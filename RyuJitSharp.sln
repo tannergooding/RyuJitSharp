@@ -1,0 +1,108 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.34607.79
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".root", ".root", "{C9BF9C84-9D50-4037-8FF9-1F21B5C49709}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
+		build.cmd = build.cmd
+		build.sh = build.sh
+		Directory.Build.props = Directory.Build.props
+		Directory.Build.targets = Directory.Build.targets
+		Directory.Packages.props = Directory.Packages.props
+		exclusion.dic = exclusion.dic
+		global.json = global.json
+		LICENSE.md = LICENSE.md
+		NuGet.config = NuGet.config
+		pack.cmd = pack.cmd
+		pack.sh = pack.sh
+		restore.cmd = restore.cmd
+		restore.sh = restore.sh
+		test.cmd = test.cmd
+		test.sh = test.sh
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{8630583F-E360-47C1-A407-0B8473D6720C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ISSUE_TEMPLATE", "ISSUE_TEMPLATE", "{948D6FE7-CBD5-41F2-9E4A-061A80816686}"
+	ProjectSection(SolutionItems) = preProject
+		.github\ISSUE_TEMPLATE\bug.md = .github\ISSUE_TEMPLATE\bug.md
+		.github\ISSUE_TEMPLATE\proposal.md = .github\ISSUE_TEMPLATE\proposal.md
+		.github\ISSUE_TEMPLATE\regression.md = .github\ISSUE_TEMPLATE\regression.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{27E44707-80D9-4976-8590-341F2906187A}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\ci.yml = .github\workflows\ci.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{A8840925-F76D-4CBC-905A-3BBDF61DBFD9}"
+	ProjectSection(SolutionItems) = preProject
+		docs\CODEOWNERS = docs\CODEOWNERS
+		docs\CODE_OF_CONDUCT.md = docs\CODE_OF_CONDUCT.md
+		docs\CONTRIBUTING.md = docs\CONTRIBUTING.md
+		docs\PULL_REQUEST_TEMPLATE.md = docs\PULL_REQUEST_TEMPLATE.md
+		docs\README.md = docs\README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{0E7188BC-196B-4CC4-B80C-04B9F0E996D7}"
+	ProjectSection(SolutionItems) = preProject
+		scripts\build.ps1 = scripts\build.ps1
+		scripts\build.sh = scripts\build.sh
+		scripts\cibuild.cmd = scripts\cibuild.cmd
+		scripts\cibuild.sh = scripts\cibuild.sh
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sources", "sources", "{46D4BAAC-C8E1-4A49-944E-8DBEC2931450}"
+	ProjectSection(SolutionItems) = preProject
+		sources\Directory.Build.props = sources\Directory.Build.props
+		sources\Directory.Build.targets = sources\Directory.Build.targets
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{8C68C283-5FEE-475C-8551-7111C0411274}"
+	ProjectSection(SolutionItems) = preProject
+		tests\Directory.Build.props = tests\Directory.Build.props
+		tests\Directory.Build.targets = tests\Directory.Build.targets
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{37ED835B-C531-4237-980F-EBDC75247CC3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RyuJitSharp", "sources\Core\RyuJitSharp.csproj", "{4433C036-68E6-4A23-9AE0-0D709CFEEA5C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{6BC2E567-ABAD-4ED8-B3CC-5043EFF878A8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RyuJitSharp.UnitTests", "tests\Core\RyuJitSharp.UnitTests.csproj", "{FEF6C715-1E55-4483-99E5-18C07787B297}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4433C036-68E6-4A23-9AE0-0D709CFEEA5C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4433C036-68E6-4A23-9AE0-0D709CFEEA5C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4433C036-68E6-4A23-9AE0-0D709CFEEA5C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4433C036-68E6-4A23-9AE0-0D709CFEEA5C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FEF6C715-1E55-4483-99E5-18C07787B297}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FEF6C715-1E55-4483-99E5-18C07787B297}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FEF6C715-1E55-4483-99E5-18C07787B297}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FEF6C715-1E55-4483-99E5-18C07787B297}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{948D6FE7-CBD5-41F2-9E4A-061A80816686} = {8630583F-E360-47C1-A407-0B8473D6720C}
+		{27E44707-80D9-4976-8590-341F2906187A} = {8630583F-E360-47C1-A407-0B8473D6720C}
+		{37ED835B-C531-4237-980F-EBDC75247CC3} = {46D4BAAC-C8E1-4A49-944E-8DBEC2931450}
+		{4433C036-68E6-4A23-9AE0-0D709CFEEA5C} = {37ED835B-C531-4237-980F-EBDC75247CC3}
+		{6BC2E567-ABAD-4ED8-B3CC-5043EFF878A8} = {8C68C283-5FEE-475C-8551-7111C0411274}
+		{FEF6C715-1E55-4483-99E5-18C07787B297} = {6BC2E567-ABAD-4ED8-B3CC-5043EFF878A8}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B1BBF641-6DC8-49F6-A06F-C92A05A7617E}
+	EndGlobalSection
+EndGlobal
