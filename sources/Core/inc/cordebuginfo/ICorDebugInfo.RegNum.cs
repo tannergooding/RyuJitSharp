@@ -15,32 +15,32 @@ public partial struct ICorDebugInfo
     public enum RegNum
     {
         //
-        // TARGET_ARM
+        // TARGET_ARM32
         //
 
-        REGNUM_ARM_R0 = 0,
-        REGNUM_ARM_R1,
-        REGNUM_ARM_R2,
-        REGNUM_ARM_R3,
-        REGNUM_ARM_R4,
-        REGNUM_ARM_R5,
-        REGNUM_ARM_R6,
-        REGNUM_ARM_R7,
-        REGNUM_ARM_R8,
-        REGNUM_ARM_R9,
-        REGNUM_ARM_R10,
-        REGNUM_ARM_R11,
-        REGNUM_ARM_R12,
-        REGNUM_ARM_SP,
-        REGNUM_ARM_LR,
-        REGNUM_ARM_PC,
-        REGNUM_ARM_COUNT,
+        REGNUM_ARM32_R0 = 0,
+        REGNUM_ARM32_R1,
+        REGNUM_ARM32_R2,
+        REGNUM_ARM32_R3,
+        REGNUM_ARM32_R4,
+        REGNUM_ARM32_R5,
+        REGNUM_ARM32_R6,
+        REGNUM_ARM32_R7,
+        REGNUM_ARM32_R8,
+        REGNUM_ARM32_R9,
+        REGNUM_ARM32_R10,
+        REGNUM_ARM32_R11,
+        REGNUM_ARM32_R12,
+        REGNUM_ARM32_SP,
+        REGNUM_ARM32_LR,
+        REGNUM_ARM32_PC,
+        REGNUM_ARM32_COUNT,
 
         // ambient SP support. Ambient SP is the original SP in the non-BP based frame.
         // Ambient SP should not change even if there are push/pop operations in the method.
-        REGNUM_ARM_AMBIENT_SP,
+        REGNUM_ARM32_AMBIENT_SP,
 
-        REGNUM_ARM_FP = REGNUM_ARM_R11,
+        REGNUM_ARM32_FP = REGNUM_ARM32_R11,
 
         //
         // TARGET_ARM64

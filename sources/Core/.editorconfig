@@ -24,8 +24,10 @@ root = false
 #    disable CA1712: Do not prefix enum values with type name
 #    disable CA1715: Identifiers should have correct prefix
 #    disable CA1716: Identifiers should not match keywords
+#    disable CA1724: Type names should not match namespaces
 #    disable CA1815: Override equals and operator equals on value types
 #    disable CA1822: Mark members as static
+#    disable CA2211: Non-constant fields should not be visible
 #    disable CA2217: Do not mark enums with FlagsAttribute
 ###############################################################################
 [*.cs]
@@ -42,8 +44,10 @@ dotnet_diagnostic.CA1711.severity = none
 dotnet_diagnostic.CA1712.severity = none
 dotnet_diagnostic.CA1715.severity = none
 dotnet_diagnostic.CA1716.severity = none
+dotnet_diagnostic.CA1724.severity = none
 dotnet_diagnostic.CA1815.severity = none
 dotnet_diagnostic.CA1822.severity = none
+dotnet_diagnostic.CA2211.severity = none
 dotnet_diagnostic.CA2217.severity = none
 
 ###############################################################################

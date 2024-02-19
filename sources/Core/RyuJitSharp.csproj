@@ -11,4 +11,8 @@
     <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Folder Include="jit\jitee\" />
+  </ItemGroup>
+
 </Project>
