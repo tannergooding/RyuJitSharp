@@ -1,0 +1,14 @@
+byref
+dczva
+inlinee
+jitted
+lzcnt
+movbe
+pclmulqdq
+popcnt
+rcpc
+simd
+ssse
+vbmi
+vnni
+vtable

@@ -1,0 +1,84 @@
+# Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+
+###############################################################################
+# EditorConfig is awesome: http://EditorConfig.org
+###############################################################################
+
+###############################################################################
+# Not top-most EditorConfig file
+###############################################################################
+root = false
+
+###############################################################################
+# Set dotnet diagnostic rules to:
+#    disable CA1008: Enums should have zero value
+#    disable CA1024: Use properties where appropriate
+#    disable CA1027: Mark enums with FlagsAttribute
+#    disable CA1028: Enum storage should be Int32
+#    disable CA1034: Nested types should not be visible
+#    disable CA1051: Do not declare visible instance fields
+#    disable CA1069: Enums should not have duplicate values
+#    disable CA1707: Identifiers should not contain underscores
+#    disable CA1708: Identifiers should differ by more than case
+#    disable CA1711: Identifiers should not have incorrect suffix
+#    disable CA1712: Do not prefix enum values with type name
+#    disable CA1715: Identifiers should have correct prefix
+#    disable CA1716: Identifiers should not match keywords
+#    disable CA1815: Override equals and operator equals on value types
+#    disable CA1822: Mark members as static
+#    disable CA2217: Do not mark enums with FlagsAttribute
+###############################################################################
+[*.cs]
+dotnet_diagnostic.CA1008.severity = none
+dotnet_diagnostic.CA1024.severity = none
+dotnet_diagnostic.CA1027.severity = none
+dotnet_diagnostic.CA1028.severity = none
+dotnet_diagnostic.CA1034.severity = none
+dotnet_diagnostic.CA1051.severity = none
+dotnet_diagnostic.CA1069.severity = none
+dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.CA1708.severity = none
+dotnet_diagnostic.CA1711.severity = none
+dotnet_diagnostic.CA1712.severity = none
+dotnet_diagnostic.CA1715.severity = none
+dotnet_diagnostic.CA1716.severity = none
+dotnet_diagnostic.CA1815.severity = none
+dotnet_diagnostic.CA1822.severity = none
+dotnet_diagnostic.CA2217.severity = none
+
+###############################################################################
+# Set dotnet naming rules to:
+#    disable any parent naming rules since they are not applicable to interop
+###############################################################################
+[*.cs]
+dotnet_naming_rule.async_methods_should_be_pascal_case_suffixed_with_async.severity = none
+dotnet_naming_rule.const_fields_and_locals_should_be_pascal_case.severity = none
+dotnet_naming_rule.interfaces_should_be_pascal_case_prefixed_with_i.severity = none
+dotnet_naming_rule.locals_should_be_camel_case.severity = none
+dotnet_naming_rule.parameters_should_be_camel_case.severity = none
+dotnet_naming_rule.private_and_internal_static_fields_should_be_camel_case_prefixed_with_s_and_underscore.severity = none
+dotnet_naming_rule.private_and_internal_fields_should_be_camel_case_prefixed_with_underscore.severity = none
+dotnet_naming_rule.public_and_protected_declarations_should_be_pascal_case.severity = none
+dotnet_naming_rule.type_parameters_should_be_pascal_case_prefixed_with_t.severity = none
+
+###############################################################################
+# Set dotnet style options to:
+#    disable certain parent style options since they are not applicable to interop
+###############################################################################
+[*.cs]
+dotnet_style_parentheses_in_arithmetic_binary_operators = always_for_clarity:none
+dotnet_style_parentheses_in_other_binary_operators = always_for_clarity:none
+dotnet_style_parentheses_in_other_operators = never_if_unnecessary:none
+dotnet_style_parentheses_in_relational_binary_operators = always_for_clarity:none
+dotnet_style_prefer_conditional_expression_over_assignment = true:none
+dotnet_style_prefer_conditional_expression_over_return = true:none
+
+###############################################################################
+# Set csharp style options to:
+#    disable certain parent style options since they are not applicable to interop
+###############################################################################
+[*.cs]
+csharp_style_expression_bodied_methods = when_on_single_line:none
+csharp_style_prefer_switch_expression = true:none
+csharp_style_prefer_pattern_matching = true:none
+csharp_style_var_when_type_is_apparent = true:none
