@@ -19,7 +19,7 @@ wiki, etc) must abide by the .NET Foundation Code of Conduct:
 https://dotnetfoundation.org/about/code-of-conduct.
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported reported by contacting the project team.
+reported by contacting the project team.
 
 ### License
 
