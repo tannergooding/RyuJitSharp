@@ -13,7 +13,7 @@ public partial class Globals
     public static CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_InstructionSetFlags input)
     {
         CORINFO_InstructionSetFlags oldFlags;
-        CORINFO_InstructionSetFlags resultFlags = input;
+        var resultFlags = input;
 
         do
         {

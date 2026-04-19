@@ -44,7 +44,6 @@ public partial struct ICorJitInfo
         [UnscopedRef]
         public Span<nuint> HandleTable => _handleTable;
 
-
         [InlineArray(SIZE)]
         private struct _HandleTable_e__FixedBuffer
         {

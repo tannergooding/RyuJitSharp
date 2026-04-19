@@ -5,7 +5,7 @@
 
 namespace RyuJitSharp;
 
-public struct TargetArchitecture
+public static class TargetArchitecture
 {
     public static readonly bool Is64Bit = TARGET_64BIT;
 

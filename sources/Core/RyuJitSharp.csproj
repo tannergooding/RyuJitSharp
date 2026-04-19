@@ -3,16 +3,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0</TargetFrameworks>
+    <TargetFrameworks>net10.0</TargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup>
     <!-- CS1591: Missing XML comment for publicly visible type or member 'Type_or_Member' -->
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <!-- IDE0060: Remove unused parameter -->
+    <!-- IDE0130: Namespace does not match folder structure-->
+    <NoWarn>$(NoWarn);CS1591;IDE0060;IDE0130</NoWarn>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Folder Include="jit\jitee\" />
-  </ItemGroup>
 
 </Project>

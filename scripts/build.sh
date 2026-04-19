@@ -74,9 +74,9 @@ function Build {
   logFile="$LogDir/$configuration/build.binlog"
 
   if [[ -z "$properties" ]]; then
-    dotnet build -c "$configuration" --no-restore -v "$verbosity" /p:Platform="Any CPU" /bl:"$logFile" /err "$solution"
+    dotnet build -c "$configuration" --no-restore -v "$verbosity" /bl:"$logFile" /err "$solution"
   else
-    dotnet build -c "$configuration" --no-restore -v "$verbosity" /p:Platform="Any CPU" /bl:"$logFile" /err "${properties[@]}" "$solution"
+    dotnet build -c "$configuration" --no-restore -v "$verbosity" /bl:"$logFile" /err "${properties[@]}" "$solution"
   fi
 
   LASTEXITCODE=$?
@@ -115,12 +115,22 @@ function Help {
 }
 
 function Pack {
-  logFile="$LogDir/$configuration/pack.binlog"
+  logFile="$LogDir/$configuration/pack"
 
   if [[ -z "$properties" ]]; then
-    dotnet pack -c "$configuration" --no-build --no-restore -v "$verbosity" /p:Platform="Any CPU" /bl:"$logFile" /err "$solution"
+    dotnet pack -c "$configuration" --no-build --no-restore -v "$verbosity" /bl:"$logFile.binlog" /err "$solution"
+
+    if $ci; then
+      dotnet pack -c "$configuration" --no-build --no-restore -v "$verbosity" /bl:"$logFile.preview.binlog" /err /p:PACKAGE_PUBLISH_MODE=preview "$solution"
+      dotnet pack -c "$configuration" --no-build --no-restore -v "$verbosity" /bl:"$logFile.stable.binlog" /err /p:PACKAGE_PUBLISH_MODE=stable "$solution"
+    fi
   else
-    dotnet pack -c "$configuration" --no-build --no-restore -v "$verbosity" /p:Platform="Any CPU" /bl:"$logFile" /err "${properties[@]}" "$solution"
+    dotnet pack -c "$configuration" --no-build --no-restore -v "$verbosity" /bl:"$logFile" /err "${properties[@]}" "$solution"
+
+    if $ci; then
+      dotnet pack -c "$configuration" --no-build --no-restore -v "$verbosity" /bl:"$logFile.preview.binlog" /err /p:PACKAGE_PUBLISH_MODE=preview "${properties[@]}" "$solution"
+      dotnet pack -c "$configuration" --no-build --no-restore -v "$verbosity" /bl:"$logFile.stable.binlog" /err /p:PACKAGE_PUBLISH_MODE=stable "${properties[@]}" "$solution"
+    fi
   fi
 
   LASTEXITCODE=$?
@@ -135,9 +145,9 @@ function Restore {
   logFile="$LogDir/$configuration/restore.binlog"
 
   if [[ -z "$properties" ]]; then
-    dotnet restore -v "$verbosity" /p:Platform="Any CPU" /bl:"$logFile" /err "$solution"
+    dotnet restore -v "$verbosity" /bl:"$logFile" /err "$solution"
   else
-    dotnet restore -v "$verbosity" /p:Platform="Any CPU" /bl:"$logFile" /err "${properties[@]}" "$solution"
+    dotnet restore -v "$verbosity" /bl:"$logFile" /err "${properties[@]}" "$solution"
   fi
 
   LASTEXITCODE=$?
@@ -152,9 +162,9 @@ function Test {
   logFile="$LogDir/$configuration/test.binlog"
 
   if [[ -z "$properties" ]]; then
-    dotnet test -c "$configuration" --no-build --no-restore -v "$verbosity" /p:Platform="Any CPU" /bl:"$logFile" /err "$solution"
+    dotnet test -c "$configuration" --no-build --no-restore -v "$verbosity" /bl:"$logFile" /err "$solution"
   else
-    dotnet test -c "$configuration" --no-build --no-restore -v "$verbosity" /p:Platform="Any CPU" /bl:"$logFile" /err "${properties[@]}" "$solution"
+    dotnet test -c "$configuration" --no-build --no-restore -v "$verbosity" /bl:"$logFile" /err "${properties[@]}" "$solution"
   fi
 
   LASTEXITCODE=$?
@@ -184,7 +194,7 @@ fi
 RepoRoot="$ScriptRoot/.."
 
 if [[ -z "$solution" ]]; then
-  solution="$RepoRoot/RyuJitSharp.sln"
+  solution="$RepoRoot/RyuJitSharp.slnx"
 fi
 
 ArtifactsDir="$RepoRoot/artifacts"
@@ -204,7 +214,7 @@ if [[ ! -z "$architecture" ]]; then
   DotNetInstallDirectory="$ArtifactsDir/dotnet"
   CreateDirectory "$DotNetInstallDirectory"
 
-  . "$DotNetInstallScript" --channel 8.0 --version latest --install-dir "$DotNetInstallDirectory" --architecture "$architecture"
+  . "$DotNetInstallScript" --channel 10.0 --version latest --install-dir "$DotNetInstallDirectory" --architecture "$architecture"
 
   PATH="$DotNetInstallDirectory:$PATH:"
 fi

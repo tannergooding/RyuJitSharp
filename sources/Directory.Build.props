@@ -13,6 +13,7 @@
   <PropertyGroup>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <EnablePackageValidation>false</EnablePackageValidation>
+    <RootNamespace>RyuJitSharp</RootNamespace>
     <ProjectCategory>sources</ProjectCategory>
   </PropertyGroup>
 

@@ -49,7 +49,7 @@ public struct SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR
         passedInRegisters = copyFrom.passedInRegisters;
         eightByteCount = copyFrom.eightByteCount;
 
-        for (int i = 0; i < CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS; i++)
+        for (var i = 0; i < CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS; i++)
         {
             eightByteClassifications[i] = copyFrom.eightByteClassifications[i];
             eightByteSizes[i] = copyFrom.eightByteSizes[i];
@@ -81,7 +81,7 @@ public struct SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR
         passedInRegisters = false;
         eightByteCount = 0;
 
-        for (int i = 0; i < CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS; i++)
+        for (var i = 0; i < CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS; i++)
         {
             eightByteClassifications[i] = SystemVClassificationTypeUnknown;
             eightByteSizes[i] = 0;

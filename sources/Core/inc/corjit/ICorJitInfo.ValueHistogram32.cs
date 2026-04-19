@@ -20,7 +20,6 @@ public partial struct ICorJitInfo
         [UnscopedRef]
         public Span<nint> ValueTable => _valueTable;
 
-
         [InlineArray(HandleHistogram32.SIZE)]
         private struct _ValueTable_e__FixedBuffer
         {

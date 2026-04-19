@@ -4,7 +4,6 @@ Param(
   [switch] $build,
   [switch] $ci,
   [ValidateSet("Debug", "Release")][string] $configuration = "Debug",
-  [switch] $generate,
   [switch] $help,
   [switch] $pack,
   [switch] $restore,
@@ -20,7 +19,7 @@ $ErrorActionPreference = "Stop"
 
 function Build() {
   $logFile = Join-Path -Path $LogDir -ChildPath "$configuration\build.binlog"
-  & dotnet build -c "$configuration" --no-restore -v "$verbosity" /p:Platform="Any CPU" /bl:"$logFile" /err "$properties" "$solution"
+  & dotnet build -c "$configuration" --no-restore -v "$verbosity" /bl:"$logFile" /err $properties "$solution"
 
   if ($LastExitCode -ne 0) {
     throw "'Build' failed for '$solution'"
@@ -55,8 +54,13 @@ function Help() {
 }
 
 function Pack() {
-  $logFile = Join-Path -Path $LogDir -ChildPath "$configuration\pack.binlog"
-  & dotnet pack -c "$configuration" --no-build --no-restore -v "$verbosity" /p:Platform="Any CPU" /bl:"$logFile" /err "$properties" "$solution"
+  $logFile = Join-Path -Path $LogDir -ChildPath "$configuration\pack"
+  & dotnet pack -c "$configuration" --no-build --no-restore -v "$verbosity" /bl:"$logFile.binlog" /err $properties "$solution"
+
+  if ($ci) {
+    & dotnet pack -c "$configuration" --no-build --no-restore -v "$verbosity" /bl:"$logFile.preview.binlog" /err /p:PACKAGE_PUBLISH_MODE=preview $properties "$solution"
+    & dotnet pack -c "$configuration" --no-build --no-restore -v "$verbosity" /bl:"$logFile.stable.binlog" /err /p:PACKAGE_PUBLISH_MODE=stable $properties "$solution"
+  }
 
   if ($LastExitCode -ne 0) {
     throw "'Pack' failed for '$solution'"
@@ -65,7 +69,7 @@ function Pack() {
 
 function Restore() {
   $logFile = Join-Path -Path $LogDir -ChildPath "$configuration\restore.binlog"
-  & dotnet restore -v "$verbosity" /p:Platform="Any CPU" /bl:"$logFile" /err "$properties" "$solution"
+  & dotnet restore -v "$verbosity" /bl:"$logFile" /err $properties "$solution"
 
   if ($LastExitCode -ne 0) {
     throw "'Restore' failed for '$solution'"
@@ -74,7 +78,7 @@ function Restore() {
 
 function Test() {
   $logFile = Join-Path -Path $LogDir -ChildPath "$configuration\test.binlog"
-  & dotnet test -c "$configuration" --no-build --no-restore -v "$verbosity" /p:Platform="Any CPU" /bl:"$logFile" /err "$properties" "$solution"
+  & dotnet test -c "$configuration" --no-build --no-restore -v "$verbosity" /bl:"$logFile" /err $properties "$solution"
 
   if ($LastExitCode -ne 0) {
     throw "'Test' failed for '$solution'"
@@ -101,7 +105,7 @@ try {
   $RepoRoot = Join-Path -Path $PSScriptRoot -ChildPath ".."
 
   if ($solution -eq "") {
-    $solution = Join-Path -Path $RepoRoot -ChildPath "RyuJitSharp.sln"
+    $solution = Join-Path -Path $RepoRoot -ChildPath "RyuJitSharp.slnx"
   }
 
   $ArtifactsDir = Join-Path -Path $RepoRoot -ChildPath "artifacts"
@@ -121,7 +125,7 @@ try {
     $DotNetInstallDirectory = Join-Path -Path $ArtifactsDir -ChildPath "dotnet"
     Create-Directory -Path $DotNetInstallDirectory
 
-    & $DotNetInstallScript -Channel 8.0 -Version latest -InstallDir $DotNetInstallDirectory -Architecture $architecture
+    & $DotNetInstallScript -Channel 10.0 -Version latest -InstallDir $DotNetInstallDirectory -Architecture $architecture
 
     $env:PATH="$DotNetInstallDirectory;$env:PATH"
   }

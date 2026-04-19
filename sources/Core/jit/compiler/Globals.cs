@@ -1,4 +1,4 @@
-﻿// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 //
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
@@ -142,9 +142,9 @@ public unsafe partial class Globals
     public static int jitNativeCode(CORINFO_METHOD_HANDLE methodHnd, CORINFO_MODULE_HANDLE classHnd, COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo, void** methodCodePtr, uint* methodCodeSize, JitFlags* compileFlags, void* inlineInfoPtr)
     {
         // A non-null inlineInfo means we are compiling the inlinee method.
-        object? inlineInfo = GCHandle.FromIntPtr((nint)inlineInfoPtr).Target;
+        var inlineInfo = GCHandle.FromIntPtr((nint)inlineInfoPtr).Target;
 
-        CorJitResult result = JitNativeCodeCore(methodHnd, classHnd, compHnd, methodInfo, methodCodePtr, methodCodeSize, compileFlags, inlineInfo);
+        var result = JitNativeCodeCore(methodHnd, classHnd, compHnd, methodInfo, methodCodePtr, methodCodeSize, compileFlags, inlineInfo);
 
         if ((inlineInfo is null) && (result is CORJIT_INTERNALERROR or CORJIT_RECOVERABLEERROR or CORJIT_IMPLLIMITATION))
         {
@@ -161,7 +161,7 @@ public unsafe partial class Globals
 
         static CorJitResult JitNativeCodeCore(CORINFO_METHOD_HANDLE methodHnd, CORINFO_MODULE_HANDLE classHnd, COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo, void** methodCodePtr, uint* methodCodeSize, JitFlags* compileFlags, object? inlineInfo)
         {
-            CorJitResult result = CORJIT_INTERNALERROR;
+            var result = CORJIT_INTERNALERROR;
 
             Console.WriteLine("Hello from RyuJitSharp!");
 

@@ -25,7 +25,6 @@ public unsafe partial struct CILJit
         return lpVtbl;
     }
 
-
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static CorJitResult compileMethod(ICorJitCompiler* pSelf, ICorJitInfo* comp, CORINFO_METHOD_INFO* info, uint flags, byte** nativeEntry, uint* nativeSizeOfCode) => ((CILJit*)pSelf)->compileMethod(comp, info, flags, nativeEntry, nativeSizeOfCode);
 

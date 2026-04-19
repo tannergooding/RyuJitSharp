@@ -15,13 +15,13 @@ public unsafe partial struct CILJit : ICorJitCompiler.Interface
     // The main JIT function for the 32 bit JIT.  See code:ICorJitCompiler#EEToJitInterface for more on the EE-JIT
     // interface. Things really don't get going inside the JIT until the code:Compiler::compCompile#Phases
     // method.  Usually that is where you want to go.
-    public CorJitResult compileMethod(ICorJitInfo* comp, CORINFO_METHOD_INFO* info, uint flags, byte** nativeEntry, uint* nativeSizeOfCode)
+    public readonly CorJitResult compileMethod(ICorJitInfo* comp, CORINFO_METHOD_INFO* info, uint flags, byte** nativeEntry, uint* nativeSizeOfCode)
     {
         Debug.Assert(flags == unchecked((uint)CORJIT_FLAGS.CorJitFlag.CORJIT_FLAG_CALL_GETJITFLAGS));
         Debug.Assert(info->ILCode != null);
 
         CORJIT_FLAGS corJitFlags;
-        uint jitFlagsSize = comp->getJitFlags(&corJitFlags, (uint)sizeof(CORJIT_FLAGS));
+        var jitFlagsSize = comp->getJitFlags(&corJitFlags, (uint)sizeof(CORJIT_FLAGS));
         Debug.Assert(jitFlagsSize == (uint)sizeof(CORJIT_FLAGS));
 
         JitFlags jitFlags = new JitFlags();
@@ -42,19 +42,19 @@ public unsafe partial struct CILJit : ICorJitCompiler.Interface
         return result;
     }
 
-    public void ProcessShutdownWork(ICorStaticInfo* info)
+    public readonly void ProcessShutdownWork(ICorStaticInfo* info)
     {
         jitShutdown(false);
         Compiler.ProcessShutdownWork(info);
     }
 
-    public void getVersionIdentifier(Guid* versionIdentifier)
+    public readonly void getVersionIdentifier(Guid* versionIdentifier)
     {
         Debug.Assert(versionIdentifier != null);
         *versionIdentifier = JITEEVersionIdentifier;
     }
 
-    public void setTargetOS(CORINFO_OS os)
+    public readonly void setTargetOS(CORINFO_OS os)
     {
         if (TARGET_OS_RUNTIMEDETERMINED)
         {

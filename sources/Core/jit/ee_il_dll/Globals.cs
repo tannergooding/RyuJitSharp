@@ -61,7 +61,7 @@ public unsafe partial class Globals
         // TODO: Port jitstdoutInit
 
         StreamWriter stdout = new StreamWriter(Console.OpenStandardOutput());
-        StreamWriter? observed = Interlocked.CompareExchange(ref s_jitstdout, stdout, null);
+        var observed = Interlocked.CompareExchange(ref s_jitstdout, stdout, null);
 
         if (observed is not null)
         {
@@ -73,7 +73,7 @@ public unsafe partial class Globals
 
     private static StreamWriter jitstdout()
     {
-        StreamWriter? jitstdout = s_jitstdout;
+        var jitstdout = s_jitstdout;
         jitstdout ??= jitstdoutInit();
         return jitstdout;
     }

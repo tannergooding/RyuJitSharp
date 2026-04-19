@@ -18,7 +18,7 @@ public unsafe struct CORINFO_InstructionSetFlags
 
     private static uint GetFlagsFieldIndex(CORINFO_InstructionSet instructionSet)
     {
-        uint bitIndex = (uint)instructionSet;
+        var bitIndex = (uint)instructionSet;
         return bitIndex / BitsPerFlagsField;
     }
 
@@ -34,21 +34,21 @@ public unsafe struct CORINFO_InstructionSetFlags
 
     public void AddInstructionSet(CORINFO_InstructionSet instructionSet)
     {
-        uint index = GetFlagsFieldIndex(instructionSet);
+        var index = GetFlagsFieldIndex(instructionSet);
         _flags[(int)index] |= GetRelativeBitMask(instructionSet);
     }
 
     public void RemoveInstructionSet(CORINFO_InstructionSet instructionSet)
     {
-        uint index = GetFlagsFieldIndex(instructionSet);
-        ulong bitIndex = GetRelativeBitMask(instructionSet);
+        var index = GetFlagsFieldIndex(instructionSet);
+        var bitIndex = GetRelativeBitMask(instructionSet);
         _flags[(int)index] &= ~bitIndex;
     }
 
     public readonly bool HasInstructionSet(CORINFO_InstructionSet instructionSet)
     {
-        uint index = GetFlagsFieldIndex(instructionSet);
-        ulong bitIndex = GetRelativeBitMask(instructionSet);
+        var index = GetFlagsFieldIndex(instructionSet);
+        var bitIndex = GetRelativeBitMask(instructionSet);
         return ((_flags[(int)index] & bitIndex) != 0);
     }
 
@@ -60,7 +60,7 @@ public unsafe struct CORINFO_InstructionSetFlags
 
     public void Add(CORINFO_InstructionSetFlags other)
     {
-        for (int i = 0; i < FlagsFieldCount; i++)
+        for (var i = 0; i < FlagsFieldCount; i++)
         {
             _flags[i] |= other._flags[i];
         }
