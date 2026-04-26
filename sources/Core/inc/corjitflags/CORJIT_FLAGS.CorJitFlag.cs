@@ -43,11 +43,11 @@ public partial struct CORJIT_FLAGS
         /// <summary>JIT is allowed to use *_MAYBEFROZEN allocators.</summary>
         CORJIT_FLAG_FROZEN_ALLOC_ALLOWED = 9,
 
-        /// <summary>Use the final code generator, i.e., not the interpreter.</summary>
-        CORJIT_FLAG_MAKEFINALCODE = 10,
+        /// <summary>Use portable entrypoints for managed calling convention (see clr-abi.md for details)</summary>
+        CORJIT_FLAG_PORTABLE_ENTRY_POINTS = 10,
 
-        /// <summary>Use version-resilient code generation.</summary>
-        CORJIT_FLAG_READYTORUN = 11,
+        /// <summary>Do ahead-of-time code generation (ReadyToRun or NativeAOT)</summary>
+        CORJIT_FLAG_AOT = 11,
 
         /// <summary>Instrument prologues/epilogues.</summary>
         CORJIT_FLAG_PROF_ENTERLEAVE = 12,
@@ -55,8 +55,8 @@ public partial struct CORJIT_FLAGS
         /// <summary>Disables PInvoke inlining.</summary>
         CORJIT_FLAG_PROF_NO_PINVOKE_INLINE = 13,
 
-        /// <summary>Pre-jit is the execution engine.</summary>
-        CORJIT_FLAG_PREJIT = 14,
+        /// <summary>Generate code for use as an async function</summary>
+        CORJIT_FLAG_ASYNC = 14,
 
         /// <summary>Generate relocatable code.</summary>
         CORJIT_FLAG_RELOC = 15,
@@ -101,21 +101,12 @@ public partial struct CORJIT_FLAGS
         /// <summary>JIT should not inline any called method into this method.</summary>
         CORJIT_FLAG_NO_INLINING = 28,
 
-        //
-        // TARGET_ARM32
-        //
-
+#if TARGET_ARM
         /// <summary>JIT should generate PC-relative address computations instead of EE relocation records.</summary>
-        CORJIT_FLAG_ARM32_RELATIVE_CODE_RELOCS = 29,
+        CORJIT_FLAG_RELATIVE_CODE_RELOCS = 29,
 
         /// <summary>Enable armel calling convention.</summary>
-        CORJIT_FLAG_ARM32_SOFTFP_ABI = 30,
-
-        //
-        // TARGET_XARCH
-        //
-
-        /// <summary>On x86/x64, 512-bit vector usage may incur CPU frequency throttling.</summary>
-        CORJIT_FLAG_XARCH_VECTOR512_THROTTLING = 31,
+        CORJIT_FLAG_SOFTFP_ABI = 30,
+#endif
     }
 }

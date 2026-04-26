@@ -5,13 +5,13 @@
 
 namespace RyuJitSharp;
 
-public unsafe struct CORINFO_TAILCALL_HELPERS
+public struct CORINFO_TAILCALL_HELPERS
 {
     public CORINFO_TAILCALL_HELPERS_FLAGS flags;
 
-    public CORINFO_METHOD_HANDLE hStoreArgs;
+    public unsafe CORINFO_METHOD_HANDLE hStoreArgs;
 
-    public CORINFO_METHOD_HANDLE hCallTarget;
+    public unsafe CORINFO_METHOD_HANDLE hCallTarget;
 
-    public CORINFO_METHOD_HANDLE hDispatcher;
+    public unsafe CORINFO_METHOD_HANDLE hDispatcher;
 }

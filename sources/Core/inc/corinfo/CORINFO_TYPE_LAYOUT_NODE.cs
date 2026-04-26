@@ -5,7 +5,7 @@
 
 namespace RyuJitSharp;
 
-public unsafe struct CORINFO_TYPE_LAYOUT_NODE
+public struct CORINFO_TYPE_LAYOUT_NODE
 {
     // Type handle if this is a SIMD type, i.e. for intrinsic types in
     // System.Numerics and System.Runtime.Intrinsics namespaces. This handle
@@ -17,12 +17,12 @@ public unsafe struct CORINFO_TYPE_LAYOUT_NODE
     // - getHfaType
     // - getTypeInstantiationArgument, but only under the assumption that the returned type handle
     //   is used for primitive type recognition via getTypeForPrimitiveNumericClass
-    public CORINFO_CLASS_HANDLE simdTypeHnd;
+    public unsafe CORINFO_CLASS_HANDLE simdTypeHnd;
 
     // Field handle that should only be used for diagnostic purposes. During
     // prejit we cannot allow arbitrary JIT-EE calls with this field handle, but it can be used
     // for diagnostic purposes (e.g. to obtain the field name).
-    public CORINFO_FIELD_HANDLE diagFieldHnd;
+    public unsafe CORINFO_FIELD_HANDLE diagFieldHnd;
 
     // Index of parent node in the tree
     public uint parent;

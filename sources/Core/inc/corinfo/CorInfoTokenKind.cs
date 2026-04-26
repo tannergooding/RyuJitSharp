@@ -3,8 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-global using static RyuJitSharp.CorInfoTokenKind;
-
 namespace RyuJitSharp;
 
 /// <summary>Used for JIT to tell EE where this token comes from.</summary>
@@ -42,4 +40,7 @@ public enum CorInfoTokenKind
 
     /// <summary>Token comes from devirtualizing a method.</summary>
     CORINFO_TOKENKIND_DevirtualizedMethod = 0x800 | CORINFO_TOKENKIND_Method,
+
+    /// <summary>Token comes from runtime async awaiting pattern</summary>
+    CORINFO_TOKENKIND_Await = 0x2000 | CORINFO_TOKENKIND_Method,
 }

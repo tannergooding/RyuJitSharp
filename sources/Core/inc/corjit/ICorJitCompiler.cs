@@ -17,9 +17,9 @@ public unsafe partial struct ICorJitCompiler : ICorJitCompiler.Interface
 {
     internal Vtbl* lpVtbl;
 
-    public CorJitResult compileMethod(ICorJitInfo* comp, CORINFO_METHOD_INFO* info, uint flags, byte** nativeEntry, uint* nativeSizeOfCode) => lpVtbl->compileMethod((ICorJitCompiler*)Unsafe.AsPointer(ref this), comp, info, flags, nativeEntry, nativeSizeOfCode);
+    public CorJitResult compileMethod(ICorJitInfo* jitInfo, CORINFO_METHOD_INFO* methodInfo, uint flags, byte** nativeEntry, uint* nativeSizeOfCode) => lpVtbl->compileMethod((ICorJitCompiler*)Unsafe.AsPointer(ref this), jitInfo, methodInfo, flags, nativeEntry, nativeSizeOfCode);
 
-    public void ProcessShutdownWork(ICorStaticInfo* info) => lpVtbl->ProcessShutdownWork((ICorJitCompiler*)Unsafe.AsPointer(ref this), info);
+    public void ProcessShutdownWork(ICorStaticInfo* staticInfo) => lpVtbl->ProcessShutdownWork((ICorJitCompiler*)Unsafe.AsPointer(ref this), staticInfo);
 
     public void getVersionIdentifier(Guid* versionIdentifier) => lpVtbl->getVersionIdentifier((ICorJitCompiler*)Unsafe.AsPointer(ref this), versionIdentifier);
 
@@ -37,10 +37,10 @@ public unsafe partial struct ICorJitCompiler : ICorJitCompiler.Interface
         // * In the 32 bit jit this is implemented by code:CILJit.compileMethod
         // * For the 64 bit jit this is implemented by code:PreJit.compileMethod
         // Note: setTargetOS must be called before this api is used.
-        CorJitResult compileMethod(ICorJitInfo* comp, CORINFO_METHOD_INFO* info, uint flags, byte** nativeEntry, uint* nativeSizeOfCode);
+        CorJitResult compileMethod(ICorJitInfo* jitInfo, CORINFO_METHOD_INFO* methodInfo, uint flags, byte** nativeEntry, uint* nativeSizeOfCode);
 
         // Do any appropriate work at process shutdown.  Default impl is to do nothing.
-        void ProcessShutdownWork(ICorStaticInfo* info) { }
+        void ProcessShutdownWork(ICorStaticInfo* staticInfo) { }
 
         // The EE asks the JIT for a "version identifier". This represents the version of the JIT/EE interface.
         // If the JIT doesn't implement the same JIT/EE interface expected by the EE (because the JIT doesn't

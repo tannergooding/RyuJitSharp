@@ -14,4 +14,7 @@ public enum CorInfoTypeWithMod
 
     /// <summary>Can be applied to CLASS, or BYREF to indicate pinned.</summary>
     CORINFO_TYPE_MOD_PINNED = 0x40,
+
+    /// <summary>Can be applied to VALUECLASS to indicate 'needs helper to copy'</summary>
+    CORINFO_TYPE_MOD_COPY_WITH_HELPER = 0x80,
 }

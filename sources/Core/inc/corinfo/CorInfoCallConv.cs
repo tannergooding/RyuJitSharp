@@ -43,4 +43,7 @@ public enum CorInfoCallConv
 
     // Passed last. Same as CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
     CORINFO_CALLCONV_PARAMTYPE = 0x80,
+
+    // Is this a call with async calling convention?
+    CORINFO_CALLCONV_ASYNCCALL = 0x100,
 }

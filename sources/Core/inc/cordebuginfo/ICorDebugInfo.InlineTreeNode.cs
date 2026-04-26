@@ -1,4 +1,4 @@
-// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+// Copyright Â© Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 //
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
@@ -9,10 +9,10 @@ public partial struct ICorDebugInfo
 {
     /// <summary>Represents an individual entry in the inline tree.</summary>
     /// <remarks>This is ordinarily stored as a flat array in which [0] is the root, and the indices below indicate the tree structure.</remarks>
-    public unsafe struct InlineTreeNode
+    public struct InlineTreeNode
     {
         /// <summary>Method handle of inlinee (or root).</summary>
-        public CORINFO_METHOD_HANDLE Method;
+        public unsafe CORINFO_METHOD_HANDLE Method;
 
         /// <summary>IL offset of IL instruction resulting in the inline.</summary>
         public uint ILOffset;

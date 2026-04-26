@@ -8,10 +8,10 @@ using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
-public unsafe struct CORINFO_CALL_INFO
+public struct CORINFO_CALL_INFO
 {
     /// <summary>Target method handle.</summary>
-    public CORINFO_METHOD_HANDLE hMethod;
+    public unsafe CORINFO_METHOD_HANDLE hMethod;
 
     /// <summary>Flags for the target method.</summary>
     public uint methodFlags;
@@ -39,7 +39,7 @@ public unsafe struct CORINFO_CALL_INFO
     public bool nullInstanceCheck;
 
     /// <summary>Context for inlining and hidden arg.</summary>
-    public CORINFO_CONTEXT_HANDLE contextHandle;
+    public unsafe CORINFO_CONTEXT_HANDLE contextHandle;
 
     /// <summary>Set if contextHandle is approx handle. Runtime lookup is required to get the exact handle.</summary>
     public bool exactContextNeedsRuntimeLookup;

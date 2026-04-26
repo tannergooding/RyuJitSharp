@@ -3,8 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-global using static RyuJitSharp.CORINFO_OS;
-
 namespace RyuJitSharp;
 
 public enum CORINFO_OS

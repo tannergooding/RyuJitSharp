@@ -4,7 +4,6 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
-using System.Diagnostics;
 
 namespace RyuJitSharp;
 
@@ -15,25 +14,24 @@ public unsafe partial struct CILJit : ICorJitCompiler.Interface
     // The main JIT function for the 32 bit JIT.  See code:ICorJitCompiler#EEToJitInterface for more on the EE-JIT
     // interface. Things really don't get going inside the JIT until the code:Compiler::compCompile#Phases
     // method.  Usually that is where you want to go.
-    public readonly CorJitResult compileMethod(ICorJitInfo* comp, CORINFO_METHOD_INFO* info, uint flags, byte** nativeEntry, uint* nativeSizeOfCode)
+    public readonly CorJitResult compileMethod(ICorJitInfo* jitInfo, CORINFO_METHOD_INFO* methodInfo, uint flags, byte** nativeEntry, uint* nativeSizeOfCode)
     {
-        Debug.Assert(flags == unchecked((uint)CORJIT_FLAGS.CorJitFlag.CORJIT_FLAG_CALL_GETJITFLAGS));
-        Debug.Assert(info->ILCode != null);
+        assert(flags == unchecked((uint)CorJitFlag.CORJIT_FLAG_CALL_GETJITFLAGS));
+        assert(methodInfo->ILCode != null);
 
         CORJIT_FLAGS corJitFlags;
-        var jitFlagsSize = comp->getJitFlags(&corJitFlags, (uint)sizeof(CORJIT_FLAGS));
-        Debug.Assert(jitFlagsSize == (uint)sizeof(CORJIT_FLAGS));
+        var jitFlagsSize = jitInfo->getJitFlags(&corJitFlags, (uint)sizeof(CORJIT_FLAGS));
+        assert(jitFlagsSize == (uint)sizeof(CORJIT_FLAGS));
 
         JitFlags jitFlags = new JitFlags();
         jitFlags.SetFromFlags(corJitFlags);
 
 #if DEBUG
         // Initialize any necessary thread-local state
-        using JitTls jitTls = new JitTls(comp);
+        using JitTls jitTls = new JitTls(jitInfo);
 #endif
 
-        void* methodCodePtr = null;
-        CorJitResult result = (CorJitResult)jitNativeCode(info->ftn, info->scope, comp, info, &methodCodePtr, nativeSizeOfCode, &jitFlags, null);
+        var result = jitNativeCode(methodInfo->ftn, methodInfo->scope, jitInfo, methodInfo, out var methodCodePtr, out *nativeSizeOfCode, ref jitFlags, inlineInfo: null);
 
         if (result == CORJIT_OK)
         {
@@ -42,32 +40,30 @@ public unsafe partial struct CILJit : ICorJitCompiler.Interface
         return result;
     }
 
-    public readonly void ProcessShutdownWork(ICorStaticInfo* info)
+    public readonly void ProcessShutdownWork(ICorStaticInfo* staticInfo)
     {
         jitShutdown(false);
-        Compiler.ProcessShutdownWork(info);
+        Compiler.ProcessShutdownWork(staticInfo);
     }
 
     public readonly void getVersionIdentifier(Guid* versionIdentifier)
     {
-        Debug.Assert(versionIdentifier != null);
+        assert(versionIdentifier != null);
         *versionIdentifier = JITEEVersionIdentifier;
     }
 
     public readonly void setTargetOS(CORINFO_OS os)
     {
-        if (TARGET_OS_RUNTIMEDETERMINED)
-        {
-            TargetOS.IsApplePlatform = os is CORINFO_APPLE;
+#if TARGET_OS_RUNTIMEDETERMINED
+        TargetOS.IsApplePlatform = os is CORINFO_APPLE;
 
-            // This define is only set if ONLY the different unix variants are runtime determined
-            if (!TARGET_UNIX_OS_RUNTIMEDETERMINED)
-            {
-                TargetOS.IsUnix = os is CORINFO_UNIX or CORINFO_APPLE;
-                TargetOS.IsWindows = os is CORINFO_WINNT;
-            }
+        
+#if !TARGET_UNIX_OS_RUNTIMEDETERMINED
+        TargetOS.IsUnix = os is CORINFO_UNIX or CORINFO_APPLE;
+        TargetOS.IsWindows = os is CORINFO_WINNT;
+#endif
 
-            TargetOS.OSSettingConfigured = true;
-        }
+        TargetOS.OSSettingConfigured = true;
+#endif
     }
 }

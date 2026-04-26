@@ -5,9 +5,11 @@
 
 namespace RyuJitSharp;
 
-public unsafe struct CORINFO_RefAny
+public partial struct ICorDebugInfo
 {
-    public void* dataPtr;
-
-    public CORINFO_CLASS_HANDLE type;
+    public struct AsyncInfo
+    {
+        /// <summary>Number of suspension points in the method.</summary>
+        public uint NumSuspensionPoints;
+    }
 }

@@ -3,8 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-global using static RyuJitSharp.CorInfoRegionKind;
-
 namespace RyuJitSharp;
 
 /// <summary>What type of code region we are in.</summary>

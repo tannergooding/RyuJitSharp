@@ -17,13 +17,20 @@ public enum CORINFO_ACCESS_FLAGS
     /// <summary>Accessed via the this reference.</summary>
     CORINFO_ACCESS_THIS = 0x0001,
 
-    // UNUSED = 0x0002,
+    /// <summary>Prefer access to a method via slot over using the temporary entrypoint</summary>
+    CORINFO_ACCESS_PREFER_SLOT_OVER_TEMPORARY_ENTRYPOINT = 0x0002,
 
     /// <summary>Instance is guaranteed non-null.</summary>
     CORINFO_ACCESS_NONNULL = 0x0004,
 
     /// <summary>Accessed via ldftn.</summary>
     CORINFO_ACCESS_LDFTN = 0x0010,
+
+    /// <summary>Method might be attributed with UnmanagedCallersOnlyAttribute.</summary>
+    CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE = 0x0020,
+
+    // UNUSED = 0x0040,
+    // UNUSED = 0x0080,
 
     //
     // Field access flags

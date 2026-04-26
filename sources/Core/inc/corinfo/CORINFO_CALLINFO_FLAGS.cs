@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-global using static RyuJitSharp.CORINFO_CALLINFO_FLAGS;
 using System;
 
 namespace RyuJitSharp;
@@ -20,7 +19,9 @@ public enum CORINFO_CALLINFO_FLAGS
     CORINFO_CALLINFO_CALLVIRT = 0x0002,
 
     // UNUSED = 0x0004,
-    // UNUSED = 0x0008,
+
+    /// <summary>Do not use a stub for this call, even if it is a virtual call.</summary>
+    CORINFO_CALLINFO_DISALLOW_STUB = 0x0008,
 
     /// <summary>Perform security checks.</summary>
     CORINFO_CALLINFO_SECURITYCHECKS = 0x0010,

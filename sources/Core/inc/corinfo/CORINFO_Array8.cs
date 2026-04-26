@@ -8,18 +8,19 @@ using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
-public unsafe struct CORINFO_Array8
+public struct CORINFO_Array8
 {
     private CORINFO_Object _base;
 
     /// <summary>The vtable for the object.</summary>
     [UnscopedRef]
-    public ref CORINFO_MethodPtr* methTable => ref _base.methTable;
+    public unsafe ref CORINFO_MethodPtr* methTable => ref _base.methTable;
 
-    private _Anonymous1_e__Union _anonymous1;
+    public uint length;
 
-    [UnscopedRef]
-    public ref uint length => ref _anonymous1.length;
+#if HOST_64BIT
+    public uint alignpad;
+#endif
 
     // actually of variable size
     private _Anonymous2_e__Union _anonymous2;
@@ -32,16 +33,6 @@ public unsafe struct CORINFO_Array8
 
     [UnscopedRef]
     public ref ulong u8Elems => ref _anonymous2.u8Elems;
-
-    [StructLayout(LayoutKind.Explicit)]
-    private struct _Anonymous1_e__Union
-    {
-        [FieldOffset(0)]
-        public uint length;
-
-        [FieldOffset(0)]
-        public nuint alignpad;
-    }
 
     [StructLayout(LayoutKind.Explicit)]
     private struct _Anonymous2_e__Union

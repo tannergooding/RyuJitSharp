@@ -20,11 +20,11 @@ public unsafe partial struct ICorJitHost : ICorJitHost.Interface
 
     public void freeMemory(void* block) => lpVtbl->freeMemory((ICorJitHost*)Unsafe.AsPointer(ref this), block);
 
-    public int getIntConfigValue(char* name, int defaultValue) => lpVtbl->getIntConfigValue((ICorJitHost*)Unsafe.AsPointer(ref this), name, defaultValue);
+    public int getIntConfigValue(byte* name, int defaultValue) => lpVtbl->getIntConfigValue((ICorJitHost*)Unsafe.AsPointer(ref this), name, defaultValue);
 
-    public char* getStringConfigValue(char* name) => lpVtbl->getStringConfigValue((ICorJitHost*)Unsafe.AsPointer(ref this), name);
+    public byte* getStringConfigValue(byte* name) => lpVtbl->getStringConfigValue((ICorJitHost*)Unsafe.AsPointer(ref this), name);
 
-    public void freeStringConfigValue(char* value) => lpVtbl->freeStringConfigValue((ICorJitHost*)Unsafe.AsPointer(ref this), value);
+    public void freeStringConfigValue(byte* value) => lpVtbl->freeStringConfigValue((ICorJitHost*)Unsafe.AsPointer(ref this), value);
 
     public void* allocateSlab(nuint size, nuint* pActualSize) => lpVtbl->allocateSlab((ICorJitHost*)Unsafe.AsPointer(ref this), size, pActualSize);
 
@@ -39,16 +39,16 @@ public unsafe partial struct ICorJitHost : ICorJitHost.Interface
         void freeMemory(void* block);
 
         // Return an integer config value for the given key, if any exists.
-        int getIntConfigValue(char* name, int defaultValue);
+        int getIntConfigValue(byte* name, int defaultValue);
 
         // Return a string config value for the given key, if any exists.
-        char* getStringConfigValue(char* name);
+        byte* getStringConfigValue(byte* name);
 
         // Free a string ConfigValue returned by the runtime.
         // JITs using the getStringConfigValue query are required
         // to return the string values to the runtime for deletion.
         // This avoids leaking the memory in the JIT.
-        void freeStringConfigValue(char* value);
+        void freeStringConfigValue(byte* value);
 
         // Allocate memory slab of the given size in bytes. The host is expected to pool
         // these for a good performance.
@@ -71,11 +71,11 @@ public unsafe partial struct ICorJitHost : ICorJitHost.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorJitHost*, void*, void> freeMemory;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitHost*, char*, int, int> getIntConfigValue;
+        public delegate* unmanaged[MemberFunction]<ICorJitHost*, byte*, int, int> getIntConfigValue;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitHost*, char*, char*> getStringConfigValue;
+        public delegate* unmanaged[MemberFunction]<ICorJitHost*, byte*, byte*> getStringConfigValue;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitHost*, char*, void> freeStringConfigValue;
+        public delegate* unmanaged[MemberFunction]<ICorJitHost*, byte*, void> freeStringConfigValue;
 
         public delegate* unmanaged[MemberFunction]<ICorJitHost*, nuint, nuint*, void*> allocateSlab;
 

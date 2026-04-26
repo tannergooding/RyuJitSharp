@@ -51,9 +51,8 @@ public struct CORINFO_EE_INFO
         // Size of the Frame structure
         public uint size;
 
-        public uint offsetOfGSCookie;
-
-        public uint offsetOfFrameVptr;
+        // Size of the Frame structure when it also contains the secret stub arg
+        public uint sizeWithSecretStubArg;
 
         public uint offsetOfFrameLink;
 
@@ -64,6 +63,8 @@ public struct CORINFO_EE_INFO
         public uint offsetOfCallTarget;
 
         public uint offsetOfReturnAddress;
+
+        public uint offsetOfSecretStubArg;
 
         // This offset is used only for ARM
         public uint offsetOfSPAfterProlog;

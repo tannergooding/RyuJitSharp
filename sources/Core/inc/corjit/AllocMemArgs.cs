@@ -5,29 +5,12 @@
 
 namespace RyuJitSharp;
 
-public unsafe struct AllocMemArgs
+public struct AllocMemArgs
 {
-    // Input arguments
-    public uint hotCodeSize;
+    // Chunks to allocate. Supports one hot code chunk, one cold code chunk, and an arbitrary number of data chunks.
+    public unsafe AllocMemChunk* chunks;
 
-    public uint coldCodeSize;
-
-    public uint roDataSize;
+    public uint chunksCount;
 
     public uint xcptnsCount;
-
-    public CorJitAllocMemFlag flag;
-
-    // Output arguments
-    public void* hotCodeBlock;
-
-    public void* hotCodeBlockRW;
-
-    public void* coldCodeBlock;
-
-    public void* coldCodeBlockRW;
-
-    public void* roDataBlock;
-
-    public void* roDataBlockRW;
 }

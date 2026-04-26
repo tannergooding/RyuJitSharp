@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-global using static RyuJitSharp.CorInfoOptions;
 using System;
 
 namespace RyuJitSharp;
@@ -30,4 +29,7 @@ public enum CorInfoOptions
 
     /// <summary>Keep the generics context alive throughout the method even if there is no explicit use, and report its location to the CLR.</summary>
     CORINFO_GENERICS_CTXT_KEEP_ALIVE = 0x00000100,
+
+    /// <summary>Runtime async method must save and restore contexts</summary>
+    CORINFO_ASYNC_SAVE_CONTEXTS = 0x00000200,
 }

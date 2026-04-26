@@ -5,7 +5,7 @@
 
 namespace RyuJitSharp;
 
-public unsafe struct CORINFO_FIELD_INFO
+public struct CORINFO_FIELD_INFO
 {
     public CORINFO_FIELD_ACCESSOR fieldAccessor;
 
@@ -20,7 +20,7 @@ public unsafe struct CORINFO_FIELD_INFO
     public CorInfoType fieldType;
 
     /// <summary>Possibly null.</summary>
-    public CORINFO_CLASS_HANDLE structType;
+    public unsafe CORINFO_CLASS_HANDLE structType;
 
     /// <summary>See <see cref="CORINFO_CALL_INFO.accessAllowed" />.</summary>
     public CorInfoIsAccessAllowedResult accessAllowed;

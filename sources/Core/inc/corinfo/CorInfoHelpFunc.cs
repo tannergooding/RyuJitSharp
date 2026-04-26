@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-global using static RyuJitSharp.CorInfoHelpFunc;
 using System;
 
 namespace RyuJitSharp;
@@ -52,21 +51,23 @@ public enum CorInfoHelpFunc
 
     CORINFO_HELP_ULMOD,
 
+    /// <summary>Convert a signed int64 to a float.</summary>
+    CORINFO_HELP_LNG2FLT,
+
     /// <summary>Convert a signed int64 to a double.</summary>
     CORINFO_HELP_LNG2DBL,
 
+    /// <summary>Convert a unsigned int64 to a float.</summary>
+    CORINFO_HELP_ULNG2FLT,
+
     /// <summary>Convert a unsigned int64 to a double.</summary>
     CORINFO_HELP_ULNG2DBL,
-
-    CORINFO_HELP_DBL2INT,
 
     CORINFO_HELP_DBL2INT_OVF,
 
     CORINFO_HELP_DBL2LNG,
 
     CORINFO_HELP_DBL2LNG_OVF,
-
-    CORINFO_HELP_DBL2UINT,
 
     CORINFO_HELP_DBL2UINT_OVF,
 
@@ -77,10 +78,6 @@ public enum CorInfoHelpFunc
     CORINFO_HELP_FLTREM,
 
     CORINFO_HELP_DBLREM,
-
-    CORINFO_HELP_FLTROUND,
-
-    CORINFO_HELP_DBLROUND,
 
     //
     // Allocating a new object. Always use ICorClassInfo.getNewHelper() to decide
@@ -119,17 +116,14 @@ public enum CorInfoHelpFunc
     /// <summary>Allocator for arrays that *might* allocate them on a frozen segment.</summary>
     CORINFO_HELP_NEWARR_1_MAYBEFROZEN,
 
-    /// <summary>Optimized 1-D object arrays.</summary>
-    CORINFO_HELP_NEWARR_1_OBJ,
+    /// <summary>Optimized 1-D arrays with pointer sized elements.</summary>
+    CORINFO_HELP_NEWARR_1_PTR,
 
     /// <summary>Optimized 1-D value class arrays.</summary>
     CORINFO_HELP_NEWARR_1_VC,
 
     /// <summary>Like VC, but aligns the array start.</summary>
     CORINFO_HELP_NEWARR_1_ALIGN8,
-
-    /// <summary>Create a new string literal.</summary>
-    CORINFO_HELP_STRCNS,
 
     //
     // Object model
@@ -154,7 +148,7 @@ public enum CorInfoHelpFunc
     /// <summary>Optimized helper for classes.</summary>
     CORINFO_HELP_ISINSTANCEOFCLASS,
 
-    /// <summary>Slow helper for any type.</summary>
+    /// <summary>Slow helper for any type</summary>
     CORINFO_HELP_ISINSTANCEOFANY,
 
     CORINFO_HELP_CHKCASTINTERFACE,
@@ -167,7 +161,7 @@ public enum CorInfoHelpFunc
 
     /// <summary>Optimized helper for classes.</summary>
     /// <remarks>Assumes that the trivial cases has been taken care of by the inlined check.</remarks>
-    CORINFO_HELP_CHKCASTCLASS_SPECIAL, 
+    CORINFO_HELP_CHKCASTCLASS_SPECIAL,
 
     CORINFO_HELP_ISINSTANCEOF_EXCEPTION,
 
@@ -179,6 +173,9 @@ public enum CorInfoHelpFunc
     CORINFO_HELP_BOX_NULLABLE,
 
     CORINFO_HELP_UNBOX,
+
+    /// <summary>Verify unbox type, throws if incompatible</summary>
+    CORINFO_HELP_UNBOX_TYPETEST,
 
     /// <summary>Special form of unboxing for <see cref="Nullable{T}" />.</summary>
     CORINFO_HELP_UNBOX_NULLABLE,
@@ -201,6 +198,9 @@ public enum CorInfoHelpFunc
 
     /// <summary>Rethrow the currently active exception.</summary>
     CORINFO_HELP_RETHROW,
+
+    /// <summary>Throw an exception object, preserving stack trace</summary>
+    CORINFO_HELP_THROWEXACT,
 
     /// <summary>For a user program to break to the debugger.</summary>
     CORINFO_HELP_USER_BREAKPOINT,
@@ -230,9 +230,6 @@ public enum CorInfoHelpFunc
 
     CORINFO_HELP_CLASS_ACCESS_EXCEPTION,
 
-    /// <summary>Callback into the EE at the end of a catch block.</summary>
-    CORINFO_HELP_ENDCATCH,
-
     //
     // Synchronization
     //
@@ -240,10 +237,6 @@ public enum CorInfoHelpFunc
     CORINFO_HELP_MON_ENTER,
 
     CORINFO_HELP_MON_EXIT,
-
-    CORINFO_HELP_MON_ENTER_STATIC,
-
-    CORINFO_HELP_MON_EXIT_STATIC,
 
     /// <summary>Given a generics method handle, returns a class handle.</summary>
     CORINFO_HELP_GETCLASSFROMMETHODPARAM,
@@ -260,9 +253,6 @@ public enum CorInfoHelpFunc
 
     /// <summary>Ask GC if it wants to collect.</summary>
     CORINFO_HELP_POLL_GC,
-
-    /// <summary>Force a GC, but then update the jitted code to be a no-op call</summary>
-    CORINFO_HELP_STRESS_GC,
 
     /// <summary>Confirm that ECX is a valid object pointer (debugging only).</summary>
     CORINFO_HELP_CHECK_OBJ,
@@ -281,44 +271,11 @@ public enum CorInfoHelpFunc
 
     CORINFO_HELP_ASSIGN_BYREF,
 
-    CORINFO_HELP_ASSIGN_STRUCT,
+    CORINFO_HELP_BULK_WRITEBARRIER,
 
     //
     // Accessing fields
     //
-
-    /// <summary>For COM object support (using COM get/set routines to update object) and EnC and cross-context support</summary>
-    CORINFO_HELP_GETFIELD8,
-
-    CORINFO_HELP_SETFIELD8,
-
-    CORINFO_HELP_GETFIELD16,
-
-    CORINFO_HELP_SETFIELD16,
-
-    CORINFO_HELP_GETFIELD32,
-
-    CORINFO_HELP_SETFIELD32,
-
-    CORINFO_HELP_GETFIELD64,
-
-    CORINFO_HELP_SETFIELD64,
-
-    CORINFO_HELP_GETFIELDOBJ,
-
-    CORINFO_HELP_SETFIELDOBJ,
-
-    CORINFO_HELP_GETFIELDSTRUCT,
-
-    CORINFO_HELP_SETFIELDSTRUCT,
-
-    CORINFO_HELP_GETFIELDFLOAT,
-
-    CORINFO_HELP_SETFIELDFLOAT,
-
-    CORINFO_HELP_GETFIELDDOUBLE,
-
-    CORINFO_HELP_SETFIELDDOUBLE,
 
     CORINFO_HELP_GETFIELDADDR,
 
@@ -336,51 +293,59 @@ public enum CorInfoHelpFunc
     // Helpers for regular statics
     //
 
-    CORINFO_HELP_GETGENERICS_GCSTATIC_BASE,
+    CORINFO_HELP_GET_GCSTATIC_BASE,
 
-    CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE,
+    CORINFO_HELP_GET_NONGCSTATIC_BASE,
 
-    CORINFO_HELP_GETSHARED_GCSTATIC_BASE,
+    CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE,
 
-    CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE,
+    CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE,
 
-    CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR,
+    CORINFO_HELP_GETPINNED_GCSTATIC_BASE,
 
-    CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR,
+    CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE,
 
-    CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS,
+    CORINFO_HELP_GET_GCSTATIC_BASE_NOCTOR,
 
-    CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS,
+    CORINFO_HELP_GET_NONGCSTATIC_BASE_NOCTOR,
 
-    //
-    // Helper to class initialize shared generic with dynamic class, but not get static field address
-    //
+    CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR,
 
-    CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS,
+    CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE_NOCTOR,
+
+    CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR,
+
+    CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR,
 
     //
     // Helpers for thread statics
     //
 
-    CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE,
+    CORINFO_HELP_GET_GCTHREADSTATIC_BASE,
 
-    CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE,
+    CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE,
 
-    CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE,
+    CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE,
 
-    CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE,
+    CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE,
 
-    CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR,
+    CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR,
 
-    CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR,
+    CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR,
 
-    CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS,
+    CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR,
 
-    CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS,
+    CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR,
 
-    CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
+    CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
 
-    CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
+    CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
+
+    CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2,
+
+    CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT,
+
+    CORINFO_HELP_GETDIRECTONTHREADLOCALDATA_NONGCTHREADSTATIC_BASE,
 
     //
     // Debugger
@@ -406,9 +371,6 @@ public enum CorInfoHelpFunc
     // Miscellaneous
     //
 
-    /// <summary>Record the entry to a method for collecting Tuning data</summary>
-    CORINFO_HELP_BBT_FCN_ENTER,
-
     /// <summary>Indirect p/invoke call.</summary>
     CORINFO_HELP_PINVOKE_CALLI,
 
@@ -423,20 +385,20 @@ public enum CorInfoHelpFunc
     /// <summary>Init block of memory.</summary>
     CORINFO_HELP_MEMSET,
 
+    /// <summary>Init block of memory with zeroes</summary>
+    CORINFO_HELP_MEMZERO,
+
     /// <summary>Copy block of memory.</summary>
     CORINFO_HELP_MEMCPY,
+
+    /// <summary>Init block of memory using native memset (not safe for pDst being null, not safe for unbounded size, does not trigger GC)</summary>
+    CORINFO_HELP_NATIVE_MEMSET,
 
     /// <summary>Determine a type/field/method handle at run-time.</summary>
     CORINFO_HELP_RUNTIMEHANDLE_METHOD,
 
-    /// <summary>Determine a type/field/method handle at run-time, with IBC logging.</summary>
-    CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG,
-
     /// <summary>Determine a type/field/method handle at run-time.</summary>
     CORINFO_HELP_RUNTIMEHANDLE_CLASS,
-
-    /// <summary>Determine a type/field/method handle at run-time, with IBC logging.</summary>
-    CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG,
 
     /// <summary>Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time.</summary>
     CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE,
@@ -587,14 +549,17 @@ public enum CorInfoHelpFunc
     /// <summary>Resolve a generic virtual method target from this pointer and runtime method handle.</summary>
     CORINFO_HELP_GVMLOOKUP_FOR_SLOT,
 
+    /// <summary>Resolve a non-generic interface method from this pointer and dispatch cell</summary>
+    CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT,
+
     /// <summary>Probes each page of the allocated stack frame.</summary>
     CORINFO_HELP_STACK_PROBE,
 
     /// <summary>Notify runtime that code has reached a patch point</summary>
     CORINFO_HELP_PATCHPOINT,
 
-    /// <summary>Notify runtime that code has reached a part of the method that wasn't originally jitted.</summary>
-    CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT,
+    /// <summary>Notify runtime that code has reached a part of the method that needs to transition</summary>
+    CORINFO_HELP_PATCHPOINT_FORCED,
 
     /// <summary>Update 32-bit class profile for a call site.</summary>
     CORINFO_HELP_CLASSPROFILE32,
@@ -631,6 +596,16 @@ public enum CorInfoHelpFunc
 
     /// <summary>CFG: Validate and dispatch to pointer</summary>
     CORINFO_HELP_DISPATCH_INDIRECT_CALL,
+
+    //
+    // Helpers for runtime async (see System.Runtime.CompilerServices.AsyncHelpers)
+    //
+
+    CORINFO_HELP_ALLOC_CONTINUATION,
+
+    CORINFO_HELP_ALLOC_CONTINUATION_METHOD,
+
+    CORINFO_HELP_ALLOC_CONTINUATION_CLASS,
 
     CORINFO_HELP_COUNT,
 }

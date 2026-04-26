@@ -3,41 +3,87 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
+global using static RyuJitSharp.JitConfigValues;
+using System.Collections.Frozen;
 
 namespace RyuJitSharp;
 
-public sealed unsafe partial class JitConfigValues
+public partial struct JitConfigValues
 {
-    // TODO: Port jitconfigvalues.h
+    private FrozenDictionary<ConfigInteger, int>? _configIntegers;
+    private FrozenDictionary<ConfigString, nuint>? _configStrings;
+    private FrozenDictionary<ConfigMethodSet, MethodSet>? _configMethodSets;
 
-    private bool m_isInitialized;
+    private bool _isInitialized;
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool isInitialized()
+    public readonly int this[ConfigInteger configInteger]
     {
-        return m_isInitialized;
+        get
+        {
+            assert(_isInitialized);
+            assert(_configIntegers is not null);
+            return _configIntegers[configInteger];
+        }
     }
 
-    public void initialize(ICorJitHost* host)
+    public readonly MethodSet this[ConfigMethodSet configMethodSet]
     {
-        Debug.Assert(!m_isInitialized);
-
-        // TODO: initialize jitconfigvalues.h
-
-        m_isInitialized = true;
+        get
+        {
+            assert(_isInitialized);
+            assert(_configMethodSets is not null);
+            return _configMethodSets[configMethodSet];
+        }
     }
 
-    public void destroy(ICorJitHost* host)
+    public readonly unsafe byte* this[ConfigString configString]
     {
-        if (!m_isInitialized)
+        get
+        {
+            assert(_isInitialized);
+            assert(_configStrings is not null);
+            return (byte*)(_configStrings[configString]);
+        }
+    }
+
+    public unsafe void destroy(ICorJitHost* jitHost)
+    {
+        if (!_isInitialized)
         {
             return;
         }
 
-        // TODO: destroy jitconfigvalues.h
+        assert(_configIntegers is not null);
+        assert(_configStrings is not null);
+        assert(_configMethodSets is not null);
 
-        m_isInitialized = false;
+        foreach (var configString in _configStrings.Values)
+        {
+            jitHost->freeStringConfigValue((byte*)(configString));
+        }
+
+        foreach (var configMethodSet in _configMethodSets.Values)
+        {
+            configMethodSet.destroy(jitHost);
+        }
+
+        _configIntegers = null;
+        _configStrings = null;
+        _configMethodSets = null;
+
+        _isInitialized = false;
     }
+
+    public unsafe void initialize(ICorJitHost* jitHost)
+    {
+        assert(!_isInitialized);
+
+        _configIntegers = ConfigIntegerMetadata.ToFrozenDictionary(kvp => kvp.Key, kvp => jitHost->getIntConfigValue((byte*)(kvp.Value.Key), kvp.Value.DefaultValue));
+        _configStrings = ConfigStringMetadata.ToFrozenDictionary(kvp => kvp.Key, kvp => (nuint)jitHost->getStringConfigValue((byte*)(kvp.Value)));
+        _configMethodSets = ConfigMethodSetMetadata.ToFrozenDictionary(kvp => kvp.Key, kvp => new MethodSet(jitHost->getStringConfigValue((byte*)(kvp.Value)), jitHost));
+
+        _isInitialized = true;
+    }
+
+    public readonly bool isInitialized() => _isInitialized;
 }

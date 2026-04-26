@@ -5,19 +5,19 @@
 
 namespace RyuJitSharp;
 
-public unsafe struct CORINFO_DEVIRTUALIZATION_INFO
+public struct CORINFO_DEVIRTUALIZATION_INFO
 {
     //
     // [In] arguments of resolveVirtualMethod
     //
 
-    public CORINFO_METHOD_HANDLE virtualMethod;
+    public unsafe CORINFO_METHOD_HANDLE virtualMethod;
 
-    public CORINFO_CLASS_HANDLE objClass;
+    public unsafe CORINFO_CLASS_HANDLE objClass;
 
-    public CORINFO_CONTEXT_HANDLE context;
+    public unsafe CORINFO_CONTEXT_HANDLE context;
 
-    public CORINFO_RESOLVED_TOKEN* pResolvedTokenVirtualMethod;
+    public unsafe CORINFO_RESOLVED_TOKEN* pResolvedTokenVirtualMethod;
 
     //
     // [Out] results of resolveVirtualMethod.
@@ -30,15 +30,17 @@ public unsafe struct CORINFO_DEVIRTUALIZATION_INFO
     //   use it as the parameter to getCallInfo
     //
 
-    public CORINFO_METHOD_HANDLE devirtualizedMethod;
+    public unsafe CORINFO_METHOD_HANDLE devirtualizedMethod;
 
-    public bool requiresInstMethodTableArg;
-
-    public CORINFO_CONTEXT_HANDLE exactContext;
+    public unsafe CORINFO_CONTEXT_HANDLE exactContext;
 
     public CORINFO_DEVIRTUALIZATION_DETAIL detail;
 
     public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedMethod;
 
     public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedUnboxedMethod;
+
+    public bool isInstantiatingStub;
+
+    public bool needsMethodContext;
 }

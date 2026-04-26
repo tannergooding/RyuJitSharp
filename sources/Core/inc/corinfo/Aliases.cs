@@ -27,6 +27,9 @@ global using unsafe CORINFO_PROFILING_HANDLE = RyuJitSharp.CORINFO_PROFILING_STR
 // a generic handle (could be any of the above)
 global using unsafe CORINFO_GENERIC_HANDLE = RyuJitSharp.CORINFO_GENERIC_STRUCT_*;
 
+// a handle for WASM type symbols
+global using unsafe CORINFO_WASM_TYPE_SYMBOL_HANDLE = RyuJitSharp.CORINFO_WASM_TYPE_SYMBOL_STRUCT_*;
+
 // what is actually passed on the varargs call
 global using unsafe CORINFO_VARARGS_HANDLE = RyuJitSharp.CORINFO_VarArgInfo*;
 
@@ -35,7 +38,10 @@ global using unsafe CORINFO_VARARGS_HANDLE = RyuJitSharp.CORINFO_VarArgInfo*;
 // (or the open instantiation) is being referred to.
 global using unsafe CORINFO_CONTEXT_HANDLE = RyuJitSharp.CORINFO_CONTEXT_STRUCT_*;
 
-global using unsafe CORINFO_MethodPtr = void*; // a generic method pointer
+global using TARGET_SIZE_T = nuint;
+
+// a generic method pointer
+global using unsafe CORINFO_MethodPtr = nuint;
 
 // Guard-stack cookie for preventing against stack buffer overruns
 global using GSCookie = nuint;

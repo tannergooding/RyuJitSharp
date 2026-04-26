@@ -1,4 +1,4 @@
-// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+// Copyright Â© Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 //
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
@@ -33,6 +33,9 @@ public partial struct ICorDebugInfo
         NATIVE_END_OFFSET_UNKNOWN = 0x08,
 
         /// <summary>The actual instruction of a call.</summary>
-        CALL_INSTRUCTION = 0x10
+        CALL_INSTRUCTION = 0x10,
+
+        /// <summary>Indicates suspension/resumption for an async call.</summary>
+        ASYNC = 0x20,
     }
 }

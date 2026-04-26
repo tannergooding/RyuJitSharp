@@ -5,8 +5,8 @@
 
 namespace RyuJitSharp;
 
-public unsafe struct CORINFO_Object
+public struct CORINFO_Object
 {
     /// <summary>The vtable for the object.</summary>
-    public CORINFO_MethodPtr* methTable;
+    public unsafe CORINFO_MethodPtr* methTable;
 }

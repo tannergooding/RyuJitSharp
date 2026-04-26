@@ -33,15 +33,17 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
     public bool haveSameMethodDefinition(CORINFO_METHOD_HANDLE meth1Hnd, CORINFO_METHOD_HANDLE meth2Hnd) => lpVtbl->haveSameMethodDefinition((ICorStaticInfo*)Unsafe.AsPointer(ref this), meth1Hnd, meth2Hnd);
 
+    public CORINFO_CLASS_HANDLE getTypeDefinition(CORINFO_CLASS_HANDLE type) => lpVtbl->getTypeDefinition((ICorStaticInfo*)Unsafe.AsPointer(ref this), type);
+
     public CorInfoInline canInline(CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE calleeHnd) => lpVtbl->canInline((ICorStaticInfo*)Unsafe.AsPointer(ref this), callerHnd, calleeHnd);
 
     public void beginInlining(CORINFO_METHOD_HANDLE inlinerHnd, CORINFO_METHOD_HANDLE inlineeHnd) => lpVtbl->beginInlining((ICorStaticInfo*)Unsafe.AsPointer(ref this), inlinerHnd, inlineeHnd);
 
-    public void reportInliningDecision(CORINFO_METHOD_HANDLE inlinerHnd, CORINFO_METHOD_HANDLE inlineeHnd, CorInfoInline inlineResult, sbyte* reason) => lpVtbl->reportInliningDecision((ICorStaticInfo*)Unsafe.AsPointer(ref this), inlinerHnd, inlineeHnd, inlineResult, reason);
+    public void reportInliningDecision(CORINFO_METHOD_HANDLE inlinerHnd, CORINFO_METHOD_HANDLE inlineeHnd, CorInfoInline inlineResult, byte* reason) => lpVtbl->reportInliningDecision((ICorStaticInfo*)Unsafe.AsPointer(ref this), inlinerHnd, inlineeHnd, inlineResult, reason);
 
     public bool canTailCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE declaredCalleeHnd, CORINFO_METHOD_HANDLE exactCalleeHnd, bool fIsTailPrefix) => lpVtbl->canTailCall((ICorStaticInfo*)Unsafe.AsPointer(ref this), callerHnd, declaredCalleeHnd, exactCalleeHnd, fIsTailPrefix);
 
-    public void reportTailCallDecision(CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE calleeHnd, bool fIsTailPrefix, CorInfoTailCall tailCallResult, sbyte* reason) => lpVtbl->reportTailCallDecision((ICorStaticInfo*)Unsafe.AsPointer(ref this), callerHnd, calleeHnd, fIsTailPrefix, tailCallResult, reason);
+    public void reportTailCallDecision(CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE calleeHnd, bool fIsTailPrefix, CorInfoTailCall tailCallResult, byte* reason) => lpVtbl->reportTailCallDecision((ICorStaticInfo*)Unsafe.AsPointer(ref this), callerHnd, calleeHnd, fIsTailPrefix, tailCallResult, reason);
 
     public void getEHinfo(CORINFO_METHOD_HANDLE ftn, uint EHnumber, CORINFO_EH_CLAUSE* clause) => lpVtbl->getEHinfo((ICorStaticInfo*)Unsafe.AsPointer(ref this), ftn, EHnumber, clause);
 
@@ -53,11 +55,17 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
     public CORINFO_METHOD_HANDLE getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg) => lpVtbl->getUnboxedEntry((ICorStaticInfo*)Unsafe.AsPointer(ref this), ftn, requiresInstMethodTableArg);
 
+    public CORINFO_METHOD_HANDLE getInstantiatedEntry(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_HANDLE* methodArg, CORINFO_CLASS_HANDLE* classArg) => lpVtbl->getInstantiatedEntry((ICorStaticInfo*)Unsafe.AsPointer(ref this), ftn, methodArg, classArg);
+
+    public CORINFO_METHOD_HANDLE getAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk) => lpVtbl->getAsyncOtherVariant((ICorStaticInfo*)Unsafe.AsPointer(ref this), ftn, variantIsThunk);
+
     public CORINFO_CLASS_HANDLE getDefaultComparerClass(CORINFO_CLASS_HANDLE elemType) => lpVtbl->getDefaultComparerClass((ICorStaticInfo*)Unsafe.AsPointer(ref this), elemType);
 
     public CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE elemType) => lpVtbl->getDefaultEqualityComparerClass((ICorStaticInfo*)Unsafe.AsPointer(ref this), elemType);
 
-    public void expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_GENERICHANDLE_RESULT* pResult) => lpVtbl->expandRawHandleIntrinsic((ICorStaticInfo*)Unsafe.AsPointer(ref this), pResolvedToken, pResult);
+    public CORINFO_CLASS_HANDLE getSZArrayHelperEnumeratorClass(CORINFO_CLASS_HANDLE elemType)=> lpVtbl->getSZArrayHelperEnumeratorClass((ICorStaticInfo*)Unsafe.AsPointer(ref this), elemType);
+
+    public void expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult) => lpVtbl->expandRawHandleIntrinsic((ICorStaticInfo*)Unsafe.AsPointer(ref this), pResolvedToken, callerHandle, pResult);
 
     public bool isIntrinsicType(CORINFO_CLASS_HANDLE classHnd) => lpVtbl->isIntrinsicType((ICorStaticInfo*)Unsafe.AsPointer(ref this), classHnd);
 
@@ -68,8 +76,6 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
     public bool satisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method) => lpVtbl->satisfiesMethodConstraints((ICorStaticInfo*)Unsafe.AsPointer(ref this), parent, method);
 
     public void methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE method) => lpVtbl->methodMustBeLoadedBeforeCodeIsRun((ICorStaticInfo*)Unsafe.AsPointer(ref this), method);
-
-    public CORINFO_METHOD_HANDLE mapMethodDeclToMethodImpl(CORINFO_METHOD_HANDLE method) => lpVtbl->mapMethodDeclToMethodImpl((ICorStaticInfo*)Unsafe.AsPointer(ref this), method);
 
     public void getGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal) => lpVtbl->getGSCookie((ICorStaticInfo*)Unsafe.AsPointer(ref this), pCookieVal, ppCookieVal);
 
@@ -91,7 +97,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
     public int getStringLiteral(CORINFO_MODULE_HANDLE module, uint metaTOK, char* buffer, int bufferSize, int startIndex = 0) => lpVtbl->getStringLiteral((ICorStaticInfo*)Unsafe.AsPointer(ref this), module, metaTOK, buffer, bufferSize, 0);
 
-    public nuint printObjectDescription(CORINFO_OBJECT_HANDLE handle, sbyte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printObjectDescription((ICorStaticInfo*)Unsafe.AsPointer(ref this), handle, buffer, bufferSize, null);
+    public nuint printObjectDescription(CORINFO_OBJECT_HANDLE handle, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printObjectDescription((ICorStaticInfo*)Unsafe.AsPointer(ref this), handle, buffer, bufferSize, null);
 
     //
     // ICorClassInfo
@@ -99,29 +105,29 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
     public CorInfoType asCorInfoType(CORINFO_CLASS_HANDLE cls) => lpVtbl->asCorInfoType((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls);
 
-    public sbyte* getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, sbyte** namespaceName) => lpVtbl->getClassNameFromMetadata((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls, namespaceName);
+    public byte* getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, byte** namespaceName) => lpVtbl->getClassNameFromMetadata((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls, namespaceName);
 
     public CORINFO_CLASS_HANDLE getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, uint index) => lpVtbl->getTypeInstantiationArgument((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls, index);
 
-    public nuint printClassName(CORINFO_CLASS_HANDLE cls, sbyte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printClassName((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls, buffer, bufferSize, null);
+    public CORINFO_CLASS_HANDLE getMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, uint index) => lpVtbl->getMethodInstantiationArgument((ICorStaticInfo*)Unsafe.AsPointer(ref this), ftn, index);
+
+    public nuint printClassName(CORINFO_CLASS_HANDLE cls, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printClassName((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls, buffer, bufferSize, null);
 
     public bool isValueClass(CORINFO_CLASS_HANDLE cls) => lpVtbl->isValueClass((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls);
 
     public uint getClassAttribs(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassAttribs((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls);
 
-    public CORINFO_MODULE_HANDLE getClassModule(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassModule((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls);
-
-    public CORINFO_ASSEMBLY_HANDLE getModuleAssembly(CORINFO_MODULE_HANDLE mod) => lpVtbl->getModuleAssembly((ICorStaticInfo*)Unsafe.AsPointer(ref this), mod);
-
-    public sbyte* getAssemblyName(CORINFO_ASSEMBLY_HANDLE assem) => lpVtbl->getAssemblyName((ICorStaticInfo*)Unsafe.AsPointer(ref this), assem);
+    public byte* getClassAssemblyName(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassAssemblyName((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls);
 
     public void* LongLifetimeMalloc(nuint sz) => lpVtbl->LongLifetimeMalloc((ICorStaticInfo*)Unsafe.AsPointer(ref this), sz);
 
     public void LongLifetimeFree(void* obj) => lpVtbl->LongLifetimeFree((ICorStaticInfo*)Unsafe.AsPointer(ref this), obj);
 
-    public nuint getClassModuleIdForStatics(CORINFO_CLASS_HANDLE cls, CORINFO_MODULE_HANDLE* pModule, void** ppIndirection) => lpVtbl->getClassModuleIdForStatics((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls, pModule, ppIndirection);
-
     public bool getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset) => lpVtbl->getIsClassInitedFlagAddress((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls, addr, offset);
+
+    public void* getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassStaticDynamicInfo((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls);
+
+    public void* getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassThreadStaticDynamicInfo((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls);
 
     public bool getStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr) => lpVtbl->getStaticBaseAddress((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls, isGc, addr);
 
@@ -141,7 +147,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
     public GetTypeLayoutResult getTypeLayout(CORINFO_CLASS_HANDLE typeHnd, CORINFO_TYPE_LAYOUT_NODE* treeNodes, nuint* numTreeNodes) => lpVtbl->getTypeLayout((ICorStaticInfo*)Unsafe.AsPointer(ref this), typeHnd, treeNodes, numTreeNodes);
 
-    public bool checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, sbyte* modifier, bool fOptional) => lpVtbl->checkMethodModifier((ICorStaticInfo*)Unsafe.AsPointer(ref this), hMethod, modifier, fOptional);
+    public bool checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, byte* modifier, bool fOptional) => lpVtbl->checkMethodModifier((ICorStaticInfo*)Unsafe.AsPointer(ref this), hMethod, modifier, fOptional);
 
     public CorInfoHelpFunc getNewHelper(CORINFO_CLASS_HANDLE classHandle, bool* pHasSideEffects) => lpVtbl->getNewHelper((ICorStaticInfo*)Unsafe.AsPointer(ref this), classHandle, pHasSideEffects);
 
@@ -165,9 +171,9 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
     public CORINFO_CLASS_HANDLE getObjectType(CORINFO_OBJECT_HANDLE objPtr) => lpVtbl->getObjectType((ICorStaticInfo*)Unsafe.AsPointer(ref this), objPtr);
 
-    public bool getReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_LOOKUP_KIND* pGenericLookupKind, CorInfoHelpFunc id, CORINFO_CONST_LOOKUP* pLookup) => lpVtbl->getReadyToRunHelper((ICorStaticInfo*)Unsafe.AsPointer(ref this), pResolvedToken, pGenericLookupKind, id, pLookup);
+    public bool getReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoHelpFunc id, CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONST_LOOKUP* pLookup) => lpVtbl->getReadyToRunHelper((ICorStaticInfo*)Unsafe.AsPointer(ref this), pResolvedToken, id, callerHandle, pLookup);
 
-    public void getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_HANDLE delegateType, CORINFO_LOOKUP* pLookup) => lpVtbl->getReadyToRunDelegateCtorHelper((ICorStaticInfo*)Unsafe.AsPointer(ref this), pTargetMethod, targetConstraint, delegateType, pLookup);
+    public void getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_HANDLE delegateType, CORINFO_METHOD_HANDLE callerHandler, CORINFO_LOOKUP* pLookup) => lpVtbl->getReadyToRunDelegateCtorHelper((ICorStaticInfo*)Unsafe.AsPointer(ref this), pTargetMethod, targetConstraint, delegateType, callerHandler, pLookup);
 
     public CorInfoInitClassResult initClass(CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context) => lpVtbl->initClass((ICorStaticInfo*)Unsafe.AsPointer(ref this), field, method, context);
 
@@ -189,6 +195,10 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
     public bool isExactType(CORINFO_CLASS_HANDLE cls) => lpVtbl->isExactType((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls);
 
+    public TypeCompareState isGenericType(CORINFO_CLASS_HANDLE cls) => lpVtbl->isGenericType((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls);
+
+    public TypeCompareState isNullableType(CORINFO_CLASS_HANDLE cls) => lpVtbl->isNullableType((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls);
+
     public TypeCompareState isEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType) => lpVtbl->isEnum((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls, underlyingType);
 
     public CORINFO_CLASS_HANDLE getParentType(CORINFO_CLASS_HANDLE cls) => lpVtbl->getParentType((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls);
@@ -209,7 +219,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
     // ICorFieldInfo
     //
 
-    public nuint printFieldName(CORINFO_FIELD_HANDLE field, sbyte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printFieldName((ICorStaticInfo*)Unsafe.AsPointer(ref this), field, buffer, bufferSize, null);
+    public nuint printFieldName(CORINFO_FIELD_HANDLE field, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printFieldName((ICorStaticInfo*)Unsafe.AsPointer(ref this), field, buffer, bufferSize, null);
 
     public CORINFO_CLASS_HANDLE getFieldClass(CORINFO_FIELD_HANDLE field) => lpVtbl->getFieldClass((ICorStaticInfo*)Unsafe.AsPointer(ref this), field);
 
@@ -243,6 +253,10 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
     public void reportRichMappings(ICorDebugInfo.InlineTreeNode* inlineTreeNodes, uint numInlineTreeNodes, ICorDebugInfo.RichOffsetMapping* mappings, uint numMappings) => lpVtbl->reportRichMappings((ICorStaticInfo*)Unsafe.AsPointer(ref this), inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
 
+    public void reportAsyncDebugInfo(ICorDebugInfo.AsyncInfo* asyncInfo, ICorDebugInfo.AsyncSuspensionPoint* suspensionPoints, ICorDebugInfo.AsyncContinuationVarInfo* vars, uint numVars) => lpVtbl->reportAsyncDebugInfo((ICorStaticInfo*)Unsafe.AsPointer(ref this), asyncInfo, suspensionPoints, vars, numVars);
+
+    public void reportMetadata(byte* key, void* value, nuint length) => lpVtbl->reportMetadata((ICorStaticInfo*)Unsafe.AsPointer(ref this), key, value, length);
+
     //
     // Misc
     //
@@ -271,7 +285,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
     public void getEEInfo(CORINFO_EE_INFO* pEEInfoOut) => lpVtbl->getEEInfo((ICorStaticInfo*)Unsafe.AsPointer(ref this), pEEInfoOut);
 
-    public char* getJitTimeLogFilename() => lpVtbl->getJitTimeLogFilename((ICorStaticInfo*)Unsafe.AsPointer(ref this));
+    public void getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut) => lpVtbl->getAsyncInfo((ICorStaticInfo*)Unsafe.AsPointer(ref this), pAsyncInfoOut);
 
     //
     // Diagnostic methods
@@ -279,17 +293,19 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
     public mdMethodDef getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod) => lpVtbl->getMethodDefFromMethod((ICorStaticInfo*)Unsafe.AsPointer(ref this), hMethod);
 
-    public nuint printMethodName(CORINFO_METHOD_HANDLE ftn, sbyte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printMethodName((ICorStaticInfo*)Unsafe.AsPointer(ref this), ftn, buffer, bufferSize, null);
+    public nuint printMethodName(CORINFO_METHOD_HANDLE ftn, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printMethodName((ICorStaticInfo*)Unsafe.AsPointer(ref this), ftn, buffer, bufferSize, null);
 
-    public sbyte* getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, sbyte** className, sbyte** namespaceName, sbyte** enclosingClassName) => lpVtbl->getMethodNameFromMetadata((ICorStaticInfo*)Unsafe.AsPointer(ref this), ftn, className, namespaceName, enclosingClassName);
+    public byte* getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, byte** className, byte** namespaceName, byte** enclosingClassName, nuint maxEnclosingClassNames) => lpVtbl->getMethodNameFromMetadata((ICorStaticInfo*)Unsafe.AsPointer(ref this), ftn, className, namespaceName, enclosingClassName, maxEnclosingClassNames);
 
     public uint getMethodHash(CORINFO_METHOD_HANDLE ftn) => lpVtbl->getMethodHash((ICorStaticInfo*)Unsafe.AsPointer(ref this), ftn);
 
     public bool getSystemVAmd64PassStructInRegisterDescriptor(CORINFO_CLASS_HANDLE structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr) => lpVtbl->getSystemVAmd64PassStructInRegisterDescriptor((ICorStaticInfo*)Unsafe.AsPointer(ref this), structHnd, structPassInRegDescPtr);
 
-    public uint getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls) => lpVtbl->getLoongArch64PassStructInRegisterFlags((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls);
+    public void getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering) => lpVtbl->getSwiftLowering((ICorStaticInfo*)Unsafe.AsPointer(ref this), structHnd, pLowering);
 
-    public uint getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls) => lpVtbl->getRISCV64PassStructInRegisterFlags((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls);
+    public void getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering) => lpVtbl->getFpStructLowering((ICorStaticInfo*)Unsafe.AsPointer(ref this), structHnd, pLowering);
+
+    public CorInfoWasmType getWasmLowering(CORINFO_CLASS_HANDLE structHnd) => lpVtbl->getWasmLowering((ICorStaticInfo*)Unsafe.AsPointer(ref this), structHnd);
 
     public interface Interface
     {
@@ -351,6 +367,22 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         //   share the same method definition.
         bool haveSameMethodDefinition(CORINFO_METHOD_HANDLE meth1Hnd, CORINFO_METHOD_HANDLE meth2Hnd);
 
+        //------------------------------------------------------------------------------
+        // getTypeDefinition: Get the (unconstructed) type definition from a given type handle.
+        //
+        // Arguments:
+        //    type - The input type handle
+        //
+        // Return Value:
+        //   The type handle for the (unconstructed) type definition from type.
+        //
+        // Remarks:
+        //   This is equivalent of Type.GetGenericTypeDefinition(). Given a generic type handle, it will
+        //   return the original type definition (eg. for Foo<int> it will return Foo<>). If called with
+        //   an unconstructed generic type, the method returns the same type as the input. This method
+        //   should only be called when the input type is in fact a generic type.
+        CORINFO_CLASS_HANDLE getTypeDefinition(CORINFO_CLASS_HANDLE type);
+
         // Decides if you have any limitations for inlining. If everything's OK, it will return
         // INLINE_PASS.
         //
@@ -364,7 +396,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         // Reports whether or not a method can be inlined, and why.  canInline is responsible for reporting all
         // inlining results when it returns INLINE_FAIL and INLINE_NEVER.  All other results are reported by the
         // JIT.
-        void reportInliningDecision(CORINFO_METHOD_HANDLE inlinerHnd, CORINFO_METHOD_HANDLE inlineeHnd, CorInfoInline inlineResult, sbyte* reason);
+        void reportInliningDecision(CORINFO_METHOD_HANDLE inlinerHnd, CORINFO_METHOD_HANDLE inlineeHnd, CorInfoInline inlineResult, byte* reason);
 
         // Returns false if the call is across security boundaries thus we cannot tailcall
         //
@@ -374,7 +406,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         // Reports whether or not a method can be tail called, and why.
         // canTailCall is responsible for reporting all results when it returns
         // false.  All other results are reported by the JIT.
-        void reportTailCallDecision(CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE calleeHnd, bool fIsTailPrefix, CorInfoTailCall tailCallResult, sbyte* reason);
+        void reportTailCallDecision(CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE calleeHnd, bool fIsTailPrefix, CorInfoTailCall tailCallResult, byte* reason);
 
         // get individual exception handler
         void getEHinfo(CORINFO_METHOD_HANDLE ftn, uint EHnumber, CORINFO_EH_CLAUSE* clause);
@@ -396,6 +428,17 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         // Get the unboxed entry point for a method, if possible.
         CORINFO_METHOD_HANDLE getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
 
+        // Get the wrapped entry point for an instantiating stub, if possible.
+        // Sets methodArg for method instantiations, classArg for class instantiations.
+        CORINFO_METHOD_HANDLE getInstantiatedEntry(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_HANDLE* methodArg, CORINFO_CLASS_HANDLE* classArg);
+
+        // Get the other variant of an async method, if possible.
+        // If this is a method with async calling convention: returns the corresponding task-returning method.
+        // If this is a task-returning method: returns the corresponding method with async calling convention.
+        // Otherwise returns null.
+        // variantIsThunk is set to true if the returned method is a thunk provided by the VM.
+        CORINFO_METHOD_HANDLE getAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk);
+
         // Given T, return the type of the default Comparer<T>.
         // Returns null if the type can't be determined exactly.
         CORINFO_CLASS_HANDLE getDefaultComparerClass(CORINFO_CLASS_HANDLE elemType);
@@ -404,13 +447,17 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         // Returns null if the type can't be determined exactly.
         CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE elemType);
 
+        // Given T, return the type of the SZArrayHelper enumerator
+        // Returns null if the type can't be determined exactly.
+        CORINFO_CLASS_HANDLE getSZArrayHelperEnumeratorClass(CORINFO_CLASS_HANDLE elemType);
+
         // Given resolved token that corresponds to an intrinsic classified to
         // get a raw handle (NI_System_Activator_AllocatorOf etc.), fetch the
         // handle associated with the token. If this is not possible at
         // compile-time (because the current method's code is shared and the
         // token contains generic parameters) then indicate how the handle
         // should be looked up at runtime.
-        void expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_GENERICHANDLE_RESULT* pResult);
+        void expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult);
 
         // Is the given type in System.Private.Corelib and marked with IntrinsicAttribute?
         // This defaults to false.
@@ -431,8 +478,6 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
         // load and restore the method
         void methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE method);
-
-        CORINFO_METHOD_HANDLE mapMethodDeclToMethodImpl(CORINFO_METHOD_HANDLE method);
 
         // Returns the global cookie for the /GS unsafe buffer checks
         // The cookie might be a constant value (JIT), or a handle to memory location (Ngen)
@@ -492,7 +537,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         //    If the return value is less than bufferSize - 1 then the full string was written. In this case
         //    it is guaranteed that return value == *pRequiredBufferSize - 1.
         //
-        nuint printObjectDescription(CORINFO_OBJECT_HANDLE handle, sbyte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null);
+        nuint printObjectDescription(CORINFO_OBJECT_HANDLE handle, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null);
 
         //
         // ICorClassInfo
@@ -504,16 +549,20 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
         // Return class name as in metadata, or null if there is none.
         // Suitable for non-debugging use.
-        sbyte* getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, sbyte** namespaceName);
+        byte* getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, byte** namespaceName);
 
         // Return the type argument of the instantiated generic class,
         // which is specified by the index
         CORINFO_CLASS_HANDLE getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, uint index);
 
+        // Return the type argument of the instantiated generic method,
+        // which is specified by the index
+        CORINFO_CLASS_HANDLE getMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, uint index);
+
         // Prints the name for a specified class including namespaces and enclosing
         // classes.
         // See printObjectDescription for documentation for the parameters.
-        nuint printClassName(CORINFO_CLASS_HANDLE cls, sbyte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null);
+        nuint printClassName(CORINFO_CLASS_HANDLE cls, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null);
 
         // Quick check whether the type is a value class. Returns the same value as getClassAttribs(cls) & CORINFO_FLG_VALUECLASS, except faster.
         bool isValueClass(CORINFO_CLASS_HANDLE cls);
@@ -521,13 +570,8 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         // return flags (a bitfield of CorInfoFlags values)
         uint getClassAttribs(CORINFO_CLASS_HANDLE cls);
 
-        CORINFO_MODULE_HANDLE getClassModule(CORINFO_CLASS_HANDLE cls);
-
-        // Returns the assembly that contains the module "mod".
-        CORINFO_ASSEMBLY_HANDLE getModuleAssembly(CORINFO_MODULE_HANDLE mod);
-
-        // Returns the name of the assembly "assem".
-        sbyte* getAssemblyName(CORINFO_ASSEMBLY_HANDLE assem);
+        // Returns the assembly name of the class "cls", or nullptr if there is none.
+        byte* getClassAssemblyName (CORINFO_CLASS_HANDLE cls);
 
         // Allocate and delete process-lifetime objects.  Should only be
         // referred to from static fields, lest a leak occur.
@@ -537,9 +581,11 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
         void LongLifetimeFree(void* obj);
 
-        nuint getClassModuleIdForStatics(CORINFO_CLASS_HANDLE cls, CORINFO_MODULE_HANDLE* pModule, void** ppIndirection);
-
         bool getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset);
+
+        void* getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls);
+
+        void* getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls);
 
         bool getStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr);
 
@@ -605,7 +651,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         //
         GetTypeLayoutResult getTypeLayout(CORINFO_CLASS_HANDLE typeHnd, CORINFO_TYPE_LAYOUT_NODE* treeNodes, nuint* numTreeNodes);
 
-        bool checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, sbyte* modifier, bool fOptional);
+        bool checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, byte* modifier, bool fOptional);
 
         //------------------------------------------------------------------------------
         // getNewHelper: Returns the allocation helper optimized for a specific class.
@@ -690,9 +736,9 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         //
         CORINFO_CLASS_HANDLE getObjectType(CORINFO_OBJECT_HANDLE objPtr);
 
-        bool getReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_LOOKUP_KIND* pGenericLookupKind, CorInfoHelpFunc id, CORINFO_CONST_LOOKUP* pLookup);
+        bool getReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoHelpFunc id, CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONST_LOOKUP* pLookup);
 
-        void getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_HANDLE delegateType, CORINFO_LOOKUP* pLookup);
+        void getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_HANDLE delegateType, CORINFO_METHOD_HANDLE callerHandler, CORINFO_LOOKUP* pLookup);
 
         // This function tries to initialize the class (run the class constructor).
         // this function returns whether the JIT must insert helper calls before
@@ -764,6 +810,12 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         // Returns true if a class handle can only describe values of exactly one type.
         bool isExactType(CORINFO_CLASS_HANDLE cls);
 
+        // Returns whether a class handle represents a generic type, if that can be statically determined.
+        TypeCompareState isGenericType(CORINFO_CLASS_HANDLE cls);
+
+        // Returns whether a class handle represents a Nullable type, if that can be statically determined.
+        TypeCompareState isNullableType(CORINFO_CLASS_HANDLE cls);
+
         // Returns TypeCompareState::Must if cls is known to be an enum.
         // For enums with known exact type returns the underlying
         // type in underlyingType when the provided pointer is
@@ -805,7 +857,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         //
 
         // Prints the name of a field into a buffer. See printObjectDescription for more documentation.
-        nuint printFieldName(CORINFO_FIELD_HANDLE field, sbyte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null);
+        nuint printFieldName(CORINFO_FIELD_HANDLE field, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null);
 
         // return class it belongs to
         CORINFO_CLASS_HANDLE getFieldClass(CORINFO_FIELD_HANDLE field);
@@ -939,6 +991,20 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         //
         void reportRichMappings(ICorDebugInfo.InlineTreeNode* inlineTreeNodes, uint numInlineTreeNodes, ICorDebugInfo.RichOffsetMapping* mappings, uint numMappings);
 
+        // Report async debug information to EE.
+        // The arrays are expected to be allocated with allocateArray
+        // and ownership is transferred to the EE with this call.
+        void reportAsyncDebugInfo(
+                ICorDebugInfo.AsyncInfo* asyncInfo,                     // [IN] Async method information
+                ICorDebugInfo.AsyncSuspensionPoint* suspensionPoints,   // [IN] Array of async suspension points, indexed by state number
+                ICorDebugInfo.AsyncContinuationVarInfo* vars,           // [IN] Array of async continuation variable info
+                uint numVars                                            // [IN] Number of entries in the async vars array
+        );
+
+        // Report back some metadata about the compilation to the EE -- for
+        // example, metrics about the compilation.
+        void reportMetadata(byte* key, void* value, nuint length);
+        
         //
         // Misc
         //
@@ -1015,8 +1081,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         // Return details about EE internal data structures
         void getEEInfo(CORINFO_EE_INFO* pEEInfoOut);
 
-        // Returns name of the JIT timer log
-        char* getJitTimeLogFilename();
+        void getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut);
 
         //
         // Diagnostic methods
@@ -1029,13 +1094,16 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         // This is similar to getMethodNameFromMetadata except that it also returns
         // reasonable names for functions without metadata.
         // See printObjectDescription for documentation of parameters.
-        nuint printMethodName(CORINFO_METHOD_HANDLE ftn, sbyte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null);
+        nuint printMethodName(CORINFO_METHOD_HANDLE ftn, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null);
 
-        // Return method name as in metadata, or null if there is none,
-        // and optionally return the class, enclosing class, and namespace names
-        // as in metadata.
+        // Return method name as in metadata, or nullptr if there is none, and
+        // optionally return the class, enclosing classes, and namespace name as
+        // in metadata. Enclosing classes are returned from inner-most enclosed class
+        // to outer-most, with nullptr in the array indicating that no more
+        // enclosing classes were left. The namespace returned corresponds to the
+        // outer most (potentially enclosing) class that was returned.
         // Suitable for non-debugging use.
-        sbyte* getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, sbyte** className, sbyte** namespaceName, sbyte** enclosingClassName);
+        byte* getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, byte** className, byte** namespaceName, byte** enclosingClassName, nuint maxEnclosingClassNames);
 
         // this function is for debugging only.  It returns a value that
         // is will always be the same for a given method.  It is used
@@ -1045,9 +1113,16 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         // returns whether the struct is enregisterable. Only valid on a System V VM. Returns true on success, false on failure.
         bool getSystemVAmd64PassStructInRegisterDescriptor(CORINFO_CLASS_HANDLE structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);
 
-        uint getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls);
+        // Classifies a swift structure into primitives or an implicit byref for ABI purposes.
+        void getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering);
 
-        uint getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls);
+        // Returns lowering info for fields of a RISC-V/LoongArch struct passed in registers according to
+        // hardware floating-point calling convention.
+        void getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering);
+
+        // Returns the primitive type for passing/returning a Wasm struct by value,
+        // or CORINFO_WASM_TYPE_VOID if passing/returning must be by reference.
+        CorInfoWasmType getWasmLowering(CORINFO_CLASS_HANDLE structHnd);
     }
 
     public struct Vtbl
@@ -1070,15 +1145,17 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE, bool> haveSameMethodDefinition;
 
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE> getTypeDefinition;
+
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE, CorInfoInline> canInline;
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE, void> beginInlining;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE, CorInfoInline, sbyte*, void> reportInliningDecision;
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE, CorInfoInline, byte*, void> reportInliningDecision;
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE, bool, bool> canTailCall;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE, bool, CorInfoTailCall, sbyte*, void> reportTailCallDecision;
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE, bool, CorInfoTailCall, byte*, void> reportTailCallDecision;
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, uint, CORINFO_EH_CLAUSE*, void> getEHinfo;
 
@@ -1090,11 +1167,17 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, bool*, CORINFO_METHOD_HANDLE> getUnboxedEntry;
 
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE*, CORINFO_CLASS_HANDLE*, CORINFO_METHOD_HANDLE> getInstantiatedEntry;
+
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, bool*, CORINFO_METHOD_HANDLE> getAsyncOtherVariant;
+
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE> getDefaultComparerClass;
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE> getDefaultEqualityComparerClass;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_RESOLVED_TOKEN*, CORINFO_GENERICHANDLE_RESULT*, void> expandRawHandleIntrinsic;
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE> getSZArrayHelperEnumeratorClass;
+
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_RESOLVED_TOKEN*, CORINFO_METHOD_HANDLE, CORINFO_GENERICHANDLE_RESULT*, void> expandRawHandleIntrinsic;
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, bool> isIntrinsicType;
 
@@ -1105,8 +1188,6 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_METHOD_HANDLE, bool> satisfiesMethodConstraints;
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, void> methodMustBeLoadedBeforeCodeIsRun;
-
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE> mapMethodDeclToMethodImpl;
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, GSCookie*, GSCookie**, void> getGSCookie;
 
@@ -1128,7 +1209,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_MODULE_HANDLE, uint, char*, int, int, int> getStringLiteral;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_OBJECT_HANDLE, sbyte*, nuint, nuint*, nuint> printObjectDescription;
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_OBJECT_HANDLE, byte*, nuint, nuint*, nuint> printObjectDescription;
 
         //
         // ICorClassInfo
@@ -1136,29 +1217,29 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CorInfoType> asCorInfoType;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, sbyte**, sbyte*> getClassNameFromMetadata;
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, byte**, byte*> getClassNameFromMetadata;
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, uint, CORINFO_CLASS_HANDLE> getTypeInstantiationArgument;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, sbyte*, nuint, nuint*, nuint> printClassName;
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, uint, CORINFO_CLASS_HANDLE> getMethodInstantiationArgument;
+
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, byte*, nuint, nuint*, nuint> printClassName;
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, bool> isValueClass;
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, uint> getClassAttribs;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_MODULE_HANDLE> getClassModule;
-
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_MODULE_HANDLE, CORINFO_ASSEMBLY_HANDLE> getModuleAssembly;
-
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_ASSEMBLY_HANDLE, sbyte*> getAssemblyName;
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, byte*> getClassAssemblyName;
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, nuint, void*> LongLifetimeMalloc;
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, void*, void> LongLifetimeFree;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_MODULE_HANDLE*, void**, nuint> getClassModuleIdForStatics;
-
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_CONST_LOOKUP*, int*, bool> getIsClassInitedFlagAddress;
+
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, void*> getClassStaticDynamicInfo;
+
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, void*> getClassThreadStaticDynamicInfo;
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, bool, CORINFO_CONST_LOOKUP*, bool> getStaticBaseAddress;
 
@@ -1178,7 +1259,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_TYPE_LAYOUT_NODE*, nuint*, GetTypeLayoutResult> getTypeLayout;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, sbyte*, bool, bool> checkMethodModifier;
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, byte*, bool, bool> checkMethodModifier;
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, bool*, CorInfoHelpFunc> getNewHelper;
 
@@ -1202,9 +1283,9 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_OBJECT_HANDLE, CORINFO_CLASS_HANDLE> getObjectType;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_RESOLVED_TOKEN*, CORINFO_LOOKUP_KIND*, CorInfoHelpFunc, CORINFO_CONST_LOOKUP*, bool> getReadyToRunHelper;
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_RESOLVED_TOKEN*, CorInfoHelpFunc, CORINFO_METHOD_HANDLE, CORINFO_CONST_LOOKUP*, bool> getReadyToRunHelper;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_RESOLVED_TOKEN*, mdToken, CORINFO_CLASS_HANDLE, CORINFO_LOOKUP*, void> getReadyToRunDelegateCtorHelper;
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_RESOLVED_TOKEN*, mdToken, CORINFO_CLASS_HANDLE, CORINFO_METHOD_HANDLE, CORINFO_LOOKUP*, void> getReadyToRunDelegateCtorHelper;
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_FIELD_HANDLE, CORINFO_METHOD_HANDLE, CORINFO_CONTEXT_HANDLE, CorInfoInitClassResult> initClass;
 
@@ -1226,6 +1307,10 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, bool> isExactType;
 
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, TypeCompareState> isGenericType;
+
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, TypeCompareState> isNullableType;
+
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE*, TypeCompareState> isEnum;
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE> getParentType;
@@ -1246,7 +1331,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         // ICorFieldInfo
         //
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_FIELD_HANDLE, sbyte*, nuint, nuint*, nuint> printFieldName;
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_FIELD_HANDLE, byte*, nuint, nuint*, nuint> printFieldName;
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_FIELD_HANDLE, CORINFO_CLASS_HANDLE> getFieldClass;
 
@@ -1280,6 +1365,10 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, ICorDebugInfo.InlineTreeNode*, uint, ICorDebugInfo.RichOffsetMapping*, uint, void> reportRichMappings;
 
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, ICorDebugInfo.AsyncInfo*, ICorDebugInfo.AsyncSuspensionPoint*, ICorDebugInfo.AsyncContinuationVarInfo*, uint, void> reportAsyncDebugInfo;
+
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, byte*, void*, nuint, void> reportMetadata;
+
         //
         // Misc
         //
@@ -1308,7 +1397,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_EE_INFO*, void> getEEInfo;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, char*> getJitTimeLogFilename;
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_ASYNC_INFO*, void> getAsyncInfo;
 
         //
         // Diagnostic methods
@@ -1316,16 +1405,18 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, mdMethodDef> getMethodDefFromMethod;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, sbyte*, nuint, nuint*, nuint> printMethodName;
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, byte*, nuint, nuint*, nuint> printMethodName;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, sbyte**, sbyte**, sbyte**, sbyte*> getMethodNameFromMetadata;
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, byte**, byte**, byte**, nuint, byte*> getMethodNameFromMetadata;
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, uint> getMethodHash;
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR*, bool> getSystemVAmd64PassStructInRegisterDescriptor;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, uint> getLoongArch64PassStructInRegisterFlags;
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_SWIFT_LOWERING*, void> getSwiftLowering;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, uint> getRISCV64PassStructInRegisterFlags;
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_FPSTRUCT_LOWERING*, void> getFpStructLowering;
+
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CorInfoWasmType> getWasmLowering;
     }
 }

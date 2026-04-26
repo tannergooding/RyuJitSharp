@@ -7,13 +7,13 @@ using System;
 
 namespace RyuJitSharp;
 
-public unsafe partial class Globals
+public partial class Globals
 {
-    // 0fb71692-0ee6-4914-88a8-6446e45f23e8
+    // 33ED917F-A197-4ABD-83AF-DB9FA8186898
     public static readonly Guid JITEEVersionIdentifier = new Guid(
-        0x0FB71692,
-        0x0EE6,
-        0x4914,
-        0X88, 0XA8, 0X64, 0X46, 0XE4, 0X5F, 0X23, 0XE8
+        0x33ED917F,
+        0xA197,
+        0x4ABD,
+        0x83, 0xAF, 0xDB, 0x9F, 0xA8, 0x18, 0x68, 0x98
     );
 }

@@ -26,5 +26,5 @@ public enum CorInfoCallConvExtension
 
     FastcallMemberFunction,
 
-    Swift
+    Swift,
 }

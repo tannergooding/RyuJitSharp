@@ -5,9 +5,9 @@
 
 namespace RyuJitSharp;
 
-public unsafe struct CORINFO_DEPENDENCY
+public struct CORINFO_DEPENDENCY
 {
-    public CORINFO_MODULE_HANDLE moduleFrom;
+    public unsafe CORINFO_MODULE_HANDLE moduleFrom;
 
-    public CORINFO_MODULE_HANDLE moduleTo;
+    public unsafe CORINFO_MODULE_HANDLE moduleTo;
 }

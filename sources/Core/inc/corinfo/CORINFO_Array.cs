@@ -8,25 +8,28 @@ using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
-public unsafe struct CORINFO_Array
+public struct CORINFO_Array
 {
     private CORINFO_Object _base;
 
     /// <summary>The vtable for the object.</summary>
     [UnscopedRef]
-    public ref CORINFO_MethodPtr* methTable => ref _base.methTable;
+    public unsafe ref CORINFO_MethodPtr* methTable => ref _base.methTable;
 
-    private _Anonymous1_e__Union _anonymous1;
+    public uint length;
 
-    [UnscopedRef]
-    public ref uint length => ref _anonymous1.length;
+#if HOST_64BIT
+    public uint alignpad;
+#endif
 
-    // // Multi-dimensional arrays have the dimension lengths and bounds here.
-    // // The element count of these arrays is the array rank (the number of dimensions in the
-    // // multi-dimensional array). So, there is one element for each dimension. The upper bound
-    // // of a dimension is `dimBound[d] + dimLength[d] - 1`.
-    // public int dimLength[rank]; // Number of array elements in each dimension.
-    // public int dimBound[rank];  // Lower bound of each dimension (possibly negative).
+#if false
+    // Multi-dimensional arrays have the dimension lengths and bounds here.
+    // The element count of these arrays is the array rank (the number of dimensions in the
+    // multi-dimensional array). So, there is one element for each dimension. The upper bound
+    // of a dimension is `dimBound[d] + dimLength[d] - 1`.
+    public int dimLength[rank]; // Number of array elements in each dimension.
+    public int dimBound[rank];  // Lower bound of each dimension (possibly negative).
+#endif
 
     // actually of variable size
     private _Anonymous2_e__Union _anonymous2;
@@ -51,16 +54,6 @@ public unsafe struct CORINFO_Array
 
     [UnscopedRef]
     public ref float r4Elems => ref _anonymous2.r4Elems;
-
-    [StructLayout(LayoutKind.Explicit)]
-    private struct _Anonymous1_e__Union
-    {
-        [FieldOffset(0)]
-        public uint length;
-
-        [FieldOffset(0)]
-        public nuint alignpad;
-    }
 
     [StructLayout(LayoutKind.Explicit)]
     private struct _Anonymous2_e__Union

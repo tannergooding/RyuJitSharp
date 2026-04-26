@@ -3,14 +3,421 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <PublishAot>true</PublishAot>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+    <RuntimeIdentifiers>linux-arm64;linux-x64;osx-arm64;win-arm64;win-x64;win-x86</RuntimeIdentifiers>
     <TargetFrameworks>net10.0</TargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup>
+    <!-- CA1700: Do not name enum values 'Reserved' -->
+    <!-- CA2213: Disposable fields should be disposed -->
     <!-- CS1591: Missing XML comment for publicly visible type or member 'Type_or_Member' -->
     <!-- IDE0060: Remove unused parameter -->
     <!-- IDE0130: Namespace does not match folder structure-->
-    <NoWarn>$(NoWarn);CS1591;IDE0060;IDE0130</NoWarn>
+    <NoWarn>$(NoWarn);CA1700;CA2213;CS1591;IDE0060;IDE0130</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <RyuJitHostRuntimeIdentifier>$(RuntimeIdentifier)</RyuJitHostRuntimeIdentifier>
+    <RyuJitTargetRuntimeIdentifier Condition="'$(TargetRuntimeIdentifier)' == ''">$(RyuJitHostRuntimeIdentifier)</RyuJitTargetRuntimeIdentifier>
+  </PropertyGroup>
+
+  <!-- Extract the OS and architecture from the host runtime identifier -->
+
+  <PropertyGroup>
+    <RyuJitHostArchitecture Condition="$(RyuJitHostRuntimeIdentifier.EndsWith('-arm')) or $(RyuJitHostRuntimeIdentifier.Contains('-arm-'))">arm</RyuJitHostArchitecture>
+    <RyuJitHostArchitecture Condition="$(RyuJitHostRuntimeIdentifier.EndsWith('-armv6')) or $(RyuJitHostRuntimeIdentifier.Contains('-armv6-'))">armv6</RyuJitHostArchitecture>
+    <RyuJitHostArchitecture Condition="$(RyuJitHostRuntimeIdentifier.EndsWith('-arm64')) or $(RyuJitHostRuntimeIdentifier.Contains('-arm64-'))">arm64</RyuJitHostArchitecture>
+    <RyuJitHostArchitecture Condition="$(RyuJitHostRuntimeIdentifier.EndsWith('-loongarch64')) or $(RyuJitHostRuntimeIdentifier.Contains('-loongarch64-'))">loongarch64</RyuJitHostArchitecture>
+    <RyuJitHostArchitecture Condition="$(RyuJitHostRuntimeIdentifier.EndsWith('-mips64')) or $(RyuJitHostRuntimeIdentifier.Contains('-mips64-'))">mips64</RyuJitHostArchitecture>
+    <RyuJitHostArchitecture Condition="$(RyuJitHostRuntimeIdentifier.EndsWith('-ppc64le')) or $(RyuJitHostRuntimeIdentifier.Contains('-ppc64le-'))">ppc64le</RyuJitHostArchitecture>
+    <RyuJitHostArchitecture Condition="$(RyuJitHostRuntimeIdentifier.EndsWith('-riscv64')) or $(RyuJitHostRuntimeIdentifier.Contains('-riscv64-'))">riscv64</RyuJitHostArchitecture>
+    <RyuJitHostArchitecture Condition="$(RyuJitHostRuntimeIdentifier.EndsWith('-s390x')) or $(RyuJitHostRuntimeIdentifier.Contains('-s390x-'))">s390x</RyuJitHostArchitecture>
+    <RyuJitHostArchitecture Condition="$(RyuJitHostRuntimeIdentifier.EndsWith('-wasm')) or $(RyuJitHostRuntimeIdentifier.Contains('-wasm-'))">wasm</RyuJitHostArchitecture>
+    <RyuJitHostArchitecture Condition="$(RyuJitHostRuntimeIdentifier.EndsWith('-x64')) or $(RyuJitHostRuntimeIdentifier.Contains('-x64-'))">x64</RyuJitHostArchitecture>
+    <RyuJitHostArchitecture Condition="$(RyuJitHostRuntimeIdentifier.EndsWith('-x86')) or $(RyuJitHostRuntimeIdentifier.Contains('-x86-'))">x86</RyuJitHostArchitecture>
+
+    <RyuJitHostOS Condition="$(RyuJitHostRuntimeIdentifier.StartsWith('android'))">android</RyuJitHostOS>
+    <RyuJitHostOS Condition="$(RyuJitHostRuntimeIdentifier.StartsWith('browser'))">browser</RyuJitHostOS>
+    <RyuJitHostOS Condition="$(RyuJitHostRuntimeIdentifier.StartsWith('ios'))">ios</RyuJitHostOS>
+    <RyuJitHostOS Condition="$(RyuJitHostRuntimeIdentifier.StartsWith('freebsd'))">freebsd</RyuJitHostOS>
+    <RyuJitHostOS Condition="$(RyuJitHostRuntimeIdentifier.StartsWith('haiku'))">haiku</RyuJitHostOS>
+    <RyuJitHostOS Condition="$(RyuJitHostRuntimeIdentifier.StartsWith('illumos'))">illumos</RyuJitHostOS>
+    <RyuJitHostOS Condition="$(RyuJitHostRuntimeIdentifier.StartsWith('linux'))">linux</RyuJitHostOS>
+    <RyuJitHostOS Condition="$(RyuJitHostRuntimeIdentifier.StartsWith('linux-musl'))">linux-musl</RyuJitHostOS>
+    <RyuJitHostOS Condition="$(RyuJitHostRuntimeIdentifier.StartsWith('maccatalyst'))">maccatalyst</RyuJitHostOS>
+    <RyuJitHostOS Condition="$(RyuJitHostRuntimeIdentifier.StartsWith('netbsd'))">netbsd</RyuJitHostOS>
+    <RyuJitHostOS Condition="$(RyuJitHostRuntimeIdentifier.StartsWith('openbsd'))">openbsd</RyuJitHostOS>
+    <RyuJitHostOS Condition="$(RyuJitHostRuntimeIdentifier.StartsWith('osx'))">osx</RyuJitHostOS>
+    <RyuJitHostOS Condition="$(RyuJitHostRuntimeIdentifier.StartsWith('sunos'))">sunos</RyuJitHostOS>
+    <RyuJitHostOS Condition="$(RyuJitHostRuntimeIdentifier.StartsWith('tvos'))">tvos</RyuJitHostOS>
+    <RyuJitHostOS Condition="$(RyuJitHostRuntimeIdentifier.StartsWith('unix'))">unix</RyuJitHostOS>
+    <RyuJitHostOS Condition="$(RyuJitHostRuntimeIdentifier.StartsWith('wasi'))">wasi</RyuJitHostOS>
+    <RyuJitHostOS Condition="$(RyuJitHostRuntimeIdentifier.StartsWith('win'))">win</RyuJitHostOS>
+
+    <RyuJitHostIs32Bit Condition="'$(RyuJitHostArchitecture)' == 'arm'">true</RyuJitHostIs32Bit>
+    <RyuJitHostIs32Bit Condition="'$(RyuJitHostArchitecture)' == 'armv6'">true</RyuJitHostIs32Bit>
+    <RyuJitHostIs32Bit Condition="'$(RyuJitHostArchitecture)' == 'wasm'">true</RyuJitHostIs32Bit>
+    <RyuJitHostIs32Bit Condition="'$(RyuJitHostArchitecture)' == 'x86'">true</RyuJitHostIs32Bit>
+
+    <RyuJitHostIs64Bit Condition="'$(RyuJitHostIs32Bit)' != 'true'">true</RyuJitHostIs64Bit>
+
+    <RyuJitHostIsApple Condition="'$(RyuJitHostOS)' == 'ios'">true</RyuJitHostIsApple>
+    <RyuJitHostIsApple Condition="'$(RyuJitHostOS)' == 'maccatalyst'">true</RyuJitHostIsApple>
+    <RyuJitHostIsApple Condition="'$(RyuJitHostOS)' == 'osx'">true</RyuJitHostIsApple>
+    <RyuJitHostIsApple Condition="'$(RyuJitHostOS)' == 'tvos'">true</RyuJitHostIsApple>
+
+    <RyuJitHostIsArm Condition="'$(RyuJitHostArchitecture)' == 'arm'">true</RyuJitHostIsArm>
+    <RyuJitHostIsArm Condition="'$(RyuJitHostArchitecture)' == 'armv6'">true</RyuJitHostIsArm>
+
+    <RyuJitHostIsArmarch Condition="'$(RyuJitHostIsArm)' == 'true'">true</RyuJitHostIsArmarch>
+    <RyuJitHostIsArmarch Condition="'$(RyuJitHostArchitecture)' == 'arm64'">true</RyuJitHostIsArmarch>
+
+    <RyuJitHostIsUnix Condition="'$(RyuJitHostOS)' != 'win'">true</RyuJitHostIsUnix>
+
+    <RyuJitHostIsXarch Condition="'$(RyuJitHostArchitecture)' == 'x86'">true</RyuJitHostIsXarch>
+    <RyuJitHostIsXarch Condition="'$(RyuJitHostArchitecture)' == 'x64'">true</RyuJitHostIsXarch>
+  </PropertyGroup>
+
+  <!-- Extract the OS and architecture from the target runtime identifier -->
+
+  <PropertyGroup>
+    <RyuJitTargetArchitecture Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-arm')) or $(RyuJitTargetRuntimeIdentifier.Contains('-arm-'))">arm</RyuJitTargetArchitecture>
+    <RyuJitTargetArchitecture Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-armv6')) or $(RyuJitTargetRuntimeIdentifier.Contains('-armv6-'))">armv6</RyuJitTargetArchitecture>
+    <RyuJitTargetArchitecture Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-arm64')) or $(RyuJitTargetRuntimeIdentifier.Contains('-arm64-'))">arm64</RyuJitTargetArchitecture>
+    <RyuJitTargetArchitecture Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-loongarch64')) or $(RyuJitTargetRuntimeIdentifier.Contains('-loongarch64-'))">loongarch64</RyuJitTargetArchitecture>
+    <RyuJitTargetArchitecture Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-mips64')) or $(RyuJitTargetRuntimeIdentifier.Contains('-mips64-'))">mips64</RyuJitTargetArchitecture>
+    <RyuJitTargetArchitecture Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-ppc64le')) or $(RyuJitTargetRuntimeIdentifier.Contains('-ppc64le-'))">ppc64le</RyuJitTargetArchitecture>
+    <RyuJitTargetArchitecture Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-riscv64')) or $(RyuJitTargetRuntimeIdentifier.Contains('-riscv64-'))">riscv64</RyuJitTargetArchitecture>
+    <RyuJitTargetArchitecture Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-s390x')) or $(RyuJitTargetRuntimeIdentifier.Contains('-s390x-'))">s390x</RyuJitTargetArchitecture>
+    <RyuJitTargetArchitecture Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-wasm')) or $(RyuJitTargetRuntimeIdentifier.Contains('-wasm-'))">wasm</RyuJitTargetArchitecture>
+    <RyuJitTargetArchitecture Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-x64')) or $(RyuJitTargetRuntimeIdentifier.Contains('-x64-'))">x64</RyuJitTargetArchitecture>
+    <RyuJitTargetArchitecture Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-x86')) or $(RyuJitTargetRuntimeIdentifier.Contains('-x86-'))">x86</RyuJitTargetArchitecture>
+
+    <RyuJitTargetOS Condition="$(RyuJitTargetRuntimeIdentifier.StartsWith('android'))">android</RyuJitTargetOS>
+    <RyuJitTargetOS Condition="$(RyuJitTargetRuntimeIdentifier.StartsWith('browser'))">browser</RyuJitTargetOS>
+    <RyuJitTargetOS Condition="$(RyuJitTargetRuntimeIdentifier.StartsWith('ios'))">ios</RyuJitTargetOS>
+    <RyuJitTargetOS Condition="$(RyuJitTargetRuntimeIdentifier.StartsWith('freebsd'))">freebsd</RyuJitTargetOS>
+    <RyuJitTargetOS Condition="$(RyuJitTargetRuntimeIdentifier.StartsWith('haiku'))">haiku</RyuJitTargetOS>
+    <RyuJitTargetOS Condition="$(RyuJitTargetRuntimeIdentifier.StartsWith('illumos'))">illumos</RyuJitTargetOS>
+    <RyuJitTargetOS Condition="$(RyuJitTargetRuntimeIdentifier.StartsWith('linux'))">linux</RyuJitTargetOS>
+    <RyuJitTargetOS Condition="$(RyuJitTargetRuntimeIdentifier.StartsWith('linux-musl'))">linux-musl</RyuJitTargetOS>
+    <RyuJitTargetOS Condition="$(RyuJitTargetRuntimeIdentifier.StartsWith('maccatalyst'))">maccatalyst</RyuJitTargetOS>
+    <RyuJitTargetOS Condition="$(RyuJitTargetRuntimeIdentifier.StartsWith('netbsd'))">netbsd</RyuJitTargetOS>
+    <RyuJitTargetOS Condition="$(RyuJitTargetRuntimeIdentifier.StartsWith('openbsd'))">openbsd</RyuJitTargetOS>
+    <RyuJitTargetOS Condition="$(RyuJitTargetRuntimeIdentifier.StartsWith('osx'))">osx</RyuJitTargetOS>
+    <RyuJitTargetOS Condition="$(RyuJitTargetRuntimeIdentifier.StartsWith('sunos'))">sunos</RyuJitTargetOS>
+    <RyuJitTargetOS Condition="$(RyuJitTargetRuntimeIdentifier.StartsWith('tvos'))">tvos</RyuJitTargetOS>
+    <RyuJitTargetOS Condition="$(RyuJitTargetRuntimeIdentifier.StartsWith('unix'))">unix</RyuJitTargetOS>
+    <RyuJitTargetOS Condition="$(RyuJitTargetRuntimeIdentifier.StartsWith('wasi'))">wasi</RyuJitTargetOS>
+    <RyuJitTargetOS Condition="$(RyuJitTargetRuntimeIdentifier.StartsWith('win'))">win</RyuJitTargetOS>
+
+    <RyuJitTargetIs32Bit Condition="'$(RyuJitTargetArchitecture)' == 'arm'">true</RyuJitTargetIs32Bit>
+    <RyuJitTargetIs32Bit Condition="'$(RyuJitTargetArchitecture)' == 'armv6'">true</RyuJitTargetIs32Bit>
+    <RyuJitTargetIs32Bit Condition="'$(RyuJitTargetArchitecture)' == 'wasm'">true</RyuJitTargetIs32Bit>
+    <RyuJitTargetIs32Bit Condition="'$(RyuJitTargetArchitecture)' == 'x86'">true</RyuJitTargetIs32Bit>
+
+    <RyuJitTargetIs64Bit Condition="'$(RyuJitTargetIs32Bit)' != 'true'">true</RyuJitTargetIs64Bit>
+
+    <RyuJitTargetIsApple Condition="'$(RyuJitTargetOS)' == 'ios'">true</RyuJitTargetIsApple>
+    <RyuJitTargetIsApple Condition="'$(RyuJitTargetOS)' == 'maccatalyst'">true</RyuJitTargetIsApple>
+    <RyuJitTargetIsApple Condition="'$(RyuJitTargetOS)' == 'osx'">true</RyuJitTargetIsApple>
+    <RyuJitTargetIsApple Condition="'$(RyuJitTargetOS)' == 'tvos'">true</RyuJitTargetIsApple>
+
+    <RyuJitTargetIsArm Condition="'$(RyuJitTargetArchitecture)' == 'arm'">true</RyuJitTargetIsArm>
+    <RyuJitTargetIsArm Condition="'$(RyuJitTargetArchitecture)' == 'armv6'">true</RyuJitTargetIsArm>
+
+    <RyuJitTargetIsArmarch Condition="'$(RyuJitTargetIsArm)' == 'true'">true</RyuJitTargetIsArmarch>
+    <RyuJitTargetIsArmarch Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">true</RyuJitTargetIsArmarch>
+
+    <RyuJitTargetIsUnix Condition="'$(RyuJitTargetOS)' != 'win'">true</RyuJitTargetIsUnix>
+
+    <RyuJitTargetIsXarch Condition="'$(RyuJitTargetArchitecture)' == 'x86'">true</RyuJitTargetIsXarch>
+    <RyuJitTargetIsXarch Condition="'$(RyuJitTargetArchitecture)' == 'x64'">true</RyuJitTargetIsXarch>
+  </PropertyGroup>
+
+  <!-- Add define constants for the host OS and architecture -->
+  
+  <PropertyGroup>
+    <DefineConstants Condition="'$(RyuJitHostIsArm)' == 'true'">$(DefineConstants);HOST_ARM</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostIsArmarch)' == 'true'">$(DefineConstants);HOST_ARMARCH</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostIsXarch)' == 'true'">$(DefineConstants);HOST_XARCH</DefineConstants>
+
+    <DefineConstants Condition="'$(RyuJitHostArchitecture)' == 'armv6'">$(DefineConstants);HOST_ARMV6</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostArchitecture)' == 'arm64'">$(DefineConstants);HOST_ARM64</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostArchitecture)' == 'loongarch64'">$(DefineConstants);HOST_LOONGARCH64</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostArchitecture)' == 'mips64'">$(DefineConstants);HOST_MIPS64</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostArchitecture)' == 'ppc64le'">$(DefineConstants);HOST_POWERPC64</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostArchitecture)' == 'riscv64'">$(DefineConstants);HOST_RISCV64</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostArchitecture)' == 's390x'">$(DefineConstants);HOST_S390X</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostArchitecture)' == 'wasm'">$(DefineConstants);HOST_WASM;HOST_WASM32</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostArchitecture)' == 'x64'">$(DefineConstants);HOST_AMD64</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostArchitecture)' == 'x86'">$(DefineConstants);HOST_X86</DefineConstants>
+
+    <DefineConstants Condition="'$(RyuJitHostIs32Bit)' == 'true'">$(DefineConstants);HOST_32BIT</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostIs64Bit)' == 'true'">$(DefineConstants);HOST_64BIT</DefineConstants>
+
+    <DefineConstants Condition="'$(RyuJitHostIsApple)' == 'true'">$(DefineConstants);HOST_APPLE</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostIsUnix)' == 'true'">$(DefineConstants);HOST_UNIX</DefineConstants>
+    
+    <DefineConstants Condition="'$(RyuJitHostOS)' == 'android'">$(DefineConstants);HOST_ANDROID</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostOS)' == 'browser'">$(DefineConstants);HOST_BROWSER</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostOS)' == 'ios'">$(DefineConstants);HOST_IOS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostOS)' == 'freebsd'">$(DefineConstants);HOST_FREEBSD</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostOS)' == 'haiku'">$(DefineConstants);HOST_HAIKU</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostOS)' == 'illumos'">$(DefineConstants);HOST_ILLUMOS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostOS)' == 'linux'">$(DefineConstants);HOST_LINUX</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostOS)' == 'linux-musl'">$(DefineConstants);HOST_LINUX_MUSL</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostOS)' == 'maccatalyst'">$(DefineConstants);HOST_MACCATALYST</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostOS)' == 'netbsd'">$(DefineConstants);HOST_NETBSD</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostOS)' == 'openbsd'">$(DefineConstants);HOST_OPENBSD</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostOS)' == 'osx'">$(DefineConstants);HOST_OSX</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostOS)' == 'sunos'">$(DefineConstants);HOST_SUNOS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostOS)' == 'tvos'">$(DefineConstants);HOST_TVOS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostOS)' == 'unix'">$(DefineConstants);HOST_UNIX</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostOS)' == 'wasi'">$(DefineConstants);HOST_WASI</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitHostOS)' == 'win'">$(DefineConstants);HOST_WINDOWS</DefineConstants>
+  </PropertyGroup>
+  
+  <!-- Add define constants for the target OS and architecture -->
+
+  <PropertyGroup>
+    <DefineConstants Condition="'$(RyuJitTargetIsArm)' == 'true'">$(DefineConstants);TARGET_ARM</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);TARGET_ARMARCH</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetIsXarch)' == 'true'">$(DefineConstants);TARGET_XARCH</DefineConstants>
+    
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'armv6'">$(DefineConstants);TARGET_ARMV6</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);TARGET_ARM64</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);TARGET_LOONGARCH64</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'mips64'">$(DefineConstants);TARGET_MIPS64</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'ppc64le'">$(DefineConstants);TARGET_POWERPC64</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);TARGET_RISCV64</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 's390x'">$(DefineConstants);TARGET_S390X</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'wasm'">$(DefineConstants);TARGET_WASM;TARGET_WASM32</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64'">$(DefineConstants);TARGET_AMD64</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);TARGET_X86</DefineConstants>
+
+    <DefineConstants Condition="'$(RyuJitTargetIs32Bit)' == 'true'">$(DefineConstants);TARGET_32BIT</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetIs64Bit)' == 'true'">$(DefineConstants);TARGET_64BIT</DefineConstants>
+
+    <DefineConstants Condition="'$(RyuJitTargetIsApple)' == 'true'">$(DefineConstants);TARGET_APPLE</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);TARGET_UNIX;TARGET_UNIX_POSSIBLY_SUPPORTED</DefineConstants>
+
+    <DefineConstants Condition="'$(RyuJitTargetOS)' == 'anyos'">$(DefineConstants);TARGET_OS_RUNTIMEDETERMINED;TARGET_UNIX_POSSIBLY_SUPPORTED;TARGET_WINDOWS_POSSIBLY_SUPPORTED</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetOS)' == 'android'">$(DefineConstants);TARGET_ANDROID</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetOS)' == 'browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetOS)' == 'ios'">$(DefineConstants);TARGET_IOS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetOS)' == 'freebsd'">$(DefineConstants);TARGET_FREEBSD</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetOS)' == 'haiku'">$(DefineConstants);TARGET_HAIKU</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetOS)' == 'illumos'">$(DefineConstants);TARGET_ILLUMOS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetOS)' == 'linux'">$(DefineConstants);TARGET_LINUX</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetOS)' == 'linux-musl'">$(DefineConstants);TARGET_LINUX_MUSL</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetOS)' == 'maccatalyst'">$(DefineConstants);TARGET_MACCATALYST</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetOS)' == 'netbsd'">$(DefineConstants);TARGET_NETBSD</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetOS)' == 'openbsd'">$(DefineConstants);TARGET_OPENBSD</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetOS)' == 'osx'">$(DefineConstants);TARGET_OSX</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetOS)' == 'sunos'">$(DefineConstants);TARGET_SUNOS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetOS)' == 'tvos'">$(DefineConstants);TARGET_TVOS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetOS)' == 'unix'">$(DefineConstants);TARGET_OS_RUNTIMEDETERMINED;TARGET_UNIX_ANYOS;TARGET_UNIX_OS_RUNTIMEDETERMINED</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetOS)' == 'wasi'">$(DefineConstants);TARGET_WASI</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetOS)' == 'win'">$(DefineConstants);TARGET_WINDOWS;TARGET_WINDOWS_POSSIBLY_SUPPORTED</DefineConstants>
+  </PropertyGroup>
+
+  <!-- Add fixed host based define constants -->
+
+  <PropertyGroup>
+    <DefineConstants Condition="'$(RyuJitHostArchitecture)' == 's390x'">$(DefineConstants);BIGENDIAN</DefineConstants>
+  </PropertyGroup>
+
+  <!-- Add fixed target based define constants -->
+
+  <PropertyGroup>
+    <!-- ABIs -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);UNIX_ARM_ABI</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64' and '$(RyuJitTargetIsApple)' == 'true'">$(DefineConstants);OSX_ARM64_ABI</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);UNIX_AMD64_ABI</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);UNIX_X86_ABI</DefineConstants>
+
+    <!-- DOUBLE_ALIGN -->
+    <!--   This aligns ESP to 0 mod 8 in function prolog, then uses ESP to reference locals, EBP to reference parameters. -->
+    <!--   It only makes sense if frameless method support is on (frameless method support is now always on) -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);DOUBLE_ALIGN</DefineConstants>
+    
+    <!-- FEATURE_ARG_SPLIT -->
+    <!--   Arm64 Windows supports FEATURE_ARG_SPLIT, note this is different from the official Arm64 ABI. -->
+    <!--   Case: splitting 16 byte struct between x7 and stack -->
+    <!--   LoongArch64's ABI supports FEATURE_ARG_SPLIT which splitting 16 byte struct between a7 and stack. -->
+    <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);FEATURE_ARG_SPLIT</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64' or '$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_ARG_SPLIT</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_ARG_SPLIT</DefineConstants>
+
+    <!-- FEATURE_HW_INTRINSICS -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_HW_INTRINSICS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetIsXarch)' == 'true'">$(DefineConstants);FEATURE_HW_INTRINSICS</DefineConstants>
+
+    <!-- FEATURE_MASKED_HW_INTRINSICS -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_MASKED_HW_INTRINSICS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetIsXarch)' == 'true'">$(DefineConstants);FEATURE_MASKED_HW_INTRINSICS</DefineConstants>
+    
+    <!-- FEATURE_IJW -->
+    <DefineConstants Condition="'$(RyuJitTargetOS)' == 'win'">$(DefineConstants);FEATURE_IJW</DefineConstants>
+
+    <!-- FEATURE_LOOP_ALIGN -->
+    <DefineConstants Condition="'$(RyuJitTargetIsXarch)' == 'true'">$(DefineConstants);FEATURE_LOOP_ALIGN</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_LOOP_ALIGN</DefineConstants>
+    
+    <!-- FEATURE_MULTITHREADING -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' != 'wasm'">$(DefineConstants);FEATURE_MULTITHREADING</DefineConstants>
+    
+    <!-- FEATURE_REMAP_FUNCTION -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_REMAP_FUNCTION</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64'">$(DefineConstants);FEATURE_REMAP_FUNCTION</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86' and '$(RyuJitTargetOS)' == 'win'">$(DefineConstants);FEATURE_REMAP_FUNCTION</DefineConstants>
+
+    <!-- FEATURE_TAILCALL_OPT: opportunistic Tail calls (i.e. without ".tail" prefix) made as fast tail calls -->
+    <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);FEATURE_TAILCALL_OPT</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);FEATURE_TAILCALL_OPT</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_TAILCALL_OPT</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64'">$(DefineConstants);FEATURE_TAILCALL_OPT</DefineConstants>
+
+    <!-- FEATURE_TAILCALL_OPT_SHARED_RETURN -->
+    <!--   Enable tail call opt for the following IL pattern -->
+    <!--       call someFunc -->
+    <!--       jmp/jcc RetBlock -->
+    <!--       ... -->
+    <!--    RetBlock: -->
+    <!--       ret -->
+    <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);FEATURE_TAILCALL_OPT_SHARED_RETURN</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);FEATURE_TAILCALL_OPT_SHARED_RETURN</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_TAILCALL_OPT_SHARED_RETURN</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64'">$(DefineConstants);FEATURE_TAILCALL_OPT_SHARED_RETURN</DefineConstants>
+
+    <!-- FEATURE_PAL_ANSI -->
+    <DefineConstants Condition="'$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);FEATURE_PAL_ANSI</DefineConstants>
+
+    <!-- FEATURE_READYTORUN -->
+    <DefineConstants>$(DefineConstants);FEATURE_READYTORUN</DefineConstants>
+
+    <!-- FEATURE_SIMD -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_SIMD</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetIsXarch)' == 'true'">$(DefineConstants);FEATURE_SIMD</DefineConstants>
+
+    <!-- FEATURE_USE_ASM_GC_WRITE_BARRIERS -->
+    <DefineConstants>$(DefineConstants);FEATURE_USE_ASM_GC_WRITE_BARRIERS</DefineConstants>
+
+    <!-- FEATURE_VN_TRACE_APPLY_SELECTORS: This controls extra tracing of the "evaluation" of "VNF_MapSelect" functions. -->
+    <DefineConstants>$(DefineConstants);FEATURE_VN_TRACE_APPLY_SELECTORS</DefineConstants>
+
+    <!-- JIT32_GCENCODER -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);JIT32_GCENCODER</DefineConstants>
+    
+    <!-- MULTIREG_HAS_SECOND_GC_RET -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);MULTIREG_HAS_SECOND_GC_RET</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);MULTIREG_HAS_SECOND_GC_RET</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);MULTIREG_HAS_SECOND_GC_RET</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);MULTIREG_HAS_SECOND_GC_RET</DefineConstants>
+
+    <!-- PROFILING_SUPPORTED -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' != 'wasm'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
+
+    <!-- USE_PER_FRAME_PINVOKE_INIT -->
+    <DefineConstants Condition="'$(RyuJitTargetIs64Bit)' == 'true'">$(DefineConstants);USE_PER_FRAME_PINVOKE_INIT</DefineConstants>
+  </PropertyGroup>
+
+  <!-- Defines that are on by default -->
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <!-- DUMP_FLOWGRAPHS: Support for creating Xml Flowgraph reports in *.fgx files -->
+    <DefineConstants>$(DefineConstants);DUMP_FLOWGRAPHS</DefineConstants>
+
+    <!-- DUMP_GC_TABLES -->
+    <DefineConstants>$(DefineConstants);DUMP_GC_TABLES</DefineConstants>
+
+    <!-- LATE_DISAM -->
+    <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);LATE_DISASM;USE_COREDISTOOLS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetIsXarch)' == 'true'">$(DefineConstants);LATE_DISASM;USE_COREDISTOOLS</DefineConstants>
+    
+    <!-- LOOP_HOIST_STATS: Collect loop hoisting stats. -->
+    <DefineConstants>$(DefineConstants);LOOP_HOIST_STATS</DefineConstants>
+
+    <!-- MEASURE_NOWAY -->
+    <!--   Enable code to count and rank individual noway_assert calls by occurrence. -->
+    <!--   These asserts would be dynamically executed, but not necessarily fail. -->
+    <!--   The provides some insight into the dynamic prevalence of these (if not a direct measure of their cost), which exist in non-DEBUG as well as DEBUG builds. -->
+    <DefineConstants>$(DefineConstants);MEASURE_NOWAY</DefineConstants>
+
+    <!-- TRACK_ENREG_STATS: Collect enregistration stats -->
+    <DefineConstants>$(DefineConstants);TRACK_ENREG_STATS</DefineConstants>
+
+    <!-- TRACK_LSRA_STATS: Collect LSRA stats -->
+    <DefineConstants>$(DefineConstants);TRACK_LSRA_STATS</DefineConstants>
+
+    <!-- USE_COREDISTOOLS -->
+    <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);USE_COREDISTOOLS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetIsXarch)' == 'true'">$(DefineConstants);USE_COREDISTOOLS</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- FUNC_INFO_LOGGING: Support dumping function info to a file. In retail, only NYIs, with no function name, are dumped -->
+    <DefineConstants>$(DefineConstants);FUNC_INFO_LOGGING</DefineConstants>
+
+    <!-- REARRANGE_ADDS -->
+    <DefineConstants>$(DefineConstants);REARRANGE_ADDS</DefineConstants>
+  </PropertyGroup>
+  
+  <!-- Defines that are off by default -->
+
+  <PropertyGroup Condition="'$(Configuration)' != 'Debug'">    
+    <!-- FEATURE_JIT_METHOD_PERF -->
+    <!-- <DefineConstants>$(DefineConstants);FEATURE_JIT_METHOD_PERF</DefineConstants> -->
+
+    <!-- MEASURE_CLRAPI_CALLS -->
+    <!-- <DefineConstants>$(DefineConstants);MEASURE_CLRAPI_CALLS</DefineConstants> -->
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <!-- CSE_INTO_HANDLERS -->
+    <!-- <DefineConstants>$(DefineConstants);CSE_INTO_HANDLERS</DefineConstants> -->
+
+    <!-- FEATURE_VN_DUMP_FUNC_ARGS: This controls whether we recursively call vnDump on function arguments. -->
+    <!-- <DefineConstants>$(DefineConstants);FEATURE_VN_DUMP_FUNC_ARGS</DefineConstants> -->
+
+    <!-- VERIFY_GC_TABLES -->
+    <!-- <DefineConstants>$(DefineConstants);VERIFY_GC_TABLES</DefineConstants> -->
+  </PropertyGroup>
+
+  <!-- Set these to 1 to collect and output various statistics about the JIT -->
+  <PropertyGroup>
+    <!-- CALL_ARG_STATS: Collect stats about calls and call arguments. -->
+    <!-- <DefineConstants>$(DefineConstants);CALL_ARG_STATS</DefineConstants> -->
+
+    <!-- COUNT_AST_OPERS: Display use counts for GenTree operators. -->
+    <!-- <DefineConstants>$(DefineConstants);COUNT_AST_OPERS</DefineConstants> -->
+    
+    <!-- COUNT_BASIC_BLOCKS: Create a histogram of basic block sizes, and a histogram of IL sizes in the simple case of single block methods. -->
+    <!-- <DefineConstants>$(DefineConstants);COUNT_BASIC_BLOCKS</DefineConstants> -->
+
+    <!-- DISPLAY_SIZES: Display generated code, data, and GC information sizes. -->
+    <!-- <DefineConstants>$(DefineConstants);DISPLAY_SIZES</DefineConstants> -->
+
+    <!-- EMITTER_STATS: Collect stats on the emitter. -->
+    <!-- <DefineConstants>$(DefineConstants);EMITTER_STATS</DefineConstants> -->
+
+    <!-- MEASURE_BLOCK_SIZE: Collect stats about basic block and FlowEdge node sizes and memory allocations. -->
+    <!-- <DefineConstants>$(DefineConstants);MEASURE_BLOCK_SIZE</DefineConstants> -->
+
+    <!-- MEASURE_FATAL: Count the number of calls to fatal(), including NYIs and noway_asserts. -->
+    <!-- <DefineConstants>$(DefineConstants);MEASURE_FATAL</DefineConstants> -->
+
+    <!-- MEASURE_NODE_SIZE: Collect stats about GenTree node allocations. -->
+    <!-- <DefineConstants>$(DefineConstants);MEASURE_NODE_SIZE</DefineConstants> -->
+
+    <!-- MEASURE_PTRTAB_SIZE: Collect stats about GC pointer table allocations. -->
+    <!-- <DefineConstants>$(DefineConstants);MEASURE_PTRTAB_SIZE</DefineConstants> -->
+
+    <!-- NODEBASH_STATS: Collect stats on changed gtOper values in GenTree's. -->
+    <!-- <DefineConstants>$(DefineConstants);NODEBASH_STATS</DefineConstants> -->
   </PropertyGroup>
 
 </Project>

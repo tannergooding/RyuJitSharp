@@ -6,19 +6,19 @@
 namespace RyuJitSharp;
 
 // getThreadLocalStaticBlocksInfo and CORINFO_THREAD_STATIC_BLOCKS_INFO: The EE instructs the JIT about how to access a thread local field
-public unsafe struct CORINFO_THREAD_STATIC_BLOCKS_INFO
+public struct CORINFO_THREAD_STATIC_BLOCKS_INFO
 {
     // windows specific
     public CORINFO_CONST_LOOKUP tlsIndex;
 
     // linux/x64 specific - address of __tls_get_addr() function
-    public void* tlsGetAddrFtnPtr;
+    public unsafe void* tlsGetAddrFtnPtr;
 
     // linux/x64 specific - address of tls_index object
-    public void* tlsIndexObject;
+    public unsafe void* tlsIndexObject;
 
     // osx x64/arm64 specific - address of __thread_vars section of `t_ThreadStatics`
-    public void* threadVarsSection;
+    public unsafe void* threadVarsSection;
 
     // windows specific
     public uint offsetOfThreadLocalStoragePointer;

@@ -5,16 +5,16 @@
 
 namespace RyuJitSharp;
 
-public unsafe struct CORINFO_RESOLVED_TOKEN
+public struct CORINFO_RESOLVED_TOKEN
 {
     //
     // [In] arguments of resolveToken
     //
 
     /// <summary>Context for resolution of generic arguments.</summary>
-    public CORINFO_CONTEXT_HANDLE tokenContext;
+    public unsafe CORINFO_CONTEXT_HANDLE tokenContext;
 
-    public CORINFO_MODULE_HANDLE tokenScope;
+    public unsafe CORINFO_MODULE_HANDLE tokenScope;
 
     /// <summary>The source token.</summary>
     public mdToken token;
@@ -29,20 +29,20 @@ public unsafe struct CORINFO_RESOLVED_TOKEN
     //   is required to provide the full context for methods in generic types.
     //
 
-    public CORINFO_CLASS_HANDLE hClass;
+    public unsafe CORINFO_CLASS_HANDLE hClass;
 
-    public CORINFO_METHOD_HANDLE hMethod;
+    public unsafe CORINFO_METHOD_HANDLE hMethod;
 
-    public CORINFO_FIELD_HANDLE hField;
+    public unsafe CORINFO_FIELD_HANDLE hField;
 
     //
     // [Out] TypeSpec and MethodSpec signatures for generics. NULL otherwise.
     //
-    public PCCOR_SIGNATURE pTypeSpec;
+    public unsafe PCCOR_SIGNATURE pTypeSpec;
 
     public uint cbTypeSpec;
 
-    public PCCOR_SIGNATURE pMethodSpec;
+    public unsafe PCCOR_SIGNATURE pMethodSpec;
 
     public uint cbMethodSpec;
 }

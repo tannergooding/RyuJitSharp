@@ -6,13 +6,13 @@
 namespace RyuJitSharp;
 
 /// <summary>Data to optimize delegate construction.</summary>
-public unsafe struct DelegateCtorArgs
+public struct DelegateCtorArgs
 {
-    public void* pMethod;
+    public unsafe void* pMethod;
 
-    public void* pArg3;
+    public unsafe void* pArg3;
 
-    public void* pArg4;
+    public unsafe void* pArg4;
 
-    public void* pArg5;
+    public unsafe void* pArg5;
 }

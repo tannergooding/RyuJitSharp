@@ -5,13 +5,13 @@
 
 namespace RyuJitSharp;
 
-public unsafe struct CORINFO_METHOD_INFO
+public struct CORINFO_METHOD_INFO
 {
-    public CORINFO_METHOD_HANDLE ftn;
+    public unsafe CORINFO_METHOD_HANDLE ftn;
 
-    public CORINFO_MODULE_HANDLE scope;
+    public unsafe CORINFO_MODULE_HANDLE scope;
 
-    public byte* ILCode;
+    public unsafe byte* ILCode;
 
     public uint ILCodeSize;
 

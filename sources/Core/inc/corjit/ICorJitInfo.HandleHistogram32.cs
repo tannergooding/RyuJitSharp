@@ -23,7 +23,7 @@ public partial struct ICorJitInfo
     // SAMPLE_INTERVAL must be >= SIZE. SAMPLE_INTERVAL / SIZE
     // gives the average number of calls between table updates.
     //
-    public unsafe struct HandleHistogram32
+    public struct HandleHistogram32
     {
         public const int SIZE = 32;
 

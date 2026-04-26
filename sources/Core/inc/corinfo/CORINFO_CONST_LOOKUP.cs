@@ -58,7 +58,7 @@ namespace RyuJitSharp;
 // (d) Must be looked up at run-time using the class dictionary stored
 //     in the vtable parameter passed to a method in a generic
 //     struct (needsRuntimeLookup && CLASSPARAM)
-public unsafe struct CORINFO_CONST_LOOKUP
+public struct CORINFO_CONST_LOOKUP
 {
     // If the handle is obtained at compile-time, then this handle is the "exact" handle (class, method, or field)
     // Otherwise, it's a representative...
@@ -73,18 +73,18 @@ public unsafe struct CORINFO_CONST_LOOKUP
     private _Anonymous_e__Union _anonymous;
 
     [UnscopedRef]
-    public ref CORINFO_GENERIC_HANDLE handle => ref _anonymous.handle;
+    public unsafe ref CORINFO_GENERIC_HANDLE handle => ref _anonymous.handle;
 
     [UnscopedRef]
-    public ref void* addr => ref _anonymous.addr;
+    public unsafe ref void* addr => ref _anonymous.addr;
 
     [StructLayout(LayoutKind.Explicit)]
     private struct _Anonymous_e__Union
     {
         [FieldOffset(0)]
-        public CORINFO_GENERIC_HANDLE handle;
+        public unsafe CORINFO_GENERIC_HANDLE handle;
 
         [FieldOffset(0)]
-        public void* addr;
+        public unsafe void* addr;
     }
 }

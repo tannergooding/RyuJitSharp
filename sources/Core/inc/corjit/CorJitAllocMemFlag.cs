@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-global using static RyuJitSharp.CorJitAllocMemFlag;
 using System;
 
 namespace RyuJitSharp;
@@ -12,21 +11,11 @@ namespace RyuJitSharp;
 [Flags]
 public enum CorJitAllocMemFlag
 {
-    /// <summary>The code will use the normal alignment.</summary>
-    CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN = 0x00000000,
+    CORJIT_ALLOCMEM_HOT_CODE = 1,
 
-    /// <summary>The code will be 16-byte aligned.</summary>
-    CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN = 0x00000001,
+    CORJIT_ALLOCMEM_COLD_CODE = 2,
 
-    /// <summary>The read-only data will be 16-byte aligned.</summary>
-    CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN = 0x00000002,
+    CORJIT_ALLOCMEM_READONLY_DATA = 4,
 
-    /// <summary>The code will be 32-byte aligned.</summary>
-    CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN = 0x00000004,
-
-    /// <summary>The read-only data will be 32-byte aligned.</summary>
-    CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN = 0x00000008,
-
-    /// <summary>The read-only data will be 64-byte aligned.</summary>
-    CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN = 0x00000010,
+    CORJIT_ALLOCMEM_HAS_POINTERS_TO_CODE = 8,
 }

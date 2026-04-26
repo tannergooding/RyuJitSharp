@@ -1,4 +1,4 @@
-﻿// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 //
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
@@ -8,18 +8,16 @@ using System;
 namespace RyuJitSharp;
 
 #if DEBUG
-public sealed unsafe class JitTls : IDisposable
+public sealed class JitTls : IDisposable
 {
-    private Compiler? m_compiler;
+    private Compiler? _compiler;
+    private LogEnv _logEnv;
+    private readonly JitTls? _next;
 
-    // private LogEnv m_logEnv;
-
-    private readonly JitTls? m_next;
-
-    public JitTls(ICorJitInfo* jitInfo)
+    public unsafe JitTls(ICorJitInfo* jitInfo)
     {
-        // m_logEnv = new LogEnv(jitInfo);
-        m_next = GetJitTls() as JitTls;
+        _logEnv = new LogEnv(jitInfo);
+        _next = GetJitTls();
         SetJitTls(this);
     }
 
@@ -34,31 +32,30 @@ public sealed unsafe class JitTls : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    // public static ref LogEnv GetLogEnv()
-    // {
-    //     if (GetJitTls() is JitTls jitTls)
-    //     {
-    //         return ref jitTls.m_logEnv;
-    //     }
-    //     else
-    //     {
-    //         return ref Unsafe.NullRef<LogEnv>();
-    //     }
-    // }
-
     public static Compiler? GetCompiler()
     {
-        return (GetJitTls() as JitTls)!.m_compiler;
+        var jitTls = GetJitTls();
+        assert(jitTls is not null);
+        return jitTls._compiler;
     }
 
-    public static void SetCompiler(Compiler compiler)
+    public static ref LogEnv GetLogEnv()
     {
-        (GetJitTls() as JitTls)!.m_compiler = compiler;
+        var jitTls = GetJitTls();
+        assert(jitTls is not null);
+        return ref jitTls._logEnv;
+    }
+
+    public static void SetCompiler(Compiler? compiler)
+    {
+        var jitTls = GetJitTls();
+        assert(jitTls is not null);
+        jitTls._compiler = compiler;
     }
 
     private void Dispose(bool isDisposing)
     {
-        SetJitTls(m_next);
+        SetJitTls(_next);
     }
 }
 #else
@@ -66,10 +63,10 @@ public static class JitTls
 {
     public static Compiler? GetCompiler()
     {
-        return GetJitTls() as Compiler;
+        return GetJitTls();
     }
 
-    public static void SetCompiler(Compiler compiler)
+    public static void SetCompiler(Compiler? compiler)
     {
         SetJitTls(compiler);
     }

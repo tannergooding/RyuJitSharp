@@ -11,7 +11,7 @@ namespace RyuJitSharp;
 
 public partial struct ICorJitInfo
 {
-    public unsafe struct ValueHistogram32
+    public struct ValueHistogram32
     {
         public uint Count;
 

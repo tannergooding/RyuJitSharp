@@ -10,10 +10,10 @@ using System.Runtime.CompilerServices;
 namespace RyuJitSharp;
 
 /// <summary>Indicates the details of the runtime lookup operation to be performed.</summary>
-public unsafe struct CORINFO_RUNTIME_LOOKUP
+public struct CORINFO_RUNTIME_LOOKUP
 {
     /// <summary>This is signature you must pass back to the runtime lookup helper.</summary>
-    public void* signature;
+    public unsafe void* signature;
 
     /// <summary>Here is the helper you must call. It is one of CORINFO_HELP_RUNTIMEHANDLE_* helpers.</summary>
     public CorInfoHelpFunc helper;
@@ -50,6 +50,9 @@ public unsafe struct CORINFO_RUNTIME_LOOKUP
     ///   <para><c>true</c> means that value stored at second offset (offsets[1]) from pointer is offset2, and the next pointer is stored at pointer+offsets[1]+offset2.</para>
     /// </remarks>
     public bool indirectSecondOffset;
+
+    /// <summary>Used for the helper call's entry point when indirections == CORINFO_USEHELPER and this is an AOT compilation</summary>
+    public CORINFO_CONST_LOOKUP helperEntryPoint;
 
     [InlineArray(CORINFO_MAXINDIRECTIONS)]
     private struct _offsets_e__FixedBuffer

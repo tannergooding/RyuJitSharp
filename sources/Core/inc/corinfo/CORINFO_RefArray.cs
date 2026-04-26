@@ -4,37 +4,29 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
-public unsafe struct CORINFO_RefArray
+public struct CORINFO_RefArray
 {
     private CORINFO_Object _base;
 
     /// <summary>The vtable for the object.</summary>
     [UnscopedRef]
-    public ref CORINFO_MethodPtr* methTable => ref _base.methTable;
+    public unsafe ref CORINFO_MethodPtr* methTable => ref _base.methTable;
 
-    private _Anonymous_e__Union _anonymous;
+    public uint length;
 
-    [UnscopedRef]
-    public ref uint length => ref _anonymous.length;
+#if HOST_64BIT
+    public uint alignpad;
+#endif
 
-    // / Multi-dimensional arrays have the lengths and bounds here
-    // public uint dimLength[length];
-    // public uint dimBound[length];
+#if false
+    // Multi-dimensional arrays have the lengths and bounds here
+    public uint dimLength[length];
+    public uint dimBound[length];
+#endif
 
     // actually of variable size
-    public CORINFO_Object* refElems;
-
-    [StructLayout(LayoutKind.Explicit)]
-    private struct _Anonymous_e__Union
-    {
-        [FieldOffset(0)]
-        public uint length;
-
-        [FieldOffset(0)]
-        public nuint alignpad;
-    }
+    public unsafe CORINFO_Object* refElems;
 }

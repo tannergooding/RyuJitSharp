@@ -7,13 +7,13 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace RyuJitSharp;
 
-public unsafe struct CORINFO_String
+public struct CORINFO_String
 {
     private CORINFO_Object _base;
 
     /// <summary>The vtable for the object.</summary>
     [UnscopedRef]
-    public ref CORINFO_MethodPtr* methTable => ref _base.methTable;
+    public unsafe ref CORINFO_MethodPtr* methTable => ref _base.methTable;
 
     public uint stringLen;
 

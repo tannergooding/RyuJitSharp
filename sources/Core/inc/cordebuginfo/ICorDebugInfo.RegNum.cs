@@ -14,210 +14,182 @@ public partial struct ICorDebugInfo
 
     public enum RegNum
     {
-        //
-        // TARGET_ARM32
-        //
 
-        REGNUM_ARM32_R0 = 0,
-        REGNUM_ARM32_R1,
-        REGNUM_ARM32_R2,
-        REGNUM_ARM32_R3,
-        REGNUM_ARM32_R4,
-        REGNUM_ARM32_R5,
-        REGNUM_ARM32_R6,
-        REGNUM_ARM32_R7,
-        REGNUM_ARM32_R8,
-        REGNUM_ARM32_R9,
-        REGNUM_ARM32_R10,
-        REGNUM_ARM32_R11,
-        REGNUM_ARM32_R12,
-        REGNUM_ARM32_SP,
-        REGNUM_ARM32_LR,
-        REGNUM_ARM32_PC,
-        REGNUM_ARM32_COUNT,
+#if TARGET_X86
+        REGNUM_EAX,
+        REGNUM_ECX,
+        REGNUM_EDX,
+        REGNUM_EBX,
+        REGNUM_ESP,
+        REGNUM_EBP,
+        REGNUM_ESI,
+        REGNUM_EDI,
+#elif TARGET_ARM
+        REGNUM_R0,
+        REGNUM_R1,
+        REGNUM_R2,
+        REGNUM_R3,
+        REGNUM_R4,
+        REGNUM_R5,
+        REGNUM_R6,
+        REGNUM_R7,
+        REGNUM_R8,
+        REGNUM_R9,
+        REGNUM_R10,
+        REGNUM_R11,
+        REGNUM_R12,
+        REGNUM_SP,
+        REGNUM_LR,
+        REGNUM_PC,
+#elif TARGET_ARM64
+        REGNUM_X0,
+        REGNUM_X1,
+        REGNUM_X2,
+        REGNUM_X3,
+        REGNUM_X4,
+        REGNUM_X5,
+        REGNUM_X6,
+        REGNUM_X7,
+        REGNUM_X8,
+        REGNUM_X9,
+        REGNUM_X10,
+        REGNUM_X11,
+        REGNUM_X12,
+        REGNUM_X13,
+        REGNUM_X14,
+        REGNUM_X15,
+        REGNUM_X16,
+        REGNUM_X17,
+        REGNUM_X18,
+        REGNUM_X19,
+        REGNUM_X20,
+        REGNUM_X21,
+        REGNUM_X22,
+        REGNUM_X23,
+        REGNUM_X24,
+        REGNUM_X25,
+        REGNUM_X26,
+        REGNUM_X27,
+        REGNUM_X28,
+        REGNUM_FP,
+        REGNUM_LR,
+        REGNUM_SP,
+        REGNUM_PC,
+#elif TARGET_AMD64
+        REGNUM_RAX,
+        REGNUM_RCX,
+        REGNUM_RDX,
+        REGNUM_RBX,
+        REGNUM_RSP,
+        REGNUM_RBP,
+        REGNUM_RSI,
+        REGNUM_RDI,
+        REGNUM_R8,
+        REGNUM_R9,
+        REGNUM_R10,
+        REGNUM_R11,
+        REGNUM_R12,
+        REGNUM_R13,
+        REGNUM_R14,
+        REGNUM_R15,
+#elif TARGET_LOONGARCH64
+        REGNUM_R0,
+        REGNUM_RA,
+        REGNUM_TP,
+        REGNUM_SP,
+        REGNUM_A0,
+        REGNUM_A1,
+        REGNUM_A2,
+        REGNUM_A3,
+        REGNUM_A4,
+        REGNUM_A5,
+        REGNUM_A6,
+        REGNUM_A7,
+        REGNUM_T0,
+        REGNUM_T1,
+        REGNUM_T2,
+        REGNUM_T3,
+        REGNUM_T4,
+        REGNUM_T5,
+        REGNUM_T6,
+        REGNUM_T7,
+        REGNUM_T8,
+        REGNUM_X0,
+        REGNUM_FP,
+        REGNUM_S0,
+        REGNUM_S1,
+        REGNUM_S2,
+        REGNUM_S3,
+        REGNUM_S4,
+        REGNUM_S5,
+        REGNUM_S6,
+        REGNUM_S7,
+        REGNUM_S8,
+        REGNUM_PC,
+#elif TARGET_RISCV64
+        REGNUM_R0,
+        REGNUM_RA,
+        REGNUM_SP,
+        REGNUM_GP,
+        REGNUM_TP,
+        REGNUM_T0,
+        REGNUM_T1,
+        REGNUM_T2,
+        REGNUM_FP,
+        REGNUM_S1,
+        REGNUM_A0,
+        REGNUM_A1,
+        REGNUM_A2,
+        REGNUM_A3,
+        REGNUM_A4,
+        REGNUM_A5,
+        REGNUM_A6,
+        REGNUM_A7,
+        REGNUM_S2,
+        REGNUM_S3,
+        REGNUM_S4,
+        REGNUM_S5,
+        REGNUM_S6,
+        REGNUM_S7,
+        REGNUM_S8,
+        REGNUM_S9,
+        REGNUM_S10,
+        REGNUM_S11,
+        REGNUM_T3,
+        REGNUM_T4,
+        REGNUM_T5,
+        REGNUM_T6,
+        REGNUM_PC,
+#elif TARGET_WASM
+        REGNUM_PC, // wasm doesn't have registers
+#else
+#warning Register numbers not defined on this platform
+#endif
 
-        // ambient SP support. Ambient SP is the original SP in the non-BP based frame.
-        // Ambient SP should not change even if there are push/pop operations in the method.
-        REGNUM_ARM32_AMBIENT_SP,
-
-        REGNUM_ARM32_FP = REGNUM_ARM32_R11,
-
-        //
-        // TARGET_ARM64
-        //
-
-        REGNUM_ARM64_X0 = 0,
-        REGNUM_ARM64_X1,
-        REGNUM_ARM64_X2,
-        REGNUM_ARM64_X3,
-        REGNUM_ARM64_X4,
-        REGNUM_ARM64_X5,
-        REGNUM_ARM64_X6,
-        REGNUM_ARM64_X7,
-        REGNUM_ARM64_X8,
-        REGNUM_ARM64_X9,
-        REGNUM_ARM64_X10,
-        REGNUM_ARM64_X11,
-        REGNUM_ARM64_X12,
-        REGNUM_ARM64_X13,
-        REGNUM_ARM64_X14,
-        REGNUM_ARM64_X15,
-        REGNUM_ARM64_X16,
-        REGNUM_ARM64_X17,
-        REGNUM_ARM64_X18,
-        REGNUM_ARM64_X19,
-        REGNUM_ARM64_X20,
-        REGNUM_ARM64_X21,
-        REGNUM_ARM64_X22,
-        REGNUM_ARM64_X23,
-        REGNUM_ARM64_X24,
-        REGNUM_ARM64_X25,
-        REGNUM_ARM64_X26,
-        REGNUM_ARM64_X27,
-        REGNUM_ARM64_X28,
-        REGNUM_ARM64_FP,
-        REGNUM_ARM64_LR,
-        REGNUM_ARM64_SP,
-        REGNUM_ARM64_PC,
-        REGNUM_ARM64_COUNT,
-
-        // ambient SP support. Ambient SP is the original SP in the non-BP based frame.
-        // Ambient SP should not change even if there are push/pop operations in the method.
-        REGNUM_ARM64_AMBIENT_SP,
-
-        //
-        // TARGET_LOONGARCH64
-        //
-
-        REGNUM_LOONGARCH64_R0 = 0,
-        REGNUM_LOONGARCH64_RA,
-        REGNUM_LOONGARCH64_TP,
-        REGNUM_LOONGARCH64_SP,
-        REGNUM_LOONGARCH64_A0,
-        REGNUM_LOONGARCH64_A1,
-        REGNUM_LOONGARCH64_A2,
-        REGNUM_LOONGARCH64_A3,
-        REGNUM_LOONGARCH64_A4,
-        REGNUM_LOONGARCH64_A5,
-        REGNUM_LOONGARCH64_A6,
-        REGNUM_LOONGARCH64_A7,
-        REGNUM_LOONGARCH64_T0,
-        REGNUM_LOONGARCH64_T1,
-        REGNUM_LOONGARCH64_T2,
-        REGNUM_LOONGARCH64_T3,
-        REGNUM_LOONGARCH64_T4,
-        REGNUM_LOONGARCH64_T5,
-        REGNUM_LOONGARCH64_T6,
-        REGNUM_LOONGARCH64_T7,
-        REGNUM_LOONGARCH64_T8,
-        REGNUM_LOONGARCH64_X0,
-        REGNUM_LOONGARCH64_FP,
-        REGNUM_LOONGARCH64_S0,
-        REGNUM_LOONGARCH64_S1,
-        REGNUM_LOONGARCH64_S2,
-        REGNUM_LOONGARCH64_S3,
-        REGNUM_LOONGARCH64_S4,
-        REGNUM_LOONGARCH64_S5,
-        REGNUM_LOONGARCH64_S6,
-        REGNUM_LOONGARCH64_S7,
-        REGNUM_LOONGARCH64_S8,
-        REGNUM_LOONGARCH64_PC,
-        REGNUM_LOONGARCH64_COUNT,
-
-        // ambient SP support. Ambient SP is the original SP in the non-BP based frame.
-        // Ambient SP should not change even if there are push/pop operations in the method.
-        REGNUM_LOONGARCH64_AMBIENT_SP,
-
-        //
-        // TARGET_RISCV64
-        //
-
-        REGNUM_RISCV64_R0 = 0,
-        REGNUM_RISCV64_RA,
-        REGNUM_RISCV64_SP,
-        REGNUM_RISCV64_GP,
-        REGNUM_RISCV64_TP,
-        REGNUM_RISCV64_T0,
-        REGNUM_RISCV64_T1,
-        REGNUM_RISCV64_T2,
-        REGNUM_RISCV64_FP,
-        REGNUM_RISCV64_S1,
-        REGNUM_RISCV64_A0,
-        REGNUM_RISCV64_A1,
-        REGNUM_RISCV64_A2,
-        REGNUM_RISCV64_A3,
-        REGNUM_RISCV64_A4,
-        REGNUM_RISCV64_A5,
-        REGNUM_RISCV64_A6,
-        REGNUM_RISCV64_A7,
-        REGNUM_RISCV64_S2,
-        REGNUM_RISCV64_S3,
-        REGNUM_RISCV64_S4,
-        REGNUM_RISCV64_S5,
-        REGNUM_RISCV64_S6,
-        REGNUM_RISCV64_S7,
-        REGNUM_RISCV64_S8,
-        REGNUM_RISCV64_S9,
-        REGNUM_RISCV64_S10,
-        REGNUM_RISCV64_S11,
-        REGNUM_RISCV64_T3,
-        REGNUM_RISCV64_T4,
-        REGNUM_RISCV64_T5,
-        REGNUM_RISCV64_T6,
-        REGNUM_RISCV64_PC,
-        REGNUM_RISCV64_COUNT,
-
-        // ambient SP support. Ambient SP is the original SP in the non-BP based frame.
-        // Ambient SP should not change even if there are push/pop operations in the method.
-        REGNUM_RISCV64_AMBIENT_SP,
-
-        //
-        // TARGET_X64
-        //
-
-        REGNUM_X64_RAX = 0,
-        REGNUM_X64_RCX,
-        REGNUM_X64_RDX,
-        REGNUM_X64_RBX,
-        REGNUM_X64_RSP,
-        REGNUM_X64_RBP,
-        REGNUM_X64_RSI,
-        REGNUM_X64_RDI,
-        REGNUM_X64_R8,
-        REGNUM_X64_R9,
-        REGNUM_X64_R10,
-        REGNUM_X64_R11,
-        REGNUM_X64_R12,
-        REGNUM_X64_R13,
-        REGNUM_X64_R14,
-        REGNUM_X64_R15,
-        REGNUM_X64_COUNT,
+        REGNUM_COUNT,
 
         // ambient SP support. Ambient SP is the original SP in the non-BP based frame.
         // Ambient SP should not change even if there are push/pop operations in the method.
-        REGNUM_X64_AMBIENT_SP,
+        REGNUM_AMBIENT_SP,
 
-        REGNUM_X64_SP = REGNUM_X64_RSP,
-
-        //
-        // TARGET_X86
-        //
-
-        REGNUM_X86_EAX = 0,
-        REGNUM_X86_ECX,
-        REGNUM_X86_EDX,
-        REGNUM_X86_EBX,
-        REGNUM_X86_ESP,
-        REGNUM_X86_EBP,
-        REGNUM_X86_ESI,
-        REGNUM_X86_EDI,
-        REGNUM_X86_COUNT,
-
-        // ambient SP support. Ambient SP is the original SP in the non-BP based frame.
-        // Ambient SP should not change even if there are push/pop operations in the method.
-        REGNUM_X86_AMBIENT_SP,
-
-        REGNUM_X86_FP = REGNUM_X86_EBP,
-        REGNUM_X86_SP = REGNUM_X86_ESP,
+#if TARGET_X86
+        REGNUM_FP = REGNUM_EBP,
+        REGNUM_SP = REGNUM_ESP,
+#elif TARGET_AMD64
+        REGNUM_FP = REGNUM_RBP,
+        REGNUM_SP = REGNUM_RSP,
+#elif TARGET_ARM
+        REGNUM_FP = REGNUM_R11,
+#elif TARGET_ARM64
+        //Nothing to do here. FP is already alloted.
+#elif TARGET_LOONGARCH64
+        //Nothing to do here. FP is already alloted.
+#elif TARGET_RISCV64
+        //Nothing to do here. FP is already alloted.
+#else
+        // RegNum values should be properly defined for this platform
+        REGNUM_FP = 0,
+        REGNUM_SP = 1,
+#endif
     }
 }

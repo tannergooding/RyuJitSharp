@@ -26,10 +26,10 @@ public unsafe partial struct CILJit
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static CorJitResult compileMethod(ICorJitCompiler* pSelf, ICorJitInfo* comp, CORINFO_METHOD_INFO* info, uint flags, byte** nativeEntry, uint* nativeSizeOfCode) => ((CILJit*)pSelf)->compileMethod(comp, info, flags, nativeEntry, nativeSizeOfCode);
+    private static CorJitResult compileMethod(ICorJitCompiler* pSelf, ICorJitInfo* jitInfo, CORINFO_METHOD_INFO* methodInfo, uint flags, byte** nativeEntry, uint* nativeSizeOfCode) => ((CILJit*)pSelf)->compileMethod(jitInfo, methodInfo, flags, nativeEntry, nativeSizeOfCode);
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static void ProcessShutdownWork(ICorJitCompiler* pSelf, ICorStaticInfo* info) => ((CILJit*)pSelf)->ProcessShutdownWork(info);
+    private static void ProcessShutdownWork(ICorJitCompiler* pSelf, ICorStaticInfo* staticInfo) => ((CILJit*)pSelf)->ProcessShutdownWork(staticInfo);
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static void getVersionIdentifier(ICorJitCompiler* pSelf, Guid* versionIdentifier) => ((CILJit*)pSelf)->getVersionIdentifier(versionIdentifier);

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-global using static RyuJitSharp.CORINFO_EH_CLAUSE_FLAGS;
 using System;
 
 namespace RyuJitSharp;
@@ -23,9 +22,7 @@ public enum CORINFO_EH_CLAUSE_FLAGS
     /// <summary>This clause is a fault clause.</summary>
     CORINFO_EH_CLAUSE_FAULT = 0x0004,
 
-    /// <summary>Duplicated clause.</summary>
-    /// <remarks>This clause was duplicated to a funclet which was pulled out of line.</remarks>
-    CORINFO_EH_CLAUSE_DUPLICATE = 0x0008,
+    // UNUSED = 0x0008,
 
     /// <summary>This clause covers same try block as the previous one.</summary>
     CORINFO_EH_CLAUSE_SAMETRY = 0x0010,

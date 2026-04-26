@@ -4,29 +4,25 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics.X86;
+using System.Text;
 using System.Threading;
-using static System.Net.WebRequestMethods;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace RyuJitSharp;
 
-public unsafe partial class Globals
+public partial class Globals
 {
-    private static ICorJitHost* g_jitHost;
-
-    private static bool g_jitInitialized;
+    private static unsafe ICorJitHost* s_jitHost;
+    private static bool s_isJitInitialized;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)], EntryPoint = "jitStartup")]
-    public static void jitStartup(ICorJitHost* jitHost)
+    public static unsafe void jitStartup(ICorJitHost* jitHost)
     {
-        if (g_jitInitialized)
+        if (s_isJitInitialized)
         {
-            if (jitHost != g_jitHost)
+            if (jitHost != s_jitHost)
             {
                 // We normally don't expect jitStartup() to be invoked more than once.
                 // (We check whether it has been called once due to an abundance of caution.)
@@ -37,69 +33,77 @@ public unsafe partial class Globals
                 // We do this by calling jitStartup with a different ICorJitHost,
                 // and have the JIT re-initialize its JitConfig state when this happens.
 
-                JitConfig.destroy(g_jitHost);
+                JitConfig.destroy(s_jitHost);
                 JitConfig.initialize(jitHost);
 
-                g_jitHost = jitHost;
+                s_jitHost = jitHost;
             }
             return;
         }
 
-        g_jitHost = jitHost;
+#if HOST_UNIX
+        var err = PAL_InitializeDLL();
 
-        Debug.Assert(!JitConfig.isInitialized());
+        if (err != 0)
+        {
+            return;
+        }
+#endif
+
+        s_jitHost = jitHost;
+
+        assert(!JitConfig.isInitialized());
         JitConfig.initialize(jitHost);
         Compiler.compStartup();
 
-        g_jitInitialized = true;
+        s_isJitInitialized = true;
     }
 
     private static volatile StreamWriter? s_jitstdout;
 
-    private static StreamWriter jitstdoutInit()
+    private static unsafe StreamWriter jitstdoutInit()
     {
-        // TODO: Port jitstdoutInit
+        var jitStdOutFile = JitConfig[ConfigString.JitStdOutFile];
 
-        StreamWriter stdout = new StreamWriter(Console.OpenStandardOutput());
-        var observed = Interlocked.CompareExchange(ref s_jitstdout, stdout, null);
+        StreamWriter jitstdout;
+
+        if (jitStdOutFile is not null)
+        {
+            jitstdout = new StreamWriter(Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(jitStdOutFile)), append: true);
+        }
+        else
+        {
+            jitstdout = new StreamWriter(Console.OpenStandardOutput(), leaveOpen: true);
+        }
+
+        var observed = Interlocked.CompareExchange(ref s_jitstdout, jitstdout, null);
 
         if (observed is not null)
         {
-            stdout.Dispose();
+            jitstdout.Dispose();
             return observed;
         }
-        return stdout;
-    }
-
-    private static StreamWriter jitstdout()
-    {
-        var jitstdout = s_jitstdout;
-        jitstdout ??= jitstdoutInit();
         return jitstdout;
-    }
-
-    /// <summary>Like printf/logf, but only outputs to jitstdout -- skips call back into EE.</summary>
-    private static void jitprintf(string fmt)
-    {
-        jitstdout().Write(fmt);
     }
 
     public static void jitShutdown(bool processIsTerminating)
     {
-        if (!g_jitInitialized)
+        if (!s_isJitInitialized)
         {
             return;
         }
 
         Compiler.compShutdown();
-        s_jitstdout?.Dispose();
 
-        g_jitInitialized = false;
+        var jitstdout = s_jitstdout;
+        jitstdout?.Dispose();
+
+        s_isJitInitialized = false;
     }
 
-    private static readonly CILJit* g_CILJit = InitCILJit();
+    private static readonly unsafe CILJit* g_CILJit = InitCILJit();
 
-    private static CILJit* InitCILJit()
+    private static unsafe CILJit* InitCILJit()
     {
         CILJit* instance = (CILJit*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(Globals), sizeof(CILJit));
         instance->lpVtbl = CILJit.s_vtbl;
@@ -107,9 +111,9 @@ public unsafe partial class Globals
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)], EntryPoint = "getJit")]
-    public static ICorJitCompiler* getJit()
+    public static unsafe ICorJitCompiler* getJit()
     {
-        if (!g_jitInitialized)
+        if (!s_isJitInitialized)
         {
             return null;
         }
@@ -120,16 +124,31 @@ public unsafe partial class Globals
     // If you are using it more broadly in retail code, you would need to understand the
     // performance implications of accessing TLS.
 
+#if DEBUG
     [ThreadStatic]
-    private static object? gJitTls;
+    private static JitTls? t_jitTls;
 
-    internal static object? GetJitTls()
+    internal static JitTls? GetJitTls()
     {
-        return gJitTls;
+        return t_jitTls;
     }
 
-    internal static void SetJitTls(object? value)
+    internal static void SetJitTls(JitTls? value)
     {
-        gJitTls = value;
+        t_jitTls = value;
     }
+#else
+    [ThreadStatic]
+    private static Compiler? t_jitTls;
+
+    internal static Compiler? GetJitTls()
+    {
+        return t_jitTls;
+    }
+
+    internal static void SetJitTls(Compiler? value)
+    {
+        t_jitTls = value;
+    }
+#endif
 }

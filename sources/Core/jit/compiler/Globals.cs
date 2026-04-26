@@ -4,13 +4,15 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
-using System.Runtime.InteropServices;
-using static RyuJitSharp.JitFlags.JitFlag;
 
 namespace RyuJitSharp;
 
-public unsafe partial class Globals
+public partial class Globals
 {
+    public static readonly string[] PhaseNames = [
+        // TODO: Port PhaseNames
+    ];
+
     /// <summary>Limit frames size to 1GB.</summary>
     /// <remarks>The maximum is 2GB in theory - make it intentionally smaller to avoid bugs from borderline cases.</remarks>
     public const int MAX_FrameSize = 0x3FFF_FFFF;
@@ -53,9 +55,6 @@ public unsafe partial class Globals
     /// <summary>Method needs GC polls.</summary>
     public const int OMF_NEEDS_GCPOLLS = 0x00000200;
 
-    /// <summary>Method has frozen objects (REF constant int).</summary>
-    public const int OMF_HAS_FROZEN_OBJECTS = 0x00000400;
-
     /// <summary>Method contains partial compilation patchpoints.</summary>
     public const int OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT = 0x00000800;
 
@@ -82,6 +81,15 @@ public unsafe partial class Globals
 
     /// <summary>Method contains casts eligible for late expansion.</summary>
     public const int OMF_HAS_EXPANDABLE_CAST = 0x00080000;
+
+    /// <summary>Method contains stack allocated arrays</summary>
+    public const int OMF_HAS_STACK_ARRAY = 0x00100000;
+
+    /// <summary>Method contains bounds checks</summary>
+    public const int OMF_HAS_BOUNDS_CHECKS = 0x00200000;
+
+    /// <summary>Method contains early expandable QMARKs</summary>
+    public const int OMF_HAS_EARLY_QMARKS = 0x00400000;
 
     //
     // optimize maximally and/or favor speed over size?
@@ -132,6 +140,9 @@ public unsafe partial class Globals
     /// <summary>Methods at more than this level deep will not be inlined.</summary>
     public const int DEFAULT_MAX_INLINE_DEPTH = 20;
 
+    /// <summary>Maximum estimated compile time increase via inlining</summary>
+    public const int DEFAULT_INLINE_BUDGET = 22;
+
     /// <summary>Methods at more than this level deep will not be force inlined.</summary>
     public const int DEFAULT_MAX_FORCE_INLINE_DEPTH = 1;
 
@@ -139,31 +150,108 @@ public unsafe partial class Globals
     public const int DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE = 32;
 
     // Compile a single method
-    public static int jitNativeCode(CORINFO_METHOD_HANDLE methodHnd, CORINFO_MODULE_HANDLE classHnd, COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo, void** methodCodePtr, uint* methodCodeSize, JitFlags* compileFlags, void* inlineInfoPtr)
+    public static unsafe CorJitResult jitNativeCode(CORINFO_METHOD_HANDLE methodHandle, CORINFO_MODULE_HANDLE classHandle, COMP_HANDLE jitInfo, CORINFO_METHOD_INFO* methodInfo, out void* methodCodePtr, out uint methodCodeSize, ref JitFlags compileFlags, InlineInfo? inlineInfo)
     {
         // A non-null inlineInfo means we are compiling the inlinee method.
-        var inlineInfo = GCHandle.FromIntPtr((nint)inlineInfoPtr).Target;
+        var result = JitNativeCodeCore(methodHandle, classHandle, jitInfo, methodInfo, out methodCodePtr, out methodCodeSize, compileFlags, inlineInfo, jitFallbackCompile: false);
 
-        var result = JitNativeCodeCore(methodHnd, classHnd, compHnd, methodInfo, methodCodePtr, methodCodeSize, compileFlags, inlineInfo);
-
-        if ((inlineInfo is null) && (result is CORJIT_INTERNALERROR or CORJIT_RECOVERABLEERROR or CORJIT_IMPLLIMITATION))
+        if ((inlineInfo is null) && (result is CORJIT_INTERNALERROR or CORJIT_RECOVERABLEERROR or CORJIT_IMPLLIMITATION or CORJIT_R2R_UNSUPPORTED))
         {
             // Update the flags for 'safer' code generation.
-            compileFlags->Set(JIT_FLAG_MIN_OPT);
-            compileFlags->Clear(JIT_FLAG_SIZE_OPT);
-            compileFlags->Clear(JIT_FLAG_SPEED_OPT);
+            compileFlags.Set(JitFlag.JIT_FLAG_MIN_OPT);
+            compileFlags.Clear(JitFlag.JIT_FLAG_SIZE_OPT);
+            compileFlags.Clear(JitFlag.JIT_FLAG_SPEED_OPT);
+            compileFlags.Clear(JitFlag.JIT_FLAG_BBOPT);
 
             // Reattempt with debuggable code.
-            result = JitNativeCodeCore(methodHnd, classHnd, compHnd, methodInfo, methodCodePtr, methodCodeSize, compileFlags, inlineInfo);
+            result = JitNativeCodeCore(methodHandle, classHandle, jitInfo, methodInfo, out methodCodePtr, out methodCodeSize, compileFlags, inlineInfo, jitFallbackCompile: true);
         }
 
-        return (int)result;
+        return result;
 
-        static CorJitResult JitNativeCodeCore(CORINFO_METHOD_HANDLE methodHnd, CORINFO_MODULE_HANDLE classHnd, COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo, void** methodCodePtr, uint* methodCodeSize, JitFlags* compileFlags, object? inlineInfo)
+        static CorJitResult JitNativeCodeCore(CORINFO_METHOD_HANDLE methodHandle, CORINFO_MODULE_HANDLE classHandle, COMP_HANDLE jitInfo, CORINFO_METHOD_INFO* methodInfo, out void* methodCodePtr, out uint methodCodeSize, in JitFlags compileFlags, InlineInfo? inlineInfo, bool jitFallbackCompile)
         {
             var result = CORJIT_INTERNALERROR;
 
-            Console.WriteLine("Hello from RyuJitSharp!");
+            try
+            {
+                var pComp = null as Compiler;
+                var pPrevComp = null as Compiler;
+
+                try
+                {
+                    Console.WriteLine("Hello from RyuJitSharp!");
+
+                    if (inlineInfo is not null)
+                    {
+                        var inlinerCompiler = inlineInfo.InlinerCompiler;
+                        assert(inlinerCompiler is not null);
+
+                        // Lazily create the inlinee compiler object
+                        if (inlinerCompiler.InlineeCompiler is null)
+                        {
+                            inlinerCompiler.InlineeCompiler = pComp;
+                        }
+                        else
+                        {
+                            pComp = inlinerCompiler.InlineeCompiler;
+                        }
+                    }
+
+                    pComp = new Compiler(methodHandle, jitInfo, methodInfo, inlineInfo);
+
+#if MEASURE_CLRAPI_CALLS
+                    var wrapCLR = WrapICorJitInfo::makeOne(pParam->pAlloc, pComp, compHnd);
+#endif
+
+                    // push this compiler on the stack (TLS)
+                    pPrevComp = JitTls.GetCompiler();
+                    JitTls.SetCompiler(pComp);
+
+                    assert(pComp != null);
+
+#if DEBUG
+                    pComp.jitFallbackCompile = jitFallbackCompile;
+#endif
+
+                    // Now generate the code
+                    result = pComp.compCompileAfterInit(classHandle, out methodCodePtr, out methodCodeSize, compileFlags);
+                }
+                finally
+                {
+                    // If OOM is thrown when allocating memory for a pComp, we will end up here.
+                    // For this case, pComp and also pCompiler will be a nullptr
+                    if (pComp is Compiler pCompiler)
+                    {
+                        pCompiler.info.compCode = null;
+
+                        // pop the compiler off the TLS stack only if it was linked above
+                        assert(JitTls.GetCompiler() == pCompiler);
+                        JitTls.SetCompiler(pPrevComp);
+                    }
+                }
+            }
+            catch (Exception ex) when (ex.HResult == FATAL_JIT_EXCEPTION)
+            {
+                if (jitInfo is not null)
+                {
+                    jitInfo->reportFatalError(CORJIT_INTERNALERROR);
+                }
+
+                // If we were looking at an inlinee....
+                if (inlineInfo is not null)
+                {
+                    // Note that we failed to compile the inlinee, and that
+                    // there's no point trying to inline it again anywhere else.
+
+                    assert(inlineInfo.inlineResult is not null);
+                    inlineInfo.inlineResult.NoteFatal(InlineObservation.CALLEE_COMPILATION_ERROR);
+                }
+                result = CORJIT_INTERNALERROR;
+
+                methodCodePtr = null;
+                methodCodeSize = 0;
+            }
 
             return result;
         }
