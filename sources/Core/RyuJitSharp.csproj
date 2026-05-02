@@ -10,12 +10,20 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <!-- CA1002: Do not expose generic lists -->
+    <!-- CA1062: Validate arguments of public methods -->
     <!-- CA1700: Do not name enum values 'Reserved' -->
+    <!-- CA1720: Identifiers should not contain type names -->
+    <!-- CA1721: Property names should not match get methods -->
+    <!-- CA1823: Avoid unused private fields -->
     <!-- CA2213: Disposable fields should be disposed -->
+    <!-- CA2225: Operator overloads have named alternates -->
+    <!-- CS0169: The field is never used -->
     <!-- CS1591: Missing XML comment for publicly visible type or member 'Type_or_Member' -->
+    <!-- IDE0044: Add readonly modifier -->
     <!-- IDE0060: Remove unused parameter -->
     <!-- IDE0130: Namespace does not match folder structure-->
-    <NoWarn>$(NoWarn);CA1700;CA2213;CS1591;IDE0060;IDE0130</NoWarn>
+    <NoWarn>$(NoWarn);CA1002;CA1062;CA1700;CA1720;CA1721;CA1823;CA2213;CA2225;CS0169;CS1591;IDE0044;IDE0060;IDE0130</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -237,12 +245,40 @@
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);UNIX_ARM_ABI</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64' and '$(RyuJitTargetIsApple)' == 'true'">$(DefineConstants);OSX_ARM64_ABI</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);UNIX_AMD64_ABI</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' != 'true'">$(DefineConstants);WINDOWS_AMD64_ABI</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);UNIX_X86_ABI</DefineConstants>
 
+    <!-- ALIGN_SIMD_TYPES: Whether SIMD type locals are to be aligned -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);ALIGN_SIMD_TYPES</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64'">$(DefineConstants);ALIGN_SIMD_TYPES</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);ALIGN_SIMD_TYPES</DefineConstants>
+    
+    <!-- CPU_HAS_BYTE_REGS -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);CPU_HAS_BYTE_REGS</DefineConstants>
+
+    <!-- CPU_LOAD_STORE_ARCH -->
+    <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);CPU_LOAD_STORE_ARCH</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);CPU_LOAD_STORE_ARCH</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);CPU_LOAD_STORE_ARCH</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'wasm'">$(DefineConstants);CPU_LOAD_STORE_ARCH</DefineConstants>
+    
     <!-- DOUBLE_ALIGN -->
     <!--   This aligns ESP to 0 mod 8 in function prolog, then uses ESP to reference locals, EBP to reference parameters. -->
     <!--   It only makes sense if frameless method support is on (frameless method support is now always on) -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);DOUBLE_ALIGN</DefineConstants>
+
+    <!-- EMIT_GENERATE_GCINFO: Track GC ref liveness in codegen and emit and generate GCInfo based on that -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' != 'wasm'">$(DefineConstants);EMIT_GENERATE_GCINFO</DefineConstants>
+
+    <!-- EMIT_TRACK_STACK_DEPTH -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' != 'wasm'">$(DefineConstants);EMIT_TRACK_STACK_DEPTH</DefineConstants>
+    
+    <!-- ETW_EBP_FRAMED: We cannot use REG as a scratch register and must create REG based frames for most methods-->
+    <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);ETW_EBP_FRAMED</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);ETW_EBP_FRAMED</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);ETW_EBP_FRAMED</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);ETW_EBP_FRAMED</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);ETW_EBP_FRAMED</DefineConstants>
     
     <!-- FEATURE_ARG_SPLIT -->
     <!--   Arm64 Windows supports FEATURE_ARG_SPLIT, note this is different from the official Arm64 ABI. -->
@@ -252,23 +288,73 @@
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64' or '$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_ARG_SPLIT</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_ARG_SPLIT</DefineConstants>
 
+    <!-- FEATURE_FASTTAILCALL: Tail calls made as epilog+jmp -->
+    <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);FEATURE_FIXED_OUT_ARGS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);FEATURE_FIXED_OUT_ARGS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_FIXED_OUT_ARGS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64'">$(DefineConstants);FEATURE_FIXED_OUT_ARGS</DefineConstants>
+    
+    <!-- FEATURE_FIXED_OUT_ARGS: Preallocate the outgoing arg area in the prolog -->
+    <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);FEATURE_FIXED_OUT_ARGS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);FEATURE_FIXED_OUT_ARGS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_FIXED_OUT_ARGS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64'">$(DefineConstants);FEATURE_FIXED_OUT_ARGS</DefineConstants>
+    
     <!-- FEATURE_HW_INTRINSICS -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_HW_INTRINSICS</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetIsXarch)' == 'true'">$(DefineConstants);FEATURE_HW_INTRINSICS</DefineConstants>
-
-    <!-- FEATURE_MASKED_HW_INTRINSICS -->
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_MASKED_HW_INTRINSICS</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetIsXarch)' == 'true'">$(DefineConstants);FEATURE_MASKED_HW_INTRINSICS</DefineConstants>
     
     <!-- FEATURE_IJW -->
     <DefineConstants Condition="'$(RyuJitTargetOS)' == 'win'">$(DefineConstants);FEATURE_IJW</DefineConstants>
 
+    <!-- FEATURE_IMPLICIT_BYREFS: Support for struct parameters passed via pointers to shadow copies -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_IMPLICIT_BYREFS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);FEATURE_IMPLICIT_BYREFS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_IMPLICIT_BYREFS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'wasm'">$(DefineConstants);FEATURE_IMPLICIT_BYREFS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64'">$(DefineConstants);FEATURE_IMPLICIT_BYREFS</DefineConstants>
+    
     <!-- FEATURE_LOOP_ALIGN -->
     <DefineConstants Condition="'$(RyuJitTargetIsXarch)' == 'true'">$(DefineConstants);FEATURE_LOOP_ALIGN</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_LOOP_ALIGN</DefineConstants>
+
+    <!-- FEATURE_MASKED_HW_INTRINSICS -->
+    <DefineConstants Condition="'$(RyuJitTargetIsXarch)' == 'true'">$(DefineConstants);FEATURE_MASKED_HW_INTRINSICS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_MASKED_HW_INTRINSICS</DefineConstants>
+
+    <!-- FEATURE_MULTIREG_ARGS: Support for passing a single argument in more than one register -->
+    <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);FEATURE_MULTIREG_ARGS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);FEATURE_MULTIREG_ARGS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_MULTIREG_ARGS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);FEATURE_MULTIREG_ARGS</DefineConstants>
+
+    <!-- FEATURE_MULTIREG_ARGS_OR_RET: Support for passing and/or returning single values in more than one register -->
+    <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);FEATURE_MULTIREG_ARGS_OR_RET</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);FEATURE_MULTIREG_ARGS_OR_RET</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_MULTIREG_ARGS_OR_RET</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);FEATURE_MULTIREG_ARGS_OR_RET</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);FEATURE_MULTIREG_ARGS_OR_RET</DefineConstants>
+
+    <!-- FEATURE_MULTIREG_RET: Support for returning a single value in more than one register -->
+    <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);FEATURE_MULTIREG_RET</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);FEATURE_MULTIREG_RET</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_MULTIREG_RET</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);FEATURE_MULTIREG_RET</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);FEATURE_MULTIREG_RET</DefineConstants>
+    
+    <!-- FEATURE_MULTIREG_STRUCT_PROMOTE: True when we want to promote fields of a multireg struct into registers -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_MULTIREG_STRUCT_PROMOTE</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);FEATURE_MULTIREG_STRUCT_PROMOTE</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_MULTIREG_STRUCT_PROMOTE</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'wasm'">$(DefineConstants);FEATURE_MULTIREG_STRUCT_PROMOTE</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);FEATURE_MULTIREG_STRUCT_PROMOTE</DefineConstants>
     
     <!-- FEATURE_MULTITHREADING -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' != 'wasm'">$(DefineConstants);FEATURE_MULTITHREADING</DefineConstants>
+
+    <!-- FEATURE_PARTIAL_SIMD_CALLEE_SAVE: Whether SIMD registers are partially saved at calls -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_PARTIAL_SIMD_CALLEE_SAVE</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);FEATURE_PARTIAL_SIMD_CALLEE_SAVE</DefineConstants>
     
     <!-- FEATURE_REMAP_FUNCTION -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_REMAP_FUNCTION</DefineConstants>
@@ -296,21 +382,19 @@
     <!-- FEATURE_PAL_ANSI -->
     <DefineConstants Condition="'$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);FEATURE_PAL_ANSI</DefineConstants>
 
-    <!-- FEATURE_READYTORUN -->
-    <DefineConstants>$(DefineConstants);FEATURE_READYTORUN</DefineConstants>
-
     <!-- FEATURE_SIMD -->
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_SIMD</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetIsXarch)' == 'true'">$(DefineConstants);FEATURE_SIMD</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_SIMD</DefineConstants>
 
-    <!-- FEATURE_USE_ASM_GC_WRITE_BARRIERS -->
-    <DefineConstants>$(DefineConstants);FEATURE_USE_ASM_GC_WRITE_BARRIERS</DefineConstants>
-
-    <!-- FEATURE_VN_TRACE_APPLY_SELECTORS: This controls extra tracing of the "evaluation" of "VNF_MapSelect" functions. -->
-    <DefineConstants>$(DefineConstants);FEATURE_VN_TRACE_APPLY_SELECTORS</DefineConstants>
-
+    <!-- HAS_FIXED_REGISTER_SET -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' != 'wasm'">$(DefineConstants);HAS_FIXED_REGISTER_SET</DefineConstants>
+    
     <!-- JIT32_GCENCODER -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);JIT32_GCENCODER</DefineConstants>
+
+    <!-- LOWER_DECOMPOSE_LONGS: Decompose TYP_LONG operations into (typically two) TYP_INT ones -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm'">$(DefineConstants);LOWER_DECOMPOSE_LONGS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);LOWER_DECOMPOSE_LONGS</DefineConstants>
     
     <!-- MULTIREG_HAS_SECOND_GC_RET -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);MULTIREG_HAS_SECOND_GC_RET</DefineConstants>
@@ -318,9 +402,32 @@
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);MULTIREG_HAS_SECOND_GC_RET</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);MULTIREG_HAS_SECOND_GC_RET</DefineConstants>
 
+    <!-- NOGC_WRITE_BARRIERS: We have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);NOGC_WRITE_BARRIERS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);NOGC_WRITE_BARRIERS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);NOGC_WRITE_BARRIERS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);NOGC_WRITE_BARRIERS</DefineConstants>
+
     <!-- PROFILING_SUPPORTED -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' != 'wasm'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
 
+    <!-- SWIFT_SUPPORT -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);SWIFT_SUPPORT</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);SWIFT_SUPPORT</DefineConstants>
+    
+    <!-- REGMASK_BITS_32 -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'wasm'">$(DefineConstants);REGMASK_BITS_32</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);REGMASK_BITS_32</DefineConstants>
+
+    <!-- REGMASK_BITS_64 -->
+    <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);REGMASK_BITS_64</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);REGMASK_BITS_64</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);REGMASK_BITS_64</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64'">$(DefineConstants);REGMASK_BITS_64</DefineConstants>
+
+    <!-- USER_ARGS_COME_LAST -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' != 'x86'">$(DefineConstants);USER_ARGS_COME_LAST</DefineConstants>
+    
     <!-- USE_PER_FRAME_PINVOKE_INIT -->
     <DefineConstants Condition="'$(RyuJitTargetIs64Bit)' == 'true'">$(DefineConstants);USE_PER_FRAME_PINVOKE_INIT</DefineConstants>
   </PropertyGroup>
@@ -352,13 +459,28 @@
 
     <!-- TRACK_LSRA_STATS: Collect LSRA stats -->
     <DefineConstants>$(DefineConstants);TRACK_LSRA_STATS</DefineConstants>
-
+    
     <!-- USE_COREDISTOOLS -->
     <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);USE_COREDISTOOLS</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetIsXarch)' == 'true'">$(DefineConstants);USE_COREDISTOOLS</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup>
+    <!-- CSE_CONSTS: Enable if we want to CSE constants -->
+    <DefineConstants>$(DefineConstants);CSE_CONSTS</DefineConstants>
+
+    <!-- FEATURE_READYTORUN -->
+    <DefineConstants>$(DefineConstants);FEATURE_READYTORUN</DefineConstants>
+    
+    <!-- FEATURE_STRUCTPROMOTE: JIT Optimization to promote fields of structs into registers -->
+    <DefineConstants>$(DefineConstants);FEATURE_STRUCTPROMOTE</DefineConstants>
+
+    <!-- FEATURE_USE_ASM_GC_WRITE_BARRIERS -->
+    <DefineConstants>$(DefineConstants);FEATURE_USE_ASM_GC_WRITE_BARRIERS</DefineConstants>
+
+    <!-- FEATURE_VN_TRACE_APPLY_SELECTORS: This controls extra tracing of the "evaluation" of "VNF_MapSelect" functions. -->
+    <DefineConstants>$(DefineConstants);FEATURE_VN_TRACE_APPLY_SELECTORS</DefineConstants>
+
     <!-- FUNC_INFO_LOGGING: Support dumping function info to a file. In retail, only NYIs, with no function name, are dumped -->
     <DefineConstants>$(DefineConstants);FUNC_INFO_LOGGING</DefineConstants>
 

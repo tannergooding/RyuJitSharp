@@ -9,7 +9,7 @@ namespace RyuJitSharp;
 
 public partial class Globals
 {
-    private static JitConfigValues JitConfig;
+    internal static JitConfigValues JitConfig;
 
     public const int CONST_CSE_ENABLE_ARM_RISCV64 = 0;
     public const int CONST_CSE_DISABLE_ALL = 1;

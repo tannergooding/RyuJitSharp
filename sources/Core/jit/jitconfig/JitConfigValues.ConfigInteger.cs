@@ -1342,7 +1342,7 @@ public partial struct JitConfigValues
 #if DEBUG
         [JitCSEHash] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitCSEHash"u8)), -1),
         [JitCSEMask] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitCSEMask"u8)), 0),
-        [JitMetrics] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitMetrics"u8)), 0),
+        [ConfigInteger.JitMetrics] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitMetrics"u8)), 0),
         [JitRandomCSE] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitRandomCSE"u8)), 0),
         [JitRLCSECandidateFeatures] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitRLCSECandidateFeatures"u8)), 0),
         [JitRLHook] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitRLHook"u8)), 0),

@@ -4,6 +4,11 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.JavaScript;
+using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace RyuJitSharp;
 
@@ -12,6 +17,12 @@ public partial class Globals
     public static readonly string[] PhaseNames = [
         // TODO: Port PhaseNames
     ];
+
+    public static readonly string[] PhaseEnums = [
+        // TODO: Port PhaseEnums
+    ];
+
+    public const uint ROOT_FUNC_IDX = 0;
 
     /// <summary>Limit frames size to 1GB.</summary>
     /// <remarks>The maximum is 2GB in theory - make it intentionally smaller to avoid bugs from borderline cases.</remarks>
@@ -23,7 +34,7 @@ public partial class Globals
     /// <summary>Number of elements in impSmallStack.</summary>
     public const int SMALL_STACK_SIZE = 16;
 
-    public const string FMT_CSE = "CSE #{0:G2}";
+    public const string FMT_CSE = "CSE #{0:D2}";
 
     /// <summary>Method contains 'new' of an SD array.</summary>
     public const int OMF_HAS_NEWARRAY = 0x00000001;
@@ -58,7 +69,7 @@ public partial class Globals
     /// <summary>Method contains partial compilation patchpoints.</summary>
     public const int OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT = 0x00000800;
 
-    /// <summary>Method has potential tail call in a non BBJ_RETURN block.</summary>
+    /// <summary>Method has potential tail call in a non <see cref="BBJ_RETURN" /> block.</summary>
     public const int OMF_HAS_TAILCALL_SUCCESSOR = 0x00001000;
 
     /// <summary>Method contains 'new' of an MD array.</summary>
@@ -149,6 +160,15 @@ public partial class Globals
     /// <summary>Fixed locallocs of this size or smaller will convert to local buffers.</summary>
     public const int DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE = 32;
 
+    public static var_types HfaTypeFromElemKind(CorInfoHFAElemType kind) => kind switch {
+        CORINFO_HFA_ELEM_NONE => TYP_UNDEF,
+        CORINFO_HFA_ELEM_FLOAT => TYP_FLOAT,
+        CORINFO_HFA_ELEM_DOUBLE => TYP_DOUBLE,
+        CORINFO_HFA_ELEM_VECTOR64 => TYP_SIMD8,
+        CORINFO_HFA_ELEM_VECTOR128 => TYP_SIMD16,
+        _ => TYP_UNKNOWN,
+    };
+
     // Compile a single method
     public static unsafe CorJitResult jitNativeCode(CORINFO_METHOD_HANDLE methodHandle, CORINFO_MODULE_HANDLE classHandle, COMP_HANDLE jitInfo, CORINFO_METHOD_INFO* methodInfo, out void* methodCodePtr, out uint methodCodeSize, ref JitFlags compileFlags, InlineInfo? inlineInfo)
     {
@@ -175,8 +195,8 @@ public partial class Globals
 
             try
             {
-                var pComp = null as Compiler;
-                var pPrevComp = null as Compiler;
+                var compiler = null as Compiler;
+                var previousCompiler = null as Compiler;
 
                 try
                 {
@@ -190,44 +210,44 @@ public partial class Globals
                         // Lazily create the inlinee compiler object
                         if (inlinerCompiler.InlineeCompiler is null)
                         {
-                            inlinerCompiler.InlineeCompiler = pComp;
+                            inlinerCompiler.InlineeCompiler = compiler;
                         }
                         else
                         {
-                            pComp = inlinerCompiler.InlineeCompiler;
+                            compiler = inlinerCompiler.InlineeCompiler;
                         }
                     }
 
-                    pComp = new Compiler(methodHandle, jitInfo, methodInfo, inlineInfo);
+                    compiler = new Compiler(methodHandle, jitInfo, methodInfo, inlineInfo);
 
 #if MEASURE_CLRAPI_CALLS
                     var wrapCLR = WrapICorJitInfo::makeOne(pParam->pAlloc, pComp, compHnd);
 #endif
 
                     // push this compiler on the stack (TLS)
-                    pPrevComp = JitTls.GetCompiler();
-                    JitTls.SetCompiler(pComp);
-
-                    assert(pComp != null);
+                    previousCompiler = JitTls.Compiler;
+                    JitTls.Compiler = compiler;
 
 #if DEBUG
-                    pComp.jitFallbackCompile = jitFallbackCompile;
+                    compiler.jitFallbackCompile = jitFallbackCompile;
 #endif
 
                     // Now generate the code
-                    result = pComp.compCompileAfterInit(classHandle, out methodCodePtr, out methodCodeSize, compileFlags);
+                    result = compiler.compCompileAfterInit(classHandle, out methodCodePtr, out methodCodeSize, compileFlags);
                 }
                 finally
                 {
                     // If OOM is thrown when allocating memory for a pComp, we will end up here.
-                    // For this case, pComp and also pCompiler will be a nullptr
-                    if (pComp is Compiler pCompiler)
+                    // For this case, pComp and also pCompiler will be a null
+
+                    if (compiler is not null)
                     {
-                        pCompiler.info.compCode = null;
+                        compiler.info.compCode = null;
 
                         // pop the compiler off the TLS stack only if it was linked above
-                        assert(JitTls.GetCompiler() == pCompiler);
-                        JitTls.SetCompiler(pPrevComp);
+                        assert(JitTls.Compiler == compiler);
+
+                        JitTls.Compiler = previousCompiler;
                     }
                 }
             }

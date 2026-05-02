@@ -1,0 +1,19 @@
+// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+namespace RyuJitSharp;
+
+public sealed class GenTreeVal : GenTree
+{
+    private readonly nuint _val1;
+
+    public GenTreeVal(genTreeOps oper, var_types type, nint val)
+        : base(oper, type)
+    {
+        _val1 = (nuint)(val);
+    }
+
+    public nuint Val1 => _val1;
+}

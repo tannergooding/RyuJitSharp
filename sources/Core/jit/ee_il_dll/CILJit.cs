@@ -9,7 +9,7 @@ namespace RyuJitSharp;
 
 public unsafe partial struct CILJit : ICorJitCompiler.Interface
 {
-    internal ICorJitCompiler.Vtbl* lpVtbl;
+    private ICorJitCompiler.Vtbl* lpVtbl;
 
     // The main JIT function for the 32 bit JIT.  See code:ICorJitCompiler#EEToJitInterface for more on the EE-JIT
     // interface. Things really don't get going inside the JIT until the code:Compiler::compCompile#Phases

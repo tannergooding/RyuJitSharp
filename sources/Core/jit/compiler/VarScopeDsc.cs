@@ -7,21 +7,21 @@ namespace RyuJitSharp;
 
 public struct VarScopeDsc
 {
-    // (remapped) LclVarDsc number
+    /// <summary>(remapped) LclVarDsc number</summary>
     public uint vsdVarNum;
 
-    // 'which' in eeGetLVinfo().
-    // Also, it is the index of this entry in the info.compVarScopes array, which is useful since the array is also accessed via the compEnterScopeList and compExitScopeList sorted arrays.
+    /// <summary>'which' in eeGetLVinfo().</summary>
+    /// <remarks>Also, it is the index of this entry in the <see cref="Compiler.Info.compVarScopes" /> array, which is useful since the array is also accessed via the compEnterScopeList and compExitScopeList sorted arrays.</remarks>
     public uint vsdLVnum;
 
-    // instr offset of beg of life
+    /// <summary>instr offset of beg of life</summary>
     public IL_OFFSET vsdLifeBeg;
 
-    // instr offset of end of life
+    /// <summary>instr offset of end of life</summary>
     public IL_OFFSET vsdLifeEnd;
 
 #if DEBUG
-    // name of the var
+    /// <summary>name of the var</summary>
     public unsafe VarName vsdName;
 #endif
 }

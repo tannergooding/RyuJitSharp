@@ -4,7 +4,6 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
-using System.Diagnostics;
 using System.Text;
 
 namespace RyuJitSharp;
@@ -106,7 +105,7 @@ public partial struct JitConfigValues
                 return false;
             }
 
-            var compiler = JitTls.GetCompiler();
+            var compiler = JitTls.Compiler;
             assert(compiler is not null);
 
             var stringBuilder = new StringBuilder(1024);

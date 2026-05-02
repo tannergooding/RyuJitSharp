@@ -3,13 +3,14 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+global using static RyuJitSharp.CorInfoFlag;
 using System;
 
 namespace RyuJitSharp;
 
 /// <summary>These are the attribute flags for fields and methods (<c>getMethodAttribs</c>).</summary>
 [Flags]
-public enum CorInfoFlag
+public enum CorInfoFlag : uint
 {
     // CORINFO_FLG_UNUSED = 0x00000001,
     // CORINFO_FLG_UNUSED = 0x00000002,
@@ -124,5 +125,5 @@ public enum CorInfoFlag
     CORINFO_FLG_GENERIC_TYPE_VARIABLE = 0x40000000,
 
     /// <summary>Unsafe (C++'s /GS) value type.</summary>
-    CORINFO_FLG_UNSAFE_VALUECLASS = unchecked((int)0x80000000),
+    CORINFO_FLG_UNSAFE_VALUECLASS = 0x80000000,
 }

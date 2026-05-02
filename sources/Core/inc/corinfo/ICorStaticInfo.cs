@@ -570,7 +570,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         // return flags (a bitfield of CorInfoFlags values)
         uint getClassAttribs(CORINFO_CLASS_HANDLE cls);
 
-        // Returns the assembly name of the class "cls", or nullptr if there is none.
+        // Returns the assembly name of the class "cls", or null if there is none.
         byte* getClassAssemblyName (CORINFO_CLASS_HANDLE cls);
 
         // Allocate and delete process-lifetime objects.  Should only be
@@ -1096,10 +1096,10 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         // See printObjectDescription for documentation of parameters.
         nuint printMethodName(CORINFO_METHOD_HANDLE ftn, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null);
 
-        // Return method name as in metadata, or nullptr if there is none, and
+        // Return method name as in metadata, or null if there is none, and
         // optionally return the class, enclosing classes, and namespace name as
         // in metadata. Enclosing classes are returned from inner-most enclosed class
-        // to outer-most, with nullptr in the array indicating that no more
+        // to outer-most, with null in the array indicating that no more
         // enclosing classes were left. The namespace returned corresponds to the
         // outer most (potentially enclosing) class that was returned.
         // Suitable for non-debugging use.

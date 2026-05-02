@@ -9,12 +9,12 @@ namespace RyuJitSharp;
 
 public enum BarrierKind
 {
-    // full barrier
-    BARRIER_FULL,       
+    /// <summary>full barrier</summary>
+    BARRIER_FULL,
 
-    // load barrier
+    /// <summary>load barrier</summary>
     BARRIER_LOAD_ONLY,
 
-    // store barrier
+    /// <summary>store barrier</summary>
     BARRIER_STORE_ONLY, 
 }

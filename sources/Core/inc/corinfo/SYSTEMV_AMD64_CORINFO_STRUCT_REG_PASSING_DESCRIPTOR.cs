@@ -3,8 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
@@ -23,24 +21,15 @@ public struct SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR
     /// <summary>Number of eight-bytes for this struct.</summary>
     public byte eightByteCount;
 
-    private _eightByteClassifications_e__FixedBuffer _eightByteClassifications;
-
     /// <summary>The eight-bytes type classification.</summary>
-    [UnscopedRef]
-    public Span<SystemVClassificationType> eightByteClassifications => _eightByteClassifications;
-
-    private _eightByteSizes_e__FixedBuffer _eightByteSizes;
+    public eightByteClassificationsInlineArray eightByteClassifications;
 
     /// <summary>The size of the eight-bytes.</summary>
     /// <remarks>An eight-byte could include padding. This represents the no padding size of the eight-byte.</remarks>
-    [UnscopedRef]
-    public Span<byte> eightByteSizes => _eightByteSizes;
-
-    private _eightByteOffsets_e__FixedBuffer _eightByteOffsets;
+    public eightByteSizesInlineArray eightByteSizes;
 
     /// <summary>The start offset of the eight-bytes (in bytes).</summary>
-    [UnscopedRef]
-    public Span<byte> eightByteOffsets => _eightByteOffsets;
+    public eightByteOffsetsInlineArray eightByteOffsets;
 
     /// <summary>Copies a struct classification into this one.</summary>
     /// <param name="copyFrom">The struct classification to copy from.</param>
@@ -62,7 +51,7 @@ public struct SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR
     /// <returns><c>true</c> if we the eight-byte at index slotIndex is of integral type.</returns>
     public readonly bool IsIntegralSlot(uint slotIndex)
     {
-        return _eightByteClassifications[(int)slotIndex] is SystemVClassificationTypeInteger
+        return eightByteClassifications[(int)slotIndex] is SystemVClassificationTypeInteger
                                                          or SystemVClassificationTypeIntegerReference
                                                          or SystemVClassificationTypeIntegerByRef;
     }
@@ -73,7 +62,7 @@ public struct SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR
     /// <remarks>Follows the rules of the AMD64 System V ABI specification at https://software.intel.com/sites/default/files/article/402129/mpx-linux64-abi.pdf. Please refer to it for definitions/examples.</remarks>
     public readonly bool IsSseSlot(uint slotIndex)
     {
-        return _eightByteClassifications[(int)slotIndex] == SystemVClassificationTypeSSE;
+        return eightByteClassifications[(int)slotIndex] == SystemVClassificationTypeSSE;
     }
 
     private void Initialize()
@@ -90,19 +79,19 @@ public struct SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR
     }
 
     [InlineArray(CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS)]
-    private struct _eightByteClassifications_e__FixedBuffer
+    public struct eightByteClassificationsInlineArray
     {
         public SystemVClassificationType e0;
     }
 
     [InlineArray(CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS)]
-    private struct _eightByteSizes_e__FixedBuffer
+    public struct eightByteSizesInlineArray
     {
         public byte e0;
     }
 
     [InlineArray(CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS)]
-    private struct _eightByteOffsets_e__FixedBuffer
+    public struct eightByteOffsetsInlineArray
     {
         public byte e0;
     }

@@ -3,6 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+global using static RyuJitSharp.CorInfoTailCall;
+
 namespace RyuJitSharp;
 
 // If you add more values here, keep it in sync with TailCallTypeMap in ..\vm\ClrEtwAll.man and the string enum in CEEInfo::reportTailCallDecision in ..\vm\JITInterface.cpp

@@ -7,9 +7,16 @@ using System;
 
 namespace RyuJitSharp;
 
+// Information kept in thread-local storage. This is used in the noway_assert exceptional path.
+// If you are using it more broadly in retail code, you would need to understand the
+// performance implications of accessing TLS.
+
 #if DEBUG
 public sealed class JitTls : IDisposable
 {
+    [ThreadStatic]
+    private static JitTls? t_jitTls;
+
     private Compiler? _compiler;
     private LogEnv _logEnv;
     private readonly JitTls? _next;
@@ -17,8 +24,8 @@ public sealed class JitTls : IDisposable
     public unsafe JitTls(ICorJitInfo* jitInfo)
     {
         _logEnv = new LogEnv(jitInfo);
-        _next = GetJitTls();
-        SetJitTls(this);
+        _next = t_jitTls;
+        t_jitTls = this;
     }
 
     ~JitTls()
@@ -32,43 +39,55 @@ public sealed class JitTls : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    public static Compiler? GetCompiler()
+    public static Compiler? Compiler
     {
-        var jitTls = GetJitTls();
-        assert(jitTls is not null);
-        return jitTls._compiler;
+        get
+        {
+            var jitTls = t_jitTls;
+            assert(jitTls is not null);
+            return jitTls._compiler;
+        }
+
+        set
+        {
+            var jitTls = t_jitTls;
+            assert(jitTls is not null);
+            jitTls._compiler = value;
+        }
     }
 
-    public static ref LogEnv GetLogEnv()
+    public static ref LogEnv LogEnv
     {
-        var jitTls = GetJitTls();
-        assert(jitTls is not null);
-        return ref jitTls._logEnv;
-    }
-
-    public static void SetCompiler(Compiler? compiler)
-    {
-        var jitTls = GetJitTls();
-        assert(jitTls is not null);
-        jitTls._compiler = compiler;
+        get
+        {
+            var jitTls = t_jitTls;
+            assert(jitTls is not null);
+            return ref jitTls._logEnv;
+        }
     }
 
     private void Dispose(bool isDisposing)
     {
-        SetJitTls(_next);
+        t_jitTls = _next;
     }
 }
 #else
 public static class JitTls
 {
-    public static Compiler? GetCompiler()
-    {
-        return GetJitTls();
-    }
+    [ThreadStatic]
+    private static Compiler? t_compiler;
 
-    public static void SetCompiler(Compiler? compiler)
+    public static Compiler? Compiler
     {
-        SetJitTls(compiler);
+        get
+        {
+            return t_compiler;
+        }
+
+        set
+        {
+            t_compiler = value;
+        }
     }
 }
 #endif

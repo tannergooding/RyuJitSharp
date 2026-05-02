@@ -344,14 +344,122 @@ public partial class Globals
     public const int CLFLG_MINOPT = CLFLG_TREETRANS;
 
     [Conditional("DEBUG")]
+    public static void DISPNODE(GenTree tree)
+    {
+        var compiler = JitTls.Compiler;
+        assert(compiler is not null);
+
+        if (compiler.verbose)
+        {
+            compiler.gtDispTree(tree, null, null, true);
+        }
+    }
+
+    [Conditional("DEBUG")]
+    public static void DISPTREE(GenTree tree)
+    {
+        var compiler = JitTls.Compiler;
+        assert(compiler is not null);
+
+        if (compiler.verbose)
+        {
+            compiler.gtDispTree(tree);
+        }
+    }
+
+    [Conditional("DEBUG")]
+    public static void DISPSTMT(Statement stmt)
+    {
+        var compiler = JitTls.Compiler;
+        assert(compiler is not null);
+
+        if (compiler.verbose)
+        {
+            compiler.gtDispStmt(stmt);
+        }
+    }
+
+    [Conditional("DEBUG")]
+    public static void DISPRANGE(LIR.ReadOnlyRange range)
+    {
+        var compiler = JitTls.Compiler;
+        assert(compiler is not null);
+
+        if (compiler.verbose)
+        {
+            compiler.gtDispRange(range);
+        }
+    }
+
+    [Conditional("DEBUG")]
+    public static void DISPTREERANGE(LIR.Range range, GenTree tree)
+    {
+        var compiler = JitTls.Compiler;
+        assert(compiler is not null);
+
+        if (compiler.verbose)
+        {
+            compiler.gtDispTreeRange(range, tree);
+        }
+    }
+
+    [Conditional("DEBUG")]
+    public static void LABELEDDISPTREERANGE(string label, LIR.Range range, GenTree tree)
+    {
+        var compiler = JitTls.Compiler;
+        assert(compiler is not null);
+
+        if (compiler.verbose)
+        {
+            logf($"{label}:\n");
+            compiler.gtDispTreeRange(range, tree);
+            logf("\n");
+        }
+    }
+
+    [Conditional("DEBUG")]
+    public static void DISPBLOCK(BasicBlock block)
+    {
+        var compiler = JitTls.Compiler;
+        assert(compiler is not null);
+
+        if (compiler.verbose)
+        {
+            compiler.fgTableDispBasicBlock(block);
+        }
+    }
+
+    [Conditional("DEBUG")]
     public static void JITDUMP(string format, params ReadOnlySpan<object> args)
     {
-        var compiler = JitTls.GetCompiler();
+        var compiler = JitTls.Compiler;
         assert(compiler is not null);
 
         if (compiler.verbose)
         {
             logf(format, args);
         }
+    }
+
+#if HOST_64BIT
+    public static int roundUp(int size, int mult)
+    {
+        assert(int.IsPow2(mult));
+        return (size + (mult - 1)) & ~(mult - 1);
+    }
+
+    public static uint roundUp(uint size, uint mult)
+    {
+        assert(uint.IsPow2(mult));
+        return (size + (mult - 1)) & ~(mult - 1);
+    }
+#endif
+
+    public static unsafe nuint roundUp(nuint size) => roundUp(size, mult: (uint)(sizeof(nuint)));
+
+    public static nuint roundUp(nuint size, nuint mult)
+    {
+        assert(nuint.IsPow2(mult));
+        return (size + (mult - 1)) & ~(mult - 1);
     }
 }

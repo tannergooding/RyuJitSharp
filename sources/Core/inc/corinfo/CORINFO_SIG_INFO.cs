@@ -21,12 +21,12 @@ public struct CORINFO_SIG_INFO
     {
         readonly get
         {
-            return (CorInfoType)(_bitfield & 0xFFu);
+            return (CorInfoType)(byte)(_bitfield);
         }
 
         set
         {
-            _bitfield = (_bitfield & ~0xFFu) | ((uint)value & 0xFFu);
+            _bitfield = (_bitfield & ~0xFFu) | (byte)(value);
         }
     }
 
@@ -36,12 +36,12 @@ public struct CORINFO_SIG_INFO
         readonly get
         {
 
-            return (_bitfield >> 8) & 0xFFu;
+            return (byte)(_bitfield >>> 8);
         }
 
         set
         {
-            _bitfield = (_bitfield & ~(0xFFu << 8)) | ((value & 0xFFu) << 8);
+            _bitfield = (_bitfield & ~(0xFFu << 8)) | ((uint)(byte)(value) << 8);
         }
     }
 
@@ -50,12 +50,12 @@ public struct CORINFO_SIG_INFO
         readonly get
         {
 
-            return (_bitfield >> 16) & 0xFFFFu;
+            return (ushort)(_bitfield >>> 16);
         }
 
         set
         {
-            _bitfield = (_bitfield & ~(0xFFFFu << 16)) | ((value & 0xFFFFu) << 16);
+            _bitfield = (_bitfield & ~(0xFFFFu << 16)) | ((uint)(ushort)(value) << 16);
         }
     }
 

@@ -11,7 +11,7 @@ namespace RyuJitSharp;
 
 public unsafe partial struct CILJit
 {
-    internal static readonly ICorJitCompiler.Vtbl* s_vtbl = InitVtbl();
+    private static readonly ICorJitCompiler.Vtbl* s_vtbl = InitVtbl();
 
     private static ICorJitCompiler.Vtbl* InitVtbl()
     {

@@ -4,7 +4,6 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
-using System.Diagnostics.Metrics;
 
 namespace RyuJitSharp;
 
@@ -33,13 +32,12 @@ public partial class Compiler
 
         public string compFullName = "";
 
-        // useful when debugging under SuperPMI
+        /// <summary>useful when debugging under SuperPMI</summary>
         public int compMethodSuperPMIIndex = -1;
 #endif
 
 #if DEBUG
-        // Method hash is logically const, but computed on first demand.
-        public uint compMethodHashPrivate;
+        private uint compMethodHashPrivate;
 
         /// <summary>get hash code for currently jitted method</summary>
         /// <returns>Hash based on method's full name</returns>
@@ -58,183 +56,187 @@ public partial class Compiler
         }
 #endif
 
-        // The following holds the FLG_xxxx flags for the method we're compiling.
+        /// <summary>The following holds the FLG_xxxx flags for the method we're compiling.</summary>
         public uint compFlags;
 
-        // The following holds the class attributes for the method we're compiling.
+        /// <summary>The following holds the class attributes for the method we're compiling.</summary>
         public uint compClassAttr;
 
         public unsafe byte* compCode;
 
-        // The IL code size
-        public IL_OFFSET compILCodeSize;         
+        /// <summary>The IL code size</summary>
+        public IL_OFFSET compILCodeSize;
 
-        // Estimated amount of IL actually imported
+        /// <summary>Estimated amount of IL actually imported</summary>
         public IL_OFFSET compILImportSize;
 
-        // The IL entry point (normally 0)
+        /// <summary>The IL entry point (normally 0)</summary>
         public IL_OFFSET compILEntry;
 
-        // Patchpoint data for OSR (normally nullptr)
+        /// <summary>Patchpoint data for OSR (normally null)</summary>
         public unsafe PatchpointInfo* compPatchpointInfo;
 
-        // The native code size, after instructions are issued.
-        // This is less than (compTotalHotCodeSize + compTotalColdCodeSize) only if:
-        //   (1) the code is not hot/cold split, and we issued less code than we expected, or
-        //   (2) the code is hot/cold split, and we issued less code than we expected in the cold section (the hot section will always be padded out to compTotalHotCodeSize).
+        /// <summary>The native code size, after instructions are issued.</summary>
+        /// <remarks>
+        ///   <para>This is less than (<see cref="compTotalHotCodeSize" /> + <see cref="compTotalColdCodeSize" />) only if:</para>
+        ///   <list type="number">
+        ///     <item>the code is not hot/cold split, and we issued less code than we expected, or</item>
+        ///     <item>the code is hot/cold split, and we issued less code than we expected in the cold section (the hot section will always be padded out to <see cref="compTotalHotCodeSize" />).</item>
+        ///   </list>
+        /// </remarks>
         public UNATIVE_OFFSET compNativeCodeSize;
 
-        private byte _bitfield;
+        private InfoFlags _flags;
 
-        // Is the method static (no 'this' pointer)?
+        /// <summary>Is the method static (no 'this' pointer)?</summary>
         public bool compIsStatic
         {
             readonly get
             {
-                return ((_bitfield  >> 0) & 0x1) != 0;
+                return (_flags & InfoFlags.IsStatic) != 0;
             }
 
             set
             {
-                _bitfield = (byte)((_bitfield & ~(0x1 << 0)) | ((value ? 1 : 0) << 0));
+                _flags = (_flags & ~InfoFlags.IsStatic) | (value ? InfoFlags.IsStatic : InfoFlags.None);
             }
         }
 
-        // Does the method have varargs parameters?
+        /// <summary>Does the method have varargs parameters?</summary>
         public bool compIsVarArgs
         {
             readonly get
             {
-                return ((_bitfield >> 1) & 0x1) != 0;
+                return (_flags & InfoFlags.IsVarArgs) != 0;
             }
 
             set
             {
-                _bitfield = (byte)((_bitfield & ~(0x1 << 1)) | ((value ? 1 : 0) << 1));
+                _flags = (_flags & ~InfoFlags.IsVarArgs) | (value ? InfoFlags.IsVarArgs : InfoFlags.None);
             }
         }
 
-        // Is the CORINFO_OPT_INIT_LOCALS bit set in the method info options?
+        /// <summary>Is the <see cref="CORINFO_OPT_INIT_LOCALS" /> bit set in the method info options?</summary>
         public bool compInitMem
         {
             readonly get
             {
-                return ((_bitfield >> 2) & 0x1) != 0;
+                return (_flags & InfoFlags.InitMem) != 0;
             }
 
             set
             {
-                _bitfield = (byte)((_bitfield & ~(0x1 << 2)) | ((value ? 1 : 0) << 2));
+                _flags = (_flags & ~InfoFlags.InitMem) | (value ? InfoFlags.InitMem : InfoFlags.None);
             }
         }
 
-        // JIT inserted a profiler Enter callback
+        /// <summary>JIT inserted a profiler Enter callback</summary>
         public bool compProfilerCallback
         {
             readonly get
             {
-                return ((_bitfield >> 3) & 0x1) != 0;
+                return (_flags & InfoFlags.ProfilerCallback) != 0;
             }
 
             set
             {
-                _bitfield = (byte)((_bitfield & ~(0x1 << 3)) | ((value ? 1 : 0) << 3));
+                _flags = (_flags & ~InfoFlags.ProfilerCallback) | (value ? InfoFlags.ProfilerCallback : InfoFlags.None);
             }
         }
 
-        // EAX captured in prolog will be available through an intrinsic
+        /// <summary>EAX captured in prolog will be available through an intrinsic</summary>
         public bool compPublishStubParam
         {
             readonly get
             {
-                return ((_bitfield >> 4) & 0x1) != 0;
+                return (_flags & InfoFlags.PublishStubParam) != 0;
             }
 
             set
             {
-                _bitfield = (byte)((_bitfield & ~(0x1 << 4)) | ((value ? 1 : 0) << 4));
+                _flags = (_flags & ~InfoFlags.PublishStubParam) | (value ? InfoFlags.PublishStubParam : InfoFlags.None);
             }
         }
 
-        // The NextCallReturnAddress intrinsic is used.
+        /// <summary>The NextCallReturnAddress intrinsic is used.</summary>
         public bool compHasNextCallRetAddr
         {
             readonly get
             {
-                return ((_bitfield >> 5) & 0x1) != 0;
+                return (_flags & InfoFlags.HasNextCallRetAddr) != 0;
             }
 
             set
             {
-                _bitfield = (byte)((_bitfield & ~(0x1 << 5)) | ((value ? 1 : 0) << 5));
+                _flags = (_flags & ~InfoFlags.HasNextCallRetAddr) | (value ? InfoFlags.HasNextCallRetAddr : InfoFlags.None);
             }
         }
 
-        // The AsyncCallContinuation intrinsic is used.
+        /// <summary>The AsyncCallContinuation intrinsic is used.</summary>
         public bool compUsesAsyncContinuation
         {
             readonly get
             {
-                return ((_bitfield >> 6) & 0x1) != 0;
+                return (_flags & InfoFlags.UsesAsyncContinuation) != 0;
             }
 
             set
             {
-                _bitfield = (byte)((_bitfield & ~(0x1 << 6)) | ((value ? 1 : 0) << 6));
+                _flags = (_flags & ~InfoFlags.UsesAsyncContinuation) | (value ? InfoFlags.UsesAsyncContinuation : InfoFlags.None);
             }
         }
 
-        // Return type of the method as declared in IL (including SIMD normalization)
+        /// <summary>Return type of the method as declared in IL (including SIMD normalization)</summary>
         public var_types compRetType;
 
-        // Normalized return type as per target arch ABI
+        /// <summary>Normalized return type as per target arch ABI</summary>
         public var_types compRetNativeType;
 
-        // Number of arguments (incl. implicit but not hidden)
+        /// <summary>Number of arguments (incl. implicit but not hidden)</summary>
         public uint compILargsCount;
 
-        // Number of arguments (incl. implicit and     hidden)
+        /// <summary>Number of arguments (incl. implicit and     hidden)</summary>
         public uint compArgsCount;
 
-        // position of hidden return param var (0, 1) (BAD_VAR_NUM means not present);
+        /// <summary>position of hidden return param var (0, 1) (BAD_VAR_NUM means not present);</summary>
         public uint compRetBuffArg;
 
-        // position of hidden param for type context for generic code (CORINFO_CALLCONV_PARAMTYPE)
+        /// <summary>position of hidden param for type context for generic code (<see cref="CORINFO_CALLCONV_PARAMTYPE" />)</summary>
         public uint compTypeCtxtArg;
 
-        // position of implicit this pointer param (not to be confused with lvaArg0Var)
+        /// <summary>position of implicit this pointer param (not to be confused with lvaArg0Var)</summary>
         public uint compThisArg;
 
-        // Number of vars : args + locals (incl. implicit but not hidden)
+        /// <summary>Number of vars : args + locals (incl. implicit but not hidden)</summary>
         public uint compILlocalsCount;
 
-        // Number of vars : args + locals (incl. implicit and     hidden)
+        /// <summary>Number of vars : args + locals (incl. implicit and     hidden)</summary>
         public uint compLocalsCount;
 
         public uint compMaxStack;
 
-        // Total number of bytes of Hot Code in the method
+        /// <summary>Total number of bytes of Hot Code in the method</summary>
         public UNATIVE_OFFSET compTotalHotCodeSize = 0;
 
-        // Total number of bytes of Cold Code in the method
+        /// <summary>Total number of bytes of Cold Code in the method</summary>
         public UNATIVE_OFFSET compTotalColdCodeSize = 0;
 
-        // count of unmanaged calls with GC transition.
+        /// <summary>count of unmanaged calls with GC transition.</summary>
         public uint compUnmanagedCallCountWithGCTransition;
 
-        // The entry-point calling convention for this method.
+        /// <summary>The entry-point calling convention for this method.</summary>
         public CorInfoCallConvExtension compCallConv;
 
-        // lclNum for the Frame root
+        /// <summary>lclNum for the Frame root</summary>
         public uint compLvFrameListRoot = BAD_VAR_NUM;
 
-        // Number of exception-handling clauses read in the method's IL.
-        // You should generally use compHndBBtabCount instead: it is the current number of EH clauses (after additions like synchronized methods and funclets, and removals like unreachable code deletion).
+        /// <summary>Number of exception-handling clauses read in the method's IL.</summary>
+        /// <remarks>You should generally use compHndBBtabCount instead: it is the current number of EH clauses (after additions like synchronized methods and funclets, and removals like unreachable code deletion).</remarks>
         public uint compXcptnsCount;                   
 
         public Target.ArgOrder compArgOrder;
 
-        // true if the VM is "matched": either the JIT is a cross-compiler and the VM expects that, or the JIT is a "self-host" compiler (e.g., x86 hosted targeting x86) and the VM expects that.
+        /// <summary>true if the VM is "matched": either the JIT is a cross-compiler and the VM expects that, or the JIT is a "self-host" compiler (e.g., x86 hosted targeting x86) and the VM expects that.</summary>
         public bool compMatchedVM = true;
 
         // The following holds IL scope information about local variables.
@@ -252,7 +254,7 @@ public partial class Compiler
 
         public ICorDebugInfo.BoundaryTypes compStmtOffsetsImplicit;
 
-        // Number of class profile probes in this method
+        /// <summary>Number of class profile probes in this method</summary>
         public uint compHandleHistogramProbeCount;
 
 #if TARGET_ARM64

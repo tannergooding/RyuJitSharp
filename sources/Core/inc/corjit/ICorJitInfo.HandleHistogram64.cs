@@ -3,8 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
@@ -15,15 +13,12 @@ public partial struct ICorJitInfo
     {
         public ulong Count;
 
-        private _HandleTable_e__FixedBuffer _handleTable;
-
-        [UnscopedRef]
-        public Span<nuint> HandleTable => _handleTable;
+        public HandleTableInlineArray HandleTable;
 
         [InlineArray(HandleHistogram32.SIZE)]
-        private struct _HandleTable_e__FixedBuffer
+        public struct HandleTableInlineArray
         {
-            public nuint e0;
+            public unsafe nuint e0;
         }
     }
 }

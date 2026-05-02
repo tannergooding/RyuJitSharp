@@ -1,0 +1,17 @@
+// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+#if FEATURE_SIMD
+namespace RyuJitSharp;
+
+public sealed class GenTreeVecCon : GenTree
+{
+    public GenTreeVecCon(var_types type)
+        : base(GT_CNS_VEC, type)
+    {
+        assert(varTypeIsSimd(type));
+    }
+}
+#endif

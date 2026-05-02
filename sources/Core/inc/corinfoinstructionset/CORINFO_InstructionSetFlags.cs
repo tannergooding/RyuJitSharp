@@ -14,7 +14,7 @@ public struct CORINFO_InstructionSetFlags
     private const int FlagsFieldCount = 2;
     private const int BitsPerFlagsField = sizeof(ulong) * 8;
 
-    private _flags_e__FixedBuffer _flags;
+    private flagsInlineArray _flags;
 
     public void Add(CORINFO_InstructionSetFlags other)
     {
@@ -43,7 +43,7 @@ public struct CORINFO_InstructionSetFlags
     }
 
     [UnscopedRef]
-    public Span<ulong> GetFlagsRaw() => _flags;
+    public ref flagsInlineArray GetFlagsRaw() => ref _flags;
 
     public readonly int GetInstructionFlagsFieldCount() => FlagsFieldCount;
 
@@ -235,7 +235,7 @@ public struct CORINFO_InstructionSetFlags
     }
 
     [InlineArray(FlagsFieldCount)]
-    private struct _flags_e__FixedBuffer
+    public struct flagsInlineArray
     {
         public ulong e0;
     }

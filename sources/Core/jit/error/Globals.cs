@@ -31,7 +31,7 @@ public partial class Globals
     private static void debugError(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, uint lineNumber)
     {
         var fileName = Path.GetFileName(filePath);
-        ref var logEnv = ref JitTls.GetLogEnv();
+        ref var logEnv = ref JitTls.LogEnv;
 
         var compiler = logEnv.compiler;
         assert(compiler is not null);
@@ -176,7 +176,7 @@ public partial class Globals
 #if MEASURE_NOWAY
     public static void RecordNowayAssertGlobal(ReadOnlySpan<char> filePath, uint lineNumber, ReadOnlySpan<char> message)
     {
-        if ((JitConfig[ConfigInteger.JitMeasureNowayAssert] == 1) && (JitTls.GetCompiler() is Compiler compiler))
+        if ((JitConfig[ConfigInteger.JitMeasureNowayAssert] == 1) && (JitTls.Compiler is Compiler compiler))
         {
             compiler.RecordNowayAssert(filePath, lineNumber, message);
         }
@@ -275,7 +275,7 @@ public partial class Globals
     // This can return based on Config flag/Debugger
     public static unsafe void notYetImplemented(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, uint lineNumber)
     {
-        var compiler = JitTls.GetCompiler();
+        var compiler = JitTls.Compiler;
 
         if ((compiler is null) || (compiler.opts.jitFlags->IsSet(JitFlag.JIT_FLAG_ALT_JIT)))
         {
@@ -285,7 +285,7 @@ public partial class Globals
 
 #if FUNC_INFO_LOGGING
 #if DEBUG
-        ref var logEnv = ref JitTls.GetLogEnv();
+        ref var logEnv = ref JitTls.LogEnv;
 
         if (logEnv.compiler is not null)
         {
@@ -293,7 +293,7 @@ public partial class Globals
 
             if (compiler.verbose)
             {
-                Console.WriteLine($"\n\n{compiler.info.compFullName} - NYI ({filePath}:{lineNumber} - {message})");
+                jitprintf($"\n\n{compiler.info.compFullName} - NYI ({filePath}:{lineNumber} - {message})\n");
             }
         }
 
@@ -392,7 +392,7 @@ public partial class Globals
     public static int getBreakOnBadCode() => JitConfig[ConfigInteger.JitBreakOnBadCode];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool ShouldThrowOnNoway() => (JitTls.GetCompiler() is not Compiler compiler) || compiler.compShouldThrowOnNoway();
+    private static bool ShouldThrowOnNoway() => (JitTls.Compiler is not Compiler compiler) || compiler.compShouldThrowOnNoway();
 
     private static void noWayAssertAbortHelper(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, uint lineNumber)
     {

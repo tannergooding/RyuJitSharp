@@ -9,7 +9,7 @@ public partial class Compiler
 {
     public struct Options
     {
-        // all flags passed from the EE
+        /// <summary>All flags passed from the EE</summary>
         public unsafe JitFlags* jitFlags;
     }
 }

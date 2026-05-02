@@ -86,7 +86,7 @@ public partial class Globals
                     assert(false, "Dump token reached");
                 }
 
-                Console.Write($"(Token=0x{s_currentLine:X})");
+                jitprintf($"(Token=0x{s_currentLine:X})");
                 s_forbidEntry = 0;
             }
         }
@@ -104,7 +104,7 @@ public partial class Globals
     {
         var message = reason;
 
-        ref var logEnv = ref JitTls.GetLogEnv();
+        ref var logEnv = ref JitTls.LogEnv;
         var phaseName = "unknown phase";
 
         if (logEnv.compiler is not null)
@@ -132,9 +132,7 @@ public partial class Globals
             }
         }
 
-        var compiler = JitTls.GetCompiler();
-
-        if (compiler is not null && compiler.opts.jitFlags->IsSet(JitFlag.JIT_FLAG_ALT_JIT))
+        if ((JitTls.Compiler is Compiler compiler) && compiler.opts.jitFlags->IsSet(JitFlag.JIT_FLAG_ALT_JIT))
         {
             // If we hit an assert, and we got here, it's either because the user hit "ignore" on the
             // dialog pop-up, or they set DOTNET_ContinueOnAssert=1 to not emit a pop-up, but just continue.

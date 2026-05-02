@@ -3,8 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
@@ -32,10 +30,7 @@ public struct CORINFO_RUNTIME_LOOKUP
 
     public ushort sizeOffset;
 
-    private _offsets_e__FixedBuffer _offsets;
-
-    [UnscopedRef]
-    public Span<nuint> offsets => _offsets;
+    public offsetsInlineArray offsets;
 
     /// <summary>If set, first offset is indirect.</summary>
     /// <remarks>
@@ -55,7 +50,7 @@ public struct CORINFO_RUNTIME_LOOKUP
     public CORINFO_CONST_LOOKUP helperEntryPoint;
 
     [InlineArray(CORINFO_MAXINDIRECTIONS)]
-    private struct _offsets_e__FixedBuffer
+    public struct offsetsInlineArray
     {
         public nuint e0;
     }

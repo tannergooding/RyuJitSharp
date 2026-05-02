@@ -3,11 +3,11 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+#if TARGET_LOONGARCH64
 namespace RyuJitSharp;
 
 public partial class Globals
 {
-#if TARGET_LOONGARCH64
     public const int TARGET_POINTER_SIZE = 8;
-#endif
 }
+#endif

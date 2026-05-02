@@ -55,7 +55,7 @@ public partial struct CORJIT_FLAGS
 
     /// <summary>DO NOT USE THIS FUNCTION! (except in very restricted special cases)</summary>
     [UnscopedRef]
-    public Span<ulong> GetInstructionSetFlagsRaw() => instructionSetFlags.GetFlagsRaw();
+    public ref CORINFO_InstructionSetFlags.flagsInlineArray GetInstructionSetFlagsRaw() => ref instructionSetFlags.GetFlagsRaw();
 
     public readonly bool IsEmpty() => (corJitFlags == 0) && instructionSetFlags.IsEmpty();
 

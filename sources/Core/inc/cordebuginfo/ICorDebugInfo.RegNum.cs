@@ -14,7 +14,6 @@ public partial struct ICorDebugInfo
 
     public enum RegNum
     {
-
 #if TARGET_X86
         REGNUM_EAX,
         REGNUM_ECX,
