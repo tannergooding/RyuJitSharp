@@ -41,6 +41,8 @@ public enum genTreeOps
 
     GT_ASYNC_RESUME_INFO,
 
+    GT_FTN_ENTRY,
+
     GT_CNS_INT,
 
     GT_CNS_LNG,
@@ -121,6 +123,8 @@ public enum genTreeOps
 
     GT_LZCNT,
 
+    GT_NONLOCAL_JMP,
+
     GT_NOT,
 
     GT_NEG,
@@ -189,7 +193,7 @@ public enum genTreeOps
 
     GT_LEA,
 
-#if !TARGET_64BIT
+#if TARGET_32BIT
     GT_LONG,
 
     GT_ADD_LO,
@@ -213,7 +217,7 @@ public enum genTreeOps
 
     GT_MULHI,
 
-#if !TARGET_64BIT || TARGET_ARM64
+#if TARGET_32BIT || TARGET_ARM64
     GT_MUL_LONG,
 #endif
 
@@ -302,6 +306,10 @@ public enum genTreeOps
     GT_NO_OP,
 
     GT_RETURN_SUSPEND,
+
+    GT_PATCHPOINT,
+
+    GT_PATCHPOINT_FORCED,
 
     GT_START_NONGC,
 

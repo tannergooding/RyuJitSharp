@@ -466,7 +466,7 @@ public partial class Compiler
         // Do we have a matched VM? Or are we "abusing" the VM to help us do JIT work (such as using an x86 native VM
         // with an ARM-targeting "altjit").
         // Match CPU/ABI for compMatchedVM
-        info.compMatchedVM = (CorInfoArch)(info.compCompHnd->getExpectedTargetArchitecture()) == CORINFO_ARCH_TARGET;
+        info.compMatchedVM = info.compCompHnd->getExpectedTargetArchitecture() == CORINFO_ARCH_TARGET;
 
         // Match OS for compMatchedVM
         var eeInfo = eeGetEEInfo();
@@ -788,7 +788,7 @@ public partial class Compiler
     }
 
 #if MEASURE_NOWAY
-    public void RecordNowayAssert(ReadOnlySpan<char> filePath, uint line, ReadOnlySpan<char> message)
+    public void RecordNowayAssert(ReadOnlySpan<char> filePath, int lineNumber, ReadOnlySpan<char> message)
     {
         // TODO: Port RecordNowayAssert
     }

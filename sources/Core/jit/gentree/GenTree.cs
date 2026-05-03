@@ -302,7 +302,7 @@ public abstract partial class GenTree
     }
 
     /// <summary>Is this node an integer constant that fits in a 32-bit signed integer</summary>
-#if !TARGET_64BIT
+#if TARGET_32BIT
     public bool IsIntCnsFitsInI32 => _oper.IsCnsIntOrI && AsIntCon().FitsInI32;
 #else
     public bool IsIntCnsFitsInI32 => _oper.IsCnsIntOrI;
@@ -324,7 +324,7 @@ public abstract partial class GenTree
                     value = long.Abs(value);
                 }
 
-                result = ulong.IsPow2((ulong)(value));
+                result = ulong.IsPow2(unchecked((ulong)(value)));
             }
 
             return result;
@@ -335,7 +335,7 @@ public abstract partial class GenTree
     public bool IsIntegralConstPow2 => _oper.IsIntegralConst && long.IsPow2(AsIntConCommon().IntegralValue);
 
     /// <summary>Determines whether the unsigned value of an integral constant is the power of 2.</summary>
-    public bool IsIntegralConstUnsignedPow2 => _oper.IsIntegralConst && ulong.IsPow2((ulong)(AsIntConCommon().IntegralValue));
+    public bool IsIntegralConstUnsignedPow2 => _oper.IsIntegralConst && ulong.IsPow2(unchecked((ulong)(AsIntConCommon().IntegralValue)));
 
 #if DEBUG
     public bool IsLirOp
@@ -382,7 +382,7 @@ public abstract partial class GenTree
             }
 #endif
 
-#if FEATURE_MULTIREG_RET && !TARGET_64BIT
+#if FEATURE_MULTIREG_RET && TARGET_32BIT
             if (OperIsMultiRegOp())
             {
                 return AsMultiRegOp().RegCount > 1;
@@ -717,7 +717,7 @@ public abstract partial class GenTree
 
     public GenTreeOpCC AsOpCC() => Unsafe.As<GenTreeOpCC>(this);
 
-#if !TARGET_64BIT
+#if TARGET_32BIT
     public GenTreeMultiRegOp AsMultiRegOp() => Unsafe.As<GenTreeMultiRegOp>(this);
 #endif
 
@@ -1101,7 +1101,7 @@ public abstract partial class GenTree
         _costsInitialized = true;
 #endif
 
-        _costEx = (costEx > MAX_COST) ? MAX_COST : (byte)(costEx);
-        _costSz = (costSz > MAX_COST) ? MAX_COST : (byte)(costSz);
+        _costEx = (costEx > MAX_COST) ? MAX_COST : unchecked((byte)(costEx));
+        _costSz = (costSz > MAX_COST) ? MAX_COST : unchecked((byte)(costSz));
     }
 }

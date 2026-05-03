@@ -104,7 +104,7 @@ public partial class Globals
 #endif
 
     [Conditional("DEBUG")]
-    public static unsafe void assertAbort(ReadOnlySpan<char> reason, ReadOnlySpan<char> filePath, uint lineNumber)
+    public static unsafe void assertAbort(ReadOnlySpan<char> reason, ReadOnlySpan<char> filePath, int lineNumber)
     {
 #if DEBUG
         var message = reason;
@@ -112,16 +112,19 @@ public partial class Globals
         ref var logEnv = ref JitTls.LogEnv;
         var phaseName = "unknown phase";
 
-        if (logEnv.Compiler is not null)
+        var isStartupAssert = Unsafe.IsNullRef(ref logEnv);
+        var compiler = !isStartupAssert ? logEnv.Compiler : null;
+
+        if (compiler is not null)
         {
-            phaseName = PhaseNames[(int)(logEnv.Compiler.mostRecentlyActivePhase)];
-            message = $"Assertion failed '{reason}' in '{logEnv.Compiler.info.compFullName}' during '{phaseName}' (IL size {logEnv.Compiler.info.compILCodeSize}; hash 0x{logEnv.Compiler.info.compMethodHash():X8)}; {logEnv.Compiler.compGetTieringName(wantShortName: true)})\n";
+            phaseName = PhaseNames[(int)(compiler.mostRecentlyActivePhase)];
+            message = $"Assertion failed '{reason}' in '{compiler.info.compFullName}' during '{phaseName}' (IL size {compiler.info.compILCodeSize}; hash 0x{compiler.info.compMethodHash():X8)}; {compiler.compGetTieringName(wantShortName: true)})\n";
         }
 
 #if FUNC_INFO_LOGGING
         if (Compiler.compJitFuncInfoFile is StreamWriter compJitFuncInfoFile)
         {
-            compJitFuncInfoFile.WriteLine($"{((logEnv.Compiler is null) ? "UNKNOWN" : logEnv.Compiler.info.compFullName)} - Assertion failed ({filePath}:{lineNumber} - {reason}) during {phaseName}");
+            compJitFuncInfoFile.WriteLine($"{((compiler is null) ? "UNKNOWN" : compiler.info.compFullName)} - Assertion failed ({filePath}:{lineNumber} - {reason}) during {phaseName}");
         }
 #endif // FUNC_INFO_LOGGING
 
@@ -131,14 +134,20 @@ public partial class Globals
             fixed (byte* pUtf8FilePath = utf8FilePath)
             fixed (byte* pUtf8Message = utf8Message)
             {
-                if (logEnv.JitInfo->doAssert(pUtf8FilePath, (int)(lineNumber), pUtf8Message) != 0)
+                if (isStartupAssert)
+                {
+                    Debug.Fail($"Assertion failed ({filePath}:{lineNumber} - {reason}) during startup");
+                }
+                else if (logEnv.JitInfo->doAssert(pUtf8FilePath, lineNumber, pUtf8Message) != 0)
                 {
                     Debugger.Break();
                 }
             }
         }
 
-        if ((JitTls.Compiler is Compiler compiler) && compiler.opts.jitFlags->IsSet(JitFlag.JIT_FLAG_ALT_JIT))
+        compiler = JitTls.Compiler;
+
+        if ((compiler is not null) && compiler.opts.jitFlags->IsSet(JitFlag.JIT_FLAG_ALT_JIT))
         {
             // If we hit an assert, and we got here, it's either because the user hit "ignore" on the
             // dialog pop-up, or they set DOTNET_ContinueOnAssert=1 to not emit a pop-up, but just continue.
@@ -157,7 +166,7 @@ public partial class Globals
     }
 
     [Conditional("DEBUG")]
-    public static void assert([DoesNotReturnIf(false)] bool condition, [CallerArgumentExpression(nameof(condition))] string conditionExpression = "", [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] uint lineNumber = 0)
+    public static void assert([DoesNotReturnIf(false)] bool condition, [CallerArgumentExpression(nameof(condition))] string conditionExpression = "", [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
     {
         if (!condition)
         {

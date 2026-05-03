@@ -303,11 +303,11 @@ public partial class Globals
     // For the following specially handled FIELD_HANDLES we need
     //   values that are negative and have the low two bits zero
     // See eeFindJitDataOffs and eeGetJitDataOffs in Compiler.hpp
-    public static unsafe CORINFO_FIELD_HANDLE FLD_GLOBAL_DS => (CORINFO_FIELD_HANDLE)(-4);
+    public static unsafe CORINFO_FIELD_HANDLE FLD_GLOBAL_DS => unchecked((CORINFO_FIELD_HANDLE)(-4));
 
-    public static unsafe CORINFO_FIELD_HANDLE FLD_GLOBAL_FS => (CORINFO_FIELD_HANDLE)(-8);
+    public static unsafe CORINFO_FIELD_HANDLE FLD_GLOBAL_FS => unchecked((CORINFO_FIELD_HANDLE)(-8));
 
-    public static unsafe CORINFO_FIELD_HANDLE FLD_GLOBAL_GS => (CORINFO_FIELD_HANDLE)(-12);
+    public static unsafe CORINFO_FIELD_HANDLE FLD_GLOBAL_GS => unchecked((CORINFO_FIELD_HANDLE)(-12));
 
     // offset of vtable pointer from obj ptr
     public const int VPTR_OFFS = 0;
@@ -522,7 +522,7 @@ public partial class Globals
 
             case ShortInlineI:
             {
-                var iOp = (sbyte)(opcodePtr[0]);
+                var iOp = unchecked((sbyte)(opcodePtr[0]));
                 operand = $" 0x{iOp:X}";
                 break;
             }
@@ -570,7 +570,7 @@ public partial class Globals
 
             case ShortInlineBrTarget:
             {
-                var jOp = (sbyte)(opcodePtr[0]);
+                var jOp = unchecked((sbyte)(opcodePtr[0]));
                 operand = $" {jOp} (IL_{baseOffs + jOp:X4})";
                 break;
             }

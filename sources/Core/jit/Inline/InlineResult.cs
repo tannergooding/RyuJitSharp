@@ -137,6 +137,9 @@ public sealed class InlineResult
     public void NoteInt(InlineObservation observation, int value)
         => m_Policy.NoteInt(observation, value);
 
+    public void NoteInt(InlineObservation observation, uint value)
+        => m_Policy.NoteInt(observation, (int)(value));
+
     /// <summary>NoteSuccess means the all the various checks have passed and the inline can happen.</summary>
     public void NoteSuccess()
     {

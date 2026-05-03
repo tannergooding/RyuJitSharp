@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
 
@@ -44,8 +45,7 @@ public sealed class JitTls : IDisposable
         get
         {
             var jitTls = t_jitTls;
-            assert(jitTls is not null);
-            return jitTls._compiler;
+            return jitTls?._compiler;
         }
 
         set
@@ -61,8 +61,7 @@ public sealed class JitTls : IDisposable
         get
         {
             var jitTls = t_jitTls;
-            assert(jitTls is not null);
-            return ref jitTls._logEnv;
+            return ref ((jitTls is not null) ? ref jitTls._logEnv : ref Unsafe.NullRef<LogEnv>());
         }
     }
 

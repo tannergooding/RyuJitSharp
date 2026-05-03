@@ -75,6 +75,7 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
 
         init
         {
+            assert(!IsUserCall);
             Flags |= (GTF_HW_USER_CALL | GTF_EXCEPT | GTF_CALL);
             _methodHandle = value;
         }
@@ -113,18 +114,18 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
     /// <returns>Returns regNumber assigned to i'th position.</returns>
     public regNumber GetRegNumByIdx(byte idx)
     {
-#if TARGET_ARM64
-        assert(idx < MAX_MULTIREG_COUNT);
-
         if (idx == 0)
         {
             return RegNum;
         }
 
+#if TARGET_ARM64
+        assert(idx < MAX_MULTIREG_COUNT);
+
         if (NeedsConsecutiveRegisters)
         {
             assert(IsMultiRegNode);
-            return (regNumber)(RegNum + idx);
+            return RegNum + idx;
         }
 #endif
 
@@ -152,7 +153,7 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
         if (NeedsConsecutiveRegisters)
         {
             assert(IsMultiRegNode);
-            assert(reg == (regNumber)(RegNum + idx));
+            assert(reg == (RegNum + idx));
             return;
         }
 #endif

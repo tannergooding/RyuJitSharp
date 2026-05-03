@@ -36,7 +36,7 @@ public abstract class GenTreeIntConCommon : GenTree
     {
         get
         {
-#if !TARGET_64BIT
+#if TARGET_32BIT
             if (OperIs(GT_CNS_LNG))
             {
                 return _value.Lcon
@@ -49,7 +49,7 @@ public abstract class GenTreeIntConCommon : GenTree
 
         set
         {
-#if !TARGET_64BIT
+#if TARGET_32BIT
             if (OperIs(GT_CNS_LNG))
             {
                 _value.Lcon = value;
@@ -68,7 +68,7 @@ public abstract class GenTreeIntConCommon : GenTree
     {
         get
         {
-#if !TARGET_64BIT
+#if TARGET_32BIT
             assert(Debugger.IsAttached || Oper.IsLong);
             return _value.Lcon;
 #else
@@ -79,7 +79,7 @@ public abstract class GenTreeIntConCommon : GenTree
 
         set
         {
-#if !TARGET_64BIT
+#if TARGET_32BIT
             assert(Oper.IsLong);
             _value.Lcon = value;
 #else

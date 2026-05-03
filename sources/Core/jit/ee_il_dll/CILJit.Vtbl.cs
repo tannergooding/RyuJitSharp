@@ -12,6 +12,14 @@ namespace RyuJitSharp;
 public unsafe partial struct CILJit
 {
     private static readonly ICorJitCompiler.Vtbl* s_vtbl = InitVtbl();
+    private static readonly CILJit* s_instance = CreateInstance();
+
+    private static CILJit* CreateInstance()
+    {
+        var instance = (CILJit*)(RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(CILJit), sizeof(CILJit)));
+        instance->lpVtbl = s_vtbl;
+        return instance;
+    }
 
     private static ICorJitCompiler.Vtbl* InitVtbl()
     {

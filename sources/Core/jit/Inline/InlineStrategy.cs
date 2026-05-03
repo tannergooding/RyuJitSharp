@@ -38,6 +38,7 @@ public sealed class InlineStrategy
     private uint m_MaxInlineSize;
     private uint m_MaxInlineDepth;
     private uint m_MaxForceInlineDepth;
+    private uint m_OverBudgetIntrinsicInlineCount;
     private int m_InitialTimeBudget;
     private int m_InitialTimeEstimate;
     private int m_CurrentTimeBudget;
@@ -66,7 +67,7 @@ public sealed class InlineStrategy
         //
         // Default value of JitInlineSize is the same as our default.
         // So normally this next line does not change the size.
-        m_MaxInlineSize = (uint)(JitConfig[ConfigInteger.JitInlineSize]);
+        m_MaxInlineSize = unchecked((uint)(JitConfig[ConfigInteger.JitInlineSize]));
 
         // Up the max size under stress
         if (m_compiler.compInlineStress())
@@ -88,7 +89,7 @@ public sealed class InlineStrategy
         //
         // Default value of JitInlineDepth is the same as our default.
         // So normally this next line does not change the size.
-        m_MaxInlineDepth = (uint)(JitConfig[ConfigInteger.JitInlineDepth]);
+        m_MaxInlineDepth = unchecked((uint)(JitConfig[ConfigInteger.JitInlineDepth]));
 
         // But don't overdo it
         if (m_MaxInlineDepth > IMPLEMENTATION_MAX_INLINE_DEPTH)
@@ -100,7 +101,7 @@ public sealed class InlineStrategy
         //
         // Default value of JitForceInlineDepth is the same as our default.
         // So normally this next line does not change the size.
-        m_MaxForceInlineDepth = (uint)(JitConfig[ConfigInteger.JitForceInlineDepth]);
+        m_MaxForceInlineDepth = unchecked((uint)(JitConfig[ConfigInteger.JitForceInlineDepth]));
 
         // But don't overdo it
         if (m_MaxForceInlineDepth > m_MaxInlineDepth)

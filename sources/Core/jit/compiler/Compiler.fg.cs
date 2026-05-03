@@ -62,7 +62,7 @@ public partial class Compiler
     /// <summary>The max bbNum that has been assigned to basic blocks</summary>
     public uint fgBBNumMax;
 
-#if !TARGET_WASM
+#if TARGET_WASM
     public List<WasmInterval>? fgWasmIntervals;
 
     public BasicBlock[]? fgIndexToBlockMap;
@@ -70,6 +70,8 @@ public partial class Compiler
     public bool fgWasmHasCatchResumptions;
 
     public FlowGraphTryRegions? fgTryRegions;
+
+    public EHClauseInfo fgWasmEHInfo;
 #endif
 
     public bool fgBBVarSetsInited;

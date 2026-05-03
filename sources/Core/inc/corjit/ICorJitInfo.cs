@@ -327,6 +327,8 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
     public void getFunctionEntryPoint(CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult, CORINFO_ACCESS_FLAGS accessFlags = CORINFO_ACCESS_ANY) => lpVtbl->getFunctionEntryPoint((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn, pResult, accessFlags);
 
+    public void getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, bool isUnsafeFunctionPointer, CORINFO_CONST_LOOKUP* pResult) => lpVtbl->getFunctionFixedEntryPoint((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn, isUnsafeFunctionPointer, pResult);
+
     public CORINFO_MODULE_HANDLE embedModuleHandle(CORINFO_MODULE_HANDLE handle, void** ppIndirection = null) => lpVtbl->embedModuleHandle((ICorJitInfo*)Unsafe.AsPointer(ref this), handle, ppIndirection);
 
     public CORINFO_CLASS_HANDLE embedClassHandle(CORINFO_CLASS_HANDLE handle, void** ppIndirection = null) => lpVtbl->embedClassHandle((ICorJitInfo*)Unsafe.AsPointer(ref this), handle, ppIndirection);
@@ -420,7 +422,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
     public ushort getRelocTypeHint(void* target) => lpVtbl->getRelocTypeHint((ICorDynamicInfo*)Unsafe.AsPointer(ref this), target);
 
-    public uint getExpectedTargetArchitecture() => lpVtbl->getExpectedTargetArchitecture((ICorDynamicInfo*) Unsafe.AsPointer(ref this));
+    public CorInfoArch getExpectedTargetArchitecture() => lpVtbl->getExpectedTargetArchitecture((ICorDynamicInfo*) Unsafe.AsPointer(ref this));
 
     public uint getJitFlags(CORJIT_FLAGS* flags, uint sizeInBytes) => lpVtbl->getJitFlags((ICorDynamicInfo*)Unsafe.AsPointer(ref this), flags, sizeInBytes);
 
@@ -552,7 +554,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
         // is cross-compiling (such as the case for crossgen), it will return a
         // different value than if it was compiling for the host architecture.
         //
-        uint getExpectedTargetArchitecture();
+        CorInfoArch getExpectedTargetArchitecture();
 
         // Fetches extended flags for a particular compilation instance. Returns
         // the number of bytes written to the provided buffer.
@@ -872,6 +874,8 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, CORINFO_CONST_LOOKUP*, CORINFO_ACCESS_FLAGS, void> getFunctionEntryPoint;
 
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, bool, CORINFO_CONST_LOOKUP*, void> getFunctionFixedEntryPoint;
+
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_MODULE_HANDLE, void**, CORINFO_MODULE_HANDLE> embedModuleHandle;
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, void**, CORINFO_CLASS_HANDLE> embedClassHandle;
@@ -962,7 +966,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, void*, ushort> getRelocTypeHint;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, uint> getExpectedTargetArchitecture;
+        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CorInfoArch> getExpectedTargetArchitecture;
 
         public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CORJIT_FLAGS*, uint, uint> getJitFlags;
     }

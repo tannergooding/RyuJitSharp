@@ -87,7 +87,7 @@ public partial class Compiler
             // Helpers are marked by the fact that they are odd numbers
             return CORINFO_HELP_UNDEF;
         }
-        return (CorInfoHelpFunc)((nuint)(method) >> 2);
+        return unchecked((CorInfoHelpFunc)((nuint)(method) >> 2));
     }
 
     /// <summary>Get a string describing a method.</summary>
@@ -217,7 +217,7 @@ public partial class Compiler
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
         static void NativeShim(void* parameter)
         {
-            var functionHandle = GCHandle<Action>.FromIntPtr((nint)(parameter));
+            var functionHandle = GCHandle<Action>.FromIntPtr(unchecked((nint)(parameter)));
             functionHandle.Target();
         }
     }

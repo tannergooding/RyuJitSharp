@@ -49,7 +49,7 @@ public partial class Globals
     /// <summary>Return 1-based AssertionIndex from 0-based int index.</summary>
     /// <param name="index">0-based index</param>
     /// <returns>1-based AssertionIndex</returns>
-    public static AssertionIndex GetAssertionIndex(ushort index) => (AssertionIndex)(index + 1);
+    public static AssertionIndex GetAssertionIndex(ushort index) => unchecked((AssertionIndex)(index + 1));
 
     /// <summary>Get spill flag associated with the return register specified by its index.</summary>
     /// <param name="flags"></param>

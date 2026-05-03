@@ -49,6 +49,8 @@ public struct PatchpointInfo
         m_keptAliveThisOffset = -1;
         m_securityCookieOffset = -1;
         m_monitorAcquiredOffset = -1;
+        m_asyncExecutionContextOffset = -1;
+        m_asyncSynchronizationContextOffset = -1;
     }
 
     // Copy
@@ -60,6 +62,8 @@ public struct PatchpointInfo
         m_keptAliveThisOffset = original->m_keptAliveThisOffset;
         m_securityCookieOffset = original->m_securityCookieOffset;
         m_monitorAcquiredOffset = original->m_monitorAcquiredOffset;
+        m_asyncExecutionContextOffset = original->m_asyncExecutionContextOffset;
+        m_asyncSynchronizationContextOffset = original->m_asyncSynchronizationContextOffset;
 
         for (uint i = 0; i < original->m_numberOfLocals; i++)
         {

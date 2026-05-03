@@ -39,4 +39,10 @@ public struct CORINFO_ASYNC_INFO
 
     /// <summary>Method handle for AsyncHelpers.RestoreContextsOnSuspension, used before suspending in async methods</summary>
     public unsafe CORINFO_METHOD_HANDLE restoreContextsOnSuspensionMethHnd;
+
+    /// <summary>Finish suspension without saving continuation context (i.e. custom awaiter or ConfigureAwait(false))</summary>
+    public unsafe CORINFO_METHOD_HANDLE finishSuspensionNoContinuationContextMethHnd;
+
+    /// <summary>Finish suspension with saving continuation context (i.e. normal task await)</summary>
+    public unsafe CORINFO_METHOD_HANDLE finishSuspensionWithContinuationContextMethHnd;
 }

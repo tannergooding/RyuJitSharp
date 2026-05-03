@@ -320,6 +320,8 @@ public unsafe struct ICorDynamicInfo : ICorDynamicInfo.Interface
 
     public void getFunctionEntryPoint(CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult, CORINFO_ACCESS_FLAGS accessFlags = CORINFO_ACCESS_ANY) => lpVtbl->getFunctionEntryPoint((ICorDynamicInfo*)Unsafe.AsPointer(ref this), ftn, pResult, accessFlags);
 
+    public void getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, bool isUnsafeFunctionPointer, CORINFO_CONST_LOOKUP* pResult) => lpVtbl->getFunctionFixedEntryPoint((ICorDynamicInfo*)Unsafe.AsPointer(ref this), ftn, isUnsafeFunctionPointer, pResult);
+
     public CORINFO_MODULE_HANDLE embedModuleHandle(CORINFO_MODULE_HANDLE handle, void** ppIndirection = null) => lpVtbl->embedModuleHandle((ICorDynamicInfo*)Unsafe.AsPointer(ref this), handle, ppIndirection);
 
     public CORINFO_CLASS_HANDLE embedClassHandle(CORINFO_CLASS_HANDLE handle, void** ppIndirection = null) => lpVtbl->embedClassHandle((ICorDynamicInfo*)Unsafe.AsPointer(ref this), handle, ppIndirection);
@@ -413,6 +415,8 @@ public unsafe struct ICorDynamicInfo : ICorDynamicInfo.Interface
         // may return a different value (depending on whether the method has
         // been JITed or not.
         void getFunctionEntryPoint(CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult, CORINFO_ACCESS_FLAGS accessFlags = CORINFO_ACCESS_ANY);
+
+        void getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, bool isUnsafeFunctionPointer, CORINFO_CONST_LOOKUP* pResult);
 
         CORINFO_MODULE_HANDLE embedModuleHandle(CORINFO_MODULE_HANDLE handle, void** ppIndirection = null);
 
@@ -843,6 +847,8 @@ public unsafe struct ICorDynamicInfo : ICorDynamicInfo.Interface
         public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CorInfoHelpFunc, CORINFO_CONST_LOOKUP*, CORINFO_METHOD_HANDLE*, void*> getHelperFtn;
 
         public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CORINFO_METHOD_HANDLE, CORINFO_CONST_LOOKUP*, CORINFO_ACCESS_FLAGS, void> getFunctionEntryPoint;
+
+        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CORINFO_METHOD_HANDLE, bool, CORINFO_CONST_LOOKUP*, void> getFunctionFixedEntryPoint;
 
         public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CORINFO_MODULE_HANDLE, void**, CORINFO_MODULE_HANDLE> embedModuleHandle;
 

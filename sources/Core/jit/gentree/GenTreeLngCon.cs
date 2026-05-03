@@ -13,7 +13,7 @@ public sealed class GenTreeLngCon : GenTreeIntConCommon
         LngValue = val;
     }
 
-    public int HiVal => (int)(_value.Lcon >>> 32);
+    public int HiVal => unchecked((int)(_value.Lcon >>> 32));
 
     public long LconValue
     {
@@ -28,5 +28,5 @@ public sealed class GenTreeLngCon : GenTreeIntConCommon
         }
     }
 
-    public int LoVal => (int)(_value.Lcon);
+    public int LoVal => unchecked((int)(_value.Lcon));
 }

@@ -28,6 +28,7 @@ public static class genTreeOpsExtensions
         GTK_LEAF,                                   // GT_RET_EXPR
         GTK_LEAF|GTK_NOVALUE,                       // GT_GCPOLL
         GTK_LEAF,                                   // GT_ASYNC_RESUME_INFO
+        GTK_LEAF,                                   // GT_FTN_ENTRY
         GTK_LEAF,                                   // GT_CNS_INT
         GTK_LEAF,                                   // GT_CNS_LNG
         GTK_LEAF,                                   // GT_CNS_DBL
@@ -73,6 +74,7 @@ public static class genTreeOpsExtensions
         GTK_UNOP,                                   // GT_BSWAP
         GTK_UNOP,                                   // GT_BSWAP16
         GTK_UNOP,                                   // GT_LZCNT
+        GTK_UNOP|GTK_NOVALUE,                       // GT_NONLOCAL_JMP
         GTK_UNOP,                                   // GT_NOT
         GTK_UNOP,                                   // GT_NEG
         GTK_BINOP,                                  // GT_OR
@@ -111,7 +113,7 @@ public static class genTreeOpsExtensions
         GTK_BINOP|GTK_EXOP,                         // GT_INDEX_ADDR
         GTK_BINOP|GTK_EXOP,                         // GT_LEA
 
-#if !TARGET_64BIT
+#if TARGET_32BIT
         GTK_BINOP,                                  // GT_LONG
         GTK_BINOP,                                  // GT_ADD_LO
         GTK_BINOP,                                  // GT_ADD_HI
@@ -128,7 +130,7 @@ public static class genTreeOpsExtensions
         GTK_UNOP,                                   // GT_INC_SATURATE
         GTK_BINOP,                                  // GT_MULHI
 
-#if !TARGET_64BIT || TARGET_ARM64
+#if TARGET_32BIT || TARGET_ARM64
         GTK_BINOP|GTK_COMMUTE,                      // GT_MUL_LONG
 #endif
 
@@ -188,6 +190,8 @@ public static class genTreeOpsExtensions
         GTK_UNOP|GTK_NOVALUE,                       // GT_SWITCH
         GTK_LEAF|GTK_NOVALUE,                       // GT_NO_OP
         GTK_UNOP|GTK_NOVALUE,                       // GT_RETURN_SUSPEND
+        GTK_BINOP|GTK_NOVALUE,                      // GT_PATCHPOINT
+        GTK_UNOP|GTK_NOVALUE,                       // GT_PATCHPOINT_FORCED
         GTK_LEAF|GTK_NOVALUE,                       // GT_START_NONGC
         GTK_LEAF|GTK_NOVALUE,                       // GT_START_PREEMPTGC
         GTK_LEAF|GTK_NOVALUE,                       // GT_PROF_HOOK
@@ -234,6 +238,7 @@ public static class genTreeOpsExtensions
         DBK_NOTLIR,                 // GT_RET_EXPR
         DBK_NOTLIR,                 // GT_GCPOLL
         DBK_NONE,                   // GT_ASYNC_RESUME_INFO
+        DBK_NONE,                   // GT_FTN_ENTRY
         DBK_NONE,                   // GT_CNS_INT
         DBK_NONE,                   // GT_CNS_LNG
         DBK_NONE,                   // GT_CNS_DBL
@@ -279,6 +284,7 @@ public static class genTreeOpsExtensions
         DBK_NONE,                   // GT_BSWAP
         DBK_NONE,                   // GT_BSWAP16
         DBK_NONE,                   // GT_LZCNT
+        DBK_NONE,                   // GT_NONLOCAL_JMP
         DBK_NONE,                   // GT_NOT
         DBK_NONE,                   // GT_NEG
         DBK_NONE,                   // GT_OR
@@ -317,7 +323,7 @@ public static class genTreeOpsExtensions
         DBK_NONE,                   // GT_INDEX_ADDR
         DBK_NOTHIR,                 // GT_LEA
 
-#if !TARGET_64BIT
+#if TARGET_32BIT
         DBK_NOTHIR,                 // GT_LONG
         DBK_NOTHIR,                 // GT_ADD_LO
         DBK_NOTHIR,                 // GT_ADD_HI
@@ -334,7 +340,7 @@ public static class genTreeOpsExtensions
         DBK_NOTHIR,                 // GT_INC_SATURATE
         DBK_NOTHIR,                 // GT_MULHI
 
-#if !TARGET_64BIT || TARGET_ARM64
+#if TARGET_32BIT || TARGET_ARM64
         DBK_NOTHIR,                 // GT_MUL_LONG
 #endif
 
@@ -394,6 +400,8 @@ public static class genTreeOpsExtensions
         DBK_NONE,                   // GT_SWITCH
         DBK_NONE,                   // GT_NO_OP
         DBK_NONE,                   // GT_RETURN_SUSPEND
+        DBK_NONE,                   // GT_PATCHPOINT
+        DBK_NONE,                   // GT_PATCHPOINT_FORCED
         DBK_NOTHIR,                 // GT_START_NONGC
         DBK_NOTHIR,                 // GT_START_PREEMPTGC
         DBK_NOTHIR,                 // GT_PROF_HOOK
@@ -441,6 +449,7 @@ public static class genTreeOpsExtensions
         nameof(GenTreeRetExpr),         // GT_RET_EXPR
         nameof(GenTree),                // GT_GCPOLL
         nameof(GenTreeVal),             // GT_ASYNC_RESUME_INFO
+        nameof(GenTree),                // GT_FTN_ENTRY
         nameof(GenTreeIntCon),          // GT_CNS_INT
         nameof(GenTreeLngCon),          // GT_CNS_LNG
         nameof(GenTreeDblCon),          // GT_CNS_DBL
@@ -486,6 +495,7 @@ public static class genTreeOpsExtensions
         nameof(GenTreeOp),              // GT_BSWAP
         nameof(GenTreeOp),              // GT_BSWAP16
         nameof(GenTreeOp),              // GT_LZCNT
+        nameof(GenTreeOp),              // GT_NONLOCAL_JMP
         nameof(GenTreeOp),              // GT_NOT
         nameof(GenTreeOp),              // GT_NEG
         nameof(GenTreeOp),              // GT_OR
@@ -524,7 +534,7 @@ public static class genTreeOpsExtensions
         nameof(GenTreeIndexAddr),       // GT_INDEX_ADDR
         nameof(GenTreeAddrMode),        // GT_LEA
 
-#if !TARGET_64BIT
+#if TARGET_32BIT
         nameof(GenTreeOp),              // GT_LONG
         nameof(GenTreeOp),              // GT_ADD_LO
         nameof(GenTreeOp),              // GT_ADD_HI
@@ -541,7 +551,7 @@ public static class genTreeOpsExtensions
         nameof(GenTreeOp),              // GT_INC_SATURATE
         nameof(GenTreeOp),              // GT_MULHI
 
-#if !TARGET_64BIT
+#if TARGET_32BIT
         nameof(GenTreeMultiRegOp),      // GT_MUL_LONG
 #elif  TARGET_ARM64
         nameof(GenTreeOp),              // GT_MUL_LONG
@@ -603,6 +613,8 @@ public static class genTreeOpsExtensions
         nameof(GenTreeOp),              // GT_SWITCH
         nameof(GenTree),                // GT_NO_OP
         nameof(GenTreeOp),              // GT_RETURN_SUSPEND
+        nameof(GenTreeOp),              // GT_PATCHPOINT
+        nameof(GenTreeOp),              // GT_PATCHPOINT_FORCED
         nameof(GenTree),                // GT_START_NONGC
         nameof(GenTree),                // GT_START_PREEMPTGC
         nameof(GenTree),                // GT_PROF_HOOK
@@ -644,7 +656,7 @@ public static class genTreeOpsExtensions
 #elif TARGET_AMD64
                 assert(AreContiguous(GT_JCC, GT_SETCC, GT_SELECTCC, GT_CCMP));
                 return oper is >= GT_JCC and <= GT_CCMP;
-#elif !TARGET_64BIT
+#elif TARGET_32BIT
                 assert(AreContiguous(GT_JCC, GT_SETCC, GT_SELECTCC));
                 return oper is (>= GT_JCC and <= GT_SELECTCC) or GT_ADD_HI or GT_SUB_HI;
 #else
@@ -823,7 +835,7 @@ public static class genTreeOpsExtensions
 
         public bool IsInitVal => oper is GT_INIT_VAL;
 
-#if !TARGET_64BIT
+#if TARGET_32BIT
         public bool IsIntegralConst => oper is GT_CNS_INT or GT_CNS_LNG;
 #else
         public bool IsIntegralConst => oper is GT_CNS_INT;
@@ -860,7 +872,7 @@ public static class genTreeOpsExtensions
 
         public bool IsLocalStore => oper is GT_STORE_LCL_VAR or GT_STORE_LCL_FLD;
 
-#if !TARGET_64BIT
+#if TARGET_32BIT
         public bool IsLong => oper is GT_CNS_LONG;
 #else
         public bool IsLong => false;
@@ -868,7 +880,7 @@ public static class genTreeOpsExtensions
 
         public bool IsMdArr => oper is GT_MDARR_LENGTH or GT_MDARR_LOWER_BOUND;
 
-#if !TARGET_64BIT || TARGET_ARM64
+#if TARGET_32BIT || TARGET_ARM64
         public bool IsMul => oper is GT_MUL or GT_MULHI or GT_MUL_LONG;
 #else
         public bool IsMul => oper is GT_MUL or GT_MULHI;
@@ -880,7 +892,7 @@ public static class genTreeOpsExtensions
         public bool IsMultiOp => false;
 #endif
 
-#if !TARGET_64BIT
+#if TARGET_32BIT
         public bool IsMultiRegOp => oper is GT_MUL_LONG;
 #else
         public bool IsMultiRegOp => false;
@@ -928,7 +940,7 @@ public static class genTreeOpsExtensions
             }
         }
 
-#if !TARGET_64BIT
+#if TARGET_32BIT
         public bool IsShiftLong => oper is GT_LSH_HI or GT_RSH_LO;
 #else
         public bool IsShiftLong => false;
@@ -938,7 +950,7 @@ public static class genTreeOpsExtensions
         {
             get
             {
-#if !TARGET_64BIT
+#if TARGET_32BIT
                 assert(AreContiguous(GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR));
                 var result = oper is (>= GT_LSH and <= GT_ROR) or GT_LSH_HI or GT_RSH_LO;
 
@@ -984,7 +996,7 @@ public static class genTreeOpsExtensions
         {
             get
             {
-#if !TARGET_64BIT
+#if TARGET_32BIT
                 assert(AreContiguous(GT_ADD, GT_SUB, GT_MUL));
                 return oper is (>= GT_ADD and <= GT_MUL) or GT_CAST or GT_ADD_HI or GT_SUB_HI;
 #else

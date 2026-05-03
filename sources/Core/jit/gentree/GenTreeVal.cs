@@ -12,7 +12,7 @@ public sealed class GenTreeVal : GenTree
     public GenTreeVal(genTreeOps oper, var_types type, nint val)
         : base(oper, type)
     {
-        _val1 = (nuint)(val);
+        _val1 = unchecked((nuint)(val));
     }
 
     public nuint Val1 => _val1;

@@ -222,7 +222,7 @@ public partial class Compiler
         // This is currently an implementation limit due to fixed-size arrays in the
         // inline info, rather than a performance heuristic.
 
-        inlineResult.NoteInt(InlineObservation.CALLEE_NUMBER_OF_LOCALS, (int)(methInfo->locals.numArgs));
+        inlineResult.NoteInt(InlineObservation.CALLEE_NUMBER_OF_LOCALS, methInfo->locals.numArgs);
 
         if (methInfo->locals.numArgs > MAX_INL_LCLS)
         {
@@ -234,7 +234,7 @@ public partial class Compiler
         // This is currently an implementation limit due to fixed-size arrays in the
         // inline info, rather than a performance heuristic.
 
-        inlineResult.NoteInt(InlineObservation.CALLEE_NUMBER_OF_ARGUMENTS, (int)(methInfo->args.numArgs));
+        inlineResult.NoteInt(InlineObservation.CALLEE_NUMBER_OF_ARGUMENTS, methInfo->args.numArgs);
 
         if (methInfo->args.numArgs > MAX_INL_ARGS)
         {
@@ -248,7 +248,7 @@ public partial class Compiler
 
         // Note IL code size
 
-        inlineResult.NoteInt(InlineObservation.CALLEE_IL_CODE_SIZE, (int)(codeSize));
+        inlineResult.NoteInt(InlineObservation.CALLEE_IL_CODE_SIZE, codeSize);
 
         if (inlineResult.IsFailure)
         {
@@ -257,7 +257,7 @@ public partial class Compiler
 
         // Make sure maxstack is not too big
 
-        inlineResult.NoteInt(InlineObservation.CALLEE_MAXSTACK, (int)(methInfo->maxStack));
+        inlineResult.NoteInt(InlineObservation.CALLEE_MAXSTACK, methInfo->maxStack);
 
         if (inlineResult.IsFailure)
         {

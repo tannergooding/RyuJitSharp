@@ -34,10 +34,11 @@ public partial class Compiler
     public VARSET_TP lvaTrackedVars;
 #endif
 
-#if !TARGET_64BIT
+#if TARGET_32BIT
     /// <summary>set of long (64-bit) variables</summary>
     public VARSET_TP lvaLongVars;
 #endif
+
     /// <summary>set of floating-point (32-bit and 64-bit) or SIMD variables</summary>
     public VARSET_TP lvaFloatVars;
 
@@ -72,6 +73,15 @@ public partial class Compiler
 #if TARGET_WASM
     /// <summary>lcl var index of Wasm stack pointer arg</summary>
     public uint lvaWasmSpArg = BAD_VAR_NUM;
+
+    /// <summary>Wasm virtual IP slot</summary>
+    public uint lvaWasmVirtualIP = BAD_VAR_NUM;
+
+    /// <summary>Wasm function index slot</summary>
+    public uint lvaWasmFunctionIndex = BAD_VAR_NUM;
+
+    /// <summary>Wasm catch resumption IP slot</summary>
+    public uint lvaWasmResumeIP = BAD_VAR_NUM;
 #endif
 
     /// <summary>variable representing the InlinedCallFrame</summary>

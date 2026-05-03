@@ -27,7 +27,7 @@ public sealed partial class FieldSeq
         var handleValue = (nuint)(fieldHnd);
 
         assert((handleValue & FIELD_KIND_MASK) == 0);
-        _fieldHandleAndKind = handleValue | (nuint)(fieldKind);
+        _fieldHandleAndKind = handleValue | (byte)(fieldKind);
 
         assert((JitTls.Compiler is Compiler compiler) && (compiler.eeIsFieldStatic(fieldHnd) == IsStaticField));
 
@@ -45,7 +45,7 @@ public sealed partial class FieldSeq
 
     public bool IsSharedStaticField => Kind is FieldKind.SharedStatic;
 
-    public FieldKind Kind => (FieldKind)(_fieldHandleAndKind & FIELD_KIND_MASK);
+    public FieldKind Kind => unchecked((FieldKind)(_fieldHandleAndKind & FIELD_KIND_MASK));
 
     /// <summary>Retrieve "the offset" for the field this node represents.</summary>
     /// <remarks>

@@ -551,11 +551,11 @@ public struct ReturnTypeDesc
 
             if (regType == TYP_DOUBLE)
             {
-                resultReg = (regNumber)(REG_FLOATRET + idx * 2); // d0, d1, d2 or d3
+                resultReg = REG_FLOATRET + unchecked((byte)(idx * 2)); // d0, d1, d2 or d3
             }
             else
             {
-                resultReg = (regNumber)(REG_FLOATRET + idx); // f0, f1, f2 or f3
+                resultReg = REG_FLOATRET + idx; // f0, f1, f2 or f3
             }
 
             assert(resultReg != REG_NA);
@@ -570,8 +570,8 @@ public struct ReturnTypeDesc
         }
         else
         {
-            noway_assert(idx < 4);                       // Up to 4 return registers for HFA's
-            resultReg = (regNumber)(REG_FLOATRET + idx); // V0, V1, V2 or V3
+            noway_assert(idx < 4);          // Up to 4 return registers for HFA's
+            resultReg = REG_FLOATRET + idx; // V0, V1, V2 or V3
             assert(resultReg != REG_NA);
         }
 #elif TARGET_LOONGARCH64 || TARGET_RISCV64

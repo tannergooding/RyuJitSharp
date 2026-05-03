@@ -109,7 +109,11 @@ public partial struct JitConfigValues
 
         /// <summary>Track stores to locals done through return buffers.</summary>
         JitOptimizeStructHiddenBuffer,
+#endif
 
+        JitEnableStoreLclFldCoalescing,
+
+#if DEBUG
         /// <summary></summary>
         JitUnrollLoopMaxIterationCount,
 
@@ -435,7 +439,7 @@ public partial struct JitConfigValues
         JitDisasmSpilled,
 
         /// <summary>Print the process address next to each instruction of the disassembly</summary>
-        JitDasmWithAddress,
+        JitDisasmWithAddress,
 #endif
 
         /// <summary>If 1, keep rich debug info and report it back to the EE</summary>
@@ -600,8 +604,11 @@ public partial struct JitConfigValues
         /// <summary>Allows APX conditional compare chaining</summary>
         EnableApxConditionalChaining,
 
-        /// <summary>Allows APX PPX feature to be disabled</summary>
-        EnableApxPPX,
+        /// <summary>Allows APX PPX Hint feature to be disabled</summary>
+        EnableApxPPHint,
+
+        /// <summary>Allows APX PP2 feature to be disabled</summary>
+        EnableApxPP2,
 
         /// <summary>Allows APX ZU feature to be disabled</summary>
         EnableApxZU,
@@ -1135,6 +1142,11 @@ public partial struct JitConfigValues
         [JitAlignLoopAdaptive] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitAlignLoopAdaptive"u8)), 1),
         [JitHideAlignBehindJmp] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitHideAlignBehindJmp"u8)), 1),
         [JitOptimizeStructHiddenBuffer] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitOptimizeStructHiddenBuffer"u8)), 1),
+#endif
+
+        [JitEnableStoreLclFldCoalescing] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnableStoreLclFldCoalescing"u8)), 1),
+
+#if DEBUG
         [JitUnrollLoopMaxIterationCount] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitUnrollLoopMaxIterationCount"u8)), DEFAULT_UNROLL_LOOP_MAX_ITERATION_COUNT),
         [JitUnrollLoopsWithEH] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitUnrollLoopsWithEH"u8)), 0),
         [JitDirectAlloc] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDirectAlloc"u8)), 0),
@@ -1250,7 +1262,7 @@ public partial struct JitConfigValues
         [JitDisasmWithGC] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDisasmWithGC"u8)), 0),
         [JitDisasmWithDebugInfo] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDisasmWithDebugInfo"u8)), 0),
         [JitDisasmSpilled] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDisasmSpilled"u8)), 0),
-        [JitDasmWithAddress] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDasmWithAddress"u8)), 0),
+        [JitDisasmWithAddress] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDisasmWithAddress"u8)), 0),
 #endif
 
         [RichDebugInfo] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("RichDebugInfo"u8)), 0),
@@ -1328,7 +1340,8 @@ public partial struct JitConfigValues
         [EnableEmbeddedMasking] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableEmbeddedMasking"u8)), 1),
         [EnableApxNDD] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableApxNDD"u8)), 0),
         [EnableApxConditionalChaining] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableApxConditionalChaining"u8)), 0),
-        [EnableApxPPX] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableApxPPX"u8)), 0),
+        [EnableApxPPHint] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableApxPPHint"u8)), 0),
+        [EnableApxPP2] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableApxPP2"u8)), 0),
         [EnableApxZU] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableApxZU"u8)), 0),
 
 #if FEATURE_SIMD

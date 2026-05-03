@@ -138,7 +138,7 @@ public partial class Globals
     // handled as if they are structs with two integer fields.
     public static bool varTypeIsPromotable(var_types vt)
     {
-#if !TARGET_64BIT
+#if TARGET_32BIT
         return varTypeIsStruct(vt) || varTypeIsLong(vt);
 #else
         return varTypeIsStruct(vt);

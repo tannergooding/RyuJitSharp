@@ -52,7 +52,7 @@ public partial struct LclVarDsc
     /// <remarks>It is set during codegen any time the variable is enregistered (lvRegister is only set to non-zero if the variable gets the same register assignment for its entire lifetime).</remarks>
     private regNumber _lvRegNum;
 
-#if !TARGET_64BIT
+#if TARGET_32BIT
     /// <summary>Used for "upper half" of long var.</summary>
     private regNumber _lvOtherReg;
 #endif
@@ -118,12 +118,12 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (var_types)(_bitfield & 0x1F);
+            return unchecked((var_types)(_bitfield & 0x1F));
         }
 
         set
         {
-            _bitfield = (byte)((_bitfield & ~0x1F) | ((byte)(value) & 0x1F));
+            _bitfield = (byte)((_bitfield & ~0x1F) | (unchecked((byte)(value)) & 0x1F));
         }
     }
 
@@ -133,12 +133,12 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (CorInfoHFAElemType)((_bitfield >>> 5) & 0x07u);
+            return unchecked((CorInfoHFAElemType)((_bitfield >>> 5) & 0x07u));
         }
 
         set
         {
-            _bitfield = (byte)((_bitfield & ~(0x07u << 5)) | (((byte)(value) & 0x07u) << 5));
+            _bitfield = (byte)((_bitfield & ~(0x07u << 5)) | ((unchecked((byte)(value)) & 0x07u) << 5));
         }
     }
 #endif

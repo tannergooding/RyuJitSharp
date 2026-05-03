@@ -61,9 +61,6 @@ public partial class Globals
     /// <summary>Method needs GC polls.</summary>
     public const int OMF_NEEDS_GCPOLLS = 0x00000200;
 
-    /// <summary>Method contains partial compilation patchpoints.</summary>
-    public const int OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT = 0x00000800;
-
     /// <summary>Method has potential tail call in a non <see cref="BBJ_RETURN" /> block.</summary>
     public const int OMF_HAS_TAILCALL_SUCCESSOR = 0x00001000;
 

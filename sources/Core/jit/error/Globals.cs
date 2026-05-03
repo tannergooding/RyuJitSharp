@@ -29,7 +29,7 @@ public partial class Globals
 #endif
 
 #if DEBUG
-    private static void debugError(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, uint lineNumber)
+    private static void debugError(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, int lineNumber)
     {
         var fileName = Path.GetFileName(filePath);
         ref var logEnv = ref JitTls.LogEnv;
@@ -63,9 +63,9 @@ public partial class Globals
 
 #if DEBUG
     [DoesNotReturn]
-    public static void badCode3(ReadOnlySpan<char> message, ReadOnlySpan<char> message2, int arg, ReadOnlySpan<char> filePath, uint line)
+    public static void badCode3(ReadOnlySpan<char> message, ReadOnlySpan<char> message2, int arg, ReadOnlySpan<char> filePath, int lineNumber)
     {
-        debugError(string.Format(CultureInfo.InvariantCulture, $"{message}{message2}", arg), filePath, line);
+        debugError(string.Format(CultureInfo.InvariantCulture, $"{message}{message2}", arg), filePath, lineNumber);
         badCode();
     }
 #endif
@@ -143,7 +143,7 @@ public partial class Globals
     }
 
     [DoesNotReturn]
-    public static void noWayAssertBody(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, uint lineNumber)
+    public static void noWayAssertBody(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, int lineNumber)
     {
 #if MEASURE_FATAL
         s_fatalNoWayAssertBodyArgsCount++;
@@ -164,7 +164,7 @@ public partial class Globals
         }
     }
 
-    public static void noWayAssertBodyConditional(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, uint lineNumber)
+    public static void noWayAssertBodyConditional(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, int lineNumber)
     {
         if (ShouldThrowOnNoway())
         {
@@ -178,7 +178,7 @@ public partial class Globals
     }
 
 #if MEASURE_NOWAY
-    public static void RecordNowayAssertGlobal(ReadOnlySpan<char> filePath, uint lineNumber, ReadOnlySpan<char> message)
+    public static void RecordNowayAssertGlobal(ReadOnlySpan<char> filePath, int lineNumber, ReadOnlySpan<char> message)
     {
         if ((JitConfig[ConfigInteger.JitMeasureNowayAssert] == 1) && (JitTls.Compiler is Compiler compiler))
         {
@@ -186,7 +186,7 @@ public partial class Globals
         }
     }
 
-    public static void RECORD_NOWAY_ASSERT(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] uint lineNumber = 0)
+    public static void RECORD_NOWAY_ASSERT(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
     {
         RecordNowayAssertGlobal(filePath, lineNumber, message);
     }
@@ -198,17 +198,17 @@ public partial class Globals
 
 #if DEBUG
     [DoesNotReturn]
-    public static void BADCODE(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] uint lineNumber = 0)
+    public static void BADCODE(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
     {
         debugError(message, filePath, lineNumber);
         badCode();
     }
 
     [DoesNotReturn]
-    public static void BADCODE3(ReadOnlySpan<char> message, ReadOnlySpan<char> message2, int arg, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] uint lineNumber = 0) => badCode3(message, message2, arg, filePath, lineNumber);
+    public static void BADCODE3(ReadOnlySpan<char> message, ReadOnlySpan<char> message2, int arg, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0) => badCode3(message, message2, arg, filePath, lineNumber);
 
     // Used for an assert that we want to convert into BADCODE to force minopts, or in minopts to force codegen.
-    public static void noway_assert([DoesNotReturnIf(false)] bool condition, [CallerArgumentExpression(nameof(condition))] ReadOnlySpan<char> conditionExpression = "", [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] uint lineNumber = 0)
+    public static void noway_assert([DoesNotReturnIf(false)] bool condition, [CallerArgumentExpression(nameof(condition))] ReadOnlySpan<char> conditionExpression = "", [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
     {
         RECORD_NOWAY_ASSERT(conditionExpression);
 
@@ -219,24 +219,24 @@ public partial class Globals
     }
 
     [DoesNotReturn]
-    public static void unreached([CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] uint lineNumber = 0) => noWayAssertBody("unreached", filePath, lineNumber);
+    public static void unreached([CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0) => noWayAssertBody("unreached", filePath, lineNumber);
 
     [DoesNotReturn]
-    public static void NO_WAY(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] uint lineNumber = 0) => noWayAssertBody(message, filePath, lineNumber);
+    public static void NO_WAY(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0) => noWayAssertBody(message, filePath, lineNumber);
 
     // Used for fallback stress mode
     [DoesNotReturn]
     public static void NO_WAY_NOASSERT(ReadOnlySpan<char> message) => noWay();
 
-    public static void NOWAY_MSG(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] uint lineNumber = 0) => noWayAssertBodyConditional(message, filePath, lineNumber);
+    public static void NOWAY_MSG(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0) => noWayAssertBodyConditional(message, filePath, lineNumber);
 
-    public static void NOWAY_MSG_FILE_AND_LINE(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, uint lineNumber) => noWayAssertBodyConditional(message, filePath, lineNumber);
+    public static void NOWAY_MSG_FILE_AND_LINE(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, int lineNumber) => noWayAssertBodyConditional(message, filePath, lineNumber);
 
     // IMPL_LIMITATION is called when we encounter valid IL that is not
     // supported by our current implementation because of various
     // limitations (that could be removed in the future)
     [DoesNotReturn]
-    public static void IMPL_LIMITATION(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] uint lineNumber = 0)
+    public static void IMPL_LIMITATION(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
     {
         debugError(message, filePath, lineNumber);
         implLimitation();
@@ -267,7 +267,7 @@ public partial class Globals
 
     public static void NOWAY_MSG(ReadOnlySpan<char> message) => noWayAssertBodyConditional();
 
-    public static void NOWAY_MSG_FILE_AND_LINE(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, uint lineNumber) => noWayAssertBodyConditional();
+    public static void NOWAY_MSG_FILE_AND_LINE(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, int lineNumber) => noWayAssertBodyConditional();
 
     // IMPL_LIMITATION is called when we encounter valid IL that is not
     // supported by our current implementation because of various
@@ -277,7 +277,7 @@ public partial class Globals
 #endif
 
     // This can return based on Config flag/Debugger
-    public static unsafe void notYetImplemented(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, uint lineNumber)
+    public static unsafe void notYetImplemented(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, int lineNumber)
     {
         var compiler = JitTls.Compiler;
 
@@ -343,11 +343,11 @@ public partial class Globals
         }
     }
 
-    public static void NYIRAW(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] uint lineNumber = 0) => notYetImplemented(message, filePath, lineNumber);
+    public static void NYIRAW(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0) => notYetImplemented(message, filePath, lineNumber);
 
-    public static void NYI(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] uint lineNumber = 0) => NYIRAW($"NYI: {message}", filePath, lineNumber);
+    public static void NYI(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0) => NYIRAW($"NYI: {message}", filePath, lineNumber);
 
-    public static void NYI_IF(bool condition, ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] uint lineNumber = 0)
+    public static void NYI_IF(bool condition, ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
     {
         if (condition)
         {
@@ -356,25 +356,25 @@ public partial class Globals
     }
 
     [Conditional("TARGET_AMD64")]
-    public static void NYI_AMD64(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] uint lineNumber = 0)  => NYIRAW($"NYI_AMD64: {message}", filePath, lineNumber);
+    public static void NYI_AMD64(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)  => NYIRAW($"NYI_AMD64: {message}", filePath, lineNumber);
 
     [Conditional("TARGET_X86")]
-    public static void NYI_X86(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] uint lineNumber = 0)    => NYIRAW($"NYI_X86: {message}", filePath, lineNumber);
+    public static void NYI_X86(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)    => NYIRAW($"NYI_X86: {message}", filePath, lineNumber);
 
     [Conditional("TARGET_ARM")]
-    public static void NYI_ARM(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] uint lineNumber = 0)    => NYIRAW($"NYI_ARM: {message}", filePath, lineNumber);
+    public static void NYI_ARM(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)    => NYIRAW($"NYI_ARM: {message}", filePath, lineNumber);
 
     [Conditional("TARGET_ARM64")]
-    public static void NYI_ARM64(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] uint lineNumber = 0)  => NYIRAW($"NYI_ARM64: {message}", filePath, lineNumber);
+    public static void NYI_ARM64(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)  => NYIRAW($"NYI_ARM64: {message}", filePath, lineNumber);
 
     [Conditional("TARGET_LOONGARCH64")]
-    public static void NYI_LOONGARCH64(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] uint lineNumber = 0) => NYIRAW($"NYI_LOONGARCH64: {message}", filePath, lineNumber);
+    public static void NYI_LOONGARCH64(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0) => NYIRAW($"NYI_LOONGARCH64: {message}", filePath, lineNumber);
 
     [Conditional("TARGET_RISCV64")]
-    public static void NYI_RISCV64(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] uint lineNumber = 0) => NYIRAW($"NYI_RISCV64: {message}", filePath, lineNumber);
+    public static void NYI_RISCV64(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0) => NYIRAW($"NYI_RISCV64: {message}", filePath, lineNumber);
 
     [Conditional("TARGET_WASM")]
-    public static void NYI_WASM(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] uint lineNumber = 0)
+    public static void NYI_WASM(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
     {
 #if DEBUG && TARGET_WASM
         if (JitConfig[ConfigInteger.JitWasmNyiToR2RUnsupported] > 0)
@@ -400,7 +400,7 @@ public partial class Globals
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool ShouldThrowOnNoway() => (JitTls.Compiler is not Compiler compiler) || compiler.compShouldThrowOnNoway();
 
-    private static void noWayAssertAbortHelper(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, uint lineNumber)
+    private static void noWayAssertAbortHelper(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, int lineNumber)
     {
         if (JitConfig[ConfigInteger.JitEnableNoWayAssert] != 0)
         {

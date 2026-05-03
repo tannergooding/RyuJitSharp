@@ -57,7 +57,7 @@ public partial struct ConfigMethodRange
 
         foreach (var range in _ranges.AsSpan(0, _rangeCount))
         {
-            if ((range.Low <= (uint)(hash)) && ((uint)(hash) <= range.High))
+            if ((range.Low <= unchecked((uint)(hash))) && (unchecked((uint)(hash)) <= range.High))
             {
                 return true;
             }

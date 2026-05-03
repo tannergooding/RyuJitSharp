@@ -10,16 +10,8 @@ namespace RyuJitSharp;
 
 public partial struct CILJit
 {
-    private static readonly unsafe CILJit* s_instance = CreateInstance();
     internal static unsafe ICorJitHost* s_jitHost;
     private static bool s_isJitInitialized;
-
-    private static unsafe CILJit* CreateInstance()
-    {
-        var instance = (CILJit*)(RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(CILJit), sizeof(CILJit)));
-        instance->lpVtbl = s_vtbl;
-        return instance;
-    }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)], EntryPoint = "getJit")]
     private static unsafe ICorJitCompiler* getJit() => s_isJitInitialized ? (ICorJitCompiler*)(s_instance) : null;

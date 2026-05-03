@@ -117,7 +117,7 @@ public sealed class GenTreeCall : GenTree
                 // Now it is a struct that is returned in registers.
                 result = _returnTypeDesc.IsMultiRegRetType;
             }
-#if !TARGET_64BIT
+#if TARGET_32BIT
             else
             {
                 result = varTypeIsLong(type);

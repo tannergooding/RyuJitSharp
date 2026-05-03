@@ -31,6 +31,10 @@ public partial class Compiler
 
     public ushort compFuncInfoCount;
 
+    public unsafe ushort* compVMClauseOrderToEHTabOrder;
+
+    public unsafe ushort* compEHTabOrderToVMClauseOrder;
+
     /// <summary>current live variables</summary>
     public VARSET_TP compCurLife;
 
@@ -1208,7 +1212,7 @@ public partial class Compiler
 
         if (compIsForInlining)
         {
-            compInlineResult.NoteInt(InlineObservation.CALLEE_NUMBER_OF_BASIC_BLOCKS, (int)(fgBBcount));
+            compInlineResult.NoteInt(InlineObservation.CALLEE_NUMBER_OF_BASIC_BLOCKS, fgBBcount);
 
             if (compInlineResult.IsFailure)
             {
@@ -1504,27 +1508,27 @@ public partial class Compiler
         else if (!IsAot)
         {
             // For AOT we never drop down to MinOpts unless unless CLFLG_MINOPT is set
-            if ((uint)(JitConfig[ConfigInteger.JitMinOptsCodeSize]) < info.compILCodeSize)
+            if (unchecked((uint)(JitConfig[ConfigInteger.JitMinOptsCodeSize])) < info.compILCodeSize)
             {
                 JITLOG(LL_INFO10, $"IL Code Size exceeded, using MinOpts for method {info.compFullName}\n");
                 theMinOptsValue = true;
             }
-            else if ((uint)(JitConfig[ConfigInteger.JitMinOptsInstrCount]) < opts.instrCount)
+            else if (unchecked((uint)(JitConfig[ConfigInteger.JitMinOptsInstrCount])) < opts.instrCount)
             {
                 JITLOG(LL_INFO10, $"IL instruction count exceeded, using MinOpts for method {info.compFullName}\n");
                 theMinOptsValue = true;
             }
-            else if ((uint)(JitConfig[ConfigInteger.JitMinOptsBbCount]) < fgBBcount)
+            else if (unchecked((uint)(JitConfig[ConfigInteger.JitMinOptsBbCount])) < fgBBcount)
             {
                 JITLOG(LL_INFO10, $"Basic Block count exceeded, using MinOpts for method {info.compFullName}\n");
                 theMinOptsValue = true;
             }
-            else if ((uint)(JitConfig[ConfigInteger.JitMinOptsLvNumCount]) < lvaCount)
+            else if (unchecked((uint)(JitConfig[ConfigInteger.JitMinOptsLvNumCount])) < lvaCount)
             {
                 JITLOG(LL_INFO10, $"Local Variable Num count exceeded, using MinOpts for method {info.compFullName}\n");
                 theMinOptsValue = true;
             }
-            else if ((uint)(JitConfig[ConfigInteger.JitMinOptsLvRefCount]) < opts.lvRefCount)
+            else if (unchecked((uint)(JitConfig[ConfigInteger.JitMinOptsLvRefCount])) < opts.lvRefCount)
             {
                 JITLOG(LL_INFO10, $"Local Variable Ref count exceeded, using MinOpts for method {info.compFullName}\n");
                 theMinOptsValue = true;
