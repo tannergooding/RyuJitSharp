@@ -4,11 +4,6 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.JavaScript;
-using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace RyuJitSharp;
 
@@ -205,20 +200,19 @@ public partial class Globals
                     if (inlineInfo is not null)
                     {
                         var inlinerCompiler = inlineInfo.InlinerCompiler;
-                        assert(inlinerCompiler is not null);
+                        compiler = inlinerCompiler.InlineeCompiler;
 
-                        // Lazily create the inlinee compiler object
-                        if (inlinerCompiler.InlineeCompiler is null)
+                        if (compiler is null)
                         {
+                            // Lazily create the inlinee compiler object
+                            compiler = new Compiler(methodHandle, jitInfo, methodInfo, inlineInfo);
                             inlinerCompiler.InlineeCompiler = compiler;
                         }
-                        else
-                        {
-                            compiler = inlinerCompiler.InlineeCompiler;
-                        }
                     }
-
-                    compiler = new Compiler(methodHandle, jitInfo, methodInfo, inlineInfo);
+                    else
+                    {
+                        compiler = new Compiler(methodHandle, jitInfo, methodInfo, inlineInfo);
+                    }
 
 #if MEASURE_CLRAPI_CALLS
                     var wrapCLR = WrapICorJitInfo::makeOne(pParam->pAlloc, pComp, compHnd);
@@ -259,14 +253,8 @@ public partial class Globals
                 }
 
                 // If we were looking at an inlinee....
-                if (inlineInfo is not null)
-                {
-                    // Note that we failed to compile the inlinee, and that
-                    // there's no point trying to inline it again anywhere else.
-
-                    assert(inlineInfo.inlineResult is not null);
-                    inlineInfo.inlineResult.NoteFatal(InlineObservation.CALLEE_COMPILATION_ERROR);
-                }
+                // Note that we failed to compile the inlinee, and that there's no point trying to inline it again anywhere else.
+                inlineInfo?.inlineResult.NoteFatal(InlineObservation.CALLEE_COMPILATION_ERROR);
                 result = CORJIT_INTERNALERROR;
 
                 methodCodePtr = null;

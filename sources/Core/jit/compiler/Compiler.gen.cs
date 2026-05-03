@@ -11,9 +11,9 @@ public partial class Compiler
 {
     // Record the instr offset mapping to the generated code
 
-    public LinkedList<IPmappingDsc>? genIPmappings;
+    public LinkedList<IPmappingDsc> genIPmappings;
 
-    public LinkedList<RichIPMapping>? genRichIPmappings;
+    public LinkedList<RichIPMapping> genRichIPmappings;
 
     // Managed RetVal - A side hash table meant to record the mapping from a
     // GT_CALL node to its debug info.  This info is used to emit sequence points

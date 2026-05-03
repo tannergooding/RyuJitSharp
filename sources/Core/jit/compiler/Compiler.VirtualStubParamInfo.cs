@@ -9,5 +9,9 @@ public partial class Compiler
 {
     public sealed class VirtualStubParamInfo
     {
+        public VirtualStubParamInfo(bool isNativeAOT)
+        {
+            // TODO: Port VirtualStubParamInfo.ctor
+        }
     }
 }

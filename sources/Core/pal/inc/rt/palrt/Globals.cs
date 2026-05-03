@@ -5,6 +5,7 @@
 
 namespace RyuJitSharp;
 
-public abstract class CodeGenInterface
+public partial class Globals
 {
+    public const int E_FAIL = unchecked((int)(0x80004005));
 }

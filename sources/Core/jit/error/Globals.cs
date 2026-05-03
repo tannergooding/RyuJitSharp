@@ -33,7 +33,7 @@ public partial class Globals
         var fileName = Path.GetFileName(filePath);
         ref var logEnv = ref JitTls.LogEnv;
 
-        var compiler = logEnv.compiler;
+        var compiler = logEnv.Compiler;
         assert(compiler is not null);
 
         JITDUMP($"\nCOMPILATION FAILED: {message} ({fileName}:{lineNumber})\n");
@@ -287,9 +287,9 @@ public partial class Globals
 #if DEBUG
         ref var logEnv = ref JitTls.LogEnv;
 
-        if (logEnv.compiler is not null)
+        if (logEnv.Compiler is not null)
         {
-            compiler = logEnv.compiler;
+            compiler = logEnv.Compiler;
 
             if (compiler.verbose)
             {
@@ -299,7 +299,7 @@ public partial class Globals
 
         if (Compiler.compJitFuncInfoFile is StreamWriter compJitFuncInfoFile)
         {
-            compJitFuncInfoFile.WriteLine($"{((logEnv.compiler is null) ? "UNKNOWN" : logEnv.compiler.info.compFullName)} - NYI ({filePath}:{lineNumber} - {message})");
+            compJitFuncInfoFile.WriteLine($"{((logEnv.Compiler is null) ? "UNKNOWN" : logEnv.Compiler.info.compFullName)} - NYI ({filePath}:{lineNumber} - {message})");
             compJitFuncInfoFile.Flush();
         }
 #else

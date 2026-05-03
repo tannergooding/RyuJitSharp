@@ -20,11 +20,11 @@ public partial class Globals
     public const int MAX_GDV_TYPE_CHECKS = 5;
 
     // Quadratic string matching algorithm that supports * and ? wildcards
-    public static bool MatchGlob(ReadOnlySpan<byte> pattern, ReadOnlySpan<byte> str)
+    public static bool MatchGlob(ReadOnlySpan<byte> pattern, ReadOnlySpan<char> str)
     {
         // Invariant: [patternStart..backtrackPattern) matches [stringStart..backtrackStr)
         var backtrackPattern = ReadOnlySpan<byte>.Empty;
-        var backtrackStr = ReadOnlySpan<byte>.Empty;
+        var backtrackStr = ReadOnlySpan<char>.Empty;
 
         while (true)
         {

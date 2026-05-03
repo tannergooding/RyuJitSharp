@@ -17,7 +17,7 @@ public unsafe partial struct ICorJitCompiler : ICorJitCompiler.Interface
 {
     internal Vtbl* lpVtbl;
 
-    public CorJitResult compileMethod(ICorJitInfo* jitInfo, CORINFO_METHOD_INFO* methodInfo, uint flags, byte** nativeEntry, uint* nativeSizeOfCode) => lpVtbl->compileMethod((ICorJitCompiler*)Unsafe.AsPointer(ref this), jitInfo, methodInfo, flags, nativeEntry, nativeSizeOfCode);
+    public CorJitResult compileMethod(ICorJitInfo* jitInfo, CORINFO_METHOD_INFO* methodInfo, CorJitFlag flags, byte** nativeEntry, uint* nativeSizeOfCode) => lpVtbl->compileMethod((ICorJitCompiler*)Unsafe.AsPointer(ref this), jitInfo, methodInfo, flags, nativeEntry, nativeSizeOfCode);
 
     public void ProcessShutdownWork(ICorStaticInfo* staticInfo) => lpVtbl->ProcessShutdownWork((ICorJitCompiler*)Unsafe.AsPointer(ref this), staticInfo);
 
@@ -37,7 +37,7 @@ public unsafe partial struct ICorJitCompiler : ICorJitCompiler.Interface
         // * In the 32 bit jit this is implemented by code:CILJit.compileMethod
         // * For the 64 bit jit this is implemented by code:PreJit.compileMethod
         // Note: setTargetOS must be called before this api is used.
-        CorJitResult compileMethod(ICorJitInfo* jitInfo, CORINFO_METHOD_INFO* methodInfo, uint flags, byte** nativeEntry, uint* nativeSizeOfCode);
+        CorJitResult compileMethod(ICorJitInfo* jitInfo, CORINFO_METHOD_INFO* methodInfo, CorJitFlag flags, byte** nativeEntry, uint* nativeSizeOfCode);
 
         // Do any appropriate work at process shutdown.  Default impl is to do nothing.
         void ProcessShutdownWork(ICorStaticInfo* staticInfo) { }
@@ -57,7 +57,7 @@ public unsafe partial struct ICorJitCompiler : ICorJitCompiler.Interface
 
     public struct Vtbl
     {
-        public delegate* unmanaged[MemberFunction]<ICorJitCompiler*, ICorJitInfo*, CORINFO_METHOD_INFO*, uint, byte**, uint*, CorJitResult> compileMethod;
+        public delegate* unmanaged[MemberFunction]<ICorJitCompiler*, ICorJitInfo*, CORINFO_METHOD_INFO*, CorJitFlag, byte**, uint*, CorJitResult> compileMethod;
 
         public delegate* unmanaged[MemberFunction]<ICorJitCompiler*, ICorStaticInfo*, void> ProcessShutdownWork;
 

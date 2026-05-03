@@ -9,16 +9,23 @@ namespace RyuJitSharp;
 public sealed class InlineInfo
 {
     /// <summary>The Compiler instance for the caller (i.e. the inliner)</summary>
-    public Compiler? InlinerCompiler;
+    public Compiler InlinerCompiler = null!;
 
     /// <summary>The Compiler instance that is the root of the inlining tree of which the owner of "this" is a member.</summary>
-    public Compiler? InlineRoot;
+    public Compiler InlineRoot = null!;
 
     public unsafe CORINFO_METHOD_HANDLE fncHandle;
 
-    public unsafe InlineCandidateInfo? inlineCandidateInfo;
+    public unsafe InlineCandidateInfo inlineCandidateInfo = null!;
 
-    public unsafe InlineContext? inlineContext;
+    public unsafe InlineContext inlineContext = null!;
 
-    public unsafe InlineResult? inlineResult;
+    public unsafe InlineResult inlineResult = null!;
+
+    public unsafe CORINFO_CLASS_HANDLE retExprClassHnd;
+
+    public bool retExprClassHndIsExact;
+
+    /// <summary>The context handle that will be passed to impTokenLookupContextHandle in Inlinee's Compiler.</summary>
+    public unsafe CORINFO_CONTEXT_HANDLE tokenLookupContextHandle;
 }

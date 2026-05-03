@@ -100,7 +100,7 @@ public partial struct LclVarDsc
 #if FEATURE_IMPLICIT_BYREFS
             assert(Debugger.IsAttached || varTypeIsStruct(lvType) || (IsImplicitByRef && (lvType is TYP_BYREF)));
 #else
-            assert(varTypeIsStruct(lvType));
+            assert(Debugger.IsAttached || varTypeIsStruct(lvType));
 #endif
             return _layout;
         }

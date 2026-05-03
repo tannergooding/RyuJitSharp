@@ -9,5 +9,9 @@ public partial class Compiler
 {
     public sealed class StructPromotionHelper
     {
+        public StructPromotionHelper(Compiler compiler)
+        {
+            // TOOD: Port StructPromotionHelper.ctor
+        }
     }
 }

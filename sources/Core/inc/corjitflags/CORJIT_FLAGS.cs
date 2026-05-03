@@ -4,7 +4,6 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 global using static RyuJitSharp.CORJIT_FLAGS;
-using System;
 using System.Diagnostics.CodeAnalysis;
 
 namespace RyuJitSharp;

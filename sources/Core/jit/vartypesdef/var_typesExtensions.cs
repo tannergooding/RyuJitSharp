@@ -122,41 +122,78 @@ public static class var_typesExtensions
         VTF_ANY,                    // TYP_UNKNOWN 
     ];
 
-    private static readonly string[] s_names = [
-        "<UNDEF>",      // TYP_UNDEF   
-        "void",         // TYP_VOID    
-        "byte",         // TYP_BYTE    
-        "ubyte",        // TYP_UBYTE   
-        "short",        // TYP_SHORT   
-        "ushort",       // TYP_USHORT  
-        "int",          // TYP_INT     
-        "uint",         // TYP_UINT    
-        "long",         // TYP_LONG    
-        "ulong",        // TYP_ULONG   
-        "float",        // TYP_FLOAT   
-        "double",       // TYP_DOUBLE  
-        "ref",          // TYP_REF     
-        "byref",        // TYP_BYREF   
-        "struct",       // TYP_STRUCT
+    private static ReadOnlySpan<emitAttr> s_emitActualSizes => [
+        EA_UNKNOWN,     // TYP_UNDEF       
+        EA_UNKNOWN,     // TYP_VOID        
+        EA_4BYTE,       // TYP_BYTE        
+        EA_4BYTE,       // TYP_UBYTE       
+        EA_4BYTE,       // TYP_SHORT       
+        EA_4BYTE,       // TYP_USHORT      
+        EA_4BYTE,       // TYP_INT         
+        EA_4BYTE,       // TYP_UINT        
+        EPS,            // TYP_LONG        
+        EPS,            // TYP_ULONG       
+        EA_4BYTE,       // TYP_FLOAT       
+        EA_8BYTE,       // TYP_DOUBLE      
+        GCS,            // TYP_REF         
+        BRS,            // TYP_BYREF       
+        EA_UNKNOWN,     // TYP_STRUCT
 
 #if FEATURE_SIMD
-        "simd8",        // TYP_SIMD8    
-        "simd12",       // TYP_SIMD12   
-        "simd16",       // TYP_SIMD16
+        EA_8BYTE,       // TYP_SIMD8    
+        EA_16BYTE,      // TYP_SIMD12   
+        EA_16BYTE,      // TYP_SIMD16
 
 #if TARGET_XARCH
-        "simd32",       // TYP_SIMD32   
-        "simd64",       // TYP_SIMD64   
+        EA_32BYTE,      // TYP_SIMD32   
+        EA_64BYTE,      // TYP_SIMD64   
 #elif TARGET_ARM64
-        "simd",         // TYP_SIMD     
+        EAU,            // TYP_SIMD     
 #endif
 
 #if FEATURE_MASKED_HW_INTRINSICS
-        "mask",         // TYP_MASK     
+        EA_8BYTE,       // TYP_MASK
 #endif
 #endif
 
-        "unknown",      // TYP_UNKNOWN 
+        EA_UNKNOWN,     // TYP_UNKNOWN
+    ];
+
+    private static ReadOnlySpan<emitAttr> s_emitSizes => [
+        EA_UNKNOWN,     // TYP_UNDEF       
+        EA_UNKNOWN,     // TYP_VOID        
+        EA_1BYTE,       // TYP_BYTE        
+        EA_1BYTE,       // TYP_UBYTE       
+        EA_2BYTE,       // TYP_SHORT       
+        EA_2BYTE,       // TYP_USHORT      
+        EA_4BYTE,       // TYP_INT         
+        EA_4BYTE,       // TYP_UINT        
+        EPS,            // TYP_LONG        
+        EPS,            // TYP_ULONG       
+        EA_4BYTE,       // TYP_FLOAT       
+        EA_8BYTE,       // TYP_DOUBLE      
+        GCS,            // TYP_REF         
+        BRS,            // TYP_BYREF       
+        EA_UNKNOWN,     // TYP_STRUCT
+
+#if FEATURE_SIMD
+        EA_8BYTE,       // TYP_SIMD8    
+        EA_16BYTE,      // TYP_SIMD12   
+        EA_16BYTE,      // TYP_SIMD16
+
+#if TARGET_XARCH
+        EA_32BYTE,      // TYP_SIMD32   
+        EA_64BYTE,      // TYP_SIMD64   
+#elif TARGET_ARM64
+        EAU,            // TYP_SIMD     
+#endif
+
+#if FEATURE_MASKED_HW_INTRINSICS
+        EA_8BYTE,       // TYP_MASK
+#endif
+#endif
+
+        EA_UNKNOWN,     // TYP_UNKNOWN
     ];
 
     private static ReadOnlySpan<var_types_register> s_registers => [
@@ -309,13 +346,23 @@ public static class var_typesExtensions
             }
         }
 
-        public string Name
+        public emitAttr EmitActualSize
         {
             get
             {
-                assert(s_names.Length == (int)(TYP_COUNT));
+                assert(s_emitActualSizes.Length == (int)(TYP_COUNT));
                 assert(varType < TYP_COUNT);
-                return Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(s_names), (int)(varType));
+                return Unsafe.Add(ref MemoryMarshal.GetReference(s_emitActualSizes), (int)(varType));
+            }
+        }
+
+        public emitAttr EmitSize
+        {
+            get
+            {
+                assert(s_emitSizes.Length == (int)(TYP_COUNT));
+                assert(varType < TYP_COUNT);
+                return Unsafe.Add(ref MemoryMarshal.GetReference(s_emitSizes), (int)(varType));
             }
         }
 

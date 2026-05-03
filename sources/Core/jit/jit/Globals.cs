@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Buffers.Binary;
 using System.Diagnostics;
 
 namespace RyuJitSharp;
@@ -327,21 +328,21 @@ public partial class Globals
 #error When FEATURE_TAILCALL_OPT_SHARED_RETURN is defined, you must define FEATURE_TAILCALL_OPT as well.
 #endif
 
-    public const int CLFLG_REGVAR = 0x00008;
+    public const uint CLFLG_REGVAR = 0x00008;
 
-    public const int CLFLG_TREETRANS = 0x00100;
+    public const uint CLFLG_TREETRANS = 0x00100;
 
-    public const int CLFLG_INLINING = 0x00200;
+    public const uint CLFLG_INLINING = 0x00200;
 
 #if FEATURE_STRUCTPROMOTE
-    public const int CLFLG_STRUCTPROMOTE = 0x00400;
+    public const uint CLFLG_STRUCTPROMOTE = 0x00400;
 #else
-    public const int CLFLG_STRUCTPROMOTE = 0x00000;
+    public const uint CLFLG_STRUCTPROMOTE = 0x00000;
 #endif
 
-    public const int CLFLG_MAXOPT = CLFLG_REGVAR | CLFLG_TREETRANS | CLFLG_INLINING | CLFLG_STRUCTPROMOTE;
+    public const uint CLFLG_MAXOPT = CLFLG_REGVAR | CLFLG_TREETRANS | CLFLG_INLINING | CLFLG_STRUCTPROMOTE;
 
-    public const int CLFLG_MINOPT = CLFLG_TREETRANS;
+    public const uint CLFLG_MINOPT = CLFLG_TREETRANS;
 
     [Conditional("DEBUG")]
     public static void DISPNODE(GenTree tree)
@@ -401,6 +402,203 @@ public partial class Globals
         {
             compiler.gtDispTreeRange(range, tree);
         }
+    }
+
+    public static unsafe nuint dspPtr(void* ptr)
+    {
+        var compiler = JitTls.Compiler;
+        assert(compiler is not null);
+        return compiler.dspPtr(ptr);
+    }
+
+    public static nuint dspOffset(nuint offs)
+    {
+        var compiler = JitTls.Compiler;
+        assert(compiler is not null);
+        return compiler.dspOffset(offs);
+    }
+
+    /// <summary>Helper for <see cref="dumpSingleInstr" /> to dump hex bytes of an IL stream, aligning up to a minimum alignment width.</summary>
+    /// <param name="codeAddr">Pointer to IL byte stream to display.</param>
+    /// <param name="codeSize">Number of bytes of IL byte stream to display.</param>
+    /// <param name="alignSize">Pad out to this many characters, if fewer than this were written.</param>
+    public static unsafe void dumpILBytes(byte* codeAddr, uint codeSize, uint alignSize)
+    {
+        for (var offs = 0u; offs < codeSize; offs++)
+        {
+            jitprintf($" {codeAddr[offs]:X2}");
+        }
+
+        var charsWritten = 3 * codeSize;
+
+        for (var i = charsWritten; i < alignSize; i++)
+        {
+            jitprintf(" ");
+        }
+    }
+
+    /// <summary>Display a range of IL instructions from an IL instruction stream.</summary>
+    /// <param name="codeAddr">Pointer to IL byte stream to display.</param>
+    /// <param name="codeSize">Number of bytes of IL byte stream to display.</param>
+    public static unsafe void dumpILRange(byte* codeAddr, uint codeSize)
+    {
+        var offs = 0u;
+
+        while (offs < codeSize)
+        {
+            var codeBytesDumped = dumpSingleInstr(codeAddr, offs, $"IL_{offs:X4}");
+            offs += codeBytesDumped;
+        }
+    }
+
+    /// <summary>Display a single IL instruction.</summary>
+    /// <param name="codeAddr">Base pointer to a stream of IL instructions.</param>
+    /// <param name="offs">Offset from codeAddr of the IL instruction to display.</param>
+    /// <param name="prefix">Optional string to prefix the IL instruction with</param>
+    /// <returns>Size of the displayed IL instruction in the instruction stream, in bytes. (Add this to 'offs' to get to the next instruction.)</returns>
+    public static unsafe uint dumpSingleInstr(byte* codeAddr, IL_OFFSET offs, string prefix = "")
+    {
+        // assume 3 characters * (1 byte opcode + 4 bytes data + 1 prefix byte) for most things
+        const uint ALIGN_WIDTH = 3 * 6;
+
+        var opcodePtr = codeAddr + offs;
+        var startOpcodePtr = opcodePtr;
+
+        if (prefix.Length != 0)
+        {
+            jitprintf(prefix);
+        }
+
+        OPCODE opcode = (OPCODE)(opcodePtr[0]);
+        opcodePtr += sizeof(byte);
+
+        if (opcode == CEE_PREFIX1)
+        {
+            opcode = (OPCODE)(opcodePtr[0] + 0x0100);
+            opcodePtr += sizeof(byte);
+        }
+
+        if (opcode >= CEE_COUNT)
+        {
+            jitprintf($"\nIllegal opcode: {opcode:X2}\n");
+            return (IL_OFFSET)(opcodePtr - startOpcodePtr);
+        }
+
+        // Get the size of additional parameters
+
+        var sz = opcode.Size;
+        var argKind = opcode.ArgKind;
+        var name = opcode.Name;
+        var totalSize = (IL_OFFSET)(opcodePtr - startOpcodePtr) + sz;
+        var baseOffs = (IL_OFFSET)(opcodePtr - codeAddr) + sz;
+        var operand = "";
+
+        switch (argKind)
+        {
+            case InlineNone:
+            {
+                break;
+            }
+
+            case ShortInlineVar:
+            {
+                var iOp =opcodePtr[0];
+                operand = $" 0x{iOp:X}";
+                break;
+            }
+
+            case ShortInlineI:
+            {
+                var iOp = (sbyte)(opcodePtr[0]);
+                operand = $" 0x{iOp:X}";
+                break;
+            }
+
+            case InlineVar:
+            {
+                var iOp = BinaryPrimitives.ReadUInt16LittleEndian(new ReadOnlySpan<byte>(opcodePtr, 2));
+                operand = $" 0x{iOp:X}";
+                break;
+            }
+
+            case InlineTok:
+            case InlineMethod:
+            case InlineField:
+            case InlineType:
+            case InlineString:
+            case InlineSig:
+            case InlineI:
+            {
+                var iOp = BinaryPrimitives.ReadInt32LittleEndian(new ReadOnlySpan<byte>(opcodePtr, 4));
+                operand = $" 0x{iOp:X}";
+                break;
+            }
+
+            case InlineI8:
+            {
+                var iOp = BinaryPrimitives.ReadInt64LittleEndian(new ReadOnlySpan<byte>(opcodePtr, 8));
+                operand = $" 0x{iOp:X}";
+                break;
+            }
+
+            case ShortInlineR:
+            {
+                var dOp = BinaryPrimitives.ReadSingleLittleEndian(new ReadOnlySpan<byte>(opcodePtr, 4));
+                operand = $" {dOp}";
+                break;
+            }
+
+            case InlineR:
+            {
+                var dOp = BinaryPrimitives.ReadDoubleLittleEndian(new ReadOnlySpan<byte>(opcodePtr, 8));
+                operand = $" {dOp}";
+                break;
+            }
+
+            case ShortInlineBrTarget:
+            {
+                var jOp = (sbyte)(opcodePtr[0]);
+                operand = $" {jOp} (IL_{baseOffs + jOp:X4})";
+                break;
+            }
+
+            case InlineBrTarget:
+            {
+                var jOp = BinaryPrimitives.ReadInt32LittleEndian(new ReadOnlySpan<byte>(opcodePtr, 4));
+                operand = $" {jOp} (IL_{baseOffs + jOp:X4})";
+                break;
+            }
+
+            case InlineSwitch:
+            {
+                // Jump over the table
+                var cOp = BinaryPrimitives.ReadInt32LittleEndian(new ReadOnlySpan<byte>(opcodePtr, 4));
+                opcodePtr += 4 + (cOp * 4);
+                break;
+            }
+
+            case InlinePhi:
+            {
+                // Jump over the table
+                var cOp = opcodePtr[0];
+                opcodePtr += 1 + (cOp * 2);
+                break;
+            }
+
+            default:
+            {
+                assert(false, "Bad argKind");
+                break;
+            }
+        }
+
+        dumpILBytes(startOpcodePtr, totalSize, ALIGN_WIDTH);
+        jitprintf($" {name,-12}{operand}");
+
+        opcodePtr += sz;
+
+        jitprintf("\n");
+        return (IL_OFFSET)(opcodePtr - startOpcodePtr);
     }
 
     [Conditional("DEBUG")]

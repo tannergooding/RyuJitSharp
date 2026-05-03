@@ -22,7 +22,7 @@ public struct CORINFO_DEVIRTUALIZATION_INFO
     //
     // [Out] results of resolveVirtualMethod.
     // - devirtualizedMethod is set to MethodDesc of devirt'ed method iff we were able to devirtualize.
-    //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod != null)`.
+    //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod is not null)`.
     // - requiresInstMethodTableArg is set to TRUE if the devirtualized method requires a type handle arg.
     // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
     // - details on the computation done by the jit host

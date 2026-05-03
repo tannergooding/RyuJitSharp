@@ -3,19 +3,15 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System;
-using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
 
 namespace RyuJitSharp;
 
 public partial struct CILJit
 {
     private static readonly unsafe CILJit* s_instance = CreateInstance();
-    private static unsafe ICorJitHost* s_jitHost;
+    internal static unsafe ICorJitHost* s_jitHost;
     private static bool s_isJitInitialized;
 
     private static unsafe CILJit* CreateInstance()

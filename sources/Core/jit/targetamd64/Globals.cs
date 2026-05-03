@@ -613,7 +613,11 @@ public partial class Globals
     public const regMaskFlt RBM_FLTARG_REGS = RBM_FLTARG_0 | RBM_FLTARG_1 | RBM_FLTARG_2 | RBM_FLTARG_3;
 #endif
 
+    public const regMaskInt RBM_VALIDATE_INDIRECT_CALL_TRASH_ALL = RBM_INT_CALLEE_TRASH_ALL & ~(RBM_R10 | RBM_RCX);
+
     public const regNumber REG_VALIDATE_INDIRECT_CALL_ADDR = REG_RCX;
+
+    public const regMaskInt RBM_VALIDATE_INDIRECT_CALL_ADDR = RBM_RCX;
 
     public const regNumber REG_DISPATCH_INDIRECT_CALL_ADDR = REG_RAX;
 

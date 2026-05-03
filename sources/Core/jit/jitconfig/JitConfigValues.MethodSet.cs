@@ -118,7 +118,7 @@ public partial struct JitConfigValues
                     (name.MethodNameContainsInstantiation != prevPattern.MethodNameContainsInstantiation) ||
                     (name.ContainsSignature != prevPattern.ContainsSignature))
                 {
-                    var success = compiler.eeRunFunctorWithSPMIErrorTrap(() =>
+                    var success = compiler.eeRunFunctorWithSpmiErrorTrap(() =>
                         compiler.eePrintMethod(
                             stringBuilder,
                             classHandle,
@@ -141,7 +141,7 @@ public partial struct JitConfigValues
                     prevPattern = name;
                 }
 
-                if (MatchGlob(name.Pattern, Encoding.UTF8.GetBytes(stringBuilder.ToString())))
+                if (MatchGlob(name.Pattern, stringBuilder.ToString()))
                 {
                     return true;
                 }

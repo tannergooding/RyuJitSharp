@@ -46,7 +46,8 @@ public partial class Compiler
     }
 
     /// <inheritdoc cref="gtPeelOffsets(ref GenTree, out long, out FieldSeq)" />
-    public void gtPeelOffsets(ref GenTree addr, out target_ssize_t offset) => gtPeelOffsets(ref addr, out offset, out Unsafe.NullRef<FieldSeq?>());
+    public void gtPeelOffsets(ref GenTree addr, out target_ssize_t offset)
+        => gtPeelOffsets(ref addr, out offset, out Unsafe.NullRef<FieldSeq?>());
 
     /// <summary>Peel all ADD(addr, CNS_INT(x)) nodes off the specified address node and return the base node and sum of offsets peeled.</summary>
     /// <param name="addr">The address node.</param>

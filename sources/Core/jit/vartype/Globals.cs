@@ -3,10 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-
 namespace RyuJitSharp;
 
 public partial class Globals

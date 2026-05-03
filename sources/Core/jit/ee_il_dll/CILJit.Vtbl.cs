@@ -26,7 +26,7 @@ public unsafe partial struct CILJit
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static CorJitResult compileMethod(ICorJitCompiler* pSelf, ICorJitInfo* jitInfo, CORINFO_METHOD_INFO* methodInfo, uint flags, byte** nativeEntry, uint* nativeSizeOfCode) => ((CILJit*)pSelf)->compileMethod(jitInfo, methodInfo, flags, nativeEntry, nativeSizeOfCode);
+    private static CorJitResult compileMethod(ICorJitCompiler* pSelf, ICorJitInfo* jitInfo, CORINFO_METHOD_INFO* methodInfo, CorJitFlag flags, byte** nativeEntry, uint* nativeSizeOfCode) => ((CILJit*)pSelf)->compileMethod(jitInfo, methodInfo, flags, nativeEntry, nativeSizeOfCode);
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static void ProcessShutdownWork(ICorJitCompiler* pSelf, ICorStaticInfo* staticInfo) => ((CILJit*)pSelf)->ProcessShutdownWork(staticInfo);

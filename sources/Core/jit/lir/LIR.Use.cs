@@ -217,7 +217,7 @@ public partial class LIR
 
             var store = compiler.gtNewTempStore(lclNum, node).AsLclVar();
 
-            assert(store != null);
+            assert(store is not null);
             assert(store.Op1 == node);
 
             var load = new GenTreeLclVar(GT_LCL_VAR, store.Type, store.AsLclVarCommon().LclNum);

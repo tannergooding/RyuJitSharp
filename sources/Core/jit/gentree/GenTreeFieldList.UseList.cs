@@ -80,7 +80,7 @@ public partial class GenTreeFieldList
             _tail = _head;
             _head = null;
 
-            for (Use? next, use = _tail; use != null; use = next)
+            for (Use? next, use = _tail; use is not null; use = next)
             {
                 next = use.Next;
                 use.Next = _head;

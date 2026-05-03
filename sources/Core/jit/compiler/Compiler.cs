@@ -5,7 +5,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 
 namespace RyuJitSharp;
@@ -163,12 +166,12 @@ public partial class Compiler
 
     public VirtualStubParamInfo? virtualStubParamInfo;
 
-    public CodeGenInterface? codeGen;
+    public ICodeGen? codeGen;
 
 #if FEATURE_SIMD
     /// <summary>Have we identified any SIMD types?</summary>
     /// <remarks>This is currently used by struct promotion to avoid getting type information for a struct field to see if it is a SIMD type, if we haven't seen any SIMD types or operations in the method.</remarks>
-    public bool _usesSIMDTypes;
+    public bool _usesSimdTypes;
 
     public SimdHandlesCache? m_simdHandleCache;
 #endif
@@ -303,13 +306,13 @@ public partial class Compiler
 
     private regMaskFlt rbmAllFloat;
 
-    private regMaskFlt rbmFltCalleeTrash;
+    internal regMaskFlt rbmFltCalleeTrash;
 
     private uint cntCalleeTrashFloat;
 
-    private regMaskInt rbmAllInt;
+    internal regMaskInt rbmAllInt;
 
-    private regMaskInt rbmIntCalleeTrash;
+    internal regMaskInt rbmIntCalleeTrash;
 
     private uint cntCalleeTrashInt;
 
@@ -333,21 +336,186 @@ public partial class Compiler
     // This was done to avoid polluting all `targetXXX.h` macro definitions with a compiler parameter, where only
     // TARGET_XARCH requires one.
 
-    // TODO: Port once regMaskTP exists
-    // private regMaskTP rbmAllMask;
-    //
-    // private regMaskTP rbmMskCalleeTrash;
+    private regMaskMsk rbmAllMask;
+    
+    internal regMaskMsk rbmMskCalleeTrash;
 
     private uint cntCalleeTrashMask;
 
-    // TODO: Port once regMaskTP exists
-    // private varTypeCalleeTrashRegsInlineArray varTypeCalleeTrashRegs;
+    private varTypeCalleeTrashRegsInlineArray varTypeCalleeTrashRegs;
+#endif
+
+#if DEBUG
+    private static ConfigMethodRange fJitStressRange;
 #endif
 
     public unsafe Compiler(CORINFO_METHOD_HANDLE methodHandle, COMP_HANDLE jitInfo, CORINFO_METHOD_INFO* methodInfo, InlineInfo? inlineInfo)
     {
-        // TODO: Port constructor
+        impInlineInfo = inlineInfo;
+        impPendingBlockMembers = [];
+        impSpillCliquePredMembers = [];
+        impSpillCliqueSuccMembers = [];
+        genIPmappings = [];
+        genRichIPmappings = [];
+
+        info.compCompHnd = jitInfo;
+        info.compMethodHnd = methodHandle;
+        info.compMethodInfo = methodInfo;
+        info.compClassHnd = jitInfo->getMethodClass(methodHandle);
+
+#if DEBUG
+        if (compIsForInlining)
+        {
+            verbose = impInlineInfo.InlinerCompiler.verbose;
+        }
+#endif
+
+#if DEBUG || LATE_DISASM || DUMP_FLOWGRAPHS || DUMP_GC_TABLES
+        info.compMethodName = eeGetMethodName(methodHandle);
+        info.compClassName = eeGetClassName(info.compClassHnd);
+        info.compFullName = eeGetMethodFullName(methodHandle);
+
+        fixed (byte* pName = "SuperPMIMethodContextNumber"u8)
+        {
+            info.compMethodSuperPMIIndex = CILJit.s_jitHost->getIntConfigValue(pName, -1);
+        }
+
+        if (!compIsForInlining)
+        {
+            JitMetadata.report(this, JitMetadata.MethodFullName, info.compFullName);
+        }
+#endif
+
+#if DEBUG
+        // Opt-in to jit stress based on method hash ranges.
+        //
+        // Note the default (with JitStressRange not set) is that all
+        // methods will be subject to stress.
+        fJitStressRange.EnsureInit(JitConfig[ConfigString.JitStressRange]);
+        assert(!fJitStressRange.Error);
+
+        if (fJitStressRange.Contains(info.compMethodHash()))
+        {
+            var jitStressOnlyMethodSet = JitConfig[ConfigMethodSet.JitStressOnly];
+            compAllowStress = jitStressOnlyMethodSet.isEmpty() || jitStressOnlyMethodSet.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args);
+        }
+#endif
+
+        if (compIsForInlining)
+        {
+            m_inlineStrategy = null;
+            compInlineResult = impInlineInfo.inlineResult;
+        }
+        else
+        {
+            m_inlineStrategy = new InlineStrategy(this);
+            compInlineResult = null;
+        }
+
+        for (var i = 0; i < (int)(TYP_COUNT); i++)
+        {
+            fgBigOffsetMorphingTemps[i] = BAD_VAR_NUM;
+        }
+
+#if DEBUG
+        if (!compIsForInlining)
+        {
+            var noStructPromotionValue = JitConfig[ConfigInteger.JitNoStructPromotion];
+            assert(0 <= noStructPromotionValue && noStructPromotionValue <= 2);
+
+            if (noStructPromotionValue == 1)
+            {
+                fgNoStructPromotion = true;
+            }
+            if (noStructPromotionValue == 2)
+            {
+                fgNoStructParamPromotion = true;
+            }
+        }
+#endif
+
+        structPromotionHelper = new StructPromotionHelper(this);
+
+        if (!compIsForInlining)
+        {
+            codeGen = getCodeGenerator(this);
+            hashBv.Init(this);
+
+            //
+            // Initialize all the per-method statistics gathering data structures.
+            //
+#if MEASURE_NODE_SIZE
+            genNodeSizeStatsPerFunc.Init();
+#endif
+        }
+
+#if DEBUG
+        if (!compIsForInlining)
+        {
+            compDoComponentUnitTestsOnce();
+        }
+#endif
+
+        // check that HelperCallProperties are initialized
+        assert(s_helperCallProperties.IsPure(CORINFO_HELP_GET_GCSTATIC_BASE));
+
+        virtualStubParamInfo = new VirtualStubParamInfo(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+
+        // compMatchedVM is set to true if both CPU/ABI and OS are matching the execution engine requirements
+        //
+        // Do we have a matched VM? Or are we "abusing" the VM to help us do JIT work (such as using an x86 native VM
+        // with an ARM-targeting "altjit").
+        // Match CPU/ABI for compMatchedVM
+        info.compMatchedVM = (CorInfoArch)(info.compCompHnd->getExpectedTargetArchitecture()) == CORINFO_ARCH_TARGET;
+
+        // Match OS for compMatchedVM
+        var eeInfo = eeGetEEInfo();
+
+#if TARGET_OS_RUNTIMEDETERMINED
+        noway_assert(TargetOS::OSSettingConfigured);
+#endif
+
+        if (TargetOS.IsApplePlatform)
+        {
+            info.compMatchedVM = info.compMatchedVM && (eeInfo.osType == CORINFO_APPLE);
+        }
+        else if (TargetOS.IsUnix)
+        {
+            if (TargetArchitecture.IsX64)
+            {
+                // Apple x64 uses the Unix jit variant in crossgen2, not a special jit
+                info.compMatchedVM &= ((eeInfo.osType == CORINFO_UNIX) || (eeInfo.osType == CORINFO_APPLE));
+            }
+            else
+            {
+                info.compMatchedVM &= (eeInfo.osType == CORINFO_UNIX);
+            }
+        }
+        else if (TargetOS.IsWindows)
+        {
+            info.compMatchedVM &= (eeInfo.osType == CORINFO_WINNT);
+        }
+
+        compMaxUncheckedOffsetForNullObject = eeInfo.maxUncheckedOffsetForNullObject;
+
+#if DEBUG && TARGET_WASM
+        // TODO-WASM: remove once we no longer need to use x86/arm collections for wasm replay
+        // if we are cross-replaying wasm, override compMaxUncheckedOffsetForNullObject
+        if (!info.compMatchedVM)
+        {
+            compMaxUncheckedOffsetForNullObject = 1024 - 1;
+        }
+#endif
+
+        info.compCode = methodInfo->ILCode;
+        info.compILCodeSize = methodInfo->ILCodeSize;
     }
+
+    public unsafe bool IsAot => opts.jitFlags->IsSet(JitFlag.JIT_FLAG_AOT);
+
+    public unsafe bool IsNativeAot => IsAot && IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+
+    public unsafe bool IsReadyToRun => IsAot && !IsTargetAbi(CORINFO_NATIVEAOT_ABI);
 
     private ClassLayoutTable typClassLayoutTable
     {
@@ -370,7 +538,6 @@ public partial class Compiler
                 if (compiler.compIsForInlining)
                 {
                     var inlinerCompiler = compiler.impInlineInfo.InlinerCompiler;
-                    assert(inlinerCompiler is not null);
                     result = inlinerCompiler.typClassLayoutTable;
                 }
                 else
@@ -380,6 +547,51 @@ public partial class Compiler
                 return result;
             }
         }
+    }
+
+    private bool UsesSimdTypes
+    {
+        get
+        {
+            return _usesSimdTypes;
+        }
+
+        set
+        {
+            _usesSimdTypes = value;
+        }
+    }
+
+    /// <summary>Returns the codegen type for a given SIMD size.</summary>
+    /// <param name="size"></param>
+    /// <returns></returns>
+    public static var_types GetSimdTypeForSize(uint size) => size switch {
+        8 => TYP_SIMD8,
+        12 => TYP_SIMD12,
+        16 => TYP_SIMD16,
+#if TARGET_XARCH
+        32 => TYP_SIMD32,
+        64 => TYP_SIMD64,
+#elif TARGET_ARM64
+        SIZE_UNKNOWN => TYP_SIMD,
+#endif
+        _ => TYP_UNDEF,
+    };
+
+    public unsafe nuint dspPtr(void* ptr) => dspOffset((nuint)(ptr));
+
+    public nuint dspOffset(nuint offs)
+    {
+#if DEBUG
+        if (offs is not 0)
+        {
+            if (opts.dspDiffable)
+            {
+                offs = 0xD1FFAB1E;
+            }
+        }
+#endif
+        return offs;
     }
 
     public unsafe var_types GetHfaType(CORINFO_CLASS_HANDLE hClass)
@@ -401,6 +613,38 @@ public partial class Compiler
         return TYP_UNDEF;
     }
 
+    // getMaxVectorByteLength
+    // The minimum SIMD size supported by System.Numeric.Vectors or System.Runtime.Intrinsic
+    // Arm.AdvSimd:  16-byte Vector<T> and Vector128<T>
+    // X86.SSE:      16-byte Vector<T> and Vector128<T>
+    // X86.AVX:      16-byte Vector<T> and Vector256<T>
+    // X86.AVX2:     32-byte Vector<T> and Vector256<T>
+    // X86.AVX512:   32-byte Vector<T> and Vector512<T>
+    public uint GetMaxVectorByteLength()
+    {
+#if TARGET_XARCH
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+        {
+            return ZMM_REGSIZE_BYTES;
+        }
+        else if (compOpportunisticallyDependsOn(InstructionSet_AVX))
+        {
+            return YMM_REGSIZE_BYTES;
+        }
+        else
+        {
+            return XMM_REGSIZE_BYTES;
+        }
+#elif TARGET_ARM64
+        return FP_REGSIZE_BYTES;
+#else
+        unreached();
+        return 0;
+#endif
+    }
+
+    public uint GetMinVectorByteLength() => (uint)(TYP_SIMD8.EmitSize);
+
     /// <inheritdoc cref="GetReturnTypeForStruct(CORINFO_CLASS_HANDLE, CorInfoCallConvExtension, out structPassingKind, uint)" />
     public unsafe var_types GetReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd, CorInfoCallConvExtension callConv, uint structSize = 0)
         => GetReturnTypeForStruct(clsHnd, callConv, out Unsafe.NullRef<structPassingKind>(), structSize);
@@ -419,6 +663,123 @@ public partial class Compiler
         return TYP_UNKNOWN;
     }
 
+    // Get the number of bytes in a System.Numeric.Vector<T> for the current compilation.
+    // Note - cannot be used for System.Runtime.Intrinsic
+    public uint GetVectorTByteLength()
+    {
+        // We need to report the ISA dependency to the VM so that scenarios
+        // such as R2R work correctly for larger vector sizes, so we always
+        // do `compExactlyDependsOn` for such cases.
+
+#if TARGET_XARCH
+        if (compExactlyDependsOn(InstructionSet_VectorT512))
+        {
+            assert(!compIsaSupportedDebugOnly(InstructionSet_VectorT256));
+            assert(!compIsaSupportedDebugOnly(InstructionSet_VectorT128));
+            return ZMM_REGSIZE_BYTES;
+        }
+        else if (compExactlyDependsOn(InstructionSet_VectorT256))
+        {
+            assert(!compIsaSupportedDebugOnly(InstructionSet_VectorT128));
+            return YMM_REGSIZE_BYTES;
+        }
+        else if (compExactlyDependsOn(InstructionSet_VectorT128))
+        {
+            return XMM_REGSIZE_BYTES;
+        }
+        else
+        {
+            // TODO: We should be returning 0 here, but there are a number of
+            // places that don't quite get handled correctly in that scenario
+            return XMM_REGSIZE_BYTES;
+        }
+#elif TARGET_ARM64
+#if DEBUG
+        if ((JitConfig[ConfigInteger.JitUseScalableVectorT] != 0) && compExactlyDependsOn(InstructionSet_VectorT))
+        {
+            return SIZE_UNKNOWN;
+        }
+        else
+#endif
+            if (compExactlyDependsOn(InstructionSet_VectorT128))
+            {
+                return FP_REGSIZE_BYTES;
+            }
+            else
+            {
+                // TODO: We should be returning 0 here, but there are a number of
+                // places that don't quite get handled correctly in that scenario
+                return FP_REGSIZE_BYTES;
+            }
+#else
+            assert(false, "getVectorTByteLength() unimplemented on target arch");
+            unreached();
+            return 0;
+#endif
+    }
+
+    /// <summary>One line log function.</summary>
+    /// <param name="level"></param>
+    /// <param name="message"></param>
+    /// <remarks>Default level is 0. Increasing it gives you more log information</remarks>
+    [Conditional("DEBUG")]
+    public void JITLOG(uint level, string message)
+    {
+        if (verbose)
+        {
+            vflogf(jitstdout(), message);
+        }
+        _ = vlogf(level, message);
+    }
+
+#if DEBUG
+    private static ConfigMethodRange fJitRange;
+
+    public unsafe bool SkipMethod()
+    {        
+        fJitRange.EnsureInit(JitConfig[ConfigString.JitRange]);
+        assert(!fJitRange.Error);
+
+        // Normally JitConfig.JitRange() is null, we don't want to skip jitting any methods.
+        // So, the logic below relies on the fact that a null range string passed to ConfigMethodRange represents the set of all methods.
+
+        if (!fJitRange.Contains(info.compMethodHash()))
+        {
+            return true;
+        }
+
+        var jitExcludeMethodSet = JitConfig[ConfigMethodSet.JitExclude];
+
+        if (jitExcludeMethodSet.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+        {
+            return true;
+        }
+
+        var jitIncludeMethodSet = JitConfig[ConfigMethodSet.JitInclude];
+
+        if (!jitIncludeMethodSet.isEmpty() && !jitIncludeMethodSet.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+        {
+            return true;
+        }
+        return false;
+    }
+#endif
+
+    /// <summary>Use to determine if a struct *might* be a SIMD type. As this function only takes a size, many structs will fit the criteria.</summary>
+    /// <param name="structSize"></param>
+    /// <returns></returns>
+    public bool structSizeMightRepresentSimdType(nuint structSize)
+    {
+#if FEATURE_SIMD
+        return (structSize >= GetMinVectorByteLength()) && (structSize <= GetMaxVectorByteLength());
+#else
+        return false;
+#endif
+    }
+
+    public bool IsTargetAbi(CORINFO_RUNTIME_ABI abi)
+        => eeGetEEInfo().targetAbi == abi;
+
     /// <summary>Assumes called as part of process shutdown; does any compiler-specific work associated with that.</summary>
     public static unsafe void ProcessShutdownWork(ICorStaticInfo* staticInfo)
     {
@@ -436,16 +797,360 @@ public partial class Compiler
     /// <returns></returns>
     public unsafe ClassLayout typGetObjLayout(CORINFO_CLASS_HANDLE classHandle) => typClassLayoutTable.GetObjLayout(this, classHandle);
 
+#if FEATURE_SIMD
+    /// <summary>Return the base type and size of SIMD vector type given its type handle.</summary>
+    /// <param name="typeHnd">The handle of the type we're interested in.</param>
+    /// <param name="sizeBytes">set to size in bytes.</param>
+    /// <returns>base type of SIMD vector.</returns>
+    /// <remarks>
+    ///   <para>If the size of the struct is already known call <see cref="structSizeMightRepresentSimdType" /> to determine if this api needs to be called.</para>
+    ///   <para>The type handle passed here can only be used in a subset of JIT-EE calls since it may be called by promotion during AOT of a method that does not version with SPC. See CORINFO_TYPE_LAYOUT_NODE for the contract on the supported JIT-EE calls.</para>
+    /// </remarks>
+    private unsafe var_types getBaseTypeAndSizeOfSimdType(CORINFO_CLASS_HANDLE typeHnd, out uint sizeBytes)
+    {
+        var simdHandleCache = m_simdHandleCache;
+
+        if (simdHandleCache is null)
+        {
+            if (impInlineInfo is null)
+            {
+                simdHandleCache = new SimdHandlesCache();
+            }
+            else
+            {
+                // Steal the inliner compiler's cache (create it if not available).
+
+                var inlineRoot = impInlineInfo.InlineRoot;
+                simdHandleCache = inlineRoot.m_simdHandleCache;
+
+                if (simdHandleCache is null)
+                {
+                    simdHandleCache = new SimdHandlesCache();
+                    inlineRoot.m_simdHandleCache = simdHandleCache;
+                }
+            }
+            m_simdHandleCache = simdHandleCache;
+        }
+
+        Unsafe.SkipInit(out sizeBytes);
+
+        if (!Unsafe.IsNullRef(in sizeBytes))
+        {
+            sizeBytes = 0;
+        }
+
+        if ((typeHnd is null) || !isIntrinsicType(typeHnd))
+        {
+            return TYP_UNDEF;
+        }
+
+        var className = getClassNameFromMetadata(typeHnd, out var namespaceName);
+
+        // fast path search using cached type handles of important types
+        var simdBaseType = TYP_UNDEF;
+        var size = 0u;
+
+        if (namespaceName.Equals("System.Numerics", StringComparison.Ordinal))
+        {
+            switch (className[0])
+            {
+                case 'P':
+                {
+                    if (!className.Equals("Plane", StringComparison.Ordinal))
+                    {
+                        return TYP_UNDEF;
+                    }
+
+                    JITDUMP("  Known type Plane\n");
+                    simdHandleCache.PlaneHandle = typeHnd;
+
+                    simdBaseType = TYP_FLOAT;
+                    size = 4u * TYP_FLOAT.Size;
+                    break;
+                }
+
+                case 'Q':
+                {
+                    if (!className.Equals("Quaternion", StringComparison.Ordinal))
+                    {
+                        return TYP_UNDEF;
+                    }
+
+                    JITDUMP("  Known type Quaternion\n");
+                    simdHandleCache.QuaternionHandle = typeHnd;
+
+                    simdBaseType = TYP_FLOAT;
+                    size = 4u * TYP_FLOAT.Size;
+                    break;
+                }
+
+                case 'V':
+                {
+                    if (!className.StartsWith("Vector", StringComparison.Ordinal))
+                    {
+                        return TYP_UNDEF;
+                    }
+
+                    switch (className[6])
+                    {
+                        case '\0':
+                        {
+                            JITDUMP(" Found type Vector\n");
+                            simdHandleCache.VectorHandle = typeHnd;
+                            break;
+                        }
+
+                        case '2':
+                        {
+                            if (className[7] != '\0')
+                            {
+                                return TYP_UNDEF;
+                            }
+
+                            JITDUMP(" Found Vector2\n");
+                            simdHandleCache.Vector2Handle = typeHnd;
+
+                            simdBaseType = TYP_FLOAT;
+                            size = 2u * TYP_FLOAT.Size;
+                            break;
+                        }
+
+                        case '3':
+                        {
+                            if (className[7] != '\0')
+                            {
+                                return TYP_UNDEF;
+                            }
+
+                            JITDUMP(" Found Vector3\n");
+                            simdHandleCache.Vector3Handle = typeHnd;
+
+                            simdBaseType = TYP_FLOAT;
+                            size = 3u * TYP_FLOAT.Size;
+                            break;
+                        }
+
+                        case '4':
+                        {
+                            if (className[7] != '\0')
+                            {
+                                return TYP_UNDEF;
+                            }
+
+                            JITDUMP(" Found Vector4\n");
+                            simdHandleCache.Vector4Handle = typeHnd;
+
+                            simdBaseType = TYP_FLOAT;
+                            size = 4u * TYP_FLOAT.Size;
+                            break;
+                        }
+
+                        case '`':
+                        {
+                            if ((className[7] != '1') || (className[8] != '\0'))
+                            {
+                                return TYP_UNDEF;
+                            }
+
+                            var typeArgHnd = info.compCompHnd->getTypeInstantiationArgument(typeHnd, 0);
+                            simdBaseType = getBaseTypeForPrimitiveNumericClass(typeArgHnd);
+
+                            if ((simdBaseType < TYP_BYTE) || (simdBaseType > TYP_DOUBLE))
+                            {
+                                return TYP_UNDEF;
+                            }
+
+                            JITDUMP($" Found Vector<{simdBaseType}>\n");
+                            size = GetVectorTByteLength();
+
+                            if (size == 0)
+                            {
+                                return TYP_UNDEF;
+                            }
+                            break;
+                        }
+
+                        default:
+                        {
+                            return TYP_UNDEF;
+                        }
+                    }
+                    break;
+                }
+
+                default:
+                {
+                    return TYP_UNDEF;
+                }
+            }
+        }
+#if FEATURE_HW_INTRINSICS
+        else
+        {
+            size = info.compCompHnd->getClassSize(typeHnd);
+
+            switch (size)
+            {
+#if TARGET_ARM64
+                case 8:
+                {
+                    if (!className.Equals("Vector64`1", StringComparison.Ordinal))
+                    {
+                        return TYP_UNDEF;
+                    }
+
+                    var typeArgHnd = info.compCompHnd->getTypeInstantiationArgument(typeHnd, 0);
+                    simdBaseType = getBaseTypeForPrimitiveNumericClass(typeArgHnd);
+
+                    if ((simdBaseType < TYP_BYTE) || (simdBaseType > TYP_DOUBLE))
+                    {
+                        return TYP_UNDEF;
+                    }
+
+                    JITDUMP($" Found Vector64<{simdBaseType}>\n");
+                    break;
+                }
+#endif
+
+                case 16:
+                {
+                    if (!className.Equals("Vector128`1", StringComparison.Ordinal))
+                    {
+                        return TYP_UNDEF;
+                    }
+
+                    var typeArgHnd = info.compCompHnd->getTypeInstantiationArgument(typeHnd, 0);
+                    simdBaseType = getBaseTypeForPrimitiveNumericClass(typeArgHnd);
+
+                    if ((simdBaseType < TYP_BYTE) || (simdBaseType > TYP_DOUBLE))
+                    {
+                        return TYP_UNDEF;
+                    }
+
+                    JITDUMP($" Found Vector128<{simdBaseType}>\n");
+                    break;
+                }
+
+#if TARGET_XARCH
+                case 32:
+                {
+                    if (!className.Equals("Vector256`1", StringComparison.Ordinal))
+                    {
+                        return TYP_UNDEF;
+                    }
+
+                    var typeArgHnd = info.compCompHnd->getTypeInstantiationArgument(typeHnd, 0);
+                    simdBaseType = getBaseTypeForPrimitiveNumericClass(typeArgHnd);
+
+                    if ((simdBaseType < TYP_BYTE) || (simdBaseType > TYP_DOUBLE))
+                    {
+                        return TYP_UNDEF;
+                    }
+
+                    if (!compOpportunisticallyDependsOn(InstructionSet_AVX))
+                    {
+                        // We must treat as a regular struct if AVX isn't supported
+                        return TYP_UNDEF;
+                    }
+
+                    JITDUMP($" Found Vector256<{simdBaseType}>\n");
+                    break;
+                }
+
+                case 64:
+                {
+                    if (!className.Equals("Vector512`1", StringComparison.Ordinal))
+                    {
+                        return TYP_UNDEF;
+                    }
+
+                    var typeArgHnd = info.compCompHnd->getTypeInstantiationArgument(typeHnd, 0);
+                    simdBaseType = getBaseTypeForPrimitiveNumericClass(typeArgHnd);
+
+                    if ((simdBaseType < TYP_BYTE) || (simdBaseType > TYP_DOUBLE))
+                    {
+                        return TYP_UNDEF;
+                    }
+
+                    if (!compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                    {
+                        // We must treat as a regular struct if AVX512 isn't supported
+                        return TYP_UNDEF;
+                    }
+
+                    JITDUMP($" Found Vector512<{simdBaseType}>\n");
+                    break;
+                }
+#endif
+
+                default:
+                {
+                    return TYP_UNDEF;
+                }
+            }
+        }
+#endif
+
+        if (!Unsafe.IsNullRef(in sizeBytes))
+        {
+            sizeBytes = size;
+        }
+
+        if (simdBaseType != TYP_UNDEF)
+        {
+            assert(size == info.compCompHnd->getClassSize(typeHnd));
+            UsesSimdTypes = true;
+        }
+        return simdBaseType;
+    }
+
+    private unsafe var_types getBaseTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls)
+    {
+        var jitType = info.compCompHnd->getTypeForPrimitiveNumericClass(cls);
+
+        if (jitType == CORINFO_TYPE_UNDEF)
+        {
+            return TYP_UNDEF;
+        }
+        return jitType.PreciseVarType;
+    }
+
+    private unsafe var_types getBaseTypeOfSimdType(CORINFO_CLASS_HANDLE typeHnd)
+        => getBaseTypeAndSizeOfSimdType(typeHnd, out Unsafe.NullRef<uint>());
+#endif
+
+    private unsafe string getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, out string namespaceName)
+    {
+        byte* pNamespaceNameUtf8;
+        var pClassNameUtf8 = info.compCompHnd->getClassNameFromMetadata(cls, &pNamespaceNameUtf8);
+
+        var classNameUtf8 = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pClassNameUtf8);
+        var namespaceNameUtf8 = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pNamespaceNameUtf8);
+
+        namespaceName = Encoding.UTF8.GetString(namespaceNameUtf8);
+        return Encoding.UTF8.GetString(classNameUtf8);
+    }
+
+#if FEATURE_SIMD
+    private unsafe bool isIntrinsicType(CORINFO_CLASS_HANDLE clsHnd)
+        => info.compCompHnd->isIntrinsicType(clsHnd);
+#endif
+
+    private unsafe bool notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported)
+    {
+        JITDUMP($"Notify VM instruction set ({InstructionSetToString(isa)}) {(supported ? "must" : "must not")} be supported.\n");
+        return info.compCompHnd->notifyInstructionSetUsage(isa, supported);
+    }
+
     [InlineArray((int)(MemoryKindCount))]
     public struct m_memorySsaMapInlineArray
     {
         public NodeToUnsignedMap e0;
     }
 
-    // TODO: Port once regMaskTP exists
-    // [InlineArray((int)(TYP_COUNT))]
-    // private struct varTypeCalleeTrashRegsInlineArray
-    // {
-    //     public regMaskTP e0;
-    // }
+    [InlineArray((int)(TYP_COUNT))]
+    private struct varTypeCalleeTrashRegsInlineArray
+    {
+        public regMaskTP e0;
+    }
 }

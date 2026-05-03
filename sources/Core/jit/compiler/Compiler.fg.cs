@@ -250,6 +250,77 @@ public partial class Compiler
 
     public bool fgDidEarlyLiveness;
 
+    /// <summary>Determines if conditions are met to allow switching the opt level to optimized</summary>
+    /// <remarks>This method is to be called at some point before <see cref="compSetOptimizationLevel" /> to determine if the opt level may be changed based on information gathered in early phases.</remarks>
+    public unsafe bool fgCanSwitchToOptimized
+    {
+        get
+        {
+            var result = opts.jitFlags->IsSet(JitFlag.JIT_FLAG_TIER0)
+                     && !opts.jitFlags->IsSet(JitFlag.JIT_FLAG_MIN_OPT)
+                     && !opts.compDbgCode
+                     && !compIsForInlining;
+
+            if (result)
+            {
+                // Ensure that it would be safe to change the opt level
+                assert(opts.compFlags == CLFLG_MINOPT);
+                assert(!opts.IsMinOptsSet);
+            }
+            return result;
+        }
+    }
+
+    /// <summary>Check if we have a profile that has weights.</summary>
+    /// <remarks>These weights may come from instrumentation or from synthesis.</remarks>
+    public bool fgHaveProfileWeights => fgPgoHaveWeights;
+
+    /// <summary>check if profile data is available and is sufficient enough to be trustful.</summary>
+    /// <remarks>See notes for fgHaveProfileData.</remarks>
+    public bool fgHaveSufficientProfileWeights
+    {
+        get
+        {
+            if (!fgHaveProfileWeights)
+            {
+                return false;
+            }
+
+            switch (fgPgoSource)
+            {
+                case ICorJitInfo.PgoSource.Dynamic:
+                case ICorJitInfo.PgoSource.Text:
+                case ICorJitInfo.PgoSource.Blend:
+                {
+                    return true;
+                }
+
+                case ICorJitInfo.PgoSource.Synthesis:
+                {
+                    // Single-edge methods always have sufficient profile data.
+                    // Assuming we don't synthesize value and class profile data (which we don't currently).
+                    return fgPgoSingleEdge;
+                }
+
+                case ICorJitInfo.PgoSource.Static:
+                {
+                    // We sometimes call this very early, eg evaluating the prejit root.
+                    if (fgFirstBB is not null)
+                    {
+                        var sufficientSamples = 1000.0;
+                        return fgFirstBB.bbWeight > sufficientSamples;
+                    }
+                    return true;
+                }
+
+                default:
+                {
+                    return false;
+                }
+            }
+        }
+    }
+
     /// <summary>Check whether the address tree may represent a heap address.</summary>
     /// <param name="addr">Address to check</param>
     /// <returns>True if address could be a heap address; false otherwise (i.e. stack, native memory, etc.)</returns>
@@ -288,12 +359,73 @@ public partial class Compiler
         return result;
     }
 
+    /// <summary>Dump all basic blocks in the function.</summary>
+    /// <param name="dumpTrees">if true, also dump the trees in each block</param>
+    public void fgDispBasicBlocks(bool dumpTrees = false)
+        => fgDispBasicBlocks(fgFirstBB, lastBlock: null, dumpTrees);
+
+    /// <summary>Dump blocks from "firstBlock" to "lastBlock".</summary>
+    /// <param name="firstBlock">the first block to dump</param>
+    /// <param name="lastBlock">the last block to dump (or nullptr for all remaining blocks)</param>
+    /// <param name="dumpTrees">if true, also dump the trees in each block</param>
+    public void fgDispBasicBlocks(BasicBlock? firstBlock, BasicBlock? lastBlock, bool dumpTrees)
+    {
+        // TODO: Port Compiler.fgDispBasicBlocks
+    }
+
+    public void fgFindBasicBlocks()
+    {
+        // TODO: Port Compiler.fgFindBasicBlocks
+    }
+
+    /// <summary>Remove all traces of profile info</summary>
+    /// <param name="reason">string describing why profile data is being removed</param>
+    /// <remarks>
+    ///   <para>Needed if the jit initially thought it was going to optimize the method, but then decided not to.</para>
+    ///   <para>Does not modify any block fields, so should be called before we start to incorporate profile data.</para>
+    /// </remarks>
+    public unsafe void fgRemoveProfileData(string reason)
+    {
+        fgPgoFailReason = reason;
+        fgPgoQueryResult = E_FAIL;
+        fgPgoHaveWeights = false;
+        fgPgoData = null;
+        fgPgoSchema = null;
+        fgPgoDisabled = true;
+        fgPgoDynamic = false;
+    }
+
 #if DEBUG
     public void fgTableDispBasicBlock(BasicBlock block, BasicBlock? nextBlock = null, bool printEdgeLikelihoods = true, int blockTargetFieldWidth = 21, int ibcColWidth = 0)
     {
         // TODO: Port Compiler.fgTableDispBasicBlock
     }
 #endif
+
+    /// <summary>Switch the opt level from tier 0 to optimized</summary>
+    /// <param name="reason">reason why opt level was switched</param>
+    /// <remarks>This method is to be called at some point before <see cref="compSetOptimizationLevel" /> to switch the opt level to optimized based on information gathered in early phases.</remarks>
+    protected unsafe void fgSwitchToOptimized(string reason)
+    {
+        assert(fgCanSwitchToOptimized);
+
+        // Switch to optimized and re-init options
+        JITDUMP($"****\n**** JIT Tier0 jit request switching to Tier1 because: {reason}\n****\n");
+        assert(opts.jitFlags->IsSet(JitFlag.JIT_FLAG_TIER0));
+        opts.jitFlags->Clear(JitFlag.JIT_FLAG_TIER0);
+        opts.jitFlags->Clear(JitFlag.JIT_FLAG_BBINSTR);
+        opts.jitFlags->Clear(JitFlag.JIT_FLAG_BBINSTR_IF_LOOPS);
+        opts.jitFlags->Clear(JitFlag.JIT_FLAG_OSR);
+        opts.jitFlags->Set(JitFlag.JIT_FLAG_BBOPT);
+
+        // Leave a note for jit diagnostics
+        compSwitchedToOptimized = true;
+
+        compInitOptions(*opts.jitFlags);
+
+        // Notify the VM of the change
+        info.compCompHnd->setMethodAttribs(info.compMethodHnd, CORINFO_FLG_SWITCHED_TO_OPTIMIZED);
+    }
 
     [InlineArray((int)(MemoryKindCount))]
     public struct fgCurMemoryVNInlineArray

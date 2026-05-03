@@ -5,6 +5,13 @@
 
 namespace RyuJitSharp;
 
-public sealed class BasicBlock
+public sealed class BasicBlock : LIR.Range
 {
+    /// <summary>The dynamic execution weight of this block</summary>
+    public weight_t bbWeight;
+
+    public BasicBlock(GenTree? firstNode, GenTree? lastNode)
+        : base(firstNode, lastNode)
+    {
+    }
 }

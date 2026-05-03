@@ -594,6 +594,11 @@ public abstract partial class GenTree
         return false;
     }
 
+    public static void InitNodeSize()
+    {
+        // TODO: Port GenTree.InitNodeSize
+    }
+
     public GenTreeUnOp AsUnOp() => Unsafe.As<GenTreeUnOp>(this);
 
     public GenTreeOp AsOp() => Unsafe.As<GenTreeOp>(this);

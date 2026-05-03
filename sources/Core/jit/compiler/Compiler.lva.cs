@@ -17,7 +17,7 @@ public partial class Compiler
     public uint lvaCount;
 
     /// <summary>variable descriptor table</summary>
-    public LclVarDsc[]? lvaTable;
+    public LclVarDsc[] lvaTable = [];
 
     public AbiPassingInformation? lvaParameterPassingInfo;
 
@@ -179,24 +179,23 @@ public partial class Compiler
     /// <remarks>During frame layout calculations, this is the level we are currently computing.</remarks>
     public FrameLayoutState lvaDoneFrameLayout;
 
+    /// <summary>return true if there is no place in the code that writes to arg0</summary>
+    public bool lvaIsOriginalThisReadOnly => lvaArg0Var == info.compThisArg;
+
     public ref LclVarDsc lvaGetDesc(uint lclNum)
     {
         assert(lclNum < lvaCount);
-        assert(lvaTable is not null);
         return ref lvaTable[lclNum];
     }
 
-#if DEBUG
     public uint lvaGrabTemp(bool shortLifetime, string reason)
     {
         // TODO: Port Compiler.lvaGrabTemp
         return 0;
     }
-#else
-    public uint lvaGrabTemp(bool shortLifetime)
+
+    public void lvaInitTypeRef()
     {
-        // TODO: Port Compiler.lvaGrabTemp
-        return 0;
+        // TODO: Port Compiler.lvaInitTypeRef
     }
-#endif
 }

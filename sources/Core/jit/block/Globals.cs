@@ -21,29 +21,6 @@ public partial class Globals
     /// <summary>Use this format for profile weights where we want to conserve horizontal space, at the expense of displaying less precision.</summary>
     public const string FMT_WT_NARROW = "{0:G3}";
 
-#if DEBUG
-    public static readonly string[] bbKindNames = [
-        "BBJ_EHFINALLYRET",
-        "BBJ_EHFAULTRET",
-        "BBJ_EHFILTERRET",
-        "BBJ_EHCATCHRET",
-        "BBJ_THROW",
-        "BBJ_RETURN",
-        "BBJ_ALWAYS",
-        "BBJ_LEAVE",
-        "BBJ_CALLFINALLY",
-        "BBJ_CALLFINALLYRET",
-        "BBJ_COND",
-        "BBJ_SWITCH",
-        "BBJ_COUNT",
-    ];
-
-    public static readonly string[] memoryKindNames = [
-        "ByrefExposed",
-        "GcHeap",
-    ];
-#endif
-
     // Special values for bbCatchType, which is normally a class token of the catch handler.
     // These special values will not collide with real tokens.
 
@@ -69,7 +46,7 @@ public partial class Globals
     public const weight_t BB_ZERO_WEIGHT = 0.0;
 
     /// <summary>Upper bound for cold weights; used during block layout</summary>
-    public const weight_t BB_COLD_WEIGHT           = 0.01;
+    public const weight_t BB_COLD_WEIGHT = 0.01;
 
     /// <summary>maximum finite weight -- needs rethinking.</summary>
     public const weight_t BB_MAX_WEIGHT = float.MaxValue;

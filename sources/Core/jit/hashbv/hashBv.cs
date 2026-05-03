@@ -7,4 +7,8 @@ namespace RyuJitSharp;
 
 public sealed class hashBv
 {
+    public static void Init(Compiler compiler)
+    {
+        // TODO: Port hashBv.Init
+    }
 }

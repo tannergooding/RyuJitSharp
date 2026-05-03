@@ -15,12 +15,18 @@ public struct LogEnv
         _jitInfo = jitInfo;
     }
 
-    public void setCompiler(Compiler value)
+    public readonly unsafe ICorJitInfo* JitInfo => _jitInfo;
+
+    public Compiler? Compiler
     {
-        _compiler = value;
+        readonly get
+        {
+            return _compiler;
+        }
+
+        set
+        {
+            _compiler = value;
+        }
     }
-
-    public readonly unsafe ICorJitInfo* jitInfo => _jitInfo;
-
-    public readonly Compiler? compiler => _compiler;
 }

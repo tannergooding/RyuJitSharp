@@ -1389,7 +1389,7 @@ public partial struct JitConfigValues
         [JitDoValueNumber] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDoValueNumber"u8)), 1),
         [JitDoIfConversion] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDoIfConversion"u8)), 1),
         [JitDoOptimizeMaskConversions] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDoOptimizeMaskConversions"u8)), 1),
-        [JitOptimizeAwait] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitOptimizeAwait"u8)), 1),
+        [JitDoOptimizeAwait] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitOptimizeAwait"u8)), 1),
 #endif
 
         [JitAsyncReuseContinuations] = ((nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitAsyncReuseContinuations"u8)), 1),

@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
 
@@ -56,7 +57,7 @@ public partial class Compiler
     private PendingDsc? impPendingFree;
 
     // We keep a byte-per-block map (dynamically extended) in the top-level Compiler object of a compilation.
-    private List<byte>? impPendingBlockMembers;
+    private List<byte> impPendingBlockMembers;
 
     private bool impCanReimport;
 
@@ -64,9 +65,9 @@ public partial class Compiler
     // block, and represent the predecessor and successor members of the clique currently being computed.
     // *** Access to these will need to be locked in a parallel compiler.
 
-    private List<byte>? impSpillCliquePredMembers;
+    private List<byte> impSpillCliquePredMembers;
 
-    private List<byte>? impSpillCliqueSuccMembers;
+    private List<byte> impSpillCliqueSuccMembers;
 
     private BlockListNode? impBlockListNodeFreeList;
 
@@ -90,7 +91,6 @@ public partial class Compiler
             if (impInlineInfo is not null)
             {
                 result = impInlineInfo.InlineRoot;
-                assert(result is not null);
             }
             return result;
         }
@@ -181,5 +181,138 @@ public partial class Compiler
         }
 
         return false;
+    }
+
+    /// <summary>screen inline candate based on info from the method header</summary>
+    /// <param name="fncHandle">inline candidate method</param>
+    /// <param name="methInfo">method info from VM</param>
+    /// <param name="forceInline">true if method is marked with AggressiveInlining</param>
+    /// <param name="inlineResult">ongoing inline evaluation</param>
+    public unsafe void impCanInlineIL(CORINFO_METHOD_HANDLE fncHandle, CORINFO_METHOD_INFO* methInfo, bool forceInline, InlineResult inlineResult)
+    {
+        var codeSize = methInfo->ILCodeSize;
+
+        // We shouldn't have made up our minds yet...
+        assert(!inlineResult.IsDecided);
+
+        if (methInfo->EHcount > 0)
+        {
+            if (!opts.compInlineMethodsWithEH)
+            {
+                inlineResult.NoteFatal(InlineObservation.CALLEE_HAS_EH);
+                return;
+            }
+        }
+
+        if ((methInfo->ILCode is null) || (codeSize == 0))
+        {
+            inlineResult.NoteFatal(InlineObservation.CALLEE_HAS_NO_BODY);
+            return;
+        }
+
+        // For now we don't inline varargs (import code can't handle it)
+
+        if (methInfo->args.isVarArg())
+        {
+            inlineResult.NoteFatal(InlineObservation.CALLEE_HAS_MANAGED_VARARGS);
+            return;
+        }
+
+        // Reject if it has too many locals.
+        // This is currently an implementation limit due to fixed-size arrays in the
+        // inline info, rather than a performance heuristic.
+
+        inlineResult.NoteInt(InlineObservation.CALLEE_NUMBER_OF_LOCALS, (int)(methInfo->locals.numArgs));
+
+        if (methInfo->locals.numArgs > MAX_INL_LCLS)
+        {
+            inlineResult.NoteFatal(InlineObservation.CALLEE_TOO_MANY_LOCALS);
+            return;
+        }
+
+        // Make sure there aren't too many arguments.
+        // This is currently an implementation limit due to fixed-size arrays in the
+        // inline info, rather than a performance heuristic.
+
+        inlineResult.NoteInt(InlineObservation.CALLEE_NUMBER_OF_ARGUMENTS, (int)(methInfo->args.numArgs));
+
+        if (methInfo->args.numArgs > MAX_INL_ARGS)
+        {
+            inlineResult.NoteFatal(InlineObservation.CALLEE_TOO_MANY_ARGUMENTS);
+            return;
+        }
+
+        // Note force inline state
+
+        inlineResult.NoteBool(InlineObservation.CALLEE_IS_FORCE_INLINE, forceInline);
+
+        // Note IL code size
+
+        inlineResult.NoteInt(InlineObservation.CALLEE_IL_CODE_SIZE, (int)(codeSize));
+
+        if (inlineResult.IsFailure)
+        {
+            return;
+        }
+
+        // Make sure maxstack is not too big
+
+        inlineResult.NoteInt(InlineObservation.CALLEE_MAXSTACK, (int)(methInfo->maxStack));
+
+        if (inlineResult.IsFailure)
+        {
+            return;
+        }
+    }
+
+    public unsafe var_types impNormStructType(CORINFO_CLASS_HANDLE structHnd)
+        => impNormStructType(structHnd, out Unsafe.NullRef<var_types>());
+
+    /// <summary>Normalize the type of a (known to be) struct class handle.</summary>
+    /// <param name="structHnd">The class handle for the struct type of interest.</param>
+    /// <param name="pSimdBaseJitType">if the struct is a SIMD type, set to the SIMD base JIT type</param>
+    /// <returns>The JIT type for the struct (e.g. TYP_STRUCT, or TYP_SIMD*).</returns>
+    /// <remarks>
+    ///   <para>This may also modify the compFloatingPointUsed flag if the type is a SIMD type.</para>
+    ///   <para>Normalizing the type involves examining the struct type to determine if it should be modified to one that is handled specially by the JIT, possibly being a candidate for full enregistration, e.g. TYP_SIMD16.</para>
+    ///   <para>If the size of the struct is already known call <see cref="structSizeMightRepresentSimdType" /> to determine if this api needs to be called.</para>
+    /// </remarks>
+    public unsafe var_types impNormStructType(CORINFO_CLASS_HANDLE structHnd, out var_types pSimdBaseJitType)
+    {
+        Unsafe.SkipInit(out pSimdBaseJitType);
+
+        assert(structHnd != NO_CLASS_HANDLE);
+        var structType = TYP_STRUCT;
+
+#if FEATURE_SIMD
+        var structFlags = info.compCompHnd->getClassAttribs(structHnd);
+
+        // Don't bother if the struct contains GC references of byrefs, it can't be a SIMD type.
+        if ((structFlags & (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_BYREF_LIKE)) == 0)
+        {
+            var originalSize = info.compCompHnd->getClassSize(structHnd);
+
+            if (structSizeMightRepresentSimdType(originalSize))
+            {
+                var simdBaseType = getBaseTypeAndSizeOfSimdType(structHnd, out var sizeBytes);
+
+                if (simdBaseType != TYP_UNDEF)
+                {
+                    assert((sizeBytes == originalSize )|| (sizeBytes is SIZE_UNKNOWN));
+                    structType = GetSimdTypeForSize(sizeBytes);
+
+                    if (!Unsafe.IsNullRef(in pSimdBaseJitType))
+                    {
+                        pSimdBaseJitType = simdBaseType;
+                    }
+
+                    // Also indicate that we use floating point registers.
+                    compFloatingPointUsed = true;
+                }
+            }
+        }
+#endif
+
+        return structType;
     }
 }

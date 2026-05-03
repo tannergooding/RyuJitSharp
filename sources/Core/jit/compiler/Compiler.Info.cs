@@ -37,19 +37,16 @@ public partial class Compiler
 #endif
 
 #if DEBUG
-        private uint compMethodHashPrivate;
+        private int compMethodHashPrivate;
 
         /// <summary>get hash code for currently jitted method</summary>
         /// <returns>Hash based on method's full name</returns>
-        public uint compMethodHash()
+        public int compMethodHash()
         {
             if (compMethodHashPrivate == 0)
             {
-                assert(compFullName is not null);
-                assert(compFullName.Length != 0);
-
                 // Use compFullName to generate the hash, as it contains the signature and return type
-                var hash = (uint)(compFullName.GetHashCode(StringComparison.Ordinal));
+                var hash = compFullName.GetHashCode(StringComparison.Ordinal);
                 compMethodHashPrivate = hash;
             }
             return compMethodHashPrivate;
@@ -57,10 +54,10 @@ public partial class Compiler
 #endif
 
         /// <summary>The following holds the FLG_xxxx flags for the method we're compiling.</summary>
-        public uint compFlags;
+        public CorInfoFlag compFlags;
 
         /// <summary>The following holds the class attributes for the method we're compiling.</summary>
-        public uint compClassAttr;
+        public CorInfoFlag compClassAttr;
 
         public unsafe byte* compCode;
 

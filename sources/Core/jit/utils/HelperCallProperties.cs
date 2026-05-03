@@ -7,4 +7,9 @@ namespace RyuJitSharp;
 
 public struct HelperCallProperties
 {
+    public readonly bool IsPure(CorInfoHelpFunc helperId)
+    {
+        // TODO: Port HelperCallProperties.IsPure
+        return false;
+    }
 }

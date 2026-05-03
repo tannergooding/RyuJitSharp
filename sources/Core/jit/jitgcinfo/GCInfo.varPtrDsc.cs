@@ -5,9 +5,9 @@
 
 namespace RyuJitSharp;
 
-public static partial class BitSetSupport
+public partial struct GCInfo
 {
-    public struct BitSetOpCounter
+    public sealed class varPtrDsc
     {
     }
 }

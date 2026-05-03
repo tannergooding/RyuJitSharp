@@ -5,6 +5,49 @@
 
 namespace RyuJitSharp;
 
+/// <summary>provides basic information about a particular inline candidate.</summary>
+/// <remarks>Calls can start out as GDV candidates and turn into inline candidates</remarks>
 public sealed class InlineCandidateInfo : HandleHistogramProfileCandidateInfo
 {
+    public unsafe CORINFO_CLASS_HANDLE guardedClassHandle;
+
+    public unsafe CORINFO_METHOD_HANDLE guardedMethodHandle;
+
+    public unsafe CORINFO_METHOD_HANDLE guardedMethodUnboxedEntryHandle;
+
+    public unsafe CORINFO_METHOD_HANDLE guardedMethodInstantiatedEntryHandle;
+
+    public uint likelihood;
+
+    public bool needsMethodContext;
+
+    public unsafe CORINFO_METHOD_INFO methInfo;
+
+    /// <summary>the logical IL caller of this inlinee.</summary>
+    public unsafe CORINFO_METHOD_HANDLE ilCallerHandle;
+
+    public unsafe CORINFO_CLASS_HANDLE clsHandle;
+
+    /// <summary>Context handle to use when inlining.</summary>
+    public unsafe CORINFO_CONTEXT_HANDLE exactContextHandle;
+
+    // Method and context handle of the call before any GDV/Inlining evaluation
+    public unsafe CORINFO_METHOD_HANDLE originalMethodHandle;
+
+    public unsafe CORINFO_CONTEXT_HANDLE originalContextHandle;
+
+    /// <summary>The GT_RET_EXPR node linking back to the inline candidate.</summary>
+    public GenTreeRetExpr? retExpr;
+
+    public uint preexistingSpillTemp;
+
+    public CorInfoFlag clsAttr;
+
+    public CorInfoFlag methAttr;
+
+    public CorInfoInitClassResult initClassResult;
+
+    public bool exactContextNeedsRuntimeLookup;
+
+    public InlineContext? inlinersContext;
 }

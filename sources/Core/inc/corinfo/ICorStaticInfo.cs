@@ -23,7 +23,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
     public bool notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn) => lpVtbl->notifyMethodInfoUsage((ICorStaticInfo*)Unsafe.AsPointer(ref this), ftn);
 
-    public uint getMethodAttribs(CORINFO_METHOD_HANDLE ftn) => lpVtbl->getMethodAttribs((ICorStaticInfo*)Unsafe.AsPointer(ref this), ftn);
+    public CorInfoFlag getMethodAttribs(CORINFO_METHOD_HANDLE ftn) => lpVtbl->getMethodAttribs((ICorStaticInfo*)Unsafe.AsPointer(ref this), ftn);
 
     public void setMethodAttribs(CORINFO_METHOD_HANDLE ftn, CorInfoMethodRuntimeFlags attribs) => lpVtbl->setMethodAttribs((ICorStaticInfo*)Unsafe.AsPointer(ref this), ftn, attribs);
 
@@ -115,7 +115,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
     public bool isValueClass(CORINFO_CLASS_HANDLE cls) => lpVtbl->isValueClass((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls);
 
-    public uint getClassAttribs(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassAttribs((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls);
+    public CorInfoFlag getClassAttribs(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassAttribs((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls);
 
     public byte* getClassAssemblyName(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassAssemblyName((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls);
 
@@ -329,7 +329,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         bool notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn);
 
         // return flags (a bitfield of CorInfoFlags values)
-        uint getMethodAttribs(CORINFO_METHOD_HANDLE ftn);
+        CorInfoFlag getMethodAttribs(CORINFO_METHOD_HANDLE ftn);
 
         // sets private JIT flags, which can be, retrieved using getAttrib.
         void setMethodAttribs(CORINFO_METHOD_HANDLE ftn, CorInfoMethodRuntimeFlags attribs);
@@ -568,7 +568,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         bool isValueClass(CORINFO_CLASS_HANDLE cls);
 
         // return flags (a bitfield of CorInfoFlags values)
-        uint getClassAttribs(CORINFO_CLASS_HANDLE cls);
+        CorInfoFlag getClassAttribs(CORINFO_CLASS_HANDLE cls);
 
         // Returns the assembly name of the class "cls", or null if there is none.
         byte* getClassAssemblyName (CORINFO_CLASS_HANDLE cls);
@@ -1135,7 +1135,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, bool> notifyMethodInfoUsage;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, uint> getMethodAttribs;
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CorInfoFlag> getMethodAttribs;
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CorInfoMethodRuntimeFlags, void> setMethodAttribs;
 
@@ -1227,7 +1227,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, bool> isValueClass;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, uint> getClassAttribs;
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CorInfoFlag> getClassAttribs;
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, byte*> getClassAssemblyName;
 

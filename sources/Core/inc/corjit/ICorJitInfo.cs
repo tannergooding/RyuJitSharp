@@ -31,7 +31,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
     public bool notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn) => lpVtbl->notifyMethodInfoUsage((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn);
 
-    public uint getMethodAttribs(CORINFO_METHOD_HANDLE ftn) => lpVtbl->getMethodAttribs((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn);
+    public CorInfoFlag getMethodAttribs(CORINFO_METHOD_HANDLE ftn) => lpVtbl->getMethodAttribs((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn);
 
     public void setMethodAttribs(CORINFO_METHOD_HANDLE ftn, CorInfoMethodRuntimeFlags attribs) => lpVtbl->setMethodAttribs((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn, attribs);
 
@@ -123,7 +123,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
     public bool isValueClass(CORINFO_CLASS_HANDLE cls) => lpVtbl->isValueClass((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
 
-    public uint getClassAttribs(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassAttribs((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
+    public CorInfoFlag getClassAttribs(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassAttribs((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
 
     public byte* getClassAssemblyName(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassAssemblyName((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
 
@@ -576,7 +576,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, bool> notifyMethodInfoUsage;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, uint> getMethodAttribs;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, CorInfoFlag> getMethodAttribs;
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, CorInfoMethodRuntimeFlags, void> setMethodAttribs;
 
@@ -668,7 +668,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, bool> isValueClass;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, uint> getClassAttribs;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, CorInfoFlag> getClassAttribs;
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, byte*> getClassAssemblyName;
 

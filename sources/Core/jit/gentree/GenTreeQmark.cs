@@ -15,8 +15,8 @@ public sealed class GenTreeQmark : GenTreeOp
         _thenLikelihood = thenLikelihood;
 
         // These must follow a specific form.
-        assert((cond != null) && (cond.Type is TYP_INT));
-        assert((colon != null) && (colon.Oper is GT_COLON));
+        assert((cond is not null) && (cond.Type is TYP_INT));
+        assert((colon is not null) && (colon.Oper is GT_COLON));
     }
 
     public byte ElseNodeLikelihood

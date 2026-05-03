@@ -9,7 +9,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace RyuJitSharp;
 
@@ -107,28 +106,29 @@ public partial class Globals
         ref var logEnv = ref JitTls.LogEnv;
         var phaseName = "unknown phase";
 
-        if (logEnv.compiler is not null)
+        if (logEnv.Compiler is not null)
         {
-            phaseName = PhaseNames[(int)(logEnv.compiler.mostRecentlyActivePhase)];
-            message = $"Assertion failed '{reason}' in '{logEnv.compiler.info.compFullName}' during '{phaseName}' (IL size {logEnv.compiler.info.compILCodeSize}; hash 0x{logEnv.compiler.info.compMethodHash():X8)}; {logEnv.compiler.compGetTieringName(wantShortName: true)})\n";
+            phaseName = PhaseNames[(int)(logEnv.Compiler.mostRecentlyActivePhase)];
+            message = $"Assertion failed '{reason}' in '{logEnv.Compiler.info.compFullName}' during '{phaseName}' (IL size {logEnv.Compiler.info.compILCodeSize}; hash 0x{logEnv.Compiler.info.compMethodHash():X8)}; {logEnv.Compiler.compGetTieringName(wantShortName: true)})\n";
         }
 
 #if FUNC_INFO_LOGGING
         if (Compiler.compJitFuncInfoFile is StreamWriter compJitFuncInfoFile)
         {
-            compJitFuncInfoFile.WriteLine($"{((logEnv.compiler is null) ? "UNKNOWN" : logEnv.compiler.info.compFullName)} - Assertion failed ({filePath}:{lineNumber} - {reason}) during {phaseName}");
+            compJitFuncInfoFile.WriteLine($"{((logEnv.Compiler is null) ? "UNKNOWN" : logEnv.Compiler.info.compFullName)} - Assertion failed ({filePath}:{lineNumber} - {reason}) during {phaseName}");
         }
 #endif // FUNC_INFO_LOGGING
 
-        var utf8FilePath = Encoding.UTF8.GetBytes(filePath.ToString());
-        var utf8Message = Encoding.UTF8.GetBytes(message.ToString());
-
-        fixed (byte* pUtf8FilePath = utf8FilePath)
-        fixed (byte* pUtf8Message = utf8Message)
+        using (var utf8FilePath = new MarshaledUtf8String(filePath))
+        using (var utf8Message = new MarshaledUtf8String(message))
         {
-            if (logEnv.jitInfo->doAssert(pUtf8FilePath, (int)lineNumber, pUtf8Message) != 0)
+            fixed (byte* pUtf8FilePath = utf8FilePath)
+            fixed (byte* pUtf8Message = utf8Message)
             {
-                Debugger.Break();
+                if (logEnv.JitInfo->doAssert(pUtf8FilePath, (int)(lineNumber), pUtf8Message) != 0)
+                {
+                    Debugger.Break();
+                }
             }
         }
 
