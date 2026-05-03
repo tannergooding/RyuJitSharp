@@ -47,8 +47,10 @@ public partial class LIR
             _firstNode = firstNode;
             _lastNode = lastNode;
 
+#if DEBUG
             assert((firstNode is null) == (lastNode is null));
             assert((firstNode == lastNode) || (Contains(lastNode!)));
+#endif
         }
 
         /// <summary>Returns the first node in the range.</summary>

@@ -68,7 +68,7 @@ public partial class Compiler
         }
 
 #else
-        public bool MinOpts => compMinOpts;
+        public readonly bool MinOpts => compMinOpts;
 #endif
 
         public readonly bool IsMinOptsSet => compMinOptsIsSet;
@@ -103,8 +103,10 @@ public partial class Compiler
 
         public unsafe void SetMinOpts(bool val)
         {
+#if DEBUG
             assert(!compMinOptsIsUsed);
             assert(!compMinOptsIsSet || (compMinOpts == val));
+#endif
 
             compMinOpts = val;
             compMinOptsIsSet = true;

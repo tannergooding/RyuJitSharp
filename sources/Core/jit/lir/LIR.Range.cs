@@ -326,7 +326,9 @@ public partial class LIR
             }
             else
             {
+#if DEBUG
                 assert(Contains(insertionPoint));
+#endif
 
                 last.Next = insertionPoint.Next;
                 if (last.Next is null)
@@ -374,7 +376,9 @@ public partial class LIR
             }
             else
             {
+#if DEBUG
                 assert(Contains(insertionPoint));
+#endif
                 first.Previous = insertionPoint.Previous;
 
                 if (first.Previous is null)

@@ -6,9 +6,12 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
+
+#if DEBUG
+using System.Globalization;
+#endif
 
 namespace RyuJitSharp;
 
@@ -17,6 +20,7 @@ public partial class Globals
     /// <summary>Like printf/logf, but only outputs to jitstdout -- skips call back into EE.</summary>
     public static void jitprintf([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object> args) => jitstdout().Write(format, args);
 
+#if DEBUG
     public static bool vlogf(uint level, string format, params ReadOnlySpan<object> args)
     {
         // TODO: This can't be implemented without varargs support
@@ -97,10 +101,12 @@ public partial class Globals
     public static void gcDump_logf([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object> args) => logf(format, args);
 
     public static void logf(uint level, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object> args) => vlogf(level, format, args);
+#endif
 
     [Conditional("DEBUG")]
     public static unsafe void assertAbort(ReadOnlySpan<char> reason, ReadOnlySpan<char> filePath, uint lineNumber)
     {
+#if DEBUG
         var message = reason;
 
         ref var logEnv = ref JitTls.LogEnv;
@@ -147,6 +153,7 @@ public partial class Globals
                 fatal(CORJIT_SKIPPED);
             }
         }
+#endif
     }
 
     [Conditional("DEBUG")]

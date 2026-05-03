@@ -20,15 +20,20 @@ public struct PhasedVar<T>
 
     public T Value
     {
+#if DEBUG
         get
         {
-#if DEBUG
+
             assert(_initialized);
             _readPhase = true;
-#endif
-
             return _value;
         }
+#else
+        readonly get
+        {
+            return _value;
+        }
+#endif
 
         set
         {

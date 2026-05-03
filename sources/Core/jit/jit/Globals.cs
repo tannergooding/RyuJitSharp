@@ -347,6 +347,7 @@ public partial class Globals
     [Conditional("DEBUG")]
     public static void DISPNODE(GenTree tree)
     {
+#if DEBUG
         var compiler = JitTls.Compiler;
         assert(compiler is not null);
 
@@ -354,11 +355,13 @@ public partial class Globals
         {
             compiler.gtDispTree(tree, null, null, true);
         }
+#endif
     }
 
     [Conditional("DEBUG")]
     public static void DISPTREE(GenTree tree)
     {
+#if DEBUG
         var compiler = JitTls.Compiler;
         assert(compiler is not null);
 
@@ -366,11 +369,13 @@ public partial class Globals
         {
             compiler.gtDispTree(tree);
         }
+#endif
     }
 
     [Conditional("DEBUG")]
     public static void DISPSTMT(Statement stmt)
     {
+#if DEBUG
         var compiler = JitTls.Compiler;
         assert(compiler is not null);
 
@@ -378,11 +383,14 @@ public partial class Globals
         {
             compiler.gtDispStmt(stmt);
         }
+#endif
     }
 
     [Conditional("DEBUG")]
     public static void DISPRANGE(LIR.ReadOnlyRange range)
     {
+
+#if DEBUG
         var compiler = JitTls.Compiler;
         assert(compiler is not null);
 
@@ -390,11 +398,14 @@ public partial class Globals
         {
             compiler.gtDispRange(range);
         }
+#endif
     }
 
     [Conditional("DEBUG")]
     public static void DISPTREERANGE(LIR.Range range, GenTree tree)
     {
+
+#if DEBUG
         var compiler = JitTls.Compiler;
         assert(compiler is not null);
 
@@ -402,6 +413,7 @@ public partial class Globals
         {
             compiler.gtDispTreeRange(range, tree);
         }
+#endif
     }
 
     public static unsafe nuint dspPtr(void* ptr)
@@ -418,6 +430,7 @@ public partial class Globals
         return compiler.dspOffset(offs);
     }
 
+#if DEBUG
     /// <summary>Helper for <see cref="dumpSingleInstr" /> to dump hex bytes of an IL stream, aligning up to a minimum alignment width.</summary>
     /// <param name="codeAddr">Pointer to IL byte stream to display.</param>
     /// <param name="codeSize">Number of bytes of IL byte stream to display.</param>
@@ -600,10 +613,12 @@ public partial class Globals
         jitprintf("\n");
         return (IL_OFFSET)(opcodePtr - startOpcodePtr);
     }
+#endif
 
     [Conditional("DEBUG")]
     public static void LABELEDDISPTREERANGE(string label, LIR.Range range, GenTree tree)
     {
+#if DEBUG
         var compiler = JitTls.Compiler;
         assert(compiler is not null);
 
@@ -613,11 +628,13 @@ public partial class Globals
             compiler.gtDispTreeRange(range, tree);
             logf("\n");
         }
+#endif
     }
 
     [Conditional("DEBUG")]
     public static void DISPBLOCK(BasicBlock block)
     {
+#if DEBUG
         var compiler = JitTls.Compiler;
         assert(compiler is not null);
 
@@ -625,11 +642,13 @@ public partial class Globals
         {
             compiler.fgTableDispBasicBlock(block);
         }
+#endif
     }
 
     [Conditional("DEBUG")]
     public static void JITDUMP(string format, params ReadOnlySpan<object> args)
     {
+#if DEBUG
         var compiler = JitTls.Compiler;
         assert(compiler is not null);
 
@@ -637,6 +656,7 @@ public partial class Globals
         {
             logf(format, args);
         }
+#endif
     }
 
 #if HOST_64BIT

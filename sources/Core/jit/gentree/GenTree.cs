@@ -5,7 +5,10 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+
+#if DEBUG
 using static RyuJitSharp.GenTree.genRegTag;
+#endif
 
 namespace RyuJitSharp;
 
@@ -144,7 +147,9 @@ public abstract partial class GenTree
     {
         get
         {
+#if DEBUG
             assert(Debugger.IsAttached || _costsInitialized);
+#endif
             return _costEx;
         }
     }
@@ -153,7 +158,9 @@ public abstract partial class GenTree
     {
         get
         {
-            assert(Debugger.IsAttached ||_costsInitialized);
+#if DEBUG
+            assert(Debugger.IsAttached || _costsInitialized);
+#endif
             return _costSz;
         }
     }
@@ -206,10 +213,11 @@ public abstract partial class GenTree
     {
         get
         {
-            assert(Debugger.IsAttached || IsLirOp);
             var result = ((_flags & GTF_CONTAINED) != 0);
 
 #if DEBUG
+            assert(Debugger.IsAttached || IsLirOp);
+
             if (!CanBeContained)
             {
                 assert(!result);
@@ -518,8 +526,10 @@ public abstract partial class GenTree
     {
         get
         {
+#if DEBUG
             // TODO-Cleanup: get rid of the NONE case, and fix everyplace that reads undefined values
             assert((_regTag is GT_REGTAG_NONE) || genIsValidReg(_regNum) || (_regNum is REG_NA));
+#endif
             return _regNum;
         }
 
@@ -716,7 +726,9 @@ public abstract partial class GenTree
     [Conditional("DEBUG")]
     public void ClearMorphed()
     {
+#if DEBUG
         _debugFlags &= ~GTF_DEBUG_NODE_MORPHED;
+#endif
     }
 
     public void ClearRegNum()
@@ -732,7 +744,9 @@ public abstract partial class GenTree
     /// <param name="tree"></param>
     public void CopyCosts(GenTree tree)
     {
+#if DEBUG
         assert(tree._costsInitialized);
+#endif
         CopyCostsRaw(tree);
     }
 

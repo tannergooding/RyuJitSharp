@@ -72,7 +72,10 @@ public struct ReturnTypeDesc
     {
         get
         {
+#if DEBUG
             assert(Debugger.IsAttached || _inited);
+#endif
+
             byte regCount = 0;
 
             for (var i = 0; i < MAX_RET_REG_COUNT; i++)
@@ -133,7 +136,9 @@ public struct ReturnTypeDesc
     /// <remarks>Only needed for X86 and arm32.</remarks>
     public void InitializeLongReturnType()
     {
+#if DEBUG
         assert(!_inited);
+#endif
 
 #if TARGET_X86 || TARGET_ARM
         // Setups up a ReturnTypeDesc for returning a long using two registers
@@ -186,7 +191,9 @@ public struct ReturnTypeDesc
     /// <param name="callConv"></param>
     public unsafe void InitializeStructReturnType(Compiler compiler, CORINFO_CLASS_HANDLE retClsHnd, CorInfoCallConvExtension callConv)
     {
+#if DEBUG
         assert(!_inited);
+#endif
 
         assert(retClsHnd != NO_CLASS_HANDLE);
         var structSize = compiler.info.compCompHnd->getClassSize(retClsHnd);

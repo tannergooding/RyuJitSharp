@@ -31,7 +31,9 @@ public abstract class GenTreeUnOp : GenTree
         }
         else
         {
+#if DEBUG
             assert(IsNullOp1Legal);
+#endif
         }
     }
 

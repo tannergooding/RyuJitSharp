@@ -725,11 +725,13 @@ public partial class Compiler
     [Conditional("DEBUG")]
     public void JITLOG(uint level, string message)
     {
+#if DEBUG
         if (verbose)
         {
             vflogf(jitstdout(), message);
         }
         _ = vlogf(level, message);
+#endif
     }
 
 #if DEBUG

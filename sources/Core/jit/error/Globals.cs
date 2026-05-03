@@ -28,6 +28,7 @@ public partial class Globals
     private static uint s_fatalNyiCount;
 #endif
 
+#if DEBUG
     private static void debugError(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, uint lineNumber)
     {
         var fileName = Path.GetFileName(filePath);
@@ -48,6 +49,7 @@ public partial class Globals
 
         BreakIfDebuggerPresent();
     }
+#endif
 
     [DoesNotReturn]
     public static void badCode()
@@ -59,12 +61,14 @@ public partial class Globals
         fatal(CORJIT_BADCODE);
     }
 
+#if DEBUG
     [DoesNotReturn]
     public static void badCode3(ReadOnlySpan<char> message, ReadOnlySpan<char> message2, int arg, ReadOnlySpan<char> filePath, uint line)
     {
         debugError(string.Format(CultureInfo.InvariantCulture, $"{message}{message2}", arg), filePath, line);
         badCode();
     }
+#endif
 
     [DoesNotReturn]
     public static void noWay()
@@ -389,7 +393,9 @@ public partial class Globals
 
     public static void BreakIfDebuggerPresent() => Debugger.Break();
 
+#if DEBUG
     public static int getBreakOnBadCode() => JitConfig[ConfigInteger.JitBreakOnBadCode];
+#endif
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool ShouldThrowOnNoway() => (JitTls.Compiler is not Compiler compiler) || compiler.compShouldThrowOnNoway();

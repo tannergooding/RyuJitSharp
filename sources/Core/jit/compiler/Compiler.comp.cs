@@ -894,8 +894,7 @@ public partial class Compiler
         {
             JITLOG(LL_INFO100000, $"\nINLINER impTokenLookupContextHandle for {eeGetMethodFullName(info.compMethodHnd)} is 0x{dspPtr(impTokenLookupContextHandle):X}.\n");
         }
-
-#endif // DEBUG
+#endif
 
         impCanReimport = compStressCompile(STRESS_CHK_REIMPORT, 15);
 
@@ -1347,6 +1346,8 @@ public partial class Compiler
         // TODO: Port Compiler.compStressCompileHelper
         return false;
     }
+#else
+    public bool compStressCompile(compStressArea stressArea, uint weightPercentage) => false;
 #endif
 
     /// <summary>Should we actually fire the noway assert body and the exception handler?</summary>
@@ -1396,7 +1397,10 @@ public partial class Compiler
 
         if (opts.compFlags == CLFLG_MINOPT)
         {
+#if DEBUG
             JITLOG(LL_INFO100, $"CLFLG_MINOPT set for method {info.compFullName}\n");
+#endif
+
             theMinOptsValue = true;
         }
 
@@ -1552,7 +1556,9 @@ public partial class Compiler
         }
 #endif
 
+#if DEBUG
         JITLOG(LL_INFO10000, $"IL Code Size,Instr {info.compILCodeSize:D4},{opts.instrCount:D4}, Basic Block count {fgBBcount:D3}, Local Variable Num,Ref count {lvaCount:D3},{opts.lvRefCount:D3} for method {info.compFullName}\n");
+#endif
         SetMinOpts(this, theMinOptsValue);
 
         static void SetMinOpts(Compiler compiler, bool theMinOptsValue)

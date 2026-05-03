@@ -27,8 +27,10 @@ public class GenTreeOp : GenTreeUnOp
         }
         else
         {
+#if DEBUG
             // Binary operators, with a few exceptions, require a non-null second argument.
             assert(IsNullOp2Legal);
+#endif
         }
     }
 
