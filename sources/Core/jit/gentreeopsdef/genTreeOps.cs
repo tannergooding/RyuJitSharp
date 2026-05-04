@@ -7,7 +7,7 @@ global using static RyuJitSharp.genTreeOps;
 
 namespace RyuJitSharp;
 
-public enum genTreeOps
+public enum genTreeOps : uint
 {
     GT_NONE,
 

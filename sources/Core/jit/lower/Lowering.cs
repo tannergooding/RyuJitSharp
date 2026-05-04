@@ -5,6 +5,19 @@
 
 namespace RyuJitSharp;
 
-public sealed class Lowering
+public sealed class Lowering : Phase
 {
+    public Lowering(Compiler compiler, IRegAlloc regAlloc)
+        : base(compiler, PHASE_LOWERING)
+    {
+        // TODO: Port Lowering.ctor
+    }
+
+    public void FinalizeOutgoingArgSpace()
+    {
+        // TODO: Port Lowering.FinalizeOutgoingArgSpace
+    }
+
+    // TODO: Port Lowering.DoPhase
+    protected override PhaseStatus DoPhase() => PhaseStatus.MODIFIED_NOTHING;
 }

@@ -3,6 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Diagnostics;
+
 namespace RyuJitSharp;
 
 public struct PhasedVar<T>
@@ -23,9 +25,14 @@ public struct PhasedVar<T>
 #if DEBUG
         get
         {
-
-            assert(_initialized);
-            _readPhase = true;
+            if (_initialized)
+            {
+                _readPhase = true;
+            }
+            else
+            {
+                assert(Debugger.IsAttached);
+            }
             return _value;
         }
 #else

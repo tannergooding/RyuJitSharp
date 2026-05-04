@@ -10,7 +10,6 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-
     /// <summary>Only present for inlinees</summary>
     public InlineInfo? impInlineInfo;
 

@@ -5,6 +5,11 @@
 
 namespace RyuJitSharp;
 
-public sealed class BitVecTraits
+public sealed class ProfileSynthesis
 {
+    public static PhaseStatus AdjustThrowEdgeLikelihoods(Compiler compiler)
+    {
+        // TODO: Port ProfileSynthesis.AdjustThrowEdgeLikelihoods
+        return PhaseStatus.MODIFIED_NOTHING;
+    }
 }

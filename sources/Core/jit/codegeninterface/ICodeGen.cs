@@ -3,6 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
+
 namespace RyuJitSharp;
 
 public interface ICodeGen
@@ -15,13 +17,26 @@ public interface ICodeGen
 
     Emitter Emitter { get; }
 
+    /// <summary>true if we've determined that the current method is to be fully interruptible.</summary>
+    bool Interruptible { get; set; }
+
     /// <summary>Indicates whether the current method requires an explicit stack frame, and all arguments and locals to be accessible relative to the Frame Pointer.</summary>
     /// <remarks>Prohibits double alignment of the stack.</remarks>
     bool IsFramePointerRequired { get; set; }
 
+    /// <summary>Indicates whether the current method sets up an explicit stack frame or not.</summary>
+    bool IsFramePointerUsed { get; set; }
+
     /// <summary>Indicates whether the current method requires an explicit frame.</summary>
     /// <remarks>Does not prohibit double alignment of the stack.</remarks>
     bool IsFrameRequired { get; set; }
+
+    //  The following will be set to true if we've determined that we need to
+    //  generate a full-blown pointer register map for the current method.
+    //  Currently it is equal to (GetInterruptible() || !isFramePointerUsed())
+    //  (i.e. We generate the full-blown map for EBP-less methods and
+    //        for fully interruptible methods)
+    bool IsFullPtrRegMapRequired { get; set; }
 
 #if TARGET_AMD64
     regMaskFlt RBM_ALLFLOAT { get; }
@@ -56,4 +71,6 @@ public interface ICodeGen
     /// <summary>Call this function after the equivalent fields in Compiler have been initialized.</summary>
     void CopyRegisterInfo();
 #endif
+
+    unsafe void genGenerateCode(out void* codePtr, out uint nativeSizeOfCode);
 }

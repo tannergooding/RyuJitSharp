@@ -31,20 +31,20 @@ public partial class Compiler
 
 #if DEBUG
     /// <summary>set of tracked variables</summary>
-    public VARSET_TP lvaTrackedVars;
+    public VARSET_TP? lvaTrackedVars;
 #endif
 
 #if TARGET_32BIT
     /// <summary>set of long (64-bit) variables</summary>
-    public VARSET_TP lvaLongVars;
+    public VARSET_TP? lvaLongVars;
 #endif
 
     /// <summary>set of floating-point (32-bit and 64-bit) or SIMD variables</summary>
-    public VARSET_TP lvaFloatVars;
+    public VARSET_TP? lvaFloatVars;
 
 #if FEATURE_MASKED_HW_INTRINSICS
     /// <summary>set of mask variables</summary>
-    public VARSET_TP lvaMaskVars;
+    public VARSET_TP? lvaMaskVars;
 #endif
 
     /// <summary>VarSets are relative to a specific set of tracked var indices. If that changes, this changes.</summary>
@@ -192,6 +192,8 @@ public partial class Compiler
     /// <summary>return true if there is no place in the code that writes to arg0</summary>
     public bool lvaIsOriginalThisReadOnly => lvaArg0Var == info.compThisArg;
 
+    public bool lvaLocalVarRefCounted => lvaRefCountState == RCS_NORMAL;
+
     public ref LclVarDsc lvaGetDesc(uint lclNum)
     {
         assert(lclNum < lvaCount);
@@ -204,8 +206,51 @@ public partial class Compiler
         return 0;
     }
 
+    /// <summary>Allocate a temporary variable which is implicitly used by code-gen</summary>
+    /// <param name="shortLifetime"></param>
+    /// <param name="reason"></param>
+    /// <returns></returns>
+    /// <remarks>There will be no explicit references to the temp, and so it needs to be forced to be kept alive, and not be optimized away.</remarks>
+    public uint lvaGrabTempWithImplicitUse(bool shortLifetime, string reason)
+    {
+        if (compIsForInlining)
+        {
+            var inlinerCompiler = impInlineInfo.InlinerCompiler;
+
+            // Grab the temp using Inliner's Compiler instance.
+            var tmpNum = inlinerCompiler.lvaGrabTempWithImplicitUse(shortLifetime, reason);
+
+            lvaTable = inlinerCompiler.lvaTable;
+            lvaCount = inlinerCompiler.lvaCount;
+
+            return tmpNum;
+        }
+
+        var lclNum = lvaGrabTemp(shortLifetime, reason);
+        ref var varDsc = ref lvaGetDesc(lclNum);
+
+        // Note the implicit use
+        varDsc.lvImplicitlyReferenced = true;
+
+        return lclNum;
+    }
+
     public void lvaInitTypeRef()
     {
         // TODO: Port Compiler.lvaInitTypeRef
     }
+
+    // TODO: Port Compiler.lvaMarkLocalVars
+    public PhaseStatus lvaMarkLocalVars()
+    {
+        lvaRefCountState = RCS_NORMAL;
+        return PhaseStatus.MODIFIED_NOTHING;
+    }
+
+#if DEBUG
+    public void lvaStressLclFld()
+    {
+        // TODO: Port Compiler.lvaStressLclFld
+    }
+#endif
 }

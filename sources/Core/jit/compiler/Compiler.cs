@@ -510,11 +510,42 @@ public partial class Compiler
         info.compILCodeSize = methodInfo->ILCodeSize;
     }
 
+    public BasicBlockSimpleList Blocks => new BasicBlockSimpleList(fgFirstBB);
+
+    public uint CurLVEpoch => lvaCurEpoch;
+
     public unsafe bool IsAot => opts.jitFlags->IsSet(JitFlag.JIT_FLAG_AOT);
+
+    public bool IsFullPtrRegMapRequired
+    {
+        get
+        {
+            assert(Debugger.IsAttached || (codeGen is not null));
+            return (codeGen is not null) && codeGen.IsFullPtrRegMapRequired;
+        }
+
+        set
+        {
+            assert(codeGen is not null);
+            codeGen.IsFullPtrRegMapRequired = value;
+        }
+    }
 
     public unsafe bool IsNativeAot => IsAot && IsTargetAbi(CORINFO_NATIVEAOT_ABI);
 
     public unsafe bool IsReadyToRun => IsAot && !IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+
+#if DEBUG
+    /// <summary>Should we enable JitStress mode?</summary>
+    /// <remarks>
+    ///   <list type="bullet">
+    ///     <item>0:   No stress</item>
+    ///     <item>!=2: Vary stress. Performance will be slightly/moderately degraded</item>
+    ///     <item>2:   Check-all stress. Performance will be REALLY horrible</item>
+    ///   </list>
+    /// </remarks>
+    public int JitStressLevel => JitConfig[ConfigInteger.JitStress];
+#endif
 
 #if TARGET_AMD64
     public uint CNT_CALLEE_TRASH_FLOAT => cntCalleeTrashFloat;
@@ -621,6 +652,27 @@ public partial class Compiler
         _ => TYP_UNDEF,
     };
 
+    /// <summary>begin execution of a phase</summary>
+    /// <param name="phase">the phase that is about to begin</param>
+    public void BeginPhase(Phases phase)
+    {
+        mostRecentlyActivePhase = phase;
+    }
+
+    /// <summary>finish execution of a phase</summary>
+    /// <param name="phase">the phase that has just finished</param>
+    public void EndPhase(Phases phase)
+    {
+#if FEATURE_JIT_METHOD_PERF
+        if (pCompJitTimer is not null)
+        {
+            pCompJitTimer.EndPhase(this, phase);
+        }
+#endif
+
+        mostRecentlyActivePhase = phase;
+    }
+
 #if TARGET_XARCH
     /// <summary>Answer the question: Is Vex encoding supported on this target</summary>
     /// <returns></returns>
@@ -639,8 +691,6 @@ public partial class Compiler
     public bool canUseApxEvexEncoding() => canUseApxEncoding() && canUseEvexEncoding();
 #endif
 
-    public unsafe nuint dspPtr(void* ptr) => dspOffset((nuint)(ptr));
-
     public nuint dspOffset(nuint offs)
     {
 #if DEBUG
@@ -653,6 +703,18 @@ public partial class Compiler
         }
 #endif
         return offs;
+    }
+
+    public unsafe nuint dspPtr(void* ptr) => dspOffset((nuint)(ptr));
+
+    public void FinalizeEH()
+    {
+        // TODO: Port Compiler.FinalizeEH
+    }
+
+    public void generatePatchpointInfo()
+    {
+        // TODO: Port Compiler.generatePatchpointInfo
     }
 
     public unsafe var_types GetHfaType(CORINFO_CLASS_HANDLE hClass)
@@ -859,6 +921,41 @@ public partial class Compiler
     /// <param name="classHandle"></param>
     /// <returns></returns>
     public unsafe ClassLayout typGetObjLayout(CORINFO_CLASS_HANDLE classHandle) => typClassLayoutTable.GetObjLayout(this, classHandle);
+
+    // TODO: Port gsPhase
+    public PhaseStatus gsPhase() => PhaseStatus.MODIFIED_NOTHING;
+
+#if FEATURE_LOOP_ALIGN
+    // TODO: Port: placeLoopAlignInstructions
+    public PhaseStatus placeLoopAlignInstructions() => PhaseStatus.MODIFIED_NOTHING;
+#endif
+
+    // TODO: Port rangeCheckPhase
+    public PhaseStatus rangeCheckPhase() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port SaveAsyncContexts
+    public PhaseStatus SaveAsyncContexts() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port StressSplitTree
+    public PhaseStatus StressSplitTree() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port TransformAsync
+    public PhaseStatus TransformAsync() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port PhysicalPromotion
+    private PhaseStatus PhysicalPromotion() => PhaseStatus.MODIFIED_NOTHING;
+
+    /// <summary>Regenerate flow graph annotations; to be used between iterations when repeating opts.</summary>
+    protected void RecomputeFlowGraphAnnotations()
+    {
+        // TODO: Port Compiler.RecomputeFlowGraphAnnotations
+    }
+
+    /// <summary>Clear annotations produced during optimizations; to be used between iterations when repeating opts.</summary>
+    protected void ResetOptAnnotations()
+    {
+        // TODO: Port Compiler.ResetOptAnnotations
+    }
 
 #if FEATURE_SIMD
     /// <summary>Return the base type and size of SIMD vector type given its type handle.</summary>
@@ -1203,6 +1300,23 @@ public partial class Compiler
     {
         JITDUMP($"Notify VM instruction set ({InstructionSetToString(isa)}) {(supported ? "must" : "must not")} be supported.\n");
         return info.compCompHnd->notifyInstructionSetUsage(isa, supported);
+    }
+
+    /// <summary>Update the SQM state.</summary>
+    /// <remarks>Assumes being called at the end of compilation.</remarks>
+    private void RecordStateAtEndOfCompilation()
+    {
+        // TODO: Port RecordStateAtEndOfCompilation
+    }
+
+    /// <summary>Records the SQM-relevant (cycles and tick count)</summary>
+    /// <remarks>
+    ///   <para>Should be called after inlining is complete.</para>
+    ///   <para>We do this after inlining because this marks the last point at which the JIT is likely to cause type-loading and class initialization</para>
+    /// </remarks>
+    private void RecordStateAtEndOfInlining()
+    {
+        // TODO: Port RecordStateAtEndOfInlining
     }
 
     [InlineArray((int)(MemoryKindCount))]

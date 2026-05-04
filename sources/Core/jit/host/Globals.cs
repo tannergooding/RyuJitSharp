@@ -18,7 +18,20 @@ namespace RyuJitSharp;
 public partial class Globals
 {
     /// <summary>Like printf/logf, but only outputs to jitstdout -- skips call back into EE.</summary>
-    public static void jitprintf([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object> args) => jitstdout().Write(format, args);
+    public static void jitprintf([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object> args)
+    {
+        var jitstdout = Globals.jitstdout();
+
+        if (format.Length is 0)
+        {
+            // 0-length string means flush
+            jitstdout.Flush();
+        }
+        else
+        {
+            jitstdout.Write(format, args);
+        }
+    }
 
 #if DEBUG
     public static bool vlogf(uint level, string format, params ReadOnlySpan<object> args)
@@ -117,7 +130,7 @@ public partial class Globals
 
         if (compiler is not null)
         {
-            phaseName = PhaseNames[(int)(compiler.mostRecentlyActivePhase)];
+            phaseName = compiler.mostRecentlyActivePhase.Name;
             message = $"Assertion failed '{reason}' in '{compiler.info.compFullName}' during '{phaseName}' (IL size {compiler.info.compILCodeSize}; hash 0x{compiler.info.compMethodHash():X8)}; {compiler.compGetTieringName(wantShortName: true)})\n";
         }
 

@@ -93,7 +93,7 @@ public partial class Compiler
 
     public BitVecTraits? optReachableBitVecTraits;
 
-    public unsafe BitVec optReachableBitVec;
+    public unsafe BitVec? optReachableBitVec;
 
     protected static unsafe fgWalkPreFn optVNAssertionPropCurStmtVisitor;
 
@@ -139,4 +139,67 @@ public partial class Compiler
     protected bool optCanPropSubRange;
 
     protected RangeCheck? optRangeCheck;
+
+    // TODO: Port optOptimizeCSEs
+    public void optOptimizeCSEs() { }
+
+    // TODO: Port optOptimizeBools
+    public PhaseStatus optOptimizeBools() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port optRecognizeAndOptimizeSwitchJumps
+    public PhaseStatus optRecognizeAndOptimizeSwitchJumps() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port optInvertLoops
+    public PhaseStatus optInvertLoops() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port optOptimizeFlow
+    public PhaseStatus optOptimizeFlow() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port optOptimizePreLayout
+    public PhaseStatus optOptimizePreLayout() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port optOptimizePostLayout
+    public PhaseStatus optOptimizePostLayout() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port optSetBlockWeights
+    public PhaseStatus optSetBlockWeights() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port optFindLoopsPhase
+    public PhaseStatus optFindLoopsPhase() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port optCloneLoops
+    public PhaseStatus optCloneLoops() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port optRangeCheckCloning
+    public PhaseStatus optRangeCheckCloning() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port optUnrollLoops
+    public PhaseStatus optUnrollLoops() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port optIfConversion
+    public PhaseStatus optIfConversion() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port optOptimizeValnumCSEs
+    public PhaseStatus optOptimizeValnumCSEs() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port optVnCopyProp
+    public PhaseStatus optVnCopyProp() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port optVNBasedDeadStoreRemoval
+    public PhaseStatus optVNBasedDeadStoreRemoval() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port optEarlyProp
+    public PhaseStatus optEarlyProp() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port optInductionVariables
+    public PhaseStatus optInductionVariables() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port optRedundantBranches
+    public PhaseStatus optRedundantBranches() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port optAssertionPropMain
+    public PhaseStatus optAssertionPropMain() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port optHoistLoopCode
+    protected PhaseStatus optHoistLoopCode() => PhaseStatus.MODIFIED_NOTHING;
 }

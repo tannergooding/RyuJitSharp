@@ -7,7 +7,7 @@ global using static RyuJitSharp.Phases;
 
 namespace RyuJitSharp;
 
-public enum Phases
+public enum Phases : uint
 {
     PHASE_PRE_IMPORT,
     PHASE_IMPORTATION,
@@ -113,6 +113,7 @@ public enum Phases
     PHASE_WASM_EH_FLOW,
     PHASE_WASM_TRANSFORM_SCCS,
     PHASE_WASM_CONTROL_FLOW,
+    PHASE_WASM_VIRTUAL_IP,
     PHASE_ASYNC,
     PHASE_LCLVARLIVENESS,
     PHASE_LCLVARLIVENESS_INIT,
@@ -130,6 +131,10 @@ public enum Phases
     PHASE_EMIT_CODE,
     PHASE_EMIT_GCEH,
     PHASE_POST_EMIT,
+
+#if MEASURE_CLRAPI_CALLS
     PHASE_CLR_API,
+#endif
+
     PHASE_NUMBER_OF,
 }

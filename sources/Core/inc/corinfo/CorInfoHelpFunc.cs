@@ -13,7 +13,7 @@ namespace RyuJitSharp;
 ///   <para>These helpers can be called by native code which executes in the runtime.</para>
 ///   <para>Compilers can emit calls to these helpers.</para>
 /// </remarks>
-public enum CorInfoHelpFunc
+public enum CorInfoHelpFunc : uint
 {
     /// <summary>Invalid value.</summary>
     /// <remarks>This should never be used.</remarks>

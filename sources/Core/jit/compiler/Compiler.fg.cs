@@ -324,6 +324,14 @@ public partial class Compiler
         }
     }
 
+    /// <summary>check if profile data is available</summary>
+    /// <remarks>
+    ///   <para>In most cases it is more appropriate to call fgHaveProfileWeights, since that tells you if blocks have profile-based weights.</para>
+    ///   <para>This method literally checks if the runtime had a profile schema, from which we can derive weights.</para>
+    ///   <para>Schema-based data comes from Tier0 methods, which currently do not do any inlining; thus inlinee profile data should be available and representative.</para>
+    /// </remarks>
+    protected unsafe bool fgHaveProfileData => fgPgoSchema is not null;
+
     /// <summary>Check whether the address tree may represent a heap address.</summary>
     /// <param name="addr">Address to check</param>
     /// <returns>True if address could be a heap address; false otherwise (i.e. stack, native memory, etc.)</returns>
@@ -362,6 +370,46 @@ public partial class Compiler
         return result;
     }
 
+#if DEBUG
+    // TODO: Port fgDebugCheckBBlist
+    public void fgDebugCheckBBlist(bool checkBBNum = false, bool checkBBRefs = true) { }
+
+    // TODO: Port fgDebugCheckInitBB
+    public void fgDebugCheckInitBB() { }
+
+    // TODO: Port fgDebugCheckFlowGraphAnnotations
+    public void fgDebugCheckFlowGraphAnnotations() { }
+
+    // TODO: Port fgDebugCheckLinkedLocals
+    public void fgDebugCheckLinkedLocals() { }
+
+    // TODO: Port fgDebugCheckLinks
+    public void fgDebugCheckLinks(bool morphTrees = false) { }
+
+    // TODO: Port fgDebugCheckLoops
+    public void fgDebugCheckLoops() { }
+
+    // TODO: Port fgDebugCheckNodesUniqueness
+    public void fgDebugCheckNodesUniqueness() { }
+
+    // TODO: Port fgDebugCheckProfile
+    public void fgDebugCheckProfile(PhaseChecks checks = PhaseChecks.CHECK_NONE) { }
+
+    // TODO: Port fgStress64RsltMul
+    public void fgStress64RsltMul() { }
+
+    // TODO: Port fgVerifyHandlerTab
+    public void fgVerifyHandlerTab() { }
+#endif
+
+#if DUMP_FLOWGRAPHS
+    public bool fgDumpFlowGraph(Phases phase, PhasePosition pos)
+    {
+        // TODO: Port Compiler.fgDumpFlowGraph
+        return false;
+    }
+#endif
+
     /// <summary>Dump all basic blocks in the function.</summary>
     /// <param name="dumpTrees">if true, also dump the trees in each block</param>
     public void fgDispBasicBlocks(bool dumpTrees = false)
@@ -381,6 +429,22 @@ public partial class Compiler
         // TODO: Port Compiler.fgFindBasicBlocks
     }
 
+    public void fgFixEntryFlowForOSR()
+    {
+        // TODO: Port Compiler.fgFixEntryFlowForOSR
+    }
+
+    public void fgInvalidateDfsTree()
+    {
+        // TODO: Port Compiler.fgInvalidateDfsTree
+    }
+
+    /// <summary>Clear up annotations for any struct promotion temps created for implicit byrefs.</summary>
+    public void fgMarkDemotedImplicitByRefArgs()
+    {
+        // TODO: Port Compiler.fgMarkDemotedImplicitByRefArgs
+    }
+
     /// <summary>Remove all traces of profile info</summary>
     /// <param name="reason">string describing why profile data is being removed</param>
     /// <remarks>
@@ -398,12 +462,180 @@ public partial class Compiler
         fgPgoDynamic = false;
     }
 
+    /// <summary>Reset any data structures to the state expected by "fgSsaBuild", so it can be run again.</summary>
+    /// <param name="deepClean"></param>
+    public void fgResetForSsa(bool deepClean)
+    {
+        // TODO: Port Compiler.fgResetForSsa
+    }
+
+    public void fgSetOptions()
+    {
+        // TODO: Port Compiler.fgSetOptions
+    }
+
+    public void fgSsaLiveness()
+    {
+        // TODO: Port Compiler.fgSsaLiveness
+    }
+
 #if DEBUG
     public void fgTableDispBasicBlock(BasicBlock block, BasicBlock? nextBlock = null, bool printEdgeLikelihoods = true, int blockTargetFieldWidth = 21, int ibcColWidth = 0)
     {
         // TODO: Port Compiler.fgTableDispBasicBlock
     }
 #endif
+
+    // TODO: Port fgAddInternal
+    public PhaseStatus fgAddInternal() => PhaseStatus.MODIFIED_NOTHING;
+
+#if SWIFT_SUPPORT
+    // TODO: Port fgAddSwiftErrorReturns
+    public PhaseStatus fgAddSwiftErrorReturns() => PhaseStatus.MODIFIED_NOTHING;
+#endif
+
+    // TODO: Port fgCanonicalizeFirstBB
+    public PhaseStatus fgCanonicalizeFirstBB() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgCloneFinally
+    public PhaseStatus fgCloneFinally() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgComputeBlockWeights
+    public PhaseStatus fgComputeBlockWeights() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgCreateFunclets
+    public PhaseStatus fgCreateFunclets() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgDetermineFirstColdBlock
+    public PhaseStatus fgDetermineFirstColdBlock() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgDfsBlocksAndRemove
+    public PhaseStatus fgDfsBlocksAndRemove() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgEarlyLiveness
+    public PhaseStatus fgEarlyLiveness() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgExpandHelper
+    public PhaseStatus fgExpandHelper(bool skipRarelyRunBlocks) => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgExpandQmarkNodes
+    public PhaseStatus fgExpandQmarkNodes(bool early) => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgExpandRuntimeLookups
+    public PhaseStatus fgExpandRuntimeLookups() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgExpandStackArrayAllocations
+    public PhaseStatus fgExpandStackArrayAllocations() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgExpandStaticInit
+    public PhaseStatus fgExpandStaticInit() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgExpandThreadLocalAccess
+    public PhaseStatus fgExpandThreadLocalAccess() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgFindOperOrder
+    public PhaseStatus fgFindOperOrder() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgHeadTailMerge
+    public PhaseStatus fgHeadTailMerge(bool early) => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgImport
+    public PhaseStatus fgImport() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgInline
+    public PhaseStatus fgInline() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgInsertGCPolls
+    public PhaseStatus fgInsertGCPolls() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgLateCastExpansion
+    public PhaseStatus fgLateCastExpansion() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgMergeFinallyChains
+    public PhaseStatus fgMergeFinallyChains() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgMorphArrayOps
+    public PhaseStatus fgMorphArrayOps() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgMorphBlocks
+    public PhaseStatus fgMorphBlocks() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgMorphInit
+    public PhaseStatus fgMorphInit() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgPostImportationCleanup
+    public PhaseStatus fgPostImportationCleanup() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgRemoveEmptyFinally
+    public PhaseStatus fgRemoveEmptyFinally() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgRemoveEmptyTry
+    public PhaseStatus fgRemoveEmptyTry() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgRemoveEmptyTryCatchOrTryFault
+    public PhaseStatus fgRemoveEmptyTryCatchOrTryFault() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgRepairProfile
+    public PhaseStatus fgRepairProfile() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgResolveGDVs
+    public PhaseStatus fgResolveGDVs() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgSearchImprovedLayout
+    public PhaseStatus fgSearchImprovedLayout() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgSetBlockOrder
+    public PhaseStatus fgSetBlockOrder() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgSsaBuild
+    public PhaseStatus fgSsaBuild() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgTailMergeThrows
+    public PhaseStatus fgTailMergeThrows() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgTransformIndirectCalls
+    public PhaseStatus fgTransformIndirectCalls() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgTransformPatchpoints
+    public PhaseStatus fgTransformPatchpoints() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgUpdateFlowGraphPhase
+    public PhaseStatus fgUpdateFlowGraphPhase() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgValueNumber
+    public PhaseStatus fgValueNumber() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgVNBasedIntrinsicExpansion
+    public PhaseStatus fgVNBasedIntrinsicExpansion() => PhaseStatus.MODIFIED_NOTHING;
+
+#if TARGET_WASM
+    // TODO: Port fgWasmEhFlow
+    public PhaseStatus fgWasmEhFlow() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgWasmControlFlow
+    public PhaseStatus fgWasmControlFlow() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgWasmTransformSccs
+    public PhaseStatus fgWasmTransformSccs() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgWasmVirtualIP
+    public PhaseStatus fgWasmVirtualIP() => PhaseStatus.MODIFIED_NOTHING;
+#endif
+
+    // TODO: Port fgComputeDominators
+    protected PhaseStatus fgComputeDominators() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgIncorporateProfileData
+    protected PhaseStatus fgIncorporateProfileData() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgInstrumentMethod
+    protected PhaseStatus fgInstrumentMethod() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgInstrumentMethodCore
+    protected PhaseStatus fgInstrumentMethodCore() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgPrepareToInstrumentMethod
+    protected PhaseStatus fgPrepareToInstrumentMethod() => PhaseStatus.MODIFIED_NOTHING;
 
 #if DEBUG
     protected bool fgStressBBProf() => (JitConfig[ConfigInteger.JitStressBBProf] is not 0) || compStressCompile(STRESS_BB_PROFILE, 15);
@@ -435,6 +667,24 @@ public partial class Compiler
         // Notify the VM of the change
         info.compCompHnd->setMethodAttribs(info.compMethodHnd, CORINFO_FLG_SWITCHED_TO_OPTIMIZED);
     }
+
+    // TODO: Port fgForwardSub
+    private PhaseStatus fgForwardSub() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgLocalMorph
+    private PhaseStatus fgLocalMorph() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgMarkImplicitByRefCopyOmissionCandidates
+    private PhaseStatus fgMarkImplicitByRefCopyOmissionCandidates() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgOptimizeMaskConversions
+    private PhaseStatus fgOptimizeMaskConversions() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgPromoteStructs
+    private PhaseStatus fgPromoteStructs() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port fgRetypeImplicitByRefArgs
+    private PhaseStatus fgRetypeImplicitByRefArgs() => PhaseStatus.MODIFIED_NOTHING;
 
     [InlineArray((int)(MemoryKindCount))]
     public struct fgCurMemoryVNInlineArray

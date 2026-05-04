@@ -9,14 +9,6 @@ namespace RyuJitSharp;
 
 public partial class Globals
 {
-    public static readonly string[] PhaseNames = [
-        // TODO: Port PhaseNames
-    ];
-
-    public static readonly string[] PhaseEnums = [
-        // TODO: Port PhaseEnums
-    ];
-
     public const CorInfoFlag FLG_CCTOR = CORINFO_FLG_CONSTRUCTOR | CORINFO_FLG_STATIC;
 
 #if DEBUG
@@ -158,6 +150,8 @@ public partial class Globals
 
     /// <summary>Fixed locallocs of this size or smaller will convert to local buffers.</summary>
     public const int DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE = 32;
+
+    public static IRegAlloc GetRegisterAllocator(Compiler compiler) => new LinearScan(compiler);
 
     public static var_types HfaTypeFromElemKind(CorInfoHFAElemType kind) => kind switch {
         CORINFO_HFA_ELEM_NONE => TYP_UNDEF,

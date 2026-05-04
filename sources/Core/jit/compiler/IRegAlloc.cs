@@ -3,10 +3,15 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.IO;
+
 namespace RyuJitSharp;
 
-#pragma warning disable CA1040
 public interface IRegAlloc
 {
+    PhaseStatus DoRegisterAllocation();
+
+#if TRACK_LSRA_STATS
+    void dumpLsraStatsCsv(StreamWriter streamWriter);
+#endif
 }
-#pragma warning restore CA1040

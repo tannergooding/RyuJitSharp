@@ -196,13 +196,13 @@ public partial class Emitter
     // in that tracking. See emitSavIG(): the important use of ByrefRegs is commented
     // out, and GCrefRegs is always saved.
 
-    private VARSET_TP emitPrevGCrefVars;
+    private VARSET_TP? emitPrevGCrefVars;
 
     private regMaskInt emitPrevGCrefRegs;
 
     private regMaskInt emitPrevByrefRegs;
 
-    private VARSET_TP emitInitGCrefVars;
+    private VARSET_TP? emitInitGCrefVars;
 
     private regMaskInt emitInitGCrefRegs;
 
@@ -229,7 +229,7 @@ public partial class Emitter
     // really the only one used; the others seem to be calculated, but not
     // used due to bugs.
 
-    private VARSET_TP emitThisGCrefVars;
+    private VARSET_TP? emitThisGCrefVars;
 
     /// <summary>Current set of registers holding GC references</summary>
     private regMaskInt emitThisGCrefRegs;

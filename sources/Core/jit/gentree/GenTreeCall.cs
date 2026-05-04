@@ -35,10 +35,10 @@ public sealed class GenTreeCall : GenTree
     private GenTreeCallFlags _callMoreFlags;
 
     // value from the gtCallTypes enumeration
-    // TODO: private gtCallTypes _callType : 3;
+    // TODO: Port private gtCallTypes _callType : 3;
 
     // exact return type
-    // TODO: private var_types _returnType : 5;
+    // TODO: Port private var_types _returnType : 5;
 
     /// <summary>number of inline candidates for the given call</summary>
     private byte _inlineInfoCount;

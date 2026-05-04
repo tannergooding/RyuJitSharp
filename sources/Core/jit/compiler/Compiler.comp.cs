@@ -39,7 +39,7 @@ public partial class Compiler
     public unsafe ushort* compEHTabOrderToVMClauseOrder;
 
     /// <summary>current live variables</summary>
-    public VARSET_TP compCurLife;
+    public VARSET_TP? compCurLife;
 
     /// <summary>node after which compCurLife has been computed</summary>
     public GenTree? compCurLifeTree;
@@ -311,6 +311,51 @@ public partial class Compiler
     [MemberNotNullWhen(true, nameof(impInlineInfo), nameof(compInlineResult))]
     [MemberNotNullWhen(false, nameof(codeGen), nameof(m_inlineStrategy))]
     public bool compIsForInlining => impInlineInfo is not null;
+
+    // Object stack allocation takes the address of locals around suspension points. Disable entirely under async for now.
+    public bool compObjectStackAllocation => !compIsAsync && (JitConfig[ConfigInteger.JitObjectStackAllocation] is not 0);
+
+    /// <summary>get a string describing PGO source</summary>
+    public string compPgoSourceName => fgPgoSource switch {
+        PgoSource.Unknown => "Unknown PGO",
+        PgoSource.Static => "Static PGO",
+        PgoSource.Dynamic => "Dynamic PGO",
+        PgoSource.Blend => "Blended PGO",
+        PgoSource.Text => "Textual PGO",
+        PgoSource.IBC => "Classic IBC",
+        PgoSource.Sampling => "Sample-based PGO",
+        PgoSource.Synthesis => "Synthesized PGO",
+        _ => "Unknown PGO",
+    };
+
+    /// <summary>get a string describing jitstress capability for this method</summary>
+    /// <remarks>Returns an empty string if stress is not enabled, else a string describing if this method is subject to stress or is excluded by name or hash.</remarks>
+    public unsafe string compStressMessage
+    {
+        get
+        {
+            var stressMessage = "";
+
+#if DEBUG
+            // Is stress enabled via mode name or level?
+            if ((JitConfig[ConfigString.JitStressModeNames] is not null) || (JitStressLevel > 0))
+            {
+                // Is the method being jitted excluded from stress via range?
+                if (compAllowStress)
+                {
+                    // Not excluded -- stress can happen
+                    stressMessage = " JitStress";
+                }
+                else
+                {
+                    stressMessage = " NoJitStress";
+                }
+            }
+#endif
+
+            return stressMessage;
+        }
+    }
 
     public static void compDisplayStaticSizes()
     {
@@ -964,7 +1009,6 @@ public partial class Compiler
         compInitDebuggingInfo();
 
         // If are an altjit and have patchpoint info, we might need to tweak the frame size so it's plausible for the altjit architecture.
-
         if (!info.compMatchedVM && jitFlags->IsSet(JitFlag.JIT_FLAG_OSR))
         {
             assert(info.compLocalsCount == info.compPatchpointInfo->NumberOfLocals);
@@ -989,7 +1033,6 @@ public partial class Compiler
                 JITDUMP("Mismatched altjit + OSR -- updating tier0 frame size from %d to %d\n", totalFrameSize, totalFrameSize + frameSizeUpdate);
 
                 // Allocate a local copy with altered frame size.
-                //
                 var patchpointInfoSize = PatchpointInfo.ComputeSize(info.compLocalsCount);
                 var newInfo = (PatchpointInfo*)(NativeMemory.Alloc(patchpointInfoSize));
 
@@ -1011,8 +1054,8 @@ public partial class Compiler
 
         if (!compIsForInlining && IsAot)
         {
-            // We're AOT compiling the root method. We also will analyze it as
-            // a potential inline candidate.
+            // We're AOT compiling the root method.
+            // We also will analyze it as a potential inline candidate.
             var prejitResult = new InlineResult(this, info.compMethodHnd, "prejit");
 
             // Profile data allows us to avoid early "too many IL bytes" outs.
@@ -1035,19 +1078,16 @@ public partial class Compiler
             assert(impInlineInfo is null);
             compInlineResult = prejitResult;
 
-            // Find the basic blocks. We must do this regardless of
-            // inlineability, since we are prejitting this method.
-            //
-            // This will also update the status of this method as
-            // an inline candidate.
+            // Find the basic blocks.
+            // We must do this regardless of inlineability, since we are prejitting this method.
+            // This will also update the status of this method as an inline candidate.
             fgFindBasicBlocks();
 
             // Undo the temporary setup.
             assert(compInlineResult == prejitResult);
             compInlineResult = null;
 
-            // If still a viable, discretionary inline, assess
-            // profitability.
+            // If still a viable, discretionary inline, assess profitability.
             if (prejitResult.IsDiscretionaryCandidate)
             {
                 prejitResult.DetermineProfitability(methodInfo);
@@ -1058,18 +1098,15 @@ public partial class Compiler
             // Handle the results of the inline analysis.
             if (prejitResult.IsFailure)
             {
-                // This method is a bad inlinee according to our
-                // analysis.  We will let the InlineResult destructor
-                // mark it as noinline in the prejit image to save the
-                // jit some work.
-                //
+                // This method is a bad inlinee according to our analysis.
+                // We will let the InlineResult destructor mark it as noinline in the prejit image to save the jit some work.
                 // This decision better not be context-dependent.
                 assert(prejitResult.IsNever);
             }
             else
             {
-                // This looks like a viable inline candidate.  Since
-                // we're not actually inlining, don't report anything.
+                // This looks like a viable inline candidate.
+                // Since we're not actually inlining, don't report anything.
                 prejitResult.Result = INLINE_PREJIT_SUCCESS;
             }
         }
@@ -1087,13 +1124,10 @@ public partial class Compiler
             return GetResult(this, compInlineResult);
         }
 
-        // We may decide to optimize this method,
-        // to avoid spending a long time stuck in Tier0 code.
-        //
+        // We may decide to optimize this method, to avoid spending a long time stuck in Tier0 code.
         if (fgCanSwitchToOptimized)
         {
             // We only expect to be able to do this at Tier0.
-            //
             assert(opts.jitFlags->IsSet(JitFlag.JIT_FLAG_TIER0));
 
             // Normal tiering should bail us out of Tier0 tail call induced loops.
@@ -1293,7 +1327,56 @@ public partial class Compiler
 
     public unsafe void compFunctionTraceEnd(void* methodCodePtr, uint methodCodeSize, bool isNyi)
     {
-        // TODO: Port compFunctionTraceEnd
+#if DEBUG
+        assert(!compIsForInlining);
+
+        if ((JitConfig[ConfigInteger.JitFunctionTrace] != 0) && !opts.disDiffable)
+        {
+            var newJitNestingLevel = Interlocked.Decrement(ref jitNestingLevel);
+
+            if (newJitNestingLevel < 0)
+            {
+                jitprintf($"{{ Illegal nesting level {newJitNestingLevel} }}\n");
+            }
+
+            for (var i = 0; i < newJitNestingLevel; i++)
+            {
+                jitprintf("  ");
+            }
+
+            // Note: that is incorrect if we are compiling several methods at the same time.
+            var methodNumber = jitTotalMethodCompiled - 1;
+
+            jitprintf($"}} Jitted Method {methodNumber:D4} at {FMT_DBG_ADDR(methodCodePtr)} method {info.compFullName} size {methodCodeSize:X8}{(isNyi ? "NYI" : "")}{(opts.altJit ? " altjit" : "")}\n");
+        }
+#endif
+    }
+
+    public unsafe void compFunctionTraceStart()
+    {
+#if DEBUG
+        if (compIsForInlining)
+        {
+            return;
+        }
+
+        if ((JitConfig[ConfigInteger.JitFunctionTrace] != 0) && !opts.disDiffable)
+        {
+            var newJitNestingLevel = Interlocked.Increment(ref jitNestingLevel);
+
+            if (newJitNestingLevel <= 0)
+            {
+                jitprintf($"{{ Illegal nesting level {newJitNestingLevel} }}\n");
+            }
+
+            for (var i = 0; i < newJitNestingLevel - 1; i++)
+            {
+                jitprintf("  ");
+            }
+
+            jitprintf($"{{ Start Jitting Method {jitTotalMethodCompiled:D4} {info.compFullName} (MethodHash={info.compMethodHash():X8}) {compGetTieringName()}\n");
+        }
+#endif // DEBUG
     }
 
 #if DEBUG
@@ -2379,6 +2462,11 @@ public partial class Compiler
 #endif
     }
 
+    public void compJitStats()
+    {
+        // TODO: Port Compiler.compJitStats
+    }
+
     public string compGetTieringName(bool wantShortName = false)
     {
         // TODO: Port compGetTieringName
@@ -2464,9 +2552,747 @@ public partial class Compiler
     /// </remarks>
     protected unsafe void compCompile(out void* methodCodePtr, out uint methodCodeSize, JitFlags* jitFlags)
     {
-        // TODO: Port compCompile
-        methodCodePtr = null;
-        methodCodeSize = 0;
+        compFunctionTraceStart();
+
+        // Enable flow graph checks
+        activePhaseChecks |= PhaseChecks.CHECK_FG;
+
+        // Prepare for importation
+        DoPhase(this, PHASE_PRE_IMPORT, () => {
+            if (compIsForInlining)
+            {
+                // Notify root instance that an inline attempt is about to import IL
+                assert(impInlineRoot.m_inlineStrategy is not null);
+                impInlineRoot.m_inlineStrategy.NoteImport();
+            }
+
+            hashBv.Init(this);
+
+            VarSetOps.AssignAllowUninitRhs(this, ref compCurLife, VarSetOps.UninitVal());
+
+            // The temp holding the secret stub argument is used by fgImport() when importing the intrinsic.
+            if (info.compPublishStubParam)
+            {
+                assert(lvaStubArgumentVar == BAD_VAR_NUM);
+                lvaStubArgumentVar = lvaGrabTempWithImplicitUse(false, "stub argument");
+                lvaGetDesc(lvaStubArgumentVar).lvType = TYP_I_IMPL;
+            }
+        });
+
+        // If we're going to instrument code, we may need to prepare before we import.
+        // Also do this before we read in any profile data.
+        if (jitFlags->IsSet(JitFlag.JIT_FLAG_BBINSTR))
+        {
+            DoPhase(this, PHASE_IBCPREP, fgPrepareToInstrumentMethod);
+        }
+
+        // Incorporate profile data.
+        //   Note: the importer is sensitive to block weights, so this has to happen before importation.
+        activePhaseChecks |= PhaseChecks.CHECK_PROFILE | PhaseChecks.CHECK_PROFILE_FLAGS;
+        DoPhase(this, PHASE_INCPROFILE, fgIncorporateProfileData);
+
+        activePhaseChecks |= PhaseChecks.CHECK_FG_INIT_BLOCK;
+        DoPhase(this, PHASE_CANONICALIZE_ENTRY, fgCanonicalizeFirstBB);
+
+        // If we are doing OSR, update flow to initially reach the appropriate IL offset.
+        if (opts.IsOSR)
+        {
+            fgFixEntryFlowForOSR();
+        }
+
+        // Enable the post-phase checks that use internal logic to decide when checking makes sense.
+        activePhaseChecks |= PhaseChecks.CHECK_EH | PhaseChecks.CHECK_LOOPS | PhaseChecks.CHECK_UNIQUE | PhaseChecks.CHECK_LINKED_LOCALS;
+
+        // Import: convert the instrs in each basic block to a tree based intermediate representation
+        DoPhase(this, PHASE_IMPORTATION, fgImport);
+
+        // If this is a failed inline attempt, we're done.
+        if (compIsForInlining && compInlineResult.IsFailure)
+        {
+#if FEATURE_JIT_METHOD_PERF
+            if (pCompJitTimer != nullptr)
+            {
+#if MEASURE_CLRAPI_CALLS
+                EndPhase(PHASE_CLR_API);
+#endif
+                pCompJitTimer->Terminate(this, CompTimeSummaryInfo.s_compTimeSummary, false);
+            }
+#endif
+
+            methodCodePtr = null;
+            methodCodeSize = 0;
+            return;
+        }
+
+        DoPhase(this, PHASE_EARLY_QMARK_EXPANSION, () => fgExpandQmarkNodes(/*early*/ true));
+
+        // If instrumenting, add block and class probes.
+        if (jitFlags->IsSet(JitFlag.JIT_FLAG_BBINSTR))
+        {
+            DoPhase(this, PHASE_IBCINSTR, fgInstrumentMethod);
+        }
+
+        // Expand any patchpoints
+        DoPhase(this, PHASE_PATCHPOINTS, fgTransformPatchpoints);
+
+        // Transform indirect calls that require control flow expansion.
+        DoPhase(this, PHASE_INDXCALL, fgTransformIndirectCalls);
+
+        // Cleanup un-imported BBs, cleanup un-imported or partially imported try regions, add OSR step blocks.
+        DoPhase(this, PHASE_POST_IMPORT, fgPostImportationCleanup);
+
+        // Capture and restore contexts around the body, if needed.
+        DoPhase(this, PHASE_ASYNC_SAVE_CONTEXTS, SaveAsyncContexts);
+
+        // If we're importing for inlining, we're done.
+        if (compIsForInlining)
+        {
+#if FEATURE_JIT_METHOD_PERF
+            if (pCompJitTimer != nullptr)
+            {
+#if MEASURE_CLRAPI_CALLS
+                EndPhase(PHASE_CLR_API);
+#endif
+                pCompJitTimer->Terminate(this, CompTimeSummaryInfo.s_compTimeSummary, false);
+            }
+#endif
+
+            methodCodePtr = null;
+            methodCodeSize = 0;
+            return;
+        }
+
+        // At this point in the phase list, all the inlinee phases have
+        // been run, and inlinee compiles have exited, so we should only
+        // get this far if we are jitting the root method.
+        noway_assert(!compIsForInlining);
+
+        // Prepare for the morph phases
+        DoPhase(this, PHASE_MORPH_INIT, fgMorphInit);
+
+        // Inline callee methods into this root method
+        DoPhase(this, PHASE_MORPH_INLINE, fgInline);
+
+        // Record "start" values for post-inlining cycles and elapsed time.
+        RecordStateAtEndOfInlining();
+
+        if (opts.OptimizationEnabled)
+        {
+            // Try and resolve GDV checks if improved types were found during inlining
+            DoPhase(this, PHASE_RESOLVE_GDVS, fgResolveGDVs);
+
+            // Build post-order and remove dead blocks
+            DoPhase(this, PHASE_DFS_BLOCKS1, fgDfsBlocksAndRemove);
+        }
+
+        // Transform each GT_ALLOCOBJ node into either an allocation helper call or local variable allocation on the stack.
+        var objectAllocator = new ObjectAllocator(this);
+
+        if (compObjectStackAllocation && opts.OptimizationEnabled)
+        {
+            objectAllocator.EnableObjectStackAllocation();
+        }
+
+        objectAllocator.Run(); // PHASE_ALLOCATE_OBJECTS
+
+        // Add any internal blocks/trees we may need
+        DoPhase(this, PHASE_MORPH_ADD_INTERNAL, fgAddInternal);
+
+#if SWIFT_SUPPORT
+        // Transform GT_RETURN nodes into GT_SWIFT_ERROR_RET nodes if this method has Swift error handling
+        DoPhase(this, PHASE_SWIFT_ERROR_RET, fgAddSwiftErrorReturns);
+#endif
+
+        // Remove empty try regions (try/finally)
+        DoPhase(this, PHASE_EMPTY_TRY, fgRemoveEmptyTry);
+
+        // Remove empty try regions (try/catch/fault)
+        DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT, fgRemoveEmptyTryCatchOrTryFault);
+
+        // Remove empty finally regions
+        DoPhase(this, PHASE_EMPTY_FINALLY, fgRemoveEmptyFinally);
+
+        // Streamline chains of finally invocations
+        DoPhase(this, PHASE_MERGE_FINALLY_CHAINS, fgMergeFinallyChains);
+
+        // Clone code in finallys to reduce overhead for non-exceptional paths
+        DoPhase(this, PHASE_CLONE_FINALLY, fgCloneFinally);
+
+        // Do some flow-related optimizations
+        if (opts.OptimizationEnabled)
+        {
+            // Tail merge
+            DoPhase(this, PHASE_HEAD_TAIL_MERGE, () => fgHeadTailMerge(true));
+
+            // Merge common throw blocks
+            DoPhase(this, PHASE_MERGE_THROWS, fgTailMergeThrows);
+
+            // Run an early flow graph simplification pass
+            DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, fgUpdateFlowGraphPhase);
+        }
+
+        // Promote struct locals
+        DoPhase(this, PHASE_PROMOTE_STRUCTS, fgPromoteStructs);
+
+        // Enable early ref counting of locals
+        lvaRefCountState = RCS_EARLY;
+
+        if (opts.OptimizationEnabled)
+        {
+            // Build post-order and remove dead blocks
+            DoPhase(this, PHASE_DFS_BLOCKS2, fgDfsBlocksAndRemove);
+
+            fgNodeThreading = NodeThreading.AllLocals;
+        }
+
+        // Simplify local accesses and analyze address exposure.
+        DoPhase(this, PHASE_LOCAL_MORPH, fgLocalMorph);
+
+        // Optimize away conversions to/from masks in local variables.
+        DoPhase(this, PHASE_OPTIMIZE_MASK_CONVERSIONS, fgOptimizeMaskConversions);
+
+        // Do an early pass of liveness for forward sub and morph.
+        // This data is valid until after morph.
+        DoPhase(this, PHASE_EARLY_LIVENESS, fgEarlyLiveness);
+
+        // Run a simple forward substitution pass.
+        DoPhase(this, PHASE_FWD_SUB, fgForwardSub);
+
+        // Promote struct locals based on primitive access patterns
+        DoPhase(this, PHASE_PHYSICAL_PROMOTION, PhysicalPromotion);
+
+        // Expose candidates for implicit byref last-use copy elision.
+        DoPhase(this, PHASE_IMPBYREF_COPY_OMISSION, fgMarkImplicitByRefCopyOmissionCandidates);
+
+        // Locals tree list is no longer kept valid.
+        fgNodeThreading = NodeThreading.None;
+
+        // Apply the type update to implicit byref parameters; also choose (based on address-exposed
+        // analysis) which implicit byref promotions to keep (requires copy to initialize) or discard.
+        DoPhase(this, PHASE_MORPH_IMPBYREF, fgRetypeImplicitByRefArgs);
+
+#if DEBUG
+        // Now that locals have address-taken and implicit byref marked, we can safely apply stress.
+        lvaStressLclFld();
+        fgStress64RsltMul();
+#endif
+
+        // Morph the trees in all the blocks of the method
+        var preMorphBBCount = fgBBcount;
+        DoPhase(this, PHASE_MORPH_GLOBAL, fgMorphBlocks);
+
+        DoPhase(this, PHASE_POST_MORPH, () => {
+            // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
+            fgMarkDemotedImplicitByRefArgs();
+            lvaRefCountState = RCS_INVALID;
+            fgLocalVarLivenessDone = false;
+
+            // Decide the kind of code we want to generate
+            fgSetOptions();
+
+            fgExpandQmarkNodes(early: false);
+
+#if DEBUG
+            compCurBB = null;
+#endif
+
+            // Enable IR checks
+            activePhaseChecks |= PhaseChecks.CHECK_IR;
+        });
+
+        if (opts.OptimizationEnabled)
+        {
+            // Compute the block weights
+            DoPhase(this, PHASE_COMPUTE_BLOCK_WEIGHTS, fgComputeBlockWeights);
+
+            // Try again to remove empty try finally/fault clauses
+            DoPhase(this, PHASE_EMPTY_FINALLY_2, fgRemoveEmptyFinally);
+
+            // Remove empty try regions (try/finally)
+            DoPhase(this, PHASE_EMPTY_TRY_2, fgRemoveEmptyTry);
+
+            // Remove empty try regions (try/catch/fault)
+            DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT_2, fgRemoveEmptyTryCatchOrTryFault);
+
+            // Run some flow graph optimizations (but don't reorder)
+            DoPhase(this, PHASE_OPTIMIZE_FLOW, optOptimizeFlow);
+
+            // Second pass of tail merge
+            DoPhase(this, PHASE_HEAD_TAIL_MERGE2, () => fgHeadTailMerge(false));
+
+            // Compute DFS tree and remove all unreachable blocks.
+            DoPhase(this, PHASE_DFS_BLOCKS3, fgDfsBlocksAndRemove);
+
+            // Adjust heuristic-derived edge likelihoods into paths that are known to throw.
+            DoPhase(this, PHASE_ADJUST_THROW_LIKELIHOODS, () => ProfileSynthesis.AdjustThrowEdgeLikelihoods(this));
+
+            // Discover and classify natural loops (e.g. mark iterative loops as such).
+            DoPhase(this, PHASE_FIND_LOOPS, optFindLoopsPhase);
+
+            // Re-establish profile consistency, now that inlining and morph have run.
+            DoPhase(this, PHASE_REPAIR_PROFILE_POST_MORPH, fgRepairProfile);
+
+            // Invert loops
+            DoPhase(this, PHASE_INVERT_LOOPS, optInvertLoops);
+
+            // Scale block weights and mark run rarely blocks.
+            DoPhase(this, PHASE_SET_BLOCK_WEIGHTS, optSetBlockWeights);
+
+            // Clone loops with optimization opportunities, and choose one based on dynamic condition evaluation.
+            DoPhase(this, PHASE_CLONE_LOOPS, optCloneLoops);
+
+            // Unroll loops
+            DoPhase(this, PHASE_UNROLL_LOOPS, optUnrollLoops);
+
+            // Compute dominators and exceptional entry blocks
+            DoPhase(this, PHASE_COMPUTE_DOMINATORS, fgComputeDominators);
+        }
+
+#if DEBUG
+        fgDebugCheckLinks();
+#endif
+
+        // Morph multi-dimensional array operations.
+        // (Consider deferring all array operation morphing, including single-dimensional array ops, from global morph to here, so cloning doesn't have to deal with morphed forms.)
+        DoPhase(this, PHASE_MORPH_MDARR, fgMorphArrayOps);
+
+        // Create the variable table (and compute variable ref counts)
+        DoPhase(this, PHASE_MARK_LOCAL_VARS, lvaMarkLocalVars);
+
+        // IMPORTANT, after this point, locals are ref counted.
+        // However, ref counts are not kept incrementally up to date.
+        assert(lvaLocalVarRefCounted);
+
+        // Figure out the order in which operators are to be evaluated
+        DoPhase(this, PHASE_FIND_OPER_ORDER, fgFindOperOrder);
+
+        // Weave the tree lists.
+        // Anyone who modifies the tree shapes after this point is responsible for calling fgSetStmtSeq() to keep the nodes properly linked.
+        DoPhase(this, PHASE_SET_BLOCK_ORDER, fgSetBlockOrder);
+
+        fgNodeThreading = NodeThreading.AllTrees;
+
+        // At this point we know if we are fully interruptible or not
+        if (opts.OptimizationEnabled)
+        {
+            var doSsa = true;
+            var doEarlyProp = true;
+            var doValueNum = true;
+            var doLoopHoisting = true;
+            var doCopyProp = true;
+            var doOptimizeIVs = true;
+            var doBranchOpt = true;
+            var doCse = true;
+            var doAssertionProp = true;
+            var doVNBasedIntrinExpansion = true;
+            var doRangeAnalysis = true;
+            var doRangeCheckCloning = true;
+            var doVNBasedDeadStoreRemoval = true;
+
+#if OPT_CONFIG
+            doSsa = (JitConfig[ConfigInteger.JitDoSsa] != 0);
+            doEarlyProp = doSsa && (JitConfig[ConfigInteger.JitDoEarlyProp] != 0);
+            doValueNum = doSsa && (JitConfig[ConfigInteger.JitDoValueNumber] != 0);
+            doLoopHoisting = doValueNum && (JitConfig[ConfigInteger.JitDoLoopHoisting] != 0);
+            doCopyProp = doValueNum && (JitConfig[ConfigInteger.JitDoCopyProp] != 0);
+            doBranchOpt = doValueNum && (JitConfig[ConfigInteger.JitDoRedundantBranchOpts] != 0);
+            doCse = doValueNum;
+            doAssertionProp = doValueNum && (JitConfig[ConfigInteger.JitDoAssertionProp] != 0);
+            doRangeAnalysis = doAssertionProp && (JitConfig[ConfigInteger.JitDoRangeAnalysis] != 0);
+            doRangeCheckCloning = doValueNum && doRangeAnalysis;
+            doOptimizeIVs = doAssertionProp && (JitConfig[ConfigInteger.JitDoOptimizeIVs] != 0);
+            doVNBasedDeadStoreRemoval = doValueNum && (JitConfig[ConfigInteger.JitDoVNBasedDeadStoreRemoval] != 0);
+            doVNBasedIntrinExpansion = doValueNum;
+#endif
+
+            if (opts.optRepeat)
+            {
+                opts.optRepeatActive = true;
+            }
+
+            while (++opts.optRepeatIteration <= opts.optRepeatCount)
+            {
+#if DEBUG
+                if (verbose && opts.optRepeat)
+                {
+                    jitprintf($"\n*************** JitOptRepeat: iteration {opts.optRepeatIteration} of {opts.optRepeatCount}\n\n");
+                }
+#endif
+
+                fgModified = false;
+
+                if (doSsa)
+                {
+                    // Build up SSA form for the IR
+                    DoPhase(this, PHASE_BUILD_SSA, fgSsaBuild);
+                }
+                else
+                {
+                    // At least do local var liveness; lowering depends on this.
+                    fgSsaLiveness();
+                }
+
+                if (doEarlyProp)
+                {
+                    // Propagate array length and rewrite getType() method call
+                    DoPhase(this, PHASE_EARLY_PROP, optEarlyProp);
+                }
+
+                if (doValueNum)
+                {
+                    // Value number the trees
+                    DoPhase(this, PHASE_VALUE_NUMBER, fgValueNumber);
+                }
+
+                if (doLoopHoisting)
+                {
+                    // Hoist invariant code out of loops
+                    DoPhase(this, PHASE_HOIST_LOOP_CODE, optHoistLoopCode);
+                }
+
+                if (doCopyProp)
+                {
+                    // Perform VN based copy propagation
+                    DoPhase(this, PHASE_VN_COPY_PROP, optVnCopyProp);
+                }
+
+                if (doBranchOpt)
+                {
+                    // Optimize redundant branches
+                    DoPhase(this, PHASE_OPTIMIZE_BRANCHES, optRedundantBranches);
+                }
+                else
+                {
+                    // DFS tree is always invalid after this point.
+                    fgInvalidateDfsTree();
+                }
+
+                if (doCse)
+                {
+                    // Remove common sub-expressions
+                    DoPhase(this, PHASE_OPTIMIZE_VALNUM_CSES, optOptimizeCSEs);
+                }
+
+                if (doAssertionProp)
+                {
+                    // Assertion propagation
+                    DoPhase(this, PHASE_ASSERTION_PROP_MAIN, optAssertionPropMain);
+                }
+
+                if (doRangeAnalysis)
+                {
+                    // Bounds check elimination via range analysis
+                    DoPhase(this, PHASE_OPTIMIZE_INDEX_CHECKS, rangeCheckPhase);
+                }
+
+                if (doOptimizeIVs)
+                {
+                    // Simplify and optimize induction variables used in natural loops
+                    DoPhase(this, PHASE_OPTIMIZE_INDUCTION_VARIABLES, optInductionVariables);
+                }
+
+                fgInvalidateDfsTree();
+
+                if (doVNBasedDeadStoreRemoval)
+                {
+                    // Note: this invalidates SSA and value numbers on tree nodes.
+                    DoPhase(this, PHASE_VN_BASED_DEAD_STORE_REMOVAL, optVNBasedDeadStoreRemoval);
+                }
+
+                if (doRangeCheckCloning)
+                {
+                    // Clone blocks with subsequent bounds checks
+                    DoPhase(this, PHASE_RANGE_CHECK_CLONING, optRangeCheckCloning);
+                }
+
+                if (doVNBasedIntrinExpansion)
+                {
+                    // Expand some intrinsics based on VN data
+                    DoPhase(this, PHASE_VN_BASED_INTRINSIC_EXPAND, fgVNBasedIntrinsicExpansion);
+                }
+
+                // Conservatively mark all VNs as stale
+                vnStore = null;
+
+                if (fgModified)
+                {
+                    // update the flowgraph if we modified it during the optimization phase
+                    DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, fgUpdateFlowGraphPhase);
+
+                    // Clean up unreachable blocks.
+                    // In opt-repeat builds, RecomputeFlowGraphAnnotations() will call
+                    // fgDfsBlocksAndRemove() when resetting annotations between iterations.
+                    // To avoid doing this expensive work twice per iteration, only run this
+                    // phase on non-optRepeat builds or on the final optRepeat iteration.
+
+                    if (!opts.optRepeat || (opts.optRepeatIteration == opts.optRepeatCount))
+                    {
+                        DoPhase(this, PHASE_OPT_DFS_BLOCKS, fgDfsBlocksAndRemove);
+                        fgInvalidateDfsTree();
+                    }
+                }
+
+                // Iterate if requested, resetting annotations first.
+                if (opts.optRepeatIteration == opts.optRepeatCount)
+                {
+                    // If we're done optimizing, just remove the PHIs
+                    fgResetForSsa(deepClean: false);
+                    break;
+                }
+
+                assert(opts.optRepeat);
+
+                ResetOptAnnotations();
+                RecomputeFlowGraphAnnotations();
+
+#if DEBUG
+                if (verbose)
+                {
+                    jitprintf("Trees before next JitOptRepeat iteration:\n");
+                    fgDispBasicBlocks(true);
+                }
+#endif
+            }
+
+            if (opts.optRepeat)
+            {
+                opts.optRepeatActive = false;
+            }
+        }
+
+        optLoopsCanonical = false;
+
+#if DEBUG
+        DoPhase(this, PHASE_STRESS_SPLIT_TREE, StressSplitTree);
+#endif
+
+        // Try again to remove empty try finally/fault clauses
+        DoPhase(this, PHASE_EMPTY_FINALLY_3, fgRemoveEmptyFinally);
+
+        // Remove empty try regions (try/finally)
+        DoPhase(this, PHASE_EMPTY_TRY_3, fgRemoveEmptyTry);
+
+        // Remove empty try regions (try/catch/fault)
+        DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT_3, fgRemoveEmptyTryCatchOrTryFault);
+
+        // Create funclets from the EH handlers.
+        DoPhase(this, PHASE_CREATE_FUNCLETS, fgCreateFunclets);
+
+        // Expand casts
+        DoPhase(this, PHASE_EXPAND_CASTS, fgLateCastExpansion);
+
+        // Expand runtime lookups (an optimization but we'd better run it in tier0 too)
+        DoPhase(this, PHASE_EXPAND_RTLOOKUPS, fgExpandRuntimeLookups);
+
+        // Partially inline static initializations
+        DoPhase(this, PHASE_EXPAND_STATIC_INIT, fgExpandStaticInit);
+
+        // Expand thread local access
+        DoPhase(this, PHASE_EXPAND_TLS, fgExpandThreadLocalAccess);
+
+        // Expand stack allocated arrays
+        DoPhase(this, PHASE_EXPAND_STACK_ARR, fgExpandStackArrayAllocations);
+
+        // Insert GC Polls
+        DoPhase(this, PHASE_INSERT_GC_POLLS, fgInsertGCPolls);
+
+        if (opts.OptimizationEnabled)
+        {
+            // Conditional to switch conversion, and switch peeling
+            DoPhase(this, PHASE_SWITCH_RECOGNITION, optRecognizeAndOptimizeSwitchJumps);
+
+            // Optimize boolean conditions
+            DoPhase(this, PHASE_OPTIMIZE_BOOLS, optOptimizeBools);
+
+            // If conversion
+            DoPhase(this, PHASE_IF_CONVERSION, optIfConversion);
+
+            // Run flow optimizations before reordering blocks
+            DoPhase(this, PHASE_OPTIMIZE_PRE_LAYOUT, optOptimizePreLayout);
+
+            // Ensure profile is consistent before starting backend phases
+            DoPhase(this, PHASE_REPAIR_PROFILE_PRE_LAYOUT, fgRepairProfile);
+        }
+
+#if DEBUG
+        // Stash the current estimate of the function's size if necessary.
+        if (verbose && opts.OptimizationEnabled)
+        {
+            compSizeEstimate = 0;
+            compCycleEstimate = 0;
+
+            foreach (var block in Blocks)
+            {
+                foreach (var stmt in block.Statements)
+                {
+                    compSizeEstimate += stmt.CostSz;
+                    compCycleEstimate += stmt.CostEx;
+                }
+            }
+        }
+#endif
+
+        // rationalize trees
+        var rat = new Rationalizer(this);
+        rat.Run(); // PHASE_RATIONALIZE
+
+        fgNodeThreading = NodeThreading.LIR;
+
+        // Enable this to gather statistical data such as
+        // call and register argument info, flowgraph and loop info, etc.
+        compJitStats();
+
+        if (compIsAsync)
+        {
+            DoPhase(this, PHASE_ASYNC, TransformAsync);
+        }
+
+        // GS security checks for unsafe buffers
+        DoPhase(this, PHASE_GS_COOKIE, gsPhase);
+
+#if TARGET_WASM
+        // Make EH continuation flow explicit
+        DoPhase(this, PHASE_WASM_EH_FLOW, fgWasmEhFlow);
+
+        // Clean up unreachable blocks.
+        DoPhase(this, PHASE_DFS_BLOCKS_WASM, fgDfsBlocksAndRemove);
+
+        // Transform any strongly connected components into reducible flow.
+        DoPhase(this, PHASE_WASM_TRANSFORM_SCCS, fgWasmTransformSccs);
+#endif
+
+        // Assign registers to variables, etc.
+
+        // Create the RA before Lowering, so that Lowering can call RA methods for
+        // determining whether locals are register candidates and (for xarch) whether
+        // a node is a containable memory op.
+        m_regAlloc = GetRegisterAllocator(this);
+
+        // Lower
+        m_pLowering = new Lowering(this, m_regAlloc);
+        m_pLowering.Run(); // PHASE_LOWERING
+
+        // Set stack levels and analyze throw helper usage.
+        var stackLevelSetter = new StackLevelSetter(this);
+        stackLevelSetter.Run();
+        m_pLowering.FinalizeOutgoingArgSpace();
+
+#if TARGET_WASM
+        // Determine if a Virtual IP is needed and add code as needed to keep the Virtual IP updated.
+        DoPhase(this, PHASE_WASM_VIRTUAL_IP, fgWasmVirtualIP);
+#endif
+
+        FinalizeEH();
+
+        // We can not add any new tracked variables after this point.
+        lvaTrackedFixed = true;
+
+        // Now that lowering is completed we can proceed to perform register allocation
+        DoPhase(this, PHASE_LINEAR_SCAN, m_regAlloc.DoRegisterAllocation);
+
+        // Copied from rpPredictRegUse()
+        IsFullPtrRegMapRequired = codeGen.Interruptible || !codeGen.IsFramePointerUsed;
+
+#if TARGET_WASM
+        // Reorder blocks for wasm and figure out wasm control flow nesting
+        DoPhase(this, PHASE_WASM_CONTROL_FLOW, fgWasmControlFlow);
+#else
+        if (opts.OptimizationEnabled)
+        {
+            // We won't introduce new blocks from here on out, so run the new block layout.
+            DoPhase(this, PHASE_OPTIMIZE_LAYOUT, fgSearchImprovedLayout);
+
+            // Now that the flowgraph is finalized, run post-layout optimizations.
+            DoPhase(this, PHASE_OPTIMIZE_POST_LAYOUT, optOptimizePostLayout);
+
+            // Determine start of cold region if we are hot/cold splitting
+            DoPhase(this, PHASE_DETERMINE_FIRST_COLD_BLOCK, fgDetermineFirstColdBlock);
+        }
+#endif
+
+#if FEATURE_LOOP_ALIGN
+        // Place loop alignment instructions
+        DoPhase(this, PHASE_ALIGN_LOOPS, placeLoopAlignInstructions);
+#endif
+
+        // The common phase checks and dumps are no longer relevant past this point.
+        activePhaseChecks = PhaseChecks.CHECK_NONE;
+        activePhaseDumps = PhaseDumps.DUMP_NONE;
+
+        // Generate code
+        codeGen.genGenerateCode(out methodCodePtr, out methodCodeSize);
+
+#if TRACK_LSRA_STATS
+        if (JitConfig[ConfigInteger.DisplayLsraStats] == 2)
+        {
+            m_regAlloc.dumpLsraStatsCsv(jitstdout());
+        }
+#endif
+
+        // We're done -- set the active phase to the last phase (which isn't really a phase)
+        mostRecentlyActivePhase = PHASE_POST_EMIT;
+
+#if FEATURE_JIT_METHOD_PERF
+        if (pCompJitTimer)
+        {
+#if MEASURE_CLRAPI_CALLS
+            EndPhase(PHASE_CLR_API);
+#else
+            EndPhase(PHASE_POST_EMIT);
+#endif
+            pCompJitTimer->Terminate(this, CompTimeSummaryInfo.s_compTimeSummary, true);
+        }
+#endif
+
+        // Generate PatchpointInfo
+        generatePatchpointInfo();
+
+        RecordStateAtEndOfCompilation();
+
+        var methodsCompiled = Interlocked.Increment(ref jitTotalMethodCompiled);
+
+        if ((JitConfig[ConfigInteger.JitDisasmSummary] != 0) && !compIsForInlining)
+        {
+            // Tiering name already includes "OSR", we just want the IL offset
+            var osrName = opts.IsOSR ? $"@0x{info.compILEntry}" : "";
+
+#if DEBUG
+            var fullName = info.compFullName;
+#else
+            var fullName = eeGetMethodFullName(info.compMethodHnd, includeReturnType: false, includeThisSpecifier: false);
+#endif
+
+            var debugPart = $", hash=0x{info.compMethodHash():X8}{compStressMessage}";
+
+            var metricPart = "";
+#if DEBUG
+            if (JitConfig[ConfigInteger.JitMetrics] > 0)
+            {
+                metricPart = $", perfScore={Metrics.PerfScore:F2}, numCse={optCSEcount}";
+            }
+#endif
+
+            var hasProf = fgHaveProfileData;
+            jitprintf($"{methodsCompiled:D4}: JIT compiled {fullName} [{compGetTieringName()}{osrName}{(hasProf ? " with " : "")}{(hasProf ? compPgoSourceName : "")}, IL size={info.compILCodeSize}, code size={methodCodeSize}{debugPart}{metricPart}]\n");
+            jitprintf(""); // flush
+        }
+
+        compFunctionTraceEnd(methodCodePtr, methodCodeSize, isNyi: false);
+        JITDUMP($"Method code size: {methodCodeSize}\n");
+
+#if FUNC_INFO_LOGGING
+        if (compJitFuncInfoFile is not null)
+        {
+            assert(!compIsForInlining);
+#if DEBUG
+            // We only have access to info.compFullName in DEBUG builds.
+            flogf(compJitFuncInfoFile, $"{info.compFullName}\n");
+#elif FEATURE_SIMD
+            flogf(compJitFuncInfoFile, $" {eeGetMethodFullName(info.compMethodHnd)}\n");
+#endif
+            flogf(compJitFuncInfoFile, ""); // flush
+        }
+#endif
     }
 
     protected unsafe void compSetOptimizationLevel()
@@ -2729,7 +3555,7 @@ public partial class Compiler
     protected unsafe void compSetProcessor()
     {
         //
-        // NOTE: This function needs to be kept in sync with EEJitManager::SetCpuInfo() in vm\codeman.cpp
+        // NOTE: This function needs to be kept in sync with EEJitManager.SetCpuInfo() in vm\codeman.cpp
         //
 
         ref var jitFlags = ref *opts.jitFlags;

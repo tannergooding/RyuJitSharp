@@ -8,7 +8,7 @@ global using static RyuJitSharp.CorInfoType;
 namespace RyuJitSharp;
 
 /// <summary>Returned in <c>getSig</c>, <c>getType</c>, <c>getArgType</c> methods.</summary>
-public enum CorInfoType
+public enum CorInfoType : uint
 {
     CORINFO_TYPE_UNDEF = 0x0,
 

@@ -17,6 +17,9 @@ public sealed class CodeGen : ICodeGen
     private PhasedVar<bool> _cgFramePointerUsed;
     private PhasedVar<bool> _cgFrameRequired;
 
+    private bool _cgInterruptible;
+    private bool _cgFullPtrRegMap;
+
     private Compiler _compiler;
 
     private bool _genAlignLoops;
@@ -51,6 +54,19 @@ public sealed class CodeGen : ICodeGen
 
     public Emitter Emitter => _cgEmitter;
 
+    public bool Interruptible
+    {
+        get
+        {
+            return _cgInterruptible;
+        }
+
+        set
+        {
+            _cgInterruptible = value;
+        }
+    }
+
     public bool IsFramePointerRequired
     {
         get
@@ -64,6 +80,19 @@ public sealed class CodeGen : ICodeGen
         }
     }
 
+    public bool IsFramePointerUsed
+    {
+        get
+        {
+            return _cgFramePointerUsed.Value;
+        }
+
+        set
+        {
+            _cgFramePointerUsed.Value = value;
+        }
+    }
+
     public bool IsFrameRequired
     {
         get
@@ -74,6 +103,19 @@ public sealed class CodeGen : ICodeGen
         set
         {
             _cgFrameRequired.Value = value;
+        }
+    }
+
+    public bool IsFullPtrRegMapRequired
+    {
+        get
+        {
+            return _cgFullPtrRegMap;
+        }
+
+        set
+        {
+            _cgFullPtrRegMap = value;
         }
     }
 
@@ -140,4 +182,11 @@ public sealed class CodeGen : ICodeGen
         _rbmMskCalleeTrash = _compiler.RBM_MSK_CALLEE_TRASH;
     }
 #endif
+
+    public unsafe void genGenerateCode(out void* codePtr, out uint nativeSizeOfCode)
+    {
+        // TODO: Port CodeGen.genGenerateCode
+        codePtr = null;
+        nativeSizeOfCode = 0;
+    }
 }

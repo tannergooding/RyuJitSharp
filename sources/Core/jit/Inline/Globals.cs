@@ -8,7 +8,7 @@ namespace RyuJitSharp;
 public partial class Globals
 {
     /// <summary>does not include obj pointer</summary>
-    public const uint MAX_INL_ARGS = 32;
+    public const int MAX_INL_ARGS = 32;
 
-    public const uint MAX_INL_LCLS = 32;
+    public const int MAX_INL_LCLS = 32;
 }

@@ -16,6 +16,9 @@ public sealed class InlineStrategy
 
     public const int IMPLEMENTATION_MAX_INLINE_DEPTH = 1000;
 
+    /// <summary>Maximum number of over-budget [Intrinsic]-type inlines allowed per root method.</summary>
+    public const int MAX_OVER_BUDGET_INTRINSIC_INLINES = 50;
+
 #if DEBUG
     private static bool s_HasDumpedDataHeader;
     private static bool s_HasDumpedXmlHeader;
@@ -114,8 +117,32 @@ public sealed class InlineStrategy
 
     public Compiler Compiler => m_compiler;
 
+    /// <summary>Return the current code size estimate for this method</summary>
+    public int CurrentSizeEstimate => m_CurrentSizeEstimate;
+
+    /// <summary>Return number of import attempts</summary>
+    public uint ImportCount => m_ImportCount;
+
+    /// <summary>Return the initial code size estimate for this method</summary>
+    public int InitialSizeEstimate => m_InitialSizeEstimate;
+
+    /// <summary>Number of successful inlines into the root</summary>
+    public uint InlineCount => m_InlineCount;
+
     /// <summary>Context for the last successful inline, or root if no inlines</summary>
     public InlineContext? LastContext => m_LastContext;
+
+    /// <summary>Get depth of maximum allowable force inline</summary>
+    public uint MaxForceInlineDepth => m_MaxForceInlineDepth;
+
+    /// <summary>Get IL size for maximum allowable inline</summary>
+    public uint MaxInlineILSize => m_MaxInlineSize;
+
+    /// <summary>Get depth of maximum allowable inline</summary>
+    public uint MaxInlineDepth => m_MaxInlineDepth;
+
+    /// <summary>Number of over-budget inlines admitted because the callee was on an [Intrinsic] type.</summary>
+    public uint OverBudgetIntrinsicInlineCount => m_OverBudgetIntrinsicInlineCount;
 
     /// <summary>get the InlineContext for the root method</summary>
     /// <remarks>Also initializes the jit time estimate and budget.</remarks>
@@ -129,12 +156,47 @@ public sealed class InlineStrategy
         }
     }
 
+    /// <summary>Inform strategy that a candidate has passed screening and that the jit will attempt to inline.</summary>
+    public void NoteAttempt(InlineResult result)
+    {
+        assert(result.IsCandidate);
+        var obs = result.Observation;
+
+        if (obs == InlineObservation.CALLEE_BELOW_ALWAYS_INLINE_SIZE)
+        {
+            m_AlwaysCandidateCount++;
+        }
+        else if (obs == InlineObservation.CALLEE_IS_FORCE_INLINE)
+        {
+            m_ForceCandidateCount++;
+        }
+        else
+        {
+            m_DiscretionaryCandidateCount++;
+        }
+    }
+
+    /// <summary>Inform strategy that there's another call</summary>
+    public void NoteCall() => m_CallCount++;
+
+    /// <summary>Inform strategy that there's a new inline candidate.</summary>
+    public void NoteCandidate() => m_CandidateCount++;
+
+    /// <summary>Inform strategy that jit is about to import the inlinee IL.</summary>
+    public void NoteImport() => m_ImportCount++;
+
+    /// <summary>Note an over-budget inline that was admitted due to the callee's [Intrinsic] type.</summary>
+    public void NoteOverBudgetIntrinsicInline() => m_OverBudgetIntrinsicInlineCount++;
+
     /// <summary>Inform strategy about the inline decision for a prejit root</summary>
     public void NotePrejitDecision(InlineResult r)
     {
         m_PrejitRootDecision = r.Policy.Decision;
         m_PrejitRootObservation = r.Policy.Observation;
     }
+
+    /// <summary>Inform strategy that a candidate was assessed and determined to be unprofitable.</summary>
+    public void NoteUnprofitable() => m_UnprofitableCandidateCount++;
 
     [MemberNotNull(nameof(m_RootContext), nameof(m_LastContext))]
     private InlineContext CreateRootContext()

@@ -344,6 +344,19 @@ public partial class Globals
 
     public const uint CLFLG_MINOPT = CLFLG_TREETRANS;
 
+#if DEBUG
+    public static bool VERBOSE
+    {
+        get
+        {
+            var compiler = JitTls.Compiler;
+            return (compiler is not null) && compiler.verbose;
+        }
+    }
+#else
+    public const bool VERBOSE = false;
+#endif
+
     [Conditional("DEBUG")]
     public static void DISPNODE(GenTree tree)
     {
