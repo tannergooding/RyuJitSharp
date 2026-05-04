@@ -103,9 +103,9 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
     public CORINFO_CLASS_HANDLE getTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken) => lpVtbl->getTokenTypeAsHandle((ICorJitInfo*)Unsafe.AsPointer(ref this), pResolvedToken);
 
-    public int getStringLiteral(CORINFO_MODULE_HANDLE module, uint metaTOK, char* buffer, int bufferSize, int startIndex = 0) => lpVtbl->getStringLiteral((ICorJitInfo*)Unsafe.AsPointer(ref this), module, metaTOK, buffer, bufferSize, 0);
+    public int getStringLiteral(CORINFO_MODULE_HANDLE module, uint metaTOK, char* buffer, int bufferSize, int startIndex = 0) => lpVtbl->getStringLiteral((ICorJitInfo*)Unsafe.AsPointer(ref this), module, metaTOK, buffer, bufferSize, startIndex);
 
-    public nuint printObjectDescription(CORINFO_OBJECT_HANDLE handle, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printObjectDescription((ICorJitInfo*)Unsafe.AsPointer(ref this), handle, buffer, bufferSize, null);
+    public nuint printObjectDescription(CORINFO_OBJECT_HANDLE handle, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printObjectDescription((ICorJitInfo*)Unsafe.AsPointer(ref this), handle, buffer, bufferSize, pRequiredBufferSize);
 
     //
     // ICorClassInfo
@@ -119,7 +119,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
     public CORINFO_CLASS_HANDLE getMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, uint index) => lpVtbl->getMethodInstantiationArgument((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn, index);
 
-    public nuint printClassName(CORINFO_CLASS_HANDLE cls, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printClassName((ICorJitInfo*)Unsafe.AsPointer(ref this), cls, buffer, bufferSize, null);
+    public nuint printClassName(CORINFO_CLASS_HANDLE cls, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printClassName((ICorJitInfo*)Unsafe.AsPointer(ref this), cls, buffer, bufferSize, pRequiredBufferSize);
 
     public bool isValueClass(CORINFO_CLASS_HANDLE cls) => lpVtbl->isValueClass((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
 
@@ -145,7 +145,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
     public bool canAllocateOnStack(CORINFO_CLASS_HANDLE cls) => lpVtbl->canAllocateOnStack((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
 
-    public uint getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, bool fDoubleAlignHint = false) => lpVtbl->getClassAlignmentRequirement((ICorJitInfo*)Unsafe.AsPointer(ref this), cls, false);
+    public uint getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, bool fDoubleAlignHint = false) => lpVtbl->getClassAlignmentRequirement((ICorJitInfo*)Unsafe.AsPointer(ref this), cls, fDoubleAlignHint);
 
     public uint getClassGClayout(CORINFO_CLASS_HANDLE cls, byte* gcPtrs) => lpVtbl->getClassGClayout((ICorJitInfo*)Unsafe.AsPointer(ref this), cls, gcPtrs);
 
@@ -227,11 +227,11 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
     // ICorFieldInfo
     //
 
-    public nuint printFieldName(CORINFO_FIELD_HANDLE field, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printFieldName((ICorJitInfo*)Unsafe.AsPointer(ref this), field, buffer, bufferSize, null);
+    public nuint printFieldName(CORINFO_FIELD_HANDLE field, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printFieldName((ICorJitInfo*)Unsafe.AsPointer(ref this), field, buffer, bufferSize, pRequiredBufferSize);
 
     public CORINFO_CLASS_HANDLE getFieldClass(CORINFO_FIELD_HANDLE field) => lpVtbl->getFieldClass((ICorJitInfo*)Unsafe.AsPointer(ref this), field);
 
-    public CorInfoType getFieldType(CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType = null, CORINFO_CLASS_HANDLE memberParent = null) => lpVtbl->getFieldType((ICorJitInfo*)Unsafe.AsPointer(ref this), field, null, null);
+    public CorInfoType getFieldType(CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType = null, CORINFO_CLASS_HANDLE memberParent = null) => lpVtbl->getFieldType((ICorJitInfo*)Unsafe.AsPointer(ref this), field, structType, memberParent);
 
     public uint getFieldOffset(CORINFO_FIELD_HANDLE field) => lpVtbl->getFieldOffset((ICorJitInfo*)Unsafe.AsPointer(ref this), field);
 
@@ -301,7 +301,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
     public mdMethodDef getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod) => lpVtbl->getMethodDefFromMethod((ICorJitInfo*)Unsafe.AsPointer(ref this), hMethod);
 
-    public nuint printMethodName(CORINFO_METHOD_HANDLE ftn, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printMethodName((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn, buffer, bufferSize, null);
+    public nuint printMethodName(CORINFO_METHOD_HANDLE ftn, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printMethodName((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn, buffer, bufferSize, pRequiredBufferSize);
 
     public byte* getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, byte** className, byte** namespaceName, byte** enclosingClassName, nuint maxEnclosingClassNames) => lpVtbl->getMethodNameFromMetadata((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn, className, namespaceName, enclosingClassName, maxEnclosingClassNames);
 
@@ -778,7 +778,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_FIELD_HANDLE, CORINFO_CLASS_HANDLE> getFieldClass;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_FIELD_HANDLE, CORINFO_CLASS_HANDLE*, CORINFO_FIELD_HANDLE, CorInfoType> getFieldType;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_FIELD_HANDLE, CORINFO_CLASS_HANDLE*, CORINFO_CLASS_HANDLE, CorInfoType> getFieldType;
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_FIELD_HANDLE, uint> getFieldOffset;
 

@@ -7,7 +7,7 @@ namespace RyuJitSharp;
 
 public sealed partial class Target
 {
-    public static string? s_tgtCPUName;
+    public static string? s_tgtCpuName;
 
     public static string s_tgtPlatformName()
     {

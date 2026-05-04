@@ -96,7 +96,7 @@ public struct ReturnTypeDesc
                 assert(_regType[i] == TYP_UNKNOWN);
 
 #if TARGET_RISCV64 || TARGET_LOONGARCH64
-                assert(_fieldOffset[i] == 0);
+                assert(_fieldOffset[i] is 0);
 #endif
             }
 #endif
@@ -213,7 +213,7 @@ public struct ReturnTypeDesc
 
                 if (!lowering->byIntegerCallConv)
                 {
-                    assert(lowering->numLoweredElements == 1);
+                    assert(lowering->numLoweredElements is 1);
                     _fieldOffset[0] = lowering->offsets[0];
                 }
 #endif
@@ -232,7 +232,7 @@ public struct ReturnTypeDesc
                 var elemSize = uint.Max(1u, hfaType.Size);
 
                 // The size of this struct should be evenly divisible by elemSize
-                assert((structSize % elemSize) == 0);
+                assert((structSize % elemSize) is 0);
 
                 var hfaCount = (structSize / elemSize);
 
@@ -302,7 +302,7 @@ public struct ReturnTypeDesc
                         _regType[i] = regType;
                         _fieldOffset[i] = fieldOffset;
 
-                        if ((regType is TYP_LONG) && ((fieldOffset % TARGET_POINTER_SIZE) == 0))
+                        if ((regType is TYP_LONG) && ((fieldOffset % TARGET_POINTER_SIZE) is 0))
                         {
                             var slot = fieldOffset / TARGET_POINTER_SIZE;
                             _regType[i] = compiler.GetJitGCType(gcPtrs[slot]);
@@ -464,7 +464,7 @@ public struct ReturnTypeDesc
 #if UNIX_AMD64_ABI
         var regType0 = GetReturnRegType(0);
 
-        if (idx == 0)
+        if (idx is 0)
         {
             if (varTypeUsesIntReg(regType0))
             {
@@ -476,7 +476,7 @@ public struct ReturnTypeDesc
                 resultReg = REG_FLOATRET;
             }
         }
-        else if (idx == 1)
+        else if (idx is 1)
         {
             var regType1 = GetReturnRegType(1);
 
@@ -506,7 +506,7 @@ public struct ReturnTypeDesc
             }
         }
 #elif WINDOWS_AMD64_ABI
-        assert(idx == 0);
+        assert(idx is 0);
 
         if (varTypeUsesIntReg(GetReturnRegType(0)))
         {
@@ -518,11 +518,11 @@ public struct ReturnTypeDesc
             resultReg = REG_FLOATRET;
         }
 #elif TARGET_X86
-        if (idx == 0)
+        if (idx is 0)
         {
             resultReg = REG_LNGRET_LO;
         }
-        else if (idx == 1)
+        else if (idx is 1)
         {
             resultReg = REG_LNGRET_HI;
         }
@@ -533,11 +533,11 @@ public struct ReturnTypeDesc
         {
             // Ints are returned in one return register.
             // Longs are returned in two return registers.
-            if (idx == 0)
+            if (idx is 0)
             {
                 resultReg = REG_LNGRET_LO;
             }
-            else if (idx == 1)
+            else if (idx is 1)
             {
                 resultReg = REG_LNGRET_HI;
             }
@@ -566,7 +566,7 @@ public struct ReturnTypeDesc
         if (varTypeIsIntegralOrI(regType))
         {
             noway_assert(idx < 2);                              // Up to 2 return registers for 16-byte structs
-            resultReg = (idx == 0) ? REG_INTRET : REG_INTRET_1; // X0 or X1
+            resultReg = (idx is 0) ? REG_INTRET : REG_INTRET_1; // X0 or X1
         }
         else
         {
@@ -577,13 +577,13 @@ public struct ReturnTypeDesc
 #elif TARGET_LOONGARCH64 || TARGET_RISCV64
         var regType = GetReturnRegType(idx);
 
-        if (idx == 0)
+        if (idx is 0)
         {
             resultReg = varTypeIsIntegralOrI(regType) ? REG_INTRET : REG_FLOATRET; // A0 or FA0
         }
         else
         {
-            noway_assert(idx == 1); // Up to 2 return registers for two-float-field structs
+            noway_assert(idx is 1); // Up to 2 return registers for two-float-field structs
 
             // If the first return register is from the same register file, return the one next to it.
             if (varTypeUsesIntReg(regType))

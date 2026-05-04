@@ -51,7 +51,7 @@ public sealed class GenTreeFieldAddr : GenTreeUnOp
             // Extending this support more in the future will require additional work and
             // considerations to help ensure it is correctly used since people may want
             // or intend to use this as more of a "point in time" feature like GTF_IND_NONNULL
-            return (_flags & FieldAddrFlags.IsSpanLength) != 0;
+            return (_flags & FieldAddrFlags.IsSpanLength) is not 0;
         }
 
         set
@@ -66,12 +66,12 @@ public sealed class GenTreeFieldAddr : GenTreeUnOp
     {
         get
         {
-            assert(((Flags & GTF_FLD_TLS) == 0) || IsStatic);
-            return (Flags & GTF_FLD_TLS) != 0;
+            assert(((Flags & GTF_FLD_TLS) is 0) || IsStatic);
+            return (Flags & GTF_FLD_TLS) is not 0;
         }
     }
 
-    public bool MayOverlap => (_flags & FieldAddrFlags.MayOverlap) != 0;
+    public bool MayOverlap => (_flags & FieldAddrFlags.MayOverlap) is not 0;
 
     private enum FieldAddrFlags : byte
     {

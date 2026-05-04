@@ -5,6 +5,7 @@
 
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using static RyuJitSharp.Compiler.compStressArea;
 
 namespace RyuJitSharp;
 
@@ -368,7 +369,7 @@ public partial class Compiler
 
     /// <summary>Dump blocks from "firstBlock" to "lastBlock".</summary>
     /// <param name="firstBlock">the first block to dump</param>
-    /// <param name="lastBlock">the last block to dump (or nullptr for all remaining blocks)</param>
+    /// <param name="lastBlock">the last block to dump (or null for all remaining blocks)</param>
     /// <param name="dumpTrees">if true, also dump the trees in each block</param>
     public void fgDispBasicBlocks(BasicBlock? firstBlock, BasicBlock? lastBlock, bool dumpTrees)
     {
@@ -404,6 +405,12 @@ public partial class Compiler
     }
 #endif
 
+#if DEBUG
+    protected bool fgStressBBProf() => (JitConfig[ConfigInteger.JitStressBBProf] is not 0) || compStressCompile(STRESS_BB_PROFILE, 15);
+#else
+    protected bool fgStressBBProf() => false;
+#endif
+
     /// <summary>Switch the opt level from tier 0 to optimized</summary>
     /// <param name="reason">reason why opt level was switched</param>
     /// <remarks>This method is to be called at some point before <see cref="compSetOptimizationLevel" /> to switch the opt level to optimized based on information gathered in early phases.</remarks>
@@ -423,7 +430,7 @@ public partial class Compiler
         // Leave a note for jit diagnostics
         compSwitchedToOptimized = true;
 
-        compInitOptions(*opts.jitFlags);
+        compInitOptions(opts.jitFlags);
 
         // Notify the VM of the change
         info.compCompHnd->setMethodAttribs(info.compMethodHnd, CORINFO_FLG_SWITCHED_TO_OPTIMIZED);

@@ -209,7 +209,7 @@ dotnet_code_quality_unused_parameters = non_public:suggestion
 #   suggest conditional expression over return,
 #   require inferred anonymous types,
 #   require inferred tuple names,
-#   require 'is null' checks over '== null',
+#   require 'is null' checks over 'is null',
 #   require simplified boolean expressions,
 #   require simplified interpolation,
 #

@@ -28,7 +28,7 @@ public sealed class GenTreeLclVar : GenTreeLclVarCommon
     {
     }
 
-    public bool IsMultiReg => (Flags & GTF_VAR_MULTIREG) != 0;
+    public bool IsMultiReg => (Flags & GTF_VAR_MULTIREG) is not 0;
 
 #if DEBUG
     /// <summary>instr offset of ref (only for JIT dumps)</summary>
@@ -96,7 +96,7 @@ public sealed class GenTreeLclVar : GenTreeLclVarCommon
     public regNumber GetRegNumByIdx(byte regIndex)
     {
         assert(regIndex < MAX_MULTIREG_COUNT);
-        return (regIndex == 0) ? RegNum : _otherReg[regIndex - 1];
+        return (regIndex is 0) ? RegNum : _otherReg[regIndex - 1];
     }
 
     public GenTreeFlags GetRegSpillFlagByIdx(byte idx) => GetMultiRegSpillFlagsByIdx(_spillFlags, idx);
@@ -127,7 +127,7 @@ public sealed class GenTreeLclVar : GenTreeLclVarCommon
     {
         assert(regIndex < MAX_MULTIREG_COUNT);
 
-        if (regIndex == 0)
+        if (regIndex is 0)
         {
             RegNum = reg;
         }

@@ -9,7 +9,7 @@ public struct AssertionInfo
 {
     private ushort _bitfield;
 
-    public readonly bool AssertionHoldsOnFalseEdge => (_bitfield & 1) != 0;
+    public readonly bool AssertionHoldsOnFalseEdge => (_bitfield & 1) is not 0;
 
     public AssertionInfo(AssertionIndex assertionIndex)
     {

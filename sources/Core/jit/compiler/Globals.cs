@@ -17,6 +17,13 @@ public partial class Globals
         // TODO: Port PhaseEnums
     ];
 
+    public const CorInfoFlag FLG_CCTOR = CORINFO_FLG_CONSTRUCTOR | CORINFO_FLG_STATIC;
+
+#if DEBUG
+    // for LclVarDsc::lvStkOffs
+    public const int BAD_STK_OFFS = unchecked((int)(0xBAADF00D));
+#endif
+
     public const uint ROOT_FUNC_IDX = 0;
 
     /// <summary>Limit frames size to 1GB.</summary>
@@ -162,26 +169,26 @@ public partial class Globals
     };
 
     // Compile a single method
-    public static unsafe CorJitResult jitNativeCode(CORINFO_METHOD_HANDLE methodHandle, CORINFO_MODULE_HANDLE classHandle, COMP_HANDLE jitInfo, CORINFO_METHOD_INFO* methodInfo, out void* methodCodePtr, out uint methodCodeSize, ref JitFlags compileFlags, InlineInfo? inlineInfo)
+    public static unsafe CorJitResult jitNativeCode(CORINFO_METHOD_HANDLE methodHandle, CORINFO_MODULE_HANDLE classHandle, COMP_HANDLE jitInfo, CORINFO_METHOD_INFO* methodInfo, out void* methodCodePtr, out uint methodCodeSize, JitFlags* jitFlags, InlineInfo? inlineInfo)
     {
         // A non-null inlineInfo means we are compiling the inlinee method.
-        var result = JitNativeCodeCore(methodHandle, classHandle, jitInfo, methodInfo, out methodCodePtr, out methodCodeSize, compileFlags, inlineInfo, jitFallbackCompile: false);
+        var result = JitNativeCodeCore(methodHandle, classHandle, jitInfo, methodInfo, out methodCodePtr, out methodCodeSize, jitFlags, inlineInfo, jitFallbackCompile: false);
 
         if ((inlineInfo is null) && (result is CORJIT_INTERNALERROR or CORJIT_RECOVERABLEERROR or CORJIT_IMPLLIMITATION or CORJIT_R2R_UNSUPPORTED))
         {
             // Update the flags for 'safer' code generation.
-            compileFlags.Set(JitFlag.JIT_FLAG_MIN_OPT);
-            compileFlags.Clear(JitFlag.JIT_FLAG_SIZE_OPT);
-            compileFlags.Clear(JitFlag.JIT_FLAG_SPEED_OPT);
-            compileFlags.Clear(JitFlag.JIT_FLAG_BBOPT);
+            jitFlags->Set(JitFlag.JIT_FLAG_MIN_OPT);
+            jitFlags->Clear(JitFlag.JIT_FLAG_SIZE_OPT);
+            jitFlags->Clear(JitFlag.JIT_FLAG_SPEED_OPT);
+            jitFlags->Clear(JitFlag.JIT_FLAG_BBOPT);
 
             // Reattempt with debuggable code.
-            result = JitNativeCodeCore(methodHandle, classHandle, jitInfo, methodInfo, out methodCodePtr, out methodCodeSize, compileFlags, inlineInfo, jitFallbackCompile: true);
+            result = JitNativeCodeCore(methodHandle, classHandle, jitInfo, methodInfo, out methodCodePtr, out methodCodeSize, jitFlags, inlineInfo, jitFallbackCompile: true);
         }
 
         return result;
 
-        static CorJitResult JitNativeCodeCore(CORINFO_METHOD_HANDLE methodHandle, CORINFO_MODULE_HANDLE classHandle, COMP_HANDLE jitInfo, CORINFO_METHOD_INFO* methodInfo, out void* methodCodePtr, out uint methodCodeSize, in JitFlags compileFlags, InlineInfo? inlineInfo, bool jitFallbackCompile)
+        static CorJitResult JitNativeCodeCore(CORINFO_METHOD_HANDLE methodHandle, CORINFO_MODULE_HANDLE classHandle, COMP_HANDLE jitInfo, CORINFO_METHOD_INFO* methodInfo, out void* methodCodePtr, out uint methodCodeSize, JitFlags* jitFlags, InlineInfo? inlineInfo, bool jitFallbackCompile)
         {
             var result = CORJIT_INTERNALERROR;
 
@@ -192,8 +199,6 @@ public partial class Globals
 
                 try
                 {
-                    Console.WriteLine("Hello from RyuJitSharp!");
-
                     if (inlineInfo is not null)
                     {
                         var inlinerCompiler = inlineInfo.InlinerCompiler;
@@ -224,7 +229,7 @@ public partial class Globals
 #endif
 
                     // Now generate the code
-                    result = compiler.compCompileAfterInit(classHandle, out methodCodePtr, out methodCodeSize, compileFlags);
+                    result = compiler.compCompileAfterInit(classHandle, out methodCodePtr, out methodCodeSize, jitFlags);
                 }
                 finally
                 {
@@ -261,4 +266,42 @@ public partial class Globals
             return result;
         }
     }
+
+    /// <summary>ConfigInteger does not offer an option for decimal flags, any numbers are interpreted as hex.</summary>
+    /// <param name="value"></param>
+    /// <returns>I could add the decimal option to ConfigInteger or I could write a function to reinterpret this value as the user intended.</returns>
+    public static uint ReinterpretHexAsDecimal(uint value)
+    {
+        // ex: in: 0x100 returns: 100
+        var result = 0u;
+        var index = 1u;
+
+        // default value
+        if (value == int.MaxValue)
+        {
+            return value;
+        }
+
+        while (value != 0)
+        {
+            var digit = value % 16;
+            value >>= 4;
+
+            assert(digit < 10);
+
+            result += digit * index;
+            index *= 10;
+        }
+        return result;
+    }
+
+#if PROFILING_SUPPORTED
+    // A Dummy routine to receive Enter/Leave/Tailcall profiler callbacks.
+    // These are used when DOTNET_JitEltHookEnabled=1
+#if TARGET_AMD64
+    internal static void DummyProfilerELTStub(nuint ProfilerHandle, nuint callerSP) { }
+#else
+    internal static void DummyProfilerELTStub(nuint ProfilerHandle) { }
+#endif
+#endif
 }

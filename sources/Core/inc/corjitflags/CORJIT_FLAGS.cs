@@ -56,11 +56,11 @@ public partial struct CORJIT_FLAGS
     [UnscopedRef]
     public ref CORINFO_InstructionSetFlags.flagsInlineArray GetInstructionSetFlagsRaw() => ref instructionSetFlags.GetFlagsRaw();
 
-    public readonly bool IsEmpty() => (corJitFlags == 0) && instructionSetFlags.IsEmpty();
+    public readonly bool IsEmpty() => (corJitFlags is 0) && instructionSetFlags.IsEmpty();
 
     public readonly bool IsSet(CORINFO_InstructionSet instructionSet) => instructionSetFlags.HasInstructionSet(instructionSet);
 
-    public readonly bool IsSet(CorJitFlag flag) => (corJitFlags & (1UL << (int)flag)) != 0;
+    public readonly bool IsSet(CorJitFlag flag) => (corJitFlags & (1UL << (int)flag)) is not 0;
 
     public void Reset()
     {

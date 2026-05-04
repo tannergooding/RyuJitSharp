@@ -41,7 +41,7 @@ public sealed class GenTreeQmark : GenTreeOp
     {
         get
         {
-            return (Flags & GTF_QMARK_EARLY_EXPAND) != 0;
+            return (Flags & GTF_QMARK_EARLY_EXPAND) is not 0;
         }
 
         set

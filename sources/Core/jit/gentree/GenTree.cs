@@ -129,7 +129,7 @@ public abstract partial class GenTree
             {
                 result = false;
             }
-            else if (!IsValue || ((_oper.DebugKind & DBK_NOCONTAIN) != 0))
+            else if (!IsValue || ((_oper.DebugKind & DBK_NOCONTAIN) is not 0))
             {
                 // It is not possible for nodes that do not produce values or that are not containable values to be contained.
                 result = false;
@@ -189,7 +189,7 @@ public abstract partial class GenTree
         get
         {
             assert(Debugger.IsAttached || _oper.MayOverflow);
-            return ((_flags & GTF_OVERFLOW) != 0);
+            return ((_flags & GTF_OVERFLOW) is not 0);
         }
     }
 
@@ -213,7 +213,7 @@ public abstract partial class GenTree
     {
         get
         {
-            var result = ((_flags & GTF_CONTAINED) != 0);
+            var result = ((_flags & GTF_CONTAINED) is not 0);
 
 #if DEBUG
             assert(Debugger.IsAttached || IsLirOp);
@@ -281,7 +281,7 @@ public abstract partial class GenTree
         get
         {
             assert(_oper.IsCnsIntOrI);
-            return (Flags & GTF_ICON_HDL_MASK) != 0;
+            return (Flags & GTF_ICON_HDL_MASK) is not 0;
         }
     }
 
@@ -351,7 +351,7 @@ public abstract partial class GenTree
             }
             else
             {
-                result = (_oper.DebugKind & DBK_NOTLIR) == 0;
+                result = (_oper.DebugKind & DBK_NOTLIR) is 0;
             }
 
             return result;
@@ -415,7 +415,7 @@ public abstract partial class GenTree
     {
         get
         {
-            return (_lirFlags & LIR.Flags.RegOptional) != 0;
+            return (_lirFlags & LIR.Flags.RegOptional) is not 0;
         }
 
         set
@@ -424,7 +424,7 @@ public abstract partial class GenTree
         }
     }
 
-    public bool IsUnusedValue => (_lirFlags & LIR.Flags.UnusedValue) != 0;
+    public bool IsUnusedValue => (_lirFlags & LIR.Flags.UnusedValue) is not 0;
 
     public bool IsUsedFromMemory
     {
@@ -479,7 +479,7 @@ public abstract partial class GenTree
             var result = true;
             var oper = _oper;
 
-            if ((oper.Kind & GTK_NOVALUE) != 0)
+            if ((oper.Kind & GTK_NOVALUE) is not 0)
             {
                 result = false;
             }
@@ -582,7 +582,7 @@ public abstract partial class GenTree
     public var_types Type => _type;
 
 #if DEBUG
-    public bool WasMorphed => (_debugFlags & GTF_DEBUG_NODE_MORPHED) != 0;
+    public bool WasMorphed => (_debugFlags & GTF_DEBUG_NODE_MORPHED) is not 0;
 #endif
 
     protected internal GenTreeFlags Flags

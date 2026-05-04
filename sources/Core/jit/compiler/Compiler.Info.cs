@@ -33,7 +33,7 @@ public partial class Compiler
         public string compFullName = "";
 
         /// <summary>useful when debugging under SuperPMI</summary>
-        public int compMethodSuperPMIIndex = -1;
+        public int compMethodSpmiIndex = -1;
 #endif
 
 #if DEBUG
@@ -43,11 +43,10 @@ public partial class Compiler
         /// <returns>Hash based on method's full name</returns>
         public int compMethodHash()
         {
-            if (compMethodHashPrivate == 0)
+            if (compMethodHashPrivate is 0)
             {
                 // Use compFullName to generate the hash, as it contains the signature and return type
-                var hash = compFullName.GetHashCode(StringComparison.Ordinal);
-                compMethodHashPrivate = hash;
+                compMethodHashPrivate = compFullName.GetHashCode(StringComparison.Ordinal);
             }
             return compMethodHashPrivate;
         }
@@ -90,7 +89,7 @@ public partial class Compiler
         {
             readonly get
             {
-                return (_flags & InfoFlags.IsStatic) != 0;
+                return (_flags & InfoFlags.IsStatic) is not 0;
             }
 
             set
@@ -104,7 +103,7 @@ public partial class Compiler
         {
             readonly get
             {
-                return (_flags & InfoFlags.IsVarArgs) != 0;
+                return (_flags & InfoFlags.IsVarArgs) is not 0;
             }
 
             set
@@ -118,7 +117,7 @@ public partial class Compiler
         {
             readonly get
             {
-                return (_flags & InfoFlags.InitMem) != 0;
+                return (_flags & InfoFlags.InitMem) is not 0;
             }
 
             set
@@ -132,7 +131,7 @@ public partial class Compiler
         {
             readonly get
             {
-                return (_flags & InfoFlags.ProfilerCallback) != 0;
+                return (_flags & InfoFlags.ProfilerCallback) is not 0;
             }
 
             set
@@ -146,7 +145,7 @@ public partial class Compiler
         {
             readonly get
             {
-                return (_flags & InfoFlags.PublishStubParam) != 0;
+                return (_flags & InfoFlags.PublishStubParam) is not 0;
             }
 
             set
@@ -160,7 +159,7 @@ public partial class Compiler
         {
             readonly get
             {
-                return (_flags & InfoFlags.HasNextCallRetAddr) != 0;
+                return (_flags & InfoFlags.HasNextCallRetAddr) is not 0;
             }
 
             set
@@ -174,7 +173,7 @@ public partial class Compiler
         {
             readonly get
             {
-                return (_flags & InfoFlags.UsesAsyncContinuation) != 0;
+                return (_flags & InfoFlags.UsesAsyncContinuation) is not 0;
             }
 
             set

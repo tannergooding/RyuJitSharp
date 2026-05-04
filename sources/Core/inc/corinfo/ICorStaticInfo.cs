@@ -95,9 +95,9 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
     public CORINFO_CLASS_HANDLE getTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken) => lpVtbl->getTokenTypeAsHandle((ICorStaticInfo*)Unsafe.AsPointer(ref this), pResolvedToken);
 
-    public int getStringLiteral(CORINFO_MODULE_HANDLE module, uint metaTOK, char* buffer, int bufferSize, int startIndex = 0) => lpVtbl->getStringLiteral((ICorStaticInfo*)Unsafe.AsPointer(ref this), module, metaTOK, buffer, bufferSize, 0);
+    public int getStringLiteral(CORINFO_MODULE_HANDLE module, uint metaTOK, char* buffer, int bufferSize, int startIndex = 0) => lpVtbl->getStringLiteral((ICorStaticInfo*)Unsafe.AsPointer(ref this), module, metaTOK, buffer, bufferSize, startIndex);
 
-    public nuint printObjectDescription(CORINFO_OBJECT_HANDLE handle, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printObjectDescription((ICorStaticInfo*)Unsafe.AsPointer(ref this), handle, buffer, bufferSize, null);
+    public nuint printObjectDescription(CORINFO_OBJECT_HANDLE handle, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printObjectDescription((ICorStaticInfo*)Unsafe.AsPointer(ref this), handle, buffer, bufferSize, pRequiredBufferSize);
 
     //
     // ICorClassInfo
@@ -111,7 +111,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
     public CORINFO_CLASS_HANDLE getMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, uint index) => lpVtbl->getMethodInstantiationArgument((ICorStaticInfo*)Unsafe.AsPointer(ref this), ftn, index);
 
-    public nuint printClassName(CORINFO_CLASS_HANDLE cls, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printClassName((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls, buffer, bufferSize, null);
+    public nuint printClassName(CORINFO_CLASS_HANDLE cls, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printClassName((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls, buffer, bufferSize, pRequiredBufferSize);
 
     public bool isValueClass(CORINFO_CLASS_HANDLE cls) => lpVtbl->isValueClass((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls);
 
@@ -137,7 +137,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
     public bool canAllocateOnStack(CORINFO_CLASS_HANDLE cls) => lpVtbl->canAllocateOnStack((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls);
 
-    public uint getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, bool fDoubleAlignHint = false) => lpVtbl->getClassAlignmentRequirement((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls, false);
+    public uint getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, bool fDoubleAlignHint = false) => lpVtbl->getClassAlignmentRequirement((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls, fDoubleAlignHint);
 
     public uint getClassGClayout(CORINFO_CLASS_HANDLE cls, byte* gcPtrs) => lpVtbl->getClassGClayout((ICorStaticInfo*)Unsafe.AsPointer(ref this), cls, gcPtrs);
 
@@ -219,11 +219,11 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
     // ICorFieldInfo
     //
 
-    public nuint printFieldName(CORINFO_FIELD_HANDLE field, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printFieldName((ICorStaticInfo*)Unsafe.AsPointer(ref this), field, buffer, bufferSize, null);
+    public nuint printFieldName(CORINFO_FIELD_HANDLE field, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printFieldName((ICorStaticInfo*)Unsafe.AsPointer(ref this), field, buffer, bufferSize, pRequiredBufferSize);
 
     public CORINFO_CLASS_HANDLE getFieldClass(CORINFO_FIELD_HANDLE field) => lpVtbl->getFieldClass((ICorStaticInfo*)Unsafe.AsPointer(ref this), field);
 
-    public CorInfoType getFieldType(CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType = null, CORINFO_CLASS_HANDLE memberParent = null) => lpVtbl->getFieldType((ICorStaticInfo*)Unsafe.AsPointer(ref this), field, null, null);
+    public CorInfoType getFieldType(CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType = null, CORINFO_CLASS_HANDLE memberParent = null) => lpVtbl->getFieldType((ICorStaticInfo*)Unsafe.AsPointer(ref this), field, structType, memberParent);
 
     public uint getFieldOffset(CORINFO_FIELD_HANDLE field) => lpVtbl->getFieldOffset((ICorStaticInfo*)Unsafe.AsPointer(ref this), field);
 
@@ -293,7 +293,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
     public mdMethodDef getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod) => lpVtbl->getMethodDefFromMethod((ICorStaticInfo*)Unsafe.AsPointer(ref this), hMethod);
 
-    public nuint printMethodName(CORINFO_METHOD_HANDLE ftn, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printMethodName((ICorStaticInfo*)Unsafe.AsPointer(ref this), ftn, buffer, bufferSize, null);
+    public nuint printMethodName(CORINFO_METHOD_HANDLE ftn, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printMethodName((ICorStaticInfo*)Unsafe.AsPointer(ref this), ftn, buffer, bufferSize, pRequiredBufferSize);
 
     public byte* getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, byte** className, byte** namespaceName, byte** enclosingClassName, nuint maxEnclosingClassNames) => lpVtbl->getMethodNameFromMetadata((ICorStaticInfo*)Unsafe.AsPointer(ref this), ftn, className, namespaceName, enclosingClassName, maxEnclosingClassNames);
 
@@ -470,7 +470,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         CorInfoCallConvExtension getUnmanagedCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, bool* pSuppressGCTransition);
 
         // return if any marshaling is required for PInvoke methods.  Note that
-        // method == 0 => calli.  The call site sig is only needed for the varargs or calli case
+        // method is 0 => calli.  The call site sig is only needed for the varargs or calli case
         bool pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig);
 
         // Check constraints on method type arguments (only).
@@ -863,7 +863,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         CORINFO_CLASS_HANDLE getFieldClass(CORINFO_FIELD_HANDLE field);
 
         // Return the field's type, if it is CORINFO_TYPE_VALUECLASS 'structType' is set
-        // the field's value class (if 'structType' == 0, then don't bother
+        // the field's value class (if 'structType' is 0, then don't bother
         // the structure info).
         //
         // 'memberParent' is typically only set when verifying.  It should be the
@@ -1335,7 +1335,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_FIELD_HANDLE, CORINFO_CLASS_HANDLE> getFieldClass;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_FIELD_HANDLE, CORINFO_CLASS_HANDLE*, CORINFO_FIELD_HANDLE, CorInfoType> getFieldType;
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_FIELD_HANDLE, CORINFO_CLASS_HANDLE*, CORINFO_CLASS_HANDLE, CorInfoType> getFieldType;
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_FIELD_HANDLE, uint> getFieldOffset;
 

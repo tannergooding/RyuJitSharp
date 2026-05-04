@@ -416,18 +416,20 @@ public partial class Globals
 #endif
     }
 
-    public static unsafe nuint dspPtr(void* ptr)
-    {
-        var compiler = JitTls.Compiler;
-        assert(compiler is not null);
-        return compiler.dspPtr(ptr);
-    }
+    public static string dspBool(bool b) => b ? "true" : "false";
 
     public static nuint dspOffset(nuint offs)
     {
         var compiler = JitTls.Compiler;
         assert(compiler is not null);
         return compiler.dspOffset(offs);
+    }
+
+    public static unsafe nuint dspPtr(void* ptr)
+    {
+        var compiler = JitTls.Compiler;
+        assert(compiler is not null);
+        return compiler.dspPtr(ptr);
     }
 
 #if DEBUG
@@ -477,7 +479,7 @@ public partial class Globals
         var opcodePtr = codeAddr + offs;
         var startOpcodePtr = opcodePtr;
 
-        if (prefix.Length != 0)
+        if (prefix.Length is not 0)
         {
             jitprintf(prefix);
         }

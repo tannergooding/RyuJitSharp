@@ -40,7 +40,7 @@ public sealed class GenTreeMultiRegOp : GenTreeOp
     {
         assert(idx < 2);
 
-        if (idx == 0)
+        if (idx is 0)
         {
             return RegNum;
         }

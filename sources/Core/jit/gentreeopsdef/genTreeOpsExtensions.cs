@@ -711,7 +711,7 @@ public static class genTreeOpsExtensions
             }
         }
 
-        public bool IsBinary => (oper.Kind & GTK_BINOP) != 0;
+        public bool IsBinary => (oper.Kind & GTK_BINOP) is not 0;
 
         public bool IsBlk
         {
@@ -753,7 +753,7 @@ public static class genTreeOpsExtensions
         public bool IsCnsVec => false;
 #endif
 
-        public bool IsCommutative => (oper.Kind & GTK_COMMUTE) != 0;
+        public bool IsCommutative => (oper.Kind & GTK_COMMUTE) is not 0;
 
         public bool IsCompare
         {
@@ -805,7 +805,7 @@ public static class genTreeOpsExtensions
 
         public bool IsCopyOrReload => oper is GT_COPY or GT_RELOAD;
 
-        public bool IsExOp => (oper.Kind & GTK_EXOP) != 0;
+        public bool IsExOp => (oper.Kind & GTK_EXOP) is not 0;
 
         public bool IsFieldList => oper is GT_FIELD_LIST;
 
@@ -843,7 +843,7 @@ public static class genTreeOpsExtensions
 
         public bool IsLclField => oper is GT_LCL_FLD or GT_STORE_LCL_FLD;
 
-        public bool IsLeaf => (oper.Kind & GTK_LEAF) != 0;
+        public bool IsLeaf => (oper.Kind & GTK_LEAF) is not 0;
 
         public bool IsLoad => oper is GT_IND or GT_BLK;
 
@@ -966,13 +966,13 @@ public static class genTreeOpsExtensions
             }
         }
 
-        public bool IsSimple => (oper.Kind & GTK_SMPOP) != 0;
+        public bool IsSimple => (oper.Kind & GTK_SMPOP) is not 0;
 
         public bool IsSpecial => (oper.Kind & GTK_KINDMASK) == GTK_SPECIAL;
 
         public bool IsSsaDef => oper is GT_STORE_LCL_VAR or GT_STORE_LCL_FLD or GT_CALL;
 
-        public bool IsStore => (oper.Kind & GTK_STORE) != 0;
+        public bool IsStore => (oper.Kind & GTK_STORE) is not 0;
 
         public bool IsStoreBlk => oper is GT_STORE_BLK;
 
@@ -980,7 +980,7 @@ public static class genTreeOpsExtensions
         /// <remarks><see cref="get_IsIndir"/> returns true also for indirection nodes such as GT_BLK, etc. as well as GT_NULLCHECK.</remarks>
         public bool IsTrueIndir => oper is GT_IND or GT_STOREIND;
 
-        public bool IsUnary => (oper.Kind & GTK_UNOP) != 0;
+        public bool IsUnary => (oper.Kind & GTK_UNOP) is not 0;
 
         public GenTreeOperKind Kind
         {

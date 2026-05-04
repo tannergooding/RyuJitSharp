@@ -108,7 +108,7 @@ public enum CorInfoHelpFunc
     /// <summary>Multi-dim array helper for arrays Rank != 1 (with or without lower bounds - dimensions passed in as unmanaged array).</summary>
     CORINFO_HELP_NEW_MDARR,
 
-    /// <summary>Rare multi-dim array helper (Rank == 1).</summary>
+    /// <summary>Rare multi-dim array helper (Rank is 1).</summary>
     CORINFO_HELP_NEW_MDARR_RARE,
 
     /// <summary>Helper for any one dimensional array creation.</summary>

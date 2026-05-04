@@ -33,12 +33,12 @@ public partial class Globals
         ArgumentNullException.ThrowIfNull(stream);
         ArgumentNullException.ThrowIfNull(format);
 
-        if (format.Length == 0)
+        if (format.Length is 0)
         {
             // 0-length string means flush
             stream.Flush();
         }
-        else if (JitConfig[ConfigInteger.JitDumpToDebugger] != 0)
+        else if (JitConfig[ConfigInteger.JitDumpToDebugger] is not 0)
         {
             var message = string.Format(CultureInfo.InvariantCulture, format, args);
             Debug.Write(message);
@@ -79,7 +79,7 @@ public partial class Globals
             // The EE just successfully logged our message
             var breakOnDumpToken = s_fJitBreakOnDumpToken.val(CLRConfig.INTERNAL_BreakOnDumpToken);
 
-            if ((breakOnDumpToken != 0xFFFFFFFF) && (s_forbidEntry == 0))
+            if ((breakOnDumpToken is not 0xFFFFFFFF) && (s_forbidEntry is 0))
             {
                 s_forbidEntry = 1;
 
@@ -138,7 +138,7 @@ public partial class Globals
                 {
                     Debug.Fail($"Assertion failed ({filePath}:{lineNumber} - {reason}) during startup");
                 }
-                else if (logEnv.JitInfo->doAssert(pUtf8FilePath, lineNumber, pUtf8Message) != 0)
+                else if (logEnv.JitInfo->doAssert(pUtf8FilePath, lineNumber, pUtf8Message) is not 0)
                 {
                     Debugger.Break();
                 }
@@ -157,7 +157,7 @@ public partial class Globals
             // to the fallback JIT behavior. This is useful when doing ASM diffs, where we only want to see
             // the first assert for any function, but we don't want to kill the whole process on the
             // first assert (which would happen if you used DOTNET_NoGuiOnAssert=1 for example).
-            if (JitConfig[ConfigInteger.AltJitSkipOnAssert] != 0)
+            if (JitConfig[ConfigInteger.AltJitSkipOnAssert] is not 0)
             {
                 fatal(CORJIT_SKIPPED);
             }

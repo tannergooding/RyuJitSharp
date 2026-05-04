@@ -26,7 +26,7 @@ public sealed partial class FieldSeq
 
         var handleValue = (nuint)(fieldHnd);
 
-        assert((handleValue & FIELD_KIND_MASK) == 0);
+        assert((handleValue & FIELD_KIND_MASK) is 0);
         _fieldHandleAndKind = handleValue | (byte)(fieldKind);
 
         assert((JitTls.Compiler is Compiler compiler) && (compiler.eeIsFieldStatic(fieldHnd) == IsStaticField));

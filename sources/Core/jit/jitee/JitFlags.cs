@@ -29,9 +29,9 @@ public partial struct JitFlags
         return _instructionSetFlags;
     }
 
-    public readonly bool IsEmpty() => _jitFlags == 0;
+    public readonly bool IsEmpty() => _jitFlags is 0;
 
-    public readonly bool IsSet(JitFlag flag) => (_jitFlags & (1UL << (int)(flag))) != 0;
+    public readonly bool IsSet(JitFlag flag) => (_jitFlags & (1UL << (int)(flag))) is not 0;
 
     public void Reset()
     {

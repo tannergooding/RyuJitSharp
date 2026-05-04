@@ -31,7 +31,7 @@ public unsafe partial struct CILJit : ICorJitCompiler.Interface
         using JitTls jitTls = new JitTls(jitInfo);
 #endif
 
-        var result = jitNativeCode(methodInfo->ftn, methodInfo->scope, jitInfo, methodInfo, out var methodCodePtr, out *nativeSizeOfCode, ref jitFlags, inlineInfo: null);
+        var result = jitNativeCode(methodInfo->ftn, methodInfo->scope, jitInfo, methodInfo, out var methodCodePtr, out *nativeSizeOfCode, &jitFlags, inlineInfo: null);
 
         if (result == CORJIT_OK)
         {

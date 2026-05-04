@@ -135,7 +135,7 @@ public sealed class GenTreeCall : GenTree
     {
         get
         {
-            return (_callMoreFlags & GTF_CALL_M_EXPANDED_EARLY) != 0;
+            return (_callMoreFlags & GTF_CALL_M_EXPANDED_EARLY) is not 0;
         }
 
         set
@@ -167,7 +167,7 @@ public sealed class GenTreeCall : GenTree
 
     /// <summary>Returns true if the ABI dictates that this call should get a ret buf arg.</summary>
     /// <remarks>This may be out of sync with gtArgs.HasRetBuffer during import until we actually create the ret buffer.</remarks>
-    public bool ShouldHaveRetBufArg => (_callMoreFlags & GTF_CALL_M_RETBUFFARG) != 0;
+    public bool ShouldHaveRetBufArg => (_callMoreFlags & GTF_CALL_M_RETBUFFARG) is not 0;
 
     /// <summary>get i'th return register allocated to this call node.</summary>
     /// <param name="idx">index of the return register</param>
@@ -179,7 +179,7 @@ public sealed class GenTreeCall : GenTree
 
         var result = REG_NA;
 
-        if (idx == 0)
+        if (idx is 0)
         {
             result = RegNum;
         }

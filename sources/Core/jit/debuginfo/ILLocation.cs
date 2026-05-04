@@ -5,11 +5,6 @@
 
 namespace RyuJitSharp;
 
-public struct HelperCallProperties
+public struct ILLocation
 {
-    public readonly bool IsPure(CorInfoHelpFunc helperId)
-    {
-        // TODO: Port HelperCallProperties.IsPure
-        return false;
-    }
 }

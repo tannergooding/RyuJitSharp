@@ -26,7 +26,7 @@ public abstract class GenTreeMultiOp : GenTree
     }
 
 #if FEATURE_HW_INTRINSICS
-    public bool IsUserCall => Oper.IsHWIntrinsic && ((Flags & GTF_HW_USER_CALL) != 0);
+    public bool IsUserCall => Oper.IsHWIntrinsic && ((Flags & GTF_HW_USER_CALL) is not 0);
 #else
     public bool IsUserCall => false;
 #endif

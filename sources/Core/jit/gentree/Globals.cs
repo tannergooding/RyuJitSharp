@@ -65,12 +65,12 @@ public partial class Globals
         var bits = flags >>> (idx * 2);
         var spillFlags = GTF_EMPTY;
 
-        if ((bits & PACKED_GTF_SPILL) != 0)
+        if ((bits & PACKED_GTF_SPILL) is not 0)
         {
             spillFlags |= GTF_SPILL;
         }
 
-        if ((bits & PACKED_GTF_SPILLED) != 0)
+        if ((bits & PACKED_GTF_SPILLED) is not 0)
         {
             spillFlags |= GTF_SPILLED;
         }
@@ -93,12 +93,12 @@ public partial class Globals
 
         var bits = 0u;
 
-        if ((flagsToSet & GTF_SPILL) != 0)
+        if ((flagsToSet & GTF_SPILL) is not 0)
         {
             bits |= PACKED_GTF_SPILL;
         }
 
-        if ((flagsToSet & GTF_SPILLED) != 0)
+        if ((flagsToSet & GTF_SPILLED) is not 0)
         {
             bits |= PACKED_GTF_SPILLED;
         }

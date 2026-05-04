@@ -66,7 +66,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsImplicitByRef) != 0;
+            return (_flags & Flags.IsImplicitByRef) is not 0;
         }
 
         set
@@ -83,7 +83,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsNeverNegative) != 0;
+            return (_flags & Flags.IsNeverNegative) is not 0;
         }
 
         set
@@ -148,7 +148,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsParam) != 0;
+            return (_flags & Flags.IsParam) is not 0;
         }
 
         set
@@ -162,7 +162,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsRegArg) != 0;
+            return (_flags & Flags.IsRegArg) is not 0;
         }
 
         set
@@ -176,7 +176,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsParamRegTarget) != 0;
+            return (_flags & Flags.IsParamRegTarget) is not 0;
         }
 
         set
@@ -190,7 +190,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.FramePointerBased) != 0;
+            return (_flags & Flags.FramePointerBased) is not 0;
         }
 
         set
@@ -204,7 +204,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.OnFrame) != 0;
+            return (_flags & Flags.OnFrame) is not 0;
         }
 
         set
@@ -218,7 +218,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.Register) != 0;
+            return (_flags & Flags.Register) is not 0;
         }
 
         set
@@ -232,7 +232,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.Tracked) != 0;
+            return (_flags & Flags.Tracked) is not 0;
         }
 
         set
@@ -248,7 +248,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.Pinned) != 0;
+            return (_flags & Flags.Pinned) is not 0;
         }
 
         set
@@ -262,7 +262,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.MustInit) != 0;
+            return (_flags & Flags.MustInit) is not 0;
         }
 
         set
@@ -277,7 +277,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.AddrExposed) != 0;
+            return (_flags & Flags.AddrExposed) is not 0;
         }
 
         set
@@ -291,7 +291,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.DoNotEnregister) != 0;
+            return (_flags & Flags.DoNotEnregister) is not 0;
         }
 
         set
@@ -306,7 +306,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.FieldAccessed) != 0;
+            return (_flags & Flags.FieldAccessed) is not 0;
         }
 
         set
@@ -320,7 +320,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.LiveInOutOfHndlr) != 0;
+            return (_flags & Flags.LiveInOutOfHndlr) is not 0;
         }
 
         set
@@ -334,7 +334,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.InSsa) != 0;
+            return (_flags & Flags.InSsa) is not 0;
         }
 
         set
@@ -348,7 +348,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsCse) != 0;
+            return (_flags & Flags.IsCse) is not 0;
         }
 
         set
@@ -362,7 +362,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.HasLdAddrOp) != 0;
+            return (_flags & Flags.HasLdAddrOp) is not 0;
         }
 
         set
@@ -376,7 +376,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.HasIlStoreOp) != 0;
+            return (_flags & Flags.HasIlStoreOp) is not 0;
         }
 
         set
@@ -390,7 +390,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.HasMultipleIlStoreOp) != 0;
+            return (_flags & Flags.HasMultipleIlStoreOp) is not 0;
         }
 
         set
@@ -404,7 +404,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsTemp) != 0;
+            return (_flags & Flags.IsTemp) is not 0;
         }
 
         set
@@ -418,7 +418,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.SingleDef) != 0;
+            return (_flags & Flags.SingleDef) is not 0;
         }
 
         set
@@ -433,7 +433,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.SingleDefRegCandidate) != 0;
+            return (_flags & Flags.SingleDefRegCandidate) is not 0;
         }
 
         set
@@ -447,7 +447,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.DisqualifySingleDefRegCandidate) != 0;
+            return (_flags & Flags.DisqualifySingleDefRegCandidate) is not 0;
         }
 
         set
@@ -462,7 +462,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.SpillAtSingleDef) != 0;
+            return (_flags & Flags.SpillAtSingleDef) is not 0;
         }
 
         set
@@ -476,7 +476,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.HasExceptionalUsesHint) != 0;
+            return (_flags & Flags.HasExceptionalUsesHint) is not 0;
         }
 
         set
@@ -490,7 +490,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsPtr) != 0;
+            return (_flags & Flags.IsPtr) is not 0;
         }
 
         set
@@ -504,7 +504,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsUnsafeBuffer) != 0;
+            return (_flags & Flags.IsUnsafeBuffer) is not 0;
         }
 
         set
@@ -519,7 +519,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.Promoted) != 0;
+            return (_flags & Flags.Promoted) is not 0;
         }
 
         set
@@ -533,7 +533,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsStructField) != 0;
+            return (_flags & Flags.IsStructField) is not 0;
         }
 
         set
@@ -547,7 +547,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.ContainsHoles) != 0;
+            return (_flags & Flags.ContainsHoles) is not 0;
         }
 
         set
@@ -561,7 +561,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsMultiRegArg) != 0;
+            return (_flags & Flags.IsMultiRegArg) is not 0;
         }
 
         set
@@ -575,7 +575,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsMultiRegRet) != 0;
+            return (_flags & Flags.IsMultiRegRet) is not 0;
         }
 
         set
@@ -589,7 +589,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsMultiRegDest) != 0;
+            return (_flags & Flags.IsMultiRegDest) is not 0;
         }
 
         set
@@ -603,7 +603,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.LraCandidate) != 0;
+            return (_flags & Flags.LraCandidate) is not 0;
         }
 
         set
@@ -617,7 +617,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.RegStruct) != 0;
+            return (_flags & Flags.RegStruct) is not 0;
         }
 
         set
@@ -631,7 +631,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.ClassIsExact) != 0;
+            return (_flags & Flags.ClassIsExact) is not 0;
         }
 
         set
@@ -645,7 +645,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.ImplicitlyReferenced) != 0;
+            return (_flags & Flags.ImplicitlyReferenced) is not 0;
         }
 
         set
@@ -659,7 +659,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.SuppressedZeroInit) != 0;
+            return (_flags & Flags.SuppressedZeroInit) is not 0;
         }
 
         set
@@ -674,7 +674,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.HasExplicitInit) != 0;
+            return (_flags & Flags.HasExplicitInit) is not 0;
         }
 
         set
@@ -689,7 +689,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsOsrLocal) != 0;
+            return (_flags & Flags.IsOsrLocal) is not 0;
         }
 
         set
@@ -703,7 +703,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsOsrExposedLocal) != 0;
+            return (_flags & Flags.IsOsrExposedLocal) is not 0;
         }
 
         set
@@ -717,7 +717,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.RedefinedInEmbeddedStatement) != 0;
+            return (_flags & Flags.RedefinedInEmbeddedStatement) is not 0;
         }
 
         set
@@ -731,7 +731,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsEnumerator) != 0;
+            return (_flags & Flags.IsEnumerator) is not 0;
         }
 
         set
@@ -745,7 +745,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsSpan) != 0;
+            return (_flags & Flags.IsSpan) is not 0;
         }
 
         set
@@ -759,7 +759,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.AllDefsAreNoGc) != 0;
+            return (_flags & Flags.AllDefsAreNoGc) is not 0;
         }
 
         set
@@ -773,7 +773,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.StackAllocatedObject) != 0;
+            return (_flags & Flags.StackAllocatedObject) is not 0;
         }
 
         set
@@ -788,7 +788,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.QuirkToLong) != 0;
+            return (_flags & Flags.QuirkToLong) is not 0;
         }
 
         set
@@ -802,7 +802,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.StructDoubleAlign) != 0;
+            return (_flags & Flags.StructDoubleAlign) is not 0;
         }
 
         set
@@ -818,7 +818,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.UsedInSimdIntrinsic) != 0;
+            return (_flags & Flags.UsedInSimdIntrinsic) is not 0;
         }
 
         set
@@ -834,7 +834,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsLastUseCopyOmissionCandidate) != 0;
+            return (_flags & Flags.IsLastUseCopyOmissionCandidate) is not 0;
         }
 
         set
@@ -850,7 +850,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_debugFlags & DebugFlags.TrackedWithoutIndex) != 0;
+            return (_debugFlags & DebugFlags.TrackedWithoutIndex) is not 0;
         }
 
         set
@@ -864,7 +864,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_debugFlags & DebugFlags.ClassInfoUpdated) != 0;
+            return (_debugFlags & DebugFlags.ClassInfoUpdated) is not 0;
         }
 
         set
@@ -878,7 +878,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_debugFlags & DebugFlags.IsHoist) != 0;
+            return (_debugFlags & DebugFlags.IsHoist) is not 0;
         }
 
         set
@@ -892,7 +892,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_debugFlags & DebugFlags.IsMultiDefCse) != 0;
+            return (_debugFlags & DebugFlags.IsMultiDefCse) is not 0;
         }
 
         set
@@ -906,7 +906,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_debugFlags & DebugFlags.KeepType) != 0;
+            return (_debugFlags & DebugFlags.KeepType) is not 0;
         }
 
         set
@@ -920,7 +920,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_debugFlags & DebugFlags.NoLclFldStress) != 0;
+            return (_debugFlags & DebugFlags.NoLclFldStress) is not 0;
         }
 
         set
@@ -934,7 +934,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_debugFlags & DebugFlags.DefinedViaAddress) != 0;
+            return (_debugFlags & DebugFlags.DefinedViaAddress) is not 0;
         }
 
         set
@@ -954,7 +954,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_debugFlags & DebugFlags.UnusedStruct) != 0;
+            return (_debugFlags & DebugFlags.UnusedStruct) is not 0;
         }
 
         set
@@ -968,7 +968,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_debugFlags & DebugFlags.UndoneStructPromotion) != 0;
+            return (_debugFlags & DebugFlags.UndoneStructPromotion) is not 0;
         }
 
         set

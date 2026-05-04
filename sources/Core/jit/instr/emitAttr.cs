@@ -43,17 +43,17 @@ public enum emitAttr : uint
 
     EA_OFFSET_FLG = 0x080,
 
-    // size == 0
+    // size is 0
     EA_OFFSET = EA_OFFSET_FLG | EA_PTRSIZE,
 
     EA_GCREF_FLG = 0x100,
 
-    // size == -1
+    // size is -1
     EA_GCREF = EA_GCREF_FLG | EA_PTRSIZE,
 
     EA_BYREF_FLG = 0x200,
 
-    // size == -2
+    // size is -2
     EA_BYREF = EA_BYREF_FLG | EA_PTRSIZE,
 
     /// <summary>Is the displacement of the instruction relocatable?</summary>

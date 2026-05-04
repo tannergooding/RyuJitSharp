@@ -192,7 +192,7 @@ public partial class Compiler
 
     public static bool s_pJitFunctionFileInitialized;
 
-    public static MethodSet? s_pJitMethodSet;
+    public static MethodSet2? s_pJitMethodSet;
 #endif
 
     public Info info;
@@ -279,8 +279,6 @@ public partial class Compiler
     public static BitSetSupport.BitSetOpCounter m_allvarsetOpCounter;
 #endif
 
-    public static HelperCallProperties s_helperCallProperties;
-
 #if TARGET_RISCV64 || TARGET_LOONGARCH64
     public FpStructLoweringMap? m_fpStructLoweringCache;
 #endif
@@ -342,7 +340,7 @@ public partial class Compiler
 
     private uint cntCalleeTrashMask;
 
-    private varTypeCalleeTrashRegsInlineArray varTypeCalleeTrashRegs;
+    private VarTypeCalleeTrashRegs varTypeCalleeTrashRegs;
 #endif
 
 #if DEBUG
@@ -377,7 +375,7 @@ public partial class Compiler
 
         fixed (byte* pName = "SuperPMIMethodContextNumber"u8)
         {
-            info.compMethodSuperPMIIndex = CILJit.s_jitHost->getIntConfigValue(pName, -1);
+            info.compMethodSpmiIndex = CILJit.s_jitHost->getIntConfigValue(pName, -1);
         }
 
         if (!compIsForInlining)
@@ -421,12 +419,13 @@ public partial class Compiler
         if (!compIsForInlining)
         {
             var noStructPromotionValue = JitConfig[ConfigInteger.JitNoStructPromotion];
-            assert(0 <= noStructPromotionValue && noStructPromotionValue <= 2);
+            assert(noStructPromotionValue is >= 0 and <= 2);
 
-            if (noStructPromotionValue == 1)
+            if (noStructPromotionValue is 1)
             {
                 fgNoStructPromotion = true;
             }
+
             if (noStructPromotionValue == 2)
             {
                 fgNoStructParamPromotion = true;
@@ -457,7 +456,7 @@ public partial class Compiler
 #endif
 
         // check that HelperCallProperties are initialized
-        assert(s_helperCallProperties.IsPure(CORINFO_HELP_GET_GCSTATIC_BASE));
+        assert(CORINFO_HELP_GET_GCSTATIC_BASE.IsPure);
 
         virtualStubParamInfo = new VirtualStubParamInfo(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
 
@@ -516,6 +515,50 @@ public partial class Compiler
     public unsafe bool IsNativeAot => IsAot && IsTargetAbi(CORINFO_NATIVEAOT_ABI);
 
     public unsafe bool IsReadyToRun => IsAot && !IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+
+#if TARGET_AMD64
+    public uint CNT_CALLEE_TRASH_FLOAT => cntCalleeTrashFloat;
+
+    public uint CNT_CALLEE_TRASH_INT => cntCalleeTrashInt;
+
+    public regMaskFlt RBM_ALLFLOAT => rbmAllFloat;
+
+    public regMaskInt RBM_ALLINT => rbmAllInt;
+
+    public regMaskFlt RBM_FLT_CALLEE_TRASH => rbmFltCalleeTrash;
+
+    public regMaskInt RBM_INT_CALLEE_TRASH => rbmIntCalleeTrash;
+
+    public uint REG_INT_COUNT => (uint)(REG_INT_LAST - REG_INT_FIRST + 1);
+
+    public regNumber REG_INT_LAST => regIntLast;
+#endif
+
+#if TARGET_XARCH
+    public regMaskMsk RBM_ALLMASK => rbmAllMask;
+
+    public regMaskMsk RBM_MSK_CALLEE_TRASH => rbmMskCalleeTrash;
+
+    public uint CNT_CALLEE_TRASH_MASK => cntCalleeTrashMask;
+#endif
+
+    /// <summary>Are we running a replay under SuperPMI?</summary>
+#if DEBUG
+    public bool RunningSuperPmiReplay => info.compMethodSpmiIndex is not -1;
+#else
+    // Note: you can certainly run a SuperPMI replay with a non-DEBUG JIT, and if necessary and useful we could make compMethodSuperPMIIndex always available.
+    public bool RunningSuperPmiReplay => false;
+#endif
+
+#if DEBUG
+    /// <summary>Should we use only ASCII characters for tree dumps?</summary>
+    /// <remarks>This is set to default to 1 in JitConfig</remarks>
+    public bool ShouldDumpAsciiTrees => JitConfig[ConfigInteger.JitDumpASCII] is 1;
+
+    public bool ShouldUseVerboseSsa => JitConfig[ConfigInteger.JitDumpVerboseSsa] is 1;
+
+    public bool ShouldUseVerboseTrees => JitConfig[ConfigInteger.JitDumpVerboseTrees] is 1;
+#endif
 
     private ClassLayoutTable typClassLayoutTable
     {
@@ -577,6 +620,24 @@ public partial class Compiler
 #endif
         _ => TYP_UNDEF,
     };
+
+#if TARGET_XARCH
+    /// <summary>Answer the question: Is Vex encoding supported on this target</summary>
+    /// <returns></returns>
+    public bool canUseVexEncoding() => compOpportunisticallyDependsOn(InstructionSet_AVX);
+
+    /// <summary>Answer the question: Is Evex encoding supported on this target</summary>
+    /// <returns></returns>
+    public bool canUseEvexEncoding() => compOpportunisticallyDependsOn(InstructionSet_AVX512);
+
+    /// <summary>Answer the question: Are APX encodings supported on this target.</summary>
+    /// <returns></returns>
+    public bool canUseApxEncoding() => compOpportunisticallyDependsOn(InstructionSet_APX);
+
+    /// <summary>Answer the question: Are APX-EVEX encodings supported on this target.</summary>
+    /// <returns></returns>
+    public bool canUseApxEvexEncoding() => canUseApxEncoding() && canUseEvexEncoding();
+#endif
 
     public unsafe nuint dspPtr(void* ptr) => dspOffset((nuint)(ptr));
 
@@ -695,7 +756,7 @@ public partial class Compiler
         }
 #elif TARGET_ARM64
 #if DEBUG
-        if ((JitConfig[ConfigInteger.JitUseScalableVectorT] != 0) && compExactlyDependsOn(InstructionSet_VectorT))
+        if ((JitConfig[ConfigInteger.JitUseScalableVectorT] is not 0) && compExactlyDependsOn(InstructionSet_VectorT))
         {
             return SIZE_UNKNOWN;
         }
@@ -965,7 +1026,7 @@ public partial class Compiler
                             JITDUMP($" Found Vector<{simdBaseType}>\n");
                             size = GetVectorTByteLength();
 
-                            if (size == 0)
+                            if (size is 0)
                             {
                                 return TYP_UNDEF;
                             }
@@ -1151,8 +1212,8 @@ public partial class Compiler
     }
 
     [InlineArray((int)(TYP_COUNT))]
-    private struct varTypeCalleeTrashRegsInlineArray
+    private struct VarTypeCalleeTrashRegs
     {
-        public regMaskTP e0;
+        public uint e0;
     }
 }

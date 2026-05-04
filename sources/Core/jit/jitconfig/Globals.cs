@@ -4,6 +4,8 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
@@ -55,7 +57,7 @@ public partial class Globals
 
             // In this case there was no match, see if we can backtrack to a wild
             // card and consume one more character from the string.
-            if (backtrackPattern.IsEmpty || backtrackStr.IsEmpty)
+            if (Unsafe.IsNullRef(in MemoryMarshal.GetReference(backtrackPattern)) || backtrackStr.IsEmpty)
             {
                 return false;
             }

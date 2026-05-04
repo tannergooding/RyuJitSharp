@@ -146,7 +146,7 @@ public sealed partial class CallArg
     {
         get
         {
-            return (_flags & Flags.NeedPlace) != 0;
+            return (_flags & Flags.NeedPlace) is not 0;
         }
 
         set
@@ -160,7 +160,7 @@ public sealed partial class CallArg
     {
         get
         {
-            return (_flags & Flags.NeedTmp) != 0;
+            return (_flags & Flags.NeedTmp) is not 0;
         }
 
         set
@@ -175,7 +175,7 @@ public sealed partial class CallArg
     {
         get
         {
-            return (_flags & Flags.Processed) != 0;
+            return (_flags & Flags.Processed) is not 0;
         }
 
         set

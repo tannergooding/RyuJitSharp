@@ -17,13 +17,33 @@ public sealed class CodeGen : ICodeGen
     private PhasedVar<bool> _cgFramePointerUsed;
     private PhasedVar<bool> _cgFrameRequired;
 
+    private Compiler _compiler;
+
     private bool _genAlignLoops;
+    private bool _genInterruptibleUsed;
+
+#if TARGET_AMD64
+    private regMaskFlt _rbmAllFloat;
+    private regMaskInt _rbmAllInt;
+    private regMaskFlt _rbmFltCalleeTrash;
+    private regMaskInt _rbmIntCalleeTrash;
+    private regNumber _regIntLast;
+#endif
+
+#if TARGET_XARCH
+    private regMaskMsk _rbmAllMask;
+    private regMaskMsk _rbmMskCalleeTrash;
+#endif
+
+    private bool _verbose;
 
     public CodeGen(Compiler compiler)
     {
-        // TODO: Port CodeGen.ctor
+        _compiler = compiler;
         _cgEmitter = new Emitter();
     }
+
+    public Compiler Compiler => _compiler;
 
 #if LATE_DISASM
     public Disassembler Disassembler => _cgDisasm;
@@ -31,8 +51,6 @@ public sealed class CodeGen : ICodeGen
 
     public Emitter Emitter => _cgEmitter;
 
-    /// <summary>Indicates whether the current method requires an explicit stack frame, and all arguments and locals to be accessible relative to the Frame Pointer.</summary>
-    /// <remarks>Prohibits double alignment of the stack.</remarks>
     public bool IsFramePointerRequired
     {
         get
@@ -46,8 +64,6 @@ public sealed class CodeGen : ICodeGen
         }
     }
 
-    /// <summary>Indicates whether the current method requires an explicit frame.</summary>
-    /// <remarks>Does not prohibit double alignment of the stack.</remarks>
     public bool IsFrameRequired
     {
         get
@@ -61,8 +77,24 @@ public sealed class CodeGen : ICodeGen
         }
     }
 
-    /// <summary>indicates whether to align loops.</summary>
-    /// <remarks>Used to avoid effects of loop alignment when diagnosing perf issues.</remarks>
+#if TARGET_AMD64
+    public regMaskFlt RBM_ALLFLOAT => _rbmAllFloat;
+
+    public regMaskInt RBM_ALLINT => _rbmAllInt;
+
+    public regMaskFlt RBM_FLT_CALLEE_TRASH => _rbmFltCalleeTrash;
+
+    public regMaskInt RBM_INT_CALLEE_TRASH => _rbmIntCalleeTrash;
+
+    public regNumber REG_INT_LAST => _regIntLast;
+#endif
+
+#if TARGET_XARCH
+    public regMaskMsk RBM_ALLMASK => _rbmAllMask;
+
+    public regMaskMsk RBM_MSK_CALLEE_TRASH => _rbmMskCalleeTrash;
+#endif
+
     public bool ShouldAlignLoops
     {
         get
@@ -75,4 +107,37 @@ public sealed class CodeGen : ICodeGen
             _genAlignLoops = value;
         }
     }
+
+#if DEBUG
+    public bool IsGcTypeFixed => _genInterruptibleUsed;
+
+    public bool Verbose
+    {
+        get
+        {
+            return _verbose;
+        }
+
+        set
+        {
+            _verbose = value;
+        }
+    }
+#endif
+
+#if TARGET_XARCH
+    public void CopyRegisterInfo()
+    {
+#if TARGET_AMD64
+        _rbmAllFloat = _compiler.RBM_ALLFLOAT;
+        _rbmFltCalleeTrash = _compiler.RBM_FLT_CALLEE_TRASH;
+        _rbmAllInt = _compiler.RBM_ALLINT;
+        _rbmIntCalleeTrash = _compiler.RBM_INT_CALLEE_TRASH;
+        _regIntLast = _compiler.REG_INT_LAST;
+#endif
+
+        _rbmAllMask = _compiler.RBM_ALLMASK;
+        _rbmMskCalleeTrash = _compiler.RBM_MSK_CALLEE_TRASH;
+    }
+#endif
 }

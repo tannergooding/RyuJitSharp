@@ -118,7 +118,7 @@ public partial class Compiler
         /// <summary>true if the CLFLG_* for an optimization is set</summary>
         /// <param name="optFlag"></param>
         /// <returns></returns>
-        public readonly bool OptEnabled(uint optFlag) => (compFlags & optFlag) != 0;
+        public readonly bool OptEnabled(uint optFlag) => (compFlags & optFlag) is not 0;
 
         // Check if the compilation is control-flow guard enabled.
         public readonly unsafe bool IsCFGEnabled
@@ -133,7 +133,7 @@ public partial class Compiler
 #else
                 assert((RBM_VALIDATE_INDIRECT_CALL_TRASH & RBM_VALIDATE_INDIRECT_CALL_ADDR) == RBM_NONE);
 #endif
-                if (JitConfig[ConfigInteger.JitForceControlFlowGuard] != 0)
+                if (JitConfig[ConfigInteger.JitForceControlFlowGuard] is not 0)
                 {
                     return true;
                 }

@@ -3,19 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if LATE_DISASM
 namespace RyuJitSharp;
 
-public struct Disassembler
-{
-    public readonly void disDone()
-    {
-        // TODO: Port Disassembler.disDone
-    }
-
-    public readonly unsafe void disOpenForLateDisAsm(string curMethodName, string curClassName, PCCOR_SIGNATURE sig)
-    {
-        // TODO: Port Disassembler.disOpenForLateDisAsm
-    }
-}
-#endif
+public unsafe delegate nuint EEPrintFunc(byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize);

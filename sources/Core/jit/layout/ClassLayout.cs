@@ -45,7 +45,7 @@ public sealed class ClassLayout
         _type = TYP_STRUCT;
 
 #if DEBUG
-        if (size == 0)
+        if (size is 0)
         {
             _name = "Empty";
             _shortName = "Empty";
@@ -64,9 +64,9 @@ public sealed class ClassLayout
     /// <remarks>Since the maximum size is 2^32-1 the count can fit in at most 30 bits.</remarks>
     public uint GcPtrCount => (_bitfield >> 1) & 0x3FFF_FFFF;
 
-    public bool HasGcPtr => GcPtrCount != 0;
+    public bool HasGcPtr => GcPtrCount is not 0;
 
-    public bool IsValueClass => (_bitfield & 1) != 0;
+    public bool IsValueClass => (_bitfield & 1) is not 0;
 
     public int SlotCount => roundUp(_size, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
 
@@ -190,7 +190,7 @@ public sealed class ClassLayout
     private CorInfoGCType GetGcPtr(int slot)
     {
         assert(slot < SlotCount);
-        return (GcPtrCount != 0) ? (CorInfoGCType)(GcPtrs[slot]) : TYPE_GC_NONE;
+        return (GcPtrCount is not 0) ? (CorInfoGCType)(GcPtrs[slot]) : TYPE_GC_NONE;
     }
 
     [StructLayout(LayoutKind.Explicit)]

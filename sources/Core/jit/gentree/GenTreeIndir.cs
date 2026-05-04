@@ -113,17 +113,17 @@ public class GenTreeIndir : GenTreeOp
     {
         get
         {
-            var isInvariant = ((Flags & GTF_IND_INVARIANT) != 0);
+            var isInvariant = ((Flags & GTF_IND_INVARIANT) is not 0);
             assert(Debugger.IsAttached || !isInvariant || Oper.IsLoad);
             return isInvariant;
         }
     }
 
     /// <summary>True if this indirection is an unaligned memory operation.</summary>
-    public bool IsUnaligned => (Flags & GTF_IND_UNALIGNED) != 0;
+    public bool IsUnaligned => (Flags & GTF_IND_UNALIGNED) is not 0;
 
     /// <summary>True if this indirection is a volatile memory operation.</summary>
-    public bool IsVolatile => (Flags & GTF_IND_VOLATILE) != 0;
+    public bool IsVolatile => (Flags & GTF_IND_VOLATILE) is not 0;
 
     public nint Offset
     {
@@ -177,7 +177,7 @@ public class GenTreeIndir : GenTreeOp
         var oper = Oper;
         var operIsStoreBlk = oper.IsStoreBlk;
 
-        if ((operIsStoreBlk || (oper is GT_STOREIND)) && ((Flags & GTF_IND_TGT_NOT_HEAP) != 0))
+        if ((operIsStoreBlk || (oper is GT_STOREIND)) && ((Flags & GTF_IND_TGT_NOT_HEAP) is not 0))
         {
             return true;
         }

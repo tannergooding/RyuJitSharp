@@ -3,19 +3,18 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if LATE_DISASM
+using System;
+
 namespace RyuJitSharp;
 
-public struct Disassembler
+[Flags]
+public enum ExceptionSetFlags : byte
 {
-    public readonly void disDone()
-    {
-        // TODO: Port Disassembler.disDone
-    }
-
-    public readonly unsafe void disOpenForLateDisAsm(string curMethodName, string curClassName, PCCOR_SIGNATURE sig)
-    {
-        // TODO: Port Disassembler.disOpenForLateDisAsm
-    }
+    None = 0,
+    OverflowException = 1 << 0,
+    DivideByZeroException = 1 << 1,
+    ArithmeticException = 1 << 2,
+    NullReferenceException = 1 << 3,
+    IndexOutOfRangeException = 1 << 4,
+    UnknownException = 1 << 5,
 }
-#endif

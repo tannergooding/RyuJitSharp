@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace RyuJitSharp;
 
@@ -123,13 +124,7 @@ public sealed class InlineStrategy
         get
         {
             var rootContext = m_RootContext;
-
-            if (rootContext is null)
-            {
-                // Allocate on first demand.
-                rootContext = CreateRootContext();
-                m_RootContext = rootContext;
-            }
+            rootContext ??= CreateRootContext();
             return rootContext;
         }
     }
@@ -141,14 +136,17 @@ public sealed class InlineStrategy
         m_PrejitRootObservation = r.Policy.Observation;
     }
 
+    [MemberNotNull(nameof(m_RootContext), nameof(m_LastContext))]
     private InlineContext CreateRootContext()
     {
         var rootContext = NewRoot();
+        m_RootContext = rootContext;
 
-        // Estimate how long the jit will take if there's no inlining
-        // done to this method.
-        m_InitialTimeEstimate = EstimateTime(rootContext);
-        m_CurrentTimeEstimate = m_InitialTimeEstimate;
+        // Estimate how long the jit will take if there's no inlining done to this method.
+        var initialTimeEstimate = EstimateTime(rootContext);
+
+        m_InitialTimeEstimate = initialTimeEstimate;
+        m_CurrentTimeEstimate = initialTimeEstimate;
 
         // Set the initial budget for inlining. Note this is
         // deliberately set very high and is intended to catch
@@ -160,12 +158,16 @@ public sealed class InlineStrategy
             JITDUMP("Using non-default inline budget %u\n", budget);
         }
 
-        m_InitialTimeBudget = budget * m_InitialTimeEstimate;
-        m_CurrentTimeBudget = m_InitialTimeBudget;
+        var initialTimeBudget = budget * initialTimeEstimate;
+
+        m_InitialTimeBudget = initialTimeBudget;
+        m_CurrentTimeBudget = initialTimeBudget;
 
         // Estimate the code size  if there's no inlining
-        m_InitialSizeEstimate = EstimateSize(rootContext);
-        m_CurrentSizeEstimate = m_InitialSizeEstimate;
+        var initialSizeEstimate = EstimateSize(rootContext);
+
+        m_InitialSizeEstimate = initialSizeEstimate;
+        m_CurrentSizeEstimate = initialSizeEstimate;
 
         // Sanity check
         assert(m_CurrentTimeEstimate > 0);
@@ -177,29 +179,77 @@ public sealed class InlineStrategy
         return rootContext;
     }
 
-    /// <summary>Create a context for the root method.</summary>
-    /// <returns></returns>
-    private InlineContext NewRoot()
+    /// <summary>construct an InlineContext for the root method.</summary>
+    /// <returns>InlineContext for use as the root context</returns>
+    /// <remarks>We leave <see cref="InlineContext.m_Code" /> as <c>null</c> here (rather than the IL buffer address of the root method) to preserve existing behavior, which is to allow one recursive inline.</remarks>
+    private unsafe InlineContext NewRoot()
     {
-        // TODO: Port InlineStrategy.NewRoot
-        return null!;
+        var rootContext = new InlineContext(this) {
+            m_ILSize = m_compiler.info.compILCodeSize,
+            m_Code = m_compiler.info.compCode,
+            m_Callee = m_compiler.info.compMethodHnd,
+
+            // May fail to block recursion for normal methods
+            // Might need the actual context handle here
+            m_RuntimeContext = METHOD_BEING_COMPILED_CONTEXT(),
+        };
+        return rootContext;
     }
 
-    /// <summary>Estimate native code size change because of this inline.</summary>
-    /// <param name="context"></param>
-    /// <returns></returns>
+    /// <summary>estimate time impact on jitting for an inline of this size.</summary>
+    /// <param name="ilSize">size of the method's IL</param>
+    /// <returns>Nominal increase in jit time.</returns>
+    /// <remarks>
+    ///   <para>Based on observational data. Time is nominally microseconds.</para>
+    ///   <para>Small inlines will make the jit a bit faster.</para>
+    /// </remarks>
+    private int EstimateInlineTime(uint ilSize) => -14 + unchecked((int)(2 * ilSize));
+
+    /// <summary>estimate jit time for method of this size with no inlining.</summary>
+    /// <param name="ilSize">size of the method's IL</param>
+    /// <returns>Nominal estimate of jit time.</returns>
+    /// <remarks>Based on observational data. Time is nominally microseconds.</remarks>
+    private int EstimateRootTime(uint ilSize) => 60 + unchecked((int)(3 * ilSize));
+
+    /// <summary>estimate impact of this inline on the method size</summary>
+    /// <param name="context">context describing this inline</param>
+    /// <returns>Nominal estimate of method size (bytes * 10)</returns>
     private int EstimateSize(InlineContext context)
     {
-        // TODO: Port InlineStrategy.EstimateSize
-        return 0;
+        // Prediction varies for root and inlines.
+        if (context == m_RootContext)
+        {
+            // Simple linear models based on observations show root method
+            // native code size is fairly well predicted by IL size.
+            //
+            // Model below is for x64 on windows.
+            var ilSize = context.ILSize;
+            var estimate = (1312 + 228 * ilSize) / 10;
+            return unchecked((int)(estimate));
+        }
+        else
+        {
+            // Use context's code size estimate.
+            return unchecked((int)(context.CodeSizeEstimate));
+        }
     }
 
-    /// <summary>Estimate the jit time change because of this inline.</summary>
-    /// <param name="context"></param>
-    /// <returns></returns>
+    /// <summary>estimate impact of this inline on the method jit time</summary>
+    /// <param name="context">context describing this inline</param>
+    /// <returns>Nominal estimate of jit time.</returns>
     private int EstimateTime(InlineContext context)
     {
-        // TODO: Port InlineStrategy.EstimateTime
-        return 0;
+        // Simple linear models based on observations show time is fairly well predicted by IL size.
+        // Prediction varies for root and inlines.
+
+        if (context == m_RootContext)
+        {
+            return EstimateRootTime(context.ILSize);
+        }
+        else
+        {
+            // Use amount of IL actually imported
+            return EstimateInlineTime(context.ImportedILSize);
+        }
     }
 }

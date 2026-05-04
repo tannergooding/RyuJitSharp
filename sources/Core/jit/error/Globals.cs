@@ -42,7 +42,7 @@ public partial class Globals
 
         // We now only assert when user explicitly set DOTNET_JitRequired=1
         // If DOTNET_JitRequired is 0 or is not set, we will not assert.
-        if ((JitConfig[ConfigInteger.JitRequired] == 1) || (getBreakOnBadCode() != 0))
+        if ((JitConfig[ConfigInteger.JitRequired] is 1) || (getBreakOnBadCode() is not 0))
         {
             assertAbort(message, filePath, lineNumber);
         }
@@ -110,7 +110,7 @@ public partial class Globals
         // Don't stop on NYI: use DOTNET_AltJitAssertOnNYI for that.
         if (jitResult != CORJIT_SKIPPED)
         {
-            if (JitConfig[ConfigInteger.DebugBreakOnVerificationFailure] != 0)
+            if (JitConfig[ConfigInteger.DebugBreakOnVerificationFailure] is not 0)
             {
                 Debugger.Break();
             }
@@ -133,7 +133,7 @@ public partial class Globals
         // have the assert code to fall back on here.
         // The debug path goes through this function also, to do the call to 'fatal'.
         // This kind of noway is hit for unreached().
-        if (JitConfig[ConfigInteger.JitEnableNoWayAssert] != 0)
+        if (JitConfig[ConfigInteger.JitEnableNoWayAssert] is not 0)
         {
             Debugger.Break();
         }
@@ -180,7 +180,7 @@ public partial class Globals
 #if MEASURE_NOWAY
     public static void RecordNowayAssertGlobal(ReadOnlySpan<char> filePath, int lineNumber, ReadOnlySpan<char> message)
     {
-        if ((JitConfig[ConfigInteger.JitMeasureNowayAssert] == 1) && (JitTls.Compiler is Compiler compiler))
+        if ((JitConfig[ConfigInteger.JitMeasureNowayAssert] is 1) && (JitTls.Compiler is Compiler compiler))
         {
             compiler.RecordNowayAssert(filePath, lineNumber, message);
         }
@@ -326,14 +326,14 @@ public partial class Globals
         // 1 means popup the assert (abort=abort, retry=debugger, ignore=skip)
         // 2 means silently don't skip (same as 3 for retail)
         // 3 means popup the assert (abort=abort, retry=debugger, ignore=don't skip)
-        if ((altJitAssertOnNyi & 1) != 0)
+        if ((altJitAssertOnNyi & 1) is not 0)
         {
 #if DEBUG
             assertAbort(message, filePath, lineNumber);
 #endif
         }
 
-        if ((altJitAssertOnNyi & 2) == 0)
+        if ((altJitAssertOnNyi & 2) is 0)
         {
 #if MEASURE_FATAL
             s_fatalNyiCount++;
@@ -402,7 +402,7 @@ public partial class Globals
 
     private static void noWayAssertAbortHelper(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, int lineNumber)
     {
-        if (JitConfig[ConfigInteger.JitEnableNoWayAssert] != 0)
+        if (JitConfig[ConfigInteger.JitEnableNoWayAssert] is not 0)
         {
             // Show the assert UI.
             assertAbort(message, filePath, lineNumber);

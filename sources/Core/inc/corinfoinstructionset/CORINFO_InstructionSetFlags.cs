@@ -56,7 +56,7 @@ public struct CORINFO_InstructionSetFlags
     {
         var index = GetFlagsFieldIndex(instructionSet);
         var bitIndex = GetRelativeBitMask(instructionSet);
-        return ((_flags[(int)index] & bitIndex) != 0);
+        return ((_flags[(int)index] & bitIndex) is not 0);
     }
 
     public readonly bool IsEmpty() => !((ReadOnlySpan<ulong>)(_flags)).ContainsAnyExcept(0UL);

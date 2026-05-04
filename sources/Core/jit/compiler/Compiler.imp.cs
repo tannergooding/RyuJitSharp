@@ -204,7 +204,7 @@ public partial class Compiler
             }
         }
 
-        if ((methInfo->ILCode is null) || (codeSize == 0))
+        if ((methInfo->ILCode is null) || (codeSize is 0))
         {
             inlineResult.NoteFatal(InlineObservation.CALLEE_HAS_NO_BODY);
             return;
@@ -288,7 +288,7 @@ public partial class Compiler
         var structFlags = info.compCompHnd->getClassAttribs(structHnd);
 
         // Don't bother if the struct contains GC references of byrefs, it can't be a SIMD type.
-        if ((structFlags & (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_BYREF_LIKE)) == 0)
+        if ((structFlags & (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_BYREF_LIKE)) is 0)
         {
             var originalSize = info.compCompHnd->getClassSize(structHnd);
 

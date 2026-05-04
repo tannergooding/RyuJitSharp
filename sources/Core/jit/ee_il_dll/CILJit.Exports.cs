@@ -58,7 +58,7 @@ public partial struct CILJit
 #if HOST_UNIX
         var err = PAL_InitializeDLL();
 
-        if (err != 0)
+        if (err is not 0)
         {
             return;
         }

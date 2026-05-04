@@ -96,9 +96,9 @@ public unsafe struct ICorDynamicInfo : ICorDynamicInfo.Interface
 
     public CORINFO_CLASS_HANDLE getTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken) => lpVtbl->getTokenTypeAsHandle((ICorDynamicInfo*)Unsafe.AsPointer(ref this), pResolvedToken);
 
-    public int getStringLiteral(CORINFO_MODULE_HANDLE module, uint metaTOK, char* buffer, int bufferSize, int startIndex = 0) => lpVtbl->getStringLiteral((ICorDynamicInfo*)Unsafe.AsPointer(ref this), module, metaTOK, buffer, bufferSize, 0);
+    public int getStringLiteral(CORINFO_MODULE_HANDLE module, uint metaTOK, char* buffer, int bufferSize, int startIndex = 0) => lpVtbl->getStringLiteral((ICorDynamicInfo*)Unsafe.AsPointer(ref this), module, metaTOK, buffer, bufferSize, startIndex);
 
-    public nuint printObjectDescription(CORINFO_OBJECT_HANDLE handle, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printObjectDescription((ICorDynamicInfo*)Unsafe.AsPointer(ref this), handle, buffer, bufferSize, null);
+    public nuint printObjectDescription(CORINFO_OBJECT_HANDLE handle, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printObjectDescription((ICorDynamicInfo*)Unsafe.AsPointer(ref this), handle, buffer, bufferSize, pRequiredBufferSize);
 
     //
     // ICorClassInfo
@@ -112,7 +112,7 @@ public unsafe struct ICorDynamicInfo : ICorDynamicInfo.Interface
 
     public CORINFO_CLASS_HANDLE getMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, uint index) => lpVtbl->getMethodInstantiationArgument((ICorDynamicInfo*)Unsafe.AsPointer(ref this), ftn, index);
 
-    public nuint printClassName(CORINFO_CLASS_HANDLE cls, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printClassName((ICorDynamicInfo*)Unsafe.AsPointer(ref this), cls, buffer, bufferSize, null);
+    public nuint printClassName(CORINFO_CLASS_HANDLE cls, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printClassName((ICorDynamicInfo*)Unsafe.AsPointer(ref this), cls, buffer, bufferSize, pRequiredBufferSize);
 
     public bool isValueClass(CORINFO_CLASS_HANDLE cls) => lpVtbl->isValueClass((ICorDynamicInfo*)Unsafe.AsPointer(ref this), cls);
 
@@ -138,7 +138,7 @@ public unsafe struct ICorDynamicInfo : ICorDynamicInfo.Interface
 
     public bool canAllocateOnStack(CORINFO_CLASS_HANDLE cls) => lpVtbl->canAllocateOnStack((ICorDynamicInfo*)Unsafe.AsPointer(ref this), cls);
 
-    public uint getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, bool fDoubleAlignHint = false) => lpVtbl->getClassAlignmentRequirement((ICorDynamicInfo*)Unsafe.AsPointer(ref this), cls, false);
+    public uint getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, bool fDoubleAlignHint = false) => lpVtbl->getClassAlignmentRequirement((ICorDynamicInfo*)Unsafe.AsPointer(ref this), cls, fDoubleAlignHint);
 
     public uint getClassGClayout(CORINFO_CLASS_HANDLE cls, byte* gcPtrs) => lpVtbl->getClassGClayout((ICorDynamicInfo*)Unsafe.AsPointer(ref this), cls, gcPtrs);
 
@@ -220,11 +220,11 @@ public unsafe struct ICorDynamicInfo : ICorDynamicInfo.Interface
     // ICorFieldInfo
     //
 
-    public nuint printFieldName(CORINFO_FIELD_HANDLE field, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printFieldName((ICorDynamicInfo*)Unsafe.AsPointer(ref this), field, buffer, bufferSize, null);
+    public nuint printFieldName(CORINFO_FIELD_HANDLE field, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printFieldName((ICorDynamicInfo*)Unsafe.AsPointer(ref this), field, buffer, bufferSize, pRequiredBufferSize);
 
     public CORINFO_CLASS_HANDLE getFieldClass(CORINFO_FIELD_HANDLE field) => lpVtbl->getFieldClass((ICorDynamicInfo*)Unsafe.AsPointer(ref this), field);
 
-    public CorInfoType getFieldType(CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType = null, CORINFO_CLASS_HANDLE memberParent = null) => lpVtbl->getFieldType((ICorDynamicInfo*)Unsafe.AsPointer(ref this), field, null, null);
+    public CorInfoType getFieldType(CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType = null, CORINFO_CLASS_HANDLE memberParent = null) => lpVtbl->getFieldType((ICorDynamicInfo*)Unsafe.AsPointer(ref this), field, structType, memberParent);
 
     public uint getFieldOffset(CORINFO_FIELD_HANDLE field) => lpVtbl->getFieldOffset((ICorDynamicInfo*)Unsafe.AsPointer(ref this), field);
 
@@ -294,7 +294,7 @@ public unsafe struct ICorDynamicInfo : ICorDynamicInfo.Interface
 
     public mdMethodDef getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod) => lpVtbl->getMethodDefFromMethod((ICorDynamicInfo*)Unsafe.AsPointer(ref this), hMethod);
 
-    public nuint printMethodName(CORINFO_METHOD_HANDLE ftn, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printMethodName((ICorDynamicInfo*)Unsafe.AsPointer(ref this), ftn, buffer, bufferSize, null);
+    public nuint printMethodName(CORINFO_METHOD_HANDLE ftn, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printMethodName((ICorDynamicInfo*)Unsafe.AsPointer(ref this), ftn, buffer, bufferSize, pRequiredBufferSize);
 
     public byte* getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, byte** className, byte** namespaceName, byte** enclosingClassName, nuint maxEnclosingClassNames) => lpVtbl->getMethodNameFromMetadata((ICorDynamicInfo*)Unsafe.AsPointer(ref this), ftn, className, namespaceName, enclosingClassName, maxEnclosingClassNames);
 
@@ -752,7 +752,7 @@ public unsafe struct ICorDynamicInfo : ICorDynamicInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CORINFO_FIELD_HANDLE, CORINFO_CLASS_HANDLE> getFieldClass;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CORINFO_FIELD_HANDLE, CORINFO_CLASS_HANDLE*, CORINFO_FIELD_HANDLE, CorInfoType> getFieldType;
+        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CORINFO_FIELD_HANDLE, CORINFO_CLASS_HANDLE*, CORINFO_CLASS_HANDLE, CorInfoType> getFieldType;
 
         public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CORINFO_FIELD_HANDLE, uint> getFieldOffset;
 

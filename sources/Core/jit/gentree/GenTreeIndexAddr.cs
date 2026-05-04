@@ -60,9 +60,9 @@ public sealed class GenTreeIndexAddr : GenTreeOp
         }
     }
 
-    public bool IsBoundsChecked => (Flags & GTF_INX_RNGCHK) != 0;
+    public bool IsBoundsChecked => (Flags & GTF_INX_RNGCHK) is not 0;
 
-    public bool IsNotNull => (Flags & (GTF_INX_ADDR_NONNULL | GTF_INX_RNGCHK)) != 0;
+    public bool IsNotNull => (Flags & (GTF_INX_ADDR_NONNULL | GTF_INX_RNGCHK)) is not 0;
 
     /// <summary>The offset from the array's base address to its length.</summary>
     public uint LenOffset => _lenOffset;

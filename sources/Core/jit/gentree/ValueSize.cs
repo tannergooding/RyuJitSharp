@@ -65,7 +65,7 @@ public readonly partial struct ValueSize : IEquatable<ValueSize>
 
     public static ValueSize FromJitType(var_types type)
     {
-        assert(type.Size != 0);
+        assert(type.Size is not 0);
 
         return type switch {
 #if TARGET_ARM64

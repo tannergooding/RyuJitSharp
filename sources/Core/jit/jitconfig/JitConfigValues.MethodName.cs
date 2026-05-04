@@ -39,14 +39,14 @@ public partial struct JitConfigValues
 
         public unsafe ReadOnlySpan<byte> Pattern => new ReadOnlySpan<byte>(_patternStart, (int)(_patternEnd - _patternStart));
 
-        public bool ContainsAssemblyName => (_flags & MethodNameFlags.ContainsAssemblyName) != 0;
+        public bool ContainsAssemblyName => (_flags & MethodNameFlags.ContainsAssemblyName) is not 0;
 
-        public bool ContainsClassName => (_flags & MethodNameFlags.ContainsClassName) != 0;
+        public bool ContainsClassName => (_flags & MethodNameFlags.ContainsClassName) is not 0;
 
-        public bool ClassNameContainsInstantiation => (_flags & MethodNameFlags.ClassNameContainsInstantiation) != 0;
+        public bool ClassNameContainsInstantiation => (_flags & MethodNameFlags.ClassNameContainsInstantiation) is not 0;
 
-        public bool MethodNameContainsInstantiation => (_flags & MethodNameFlags.MethodNameContainsInstantiation) != 0;
+        public bool MethodNameContainsInstantiation => (_flags & MethodNameFlags.MethodNameContainsInstantiation) is not 0;
 
-        public bool ContainsSignature => (_flags & MethodNameFlags.ContainsSignature) != 0;
+        public bool ContainsSignature => (_flags & MethodNameFlags.ContainsSignature) is not 0;
     }
 }

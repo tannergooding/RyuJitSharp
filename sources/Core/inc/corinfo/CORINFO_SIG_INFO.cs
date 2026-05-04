@@ -78,9 +78,9 @@ public struct CORINFO_SIG_INFO
 
     public readonly CorInfoCallConv getCallConv() => callConv & CORINFO_CALLCONV_MASK;
 
-    public readonly bool hasThis() => (callConv & CORINFO_CALLCONV_HASTHIS) != 0;
+    public readonly bool hasThis() => (callConv & CORINFO_CALLCONV_HASTHIS) is not 0;
 
-    public readonly bool hasExplicitThis() => (callConv & CORINFO_CALLCONV_EXPLICITTHIS) != 0;
+    public readonly bool hasExplicitThis() => (callConv & CORINFO_CALLCONV_EXPLICITTHIS) is not 0;
 
     public readonly bool hasImplicitThis() => (callConv & (CORINFO_CALLCONV_HASTHIS | CORINFO_CALLCONV_EXPLICITTHIS)) == CORINFO_CALLCONV_HASTHIS;
 
@@ -88,7 +88,7 @@ public struct CORINFO_SIG_INFO
 
     public readonly bool isVarArg() => getCallConv() is CORINFO_CALLCONV_VARARG or CORINFO_CALLCONV_NATIVEVARARG;
 
-    public readonly bool hasTypeArg() => (callConv & CORINFO_CALLCONV_PARAMTYPE) != 0;
+    public readonly bool hasTypeArg() => (callConv & CORINFO_CALLCONV_PARAMTYPE) is not 0;
 
-    public readonly bool isAsyncCall() => (callConv & CORINFO_CALLCONV_ASYNCCALL) != 0;
+    public readonly bool isAsyncCall() => (callConv & CORINFO_CALLCONV_ASYNCCALL) is not 0;
 }
