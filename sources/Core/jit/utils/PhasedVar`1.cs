@@ -20,6 +20,12 @@ public struct PhasedVar<T>
     private bool _readPhase;
 #endif
 
+#if DEBUG
+    public readonly bool HasFinalValue => _readPhase == true;
+#else
+    public readonly bool HasFinalValue => true;
+#endif
+
     public T Value
     {
 #if DEBUG

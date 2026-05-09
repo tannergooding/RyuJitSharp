@@ -3,7 +3,10 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
+using static RyuJitSharp.ICorDebugInfo;
 
 namespace RyuJitSharp;
 
@@ -21,7 +24,7 @@ public partial class Compiler
     /// <summary>variable descriptor table</summary>
     public LclVarDsc[] lvaTable = [];
 
-    public AbiPassingInformation? lvaParameterPassingInfo;
+    public AbiPassingInformation[] lvaParameterPassingInfo = [];
 
     public int lvaParameterStackSize;
 
@@ -209,6 +212,662 @@ public partial class Compiler
     /// <returns></returns>
     public bool lclNumIsCSE(int lclNum) => lvaGetDesc(lclNum).lvIsCSE;
 
+    public void lvaAllocOutgoingArgSpaceVar()
+    {
+#if FEATURE_FIXED_OUT_ARGS
+        // Setup the outgoing argument region, in case we end up using it later
+        if (lvaOutgoingArgSpaceVar == BAD_VAR_NUM)
+        {
+            lvaOutgoingArgSpaceVar = lvaGrabTempWithImplicitUse(shortLifetime: false, "OutgoingArgSpace");
+            lvaSetStruct(lvaOutgoingArgSpaceVar, typGetBlkLayout(0), unsafeValueClsCheck: false);
+            lvaSetVarAddrExposed(lvaOutgoingArgSpaceVar, (AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY));
+        }
+
+        noway_assert(lvaOutgoingArgSpaceVar >= info.compLocalsCount && lvaOutgoingArgSpaceVar < lvaCount);
+#endif
+    }
+
+    public void lvaClassifyParameterAbi()
+    {
+        var cInfo = new ClassifierInfo {
+            CallConv = info.compCallConv,
+            IsVarArgs = info.compIsVarArgs,
+            HasThis = info.compThisArg != BAD_VAR_NUM,
+            HasRetBuff = info.compRetBuffArg != BAD_VAR_NUM,
+        };
+
+#if SWIFT_SUPPORT
+        if (info.compCallConv == CorInfoCallConvExtension.Swift)
+        {
+            SwiftABIClassifier classifier(cInfo);
+            lvaClassifyParameterABI(classifier);
+        }
+        else
+#endif
+        {
+            var classifier = new PlatformClassifier(cInfo);
+            lvaClassifyParameterAbi(ref classifier);
+        }
+
+#if DEBUG
+        for (var lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+        {
+            ref readonly var abiInfo = ref lvaGetParameterAbiInfo(lclNum);
+
+            if (lvaIsImplicitByRefLocal(lclNum))
+            {
+                assert((abiInfo.NumSegments is 1) && (abiInfo.Segments[0].Size == TARGET_POINTER_SIZE));
+            }
+            else
+            {
+                var segments = abiInfo.Segments;
+
+                for (var i = 0; i < segments.Length; i++)
+                {
+                    ref readonly var segment = ref segments[i];
+                    assert(segment.Size > 0);
+                    assert(segment.Offset + segment.Size <= lvaLclExactSize(lclNum));
+
+                    if (i > 0)
+                    {
+                        assert(segment.Offset > segments[i - 1].Offset);
+                    }
+
+                    for (var j = 0; j < segments.Length; j++)
+                    {
+                        if (i == j)
+                        {
+                            continue;
+                        }
+
+                        ref readonly var otherSegment = ref segments[j];
+                        assert((segment.Offset + segment.Size <= otherSegment.Offset) ||
+                               (segment.Offset >= otherSegment.Offset + otherSegment.Size));
+                    }
+                }
+            }
+        }
+#endif
+    }
+
+    public unsafe void lvaClassifyParameterAbi(ref PlatformClassifier classifier)
+    {
+        lvaParameterPassingInfo = (info.compArgsCount is 0) ? [] : new AbiPassingInformation[info.compArgsCount];
+
+        for (var i = 0; i < info.compArgsCount; i++)
+        {
+            ref var dsc = ref lvaGetDesc(i);
+            var structLayout = varTypeIsStruct(dsc.Type) ? dsc.Layout : null;
+
+            var wellKnownArg = WellKnownArg.None;
+
+            if (i == info.compRetBuffArg)
+            {
+                wellKnownArg = WellKnownArg.RetBuffer;
+            }
+#if SWIFT_SUPPORT
+            else if (i == lvaSwiftSelfArg)
+            {
+                wellKnownArg = WellKnownArg.SwiftSelf;
+            }
+            else if (i == lvaSwiftIndirectResultArg)
+            {
+                wellKnownArg = WellKnownArg.RetBuffer;
+            }
+            else if (i == lvaSwiftErrorArg)
+            {
+                wellKnownArg = WellKnownArg.SwiftError;
+            }
+#endif
+
+            var abiInfo = classifier.Classify(this, dsc.Type, structLayout, wellKnownArg);
+            lvaParameterPassingInfo[i] = abiInfo;
+
+#if DEBUG
+            JITDUMP($"Parameter V{i:D2} ABI info: ");
+
+            if (verbose)
+            {
+                abiInfo.Dump();
+            }
+#endif
+
+#if FEATURE_IMPLICIT_BYREFS
+            dsc.IsImplicitByRef = abiInfo.IsPassedByReference;
+#endif
+
+            var numRegisters = 0;
+
+            foreach (ref readonly var segment in abiInfo.Segments)
+            {
+                if (segment.IsPassedInRegister)
+                {
+                    numRegisters++;
+                }
+            }
+
+            dsc.lvIsRegArg = numRegisters > 0;
+            dsc.lvIsMultiRegArg = numRegisters > 1;
+
+#if DEBUG
+            // Extra query to facilitate wasm replay of native collections.
+            // TODO-WASM: delete once we can get a wasm collection.
+            if ((JitConfig[ConfigInteger.EnableExtraSuperPmiQueries] != 0) && IsReadyToRun && (structLayout is not null))
+            {
+                var clsHnd = structLayout.ClassHandle;
+
+                if (clsHnd != NO_CLASS_HANDLE)
+                {
+                    info.compCompHnd->getWasmLowering(clsHnd);
+                }
+            }
+#endif
+        }
+
+        lvaParameterStackSize = classifier.StackSize;
+
+#if TARGET_ARM
+        // Prespill all argument regs on to stack in case of Arm when under profiler.
+        // We do this as the arm32 CORINFO_HELP_FCN_ENTER helper does not preserve
+        // these registers, and is called very early.
+        if (compIsProfilerHookNeeded)
+        {
+            codeGen.regSet.rsMaskPreSpillRegArg |= RBM_ARG_REGS;
+        }
+
+        var doubleAlignMask = RBM_NONE;
+
+        // Also prespill struct parameters.
+        for (var i = 0; i < info.compArgsCount; i++)
+        {
+            ref readonly var abiInfo  = ref lvaGetParameterABIInfo(i);
+            ref var varDsc   = ref lvaGetDesc(i);
+            var preSpill = opts.compUseSoftFP && varTypeIsFloating(varDsc);
+            preSpill |= varDsc.TypeIs(TYP_STRUCT);
+
+            if (!preSpill)
+            {
+                continue;
+            }
+
+            var regs = RBM_NONE;
+
+            foreach (ref readonly var segment in abiInfo.Segments)
+            {
+                if (segment.IsPassedInRegister && genIsValidIntReg(segment.Register))
+                {
+                    regs |= segment.RegisterMask;
+                }
+            }
+
+            codeGen.regSet.rsMaskPreSpillRegArg |= regs;
+
+            if (varDsc.lvStructDoubleAlign || (varDsc.Type is TYP_DOUBLE))
+            {
+                doubleAlignMask |= regs;
+            }
+        }
+
+        if (doubleAlignMask != RBM_NONE)
+        {
+            assert(RBM_ARG_REGS is 0xF);
+            assert((doubleAlignMask & RBM_ARG_REGS) == doubleAlignMask);
+
+            if ((doubleAlignMask != RBM_NONE) && (doubleAlignMask != RBM_ARG_REGS))
+            {
+                // 'double aligned types' can begin only at r0 or r2 and we always expect at least two registers to be used
+                // Note that in rare cases, we can have double-aligned structs of 12 bytes (if specified explicitly with
+                // attributes)
+                assert((doubleAlignMask is 0b0011) || (doubleAlignMask is 0b1100) ||
+                       (doubleAlignMask is 0b0111) /* || 0b1111 is if'ed out */);
+
+                // Now if doubleAlignMask is xyz1 i.e., the struct starts in r0, and we prespill r2 or r3
+                // but not both, then the stack would be misaligned for r0. So spill both
+                // r2 and r3.
+                //
+                // ; +0 --- caller SP double aligned ----
+                // ; -4 r2    r3
+                // ; -8 r1    r1
+                // ; -c r0    r0   <-- misaligned.
+                // ; callee saved regs
+                var startsAtR0 = (doubleAlignMask & 1) is 1;
+                var r2XorR3    = ((codeGen.regSet.rsMaskPreSpillRegArg & RBM_R2) is 0) !=
+                                 ((codeGen.regSet.rsMaskPreSpillRegArg & RBM_R3) is 0);
+                if (startsAtR0 && r2XorR3)
+                {
+                    codeGen.regSet.rsMaskPreSpillAlign = (~codeGen.regSet.rsMaskPreSpillRegArg & ~doubleAlignMask) & RBM_ARG_REGS;
+                }
+            }
+        }
+#endif
+    }
+
+#if DEBUG
+    public unsafe void lvaDumpEntry(int lclNum, FrameLayoutState curState, int refCntWtdWidth)
+    {
+        ref var varDsc = ref lvaGetDesc(lclNum);
+        var type = varDsc.Type;
+
+        if (curState == INITIAL_FRAME_LAYOUT)
+        {
+            jitprintf(";  ");
+            gtDispLclVar(lclNum);
+
+            jitprintf($" {type.Name,7} ");
+            gtDispLclVarStructType(lclNum);
+        }
+        else
+        {
+            if (varDsc.lvRefCnt() is 0)
+            {
+                // Print this with a special indicator that the variable is unused. Even though the
+                // variable itself is unused, it might be a struct that is promoted, so seeing it
+                // can be useful when looking at the promoted struct fields. It's also weird to see
+                // missing var numbers if these aren't printed.
+                jitprintf(";* ");
+            }
+#if FEATURE_FIXED_OUT_ARGS
+            // Since lvaOutgoingArgSpaceSize is a PhasedVar we can't read it for Dumping until
+            // after we set it to something.
+            else if ((lclNum == lvaOutgoingArgSpaceVar) && lvaOutgoingArgSpaceSize.HasFinalValue && (lvaOutgoingArgSpaceSize.Value is 0))
+            {
+                // Similar to above; print this anyway.
+                jitprintf(";# ");
+            }
+#endif
+            else
+            {
+                jitprintf(";  ");
+            }
+
+            gtDispLclVar(lclNum);
+
+            jitprintf($"[V{lclNum:D2}");
+            if (varDsc.lvTracked)
+            {
+                jitprintf($",T{varDsc._varIndex:D2}]");
+            }
+            else
+            {
+                jitprintf("    ]");
+            }
+
+            var refCntWtd = refCntWtd2str(varDsc.lvRefCntWtd(lvaRefCountState), /* padForDecimalPlaces */ true);
+            jitprintf($" ({varDsc.lvRefCnt(lvaRefCountState):D3},{new string(' ', int.Max(0, refCntWtdWidth - refCntWtd.Length))}{refCntWtd}");
+
+            jitprintf($" {type.Name,7} ");
+
+            if (type.Size is 0)
+            {
+                jitprintf($"({lvaLclStackHomeSize(lclNum):D2}) ");
+            }
+            else
+            {
+                jitprintf(" ->  ");
+            }
+
+            // The register or stack location field is 11 characters wide.
+            if ((varDsc.lvRefCnt(lvaRefCountState) is 0) && !varDsc.lvImplicitlyReferenced)
+            {
+                jitprintf("zero-ref   ");
+            }
+            else if (varDsc.lvRegister)
+            {
+                // It's always a register, and always in the same register.
+                lvaDumpRegLocation(lclNum);
+            }
+            else if (!varDsc.lvOnFrame)
+            {
+                jitprintf("registers  ");
+            }
+            else
+            {
+                // For RyuJIT backend, it might be in a register part of the time, but it will definitely have a stack home
+                // location. Otherwise, it's always on the stack.
+                if (lvaDoneFrameLayout != NO_FRAME_LAYOUT)
+                {
+                    lvaDumpFrameLocation(lclNum, "zero-ref   ".Length);
+                }
+            }
+        }
+
+        if (varDsc.lvDoNotEnregister)
+        {
+            jitprintf(" do-not-enreg[");
+
+            if (varDsc.IsAddressExposed)
+            {
+                jitprintf("X");
+            }
+
+            if (varDsc.IsDefinedViaAddress)
+            {
+                jitprintf("DA");
+            }
+
+            if (varTypeIsStruct(varDsc.Type))
+            {
+                jitprintf("S");
+            }
+
+            if (varDsc.DoNotEnregisterReason == DoNotEnregisterReason.VMNeedsStackAddr)
+            {
+                jitprintf("V");
+            }
+
+            if (lvaEnregEHVars && varDsc.lvLiveInOutOfHndlr)
+            {
+                jitprintf("%c", varDsc.lvSingleDefDisqualifyReason);
+            }
+
+            if (varDsc.DoNotEnregisterReason == DoNotEnregisterReason.LocalField)
+            {
+                jitprintf("F");
+            }
+
+            if (varDsc.DoNotEnregisterReason == DoNotEnregisterReason.BlockOp)
+            {
+                jitprintf("B");
+            }
+
+            if (varDsc.lvIsMultiRegArg)
+            {
+                jitprintf("A");
+            }
+
+            if (varDsc.lvIsMultiRegRet)
+            {
+                jitprintf("R");
+            }
+
+            if (varDsc.lvIsMultiRegDest)
+            {
+                jitprintf("M");
+            }
+
+#if JIT32_GCENCODER
+            if (varDsc.lvPinned)
+            {
+                jitprintf("P");
+            }
+#endif
+
+            jitprintf("]");
+        }
+
+        if (varDsc.lvIsMultiRegArg)
+        {
+            jitprintf(" multireg-arg");
+        }
+
+        if (varDsc.lvIsMultiRegRet)
+        {
+            jitprintf(" multireg-ret");
+        }
+
+        if (varDsc.lvIsMultiRegDest)
+        {
+            jitprintf(" multireg-dest");
+        }
+
+        if (varDsc.lvMustInit)
+        {
+            jitprintf(" must-init");
+        }
+
+        if (varDsc.IsAddressExposed)
+        {
+            jitprintf(" addr-exposed");
+        }
+
+        if (varDsc.IsDefinedViaAddress)
+        {
+            jitprintf(" defined-via-address");
+        }
+
+        if (varDsc.lvHasLdAddrOp)
+        {
+            jitprintf(" ld-addr-op");
+        }
+
+        if (lvaIsOriginalThisArg(lclNum))
+        {
+            jitprintf(" this");
+        }
+
+        if (varDsc.lvPinned)
+        {
+            jitprintf(" pinned");
+        }
+
+        if (varDsc.lvClassHnd != NO_CLASS_HANDLE)
+        {
+            jitprintf(" class-hnd");
+        }
+
+        if (varDsc.lvClassIsExact)
+        {
+            jitprintf(" exact");
+        }
+
+        if (varDsc.lvLiveInOutOfHndlr)
+        {
+            jitprintf(" EH-live");
+        }
+
+        if (varDsc.lvSpillAtSingleDef)
+        {
+            jitprintf(" spill-single-def");
+        }
+        else if (varDsc.lvSingleDefRegCandidate)
+        {
+            jitprintf(" single-def");
+        }
+
+        if (lvaIsOSRLocal(lclNum) && varDsc.lvOnFrame)
+        {
+            jitprintf(" tier0-frame");
+        }
+
+        if (varDsc.lvIsHoist)
+        {
+            jitprintf(" hoist");
+        }
+
+        if (varDsc.lvIsMultiDefCSE)
+        {
+            jitprintf(" multi-def");
+        }
+
+#if !TARGET_64BIT
+        if (varDsc.lvStructDoubleAlign)
+        {
+            jitprintf(" double-align");
+        }
+#endif
+
+        if (compGSReorderStackLayout && !varDsc.lvRegister)
+        {
+            if (varDsc.lvIsPtr)
+            {
+                jitprintf(" ptr");
+            }
+
+            if (varDsc.lvIsUnsafeBuffer)
+            {
+                jitprintf(" unsafe-buffer");
+            }
+        }
+
+        if (varDsc.lvReason is not null)
+        {
+            jitprintf($" \"{varDsc.lvReason}\"");
+        }
+
+        if (varDsc.lvIsStructField)
+        {
+            ref var parentVarDsc = ref lvaGetDesc(varDsc.lvParentLcl);
+            var promotionType = lvaGetPromotionType(parentVarDsc);
+
+            switch (promotionType)
+            {
+                case PROMOTION_TYPE_NONE:
+                {
+                    jitprintf(" P-NONE");
+                    break;
+                }
+
+                case PROMOTION_TYPE_DEPENDENT:
+                {
+                    jitprintf(" P-DEP");
+                    break;
+                }
+
+                case PROMOTION_TYPE_INDEPENDENT:
+                {
+                    jitprintf(" P-INDEP");
+                    break;
+                }
+            }
+        }
+
+        if (varDsc.lvClassHnd != NO_CLASS_HANDLE)
+        {
+            jitprintf($" <{eeGetClassName(varDsc.lvClassHnd)}>");
+        }
+        else if (varTypeIsStruct(varDsc.Type))
+        {
+            var layout = varDsc.Layout;
+
+            if (layout is not null)
+            {
+                jitprintf($" <{layout.ClassName}>");
+            }
+        }
+
+        jitprintf("\n");
+    }
+
+    /// <summary>Dump the register a local is in right now. It is only the current location, since the location changes and it is updated throughout code generation based on LSRA register assignments.</summary>
+    /// <param name="lclNum"></param>
+
+    public void lvaDumpRegLocation(int lclNum)
+    {
+        ref var varDsc = ref lvaGetDesc(lclNum);
+
+#if TARGET_ARM
+        if (varDsc.Type is TYP_DOUBLE)
+        {
+            // The assigned registers are `lvRegNum:RegNext(lvRegNum)`
+            jitprintf($"{varDsc.RegNum.Name,3}:{REG_NEXT(varDsc.RegNum),-3}    ");
+        }
+        else
+#endif
+        {
+            jitprintf($"{varDsc.RegNum.Name,3}        ");
+        }
+    }
+
+    /// <summary>Dump the frame location assigned to a local. It's the home location, even though the variable doesn't always live in its home location.</summary>
+    /// <param name="lclNum"></param>
+    /// <param name="minLength"></param>
+    public void lvaDumpFrameLocation(int lclNum, int minLength)
+    {
+        // TODO: Port Compiler.lvaDumpFrameLocation
+    }
+
+    public void lvaTableDump(FrameLayoutState curState = NO_FRAME_LAYOUT)
+    {
+        if (curState == NO_FRAME_LAYOUT)
+        {
+            curState = lvaDoneFrameLayout;
+
+            if (curState == NO_FRAME_LAYOUT)
+            {
+                // Still no layout? Could be a bug, but just display the initial layout
+                curState = INITIAL_FRAME_LAYOUT;
+            }
+        }
+
+        if (curState == INITIAL_FRAME_LAYOUT)
+        {
+            jitprintf("; Initial");
+        }
+        else if (curState == PRE_REGALLOC_FRAME_LAYOUT)
+        {
+            jitprintf("; Pre-RegAlloc");
+        }
+        else if (curState == REGALLOC_FRAME_LAYOUT)
+        {
+            jitprintf("; RegAlloc");
+        }
+        else if (curState == TENTATIVE_FRAME_LAYOUT)
+        {
+            jitprintf("; Tentative");
+        }
+        else if (curState == FINAL_FRAME_LAYOUT)
+        {
+            jitprintf("; Final");
+        }
+        else
+        {
+            jitprintf("UNKNOWN FrameLayoutState!");
+            unreached();
+        }
+
+        jitprintf(" local variable assignments\n");
+        jitprintf(";\n");
+
+        // Figure out some sizes, to help line things up
+
+        // Use 6 as the minimum width
+        var refCntWtdWidth = 6;
+
+        // don't need this info for INITIAL_FRAME_LAYOUT
+        if (curState != INITIAL_FRAME_LAYOUT)
+        {
+            for (var lclNum = 0; lclNum < lvaCount; lclNum++)
+            {
+                ref var varDsc = ref lvaGetDesc(lclNum);
+
+                var width = refCntWtd2str(varDsc.lvRefCntWtd(lvaRefCountState), padForDecimalPlaces: true).Length;
+
+                if (width > refCntWtdWidth)
+                {
+                    refCntWtdWidth = width;
+                }
+            }
+        }
+
+        // Do the actual output
+
+        for (var lclNum = 0; lclNum < lvaCount; lclNum++)
+        {
+            lvaDumpEntry(lclNum, curState, refCntWtdWidth);
+        }
+
+        //-------------------------------------------------------------------------
+        // Display the code-gen temps
+
+        // TODO: Port the rest of Compiler.lvaTableDump
+        // assert(codeGen.regSet.tmpAllFree());
+        // for (TempDsc* temp = codeGen.regSet.tmpListBeg(); temp is not null; temp = codeGen.regSet.tmpListNxt(temp))
+        // {
+        //     jitprintf($";  TEMP_%02u %26s%*s%7s  -> ", -temp->tdTempNum(), " ", refCntWtdWidth, " ",
+        //            varTypeName(temp->tdTempType()));
+        //     int offset = temp->tdTempOffs();
+        //     jitprintf($" [%2s%1s0x%02X]\n", isFramePointerUsed() ? STR_FPBASE : STR_SPBASE, (offset < 0 ? "-" : "+"),
+        //            (offset < 0 ? -offset : offset));
+        // }
+        // 
+        // if (curState >= TENTATIVE_FRAME_LAYOUT)
+        // {
+        //     jitprintf(";\n");
+        //     jitprintf($"; Lcl frame size = {compLclFrameSize}\n");
+        // }
+    }
+#endif
+
     public ref LclVarDsc lvaGetDesc(int lclNum)
     {
         assert((lclNum >= 0) && (lclNum < lvaCount));
@@ -222,6 +881,12 @@ public partial class Compiler
 
         assert(Unsafe.AreSame(in varDsc, in lvaTable[varNum]));
         return varNum;
+    }
+
+    public ref readonly AbiPassingInformation lvaGetParameterAbiInfo(int lclNum)
+    {
+        assert(lclNum < info.compArgsCount);
+        return ref lvaParameterPassingInfo[lclNum];
     }
 
     public lvaPromotionType lvaGetParentPromotionType(in LclVarDsc varDsc)
@@ -270,8 +935,92 @@ public partial class Compiler
 
     public int lvaGrabTemp(bool shortLifetime, string reason)
     {
-        // TODO: Port Compiler.lvaGrabTemp
-        return 0;
+        if (compIsForInlining)
+        {
+            // Grab the temp using Inliner's Compiler instance.
+            var inlinerCompiler = impInlineInfo.InlinerCompiler; // The Compiler instance for the caller (i.e. the inliner)
+
+            if (inlinerCompiler.lvaHaveManyLocals())
+            {
+                // Don't create more LclVar with inlining
+                compInlineResult.NoteFatal(InlineObservation.CALLSITE_TOO_MANY_LOCALS);
+            }
+
+            var tmpNum = inlinerCompiler.lvaGrabTemp(shortLifetime, reason);
+            lvaTable = inlinerCompiler.lvaTable;
+            lvaCount = inlinerCompiler.lvaCount;
+            return tmpNum;
+        }
+
+        // You cannot allocate more space after frame layout!
+        noway_assert(lvaDoneFrameLayout < TENTATIVE_FRAME_LAYOUT);
+
+        /* Check if the lvaTable has to be grown */
+        if ((lvaCount + 1) > lvaTable.Length)
+        {
+            var newLvaTableCnt = lvaCount + (lvaCount / 2) + 1;
+
+            // Check for overflow
+            if (newLvaTableCnt <= lvaCount)
+            {
+                IMPL_LIMITATION("too many locals");
+            }
+
+            var newLvaTable = new LclVarDsc[newLvaTableCnt];
+
+            lvaTable.AsSpan().CopyTo(newLvaTable);
+
+            for (var i = lvaCount; i < newLvaTable.Length; i++)
+            {
+                newLvaTable[i] = new LclVarDsc(); // call the constructor.
+            }
+
+#if DEBUG
+            // Fill the old table with junks. So to detect the un-intended use.
+            lvaTable.AsSpan().Clear();
+#endif
+
+            lvaTable = newLvaTable;
+        }
+
+        var tempNum = lvaCount;
+        lvaCount++;
+
+        ref var lvaDsc = ref lvaTable[tempNum];
+
+        // Initialize lvType, lvIsTemp and lvOnFrame
+        lvaDsc.Type = TYP_UNDEF;
+        lvaDsc.lvIsTemp = shortLifetime;
+        lvaDsc.lvOnFrame = true;
+
+        // If we've started normal ref counting, bump the ref count of this
+        // local, as we no longer do any incremental counting, and we presume
+        // this new local will be referenced.
+        if (lvaLocalVarRefCounted)
+        {
+            if (opts.OptimizationDisabled)
+            {
+                lvaDsc.lvImplicitlyReferenced = true;
+            }
+            else
+            {
+                lvaDsc.setLvRefCnt(1);
+                lvaDsc.setLvRefCntWtd(BB_UNITY_WEIGHT);
+            }
+        }
+
+#if DEBUG
+        lvaDsc.lvReason = reason;
+
+        if (verbose)
+        {
+            jitprintf($"\nlvaGrabTemp returning {tempNum} (");
+            gtDispLclVar(tempNum, false);
+            jitprintf($"){(shortLifetime ? "" : " (a long lifetime temp)")} called for {reason}.\n");
+        }
+#endif
+
+        return tempNum;
     }
 
     /// <summary>Allocate a temporary variable which is implicitly used by code-gen</summary>
@@ -303,9 +1052,719 @@ public partial class Compiler
         return lclNum;
     }
 
-    public void lvaInitTypeRef()
+    public bool lvaHaveManyLocals(float percent = 1.0f)
     {
-        // TODO: Port Compiler.lvaInitTypeRef
+        assert((percent >= 0.0) && (percent <= 1.0));
+        return (lvaCount >= (JitConfig[ConfigInteger.JitMaxLocalsToTrack] * percent));
+    }
+
+    public unsafe void lvaInitArgs(bool hasRetBuffArg)
+    {
+#if TARGET_ARM && PROFILING_SUPPORTED
+        // Prespill all argument regs on to stack in case of Arm when under profiler.
+        // We do this as the arm32 CORINFO_HELP_FCN_ENTER helper does not preserve
+        // these registers, and is called very early.
+        if (compIsProfilerHookNeeded)
+        {
+            codeGen.regSet.rsMaskPreSpillRegArg |= RBM_ARG_REGS;
+        }
+#endif
+
+        //----------------------------------------------------------------------
+
+        var varNum = 0;
+
+#if TARGET_WASM
+        if (!opts.IsReversePInvoke)
+        {
+            // Wasm stack pointer is first arg
+            lvaInitWasmStackPtrArg(&varNum);
+        }
+#endif
+
+        // Is there a "this" pointer ?
+        lvaInitThisPtr(ref varNum);
+
+        var numUserArgsToSkip = 0;
+        var numUserArgs = info.compMethodInfo->args.numArgs;
+
+#if !TARGET_ARM
+        if (TargetOS.IsWindows && callConvIsInstanceMethodCallConv(info.compCallConv))
+        {
+            // If we are a native instance method, handle the first user arg
+            // (the unmanaged this parameter) and then handle the hidden
+            // return buffer parameter.
+
+            assert(numUserArgs >= 1);
+            lvaInitUserArgs(ref varNum, 0, 1);
+
+            numUserArgsToSkip++;
+            numUserArgs--;
+
+            if (hasRetBuffArg)
+            {
+                lvaInitRetBuffArg(ref varNum, useFixedRetBufReg: false);
+            }
+        }
+        else
+#endif
+        {
+            if (hasRetBuffArg)
+            {
+                // If we have a hidden return-buffer parameter, that comes here
+                lvaInitRetBuffArg(ref varNum, useFixedRetBufReg: true);
+            }
+        }
+
+        //======================================================================
+
+#if USER_ARGS_COME_LAST
+        // @GENERICS: final instantiation-info argument for shared generic methods
+        // and shared generic struct instance methods
+        lvaInitGenericsCtxt(ref varNum);
+
+        lvaInitAsyncContinuation(ref varNum);
+
+        //* If the method is varargs, process the varargs cookie
+        lvaInitVarArgsHandle(ref varNum);
+#endif
+
+        //-------------------------------------------------------------------------
+        // Now walk the function signature for the explicit user arguments
+        //-------------------------------------------------------------------------
+        lvaInitUserArgs(ref varNum, numUserArgsToSkip, numUserArgs);
+
+#if !USER_ARGS_COME_LAST
+        lvaInitAsyncContinuation(ref varNum);
+
+        //@GENERICS: final instantiation-info argument for shared generic methods
+        // and shared generic struct instance methods
+        lvaInitGenericsCtxt(ref varNum);
+
+        // If the method is varargs, process the varargs cookie
+        lvaInitVarArgsHandle(ref varNum);
+#endif
+
+#if TARGET_WASM
+        if (!opts.IsReversePInvoke)
+        {
+            // Wasm portable entry point is the very last arg
+            lvaInitWasmPortableEntryPtr(&varNum);
+        }
+#endif
+
+        //----------------------------------------------------------------------
+
+        // We have set info.compArgsCount in compCompile()
+        noway_assert(varNum == info.compArgsCount);
+
+        // Now we have parameters created in the right order. Figure out how they're passed.
+        lvaClassifyParameterAbi();
+
+        // The total argument size must be aligned.
+        noway_assert((lvaParameterStackSize % TARGET_POINTER_SIZE) is 0);
+
+#if TARGET_X86
+        // We can not pass more than 2^16 dwords as arguments as the "ret"
+        // instruction can only pop 2^16 arguments. Could be handled correctly
+        // but it will be very difficult for fully interruptible code
+
+        if (lvaParameterStackSize != unchecked((ushort)(lvaParameterStackSize)))
+        {
+            IMPL_LIMITATION("Too many arguments for the \"ret\" instruction to pop");
+        }
+#endif
+    }
+
+    /// <summary>Initialize the async continuation parameter.</summary>
+    /// <param name="curVarNum">The current local variable number for parameters</param>
+    public void lvaInitAsyncContinuation(ref int curVarNum)
+    {
+        if (!compIsAsync)
+        {
+            return;
+        }
+
+        lvaAsyncContinuationArg = curVarNum;
+
+        ref var varDsc = ref lvaGetDesc(curVarNum);
+        varDsc.Type = TYP_REF;
+        varDsc.lvIsParam = true;
+
+        // The final home for this incoming register might be our local stack frame
+        varDsc.lvOnFrame = true;
+
+#if DEBUG
+        varDsc.lvReason = "Async continuation arg";
+#endif
+
+        curVarNum++;
+    }
+
+    public unsafe void lvaInitGenericsCtxt(ref int curVarNum)
+    {
+        // @GENERICS: final instantiation-info argument for shared generic methods
+        // and shared generic struct instance methods
+        if ((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) is 0)
+        {
+            return;
+        }
+
+        info.compTypeCtxtArg = curVarNum;
+
+        ref var varDsc = ref lvaGetDesc(curVarNum);
+        varDsc.lvIsParam = true;
+        varDsc.Type = TYP_I_IMPL;
+        varDsc.lvOnFrame = true; // The final home for this incoming register might be our local stack frame
+
+        curVarNum++;
+    }
+
+    public void lvaInitRetBuffArg(ref int curVarNum, bool useFixedRetBufReg)
+    {
+        info.compRetBuffArg = curVarNum;
+
+        ref var varDsc = ref lvaGetDesc(curVarNum);
+        varDsc.Type = TYP_I_IMPL;
+        varDsc.lvIsParam = true;
+        varDsc.lvIsRegArg = false;
+        varDsc.lvOnFrame = true; // The final home for this incoming register might be our local stack frame
+
+        curVarNum++;
+    }
+
+    public unsafe void lvaInitThisPtr(ref int curVarNum)
+    {
+        if (info.compIsStatic)
+        {
+            return;
+        }
+
+        ref var varDsc = ref lvaGetDesc(curVarNum);
+        varDsc.lvIsParam = true;
+        varDsc.lvIsPtr = true;
+
+        lvaArg0Var = curVarNum;
+        info.compThisArg = lvaArg0Var;
+
+#if TARGET_WASM
+        noway_assert(info.compThisArg is 1);
+#else
+        noway_assert(info.compThisArg is 0);
+#endif
+
+        if (eeIsValueClass(info.compClassHnd))
+        {
+            varDsc.Type = TYP_BYREF;
+        }
+        else
+        {
+            varDsc.Type = TYP_REF;
+            lvaSetClass(curVarNum, info.compClassHnd);
+        }
+
+        // The final home for this incoming register might be our local stack frame
+        varDsc.lvOnFrame = true;
+
+        curVarNum++;
+    }
+
+    public unsafe void lvaInitTypeRef()
+    {
+        // x86 args look something like this:
+        //  [this ptr] [hidden return buffer] [declared arguments]* [generic context] [async continuation] [var arg cookie]
+        // 
+        // x64 is closer to the native ABI:
+        //  [this ptr] [hidden return buffer] [generic context] [async continuation] [var arg cookie] [declared arguments]*
+        //  (Note: prior to .NET Framework 4.5.1 for Windows 8.1 (but not .NET Framework 4.5.1 "downlevel"),
+        //  the "hidden return buffer" came before the "this ptr". Now, the "this ptr" comes first. This
+        //  is different from the C++ order, where the "hidden return buffer" always comes first.)
+        // 
+        // ARM and ARM64 are the same as the current x64 convention:
+        //  [this ptr] [hidden return buffer] [generic context] [async continuation] [var arg cookie] [declared arguments]*
+        // 
+        // Key difference:
+        //     The var arg cookie, generic context and async continuations are swapped with respect to the user arguments
+
+        // Set compArgsCount and compLocalsCount
+        ref var methodArgs = ref info.compMethodInfo->args;
+        info.compArgsCount = methodArgs.numArgs;
+
+        // Is there a 'this' pointer
+
+        if (!info.compIsStatic)
+        {
+            info.compArgsCount++;
+        }
+        else
+        {
+            info.compThisArg = BAD_VAR_NUM;
+        }
+
+        info.compILargsCount = info.compArgsCount;
+
+        // Initialize "compRetNativeType" (along with "compRetTypeDesc"):
+        //
+        //  1. For structs returned via a return buffer, or in multiple registers, make it TYP_STRUCT.
+        //  2. For structs returned in a single register, make it the corresponding primitive type.
+        //  3. For primitives, leave it as-is. Note this makes it "incorrect" for soft-FP conventions.
+        //
+        Unsafe.SkipInit(out ReturnTypeDesc retTypeDesc);
+        retTypeDesc.InitializeReturnType(this, info.compRetType, methodArgs.retTypeClass, info.compCallConv);
+
+        compRetTypeDesc = retTypeDesc;
+        var returnRegCount = retTypeDesc.ReturnRegCount;
+        var hasRetBuffArg = false;
+
+        if (returnRegCount > 1)
+        {
+            info.compRetNativeType = varTypeIsMultiReg(info.compRetType) ? info.compRetType : TYP_STRUCT;
+        }
+        else if (returnRegCount is 1)
+        {
+            info.compRetNativeType = retTypeDesc.GetReturnRegType(0);
+        }
+        else
+        {
+            hasRetBuffArg = info.compRetType != TYP_VOID;
+            info.compRetNativeType = hasRetBuffArg ? TYP_STRUCT : TYP_VOID;
+        }
+
+#if DEBUG
+        if (verbose)
+        {
+            var retClass = methodArgs.retTypeClass;
+            jitprintf($"{returnRegCount} return registers for return type {info.compRetType.Name} {(varTypeIsStruct(info.compRetType) ? eeGetClassName(retClass) : "")}\n");
+
+            for (byte i = 0; i < returnRegCount; i++)
+            {
+                var offset = compRetTypeDesc.GetReturnFieldOffset(i);
+                var size = compRetTypeDesc.GetReturnRegType(i).Size;
+                jitprintf($"  [{offset:D2}..{(offset + size):D2}) reg {compRetTypeDesc.GetAbiReturnReg(i, info.compCallConv)}\n");
+            }
+        }
+#endif
+
+        // Do we have a RetBuffArg?
+        if (hasRetBuffArg)
+        {
+            info.compArgsCount++;
+        }
+        else
+        {
+            info.compRetBuffArg = BAD_VAR_NUM;
+        }
+
+#if DEBUG && SWIFT_SUPPORT
+        if (verbose && (info.compCallConv == CorInfoCallConvExtension.Swift) && varTypeIsStruct(info.compRetType))
+        {
+            var retTypeHnd = methodArgs.retTypeClass;
+            var lowering = GetSwiftLowering(retTypeHnd);
+
+            if (lowering->byReference)
+            {
+                jitprintf($"Swift compilation returns {typGetObjLayout(retTypeHnd).ClassName} by reference\n");
+            }
+            else
+            {
+                jitprintf($"Swift compilation returns {typGetObjLayout(retTypeHnd).ClassName} as {lowering->numLoweredElements} primitive(s) in registers\n");
+
+                for (var i = 0; i < lowering->numLoweredElements; i++)
+                {
+                    jitprintf($"    [{i}] @ +{lowering->offsets[i]:D2}: {lowering->loweredElements[i].PreciseVarType.Name}\n");
+                }
+            }
+        }
+#endif
+
+        // There is a 'hidden' cookie pushed last when the calling convention is varargs
+
+        if (info.compIsVarArgs)
+        {
+            info.compArgsCount++;
+        }
+
+        // Is there an extra parameter used to pass instantiation info to
+        // shared generic methods and shared generic struct instance methods?
+        if ((methodArgs.callConv & CORINFO_CALLCONV_PARAMTYPE) != 0)
+        {
+            info.compArgsCount++;
+        }
+        else
+        {
+            info.compTypeCtxtArg = BAD_VAR_NUM;
+        }
+
+        if (compIsAsync)
+        {
+            info.compArgsCount++;
+        }
+
+#if TARGET_WASM
+        if (!opts.IsReversePInvoke)
+        {
+            // Managed Wasm ABI passes stack pointer as first arg...
+            info.compArgsCount += 1;
+
+            if (opts.jitFlags->IsSet(JitFlags.JIT_FLAG_PORTABLE_ENTRY_POINTS))
+            {
+                // ... and portable entry point as last arg
+                info.compArgsCount += 1;
+            }
+        }
+#endif
+
+        ref var methodLocals = ref info.compMethodInfo->locals;
+        var localsNumArgs = methodLocals.numArgs;
+
+        lvaCount = info.compArgsCount + localsNumArgs;
+        info.compLocalsCount = lvaCount;
+
+        info.compILlocalsCount = info.compILargsCount + localsNumArgs;
+
+        // Now allocate the variable descriptor table
+
+        if (compIsForInlining)
+        {
+            var inlinerCompiler = impInlineInfo.InlinerCompiler;
+
+            lvaTable = inlinerCompiler.lvaTable;
+            lvaCount = inlinerCompiler.lvaCount;
+
+            // No more stuff needs to be done.
+            return;
+        }
+
+        lvaTable = new LclVarDsc[int.Min(16, lvaCount * 2)];
+
+        for (var i = 0; i < lvaTable.Length; i++)
+        {
+            lvaTable[i] = new LclVarDsc();
+        }
+
+        //-------------------------------------------------------------------------
+        // Count the arguments and initialize the respective lvaTable[] entries
+        //
+        // First the arguments
+        //-------------------------------------------------------------------------
+
+        lvaInitArgs(hasRetBuffArg);
+
+        //-------------------------------------------------------------------------
+        // Then the local variables
+        //-------------------------------------------------------------------------
+
+        var varNum = info.compArgsCount;
+        var localsSig = methodLocals.args;
+
+        for (var i = 0; i < localsNumArgs; i++, varNum++, localsSig = info.compCompHnd->getArgNext(localsSig))
+        {
+            ref var varDsc = ref lvaGetDesc(varNum);
+
+            CORINFO_CLASS_HANDLE typeHnd;
+            var corInfoTypeWithMod = info.compCompHnd->getArgType(&info.compMethodInfo->locals, localsSig, &typeHnd);
+            var corInfoType = strip(corInfoTypeWithMod);
+
+            lvaInitVarDsc(ref varDsc, varNum, corInfoType, typeHnd, localsSig, in methodLocals);
+
+            if ((corInfoTypeWithMod & CORINFO_TYPE_MOD_PINNED) is not 0)
+            {
+                if ((corInfoType == CORINFO_TYPE_CLASS) || (corInfoType == CORINFO_TYPE_BYREF))
+                {
+                    JITDUMP($"Setting lvPinned for V{varNum:D2}\n");
+                    varDsc.lvPinned = true;
+
+                    if (opts.IsOSR)
+                    {
+                        // OSR method may not see any references to the pinned local,
+                        // but must still report it in GC info.
+                        varDsc.lvImplicitlyReferenced = true;
+                    }
+                }
+                else
+                {
+                    JITDUMP($"Ignoring pin for non-GC type V{varNum:D2}\n");
+                }
+            }
+
+            varDsc.lvOnFrame = true; // The final home for this local variable might be our local stack frame
+
+            if (corInfoType == CORINFO_TYPE_CLASS)
+            {
+                var clsHnd = info.compCompHnd->getArgClass(&info.compMethodInfo->locals, localsSig);
+                lvaSetClass(varNum, clsHnd);
+            }
+        }
+
+        // If there already exist unsafe buffers, don't mark more structs as unsafe
+        // as that will cause them to be placed along with the real unsafe buffers,
+        // unnecessarily exposing them to overruns. This can affect GS tests which
+        // intentionally do buffer-overruns.
+        //
+        // GS checks require the stack to be re-ordered, which can't be done with EnC
+        if (!NeedsGSSecurityCookie && !opts.compDbgEnC && compStressCompile(STRESS_UNSAFE_BUFFER_CHECKS, 25))
+        {
+            NeedsGSSecurityCookie = true;
+            var nowHasCookie = NeedsGSSecurityCookie;
+
+            if (nowHasCookie)
+            {
+                JITDUMP("Marking some struct locals as unsafe to stress GS checks\n");
+                for (uint i = 0; i < lvaCount; i++)
+                {
+                    ref var lvaDsc = ref lvaTable[i];
+
+                    if ((lvaDsc.Type == TYP_STRUCT) && compStressCompile(STRESS_GENERIC_VARN, 60))
+                    {
+                        lvaDsc.lvIsUnsafeBuffer = true;
+                    }
+                }
+            }
+        }
+
+        // If this is an OSR method, mark all the OSR locals.
+        //
+        // Do this before we add the GS Cookie Dummy or Outgoing args to the locals
+        // so we don't have to do special checks to exclude them.
+        //
+        if (opts.IsOSR)
+        {
+            for (var lclNum = 0; lclNum < lvaCount; lclNum++)
+            {
+                ref var varDsc = ref lvaGetDesc(lclNum);
+                varDsc.lvIsOSRLocal = true;
+
+                if (info.compPatchpointInfo->IsExposed(lclNum))
+                {
+                    JITDUMP($"-- V{lclNum:D2} is OSR exposed\n");
+                    varDsc.lvIsOSRExposedLocal = true;
+
+                    // Ensure that ref counts for exposed OSR locals take into account
+                    // that some of the refs might be in the Tier0 parts of the method
+                    // that get trimmed away.
+                    varDsc.lvImplicitlyReferenced = true;
+                }
+            }
+        }
+
+        if (NeedsGSSecurityCookie)
+        {
+            // Ensure that there will be at least one stack variable since
+            // we require that the GSCookie does not have a 0 stack offset.
+            var dummy = lvaGrabTempWithImplicitUse(shortLifetime: false, ("GSCookie dummy"));
+
+            ref var gsCookieDummy = ref lvaGetDesc(dummy);
+            gsCookieDummy.Type = TYP_INT;
+            gsCookieDummy.lvIsTemp = true; // It is not alive at all, set the flag to prevent zero-init.
+
+            lvaSetVarDoNotEnregister(dummy, (DoNotEnregisterReason.VMNeedsStackAddr));
+        }
+
+        // Allocate the lvaOutgoingArgSpaceVar now because we can run into problems in the
+        // emitter when the varNum is greater that 32767 (see emitLclVarAddr.initLclVarAddr)
+        lvaAllocOutgoingArgSpaceVar();
+
+#if TARGET_WASM
+        lvaAllocWasmStackPtr();
+#endif
+
+#if DEBUG
+        if (verbose)
+        {
+            lvaTableDump(INITIAL_FRAME_LAYOUT);
+        }
+#endif
+    }
+
+    /// <summary>Initialize local var descriptions for incoming user arguments</summary>
+    /// <param name="curVarNum">the current local</param>
+    /// <param name="skipArgs">the number of user args to skip processing.</param>
+    /// <param name="takeArgs">the number of user args to process (after skipping skipArgs number of args)</param>
+    public unsafe void lvaInitUserArgs(ref int curVarNum, int skipArgs, int takeArgs)
+    {
+        //-------------------------------------------------------------------------
+        // Walk the function signature for the explicit arguments
+        //-------------------------------------------------------------------------
+
+        ref var methodArgs = ref info.compMethodInfo->args;
+        var argLst = methodArgs.args;
+
+        var argSigLen = methodArgs.numArgs;
+
+        // We will process at most takeArgs arguments from the signature after skipping skipArgs arguments
+        var numUserArgs = long.Min(takeArgs, (argSigLen - skipArgs));
+
+        // If there are no user args or less than skipArgs args, return here since there's no work to do.
+        if (numUserArgs <= 0)
+        {
+            return;
+        }
+
+        // Skip skipArgs arguments from the signature.
+        for (var i = 0; i < skipArgs; i++)
+        {
+            argLst = info.compCompHnd->getArgNext(argLst);
+        }
+
+        // Process each user arg.
+        for (var i = 0; i < numUserArgs; i++)
+        {
+            ref var varDsc = ref lvaGetDesc(curVarNum);
+
+            CORINFO_CLASS_HANDLE typeHnd;
+            var corInfoType = info.compCompHnd->getArgType(&info.compMethodInfo->args, argLst, &typeHnd);
+            varDsc.lvIsParam = true;
+
+#if TARGET_X86 && FEATURE_IJW
+            if ((corInfoType & CORINFO_TYPE_MOD_COPY_WITH_HELPER) is not 0)
+            {
+                var typeWithoutMod = strip(corInfoType);
+
+                if (typeWithoutMod is CORINFO_TYPE_VALUECLASS or  CORINFO_TYPE_PTR or CORINFO_TYPE_BYREF)
+                {
+                    JITDUMP($"Marking user arg{i:D2} as requiring special copy semantics\n");
+                    recordArgRequiresSpecialCopy(i);
+                }
+            }
+#endif
+
+            lvaInitVarDsc(ref varDsc, curVarNum, strip(corInfoType), typeHnd, argLst, in methodArgs);
+
+            if (strip(corInfoType) == CORINFO_TYPE_CLASS)
+            {
+                var clsHnd = info.compCompHnd->getArgClass(&info.compMethodInfo->args, argLst);
+                lvaSetClass(curVarNum, clsHnd);
+            }
+
+            // The final home for this incoming parameter might be our local stack frame.
+            varDsc.lvOnFrame = true;
+
+#if SWIFT_SUPPORT
+            if (info.compCallConv == CorInfoCallConvExtension.Swift)
+            {
+                if (varTypeIsSimd(varDsc.Type))
+                {
+                    IMPL_LIMITATION("SIMD types are currently unsupported in Swift reverse pinvokes");
+                }
+
+                if (lvaInitSpecialSwiftParam(argLst, curVarNum, strip(corInfoType), typeHnd))
+                {
+                    continue;
+                }
+
+                if (varDsc.Type is TYP_STRUCT)
+                {
+                    // Struct parameters are lowered to separate primitives in the
+                    // Swift calling convention. We cannot handle these patterns
+                    // efficiently, so we always DNER them and home them to stack
+                    // in the prolog.
+                    lvaSetVarDoNotEnregister(curVarNum, (DoNotEnregisterReason.IsStructArg));
+                }
+            }
+#endif
+
+#if CONFIGURABLE_ARM_ABI
+            var compUseSoftFP = opts.compUseSoftFP;
+#else
+            var compUseSoftFP = Options.compUseSoftFP;
+#endif
+
+            if (info.compIsVarArgs || (compUseSoftFP && varTypeIsFloating(varDsc.Type)))
+            {
+#if !TARGET_X86
+                // TODO-CQ: We shouldn't have to go as far as to declare these
+                // address-exposed -- DoNotEnregister should suffice.
+                lvaSetVarAddrExposed(curVarNum, (AddressExposedReason.TOO_CONSERVATIVE));
+#endif
+            }
+
+            curVarNum++;
+            argLst = info.compCompHnd->getArgNext(argLst);
+        }
+    }
+
+    public void lvaInitVarArgsHandle(ref int curVarNum)
+    {
+        if (!info.compIsVarArgs)
+        {
+            return;
+        }
+
+        lvaVarargsHandleArg = curVarNum;
+
+        ref var varDsc = ref lvaGetDesc(curVarNum);
+        varDsc.Type = TYP_I_IMPL;
+        varDsc.lvIsParam = true;
+        varDsc.lvOnFrame = true; // The final home for this incoming register might be our local stack frame
+        varDsc.lvHasLdAddrOp = true;
+
+#if TARGET_X86
+        // Codegen will need it for x86 scope info.
+        varDsc.lvImplicitlyReferenced = true;
+#endif
+
+        lvaSetVarDoNotEnregister(lvaVarargsHandleArg, (DoNotEnregisterReason.VMNeedsStackAddr));
+
+#if TARGET_X86
+        // Allocate a temp to point at the beginning of the args
+        lvaVarargsBaseOfStkArgs = lvaGrabTemp(shortLifetime: false, "Varargs BaseOfStkArgs");
+        lvaTable[lvaVarargsBaseOfStkArgs].lvType = TYP_I_IMPL;
+#endif // TARGET_X86
+
+        curVarNum++;
+    }
+
+    public unsafe void lvaInitVarDsc(ref LclVarDsc varDsc, int varNum, CorInfoType corInfoType, CORINFO_CLASS_HANDLE typeHnd, CORINFO_ARG_LIST_HANDLE varList, in CORINFO_SIG_INFO varSig)
+    {
+        noway_assert(Unsafe.AreSame(in varDsc, in lvaGetDesc(varNum)));
+
+        switch (corInfoType)
+        {
+            // Mark types that looks like a pointer for doing shadow-copying of
+            // parameters if we have an unsafe buffer.
+            // Note that this does not handle structs with pointer fields. Instead,
+            // we rely on using the assign-groups/equivalence-groups in
+            // gsFindVulnerableParams() to determine if a buffer-struct contains a
+            // pointer. We could do better by having the EE determine this for us.
+            // Note that we want to keep buffers without pointers at lower memory
+            // addresses than buffers with pointers.
+            case CORINFO_TYPE_STRING:
+            case CORINFO_TYPE_PTR:
+            case CORINFO_TYPE_BYREF:
+            case CORINFO_TYPE_CLASS:
+            case CORINFO_TYPE_REFANY:
+            case CORINFO_TYPE_VAR:
+            {
+                varDsc.lvIsPtr = true;
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
+        }
+
+        var type = corInfoType.VarType;
+
+        if (varTypeIsFloating(type))
+        {
+            compFloatingPointUsed = true;
+        }
+
+        // Set the lvType (before this point it is TYP_UNDEF).
+        if ((varTypeIsStruct(type)))
+        {
+            lvaSetStruct(varNum, typeHnd, typeHnd != NO_CLASS_HANDLE);
+        }
+        else
+        {
+            varDsc.Type = type;
+        }
+
+#if DEBUG
+        varDsc.StackOffset = BAD_STK_OFFS;
+#endif
     }
 
     /// <summary>Is the local an "implicit byref" parameter?</summary>
@@ -329,6 +1788,71 @@ public partial class Compiler
         }
 #endif
         return false;
+    }
+
+    /// <summary>Return the exact width of local variable "varNum" -- the number of bytes you'd need to copy in order to overwrite the value.</summary>
+    /// <param name="varNum"></param>
+    /// <returns></returns>
+    public int lvaLclExactSize(int varNum)
+    {
+        assert(varNum < lvaCount);
+        return lvaGetDesc(varNum).lvExactSize;
+    }
+
+    /// <summary>returns size of stack home of a local variable, in bytes</summary>
+    /// <param name="varNum">variable to query</param>
+    /// <returns>Number of bytes needed on the frame for such a local.</returns>
+    public int lvaLclStackHomeSize(int varNum)
+    {
+        assert(varNum < lvaCount);
+
+        ref var varDsc = ref lvaGetDesc(varNum);
+        var varType = varDsc.Type;
+
+        if (!varTypeIsStruct(varType))
+        {
+#if TARGET_64BIT
+            // We only need this Quirk for TARGET_64BIT
+            if (varDsc.lvQuirkToLong)
+            {
+                noway_assert(varDsc.IsAddressExposed);
+                return TYP_LONG.StSz * sizeof(int); // return 8  (2 * 4)
+            }
+#endif
+
+            return varType.StSz * sizeof(int);
+        }
+
+        if (varDsc.lvIsParam && !varDsc.lvIsStructField)
+        {
+            // If this parameter was passed on the stack then we often reuse that
+            // space for its home. Take into account that this space might actually
+            // not be pointer-sized for some cases (macos-arm64 ABI currently).
+            ref readonly var abiInfo = ref lvaGetParameterAbiInfo(varNum);
+
+            if (abiInfo.HasExactlyOneStackSegment)
+            {
+                return abiInfo.Segments[0].StackSize;
+            }
+
+            // There are other cases where the caller has allocated space for the
+            // parameter, like windows-x64 with shadow space for register
+            // parameters, but in those cases this rounding is fine.
+            return roundUp(varDsc.lvExactSize, TARGET_POINTER_SIZE);
+        }
+
+#if FEATURE_SIMD && !TARGET_64BIT
+        // For 32-bit architectures, we make local variable SIMD12 types 16 bytes instead of just 12. We can't do
+        // this for arguments, which must be passed according the defined ABI. We don't want to do this for
+        // dependently promoted struct fields, but we don't know that here. See lvaMapSimd12ToSimd16().
+        // (Note that for 64-bits, we are already rounding up to 16.)
+        if (varDsc.Type is TYP_SIMD12)
+        {
+            return 16;
+        }
+#endif
+
+        return roundUp(varDsc.lvExactSize, TARGET_POINTER_SIZE);
     }
 
     // TODO: Port Compiler.lvaMarkLocalVars

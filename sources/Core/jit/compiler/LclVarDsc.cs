@@ -37,7 +37,7 @@ public partial struct LclVarDsc
 #endif
 
     /// <summary>variable tracking index</summary>
-    private ushort _varIndex;
+    internal ushort _varIndex;
 
     /// <summary>unweighted (real) reference count.</summary>
     /// <remarks>For implicit by reference parameters, this gets hijacked from fgResetImplicitByRefRefCount through fgMarkDemotedImplicitByRefArgs, to provide a static appearance count (computed during address-exposed analysis) that fgMakeOutgoingStructArgCopy consults during global morph to determine if eliding its copy is legal.</remarks>
@@ -105,7 +105,7 @@ public partial struct LclVarDsc
 #if FEATURE_IMPLICIT_BYREFS
             assert(Debugger.IsAttached || varTypeIsStruct(Type) || (IsImplicitByRef && (Type is TYP_BYREF)));
 #else
-            assert(Debugger.IsAttached || varTypeIsStruct(lvType));
+            assert(Debugger.IsAttached || varTypeIsStruct(Type));
 #endif
             return _layout;
         }

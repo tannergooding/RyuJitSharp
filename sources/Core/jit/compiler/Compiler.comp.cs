@@ -1011,12 +1011,12 @@ public partial class Compiler
         {
             bool unused;
             info.compCallConv = info.compCompHnd->getUnmanagedCallConv(methodInfo->ftn, null, &unused);
-            info.compArgOrder = Target.g_tgtUnmanagedArgOrder;
+            info.compArgOrder = Target.TgtUnmanagedArgOrder;
         }
         else
         {
             info.compCallConv = CorInfoCallConvExtension.Managed;
-            info.compArgOrder = Target.g_tgtArgOrder;
+            info.compArgOrder = Target.TgtArgOrder;
         }
 
         switch (methodInfo->args.getCallConv())
@@ -2015,7 +2015,7 @@ public partial class Compiler
         if (verbose)
         {
             jitprintf($"****** START compiling {info.compFullName} (MethodHash={info.compMethodHash():08x})\n");
-            jitprintf($"Generating code for {Target.s_tgtPlatformName} {Target.s_tgtCpuName}\n");
+            jitprintf($"Generating code for {Target.s_tgtPlatformName} {Target.TgtCpuName}\n");
             jitprintf(""); // in our logic this causes a flush
         }
 
@@ -2883,7 +2883,7 @@ public partial class Compiler
     /// <param name="methodCodeSize">size of the generated code (hot + cold sections)</param>
     /// <param name="jitFlags">flags controlling jit behavior</param>
     /// <remarks>
-    ///   <para>This is the most interesting 'toplevel' function in the JIT and goes through the operations of importing, morphing, optimizations and code generation. </para>
+    ///   <para>This is the most interesting 'top level' function in the JIT and goes through the operations of importing, morphing, optimizations and code generation. </para>
     ///   <para>This is called from the EE through the CILJit.compileMethod function.</para>
     ///   <para>For an overview of the structure of the JIT, see: https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/jit/ryujit-overview.md</para>
     ///   <para>Also called for inlinees, though they will only be run through the first few phases.</para>

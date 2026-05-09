@@ -7,14 +7,8 @@ namespace RyuJitSharp;
 
 public sealed partial class Target
 {
-    public static string? s_tgtCpuName;
-
     public static string s_tgtPlatformName()
     {
         return TargetOS.IsWindows? "Windows" : "Unix";
     }
-
-    public static readonly ArgOrder g_tgtArgOrder;
-
-    public static readonly ArgOrder g_tgtUnmanagedArgOrder;
 }

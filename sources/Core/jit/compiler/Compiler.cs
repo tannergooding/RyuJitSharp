@@ -1040,10 +1040,24 @@ public partial class Compiler
     }
 #endif
 
+    public ClassLayout typGetBlkLayout(int blockSize)
+        => typGetCustomLayout(new ClassLayoutBuilder(this, blockSize));
+
+    public int typGetBlkLayoutNum(int blockSize)
+        => typGetCustomLayoutNum(new ClassLayoutBuilder(this, blockSize));
+
+    public ClassLayout typGetCustomLayout(ClassLayoutBuilder builder)
+        => typClassLayoutTable.GetCustomLayout(this, builder);
+
+    public int typGetCustomLayoutNum(ClassLayoutBuilder builder)
+        => typClassLayoutTable.GetCustomLayoutNum(this, builder);
+
     /// <summary>Get the layout for the specified class handle.</summary>
     /// <param name="classHandle"></param>
     /// <returns></returns>
     public unsafe ClassLayout typGetObjLayout(CORINFO_CLASS_HANDLE classHandle) => typClassLayoutTable.GetObjLayout(this, classHandle);
+
+    public unsafe int typGetObjLayoutNum(CORINFO_CLASS_HANDLE classHandle) => typClassLayoutTable.GetObjLayoutNum(this, classHandle);
 
     // TODO: Port gsPhase
     public PhaseStatus gsPhase() => PhaseStatus.MODIFIED_NOTHING;

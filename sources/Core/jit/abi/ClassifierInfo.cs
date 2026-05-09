@@ -3,18 +3,12 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_AMD64
 namespace RyuJitSharp;
 
-public partial class Target
+public struct ClassifierInfo
 {
-    public const ArgOrder ARG_ORDER_R2L = ArgOrder.ARG_ORDER_R2L;
-    public const ArgOrder ARG_ORDER_L2R = ArgOrder.ARG_ORDER_L2R;
-
-    public enum ArgOrder
-    {
-        ARG_ORDER_R2L,
-        ARG_ORDER_L2R
-    }
+    public CorInfoCallConvExtension CallConv;
+    public bool IsVarArgs;
+    public bool HasThis;
+    public bool HasRetBuff;
 }
-#endif

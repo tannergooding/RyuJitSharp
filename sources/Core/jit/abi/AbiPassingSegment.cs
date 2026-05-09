@@ -111,10 +111,47 @@ public struct AbiPassingSegment
         }
     }
 
+    /// <summary>Create an AbiPassingSegment representing that a segment is passed in a register.</summary>
+    /// <param name="reg">The register the segment is passed in</param>
+    /// <param name="offset">The offset of the segment that is passed in the register</param>
+    /// <param name="size">The size of the segment passed in the register</param>
+    /// <returns>New instance of AbiPassingSegment.</returns>
+    public static AbiPassingSegment InRegister(regNumber reg, int offset, int size)
+    {
+        assert(reg != REG_NA);
+        return new AbiPassingSegment {
+            m_register = reg,
+            Offset = offset,
+            Size = size,
+        };
+    }
+
+    /// <summary>Create an AbiPassingSegment representing that a segment is passed on the stack.</summary>
+    /// <param name="stackOffset">Offset relative to the first stack parameter/argument</param>
+    /// <param name="offset">The offset of the segment that is passed in the register</param>
+    /// <param name="size">The size of the segment passed in the register</param>
+    /// <returns>New instance of AbiPassingSegment.</returns>
+    public static AbiPassingSegment OnStack(int stackOffset, int offset, int size)
+    {
+        return new AbiPassingSegment {
+            m_register = REG_NA,
+            m_stackOffset = stackOffset,
+            Offset = offset,
+            Size = size,
+        };
+    }
+
 #if DEBUG
     public readonly void Dump()
     {
-        // TODO: Port AbiPassingSegment.Dump
+        if (IsPassedInRegister)
+        {
+            jitprintf($"[{Offset:D2}..{Offset + Size:D2}) reg {Register.Name}");
+        }
+        else
+        {
+            jitprintf($"[{Offset:D2}..{Offset + Size:D2}) stack @ +{StackOffset:D2}");
+        }
     }
 #endif
 

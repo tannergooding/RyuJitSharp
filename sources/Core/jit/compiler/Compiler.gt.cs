@@ -24,6 +24,54 @@ public partial class Compiler
         }
     }
 
+    public void gtDispClassLayout(ClassLayout layout, var_types type)
+    {
+        assert(layout is not null);
+
+        if (layout.IsBlockLayout)
+        {
+            jitprintf($"<{layout.Size}>");
+        }
+        else if (varTypeIsSimd(type))
+        {
+            jitprintf($"<{layout.ShortClassName}>");
+        }
+        else
+        {
+            jitprintf($"<{layout.ShortClassName}, {layout.Size}>");
+        }
+    }
+
+    public void gtDispLclVar(int lclNum, bool padForBiggestDisp = true)
+    {
+        var name = gtGetLclVarName(lclNum);
+
+        if (name.Length == 0)
+        {
+            return;
+        }
+
+        jitprintf(name);
+
+        if (padForBiggestDisp && (name.Length < LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH))
+        {
+            jitprintf(new string(' ', int.Max(0, LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH - name.Length)));
+        }
+    }
+
+    public void gtDispLclVarStructType(int lclNum)
+    {
+        ref var varDsc = ref lvaGetDesc(lclNum);
+        var type = varDsc.Type;
+
+        if (type is TYP_STRUCT)
+        {
+            var layout = varDsc.Layout;
+            assert(layout is not null);
+            gtDispClassLayout(layout, type);
+        }
+    }
+
     public void gtDispLIRNode(GenTree node, string prefixMsg = "")
     {
         var indentStack = new IndentStack(this);

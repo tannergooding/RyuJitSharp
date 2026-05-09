@@ -69,6 +69,8 @@ public sealed class ClassLayout
     public string ShortClassName => _shortName;
 #endif
 
+    internal nint GcPtrs => _anonymous;
+
     /// <summary>The number of GC pointers in this layout.</summary>
     /// <remarks>Since the maximum size == 2^32-1 the count can fit in at most 30 bits.</remarks>
     public int GcPtrCount => (_bitfield >>> 1) & 0x3FFF_FFFF;
@@ -209,6 +211,18 @@ public sealed class ClassLayout
         return true;
     }
 
+    public static unsafe ClassLayout Create(Compiler compiler, CORINFO_CLASS_HANDLE classHandle)
+    {
+        // TODO: Port ClassLayout.Create
+        return null!;
+    }
+
+    public static unsafe ClassLayout Create(Compiler compiler, in ClassLayoutBuilder builder)
+    {
+        // TODO: Port ClassLayout.Create
+        return null!;
+    }
+
     public var_types GetGCPtrType(int slot) => GetGCPtr(slot) switch {
         TYPE_GC_NONE => TYP_I_IMPL,
         TYPE_GC_REF => TYP_REF,
@@ -239,7 +253,7 @@ public sealed class ClassLayout
     }
 
     [InlineArray(TARGET_POINTER_SIZE)]
-    private struct GCPtrsArrayInlineArray
+    internal struct GCPtrsArrayInlineArray
     {
         public byte e0;
     }

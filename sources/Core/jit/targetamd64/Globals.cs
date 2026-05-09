@@ -665,5 +665,41 @@ public partial class Globals
 
     public const int SWIFT_RET_BUFF_ARGNUM = MAX_REG_ARG;
 #endif
+
+#if UNIX_AMD64_ABI
+    public static ReadOnlySpan<regNumber> IntArgRegs => [
+        REG_EDI,
+        REG_ESI,
+        REG_EDX,
+        REG_ECX,
+        REG_R8,
+        REG_R9,
+    ];
+
+    public static ReadOnlySpan<regNumber> FltArgRegs => [
+        REG_XMM0,
+        REG_XMM1,
+        REG_XMM2,
+        REG_XMM3,
+        REG_XMM4,
+        REG_XMM5,
+        REG_XMM6,
+        REG_XMM7,
+    ];
+#else
+    public static ReadOnlySpan<regNumber> IntArgRegs => [
+        REG_ECX,
+        REG_EDX,
+        REG_R8,
+        REG_R9,
+    ];
+
+    public static ReadOnlySpan<regNumber> FltArgRegs => [
+        REG_XMM0,
+        REG_XMM1,
+        REG_XMM2,
+        REG_XMM3,
+    ];
+#endif
 }
 #endif
