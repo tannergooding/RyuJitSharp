@@ -549,8 +549,5 @@
     <!-- NODEBASH_STATS: Collect stats on changed gtOper values in GenTree's. -->
     <!-- <DefineConstants>$(DefineConstants);NODEBASH_STATS</DefineConstants> -->
   </PropertyGroup>
-  <ItemGroup>
-    <Folder Include="jit\bitset\" />
-  </ItemGroup>
 
 </Project>

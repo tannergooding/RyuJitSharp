@@ -31,18 +31,18 @@ public sealed class InlineStrategy
     private InlineContext? m_LastContext;
     private InlineDecision m_PrejitRootDecision;
     private InlineObservation m_PrejitRootObservation;
-    private uint m_CallCount;
-    private uint m_CandidateCount;
-    private uint m_AlwaysCandidateCount;
-    private uint m_ForceCandidateCount;
-    private uint m_DiscretionaryCandidateCount;
-    private uint m_UnprofitableCandidateCount;
-    private uint m_ImportCount;
-    private uint m_InlineCount;
-    private uint m_MaxInlineSize;
-    private uint m_MaxInlineDepth;
-    private uint m_MaxForceInlineDepth;
-    private uint m_OverBudgetIntrinsicInlineCount;
+    private int m_CallCount;
+    private int m_CandidateCount;
+    private int m_AlwaysCandidateCount;
+    private int m_ForceCandidateCount;
+    private int m_DiscretionaryCandidateCount;
+    private int m_UnprofitableCandidateCount;
+    private int m_ImportCount;
+    private int m_InlineCount;
+    private int m_MaxInlineSize;
+    private int m_MaxInlineDepth;
+    private int m_MaxForceInlineDepth;
+    private int m_OverBudgetIntrinsicInlineCount;
     private int m_InitialTimeBudget;
     private int m_InitialTimeEstimate;
     private int m_CurrentTimeBudget;
@@ -71,7 +71,7 @@ public sealed class InlineStrategy
         //
         // Default value of JitInlineSize is the same as our default.
         // So normally this next line does not change the size.
-        m_MaxInlineSize = unchecked((uint)(JitConfig[ConfigInteger.JitInlineSize]));
+        m_MaxInlineSize = JitConfig[ConfigInteger.JitInlineSize];
 
         // Up the max size under stress
         if (m_compiler.compInlineStress())
@@ -93,7 +93,7 @@ public sealed class InlineStrategy
         //
         // Default value of JitInlineDepth is the same as our default.
         // So normally this next line does not change the size.
-        m_MaxInlineDepth = unchecked((uint)(JitConfig[ConfigInteger.JitInlineDepth]));
+        m_MaxInlineDepth = JitConfig[ConfigInteger.JitInlineDepth];
 
         // But don't overdo it
         if (m_MaxInlineDepth > IMPLEMENTATION_MAX_INLINE_DEPTH)
@@ -105,7 +105,7 @@ public sealed class InlineStrategy
         //
         // Default value of JitForceInlineDepth is the same as our default.
         // So normally this next line does not change the size.
-        m_MaxForceInlineDepth = unchecked((uint)(JitConfig[ConfigInteger.JitForceInlineDepth]));
+        m_MaxForceInlineDepth = JitConfig[ConfigInteger.JitForceInlineDepth];
 
         // But don't overdo it
         if (m_MaxForceInlineDepth > m_MaxInlineDepth)
@@ -121,28 +121,28 @@ public sealed class InlineStrategy
     public int CurrentSizeEstimate => m_CurrentSizeEstimate;
 
     /// <summary>Return number of import attempts</summary>
-    public uint ImportCount => m_ImportCount;
+    public int ImportCount => m_ImportCount;
 
     /// <summary>Return the initial code size estimate for this method</summary>
     public int InitialSizeEstimate => m_InitialSizeEstimate;
 
     /// <summary>Number of successful inlines into the root</summary>
-    public uint InlineCount => m_InlineCount;
+    public int InlineCount => m_InlineCount;
 
     /// <summary>Context for the last successful inline, or root if no inlines</summary>
     public InlineContext? LastContext => m_LastContext;
 
     /// <summary>Get depth of maximum allowable force inline</summary>
-    public uint MaxForceInlineDepth => m_MaxForceInlineDepth;
+    public int MaxForceInlineDepth => m_MaxForceInlineDepth;
 
     /// <summary>Get IL size for maximum allowable inline</summary>
-    public uint MaxInlineILSize => m_MaxInlineSize;
+    public int MaxInlineILSize => m_MaxInlineSize;
 
     /// <summary>Get depth of maximum allowable inline</summary>
-    public uint MaxInlineDepth => m_MaxInlineDepth;
+    public int MaxInlineDepth => m_MaxInlineDepth;
 
     /// <summary>Number of over-budget inlines admitted because the callee was on an [Intrinsic] type.</summary>
-    public uint OverBudgetIntrinsicInlineCount => m_OverBudgetIntrinsicInlineCount;
+    public int OverBudgetIntrinsicInlineCount => m_OverBudgetIntrinsicInlineCount;
 
     /// <summary>get the InlineContext for the root method</summary>
     /// <remarks>Also initializes the jit time estimate and budget.</remarks>
@@ -265,13 +265,13 @@ public sealed class InlineStrategy
     ///   <para>Based on observational data. Time is nominally microseconds.</para>
     ///   <para>Small inlines will make the jit a bit faster.</para>
     /// </remarks>
-    private int EstimateInlineTime(uint ilSize) => -14 + unchecked((int)(2 * ilSize));
+    private int EstimateInlineTime(int ilSize) => -14 + (2 * ilSize);
 
     /// <summary>estimate jit time for method of this size with no inlining.</summary>
     /// <param name="ilSize">size of the method's IL</param>
     /// <returns>Nominal estimate of jit time.</returns>
     /// <remarks>Based on observational data. Time is nominally microseconds.</remarks>
-    private int EstimateRootTime(uint ilSize) => 60 + unchecked((int)(3 * ilSize));
+    private int EstimateRootTime(int ilSize) => 60 + (3 * ilSize);
 
     /// <summary>estimate impact of this inline on the method size</summary>
     /// <param name="context">context describing this inline</param>
@@ -287,12 +287,12 @@ public sealed class InlineStrategy
             // Model below is for x64 on windows.
             var ilSize = context.ILSize;
             var estimate = (1312 + 228 * ilSize) / 10;
-            return unchecked((int)(estimate));
+            return estimate;
         }
         else
         {
             // Use context's code size estimate.
-            return unchecked((int)(context.CodeSizeEstimate));
+            return context.CodeSizeEstimate;
         }
     }
 

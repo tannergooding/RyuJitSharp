@@ -294,9 +294,9 @@ public partial class Globals
 
     public static unsafe CORINFO_METHOD_HANDLE NO_METHOD_HANDLE => null;
 
-    public const IL_OFFSET BAD_IL_OFFSET = 0xFFFF_FFFF;
+    public const IL_OFFSET BAD_IL_OFFSET = -1;
 
-    public const uint BAD_VAR_NUM = uint.MaxValue;
+    public const int BAD_VAR_NUM = -1;
 
     public const ushort BAD_LCL_OFFSET = ushort.MaxValue;
 
@@ -328,21 +328,21 @@ public partial class Globals
 #error When FEATURE_TAILCALL_OPT_SHARED_RETURN is defined, you must define FEATURE_TAILCALL_OPT as well.
 #endif
 
-    public const uint CLFLG_REGVAR = 0x00008;
+    public const int CLFLG_REGVAR = 0x00008;
 
-    public const uint CLFLG_TREETRANS = 0x00100;
+    public const int CLFLG_TREETRANS = 0x00100;
 
-    public const uint CLFLG_INLINING = 0x00200;
+    public const int CLFLG_INLINING = 0x00200;
 
 #if FEATURE_STRUCTPROMOTE
-    public const uint CLFLG_STRUCTPROMOTE = 0x00400;
+    public const int CLFLG_STRUCTPROMOTE = 0x00400;
 #else
-    public const uint CLFLG_STRUCTPROMOTE = 0x00000;
+    public const int CLFLG_STRUCTPROMOTE = 0x00000;
 #endif
 
-    public const uint CLFLG_MAXOPT = CLFLG_REGVAR | CLFLG_TREETRANS | CLFLG_INLINING | CLFLG_STRUCTPROMOTE;
+    public const int CLFLG_MAXOPT = CLFLG_REGVAR | CLFLG_TREETRANS | CLFLG_INLINING | CLFLG_STRUCTPROMOTE;
 
-    public const uint CLFLG_MINOPT = CLFLG_TREETRANS;
+    public const int CLFLG_MINOPT = CLFLG_TREETRANS;
 
 #if DEBUG
     public static bool VERBOSE
@@ -366,7 +366,7 @@ public partial class Globals
 
         if (compiler.verbose)
         {
-            compiler.gtDispTree(tree, null, null, true);
+            compiler.gtDispTree(tree, msg: null, topOnly: true);
         }
 #endif
     }
@@ -431,14 +431,14 @@ public partial class Globals
 
     public static string dspBool(bool b) => b ? "true" : "false";
 
-    public static nuint dspOffset(nuint offs)
+    public static nint dspOffset(nint offs)
     {
         var compiler = JitTls.Compiler;
         assert(compiler is not null);
         return compiler.dspOffset(offs);
     }
 
-    public static unsafe nuint dspPtr(void* ptr)
+    public static unsafe nint dspPtr(void* ptr)
     {
         var compiler = JitTls.Compiler;
         assert(compiler is not null);
@@ -450,9 +450,9 @@ public partial class Globals
     /// <param name="codeAddr">Pointer to IL byte stream to display.</param>
     /// <param name="codeSize">Number of bytes of IL byte stream to display.</param>
     /// <param name="alignSize">Pad out to this many characters, if fewer than this were written.</param>
-    public static unsafe void dumpILBytes(byte* codeAddr, uint codeSize, uint alignSize)
+    public static unsafe void dumpILBytes(byte* codeAddr, int codeSize, int alignSize)
     {
-        for (var offs = 0u; offs < codeSize; offs++)
+        for (var offs = 0; offs < codeSize; offs++)
         {
             jitprintf($" {codeAddr[offs]:X2}");
         }
@@ -468,9 +468,9 @@ public partial class Globals
     /// <summary>Display a range of IL instructions from an IL instruction stream.</summary>
     /// <param name="codeAddr">Pointer to IL byte stream to display.</param>
     /// <param name="codeSize">Number of bytes of IL byte stream to display.</param>
-    public static unsafe void dumpILRange(byte* codeAddr, uint codeSize)
+    public static unsafe void dumpILRange(byte* codeAddr, int codeSize)
     {
-        var offs = 0u;
+        var offs = 0;
 
         while (offs < codeSize)
         {
@@ -484,15 +484,15 @@ public partial class Globals
     /// <param name="offs">Offset from codeAddr of the IL instruction to display.</param>
     /// <param name="prefix">Optional string to prefix the IL instruction with</param>
     /// <returns>Size of the displayed IL instruction in the instruction stream, in bytes. (Add this to 'offs' to get to the next instruction.)</returns>
-    public static unsafe uint dumpSingleInstr(byte* codeAddr, IL_OFFSET offs, string prefix = "")
+    public static unsafe int dumpSingleInstr(byte* codeAddr, IL_OFFSET offs, string prefix = "")
     {
         // assume 3 characters * (1 byte opcode + 4 bytes data + 1 prefix byte) for most things
-        const uint ALIGN_WIDTH = 3 * 6;
+        const int ALIGN_WIDTH = 3 * 6;
 
         var opcodePtr = codeAddr + offs;
         var startOpcodePtr = opcodePtr;
 
-        if (prefix.Length is not 0)
+        if (prefix.Length != 0)
         {
             jitprintf(prefix);
         }
@@ -674,25 +674,9 @@ public partial class Globals
 #endif
     }
 
-#if HOST_64BIT
     public static int roundUp(int size, int mult)
     {
         assert(int.IsPow2(mult));
-        return (size + (mult - 1)) & ~(mult - 1);
-    }
-
-    public static uint roundUp(uint size, uint mult)
-    {
-        assert(uint.IsPow2(mult));
-        return (size + (mult - 1)) & ~(mult - 1);
-    }
-#endif
-
-    public static unsafe nuint roundUp(nuint size) => roundUp(size, mult: (uint)(sizeof(nuint)));
-
-    public static nuint roundUp(nuint size, nuint mult)
-    {
-        assert(nuint.IsPow2(mult));
         return (size + (mult - 1)) & ~(mult - 1);
     }
 }

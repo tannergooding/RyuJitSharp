@@ -5,7 +5,6 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using static RyuJitSharp.Compiler.structPassingKind;
 
 namespace RyuJitSharp;
 
@@ -96,7 +95,7 @@ public struct ReturnTypeDesc
                 assert(_regType[i] == TYP_UNKNOWN);
 
 #if TARGET_RISCV64 || TARGET_LOONGARCH64
-                assert(_fieldOffset[i] is 0);
+                assert(_fieldOffset[i] == 0);
 #endif
             }
 #endif
@@ -111,7 +110,7 @@ public struct ReturnTypeDesc
     public readonly byte ReturnRegCountOrDefault => (byte)(_inited ? ReturnRegCount : 0);
 #endif
 
-    public readonly uint SingleReturnFieldOffset
+    public readonly int SingleReturnFieldOffset
     {
         get
         {
@@ -202,8 +201,8 @@ public struct ReturnTypeDesc
 
         switch (howToReturnStruct)
         {
-            case SPK_EnclosingType:
-            case SPK_PrimitiveType:
+            case Compiler.SPK_EnclosingType:
+            case Compiler.SPK_PrimitiveType:
             {
                 assert(returnType is not TYP_UNKNOWN and not TYP_STRUCT);
                 _regType[0] = returnType;
@@ -213,14 +212,14 @@ public struct ReturnTypeDesc
 
                 if (!lowering->byIntegerCallConv)
                 {
-                    assert(lowering->numLoweredElements is 1);
+                    assert(lowering->numLoweredElements == 1);
                     _fieldOffset[0] = lowering->offsets[0];
                 }
 #endif
                 break;
             }
 
-            case SPK_ByValueAsHfa:
+            case Compiler.SPK_ByValueAsHfa:
             {
                 assert(varTypeIsStruct(returnType));
                 var hfaType = compiler.GetHfaType(retClsHnd);
@@ -229,10 +228,10 @@ public struct ReturnTypeDesc
                 assert(varTypeIsValidHfaType(hfaType));
 
                 // Note that the retail build issues a warning about a potential divsion by zero without this "max",
-                var elemSize = uint.Max(1u, hfaType.Size);
+                var elemSize = int.Max(1, hfaType.Size);
 
                 // The size of this struct should be evenly divisible by elemSize
-                assert((structSize % elemSize) is 0);
+                assert((structSize % elemSize) == 0);
 
                 var hfaCount = (structSize / elemSize);
 
@@ -245,7 +244,7 @@ public struct ReturnTypeDesc
                 break;
             }
 
-            case SPK_ByValue:
+            case Compiler.SPK_ByValue:
             {
                 assert(varTypeIsStruct(returnType));
 
@@ -302,7 +301,7 @@ public struct ReturnTypeDesc
                         _regType[i] = regType;
                         _fieldOffset[i] = fieldOffset;
 
-                        if ((regType is TYP_LONG) && ((fieldOffset % TARGET_POINTER_SIZE) is 0))
+                        if ((regType is TYP_LONG) && ((fieldOffset % TARGET_POINTER_SIZE) == 0))
                         {
                             var slot = fieldOffset / TARGET_POINTER_SIZE;
                             _regType[i] = compiler.GetJitGCType(gcPtrs[slot]);
@@ -320,7 +319,7 @@ public struct ReturnTypeDesc
                     for (byte i = 0; i < 2; i++)
                     {
                         _regType[i] = compiler.GetJitGCType(gcPtrs[i]);
-                        _fieldOffset[i] = (uint)(i * TARGET_POINTER_SIZE);
+                        _fieldOffset[i] = i * TARGET_POINTER_SIZE;
                     }
                 }
 #elif TARGET_X86
@@ -345,7 +344,7 @@ public struct ReturnTypeDesc
                 break;
             }
 
-            case SPK_ByReference:
+            case Compiler.SPK_ByReference:
             {
                 // We are returning using the return buffer argument, there are no return registers.
                 break;
@@ -395,14 +394,14 @@ public struct ReturnTypeDesc
     /// <summary>For the N'th returned register, identified by "index", returns the starting offset in the struct return type of the data being returned.</summary>
     /// <param name="index">The register whose offset to get</param>
     /// <returns>Starting offset of data returned in that register.</returns>
-    public readonly uint GetReturnFieldOffset(byte index)
+    public readonly int GetReturnFieldOffset(byte index)
     {
         assert(_regType[index] is not TYP_UNKNOWN);
 
 #if TARGET_RISCV64 || TARGET_LOONGARCH64
         return _fieldOffset[index];
 #else
-        var offset = 0u;
+        var offset = 0;
 
         for (byte i = 0; i < index; i++)
         {
@@ -464,7 +463,7 @@ public struct ReturnTypeDesc
 #if UNIX_AMD64_ABI
         var regType0 = GetReturnRegType(0);
 
-        if (idx is 0)
+        if (idx == 0)
         {
             if (varTypeUsesIntReg(regType0))
             {
@@ -476,7 +475,7 @@ public struct ReturnTypeDesc
                 resultReg = REG_FLOATRET;
             }
         }
-        else if (idx is 1)
+        else if (idx == 1)
         {
             var regType1 = GetReturnRegType(1);
 
@@ -506,7 +505,7 @@ public struct ReturnTypeDesc
             }
         }
 #elif WINDOWS_AMD64_ABI
-        assert(idx is 0);
+        assert(idx == 0);
 
         if (varTypeUsesIntReg(GetReturnRegType(0)))
         {
@@ -518,11 +517,11 @@ public struct ReturnTypeDesc
             resultReg = REG_FLOATRET;
         }
 #elif TARGET_X86
-        if (idx is 0)
+        if (idx == 0)
         {
             resultReg = REG_LNGRET_LO;
         }
-        else if (idx is 1)
+        else if (idx == 1)
         {
             resultReg = REG_LNGRET_HI;
         }
@@ -533,11 +532,11 @@ public struct ReturnTypeDesc
         {
             // Ints are returned in one return register.
             // Longs are returned in two return registers.
-            if (idx is 0)
+            if (idx == 0)
             {
                 resultReg = REG_LNGRET_LO;
             }
-            else if (idx is 1)
+            else if (idx == 1)
             {
                 resultReg = REG_LNGRET_HI;
             }
@@ -551,7 +550,7 @@ public struct ReturnTypeDesc
 
             if (regType == TYP_DOUBLE)
             {
-                resultReg = REG_FLOATRET + unchecked((byte)(idx * 2)); // d0, d1, d2 or d3
+                resultReg = REG_FLOATRET + (byte)(idx * 2); // d0, d1, d2 or d3
             }
             else
             {
@@ -566,7 +565,7 @@ public struct ReturnTypeDesc
         if (varTypeIsIntegralOrI(regType))
         {
             noway_assert(idx < 2);                              // Up to 2 return registers for 16-byte structs
-            resultReg = (idx is 0) ? REG_INTRET : REG_INTRET_1; // X0 or X1
+            resultReg = (idx == 0) ? REG_INTRET : REG_INTRET_1; // X0 or X1
         }
         else
         {
@@ -577,13 +576,13 @@ public struct ReturnTypeDesc
 #elif TARGET_LOONGARCH64 || TARGET_RISCV64
         var regType = GetReturnRegType(idx);
 
-        if (idx is 0)
+        if (idx == 0)
         {
             resultReg = varTypeIsIntegralOrI(regType) ? REG_INTRET : REG_FLOATRET; // A0 or FA0
         }
         else
         {
-            noway_assert(idx is 1); // Up to 2 return registers for two-float-field structs
+            noway_assert(idx == 1); // Up to 2 return registers for two-float-field structs
 
             // If the first return register is from the same register file, return the one next to it.
             if (varTypeUsesIntReg(regType))
@@ -649,7 +648,7 @@ public struct ReturnTypeDesc
     [InlineArray(MAX_RET_REG_COUNT)]
     private struct _fieldOffsetInlineArray
     {
-        public uint e0;
+        public int e0;
     }
 #endif
 }

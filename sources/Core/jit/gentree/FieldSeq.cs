@@ -13,9 +13,9 @@ public sealed partial class FieldSeq
     // class field and any additional struct fields. We only need to preserve the handle for the first field,
     // so any struct fields will be represented implicitly (via offsets). See also "IsFieldAddr".
 
-    private const nuint FIELD_KIND_MASK = 0b11;
+    private const nint FIELD_KIND_MASK = 0b11;
 
-    private nuint _fieldHandleAndKind;
+    private nint _fieldHandleAndKind;
     private nint _offset;
 
     public unsafe FieldSeq(CORINFO_FIELD_HANDLE fieldHnd, nint offset, FieldKind fieldKind)
@@ -24,9 +24,9 @@ public sealed partial class FieldSeq
 
         assert(fieldHnd != NO_FIELD_HANDLE);
 
-        var handleValue = (nuint)(fieldHnd);
+        var handleValue = unchecked((nint)(fieldHnd));
 
-        assert((handleValue & FIELD_KIND_MASK) is 0);
+        assert((handleValue & FIELD_KIND_MASK) == 0);
         _fieldHandleAndKind = handleValue | (byte)(fieldKind);
 
         assert((JitTls.Compiler is Compiler compiler) && (compiler.eeIsFieldStatic(fieldHnd) == IsStaticField));
@@ -35,7 +35,7 @@ public sealed partial class FieldSeq
         {
             // TODO: enable this assert. At the time of writing, crossgen2 had a bug where the value "getFieldOffset"
             // would return for fields with an offset unknown at compile time was incorrect (not zero).
-            // assert(static_cast<ssize_t>(JitTls::GetCompiler()->info.compCompHnd->getFieldOffset(fieldHnd)) == offset);
+            // assert(static_cast<ssize_t>(JitTls.GetCompiler()->info.compCompHnd->getFieldOffset(fieldHnd)) == offset);
         }
     }
 
@@ -45,7 +45,7 @@ public sealed partial class FieldSeq
 
     public bool IsSharedStaticField => Kind is FieldKind.SharedStatic;
 
-    public FieldKind Kind => unchecked((FieldKind)(_fieldHandleAndKind & FIELD_KIND_MASK));
+    public FieldKind Kind => (FieldKind)(_fieldHandleAndKind & FIELD_KIND_MASK);
 
     /// <summary>Retrieve "the offset" for the field this node represents.</summary>
     /// <remarks>

@@ -81,7 +81,7 @@ function Build {
 
   LASTEXITCODE=$?
 
-  if [ "$LASTEXITCODE" is not 0 ]; then
+  if [ "$LASTEXITCODE" != 0 ]; then
     echo "'Build' failed for '$solution'"
     return "$LASTEXITCODE"
   fi
@@ -135,7 +135,7 @@ function Pack {
 
   LASTEXITCODE=$?
 
-  if [ "$LASTEXITCODE" is not 0 ]; then
+  if [ "$LASTEXITCODE" != 0 ]; then
     echo "'Build' failed for '$solution'"
     return "$LASTEXITCODE"
   fi
@@ -152,7 +152,7 @@ function Restore {
 
   LASTEXITCODE=$?
 
-  if [ "$LASTEXITCODE" is not 0 ]; then
+  if [ "$LASTEXITCODE" != 0 ]; then
     echo "'Restore' failed for '$solution'"
     return "$LASTEXITCODE"
   fi
@@ -169,7 +169,7 @@ function Test {
 
   LASTEXITCODE=$?
 
-  if [ "$LASTEXITCODE" is not 0 ]; then
+  if [ "$LASTEXITCODE" != 0 ]; then
     echo "'Test' failed for '$solution'"
     return "$LASTEXITCODE"
   fi
@@ -222,7 +222,7 @@ fi
 if $restore; then
   Restore
 
-  if [ "$LASTEXITCODE" is not 0 ]; then
+  if [ "$LASTEXITCODE" != 0 ]; then
     return "$LASTEXITCODE"
   fi
 fi
@@ -230,7 +230,7 @@ fi
 if $build; then
   Build
 
-  if [ "$LASTEXITCODE" is not 0 ]; then
+  if [ "$LASTEXITCODE" != 0 ]; then
     return "$LASTEXITCODE"
   fi
 fi
@@ -238,7 +238,7 @@ fi
 if $test; then
   Test
 
-  if [ "$LASTEXITCODE" is not 0 ]; then
+  if [ "$LASTEXITCODE" != 0 ]; then
     return "$LASTEXITCODE"
   fi
 fi
@@ -246,7 +246,7 @@ fi
 if $pack; then
   Pack
 
-  if [ "$LASTEXITCODE" is not 0 ]; then
+  if [ "$LASTEXITCODE" != 0 ]; then
     return "$LASTEXITCODE"
   fi
 fi

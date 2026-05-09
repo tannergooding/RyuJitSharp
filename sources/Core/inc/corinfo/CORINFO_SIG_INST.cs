@@ -7,13 +7,13 @@ namespace RyuJitSharp;
 
 public struct CORINFO_SIG_INST
 {
-    public uint classInstCount;
+    public int classInstCount;
 
     /// <summary>Instantiation for class type variables in signature.</summary>
     /// <remarks>Representative, not exact.</remarks>
     public unsafe CORINFO_CLASS_HANDLE* classInst;
 
-    public uint methInstCount;
+    public int methInstCount;
 
     /// <summary>Instantiation for method type variables in signature.</summary>
     /// <remarks>Representative, not exact.</remarks>

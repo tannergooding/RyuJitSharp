@@ -25,16 +25,16 @@ public struct CORINFO_TYPE_LAYOUT_NODE
     public unsafe CORINFO_FIELD_HANDLE diagFieldHnd;
 
     // Index of parent node in the tree
-    public uint parent;
+    public int parent;
 
     // Offset into the root type of the field
-    public uint offset;
+    public int offset;
 
     // Size of the type.
-    public uint size;
+    public int size;
 
     // Number of fields for type == CORINFO_TYPE_VALUECLASS. This is the number of nodes added.
-    public uint numFields;
+    public int numFields;
 
     // Type of the field.
     public CorInfoType type;

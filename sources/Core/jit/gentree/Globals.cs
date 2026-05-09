@@ -29,27 +29,27 @@ public partial class Globals
     public const int FLT_IND_COST_EX = IND_COST_EX;
 #endif
 
-    public const uint EMPTY_STRING_SCON = uint.MaxValue;
+    public const int EMPTY_STRING_SCON = -1;
 
     public const int GT_ARR_MAX_RANK = 3;
 
     // We use the following format when printing the Statement number: Statement->GetID()
     // This define is used with string concatenation to put this in printf format strings  (Note that %u means unsigned int)
-    public const string FMT_STMT = "STMT{0:D5}";
+    public static string FMT_STMT(int id) => $"STMT{id:D5}";
 
     // GTF_SPILL or GTF_SPILLED flag on a multi-reg node indicates that one or
     // more of its result regs are in that state.  The spill flags of each register
     // are stored here. We only need 2 bits per returned register,
     // so this is treated as a 2-bit array. No architecture needs more than 8 bits.
 
-    public const uint PACKED_GTF_SPILL = 1;
+    public const int PACKED_GTF_SPILL = 1;
 
-    public const uint PACKED_GTF_SPILLED = 2;
+    public const int PACKED_GTF_SPILLED = 2;
 
     /// <summary>Return 1-based AssertionIndex from 0-based int index.</summary>
     /// <param name="index">0-based index</param>
     /// <returns>1-based AssertionIndex</returns>
-    public static AssertionIndex GetAssertionIndex(ushort index) => unchecked((AssertionIndex)(index + 1));
+    public static AssertionIndex GetAssertionIndex(ushort index) => (AssertionIndex)(index + 1);
 
     /// <summary>Get spill flag associated with the return register specified by its index.</summary>
     /// <param name="flags"></param>
@@ -65,12 +65,12 @@ public partial class Globals
         var bits = flags >>> (idx * 2);
         var spillFlags = GTF_EMPTY;
 
-        if ((bits & PACKED_GTF_SPILL) is not 0)
+        if ((bits & PACKED_GTF_SPILL) != 0)
         {
             spillFlags |= GTF_SPILL;
         }
 
-        if ((bits & PACKED_GTF_SPILLED) is not 0)
+        if ((bits & PACKED_GTF_SPILLED) != 0)
         {
             spillFlags |= GTF_SPILLED;
         }
@@ -91,14 +91,14 @@ public partial class Globals
         assert((MAX_MULTIREG_COUNT * 2) <= (sizeof(byte) * BITS_PER_BYTE));
         assert(idx < MAX_MULTIREG_COUNT);
 
-        var bits = 0u;
+        var bits = 0;
 
-        if ((flagsToSet & GTF_SPILL) is not 0)
+        if ((flagsToSet & GTF_SPILL) != 0)
         {
             bits |= PACKED_GTF_SPILL;
         }
 
-        if ((flagsToSet & GTF_SPILLED) is not 0)
+        if ((flagsToSet & GTF_SPILLED) != 0)
         {
             bits |= PACKED_GTF_SPILLED;
         }

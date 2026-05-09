@@ -11,7 +11,7 @@ namespace RyuJitSharp;
 /// <summary>Indir is just an op, no additional data, but some additional abstractions</summary>
 public class GenTreeIndir : GenTreeOp
 {
-    public GenTreeIndir(genTreeOps oper, var_types type, GenTree addr, GenTree? data)
+    protected internal GenTreeIndir(genTreeOps oper, var_types type, GenTree addr, GenTree? data = null)
         : base(oper, type, addr, data)
     {
     }
@@ -21,7 +21,6 @@ public class GenTreeIndir : GenTreeOp
     {
         get
         {
-            assert(Op1 is not null);
             assert(varTypeIsI(Op1.Type));
             return Op1;
         }
@@ -61,12 +60,12 @@ public class GenTreeIndir : GenTreeOp
         }
     }
 
-    public GenTree? Data
+    public GenTree Data
     {
         get
         {
             assert(Debugger.IsAttached || (Oper is GT_STOREIND) || Oper.IsStoreBlk || Oper.IsAtomic);
-            return Op2;
+            return Op2!;
         }
 
         set
@@ -113,17 +112,17 @@ public class GenTreeIndir : GenTreeOp
     {
         get
         {
-            var isInvariant = ((Flags & GTF_IND_INVARIANT) is not 0);
+            var isInvariant = ((Flags & GTF_IND_INVARIANT) != 0);
             assert(Debugger.IsAttached || !isInvariant || Oper.IsLoad);
             return isInvariant;
         }
     }
 
     /// <summary>True if this indirection is an unaligned memory operation.</summary>
-    public bool IsUnaligned => (Flags & GTF_IND_UNALIGNED) is not 0;
+    public bool IsUnaligned => (Flags & GTF_IND_UNALIGNED) != 0;
 
     /// <summary>True if this indirection is a volatile memory operation.</summary>
-    public bool IsVolatile => (Flags & GTF_IND_VOLATILE) is not 0;
+    public bool IsVolatile => (Flags & GTF_IND_VOLATILE) != 0;
 
     public nint Offset
     {
@@ -161,7 +160,7 @@ public class GenTreeIndir : GenTreeOp
         }
     }
 
-    public uint Size => ValueSize.ExactSize;
+    public int Size => ValueSize.ExactSize;
 
     public ValueSize ValueSize
     {
@@ -177,7 +176,7 @@ public class GenTreeIndir : GenTreeOp
         var oper = Oper;
         var operIsStoreBlk = oper.IsStoreBlk;
 
-        if ((operIsStoreBlk || (oper is GT_STOREIND)) && ((Flags & GTF_IND_TGT_NOT_HEAP) is not 0))
+        if ((operIsStoreBlk || (oper is GT_STOREIND)) && ((Flags & GTF_IND_TGT_NOT_HEAP) != 0))
         {
             return true;
         }

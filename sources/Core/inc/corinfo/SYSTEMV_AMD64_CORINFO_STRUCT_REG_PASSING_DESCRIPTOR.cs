@@ -49,9 +49,9 @@ public struct SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR
     /// <summary>Returns whether the eight-byte at slotIndex is of integral type.</summary>
     /// <param name="slotIndex">The slot number we are determining if it is of integral type.</param>
     /// <returns><c>true</c> if we the eight-byte at index slotIndex is of integral type.</returns>
-    public readonly bool IsIntegralSlot(uint slotIndex)
+    public readonly bool IsIntegralSlot(int slotIndex)
     {
-        return eightByteClassifications[(int)slotIndex] is SystemVClassificationTypeInteger
+        return eightByteClassifications[slotIndex] is SystemVClassificationTypeInteger
                                                          or SystemVClassificationTypeIntegerReference
                                                          or SystemVClassificationTypeIntegerByRef;
     }
@@ -60,9 +60,9 @@ public struct SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR
     /// <param name="slotIndex">The slot number we are determining if it is of SSE type.</param>
     /// <returns><c>true</c> if we the eight-byte at index slotIndex is of SSE type.</returns>
     /// <remarks>Follows the rules of the AMD64 System V ABI specification at https://software.intel.com/sites/default/files/article/402129/mpx-linux64-abi.pdf. Please refer to it for definitions/examples.</remarks>
-    public readonly bool IsSseSlot(uint slotIndex)
+    public readonly bool IsSseSlot(int slotIndex)
     {
-        return eightByteClassifications[(int)slotIndex] == SystemVClassificationTypeSSE;
+        return eightByteClassifications[slotIndex] == SystemVClassificationTypeSSE;
     }
 
     private void Initialize()

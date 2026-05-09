@@ -1,4 +1,4 @@
-// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+// Copyright Â© Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 //
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
@@ -9,6 +9,12 @@ namespace RyuJitSharp;
 
 public partial struct ICorDebugInfo
 {
+    public const BoundaryTypes NO_BOUNDARIES = BoundaryTypes.NO_BOUNDARIES;
+    public const BoundaryTypes STACK_EMPTY_BOUNDARIES = BoundaryTypes.STACK_EMPTY_BOUNDARIES;
+    public const BoundaryTypes NOP_BOUNDARIES = BoundaryTypes.NOP_BOUNDARIES;
+    public const BoundaryTypes CALL_SITE_BOUNDARIES = BoundaryTypes.CALL_SITE_BOUNDARIES;
+    public const BoundaryTypes DEFAULT_BOUNDARIES = BoundaryTypes.DEFAULT_BOUNDARIES;
+
     [Flags]
     public enum BoundaryTypes
     {

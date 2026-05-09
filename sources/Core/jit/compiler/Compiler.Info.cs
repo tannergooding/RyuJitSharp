@@ -43,7 +43,7 @@ public partial class Compiler
         /// <returns>Hash based on method's full name</returns>
         public int compMethodHash()
         {
-            if (compMethodHashPrivate is 0)
+            if (compMethodHashPrivate == 0)
             {
                 // Use compFullName to generate the hash, as it contains the signature and return type
                 compMethodHashPrivate = compFullName.GetHashCode(StringComparison.Ordinal);
@@ -80,7 +80,7 @@ public partial class Compiler
         ///     <item>the code is hot/cold split, and we issued less code than we expected in the cold section (the hot section will always be padded out to <see cref="compTotalHotCodeSize" />).</item>
         ///   </list>
         /// </remarks>
-        public UNATIVE_OFFSET compNativeCodeSize;
+        public NATIVE_OFFSET compNativeCodeSize;
 
         private InfoFlags _flags;
 
@@ -89,7 +89,7 @@ public partial class Compiler
         {
             readonly get
             {
-                return (_flags & InfoFlags.IsStatic) is not 0;
+                return (_flags & InfoFlags.IsStatic) != 0;
             }
 
             set
@@ -103,7 +103,7 @@ public partial class Compiler
         {
             readonly get
             {
-                return (_flags & InfoFlags.IsVarArgs) is not 0;
+                return (_flags & InfoFlags.IsVarArgs) != 0;
             }
 
             set
@@ -117,7 +117,7 @@ public partial class Compiler
         {
             readonly get
             {
-                return (_flags & InfoFlags.InitMem) is not 0;
+                return (_flags & InfoFlags.InitMem) != 0;
             }
 
             set
@@ -131,7 +131,7 @@ public partial class Compiler
         {
             readonly get
             {
-                return (_flags & InfoFlags.ProfilerCallback) is not 0;
+                return (_flags & InfoFlags.ProfilerCallback) != 0;
             }
 
             set
@@ -145,7 +145,7 @@ public partial class Compiler
         {
             readonly get
             {
-                return (_flags & InfoFlags.PublishStubParam) is not 0;
+                return (_flags & InfoFlags.PublishStubParam) != 0;
             }
 
             set
@@ -159,7 +159,7 @@ public partial class Compiler
         {
             readonly get
             {
-                return (_flags & InfoFlags.HasNextCallRetAddr) is not 0;
+                return (_flags & InfoFlags.HasNextCallRetAddr) != 0;
             }
 
             set
@@ -173,7 +173,7 @@ public partial class Compiler
         {
             readonly get
             {
-                return (_flags & InfoFlags.UsesAsyncContinuation) is not 0;
+                return (_flags & InfoFlags.UsesAsyncContinuation) != 0;
             }
 
             set
@@ -189,46 +189,46 @@ public partial class Compiler
         public var_types compRetNativeType;
 
         /// <summary>Number of arguments (incl. implicit but not hidden)</summary>
-        public uint compILargsCount;
+        public int compILargsCount;
 
         /// <summary>Number of arguments (incl. implicit and     hidden)</summary>
-        public uint compArgsCount;
+        public int compArgsCount;
 
         /// <summary>position of hidden return param var (0, 1) (BAD_VAR_NUM means not present);</summary>
-        public uint compRetBuffArg;
+        public int compRetBuffArg;
 
         /// <summary>position of hidden param for type context for generic code (<see cref="CORINFO_CALLCONV_PARAMTYPE" />)</summary>
-        public uint compTypeCtxtArg;
+        public int compTypeCtxtArg;
 
         /// <summary>position of implicit this pointer param (not to be confused with lvaArg0Var)</summary>
-        public uint compThisArg;
+        public int compThisArg;
 
         /// <summary>Number of vars : args + locals (incl. implicit but not hidden)</summary>
-        public uint compILlocalsCount;
+        public int compILlocalsCount;
 
         /// <summary>Number of vars : args + locals (incl. implicit and     hidden)</summary>
-        public uint compLocalsCount;
+        public int compLocalsCount;
 
-        public uint compMaxStack;
+        public int compMaxStack;
 
         /// <summary>Total number of bytes of Hot Code in the method</summary>
-        public UNATIVE_OFFSET compTotalHotCodeSize = 0;
+        public NATIVE_OFFSET compTotalHotCodeSize = 0;
 
         /// <summary>Total number of bytes of Cold Code in the method</summary>
-        public UNATIVE_OFFSET compTotalColdCodeSize = 0;
+        public NATIVE_OFFSET compTotalColdCodeSize = 0;
 
         /// <summary>count of unmanaged calls with GC transition.</summary>
-        public uint compUnmanagedCallCountWithGCTransition;
+        public int compUnmanagedCallCountWithGCTransition;
 
         /// <summary>The entry-point calling convention for this method.</summary>
         public CorInfoCallConvExtension compCallConv;
 
         /// <summary>lclNum for the Frame root</summary>
-        public uint compLvFrameListRoot = BAD_VAR_NUM;
+        public int compLvFrameListRoot = BAD_VAR_NUM;
 
         /// <summary>Number of exception-handling clauses read in the method's IL.</summary>
         /// <remarks>You should generally use compHndBBtabCount instead: it is the current number of EH clauses (after additions like synchronized methods and funclets, and removals like unreachable code deletion).</remarks>
-        public uint compXcptnsCount;                   
+        public ushort compXcptnsCount;                   
 
         public Target.ArgOrder compArgOrder;
 
@@ -237,21 +237,21 @@ public partial class Compiler
 
         // The following holds IL scope information about local variables.
 
-        public uint compVarScopesCount;
+        public int compVarScopesCount;
 
-        public unsafe VarScopeDsc* compVarScopes;
+        public VarScopeDsc[] compVarScopes = [];
 
         // The following holds information about instr offsets for which we need to report IP-mappings
 
         // sorted
-        public unsafe IL_OFFSET* compStmtOffsets;
+        public IL_OFFSET[] compStmtOffsets = [];
 
-        public uint compStmtOffsetsCount;
+        public int compStmtOffsetsCount;
 
         public ICorDebugInfo.BoundaryTypes compStmtOffsetsImplicit;
 
         /// <summary>Number of class profile probes in this method</summary>
-        public uint compHandleHistogramProbeCount;
+        public int compHandleHistogramProbeCount;
 
 #if TARGET_ARM64
         public bool compNeedsConsecutiveRegisters;

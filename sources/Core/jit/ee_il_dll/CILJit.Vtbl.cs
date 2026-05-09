@@ -34,14 +34,14 @@ public unsafe partial struct CILJit
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static CorJitResult compileMethod(ICorJitCompiler* pSelf, ICorJitInfo* jitInfo, CORINFO_METHOD_INFO* methodInfo, CorJitFlag flags, byte** nativeEntry, uint* nativeSizeOfCode) => ((CILJit*)pSelf)->compileMethod(jitInfo, methodInfo, flags, nativeEntry, nativeSizeOfCode);
+    private static CorJitResult compileMethod(ICorJitCompiler* pSelf, ICorJitInfo* jitInfo, CORINFO_METHOD_INFO* methodInfo, int flags, byte** nativeEntry, int* nativeSizeOfCode) => ((CILJit*)(pSelf))->compileMethod(jitInfo, methodInfo, flags, nativeEntry, nativeSizeOfCode);
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static void ProcessShutdownWork(ICorJitCompiler* pSelf, ICorStaticInfo* staticInfo) => ((CILJit*)pSelf)->ProcessShutdownWork(staticInfo);
+    private static void ProcessShutdownWork(ICorJitCompiler* pSelf, ICorStaticInfo* staticInfo) => ((CILJit*)(pSelf))->ProcessShutdownWork(staticInfo);
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static void getVersionIdentifier(ICorJitCompiler* pSelf, Guid* versionIdentifier) => ((CILJit*)pSelf)->getVersionIdentifier(versionIdentifier);
+    private static void getVersionIdentifier(ICorJitCompiler* pSelf, Guid* versionIdentifier) => ((CILJit*)(pSelf))->getVersionIdentifier(versionIdentifier);
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static void setTargetOS(ICorJitCompiler* pSelf, CORINFO_OS os) => ((CILJit*)pSelf)->setTargetOS(os);
+    private static void setTargetOS(ICorJitCompiler* pSelf, CORINFO_OS os) => ((CILJit*)(pSelf))->setTargetOS(os);
 }

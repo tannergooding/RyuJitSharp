@@ -9,21 +9,21 @@ public struct AssertionInfo
 {
     private ushort _bitfield;
 
-    public readonly bool AssertionHoldsOnFalseEdge => (_bitfield & 1) is not 0;
+    public readonly bool AssertionHoldsOnFalseEdge => (_bitfield & 1) != 0;
 
     public AssertionInfo(AssertionIndex assertionIndex)
     {
-        _bitfield = unchecked((ushort)(assertionIndex << 1));
+        _bitfield = (ushort)(assertionIndex << 1);
     }
 
     private AssertionInfo(bool assertionHoldsOnFalseEdge, AssertionIndex assertionIndex)
     {
-        _bitfield = unchecked((ushort)(assertionHoldsOnFalseEdge ? 1 : 0));
-        _bitfield |= unchecked((ushort)(assertionIndex << 1));
+        _bitfield = (ushort)(assertionHoldsOnFalseEdge ? 1 : 0);
+        _bitfield |= (ushort)(assertionIndex << 1);
         assert(AssertionIndex == assertionIndex);
     }
 
-    public readonly AssertionIndex AssertionIndex => unchecked((AssertionIndex)(_bitfield >>> 1));
+    public readonly AssertionIndex AssertionIndex => (AssertionIndex)(_bitfield >>> 1);
 
     public readonly bool HasAssertion => (AssertionIndex != NO_ASSERTION_INDEX);
 

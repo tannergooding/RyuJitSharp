@@ -14,7 +14,7 @@ public sealed class Statement
     private GenTree _rootNode;
 
     // The tree list head (for forward walks in evaluation order).
-    // The value is `nullptr` until we have set the sequencing of the nodes.
+    // The value is `null` until we have set the sequencing of the nodes.
     private GenTree? _treeList;
 
     // The tree list tail. Only valid when locals are linked (fgNodeThreading
@@ -25,7 +25,7 @@ public sealed class Statement
 
     // The statement nodes are doubly-linked. The first statement node in a block points
     // to the last node in the block via its `m_prev` link. Note that the last statement node
-    // does not point to the first: it has `m_next == nullptr`; that is, the list is not fully circular.
+    // does not point to the first: it has `m_next is null`; that is, the list is not fully circular.
     private Statement? _next;
     private Statement? _prev;
 
@@ -35,10 +35,10 @@ public sealed class Statement
     /// <summary>The instr offset at the end of this statement.</summary>
     private IL_OFFSET _lastILOffset;
 
-    private uint _stmtId;
+    private int _stmtId;
 #endif
 
-    public Statement(GenTree expr, uint stmtId)
+    public Statement(GenTree expr, int stmtId)
     {
         _rootNode = expr;
 
@@ -52,8 +52,12 @@ public sealed class Statement
 
     public byte CostSz => _rootNode.CostSz;
 
+    public ref readonly DebugInfo DebugInfo => ref _debugInfo;
+
 #if DEBUG
-    public uint Id => _stmtId;
+    public int Id => _stmtId;
+
+    public bool IsPhiDefnStmt => _rootNode.IsPhiDefn;
 
     public IL_OFFSET LastILOffset
     {
@@ -157,4 +161,10 @@ public sealed class Statement
     }
 
     public ref GenTree? TreeListEndRef => ref _treeListEnd;
+
+    public void SetDebugInfo(in DebugInfo debugInfo)
+    {
+        debugInfo.Validate();
+        _debugInfo = debugInfo;
+    }
 }

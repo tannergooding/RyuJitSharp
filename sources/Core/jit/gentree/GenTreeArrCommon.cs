@@ -14,12 +14,5 @@ public abstract class GenTreeArrCommon : GenTreeUnOp
     }
 
     /// <summary>The array address node</summary>
-    public GenTree ArrRef
-    {
-        get
-        {
-            assert(Op1 is not null);
-            return Op1;
-        }
-    }
+    public GenTree ArrRef => Op1;
 }

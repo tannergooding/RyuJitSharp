@@ -12,13 +12,13 @@ public partial class Phase
     {
 #if DEBUG
         private Compiler _compiler;
-        private uint _fgBBcount;
-        private uint _fgBBNumMax;
-        private uint _compHndBBtabCount;
-        private uint _lvaCount;
+        private int _fgBBcount;
+        private int _fgBBNumMax;
+        private int _compHndBBtabCount;
+        private int _lvaCount;
         private int _compGenTreeID;
-        private uint _compStatementID;
-        private uint _compBasicBlockID;
+        private int _compStatementID;
+        private int _compBasicBlockID;
 #endif
 
         /// <summary>snapshot key compiler variables before running a phase</summary>

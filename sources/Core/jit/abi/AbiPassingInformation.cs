@@ -20,7 +20,7 @@ public struct AbiPassingInformation
     ///     <item>On SysV x64, structs can be passed in two registers, resulting in two register segments</item>
     ///     <item>On arm64/arm32, HFAs can be passed in up to four registers, giving four register segments</item>
     ///     <item>On arm32, structs can be split out over register and stack, giving multiple register segments and a struct segment.</item>
-    ///     <item>On Windows x64, all parameters always fit into one stack slot or register, and thus always have NumSegments is 1</item>
+    ///     <item>On Windows x64, all parameters always fit into one stack slot or register, and thus always have NumSegments == 1</item>
     ///     <item>On loongarch64/riscv64, structs can be passed in two registers or can be split out over register and stack, giving multiple register segments and a struct segment.</item>
     ///   </list>
     /// </remarks>

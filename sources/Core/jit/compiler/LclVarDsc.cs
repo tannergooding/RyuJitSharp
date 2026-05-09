@@ -4,7 +4,6 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
@@ -16,20 +15,24 @@ public partial struct LclVarDsc
     private weight_t _lvRefCntWtd;
 
     /// <summary>class handle for the local or null if not known or not a class</summary>
-    private unsafe CORINFO_CLASS_HANDLE lvClassHnd;
+    public unsafe CORINFO_CLASS_HANDLE lvClassHnd;
 
     /// <summary>layout info for structs</summary>
     private ClassLayout? _layout;
 
-    private _Anonymous_e__Union _anonymous;
+    private int _anonymous;
 
     /// <summary>stack offset of home in bytes.</summary>
     private int lvStkOffs;
 
     /// <summary>original slot # (if remapped)</summary>
-    private uint lvSlotNum;
+    private int lvSlotNum;
 
 #if DEBUG
+    private DoNotEnregisterReason _doNotEnregReason;
+
+    private AddressExposedReason _addrExposedReason;
+
     private DebugFlags _debugFlags;
 #endif
 
@@ -66,7 +69,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsImplicitByRef) is not 0;
+            return (_flags & Flags.IsImplicitByRef) != 0;
         }
 
         set
@@ -83,7 +86,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsNeverNegative) is not 0;
+            return (_flags & Flags.IsNeverNegative) != 0;
         }
 
         set
@@ -92,13 +95,15 @@ public partial struct LclVarDsc
         }
     }
 
+    public readonly bool IsStackAllocatedObject => lvStackAllocatedObject;
+
     /// <summary>Gets or set the layout of a struct variable or implicit byref.</summary>
     public ClassLayout? Layout
     {
         readonly get
         {
 #if FEATURE_IMPLICIT_BYREFS
-            assert(Debugger.IsAttached || varTypeIsStruct(lvType) || (IsImplicitByRef && (lvType is TYP_BYREF)));
+            assert(Debugger.IsAttached || varTypeIsStruct(Type) || (IsImplicitByRef && (Type is TYP_BYREF)));
 #else
             assert(Debugger.IsAttached || varTypeIsStruct(lvType));
 #endif
@@ -107,23 +112,9 @@ public partial struct LclVarDsc
 
         set
         {
-            assert(varTypeIsStruct(lvType));
+            assert(varTypeIsStruct(Type));
             assert((_layout is null) || ClassLayout.AreCompatible(_layout, value));
             _layout = value;
-        }
-    }
-
-    // TYP_INT/LONG/FLOAT/DOUBLE/REF
-    public var_types lvType
-    {
-        readonly get
-        {
-            return unchecked((var_types)(_bitfield & 0x1F));
-        }
-
-        set
-        {
-            _bitfield = (byte)((_bitfield & ~0x1F) | (unchecked((byte)(value)) & 0x1F));
         }
     }
 
@@ -133,22 +124,40 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return unchecked((CorInfoHFAElemType)((_bitfield >>> 5) & 0x07u));
+            return (CorInfoHFAElemType)((_bitfield >>> 5) & 0x07);
         }
 
         set
         {
-            _bitfield = (byte)((_bitfield & ~(0x07u << 5)) | ((unchecked((byte)(value)) & 0x07u) << 5));
+            _bitfield = (byte)((_bitfield & ~(0x07 << 5)) | (((byte)(value) & 0x07) << 5));
         }
     }
 #endif
+
+    /// <summary>true if this is a multireg LclVar struct used in an argument context or if this is a multireg LclVar struct assigned from a multireg call</summary>
+    public readonly bool lvIsMultiRegArgOrRet => lvIsMultiRegArg || lvIsMultiRegRet;
+
+    public bool IsMultiRegDest
+    {
+        readonly get
+        {
+            return lvIsMultiRegDest;
+        }
+
+        set
+        {
+            lvIsMultiRegDest = true;
+            // TODO-Quirk: Set the old lvIsMultiRegRet, which is used for heuristics
+            lvIsMultiRegRet = true;
+        }
+    }
 
     /// <summary>is this a parameter?</summary>
     public bool lvIsParam
     {
         readonly get
         {
-            return (_flags & Flags.IsParam) is not 0;
+            return (_flags & Flags.IsParam) != 0;
         }
 
         set
@@ -162,7 +171,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsRegArg) is not 0;
+            return (_flags & Flags.IsRegArg) != 0;
         }
 
         set
@@ -176,7 +185,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsParamRegTarget) is not 0;
+            return (_flags & Flags.IsParamRegTarget) != 0;
         }
 
         set
@@ -190,7 +199,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.FramePointerBased) is not 0;
+            return (_flags & Flags.FramePointerBased) != 0;
         }
 
         set
@@ -204,7 +213,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.OnFrame) is not 0;
+            return (_flags & Flags.OnFrame) != 0;
         }
 
         set
@@ -218,7 +227,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.Register) is not 0;
+            return (_flags & Flags.Register) != 0;
         }
 
         set
@@ -232,7 +241,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.Tracked) is not 0;
+            return (_flags & Flags.Tracked) != 0;
         }
 
         set
@@ -241,14 +250,14 @@ public partial struct LclVarDsc
         }
     }
 
-    public readonly bool lvTrackedNonStruct => lvTracked && (lvType is not TYP_STRUCT);
+    public readonly bool lvTrackedNonStruct => lvTracked && (Type is not TYP_STRUCT);
 
     /// <summary>is this a pinned variable?</summary>
     public bool lvPinned
     {
         readonly get
         {
-            return (_flags & Flags.Pinned) is not 0;
+            return (_flags & Flags.Pinned) != 0;
         }
 
         set
@@ -262,7 +271,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.MustInit) is not 0;
+            return (_flags & Flags.MustInit) != 0;
         }
 
         set
@@ -277,7 +286,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.AddrExposed) is not 0;
+            return (_flags & Flags.AddrExposed) != 0;
         }
 
         set
@@ -291,7 +300,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.DoNotEnregister) is not 0;
+            return (_flags & Flags.DoNotEnregister) != 0;
         }
 
         set
@@ -306,7 +315,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.FieldAccessed) is not 0;
+            return (_flags & Flags.FieldAccessed) != 0;
         }
 
         set
@@ -320,7 +329,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.LiveInOutOfHndlr) is not 0;
+            return (_flags & Flags.LiveInOutOfHndlr) != 0;
         }
 
         set
@@ -334,7 +343,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.InSsa) is not 0;
+            return (_flags & Flags.InSsa) != 0;
         }
 
         set
@@ -348,7 +357,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsCse) is not 0;
+            return (_flags & Flags.IsCse) != 0;
         }
 
         set
@@ -362,7 +371,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.HasLdAddrOp) is not 0;
+            return (_flags & Flags.HasLdAddrOp) != 0;
         }
 
         set
@@ -376,7 +385,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.HasIlStoreOp) is not 0;
+            return (_flags & Flags.HasIlStoreOp) != 0;
         }
 
         set
@@ -390,7 +399,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.HasMultipleIlStoreOp) is not 0;
+            return (_flags & Flags.HasMultipleIlStoreOp) != 0;
         }
 
         set
@@ -404,7 +413,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsTemp) is not 0;
+            return (_flags & Flags.IsTemp) != 0;
         }
 
         set
@@ -418,7 +427,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.SingleDef) is not 0;
+            return (_flags & Flags.SingleDef) != 0;
         }
 
         set
@@ -433,7 +442,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.SingleDefRegCandidate) is not 0;
+            return (_flags & Flags.SingleDefRegCandidate) != 0;
         }
 
         set
@@ -447,7 +456,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.DisqualifySingleDefRegCandidate) is not 0;
+            return (_flags & Flags.DisqualifySingleDefRegCandidate) != 0;
         }
 
         set
@@ -462,7 +471,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.SpillAtSingleDef) is not 0;
+            return (_flags & Flags.SpillAtSingleDef) != 0;
         }
 
         set
@@ -476,7 +485,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.HasExceptionalUsesHint) is not 0;
+            return (_flags & Flags.HasExceptionalUsesHint) != 0;
         }
 
         set
@@ -490,7 +499,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsPtr) is not 0;
+            return (_flags & Flags.IsPtr) != 0;
         }
 
         set
@@ -504,7 +513,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsUnsafeBuffer) is not 0;
+            return (_flags & Flags.IsUnsafeBuffer) != 0;
         }
 
         set
@@ -519,7 +528,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.Promoted) is not 0;
+            return (_flags & Flags.Promoted) != 0;
         }
 
         set
@@ -533,7 +542,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsStructField) is not 0;
+            return (_flags & Flags.IsStructField) != 0;
         }
 
         set
@@ -547,7 +556,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.ContainsHoles) is not 0;
+            return (_flags & Flags.ContainsHoles) != 0;
         }
 
         set
@@ -561,7 +570,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsMultiRegArg) is not 0;
+            return (_flags & Flags.IsMultiRegArg) != 0;
         }
 
         set
@@ -575,7 +584,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsMultiRegRet) is not 0;
+            return (_flags & Flags.IsMultiRegRet) != 0;
         }
 
         set
@@ -589,7 +598,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsMultiRegDest) is not 0;
+            return (_flags & Flags.IsMultiRegDest) != 0;
         }
 
         set
@@ -603,7 +612,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.LraCandidate) is not 0;
+            return (_flags & Flags.LraCandidate) != 0;
         }
 
         set
@@ -617,7 +626,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.RegStruct) is not 0;
+            return (_flags & Flags.RegStruct) != 0;
         }
 
         set
@@ -631,7 +640,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.ClassIsExact) is not 0;
+            return (_flags & Flags.ClassIsExact) != 0;
         }
 
         set
@@ -645,7 +654,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.ImplicitlyReferenced) is not 0;
+            return (_flags & Flags.ImplicitlyReferenced) != 0;
         }
 
         set
@@ -659,7 +668,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.SuppressedZeroInit) is not 0;
+            return (_flags & Flags.SuppressedZeroInit) != 0;
         }
 
         set
@@ -674,7 +683,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.HasExplicitInit) is not 0;
+            return (_flags & Flags.HasExplicitInit) != 0;
         }
 
         set
@@ -689,7 +698,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsOsrLocal) is not 0;
+            return (_flags & Flags.IsOsrLocal) != 0;
         }
 
         set
@@ -703,7 +712,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsOsrExposedLocal) is not 0;
+            return (_flags & Flags.IsOsrExposedLocal) != 0;
         }
 
         set
@@ -717,7 +726,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.RedefinedInEmbeddedStatement) is not 0;
+            return (_flags & Flags.RedefinedInEmbeddedStatement) != 0;
         }
 
         set
@@ -731,7 +740,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsEnumerator) is not 0;
+            return (_flags & Flags.IsEnumerator) != 0;
         }
 
         set
@@ -745,7 +754,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsSpan) is not 0;
+            return (_flags & Flags.IsSpan) != 0;
         }
 
         set
@@ -759,7 +768,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.AllDefsAreNoGc) is not 0;
+            return (_flags & Flags.AllDefsAreNoGc) != 0;
         }
 
         set
@@ -773,7 +782,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.StackAllocatedObject) is not 0;
+            return (_flags & Flags.StackAllocatedObject) != 0;
         }
 
         set
@@ -788,7 +797,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.QuirkToLong) is not 0;
+            return (_flags & Flags.QuirkToLong) != 0;
         }
 
         set
@@ -802,7 +811,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.StructDoubleAlign) is not 0;
+            return (_flags & Flags.StructDoubleAlign) != 0;
         }
 
         set
@@ -818,7 +827,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.UsedInSimdIntrinsic) is not 0;
+            return (_flags & Flags.UsedInSimdIntrinsic) != 0;
         }
 
         set
@@ -834,7 +843,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_flags & Flags.IsLastUseCopyOmissionCandidate) is not 0;
+            return (_flags & Flags.IsLastUseCopyOmissionCandidate) != 0;
         }
 
         set
@@ -850,7 +859,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_debugFlags & DebugFlags.TrackedWithoutIndex) is not 0;
+            return (_debugFlags & DebugFlags.TrackedWithoutIndex) != 0;
         }
 
         set
@@ -864,7 +873,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_debugFlags & DebugFlags.ClassInfoUpdated) is not 0;
+            return (_debugFlags & DebugFlags.ClassInfoUpdated) != 0;
         }
 
         set
@@ -878,7 +887,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_debugFlags & DebugFlags.IsHoist) is not 0;
+            return (_debugFlags & DebugFlags.IsHoist) != 0;
         }
 
         set
@@ -892,7 +901,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_debugFlags & DebugFlags.IsMultiDefCse) is not 0;
+            return (_debugFlags & DebugFlags.IsMultiDefCse) != 0;
         }
 
         set
@@ -906,7 +915,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_debugFlags & DebugFlags.KeepType) is not 0;
+            return (_debugFlags & DebugFlags.KeepType) != 0;
         }
 
         set
@@ -920,7 +929,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_debugFlags & DebugFlags.NoLclFldStress) is not 0;
+            return (_debugFlags & DebugFlags.NoLclFldStress) != 0;
         }
 
         set
@@ -934,7 +943,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_debugFlags & DebugFlags.DefinedViaAddress) is not 0;
+            return (_debugFlags & DebugFlags.DefinedViaAddress) != 0;
         }
 
         set
@@ -954,7 +963,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_debugFlags & DebugFlags.UnusedStruct) is not 0;
+            return (_debugFlags & DebugFlags.UnusedStruct) != 0;
         }
 
         set
@@ -968,7 +977,7 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            return (_debugFlags & DebugFlags.UndoneStructPromotion) is not 0;
+            return (_debugFlags & DebugFlags.UndoneStructPromotion) != 0;
         }
 
         set
@@ -980,27 +989,31 @@ public partial struct LclVarDsc
     public readonly byte lvSingleDefDisqualifyReason => (byte)('H');
 #endif
 
-    public uint lvFieldLclStart
+    /// <summary>The index of the local var representing the first field in the promoted struct local.</summary>
+    /// <remarks>For implicit byref parameters, this gets hijacked between fgRetypeImplicitByRefArgs and fgMarkDemotedImplicitByRefArgs to point to the struct local created to model the parameter's struct promotion, if any.</remarks>
+    public int lvFieldLclStart
     {
         readonly get
         {
-            return _anonymous.lvFieldLclStart;
+            return _anonymous;
         }
         set
         {
-            _anonymous.lvFieldLclStart = value;
+            _anonymous = value;
         }
     }
 
-    public uint lvParentLcl
+    /// <summary>The index of the local var representing the parent (i.e. the promoted struct local).</summary>
+    /// <remarks>Valid on promoted struct local fields.</remarks>
+    public int lvParentLcl
     {
         readonly get
         {
-            return _anonymous.lvParentLcl;
+            return _anonymous;
         }
         set
         {
-            _anonymous.lvParentLcl = value;
+            _anonymous = value;
         }
     }
 
@@ -1044,17 +1057,622 @@ public partial struct LclVarDsc
         }
     }
 
-    [StructLayout(LayoutKind.Explicit)]
-    private struct _Anonymous_e__Union
+#if DEBUG
+    public DoNotEnregisterReason DoNotEnregisterReason
     {
-        /// <summary>The index of the local var representing the first field in the promoted struct local.</summary>
-        /// <remarks>For implicit byref parameters, this gets hijacked between fgRetypeImplicitByRefArgs and fgMarkDemotedImplicitByRefArgs to point to the struct local created to model the parameter's struct promotion, if any.</remarks>
-        [FieldOffset(0)]
-        public uint lvFieldLclStart;
+        readonly get
+        {
+            return _doNotEnregReason;
+        }
 
-        /// <summary>The index of the local var representing the parent (i.e. the promoted struct local).</summary>
-        /// <remarks>Valid on promoted struct local fields.</remarks>
-        [FieldOffset(0)]
-        public uint lvParentLcl;
+        set
+        {
+            _doNotEnregReason = value;
+        }
     }
+#else
+    public readonly DoNotEnregisterReason DoNotEnregisterReason => DoNotEnregisterReason.None;
+#endif
+
+#if DEBUG
+    public readonly AddressExposedReason AddrExposedReason => _addrExposedReason;
+#else
+    public readonly AddressExposedReason AddrExposedReason => AddressExposedReason.NONE;
+#endif
+
+    public void SetAddressExposed(bool value, AddressExposedReason reason)
+    {
+        m_addrExposed = value;
+
+#if DEBUG
+        _addrExposedReason = reason;
+#endif
+    }
+
+    public void CleanAddressExposed()
+    {
+        m_addrExposed = false;
+    }
+
+    public readonly bool IsAddressExposed => m_addrExposed;
+
+#if DEBUG
+    public bool IsDefinedViaAddress
+    {
+        readonly get
+        {
+            return lvDefinedViaAddress;
+        }
+
+        set
+        {
+            lvDefinedViaAddress = value;
+        }
+    }
+#endif
+
+    public regNumber RegNum
+    {
+        readonly get
+        {
+            return _lvRegNum;
+        }
+
+        set
+        {
+            _lvRegNum = value;
+        }
+    }
+
+#if TARGET_64BIT
+    public readonly regNumber OtherReg
+    {
+        get
+        {
+            unreached();
+            return REG_NA;
+        }
+
+        set
+        {
+            unreached();
+        }
+    }
+#else
+    public regNumber OtherReg
+    {
+        readonly get
+        {
+            return _lvOtherReg;
+        }
+
+        set
+        {
+            _lvOtherReg = value;
+        }
+    }
+#endif
+
+#if FEATURE_SIMD
+    public readonly bool lvIsUsedInSimdIntrinsic => lvUsedInSIMDIntrinsic;
+#else
+    public const bool lvIsUsedInSimdIntrinsic = false;
+#endif
+
+    public bool IsSpan
+    {
+        readonly get
+        {
+            return lvIsSpan;
+        }
+
+        set
+        {
+            lvIsSpan = value;
+        }
+    }
+
+    public regNumber ArgInitReg
+    {
+        readonly get
+        {
+            return _lvArgInitReg;
+        }
+
+        set
+        {
+            _lvArgInitReg = value;
+        }
+    }
+
+    public readonly bool lvIsRegCandidate => lvLRACandidate;
+
+    public readonly bool lvIsInReg => lvIsRegCandidate && (_lvRegNum != REG_STK);
+
+#if HAS_FIXED_REGISTER_SET
+    public readonly int lvRegMask
+    {
+        get
+        {
+            if (_lvRegNum != REG_STK)
+            {
+                return 1 << (int)(_lvRegNum);
+            }
+            else
+            {
+                return RBM_NONE;
+            }
+        }
+    }
+#endif
+
+    /// <summary>Get a bitset of flags that represents all fields dying.</summary>
+    /// <remarks>Only usable for promoted locals.</remarks>
+    public readonly GenTreeFlags AllFieldDeathFlags
+    {
+        get
+        {
+            assert(lvPromoted && (lvFieldCnt is > 0 and <= 4));
+            var flags = (GenTreeFlags)(((1 << lvFieldCnt) - 1) << FIELD_LAST_USE_SHIFT);
+
+            assert((flags & ~GTF_VAR_DEATH_MASK) == 0);
+            return flags;
+        }
+    }
+
+    /// <summary>Get a bitset of flags that represents this local fully dying.</summary>
+    public readonly GenTreeFlags FullDeathFlags => lvPromoted? AllFieldDeathFlags : GTF_VAR_DEATH;
+
+    /// <summary>access reference count for this local var</summary>
+    /// <param name="state">the requestor's expected ref count state; defaults to RCS_NORMAL</param>
+    /// <returns>Ref count for the local.</returns>
+    public readonly ushort lvRefCnt(RefCountState state = RCS_NORMAL)
+    {
+#if DEBUG
+        assert(state != RCS_INVALID);
+
+        var compiler = JitTls.Compiler;
+        assert(compiler is not null);
+
+        assert(compiler.lvaRefCountState == state);
+#endif
+
+        var refCnt = _lvRefCnt;
+
+        if (lvImplicitlyReferenced && (refCnt == 0))
+        {
+            return 1;
+        }
+        return refCnt;
+    }
+
+    /// <summary>increment reference count for this local var</summary>
+    /// <param name="delta">the amount of the increment</param>
+    /// <param name="state">the requestor's expected ref count state; defaults to RCS_NORMAL</param>
+    /// <remarks>It is currently the caller's responsibility to ensure this increment will not cause overflow.</remarks>
+    public void incLvRefCnt(ushort delta, RefCountState state = RCS_NORMAL)
+        => setLvRefCnt((ushort)(_lvRefCnt + delta), state);
+
+    /// <summary>set the reference count for this local var</summary>
+    /// <param name="newValue">the desired new reference count</param>
+    /// <param name="state">the requestor's expected ref count state; defaults to RCS_NORMAL</param>
+    /// <remarks>
+    ///   <para>Generally after calling v->setLvRefCnt(Y), v->lvRefCnt() == Y.</para>
+    ///   <para>However this may not be true when v->lvImplicitlyReferenced == 1.</para>
+    /// </remarks>
+    public void setLvRefCnt(ushort newValue, RefCountState state = RCS_NORMAL)
+    {
+#if DEBUG
+        assert(state != RCS_INVALID);
+
+        var compiler = JitTls.Compiler;
+        assert(compiler is not null);
+
+        assert(compiler.lvaRefCountState == state);
+#endif
+
+        _lvRefCnt = newValue;
+    }
+
+    /// <summary>increment reference count for this local var (with saturating semantics)</summary>
+    /// <param name="delta">the amount of the increment</param>
+    /// <param name="state">the requestor's expected ref count state; defaults to RCS_NORMAL</param>
+    public void incLvRefCntSaturating(ushort delta, RefCountState state = RCS_NORMAL)
+        => setLvRefCnt((ushort)(int.Min(_lvRefCnt + delta, ushort.MaxValue)), state);
+
+    /// <summary>access weighted reference count for this local var</summary>
+    /// <param name="state">the requestor's expected ref count state; defaults to RCS_NORMAL</param>
+    /// <returns>Weighted ref count for the local.</returns>
+    public readonly weight_t lvRefCntWtd(RefCountState state = RCS_NORMAL)
+    {
+#if DEBUG
+        assert(state != RCS_INVALID);
+
+        var compiler = JitTls.Compiler;
+        assert(compiler is not null);
+
+        assert(compiler.lvaRefCountState == state);
+#endif
+
+        if (lvImplicitlyReferenced && (_lvRefCntWtd == 0))
+        {
+            return BB_UNITY_WEIGHT;
+        }
+        return _lvRefCntWtd;
+    }
+
+    /// <summary>increment weighted reference count for this local var</summary>
+    /// <param name="delta">the amount of the increment</param>
+    /// <param name="state">the requestor's expected ref count state; defaults to RCS_NORMAL</param>
+    /// <remarks>It is currently the caller's responsibility to ensure this increment will not cause overflow.</remarks>
+    public void incLvRefCntWtd(weight_t delta, RefCountState state = RCS_NORMAL)
+        => setLvRefCntWtd(_lvRefCntWtd + delta, state);
+
+    /// <summary>set the weighted reference count for this local var</summary>
+    /// <param name="newValue">the desired new weighted reference count</param>
+    /// <param name="state">the requestor's expected ref count state; defaults to RCS_NORMAL</param>
+    /// <remarks>
+    ///   <para>Generally after calling v->setLvRefCntWtd(Y), v->lvRefCntWtd() == Y.</para>
+    ///   <para>However this may not be true when v->lvImplicitlyReferenced == 1.</para>
+    /// </remarks>
+    public void setLvRefCntWtd(weight_t newValue, RefCountState state = RCS_NORMAL)
+    {
+#if DEBUG
+        assert(state != RCS_INVALID);
+
+        var compiler = JitTls.Compiler;
+        assert(compiler is not null);
+
+        assert(compiler.lvaRefCountState == state);
+#endif
+
+        _lvRefCntWtd = newValue;
+    }
+
+    public int StackOffset
+    {
+        readonly get
+        {
+            return lvStkOffs;
+        }
+
+        set
+        {
+            lvStkOffs = value;
+        }
+    }
+
+    /// <summary>Get the exact size of the type of this local.</summary>
+    public readonly int lvExactSize
+    {
+        get
+        {
+            assert(!varTypeHasUnknownSize(Type));
+            return lvValueSize.ExactSize;
+        }
+    }
+
+    /// <summary>Get the value size of the type of this local.</summary>
+    public readonly ValueSize lvValueSize
+    {
+        get
+        {
+            if (Type is TYP_STRUCT)
+            {
+                assert(_layout is not null);
+                return new ValueSize(_layout.Size); 
+            }
+            else
+            {
+                return ValueSize.FromJitType(Type);
+            }
+        }
+    }
+
+    public var_types Type
+    {
+        readonly get
+        {
+            return (var_types)(_bitfield & 0x1F);
+        }
+
+        set
+        {
+            _bitfield = (byte)((_bitfield & ~0x1F) | ((byte)(value) & 0x1F));
+        }
+    }
+
+    // NormalizeOnLoad Rules:
+    //   1. All small locals are actually TYP_INT locals.
+    //   2. NOL locals are such that not all definitions can be controlled by the compiler and so the upper bits can
+    //      be undefined.For parameters this is the case because of ABI.For struct fields - because of padding.For
+    //      address - exposed locals - because not all stores are direct.
+    //   3. Hence, all NOL uses(unless proven otherwise) are assumed in morph to have undefined upper bits and
+    //      explicit casts have be inserted to "normalize" them back to conform to IL semantics.
+    // OSR exposed locals were normalize on load in the Tier0 frame so must be so for OSR too.
+    public readonly bool lvNormalizeOnLoad => varTypeIsSmall(Type) && (lvIsParam || m_addrExposed || lvIsStructField || lvIsOSRExposedLocal);
+
+    // OSR exposed locals were normalize on load in the Tier0 frame so must be so for OSR too.
+    public readonly bool lvNormalizeOnStore => varTypeIsSmall(Type) && !(lvIsParam || m_addrExposed || lvIsStructField || lvIsOSRExposedLocal);
+
+    public void incRefCnts(weight_t weight, Compiler compiler, RefCountState state = RCS_NORMAL, bool propagate = true)
+    {
+        // In minopts and debug codegen, we don't maintain normal ref counts.
+        if ((state == RCS_NORMAL) && !compiler.PreciseRefCountsRequired)
+        {
+            // Note, at least, that there is at least one reference.
+            lvImplicitlyReferenced = true;
+            return;
+        }
+
+        var promotionType = Compiler.PROMOTION_TYPE_NONE;
+
+        if (varTypeIsPromotable(Type))
+        {
+            promotionType = compiler.lvaGetPromotionType(this);
+        }
+
+        // Increment counts on the local itself.
+        if ((Type is not TYP_STRUCT) || (promotionType is not Compiler.PROMOTION_TYPE_INDEPENDENT))
+        {
+            // We increment ref counts of this local for primitive types, including structs that have been retyped as their
+            // only field, as well as for structs whose fields are not independently promoted.
+
+            // Increment lvRefCnt
+            var newRefCnt = lvRefCnt(state) + 1;
+
+            if (newRefCnt == (ushort)(newRefCnt)) // lvRefCnt is an "unsigned short". Don't overflow it.
+            {
+                setLvRefCnt((ushort)(newRefCnt), state);
+            }
+
+            // Increment lvRefCntWtd
+            if (weight != 0)
+            {
+                // We double the weight of internal temps
+
+                var doubleWeight = lvIsTemp;
+
+#if FEATURE_IMPLICIT_BYREFS
+                // and, for the time being, implicit byref params
+                doubleWeight |= IsImplicitByRef;
+#endif
+
+                if (doubleWeight && (weight * 2 > weight))
+                {
+                    weight *= 2;
+                }
+
+                var newWeight = lvRefCntWtd(state) + weight;
+                assert(newWeight >= lvRefCntWtd(state));
+                setLvRefCntWtd(newWeight, state);
+            }
+        }
+
+        if (varTypeIsPromotable(Type) && propagate)
+        {
+            // For promoted struct locals, increment lvRefCnt on its field locals as well.
+            if (promotionType is Compiler.PROMOTION_TYPE_INDEPENDENT or Compiler.PROMOTION_TYPE_DEPENDENT)
+            {
+                for (var i = lvFieldLclStart; i < lvFieldLclStart + lvFieldCnt; ++i)
+                {
+                    // Don't propagate
+                    compiler.lvaTable[i].incRefCnts(weight, compiler, state, false);
+                }
+            }
+        }
+
+        if (lvIsStructField && propagate)
+        {
+            // Depending on the promotion type, increment the ref count for the parent struct as well.
+            promotionType = compiler.lvaGetParentPromotionType(this);
+
+            ref var parentvarDsc = ref compiler.lvaGetDesc(lvParentLcl);
+            assert(!parentvarDsc.lvRegStruct);
+
+            if (promotionType is Compiler.PROMOTION_TYPE_DEPENDENT)
+            {
+                // Don't propagate
+                parentvarDsc.incRefCnts(weight, compiler, state, false);
+            }
+        }
+
+#if DEBUG
+        if (compiler.verbose)
+        {
+            jitprintf($"New refCnts for V{compiler.lvaGetLclNum(this):D2}: refCnt = {lvRefCnt(state):D2}, refCntWtd = {refCntWtd2str(lvRefCntWtd(state))}\n");
+        }
+#endif
+    }
+
+    /// <summary>Returns true if this variable contains GC pointers (including being a GC pointer itself).</summary>
+    public readonly bool HasGCPtr
+    {
+        get
+        {
+            var result = varTypeIsGC(Type);
+
+            if (!result && (Type is TYP_STRUCT))
+            {
+                assert(_layout is not null);
+                result = _layout.HasGCPtr;
+            }
+
+            return result;
+        }
+    }
+
+    // Change the layout to one that may not be compatible.
+    public void ChangeLayout(ClassLayout layout)
+    {
+        assert(varTypeIsStruct(Type));
+        _layout = layout;
+    }
+
+    // Grow the size of a block layout local.
+    public void GrowBlockLayout(ClassLayout layout)
+    {
+        assert(varTypeIsStruct(Type));
+        assert((_layout is null) || (_layout.IsBlockLayout && (_layout.Size <= layout.Size)));
+        assert(layout.IsBlockLayout);
+        _layout = layout;
+    }
+
+    public SsaDefArray<LclSsaVarDsc> lvPerSsaData;
+
+    // True if ssaNum is a viable ssaNum for this local.
+    public readonly bool IsValidSsaNum(int ssaNum) => lvPerSsaData.IsValidSsaNum(ssaNum);
+
+    // Returns the address of the per-Ssa data for the given ssaNum (which is required
+    // not to be the SsaConfig::RESERVED_SSA_NUM, which indicates that the variable is
+    // not an SSA variable).
+    public readonly ref LclSsaVarDsc GetPerSsaData(int ssaNum) => ref lvPerSsaData.GetSsaDef(ssaNum);
+
+    // Returns the SSA number for "ssaDef". Requires "ssaDef" to be a valid definition of this variable.
+    public readonly int GetSsaNumForSsaDef(in LclSsaVarDsc ssaDef) => lvPerSsaData.GetSsaNum(ssaDef);
+
+    /// <summary>Determine register type for this local var.</summary>
+    /// <param name="tree">node that uses the local, its type is checked first.</param>
+    /// <returns>TYP_UNDEF if the layout is not enregistrable, the register type otherwise.</returns>
+    public readonly var_types GetRegisterType(GenTreeLclVarCommon tree)
+    {
+        var targetType = tree.Type;
+
+        if (targetType is TYP_STRUCT)
+        {
+            ClassLayout? layout;
+
+            if (tree.Oper is GT_LCL_FLD or GT_STORE_LCL_FLD)
+            {
+                layout = tree.AsLclFld().Layout;
+            }
+            else
+            {
+                assert((Type is TYP_STRUCT) && (tree.Oper is GT_LCL_VAR or GT_STORE_LCL_VAR));
+                layout = _layout;
+            }
+
+            assert(layout is not null);
+            targetType = layout.RegisterType;
+        }
+
+#if DEBUG
+        if ((targetType is not TYP_UNDEF) && (tree.Oper is GT_STORE_LCL_VAR) && lvNormalizeOnStore)
+        {
+            // Ensure that the lclVar node is typed correctly, does not apply to phi-stores because they do not produce code in the merge block.
+            assert(!tree.AsUnOp().Op1.Oper.IsNonPhiLocal || (targetType == Type.ActualType));
+        }
+#endif
+
+        return targetType;
+    }
+
+    /// <summary>Determine register type for this local var.</summary>
+    /// <returns>TYP_UNDEF if the layout is not enregistrable, the register type otherwise.</returns>
+    public readonly var_types GetRegisterType()
+    {
+        var type = Type;
+
+        if (type is not TYP_STRUCT)
+        {
+#if LOWER_DECOMPOSE_LONGS
+        if (type is TYP_LONG)
+        {
+            return TYP_UNDEF;
+        }
+#endif
+            return type;
+        }
+
+        assert(_layout is not null);
+        return _layout.RegisterType;
+    }
+
+    /// <summary>Get the canonical type of the stack slot that this enregistrable local is using when stored on the stack.</summary>
+    /// <returns>TYP_UNDEF if the layout is not enregistrable. Otherwise returns the type of the stack slot home for the local.</returns>
+    /// <remarks>
+    ///   <para>This function always returns a canonical type for all 4-byte types (structs, floats, ints) it will return TYP_INT.</para>
+    ///   <para>It is meant to be used when moving locals between register and stack.</para>
+    ///   <para>Because of this the returned type is usually at least one 4-byte stack slot.</para>
+    ///   <para>However, there are certain exceptions for promoted fields in OSR methods (that may refer back to the original frame) and due to Apple arm64 where subsequent small parameters can be packed into the same stack slot.</para>
+    /// </remarks>
+    public readonly var_types GetStackSlotHomeType()
+    {
+        if (varTypeIsSmall(Type))
+        {
+            if (compAppleArm64Abi() && lvIsParam && !lvIsRegArg)
+            {
+                // Allocated by caller and potentially only takes up a small slot
+                return GetRegisterType();
+            }
+
+            if (lvIsOSRLocal && lvIsStructField)
+            {
+#if TARGET_X86
+                // Revisit when we support OSR on x86
+                unreached();
+                return TYP_UNDEF;
+#else
+                return GetRegisterType();
+#endif
+            }
+        }
+
+        return GetRegisterType().ActualType;
+    }
+
+    public readonly bool IsEnregisterableType => GetRegisterType() is not TYP_UNDEF;
+
+    public readonly bool IsEnregisterableLcl => !lvDoNotEnregister && IsEnregisterableType;
+
+    /// <summary>Determines if this variable's value is always up-to-date on stack.</summary>
+    /// <remarks>This is possible if this is an EH-var or we decided to spill after single-def.</remarks>
+    public readonly bool IsAlwaysAliveInMemory => lvLiveInOutOfHndlr || lvSpillAtSingleDef;
+
+    /// <summary>check if a whole struct reference could be replaced by a field.</summary>
+    /// <param name="compiler">the compiler instance</param>
+    /// <returns>true if that can be replaced, false otherwise.</returns>
+    /// <remarks>The replacement can be made only for independently promoted structs with 1 field without holes.</remarks>
+    public readonly bool CanBeReplacedWithItsField(Compiler compiler)
+    {
+        if (!lvPromoted)
+        {
+            return false;
+        }
+        else if (compiler.lvaGetPromotionType(this) != Compiler.PROMOTION_TYPE_INDEPENDENT)
+        {
+            return false;
+        }
+        else if (lvFieldCnt != 1)
+        {
+            return false;
+        }
+        else if (lvContainsHoles)
+        {
+            return false;
+        }
+
+#if FEATURE_SIMD
+        // If we return `struct A { SIMD16 a; }` we split the struct into several fields.
+        // In order to do that we have to have its field `a` in memory. Right now lowering cannot
+        // handle RETURN struct(multiple registers)->SIMD16(one register), but it can be improved.
+        ref var fieldDsc = ref compiler.lvaGetDesc(lvFieldLclStart);
+
+        if (varTypeIsSimd(fieldDsc.Type))
+        {
+            return false;
+        }
+#endif
+
+        return true;
+    }
+
+#if DEBUG
+    public string lvReason;
+
+    public readonly void PrintVarReg()
+    {
+        jitprintf($"{_lvRegNum.Name}");
+    }
+#endif
 }

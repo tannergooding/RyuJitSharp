@@ -15,7 +15,7 @@ Param(
 
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = "Stop"
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+[Net.ServicePointManager].SecurityProtocol = [Net.SecurityProtocolType].Tls12
 
 function Build() {
   $logFile = Join-Path -Path $LogDir -ChildPath "$configuration\build.binlog"

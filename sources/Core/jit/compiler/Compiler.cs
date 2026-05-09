@@ -15,6 +15,31 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    // <summary>call has "tail" IL prefix</summary>
+    private const int PREFIX_TAILCALL_EXPLICIT = 0x00000001;
+
+    // <summary>call is treated as having "tail" prefix even though there is no "tail" IL prefix</summary>
+    private const int PREFIX_TAILCALL_IMPLICIT = 0x00000002;
+
+    private const int PREFIX_TAILCALL = PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_IMPLICIT;
+
+    private const int PREFIX_VOLATILE = 0x00000004;
+
+    private const int PREFIX_UNALIGNED = 0x00000008;
+
+    private const int PREFIX_CONSTRAINED = 0x00000010;
+
+    private const int PREFIX_READONLY = 0x00000020;
+
+#if DEBUG
+    /// <summary>call doesn't "tail" IL prefix but is treated as explicit because of tail call stress</summary>
+    private const int PREFIX_TAILCALL_STRESS = 0x00000040;
+#endif
+
+    private const int PREFIX_IS_TASK_AWAIT = 0x00000080;
+
+    private const int PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT = 0x00000100;
+
 #if DEBUG
     public bool verbose;
 
@@ -32,7 +57,7 @@ public partial class Compiler
     /// <summary>This counts the trees that have been morphed, allowing us to label each uniquely.</summary>
     public int morphNum;
 
-    public uint expensiveDebugCheckLevel;
+    public int expensiveDebugCheckLevel;
 #endif
 
     // This table is useful for memoization of BlockDominancePreds.
@@ -48,7 +73,7 @@ public partial class Compiler
     //              All this is necessary because if we under-estimate the size of the spill
     //              temps we could fail when encoding instructions that reference stack offsets for ARM.
     /// <summary>Pre codegen max spill temp size.</summary>
-    public const uint MAX_SPILL_TEMP_SIZE = 24;
+    public const int MAX_SPILL_TEMP_SIZE = 24;
 
     public StructPromotionHelper? structPromotionHelper;
 
@@ -59,17 +84,17 @@ public partial class Compiler
 
     protected bool hasUpdatedTypeLocals;
 
-    public const uint CHECK_SPILL_ALL = unchecked((uint)(-1));
+    public const int CHECK_SPILL_ALL = -1;
 
-    public const uint CHECK_SPILL_NONE = unchecked((uint)(-2));
+    public const int CHECK_SPILL_NONE = -2;
 
     /// <summary>The maximum number of bytes of IL processed without clean stack state.</summary>
     /// <remarks>It allows to limit the maximum tree size and depth.</remarks>
-    private const uint MAX_TREE_SIZE = 200;
+    private const int MAX_TREE_SIZE = 200;
 
     private bool m_nextAwaitIsTail;
 
-    private static uint jitTotalMethodCompiled;
+    private static int jitTotalMethodCompiled;
 
 #if DEBUG
     private static int jitNestingLevel;
@@ -108,8 +133,8 @@ public partial class Compiler
     public CorInfoHelpFunc m_preferredInitCctor;
 
     /// <summary>This stack, managed by the SSA numbering infrastructure, keeps "outlined composite SSA numbers".</summary>
-    /// <remarks>See "SsaNumInfo::GetNum" for more details on when this is needed.</remarks>
-    public Stack<uint>? m_outlinedCompositeSsaNums;
+    /// <remarks>See "SsaNumInfo.GetNum" for more details on when this is needed.</remarks>
+    public Stack<int>? m_outlinedCompositeSsaNums;
 
     /// <summary>This map tracks nodes whose value numbers explicitly or implicitly depend on memory states.</summary>
     /// <remarks>
@@ -138,10 +163,10 @@ public partial class Compiler
     /// <summary>True iff GcHeap and ByrefExposed memory have all the same def points.</summary>
     public bool byrefStatesMatchGcHeapStates;
 
-    public uint acdCount;
+    public int acdCount;
 
     /// <summary>The following is the upper limit on how many expressions we'll keep track of for the CSE analysis.</summary>
-    protected const uint MAX_CSE_CNT = EXPSET_SZ;
+    protected const int MAX_CSE_CNT = EXPSET_SZ;
 
     protected const int MIN_CSE_COST = 2;
 
@@ -214,22 +239,22 @@ public partial class Compiler
 #endif
 
 #if LOOP_HOIST_STATS
-    public uint m_loopsConsidered;
+    public int m_loopsConsidered;
 
     public bool m_curLoopHasHoistedExpression;
 
-    public uint m_loopsWithHoistedExpressions;
+    public int m_loopsWithHoistedExpressions;
 
-    public uint m_totalHoistedExpressions;
+    public int m_totalHoistedExpressions;
 
     /// <summary>This lock protects the data structures below.</summary>
     public static Lock? s_loopHoistStatsLock;
 
-    public static uint s_loopsConsidered;
+    public static int s_loopsConsidered;
 
-    public static uint s_loopsWithHoistedExpressions;
+    public static int s_loopsWithHoistedExpressions;
 
-    public static uint s_totalHoistedExpressions;
+    public static int s_totalHoistedExpressions;
 #endif
 
 #if TRACK_ENREG_STATS
@@ -239,29 +264,29 @@ public partial class Compiler
     public JitMetrics Metrics;
 
     // Max value of scope count for which we would use linear search; for larger values we would use hashtable lookup.
-    public const uint MAX_LINEAR_FIND_LCL_SCOPELIST = 32;
+    public const int MAX_LINEAR_FIND_LCL_SCOPELIST = 32;
 
     public EntryState? stackState;
 
     /// <summary>Address of global cookie for unsafe buffer checks</summary>
     public unsafe GSCookie* gsGlobalSecurityCookieAddr;
 
-    /// <summary>Value of global cookie if addr is NULL</summary>
+    /// <summary>Value of global cookie if addr is null</summary>
     public GSCookie gsGlobalSecurityCookieVal;
 
     /// <summary>Table used by shadow param analysis code</summary>
     public ShadowParamVarInfo? gsShadowVarInfo;
 
-    public uint gsShadowVarInfoCount;
+    public int gsShadowVarInfoCount;
 
 #if DEBUG
     private NodeToTestDataMap? m_nodeTestData;
 
-    private const uint FIRST_LOOP_HOIST_CSE_CLASS = 1000;
+    private const int FIRST_LOOP_HOIST_CSE_CLASS = 1000;
 
     /// <summary>LoopHoist test annotations turn into CSE requirements</summary>
     /// <remarks>we label them with CSE Class #'s starting at FIRST_LOOP_HOIST_CSE_CLASS. Current kept in this.</remarks>
-    private uint m_loopHoistCSEClass = FIRST_LOOP_HOIST_CSE_CLASS;
+    private int m_loopHoistCSEClass = FIRST_LOOP_HOIST_CSE_CLASS;
 #endif
 
     public FieldSeqStore? m_fieldSeqStore;
@@ -292,10 +317,10 @@ public partial class Compiler
     //
     // Users of these values need to define four accessor functions:
     //
-    //    regMaskTP get_RBM_ALLFLOAT();
-    //    regMaskTP get_RBM_FLT_CALLEE_TRASH();
-    //    uint get_CNT_CALLEE_TRASH_FLOAT();
-    //    uint get_AVAILABLE_REG_COUNT();
+    //    regMaskFlt get_RBM_ALLFLOAT();
+    //    regMaskFlt get_RBM_FLT_CALLEE_TRASH();
+    //    int get_CNT_CALLEE_TRASH_FLOAT();
+    //    int get_AVAILABLE_REG_COUNT();
     //
     // which return the values of these variables.
     //
@@ -306,13 +331,13 @@ public partial class Compiler
 
     internal regMaskFlt rbmFltCalleeTrash;
 
-    private uint cntCalleeTrashFloat;
+    private int cntCalleeTrashFloat;
 
     internal regMaskInt rbmAllInt;
 
     internal regMaskInt rbmIntCalleeTrash;
 
-    private uint cntCalleeTrashInt;
+    private int cntCalleeTrashInt;
 
     private regNumber regIntLast;
 #endif
@@ -324,10 +349,10 @@ public partial class Compiler
     //
     // Users of these values need to define four accessor functions:
     //
-    //    regMaskTP get_RBM_ALLMASK();
-    //    regMaskTP get_RBM_MSK_CALLEE_TRASH();
-    //    uint get_CNT_CALLEE_TRASH_MASK();
-    //    uint get_AVAILABLE_REG_COUNT();
+    //    regMaskMsk get_RBM_ALLMASK();
+    //    regMaskMsk get_RBM_MSK_CALLEE_TRASH();
+    //    int get_CNT_CALLEE_TRASH_MASK();
+    //    int get_AVAILABLE_REG_COUNT();
     //
     // which return the values of these variables.
     //
@@ -338,7 +363,7 @@ public partial class Compiler
     
     internal regMaskMsk rbmMskCalleeTrash;
 
-    private uint cntCalleeTrashMask;
+    private int cntCalleeTrashMask;
 
     private VarTypeCalleeTrashRegs varTypeCalleeTrashRegs;
 #endif
@@ -421,7 +446,7 @@ public partial class Compiler
             var noStructPromotionValue = JitConfig[ConfigInteger.JitNoStructPromotion];
             assert(noStructPromotionValue is >= 0 and <= 2);
 
-            if (noStructPromotionValue is 1)
+            if (noStructPromotionValue == 1)
             {
                 fgNoStructPromotion = true;
             }
@@ -471,7 +496,7 @@ public partial class Compiler
         var eeInfo = eeGetEEInfo();
 
 #if TARGET_OS_RUNTIMEDETERMINED
-        noway_assert(TargetOS::OSSettingConfigured);
+        noway_assert(TargetOS.OSSettingConfigured);
 #endif
 
         if (TargetOS.IsApplePlatform)
@@ -495,7 +520,7 @@ public partial class Compiler
             info.compMatchedVM &= (eeInfo.osType == CORINFO_WINNT);
         }
 
-        compMaxUncheckedOffsetForNullObject = eeInfo.maxUncheckedOffsetForNullObject;
+        compMaxUncheckedOffsetForNullObject = (int)(eeInfo.maxUncheckedOffsetForNullObject);
 
 #if DEBUG && TARGET_WASM
         // TODO-WASM: remove once we no longer need to use x86/arm collections for wasm replay
@@ -512,9 +537,9 @@ public partial class Compiler
 
     public BasicBlockSimpleList Blocks => new BasicBlockSimpleList(fgFirstBB);
 
-    public uint CurLVEpoch => lvaCurEpoch;
+    public int CurLVEpoch => lvaCurEpoch;
 
-    public unsafe bool IsAot => opts.jitFlags->IsSet(JitFlag.JIT_FLAG_AOT);
+    public unsafe bool IsAot => opts.jitFlags->IsSet(JitFlags.JIT_FLAG_AOT);
 
     public bool IsFullPtrRegMapRequired
     {
@@ -547,10 +572,42 @@ public partial class Compiler
     public int JitStressLevel => JitConfig[ConfigInteger.JitStress];
 #endif
 
-#if TARGET_AMD64
-    public uint CNT_CALLEE_TRASH_FLOAT => cntCalleeTrashFloat;
+    public bool NeedsGSSecurityCookie
+    {
+        get
+        {
+            return compNeedsGSSecurityCookie;
+        }
 
-    public uint CNT_CALLEE_TRASH_INT => cntCalleeTrashInt;
+        set
+        {
+#if TARGET_WASM
+#if DEBUG
+            compGSSecurityCheckBlocker = "Not currently enabled for Wasm";
+#endif
+            return;
+#endif
+
+            if (opts.compDbgEnC)
+            {
+#if DEBUG
+                compGSSecurityCheckBlocker = "incompatible with EnC";
+#endif
+            }
+            else
+            {
+                compGSReorderStackLayout = true;
+                compNeedsGSSecurityCookie = true;
+            }
+        }
+    }
+
+    public bool PreciseRefCountsRequired =>  opts.OptimizationEnabled;
+
+#if TARGET_AMD64
+    public int CNT_CALLEE_TRASH_FLOAT => cntCalleeTrashFloat;
+
+    public int CNT_CALLEE_TRASH_INT => cntCalleeTrashInt;
 
     public regMaskFlt RBM_ALLFLOAT => rbmAllFloat;
 
@@ -560,7 +617,7 @@ public partial class Compiler
 
     public regMaskInt RBM_INT_CALLEE_TRASH => rbmIntCalleeTrash;
 
-    public uint REG_INT_COUNT => (uint)(REG_INT_LAST - REG_INT_FIRST + 1);
+    public int REG_INT_COUNT => REG_INT_LAST - REG_INT_FIRST + 1;
 
     public regNumber REG_INT_LAST => regIntLast;
 #endif
@@ -570,7 +627,7 @@ public partial class Compiler
 
     public regMaskMsk RBM_MSK_CALLEE_TRASH => rbmMskCalleeTrash;
 
-    public uint CNT_CALLEE_TRASH_MASK => cntCalleeTrashMask;
+    public int CNT_CALLEE_TRASH_MASK => cntCalleeTrashMask;
 #endif
 
     /// <summary>Are we running a replay under SuperPMI?</summary>
@@ -584,11 +641,11 @@ public partial class Compiler
 #if DEBUG
     /// <summary>Should we use only ASCII characters for tree dumps?</summary>
     /// <remarks>This is set to default to 1 in JitConfig</remarks>
-    public bool ShouldDumpAsciiTrees => JitConfig[ConfigInteger.JitDumpASCII] is 1;
+    public bool ShouldDumpAsciiTrees => JitConfig[ConfigInteger.JitDumpASCII] == 1;
 
-    public bool ShouldUseVerboseSsa => JitConfig[ConfigInteger.JitDumpVerboseSsa] is 1;
+    public bool ShouldUseVerboseSsa => JitConfig[ConfigInteger.JitDumpVerboseSsa] == 1;
 
-    public bool ShouldUseVerboseTrees => JitConfig[ConfigInteger.JitDumpVerboseTrees] is 1;
+    public bool ShouldUseVerboseTrees => JitConfig[ConfigInteger.JitDumpVerboseTrees] == 1;
 #endif
 
     private ClassLayoutTable typClassLayoutTable
@@ -639,7 +696,7 @@ public partial class Compiler
     /// <summary>Returns the codegen type for a given SIMD size.</summary>
     /// <param name="size"></param>
     /// <returns></returns>
-    public static var_types GetSimdTypeForSize(uint size) => size switch {
+    public static var_types GetSimdTypeForSize(int size) => size switch {
         8 => TYP_SIMD8,
         12 => TYP_SIMD12,
         16 => TYP_SIMD16,
@@ -691,30 +748,79 @@ public partial class Compiler
     public bool canUseApxEvexEncoding() => canUseApxEncoding() && canUseEvexEncoding();
 #endif
 
-    public nuint dspOffset(nuint offs)
+    public nint dspOffset(nint offs)
     {
 #if DEBUG
-        if (offs is not 0)
+        if (offs != 0)
         {
             if (opts.dspDiffable)
             {
-                offs = 0xD1FFAB1E;
+                offs = unchecked((nint)(0xD1FFAB1E));
             }
         }
 #endif
         return offs;
     }
 
-    public unsafe nuint dspPtr(void* ptr) => dspOffset((nuint)(ptr));
+    public unsafe nint dspPtr(void* ptr) => dspOffset(unchecked((nint)(ptr)));
 
     public void FinalizeEH()
     {
-        // TODO: Port Compiler.FinalizeEH
+        // We should not make any more alterations to the EH table structure.
+        ehTableFinalized = true;
     }
 
     public void generatePatchpointInfo()
     {
         // TODO: Port Compiler.generatePatchpointInfo
+    }
+
+    /// <summary>Return the length for an allocation whose length is represented by GT_ARR_LENGTH.</summary>
+    /// <param name="tree">The array allocation helper call.</param>
+    /// <returns>Return the array length node.</returns>
+    public GenTree? getArrayLengthFromAllocation(GenTree tree)
+    {
+        assert(tree is not null);
+        var arrayLength = null as GenTree;
+
+        if (tree.Oper.IsCall)
+        {
+            var call = tree.AsCall();
+
+            if (call.IsHelperCall())
+            {
+                var helper = call.HelperNum;
+
+                switch (helper)
+                {
+                    case CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
+                    case CORINFO_HELP_NEWARR_1_DIRECT:
+                    case CORINFO_HELP_NEWARR_1_PTR:
+                    case CORINFO_HELP_NEWARR_1_VC:
+                    case CORINFO_HELP_NEWARR_1_ALIGN8:
+                    {
+                        // This is an array allocation site. Grab the array length node.
+
+                        var callArg = call.Args.GetUserArgByIndex(1);
+                        assert(callArg is not null);
+
+                        arrayLength = callArg.Node;
+                        break;
+                    }
+
+                    default:
+                        break;
+                }
+
+                assert((arrayLength is null) || ((optMethodFlags & OMF_HAS_NEWARRAY) != 0));
+            }
+        }
+
+        if (arrayLength is not null)
+        {
+            arrayLength = arrayLength.Oper.IsPutArg ? arrayLength.AsUnOp().Op1 : arrayLength;
+        }
+        return arrayLength;
     }
 
     public unsafe var_types GetHfaType(CORINFO_CLASS_HANDLE hClass)
@@ -743,7 +849,7 @@ public partial class Compiler
     // X86.AVX:      16-byte Vector<T> and Vector256<T>
     // X86.AVX2:     32-byte Vector<T> and Vector256<T>
     // X86.AVX512:   32-byte Vector<T> and Vector512<T>
-    public uint GetMaxVectorByteLength()
+    public int GetMaxVectorByteLength()
     {
 #if TARGET_XARCH
         if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
@@ -766,10 +872,13 @@ public partial class Compiler
 #endif
     }
 
-    public uint GetMinVectorByteLength() => (uint)(TYP_SIMD8.EmitSize);
+    public unsafe CORINFO_CLASS_HANDLE getMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, int index)
+        => info.compCompHnd->getMethodInstantiationArgument(ftn, index);
 
-    /// <inheritdoc cref="GetReturnTypeForStruct(CORINFO_CLASS_HANDLE, CorInfoCallConvExtension, out structPassingKind, uint)" />
-    public unsafe var_types GetReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd, CorInfoCallConvExtension callConv, uint structSize = 0)
+    public int GetMinVectorByteLength() => (int)(TYP_SIMD8.EmitSize);
+
+    /// <inheritdoc cref="GetReturnTypeForStruct(CORINFO_CLASS_HANDLE, CorInfoCallConvExtension, out structPassingKind, int)" />
+    public unsafe var_types GetReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd, CorInfoCallConvExtension callConv, int structSize = 0)
         => GetReturnTypeForStruct(clsHnd, callConv, out Unsafe.NullRef<structPassingKind>(), structSize);
 
     /// <summary>Get the type that is used to return values of the given struct type.</summary>
@@ -779,16 +888,19 @@ public partial class Compiler
     /// <param name="structSize"></param>
     /// <returns></returns>
     /// <remarks>If the size is unknown, pass 0 and it will be determined from 'clsHnd'.</remarks>
-    public unsafe var_types GetReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd, CorInfoCallConvExtension callConv, out structPassingKind wbPassStruct, uint structSize = 0)
+    public unsafe var_types GetReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd, CorInfoCallConvExtension callConv, out structPassingKind wbPassStruct, int structSize = 0)
     {
         // TODO: Port getReturnTypeForStruct
         wbPassStruct = default;
         return TYP_UNKNOWN;
     }
 
+    public unsafe CORINFO_CLASS_HANDLE getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, int index)
+        => info.compCompHnd->getTypeInstantiationArgument(cls, index);
+
     // Get the number of bytes in a System.Numeric.Vector<T> for the current compilation.
     // Note - cannot be used for System.Runtime.Intrinsic
-    public uint GetVectorTByteLength()
+    public int GetVectorTByteLength()
     {
         // We need to report the ISA dependency to the VM so that scenarios
         // such as R2R work correctly for larger vector sizes, so we always
@@ -818,7 +930,7 @@ public partial class Compiler
         }
 #elif TARGET_ARM64
 #if DEBUG
-        if ((JitConfig[ConfigInteger.JitUseScalableVectorT] is not 0) && compExactlyDependsOn(InstructionSet_VectorT))
+        if ((JitConfig[ConfigInteger.JitUseScalableVectorT] != 0) && compExactlyDependsOn(InstructionSet_VectorT))
         {
             return SIZE_UNKNOWN;
         }
@@ -841,12 +953,23 @@ public partial class Compiler
 #endif
     }
 
+    public unsafe bool isSpanClass(CORINFO_CLASS_HANDLE clsHnd)
+    {
+        if (isIntrinsicType(clsHnd))
+        {
+            var className = getClassNameFromMetadata(clsHnd, out var namespaceName);
+            return namespaceName.Equals("System", StringComparison.Ordinal) &&
+                   (className.Equals("Span`1", StringComparison.Ordinal) || className.Equals("ReadOnlySpan`1", StringComparison.Ordinal));
+        }
+        return false;
+    }
+
     /// <summary>One line log function.</summary>
     /// <param name="level"></param>
     /// <param name="message"></param>
-    /// <remarks>Default level is 0. Increasing it gives you more log information</remarks>
+    /// <remarks>Default level == 0. Increasing it gives you more log information</remarks>
     [Conditional("DEBUG")]
-    public void JITLOG(uint level, string message)
+    public void JITLOG(int level, string message)
     {
 #if DEBUG
         if (verbose)
@@ -893,7 +1016,7 @@ public partial class Compiler
     /// <summary>Use to determine if a struct *might* be a SIMD type. As this function only takes a size, many structs will fit the criteria.</summary>
     /// <param name="structSize"></param>
     /// <returns></returns>
-    public bool structSizeMightRepresentSimdType(nuint structSize)
+    public bool structSizeMightRepresentSimdType(nint structSize)
     {
 #if FEATURE_SIMD
         return (structSize >= GetMinVectorByteLength()) && (structSize <= GetMaxVectorByteLength());
@@ -966,7 +1089,7 @@ public partial class Compiler
     ///   <para>If the size of the struct is already known call <see cref="structSizeMightRepresentSimdType" /> to determine if this api needs to be called.</para>
     ///   <para>The type handle passed here can only be used in a subset of JIT-EE calls since it may be called by promotion during AOT of a method that does not version with SPC. See CORINFO_TYPE_LAYOUT_NODE for the contract on the supported JIT-EE calls.</para>
     /// </remarks>
-    private unsafe var_types getBaseTypeAndSizeOfSimdType(CORINFO_CLASS_HANDLE typeHnd, out uint sizeBytes)
+    private unsafe var_types getBaseTypeAndSizeOfSimdType(CORINFO_CLASS_HANDLE typeHnd, out int sizeBytes)
     {
         var simdHandleCache = m_simdHandleCache;
 
@@ -1008,7 +1131,7 @@ public partial class Compiler
 
         // fast path search using cached type handles of important types
         var simdBaseType = TYP_UNDEF;
-        var size = 0u;
+        var size = 0;
 
         if (namespaceName.Equals("System.Numerics", StringComparison.Ordinal))
         {
@@ -1025,7 +1148,7 @@ public partial class Compiler
                     simdHandleCache.PlaneHandle = typeHnd;
 
                     simdBaseType = TYP_FLOAT;
-                    size = 4u * TYP_FLOAT.Size;
+                    size = 4 * TYP_FLOAT.Size;
                     break;
                 }
 
@@ -1040,7 +1163,7 @@ public partial class Compiler
                     simdHandleCache.QuaternionHandle = typeHnd;
 
                     simdBaseType = TYP_FLOAT;
-                    size = 4u * TYP_FLOAT.Size;
+                    size = 4 * TYP_FLOAT.Size;
                     break;
                 }
 
@@ -1071,7 +1194,7 @@ public partial class Compiler
                             simdHandleCache.Vector2Handle = typeHnd;
 
                             simdBaseType = TYP_FLOAT;
-                            size = 2u * TYP_FLOAT.Size;
+                            size = 2 * TYP_FLOAT.Size;
                             break;
                         }
 
@@ -1086,7 +1209,7 @@ public partial class Compiler
                             simdHandleCache.Vector3Handle = typeHnd;
 
                             simdBaseType = TYP_FLOAT;
-                            size = 3u * TYP_FLOAT.Size;
+                            size = 3 * TYP_FLOAT.Size;
                             break;
                         }
 
@@ -1101,7 +1224,7 @@ public partial class Compiler
                             simdHandleCache.Vector4Handle = typeHnd;
 
                             simdBaseType = TYP_FLOAT;
-                            size = 4u * TYP_FLOAT.Size;
+                            size = 4 * TYP_FLOAT.Size;
                             break;
                         }
 
@@ -1120,10 +1243,10 @@ public partial class Compiler
                                 return TYP_UNDEF;
                             }
 
-                            JITDUMP($" Found Vector<{simdBaseType}>\n");
+                            JITDUMP($" Found Vector<{simdBaseType.Name}>\n");
                             size = GetVectorTByteLength();
 
-                            if (size is 0)
+                            if (size == 0)
                             {
                                 return TYP_UNDEF;
                             }
@@ -1167,7 +1290,7 @@ public partial class Compiler
                         return TYP_UNDEF;
                     }
 
-                    JITDUMP($" Found Vector64<{simdBaseType}>\n");
+                    JITDUMP($" Found Vector64<{simdBaseType.Name}>\n");
                     break;
                 }
 #endif
@@ -1187,7 +1310,7 @@ public partial class Compiler
                         return TYP_UNDEF;
                     }
 
-                    JITDUMP($" Found Vector128<{simdBaseType}>\n");
+                    JITDUMP($" Found Vector128<{simdBaseType.Name}>\n");
                     break;
                 }
 
@@ -1213,7 +1336,7 @@ public partial class Compiler
                         return TYP_UNDEF;
                     }
 
-                    JITDUMP($" Found Vector256<{simdBaseType}>\n");
+                    JITDUMP($" Found Vector256<{simdBaseType.Name}>\n");
                     break;
                 }
 
@@ -1238,7 +1361,7 @@ public partial class Compiler
                         return TYP_UNDEF;
                     }
 
-                    JITDUMP($" Found Vector512<{simdBaseType}>\n");
+                    JITDUMP($" Found Vector512<{simdBaseType.Name}>\n");
                     break;
                 }
 #endif
@@ -1276,7 +1399,7 @@ public partial class Compiler
     }
 
     private unsafe var_types getBaseTypeOfSimdType(CORINFO_CLASS_HANDLE typeHnd)
-        => getBaseTypeAndSizeOfSimdType(typeHnd, out Unsafe.NullRef<uint>());
+        => getBaseTypeAndSizeOfSimdType(typeHnd, out Unsafe.NullRef<int>());
 #endif
 
     private unsafe string getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, out string namespaceName)
@@ -1319,6 +1442,44 @@ public partial class Compiler
         // TODO: Port RecordStateAtEndOfInlining
     }
 
+    public void setMethodHasNoReturnCalls()
+    {
+        optNoReturnCallCount++;
+    }
+
+    public void setCallDoesNotReturn(GenTreeCall call)
+    {
+        assert(call is not null);
+        assert(!call.IsNoReturn);
+
+        call.IsNoReturn = true;
+        setMethodHasNoReturnCalls();
+    }
+
+    public static bool StructHasOverlappingFields(CorInfoFlag attribs)
+        => (attribs & CORINFO_FLG_OVERLAPPING_FIELDS) != 0;
+
+    public static bool StructHasIndexableFields(CorInfoFlag attribs)
+        => (attribs & CORINFO_FLG_INDEXABLE_FIELDS) != 0;
+
+#if DEBUG
+    /// <summary>helper to determine if the local should not be promoted under a stress mode.</summary>
+    /// <param name="lclNum">local number to test</param>
+    /// <returns>true if this local should not be promoted.</returns>
+    /// <remarks>Reject ~50% of the potential promotions if STRESS_PROMOTE_FEWER_STRUCTS is active.</remarks>
+    public bool compPromoteFewerStructs(int lclNum)
+    {
+        var rejectThisPromo = false;
+        var promoteLess = compStressCompile(STRESS_PROMOTE_FEWER_STRUCTS, 50);
+
+        if (promoteLess)
+        {
+            rejectThisPromo = ((info.compMethodHash() ^ lclNum) & 1) == 0;
+        }
+        return rejectThisPromo;
+    }
+#endif
+
     [InlineArray((int)(MemoryKindCount))]
     public struct m_memorySsaMapInlineArray
     {
@@ -1328,6 +1489,6 @@ public partial class Compiler
     [InlineArray((int)(TYP_COUNT))]
     private struct VarTypeCalleeTrashRegs
     {
-        public uint e0;
+        public int e0;
     }
 }

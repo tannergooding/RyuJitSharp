@@ -24,7 +24,7 @@ public sealed class MethodSet2
     //
     // Method names should not have any leading whitespace.
     //
-    // TODO: Should this be more related to JitConfigValues::MethodSet?
+    // TODO: Should this be more related to JitConfigValues.MethodSet?
 
     /// <summary>List of function info</summary>
     private MethodInfo? _infos;
@@ -138,7 +138,7 @@ public sealed class MethodSet2
     /// <summary>Return 'true' if 'methodName' is in the stored set of assembly names.</summary>
     /// <param name="methodName"></param>
     /// <returns></returns>
-    // TODO: make this more like JitConfigValues::MethodSet::contains()?
+    // TODO: make this more like JitConfigValues.MethodSet.contains()?
     public unsafe bool IsInSet(string methodName)
     {
         for (var info = _infos; info is not null; info = info.Next)
@@ -173,7 +173,7 @@ public sealed class MethodSet2
     /// <remarks>Prefer non-zero methodHash for check over (non-null) methodName.</remarks>
     public unsafe bool IsActiveMethod(string methodName, int methodHash)
     {
-        if ((methodHash is not 0) && IsInSet(methodHash))
+        if ((methodHash != 0) && IsInSet(methodHash))
         {
             // Use the method hash.
             JITDUMP($"Method active in MethodSet (hash match): {methodName} Hash: {methodHash:x}\n");

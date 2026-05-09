@@ -10,7 +10,7 @@ public struct AllocMemArgs
     // Chunks to allocate. Supports one hot code chunk, one cold code chunk, and an arbitrary number of data chunks.
     public unsafe AllocMemChunk* chunks;
 
-    public uint chunksCount;
+    public int chunksCount;
 
-    public uint xcptnsCount;
+    public int xcptnsCount;
 }

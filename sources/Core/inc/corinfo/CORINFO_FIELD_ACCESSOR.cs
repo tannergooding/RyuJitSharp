@@ -51,7 +51,7 @@ public enum CORINFO_FIELD_ACCESSOR
     /// <summary>Static field access using relocation (used in AOT).</summary>
     CORINFO_FIELD_STATIC_RELOCATABLE,
 
-    /// <summary>Intrinsic zero (<see cref="IntPtr.Zero" />, <see cref="UIntPtr.Zero" />).</summary>
+    /// <summary>Intrinsic zero (<see cref="nint.Zero" />, <see cref="nuint.Zero" />).</summary>
     CORINFO_FIELD_INTRINSIC_ZERO,
 
     /// <summary>Intrinsic empty string (<see cref="string.Empty" />).</summary>

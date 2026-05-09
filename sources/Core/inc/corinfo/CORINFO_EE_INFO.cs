@@ -18,27 +18,27 @@ public struct CORINFO_EE_INFO
     //
 
     // offset of the current Frame
-    public uint offsetOfThreadFrame;
+    public int offsetOfThreadFrame;
 
     // offset of the preemptive/cooperative state of the Thread
-    public uint offsetOfGCState;
+    public int offsetOfGCState;
 
     // Delegate offsets
-    public uint offsetOfDelegateInstance;
+    public int offsetOfDelegateInstance;
 
-    public uint offsetOfDelegateFirstTarget;
+    public int offsetOfDelegateFirstTarget;
 
     // Wrapper delegate offsets
-    public uint offsetOfWrapperDelegateIndirectCell;
+    public int offsetOfWrapperDelegateIndirectCell;
 
     // Reverse PInvoke offsets
-    public uint sizeOfReversePInvokeFrame;
+    public int sizeOfReversePInvokeFrame;
 
     // OS Page size
-    public nuint osPageSize;
+    public nint osPageSize;
 
     // Null object offset
-    public nuint maxUncheckedOffsetForNullObject;
+    public nint maxUncheckedOffsetForNullObject;
 
     // Target ABI. Combined with target architecture and OS to determine
     // GC, EH, and unwind styles.
@@ -49,24 +49,24 @@ public struct CORINFO_EE_INFO
     public struct InlinedCallFrameInfo
     {
         // Size of the Frame structure
-        public uint size;
+        public int size;
 
         // Size of the Frame structure when it also contains the secret stub arg
-        public uint sizeWithSecretStubArg;
+        public int sizeWithSecretStubArg;
 
-        public uint offsetOfFrameLink;
+        public int offsetOfFrameLink;
 
-        public uint offsetOfCallSiteSP;
+        public int offsetOfCallSiteSP;
 
-        public uint offsetOfCalleeSavedFP;
+        public int offsetOfCalleeSavedFP;
 
-        public uint offsetOfCallTarget;
+        public int offsetOfCallTarget;
 
-        public uint offsetOfReturnAddress;
+        public int offsetOfReturnAddress;
 
-        public uint offsetOfSecretStubArg;
+        public int offsetOfSecretStubArg;
 
         // This offset is used only for ARM
-        public uint offsetOfSPAfterProlog;
+        public int offsetOfSPAfterProlog;
     }
 }

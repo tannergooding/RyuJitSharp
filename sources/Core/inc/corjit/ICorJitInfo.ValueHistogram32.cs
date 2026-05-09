@@ -11,7 +11,7 @@ public partial struct ICorJitInfo
 {
     public struct ValueHistogram32
     {
-        public uint Count;
+        public int Count;
 
         public ValueTableInlineArray ValueTable;
 

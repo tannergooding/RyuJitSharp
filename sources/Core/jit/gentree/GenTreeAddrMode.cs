@@ -13,13 +13,13 @@ public sealed class GenTreeAddrMode : GenTreeOp
     // Address is Base + Index*Scale + Offset.
     // These are the legal patterns:
     //
-    //      Base                                // Base is not null && Index is null && Scale is 0 && Offset is 0
-    //      Base + Index*Scale                  // Base is not null && Index is not null && Scale is not 0 && Offset is 0
-    //      Base + Offset                       // Base is not null && Index is null && Scale is 0 && Offset is not 0
-    //      Base + Index*Scale + Offset         // Base is not null && Index is not null && Scale is not 0 && Offset is not 0
-    //             Index*Scale                  // Base is null && Index is not null && Scale >  1 && Offset is 0
-    //             Index*Scale + Offset         // Base is null && Index is not null && Scale >  1 && Offset is not 0
-    //                           Offset         // Base is null && Index is null && Scale is 0 && Offset is not 0
+    //      Base                                // Base is not null && Index is null && Scale == 0 && Offset == 0
+    //      Base + Index*Scale                  // Base is not null && Index is not null && Scale != 0 && Offset == 0
+    //      Base + Offset                       // Base is not null && Index is null && Scale == 0 && Offset != 0
+    //      Base + Index*Scale + Offset         // Base is not null && Index is not null && Scale != 0 && Offset != 0
+    //             Index*Scale                  // Base is null && Index is not null && Scale >  1 && Offset == 0
+    //             Index*Scale + Offset         // Base is null && Index is not null && Scale >  1 && Offset != 0
+    //                           Offset         // Base is null && Index is null && Scale == 0 && Offset != 0
     //
     // So, for example:
     //      1. Base + Index is legal with Scale==1
@@ -48,7 +48,7 @@ public sealed class GenTreeAddrMode : GenTreeOp
 
         set
         {
-            Op1 = value;
+            Op1 = value!;
         }
     }
 
@@ -67,7 +67,7 @@ public sealed class GenTreeAddrMode : GenTreeOp
 
         set
         {
-            Op2 = value;
+            Op2 = value!;
         }
     }
 

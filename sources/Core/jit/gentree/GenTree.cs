@@ -3,32 +3,29 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-#if DEBUG
-using static RyuJitSharp.GenTree.genRegTag;
-#endif
-
 namespace RyuJitSharp;
 
-public abstract partial class GenTree
+public partial class GenTree
 {
-    private readonly genTreeOps _oper;
+    internal genTreeOps _oper;
 
-    private readonly var_types _type;
+    internal var_types _type;
 
 #if DEBUG
     // Only used to save gtOper when we destroy a node, to aid debugging.
-    private genTreeOps _operSave;
+    internal genTreeOps _operSave;
 #endif
 
     /// <summary>0 or the CSE index (negated if def)</summary>
     /// <remarks>valid only for CSE expressions</remarks>
     private sbyte _cseNum;
 
-    /// <summary>Used for nodes that are in LIR. See LIR::Flags in lir.h for the various flags.</summary>
-    private LIR.Flags _lirFlags;
+    /// <summary>Used for nodes that are in LIR. See LIR.Flags in lir.h for the various flags.</summary>
+    internal LIR.Flags _lirFlags;
 
     private AssertionInfo _assertionInfo;
 
@@ -57,12 +54,12 @@ public abstract partial class GenTree
     private GenTreeFlags _flags;
 
 #if DEBUG
-    private GenTreeDebugFlags _debugFlags;
+    internal GenTreeDebugFlags _debugFlags;
 
-    private ushort _morphCount;
+    internal ushort _morphCount;
 #endif
 
-    private ValueNumPair _vnPair;
+    internal ValueNumPair _vnPair;
 
     private GenTree? _next;
 
@@ -72,13 +69,13 @@ public abstract partial class GenTree
     private int _treeId;
 
     /// <summary>liveness traversal order within the current statement</summary>
-    private uint _seqNum;
+    internal int _seqNum;
 
     /// <summary>use-ordered traversal within the function</summary>
     private int _useNum;
 #endif
 
-    protected GenTree(genTreeOps oper, var_types type)
+    protected internal GenTree(genTreeOps oper, var_types type)
     {
         _oper = oper;
         _type = type;
@@ -129,7 +126,7 @@ public abstract partial class GenTree
             {
                 result = false;
             }
-            else if (!IsValue || ((_oper.DebugKind & DBK_NOCONTAIN) is not 0))
+            else if (!IsValue || ((_oper.DebugKind & DBK_NOCONTAIN) != 0))
             {
                 // It is not possible for nodes that do not produce values or that are not containable values to be contained.
                 result = false;
@@ -173,9 +170,7 @@ public abstract partial class GenTree
 
             while (result._oper is GT_COMMA)
             {
-                var comma = result.AsOp();
-                assert(comma.Op2 is not null);
-                result = comma.Op2;
+                result = result.AsOp().Op2;
             }
 
             return result;
@@ -189,7 +184,27 @@ public abstract partial class GenTree
         get
         {
             assert(Debugger.IsAttached || _oper.MayOverflow);
-            return ((_flags & GTF_OVERFLOW) is not 0);
+            return (_flags & GTF_OVERFLOW) != 0;
+        }
+    }
+
+    public GenTree IndirOrArrMetaDataAddr
+    {
+        get
+        {
+            if (_oper.IsIndir)
+            {
+                return AsIndir().Addr;
+            }
+            else if (_oper.IsArrMetadata)
+            {
+                return AsArrCommon().ArrRef;
+            }
+            else
+            {
+                assert(Debugger.IsAttached);
+                return null!;
+            }
         }
     }
 
@@ -213,7 +228,7 @@ public abstract partial class GenTree
     {
         get
         {
-            var result = ((_flags & GTF_CONTAINED) is not 0);
+            var result = ((_flags & GTF_CONTAINED) != 0);
 
 #if DEBUG
             assert(Debugger.IsAttached || IsLirOp);
@@ -267,21 +282,9 @@ public abstract partial class GenTree
 
             if (_oper.IsCopyOrReload)
             {
-                var op1 = AsOp().Op1;
-                assert(op1 is not null);
-                result = op1.IsMultiRegCall;
+                result = AsUnOp().Op1.IsMultiRegCall;
             }
-
             return result;
-        }
-    }
-
-    public bool IsIconHandle
-    {
-        get
-        {
-            assert(_oper.IsCnsIntOrI);
-            return (Flags & GTF_ICON_HDL_MASK) is not 0;
         }
     }
 
@@ -337,6 +340,8 @@ public abstract partial class GenTree
     /// <summary>Determines whether the unsigned value of an integral constant is the power of 2.</summary>
     public bool IsIntegralConstUnsignedPow2 => _oper.IsIntegralConst && ulong.IsPow2(unchecked((ulong)(AsIntConCommon().IntegralValue)));
 
+    public bool IsLclVarAddr => (_oper is GT_LCL_ADDR) && (AsLclFld().LclOffs == 0);
+
 #if DEBUG
     public bool IsLirOp
     {
@@ -351,7 +356,7 @@ public abstract partial class GenTree
             }
             else
             {
-                result = (_oper.DebugKind & DBK_NOTLIR) is 0;
+                result = (_oper.DebugKind & DBK_NOTLIR) == 0;
             }
 
             return result;
@@ -410,12 +415,26 @@ public abstract partial class GenTree
 
     public bool IsNothingNode => (_oper is GT_NOP) && (_type is TYP_VOID);
 
+    public bool IsPhiDefn
+    {
+        get
+        {
+            var result = false;
+
+            if (_oper is GT_STORE_LCL_VAR)
+            {
+                result = AsLclVar().Data.Oper is GT_PHI;
+            }
+            return result;
+        }
+    }
+
     /// <summary>indicates that codegen can still generate code even if it isn't allocated a register.</summary>
     public bool IsRegOptional
     {
         get
         {
-            return (_lirFlags & LIR.Flags.RegOptional) is not 0;
+            return (_lirFlags & LIR.Flags.RegOptional) != 0;
         }
 
         set
@@ -424,7 +443,39 @@ public abstract partial class GenTree
         }
     }
 
-    public bool IsUnusedValue => (_lirFlags & LIR.Flags.UnusedValue) is not 0;
+    public bool IsReverseOp
+    {
+        get
+        {
+            return (_flags & GTF_REVERSE_OPS) != 0;
+        }
+
+        set
+        {
+            _flags = (_flags & ~GTF_REVERSE_OPS) | (value ? GTF_REVERSE_OPS : GTF_EMPTY);
+        }
+    }
+
+    public bool IsUnusedValue
+    {
+        get
+        {
+            return (_lirFlags & LIR.Flags.UnusedValue) != 0;
+        }
+
+        set
+        {
+            if (value)
+            {
+                _lirFlags |= LIR.Flags.UnusedValue;
+                IsContained = false;
+            }
+            else
+            {
+                _lirFlags &= ~LIR.Flags.UnusedValue;
+            }
+        }
+    }
 
     public bool IsUsedFromMemory
     {
@@ -479,7 +530,7 @@ public abstract partial class GenTree
             var result = true;
             var oper = _oper;
 
-            if ((oper.Kind & GTK_NOVALUE) is not 0)
+            if ((oper.Kind & GTK_NOVALUE) != 0)
             {
                 result = false;
             }
@@ -509,7 +560,9 @@ public abstract partial class GenTree
 
     public genTreeOps Oper => _oper;
 
-    public GenTree? Previous
+    public GenTreeOperandsList Operands => new GenTreeOperandsList(this);
+
+    public GenTree? Prev
     {
         get
         {
@@ -555,6 +608,23 @@ public abstract partial class GenTree
     }
 #endif
 
+    public bool RequiresAsgFlag => _oper switch {
+        GT_STORE_LCL_VAR => true,
+        GT_STORE_LCL_FLD => true,
+        GT_MEMORYBARRIER => true,
+        GT_LOCKADD => true,
+        GT_XAND => true,
+        GT_XORR => true,
+        GT_XADD => true,
+        GT_XCHG => true,
+        GT_CMPXCHG => true,
+        GT_STOREIND => true,
+        GT_STORE_BLK => true,
+        GT_CALL => AsCall().IsOptimizingRetBufAsLocal,
+        GT_HWINTRINSIC => AsHWIntrinsic().IsMemoryStoreOrBarrier,
+        _ => false,
+    };
+
     public GenTree SkipCopyOrReload
     {
         get
@@ -563,11 +633,8 @@ public abstract partial class GenTree
 
             if (_oper.IsCopyOrReload)
             {
-                var op1 = AsOp().Op1;
-
-                assert(op1 is not null);
+                var op1 = AsUnOp().Op1;
                 assert(!op1._oper.IsCopyOrReload);
-
                 result = op1;
             }
 
@@ -579,10 +646,23 @@ public abstract partial class GenTree
     public int TreeId => _treeId;
 #endif
 
-    public var_types Type => _type;
+    public var_types Type
+    {
+        get
+        {
+            return _type;
+        }
+
+        set
+        {
+            _type = value;
+        }
+    }
+
+    public GenTreeUseEdgesList UseEdges => new GenTreeUseEdgesList(this);
 
 #if DEBUG
-    public bool WasMorphed => (_debugFlags & GTF_DEBUG_NODE_MORPHED) is not 0;
+    public bool WasMorphed => (_debugFlags & GTF_DEBUG_NODE_MORPHED) != 0;
 #endif
 
     protected internal GenTreeFlags Flags
@@ -600,7 +680,7 @@ public abstract partial class GenTree
 
     public static bool Compare(GenTree op1, GenTree op2, bool swapOk = false)
     {
-        // TODO: Port GenTree::Compare
+        // TODO: Port GenTree.Compare
         return false;
     }
 
@@ -766,6 +846,176 @@ public abstract partial class GenTree
         _costSz = tree._costSz;
     }
 
+    /// <summary>Get exception set this tree may throw.</summary>
+    /// <param name="comp">Compiler instance</param>
+    /// <returns>A bit set of exceptions this tree may throw.</returns>
+    /// <remarks>The ExceptionSetFlags.UnknownException must generally be handled specially by the consumer; when it is present it means we can say nothing precise about the thrown exceptions.</remarks>
+    public ExceptionSetFlags Exceptions(Compiler comp)
+    {
+        switch (_oper)
+        {
+            case GT_ADD:
+            case GT_SUB:
+            case GT_MUL:
+            case GT_CAST:
+#if !TARGET_64BIT
+            case GT_ADD_HI:
+            case GT_SUB_HI:
+#endif // !TARGET_64BIT
+            {
+                return HasOverflowCheck ? ExceptionSetFlags.OverflowException : ExceptionSetFlags.None;
+            }
+
+            case GT_MOD:
+            case GT_DIV:
+            case GT_UMOD:
+            case GT_UDIV:
+            {
+                if (varTypeIsFloating(Type))
+                {
+                    return ExceptionSetFlags.None;
+                }
+
+                var exSetFlags = ExceptionSetFlags.None;
+                var op = AsOp();
+
+                if (((_flags & GTF_DIV_MOD_NO_BY_ZERO) == 0) && !op.Op2.SkipCopyOrReload.IsNeverZero())
+                {
+                    exSetFlags |= ExceptionSetFlags.DivideByZeroException;
+                }
+
+                if ((_oper is GT_DIV or GT_MOD) && op.CanDivOrModPossiblyOverflow(comp))
+                {
+                    exSetFlags |= ExceptionSetFlags.ArithmeticException;
+                }
+                return exSetFlags;
+            }
+
+            case GT_INTRINSIC:
+            {
+                // If this is an intrinsic that represents the object.GetType(), it can throw an NullReferenceException.
+                // Currently, this is the only intrinsic that can throw an exception.
+                if (AsIntrinsic().IntrinsicName == NI_System_Object_GetType)
+                {
+                    return ExceptionSetFlags.NullReferenceException;
+                }
+                return ExceptionSetFlags.None;
+            }
+
+            case GT_CALL:
+            {
+                var helper = AsCall().HelperNum;
+
+                if (helper == CORINFO_HELP_UNDEF)
+                {
+                    return ExceptionSetFlags.UnknownException;
+                }
+                return helper.ThrownExceptions;
+            }
+
+            case GT_LOCKADD:
+            case GT_XAND:
+            case GT_XORR:
+            case GT_XADD:
+            case GT_XCHG:
+            case GT_CMPXCHG:
+            case GT_IND:
+            case GT_STOREIND:
+            case GT_BLK:
+            case GT_NULLCHECK:
+            case GT_STORE_BLK:
+            case GT_ARR_LENGTH:
+            case GT_MDARR_LENGTH:
+            case GT_MDARR_LOWER_BOUND:
+            {
+                return IndirMayFault(comp) ? ExceptionSetFlags.NullReferenceException : ExceptionSetFlags.None;
+            }
+
+            case GT_ARR_ELEM:
+            {
+                if (comp.fgAddrCouldBeNull(AsArrElem().ArrObj))
+                {
+                    return ExceptionSetFlags.NullReferenceException | ExceptionSetFlags.IndexOutOfRangeException;
+                }
+                return ExceptionSetFlags.IndexOutOfRangeException;
+            }
+
+            case GT_FIELD_ADDR:
+            {
+                var fieldAddr = AsFieldAddr();
+
+                if (fieldAddr.IsInstance && comp.fgAddrCouldBeNull(fieldAddr.FldObj))
+                {
+                    return ExceptionSetFlags.NullReferenceException;
+                }
+                return ExceptionSetFlags.None;
+            }
+
+            case GT_BOUNDS_CHECK:
+            {
+                return ExceptionSetFlags.IndexOutOfRangeException;
+            }
+
+            case GT_INDEX_ADDR:
+            {
+                return ExceptionSetFlags.NullReferenceException | ExceptionSetFlags.IndexOutOfRangeException;
+            }
+
+            case GT_CKFINITE:
+            {
+                return ExceptionSetFlags.ArithmeticException;
+            }
+
+#if TARGET_WASM
+            case GT_WASM_THROW_REF:
+            {
+                return ExceptionSetFlags.UnknownException;
+            }
+#endif
+
+#if FEATURE_HW_INTRINSICS
+            case GT_HWINTRINSIC:
+            {
+                var hwintrinsic = AsHWIntrinsic();
+
+                if (hwintrinsic.IsUserCall)
+                {
+                    return ExceptionSetFlags.UnknownException;
+                }
+
+                var flags = ExceptionSetFlags.None;
+
+                if (hwintrinsic.IsMemoryLoadOrStore)
+                {
+                    // TODO-CQ: We should use comp.fgAddrCouldBeNull on the address operand
+                    // to determine if this can actually produce an NRE or not
+                    flags |= ExceptionSetFlags.NullReferenceException;
+                }
+
+#if TARGET_XARCH
+                var intrinsicId = hwintrinsic.HWIntrinsicId;
+
+                if (intrinsicId is NI_Vector128_op_Division or NI_Vector256_op_Division or NI_Vector512_op_Division)
+                {
+                    // We currently don't try to avoid setting these flags and GTF_EXCEPT when
+                    // we know that the operation in fact cannot overflow/divide by zero.
+                    assert(varTypeIsInt(hwintrinsic.SimdBaseType));
+                    flags |= (ExceptionSetFlags.OverflowException | ExceptionSetFlags.DivideByZeroException);
+                }
+#endif
+
+                return flags;
+            }
+#endif
+
+            default:
+            {
+                assert(!_oper.MayOverflow && !_oper.IsIndirOrArrMetaData);
+                return ExceptionSetFlags.None;
+            }
+        }
+    }
+
     /// <summary>Get the struct layout for this node.</summary>
     /// <param name="compiler">The Compiler instance</param>
     /// <returns>The struct layout of this node; it must have one.</returns>
@@ -797,9 +1047,7 @@ public abstract partial class GenTree
 
             case GT_COMMA:
             {
-                var op2 = AsOp().Op2;
-                assert(op2 is not null);
-                return op2.GetLayout(compiler);
+                return AsOp().Op2.GetLayout(compiler);
             }
 
 #if FEATURE_HW_INTRINSICS
@@ -817,9 +1065,7 @@ public abstract partial class GenTree
 
             case GT_RET_EXPR:
             {
-                var inlineCandidate = AsRetExpr().InlineCandidate;
-                assert(inlineCandidate is not null);
-                structHnd = inlineCandidate.RetClsHnd;
+                structHnd = AsRetExpr().InlineCandidate.RetClsHnd;
                 break;
             }
 
@@ -838,8 +1084,6 @@ public abstract partial class GenTree
 #nullable disable
     public ref GenTree GetUseRefOrNullRef(GenTree def)
     {
-        assert(def is not null);
-
         ref var use = ref Unsafe.NullRef<GenTree>();
         var oper = _oper;
 
@@ -928,13 +1172,13 @@ public abstract partial class GenTree
                         }
                         else
                         {
-                            ref var arrInds = ref arrElemNode.ArrInds;
+                            Span<GenTree> arrInds = arrElemNode.ArrInds;
 
-                            for (byte i = 0; i < arrElemNode.ArrRank; i++)
+                            foreach (ref var arrInd in arrInds[..arrElemNode.ArrRank])
                             {
-                                if (def == arrInds[i])
+                                if (def == arrInd)
                                 {
-                                    use = ref arrInds[i];
+                                    use = ref arrInd;
                                 }
                             }
                         }
@@ -1036,11 +1280,8 @@ public abstract partial class GenTree
         else if (IsCopyOrReloadOfMultiRegCall)
         {
             var copyOrReload = AsCopyOrReload();
+            var call = copyOrReload.Op1.AsCall();
 
-            var copyOrReloadOp1 = copyOrReload.Op1;
-            assert(copyOrReloadOp1 is not null);
-
-            var call = copyOrReloadOp1.AsCall();
             var regCount = call.ReturnTypeDesc.ReturnRegCount;
 
             // A Multi-reg copy or reload node is said to have regs, if it has valid regs in any of the positions.
@@ -1079,6 +1320,94 @@ public abstract partial class GenTree
         return result;
     }
 
+    /// <summary>May this indirection-like node throw an NRE?</summary>
+    /// <param name="compiler">the compiler instance</param>
+    /// <returns>Whether this node's address may be null.</returns>
+    public bool IndirMayFault(Compiler compiler)
+    {
+        assert(_oper.IsIndirOrArrMetaData);
+        return ((_flags & GTF_IND_NONFAULTING) == 0) && compiler.fgAddrCouldBeNull(IndirOrArrMetaDataAddr);
+    }
+
+    public bool IsNeverNegative(Compiler comp)
+    {
+        assert(varTypeIsIntegral(_type));
+
+        if (_oper.IsIntegralConst)
+        {
+            return AsIntConCommon().IntegralValue >= 0;
+        }
+
+        if (_oper is GT_LCL_VAR)
+        {
+            if (AsLclVar().IsNeverNegative(comp))
+            {
+                // This is an early exit, it doesn't cover all cases
+                return true;
+            }
+        }
+
+        // TODO: Port GenTree.IsNeverNegative
+        // if (IntegralRange.ForNode(const_cast<GenTree*>(this), comp).IsNonNegative())
+        // {
+        //     return true;
+        // }
+        // 
+        // if ((comp.vnStore is not null) && comp.vnStore->IsVNNeverNegative(gtVNPair.GetConservative()))
+        // {
+        //     return true;
+        // }
+
+        return false;
+    }
+
+    public bool IsNeverNegativeOne(Compiler comp)
+    {
+        assert(varTypeIsIntegral(_type));
+
+        if (IsNeverNegative(comp))
+        {
+            return true;
+        }
+
+        if (_oper.IsIntegralConst)
+        {
+            return !AsIntConCommon().IsIntegralConst(-1);
+        }
+        return false;
+    }
+
+    public bool IsNeverZero()
+    {
+        assert(varTypeIsIntegral(_type));
+
+        if (_oper.IsIntegralConst)
+        {
+            return !AsIntConCommon().IsIntegralConst(0);
+        }
+        return false;
+    }
+
+    /// <summary>Check whether the operation may throw.</summary>
+    /// <param name="comp">Compiler instance</param>
+    /// <returns>True if the given operator may cause an exception</returns>
+    public bool MayThrow(Compiler comp)
+        => Exceptions(comp) != ExceptionSetFlags.None;
+
+    public bool Precedes(GenTree other)
+    {
+        assert(other is not null);
+
+        for (var node = _next; node is not null; node = node._next)
+        {
+            if (node == other)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /// <summary>Replace a given operand to this node with a new operand.</summary>
     /// <param name="useEdge">the use edge that points to the operand to be replaced.</param>
     /// <param name="replacement">the replacement node.</param>
@@ -1092,16 +1421,309 @@ public abstract partial class GenTree
     // Set the costs. They are always both set at the same time.
     // Don't use the "put" property: force calling this function, to make it more obvious in the few places that set the values.
     // Note that costs are only set in gtSetEvalOrder() and its callees.
-    public void SetCosts(uint costEx, uint costSz)
+    public void SetCosts(byte costEx, byte costSz)
     {
-        assert(costEx != uint.MaxValue); // looks bogus
-        assert(costSz != uint.MaxValue); // looks bogus
-
 #if DEBUG
         _costsInitialized = true;
 #endif
 
-        _costEx = (costEx > MAX_COST) ? MAX_COST : unchecked((byte)(costEx));
-        _costSz = (costSz > MAX_COST) ? MAX_COST : unchecked((byte)(costSz));
+        _costEx = costEx;
+        _costSz = costSz;
+    }
+
+    /// <summary>Set GTF_EXCEPT and GTF_IND_NONFAULTING flags as appropriate on an indirection or an array length node.</summary>
+    /// <param name="compiler"></param>
+    public void SetIndirExceptionFlags(Compiler compiler)
+    {
+        assert(_oper.IsIndirOrArrMetaData && (_oper.IsSimple || (_oper is GT_CMPXCHG)));
+
+        if (IndirMayFault(compiler))
+        {
+            _flags |= GTF_EXCEPT;
+        }
+        else
+        {
+            var addr = IndirOrArrMetaDataAddr;
+
+            _flags |= GTF_IND_NONFAULTING;
+            _flags &= ~GTF_EXCEPT;
+            _flags |= (addr._flags & GTF_EXCEPT);
+
+            if (_oper.IsBinary)
+            {
+                _flags |= AsOp().Op2._flags & GTF_EXCEPT;
+            }
+            else if (Oper is GT_CMPXCHG)
+            {
+                var cmpXchg = AsCmpXchg();
+
+                _flags |= cmpXchg.Data._flags & GTF_EXCEPT;
+                _flags |= cmpXchg.Comparand._flags & GTF_EXCEPT;
+            }
+        }
+    }
+
+    /// <summary>mark a node as having been morphed</summary>
+    /// <param name="compiler">compiler instance</param>
+    /// <param name="doChilren">recursive mark child nodes</param>
+    /// <remarks>
+    ///   <para>Does nothing outside of global morph.</para>
+    ///   <para>Useful for morph post-order expansions / optimizations.</para>
+    ///   <para>Use care when invoking this on an assignment (or when doChildren is true, on trees containing assignments) as those usually will also require local assertion updates.</para>
+    /// </remarks>
+    [Conditional("DEBUG")]
+    public void SetMorphed(Compiler compiler, bool doChilren = false)
+    {
+#if DEBUG
+        if (!compiler.fgGlobalMorph)
+        {
+            return;
+        }
+
+        if (doChilren)
+        {
+            var node = this;
+
+            var visitor = new SetMorphedVisitor();
+            visitor.WalkTree(ref node, user: null);
+
+            assert(node == this);
+        }
+        else if (!WasMorphed)
+        {
+            _debugFlags |= GTF_DEBUG_NODE_MORPHED;
+            _morphCount++;
+        }
+#endif
+    }
+
+    // Visits each operand of this node. The operand must be either a lambda, function, or functor with the signature
+    // `GenTree::VisitResult VisitorFunction(GenTree* operand)`. Here is a simple example:
+    //
+    //     unsigned operandCount = 0;
+    //     node->VisitOperands([&](GenTree* operand) -> GenTree::VisitResult)
+    //     {
+    //         operandCount++;
+    //         return GenTree::VisitResult::Continue;
+    //     });
+    //
+    // This function is generally more efficient that the operand iterator and should be preferred over that API for
+    // hot code, as it affords better opportunities for inlining and achieves shorter dynamic path lengths when
+    // deciding how operands need to be accessed.
+    //
+    // Note that this function does not respect `GTF_REVERSE_OPS`. This is always safe in LIR, but may be dangerous
+    // in HIR if for some reason you need to visit operands in the order in which they will execute.
+    public VisitResult VisitOperands(GenTreeVisitorFunc visitor)
+    {
+        return VisitOperandUses((ref use) => visitor(use));
+    }
+
+    public VisitResult VisitOperandUses(GenTreeUseVisitorFunc visitor)
+    {
+        var result = VisitResult.Continue;
+        var oper = _oper;
+
+        if (oper.IsLeaf)
+        {
+            // Nothing to handle
+        }
+        else if (oper.IsBinary)
+        {
+            var op = AsOp();
+
+            if (op.Op1 is not null)
+            {
+                result = visitor(ref op.Op1Ref);
+            }
+            else
+            {
+#if DEBUG
+                assert(op.IsNullOp1Legal);
+#endif
+            }
+
+            // We can have null op1 and non-null op2 for some nodes, such as GT_LEA
+
+            if ((result is not VisitResult.Abort) && (op.Op2 is not null))
+            {
+                result = visitor(ref op.Op2Ref);
+            }
+            else
+            {
+#if DEBUG
+                assert(op.IsNullOp2Legal);
+#endif
+            }
+        }
+        else if (oper.IsUnary)
+        {
+            var unOp = AsUnOp();
+
+            if (unOp.Op1 is not null)
+            {
+                result = visitor(ref unOp.Op1Ref);
+            }
+            else
+            {
+#if DEBUG
+                assert(unOp.IsNullOp1Legal);
+#endif
+            }
+        }
+        else
+        {
+            assert(oper.IsSpecial);
+
+            switch (oper)
+            {
+                case GT_PHI:
+                {
+                    var phi = AsPhi();
+
+                    foreach (var use in phi.Uses)
+                    {
+                        result = visitor(ref use.NodeRef);
+
+                        if (result is VisitResult.Abort)
+                        {
+                            break;
+                        }
+                    }
+                    break;
+                }
+
+                case GT_CMPXCHG:
+                {
+                    var cmpXchg = AsCmpXchg();
+                    result = visitor(ref cmpXchg.AddrRef);
+
+                    if (result is not VisitResult.Abort)
+                    {
+                        result = visitor(ref cmpXchg.DataRef);
+
+                        if (result is not VisitResult.Abort)
+                        {
+                            result = visitor(ref cmpXchg.ComparandRef);
+                        }
+                    }
+                    break;
+                }
+
+                case GT_SELECT:
+                {
+                    var conditional = AsConditional();
+                    result = visitor(ref conditional.CondRef);
+
+                    if (result is not VisitResult.Abort)
+                    {
+                        result = visitor(ref conditional.Op1Ref);
+
+                        if (result is not VisitResult.Abort)
+                        {
+                            result = visitor(ref conditional.Op2Ref);
+                        }
+                    }
+                    break;
+                }
+
+#if FEATURE_HW_INTRINSICS
+                case GT_HWINTRINSIC:
+                {
+                    var hwintrinsic = AsHWIntrinsic();
+
+                    foreach (ref var operand in hwintrinsic.Operands)
+                    {
+                        result = visitor(ref operand);
+
+                        if (result is VisitResult.Abort)
+                        {
+                            break;
+                        }
+                    }
+                    break;
+                }
+#endif
+
+                case GT_ARR_ELEM:
+                {
+                    var arrElem = AsArrElem();
+                    result = visitor(ref arrElem.ArrObjRef);
+
+                    if (result is not VisitResult.Abort)
+                    {
+                        Span<GenTree> arrInds = arrElem.ArrInds;
+
+                        foreach (ref var arrInd in arrInds[..arrElem.ArrRank])
+                        {
+                            result = visitor(ref arrInd);
+
+                            if (result is VisitResult.Abort)
+                            {
+                                break;
+                            }
+                        }
+                    }
+                    break;
+                }
+
+                case GT_CALL:
+                {
+                    var call = AsCall();
+                    ref var args = ref call.Args;
+
+                    foreach (var arg in args.EarlyArgs)
+                    {
+                        result = visitor(ref arg.EarlyNodeRef);
+
+                        if (result is VisitResult.Abort)
+                        {
+                            break;
+                        }
+                    }
+
+                    if (result != VisitResult.Abort)
+                    {
+                        foreach (var arg in args.LateArgs)
+                        {
+                            result = visitor(ref arg.LateNodeRef);
+
+                            if (result is VisitResult.Abort)
+                            {
+                                break;
+                            }
+                        }
+
+                        if ((result is not VisitResult.Abort) && (call.ControlExpr is not null))
+                        {
+                            result = visitor(ref call.ControlExprRef);
+                        }
+                    }
+                    break;
+                }
+
+                case GT_FIELD_LIST:
+                {
+                    var fieldList = AsFieldList();
+
+                    foreach (var use in fieldList.Uses)
+                    {
+                        result = visitor(ref use.NodeRef);
+
+                        if (result is VisitResult.Abort)
+                        {
+                            break;
+                        }
+                    }
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                    break;
+                }
+            }
+        }
+        return result;
     }
 }

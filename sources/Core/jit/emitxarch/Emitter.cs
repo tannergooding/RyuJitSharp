@@ -4,9 +4,6 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 #if TARGET_XARCH
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-
 namespace RyuJitSharp;
 
 public partial class Emitter

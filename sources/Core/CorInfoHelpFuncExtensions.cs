@@ -4,8 +4,6 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using static RyuJitSharp.CorInfoHelpFuncExtensions.Flags;
 
 namespace RyuJitSharp;
@@ -418,21 +416,21 @@ public static class CorInfoHelpFuncExtensions
 
     extension(CorInfoHelpFunc helperId)
     {
-        public bool AlwaysThrow => (helperId.Flags & AlwaysThrow) is not 0;
+        public bool AlwaysThrow => (helperId.Flags & AlwaysThrow) != 0;
 
-        public bool IsAllocator => (helperId.Flags & IsAllocator) is not 0;
+        public bool IsAllocator => (helperId.Flags & IsAllocator) != 0;
 
-        public bool IsNoEscape => (helperId.Flags & IsNoEscape) is not 0;
+        public bool IsNoEscape => (helperId.Flags & IsNoEscape) != 0;
 
-        public bool IsNoGC => (helperId.Flags & IsNoGC) is not 0;
+        public bool IsNoGC => (helperId.Flags & IsNoGC) != 0;
 
-        public bool IsPure => (helperId.Flags & IsPure) is not 0;
+        public bool IsPure => (helperId.Flags & IsPure) != 0;
 
-        public bool MayRunCctor => (helperId.Flags & MayRunCctor) is not 0;
+        public bool MayRunCctor => (helperId.Flags & MayRunCctor) != 0;
 
-        public bool MutatesHeap => (helperId.Flags & MutatesHeap) is not 0;
+        public bool MutatesHeap => (helperId.Flags & MutatesHeap) != 0;
 
-        public bool NonNullReturn => (helperId.Flags & NonNullReturn) is not 0;
+        public bool NonNullReturn => (helperId.Flags & NonNullReturn) != 0;
 
         public bool NoThrow => helperId.ThrownExceptions == ExceptionSetFlags.None;
 
@@ -441,8 +439,7 @@ public static class CorInfoHelpFuncExtensions
             get
             {
                 assert(s_thrownExceptions.Length == (int)(CORINFO_HELP_COUNT));
-                assert(helperId < CORINFO_HELP_COUNT);
-                return Unsafe.Add(ref MemoryMarshal.GetReference(s_thrownExceptions), (int)(helperId));
+                return s_thrownExceptions[(int)(helperId)];
             }
         }
 
@@ -451,8 +448,7 @@ public static class CorInfoHelpFuncExtensions
             get
             {
                 assert(s_flags.Length == (int)(CORINFO_HELP_COUNT));
-                assert(helperId < CORINFO_HELP_COUNT);
-                return Unsafe.Add(ref MemoryMarshal.GetReference(s_flags), (int)(helperId));
+                return s_flags[(int)(helperId)];
             }
         }
     }

@@ -17,21 +17,7 @@ public sealed class GenTreeColon : GenTreeOp
     // However, these conventions seem backward.
     // TODO-Cleanup: If we could get these accessors used everywhere, then we could switch them.
 
-    public GenTree ElseNode
-    {
-        get
-        {
-            assert(Op1 is not null);
-            return Op1;
-        }
-    }
+    public GenTree ElseNode => Op1;
 
-    public GenTree ThenNode
-    {
-        get
-        {
-            assert(Op2 is not null);
-            return Op2;
-        }
-    }
+    public GenTree ThenNode => Op2;
 }

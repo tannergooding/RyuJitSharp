@@ -10,11 +10,11 @@ public sealed class GenTreeIndexAddr : GenTreeOp
 {
     private readonly unsafe CORINFO_CLASS_HANDLE _structElemClass;
     private readonly var_types _elemType;
-    private readonly uint _elemSize;
-    private readonly uint _lenOffset;
-    private readonly uint _elemOffset;
+    private readonly int _elemSize;
+    private readonly int _lenOffset;
+    private readonly int _elemOffset;
 
-    public unsafe GenTreeIndexAddr(GenTree arr, GenTree ind, var_types elemType, CORINFO_CLASS_HANDLE structElemClass, uint elemSize, uint lenOffset, uint elemOffset, bool boundsCheck)
+    public unsafe GenTreeIndexAddr(GenTree arr, GenTree ind, var_types elemType, CORINFO_CLASS_HANDLE structElemClass, int elemSize, int lenOffset, int elemOffset, bool boundsCheck)
         : base(GT_INDEX_ADDR, TYP_BYREF, arr, ind)
     {
         _structElemClass = structElemClass;
@@ -33,39 +33,25 @@ public sealed class GenTreeIndexAddr : GenTreeOp
         Flags |= (GTF_EXCEPT | GTF_GLOB_REF);
     }
 
-    public GenTree Arr
-    {
-        get
-        {
-            assert(Op1 is not null);
-            return Op1;
-        }
-    }
+    public GenTree Arr => Op1;
 
     /// <summary>The offset from the array's base address to its first element.</summary>
-    public uint ElemOffset => _elemOffset;
+    public int ElemOffset => _elemOffset;
 
     /// <summary>The size of elements in the array</summary>
-    public uint ElemSize => _elemSize;
+    public int ElemSize => _elemSize;
 
     /// <summary>The element type of the array.</summary>
     public var_types ElemType => _elemType;
 
-    public GenTree Index
-    {
-        get
-        {
-            assert(Op2 is not null);
-            return Op2;
-        }
-    }
+    public GenTree Index => Op2;
 
-    public bool IsBoundsChecked => (Flags & GTF_INX_RNGCHK) is not 0;
+    public bool IsBoundsChecked => (Flags & GTF_INX_RNGCHK) != 0;
 
-    public bool IsNotNull => (Flags & (GTF_INX_ADDR_NONNULL | GTF_INX_RNGCHK)) is not 0;
+    public bool IsNotNull => (Flags & (GTF_INX_ADDR_NONNULL | GTF_INX_RNGCHK)) != 0;
 
     /// <summary>The offset from the array's base address to its length.</summary>
-    public uint LenOffset => _lenOffset;
+    public int LenOffset => _lenOffset;
 
     /// <summary>If the element type is a struct, this is the struct type.</summary>
     public unsafe CORINFO_CLASS_HANDLE StructElemClass => _structElemClass;

@@ -21,7 +21,7 @@ public sealed class InlineResult
     private unsafe CORINFO_METHOD_HANDLE m_Callee;
 
     /// <summary>estimated size of imported IL</summary>
-    private uint  m_ImportedILSize;
+    private int  m_ImportedILSize;
 
     private string m_Description = "";
 
@@ -101,7 +101,7 @@ public sealed class InlineResult
 
     /// <summary>Determine if this inline is profitable</summary>
     /// <param name="methodInfo"></param>
-    public unsafe void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
+    public unsafe void DetermineProfitability(in CORINFO_METHOD_INFO methodInfo)
         => m_Policy.DetermineProfitability(methodInfo);
 
     /// <summary>Make a true observation, and update internal state appropriately.</summary>
@@ -136,9 +136,6 @@ public sealed class InlineResult
     /// <param name="value"></param>
     public void NoteInt(InlineObservation observation, int value)
         => m_Policy.NoteInt(observation, value);
-
-    public void NoteInt(InlineObservation observation, uint value)
-        => m_Policy.NoteInt(observation, (int)(value));
 
     /// <summary>NoteSuccess means the all the various checks have passed and the inline can happen.</summary>
     public void NoteSuccess()

@@ -17,13 +17,13 @@ public unsafe partial struct ICorJitCompiler : ICorJitCompiler.Interface
 {
     internal Vtbl* lpVtbl;
 
-    public CorJitResult compileMethod(ICorJitInfo* jitInfo, CORINFO_METHOD_INFO* methodInfo, CorJitFlag flags, byte** nativeEntry, uint* nativeSizeOfCode) => lpVtbl->compileMethod((ICorJitCompiler*)Unsafe.AsPointer(ref this), jitInfo, methodInfo, flags, nativeEntry, nativeSizeOfCode);
+    public CorJitResult compileMethod(ICorJitInfo* jitInfo, CORINFO_METHOD_INFO* methodInfo, int flags, byte** nativeEntry, int* nativeSizeOfCode) => lpVtbl->compileMethod((ICorJitCompiler*)(Unsafe.AsPointer(ref this)), jitInfo, methodInfo, flags, nativeEntry, nativeSizeOfCode);
 
-    public void ProcessShutdownWork(ICorStaticInfo* staticInfo) => lpVtbl->ProcessShutdownWork((ICorJitCompiler*)Unsafe.AsPointer(ref this), staticInfo);
+    public void ProcessShutdownWork(ICorStaticInfo* staticInfo) => lpVtbl->ProcessShutdownWork((ICorJitCompiler*)(Unsafe.AsPointer(ref this)), staticInfo);
 
-    public void getVersionIdentifier(Guid* versionIdentifier) => lpVtbl->getVersionIdentifier((ICorJitCompiler*)Unsafe.AsPointer(ref this), versionIdentifier);
+    public void getVersionIdentifier(Guid* versionIdentifier) => lpVtbl->getVersionIdentifier((ICorJitCompiler*)(Unsafe.AsPointer(ref this)), versionIdentifier);
 
-    public void setTargetOS(CORINFO_OS os) => lpVtbl->setTargetOS((ICorJitCompiler*)Unsafe.AsPointer(ref this), os);
+    public void setTargetOS(CORINFO_OS os) => lpVtbl->setTargetOS((ICorJitCompiler*)(Unsafe.AsPointer(ref this)), os);
 
     public interface Interface
     {
@@ -37,7 +37,7 @@ public unsafe partial struct ICorJitCompiler : ICorJitCompiler.Interface
         // * In the 32 bit jit this is implemented by code:CILJit.compileMethod
         // * For the 64 bit jit this is implemented by code:PreJit.compileMethod
         // Note: setTargetOS must be called before this api is used.
-        CorJitResult compileMethod(ICorJitInfo* jitInfo, CORINFO_METHOD_INFO* methodInfo, CorJitFlag flags, byte** nativeEntry, uint* nativeSizeOfCode);
+        CorJitResult compileMethod(ICorJitInfo* jitInfo, CORINFO_METHOD_INFO* methodInfo, int flags, byte** nativeEntry, int* nativeSizeOfCode);
 
         // Do any appropriate work at process shutdown.  Default impl is to do nothing.
         void ProcessShutdownWork(ICorStaticInfo* staticInfo) { }
@@ -57,7 +57,7 @@ public unsafe partial struct ICorJitCompiler : ICorJitCompiler.Interface
 
     public struct Vtbl
     {
-        public delegate* unmanaged[MemberFunction]<ICorJitCompiler*, ICorJitInfo*, CORINFO_METHOD_INFO*, CorJitFlag, byte**, uint*, CorJitResult> compileMethod;
+        public delegate* unmanaged[MemberFunction]<ICorJitCompiler*, ICorJitInfo*, CORINFO_METHOD_INFO*, int, byte**, int*, CorJitResult> compileMethod;
 
         public delegate* unmanaged[MemberFunction]<ICorJitCompiler*, ICorStaticInfo*, void> ProcessShutdownWork;
 

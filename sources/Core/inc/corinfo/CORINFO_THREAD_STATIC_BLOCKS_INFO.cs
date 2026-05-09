@@ -21,11 +21,11 @@ public struct CORINFO_THREAD_STATIC_BLOCKS_INFO
     public unsafe void* threadVarsSection;
 
     // windows specific
-    public uint offsetOfThreadLocalStoragePointer;
+    public int offsetOfThreadLocalStoragePointer;
 
-    public uint offsetOfMaxThreadStaticBlocks;
+    public int offsetOfMaxThreadStaticBlocks;
 
-    public uint offsetOfThreadStaticBlocks;
+    public int offsetOfThreadStaticBlocks;
 
-    public uint offsetOfGCDataPointer;
+    public int offsetOfGCDataPointer;
 }

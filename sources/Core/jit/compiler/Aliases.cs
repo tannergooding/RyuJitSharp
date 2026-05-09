@@ -4,7 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 // Actual ASCII string
-global using unsafe VarName = byte*;
+global using VarName = string;
 
 global using NodeToTestDataMap = System.Collections.Generic.Dictionary<RyuJitSharp.GenTree, RyuJitSharp.TestLabelAndNum>;
 
@@ -22,9 +22,9 @@ global using unsafe fgWalkPreFn = delegate*<ref RyuJitSharp.GenTree, RyuJitSharp
 
 global using GenTreeStack = System.Collections.Generic.Stack<RyuJitSharp.GenTree>;
 
-global using NodeToUnsignedMap = System.Collections.Generic.Dictionary<RyuJitSharp.GenTree, uint>;
+global using NodeToUnsignedMap = System.Collections.Generic.Dictionary<RyuJitSharp.GenTree, int>;
 
-global using VarToLikelyClassMap = System.Collections.Generic.Dictionary<uint, RyuJitSharp.Compiler.InferredGdvEntry>;
+global using VarToLikelyClassMap = System.Collections.Generic.Dictionary<int, RyuJitSharp.Compiler.InferredGdvEntry>;
 
 global using HelperToManagedMap = System.Collections.Generic.Dictionary<RyuJitSharp.Pointer<RyuJitSharp.CORINFO_METHOD_STRUCT_>, RyuJitSharp.Pointer<RyuJitSharp.CORINFO_METHOD_STRUCT_>>;
 
@@ -42,17 +42,17 @@ global using unsafe fgSplitPredicate = delegate*<RyuJitSharp.GenTree, RyuJitShar
 global using AddCodeDscMap = System.Collections.Generic.Dictionary<RyuJitSharp.Compiler.AddCodeDscKey, RyuJitSharp.Compiler.AddCodeDsc>;
 
 // To represent sets of VN's that have already been hoisted in outer loops.
-global using VNSet = System.Collections.Generic.Dictionary<uint, bool>;
+global using VNSet = System.Collections.Generic.Dictionary<int, bool>;
 
 global using CopyPropSsaDefStack = System.Collections.Generic.Stack<RyuJitSharp.Compiler.CopyPropSsaDef>;
 
-global using LclNumToLiveDefsMap = System.Collections.Generic.Dictionary<uint, System.Collections.Generic.Stack<RyuJitSharp.Compiler.CopyPropSsaDef>>;
+global using LclNumToLiveDefsMap = System.Collections.Generic.Dictionary<int, System.Collections.Generic.Stack<RyuJitSharp.Compiler.CopyPropSsaDef>>;
 
-global using LocalNumberToNullCheckTreeMap = System.Collections.Generic.Dictionary<uint, RyuJitSharp.GenTree>;
+global using LocalNumberToNullCheckTreeMap = System.Collections.Generic.Dictionary<int, RyuJitSharp.GenTree>;
 
 global using CallSiteDebugInfoTable = System.Collections.Generic.Dictionary<RyuJitSharp.GenTree, RyuJitSharp.DebugInfo>;
 
-global using VarNumToScopeDscMap = System.Collections.Generic.Dictionary<uint, RyuJitSharp.Compiler.VarScopeMapInfo>;
+global using VarNumToScopeDscMap = System.Collections.Generic.Dictionary<int, RyuJitSharp.Compiler.VarScopeMapInfo>;
 
 #if DEBUG
 global using NodeToIntMap = System.Collections.Generic.Dictionary<RyuJitSharp.GenTree, int>;

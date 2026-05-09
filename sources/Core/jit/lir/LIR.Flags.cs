@@ -7,7 +7,7 @@ using System;
 
 namespace RyuJitSharp;
 
-/// <summary> Defines the set of flags that may appear in the GenTree::gtLIRFlags field.</summary>
+/// <summary> Defines the set of flags that may appear in the GenTree.gtLIRFlags field.</summary>
 public partial class LIR
 {
     [Flags]
@@ -15,12 +15,12 @@ public partial class LIR
     {
         None = 0x00,
 
-        /// <summary>An arbitrary "mark" bit that can be used in place of a more expensive data structure when processing a set of LIR nodes. See for example `LIR::GetTreeRange`.</summary>
+        /// <summary>An arbitrary "mark" bit that can be used in place of a more expensive data structure when processing a set of LIR nodes. See for example `LIR.GetTreeRange`.</summary>
         Mark = 0x01,
 
         /// <summary>
         ///   <para>Set on a node if it produces a value that is not subsequently used.</para>
-        ///   <para>Should never be set on nodes that return `false` for `GenTree::IsValue`.</para>
+        ///   <para>Should never be set on nodes that return `false` for `GenTree.IsValue`.</para>
         ///   <para>Note that this bit should not be assumed to be valid at all points during compilation: it is currently only computed during target-dependent lowering.</para>
         /// </summary>
         UnusedValue = 0x02,

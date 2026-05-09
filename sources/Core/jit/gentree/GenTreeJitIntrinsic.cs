@@ -63,7 +63,7 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
     }
 #endif
 
-    public bool IsSimd => _simdSize is not 0;
+    public bool IsSimd => _simdSize != 0;
 
     public unsafe CORINFO_METHOD_HANDLE MethodHandle
     {
@@ -114,7 +114,7 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
     /// <returns>Returns regNumber assigned to i'th position.</returns>
     public regNumber GetRegNumByIdx(byte idx)
     {
-        if (idx is 0)
+        if (idx == 0)
         {
             return RegNum;
         }
@@ -130,7 +130,7 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
 #endif
 
         // should only be used to get otherReg
-        assert(idx is 1);
+        assert(idx == 1);
         return _otherReg;
     }
 
@@ -144,7 +144,7 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
 #if TARGET_ARM64
         assert(idx < MAX_MULTIREG_COUNT);
 
-        if (idx is 0)
+        if (idx == 0)
         {
             RegNum = reg;
             return;
@@ -159,7 +159,7 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
 #endif
 
         // should only be used to set otherReg
-        assert(idx is 1);
+        assert(idx == 1);
         _otherReg = reg;
     }
 

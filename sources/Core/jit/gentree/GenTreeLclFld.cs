@@ -14,14 +14,14 @@ public sealed class GenTreeLclFld : GenTreeLclVarCommon
     // The struct layout for this local field.
     private ClassLayout? _layout;
 
-    public GenTreeLclFld(genTreeOps oper, var_types type, uint lclNum, ushort lclOffs, ClassLayout? layout = null)
+    public GenTreeLclFld(genTreeOps oper, var_types type, int lclNum, ushort lclOffs, ClassLayout? layout = null)
         : base(oper, type, lclNum)
     {
         _lclOffs = lclOffs;
         _layout = layout;
     }
 
-    public GenTreeLclFld(var_types type, uint lclNum, ushort lclOffs, GenTree data, ClassLayout layout)
+    public GenTreeLclFld(var_types type, int lclNum, ushort lclOffs, GenTree data, ClassLayout layout)
         : base(GT_STORE_LCL_FLD, type, lclNum, data)
     {
         _lclOffs = lclOffs;

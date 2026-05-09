@@ -4,4 +4,4 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 // We will represent ValueNum's as unsigned integers.
-global using ValueNum = uint;
+global using ValueNum = int;

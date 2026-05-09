@@ -9,10 +9,10 @@ namespace RyuJitSharp;
 /// <remarks>Used for `array.GetLength(n)`, `array.GetLowerBound(n)`.</remarks>
 public sealed class GenTreeMDArr : GenTreeArrCommon
 {
-    private readonly uint _dim;  
-    private readonly uint _rank;
+    private readonly int _dim;  
+    private readonly int _rank;
 
-    public GenTreeMDArr(genTreeOps oper, GenTree arrRef, uint dim, uint rank)
+    public GenTreeMDArr(genTreeOps oper, GenTree arrRef, int dim, int rank)
         : base(oper, TYP_INT, arrRef)
     {
         _dim = dim;
@@ -22,8 +22,8 @@ public sealed class GenTreeMDArr : GenTreeArrCommon
     }
 
     /// <summary>Array dimension of this array length</summary>
-    public uint Dim => _dim;
+    public int Dim => _dim;
 
     /// <summary>Array rank of the array</summary>
-    public uint Rank => _rank;
+    public int Rank => _rank;
 }

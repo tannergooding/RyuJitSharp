@@ -4,8 +4,6 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
@@ -945,8 +943,7 @@ public static class OPCODEExtensions
             get
             {
                 assert(s_argKinds.Length == (int)(CEE_COUNT));
-                assert(opcode < CEE_COUNT);
-                return Unsafe.Add(ref MemoryMarshal.GetReference(s_argKinds), (int)(opcode));
+                return s_argKinds[(int)(opcode)];
             }
         }
 
@@ -955,8 +952,7 @@ public static class OPCODEExtensions
             get
             {
                 assert(s_names.Length == (int)(CEE_COUNT));
-                assert(opcode < CEE_COUNT);
-                return Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(s_names), (int)(opcode));
+                return s_names[(int)(opcode)];
             }
         }
 #endif
@@ -966,8 +962,7 @@ public static class OPCODEExtensions
             get
             {
                 assert(s_sizes.Length == (int)(CEE_COUNT));
-                assert(opcode < CEE_COUNT);
-                return Unsafe.Add(ref MemoryMarshal.GetReference(s_sizes), (int)(opcode));
+                return s_sizes[(int)(opcode)];
             }
         }
     }

@@ -27,404 +27,404 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
     // ICorMethodInfo
     //
 
-    public bool isIntrinsic(CORINFO_METHOD_HANDLE ftn) => lpVtbl->isIntrinsic((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn);
+    public bool isIntrinsic(CORINFO_METHOD_HANDLE ftn) => lpVtbl->isIntrinsic((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftn);
 
-    public bool notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn) => lpVtbl->notifyMethodInfoUsage((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn);
+    public bool notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn) => lpVtbl->notifyMethodInfoUsage((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftn);
 
-    public CorInfoFlag getMethodAttribs(CORINFO_METHOD_HANDLE ftn) => lpVtbl->getMethodAttribs((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn);
+    public CorInfoFlag getMethodAttribs(CORINFO_METHOD_HANDLE ftn) => lpVtbl->getMethodAttribs((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftn);
 
-    public void setMethodAttribs(CORINFO_METHOD_HANDLE ftn, CorInfoMethodRuntimeFlags attribs) => lpVtbl->setMethodAttribs((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn, attribs);
+    public void setMethodAttribs(CORINFO_METHOD_HANDLE ftn, CorInfoMethodRuntimeFlags attribs) => lpVtbl->setMethodAttribs((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftn, attribs);
 
-    public void getMethodSig(CORINFO_METHOD_HANDLE ftn, CORINFO_SIG_INFO* sig, CORINFO_CLASS_HANDLE memberParent = null) => lpVtbl->getMethodSig((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn, sig, memberParent);
+    public void getMethodSig(CORINFO_METHOD_HANDLE ftn, CORINFO_SIG_INFO* sig, CORINFO_CLASS_HANDLE memberParent = null) => lpVtbl->getMethodSig((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftn, sig, memberParent);
 
-    public bool getMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info, CORINFO_CONTEXT_HANDLE context = null) => lpVtbl->getMethodInfo((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn, info, context);
+    public bool getMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info, CORINFO_CONTEXT_HANDLE context = null) => lpVtbl->getMethodInfo((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftn, info, context);
 
-    public bool haveSameMethodDefinition(CORINFO_METHOD_HANDLE meth1Hnd, CORINFO_METHOD_HANDLE meth2Hnd) => lpVtbl->haveSameMethodDefinition((ICorJitInfo*)Unsafe.AsPointer(ref this), meth1Hnd, meth2Hnd);
+    public bool haveSameMethodDefinition(CORINFO_METHOD_HANDLE meth1Hnd, CORINFO_METHOD_HANDLE meth2Hnd) => lpVtbl->haveSameMethodDefinition((ICorJitInfo*)(Unsafe.AsPointer(ref this)), meth1Hnd, meth2Hnd);
 
-    public CORINFO_CLASS_HANDLE getTypeDefinition(CORINFO_CLASS_HANDLE type) => lpVtbl->getTypeDefinition((ICorJitInfo*)Unsafe.AsPointer(ref this), type);
+    public CORINFO_CLASS_HANDLE getTypeDefinition(CORINFO_CLASS_HANDLE type) => lpVtbl->getTypeDefinition((ICorJitInfo*)(Unsafe.AsPointer(ref this)), type);
 
-    public CorInfoInline canInline(CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE calleeHnd) => lpVtbl->canInline((ICorJitInfo*)Unsafe.AsPointer(ref this), callerHnd, calleeHnd);
+    public CorInfoInline canInline(CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE calleeHnd) => lpVtbl->canInline((ICorJitInfo*)(Unsafe.AsPointer(ref this)), callerHnd, calleeHnd);
 
-    public void beginInlining(CORINFO_METHOD_HANDLE inlinerHnd, CORINFO_METHOD_HANDLE inlineeHnd) => lpVtbl->beginInlining((ICorJitInfo*)Unsafe.AsPointer(ref this), inlinerHnd, inlineeHnd);
+    public void beginInlining(CORINFO_METHOD_HANDLE inlinerHnd, CORINFO_METHOD_HANDLE inlineeHnd) => lpVtbl->beginInlining((ICorJitInfo*)(Unsafe.AsPointer(ref this)), inlinerHnd, inlineeHnd);
 
-    public void reportInliningDecision(CORINFO_METHOD_HANDLE inlinerHnd, CORINFO_METHOD_HANDLE inlineeHnd, CorInfoInline inlineResult, byte* reason) => lpVtbl->reportInliningDecision((ICorJitInfo*)Unsafe.AsPointer(ref this), inlinerHnd, inlineeHnd, inlineResult, reason);
+    public void reportInliningDecision(CORINFO_METHOD_HANDLE inlinerHnd, CORINFO_METHOD_HANDLE inlineeHnd, CorInfoInline inlineResult, byte* reason) => lpVtbl->reportInliningDecision((ICorJitInfo*)(Unsafe.AsPointer(ref this)), inlinerHnd, inlineeHnd, inlineResult, reason);
 
-    public bool canTailCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE declaredCalleeHnd, CORINFO_METHOD_HANDLE exactCalleeHnd, bool fIsTailPrefix) => lpVtbl->canTailCall((ICorJitInfo*)Unsafe.AsPointer(ref this), callerHnd, declaredCalleeHnd, exactCalleeHnd, fIsTailPrefix);
+    public bool canTailCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE declaredCalleeHnd, CORINFO_METHOD_HANDLE exactCalleeHnd, bool fIsTailPrefix) => lpVtbl->canTailCall((ICorJitInfo*)(Unsafe.AsPointer(ref this)), callerHnd, declaredCalleeHnd, exactCalleeHnd, fIsTailPrefix);
 
-    public void reportTailCallDecision(CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE calleeHnd, bool fIsTailPrefix, CorInfoTailCall tailCallResult, byte* reason) => lpVtbl->reportTailCallDecision((ICorJitInfo*)Unsafe.AsPointer(ref this), callerHnd, calleeHnd, fIsTailPrefix, tailCallResult, reason);
+    public void reportTailCallDecision(CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE calleeHnd, bool fIsTailPrefix, CorInfoTailCall tailCallResult, byte* reason) => lpVtbl->reportTailCallDecision((ICorJitInfo*)(Unsafe.AsPointer(ref this)), callerHnd, calleeHnd, fIsTailPrefix, tailCallResult, reason);
 
-    public void getEHinfo(CORINFO_METHOD_HANDLE ftn, uint EHnumber, CORINFO_EH_CLAUSE* clause) => lpVtbl->getEHinfo((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn, EHnumber, clause);
+    public void getEHinfo(CORINFO_METHOD_HANDLE ftn, int EHnumber, CORINFO_EH_CLAUSE* clause) => lpVtbl->getEHinfo((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftn, EHnumber, clause);
 
-    public CORINFO_CLASS_HANDLE getMethodClass(CORINFO_METHOD_HANDLE method) => lpVtbl->getMethodClass((ICorJitInfo*)Unsafe.AsPointer(ref this), method);
+    public CORINFO_CLASS_HANDLE getMethodClass(CORINFO_METHOD_HANDLE method) => lpVtbl->getMethodClass((ICorJitInfo*)(Unsafe.AsPointer(ref this)), method);
 
-    public void getMethodVTableOffset(CORINFO_METHOD_HANDLE method, uint* offsetOfIndirection, uint* offsetAfterIndirection, bool* isRelative) => lpVtbl->getMethodVTableOffset((ICorJitInfo*)Unsafe.AsPointer(ref this), method, offsetOfIndirection, offsetAfterIndirection, isRelative);
+    public void getMethodVTableOffset(CORINFO_METHOD_HANDLE method, int* offsetOfIndirection, int* offsetAfterIndirection, bool* isRelative) => lpVtbl->getMethodVTableOffset((ICorJitInfo*)(Unsafe.AsPointer(ref this)), method, offsetOfIndirection, offsetAfterIndirection, isRelative);
 
-    public bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO* info) => lpVtbl->resolveVirtualMethod((ICorJitInfo*)Unsafe.AsPointer(ref this), info);
+    public bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO* info) => lpVtbl->resolveVirtualMethod((ICorJitInfo*)(Unsafe.AsPointer(ref this)), info);
 
-    public CORINFO_METHOD_HANDLE getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg) => lpVtbl->getUnboxedEntry((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn, requiresInstMethodTableArg);
+    public CORINFO_METHOD_HANDLE getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg) => lpVtbl->getUnboxedEntry((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftn, requiresInstMethodTableArg);
 
-    public CORINFO_METHOD_HANDLE getInstantiatedEntry(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_HANDLE* methodArg, CORINFO_CLASS_HANDLE* classArg) => lpVtbl->getInstantiatedEntry((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn, methodArg, classArg);
+    public CORINFO_METHOD_HANDLE getInstantiatedEntry(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_HANDLE* methodArg, CORINFO_CLASS_HANDLE* classArg) => lpVtbl->getInstantiatedEntry((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftn, methodArg, classArg);
 
-    public CORINFO_METHOD_HANDLE getAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk) => lpVtbl->getAsyncOtherVariant((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn, variantIsThunk);
+    public CORINFO_METHOD_HANDLE getAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk) => lpVtbl->getAsyncOtherVariant((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftn, variantIsThunk);
 
-    public CORINFO_CLASS_HANDLE getDefaultComparerClass(CORINFO_CLASS_HANDLE elemType) => lpVtbl->getDefaultComparerClass((ICorJitInfo*)Unsafe.AsPointer(ref this), elemType);
+    public CORINFO_CLASS_HANDLE getDefaultComparerClass(CORINFO_CLASS_HANDLE elemType) => lpVtbl->getDefaultComparerClass((ICorJitInfo*)(Unsafe.AsPointer(ref this)), elemType);
 
-    public CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE elemType) => lpVtbl->getDefaultEqualityComparerClass((ICorJitInfo*)Unsafe.AsPointer(ref this), elemType);
+    public CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE elemType) => lpVtbl->getDefaultEqualityComparerClass((ICorJitInfo*)(Unsafe.AsPointer(ref this)), elemType);
 
-    public CORINFO_CLASS_HANDLE getSZArrayHelperEnumeratorClass(CORINFO_CLASS_HANDLE elemType) => lpVtbl->getSZArrayHelperEnumeratorClass((ICorJitInfo*)Unsafe.AsPointer(ref this), elemType);
+    public CORINFO_CLASS_HANDLE getSZArrayHelperEnumeratorClass(CORINFO_CLASS_HANDLE elemType) => lpVtbl->getSZArrayHelperEnumeratorClass((ICorJitInfo*)(Unsafe.AsPointer(ref this)), elemType);
 
-    public void expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult) => lpVtbl->expandRawHandleIntrinsic((ICorJitInfo*)Unsafe.AsPointer(ref this), pResolvedToken, callerHandle, pResult);
+    public void expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult) => lpVtbl->expandRawHandleIntrinsic((ICorJitInfo*)(Unsafe.AsPointer(ref this)), pResolvedToken, callerHandle, pResult);
 
-    public bool isIntrinsicType(CORINFO_CLASS_HANDLE classHnd) => lpVtbl->isIntrinsicType((ICorJitInfo*)Unsafe.AsPointer(ref this), classHnd);
+    public bool isIntrinsicType(CORINFO_CLASS_HANDLE classHnd) => lpVtbl->isIntrinsicType((ICorJitInfo*)(Unsafe.AsPointer(ref this)), classHnd);
 
-    public CorInfoCallConvExtension getUnmanagedCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, bool* pSuppressGCTransition) => lpVtbl->getUnmanagedCallConv((ICorJitInfo*)Unsafe.AsPointer(ref this), method, callSiteSig, pSuppressGCTransition);
+    public CorInfoCallConvExtension getUnmanagedCallConv(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, bool* pSuppressGCTransition) => lpVtbl->getUnmanagedCallConv((ICorJitInfo*)(Unsafe.AsPointer(ref this)), method, callSiteSig, pSuppressGCTransition);
 
-    public bool pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig) => lpVtbl->pInvokeMarshalingRequired((ICorJitInfo*)Unsafe.AsPointer(ref this), method, callSiteSig);
+    public bool pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig) => lpVtbl->pInvokeMarshalingRequired((ICorJitInfo*)(Unsafe.AsPointer(ref this)), method, callSiteSig);
 
-    public bool satisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method) => lpVtbl->satisfiesMethodConstraints((ICorJitInfo*)Unsafe.AsPointer(ref this), parent, method);
+    public bool satisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method) => lpVtbl->satisfiesMethodConstraints((ICorJitInfo*)(Unsafe.AsPointer(ref this)), parent, method);
 
-    public void methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE method) => lpVtbl->methodMustBeLoadedBeforeCodeIsRun((ICorJitInfo*)Unsafe.AsPointer(ref this), method);
+    public void methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE method) => lpVtbl->methodMustBeLoadedBeforeCodeIsRun((ICorJitInfo*)(Unsafe.AsPointer(ref this)), method);
 
-    public void getGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal) => lpVtbl->getGSCookie((ICorJitInfo*)Unsafe.AsPointer(ref this), pCookieVal, ppCookieVal);
+    public void getGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal) => lpVtbl->getGSCookie((ICorJitInfo*)(Unsafe.AsPointer(ref this)), pCookieVal, ppCookieVal);
 
-    public void setPatchpointInfo(PatchpointInfo* patchpointInfo) => lpVtbl->setPatchpointInfo((ICorJitInfo*)Unsafe.AsPointer(ref this), patchpointInfo);
+    public void setPatchpointInfo(PatchpointInfo* patchpointInfo) => lpVtbl->setPatchpointInfo((ICorJitInfo*)(Unsafe.AsPointer(ref this)), patchpointInfo);
 
-    public PatchpointInfo* getOSRInfo(uint* ilOffset) => lpVtbl->getOSRInfo((ICorJitInfo*)Unsafe.AsPointer(ref this), ilOffset);
+    public PatchpointInfo* getOSRInfo(int* ilOffset) => lpVtbl->getOSRInfo((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ilOffset);
 
     //
     // ICorModuleInfo
     //
 
-    public void resolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken) => lpVtbl->resolveToken((ICorJitInfo*)Unsafe.AsPointer(ref this), pResolvedToken);
+    public void resolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken) => lpVtbl->resolveToken((ICorJitInfo*)(Unsafe.AsPointer(ref this)), pResolvedToken);
 
-    public void findSig(CORINFO_MODULE_HANDLE module, uint sigTOK, CORINFO_CONTEXT_HANDLE context, CORINFO_SIG_INFO* sig) => lpVtbl->findSig((ICorJitInfo*)Unsafe.AsPointer(ref this), module, sigTOK, context, sig);
+    public void findSig(CORINFO_MODULE_HANDLE module, int sigTOK, CORINFO_CONTEXT_HANDLE context, CORINFO_SIG_INFO* sig) => lpVtbl->findSig((ICorJitInfo*)(Unsafe.AsPointer(ref this)), module, sigTOK, context, sig);
 
-    public void findCallSiteSig(CORINFO_MODULE_HANDLE module, uint methTOK, CORINFO_CONTEXT_HANDLE context, CORINFO_SIG_INFO* sig) => lpVtbl->findCallSiteSig((ICorJitInfo*)Unsafe.AsPointer(ref this), module, methTOK, context, sig);
+    public void findCallSiteSig(CORINFO_MODULE_HANDLE module, int methTOK, CORINFO_CONTEXT_HANDLE context, CORINFO_SIG_INFO* sig) => lpVtbl->findCallSiteSig((ICorJitInfo*)(Unsafe.AsPointer(ref this)), module, methTOK, context, sig);
 
-    public CORINFO_CLASS_HANDLE getTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken) => lpVtbl->getTokenTypeAsHandle((ICorJitInfo*)Unsafe.AsPointer(ref this), pResolvedToken);
+    public CORINFO_CLASS_HANDLE getTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken) => lpVtbl->getTokenTypeAsHandle((ICorJitInfo*)(Unsafe.AsPointer(ref this)), pResolvedToken);
 
-    public int getStringLiteral(CORINFO_MODULE_HANDLE module, uint metaTOK, char* buffer, int bufferSize, int startIndex = 0) => lpVtbl->getStringLiteral((ICorJitInfo*)Unsafe.AsPointer(ref this), module, metaTOK, buffer, bufferSize, startIndex);
+    public int getStringLiteral(CORINFO_MODULE_HANDLE module, int metaTOK, char* buffer, int bufferSize, int startIndex = 0) => lpVtbl->getStringLiteral((ICorJitInfo*)(Unsafe.AsPointer(ref this)), module, metaTOK, buffer, bufferSize, startIndex);
 
-    public nuint printObjectDescription(CORINFO_OBJECT_HANDLE handle, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printObjectDescription((ICorJitInfo*)Unsafe.AsPointer(ref this), handle, buffer, bufferSize, pRequiredBufferSize);
+    public nint printObjectDescription(CORINFO_OBJECT_HANDLE handle, byte* buffer, nint bufferSize, nint* pRequiredBufferSize = null) => lpVtbl->printObjectDescription((ICorJitInfo*)(Unsafe.AsPointer(ref this)), handle, buffer, bufferSize, pRequiredBufferSize);
 
     //
     // ICorClassInfo
     //
 
-    public CorInfoType asCorInfoType(CORINFO_CLASS_HANDLE cls) => lpVtbl->asCorInfoType((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
+    public CorInfoType asCorInfoType(CORINFO_CLASS_HANDLE cls) => lpVtbl->asCorInfoType((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
-    public byte* getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, byte** namespaceName) => lpVtbl->getClassNameFromMetadata((ICorJitInfo*)Unsafe.AsPointer(ref this), cls, namespaceName);
+    public byte* getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, byte** namespaceName) => lpVtbl->getClassNameFromMetadata((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls, namespaceName);
 
-    public CORINFO_CLASS_HANDLE getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, uint index) => lpVtbl->getTypeInstantiationArgument((ICorJitInfo*)Unsafe.AsPointer(ref this), cls, index);
+    public CORINFO_CLASS_HANDLE getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, int index) => lpVtbl->getTypeInstantiationArgument((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls, index);
 
-    public CORINFO_CLASS_HANDLE getMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, uint index) => lpVtbl->getMethodInstantiationArgument((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn, index);
+    public CORINFO_CLASS_HANDLE getMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, int index) => lpVtbl->getMethodInstantiationArgument((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftn, index);
 
-    public nuint printClassName(CORINFO_CLASS_HANDLE cls, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printClassName((ICorJitInfo*)Unsafe.AsPointer(ref this), cls, buffer, bufferSize, pRequiredBufferSize);
+    public nint printClassName(CORINFO_CLASS_HANDLE cls, byte* buffer, nint bufferSize, nint* pRequiredBufferSize = null) => lpVtbl->printClassName((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls, buffer, bufferSize, pRequiredBufferSize);
 
-    public bool isValueClass(CORINFO_CLASS_HANDLE cls) => lpVtbl->isValueClass((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
+    public bool isValueClass(CORINFO_CLASS_HANDLE cls) => lpVtbl->isValueClass((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
-    public CorInfoFlag getClassAttribs(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassAttribs((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
+    public CorInfoFlag getClassAttribs(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassAttribs((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
-    public byte* getClassAssemblyName(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassAssemblyName((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
+    public byte* getClassAssemblyName(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassAssemblyName((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
-    public void* LongLifetimeMalloc(nuint sz) => lpVtbl->LongLifetimeMalloc((ICorJitInfo*)Unsafe.AsPointer(ref this), sz);
+    public void* LongLifetimeMalloc(nint sz) => lpVtbl->LongLifetimeMalloc((ICorJitInfo*)(Unsafe.AsPointer(ref this)), sz);
 
-    public void LongLifetimeFree(void* obj) => lpVtbl->LongLifetimeFree((ICorJitInfo*)Unsafe.AsPointer(ref this), obj);
+    public void LongLifetimeFree(void* obj) => lpVtbl->LongLifetimeFree((ICorJitInfo*)(Unsafe.AsPointer(ref this)), obj);
 
-    public bool getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset) => lpVtbl->getIsClassInitedFlagAddress((ICorJitInfo*)Unsafe.AsPointer(ref this), cls, addr, offset);
+    public bool getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset) => lpVtbl->getIsClassInitedFlagAddress((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls, addr, offset);
 
-    public void* getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassStaticDynamicInfo((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
+    public void* getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassStaticDynamicInfo((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
-    public void* getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassThreadStaticDynamicInfo((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
+    public void* getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassThreadStaticDynamicInfo((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
-    public bool getStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr) => lpVtbl->getStaticBaseAddress((ICorJitInfo*)Unsafe.AsPointer(ref this), cls, isGc, addr);
+    public bool getStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr) => lpVtbl->getStaticBaseAddress((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls, isGc, addr);
 
-    public uint getClassSize(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassSize((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
+    public int getClassSize(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassSize((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
-    public uint getHeapClassSize(CORINFO_CLASS_HANDLE cls) => lpVtbl->getHeapClassSize((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
+    public int getHeapClassSize(CORINFO_CLASS_HANDLE cls) => lpVtbl->getHeapClassSize((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
-    public bool canAllocateOnStack(CORINFO_CLASS_HANDLE cls) => lpVtbl->canAllocateOnStack((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
+    public bool canAllocateOnStack(CORINFO_CLASS_HANDLE cls) => lpVtbl->canAllocateOnStack((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
-    public uint getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, bool fDoubleAlignHint = false) => lpVtbl->getClassAlignmentRequirement((ICorJitInfo*)Unsafe.AsPointer(ref this), cls, fDoubleAlignHint);
+    public int getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, bool fDoubleAlignHint = false) => lpVtbl->getClassAlignmentRequirement((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls, fDoubleAlignHint);
 
-    public uint getClassGClayout(CORINFO_CLASS_HANDLE cls, byte* gcPtrs) => lpVtbl->getClassGClayout((ICorJitInfo*)Unsafe.AsPointer(ref this), cls, gcPtrs);
+    public int getClassGClayout(CORINFO_CLASS_HANDLE cls, byte* gcPtrs) => lpVtbl->getClassGClayout((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls, gcPtrs);
 
-    public uint getClassNumInstanceFields(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassNumInstanceFields((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
+    public int getClassNumInstanceFields(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassNumInstanceFields((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
-    public CORINFO_FIELD_HANDLE getFieldInClass(CORINFO_CLASS_HANDLE clsHnd, int num) => lpVtbl->getFieldInClass((ICorJitInfo*)Unsafe.AsPointer(ref this), clsHnd, num);
+    public CORINFO_FIELD_HANDLE getFieldInClass(CORINFO_CLASS_HANDLE clsHnd, int num) => lpVtbl->getFieldInClass((ICorJitInfo*)(Unsafe.AsPointer(ref this)), clsHnd, num);
 
-    public GetTypeLayoutResult getTypeLayout(CORINFO_CLASS_HANDLE typeHnd, CORINFO_TYPE_LAYOUT_NODE* treeNodes, nuint* numTreeNodes) => lpVtbl->getTypeLayout((ICorJitInfo*)Unsafe.AsPointer(ref this), typeHnd, treeNodes, numTreeNodes);
+    public GetTypeLayoutResult getTypeLayout(CORINFO_CLASS_HANDLE typeHnd, CORINFO_TYPE_LAYOUT_NODE* treeNodes, nint* numTreeNodes) => lpVtbl->getTypeLayout((ICorJitInfo*)(Unsafe.AsPointer(ref this)), typeHnd, treeNodes, numTreeNodes);
 
-    public bool checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, byte* modifier, bool fOptional) => lpVtbl->checkMethodModifier((ICorJitInfo*)Unsafe.AsPointer(ref this), hMethod, modifier, fOptional);
+    public bool checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, byte* modifier, bool fOptional) => lpVtbl->checkMethodModifier((ICorJitInfo*)(Unsafe.AsPointer(ref this)), hMethod, modifier, fOptional);
 
-    public CorInfoHelpFunc getNewHelper(CORINFO_CLASS_HANDLE classHandle, bool* pHasSideEffects) => lpVtbl->getNewHelper((ICorJitInfo*)Unsafe.AsPointer(ref this), classHandle, pHasSideEffects);
+    public CorInfoHelpFunc getNewHelper(CORINFO_CLASS_HANDLE classHandle, bool* pHasSideEffects) => lpVtbl->getNewHelper((ICorJitInfo*)(Unsafe.AsPointer(ref this)), classHandle, pHasSideEffects);
 
-    public CorInfoHelpFunc getNewArrHelper(CORINFO_CLASS_HANDLE arrayCls) => lpVtbl->getNewArrHelper((ICorJitInfo*)Unsafe.AsPointer(ref this), arrayCls);
+    public CorInfoHelpFunc getNewArrHelper(CORINFO_CLASS_HANDLE arrayCls) => lpVtbl->getNewArrHelper((ICorJitInfo*)(Unsafe.AsPointer(ref this)), arrayCls);
 
-    public CorInfoHelpFunc getCastingHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fThrowing) => lpVtbl->getCastingHelper((ICorJitInfo*)Unsafe.AsPointer(ref this), pResolvedToken, fThrowing);
+    public CorInfoHelpFunc getCastingHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fThrowing) => lpVtbl->getCastingHelper((ICorJitInfo*)(Unsafe.AsPointer(ref this)), pResolvedToken, fThrowing);
 
-    public CorInfoHelpFunc getSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd) => lpVtbl->getSharedCCtorHelper((ICorJitInfo*)Unsafe.AsPointer(ref this), clsHnd);
+    public CorInfoHelpFunc getSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd) => lpVtbl->getSharedCCtorHelper((ICorJitInfo*)(Unsafe.AsPointer(ref this)), clsHnd);
 
-    public CORINFO_CLASS_HANDLE getTypeForBox(CORINFO_CLASS_HANDLE cls) => lpVtbl->getTypeForBox((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
+    public CORINFO_CLASS_HANDLE getTypeForBox(CORINFO_CLASS_HANDLE cls) => lpVtbl->getTypeForBox((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
-    public CorInfoHelpFunc getBoxHelper(CORINFO_CLASS_HANDLE cls) => lpVtbl->getBoxHelper((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
+    public CorInfoHelpFunc getBoxHelper(CORINFO_CLASS_HANDLE cls) => lpVtbl->getBoxHelper((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
-    public CorInfoHelpFunc getUnBoxHelper(CORINFO_CLASS_HANDLE cls) => lpVtbl->getUnBoxHelper((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
+    public CorInfoHelpFunc getUnBoxHelper(CORINFO_CLASS_HANDLE cls) => lpVtbl->getUnBoxHelper((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
-    public CORINFO_OBJECT_HANDLE getRuntimeTypePointer(CORINFO_CLASS_HANDLE cls) => lpVtbl->getRuntimeTypePointer((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
+    public CORINFO_OBJECT_HANDLE getRuntimeTypePointer(CORINFO_CLASS_HANDLE cls) => lpVtbl->getRuntimeTypePointer((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
-    public bool isObjectImmutable(CORINFO_OBJECT_HANDLE objPtr) => lpVtbl->isObjectImmutable((ICorJitInfo*)Unsafe.AsPointer(ref this), objPtr);
+    public bool isObjectImmutable(CORINFO_OBJECT_HANDLE objPtr) => lpVtbl->isObjectImmutable((ICorJitInfo*)(Unsafe.AsPointer(ref this)), objPtr);
 
-    public bool getStringChar(CORINFO_OBJECT_HANDLE strObj, int index, ushort* value) => lpVtbl->getStringChar((ICorJitInfo*)Unsafe.AsPointer(ref this), strObj, index, value);
+    public bool getStringChar(CORINFO_OBJECT_HANDLE strObj, int index, ushort* value) => lpVtbl->getStringChar((ICorJitInfo*)(Unsafe.AsPointer(ref this)), strObj, index, value);
 
-    public CORINFO_CLASS_HANDLE getObjectType(CORINFO_OBJECT_HANDLE objPtr) => lpVtbl->getObjectType((ICorJitInfo*)Unsafe.AsPointer(ref this), objPtr);
+    public CORINFO_CLASS_HANDLE getObjectType(CORINFO_OBJECT_HANDLE objPtr) => lpVtbl->getObjectType((ICorJitInfo*)(Unsafe.AsPointer(ref this)), objPtr);
 
-    public bool getReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoHelpFunc id, CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONST_LOOKUP* pLookup) => lpVtbl->getReadyToRunHelper((ICorJitInfo*)Unsafe.AsPointer(ref this), pResolvedToken, id, callerHandle, pLookup);
+    public bool getReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoHelpFunc id, CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONST_LOOKUP* pLookup) => lpVtbl->getReadyToRunHelper((ICorJitInfo*)(Unsafe.AsPointer(ref this)), pResolvedToken, id, callerHandle, pLookup);
 
-    public void getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_HANDLE delegateType, CORINFO_METHOD_HANDLE callerHandler, CORINFO_LOOKUP* pLookup) => lpVtbl->getReadyToRunDelegateCtorHelper((ICorJitInfo*)Unsafe.AsPointer(ref this), pTargetMethod, targetConstraint, delegateType, callerHandler, pLookup);
+    public void getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_HANDLE delegateType, CORINFO_METHOD_HANDLE callerHandler, CORINFO_LOOKUP* pLookup) => lpVtbl->getReadyToRunDelegateCtorHelper((ICorJitInfo*)(Unsafe.AsPointer(ref this)), pTargetMethod, targetConstraint, delegateType, callerHandler, pLookup);
 
-    public CorInfoInitClassResult initClass(CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context) => lpVtbl->initClass((ICorJitInfo*)Unsafe.AsPointer(ref this), field, method, context);
+    public CorInfoInitClassResult initClass(CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context) => lpVtbl->initClass((ICorJitInfo*)(Unsafe.AsPointer(ref this)), field, method, context);
 
-    public void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls) => lpVtbl->classMustBeLoadedBeforeCodeIsRun((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
+    public void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls) => lpVtbl->classMustBeLoadedBeforeCodeIsRun((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
-    public CORINFO_CLASS_HANDLE getBuiltinClass(CorInfoClassId classId) => lpVtbl->getBuiltinClass((ICorJitInfo*)Unsafe.AsPointer(ref this), classId);
+    public CORINFO_CLASS_HANDLE getBuiltinClass(CorInfoClassId classId) => lpVtbl->getBuiltinClass((ICorJitInfo*)(Unsafe.AsPointer(ref this)), classId);
 
-    public CorInfoType getTypeForPrimitiveValueClass(CORINFO_CLASS_HANDLE cls) => lpVtbl->getTypeForPrimitiveValueClass((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
+    public CorInfoType getTypeForPrimitiveValueClass(CORINFO_CLASS_HANDLE cls) => lpVtbl->getTypeForPrimitiveValueClass((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
-    public CorInfoType getTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls) => lpVtbl->getTypeForPrimitiveNumericClass((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
+    public CorInfoType getTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls) => lpVtbl->getTypeForPrimitiveNumericClass((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
-    public bool canCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent) => lpVtbl->canCast((ICorJitInfo*)Unsafe.AsPointer(ref this), child, parent);
+    public bool canCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent) => lpVtbl->canCast((ICorJitInfo*)(Unsafe.AsPointer(ref this)), child, parent);
 
-    public TypeCompareState compareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass) => lpVtbl->compareTypesForCast((ICorJitInfo*)Unsafe.AsPointer(ref this), fromClass, toClass);
+    public TypeCompareState compareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass) => lpVtbl->compareTypesForCast((ICorJitInfo*)(Unsafe.AsPointer(ref this)), fromClass, toClass);
 
-    public TypeCompareState compareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2) => lpVtbl->compareTypesForEquality((ICorJitInfo*)Unsafe.AsPointer(ref this), cls1, cls2);
+    public TypeCompareState compareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2) => lpVtbl->compareTypesForEquality((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls1, cls2);
 
-    public bool isMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2) => lpVtbl->isMoreSpecificType((ICorJitInfo*)Unsafe.AsPointer(ref this), cls1, cls2);
+    public bool isMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2) => lpVtbl->isMoreSpecificType((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls1, cls2);
 
-    public bool isExactType(CORINFO_CLASS_HANDLE cls) => lpVtbl->isExactType((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
+    public bool isExactType(CORINFO_CLASS_HANDLE cls) => lpVtbl->isExactType((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
-    public TypeCompareState isGenericType(CORINFO_CLASS_HANDLE cls) => lpVtbl->isGenericType((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
+    public TypeCompareState isGenericType(CORINFO_CLASS_HANDLE cls) => lpVtbl->isGenericType((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
-    public TypeCompareState isNullableType(CORINFO_CLASS_HANDLE cls) => lpVtbl->isNullableType((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
+    public TypeCompareState isNullableType(CORINFO_CLASS_HANDLE cls) => lpVtbl->isNullableType((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
-    public TypeCompareState isEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType) => lpVtbl->isEnum((ICorJitInfo*)Unsafe.AsPointer(ref this), cls, underlyingType);
+    public TypeCompareState isEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType) => lpVtbl->isEnum((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls, underlyingType);
 
-    public CORINFO_CLASS_HANDLE getParentType(CORINFO_CLASS_HANDLE cls) => lpVtbl->getParentType((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
+    public CORINFO_CLASS_HANDLE getParentType(CORINFO_CLASS_HANDLE cls) => lpVtbl->getParentType((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
-    public CorInfoType getChildType(CORINFO_CLASS_HANDLE clsHnd, CORINFO_CLASS_HANDLE* clsRet) => lpVtbl->getChildType((ICorJitInfo*)Unsafe.AsPointer(ref this), clsHnd, clsRet);
+    public CorInfoType getChildType(CORINFO_CLASS_HANDLE clsHnd, CORINFO_CLASS_HANDLE* clsRet) => lpVtbl->getChildType((ICorJitInfo*)(Unsafe.AsPointer(ref this)), clsHnd, clsRet);
 
-    public bool isSDArray(CORINFO_CLASS_HANDLE cls) => lpVtbl->isSDArray((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
+    public bool isSDArray(CORINFO_CLASS_HANDLE cls) => lpVtbl->isSDArray((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
-    public uint getArrayRank(CORINFO_CLASS_HANDLE cls) => lpVtbl->getArrayRank((ICorJitInfo*)Unsafe.AsPointer(ref this), cls);
+    public int getArrayRank(CORINFO_CLASS_HANDLE cls) => lpVtbl->getArrayRank((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
-    public CorInfoArrayIntrinsic getArrayIntrinsicID(CORINFO_METHOD_HANDLE ftn) => lpVtbl->getArrayIntrinsicID((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn);
+    public CorInfoArrayIntrinsic getArrayIntrinsicID(CORINFO_METHOD_HANDLE ftn) => lpVtbl->getArrayIntrinsicID((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftn);
 
-    public void* getArrayInitializationData(CORINFO_FIELD_HANDLE field, uint size) => lpVtbl->getArrayInitializationData((ICorJitInfo*)Unsafe.AsPointer(ref this), field, size);
+    public void* getArrayInitializationData(CORINFO_FIELD_HANDLE field, int size) => lpVtbl->getArrayInitializationData((ICorJitInfo*)(Unsafe.AsPointer(ref this)), field, size);
 
-    public CorInfoIsAccessAllowedResult canAccessClass(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_HELPER_DESC* pAccessHelper) => lpVtbl->canAccessClass((ICorJitInfo*)Unsafe.AsPointer(ref this), pResolvedToken, callerHandle, pAccessHelper);
+    public CorInfoIsAccessAllowedResult canAccessClass(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_HELPER_DESC* pAccessHelper) => lpVtbl->canAccessClass((ICorJitInfo*)(Unsafe.AsPointer(ref this)), pResolvedToken, callerHandle, pAccessHelper);
 
     //
     // ICorFieldInfo
     //
 
-    public nuint printFieldName(CORINFO_FIELD_HANDLE field, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printFieldName((ICorJitInfo*)Unsafe.AsPointer(ref this), field, buffer, bufferSize, pRequiredBufferSize);
+    public nint printFieldName(CORINFO_FIELD_HANDLE field, byte* buffer, nint bufferSize, nint* pRequiredBufferSize = null) => lpVtbl->printFieldName((ICorJitInfo*)(Unsafe.AsPointer(ref this)), field, buffer, bufferSize, pRequiredBufferSize);
 
-    public CORINFO_CLASS_HANDLE getFieldClass(CORINFO_FIELD_HANDLE field) => lpVtbl->getFieldClass((ICorJitInfo*)Unsafe.AsPointer(ref this), field);
+    public CORINFO_CLASS_HANDLE getFieldClass(CORINFO_FIELD_HANDLE field) => lpVtbl->getFieldClass((ICorJitInfo*)(Unsafe.AsPointer(ref this)), field);
 
-    public CorInfoType getFieldType(CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType = null, CORINFO_CLASS_HANDLE memberParent = null) => lpVtbl->getFieldType((ICorJitInfo*)Unsafe.AsPointer(ref this), field, structType, memberParent);
+    public CorInfoType getFieldType(CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType = null, CORINFO_CLASS_HANDLE memberParent = null) => lpVtbl->getFieldType((ICorJitInfo*)(Unsafe.AsPointer(ref this)), field, structType, memberParent);
 
-    public uint getFieldOffset(CORINFO_FIELD_HANDLE field) => lpVtbl->getFieldOffset((ICorJitInfo*)Unsafe.AsPointer(ref this), field);
+    public int getFieldOffset(CORINFO_FIELD_HANDLE field) => lpVtbl->getFieldOffset((ICorJitInfo*)(Unsafe.AsPointer(ref this)), field);
 
-    public void getFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult) => lpVtbl->getFieldInfo((ICorJitInfo*)Unsafe.AsPointer(ref this), pResolvedToken, callerHandle, flags, pResult);
+    public void getFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult) => lpVtbl->getFieldInfo((ICorJitInfo*)(Unsafe.AsPointer(ref this)), pResolvedToken, callerHandle, flags, pResult);
 
-    public uint getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, bool isGCType) => lpVtbl->getThreadLocalFieldInfo((ICorJitInfo*)Unsafe.AsPointer(ref this), field, isGCType);
+    public int getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, bool isGCType) => lpVtbl->getThreadLocalFieldInfo((ICorJitInfo*)(Unsafe.AsPointer(ref this)), field, isGCType);
 
-    public void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType) => lpVtbl->getThreadLocalStaticBlocksInfo((ICorJitInfo*)Unsafe.AsPointer(ref this), pInfo, isGCType);
+    public void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType) => lpVtbl->getThreadLocalStaticBlocksInfo((ICorJitInfo*)(Unsafe.AsPointer(ref this)), pInfo, isGCType);
 
-    public void getThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo) => lpVtbl->getThreadLocalStaticInfo_NativeAOT((ICorJitInfo*)Unsafe.AsPointer(ref this), pInfo);
+    public void getThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo) => lpVtbl->getThreadLocalStaticInfo_NativeAOT((ICorJitInfo*)(Unsafe.AsPointer(ref this)), pInfo);
 
-    public bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd) => lpVtbl->isFieldStatic((ICorJitInfo*)Unsafe.AsPointer(ref this), fldHnd);
+    public bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd) => lpVtbl->isFieldStatic((ICorJitInfo*)(Unsafe.AsPointer(ref this)), fldHnd);
 
-    public int getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd) => lpVtbl->getArrayOrStringLength((ICorJitInfo*)Unsafe.AsPointer(ref this), objHnd);
+    public int getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd) => lpVtbl->getArrayOrStringLength((ICorJitInfo*)(Unsafe.AsPointer(ref this)), objHnd);
 
     //
     // ICorDebugInfo
     //
 
-    public void getBoundaries(CORINFO_METHOD_HANDLE ftn, uint* cILOffsets, uint** pILOffsets, ICorDebugInfo.BoundaryTypes* implicitBoundaries) => lpVtbl->getBoundaries((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn, cILOffsets, pILOffsets, implicitBoundaries);
+    public void getBoundaries(CORINFO_METHOD_HANDLE ftn, int* cILOffsets, int** pILOffsets, ICorDebugInfo.BoundaryTypes* implicitBoundaries) => lpVtbl->getBoundaries((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftn, cILOffsets, pILOffsets, implicitBoundaries);
 
-    public void setBoundaries(CORINFO_METHOD_HANDLE ftn, uint cMap, ICorDebugInfo.OffsetMapping* pMap) => lpVtbl->setBoundaries((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn, cMap, pMap);
+    public void setBoundaries(CORINFO_METHOD_HANDLE ftn, int cMap, ICorDebugInfo.OffsetMapping* pMap) => lpVtbl->setBoundaries((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftn, cMap, pMap);
 
-    public void getVars(CORINFO_METHOD_HANDLE ftn, uint* cVars, ICorDebugInfo.ILVarInfo** vars, bool* extendOthers) => lpVtbl->getVars((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn, cVars, vars, extendOthers);
+    public void getVars(CORINFO_METHOD_HANDLE ftn, int* cVars, ICorDebugInfo.ILVarInfo** vars, bool* extendOthers) => lpVtbl->getVars((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftn, cVars, vars, extendOthers);
 
-    public void setVars(CORINFO_METHOD_HANDLE ftn, uint cVars, ICorDebugInfo.NativeVarInfo* vars) => lpVtbl->setVars((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn, cVars, vars);
+    public void setVars(CORINFO_METHOD_HANDLE ftn, int cVars, ICorDebugInfo.NativeVarInfo* vars) => lpVtbl->setVars((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftn, cVars, vars);
 
-    public void reportRichMappings(ICorDebugInfo.InlineTreeNode* inlineTreeNodes, uint numInlineTreeNodes, ICorDebugInfo.RichOffsetMapping* mappings, uint numMappings) => lpVtbl->reportRichMappings((ICorJitInfo*)Unsafe.AsPointer(ref this), inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
+    public void reportRichMappings(ICorDebugInfo.InlineTreeNode* inlineTreeNodes, int numInlineTreeNodes, ICorDebugInfo.RichOffsetMapping* mappings, int numMappings) => lpVtbl->reportRichMappings((ICorJitInfo*)(Unsafe.AsPointer(ref this)), inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
 
-    public void reportAsyncDebugInfo(ICorDebugInfo.AsyncInfo* asyncInfo, ICorDebugInfo.AsyncSuspensionPoint* suspensionPoints, ICorDebugInfo.AsyncContinuationVarInfo* vars, uint numVars) => lpVtbl->reportAsyncDebugInfo((ICorJitInfo*)Unsafe.AsPointer(ref this), asyncInfo, suspensionPoints, vars, numVars);
+    public void reportAsyncDebugInfo(ICorDebugInfo.AsyncInfo* asyncInfo, ICorDebugInfo.AsyncSuspensionPoint* suspensionPoints, ICorDebugInfo.AsyncContinuationVarInfo* vars, int numVars) => lpVtbl->reportAsyncDebugInfo((ICorJitInfo*)(Unsafe.AsPointer(ref this)), asyncInfo, suspensionPoints, vars, numVars);
 
-    public void reportMetadata(byte* key, void* value, nuint length) => lpVtbl->reportMetadata((ICorJitInfo*)Unsafe.AsPointer(ref this), key, value, length);
+    public void reportMetadata(byte* key, void* value, nint length) => lpVtbl->reportMetadata((ICorJitInfo*)(Unsafe.AsPointer(ref this)), key, value, length);
 
     //
     // Misc
     //
 
-    public void* allocateArray(nuint cBytes) => lpVtbl->allocateArray((ICorJitInfo*)Unsafe.AsPointer(ref this), cBytes);
+    public void* allocateArray(nint cBytes) => lpVtbl->allocateArray((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cBytes);
 
-    public void freeArray(void* array) => lpVtbl->freeArray((ICorJitInfo*)Unsafe.AsPointer(ref this), array);
+    public void freeArray(void* array) => lpVtbl->freeArray((ICorJitInfo*)(Unsafe.AsPointer(ref this)), array);
 
     //
     // ICorArgInfo
     //
 
-    public CORINFO_ARG_LIST_HANDLE getArgNext(CORINFO_ARG_LIST_HANDLE args) => lpVtbl->getArgNext((ICorJitInfo*)Unsafe.AsPointer(ref this), args);
+    public CORINFO_ARG_LIST_HANDLE getArgNext(CORINFO_ARG_LIST_HANDLE args) => lpVtbl->getArgNext((ICorJitInfo*)(Unsafe.AsPointer(ref this)), args);
 
-    public CorInfoTypeWithMod getArgType(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args, CORINFO_CLASS_HANDLE* vcTypeRet) => lpVtbl->getArgType((ICorJitInfo*)Unsafe.AsPointer(ref this), sig, args, vcTypeRet);
+    public CorInfoTypeWithMod getArgType(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args, CORINFO_CLASS_HANDLE* vcTypeRet) => lpVtbl->getArgType((ICorJitInfo*)(Unsafe.AsPointer(ref this)), sig, args, vcTypeRet);
 
-    public int getExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet) => lpVtbl->getExactClasses((ICorJitInfo*)Unsafe.AsPointer(ref this), baseType, maxExactClasses, exactClsRet);
+    public int getExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet) => lpVtbl->getExactClasses((ICorJitInfo*)(Unsafe.AsPointer(ref this)), baseType, maxExactClasses, exactClsRet);
 
-    public CORINFO_CLASS_HANDLE getArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args) => lpVtbl->getArgClass((ICorJitInfo*)Unsafe.AsPointer(ref this), sig, args);
+    public CORINFO_CLASS_HANDLE getArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args) => lpVtbl->getArgClass((ICorJitInfo*)(Unsafe.AsPointer(ref this)), sig, args);
 
-    public CorInfoHFAElemType getHFAType(CORINFO_CLASS_HANDLE hClass) => lpVtbl->getHFAType((ICorJitInfo*)Unsafe.AsPointer(ref this), hClass);
+    public CorInfoHFAElemType getHFAType(CORINFO_CLASS_HANDLE hClass) => lpVtbl->getHFAType((ICorJitInfo*)(Unsafe.AsPointer(ref this)), hClass);
 
-    public bool runWithErrorTrap(errorTrapFunction function, void* parameter) => lpVtbl->runWithErrorTrap((ICorJitInfo*)Unsafe.AsPointer(ref this), function, parameter);
+    public bool runWithErrorTrap(errorTrapFunction function, void* parameter) => lpVtbl->runWithErrorTrap((ICorJitInfo*)(Unsafe.AsPointer(ref this)), function, parameter);
 
-    public bool runWithSPMIErrorTrap(errorTrapFunction function, void* parameter) => lpVtbl->runWithSPMIErrorTrap((ICorJitInfo*)Unsafe.AsPointer(ref this), function, parameter);
+    public bool runWithSPMIErrorTrap(errorTrapFunction function, void* parameter) => lpVtbl->runWithSPMIErrorTrap((ICorJitInfo*)(Unsafe.AsPointer(ref this)), function, parameter);
 
-    public void getEEInfo(CORINFO_EE_INFO* pEEInfoOut) => lpVtbl->getEEInfo((ICorJitInfo*)Unsafe.AsPointer(ref this), pEEInfoOut);
+    public void getEEInfo(CORINFO_EE_INFO* pEEInfoOut) => lpVtbl->getEEInfo((ICorJitInfo*)(Unsafe.AsPointer(ref this)), pEEInfoOut);
 
-    public void getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut) => lpVtbl->getAsyncInfo((ICorJitInfo*)Unsafe.AsPointer(ref this), pAsyncInfoOut);
+    public void getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut) => lpVtbl->getAsyncInfo((ICorJitInfo*)(Unsafe.AsPointer(ref this)), pAsyncInfoOut);
 
     //
     // Diagnostic methods
     //
 
-    public mdMethodDef getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod) => lpVtbl->getMethodDefFromMethod((ICorJitInfo*)Unsafe.AsPointer(ref this), hMethod);
+    public mdMethodDef getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod) => lpVtbl->getMethodDefFromMethod((ICorJitInfo*)(Unsafe.AsPointer(ref this)), hMethod);
 
-    public nuint printMethodName(CORINFO_METHOD_HANDLE ftn, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize = null) => lpVtbl->printMethodName((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn, buffer, bufferSize, pRequiredBufferSize);
+    public nint printMethodName(CORINFO_METHOD_HANDLE ftn, byte* buffer, nint bufferSize, nint* pRequiredBufferSize = null) => lpVtbl->printMethodName((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftn, buffer, bufferSize, pRequiredBufferSize);
 
-    public byte* getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, byte** className, byte** namespaceName, byte** enclosingClassName, nuint maxEnclosingClassNames) => lpVtbl->getMethodNameFromMetadata((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn, className, namespaceName, enclosingClassName, maxEnclosingClassNames);
+    public byte* getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, byte** className, byte** namespaceName, byte** enclosingClassName, nint maxEnclosingClassNames) => lpVtbl->getMethodNameFromMetadata((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftn, className, namespaceName, enclosingClassName, maxEnclosingClassNames);
 
-    public uint getMethodHash(CORINFO_METHOD_HANDLE ftn) => lpVtbl->getMethodHash((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn);
+    public int getMethodHash(CORINFO_METHOD_HANDLE ftn) => lpVtbl->getMethodHash((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftn);
 
-    public bool getSystemVAmd64PassStructInRegisterDescriptor(CORINFO_CLASS_HANDLE structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr) => lpVtbl->getSystemVAmd64PassStructInRegisterDescriptor((ICorJitInfo*)Unsafe.AsPointer(ref this), structHnd, structPassInRegDescPtr);
+    public bool getSystemVAmd64PassStructInRegisterDescriptor(CORINFO_CLASS_HANDLE structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr) => lpVtbl->getSystemVAmd64PassStructInRegisterDescriptor((ICorJitInfo*)(Unsafe.AsPointer(ref this)), structHnd, structPassInRegDescPtr);
 
-    public void getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering) => lpVtbl->getSwiftLowering((ICorJitInfo*)Unsafe.AsPointer(ref this), structHnd, pLowering);
+    public void getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering) => lpVtbl->getSwiftLowering((ICorJitInfo*)(Unsafe.AsPointer(ref this)), structHnd, pLowering);
 
-    public void getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering) => lpVtbl->getFpStructLowering((ICorJitInfo*)Unsafe.AsPointer(ref this), structHnd, pLowering);
+    public void getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering) => lpVtbl->getFpStructLowering((ICorJitInfo*)(Unsafe.AsPointer(ref this)), structHnd, pLowering);
 
-    public CorInfoWasmType getWasmLowering(CORINFO_CLASS_HANDLE structHnd) => lpVtbl->getWasmLowering((ICorJitInfo*)Unsafe.AsPointer(ref this), structHnd);
+    public CorInfoWasmType getWasmLowering(CORINFO_CLASS_HANDLE structHnd) => lpVtbl->getWasmLowering((ICorJitInfo*)(Unsafe.AsPointer(ref this)), structHnd);
 
     //
     // ICorDynamicInfo
     //
 
-    public uint getThreadTLSIndex(void** ppIndirection = null) => lpVtbl->getThreadTLSIndex((ICorJitInfo*)Unsafe.AsPointer(ref this), ppIndirection);
+    public int getThreadTLSIndex(void** ppIndirection = null) => lpVtbl->getThreadTLSIndex((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ppIndirection);
 
-    public int* getAddrOfCaptureThreadGlobal(void** ppIndirection = null) => lpVtbl->getAddrOfCaptureThreadGlobal((ICorJitInfo*)Unsafe.AsPointer(ref this), ppIndirection);
+    public int* getAddrOfCaptureThreadGlobal(void** ppIndirection = null) => lpVtbl->getAddrOfCaptureThreadGlobal((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ppIndirection);
 
-    public void* getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_HANDLE* pMethodHandle = null) => lpVtbl->getHelperFtn((ICorJitInfo*)Unsafe.AsPointer(ref this), ftnNum, pNativeEntrypoint, pMethodHandle);
+    public void* getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_HANDLE* pMethodHandle = null) => lpVtbl->getHelperFtn((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftnNum, pNativeEntrypoint, pMethodHandle);
 
-    public void getFunctionEntryPoint(CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult, CORINFO_ACCESS_FLAGS accessFlags = CORINFO_ACCESS_ANY) => lpVtbl->getFunctionEntryPoint((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn, pResult, accessFlags);
+    public void getFunctionEntryPoint(CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult, CORINFO_ACCESS_FLAGS accessFlags = CORINFO_ACCESS_ANY) => lpVtbl->getFunctionEntryPoint((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftn, pResult, accessFlags);
 
-    public void getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, bool isUnsafeFunctionPointer, CORINFO_CONST_LOOKUP* pResult) => lpVtbl->getFunctionFixedEntryPoint((ICorJitInfo*)Unsafe.AsPointer(ref this), ftn, isUnsafeFunctionPointer, pResult);
+    public void getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, bool isUnsafeFunctionPointer, CORINFO_CONST_LOOKUP* pResult) => lpVtbl->getFunctionFixedEntryPoint((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftn, isUnsafeFunctionPointer, pResult);
 
-    public CORINFO_MODULE_HANDLE embedModuleHandle(CORINFO_MODULE_HANDLE handle, void** ppIndirection = null) => lpVtbl->embedModuleHandle((ICorJitInfo*)Unsafe.AsPointer(ref this), handle, ppIndirection);
+    public CORINFO_MODULE_HANDLE embedModuleHandle(CORINFO_MODULE_HANDLE handle, void** ppIndirection = null) => lpVtbl->embedModuleHandle((ICorJitInfo*)(Unsafe.AsPointer(ref this)), handle, ppIndirection);
 
-    public CORINFO_CLASS_HANDLE embedClassHandle(CORINFO_CLASS_HANDLE handle, void** ppIndirection = null) => lpVtbl->embedClassHandle((ICorJitInfo*)Unsafe.AsPointer(ref this), handle, ppIndirection);
+    public CORINFO_CLASS_HANDLE embedClassHandle(CORINFO_CLASS_HANDLE handle, void** ppIndirection = null) => lpVtbl->embedClassHandle((ICorJitInfo*)(Unsafe.AsPointer(ref this)), handle, ppIndirection);
 
-    public CORINFO_METHOD_HANDLE embedMethodHandle(CORINFO_METHOD_HANDLE handle, void** ppIndirection = null) => lpVtbl->embedMethodHandle((ICorJitInfo*)Unsafe.AsPointer(ref this), handle, ppIndirection);
+    public CORINFO_METHOD_HANDLE embedMethodHandle(CORINFO_METHOD_HANDLE handle, void** ppIndirection = null) => lpVtbl->embedMethodHandle((ICorJitInfo*)(Unsafe.AsPointer(ref this)), handle, ppIndirection);
 
-    public CORINFO_FIELD_HANDLE embedFieldHandle(CORINFO_FIELD_HANDLE handle, void** ppIndirection = null) => lpVtbl->embedFieldHandle((ICorJitInfo*)Unsafe.AsPointer(ref this), handle, ppIndirection);
+    public CORINFO_FIELD_HANDLE embedFieldHandle(CORINFO_FIELD_HANDLE handle, void** ppIndirection = null) => lpVtbl->embedFieldHandle((ICorJitInfo*)(Unsafe.AsPointer(ref this)), handle, ppIndirection);
 
-    public void embedGenericHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fEmbedParent, CORINFO_METHOD_HANDLE callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult) => lpVtbl->embedGenericHandle((ICorJitInfo*)Unsafe.AsPointer(ref this), pResolvedToken, fEmbedParent, callerHandle, pResult);
+    public void embedGenericHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fEmbedParent, CORINFO_METHOD_HANDLE callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult) => lpVtbl->embedGenericHandle((ICorJitInfo*)(Unsafe.AsPointer(ref this)), pResolvedToken, fEmbedParent, callerHandle, pResult);
 
-    public void getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind) => lpVtbl->getLocationOfThisType((ICorJitInfo*)Unsafe.AsPointer(ref this), context, pLookupKind);
+    public void getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind) => lpVtbl->getLocationOfThisType((ICorJitInfo*)(Unsafe.AsPointer(ref this)), context, pLookupKind);
 
-    public void getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup) => lpVtbl->getAddressOfPInvokeTarget((ICorJitInfo*)Unsafe.AsPointer(ref this), method, pLookup);
+    public void getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup) => lpVtbl->getAddressOfPInvokeTarget((ICorJitInfo*)(Unsafe.AsPointer(ref this)), method, pLookup);
 
-    public void* GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection = null) => lpVtbl->GetCookieForPInvokeCalliSig((ICorJitInfo*)Unsafe.AsPointer(ref this), szMetaSig, ppIndirection);
+    public void* GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection = null) => lpVtbl->GetCookieForPInvokeCalliSig((ICorJitInfo*)(Unsafe.AsPointer(ref this)), szMetaSig, ppIndirection);
 
-    public void* GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig) => lpVtbl->GetCookieForInterpreterCalliSig((ICorJitInfo*)Unsafe.AsPointer(ref this), szMetaSig);
+    public void* GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig) => lpVtbl->GetCookieForInterpreterCalliSig((ICorJitInfo*)(Unsafe.AsPointer(ref this)), szMetaSig);
 
-    public CORINFO_JUST_MY_CODE_HANDLE getJustMyCodeHandle(CORINFO_METHOD_HANDLE method, CORINFO_JUST_MY_CODE_HANDLE** ppIndirection = null) => lpVtbl->getJustMyCodeHandle((ICorJitInfo*)Unsafe.AsPointer(ref this), method, ppIndirection);
+    public CORINFO_JUST_MY_CODE_HANDLE getJustMyCodeHandle(CORINFO_METHOD_HANDLE method, CORINFO_JUST_MY_CODE_HANDLE** ppIndirection = null) => lpVtbl->getJustMyCodeHandle((ICorJitInfo*)(Unsafe.AsPointer(ref this)), method, ppIndirection);
 
-    public void GetProfilingHandle(bool* pbHookFunction, void** pProfilerHandle, bool* pbIndirectedHandles) => lpVtbl->GetProfilingHandle((ICorJitInfo*)Unsafe.AsPointer(ref this), pbHookFunction, pProfilerHandle, pbIndirectedHandles);
+    public void GetProfilingHandle(bool* pbHookFunction, void** pProfilerHandle, bool* pbIndirectedHandles) => lpVtbl->GetProfilingHandle((ICorJitInfo*)(Unsafe.AsPointer(ref this)), pbHookFunction, pProfilerHandle, pbIndirectedHandles);
 
-    public void getCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult) => lpVtbl->getCallInfo((ICorJitInfo*)Unsafe.AsPointer(ref this), pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult);
+    public void getCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult) => lpVtbl->getCallInfo((ICorJitInfo*)(Unsafe.AsPointer(ref this)), pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult);
 
-    public bool getStaticFieldContent(CORINFO_FIELD_HANDLE field, byte* buffer, int bufferSize, int valueOffset = 0, bool ignoreMovableObjects = true) => lpVtbl->getStaticFieldContent((ICorJitInfo*)Unsafe.AsPointer(ref this), field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
+    public bool getStaticFieldContent(CORINFO_FIELD_HANDLE field, byte* buffer, int bufferSize, int valueOffset = 0, bool ignoreMovableObjects = true) => lpVtbl->getStaticFieldContent((ICorJitInfo*)(Unsafe.AsPointer(ref this)), field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
 
-    public bool getObjectContent(CORINFO_OBJECT_HANDLE obj, byte* buffer, int bufferSize, int valueOffset) => lpVtbl->getObjectContent((ICorJitInfo*)Unsafe.AsPointer(ref this), obj, buffer, bufferSize, valueOffset);
+    public bool getObjectContent(CORINFO_OBJECT_HANDLE obj, byte* buffer, int bufferSize, int valueOffset) => lpVtbl->getObjectContent((ICorJitInfo*)(Unsafe.AsPointer(ref this)), obj, buffer, bufferSize, valueOffset);
 
-    public CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative = null) => lpVtbl->getStaticFieldCurrentClass((ICorJitInfo*)Unsafe.AsPointer(ref this), field, pIsSpeculative);
+    public CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative = null) => lpVtbl->getStaticFieldCurrentClass((ICorJitInfo*)(Unsafe.AsPointer(ref this)), field, pIsSpeculative);
 
-    public CORINFO_VARARGS_HANDLE getVarArgsHandle(CORINFO_SIG_INFO* pSig, CORINFO_METHOD_HANDLE methHnd, void** ppIndirection = null) => lpVtbl->getVarArgsHandle((ICorJitInfo*)Unsafe.AsPointer(ref this), pSig, methHnd, ppIndirection);
+    public CORINFO_VARARGS_HANDLE getVarArgsHandle(CORINFO_SIG_INFO* pSig, CORINFO_METHOD_HANDLE methHnd, void** ppIndirection = null) => lpVtbl->getVarArgsHandle((ICorJitInfo*)(Unsafe.AsPointer(ref this)), pSig, methHnd, ppIndirection);
 
-    public InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE module, mdToken metaTok, void** ppValue) => lpVtbl->constructStringLiteral((ICorJitInfo*)Unsafe.AsPointer(ref this), module, metaTok, ppValue);
+    public InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE module, mdToken metaTok, void** ppValue) => lpVtbl->constructStringLiteral((ICorJitInfo*)(Unsafe.AsPointer(ref this)), module, metaTok, ppValue);
 
-    public InfoAccessType emptyStringLiteral(void** ppValue) => lpVtbl->emptyStringLiteral((ICorJitInfo*)Unsafe.AsPointer(ref this), ppValue);
+    public InfoAccessType emptyStringLiteral(void** ppValue) => lpVtbl->emptyStringLiteral((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ppValue);
 
-    public uint getFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** ppIndirection = null) => lpVtbl->getFieldThreadLocalStoreID((ICorJitInfo*)Unsafe.AsPointer(ref this), field, ppIndirection);
+    public int getFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** ppIndirection = null) => lpVtbl->getFieldThreadLocalStoreID((ICorJitInfo*)(Unsafe.AsPointer(ref this)), field, ppIndirection);
 
-    public CORINFO_METHOD_HANDLE GetDelegateCtor(CORINFO_METHOD_HANDLE methHnd, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE targetMethodHnd, DelegateCtorArgs* pCtorData) => lpVtbl->GetDelegateCtor((ICorJitInfo*)Unsafe.AsPointer(ref this), methHnd, clsHnd, targetMethodHnd, pCtorData);
+    public CORINFO_METHOD_HANDLE GetDelegateCtor(CORINFO_METHOD_HANDLE methHnd, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE targetMethodHnd, DelegateCtorArgs* pCtorData) => lpVtbl->GetDelegateCtor((ICorJitInfo*)(Unsafe.AsPointer(ref this)), methHnd, clsHnd, targetMethodHnd, pCtorData);
 
-    public void MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd) => lpVtbl->MethodCompileComplete((ICorJitInfo*)Unsafe.AsPointer(ref this), methHnd);
+    public void MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd) => lpVtbl->MethodCompileComplete((ICorJitInfo*)(Unsafe.AsPointer(ref this)), methHnd);
 
-    public bool getTailCallHelpers(CORINFO_RESOLVED_TOKEN* callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, CORINFO_TAILCALL_HELPERS* pResult) => lpVtbl->getTailCallHelpers((ICorJitInfo*)Unsafe.AsPointer(ref this), callToken, sig, flags, pResult);
+    public bool getTailCallHelpers(CORINFO_RESOLVED_TOKEN* callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, CORINFO_TAILCALL_HELPERS* pResult) => lpVtbl->getTailCallHelpers((ICorJitInfo*)(Unsafe.AsPointer(ref this)), callToken, sig, flags, pResult);
 
-    public CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) => lpVtbl->getAsyncResumptionStub((ICorJitInfo*)Unsafe.AsPointer(ref this), entryPoint);
+    public CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) => lpVtbl->getAsyncResumptionStub((ICorJitInfo*)(Unsafe.AsPointer(ref this)), entryPoint);
 
-    public CORINFO_CLASS_HANDLE getContinuationType(nuint dataSize, bool* objRefs, nuint objRefsSize) => lpVtbl->getContinuationType((ICorJitInfo*)Unsafe.AsPointer(ref this), dataSize, objRefs, objRefsSize);
+    public CORINFO_CLASS_HANDLE getContinuationType(nint dataSize, bool* objRefs, nint objRefsSize) => lpVtbl->getContinuationType((ICorJitInfo*)(Unsafe.AsPointer(ref this)), dataSize, objRefs, objRefsSize);
 
-    public bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert) => lpVtbl->convertPInvokeCalliToCall((ICorJitInfo*)Unsafe.AsPointer(ref this), pResolvedToken, fMustConvert);
+    public bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert) => lpVtbl->convertPInvokeCalliToCall((ICorJitInfo*)(Unsafe.AsPointer(ref this)), pResolvedToken, fMustConvert);
 
-    public bool notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supportEnabled) => lpVtbl->notifyInstructionSetUsage((ICorJitInfo*)Unsafe.AsPointer(ref this), instructionSet, supportEnabled);
+    public bool notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supportEnabled) => lpVtbl->notifyInstructionSetUsage((ICorJitInfo*)(Unsafe.AsPointer(ref this)), instructionSet, supportEnabled);
 
-    public void updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint) => lpVtbl->updateEntryPointForTailCall((ICorJitInfo*)Unsafe.AsPointer(ref this), entryPoint);
+    public void updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint) => lpVtbl->updateEntryPointForTailCall((ICorJitInfo*)(Unsafe.AsPointer(ref this)), entryPoint);
 
-    public CORINFO_WASM_TYPE_SYMBOL_HANDLE getWasmTypeSymbol(CorInfoWasmType* types, nuint typesSize) => lpVtbl->getWasmTypeSymbol((ICorJitInfo*)Unsafe.AsPointer(ref this), types, typesSize);
+    public CORINFO_WASM_TYPE_SYMBOL_HANDLE getWasmTypeSymbol(CorInfoWasmType* types, nint typesSize) => lpVtbl->getWasmTypeSymbol((ICorJitInfo*)(Unsafe.AsPointer(ref this)), types, typesSize);
 
-    public CORINFO_METHOD_HANDLE getSpecialCopyHelper(CORINFO_CLASS_HANDLE type) => lpVtbl->getSpecialCopyHelper((ICorJitInfo*)Unsafe.AsPointer(ref this), type);
+    public CORINFO_METHOD_HANDLE getSpecialCopyHelper(CORINFO_CLASS_HANDLE type) => lpVtbl->getSpecialCopyHelper((ICorJitInfo*)(Unsafe.AsPointer(ref this)), type);
 
     //
     // ICorJitInfo
     //
 
-    public void allocMem(AllocMemArgs* pArgs) => lpVtbl->allocMem((ICorDynamicInfo*)Unsafe.AsPointer(ref this), pArgs);
+    public void allocMem(AllocMemArgs* pArgs) => lpVtbl->allocMem((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), pArgs);
 
-    public void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint unwindSize) => lpVtbl->reserveUnwindInfo((ICorDynamicInfo*)Unsafe.AsPointer(ref this), isFunclet, isColdCode, unwindSize);
+    public void reserveUnwindInfo(bool isFunclet, bool isColdCode, int unwindSize) => lpVtbl->reserveUnwindInfo((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), isFunclet, isColdCode, unwindSize);
 
-    public void allocUnwindInfo(byte* pHotCode, byte* pColdCode, uint startOffset, uint endOffset, uint unwindSize, byte* pUnwindBlock, CorJitFuncKind funcKind) => lpVtbl->allocUnwindInfo((ICorDynamicInfo*)Unsafe.AsPointer(ref this), pHotCode, pColdCode, startOffset, endOffset, unwindSize, pUnwindBlock, funcKind);
+    public void allocUnwindInfo(byte* pHotCode, byte* pColdCode, int startOffset, int endOffset, int unwindSize, byte* pUnwindBlock, CorJitFuncKind funcKind) => lpVtbl->allocUnwindInfo((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), pHotCode, pColdCode, startOffset, endOffset, unwindSize, pUnwindBlock, funcKind);
 
-    public void* allocGCInfo(nuint size) => lpVtbl->allocGCInfo((ICorDynamicInfo*)Unsafe.AsPointer(ref this), size);
+    public void* allocGCInfo(nint size) => lpVtbl->allocGCInfo((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), size);
 
-    public void setEHcount(uint cEH) => lpVtbl->setEHcount((ICorDynamicInfo*)Unsafe.AsPointer(ref this), cEH);
+    public void setEHcount(int cEH) => lpVtbl->setEHcount((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), cEH);
 
-    public void setEHinfo(uint EHnumber, CORINFO_EH_CLAUSE* clause) => lpVtbl->setEHinfo((ICorDynamicInfo*)Unsafe.AsPointer(ref this), EHnumber, clause);
+    public void setEHinfo(int EHnumber, CORINFO_EH_CLAUSE* clause) => lpVtbl->setEHinfo((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), EHnumber, clause);
 
-    public bool logMsg(uint level, byte* fmt, void* args) => lpVtbl->logMsg((ICorDynamicInfo*)Unsafe.AsPointer(ref this), level, fmt, args);
+    public bool logMsg(int level, byte* fmt, void* args) => lpVtbl->logMsg((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), level, fmt, args);
 
-    public int doAssert(byte* szFile, int iLine, byte* szExpr) => lpVtbl->doAssert((ICorDynamicInfo*)Unsafe.AsPointer(ref this), szFile, iLine, szExpr);
+    public int doAssert(byte* szFile, int iLine, byte* szExpr) => lpVtbl->doAssert((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), szFile, iLine, szExpr);
 
-    public void reportFatalError(CorJitResult result) => lpVtbl->reportFatalError((ICorDynamicInfo*)Unsafe.AsPointer(ref this), result);
+    public void reportFatalError(CorJitResult result) => lpVtbl->reportFatalError((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), result);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsUnknownHandle(nint handle) => handle is >= UNKNOWN_HANDLE_MIN and <= UNKNOWN_HANDLE_MAX;
 
-    public JITINTERFACE_HRESULT getPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, PgoInstrumentationSchema** pSchema, uint* pCountSchemaItems, byte** pInstrumentationData, PgoSource* pPgoSource, bool* pDynamicPgo) => lpVtbl->getPgoInstrumentationResults((ICorDynamicInfo*)Unsafe.AsPointer(ref this), ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource, pDynamicPgo);
+    public JITINTERFACE_HRESULT getPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, PgoInstrumentationSchema** pSchema, int* pCountSchemaItems, byte** pInstrumentationData, PgoSource* pPgoSource, bool* pDynamicPgo) => lpVtbl->getPgoInstrumentationResults((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource, pDynamicPgo);
 
-    public JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, PgoInstrumentationSchema* pSchema, uint countSchemaItems, byte** pInstrumentationData) => lpVtbl->allocPgoInstrumentationBySchema((ICorDynamicInfo*)Unsafe.AsPointer(ref this), ftnHnd, pSchema, countSchemaItems, pInstrumentationData);
+    public JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, PgoInstrumentationSchema* pSchema, int countSchemaItems, byte** pInstrumentationData) => lpVtbl->allocPgoInstrumentationBySchema((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), ftnHnd, pSchema, countSchemaItems, pInstrumentationData);
 
-    public void recordCallSite(uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle) => lpVtbl->recordCallSite((ICorDynamicInfo*)Unsafe.AsPointer(ref this), instrOffset, callSig, methodHandle);
+    public void recordCallSite(int instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle) => lpVtbl->recordCallSite((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), instrOffset, callSig, methodHandle);
 
-    public void recordRelocation(void* location, void* locationRW, void* target, ushort fRelocType, int addlDelta = 0) => lpVtbl->recordRelocation((ICorDynamicInfo*)Unsafe.AsPointer(ref this), location, locationRW, target, fRelocType, addlDelta);
+    public void recordRelocation(void* location, void* locationRW, void* target, ushort fRelocType, int addlDelta = 0) => lpVtbl->recordRelocation((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), location, locationRW, target, fRelocType, addlDelta);
 
-    public ushort getRelocTypeHint(void* target) => lpVtbl->getRelocTypeHint((ICorDynamicInfo*)Unsafe.AsPointer(ref this), target);
+    public ushort getRelocTypeHint(void* target) => lpVtbl->getRelocTypeHint((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), target);
 
-    public CorInfoArch getExpectedTargetArchitecture() => lpVtbl->getExpectedTargetArchitecture((ICorDynamicInfo*) Unsafe.AsPointer(ref this));
+    public CorInfoArch getExpectedTargetArchitecture() => lpVtbl->getExpectedTargetArchitecture((ICorDynamicInfo*) (Unsafe.AsPointer(ref this)));
 
-    public uint getJitFlags(CORJIT_FLAGS* flags, uint sizeInBytes) => lpVtbl->getJitFlags((ICorDynamicInfo*)Unsafe.AsPointer(ref this), flags, sizeInBytes);
+    public int getJitFlags(CORJIT_FLAGS* flags, int sizeInBytes) => lpVtbl->getJitFlags((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), flags, sizeInBytes);
 
     public interface Interface : ICorDynamicInfo.Interface
     {
@@ -442,7 +442,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
         // For prejitted code we split up the unwinding information into
         // separate sections .rdata and .pdata.
         //
-        void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint unwindSize);
+        void reserveUnwindInfo(bool isFunclet, bool isColdCode, int unwindSize);
 
         // Allocate and initialize the .rdata and .pdata for this method or
         // funclet, and get the block of memory needed for the machine-specific
@@ -461,29 +461,29 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
         //    pUnwindBlock    pointer to unwind info
         //    funcKind        type of funclet (main method code, handler, filter)
         //
-        void allocUnwindInfo(byte* pHotCode, byte* pColdCode, uint startOffset, uint endOffset, uint unwindSize, byte* pUnwindBlock, CorJitFuncKind funcKind);
+        void allocUnwindInfo(byte* pHotCode, byte* pColdCode, int startOffset, int endOffset, int unwindSize, byte* pUnwindBlock, CorJitFuncKind funcKind);
 
         // Get a block of memory needed for the code manager information,
         // (the info for enumerating the GC pointers while crawling the
         // stack frame). Note that allocMem must be called first.
-        void* allocGCInfo(nuint size);
+        void* allocGCInfo(nint size);
 
         // Indicate how many exception handler blocks are to be returned.
         // This is guaranteed to be called before any 'setEHinfo' call.
         // Note that allocMem must be called before this method can be called.
-        void setEHcount(uint cEH);
+        void setEHcount(int cEH);
 
         // Set the values for one particular exception handler block.
         //
         // Handler regions should be lexically contiguous.
         // This is because FinallyIsUnwinding() uses lexicality to
         // determine if a "finally" clause is executing.
-        void setEHinfo(uint EHnumber, CORINFO_EH_CLAUSE* clause);
+        void setEHinfo(int EHnumber, CORINFO_EH_CLAUSE* clause);
 
         // Level -> fatalError, Level 2 -> Error, Level 3 -> Warning
         // Level 4 means happens 10 times in a run, level 5 means 100, level 6 means 1000 ...
         // returns non-zero if the logging succeeded
-        bool logMsg(uint level, byte* fmt, void* args);
+        bool logMsg(int level, byte* fmt, void* args);
 
         // do an assert.  will return true if the code should retry (DebugBreak)
         // returns false, if the assert should be ignored.
@@ -511,7 +511,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
         // pDynamicPgo
         //   dynamic PGO is enabled (valid even when return value is failure)
         //
-        JITINTERFACE_HRESULT getPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, PgoInstrumentationSchema** pSchema, uint* pCountSchemaItems, byte** pInstrumentationData, PgoSource* pPgoSource, bool* pDynamicPgo);
+        JITINTERFACE_HRESULT getPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, PgoInstrumentationSchema** pSchema, int* pCountSchemaItems, byte** pInstrumentationData, PgoSource* pPgoSource, bool* pDynamicPgo);
 
         // Allocate a profile buffer for use in the current process
         // The JIT shall call this api with the schema entries other than Offset filled in.
@@ -535,13 +535,13 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
         // pInstrumentationData
         //   `*pInstrumentationData` is set to the address of the instrumentation data.
         //
-        JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, PgoInstrumentationSchema* pSchema, uint countSchemaItems, byte** pInstrumentationData);
+        JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, PgoInstrumentationSchema* pSchema, int countSchemaItems, byte** pInstrumentationData);
 
         // Associates a native call site, identified by its offset in the native code stream, with
         // the signature information and method handle the JIT used to lay out the call site. If
         // the call site has no signature information (e.g. a helper call) or has no method handle
         // (e.g. a CALLI P/Invoke), then null should be passed instead.
-        void recordCallSite(uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle);
+        void recordCallSite(int instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle);
 
         // A relocation is recorded if we are pre-jitting.
         // A jump thunk may be inserted if we are jitting
@@ -565,7 +565,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
         // sizeInBytes
         //   The size of the buffer. Note that this is effectively a version number for the CORJIT_FLAGS value
         //
-        uint getJitFlags(CORJIT_FLAGS* flags, uint sizeInBytes);
+        int getJitFlags(CORJIT_FLAGS* flags, int sizeInBytes);
     }
 
     public struct Vtbl
@@ -600,11 +600,11 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE, bool, CorInfoTailCall, byte*, void> reportTailCallDecision;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, uint, CORINFO_EH_CLAUSE*, void> getEHinfo;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, int, CORINFO_EH_CLAUSE*, void> getEHinfo;
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, CORINFO_CLASS_HANDLE> getMethodClass;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, uint*, uint*, bool*, void> getMethodVTableOffset;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, int*, int*, bool*, void> getMethodVTableOffset;
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_DEVIRTUALIZATION_INFO*, bool> resolveVirtualMethod;
 
@@ -636,7 +636,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, PatchpointInfo*, void> setPatchpointInfo;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, uint*, PatchpointInfo*> getOSRInfo;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, int*, PatchpointInfo*> getOSRInfo;
 
         //
         // ICorModuleInfo
@@ -644,15 +644,15 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_RESOLVED_TOKEN*, void> resolveToken;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_MODULE_HANDLE, uint, CORINFO_CONTEXT_HANDLE, CORINFO_SIG_INFO*, void> findSig;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_MODULE_HANDLE, int, CORINFO_CONTEXT_HANDLE, CORINFO_SIG_INFO*, void> findSig;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_MODULE_HANDLE, uint, CORINFO_CONTEXT_HANDLE, CORINFO_SIG_INFO*, void> findCallSiteSig;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_MODULE_HANDLE, int, CORINFO_CONTEXT_HANDLE, CORINFO_SIG_INFO*, void> findCallSiteSig;
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_RESOLVED_TOKEN*, CORINFO_CLASS_HANDLE> getTokenTypeAsHandle;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_MODULE_HANDLE, uint, char*, int, int, int> getStringLiteral;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_MODULE_HANDLE, int, char*, int, int, int> getStringLiteral;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_OBJECT_HANDLE, byte*, nuint, nuint*, nuint> printObjectDescription;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_OBJECT_HANDLE, byte*, nint, nint*, nint> printObjectDescription;
 
         //
         // ICorClassInfo
@@ -662,11 +662,11 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, byte**, byte*> getClassNameFromMetadata;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, uint, CORINFO_CLASS_HANDLE> getTypeInstantiationArgument;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, int, CORINFO_CLASS_HANDLE> getTypeInstantiationArgument;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, uint, CORINFO_CLASS_HANDLE> getMethodInstantiationArgument;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, int, CORINFO_CLASS_HANDLE> getMethodInstantiationArgument;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, byte*, nuint, nuint*, nuint> printClassName;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, byte*, nint, nint*, nint> printClassName;
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, bool> isValueClass;
 
@@ -674,7 +674,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, byte*> getClassAssemblyName;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, nuint, void*> LongLifetimeMalloc;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, nint, void*> LongLifetimeMalloc;
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, void*, void> LongLifetimeFree;
 
@@ -686,21 +686,21 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, bool, CORINFO_CONST_LOOKUP*, bool> getStaticBaseAddress;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, uint> getClassSize;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, int> getClassSize;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, uint> getHeapClassSize;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, int> getHeapClassSize;
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, bool> canAllocateOnStack;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, bool, uint> getClassAlignmentRequirement;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, bool, int> getClassAlignmentRequirement;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, byte*, uint> getClassGClayout;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, byte*, int> getClassGClayout;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, uint> getClassNumInstanceFields;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, int> getClassNumInstanceFields;
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, int, CORINFO_FIELD_HANDLE> getFieldInClass;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, CORINFO_TYPE_LAYOUT_NODE*, nuint*, GetTypeLayoutResult> getTypeLayout;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, CORINFO_TYPE_LAYOUT_NODE*, nint*, GetTypeLayoutResult> getTypeLayout;
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, byte*, bool, bool> checkMethodModifier;
 
@@ -762,11 +762,11 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, bool> isSDArray;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, uint> getArrayRank;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, int> getArrayRank;
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, CorInfoArrayIntrinsic> getArrayIntrinsicID;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_FIELD_HANDLE, uint, void*> getArrayInitializationData;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_FIELD_HANDLE, int, void*> getArrayInitializationData;
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_RESOLVED_TOKEN*, CORINFO_METHOD_HANDLE, CORINFO_HELPER_DESC*, CorInfoIsAccessAllowedResult> canAccessClass;
 
@@ -774,17 +774,17 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
         // ICorFieldInfo
         //
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_FIELD_HANDLE, byte*, nuint, nuint*, nuint> printFieldName;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_FIELD_HANDLE, byte*, nint, nint*, nint> printFieldName;
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_FIELD_HANDLE, CORINFO_CLASS_HANDLE> getFieldClass;
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_FIELD_HANDLE, CORINFO_CLASS_HANDLE*, CORINFO_CLASS_HANDLE, CorInfoType> getFieldType;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_FIELD_HANDLE, uint> getFieldOffset;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_FIELD_HANDLE, int> getFieldOffset;
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_RESOLVED_TOKEN*, CORINFO_METHOD_HANDLE, CORINFO_ACCESS_FLAGS, CORINFO_FIELD_INFO*, void> getFieldInfo;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_FIELD_HANDLE, bool, uint> getThreadLocalFieldInfo;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_FIELD_HANDLE, bool, int> getThreadLocalFieldInfo;
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_THREAD_STATIC_BLOCKS_INFO*, bool, void> getThreadLocalStaticBlocksInfo;
 
@@ -798,25 +798,25 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
         // ICorDebugInfo
         //
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, uint*, uint**, ICorDebugInfo.BoundaryTypes*, void> getBoundaries;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, int*, int**, ICorDebugInfo.BoundaryTypes*, void> getBoundaries;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, uint, ICorDebugInfo.OffsetMapping*, void> setBoundaries;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, int, ICorDebugInfo.OffsetMapping*, void> setBoundaries;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, uint*, ICorDebugInfo.ILVarInfo**, bool*, void> getVars;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, int*, ICorDebugInfo.ILVarInfo**, bool*, void> getVars;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, uint, ICorDebugInfo.NativeVarInfo*, void> setVars;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, int, ICorDebugInfo.NativeVarInfo*, void> setVars;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, ICorDebugInfo.InlineTreeNode*, uint, ICorDebugInfo.RichOffsetMapping*, uint, void> reportRichMappings;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, ICorDebugInfo.InlineTreeNode*, int, ICorDebugInfo.RichOffsetMapping*, int, void> reportRichMappings;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, ICorDebugInfo.AsyncInfo*, ICorDebugInfo.AsyncSuspensionPoint*, ICorDebugInfo.AsyncContinuationVarInfo*, uint, void> reportAsyncDebugInfo;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, ICorDebugInfo.AsyncInfo*, ICorDebugInfo.AsyncSuspensionPoint*, ICorDebugInfo.AsyncContinuationVarInfo*, int, void> reportAsyncDebugInfo;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, byte*, void*, nuint, void> reportMetadata;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, byte*, void*, nint, void> reportMetadata;
 
         //
         // Misc
         //
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, nuint, void*> allocateArray;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, nint, void*> allocateArray;
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, void*, void> freeArray;
 
@@ -848,11 +848,11 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, mdMethodDef> getMethodDefFromMethod;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, byte*, nuint, nuint*, nuint> printMethodName;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, byte*, nint, nint*, nint> printMethodName;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, byte**, byte**, byte**, nuint, byte*> getMethodNameFromMetadata;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, byte**, byte**, byte**, nint, byte*> getMethodNameFromMetadata;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, uint> getMethodHash;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, int> getMethodHash;
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR*, bool> getSystemVAmd64PassStructInRegisterDescriptor;
 
@@ -866,7 +866,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
         // ICorDynamicInfo
         //
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, void**, uint> getThreadTLSIndex;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, void**, int> getThreadTLSIndex;
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, void**, int*> getAddrOfCaptureThreadGlobal;
 
@@ -912,7 +912,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, void**, InfoAccessType> emptyStringLiteral;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_FIELD_HANDLE, void**, uint> getFieldThreadLocalStoreID;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_FIELD_HANDLE, void**, int> getFieldThreadLocalStoreID;
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, CORINFO_CLASS_HANDLE, CORINFO_METHOD_HANDLE, DelegateCtorArgs*, CORINFO_METHOD_HANDLE> GetDelegateCtor;
 
@@ -922,7 +922,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, void**, CORINFO_METHOD_HANDLE> getAsyncResumptionStub;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, nuint, bool*, nuint, CORINFO_CLASS_HANDLE> getContinuationType;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, nint, bool*, nint, CORINFO_CLASS_HANDLE> getContinuationType;
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_RESOLVED_TOKEN*, bool, bool> convertPInvokeCalliToCall;
 
@@ -930,7 +930,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CONST_LOOKUP*, void> updateEntryPointForTailCall;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CorInfoWasmType*, nuint, CORINFO_WASM_TYPE_SYMBOL_HANDLE> getWasmTypeSymbol;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CorInfoWasmType*, nint, CORINFO_WASM_TYPE_SYMBOL_HANDLE> getWasmTypeSymbol;
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, CORINFO_METHOD_HANDLE> getSpecialCopyHelper;
 
@@ -940,27 +940,27 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, AllocMemArgs*, void> allocMem;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, bool, bool, uint, void> reserveUnwindInfo;
+        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, bool, bool, int, void> reserveUnwindInfo;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, byte*, byte*, uint, uint, uint, byte*, CorJitFuncKind, void> allocUnwindInfo;
+        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, byte*, byte*, int, int, int, byte*, CorJitFuncKind, void> allocUnwindInfo;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, nuint, void*> allocGCInfo;
+        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, nint, void*> allocGCInfo;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, uint, void> setEHcount;
+        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, int, void> setEHcount;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, uint, CORINFO_EH_CLAUSE*, void> setEHinfo;
+        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, int, CORINFO_EH_CLAUSE*, void> setEHinfo;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, uint, byte*, void*, bool> logMsg;
+        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, int, byte*, void*, bool> logMsg;
 
         public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, byte*, int, byte*, int> doAssert;
 
         public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CorJitResult, void> reportFatalError;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CORINFO_METHOD_HANDLE, PgoInstrumentationSchema**, uint*, byte**, PgoSource*, bool*, JITINTERFACE_HRESULT> getPgoInstrumentationResults;
+        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CORINFO_METHOD_HANDLE, PgoInstrumentationSchema**, int*, byte**, PgoSource*, bool*, JITINTERFACE_HRESULT> getPgoInstrumentationResults;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CORINFO_METHOD_HANDLE, PgoInstrumentationSchema*, uint, byte**, JITINTERFACE_HRESULT> allocPgoInstrumentationBySchema;
+        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CORINFO_METHOD_HANDLE, PgoInstrumentationSchema*, int, byte**, JITINTERFACE_HRESULT> allocPgoInstrumentationBySchema;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, uint, CORINFO_SIG_INFO*, CORINFO_METHOD_HANDLE, void> recordCallSite;
+        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, int, CORINFO_SIG_INFO*, CORINFO_METHOD_HANDLE, void> recordCallSite;
 
         public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, void*, void*, void*, ushort, int, void> recordRelocation;
 
@@ -968,6 +968,6 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CorInfoArch> getExpectedTargetArchitecture;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CORJIT_FLAGS*, uint, uint> getJitFlags;
+        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CORJIT_FLAGS*, int, int> getJitFlags;
     }
 }

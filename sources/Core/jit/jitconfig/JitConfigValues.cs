@@ -11,7 +11,7 @@ namespace RyuJitSharp;
 public partial struct JitConfigValues
 {
     private FrozenDictionary<ConfigInteger, int>? _configIntegers;
-    private FrozenDictionary<ConfigString, nuint>? _configStrings;
+    private FrozenDictionary<ConfigString, nint>? _configStrings;
     private FrozenDictionary<ConfigMethodSet, MethodSet>? _configMethodSets;
 
     private bool _isInitialized;
@@ -79,7 +79,7 @@ public partial struct JitConfigValues
         assert(!_isInitialized);
 
         _configIntegers = ConfigIntegerMetadata.ToFrozenDictionary(kvp => kvp.Key, kvp => jitHost->getIntConfigValue((byte*)(kvp.Value.Key), kvp.Value.DefaultValue));
-        _configStrings = ConfigStringMetadata.ToFrozenDictionary(kvp => kvp.Key, kvp => (nuint)jitHost->getStringConfigValue((byte*)(kvp.Value)));
+        _configStrings = ConfigStringMetadata.ToFrozenDictionary(kvp => kvp.Key, kvp => unchecked((nint)(jitHost->getStringConfigValue((byte*)(kvp.Value)))));
         _configMethodSets = ConfigMethodSetMetadata.ToFrozenDictionary(kvp => kvp.Key, kvp => new MethodSet(jitHost->getStringConfigValue((byte*)(kvp.Value)), jitHost));
 
         _isInitialized = true;

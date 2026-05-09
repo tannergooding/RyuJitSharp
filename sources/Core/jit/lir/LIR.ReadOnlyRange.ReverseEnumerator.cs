@@ -36,7 +36,7 @@ public partial class LIR
 
                 if (current is not null)
                 {
-                    current = current.Previous;
+                    current = current.Prev;
                 }
                 else
                 {

@@ -10,13 +10,13 @@ public partial struct ICorDebugInfo
     public struct RichOffsetMapping
     {
         /// <summary>Offset in emitted code.</summary>
-        public uint NativeOffset;
+        public int NativeOffset;
 
         /// <summary>Index of inline tree node containing the IL offset (0 for root).</summary>
-        public uint Inlinee;
+        public int Inlinee;
 
         /// <summary>IL offset of IL instruction in inlinee that this mapping was created from.</summary>
-        public uint ILOffset;
+        public int ILOffset;
 
         /// <summary>Source information about the IL instruction in the inlinee.</summary>
         public SourceTypes Source;

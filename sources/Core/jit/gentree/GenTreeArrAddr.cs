@@ -24,14 +24,7 @@ public sealed class GenTreeArrAddr : GenTreeUnOp
         assert(((elemType is TYP_STRUCT) && (elemClassHandle != NO_CLASS_HANDLE)) || (elemClassHandle == NO_CLASS_HANDLE));
     }
 
-    public GenTree Addr
-    {
-        get
-        {
-            assert(Op1 is not null);
-            return Op1;
-        }
-    }
+    public GenTree Addr => Op1;
 
     /// <summary>The array element class. Currently only used for arrays of TYP_STRUCT.</summary>
     public unsafe CORINFO_CLASS_HANDLE ElemClassHandle => _elemClassHandle;

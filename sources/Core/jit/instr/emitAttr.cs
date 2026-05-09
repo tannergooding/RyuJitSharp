@@ -7,7 +7,7 @@ global using static RyuJitSharp.emitAttr;
 
 namespace RyuJitSharp;
 
-public enum emitAttr : uint
+public enum emitAttr
 {
     EA_UNKNOWN = 0x000,
 
@@ -43,7 +43,7 @@ public enum emitAttr : uint
 
     EA_OFFSET_FLG = 0x080,
 
-    // size is 0
+    // size == 0
     EA_OFFSET = EA_OFFSET_FLG | EA_PTRSIZE,
 
     EA_GCREF_FLG = 0x100,

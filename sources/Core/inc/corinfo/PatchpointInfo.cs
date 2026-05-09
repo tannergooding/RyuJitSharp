@@ -8,11 +8,11 @@ using System.Runtime.CompilerServices;
 namespace RyuJitSharp;
 
 /// <summary>Patchpoint info is passed back and forth across the interface but is opaque.</summary>
-public struct PatchpointInfo
+public partial struct PatchpointInfo
 {
-    private ulong m_calleeSaveRegisters;
-    private nuint m_tier0Version;
-    private uint m_numberOfLocals;
+    private long m_calleeSaveRegisters;
+    private nint m_tier0Version;
+    private int m_numberOfLocals;
     private int m_totalFrameSize;
     private int m_genericContextArgOffset;
     private int m_keptAliveThisOffset;
@@ -23,7 +23,7 @@ public struct PatchpointInfo
     private int m_offsetAndExposureData;
 
     /// <summary>Number of locals in the original method (including special locals)</summary>
-    public readonly uint NumberOfLocals => m_numberOfLocals;
+    public readonly int NumberOfLocals => m_numberOfLocals;
 
     /// <summary>Total frame size of the original method</summary>
     public readonly int TotalFrameSize => m_totalFrameSize;
@@ -31,15 +31,15 @@ public struct PatchpointInfo
     /// <summary>Determine how much storage is needed to hold this info</summary>
     /// <param name="localCount"></param>
     /// <returns></returns>
-    public static unsafe uint ComputeSize(uint localCount)
+    public static unsafe int ComputeSize(int localCount)
     {
-        var baseSize = (uint)(sizeof(PatchpointInfo));
+        var baseSize = sizeof(PatchpointInfo);
         var variableSize = localCount * sizeof(int);
         var totalSize = baseSize + variableSize;
         return totalSize;
     }
 
-    public void Initialize(uint localCount, int totalFrameSize)
+    public void Initialize(int localCount, int totalFrameSize)
     {
         m_calleeSaveRegisters = 0;
         m_tier0Version = 0;
@@ -65,7 +65,7 @@ public struct PatchpointInfo
         m_asyncExecutionContextOffset = original->m_asyncExecutionContextOffset;
         m_asyncSynchronizationContextOffset = original->m_asyncSynchronizationContextOffset;
 
-        for (uint i = 0; i < original->m_numberOfLocals; i++)
+        for (var i = 0; i < original->m_numberOfLocals; i++)
         {
             Unsafe.Add(ref m_offsetAndExposureData, i) = Unsafe.Add(ref original->m_offsetAndExposureData, i);
         }

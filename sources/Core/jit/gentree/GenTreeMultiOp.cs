@@ -20,24 +20,23 @@ public abstract class GenTreeMultiOp : GenTree
 
         foreach (var operand in operands)
         {
-            assert(operand is not null);
             Flags |= (operand.Flags & GTF_ALL_EFFECT);
         }
     }
 
 #if FEATURE_HW_INTRINSICS
-    public bool IsUserCall => Oper.IsHWIntrinsic && ((Flags & GTF_HW_USER_CALL) is not 0);
+    public bool IsUserCall => Oper.IsHWIntrinsic && ((Flags & GTF_HW_USER_CALL) != 0);
 #else
     public bool IsUserCall => false;
 #endif
 
-    public Span<GenTree> Operands => _operands;
+    public new Span<GenTree> Operands => _operands;
 
     public GenTree GetOp(int index) => _operands[index - 1];
 
 #nullable disable
     public ref GenTree GetOpRef(int index) => ref _operands[index - 1];
-#nullable enable
+#nullable restore
 
     public void SetOp(int index, GenTree value)
     {

@@ -7,6 +7,9 @@ namespace RyuJitSharp;
 
 public partial class Target
 {
+    public const ArgOrder ARG_ORDER_R2L = ArgOrder.ARG_ORDER_R2L;
+    public const ArgOrder ARG_ORDER_L2R = ArgOrder.ARG_ORDER_L2R;
+
     public enum ArgOrder
     {
         ARG_ORDER_R2L,

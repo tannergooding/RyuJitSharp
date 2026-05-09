@@ -7,6 +7,59 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    public const compStressArea STRESS_NONE = compStressArea.STRESS_NONE;
+    public const compStressArea STRESS_REGS = compStressArea.STRESS_REGS;
+    public const compStressArea STRESS_DBL_ALN = compStressArea.STRESS_DBL_ALN;
+    public const compStressArea STRESS_LCL_FLDS = compStressArea.STRESS_LCL_FLDS;
+    public const compStressArea STRESS_UNROLL_LOOPS = compStressArea.STRESS_UNROLL_LOOPS;
+    public const compStressArea STRESS_MAKE_CSE = compStressArea.STRESS_MAKE_CSE;
+    public const compStressArea STRESS_LEGACY_INLINE = compStressArea.STRESS_LEGACY_INLINE;
+    public const compStressArea STRESS_CLONE_EXPR = compStressArea.STRESS_CLONE_EXPR;
+    public const compStressArea STRESS_FOLD = compStressArea.STRESS_FOLD;
+    public const compStressArea STRESS_MERGED_RETURNS = compStressArea.STRESS_MERGED_RETURNS;
+    public const compStressArea STRESS_BB_PROFILE = compStressArea.STRESS_BB_PROFILE;
+    public const compStressArea STRESS_OPT_BOOLS_GC = compStressArea.STRESS_OPT_BOOLS_GC;
+    public const compStressArea STRESS_OPT_BOOLS_COMPARE_CHAIN_COST = compStressArea.STRESS_OPT_BOOLS_COMPARE_CHAIN_COST;
+    public const compStressArea STRESS_REMORPH_TREES = compStressArea.STRESS_REMORPH_TREES;
+    public const compStressArea STRESS_64RSLT_MUL = compStressArea.STRESS_64RSLT_MUL;
+    public const compStressArea STRESS_DO_WHILE_LOOPS = compStressArea.STRESS_DO_WHILE_LOOPS;
+    public const compStressArea STRESS_MIN_OPTS = compStressArea.STRESS_MIN_OPTS;
+    public const compStressArea STRESS_REVERSE_FLAG = compStressArea.STRESS_REVERSE_FLAG;
+    public const compStressArea STRESS_TAILCALL = compStressArea.STRESS_TAILCALL;
+    public const compStressArea STRESS_CATCH_ARG = compStressArea.STRESS_CATCH_ARG;
+    public const compStressArea STRESS_UNSAFE_BUFFER_CHECKS = compStressArea.STRESS_UNSAFE_BUFFER_CHECKS;
+    public const compStressArea STRESS_NULL_OBJECT_CHECK = compStressArea.STRESS_NULL_OBJECT_CHECK;
+    public const compStressArea STRESS_RANDOM_INLINE = compStressArea.STRESS_RANDOM_INLINE;
+    public const compStressArea STRESS_SWITCH_CMP_BR_EXPANSION = compStressArea.STRESS_SWITCH_CMP_BR_EXPANSION;
+    public const compStressArea STRESS_GENERIC_VARN = compStressArea.STRESS_GENERIC_VARN;
+    public const compStressArea STRESS_PROFILER_CALLBACKS = compStressArea.STRESS_PROFILER_CALLBACKS;
+    public const compStressArea STRESS_BYREF_PROMOTION = compStressArea.STRESS_BYREF_PROMOTION;
+    public const compStressArea STRESS_PROMOTE_FEWER_STRUCTS = compStressArea.STRESS_PROMOTE_FEWER_STRUCTS;
+    public const compStressArea STRESS_VN_BUDGET = compStressArea.STRESS_VN_BUDGET;
+    public const compStressArea STRESS_SSA_INFO = compStressArea.STRESS_SSA_INFO;
+    public const compStressArea STRESS_SPLIT_TREES_RANDOMLY = compStressArea.STRESS_SPLIT_TREES_RANDOMLY;
+    public const compStressArea STRESS_SPLIT_TREES_REMOVE_COMMAS = compStressArea.STRESS_SPLIT_TREES_REMOVE_COMMAS;
+    public const compStressArea STRESS_NO_OLD_PROMOTION = compStressArea.STRESS_NO_OLD_PROMOTION;
+    public const compStressArea STRESS_PHYSICAL_PROMOTION = compStressArea.STRESS_PHYSICAL_PROMOTION;
+    public const compStressArea STRESS_PHYSICAL_PROMOTION_COST = compStressArea.STRESS_PHYSICAL_PROMOTION_COST;
+    public const compStressArea STRESS_UNWIND = compStressArea.STRESS_UNWIND;
+    public const compStressArea STRESS_OPT_REPEAT = compStressArea.STRESS_OPT_REPEAT;
+    public const compStressArea STRESS_INITIAL_PARAM_REG = compStressArea.STRESS_INITIAL_PARAM_REG;
+    public const compStressArea STRESS_DOWNWARDS_COUNTED_LOOPS = compStressArea.STRESS_DOWNWARDS_COUNTED_LOOPS;
+    public const compStressArea STRESS_STRENGTH_REDUCTION = compStressArea.STRESS_STRENGTH_REDUCTION;
+    public const compStressArea STRESS_STRENGTH_REDUCTION_PROFITABILITY = compStressArea.STRESS_STRENGTH_REDUCTION_PROFITABILITY;
+    public const compStressArea STRESS_COUNT_VARN = compStressArea.STRESS_COUNT_VARN;
+    public const compStressArea STRESS_FORCE_INLINE = compStressArea.STRESS_FORCE_INLINE;
+    public const compStressArea STRESS_EMITTER = compStressArea.STRESS_EMITTER;
+    public const compStressArea STRESS_CHK_REIMPORT = compStressArea.STRESS_CHK_REIMPORT;
+    public const compStressArea STRESS_GENERIC_CHECK = compStressArea.STRESS_GENERIC_CHECK;
+    public const compStressArea STRESS_IF_CONVERSION_COST = compStressArea.STRESS_IF_CONVERSION_COST;
+    public const compStressArea STRESS_IF_CONVERSION_INNER_LOOPS = compStressArea.STRESS_IF_CONVERSION_INNER_LOOPS;
+    public const compStressArea STRESS_POISON_IMPLICIT_BYREFS = compStressArea.STRESS_POISON_IMPLICIT_BYREFS;
+    public const compStressArea STRESS_STORE_BLOCK_UNROLLING = compStressArea.STRESS_STORE_BLOCK_UNROLLING;
+    public const compStressArea STRESS_THREE_OPT_LAYOUT = compStressArea.STRESS_THREE_OPT_LAYOUT;
+    public const compStressArea STRESS_COUNT = compStressArea.STRESS_COUNT;
+
     public enum compStressArea
     {
         STRESS_NONE,

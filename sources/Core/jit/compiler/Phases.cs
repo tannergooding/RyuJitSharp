@@ -7,7 +7,7 @@ global using static RyuJitSharp.Phases;
 
 namespace RyuJitSharp;
 
-public enum Phases : uint
+public enum Phases
 {
     PHASE_PRE_IMPORT,
     PHASE_IMPORTATION,

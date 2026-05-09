@@ -13,7 +13,7 @@ public partial class Compiler
     // BitVec trait information for computing CSE availability using the CSE_DataFlow algorithm.
     // Two bits are allocated per CSE candidate to compute CSE availability
     // plus an extra bit to handle the initial unvisited case.
-    // (See CSE_DataFlow::EndMerge for an explanation of why this is necessary.)
+    // (See CSE_DataFlow.EndMerge for an explanation of why this is necessary.)
     //
     // The two bits per CSE candidate have the following meanings:
     //     11 - The CSE is available, and is also available when considering calls as killing availability.

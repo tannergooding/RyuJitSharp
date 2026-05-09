@@ -4,13 +4,14 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
 
 public abstract class GenTreeIntConCommon : GenTree
 {
-    protected _Value_e__Union _value;
+    protected Value _value;
 
     protected GenTreeIntConCommon(genTreeOps oper, var_types type)
         : base(oper, type)
@@ -89,18 +90,29 @@ public abstract class GenTreeIntConCommon : GenTree
         }
     }
 
-    [StructLayout(LayoutKind.Explicit)]
-    protected struct _Value_e__Union
+    public bool IsIntegralConst(nint value)
     {
+#if TARGET_32BIT
+        if (Oper.IsCnsIntOrI)
+        {
+            return _value.Icon == value;
+        }
+        return _value.Lcon == value;
+#else
+        return _value.Icon == value;
+#endif
+    }
+
+    protected struct Value
+    {
+        public long Lcon;
+
         // This is the GT_CNS_INT struct definition.
         // It's used to hold for both int constants and pointer handle constants.
         // For the 64-bit targets we will only use GT_CNS_INT as it used to represent all the possible sizes
         // For the 32-bit targets we use a GT_CNS_LNG to hold a 64-bit integer constant and GT_CNS_INT for all others.
         // In the future when we retarget the JIT for x86 we should consider eliminating GT_CNS_LNG
-        [FieldOffset(0)]
-        public nint Icon;
-
-        [FieldOffset(0)]
-        public long Lcon;
+        [UnscopedRef]
+        public ref nint Icon => ref Unsafe.As<long, nint>(ref Lcon);
     }
 }

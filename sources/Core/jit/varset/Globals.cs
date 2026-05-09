@@ -8,5 +8,5 @@ namespace RyuJitSharp;
 public partial class Globals
 {
     /// <summary>default value for JitConfig.JitMaxLocalsToTrack</summary>
-    public const uint lclMAX_ALLSET_TRACKED = 0x400;
+    public const int lclMAX_ALLSET_TRACKED = 0x400;
 }

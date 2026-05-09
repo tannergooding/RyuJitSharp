@@ -8,7 +8,7 @@ using System;
 namespace RyuJitSharp;
 
 [Flags]
-public enum PhaseChecks : uint
+public enum PhaseChecks
 {
     CHECK_NONE = 0,
 

@@ -45,8 +45,6 @@ public partial class LIR
         /// </remarks>
         public static void MakeDummyUse(Range range, GenTree node, [UnscopedRef] out Use dummyUse)
         {
-            assert(node is not null);
-
             dummyUse._range = range;
             dummyUse._user = node;
             dummyUse._edge = ref dummyUse._user;
@@ -83,7 +81,7 @@ public partial class LIR
 #if DEBUG
             assert(IsInitialized());
             assert(_range.Contains(_user));
-            assert(Def() is not null);
+            assert(_edge is not null);
             assert(Unsafe.AreSame(in _user.GetUseRefOrNullRef(Def()), in _edge));
 #endif
         }
@@ -131,7 +129,7 @@ public partial class LIR
             //          /--*  t18 int
             //          *  jmpTrue   void
             //
-            // Eliminating the now-dead compare and its operands using `LIR::Range::Remove`
+            // Eliminating the now-dead compare and its operands using `LIR.Range.Remove`
             // would then give us:
             //
             //    t18 =    const     int    1
@@ -141,7 +139,6 @@ public partial class LIR
 
 #if DEBUG
             assert(IsInitialized());
-            assert(replacement is not null);
             assert(IsDummyUse() || _range.Contains(_user));
             assert(_range.Contains(replacement));
 #endif
@@ -156,11 +153,11 @@ public partial class LIR
             }
         }
 
-        /// <inheritdoc cref="ReplaceWithLclVar(Compiler, uint, out GenTree)" />
-        public uint ReplaceWithLclVar(Compiler compiler, uint lclNum = BAD_VAR_NUM) => ReplaceWithLclVar(compiler, lclNum, out _);
+        /// <inheritdoc cref="ReplaceWithLclVar(Compiler, int, out GenTree)" />
+        public int ReplaceWithLclVar(Compiler compiler, int lclNum = BAD_VAR_NUM) => ReplaceWithLclVar(compiler, lclNum, out _);
 
-        /// <inheritdoc cref="ReplaceWithLclVar(Compiler, uint, out GenTree)" />
-        public uint ReplaceWithLclVar(Compiler compiler, out GenTree pStore) => ReplaceWithLclVar(compiler, BAD_VAR_NUM, out pStore);
+        /// <inheritdoc cref="ReplaceWithLclVar(Compiler, int, out GenTree)" />
+        public int ReplaceWithLclVar(Compiler compiler, out GenTree pStore) => ReplaceWithLclVar(compiler, BAD_VAR_NUM, out pStore);
 
         /// <summary>
         ///   <para>Assigns the def for this use to a local var and points the use to a use of that local var.</para>
@@ -170,7 +167,7 @@ public partial class LIR
         /// <param name="lclNum">The local to use for temporary storage. If BAD_VAR_NUM (the default) is provided, this method will create and use a new local var.</param>
         /// <param name="pStore">On return, contains the created store node</param>
         /// <returns>The number of the local var used for temporary storage.</returns>
-        public uint ReplaceWithLclVar(Compiler compiler, uint lclNum, out GenTree pStore)
+        public int ReplaceWithLclVar(Compiler compiler, int lclNum, out GenTree pStore)
         {
             // For example, given the following IR:
             //
@@ -209,7 +206,6 @@ public partial class LIR
 
 #if DEBUG
             assert(IsInitialized());
-            assert(compiler is not null);
             assert(_range.Contains(_user));
             assert(_range.Contains(_edge));
 #endif
@@ -221,12 +217,8 @@ public partial class LIR
                 lclNum = compiler.lvaGrabTemp(true, "ReplaceWithLclVar is creating a new local variable");
             }
 
-            var store = compiler.gtNewTempStore(lclNum, node).AsLclVar();
-
-            assert(store is not null);
-            assert(store.Op1 == node);
-
-            var load = new GenTreeLclVar(GT_LCL_VAR, store.Type, store.AsLclVarCommon().LclNum);
+            var store = compiler.gtNewTempStore(lclNum, node);
+            var load = new GenTreeLclVar(GT_LCL_VAR, store.Type, store.LclNum);
 
             _range.InsertAfter(node, store, load);
 

@@ -93,7 +93,7 @@ public static class JitMetadata
 
         fixed (byte* pUtf8Data = utf8Data)
         {
-            report(compiler, name, pUtf8Data, (uint)(utf8Data.Length));
+            report(compiler, name, pUtf8Data, utf8Data.Length);
         }
     }
 
@@ -102,7 +102,7 @@ public static class JitMetadata
     /// <param name="name">Key name of metadata</param>
     /// <param name="data">Pointer to the value to report back</param>
     /// <param name="length"></param>
-    public static unsafe void report(Compiler compiler, string name, void* data, nuint length)
+    public static unsafe void report(Compiler compiler, string name, void* data, int length)
     {
         using var utf8Name = new MarshaledUtf8String(name);
 

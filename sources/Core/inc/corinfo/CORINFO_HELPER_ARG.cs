@@ -25,7 +25,7 @@ public struct CORINFO_HELPER_ARG
     public unsafe ref CORINFO_MODULE_HANDLE moduleHandle => ref _anonymous.moduleHandle;
 
     [UnscopedRef]
-    public ref nuint constant => ref _anonymous.constant;
+    public ref nint constant => ref _anonymous.constant;
 
     public CorInfoAccessAllowedHelperArgType argType;
 
@@ -47,7 +47,7 @@ public struct CORINFO_HELPER_ARG
         classHandle = handle;
     }
 
-    public void Set(nuint value)
+    public void Set(nint value)
     {
         argType = CORINFO_HELPER_ARG_TYPE_Const;
         constant = value;
@@ -69,6 +69,6 @@ public struct CORINFO_HELPER_ARG
         public unsafe CORINFO_MODULE_HANDLE moduleHandle;
 
         [FieldOffset(0)]
-        public nuint constant;
+        public nint constant;
     }
 }

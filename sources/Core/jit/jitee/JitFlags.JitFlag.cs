@@ -5,6 +5,41 @@ namespace RyuJitSharp;
 
 public partial struct JitFlags
 {
+    public const JitFlag JIT_FLAG_SPEED_OPT = JitFlag.JIT_FLAG_SPEED_OPT;
+    public const JitFlag JIT_FLAG_SIZE_OPT = JitFlag.JIT_FLAG_SIZE_OPT;
+    public const JitFlag JIT_FLAG_DEBUG_CODE = JitFlag.JIT_FLAG_DEBUG_CODE;
+    public const JitFlag JIT_FLAG_DEBUG_EnC = JitFlag.JIT_FLAG_DEBUG_EnC;
+    public const JitFlag JIT_FLAG_DEBUG_INFO = JitFlag.JIT_FLAG_DEBUG_INFO;
+    public const JitFlag JIT_FLAG_MIN_OPT = JitFlag.JIT_FLAG_MIN_OPT;
+    public const JitFlag JIT_FLAG_ENABLE_CFG = JitFlag.JIT_FLAG_ENABLE_CFG;
+    public const JitFlag JIT_FLAG_OSR = JitFlag.JIT_FLAG_OSR;
+    public const JitFlag JIT_FLAG_ALT_JIT = JitFlag.JIT_FLAG_ALT_JIT;
+    public const JitFlag JIT_FLAG_FROZEN_ALLOC_ALLOWED = JitFlag.JIT_FLAG_FROZEN_ALLOC_ALLOWED;
+    public const JitFlag JIT_FLAG_PORTABLE_ENTRY_POINTS = JitFlag.JIT_FLAG_PORTABLE_ENTRY_POINTS;
+    public const JitFlag JIT_FLAG_AOT = JitFlag.JIT_FLAG_AOT;
+    public const JitFlag JIT_FLAG_PROF_ENTERLEAVE = JitFlag.JIT_FLAG_PROF_ENTERLEAVE;
+    public const JitFlag JIT_FLAG_PROF_NO_PINVOKE_INLINE = JitFlag.JIT_FLAG_PROF_NO_PINVOKE_INLINE;
+    public const JitFlag JIT_FLAG_ASYNC = JitFlag.JIT_FLAG_ASYNC;
+    public const JitFlag JIT_FLAG_RELOC = JitFlag.JIT_FLAG_RELOC;
+    public const JitFlag JIT_FLAG_IL_STUB = JitFlag.JIT_FLAG_IL_STUB;
+    public const JitFlag JIT_FLAG_PROCSPLIT = JitFlag.JIT_FLAG_PROCSPLIT;
+    public const JitFlag JIT_FLAG_BBINSTR = JitFlag.JIT_FLAG_BBINSTR;
+    public const JitFlag JIT_FLAG_BBINSTR_IF_LOOPS = JitFlag.JIT_FLAG_BBINSTR_IF_LOOPS;
+    public const JitFlag JIT_FLAG_BBOPT = JitFlag.JIT_FLAG_BBOPT;
+    public const JitFlag JIT_FLAG_FRAMED = JitFlag.JIT_FLAG_FRAMED;
+    public const JitFlag JIT_FLAG_PUBLISH_SECRET_PARAM = JitFlag.JIT_FLAG_PUBLISH_SECRET_PARAM;
+    public const JitFlag JIT_FLAG_USE_PINVOKE_HELPERS = JitFlag.JIT_FLAG_USE_PINVOKE_HELPERS;
+    public const JitFlag JIT_FLAG_REVERSE_PINVOKE = JitFlag.JIT_FLAG_REVERSE_PINVOKE;
+    public const JitFlag JIT_FLAG_TRACK_TRANSITIONS = JitFlag.JIT_FLAG_TRACK_TRANSITIONS;
+    public const JitFlag JIT_FLAG_TIER0 = JitFlag.JIT_FLAG_TIER0;
+    public const JitFlag JIT_FLAG_TIER1 = JitFlag.JIT_FLAG_TIER1;
+    public const JitFlag JIT_FLAG_NO_INLINING = JitFlag.JIT_FLAG_NO_INLINING;
+
+#if TARGET_ARM
+    public const JitFlag JIT_FLAG_RELATIVE_CODE_RELOCS = JitFlag.JIT_FLAG_RELATIVE_CODE_RELOCS;
+    public const JitFlag JIT_FLAG_SOFTFP_ABI = JitFlag.JIT_FLAG_SOFTFP_ABI;
+#endif
+
     public enum JitFlag
     {
         /// <summary>optimize for speed</summary>

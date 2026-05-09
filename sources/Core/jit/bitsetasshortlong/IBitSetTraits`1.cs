@@ -8,9 +8,9 @@ namespace RyuJitSharp;
 public interface IBitSetTraits<TEnv>
     where TEnv : class
 {
-    static abstract uint GetArrSize(TEnv env);
+    static abstract int GetArrSize(TEnv env);
 
-    static abstract uint GetEpoch(TEnv env);
+    static abstract int GetEpoch(TEnv env);
 
-    static abstract uint GetSize(TEnv env);
+    static abstract int GetSize(TEnv env);
 }

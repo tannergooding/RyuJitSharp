@@ -5,7 +5,7 @@
 
 namespace RyuJitSharp;
 
-/// <summary>Current kind of node threading stored in GenTree::gtPrev and GenTree::gtNext.</summary>
+/// <summary>Current kind of node threading stored in GenTree.gtPrev and GenTree.gtNext.</summary>
 public enum NodeThreading
 {
     None,

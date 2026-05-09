@@ -3,8 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System;
-
 namespace RyuJitSharp;
 
 public interface ICodeGen
@@ -72,5 +70,5 @@ public interface ICodeGen
     void CopyRegisterInfo();
 #endif
 
-    unsafe void genGenerateCode(out void* codePtr, out uint nativeSizeOfCode);
+    unsafe void genGenerateCode(out void* codePtr, out int nativeSizeOfCode);
 }

@@ -10,5 +10,5 @@ public struct CORINFO_VarArgInfo
 {
     /// <summary>Number of bytes the arguments take up.</summary>
     /// <remarks>The CORINFO_VARARGS_HANDLE counts as an arg.</remarks>
-    public uint argBytes;
+    public int argBytes;
 }

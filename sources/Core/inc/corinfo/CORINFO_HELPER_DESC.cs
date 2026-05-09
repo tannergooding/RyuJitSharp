@@ -11,7 +11,7 @@ public struct CORINFO_HELPER_DESC
 {
     public CorInfoHelpFunc helperNum;
 
-    public uint numArgs;
+    public int numArgs;
 
     public argsInlineArray args;
 

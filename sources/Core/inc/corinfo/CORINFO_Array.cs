@@ -16,10 +16,10 @@ public struct CORINFO_Array
     [UnscopedRef]
     public unsafe ref CORINFO_MethodPtr* methTable => ref _base.methTable;
 
-    public uint length;
+    public int length;
 
 #if HOST_64BIT
-    public uint alignpad;
+    public int alignpad;
 #endif
 
 #if false

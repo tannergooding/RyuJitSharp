@@ -23,8 +23,8 @@ public struct CORINFO_RESOLVED_TOKEN
 
     //
     // [Out] arguments of resolveToken.
-    // - Type handle is always non-NULL.
-    // - At most one of method and field handles is non-NULL (according to the token type).
+    // - Type handle is always non-null.
+    // - At most one of method and field handles is non-null (according to the token type).
     // - Method handle is an instantiating stub only for generic methods. Type handle
     //   is required to provide the full context for methods in generic types.
     //
@@ -36,13 +36,13 @@ public struct CORINFO_RESOLVED_TOKEN
     public unsafe CORINFO_FIELD_HANDLE hField;
 
     //
-    // [Out] TypeSpec and MethodSpec signatures for generics. NULL otherwise.
+    // [Out] TypeSpec and MethodSpec signatures for generics. null otherwise.
     //
     public unsafe PCCOR_SIGNATURE pTypeSpec;
 
-    public uint cbTypeSpec;
+    public int cbTypeSpec;
 
     public unsafe PCCOR_SIGNATURE pMethodSpec;
 
-    public uint cbMethodSpec;
+    public int cbMethodSpec;
 }

@@ -17,9 +17,26 @@ public sealed class GenTreeBox : GenTreeUnOp
         _copyStmtWhenInlinedBoxValue = copyStmtWhenInlinedBoxValue;
     }
 
-    /// <summary>This is the statement that contains the definition tree when the node is an inlined GT_BOX on a value type</summary>
-    public Statement DefStmtWhenInlinedBoxValue => _defStmtWhenInlinedBoxValue;
+    public GenTree BoxOp => Op1;
 
     /// <summary>This is the statement that copies from the value being boxed to the box payload</summary>
     public Statement CopyStmtWhenInlinedBoxValue => _copyStmtWhenInlinedBoxValue;
+
+    /// <summary>This is the statement that contains the definition tree when the node is an inlined GT_BOX on a value type</summary>
+    public Statement DefStmtWhenInlinedBoxValue => _defStmtWhenInlinedBoxValue;
+
+    public bool IsBoxedValue => (Flags & GTF_BOX_VALUE) != 0;
+
+    public bool WasCloned
+    {
+        get
+        {
+            return (Flags & GTF_BOX_CLONED) != 0;
+        }
+
+        set
+        {
+            Flags = (Flags & ~GTF_BOX_CLONED) | (value ? GTF_BOX_CLONED : 0);
+        }
+    }
 }

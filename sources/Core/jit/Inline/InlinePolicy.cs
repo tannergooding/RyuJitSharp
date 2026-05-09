@@ -23,13 +23,16 @@ public abstract class InlinePolicy
     /// <summary>Get the observation responsible for the result</summary>
     public InlineObservation Observation => m_Observation;
 
+    /// <summary>Does Policy require a more precise IL scan?</summary>
+    public virtual bool RequiresPreciseScan => false;
+
     public static InlinePolicy GetPolicy(Compiler compiler, bool isPrejitRoot)
     {
         // TODO: Port InlinePolicy.GetPolicy;
         return null!;
     }
 
-    public abstract unsafe void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo);
+    public abstract unsafe void DetermineProfitability(in CORINFO_METHOD_INFO methodInfo);
 
     public abstract void NoteBool(InlineObservation observation, bool value);
 

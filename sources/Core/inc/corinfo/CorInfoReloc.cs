@@ -88,7 +88,7 @@ public enum CorInfoReloc
     // Address of relocated movw/movt is l0
     // So, imm should be calculated as the following:
     //  imm = relocTarget - (l8 + 4) = relocTarget - (l0 + 8 + 4) = relocTarget - (l_0 + 12)
-    // So, the value of offset correction is 12
+    // So, the value of offset correction == 12
 
     /// <summary>Thumb2: MOVW/MOVT</summary>
     ARM32_THUMB_MOV32_PCREL,

@@ -3,10 +3,12 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Diagnostics;
+
 namespace RyuJitSharp;
 
 // In the current design, we never instantiate GenTreeUnOp: it exists only to be
-// used as a base class.  For unary operators, we instantiate GenTreeOp, with a NULL second
+// used as a base class.  For unary operators, we instantiate GenTreeOp, with a null second
 // argument.  We check that this is true dynamically.  We could tighten this and get static
 // checking, but that would entail accessing the first child of a unary operator via something
 // like gtUnOp.gtOp1 instead of AsOp()->gtOp1.
@@ -47,11 +49,14 @@ public abstract class GenTreeUnOp : GenTree
     };
 #endif
 
-    public GenTree? Op1
+    public GenTree Op1
     {
         get
         {
-            return _op1;
+#if DEBUG
+            assert(Debugger.IsAttached || (_op1 is not null) || !IsNullOp1Legal);
+#endif
+            return _op1!;
         }
 
         set

@@ -15,9 +15,9 @@ public partial struct ICorDebugInfo
         ///     <para>Also used as a unique key for debug information about the suspension point.</para>
         ///     <para>See ResumeInfo.DiagnosticIP in SPC for more info.</para>
         /// </summary>
-        public uint DiagnosticNativeOffset;
+        public int DiagnosticNativeOffset;
 
         /// <summary>Count of AsyncContinuationVarInfo in array of locals starting where the previous suspension point's locals end.</summary>
-        public uint NumContinuationVars;
+        public int NumContinuationVars;
     }
 }

@@ -27,7 +27,7 @@ public partial struct ICorJitInfo
 
         public const int SAMPLE_INTERVAL = 64;
 
-        public const int CLASS_FLAG = unchecked((int)0x80000000);
+        public const int CLASS_FLAG = int.MinValue;
 
         public const int INTERFACE_FLAG = 0x40000000;
 
@@ -35,14 +35,14 @@ public partial struct ICorJitInfo
 
         public const int OFFSET_MASK = 0x0FFFFFF;
 
-        public uint Count;
+        public int Count;
 
         public HandleTableInlineArray HandleTable;
 
         [InlineArray(SIZE)]
         public struct HandleTableInlineArray
         {
-            public unsafe nuint e0;
+            public unsafe nint e0;
         }
     }
 }

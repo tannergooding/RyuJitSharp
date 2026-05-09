@@ -6,7 +6,7 @@
 namespace RyuJitSharp;
 
 /// <summary>Specify compiler data that a phase might modify</summary>
-public enum PhaseStatus : uint
+public enum PhaseStatus
 {
     /// <summary>Phase did not make any changes that warrant running post-phase checks or dumping the main jit data strutures.</summary>
     MODIFIED_NOTHING,

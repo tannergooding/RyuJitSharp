@@ -7,7 +7,7 @@ global using static RyuJitSharp.OPCODE;
 
 namespace RyuJitSharp;
 
-public enum OPCODE : uint
+public enum OPCODE
 {
     CEE_NOP,
     CEE_BREAK,

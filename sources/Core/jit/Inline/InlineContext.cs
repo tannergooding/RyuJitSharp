@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System;
+using System.Collections;
 
 namespace RyuJitSharp;
 
@@ -34,10 +34,10 @@ public sealed class InlineContext
     private PgoInfo m_PgoInfo;
 
     /// <summary>size of IL buffer for the method</summary>
-    internal uint m_ILSize;
+    internal int m_ILSize;
 
     /// <summary>estimated size of imported IL</summary>
-    private uint m_ImportedILSize;
+    private int m_ImportedILSize;
 
     /// <summary>inlining statement location within parent</summary>
     private ILLocation m_Location;
@@ -52,7 +52,7 @@ public sealed class InlineContext
     private int m_CodeSizeEstimate;
 
     /// <summary>Ordinal number of this inline</summary>
-    private uint m_Ordinal;
+    private int m_Ordinal;
 
     private Flags m_Flags;
 
@@ -61,10 +61,10 @@ public sealed class InlineContext
     private InlinePolicy? m_Policy;
 
     /// <summary>ID of the GenTreeCall in the parent</summary>
-    private uint m_TreeID;
+    private int m_TreeID;
 
     /// <summary>Set of offsets where instructions begin</summary>
-    private unsafe void* m_ILInstsSet; // FixedBitVect
+    internal BitArray m_ILInstsSet;
 #endif
 
     internal InlineContext(InlineStrategy strategy)
@@ -73,17 +73,33 @@ public sealed class InlineContext
         m_ActualCallOffset = BAD_IL_OFFSET;
         m_Observation = InlineObservation.CALLEE_UNUSED_INITIAL;
         m_Flags = Flags.Success;
+
+#if DEBUG
+        m_ILInstsSet = new BitArray(0);
+#endif
     }
 
     /// <summary>Get the native code size estimate for this inline.</summary>
-    public uint CodeSizeEstimate => unchecked((uint)(m_CodeSizeEstimate));
+    public int CodeSizeEstimate => m_CodeSizeEstimate;
 
     public unsafe bool HasPgoInfo => (m_PgoInfo.PgoSchema is not null) && (m_PgoInfo.PgoSchemaCount > 0) && (m_PgoInfo.PgoData is not null);
 
-    /// <summary>Get the IL code size for this inline.</summary>
-    public uint ILSize => m_ILSize;
+#if DEBUG
+    public BitArray ILInstsSet => m_ILInstsSet;
+#endif
 
-    public uint ImportedILSize => m_ImportedILSize;
+    /// <summary>Get the IL code size for this inline.</summary>
+    public int ILSize => m_ILSize;
+
+    public int ImportedILSize => m_ImportedILSize;
+
+    public bool IsRoot => m_Parent is null;
+
+    public ILLocation Location => m_Location;
+
+    public int Ordinal => m_Ordinal;
+
+    public InlineContext? Parent => m_Parent;
 
     public PgoInfo PgoInfo
     {

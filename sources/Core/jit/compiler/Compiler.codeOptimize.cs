@@ -7,6 +7,11 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    public const codeOptimize BLENDED_CODE = codeOptimize.BLENDED_CODE;
+    public const codeOptimize SMALL_CODE = codeOptimize.SMALL_CODE;
+    public const codeOptimize FAST_CODE = codeOptimize.FAST_CODE;
+    public const codeOptimize COUNT_OPT_CODE = codeOptimize.COUNT_OPT_CODE;
+
     public enum codeOptimize
     {
         BLENDED_CODE,

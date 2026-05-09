@@ -24,7 +24,7 @@ public sealed class GenTreeIntCon : GenTreeIntConCommon
 
 #if DEBUG
     // If the value represents target address (for a field or call), holds the handle of the field (or call).
-    private nuint _targetHandle;
+    private nint _targetHandle;
 #endif
 
     public GenTreeIntCon(var_types type, nint value)
@@ -58,7 +58,7 @@ public sealed class GenTreeIntCon : GenTreeIntConCommon
     public nint IconVal => _value.Icon;
 
 #if DEBUG
-    public nuint TargetHandle
+    public nint TargetHandle
     {
         get
         {
@@ -71,4 +71,17 @@ public sealed class GenTreeIntCon : GenTreeIntConCommon
         }
     }
 #endif
+
+    public bool IsIconHandle()
+        => (Flags & GTF_ICON_HDL_MASK) != 0;
+
+    public bool IsIconHandle(GenTreeFlags handleType)
+    {
+        // check that handleType is one of the valid GTF_ICON_* values
+
+        assert((handleType & GTF_ICON_HDL_MASK) != 0);
+        assert((handleType & ~GTF_ICON_HDL_MASK) == 0);
+
+        return ((Flags & GTF_ICON_HDL_MASK) == handleType);
+    }
 }

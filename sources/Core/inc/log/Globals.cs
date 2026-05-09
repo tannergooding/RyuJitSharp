@@ -69,9 +69,9 @@ public partial class Globals
 
     public const int LF_BCL = 0x40000000;
 
-    public const int LF_ALWAYS = unchecked((int)(0x80000000)); // Log message irrepespective of LogFacility (if the level matches)
+    public const int LF_ALWAYS = int.MinValue; // Log message irrepespective of LogFacility (if the level matches)
 
-    public const int LF_ALL = unchecked((int)(0xFFFFFFFF)); // Used only to mask bits. Never use as LOG((LF_ALL, ...))
+    public const int LF_ALL = -1; // Used only to mask bits. Never use as LOG((LF_ALL, ...))
 
     // LogFacility2: all 32-bit of LogFacility are used, need a 2nd DWORD for more facilities
     public const int LF2_MULTICOREJIT = 0x00000001; // Multicore JIT

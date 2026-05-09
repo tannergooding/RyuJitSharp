@@ -183,7 +183,7 @@ public sealed class CodeGen : ICodeGen
     }
 #endif
 
-    public unsafe void genGenerateCode(out void* codePtr, out uint nativeSizeOfCode)
+    public unsafe void genGenerateCode(out void* codePtr, out int nativeSizeOfCode)
     {
         // TODO: Port CodeGen.genGenerateCode
         codePtr = null;

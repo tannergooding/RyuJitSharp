@@ -47,24 +47,10 @@ public sealed class GenTreeBoundsChk : GenTreeOp
     }
 
     /// <summary>An expression for the length.</summary>
-    public GenTree ArrayLength
-    {
-        get
-        {
-            assert(Op2 is not null);
-            return Op2;
-        }
-    }
+    public GenTree ArrayLength => Op2;
 
     /// <summary>The index expression.</summary>
-    public GenTree Index
-    {
-        get
-        {
-            assert(Op1 is not null);
-            return Op1;
-        }
-    }
+    public GenTree Index => Op1;
 
     /// <summary>The array element type.</summary>
     public var_types InxType => _inxType;

@@ -3,8 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+#if FEATURE_JIT_METHOD_PERF || DUMP_FLOWGRAPHS
+#endif
 
 namespace RyuJitSharp;
 
@@ -143,14 +143,17 @@ public static class PhasesExtensions
 
     extension(Phases phase)
     {
+#if FEATURE_JIT_METHOD_PERF || DUMP_FLOWGRAPHS
         public string Name
         {
             get
             {
                 assert(s_names.Length == (int)(PHASE_NUMBER_OF));
-                assert(phase < PHASE_NUMBER_OF);
-                return Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(s_names), (int)(phase));
+                return s_names[(int)(phase)];
             }
         }
+#else
+        public string Name => phase.ToString();
+#endif
     }
 }

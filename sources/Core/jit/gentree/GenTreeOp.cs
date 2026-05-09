@@ -3,13 +3,15 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Diagnostics;
+
 namespace RyuJitSharp;
 
 public class GenTreeOp : GenTreeUnOp
 {
     private GenTree? _op2;
 
-    public GenTreeOp(genTreeOps oper, var_types type, GenTree? op1, GenTree? op2)
+    internal GenTreeOp(genTreeOps oper, var_types type, GenTree? op1, GenTree? op2)
         : base(oper, type, op1)
     {
         _op2 = op2;
@@ -61,11 +63,14 @@ public class GenTreeOp : GenTreeUnOp
     };
 #endif
 
-    public GenTree? Op2
+    public GenTree Op2
     {
         get
         {
-            return _op2;
+#if DEBUG
+            assert(Debugger.IsAttached || (_op2 is not null) || !IsNullOp2Legal);
+#endif
+            return _op2!;
         }
 
         set
@@ -77,4 +82,53 @@ public class GenTreeOp : GenTreeUnOp
 #nullable disable
     public ref GenTree Op2Ref => ref _op2;
 #nullable restore
+
+    /// <summary>returns true if the given tree is known to possibly overflow on a division.</summary>
+    /// <param name="comp">Compiler object, needed for IsNeverNegativeOne</param>
+    /// <returns>true if the given tree is known to possibly overflow on a division</returns>
+    /// <remarks>
+    ///   <para>Only valid for integral types.</para>
+    ///   <para>Only valid for signed-div/signed-mod.</para>
+    /// </remarks>
+    public bool CanDivOrModPossiblyOverflow(Compiler comp)
+    {
+        assert(Oper is GT_DIV or GT_MOD);
+        assert(varTypeIsIntegral(Type));
+
+        if ((Flags & GTF_DIV_MOD_NO_OVERFLOW) != 0)
+        {
+            return false;
+        }
+
+        var op1 = Op1.SkipCopyOrReload;
+        var op2 = Op2.SkipCopyOrReload;
+
+        // If the divisor is known to never be '-1', we cannot overflow.
+        if (op2.IsNeverNegativeOne(comp))
+        {
+            return false;
+        }
+
+        // If the dividend is a constant with a minimum value with respect to the division's type, then we might overflow
+        // as we do not know if the divisor will be '-1' or not at this point.
+        if (op1.Oper.IsIntegralConst)
+        {
+            var intConCommon = op1.AsIntConCommon();
+
+            if ((Type is TYP_INT) && intConCommon.IsIntegralConst(int.MinValue))
+            {
+                return true;
+            }
+            else if ((Type is TYP_LONG) && (intConCommon.IntegralValue == long.MinValue))
+            {
+                return true;
+            }
+
+            // Dividend is not a minimum value; therefore we cannot overflow.
+            return false;
+        }
+
+        // Not enough known information; therefore we might overflow.
+        return true;
+    }
 }

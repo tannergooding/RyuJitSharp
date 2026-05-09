@@ -10,23 +10,23 @@ public sealed class BitVecTraits : IBitSetTraits<BitVecTraits>
 {
     private Compiler _compiler;
 
-    private uint _size;
+    private int _size;
 
     /// <summary>pre-computed to avoid computation in GetArrSize</summary>
-    private uint _arraySize;
+    private int _arraySize;
 
-    public unsafe BitVecTraits(Compiler compiler, uint size)
+    public unsafe BitVecTraits(Compiler compiler, int size)
     {
         _compiler = compiler;
         _size = size;
 
-        var elemBits = 8 * (uint)(sizeof(nuint));
+        var elemBits = 8 * sizeof(nint);
         _arraySize = roundUp(size, elemBits) / elemBits;
     }
 
-    public static uint GetArrSize(BitVecTraits env) => env._arraySize;
+    public static int GetArrSize(BitVecTraits env) => env._arraySize;
 
-    public static uint GetEpoch(BitVecTraits env) => env._size;
+    public static int GetEpoch(BitVecTraits env) => env._size;
 
-    public static uint GetSize(BitVecTraits env) => env._size;
+    public static int GetSize(BitVecTraits env) => env._size;
 }

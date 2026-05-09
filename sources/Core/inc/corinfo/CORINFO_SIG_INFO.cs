@@ -15,7 +15,7 @@ public struct CORINFO_SIG_INFO
     /// <summary>Returns the value class as it is in the sig (enums are not converted to primitives).</summary>
     public unsafe CORINFO_CLASS_HANDLE retTypeSigClass;
 
-    private uint _bitfield;
+    private int _bitfield;
 
     public CorInfoType retType
     {
@@ -26,12 +26,12 @@ public struct CORINFO_SIG_INFO
 
         set
         {
-            _bitfield = (_bitfield & ~0xFFu) | unchecked((byte)(value));
+            _bitfield = (_bitfield & ~0xFF) | (byte)(value);
         }
     }
 
     /// <summary>Used by IL stubs code.</summary>
-    public uint flags
+    public byte flags
     {
         readonly get
         {
@@ -41,11 +41,11 @@ public struct CORINFO_SIG_INFO
 
         set
         {
-            _bitfield = (_bitfield & ~(0xFFu << 8)) | (unchecked((uint)(byte)(value)) << 8);
+            _bitfield = (_bitfield & ~(0xFF << 8)) | (value << 8);
         }
     }
 
-    public uint numArgs
+    public ushort numArgs
     {
         readonly get
         {
@@ -55,7 +55,7 @@ public struct CORINFO_SIG_INFO
 
         set
         {
-            _bitfield = (_bitfield & ~(0xFFFFu << 16)) | (unchecked((uint)(ushort)(value)) << 16);
+            _bitfield = (_bitfield & ~(0xFFFF << 16)) | (value << 16);
         }
     }
 
@@ -66,7 +66,7 @@ public struct CORINFO_SIG_INFO
 
     public unsafe PCCOR_SIGNATURE pSig;
 
-    public uint cbSig;
+    public int cbSig;
 
     /// <summary>Used in place of pSig and cbSig to reference a method signature object handle.</summary>
     public unsafe MethodSignatureInfo* methodSignature;
@@ -78,17 +78,17 @@ public struct CORINFO_SIG_INFO
 
     public readonly CorInfoCallConv getCallConv() => callConv & CORINFO_CALLCONV_MASK;
 
-    public readonly bool hasThis() => (callConv & CORINFO_CALLCONV_HASTHIS) is not 0;
+    public readonly bool hasThis() => (callConv & CORINFO_CALLCONV_HASTHIS) != 0;
 
-    public readonly bool hasExplicitThis() => (callConv & CORINFO_CALLCONV_EXPLICITTHIS) is not 0;
+    public readonly bool hasExplicitThis() => (callConv & CORINFO_CALLCONV_EXPLICITTHIS) != 0;
 
     public readonly bool hasImplicitThis() => (callConv & (CORINFO_CALLCONV_HASTHIS | CORINFO_CALLCONV_EXPLICITTHIS)) == CORINFO_CALLCONV_HASTHIS;
 
-    public readonly uint totalILArgs() => numArgs + (hasImplicitThis() ? 1u : 0u);
+    public readonly int totalILArgs() => numArgs + (hasImplicitThis() ? 1 : 0);
 
     public readonly bool isVarArg() => getCallConv() is CORINFO_CALLCONV_VARARG or CORINFO_CALLCONV_NATIVEVARARG;
 
-    public readonly bool hasTypeArg() => (callConv & CORINFO_CALLCONV_PARAMTYPE) is not 0;
+    public readonly bool hasTypeArg() => (callConv & CORINFO_CALLCONV_PARAMTYPE) != 0;
 
-    public readonly bool isAsyncCall() => (callConv & CORINFO_CALLCONV_ASYNCCALL) is not 0;
+    public readonly bool isAsyncCall() => (callConv & CORINFO_CALLCONV_ASYNCCALL) != 0;
 }

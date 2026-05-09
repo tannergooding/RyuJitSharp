@@ -22,14 +22,14 @@ namespace RyuJitSharp;
 //
 // CORINFO_CALL_CODE_POINTER (shared generic code only) :
 //   Indicates that the JIT should do an indirect call to the entrypoint given by address, which may be specified
-//   as a runtime lookup by CORINFO_CALL_INFO::codePointerLookup.
+//   as a runtime lookup by CORINFO_CALL_INFO.codePointerLookup.
 //   [targetMethodHandle] will not hold a valid value.
 //   This flag may be combined with nullInstanceCheck=TRUE for uses of callvirt on methods whose target method can
 //   be resolved at compile-time but whose instantiation can be resolved only through runtime lookup.
 //
 // CORINFO_VIRTUALCALL_STUB (interface calls) :
 //   Indicates that the EE supports "stub dispatch" and request the JIT to make a
-//   "stub dispatch" call (an indirect call through CORINFO_CALL_INFO::stubLookup,
+//   "stub dispatch" call (an indirect call through CORINFO_CALL_INFO.stubLookup,
 //   similar to CORINFO_CALL_CODE_POINTER).
 //   "Stub dispatch" is a specialized calling sequence (that may require use of NOPs)
 //   which allow the runtime to determine the call-site after the call has been dispatched.

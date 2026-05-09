@@ -15,9 +15,9 @@ public readonly partial struct ValueSize : IEquatable<ValueSize>
     private readonly Kind _kind;
 
     /// <summary>The size field is used when the kind is Exact, otherwise the size field is zero.</summary>
-    private readonly uint _size;
+    private readonly int _size;
 
-    public ValueSize(uint size)
+    public ValueSize(int size)
     {
         _size = size;
     }
@@ -33,7 +33,7 @@ public readonly partial struct ValueSize : IEquatable<ValueSize>
 
     public static ValueSize Vector => new ValueSize(Kind.Vector);
 
-    public uint ExactSize
+    public int ExactSize
     {
         get
         {
@@ -46,7 +46,7 @@ public readonly partial struct ValueSize : IEquatable<ValueSize>
 
     public bool IsMask => _kind is Kind.Mask;
 
-    public bool IsNull => (_kind is Kind.Exact) && (_size is 0);
+    public bool IsNull => (_kind is Kind.Exact) && (_size == 0);
 
     public bool IsUnknown => _kind is Kind.Unknown;
 
@@ -65,7 +65,7 @@ public readonly partial struct ValueSize : IEquatable<ValueSize>
 
     public static ValueSize FromJitType(var_types type)
     {
-        assert(type.Size is not 0);
+        assert(type.Size != 0);
 
         return type switch {
 #if TARGET_ARM64

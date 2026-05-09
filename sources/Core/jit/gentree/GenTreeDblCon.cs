@@ -33,13 +33,13 @@ public sealed class GenTreeDblCon : GenTree
 
     public bool IsBitwiseEqual(GenTreeDblCon other)
     {
-        var otherBits = BitConverter.DoubleToUInt64Bits(other._dconVal);
+        var otherBits = BitConverter.DoubleToInt64Bits(other._dconVal);
         return IsBitwiseEqual(otherBits);
     }
 
-    public bool IsBitwiseEqual(ulong otherBits)
+    public bool IsBitwiseEqual(long otherBits)
     {
-        var bits = BitConverter.DoubleToUInt64Bits(_dconVal);
+        var bits = BitConverter.DoubleToInt64Bits(_dconVal);
         return bits == otherBits;
     }
 }

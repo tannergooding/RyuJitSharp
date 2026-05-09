@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 namespace RyuJitSharp;
 
-public readonly partial struct LocalsGenTreeList : IEnumerable<GenTree>
+public readonly partial struct LocalsGenTreeList : IEnumerable<GenTreeLclVarCommon>
 {
     private readonly Statement _stmt;
 
@@ -24,7 +24,7 @@ public readonly partial struct LocalsGenTreeList : IEnumerable<GenTree>
         return new Enumerator(first?.AsLclVarCommon());
     }
 
-    IEnumerator<GenTree> IEnumerable<GenTree>.GetEnumerator() => GetEnumerator();
+    IEnumerator<GenTreeLclVarCommon> IEnumerable<GenTreeLclVarCommon>.GetEnumerator() => GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }

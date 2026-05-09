@@ -3,28 +3,21 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System.Globalization;
-using System.Text;
-
 namespace RyuJitSharp;
 
 public partial class Globals
 {
-#if !HOST_64BIT
-    public static nuint INVALID_POINT_CC => unchecked((nuint)(0xCCCCCCCC_CCCCCCCC));
+#if HOST_64BIT
+    public static long INVALID_POINT_CC => unchecked((long)(0xCCCCCCCC_CCCCCCCC));
 
-    public static nuint INVALID_POINT_CD => unchecked((nuint)(0xCDCDCDCD_CDCDCDCD));
+    public static long INVALID_POINT_CD => unchecked((long)(0xCDCDCDCD_CDCDCDCD));
 
-    public static readonly CompositeFormat FMT_ADDR = CompositeFormat.Parse(" {0:X8}`{1:X8} ");
-
-    public static unsafe string FMT_DBG_ADDR(void* ptr) => string.Format(CultureInfo.InvariantCulture, FMT_ADDR, unchecked((uint)((nuint)(ptr) >> 32)), unchecked((uint)(ptr)));
+    public static unsafe string FMT_DBG_ADDR(void* ptr) => $" {unchecked((int)((nint)(ptr) >>> 32)):X8}`{unchecked((int)(ptr)):X8} ";
 #else
-    public const uint INVALID_POINT_CC = 0xCCCCCCCC;
+    public const int INVALID_POINT_CC = unchecked((int)(0xCCCCCCCC));
 
-    public const uint INVALID_POINT_CD = 0xCDCDCDCD;
+    public const int INVALID_POINT_CD = unchecked((int)(0xCDCDCDCD));
 
-    public static readonly CompositeFormat FMT_ADDR = CompositeFormat.Parse(" {0:X8} ");
-
-    public static unsafe string FMT_DBG_ADDR(void* ptr) => string.Format(CultureInfo.InvariantCulture, FMT_ADDR, unchecked((uint)(ptr)));
+    public static unsafe string FMT_DBG_ADDR(void* ptr) => $" {unchecked((int)(ptr)):X8} ";
 #endif
 }

@@ -46,7 +46,7 @@ public partial class Globals
     public static bool varTypeIsSimd(var_types v)
     {
 #if FEATURE_SIMD
-        return (v.Classification & VTF_VEC) is not 0;
+        return (v.Classification & VTF_VEC) != 0;
 #else
         return false;
 #endif
@@ -63,11 +63,11 @@ public partial class Globals
 
     public static bool varTypeIsSimdOrMask(var_types vt) => varTypeIsSimd(vt) || varTypeIsMask(vt);
 
-    public static bool varTypeIsIntegral(var_types vt) => (vt.Classification & VTF_INT) is not 0;
+    public static bool varTypeIsIntegral(var_types vt) => (vt.Classification & VTF_INT) != 0;
 
-    public static bool varTypeIsIntegralOrI(var_types vt) => (vt.Classification & (VTF_INT | VTF_I)) is not 0;
+    public static bool varTypeIsIntegralOrI(var_types vt) => (vt.Classification & (VTF_INT | VTF_I)) != 0;
 
-    public static bool varTypeIsUnsigned(var_types vt) => (vt.Classification & VTF_UNS) is not 0;
+    public static bool varTypeIsUnsigned(var_types vt) => (vt.Classification & VTF_UNS) != 0;
 
     public static bool varTypeIsSigned(var_types vt) => varTypeIsIntegralOrI(vt) && !varTypeIsUnsigned(vt);
 
@@ -77,13 +77,13 @@ public partial class Globals
     // If "vt" represents a signed integral type, returns the corresponding unsigned integral type, otherwise returns the original type.
     public static var_types varTypeToUnsigned(var_types vt) => (varTypeIsIntegral(vt) && !varTypeIsUnsigned(vt)) ? (vt + 1) : vt;
 
-    public static bool varTypeIsFloating(var_types vt) => (vt.Classification & VTF_FLT) is not 0;
+    public static bool varTypeIsFloating(var_types vt) => (vt.Classification & VTF_FLT) != 0;
 
-    public static bool varTypeIsArithmetic(var_types vt) => (vt.Classification & (VTF_INT | VTF_FLT)) is not 0;
+    public static bool varTypeIsArithmetic(var_types vt) => (vt.Classification & (VTF_INT | VTF_FLT)) != 0;
 
     public static bool varTypeIsGC(var_types vt) => vt is TYP_REF or TYP_BYREF;
 
-    public static bool varTypeIsI(var_types vt) => (vt.Classification & VTF_I) is not 0;
+    public static bool varTypeIsI(var_types vt) => (vt.Classification & VTF_I) != 0;
 
     public static bool varTypeIsEnregisterable(var_types vt) => vt != TYP_STRUCT;
 
@@ -145,7 +145,7 @@ public partial class Globals
 #endif
     }
 
-    public static bool varTypeIsStruct(var_types vt) => (vt.Classification & VTF_S) is not 0;
+    public static bool varTypeIsStruct(var_types vt) => (vt.Classification & VTF_S) != 0;
 
     public static bool varTypeUsesSameRegType(var_types vt, var_types vu) => vt.Register == vu.Register;
 

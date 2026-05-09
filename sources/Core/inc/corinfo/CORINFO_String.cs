@@ -15,7 +15,7 @@ public struct CORINFO_String
     [UnscopedRef]
     public unsafe ref CORINFO_MethodPtr* methTable => ref _base.methTable;
 
-    public uint stringLen;
+    public int stringLen;
 
     /// <summary>Actually of variable size.</summary>
     public char chars;

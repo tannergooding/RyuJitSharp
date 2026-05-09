@@ -1,4 +1,4 @@
-// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+// Copyright Â© Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 //
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
@@ -9,11 +9,11 @@ public partial struct ICorDebugInfo
 {
     public struct NativeVarInfo
     {
-        public uint startOffset;
+        public int startOffset;
 
-        public uint endOffset;
+        public int endOffset;
 
-        public uint varNumber;
+        public int varNumber;
 
         public VarLoc loc;
     }

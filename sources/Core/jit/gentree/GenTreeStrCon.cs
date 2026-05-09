@@ -7,11 +7,11 @@ namespace RyuJitSharp;
 
 public sealed class GenTreeStrCon : GenTree
 {
-    private readonly uint _sconCpx;
+    private readonly int _sconCpx;
     private readonly unsafe CORINFO_MODULE_HANDLE _scpHnd;
 
     // Because this node can come from an inlined method we need to have the scope handle, since it will become a helper call.
-    public unsafe GenTreeStrCon(uint sconCpx, CORINFO_MODULE_HANDLE scpHnd)
+    public unsafe GenTreeStrCon(int sconCpx, CORINFO_MODULE_HANDLE scpHnd)
         : base(GT_CNS_STR, TYP_REF)
     {
         _sconCpx = sconCpx;
@@ -22,7 +22,7 @@ public sealed class GenTreeStrCon : GenTree
     public unsafe bool IsStringEmptyField => (_sconCpx is EMPTY_STRING_SCON)
                                           && (_scpHnd is null);
 
-    public uint SconCpx => _sconCpx;
+    public int SconCpx => _sconCpx;
 
     public unsafe CORINFO_MODULE_HANDLE ScpHnd => _scpHnd;
 }

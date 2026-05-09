@@ -21,7 +21,7 @@ public struct CORINFO_FPSTRUCT_LOWERING
     public offsetsInlineArray offsets;
 
     /// <summary>Number of lowered struct fields.</summary>
-    public nuint numLoweredElements;
+    public nint numLoweredElements;
 
     [InlineArray(MAX_FPSTRUCT_LOWERED_ELEMENTS)]
     public struct loweredElementsInlineArray
@@ -32,6 +32,6 @@ public struct CORINFO_FPSTRUCT_LOWERING
     [InlineArray(MAX_FPSTRUCT_LOWERED_ELEMENTS)]
     public struct offsetsInlineArray
     {
-        public uint e0;
+        public int e0;
     }
 }

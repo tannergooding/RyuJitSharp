@@ -8,7 +8,7 @@ namespace RyuJitSharp;
 // getThreadLocalStaticInfo_NativeAOT and CORINFO_THREAD_STATIC_INFO_NATIVEAOT: The EE instructs the JIT about how to access a thread local field
 public struct CORINFO_THREAD_STATIC_INFO_NATIVEAOT
 {
-    public uint offsetOfThreadLocalStoragePointer;
+    public int offsetOfThreadLocalStoragePointer;
 
     public CORINFO_CONST_LOOKUP tlsRootObject;
 

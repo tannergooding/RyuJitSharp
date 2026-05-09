@@ -7,6 +7,9 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    public const FlowGraphOrder FGOrderTree = FlowGraphOrder.FGOrderTree;
+    public const FlowGraphOrder FGOrderLinear = FlowGraphOrder.FGOrderLinear;
+
     public enum FlowGraphOrder
     {
         /// <summary>the dominant ordering is the tree order, and the nodes contained in each tree and sub-tree are contiguous, and can be traversed (in gtNext/gtPrev order) by traversing the tree according to the order of the operands.</summary>

@@ -31,7 +31,7 @@ public partial class Globals
     public const int CORINFO_ACCESS_ALLOWED_MAX_ARGS = 4;
 
     /// <summary>Indicates that the CORINFO_VIRTUALCALL_VTABLE lookup needn't do a chunk indirection</summary>
-    public const int CORINFO_VIRTUALCALL_NO_CHUNK = unchecked((int)0xFFFF_FFFF);
+    public const int CORINFO_VIRTUALCALL_NO_CHUNK = -1;
 
     /// <summary>This is used to indicate that a finally has been called "locally" by the try block.</summary>
     public const int LCL_FINALLY_MARK = 0xFC;
@@ -51,11 +51,11 @@ public partial class Globals
 
 #if TARGET_64BIT
     public const int OFFSETOF__CORINFO_Array__data = OFFSETOF__CORINFO_Array__length
-                                                    + sizeof(uint)  // length
-                                                    + sizeof(uint); // alignpad
+                                                   + sizeof(int)  // length
+                                                   + sizeof(int); // alignpad
 #else
     public const int OFFSETOF__CORINFO_Array__data = OFFSETOF__CORINFO_Array__length
-                                                   + sizeof(uint);  // length
+                                                   + sizeof(int);  // length
 #endif
 
     public const int OFFSETOF__CORINFO_TypedReference__dataPtr = 0;
@@ -66,7 +66,7 @@ public partial class Globals
     public const int OFFSETOF__CORINFO_String__stringLen = SIZEOF__CORINFO_Object;
 
     public const int OFFSETOF__CORINFO_String__chars = OFFSETOF__CORINFO_String__stringLen
-                                                       + sizeof(uint); // stringLen
+                                                     + sizeof(int); // stringLen
 
     public const int OFFSETOF__CORINFO_NullableOfT__hasValue = 0;
 
@@ -125,8 +125,8 @@ public partial class Globals
     public static unsafe CORINFO_CONTEXT_HANDLE METHOD_BEING_COMPILED_CONTEXT() => (CORINFO_CONTEXT_HANDLE)(1);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe CORINFO_CONTEXT_HANDLE MAKE_CLASSCONTEXT(CORINFO_CLASS_HANDLE c) => (CORINFO_CONTEXT_HANDLE)((nuint)(c) | (nuint)(CORINFO_CONTEXTFLAGS_CLASS));
+    public static unsafe CORINFO_CONTEXT_HANDLE MAKE_CLASSCONTEXT(CORINFO_CLASS_HANDLE c) => (CORINFO_CONTEXT_HANDLE)(unchecked((nint)(c)) | (nint)(CORINFO_CONTEXTFLAGS_CLASS));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe CORINFO_CONTEXT_HANDLE MAKE_METHODCONTEXT(CORINFO_METHOD_HANDLE m) => (CORINFO_CONTEXT_HANDLE)((nuint)(m) | (nuint)(CORINFO_CONTEXTFLAGS_METHOD));
+    public static unsafe CORINFO_CONTEXT_HANDLE MAKE_METHODCONTEXT(CORINFO_METHOD_HANDLE m) => (CORINFO_CONTEXT_HANDLE)(unchecked((nint)(m)) | (nint)(CORINFO_CONTEXTFLAGS_METHOD));
 }

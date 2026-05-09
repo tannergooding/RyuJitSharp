@@ -11,4 +11,6 @@ public partial class Globals
     public const int MAX_INL_ARGS = 32;
 
     public const int MAX_INL_LCLS = 32;
+
+    public static string FMT_INL_CTX(int ordinal) => $"INL{ordinal:D2}";
 }

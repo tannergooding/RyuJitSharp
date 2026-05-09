@@ -7,6 +7,13 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    public const structPassingKind SPK_Unknown = structPassingKind.SPK_Unknown;
+    public const structPassingKind SPK_PrimitiveType = structPassingKind.SPK_PrimitiveType;
+    public const structPassingKind SPK_EnclosingType = structPassingKind.SPK_EnclosingType;
+    public const structPassingKind SPK_ByValue = structPassingKind.SPK_ByValue;
+    public const structPassingKind SPK_ByValueAsHfa = structPassingKind.SPK_ByValueAsHfa;
+    public const structPassingKind SPK_ByReference = structPassingKind.SPK_ByReference;
+
     public enum structPassingKind
     {
         /// <summary>Invalid value, never returned</summary>

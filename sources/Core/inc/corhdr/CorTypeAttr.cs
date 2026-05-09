@@ -10,7 +10,7 @@ namespace RyuJitSharp;
 
 /// <summary>TypeDef/ExportedType attr bits, used by DefineTypeDef.</summary>
 [Flags]
-public enum CorTypeAttr : uint
+public enum CorTypeAttr
 {
     /// <summary>Use this mask to retrieve the type visibility information.</summary>
     tdVisibilityMask = 0x00000007,

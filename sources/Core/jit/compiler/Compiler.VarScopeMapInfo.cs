@@ -7,7 +7,15 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    public sealed class VarScopeMapInfo
+    public struct VarScopeMapInfo
     {
+        public VarScopeListNode Head;
+        public VarScopeListNode Tail;
+
+        public VarScopeMapInfo(VarScopeListNode node)
+        {
+            Head = node;
+            Tail = node;
+        }
     }
 }

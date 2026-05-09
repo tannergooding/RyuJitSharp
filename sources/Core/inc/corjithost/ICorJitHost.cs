@@ -16,26 +16,26 @@ public unsafe partial struct ICorJitHost : ICorJitHost.Interface
 {
     internal Vtbl* lpVtbl;
 
-    public void* allocateMemory(nuint size) => lpVtbl->allocateMemory((ICorJitHost*)Unsafe.AsPointer(ref this), size);
+    public void* allocateMemory(nint size) => lpVtbl->allocateMemory((ICorJitHost*)(Unsafe.AsPointer(ref this)), size);
 
-    public void freeMemory(void* block) => lpVtbl->freeMemory((ICorJitHost*)Unsafe.AsPointer(ref this), block);
+    public void freeMemory(void* block) => lpVtbl->freeMemory((ICorJitHost*)(Unsafe.AsPointer(ref this)), block);
 
-    public int getIntConfigValue(byte* name, int defaultValue) => lpVtbl->getIntConfigValue((ICorJitHost*)Unsafe.AsPointer(ref this), name, defaultValue);
+    public int getIntConfigValue(byte* name, int defaultValue) => lpVtbl->getIntConfigValue((ICorJitHost*)(Unsafe.AsPointer(ref this)), name, defaultValue);
 
-    public byte* getStringConfigValue(byte* name) => lpVtbl->getStringConfigValue((ICorJitHost*)Unsafe.AsPointer(ref this), name);
+    public byte* getStringConfigValue(byte* name) => lpVtbl->getStringConfigValue((ICorJitHost*)(Unsafe.AsPointer(ref this)), name);
 
-    public void freeStringConfigValue(byte* value) => lpVtbl->freeStringConfigValue((ICorJitHost*)Unsafe.AsPointer(ref this), value);
+    public void freeStringConfigValue(byte* value) => lpVtbl->freeStringConfigValue((ICorJitHost*)(Unsafe.AsPointer(ref this)), value);
 
-    public void* allocateSlab(nuint size, nuint* pActualSize) => lpVtbl->allocateSlab((ICorJitHost*)Unsafe.AsPointer(ref this), size, pActualSize);
+    public void* allocateSlab(nint size, nint* pActualSize) => lpVtbl->allocateSlab((ICorJitHost*)(Unsafe.AsPointer(ref this)), size, pActualSize);
 
-    public void freeSlab(void* slab, nuint actualSize) => lpVtbl->freeSlab((ICorJitHost*)Unsafe.AsPointer(ref this), slab, actualSize);
+    public void freeSlab(void* slab, nint actualSize) => lpVtbl->freeSlab((ICorJitHost*)(Unsafe.AsPointer(ref this)), slab, actualSize);
 
     public interface Interface
     {
         // Allocate memory of the given size in bytes.
-        void* allocateMemory(nuint size);
+        void* allocateMemory(nint size);
 
-        // Frees memory previous obtained by a call to `ICorJitHost::allocateMemory`.
+        // Frees memory previous obtained by a call to `ICorJitHost.allocateMemory`.
         void freeMemory(void* block);
 
         // Return an integer config value for the given key, if any exists.
@@ -52,14 +52,14 @@ public unsafe partial struct ICorJitHost : ICorJitHost.Interface
 
         // Allocate memory slab of the given size in bytes. The host is expected to pool
         // these for a good performance.
-        void* allocateSlab(nuint size, nuint* pActualSize)
+        void* allocateSlab(nint size, nint* pActualSize)
         {
             *pActualSize = size;
             return allocateMemory(size);
         }
 
         // Free memory slab of the given size in bytes.
-        void freeSlab(void* slab, nuint actualSize)
+        void freeSlab(void* slab, nint actualSize)
         {
             freeMemory(slab);
         }
@@ -67,7 +67,7 @@ public unsafe partial struct ICorJitHost : ICorJitHost.Interface
 
     public struct Vtbl
     {
-        public delegate* unmanaged[MemberFunction]<ICorJitHost*, nuint, void*> allocateMemory;
+        public delegate* unmanaged[MemberFunction]<ICorJitHost*, nint, void*> allocateMemory;
 
         public delegate* unmanaged[MemberFunction]<ICorJitHost*, void*, void> freeMemory;
 
@@ -77,8 +77,8 @@ public unsafe partial struct ICorJitHost : ICorJitHost.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorJitHost*, byte*, void> freeStringConfigValue;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitHost*, nuint, nuint*, void*> allocateSlab;
+        public delegate* unmanaged[MemberFunction]<ICorJitHost*, nint, nint*, void*> allocateSlab;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitHost*, void*, nuint, void> freeSlab;
+        public delegate* unmanaged[MemberFunction]<ICorJitHost*, void*, nint, void> freeSlab;
     }
 }

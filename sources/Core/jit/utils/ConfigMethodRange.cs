@@ -38,9 +38,9 @@ public partial struct ConfigMethodRange
     /// <summary>index + 1 of any bad character in range string</summary>
     public readonly int BadCharIndex => _badChar - 1;
 
-    public readonly bool Error => _badChar is not 0;
+    public readonly bool Error => _badChar != 0;
 
-    public readonly bool IsEmpty => _rangeCount is 0;
+    public readonly bool IsEmpty => _rangeCount == 0;
 
     /// <summary>check if the range includes a particular hash</summary>
     /// <param name="hash">hash value to check</param>
@@ -49,7 +49,7 @@ public partial struct ConfigMethodRange
     {
         assert(_ranges is not null);
 
-        if (_rangeCount is 0)
+        if (_rangeCount == 0)
         {
             // No ranges specified means all methods included.
             return true;
@@ -57,7 +57,7 @@ public partial struct ConfigMethodRange
 
         foreach (var range in _ranges.AsSpan(0, _rangeCount))
         {
-            if ((range.Low <= unchecked((uint)(hash))) && (unchecked((uint)(hash)) <= range.High))
+            if ((range.Low <= hash) && (hash <= range.High))
             {
                 return true;
             }
@@ -67,7 +67,7 @@ public partial struct ConfigMethodRange
 
     // Ensure the range string has been parsed.
     [MemberNotNull(nameof(_ranges))]
-    public unsafe void EnsureInit(byte* rangeStr, uint capacity = DEFAULT_CAPACITY)
+    public unsafe void EnsureInit(byte* rangeStr, int capacity = DEFAULT_CAPACITY)
     {
         if (_ranges is null)
         {
@@ -85,7 +85,7 @@ public partial struct ConfigMethodRange
             return;
         }
 
-        if (_rangeCount is 0)
+        if (_rangeCount == 0)
         {
             jitprintf("<empty method range>\n");
             return;
@@ -113,12 +113,12 @@ public partial struct ConfigMethodRange
     /// <param name="rangeStr">String to parse (may be null)</param>
     /// <param name="capacity">Number ranges to allocate in the range array</param>
     /// <remarks>Does some internal error checking; clients can use <see cref="Error" /> to determine if the range string couldn't be fully parsed because of bad characters or too many entries, or had values that were too large to represent.</remarks>
-    private void InitRanges(ReadOnlySpan<byte> rangeStr, uint capacity)
+    private void InitRanges(ReadOnlySpan<byte> rangeStr, int capacity)
     {
         // Make sure that the memory was zero initialized
         assert(_ranges is null);
-        assert(_rangeCount is 0);
-        assert(_badChar is 0);
+        assert(_rangeCount == 0);
+        assert(_badChar == 0);
 
         // Flag any strange-looking requests
         assert(capacity < 100000);
@@ -137,7 +137,7 @@ public partial struct ConfigMethodRange
         var totalIndex = 0;
         var setHighPart = false;
 
-        while ((rangeStr.Length is not 0) && (rangeCount < ranges.Length))
+        while ((rangeStr.Length != 0) && (rangeCount < ranges.Length))
         {
             var nextIndex = rangeStr.IndexOfAnyExcept((byte)(' '), (byte)(','));
 
@@ -147,15 +147,15 @@ public partial struct ConfigMethodRange
                 totalIndex += nextIndex;
             }
 
-            var value = 0u;
+            var value = 0;
             var currentChar = (char)(rangeStr[0]);
 
             while (char.IsAsciiHexDigit(currentChar))
             {
-                var digit = (uint)((currentChar is >= '0' and <= '9') ? (currentChar - '0') : ((currentChar | 0x20) - 'a' + 10));
-                var newValue = (value * 16u) + digit;
+                var digit = (currentChar is >= '0' and <= '9') ? (currentChar - '0') : ((currentChar | 0x20) - 'a' + 10);
+                var newValue = (value * 16) + digit;
 
-                if ((badChar is 0) && (newValue <= value))
+                if ((badChar == 0) && (newValue <= value))
                 {
                     // Check for overflow
                     badChar = totalIndex + 1;
@@ -174,10 +174,10 @@ public partial struct ConfigMethodRange
             if (setHighPart)
             {
                 // Yep, set it and move to the next range
-                range.High = value;
+                range.High = unchecked((uint)(value));
 
                 // Sanity check that range is proper
-                if ((badChar is 0) && (range.High < range.Low))
+                if ((badChar == 0) && (range.High < range.Low))
                 {
                     badChar = totalIndex + 1;
                 }
@@ -188,7 +188,7 @@ public partial struct ConfigMethodRange
             }
 
             // Must have been looking for the low part of a range
-            range.Low = value;
+            range.Low = unchecked((uint)(value));
 
             nextIndex = rangeStr.IndexOfAnyExcept((byte)(' '));
 
@@ -210,13 +210,13 @@ public partial struct ConfigMethodRange
             }
 
             // Else we have a point range, so set high = low
-            range.High = value;
+            range.High = unchecked((uint)(value));
             rangeCount++;
         }
 
         // If we didn't parse the full range string, note index of the the
         // first bad char.
-        if ((badChar is 0) && (rangeStr.Length is not 0))
+        if ((badChar == 0) && (rangeStr.Length != 0))
         {
             badChar = totalIndex + 1;
         }

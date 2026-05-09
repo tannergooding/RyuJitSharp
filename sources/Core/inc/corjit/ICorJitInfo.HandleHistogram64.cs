@@ -11,14 +11,14 @@ public partial struct ICorJitInfo
 {
     public struct HandleHistogram64
     {
-        public ulong Count;
+        public long Count;
 
         public HandleTableInlineArray HandleTable;
 
         [InlineArray(HandleHistogram32.SIZE)]
         public struct HandleTableInlineArray
         {
-            public unsafe nuint e0;
+            public unsafe nint e0;
         }
     }
 }

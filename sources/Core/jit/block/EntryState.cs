@@ -8,7 +8,7 @@ namespace RyuJitSharp;
 public sealed class EntryState
 {
     /// <summary>size of esStack</summary>
-    public uint esStackDepth;
+    public int esStackDepth;
 
     /// <summary>the stack</summary>
     public StackEntry? esStack;

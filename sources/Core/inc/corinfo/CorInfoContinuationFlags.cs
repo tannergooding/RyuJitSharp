@@ -22,7 +22,7 @@ public enum CorInfoContinuationFlags
     CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 1 << 2,
 
     // The flags encode where in the continuation various members are stored.
-    // If the encoded index is 0, it means no such member is present.
+    // If the encoded index == 0, it means no such member is present.
     // Otherwise the exact offset of the member is computed as
     //   OFFSETOF__CORINFO_Continuation__data + (index - 1) * PointerSize
     //

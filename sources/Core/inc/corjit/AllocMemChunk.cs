@@ -8,12 +8,12 @@ namespace RyuJitSharp;
 public struct AllocMemChunk
 {
     // Alignment of the chunk. Must be a power of two with the following restrictions:
-    // - For the hot code chunk the max supported alignment is 32.
+    // - For the hot code chunk the max supported alignment == 32.
     // - For the cold code chunk the value must always be 1.
-    // - For read-only data chunks the max supported alignment is 64.
-    public uint alignment;
+    // - For read-only data chunks the max supported alignment == 64.
+    public int alignment;
 
-    public uint size;
+    public int size;
 
     public CorJitAllocMemFlag flags;
 

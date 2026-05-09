@@ -430,7 +430,7 @@ public partial class Globals
 
     public const regMaskInt RBM_PINVOKE_TARGET_PARAM = RBM_R10;
 
-    /// <summary>IL stub's secret MethodDesc parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)</summary>
+    /// <summary>IL stub's secret MethodDesc parameter (JitFlags.JIT_FLAG_PUBLISH_SECRET_PARAM)</summary>
     public const regNumber REG_SECRET_STUB_PARAM = REG_R10;
 
     public const regMaskInt RBM_SECRET_STUB_PARAM = RBM_R10;

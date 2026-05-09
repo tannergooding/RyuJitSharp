@@ -20,34 +20,34 @@ public partial class Compiler
     public bool optLoopsCanonical;
 
     /// <summary>number of calls made in the method</summary>
-    protected uint optCallCount;
+    protected int optCallCount;
 
     /// <summary>number of virtual, interface and indirect calls made in the method</summary>
-    protected uint optIndirectCallCount;
+    protected int optIndirectCallCount;
 
     /// <summary>number of Pinvoke/Native calls made in the method</summary>
-    protected uint optNativeCallCount;
+    protected int optNativeCallCount;
 
     /// <summary>number of fast tail calls made in the method</summary>
-    protected uint optFastTailCallCount;
+    protected int optFastTailCallCount;
 
     /// <summary>number of indirect (see above) fast tail calls made in the method</summary>
-    protected uint optIndirectFastTailCallCount;
+    protected int optIndirectFastTailCallCount;
 
-    protected static readonly nuint s_optCSEhashSizeInitial;
+    protected static readonly nint s_optCSEhashSizeInitial;
 
-    protected static readonly nuint s_optCSEhashGrowthFactor;
+    protected static readonly nint s_optCSEhashGrowthFactor;
 
-    protected static readonly nuint s_optCSEhashBucketSize;
+    protected static readonly nint s_optCSEhashBucketSize;
 
     /// <summary>The current size of hashtable</summary>
-    protected nuint optCSEhashSize;
+    protected nint optCSEhashSize;
 
     /// <summary>Number of entries in hashtable</summary>
-    protected nuint optCSEhashCount;
+    protected nint optCSEhashCount;
 
     /// <summary>Number of entries before resize</summary>
-    protected nuint optCSEhashMaxCountBeforeResize;
+    protected nint optCSEhashMaxCountBeforeResize;
 
     protected unsafe CSEdsc** optCSEhash;
 
@@ -63,19 +63,19 @@ public partial class Compiler
     protected bool optValnumCSE_phase;
 
     /// <summary>Count of CSE candidates</summary>
-    protected uint optCSECandidateCount;
+    protected int optCSECandidateCount;
 
     /// <summary>The first local variable number that is a CSE</summary>
-    protected uint optCSEstart = BAD_VAR_NUM;
+    protected int optCSEstart = BAD_VAR_NUM;
 
     /// <summary>The number of CSEs attempted so far.</summary>
-    protected uint optCSEattempt;
+    protected int optCSEattempt;
 
     /// <summary>The total count of CSEs introduced.</summary>
-    protected uint optCSEcount;
+    protected int optCSEcount;
 
     /// <summary>Number of CSE trees unmarked</summary>
-    protected uint optCSEunmarks;
+    protected int optCSEunmarks;
 
     /// <summary>The weight of the current block when we are doing PerformCSE</summary>
     protected weight_t optCSEweight;
@@ -83,9 +83,9 @@ public partial class Compiler
     /// <summary>CSE Heuristic to use for this method</summary>
     protected CSE_HeuristicCommon? optCSEheuristic;
 
-    public uint optMethodFlags;
+    public int optMethodFlags;
 
-    public uint optNoReturnCallCount;
+    public int optNoReturnCallCount;
 
     /// <summary>Recursion bound controls how far we can go backwards tracking for a SSA value.</summary>
     /// <remarks>No throughput diff was found with backward walk bound between 3-8.</remarks>
@@ -112,7 +112,7 @@ public partial class Compiler
     protected unsafe AssertionIndex* optComplementaryAssertionMap;
 
     /// <summary>table that holds dependent assertions (assertions using the value of a local var) for each local var</summary>
-    protected List<Pointer<nuint>>? optAssertionDep;
+    protected List<Pointer<nint>>? optAssertionDep;
 
     /// <summary>table that holds info about assertions</summary>
     protected AssertionDsc? optAssertionTabPrivate;
@@ -126,7 +126,7 @@ public partial class Compiler
 
     protected bool optCrossBlockLocalAssertionProp;
 
-    protected uint optAssertionOverflow;
+    protected int optAssertionOverflow;
 
     protected bool optCanPropLclVar;
 

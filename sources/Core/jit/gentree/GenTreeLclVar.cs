@@ -17,18 +17,18 @@ public sealed class GenTreeLclVar : GenTreeLclVarCommon
     private IL_OFFSET _lclIlOffs = BAD_IL_OFFSET;
 #endif
 
-    public GenTreeLclVar(genTreeOps oper, var_types type, uint lclNum)
+    public GenTreeLclVar(genTreeOps oper, var_types type, int lclNum)
         : base(oper, type, lclNum)
     {
         assert(oper.IsScalarLocal);
     }
 
-    public GenTreeLclVar(var_types type, uint lclNum, GenTree data)
+    public GenTreeLclVar(var_types type, int lclNum, GenTree data)
         : base(GT_STORE_LCL_VAR, type, lclNum, data)
     {
     }
 
-    public bool IsMultiReg => (Flags & GTF_VAR_MULTIREG) is not 0;
+    public bool IsMultiReg => (Flags & GTF_VAR_MULTIREG) != 0;
 
 #if DEBUG
     /// <summary>instr offset of ref (only for JIT dumps)</summary>
@@ -68,7 +68,7 @@ public sealed class GenTreeLclVar : GenTreeLclVarCommon
     /// <param name="compiler">the current Compiler instance.</param>
     /// <returns>Returns the number of registers defined by this node.</returns>
     /// <remarks>This must be a multireg lclVar.</remarks>
-    public uint GetFieldCount(Compiler compiler)
+    public int GetFieldCount(Compiler compiler)
     {
         assert(IsMultiReg);
         ref var varDsc = ref compiler.lvaGetDesc(LclNum);
@@ -80,7 +80,7 @@ public sealed class GenTreeLclVar : GenTreeLclVarCommon
     /// <param name="idx">which register type to return.</param>
     /// <returns>The register type assigned to this index for this node.</returns>
     /// <remarks>This must be a multireg lclVar and 'regIndex' must be a valid index for this node.</remarks>
-    public var_types GetFieldTypeByIndex(Compiler compiler, uint idx)
+    public var_types GetFieldTypeByIndex(Compiler compiler, int idx)
     {
         assert(IsMultiReg);
 
@@ -88,15 +88,15 @@ public sealed class GenTreeLclVar : GenTreeLclVarCommon
         ref var fieldVarDsc = ref compiler.lvaGetDesc(varDsc.lvFieldLclStart + idx);
 
         // Don't expect struct fields.
-        assert(fieldVarDsc.lvType is not TYP_STRUCT);
+        assert(fieldVarDsc.Type is not TYP_STRUCT);
 
-        return fieldVarDsc.lvType;
+        return fieldVarDsc.Type;
     }
 
     public regNumber GetRegNumByIdx(byte regIndex)
     {
         assert(regIndex < MAX_MULTIREG_COUNT);
-        return (regIndex is 0) ? RegNum : _otherReg[regIndex - 1];
+        return (regIndex == 0) ? RegNum : _otherReg[regIndex - 1];
     }
 
     public GenTreeFlags GetRegSpillFlagByIdx(byte idx) => GetMultiRegSpillFlagsByIdx(_spillFlags, idx);
@@ -104,7 +104,7 @@ public sealed class GenTreeLclVar : GenTreeLclVarCommon
     /// <summary>Gets true if the lcl var is never negative; otherwise false.</summary>
     /// <param name="compiler">the compiler instance</param>
     /// <returns>true if the lcl var is never negative; otherwise false.</returns>
-    public bool IsNeverNegative(Compiler compiler)
+    public new bool IsNeverNegative(Compiler compiler)
     {
         assert(Oper is GT_LCL_VAR);
         return compiler.lvaGetDesc(LclNum).IsNeverNegative;
@@ -127,7 +127,7 @@ public sealed class GenTreeLclVar : GenTreeLclVarCommon
     {
         assert(regIndex < MAX_MULTIREG_COUNT);
 
-        if (regIndex is 0)
+        if (regIndex == 0)
         {
             RegNum = reg;
         }

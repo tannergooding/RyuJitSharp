@@ -53,7 +53,6 @@ public partial class GenTreeFieldList
 
             set
             {
-                assert(value is not null);
                 _node = value;
             }
         }

@@ -10,9 +10,9 @@ public partial struct ICorDebugInfo
     public struct AsyncContinuationVarInfo
     {
         /// <summary>IL number of variable (or one of the special IL numbers, like TYPECTXT_ILNUM)</summary>
-        public uint VarNumber;
+        public int VarNumber;
 
         /// <summary>Offset in continuation object where this variable is stored</summary>
-        public uint Offset;
+        public int Offset;
     }
 }

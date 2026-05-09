@@ -29,21 +29,21 @@ public partial class Compiler
         }
 
         /// <summary>method attributes</summary>
-        public uint compFlags;          
+        public int compFlags;          
 
         /// <summary>number of IL opcodes</summary>
-        public uint instrCount;
+        public int instrCount;
 
         /// <summary>number of IL opcodes (calls only).</summary>
-        public uint callInstrCount;
+        public int callInstrCount;
 
-        public uint lvRefCount;
+        public int lvRefCount;
 
         /// <summary>what type of code optimizations</summary>
         public codeOptimize compCodeOpt;
 
 #if TARGET_XARCH
-        public uint preferredVectorByteLength;
+        public int preferredVectorByteLength;
 #endif
 
         public bool canUseTier0Opts;
@@ -111,14 +111,14 @@ public partial class Compiler
             compMinOpts = val;
             compMinOptsIsSet = true;
 
-            canUseTier0Opts = !compDbgCode && !jitFlags->IsSet(JitFlag.JIT_FLAG_MIN_OPT);
+            canUseTier0Opts = !compDbgCode && !jitFlags->IsSet(JitFlags.JIT_FLAG_MIN_OPT);
             canUseAllOpts = canUseTier0Opts && !val;
         }
 
         /// <summary>true if the CLFLG_* for an optimization is set</summary>
         /// <param name="optFlag"></param>
         /// <returns></returns>
-        public readonly bool OptEnabled(uint optFlag) => (compFlags & optFlag) is not 0;
+        public readonly bool OptEnabled(int optFlag) => (compFlags & optFlag) != 0;
 
         // Check if the compilation is control-flow guard enabled.
         public readonly unsafe bool IsCFGEnabled
@@ -133,11 +133,11 @@ public partial class Compiler
 #else
                 assert((RBM_VALIDATE_INDIRECT_CALL_TRASH & RBM_VALIDATE_INDIRECT_CALL_ADDR) == RBM_NONE);
 #endif
-                if (JitConfig[ConfigInteger.JitForceControlFlowGuard] is not 0)
+                if (JitConfig[ConfigInteger.JitForceControlFlowGuard] != 0)
                 {
                     return true;
                 }
-                return jitFlags->IsSet(JitFlag.JIT_FLAG_ENABLE_CFG);
+                return jitFlags->IsSet(JitFlags.JIT_FLAG_ENABLE_CFG);
 #else
                 // The remaining platforms are not supported and would require some
                 // work to support.
@@ -160,30 +160,30 @@ public partial class Compiler
         }
 
 #if FEATURE_ON_STACK_REPLACEMENT
-        public readonly unsafe bool IsOSR => jitFlags->IsSet(JitFlag.JIT_FLAG_OSR);
+        public readonly unsafe bool IsOSR => jitFlags->IsSet(JitFlags.JIT_FLAG_OSR);
 #else
         public readonly bool IsOSR => false;
 #endif
 
-        public readonly unsafe bool IsTier0 => jitFlags->IsSet(JitFlag.JIT_FLAG_TIER0);
+        public readonly unsafe bool IsTier0 => jitFlags->IsSet(JitFlags.JIT_FLAG_TIER0);
 
-        public readonly unsafe bool IsInstrumented => jitFlags->IsSet(JitFlag.JIT_FLAG_BBINSTR);
+        public readonly unsafe bool IsInstrumented => jitFlags->IsSet(JitFlags.JIT_FLAG_BBINSTR);
 
-        public readonly unsafe bool IsOptimizedWithProfile => OptimizationEnabled && jitFlags->IsSet(JitFlag.JIT_FLAG_BBOPT);
+        public readonly unsafe bool IsOptimizedWithProfile => OptimizationEnabled && jitFlags->IsSet(JitFlags.JIT_FLAG_BBOPT);
 
-        public readonly unsafe bool IsInstrumentedAndOptimized => IsInstrumented && jitFlags->IsSet(JitFlag.JIT_FLAG_BBOPT);
+        public readonly unsafe bool IsInstrumentedAndOptimized => IsInstrumented && jitFlags->IsSet(JitFlags.JIT_FLAG_BBOPT);
 
-        public readonly unsafe bool DoEarlyBlockMerging => !jitFlags->IsSet(JitFlag.JIT_FLAG_DEBUG_EnC)
-                                                        && !jitFlags->IsSet(JitFlag.JIT_FLAG_DEBUG_CODE)
-                                                        && (!jitFlags->IsSet(JitFlag.JIT_FLAG_MIN_OPT) || jitFlags->IsSet(JitFlag.JIT_FLAG_TIER0));
+        public readonly unsafe bool DoEarlyBlockMerging => !jitFlags->IsSet(JitFlags.JIT_FLAG_DEBUG_EnC)
+                                                        && !jitFlags->IsSet(JitFlags.JIT_FLAG_DEBUG_CODE)
+                                                        && (!jitFlags->IsSet(JitFlags.JIT_FLAG_MIN_OPT) || jitFlags->IsSet(JitFlags.JIT_FLAG_TIER0));
 
         /// <summary>true if we should use the PINVOKE_{BEGIN,END} helpers instead of generating PInvoke transitions inline.</summary>
         /// <remarks>Normally used by R2R, but also used when generating a reverse pinvoke frame, as the current logic for frame setup initializes and pushes the InlinedCallFrame before performing the Reverse PInvoke transition, which is invalid (as frames cannot safely be pushed/popped while the thread is in a preemptive state.).</remarks>
-        public readonly unsafe bool ShouldUsePInvokeHelpers => jitFlags->IsSet(JitFlag.JIT_FLAG_USE_PINVOKE_HELPERS)
-                                                            || jitFlags->IsSet(JitFlag.JIT_FLAG_REVERSE_PINVOKE);
+        public readonly unsafe bool ShouldUsePInvokeHelpers => jitFlags->IsSet(JitFlags.JIT_FLAG_USE_PINVOKE_HELPERS)
+                                                            || jitFlags->IsSet(JitFlags.JIT_FLAG_REVERSE_PINVOKE);
 
         /// <summary>true if we should use insert the REVERSE_PINVOKE_{ENTER,EXIT} helpers in the method prolog/epilog</summary>
-        public readonly unsafe bool IsReversePInvoke => jitFlags->IsSet(JitFlag.JIT_FLAG_REVERSE_PINVOKE);
+        public readonly unsafe bool IsReversePInvoke => jitFlags->IsSet(JitFlags.JIT_FLAG_REVERSE_PINVOKE);
 
         /// <summary>Generate the LocalVar info ?</summary>
         public bool compScopeInfo;

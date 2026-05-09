@@ -5,7 +5,7 @@
 
 namespace RyuJitSharp;
 
-public enum HandleKindIndex : uint
+public enum HandleKindIndex
 {
     GTF_ICON_SCOPE_HDL,
     GTF_ICON_CLASS_HDL,

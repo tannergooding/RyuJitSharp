@@ -30,13 +30,13 @@ public partial class Compiler
     public CallSiteDebugInfoTable? genCallSite2DebugInfoMap;
 
     /// <summary>Local number for the return value when applicable.</summary>
-    public uint genReturnLocal = BAD_VAR_NUM;
+    public int genReturnLocal = BAD_VAR_NUM;
 
     /// <summary>jumped to when not optimizing for speed.</summary>
     public BasicBlock? genReturnBB;
 
 #if SWIFT_SUPPORT
     /// <summary>Local number for the Swift error value when applicable.</summary>
-    public uint genReturnErrorLocal = BAD_VAR_NUM;
+    public int genReturnErrorLocal = BAD_VAR_NUM;
 #endif
 }

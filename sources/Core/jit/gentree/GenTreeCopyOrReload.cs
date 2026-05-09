@@ -79,7 +79,7 @@ public sealed class GenTreeCopyOrReload : GenTreeUnOp
     {
         assert(idx < MAX_MULTIREG_COUNT);
 
-        if (idx is 0)
+        if (idx == 0)
         {
             return RegNum;
         }
@@ -94,7 +94,7 @@ public sealed class GenTreeCopyOrReload : GenTreeUnOp
     {
         assert(idx < MAX_MULTIREG_COUNT);
 
-        if (idx is 0)
+        if (idx == 0)
         {
             RegNum = reg;
         }

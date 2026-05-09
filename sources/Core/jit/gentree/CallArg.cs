@@ -33,6 +33,8 @@ public sealed partial class CallArg
         _signatureLayout = arg.SignatureLayout;
     }
 
+    public ref readonly AbiPassingInformation AbiInfo => ref _abiInfo;
+
     public GenTree EarlyNode
     {
         get
@@ -131,7 +133,7 @@ public sealed partial class CallArg
 
 #nullable disable
     public ref GenTree NodeRef => ref ((_lateNode is null) ? ref _earlyNode : ref _lateNode);
-#nullable enable
+#nullable restore
 
     public unsafe CORINFO_CLASS_HANDLE SignatureClassHandle => (_signatureLayout is not null) ? _signatureLayout.ClassHandle : NO_CLASS_HANDLE;
 
@@ -146,7 +148,7 @@ public sealed partial class CallArg
     {
         get
         {
-            return (_flags & Flags.NeedPlace) is not 0;
+            return (_flags & Flags.NeedPlace) != 0;
         }
 
         set
@@ -160,7 +162,7 @@ public sealed partial class CallArg
     {
         get
         {
-            return (_flags & Flags.NeedTmp) is not 0;
+            return (_flags & Flags.NeedTmp) != 0;
         }
 
         set
@@ -175,7 +177,7 @@ public sealed partial class CallArg
     {
         get
         {
-            return (_flags & Flags.Processed) is not 0;
+            return (_flags & Flags.Processed) != 0;
         }
 
         set
@@ -189,7 +191,7 @@ public sealed partial class CallArg
     public void Dump()
     {
         jitprintf($"CallArg[[{Node.TreeId:D6}].{Node.Oper}");
-        jitprintf($" {_signatureType}");
+        jitprintf($" {_signatureType.Name}");
         jitprintf($" ({(_abiInfo.IsPassedByReference ? "By ref" : "By value")})");
         jitprintf($", {_abiInfo.NumSegments} segments:");
 

@@ -10,9 +10,9 @@ namespace RyuJitSharp;
 public struct CORINFO_AsyncResumeInfo
 {
     /// <summary>delegate*&lt;Continuation, ref byte, Continuation&gt;</summary>
-    public TARGET_SIZE_T Resume;
+    public nint Resume;
 
     /// <summary>Pointer in main code for diagnostics.</summary>
-    /// <remarks>See comments on ICorDebugInfo::AsyncSuspensionPoint::DiagnosticNativeOffset and ResumeInfo.DiagnosticIP in SPC.</remarks>
-    public TARGET_SIZE_T DiagnosticIP;
+    /// <remarks>See comments on ICorDebugInfo.AsyncSuspensionPoint.DiagnosticNativeOffset and ResumeInfo.DiagnosticIP in SPC.</remarks>
+    public nint DiagnosticIP;
 }

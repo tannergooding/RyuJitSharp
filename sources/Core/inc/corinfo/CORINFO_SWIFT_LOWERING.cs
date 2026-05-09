@@ -15,7 +15,7 @@ public struct CORINFO_SWIFT_LOWERING
 
     public offsetsInlineArray offsets;
 
-    public nuint numLoweredElements;
+    public nint numLoweredElements;
 
     [InlineArray(MAX_SWIFT_LOWERED_ELEMENTS)]
     public struct loweredElementsInlineArray
@@ -26,6 +26,6 @@ public struct CORINFO_SWIFT_LOWERING
     [InlineArray(MAX_SWIFT_LOWERED_ELEMENTS)]
     public struct offsetsInlineArray
     {
-        public uint e0;
+        public int e0;
     }
 }

@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics;
 
 namespace RyuJitSharp;
 
@@ -12,14 +13,14 @@ public partial class Globals
     public const CorInfoFlag FLG_CCTOR = CORINFO_FLG_CONSTRUCTOR | CORINFO_FLG_STATIC;
 
 #if DEBUG
-    // for LclVarDsc::lvStkOffs
+    // for LclVarDsc.lvStkOffs
     public const int BAD_STK_OFFS = unchecked((int)(0xBAADF00D));
 #endif
 
-    public const uint ROOT_FUNC_IDX = 0;
+    public const int ROOT_FUNC_IDX = 0;
 
     /// <summary>Limit frames size to 1GB.</summary>
-    /// <remarks>The maximum is 2GB in theory - make it intentionally smaller to avoid bugs from borderline cases.</remarks>
+    /// <remarks>The maximum == 2GB in theory - make it intentionally smaller to avoid bugs from borderline cases.</remarks>
     public const int MAX_FrameSize = 0x3FFF_FFFF;
 
     /// <summary>Maximum number of fields in promotable struct.</summary>
@@ -151,6 +152,31 @@ public partial class Globals
     /// <summary>Fixed locallocs of this size or smaller will convert to local buffers.</summary>
     public const int DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE = 32;
 
+    /// <summary>sets value of tree to garbage to catch extra references</summary>
+    /// <param name="tree">This node should not be referenced by anyone now</param>
+    [Conditional("DEBUG")]
+    public static void DEBUG_DESTROY_NODE(GenTree tree)
+    {
+#if DEBUG
+        // jitprintf("DEBUG_DESTROY_NODE for [0x%08x]\n", tree);
+
+        // Save gtOper in case we want to find out what this node was
+        tree._operSave = tree._oper;
+
+        tree._type = TYP_UNDEF;
+        tree.Flags |= ~GTF_NODE_MASK;
+
+        foreach (ref var use in tree.UseEdges)
+        {
+            use = null;
+        }
+
+        // Must do this last, because the "AsOp()" check above will fail otherwise.
+        // Don't call SetOper, because GT_COUNT is not a valid value
+        tree._oper = GT_COUNT;
+#endif
+    }
+
     public static IRegAlloc GetRegisterAllocator(Compiler compiler) => new LinearScan(compiler);
 
     public static var_types HfaTypeFromElemKind(CorInfoHFAElemType kind) => kind switch {
@@ -163,7 +189,7 @@ public partial class Globals
     };
 
     // Compile a single method
-    public static unsafe CorJitResult jitNativeCode(CORINFO_METHOD_HANDLE methodHandle, CORINFO_MODULE_HANDLE classHandle, COMP_HANDLE jitInfo, CORINFO_METHOD_INFO* methodInfo, out void* methodCodePtr, out uint methodCodeSize, JitFlags* jitFlags, InlineInfo? inlineInfo)
+    public static unsafe CorJitResult jitNativeCode(CORINFO_METHOD_HANDLE methodHandle, CORINFO_MODULE_HANDLE classHandle, COMP_HANDLE jitInfo, CORINFO_METHOD_INFO* methodInfo, out void* methodCodePtr, out int methodCodeSize, JitFlags* jitFlags, InlineInfo? inlineInfo)
     {
         // A non-null inlineInfo means we are compiling the inlinee method.
         var result = JitNativeCodeCore(methodHandle, classHandle, jitInfo, methodInfo, out methodCodePtr, out methodCodeSize, jitFlags, inlineInfo, jitFallbackCompile: false);
@@ -171,10 +197,10 @@ public partial class Globals
         if ((inlineInfo is null) && (result is CORJIT_INTERNALERROR or CORJIT_RECOVERABLEERROR or CORJIT_IMPLLIMITATION or CORJIT_R2R_UNSUPPORTED))
         {
             // Update the flags for 'safer' code generation.
-            jitFlags->Set(JitFlag.JIT_FLAG_MIN_OPT);
-            jitFlags->Clear(JitFlag.JIT_FLAG_SIZE_OPT);
-            jitFlags->Clear(JitFlag.JIT_FLAG_SPEED_OPT);
-            jitFlags->Clear(JitFlag.JIT_FLAG_BBOPT);
+            jitFlags->Set(JitFlags.JIT_FLAG_MIN_OPT);
+            jitFlags->Clear(JitFlags.JIT_FLAG_SIZE_OPT);
+            jitFlags->Clear(JitFlags.JIT_FLAG_SPEED_OPT);
+            jitFlags->Clear(JitFlags.JIT_FLAG_BBOPT);
 
             // Reattempt with debuggable code.
             result = JitNativeCodeCore(methodHandle, classHandle, jitInfo, methodInfo, out methodCodePtr, out methodCodeSize, jitFlags, inlineInfo, jitFallbackCompile: true);
@@ -182,7 +208,7 @@ public partial class Globals
 
         return result;
 
-        static CorJitResult JitNativeCodeCore(CORINFO_METHOD_HANDLE methodHandle, CORINFO_MODULE_HANDLE classHandle, COMP_HANDLE jitInfo, CORINFO_METHOD_INFO* methodInfo, out void* methodCodePtr, out uint methodCodeSize, JitFlags* jitFlags, InlineInfo? inlineInfo, bool jitFallbackCompile)
+        static CorJitResult JitNativeCodeCore(CORINFO_METHOD_HANDLE methodHandle, CORINFO_MODULE_HANDLE classHandle, COMP_HANDLE jitInfo, CORINFO_METHOD_INFO* methodInfo, out void* methodCodePtr, out int methodCodeSize, JitFlags* jitFlags, InlineInfo? inlineInfo, bool jitFallbackCompile)
         {
             var result = CORJIT_INTERNALERROR;
 
@@ -211,7 +237,7 @@ public partial class Globals
                     }
 
 #if MEASURE_CLRAPI_CALLS
-                    var wrapCLR = WrapICorJitInfo::makeOne(pParam->pAlloc, pComp, compHnd);
+                    var wrapCLR = WrapICorJitInfo.makeOne(pParam->pAlloc, pComp, compHnd);
 #endif
 
                     // push this compiler on the stack (TLS)
@@ -264,11 +290,11 @@ public partial class Globals
     /// <summary>ConfigInteger does not offer an option for decimal flags, any numbers are interpreted as hex.</summary>
     /// <param name="value"></param>
     /// <returns>I could add the decimal option to ConfigInteger or I could write a function to reinterpret this value as the user intended.</returns>
-    public static uint ReinterpretHexAsDecimal(uint value)
+    public static int ReinterpretHexAsDecimal(int value)
     {
         // ex: in: 0x100 returns: 100
-        var result = 0u;
-        var index = 1u;
+        var result = 0;
+        var index = 1;
 
         // default value
         if (value == int.MaxValue)
@@ -278,8 +304,8 @@ public partial class Globals
 
         while (value != 0)
         {
-            var digit = value % 16;
-            value >>= 4;
+            var digit = value & 0x0F;
+            value >>>= 4;
 
             assert(digit < 10);
 
@@ -289,13 +315,60 @@ public partial class Globals
         return result;
     }
 
+#if DEBUG
+    /// <summary>Return a string representation of a weighted ref count</summary>
+    /// <param name="refCntWtd">weight to format</param>
+    /// <param name="padForDecimalPlaces">If true, pad any integral or non-numeric output on the right with three spaces, representing space for ".00".</param>
+    /// <returns></returns>
+    public static string refCntWtd2str(weight_t refCntWtd, bool padForDecimalPlaces = false)
+    {
+        if (refCntWtd >= BB_MAX_WEIGHT)
+        {
+            return padForDecimalPlaces ? "MAX   " : "MAX";
+        }
+        else
+        {
+            var scaledWeight = refCntWtd / BB_UNITY_WEIGHT;
+            var intPart = weight_t.Floor(scaledWeight);
+
+            var isLarge = intPart > 1e9;
+            var isSmall = (intPart < 1e-2) && (intPart != 0);
+
+            // Use g format for high dynamic range counts.
+            //
+            if (isLarge || isSmall)
+            {
+                return $"{scaledWeight:G2}";
+            }
+            else
+            {
+                if (intPart == scaledWeight)
+                {
+                    if (padForDecimalPlaces)
+                    {
+                        return $"{intPart}   ";
+                    }
+                    else
+                    {
+                        return $"{intPart}";
+                    }
+                }
+                else
+                {
+                    return $"{scaledWeight:F2}";
+                }
+            }
+        }
+    }
+#endif
+
 #if PROFILING_SUPPORTED
     // A Dummy routine to receive Enter/Leave/Tailcall profiler callbacks.
     // These are used when DOTNET_JitEltHookEnabled=1
 #if TARGET_AMD64
-    internal static void DummyProfilerELTStub(nuint ProfilerHandle, nuint callerSP) { }
+    internal static void DummyProfilerELTStub(nint ProfilerHandle, nint callerSP) { }
 #else
-    internal static void DummyProfilerELTStub(nuint ProfilerHandle) { }
+    internal static void DummyProfilerELTStub(nint ProfilerHandle) { }
 #endif
 #endif
 }

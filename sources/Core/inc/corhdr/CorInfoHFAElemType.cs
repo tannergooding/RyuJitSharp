@@ -9,7 +9,7 @@ namespace RyuJitSharp;
 
 /// <summary>Enum used for HFA type recognition.</summary>
 /// <remarks>Supported across architectures, so that it can be used in altjits and cross-compilation.</remarks>
-public enum CorInfoHFAElemType : uint
+public enum CorInfoHFAElemType
 {
     CORINFO_HFA_ELEM_NONE,
 

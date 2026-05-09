@@ -15,12 +15,12 @@ public partial struct ICorDebugInfo
         public unsafe CORINFO_METHOD_HANDLE Method;
 
         /// <summary>IL offset of IL instruction resulting in the inline.</summary>
-        public uint ILOffset;
+        public int ILOffset;
 
         /// <summary>Index of child in tree, 0 if no children.</summary>
-        public uint Child;
+        public int Child;
 
         /// <summary>Index of sibling in tree, 0 if no sibling.</summary>
-        public uint Sibling;
+        public int Sibling;
     }
 }

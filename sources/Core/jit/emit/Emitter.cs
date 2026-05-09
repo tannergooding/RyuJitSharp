@@ -16,27 +16,27 @@ public partial class Emitter
 
     protected CodeGen? codeGen;
 
-    private nuint m_debugInfoSize;
+    private int m_debugInfoSize;
 
-    protected uint emitInsCount;
+    protected int emitInsCount;
 
 #if DEBUG
-    protected uint emitVarRefOffs;
+    protected int emitVarRefOffs;
 #else
-    protected const uint emitVarRefOffs = 0;
+    protected const int emitVarRefOffs = 0;
 #endif
 
-    protected uint emitPrologEndPos;
+    protected int emitPrologEndPos;
 
-    protected uint emitEpilogCnt;
+    protected int emitEpilogCnt;
 
-    protected UNATIVE_OFFSET emitEpilogSize;
+    protected NATIVE_OFFSET emitEpilogSize;
 
 #if TARGET_XARCH
     protected emitLocation emitExitSeqBegLoc;
 
     /// <summary>minimum size of any return sequence - the 'ret' after the epilog</summary>
-    protected UNATIVE_OFFSET emitExitSeqSize;
+    protected NATIVE_OFFSET emitExitSeqSize;
 #endif
 
     /// <summary>per method placeholder list - head</summary>
@@ -66,19 +66,19 @@ public partial class Emitter
 
     public unsafe AllocMemChunk* emitDataChunks;
 
-    public unsafe uint* emitDataChunkOffsets;
+    public unsafe int* emitDataChunkOffsets;
 
-    public uint emitNumDataChunks;
+    public int emitNumDataChunks;
 
     /// <summary>Offset applied to a code address to get memory location that can be written</summary>
-    public nuint writeableOffset;
+    public nint writeableOffset;
 
-    public UNATIVE_OFFSET emitTotalHotCodeSize;
+    public NATIVE_OFFSET emitTotalHotCodeSize;
 
-    public UNATIVE_OFFSET emitTotalColdCodeSize;
+    public NATIVE_OFFSET emitTotalColdCodeSize;
 
 #if TARGET_LOONGARCH64
-    public uint emitCounts_INS_OPTS_J;
+    public int emitCounts_INS_OPTS_J;
 #endif
 
     public bool emitHasFramePtr;
@@ -102,7 +102,7 @@ public partial class Emitter
     private regMaskMsk rbmMskCalleeTrash;
 #endif
 
-    private nuint emitIGbuffSize;
+    private nint emitIGbuffSize;
 
     /// <summary>first  instruction group</summary>
     private insGroup? emitIGlist;
@@ -129,13 +129,13 @@ public partial class Emitter
     private instrDescAlign? emitCurIGAlignList;
 
     /// <summary>Start IG of last inner loop</summary>
-    private uint emitLastLoopStart;
+    private int emitLastLoopStart;
 
     /// <summary>End IG of last inner loop</summary>
-    private uint emitLastLoopEnd;
+    private int emitLastLoopEnd;
 
     /// <summary>last IG that has align instruction</summary>
-    private uint emitLastAlignedIgNum;
+    private int emitLastAlignedIgNum;
 
     /// <summary>list of all align instructions in method</summary>
     private instrDescAlign? emitAlignList;
@@ -152,7 +152,7 @@ public partial class Emitter
     private bool emitFwdJumps;
 
     /// <summary>Count of number of nested "NO GC" region requests we have.</summary>
-    private uint emitNoGCRequestCount;
+    private int emitNoGCRequestCount;
 
     /// <summary>Are we generating IGF_NOGCINTERRUPT insGroups (for prologs, epilogs, etc.)</summary>
     private bool emitNoGCIG;
@@ -170,16 +170,16 @@ public partial class Emitter
     private unsafe byte* emitCurIGfreeBase;
 
     /// <summary># of collected instr's in buffer</summary>
-    private uint emitCurIGinsCnt;
+    private int emitCurIGinsCnt;
 
     /// <summary>estimated code size of current group in bytes</summary>
-    private uint emitCurIGsize;
+    private int emitCurIGsize;
 
     /// <summary>current code offset within group</summary>
-    private UNATIVE_OFFSET emitCurCodeOffset;
+    private NATIVE_OFFSET emitCurCodeOffset;
 
     /// <summary>bytes of code in entire method</summary>
-    private UNATIVE_OFFSET emitTotalCodeSize;
+    private NATIVE_OFFSET emitTotalCodeSize;
 
     /// <summary>first cold instruction group</summary>
     private insGroup? emitFirstColdIG;
@@ -196,13 +196,13 @@ public partial class Emitter
     // in that tracking. See emitSavIG(): the important use of ByrefRegs is commented
     // out, and GCrefRegs is always saved.
 
-    private VARSET_TP? emitPrevGCrefVars;
+    private VARSET_TP emitPrevGCrefVars = [];
 
     private regMaskInt emitPrevGCrefRegs;
 
     private regMaskInt emitPrevByrefRegs;
 
-    private VARSET_TP? emitInitGCrefVars;
+    private VARSET_TP emitInitGCrefVars = [];
 
     private regMaskInt emitInitGCrefRegs;
 
@@ -229,7 +229,7 @@ public partial class Emitter
     // really the only one used; the others seem to be calculated, but not
     // used due to bugs.
 
-    private VARSET_TP? emitThisGCrefVars;
+    private VARSET_TP emitThisGCrefVars = [];
 
     /// <summary>Current set of registers holding GC references</summary>
     private regMaskInt emitThisGCrefRegs;
@@ -243,27 +243,27 @@ public partial class Emitter
     /// <summary>where is "this" enregistered for synchronized methods?</summary>
     private regNumber emitSyncThisObjReg;
 
-    private uint emitNxtIGnum;
+    private int emitNxtIGnum;
 
     private instrDesc? emitLastIns;
 
     private insGroup? emitLastInsIG;
 
 #if EMIT_BACKWARDS_NAVIGATION
-    private uint emitLastInsFullSize;
+    private int emitLastInsFullSize;
 #endif
 
 #if TARGET_ARMARCH
     private instrDesc? emitLastMemBarrier;
 #endif
 
-    private uint emitTrkVarCnt;
+    private int emitTrkVarCnt;
 
     /// <summary>Offsets of tracked stack ptr vars (varTrkIndex -> stkOffs)</summary>
     private unsafe int* emitGCrFrameOffsTab;
 
     /// <summary>Number of       tracked stack ptr vars</summary>
-    private uint emitGCrFrameOffsCnt;
+    private int emitGCrFrameOffsCnt;
 
     /// <summary>Min offset of a tracked stack ptr var</summary>
     private int emitGCrFrameOffsMin;
@@ -303,10 +303,10 @@ public partial class Emitter
 
 #if EMIT_TRACK_STACK_DEPTH
     /// <summary>0 in prolog/epilog, One DWORD elsewhere</summary>
-    public uint emitCntStackDepth;
+    public int emitCntStackDepth;
 
     /// <summary>actual computed max. stack depth</summary>
-    public uint emitMaxStackDepth;
+    public int emitMaxStackDepth;
 #endif
 
     /// <summary>using the "simple" stack table?</summary>
@@ -319,7 +319,7 @@ public partial class Emitter
     public ref _Anonymous_e__Union._u2_e__Struct u2 => ref _anonymous.u2;
 
     /// <summary>amount of bytes pushed on stack</summary>
-    public uint emitCurStackLvl;
+    public int emitCurStackLvl;
 
     public dataSecDsc emitConsDsc;
 
@@ -334,7 +334,7 @@ public partial class Emitter
     {
         m_compiler = comp;
         emitCmpHandle = cmpHandle;
-        m_debugInfoSize = (uint)(sizeof(instrDescDebugInfo));
+        m_debugInfoSize = sizeof(instrDescDebugInfo);
 
 #if !DEBUG
         if (!comp.opts.disAsm)
@@ -376,10 +376,10 @@ public partial class Emitter
         public struct _u1_e__Struct
         {
             /// <summary>bit per pushed dword (if it fits. Lowest bit &lt;==&gt; last pushed arg)</summary>
-            public uint emitSimpleStkMask;
+            public int emitSimpleStkMask;
 
             /// <summary>byref qualifier for emitSimpleStkMask</summary>
-            public uint emitSimpleByrefStkMask;
+            public int emitSimpleByrefStkMask;
         }
 
         public struct _u2_e__Struct

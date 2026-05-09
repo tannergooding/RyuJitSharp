@@ -13,11 +13,11 @@ public struct CORINFO_METHOD_INFO
 
     public unsafe byte* ILCode;
 
-    public uint ILCodeSize;
+    public int ILCodeSize;
 
-    public uint maxStack;
+    public int maxStack;
 
-    public uint EHcount;
+    public int EHcount;
 
     public CorInfoOptions options;
 

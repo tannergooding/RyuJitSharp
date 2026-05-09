@@ -17,7 +17,7 @@ public sealed class InlineCandidateInfo : HandleHistogramProfileCandidateInfo
 
     public unsafe CORINFO_METHOD_HANDLE guardedMethodInstantiatedEntryHandle;
 
-    public uint likelihood;
+    public int likelihood;
 
     public bool needsMethodContext;
 
@@ -39,7 +39,7 @@ public sealed class InlineCandidateInfo : HandleHistogramProfileCandidateInfo
     /// <summary>The GT_RET_EXPR node linking back to the inline candidate.</summary>
     public GenTreeRetExpr? retExpr;
 
-    public uint preexistingSpillTemp;
+    public int preexistingSpillTemp;
 
     public CorInfoFlag clsAttr;
 

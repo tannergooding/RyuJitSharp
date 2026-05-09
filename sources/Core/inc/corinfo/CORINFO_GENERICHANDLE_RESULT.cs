@@ -10,7 +10,7 @@ public struct CORINFO_GENERICHANDLE_RESULT
 {
     public CORINFO_LOOKUP lookup;
 
-    /// <summary>Guaranteed to be either NULL or a handle that is usable during compile time.</summary>
+    /// <summary>Guaranteed to be either null or a handle that is usable during compile time.</summary>
     /// <remarks>This must not be embedded in the code because it might not be valid at run-time.</remarks>
     public unsafe CORINFO_GENERIC_HANDLE compileTimeHandle;
 

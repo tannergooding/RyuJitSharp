@@ -10,8 +10,8 @@ public partial struct ICorJitInfo
     // Also defined by:  CORBBTPROF_BLOCK_DATA
     public struct BlockCounts
     {
-        public uint ILOffset;
+        public int ILOffset;
 
-        public uint ExecutionCount;
+        public int ExecutionCount;
     }
 }

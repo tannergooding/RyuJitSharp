@@ -9,13 +9,13 @@ public struct CORINFO_FIELD_INFO
 {
     public CORINFO_FIELD_ACCESSOR fieldAccessor;
 
-    public uint fieldFlags;
+    public int fieldFlags;
 
     /// <summary>Helper to use if the field access requires it.</summary>
     public CorInfoHelpFunc helper;
 
     /// <summary>Field offset if there is one.</summary>
-    public uint offset;
+    public int offset;
 
     public CorInfoType fieldType;
 

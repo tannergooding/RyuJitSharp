@@ -7,13 +7,13 @@ namespace RyuJitSharp;
 
 public sealed class GenTreeVal : GenTree
 {
-    private readonly nuint _val1;
+    private readonly nint _val1;
 
     public GenTreeVal(genTreeOps oper, var_types type, nint val)
         : base(oper, type)
     {
-        _val1 = unchecked((nuint)(val));
+        _val1 = val;
     }
 
-    public nuint Val1 => _val1;
+    public nint Val1 => _val1;
 }

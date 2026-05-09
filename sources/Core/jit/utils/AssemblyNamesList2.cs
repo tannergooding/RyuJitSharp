@@ -20,7 +20,7 @@ public sealed class AssemblyNamesList2
         // dummy
         var prevChar   = '?';     
 
-        // start of the name currently being processed. nullptr if no current name
+        // start of the name currently being processed. null if no current name
         var nameStart = (byte*)(null);
 
         ref var nextName = ref _names;
@@ -35,7 +35,7 @@ public sealed class AssemblyNamesList2
                 if (nameStart is not null)
                 {
                     // Found the end of the current name; add a new assembly name to the list.
-                    var nameLenUtf8 = unchecked((int)(listWalk - nameStart));
+                    var nameLenUtf8 = (int)(listWalk - nameStart);
                     var nameUtf8 = new ReadOnlySpan<byte>(nameStart, nameLenUtf8);
 
                     var name = Encoding.UTF8.GetString(nameUtf8);

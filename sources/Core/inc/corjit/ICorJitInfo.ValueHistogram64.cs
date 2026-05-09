@@ -11,7 +11,7 @@ public partial struct ICorJitInfo
 {
     public struct ValueHistogram64
     {
-        public ulong Count;
+        public long Count;
 
         public ValueTableInlineArray ValueTable;
 

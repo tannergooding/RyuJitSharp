@@ -38,13 +38,11 @@ global using unsafe CORINFO_VARARGS_HANDLE = RyuJitSharp.CORINFO_VarArgInfo*;
 // (or the open instantiation) is being referred to.
 global using unsafe CORINFO_CONTEXT_HANDLE = RyuJitSharp.CORINFO_CONTEXT_STRUCT_*;
 
-global using TARGET_SIZE_T = nuint;
-
 // a generic method pointer
-global using unsafe CORINFO_MethodPtr = nuint;
+global using unsafe CORINFO_MethodPtr = void*;
 
 // Guard-stack cookie for preventing against stack buffer overruns
-global using GSCookie = nuint;
+global using GSCookie = nint;
 
 // Runs the given function under an error trap. This allows the JIT to make calls
 // to interface functions that may throw exceptions without needing to be aware of

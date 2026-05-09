@@ -5,18 +5,18 @@
 
 namespace RyuJitSharp;
 
-public unsafe struct PgoInfo
+public struct PgoInfo
 {
     /// <summary>pgo schema for method</summary>
-    public ICorJitInfo.PgoInstrumentationSchema* PgoSchema;
+    public unsafe ICorJitInfo.PgoInstrumentationSchema* PgoSchema;
 
     /// <summary>pgo data for the method</summary>
     public unsafe byte* PgoData;
 
     /// <summary>count of schema elements</summary>
-    public uint PgoSchemaCount;
+    public int PgoSchemaCount;
 
-    public PgoInfo(Compiler compiler)
+    public unsafe PgoInfo(Compiler compiler)
     {
         PgoSchema = compiler.fgPgoSchema;
         PgoSchemaCount = compiler.fgPgoSchemaCount;

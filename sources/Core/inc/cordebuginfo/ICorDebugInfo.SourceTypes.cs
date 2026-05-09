@@ -14,6 +14,14 @@ public partial struct ICorDebugInfo
     // The debugger will check to see if a boundary offset's source field &
     // SEQUENCE_POINT is true to determine if the boundary is a sequence point.
 
+    public const SourceTypes SOURCE_TYPE_INVALID = SourceTypes.SOURCE_TYPE_INVALID;
+    public const SourceTypes SEQUENCE_POINT = SourceTypes.SEQUENCE_POINT;
+    public const SourceTypes STACK_EMPTY = SourceTypes.STACK_EMPTY;
+    public const SourceTypes CALL_SITE = SourceTypes.CALL_SITE;
+    public const SourceTypes NATIVE_END_OFFSET_UNKNOWN = SourceTypes.NATIVE_END_OFFSET_UNKNOWN;
+    public const SourceTypes CALL_INSTRUCTION = SourceTypes.CALL_INSTRUCTION;
+    public const SourceTypes ASYNC = SourceTypes.ASYNC;
+
     [Flags]
     public enum SourceTypes
     {

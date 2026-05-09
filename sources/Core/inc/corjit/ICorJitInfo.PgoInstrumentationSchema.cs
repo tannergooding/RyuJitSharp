@@ -9,7 +9,7 @@ public partial struct ICorJitInfo
 {
     public struct PgoInstrumentationSchema
     {
-        public nuint Offset;
+        public nint Offset;
 
         public PgoInstrumentationKind InstrumentationKind;
 

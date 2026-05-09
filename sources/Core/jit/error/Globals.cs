@@ -17,15 +17,15 @@ public partial class Globals
     public const int FATAL_JIT_EXCEPTION = 0x02345678;
 
 #if MEASURE_FATAL
-    private static uint s_fatalBadCodeCount;
-    private static uint s_fatalNoWayCount;
-    private static uint s_fatalImplLimitationCount;
-    private static uint s_fatalNoMemCount;
-    private static uint s_fatalNoWayAssertBodyCount;
+    private static int s_fatalBadCodeCount;
+    private static int s_fatalNoWayCount;
+    private static int s_fatalImplLimitationCount;
+    private static int s_fatalNoMemCount;
+    private static int s_fatalNoWayAssertBodyCount;
 #if DEBUG
-    private static uint s_fatalNoWayAssertBodyArgsCount;
+    private static int s_fatalNoWayAssertBodyArgsCount;
 #endif
-    private static uint s_fatalNyiCount;
+    private static int s_fatalNyiCount;
 #endif
 
 #if DEBUG
@@ -41,8 +41,8 @@ public partial class Globals
         logf(LL_ERROR, $"COMPILATION FAILED: file: {fileName}:{lineNumber} compiling method {compiler.info.compFullName} reason {message}\n");
 
         // We now only assert when user explicitly set DOTNET_JitRequired=1
-        // If DOTNET_JitRequired is 0 or is not set, we will not assert.
-        if ((JitConfig[ConfigInteger.JitRequired] is 1) || (getBreakOnBadCode() is not 0))
+        // If DOTNET_JitRequired == 0 or is not set, we will not assert.
+        if ((JitConfig[ConfigInteger.JitRequired] == 1) || (getBreakOnBadCode() != 0))
         {
             assertAbort(message, filePath, lineNumber);
         }
@@ -110,7 +110,7 @@ public partial class Globals
         // Don't stop on NYI: use DOTNET_AltJitAssertOnNYI for that.
         if (jitResult != CORJIT_SKIPPED)
         {
-            if (JitConfig[ConfigInteger.DebugBreakOnVerificationFailure] is not 0)
+            if (JitConfig[ConfigInteger.DebugBreakOnVerificationFailure] != 0)
             {
                 Debugger.Break();
             }
@@ -133,7 +133,7 @@ public partial class Globals
         // have the assert code to fall back on here.
         // The debug path goes through this function also, to do the call to 'fatal'.
         // This kind of noway is hit for unreached().
-        if (JitConfig[ConfigInteger.JitEnableNoWayAssert] is not 0)
+        if (JitConfig[ConfigInteger.JitEnableNoWayAssert] != 0)
         {
             Debugger.Break();
         }
@@ -180,7 +180,7 @@ public partial class Globals
 #if MEASURE_NOWAY
     public static void RecordNowayAssertGlobal(ReadOnlySpan<char> filePath, int lineNumber, ReadOnlySpan<char> message)
     {
-        if ((JitConfig[ConfigInteger.JitMeasureNowayAssert] is 1) && (JitTls.Compiler is Compiler compiler))
+        if ((JitConfig[ConfigInteger.JitMeasureNowayAssert] == 1) && (JitTls.Compiler is Compiler compiler))
         {
             compiler.RecordNowayAssert(filePath, lineNumber, message);
         }
@@ -281,7 +281,7 @@ public partial class Globals
     {
         var compiler = JitTls.Compiler;
 
-        if ((compiler is null) || (compiler.opts.jitFlags->IsSet(JitFlag.JIT_FLAG_ALT_JIT)))
+        if ((compiler is null) || (compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_ALT_JIT)))
         {
             NOWAY_MSG_FILE_AND_LINE(message, filePath, lineNumber);
             return;
@@ -326,14 +326,14 @@ public partial class Globals
         // 1 means popup the assert (abort=abort, retry=debugger, ignore=skip)
         // 2 means silently don't skip (same as 3 for retail)
         // 3 means popup the assert (abort=abort, retry=debugger, ignore=don't skip)
-        if ((altJitAssertOnNyi & 1) is not 0)
+        if ((altJitAssertOnNyi & 1) != 0)
         {
 #if DEBUG
             assertAbort(message, filePath, lineNumber);
 #endif
         }
 
-        if ((altJitAssertOnNyi & 2) is 0)
+        if ((altJitAssertOnNyi & 2) == 0)
         {
 #if MEASURE_FATAL
             s_fatalNyiCount++;
@@ -402,7 +402,7 @@ public partial class Globals
 
     private static void noWayAssertAbortHelper(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, int lineNumber)
     {
-        if (JitConfig[ConfigInteger.JitEnableNoWayAssert] is not 0)
+        if (JitConfig[ConfigInteger.JitEnableNoWayAssert] != 0)
         {
             // Show the assert UI.
             assertAbort(message, filePath, lineNumber);

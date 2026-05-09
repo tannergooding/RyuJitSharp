@@ -52,6 +52,6 @@ public struct CORINFO_RUNTIME_LOOKUP
     [InlineArray(CORINFO_MAXINDIRECTIONS)]
     public struct offsetsInlineArray
     {
-        public nuint e0;
+        public nint e0;
     }
 }

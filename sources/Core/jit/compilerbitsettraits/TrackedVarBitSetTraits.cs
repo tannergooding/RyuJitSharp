@@ -9,9 +9,9 @@ namespace RyuJitSharp;
 /// <remarks>The size of the bitset is determined by the # of tracked locals (up to some internal maximum), and the Compiler* tracks the tracked local epochs</remarks>
 public struct TrackedVarBitSetTraits : IBitSetTraits<Compiler>
 {
-    public static uint GetArrSize(Compiler env) => env.lvaTrackedCount;
+    public static int GetArrSize(Compiler env) => env.lvaTrackedCount;
 
-    public static uint GetEpoch(Compiler env) => env.CurLVEpoch;
+    public static int GetEpoch(Compiler env) => env.CurLVEpoch;
 
-    public static uint GetSize(Compiler env) => env.lvaTrackedCountInSizeTUnits;
+    public static int GetSize(Compiler env) => env.lvaTrackedCountInSizeTUnits;
 }

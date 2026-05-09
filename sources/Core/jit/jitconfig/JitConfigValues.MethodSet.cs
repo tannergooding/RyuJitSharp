@@ -33,7 +33,7 @@ public partial struct JitConfigValues
             var patternStart = listFromConfig;
             var patternEnd = patternStart;
 
-            while (patternEnd[0] is not 0)
+            while (patternEnd[0] != 0)
             {
                 if (patternEnd[0] == ' ')
                 {

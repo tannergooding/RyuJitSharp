@@ -10,14 +10,14 @@ namespace RyuJitSharp;
 public sealed class GenTreeFieldAddr : GenTreeUnOp
 {
     private readonly unsafe CORINFO_FIELD_HANDLE _fldHnd;
-    private readonly uint _fldOffset;
+    private readonly int _fldOffset;
     private FieldAddrFlags _flags;
 
 #if FEATURE_READYTORUN
     private CORINFO_CONST_LOOKUP _fieldLookup;
 #endif
 
-    public unsafe GenTreeFieldAddr(var_types type, GenTree obj, CORINFO_FIELD_HANDLE fldHnd, uint offs)
+    public unsafe GenTreeFieldAddr(var_types type, GenTree obj, CORINFO_FIELD_HANDLE fldHnd, int offs)
         : base(GT_FIELD_ADDR, type, obj)
     {
         _fldHnd = fldHnd;
@@ -30,7 +30,7 @@ public sealed class GenTreeFieldAddr : GenTreeUnOp
     // Note that this is an address, i. e. for struct fields it will be ADDR(STRUCT).
     public GenTree? FldObj => Op1;
 
-    public uint FldOffset => _fldOffset;
+    public int FldOffset => _fldOffset;
 
     [MemberNotNullWhen(true, nameof(FldObj))]
     public bool IsInstance => Op1 is not null;
@@ -51,7 +51,7 @@ public sealed class GenTreeFieldAddr : GenTreeUnOp
             // Extending this support more in the future will require additional work and
             // considerations to help ensure it is correctly used since people may want
             // or intend to use this as more of a "point in time" feature like GTF_IND_NONNULL
-            return (_flags & FieldAddrFlags.IsSpanLength) is not 0;
+            return (_flags & FieldAddrFlags.IsSpanLength) != 0;
         }
 
         set
@@ -66,12 +66,12 @@ public sealed class GenTreeFieldAddr : GenTreeUnOp
     {
         get
         {
-            assert(((Flags & GTF_FLD_TLS) is 0) || IsStatic);
-            return (Flags & GTF_FLD_TLS) is not 0;
+            assert(((Flags & GTF_FLD_TLS) == 0) || IsStatic);
+            return (Flags & GTF_FLD_TLS) != 0;
         }
     }
 
-    public bool MayOverlap => (_flags & FieldAddrFlags.MayOverlap) is not 0;
+    public bool MayOverlap => (_flags & FieldAddrFlags.MayOverlap) != 0;
 
     private enum FieldAddrFlags : byte
     {

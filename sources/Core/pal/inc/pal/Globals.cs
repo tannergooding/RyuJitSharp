@@ -39,13 +39,13 @@ public partial class Globals
     public static int HRESULT_CODE(int hr) => (hr & 0xFFFF);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int HRESULT_FACILITY(int hr) => ((hr >> 16) & 0x1fff);
+    public static int HRESULT_FACILITY(int hr) => ((hr >>> 16) & 0x1fff);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int MAKE_HRESULT(int sev, int fac, int code) => (sev << 31) | (fac << 16) | code;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static uint MAKE_SCODE(uint sev, uint fac, uint code) => (sev << 31) | (fac << 16) | code;
+    public static int MAKE_SCODE(int sev, int fac, int code) => (sev << 31) | (fac << 16) | code;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int HRESULT_FROM_WIN32(int x) => (x <= 0) ? x : MAKE_HRESULT(SEVERITY_ERROR, FACILITY_WIN32, x & 0xFFFF);

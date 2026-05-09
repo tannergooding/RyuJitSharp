@@ -7,11 +7,47 @@ namespace RyuJitSharp;
 
 public partial struct CORJIT_FLAGS
 {
+    public const CorJitFlag CORJIT_FLAG_CALL_GETJITFLAGS = CorJitFlag.CORJIT_FLAG_CALL_GETJITFLAGS;
+    public const CorJitFlag CORJIT_FLAG_SPEED_OPT = CorJitFlag.CORJIT_FLAG_SPEED_OPT;
+    public const CorJitFlag CORJIT_FLAG_SIZE_OPT = CorJitFlag.CORJIT_FLAG_SIZE_OPT;
+    public const CorJitFlag CORJIT_FLAG_DEBUG_CODE = CorJitFlag.CORJIT_FLAG_DEBUG_CODE;
+    public const CorJitFlag CORJIT_FLAG_DEBUG_EnC = CorJitFlag.CORJIT_FLAG_DEBUG_EnC;
+    public const CorJitFlag CORJIT_FLAG_DEBUG_INFO = CorJitFlag.CORJIT_FLAG_DEBUG_INFO;
+    public const CorJitFlag CORJIT_FLAG_MIN_OPT = CorJitFlag.CORJIT_FLAG_MIN_OPT;
+    public const CorJitFlag CORJIT_FLAG_ENABLE_CFG = CorJitFlag.CORJIT_FLAG_ENABLE_CFG;
+    public const CorJitFlag CORJIT_FLAG_OSR = CorJitFlag.CORJIT_FLAG_OSR;
+    public const CorJitFlag CORJIT_FLAG_ALT_JIT = CorJitFlag.CORJIT_FLAG_ALT_JIT;
+    public const CorJitFlag CORJIT_FLAG_FROZEN_ALLOC_ALLOWED = CorJitFlag.CORJIT_FLAG_FROZEN_ALLOC_ALLOWED;
+    public const CorJitFlag CORJIT_FLAG_PORTABLE_ENTRY_POINTS = CorJitFlag.CORJIT_FLAG_PORTABLE_ENTRY_POINTS;
+    public const CorJitFlag CORJIT_FLAG_AOT = CorJitFlag.CORJIT_FLAG_AOT;
+    public const CorJitFlag CORJIT_FLAG_PROF_ENTERLEAVE = CorJitFlag.CORJIT_FLAG_PROF_ENTERLEAVE;
+    public const CorJitFlag CORJIT_FLAG_PROF_NO_PINVOKE_INLINE = CorJitFlag.CORJIT_FLAG_PROF_NO_PINVOKE_INLINE;
+    public const CorJitFlag CORJIT_FLAG_ASYNC = CorJitFlag.CORJIT_FLAG_ASYNC;
+    public const CorJitFlag CORJIT_FLAG_RELOC = CorJitFlag.CORJIT_FLAG_RELOC;
+    public const CorJitFlag CORJIT_FLAG_IL_STUB = CorJitFlag.CORJIT_FLAG_IL_STUB;
+    public const CorJitFlag CORJIT_FLAG_PROCSPLIT = CorJitFlag.CORJIT_FLAG_PROCSPLIT;
+    public const CorJitFlag CORJIT_FLAG_BBINSTR = CorJitFlag.CORJIT_FLAG_BBINSTR;
+    public const CorJitFlag CORJIT_FLAG_BBINSTR_IF_LOOPS = CorJitFlag.CORJIT_FLAG_BBINSTR_IF_LOOPS;
+    public const CorJitFlag CORJIT_FLAG_BBOPT = CorJitFlag.CORJIT_FLAG_BBOPT;
+    public const CorJitFlag CORJIT_FLAG_FRAMED = CorJitFlag.CORJIT_FLAG_FRAMED;
+    public const CorJitFlag CORJIT_FLAG_PUBLISH_SECRET_PARAM = CorJitFlag.CORJIT_FLAG_PUBLISH_SECRET_PARAM;
+    public const CorJitFlag CORJIT_FLAG_USE_PINVOKE_HELPERS = CorJitFlag.CORJIT_FLAG_USE_PINVOKE_HELPERS;
+    public const CorJitFlag CORJIT_FLAG_REVERSE_PINVOKE = CorJitFlag.CORJIT_FLAG_REVERSE_PINVOKE;
+    public const CorJitFlag CORJIT_FLAG_TRACK_TRANSITIONS = CorJitFlag.CORJIT_FLAG_TRACK_TRANSITIONS;
+    public const CorJitFlag CORJIT_FLAG_TIER0 = CorJitFlag.CORJIT_FLAG_TIER0;
+    public const CorJitFlag CORJIT_FLAG_TIER1 = CorJitFlag.CORJIT_FLAG_TIER1;
+    public const CorJitFlag CORJIT_FLAG_NO_INLINING = CorJitFlag.CORJIT_FLAG_NO_INLINING;
+
+#if TARGET_ARM
+    public const CorJitFlag CORJIT_FLAG_RELATIVE_CODE_RELOCS = CorJitFlag.CORJIT_FLAG_RELATIVE_CODE_RELOCS;
+    public const CorJitFlag CORJIT_FLAG_SOFTFP_ABI = CorJitFlag.CORJIT_FLAG_SOFTFP_ABI;
+#endif
+
     // No number should be re-used between different target conditions, so platform-independent code can know uniquely which number corresponds to which flag.
     public enum CorJitFlag
     {
         /// <summary>Indicates that the JIT should retrieve flags in the form of a pointer to a <see cref="CORJIT_FLAGS" /> value via <see cref="ICorJitInfo.getJitFlags" />.</summary>
-        CORJIT_FLAG_CALL_GETJITFLAGS = unchecked((int)0xFFFF_FFFF),
+        CORJIT_FLAG_CALL_GETJITFLAGS = -1,
 
         /// <summary>Optimize for speed.</summary>
         CORJIT_FLAG_SPEED_OPT = 0,

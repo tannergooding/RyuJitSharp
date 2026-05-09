@@ -3,14 +3,13 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-global using static RyuJitSharp.CORJIT_FLAGS;
 using System.Diagnostics.CodeAnalysis;
 
 namespace RyuJitSharp;
 
 public partial struct CORJIT_FLAGS
 {
-    private ulong corJitFlags;
+    private long corJitFlags;
     private CORINFO_InstructionSetFlags instructionSetFlags;
 
     // Convenience constructor to set exactly one flag.
@@ -38,7 +37,7 @@ public partial struct CORJIT_FLAGS
 
     public void Clear(CorJitFlag flag)
     {
-        corJitFlags &= ~(1UL << (int)flag);
+        corJitFlags &= ~(1L << (int)(flag));
     }
     public void EnsureValidInstructionSetSupport()
     {
@@ -46,7 +45,7 @@ public partial struct CORJIT_FLAGS
     }
 
     /// <summary>DO NOT USE THIS FUNCTION! (except in very restricted special cases)</summary>
-    public readonly ulong GetFlagsRaw() => corJitFlags;
+    public readonly long GetFlagsRaw() => corJitFlags;
 
     public readonly int GetInstructionFlagsFieldCount() => instructionSetFlags.GetInstructionFlagsFieldCount();
 
@@ -56,11 +55,11 @@ public partial struct CORJIT_FLAGS
     [UnscopedRef]
     public ref CORINFO_InstructionSetFlags.flagsInlineArray GetInstructionSetFlagsRaw() => ref instructionSetFlags.GetFlagsRaw();
 
-    public readonly bool IsEmpty() => (corJitFlags is 0) && instructionSetFlags.IsEmpty();
+    public readonly bool IsEmpty() => (corJitFlags == 0) && instructionSetFlags.IsEmpty();
 
     public readonly bool IsSet(CORINFO_InstructionSet instructionSet) => instructionSetFlags.HasInstructionSet(instructionSet);
 
-    public readonly bool IsSet(CorJitFlag flag) => (corJitFlags & (1UL << (int)flag)) is not 0;
+    public readonly bool IsSet(CorJitFlag flag) => (corJitFlags & (1L << (int)(flag))) != 0;
 
     public void Reset()
     {
@@ -75,7 +74,7 @@ public partial struct CORJIT_FLAGS
 
     public void Set(CorJitFlag flag)
     {
-        corJitFlags |= 1UL << (int)flag;
+        corJitFlags |= 1L << (int)(flag);
     }
 
     public void Set64BitInstructionSetVariants()

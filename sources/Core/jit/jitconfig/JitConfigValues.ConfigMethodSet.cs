@@ -95,37 +95,37 @@ public partial struct JitConfigValues
 #endif
     }
 
-    private static readonly unsafe FrozenDictionary<ConfigMethodSet, nuint> ConfigMethodSetMetadata = new Dictionary<ConfigMethodSet, nuint> {
+    private static readonly unsafe FrozenDictionary<ConfigMethodSet, nint> ConfigMethodSetMetadata = new Dictionary<ConfigMethodSet, nint> {
 #if DEBUG
-        [JitMinOptsName] = (nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JITMinOptsName"u8)),
-        [JitPrintInlinedMethods] = (nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitPrintInlinedMethods"u8)),
-        [JitPrintDevirtualizedMethods] = (nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitPrintDevirtualizedMethods"u8)),
-        [JitBreak] = (nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitBreak"u8)),
-        [JitDebugBreak] = (nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDebugBreak"u8)),
-        [JitDump] = (nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDump"u8)),
-        [JitEHDump] = (nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEHDump"u8)),
-        [JitExclude] = (nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitExclude"u8)),
-        [JitForceProcedureSplitting] = (nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitForceProcedureSplitting"u8)),
-        [JitGCDump] = (nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitGCDump"u8)),
-        [JitDebugDump] = (nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDebugDump"u8)),
-        [JitHalt] = (nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitHalt"u8)),
-        [JitInclude] = (nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInclude"u8)),
-        [JitLateDisasm] = (nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitLateDisasm"u8)),
-        [JitNoProcedureSplitting] = (nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitNoProcedureSplitting"u8)),
-        [JitNoProcedureSplittingEH] = (nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitNoProcedureSplittingEH"u8)),
-        [JitStressOnly] = (nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressOnly"u8)),
-        [JitUnwindDump] = (nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitUnwindDump"u8)),
-        [JitDumpFg] = (nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDumpFg"u8)),
-        [JitEmitUnitTests] = (nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEmitUnitTests"u8)),
+        [JitMinOptsName] = (nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JITMinOptsName"u8))),
+        [JitPrintInlinedMethods] = (nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitPrintInlinedMethods"u8))),
+        [JitPrintDevirtualizedMethods] = (nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitPrintDevirtualizedMethods"u8))),
+        [JitBreak] = (nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitBreak"u8))),
+        [JitDebugBreak] = (nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDebugBreak"u8))),
+        [JitDump] = (nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDump"u8))),
+        [JitEHDump] = (nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEHDump"u8))),
+        [JitExclude] = (nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitExclude"u8))),
+        [JitForceProcedureSplitting] = (nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitForceProcedureSplitting"u8))),
+        [JitGCDump] = (nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitGCDump"u8))),
+        [JitDebugDump] = (nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDebugDump"u8))),
+        [JitHalt] = (nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitHalt"u8))),
+        [JitInclude] = (nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInclude"u8))),
+        [JitLateDisasm] = (nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitLateDisasm"u8))),
+        [JitNoProcedureSplitting] = (nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitNoProcedureSplitting"u8))),
+        [JitNoProcedureSplittingEH] = (nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitNoProcedureSplittingEH"u8))),
+        [JitStressOnly] = (nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressOnly"u8))),
+        [JitUnwindDump] = (nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitUnwindDump"u8))),
+        [JitDumpFg] = (nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDumpFg"u8))),
+        [JitEmitUnitTests] = (nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEmitUnitTests"u8))),
 #endif
 
-        [JitDisasm] = (nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDisasm"u8)),
-        [JitOptRepeat] = (nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitOptRepeat"u8)),
-        [AltJit] = (nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("AltJit"u8)),
-        [AltJitNgen] = (nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("AltJitNgen"u8)),
+        [JitDisasm] = (nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDisasm"u8))),
+        [JitOptRepeat] = (nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitOptRepeat"u8))),
+        [AltJit] = (nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("AltJit"u8))),
+        [AltJitNgen] = (nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("AltJitNgen"u8))),
 
 #if DEBUG
-        [JitRawHexCode] = (nuint)Unsafe.AsPointer(in MemoryMarshal.GetReference("JitRawHexCode"u8)),
+        [JitRawHexCode] = (nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitRawHexCode"u8))),
 #endif
     }.ToFrozenDictionary();
 }

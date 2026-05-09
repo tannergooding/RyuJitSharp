@@ -5,4 +5,4 @@
 
 global using BitVecOps = RyuJitSharp.BitSetOps<RyuJitSharp.BitVecTraits, RyuJitSharp.BitVecTraits>;
 
-global using BitVec = nuint[];
+global using BitVec = nint[];

@@ -4,7 +4,6 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System.Runtime.CompilerServices;
-using static RyuJitSharp.ICorDebugInfo;
 
 namespace RyuJitSharp;
 
@@ -32,7 +31,7 @@ public sealed class InlineInfo
     /// <summary>The context handle that will be passed to impTokenLookupContextHandle in Inlinee's Compiler.</summary>
     public unsafe CORINFO_CONTEXT_HANDLE tokenLookupContextHandle;
 
-    public uint argCnt;
+    public int argCnt;
 
     public inlArgInfoInlineArray inlArgInfo;
 
@@ -45,12 +44,12 @@ public sealed class InlineInfo
     public lclVarInfoInlineArray lclVarInfo;
 
     /// <summary>Number of TYP_REF and TYP_BYREF locals</summary>
-    public uint numberOfGcRefLocals;
+    public int numberOfGcRefLocals;
 
     public bool thisDereferencedFirst;
 
 #if FEATURE_SIMD
-    public bool hasSIMDTypeArgLocalOrReturn;
+    public bool hasSimdTypeArgLocalOrReturn;
 #endif
 
     /// <summary>The GT_CALL node to be inlined.</summary>

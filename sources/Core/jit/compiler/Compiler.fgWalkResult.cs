@@ -7,7 +7,14 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    public const fgWalkResult WALK_CONTINUE = fgWalkResult.WALK_CONTINUE;
+    public const fgWalkResult WALK_SKIP_SUBTREES = fgWalkResult.WALK_SKIP_SUBTREES;
+    public const fgWalkResult WALK_ABORT = fgWalkResult.WALK_ABORT;
+
     public enum fgWalkResult
     {
+        WALK_CONTINUE,
+        WALK_SKIP_SUBTREES,
+        WALK_ABORT,
     }
 }

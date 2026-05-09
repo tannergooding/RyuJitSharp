@@ -15,21 +15,17 @@
 #if REGMASK_BITS_8
 global using regMaskSmall = byte;
 #elif REGMASK_BITS_16
-global using regMaskSmall = ushort;
+global using regMaskSmall = short;
 #elif REGMASK_BITS_32
-global using regMaskSmall = uint;
+global using regMaskSmall = int;
 #elif REGMASK_BITS_64
-global using regMaskSmall = ulong;
+global using regMaskSmall = long;
 #else
 #error Unsupported REGMASK_BITS size
 #endif
 
 #if TARGET_64BIT
-global using target_size_t = ulong;
-
 global using target_ssize_t = long;
 #else
-global using target_size_t = uint;
-
 global using target_ssize_t = int;
 #endif

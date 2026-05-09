@@ -10,6 +10,6 @@ public partial struct ICorDebugInfo
     public struct AsyncInfo
     {
         /// <summary>Number of suspension points in the method.</summary>
-        public uint NumSuspensionPoints;
+        public int NumSuspensionPoints;
     }
 }

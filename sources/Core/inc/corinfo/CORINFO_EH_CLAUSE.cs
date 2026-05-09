@@ -12,31 +12,31 @@ public struct CORINFO_EH_CLAUSE
 {
     public CORINFO_EH_CLAUSE_FLAGS Flags;
 
-    public uint TryOffset;
+    public int TryOffset;
 
-    public uint TryLength;
+    public int TryLength;
 
-    public uint HandlerOffset;
+    public int HandlerOffset;
 
-    public uint HandlerLength;
+    public int HandlerLength;
 
     private _Anonymous_e__Union _anonymous;
 
     // use for type-based exception handlers
     [UnscopedRef]
-    public ref uint ClassToken => ref _anonymous.ClassToken;
+    public ref int ClassToken => ref _anonymous.ClassToken;
 
     // use for filter-based exception handlers (COR_ILEXCEPTION_FILTER is set)
     [UnscopedRef]
-    public ref uint FilterOffset => ref _anonymous.FilterOffset;
+    public ref int FilterOffset => ref _anonymous.FilterOffset;
 
     [StructLayout(LayoutKind.Explicit)]
     private struct _Anonymous_e__Union
     {
         [FieldOffset(0)]
-        public uint ClassToken;
+        public int ClassToken;
 
         [FieldOffset(0)]
-        public uint FilterOffset;
+        public int FilterOffset;
     }
 }

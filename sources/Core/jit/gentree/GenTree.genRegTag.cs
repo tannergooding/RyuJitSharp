@@ -8,6 +8,9 @@ namespace RyuJitSharp;
 
 public partial class GenTree
 {
+    public const genRegTag GT_REGTAG_NONE = genRegTag.GT_REGTAG_NONE;
+    public const genRegTag GT_REGTAG_REG = genRegTag.GT_REGTAG_REG;
+
     public enum genRegTag
     {
         /// <summary>Nothing has been assigned to _gtRegNum</summary>

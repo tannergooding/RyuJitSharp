@@ -23,10 +23,10 @@ public partial class LIR
         // consider the following:
         //
         //     // View the block as a range
-        //     LIR::Range& blockRange = LIR::AsRange(block);
+        //     LIR.Range& blockRange = LIR.AsRange(block);
         //
         //     // Create a read only range from from it.
-        //     LIR::ReadOnlyRange readRange = blockRange;
+        //     LIR.ReadOnlyRange readRange = blockRange;
         //
         //     // Remove the last node from the block
         //     blockRange.Remove(blockRange.LastNode());
@@ -80,8 +80,6 @@ public partial class LIR
         /// <returns>True if this range contains the given node; false otherwise.</returns>
         public bool Contains(GenTree node)
         {
-            assert(node is not null);
-
             // TODO-LIR: derive this from the # of nodes in the function as well as
             // the debug level. Checking small functions is pretty cheap; checking
             // large functions is not.

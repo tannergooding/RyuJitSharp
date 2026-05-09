@@ -12,7 +12,7 @@ namespace RyuJitSharp;
 public struct CORINFO_InstructionSetFlags
 {
     private const int FlagsFieldCount = 2;
-    private const int BitsPerFlagsField = sizeof(ulong) * 8;
+    private const int BitsPerFlagsField = sizeof(long) * 8;
 
     private flagsInlineArray _flags;
 
@@ -27,18 +27,18 @@ public struct CORINFO_InstructionSetFlags
     public void AddInstructionSet(CORINFO_InstructionSet instructionSet)
     {
         var index = GetFlagsFieldIndex(instructionSet);
-        _flags[(int)index] |= GetRelativeBitMask(instructionSet);
+        _flags[index] |= GetRelativeBitMask(instructionSet);
     }
 
     public readonly bool Equals(CORINFO_InstructionSetFlags other)
     {
-        ReadOnlySpan<ulong> flags = _flags;
+        ReadOnlySpan<long> flags = _flags;
         return flags.SequenceEqual(other._flags);
     }
 
-    private static uint GetFlagsFieldIndex(CORINFO_InstructionSet instructionSet)
+    private static int GetFlagsFieldIndex(CORINFO_InstructionSet instructionSet)
     {
-        var bitIndex = (uint)instructionSet;
+        var bitIndex = (int)(instructionSet);
         return bitIndex / BitsPerFlagsField;
     }
 
@@ -47,30 +47,30 @@ public struct CORINFO_InstructionSetFlags
 
     public readonly int GetInstructionFlagsFieldCount() => FlagsFieldCount;
 
-    private static ulong GetRelativeBitMask(CORINFO_InstructionSet instructionSet)
+    private static long GetRelativeBitMask(CORINFO_InstructionSet instructionSet)
     {
-        return 1UL << (int)instructionSet;
+        return 1L << (int)(instructionSet);
     }
 
     public readonly bool HasInstructionSet(CORINFO_InstructionSet instructionSet)
     {
         var index = GetFlagsFieldIndex(instructionSet);
         var bitIndex = GetRelativeBitMask(instructionSet);
-        return ((_flags[(int)index] & bitIndex) is not 0);
+        return ((_flags[index] & bitIndex) != 0);
     }
 
-    public readonly bool IsEmpty() => !((ReadOnlySpan<ulong>)(_flags)).ContainsAnyExcept(0UL);
+    public readonly bool IsEmpty() => !((ReadOnlySpan<long>)(_flags)).ContainsAnyExcept(0);
 
     public void RemoveInstructionSet(CORINFO_InstructionSet instructionSet)
     {
         var index = GetFlagsFieldIndex(instructionSet);
         var bitIndex = GetRelativeBitMask(instructionSet);
-        _flags[(int)index] &= ~bitIndex;
+        _flags[index] &= ~bitIndex;
     }
 
     public void Reset()
     {
-        Span<ulong> flags = _flags;
+        Span<long> flags = _flags;
         flags.Clear();
     }
 
@@ -237,6 +237,6 @@ public struct CORINFO_InstructionSetFlags
     [InlineArray(FlagsFieldCount)]
     public struct flagsInlineArray
     {
-        public ulong e0;
+        public long e0;
     }
 }

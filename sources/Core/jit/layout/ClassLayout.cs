@@ -5,7 +5,6 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
@@ -16,15 +15,19 @@ public sealed class ClassLayout
     // Class handle or NO_CLASS_HANDLE for "block" layouts.
     private readonly unsafe CORINFO_CLASS_HANDLE _classHandle;
 
-    // Size of the layout in bytes (as reported by ICorJitInfo::getClassSize/getHeapClassSize for non "block" layouts).
+    // Size of the layout in bytes (as reported by ICorJitInfo.getClassSize/getHeapClassSize for non "block" layouts).
     // For "block" layouts this may be 0 due to 0 being a valid size for cpblk/initblk.
     private readonly int _size;
 
-    private uint _bitfield;
+    private int _bitfield;
 
     // Array of CorInfoGCType (as BYTE) that describes the GC layout of the class.
     // For small classes the array is stored inline, avoiding an extra allocation and the pointer size overhead.
-    private _Anonymous_e__Union _anonymous;
+    private nint _anonymous;
+
+    private unsafe byte* _gcPtrs => (byte*)(_anonymous);
+
+    private ref GCPtrsArrayInlineArray _gcPtrsArray => ref Unsafe.As<nint, GCPtrsArrayInlineArray>(ref _anonymous);
 
     private SegmentList? _nonPadding;
 
@@ -45,7 +48,7 @@ public sealed class ClassLayout
         _type = TYP_STRUCT;
 
 #if DEBUG
-        if (size is 0)
+        if (size == 0)
         {
             _name = "Empty";
             _shortName = "Empty";
@@ -60,13 +63,49 @@ public sealed class ClassLayout
 
     public unsafe CORINFO_CLASS_HANDLE ClassHandle => _classHandle;
 
+#if DEBUG
+    public string ClassName => _name;
+
+    public string ShortClassName => _shortName;
+#endif
+
     /// <summary>The number of GC pointers in this layout.</summary>
-    /// <remarks>Since the maximum size is 2^32-1 the count can fit in at most 30 bits.</remarks>
-    public uint GcPtrCount => (_bitfield >> 1) & 0x3FFF_FFFF;
+    /// <remarks>Since the maximum size == 2^32-1 the count can fit in at most 30 bits.</remarks>
+    public int GcPtrCount => (_bitfield >>> 1) & 0x3FFF_FFFF;
 
-    public bool HasGcPtr => GcPtrCount is not 0;
+    public bool HasGCPtr => GcPtrCount != 0;
 
-    public bool IsValueClass => (_bitfield & 1) is not 0;
+    public bool IsBlockLayout => IsCustomLayout && !HasGCPtr;
+
+    public unsafe bool IsCustomLayout => _classHandle == NO_CLASS_HANDLE;
+
+    public bool IsValueClass => (_bitfield & 1) != 0;
+
+    /// <summary>Determine register type for the layout.</summary>
+    public var_types RegisterType
+    {
+        get
+        {
+            if (HasGCPtr)
+            {
+                return (SlotCount == 1) ? GetGCPtrType(0) : TYP_UNDEF;
+            }
+
+            return _size switch {
+                1 => TYP_UBYTE,
+                2 => TYP_USHORT,
+                4 => TYP_INT,
+#if TARGET_64BIT || TARGET_WASM
+                8 => TYP_LONG,
+#endif
+#if FEATURE_SIMD
+                // TODO: check TYP_SIMD12 profitability, it will need additional support in `BuildStoreLoc`.
+                16 => TYP_SIMD16,
+#endif
+                _ => TYP_UNDEF,
+            };
+        }
+    }
 
     public int SlotCount => roundUp(_size, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
 
@@ -74,16 +113,16 @@ public sealed class ClassLayout
 
     public var_types Type => _type;
 
-    private unsafe Span<byte> GcPtrs
+    private unsafe Span<byte> GCPtrs
     {
         get
         {
             var slotCount = SlotCount;
-            Span<byte> result = _anonymous.GCPtrsArray;
+            Span<byte> result = _gcPtrsArray;
 
             if (slotCount > result.Length)
             {
-                result = new Span<byte>(_anonymous.GCPtrs, slotCount);
+                result = new Span<byte>(_gcPtrs, slotCount);
             }
             return result;
         }
@@ -135,7 +174,7 @@ public sealed class ClassLayout
             return false;
         }
 
-        if (layout1.HasGcPtr != layout2.HasGcPtr)
+        if (layout1.HasGCPtr != layout2.HasGCPtr)
         {
             return false;
         }
@@ -145,12 +184,12 @@ public sealed class ClassLayout
             return false;
         }
 
-        if (!layout1.HasGcPtr && !layout2.HasGcPtr)
+        if (!layout1.HasGCPtr && !layout2.HasGCPtr)
         {
             return true;
         }
 
-        assert(layout1.HasGcPtr && layout2.HasGcPtr);
+        assert(layout1.HasGCPtr && layout2.HasGCPtr);
 
         if (layout1.GcPtrCount != layout2.GcPtrCount)
         {
@@ -162,7 +201,7 @@ public sealed class ClassLayout
 
         for (var i = 0; i < slotsCount; i++)
         {
-            if (layout1.GetGcPtrType(i) != layout2.GetGcPtrType(i))
+            if (layout1.GetGCPtrType(i) != layout2.GetGCPtrType(i))
             {
                 return false;
             }
@@ -170,12 +209,18 @@ public sealed class ClassLayout
         return true;
     }
 
-    public var_types GetGcPtrType(int slot) => GetGcPtr(slot) switch {
+    public var_types GetGCPtrType(int slot) => GetGCPtr(slot) switch {
         TYPE_GC_NONE => TYP_I_IMPL,
         TYPE_GC_REF => TYP_REF,
         TYPE_GC_BYREF => TYP_BYREF,
         _ => TYP_UNKNOWN,
     };
+
+    public bool IsGCByRef(int slot) => GetGCPtr(slot) is TYPE_GC_BYREF;
+
+    public bool IsGCPtr(int slot) => GetGCPtr(slot) is not TYPE_GC_NONE;
+
+    public bool IsGCRef(int slot) => GetGCPtr(slot) is TYPE_GC_REF;
 
     /// <summary>does the layout represent a block that can never be on the heap?</summary>
     /// <param name="compiler">The Compiler object</param>
@@ -187,20 +232,10 @@ public sealed class ClassLayout
             && compiler.eeIsByrefLike(_classHandle);
     }
 
-    private CorInfoGCType GetGcPtr(int slot)
+    private CorInfoGCType GetGCPtr(int slot)
     {
         assert(slot < SlotCount);
-        return (GcPtrCount is not 0) ? (CorInfoGCType)(GcPtrs[slot]) : TYPE_GC_NONE;
-    }
-
-    [StructLayout(LayoutKind.Explicit)]
-    private struct _Anonymous_e__Union
-    {
-        [FieldOffset(0)]
-        public unsafe byte* GCPtrs;
-
-        [FieldOffset(0)]
-        public GCPtrsArrayInlineArray GCPtrsArray;
+        return (GcPtrCount != 0) ? (CorInfoGCType)(GCPtrs[slot]) : TYPE_GC_NONE;
     }
 
     [InlineArray(TARGET_POINTER_SIZE)]

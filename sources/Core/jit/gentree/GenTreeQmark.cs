@@ -15,8 +15,8 @@ public sealed class GenTreeQmark : GenTreeOp
         _thenLikelihood = thenLikelihood;
 
         // These must follow a specific form.
-        assert((cond is not null) && (cond.Type is TYP_INT));
-        assert((colon is not null) && (colon.Oper is GT_COLON));
+        assert(cond.Type is TYP_INT);
+        assert(colon.Oper is GT_COLON);
     }
 
     public byte ElseNodeLikelihood
@@ -28,20 +28,15 @@ public sealed class GenTreeQmark : GenTreeOp
         }
     }
 
-    public GenTree ElseNode
-    {
-        get
-        {
-            assert(Op2 is not null);
-            return Op2.AsColon().ElseNode;
-        }
-    }
+    public GenTreeColon Colon => Op2.AsColon();
+
+    public GenTree ElseNode => Colon.ElseNode;
 
     public bool IsEarlyExpandableQmark
     {
         get
         {
-            return (Flags & GTF_QMARK_EARLY_EXPAND) is not 0;
+            return (Flags & GTF_QMARK_EARLY_EXPAND) != 0;
         }
 
         set
@@ -65,12 +60,5 @@ public sealed class GenTreeQmark : GenTreeOp
         }
     }
 
-    public GenTree ThenNode
-    {
-        get
-        {
-            assert(Op2 is not null);
-            return Op2.AsColon().ThenNode;
-        }
-    }
+    public GenTree ThenNode => Colon.ThenNode;
 }

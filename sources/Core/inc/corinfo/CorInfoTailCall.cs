@@ -7,7 +7,7 @@ global using static RyuJitSharp.CorInfoTailCall;
 
 namespace RyuJitSharp;
 
-// If you add more values here, keep it in sync with TailCallTypeMap in ..\vm\ClrEtwAll.man and the string enum in CEEInfo::reportTailCallDecision in ..\vm\JITInterface.cpp
+// If you add more values here, keep it in sync with TailCallTypeMap in ..\vm\ClrEtwAll.man and the string enum in CEEInfo.reportTailCallDecision in ..\vm\JITInterface.cpp
 public enum CorInfoTailCall
 {
     /// <summary>Optimized tail call (epilog + jmp).</summary>

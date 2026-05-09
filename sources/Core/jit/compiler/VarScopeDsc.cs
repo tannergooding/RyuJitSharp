@@ -8,11 +8,11 @@ namespace RyuJitSharp;
 public struct VarScopeDsc
 {
     /// <summary>(remapped) LclVarDsc number</summary>
-    public uint vsdVarNum;
+    public int vsdVarNum;
 
     /// <summary>'which' in eeGetLVinfo().</summary>
     /// <remarks>Also, it is the index of this entry in the <see cref="Compiler.Info.compVarScopes" /> array, which is useful since the array is also accessed via the compEnterScopeList and compExitScopeList sorted arrays.</remarks>
-    public uint vsdLVnum;
+    public int vsdLVnum;
 
     /// <summary>instr offset of beg of life</summary>
     public IL_OFFSET vsdLifeBeg;
@@ -22,6 +22,6 @@ public struct VarScopeDsc
 
 #if DEBUG
     /// <summary>name of the var</summary>
-    public unsafe VarName vsdName;
+    public VarName vsdName;
 #endif
 }

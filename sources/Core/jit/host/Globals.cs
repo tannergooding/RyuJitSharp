@@ -22,7 +22,7 @@ public partial class Globals
     {
         var jitstdout = Globals.jitstdout();
 
-        if (format.Length is 0)
+        if (format.Length == 0)
         {
             // 0-length string means flush
             jitstdout.Flush();
@@ -34,7 +34,7 @@ public partial class Globals
     }
 
 #if DEBUG
-    public static bool vlogf(uint level, string format, params ReadOnlySpan<object> args)
+    public static bool vlogf(int level, string format, params ReadOnlySpan<object> args)
     {
         // TODO: This can't be implemented without varargs support
         // return JitTls.GetLogEnv().jitInfo->logMsg(level, format, args);
@@ -46,12 +46,12 @@ public partial class Globals
         ArgumentNullException.ThrowIfNull(stream);
         ArgumentNullException.ThrowIfNull(format);
 
-        if (format.Length is 0)
+        if (format.Length == 0)
         {
             // 0-length string means flush
             stream.Flush();
         }
-        else if (JitConfig[ConfigInteger.JitDumpToDebugger] is not 0)
+        else if (JitConfig[ConfigInteger.JitDumpToDebugger] != 0)
         {
             var message = string.Format(CultureInfo.InvariantCulture, format, args);
             Debug.Write(message);
@@ -92,7 +92,7 @@ public partial class Globals
             // The EE just successfully logged our message
             var breakOnDumpToken = s_fJitBreakOnDumpToken.val(CLRConfig.INTERNAL_BreakOnDumpToken);
 
-            if ((breakOnDumpToken is not 0xFFFFFFFF) && (s_forbidEntry is 0))
+            if ((breakOnDumpToken != 0xFFFFFFFF) && (s_forbidEntry == 0))
             {
                 s_forbidEntry = 1;
 
@@ -113,7 +113,7 @@ public partial class Globals
 
     public static void gcDump_logf([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object> args) => logf(format, args);
 
-    public static void logf(uint level, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object> args) => vlogf(level, format, args);
+    public static void logf(int level, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object> args) => vlogf(level, format, args);
 #endif
 
     [Conditional("DEBUG")]
@@ -151,7 +151,7 @@ public partial class Globals
                 {
                     Debug.Fail($"Assertion failed ({filePath}:{lineNumber} - {reason}) during startup");
                 }
-                else if (logEnv.JitInfo->doAssert(pUtf8FilePath, lineNumber, pUtf8Message) is not 0)
+                else if (logEnv.JitInfo->doAssert(pUtf8FilePath, lineNumber, pUtf8Message) != 0)
                 {
                     Debugger.Break();
                 }
@@ -160,7 +160,7 @@ public partial class Globals
 
         compiler = JitTls.Compiler;
 
-        if ((compiler is not null) && compiler.opts.jitFlags->IsSet(JitFlag.JIT_FLAG_ALT_JIT))
+        if ((compiler is not null) && compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_ALT_JIT))
         {
             // If we hit an assert, and we got here, it's either because the user hit "ignore" on the
             // dialog pop-up, or they set DOTNET_ContinueOnAssert=1 to not emit a pop-up, but just continue.
@@ -170,7 +170,7 @@ public partial class Globals
             // to the fallback JIT behavior. This is useful when doing ASM diffs, where we only want to see
             // the first assert for any function, but we don't want to kill the whole process on the
             // first assert (which would happen if you used DOTNET_NoGuiOnAssert=1 for example).
-            if (JitConfig[ConfigInteger.AltJitSkipOnAssert] is not 0)
+            if (JitConfig[ConfigInteger.AltJitSkipOnAssert] != 0)
             {
                 fatal(CORJIT_SKIPPED);
             }

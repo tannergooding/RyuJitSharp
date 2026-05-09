@@ -4,8 +4,6 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
@@ -196,6 +194,46 @@ public static class var_typesExtensions
         EA_UNKNOWN,     // TYP_UNKNOWN
     ];
 
+#if DEBUG
+    private static readonly string[] s_names = [
+        "<UNDEF>",  // TYP_UNDEF   
+        "void",     // TYP_VOID    
+        "byte",     // TYP_BYTE    
+        "ubyte",    // TYP_UBYTE   
+        "short",    // TYP_SHORT   
+        "ushort",   // TYP_USHORT  
+        "int",      // TYP_INT     
+        "uint",     // TYP_UINT    
+        "long",     // TYP_LONG    
+        "ulong",    // TYP_ULONG   
+        "float",    // TYP_FLOAT   
+        "double",   // TYP_DOUBLE  
+        "ref",      // TYP_REF     
+        "byref",    // TYP_BYREF   
+        "struct",   // TYP_STRUCT
+
+#if FEATURE_SIMD
+        "simd8",    // TYP_SIMD8    
+        "simd12",   // TYP_SIMD12   
+        "simd16",   // TYP_SIMD16
+
+#if TARGET_XARCH
+        "simd32",   // TYP_SIMD32   
+        "simd64",   // TYP_SIMD64
+
+#elif TARGET_ARM64
+        "simd",     // TYP_SIMD     
+#endif
+
+#if FEATURE_MASKED_HW_INTRINSICS
+        "mask",     // TYP_MASK     
+#endif
+#endif
+
+        "unknown"   // TYP_UNKNOWN
+    ];
+#endif
+
     private static ReadOnlySpan<var_types_register> s_registers => [
         VTR_INT,    // TYP_UNDEF   
         VTR_INT,    // TYP_VOID    
@@ -316,13 +354,8 @@ public static class var_typesExtensions
         {
             get
             {
-                // Spot check to make certain the table is in synch with the enum
-                assert(s_actualTypes[(int)(TYP_DOUBLE)] == TYP_DOUBLE);
-                assert(s_actualTypes[(int)(TYP_REF)] == TYP_REF);
-
                 assert(s_actualTypes.Length == (int)(TYP_COUNT));
-                assert(varType < TYP_COUNT);
-                return Unsafe.Add(ref MemoryMarshal.GetReference(s_actualTypes), (int)(varType));
+                return s_actualTypes[(int)(varType)];
             }
         }
 
@@ -331,8 +364,7 @@ public static class var_typesExtensions
             get
             {
                 assert(s_alignments.Length == (int)(TYP_COUNT));
-                assert(varType < TYP_COUNT);
-                return Unsafe.Add(ref MemoryMarshal.GetReference(s_alignments), (int)(varType));
+                return s_alignments[(int)(varType)];
             }
         }
 
@@ -341,8 +373,7 @@ public static class var_typesExtensions
             get
             {
                 assert(s_classifications.Length == (int)(TYP_COUNT));
-                assert(varType < TYP_COUNT);
-                return Unsafe.Add(ref MemoryMarshal.GetReference(s_classifications), (int)(varType));
+                return s_classifications[(int)(varType)];
             }
         }
 
@@ -351,8 +382,7 @@ public static class var_typesExtensions
             get
             {
                 assert(s_emitActualSizes.Length == (int)(TYP_COUNT));
-                assert(varType < TYP_COUNT);
-                return Unsafe.Add(ref MemoryMarshal.GetReference(s_emitActualSizes), (int)(varType));
+                return s_emitActualSizes[(int)(varType)];
             }
         }
 
@@ -361,18 +391,29 @@ public static class var_typesExtensions
             get
             {
                 assert(s_emitSizes.Length == (int)(TYP_COUNT));
-                assert(varType < TYP_COUNT);
-                return Unsafe.Add(ref MemoryMarshal.GetReference(s_emitSizes), (int)(varType));
+                return s_emitSizes[(int)(varType)];
             }
         }
+
+#if DEBUG
+        public string Name
+        {
+            get
+            {
+                assert(s_names.Length == (int)(TYP_COUNT));
+                return s_names[(int)(varType)];
+            }
+        }
+#else
+        public string Name => varType.ToString();
+#endif
 
         public var_types_register Register
         {
             get
             {
                 assert(s_registers.Length == (int)(TYP_COUNT));
-                assert(varType < TYP_COUNT);
-                return Unsafe.Add(ref MemoryMarshal.GetReference(s_registers), (int)(varType));
+                return s_registers[(int)(varType)];
             }
         }
 
@@ -383,8 +424,7 @@ public static class var_typesExtensions
             get
             {
                 assert(s_sizes.Length == (int)(TYP_COUNT));
-                assert(varType < TYP_COUNT);
-                return Unsafe.Add(ref MemoryMarshal.GetReference(s_sizes), (int)(varType));
+                return s_sizes[(int)(varType)];
             }
         }
 
@@ -398,8 +438,7 @@ public static class var_typesExtensions
 #endif
 
                 assert(s_stSzs.Length == (int)(TYP_COUNT));
-                assert(varType < TYP_COUNT);
-                return Unsafe.Add(ref MemoryMarshal.GetReference(s_stSzs), (int)(varType));
+                return s_stSzs[(int)(varType)];
             }
         }
     }

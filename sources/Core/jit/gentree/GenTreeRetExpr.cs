@@ -8,18 +8,19 @@ namespace RyuJitSharp;
 /// <summary>Place holder for the return expression from an inline candidate (GT_RET_EXPR)</summary>
 public sealed class GenTreeRetExpr : GenTree
 {
-    private GenTreeCall? _inlineCandidate;
+    private GenTreeCall _inlineCandidate;
 
     private GenTree? _substExpr;
 
     private BasicBlock? _substBB;
 
-    public GenTreeRetExpr(var_types type)
+    public GenTreeRetExpr(var_types type, GenTreeCall inlineCandidate)
         : base(GT_RET_EXPR, type)
     {
+        _inlineCandidate = inlineCandidate;
     }
 
-    public GenTreeCall? InlineCandidate
+    public GenTreeCall InlineCandidate
     {
         get
         {

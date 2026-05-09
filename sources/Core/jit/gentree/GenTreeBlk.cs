@@ -14,7 +14,7 @@ public sealed class GenTreeBlk : GenTreeIndir
     public GenTreeBlk(genTreeOps oper, var_types type, GenTree addr, ClassLayout layout)
         : base(oper, type, addr, data: null)
     {
-        assert(layout.Size is not 0);
+        assert(layout.Size != 0);
         _layout = layout;
     }
 

@@ -12,13 +12,13 @@ namespace RyuJitSharp;
 /// </remarks>
 public struct AllVarBitSetTraits : IBitSetTraits<Compiler>
 {
-    public static unsafe uint GetArrSize(Compiler env)
+    public static unsafe int GetArrSize(Compiler env)
     {
-        var elemBits = 8 * (uint)(sizeof(nuint));
+        var elemBits = 8 * sizeof(nint);
         return roundUp(GetSize(env), elemBits) / elemBits;
     }
 
-    public static uint GetEpoch(Compiler env) => GetSize(env);
+    public static int GetEpoch(Compiler env) => GetSize(env);
 
-    public static uint GetSize(Compiler env) => uint.Min(env.lvaCount, lclMAX_ALLSET_TRACKED);
+    public static int GetSize(Compiler env) => int.Min(env.lvaCount, lclMAX_ALLSET_TRACKED);
 }
