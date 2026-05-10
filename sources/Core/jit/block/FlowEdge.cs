@@ -107,6 +107,17 @@ public sealed class FlowEdge
         }
     }
 
+    public weight_t LikelyWeight
+    {
+        get
+        {
+#if DEBUG
+            assert(m_likelihoodSet);
+#endif
+            return m_likelihood * m_sourceBlock.bbWeight;
+        }
+    }
+
     public FlowEdge? NextPredEdge
     {
         get

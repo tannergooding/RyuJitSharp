@@ -1121,6 +1121,73 @@ public partial class Compiler
         }
     }
 
+    /// <summary>Create a new init BB at the beginning of the function.</summary>
+    public void fgCreateNewInitBB()
+    {
+        // The first block has an implicit ref count which we must remove. Note the
+        // ref count could be greater than one, if the first block is targeted by a
+        // branch.
+        assert(fgFirstBB is not null);
+        assert(fgFirstBB.bbRefs >= 1);
+        fgFirstBB.bbRefs--;
+
+        var block = BasicBlock.New(this);
+
+        // If we have profile data determine the weight of the initBB BB
+        //
+        if (fgFirstBB.hasProfileWeight)
+        {
+            // If current entry has preds, sum up those weights
+            weight_t nonEntryWeight = 0;
+
+            foreach (var predEdge in fgFirstBB.PredEdges)
+            {
+                nonEntryWeight += predEdge.LikelyWeight;
+            }
+
+            // entry weight is weight not from any pred
+            var entryWeight = fgFirstBB.bbWeight - nonEntryWeight;
+
+            if (entryWeight <= 0)
+            {
+                // If the result is clearly nonsensical, just inherit
+                //
+                JITDUMP($"fgCanonicalizeFirstBB: Profile data could not be locally repaired. Data {(fgPgoConsistent ? "is now" : "was already")} inconsistent.\n");
+
+                if (fgPgoConsistent)
+                {
+                    Metrics.ProfileInconsistentScratchBB++;
+                    fgPgoConsistent = false;
+                }
+
+                block.inheritWeight(fgFirstBB);
+            }
+            else
+            {
+                block.setBBProfileWeight(entryWeight);
+            }
+        }
+        else
+        {
+            block.inheritWeight(fgFirstBB);
+        }
+
+        // The new scratch bb will fall through to the old first bb
+        var edge = fgAddRefPred(fgFirstBB, block);
+        block.SetKindAndTargetEdge(BBJ_ALWAYS, edge);
+        fgInsertBBbefore(fgFirstBB, block);
+
+        // Set the expected flags
+        block.SetFlags(BBF_INTERNAL);
+
+        // This new first BB has an implicit ref, and no others.
+        //
+        assert(fgPredsComputed);
+        block.bbRefs = 1;
+
+        JITDUMP($"New init {FMT_BB(block.bbNum)}\n");
+    }
+
 #if DEBUG
     // TODO: Port fgDebugCheckBBlist
     public void fgDebugCheckBBlist(bool checkBBNum = false, bool checkBBRefs = true) { }
@@ -7192,8 +7259,34 @@ public partial class Compiler
     public PhaseStatus fgAddSwiftErrorReturns() => PhaseStatus.MODIFIED_NOTHING;
 #endif
 
-    // TODO: Port fgCanonicalizeFirstBB
-    public PhaseStatus fgCanonicalizeFirstBB() => PhaseStatus.MODIFIED_NOTHING;
+    /// <summary>Canonicalize the method entry to be dominate all blocks in the BB and to be executed exactly once.</summary>
+    /// <returns></returns>
+    public PhaseStatus fgCanonicalizeFirstBB()
+    {
+        assert(fgFirstBB is not null);
+
+        if (fgFirstBB.hasTryIndex)
+        {
+            JITDUMP("Canonicalizing entry because it currently is the beginning of a try region\n");
+        }
+        else if (fgFirstBB.bbPreds is not null)
+        {
+            JITDUMP("Canonicalizing entry because it currently has predecessors\n");
+        }
+        else if (opts.compDbgCode && !fgFirstBB.HasFlag(BBF_INTERNAL))
+        {
+            // For debug ensure the first BB is internal so as to not conflate user
+            // code with JIT added code.
+            JITDUMP("Canonicalizing entry because it currently is a user BB and we are generating debug code\n");
+        }
+        else
+        {
+            return PhaseStatus.MODIFIED_NOTHING;
+        }
+
+        fgCreateNewInitBB();
+        return PhaseStatus.MODIFIED_EVERYTHING;
+    }
 
     // TODO: Port fgCloneFinally
     public PhaseStatus fgCloneFinally() => PhaseStatus.MODIFIED_NOTHING;

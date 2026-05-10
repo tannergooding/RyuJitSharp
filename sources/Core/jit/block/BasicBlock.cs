@@ -1135,6 +1135,14 @@ public sealed partial class BasicBlock : LIR.Range
         bbWeight *= scale;
     }
 
+    /// <summary>Set the profile-derived weight for a basic block and update the run rarely flag as appropriate.</summary>
+    /// <param name="weight"></param>
+    public void setBBProfileWeight(weight_t weight)
+    {
+        SetFlags(BBF_PROF_WEIGHT);
+        bbWeight = weight;
+    }
+
     public void SetEhf(BBJumpTable ehfTargets)
     {
         _kind = BBJ_EHFINALLYRET;
