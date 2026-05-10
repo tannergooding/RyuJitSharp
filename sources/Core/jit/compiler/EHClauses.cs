@@ -3,6 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Runtime.InteropServices;
+
 namespace RyuJitSharp;
 
 public ref partial struct EHClauses
@@ -12,7 +14,7 @@ public ref partial struct EHClauses
 
     public EHClauses(Compiler compiler)
     {
-        _first = ref compiler.compHndBBtab[0];
+        _first = ref MemoryMarshal.GetArrayDataReference(compiler.compHndBBtab);
         _count = compiler.compHndBBtabCount;
     }
 

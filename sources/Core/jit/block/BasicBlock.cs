@@ -49,7 +49,7 @@ public sealed partial class BasicBlock : LIR.Range
     }
 
     /// <summary>BBJ_COND successor edge when its condition is true (alias for bbTargetEdge)</summary>
-    public FlowEdge? bbTrueEdge
+    internal FlowEdge? bbTrueEdge
     {
         get
         {
@@ -91,7 +91,7 @@ public sealed partial class BasicBlock : LIR.Range
     }
 
     /// <summary>Successor edge of a BBJ_COND block if bbTrueEdge is not taken</summary>
-    private FlowEdge? bbFalseEdge;
+    internal FlowEdge? bbFalseEdge;
 
     private BasicBlockFlags bbFlags;
 
@@ -727,7 +727,7 @@ public sealed partial class BasicBlock : LIR.Range
         {
             assert(Kind is BBJ_COND);
             assert(value.SourceBlock == this);
-            bbTrueEdge = value;
+            bbFalseEdge = value;
         }
     }
 
@@ -1048,6 +1048,58 @@ public sealed partial class BasicBlock : LIR.Range
         bbTryIndex = source.bbTryIndex;
     }
 
+    /// <summary>get the normalized weight of this block</summary>
+    /// <param name="comp">Compiler instance</param>
+    /// <returns></returns>
+    /// <remarks>With profile data: number of expected executions of this block, given one call to the method.</remarks>
+    public weight_t getBBWeight(Compiler comp)
+    {
+        if (bbWeight == BB_ZERO_WEIGHT)
+        {
+            return BB_ZERO_WEIGHT;
+        }
+        else
+        {
+            // Normalize the bbWeight.
+            var calledCount = getCalledCount(comp);
+            return (bbWeight / calledCount) * BB_UNITY_WEIGHT;
+        }
+    }
+
+    /// <summary>get the value used to normalized weights for this method</summary>
+    /// <param name="comp">Compiler instance</param>
+    /// <returns></returns>
+    /// <remarks>If we don't have profile data then getCalledCount will return BB_UNITY_WEIGHT (100) otherwise it returns the number of times that profile data says the method was called.</remarks>
+    public static weight_t getCalledCount(Compiler comp)
+    {
+        // when we don't have profile data then fgCalledCount will be BB_UNITY_WEIGHT (100)
+        var calledCount = comp.fgCalledCount;
+
+        // If we haven't yet reach the place where we setup fgCalledCount it could still be zero
+        // so return a reasonable value to use until we set it.
+        //
+        if (calledCount == 0)
+        {
+            if (comp.fgIsUsingProfileWeights)
+            {
+                // When we use profile data block counts we have exact counts,
+                // not multiples of BB_UNITY_WEIGHT (100)
+                calledCount = 1;
+            }
+            else
+            {
+                assert(comp.fgFirstBB is not null);
+                calledCount = comp.fgFirstBB.bbWeight;
+
+                if (calledCount == 0)
+                {
+                    calledCount = BB_UNITY_WEIGHT;
+                }
+            }
+        }
+        return calledCount;
+    }
+
     public void inheritWeight(BasicBlock source)
     {
         inheritWeightPercentage(source, 100);
@@ -1234,7 +1286,7 @@ public sealed partial class BasicBlock : LIR.Range
 
         static void dspFlag(BasicBlock block, BasicBlockFlags flag, string displayString, string sep = " ")
         {
-            if (flag.HasFlag(flag))
+            if (block.HasFlag(flag))
             {
                 jitprintf($"{sep}{displayString}");
             }
@@ -1259,7 +1311,7 @@ public sealed partial class BasicBlock : LIR.Range
             jitprintf(FMT_BB(predSourceBBNum));
             count += 4;
 
-            // Account for %02u only handling 2 digits, but we can display more than that.
+            // Account for D2 only handling 2 digits, but we can display more than that.
             var digits = CountDigits(predSourceBBNum);
 
             if (digits > 2)
@@ -1392,7 +1444,7 @@ public sealed partial class BasicBlock : LIR.Range
 
                 for (var i = 0; i < jumpTab.Length; i++)
                 {
-                    jitprintf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]));
+                    jitprintf($"{((i == 0) ? ' ' : ',')}{dspBlockNum(jumpTab[i])}");
 
                     if (bbSwtTargets.HasDefaultCase && (i == (jumpTab.Length - 1)))
                     {

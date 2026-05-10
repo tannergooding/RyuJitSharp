@@ -8,7 +8,9 @@ using System.Buffers.Binary;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace RyuJitSharp;
 
@@ -337,6 +339,9 @@ public partial class Compiler
     ///   <para>Schema-based data comes from Tier0 methods, which currently do not do any inlining; thus inlinee profile data should be available and representative.</para>
     /// </remarks>
     protected unsafe bool fgHaveProfileData => fgPgoSchema is not null;
+
+    /// <summary>true if we have real profile data for this method or if we have some fake profile data for the stress mode</summary>
+    public bool fgIsUsingProfileWeights => fgHaveProfileWeights || fgStressBBProf();
 
     /// <summary>find acd map key for a given block</summary>
     /// <param name="blk">block that may eventually throw an exception</param>
@@ -4322,7 +4327,7 @@ public partial class Compiler
 
             if (opcode is >= CEE_BR_S and <= CEE_BLT_UN)
             {
-                jmpDist = (sz is 1) ? codeAddr[0] : BinaryPrimitives.ReadInt32LittleEndian(new ReadOnlySpan<byte>(codeAddr, sizeof(int)));
+                jmpDist = (sz is 1) ? unchecked((sbyte)(codeAddr[0])) : BinaryPrimitives.ReadInt32LittleEndian(new ReadOnlySpan<byte>(codeAddr, sizeof(int)));
                 jmpAddr = (IL_OFFSET)(codeAddr - codeBegp) + (sz + jmpDist);
 
                 if (opcode is CEE_BR_S or CEE_BR)
@@ -4347,7 +4352,7 @@ public partial class Compiler
                     case CEE_LEAVE:
                     case CEE_LEAVE_S:
                     {
-                        jmpDist = (sz is 1) ? codeAddr[0] : BinaryPrimitives.ReadInt32LittleEndian(new ReadOnlySpan<byte>(codeAddr, sizeof(int)));
+                        jmpDist = (sz is 1) ? unchecked((sbyte)(codeAddr[0])) : BinaryPrimitives.ReadInt32LittleEndian(new ReadOnlySpan<byte>(codeAddr, sizeof(int)));
                         jmpAddr = (IL_OFFSET)(codeAddr - codeBegp) + (sz + jmpDist);
 
                         // We need to check if we are jumping out of a finally-protected try.
@@ -4547,37 +4552,6 @@ public partial class Compiler
                     }
 
 #if DEBUG
-                    // make certain we did not forget any flow of control instructions by checking the 'ctrl' field in opcode.def. First filter out all non-ctrl instructions
-
-                    // #define BREAK(name)                                                                                                    \
-                    //     case name:                                                                                                         \
-                    //         break;
-                    // #define NEXT(name)                                                                                                     \
-                    //     case name:                                                                                                         \
-                    //         break;
-                    // #define CALL(name)
-                    // #define THROW(name)
-                    // #undef RETURN // undef contract RETURN macro
-                    // #define RETURN(name)
-                    // #define META(name)
-                    // #define BRANCH(name)
-                    // #define COND_BRANCH(name)
-                    // #define PHI(name)
-                    // 
-                    // #define OPDEF(name, string, pop, push, oprType, opcType, l, s1, s2, ctrl) ctrl(name)
-                    // #include "opcode.def"
-                    // #undef OPDEF
-                    // 
-                    // #undef PHI
-                    // #undef BREAK
-                    // #undef CALL
-                    // #undef NEXT
-                    // #undef THROW
-                    // #undef RETURN
-                    // #undef META
-                    // #undef BRANCH
-                    // #undef COND_BRANCH
-
                     // These ctrl-flow opcodes don't need any special handling
                     case CEE_NEWOBJ:
                     {
@@ -4588,6 +4562,11 @@ public partial class Compiler
 
                     default:
                     {
+                        if (opcode.FlowKind is FLOW_BREAK or FLOW_NEXT)
+                        {
+                            break;
+                        }
+
                         // what's left are forgotten instructions
                         BADCODE("Unrecognized control Opcode");
                         break;
@@ -4608,9 +4587,9 @@ public partial class Compiler
             if (actualSz is not 0)
             {
                 // offset of the operand
-                var offs = (IL_OFFSET)(codeAddr - codeBegp) - sz;
+                var offs = (IL_OFFSET)(codeAddr - codeBegp) - actualSz;
 
-                for (var i = 0; i < sz; i++, offs++)
+                for (var i = 0; i < actualSz; i++, offs++)
                 {
                     if (jumpTarget[offs])
                     {
@@ -6559,7 +6538,481 @@ public partial class Compiler
 #if DEBUG
     public void fgTableDispBasicBlock(BasicBlock block, BasicBlock? nextBlock = null, bool printEdgeLikelihoods = true, int blockTargetFieldWidth = 21, int ibcColWidth = 0)
     {
-        // TODO: Port Compiler.fgTableDispBasicBlock
+        var flags = block.FlagsRaw;
+        var bbNumMax = fgBBNumMax;
+
+        var maxBlockNumWidth = CountDigits(bbNumMax);
+        maxBlockNumWidth = int.Max(maxBlockNumWidth, 2);
+
+        var blockNumWidth = CountDigits(block.bbNum);
+        blockNumWidth = int.Max(blockNumWidth, 2);
+
+        var blockNumPadding = maxBlockNumWidth - blockNumWidth;
+
+        // Instead of displaying a block number, should we instead display "*" when the specified block is
+        // the next block?
+        var terseNext = JitConfig[ConfigInteger.JitDumpTerseNextBlock] != 0;
+
+        jitprintf($"{block.dspToString(blockNumPadding)} {block.bbRefs:D2}");
+
+        //
+        // Display EH 'try' region index
+        //
+
+        if (block.hasTryIndex)
+        {
+            jitprintf($" {block.TryIndex:D2}");
+        }
+        else
+        {
+            jitprintf("   ");
+        }
+
+        //
+        // Display EH handler region index
+        //
+
+        if (block.hasHndIndex)
+        {
+            jitprintf($" {block.HndIndex:D2}");
+        }
+        else
+        {
+            jitprintf("   ");
+        }
+
+        jitprintf(" ");
+
+        //
+        // Display block predecessor list
+        //
+
+        var charCnt = block.dspPreds();
+
+        if (charCnt < 19)
+        {
+            jitprintf(new string(' ', int.Max(0, 19 - charCnt)));
+        }
+
+        jitprintf(" ");
+
+        //
+        // Display block weight
+        //
+
+        if (block.isMaxBBWeight)
+        {
+            jitprintf(" MAX  ");
+        }
+        else
+        {
+            var weight = block.getBBWeight(this);
+
+            if (weight > 99999) // Is it going to be more than 6 characters?
+            {
+                if (weight <= (99999 * BB_UNITY_WEIGHT))
+                {
+                    // print weight in this format ddddd.
+                    jitprintf($"{(int)(weight_t.Round(weight / BB_UNITY_WEIGHT))}.");
+                }
+                else // print weight in terms of k (i.e. 156k )
+                {
+                    // print weight in this format dddddk
+                    var weightK = weight / 1000;
+                    jitprintf($"{(int)(weight_t.Round(weightK / BB_UNITY_WEIGHT))}k");
+                }
+            }
+            else // print weight in this format ddd.dd
+            {
+                jitprintf($"{refCntWtd2str(weight, padForDecimalPlaces: true),6}");
+            }
+        }
+
+        //
+        // Display optional IBC weight column.
+        // Note that iColWidth includes one character for a leading space, if there is an IBC column.
+        //
+
+        if (ibcColWidth > 0)
+        {
+            if (block.hasProfileWeight)
+            {
+                var bbWeightStr = $"{(int)(weight_t.Round(block.bbWeight))}";
+                jitprintf($"{new string(' ', int.Max(0, ibcColWidth - bbWeightStr.Length))}{bbWeightStr}");
+            }
+            else
+            {
+                // No IBC data. Just print spaces to align the column.
+                jitprintf(new string(' ', ibcColWidth));
+            }
+        }
+
+        jitprintf(" ");
+
+        //
+        // Display block IL range
+        //
+
+        block.dspBlockILRange();
+
+        //
+        // Display block branch target
+        //
+
+        int printedBlockWidth;
+
+        if ((flags & BBF_REMOVED) != 0)
+        {
+            printedBlockWidth = 10;
+            jitprintf($"[removed] {new string(' ', blockTargetFieldWidth - printedBlockWidth)}");
+        }
+        else
+        {
+            switch (block.Kind)
+            {
+                case BBJ_COND:
+                {
+                    printedBlockWidth = 3 + 1 + 9; // "-> " + comma + kind
+                    jitprintf($"-> {DspBlockNum(block.bbTrueEdge, printEdgeLikelihoods, terseNext, nextBlock, ref printedBlockWidth)},{DspBlockNum(block.bbFalseEdge, printEdgeLikelihoods, terseNext, nextBlock, ref printedBlockWidth)}");
+                    jitprintf($"{new string(' ', blockTargetFieldWidth - printedBlockWidth)} ( cond )");
+                    break;
+                }
+
+                case BBJ_CALLFINALLY:
+                {
+                    printedBlockWidth = 3 + 9; // "-> " + kind
+                    jitprintf($"-> {DspBlockNum(block.bbTargetEdge, printEdgeLikelihoods, terseNext, nextBlock, ref printedBlockWidth)}");
+                    jitprintf($"{new string(' ', blockTargetFieldWidth - printedBlockWidth)} (callf )");
+                    break;
+                }
+
+                case BBJ_CALLFINALLYRET:
+                {
+                    printedBlockWidth = 3 + 9; // "-> " + kind
+                    jitprintf($"-> {DspBlockNum(block.bbTargetEdge, printEdgeLikelihoods, terseNext, nextBlock, ref printedBlockWidth)}");
+                    jitprintf($"{new string(' ', blockTargetFieldWidth - printedBlockWidth)} (callfr)");
+                    break;
+                }
+
+                case BBJ_ALWAYS:
+                {
+                    var label = ((flags & BBF_KEEP_BBJ_ALWAYS) != 0) ? "ALWAYS" : "always";
+                    printedBlockWidth = 3 + 9; // "-> " + kind
+                    jitprintf($"-> {DspBlockNum(block.bbTargetEdge, printEdgeLikelihoods, terseNext, nextBlock, ref printedBlockWidth)}");
+                    jitprintf($"{new string(' ', blockTargetFieldWidth - printedBlockWidth)} ({label})");
+                    break;
+                }
+
+                case BBJ_LEAVE:
+                {
+                    printedBlockWidth = 3 + 9; // "-> " + kind
+                    jitprintf($"-> {DspBlockNum(block.bbTargetEdge, printEdgeLikelihoods, terseNext, nextBlock, ref printedBlockWidth)}");
+                    jitprintf($"{new string(' ', blockTargetFieldWidth - printedBlockWidth)} (leave )");
+                    break;
+                }
+
+                case BBJ_EHFINALLYRET:
+                {
+                    jitprintf("->");
+                    printedBlockWidth = 2 + 9; // kind
+
+                    var ehfDesc = block.EhfTargets;
+                    if (ehfDesc is null)
+                    {
+                        jitprintf(" ????");
+                        printedBlockWidth += 5;
+                    }
+                    else
+                    {
+                        // Very early in compilation, we won't have fixed up the BBJ_EHFINALLYRET successors yet.
+
+                        var succs = ehfDesc.Succs;
+
+                        for (var i = 0; i < succs.Length; i++)
+                        {
+                            printedBlockWidth += 1; // space/comma
+                            jitprintf($"{((i == 0) ? ' ' : ',')}{DspBlockNum(succs[i], printEdgeLikelihoods, terseNext, nextBlock, ref printedBlockWidth)}");
+                        }
+                    }
+
+                    if (printedBlockWidth < blockTargetFieldWidth)
+                    {
+                        jitprintf($"{new string(' ', blockTargetFieldWidth - printedBlockWidth)}");
+                    }
+
+                    jitprintf(" (finret)");
+                    break;
+                }
+
+                case BBJ_EHFAULTRET:
+                {
+                    printedBlockWidth = 9; // kind
+                    jitprintf($"{new string(' ', blockTargetFieldWidth - printedBlockWidth)} (falret)");
+                    break;
+                }
+
+                case BBJ_EHFILTERRET:
+                {
+                    printedBlockWidth = 3 + 9; // "-> " + kind
+                    jitprintf($"-> {DspBlockNum(block.bbTargetEdge, printEdgeLikelihoods, terseNext, nextBlock, ref printedBlockWidth)}");
+                    jitprintf($"{new string(' ', blockTargetFieldWidth - printedBlockWidth)} (fltret)");
+                    break;
+                }
+
+                case BBJ_EHCATCHRET:
+                {
+                    printedBlockWidth = 3 + 9; // "-> " + kind
+                    jitprintf($"-> {DspBlockNum(block.bbTargetEdge, printEdgeLikelihoods, terseNext, nextBlock, ref printedBlockWidth)}");
+                    jitprintf($"{new string(' ', blockTargetFieldWidth - printedBlockWidth)} ( cret )");
+                    break;
+                }
+
+                case BBJ_THROW:
+                {
+                    printedBlockWidth = 9; // kind
+                    jitprintf($"{new string(' ', blockTargetFieldWidth - printedBlockWidth)} (throw )");
+                    break;
+                }
+
+                case BBJ_RETURN:
+                {
+                    printedBlockWidth = 9; // kind
+                    jitprintf($"{new string(' ', blockTargetFieldWidth - printedBlockWidth)} (return)");
+                    break;
+                }
+
+                case BBJ_SWITCH:
+                {
+                    jitprintf("->");
+                    printedBlockWidth = 2 + 9; // kind
+
+                    var jumpSwt = block.SwitchTargets;
+                    var jumpTab = jumpSwt.Cases;
+
+                    for (var i = 0; i < jumpTab.Length; i++)
+                    {
+                        printedBlockWidth += 1; // space/comma
+                        jitprintf($"{((i == 0) ? ' ' : ',')}{DspBlockNum(jumpTab[i], printEdgeLikelihoods, terseNext, nextBlock, ref printedBlockWidth)}");
+
+                        var isDefault = jumpSwt.HasDefaultCase && (i == (jumpTab.Length - 1));
+                        if (isDefault)
+                        {
+                            jitprintf("[def]");
+                            printedBlockWidth += 5;
+                        }
+
+                        var isDominant = jumpSwt.HasDominantCase && (i == jumpSwt.DominantCase);
+                        if (isDominant)
+                        {
+                            jitprintf("[dom]");
+                            printedBlockWidth += 5;
+                        }
+                    }
+
+                    if (printedBlockWidth < blockTargetFieldWidth)
+                    {
+                        jitprintf($"{new string(' ', blockTargetFieldWidth - printedBlockWidth)}");
+                    }
+
+                    jitprintf(" (switch)");
+                }
+                break;
+
+                default:
+                {
+                    // Bad Kind
+                    printedBlockWidth = 9; // kind
+                    jitprintf($"{new string(' ', blockTargetFieldWidth - printedBlockWidth)} (ERROR )");
+                    break;
+                }
+            }
+        }
+
+        jitprintf(" ");
+
+        //
+        // Display block EH region and type, including nesting indicator
+        //
+
+        if (block.hasTryIndex)
+        {
+            jitprintf($"T{block.TryIndex} ");
+        }
+        else
+        {
+            jitprintf("   ");
+        }
+
+        if (block.hasHndIndex)
+        {
+            jitprintf($"H{block.HndIndex} ");
+        }
+        else
+        {
+            jitprintf("   ");
+        }
+
+        var cnt = 0;
+
+        switch (block.CatchType)
+        {
+            case BBCT_NONE:
+            {
+                break;
+            }
+
+            case BBCT_FAULT:
+            {
+                jitprintf("fault ");
+                cnt += 6;
+                break;
+            }
+
+            case BBCT_FINALLY:
+            {
+                jitprintf("finally ");
+                cnt += 8;
+                break;
+            }
+
+            case BBCT_FILTER:
+            {
+                jitprintf("filter ");
+                cnt += 7;
+                break;
+            }
+
+            case BBCT_FILTER_HANDLER:
+            {
+                jitprintf("filtHnd ");
+                cnt += 8;
+                break;
+            }
+
+            default:
+            {
+                jitprintf("catch ");
+                cnt += 6;
+                break;
+            }
+        }
+
+        if (block.CatchType is not BBCT_NONE)
+        {
+            cnt += 2;
+            jitprintf("{{ ");
+            // brace matching editor workaround to compensate for the preceding line: }
+        }
+
+        if (bbIsTryBeg(block))
+        {
+            // Output a brace for every try region that this block opens
+
+            foreach (var HBtab in new EHClauses(this))
+            {
+                if (HBtab.ebdTryBeg == block)
+                {
+                    cnt += 6;
+                    jitprintf("try { ");
+                    // brace matching editor workaround to compensate for the preceding line: }
+                }
+            }
+        }
+
+        foreach (var HBtab in new EHClauses(this))
+        {
+            if (HBtab.ebdTryLast == block)
+            {
+                cnt += 2;
+                // brace matching editor workaround to compensate for the following line: {
+                jitprintf("} ");
+            }
+
+            if (HBtab.ebdHndLast == block)
+            {
+                cnt += 2;
+                // brace matching editor workaround to compensate for the following line: {
+                jitprintf("} ");
+            }
+
+            if (HBtab.HasFilter && (block.Next == HBtab.ebdHndBeg))
+            {
+                cnt += 2;
+                // brace matching editor workaround to compensate for the following line: {
+                jitprintf("} ");
+            }
+        }
+
+        while (cnt < 12)
+        {
+            cnt++;
+            jitprintf(" ");
+        }
+
+        //
+        // Display block flags
+        //
+
+        block.dspFlags();
+
+        // Display OSR info
+        //
+        if (opts.IsOSR)
+        {
+            if (block == fgEntryBB)
+            {
+                jitprintf(" original-entry");
+            }
+
+            if (block == fgOSREntryBB)
+            {
+                jitprintf(" osr-entry");
+            }
+        }
+
+        // Indicate if it's the merged return block.
+        if (block == genReturnBB)
+        {
+            jitprintf(" merged-return");
+        }
+
+        jitprintf("\n");
+
+        // Call `dspBlockNum()` to get the block number to print, and update `printedBlockWidth` with the width
+        // of the generated string. Note that any computation using `printedBlockWidth` must be done after all
+        // calls to this function.
+        static string DspBlockNum(FlowEdge? e, bool printEdgeLikelihoods, bool terseNext, BasicBlock? nextBlock, ref int printedBlockWidth)
+        {
+            if (e is null)
+            {
+                return "NULL";
+                printedBlockWidth += 4;
+            }
+
+            var b = e.DestinationBlock;
+            var stringBuilder = new StringBuilder();
+
+            if (b is null)
+            {
+                _ = stringBuilder.Append("NULL");
+            }
+            else if (terseNext && (b == nextBlock))
+            {
+                _ = stringBuilder.Append('*');
+            }
+            else
+            {
+                _ = stringBuilder.Append(FMT_BB(b.bbNum));
+            }
+
+            if (printEdgeLikelihoods && e.hasLikelihood)
+            {
+                _ = stringBuilder.Append(CultureInfo.InvariantCulture, $"({FMT_WT_NARROW(e.Likelihood)})");
+            }
+
+            printedBlockWidth += stringBuilder.Length;
+            return stringBuilder.ToString();
+        }
     }
 #endif
 

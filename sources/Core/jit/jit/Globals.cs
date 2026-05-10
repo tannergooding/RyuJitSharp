@@ -661,7 +661,7 @@ public partial class Globals
     }
 
     [Conditional("DEBUG")]
-    public static void JITDUMP(string format, params ReadOnlySpan<object> args)
+    public static void JITDUMP(string message)
     {
 #if DEBUG
         var compiler = JitTls.Compiler;
@@ -669,7 +669,7 @@ public partial class Globals
 
         if (compiler.verbose)
         {
-            logf(format, args);
+            logf(message);
         }
 #endif
     }

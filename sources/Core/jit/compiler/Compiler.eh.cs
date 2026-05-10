@@ -23,6 +23,19 @@ public partial class Compiler
 
     public bool ehTableFinalized;
 
+    // returns true if this block is the start of any try region.
+    // This is computed by examining the current values in the
+    // EH table rather than just looking at the block's bbFlags.
+    //
+    // Note that a block is the beginning of any try region if it is the beginning of the
+    // most nested try region it is a member of. Thus, we only need to check the EH
+    // table entry related to the try index stored on the block.
+    public bool bbIsTryBeg(BasicBlock block)
+    {
+        ref var ehDsc = ref ehGetBlockTryDsc(block);
+        return !Unsafe.IsNullRef(in ehDsc) && (block == ehDsc.ebdTryBeg);
+    }
+
     /// <summary>Returns true if value is between [start..end).</summary>
     /// <param name="value"></param>
     /// <param name="start"></param>

@@ -18,54 +18,53 @@ namespace RyuJitSharp;
 public partial class Globals
 {
     /// <summary>Like printf/logf, but only outputs to jitstdout -- skips call back into EE.</summary>
-    public static void jitprintf([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object> args)
+    public static void jitprintf(string message)
     {
         var jitstdout = Globals.jitstdout();
 
-        if (format.Length == 0)
+        if (message.Length == 0)
         {
             // 0-length string means flush
             jitstdout.Flush();
         }
         else
         {
-            jitstdout.Write(format, args);
+            jitstdout.Write(message);
         }
     }
 
 #if DEBUG
-    public static bool vlogf(int level, string format, params ReadOnlySpan<object> args)
+    public static bool vlogf(int level, string message)
     {
         // TODO: This can't be implemented without varargs support
-        // return JitTls.GetLogEnv().jitInfo->logMsg(level, format, args);
+        // return JitTls.GetLogEnv().jitInfo->logMsg(level, message);
         return false;
     }
 
-    public static void vflogf(StreamWriter stream, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object> args)
+    public static void vflogf(StreamWriter stream, string message)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        ArgumentNullException.ThrowIfNull(format);
+        ArgumentNullException.ThrowIfNull(message);
 
-        if (format.Length == 0)
+        if (message.Length == 0)
         {
             // 0-length string means flush
             stream.Flush();
         }
         else if (JitConfig[ConfigInteger.JitDumpToDebugger] != 0)
         {
-            var message = string.Format(CultureInfo.InvariantCulture, format, args);
             Debug.Write(message);
             stream.Write(message);
         }
         else
         {
-            stream.Write(format, args);
+            stream.Write(message);
         }
     }
 
     private static bool s_logToEEfailed;
 
-    public static void logf([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object> args)
+    public static void logf(string message)
     {
         // We remember when the EE failed to log, because vlogf()
         // is very slow in a checked build.
@@ -75,7 +74,7 @@ public partial class Globals
 
         if (!s_logToEEfailed)
         {
-            if (!vlogf(LL_INFO1000, format, args))
+            if (!vlogf(LL_INFO1000, message))
             {
                 s_logToEEfailed = true;
             }
@@ -84,7 +83,7 @@ public partial class Globals
         if (s_logToEEfailed)
         {
             // if the EE refuses to log it, we try to send it to stdout
-            vflogf(jitstdout(), format, args);
+            vflogf(jitstdout(), message);
         }
 #if false  // Enable this only when you need it
         else
@@ -109,11 +108,11 @@ public partial class Globals
 #endif
     }
 
-    public static void flogf(StreamWriter stream, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object> args) => vflogf(stream, format, args);
+    public static void flogf(StreamWriter stream, string message) => vflogf(stream, message);
 
-    public static void gcDump_logf([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object> args) => logf(format, args);
+    public static void gcDump_logf(string message) => logf(message);
 
-    public static void logf(int level, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object> args) => vlogf(level, format, args);
+    public static void logf(int level, string message) => vlogf(level, message);
 #endif
 
     [Conditional("DEBUG")]

@@ -217,7 +217,7 @@ public sealed class InlineStrategy
 
         if (budget != DEFAULT_INLINE_BUDGET)
         {
-            JITDUMP("Using non-default inline budget %u\n", budget);
+            JITDUMP($"Using non-default inline budget {budget}\n");
         }
 
         var initialTimeBudget = budget * initialTimeEstimate;

@@ -14,6 +14,7 @@ public readonly ref partial struct BBSuccBlockList
 {
     private readonly ReadOnlySpan<FlowEdge> m_succs;
     private readonly succsInlineArray m_succsInline;
+    private readonly int m_succCount;
 
     public BBSuccBlockList(BasicBlock block)
     {
@@ -24,6 +25,7 @@ public readonly ref partial struct BBSuccBlockList
             case BBJ_EHFAULTRET:
             {
                 m_succs = [];
+                m_succCount = 0;
                 break;
             }
 
@@ -35,7 +37,7 @@ public readonly ref partial struct BBSuccBlockList
             case BBJ_LEAVE:
             {
                 m_succsInline[0] = block.TargetEdge;
-                m_succs = MemoryMarshal.CreateReadOnlySpan(in m_succsInline[0], 1);
+                m_succCount = 1;
                 break;
             }
 
@@ -46,13 +48,13 @@ public readonly ref partial struct BBSuccBlockList
                 if (block.TrueEdge == block.FalseEdge)
                 {
                     m_succsInline[0] = block.FalseEdge;
-                    m_succs = MemoryMarshal.CreateReadOnlySpan(in m_succsInline[0], 1);
+                    m_succCount = 1;
                 }
                 else
                 {
                     m_succsInline[0] = block.FalseEdge;
                     m_succsInline[1] = block.TrueEdge;
-                    m_succs = MemoryMarshal.CreateReadOnlySpan(in m_succsInline[0], 2);
+                    m_succCount = 2;
                 }
                 break;
             }
@@ -64,6 +66,7 @@ public readonly ref partial struct BBSuccBlockList
                 // been computed.
                 var ehfTargets = block.EhfTargets;
                 m_succs = (ehfTargets is not null) ? ehfTargets.Succs : [];
+                m_succCount = m_succs.Length;
                 break;
             }
 
@@ -71,6 +74,7 @@ public readonly ref partial struct BBSuccBlockList
             {
                 // We don't use the m_succs in-line data for switches; use the existing jump table in the block.
                 m_succs = block.SwitchTargets.Succs;
+                m_succCount = m_succs.Length;
                 break;
             }
 
@@ -83,7 +87,11 @@ public readonly ref partial struct BBSuccBlockList
     }
 
     [UnscopedRef]
-    public readonly BlockEnumerator GetEnumerator() => new BlockEnumerator(m_succs);
+    public readonly BlockEnumerator GetEnumerator()
+    {
+        var succs = (m_succCount <= 2) ? m_succsInline : m_succs;
+        return new BlockEnumerator(succs[0..m_succCount]);
+    }
 
     [InlineArray(2)]
     private struct succsInlineArray

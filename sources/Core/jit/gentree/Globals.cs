@@ -34,7 +34,7 @@ public partial class Globals
     public const int GT_ARR_MAX_RANK = 3;
 
     // We use the following format when printing the Statement number: Statement->GetID()
-    // This define is used with string concatenation to put this in printf format strings  (Note that %u means unsigned int)
+    // This define is used with string concatenation to put this in printf format strings
     public static string FMT_STMT(int id) => $"STMT{id:D5}";
 
     // GTF_SPILL or GTF_SPILLED flag on a multi-reg node indicates that one or

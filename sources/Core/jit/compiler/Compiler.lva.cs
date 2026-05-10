@@ -557,7 +557,7 @@ public partial class Compiler
 
             if (lvaEnregEHVars && varDsc.lvLiveInOutOfHndlr)
             {
-                jitprintf("%c", varDsc.lvSingleDefDisqualifyReason);
+                jitprintf($"{(char)(varDsc.lvSingleDefDisqualifyReason)}");
             }
 
             if (varDsc.DoNotEnregisterReason == DoNotEnregisterReason.LocalField)
@@ -1891,7 +1891,7 @@ public partial class Compiler
         assert(varDsc.lvClassHnd == NO_CLASS_HANDLE);
         assert(!varDsc.lvClassIsExact);
 
-        JITDUMP($"\nlvaSetClass: setting class for V{varNum:D2} to ({dspPtr(clsHnd)}) {eeGetClassName(clsHnd)} {(isExact ? " [exact]" : "")}\n");
+        JITDUMP($"\nlvaSetClass: setting class for V{varNum:D2} to ({dspPtr(clsHnd):X}) {eeGetClassName(clsHnd)} {(isExact ? " [exact]" : "")}\n");
 
         varDsc.lvClassHnd = clsHnd;
         varDsc.lvClassIsExact = isExact;

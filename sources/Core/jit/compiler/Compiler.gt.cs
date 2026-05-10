@@ -124,7 +124,7 @@ public partial class Compiler
 
         if (prefixMsg is not null)
         {
-            jitprintf("%s", prefixMsg);
+            jitprintf(prefixMsg);
         }
 
         const bool topOnly = true;

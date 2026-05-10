@@ -790,8 +790,7 @@ public partial class Compiler
             assert(inlineCandidateInfo.clsHandle == info.compClassHnd);
             assert(inlineCandidateInfo.clsAttr == info.compCompHnd->getClassAttribs(info.compClassHnd));
 
-            // printf("%x != %x\n", inlineCandidateInfo.clsAttr,
-            // info.compCompHnd->getClassAttribs(info.compClassHnd));
+            // jitprintf($"{inlineCandidateInfo.clsAttr:X} != {info.compCompHnd->getClassAttribs(info.compClassHnd):X}\n");
             info.compClassAttr = inlineCandidateInfo.clsAttr;
         }
         else
@@ -1070,7 +1069,7 @@ public partial class Compiler
 
             if (frameSizeUpdate != 0)
             {
-                JITDUMP("Mismatched altjit + OSR -- updating tier0 frame size from %d to %d\n", totalFrameSize, totalFrameSize + frameSizeUpdate);
+                JITDUMP($"Mismatched altjit + OSR -- updating tier0 frame size from {totalFrameSize} to {totalFrameSize + frameSizeUpdate}\n");
 
                 // Allocate a local copy with altered frame size.
                 var patchpointInfoSize = PatchpointInfo.ComputeSize(info.compLocalsCount);
@@ -2383,13 +2382,13 @@ public partial class Compiler
 
             if (jitFlags->IsSet(JitFlags.JIT_FLAG_OSR))
             {
-                jitprintf("OPTIONS: OSR variant with entry point 0x%x\n", info.compILEntry);
+                jitprintf($"OPTIONS: OSR variant with entry point 0x{info.compILEntry:X}\n");
             }
 
-            jitprintf("OPTIONS: compCodeOpt = %s\n", (opts.compCodeOpt is BLENDED_CODE) ? "BLENDED_CODE"
-                                                      : (opts.compCodeOpt is SMALL_CODE) ? "SMALL_CODE"
-                                                       : (opts.compCodeOpt is FAST_CODE) ? "FAST_CODE"
-                                                                                         : "UNKNOWN_CODE");
+            jitprintf($"OPTIONS: compCodeOpt = {(opts.compCodeOpt is BLENDED_CODE ? "BLENDED_CODE"
+                                                 : opts.compCodeOpt is SMALL_CODE ? "SMALL_CODE"
+                                                  : opts.compCodeOpt is FAST_CODE ? "FAST_CODE"
+                                                                                  : "UNKNOWN_CODE")}\n");
 
             jitprintf($"OPTIONS: compDbgCode = {dspBool(opts.compDbgCode)}\n");
             jitprintf($"OPTIONS: compDbgInfo = {dspBool(opts.compDbgInfo)}\n");
@@ -3831,7 +3830,7 @@ public partial class Compiler
 #if DEBUG
             if (compiler.verbose && !compiler.compIsForInlining)
             {
-                jitprintf("OPTIONS: opts.MinOpts() == %s\n", compiler.opts.MinOpts ? "true" : "false");
+                jitprintf($"OPTIONS: opts.MinOpts() == {(compiler.opts.MinOpts ? "true" : "false")}\n");
             }
 #endif
 

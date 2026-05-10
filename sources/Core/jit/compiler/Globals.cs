@@ -158,7 +158,7 @@ public partial class Globals
     public static void DEBUG_DESTROY_NODE(GenTree tree)
     {
 #if DEBUG
-        // jitprintf("DEBUG_DESTROY_NODE for [0x%08x]\n", tree);
+        // jitprintf($"DEBUG_DESTROY_NODE for [0x{tree.TreeId:X8}]\n", tree);
 
         // Save gtOper in case we want to find out what this node was
         tree._operSave = tree._oper;

@@ -174,12 +174,12 @@ public sealed class FlowEdge
 
     public void decrementDupCount(int dupCount = 1)
     {
+        assert(m_dupCount >= dupCount);
         m_dupCount -= dupCount;
     }
 
     public void incrementDupCount(int dupCount = 1)
     {
-        assert(m_dupCount >= dupCount);
         m_dupCount += dupCount;
     }
 }

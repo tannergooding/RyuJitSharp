@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace RyuJitSharp;
 
@@ -329,6 +330,307 @@ public static class OPCODEExtensions
         InlineNone,                 // CEE_ILLEGAL
         InlineNone,                 // CEE_MACRO_END
         InlineNone,                 // CEE_CODE_LABEL
+#endif
+    ];
+
+    private static ReadOnlySpan<OpFlow> s_flowKinds => [
+        FLOW_NEXT,              // CEE_NOP
+        FLOW_BREAK,             // CEE_BREAK
+        FLOW_NEXT,              // CEE_LDARG_0
+        FLOW_NEXT,              // CEE_LDARG_1
+        FLOW_NEXT,              // CEE_LDARG_2
+        FLOW_NEXT,              // CEE_LDARG_3
+        FLOW_NEXT,              // CEE_LDLOC_0
+        FLOW_NEXT,              // CEE_LDLOC_1
+        FLOW_NEXT,              // CEE_LDLOC_2
+        FLOW_NEXT,              // CEE_LDLOC_3
+        FLOW_NEXT,              // CEE_STLOC_0
+        FLOW_NEXT,              // CEE_STLOC_1
+        FLOW_NEXT,              // CEE_STLOC_2
+        FLOW_NEXT,              // CEE_STLOC_3
+        FLOW_NEXT,              // CEE_LDARG_S
+        FLOW_NEXT,              // CEE_LDARGA_S
+        FLOW_NEXT,              // CEE_STARG_S
+        FLOW_NEXT,              // CEE_LDLOC_S
+        FLOW_NEXT,              // CEE_LDLOCA_S
+        FLOW_NEXT,              // CEE_STLOC_S
+        FLOW_NEXT,              // CEE_LDNULL
+        FLOW_NEXT,              // CEE_LDC_I4_M1
+        FLOW_NEXT,              // CEE_LDC_I4_0
+        FLOW_NEXT,              // CEE_LDC_I4_1
+        FLOW_NEXT,              // CEE_LDC_I4_2
+        FLOW_NEXT,              // CEE_LDC_I4_3
+        FLOW_NEXT,              // CEE_LDC_I4_4
+        FLOW_NEXT,              // CEE_LDC_I4_5
+        FLOW_NEXT,              // CEE_LDC_I4_6
+        FLOW_NEXT,              // CEE_LDC_I4_7
+        FLOW_NEXT,              // CEE_LDC_I4_8
+        FLOW_NEXT,              // CEE_LDC_I4_S
+        FLOW_NEXT,              // CEE_LDC_I4
+        FLOW_NEXT,              // CEE_LDC_I8
+        FLOW_NEXT,              // CEE_LDC_R4
+        FLOW_NEXT,              // CEE_LDC_R8
+        FLOW_NEXT,              // CEE_UNUSED49
+        FLOW_NEXT,              // CEE_DUP
+        FLOW_NEXT,              // CEE_POP
+        FLOW_CALL,              // CEE_JMP
+        FLOW_CALL,              // CEE_CALL
+        FLOW_CALL,              // CEE_CALLI
+        FLOW_RETURN,            // CEE_RET
+        FLOW_BRANCH,            // CEE_BR_S
+        FLOW_COND_BRANCH,       // CEE_BRFALSE_S
+        FLOW_COND_BRANCH,       // CEE_BRTRUE_S
+        FLOW_COND_BRANCH,       // CEE_BEQ_S
+        FLOW_COND_BRANCH,       // CEE_BGE_S
+        FLOW_COND_BRANCH,       // CEE_BGT_S
+        FLOW_COND_BRANCH,       // CEE_BLE_S
+        FLOW_COND_BRANCH,       // CEE_BLT_S
+        FLOW_COND_BRANCH,       // CEE_BNE_UN_S
+        FLOW_COND_BRANCH,       // CEE_BGE_UN_S
+        FLOW_COND_BRANCH,       // CEE_BGT_UN_S
+        FLOW_COND_BRANCH,       // CEE_BLE_UN_S
+        FLOW_COND_BRANCH,       // CEE_BLT_UN_S
+        FLOW_BRANCH,            // CEE_BR
+        FLOW_COND_BRANCH,       // CEE_BRFALSE
+        FLOW_COND_BRANCH,       // CEE_BRTRUE
+        FLOW_COND_BRANCH,       // CEE_BEQ
+        FLOW_COND_BRANCH,       // CEE_BGE
+        FLOW_COND_BRANCH,       // CEE_BGT
+        FLOW_COND_BRANCH,       // CEE_BLE
+        FLOW_COND_BRANCH,       // CEE_BLT
+        FLOW_COND_BRANCH,       // CEE_BNE_UN
+        FLOW_COND_BRANCH,       // CEE_BGE_UN
+        FLOW_COND_BRANCH,       // CEE_BGT_UN
+        FLOW_COND_BRANCH,       // CEE_BLE_UN
+        FLOW_COND_BRANCH,       // CEE_BLT_UN
+        FLOW_COND_BRANCH,       // CEE_SWITCH
+        FLOW_NEXT,              // CEE_LDIND_I1
+        FLOW_NEXT,              // CEE_LDIND_U1
+        FLOW_NEXT,              // CEE_LDIND_I2
+        FLOW_NEXT,              // CEE_LDIND_U2
+        FLOW_NEXT,              // CEE_LDIND_I4
+        FLOW_NEXT,              // CEE_LDIND_U4
+        FLOW_NEXT,              // CEE_LDIND_I8
+        FLOW_NEXT,              // CEE_LDIND_I
+        FLOW_NEXT,              // CEE_LDIND_R4
+        FLOW_NEXT,              // CEE_LDIND_R8
+        FLOW_NEXT,              // CEE_LDIND_REF
+        FLOW_NEXT,              // CEE_STIND_REF
+        FLOW_NEXT,              // CEE_STIND_I1
+        FLOW_NEXT,              // CEE_STIND_I2
+        FLOW_NEXT,              // CEE_STIND_I4
+        FLOW_NEXT,              // CEE_STIND_I8
+        FLOW_NEXT,              // CEE_STIND_R4
+        FLOW_NEXT,              // CEE_STIND_R8
+        FLOW_NEXT,              // CEE_ADD
+        FLOW_NEXT,              // CEE_SUB
+        FLOW_NEXT,              // CEE_MUL
+        FLOW_NEXT,              // CEE_DIV
+        FLOW_NEXT,              // CEE_DIV_UN
+        FLOW_NEXT,              // CEE_REM
+        FLOW_NEXT,              // CEE_REM_UN
+        FLOW_NEXT,              // CEE_AND
+        FLOW_NEXT,              // CEE_OR
+        FLOW_NEXT,              // CEE_XOR
+        FLOW_NEXT,              // CEE_SHL
+        FLOW_NEXT,              // CEE_SHR
+        FLOW_NEXT,              // CEE_SHR_UN
+        FLOW_NEXT,              // CEE_NEG
+        FLOW_NEXT,              // CEE_NOT
+        FLOW_NEXT,              // CEE_CONV_I1
+        FLOW_NEXT,              // CEE_CONV_I2
+        FLOW_NEXT,              // CEE_CONV_I4
+        FLOW_NEXT,              // CEE_CONV_I8
+        FLOW_NEXT,              // CEE_CONV_R4
+        FLOW_NEXT,              // CEE_CONV_R8
+        FLOW_NEXT,              // CEE_CONV_U4
+        FLOW_NEXT,              // CEE_CONV_U8
+        FLOW_CALL,              // CEE_CALLVIRT
+        FLOW_NEXT,              // CEE_CPOBJ
+        FLOW_NEXT,              // CEE_LDOBJ
+        FLOW_NEXT,              // CEE_LDSTR
+        FLOW_CALL,              // CEE_NEWOBJ
+        FLOW_NEXT,              // CEE_CASTCLASS
+        FLOW_NEXT,              // CEE_ISINST
+        FLOW_NEXT,              // CEE_CONV_R_UN
+        FLOW_NEXT,              // CEE_UNUSED58
+        FLOW_NEXT,              // CEE_UNUSED1
+        FLOW_NEXT,              // CEE_UNBOX
+        FLOW_THROW,             // CEE_THROW
+        FLOW_NEXT,              // CEE_LDFLD
+        FLOW_NEXT,              // CEE_LDFLDA
+        FLOW_NEXT,              // CEE_STFLD
+        FLOW_NEXT,              // CEE_LDSFLD
+        FLOW_NEXT,              // CEE_LDSFLDA
+        FLOW_NEXT,              // CEE_STSFLD
+        FLOW_NEXT,              // CEE_STOBJ
+        FLOW_NEXT,              // CEE_CONV_OVF_I1_UN
+        FLOW_NEXT,              // CEE_CONV_OVF_I2_UN
+        FLOW_NEXT,              // CEE_CONV_OVF_I4_UN
+        FLOW_NEXT,              // CEE_CONV_OVF_I8_UN
+        FLOW_NEXT,              // CEE_CONV_OVF_U1_UN
+        FLOW_NEXT,              // CEE_CONV_OVF_U2_UN
+        FLOW_NEXT,              // CEE_CONV_OVF_U4_UN
+        FLOW_NEXT,              // CEE_CONV_OVF_U8_UN
+        FLOW_NEXT,              // CEE_CONV_OVF_I_UN
+        FLOW_NEXT,              // CEE_CONV_OVF_U_UN
+        FLOW_NEXT,              // CEE_BOX
+        FLOW_NEXT,              // CEE_NEWARR
+        FLOW_NEXT,              // CEE_LDLEN
+        FLOW_NEXT,              // CEE_LDELEMA
+        FLOW_NEXT,              // CEE_LDELEM_I1
+        FLOW_NEXT,              // CEE_LDELEM_U1
+        FLOW_NEXT,              // CEE_LDELEM_I2
+        FLOW_NEXT,              // CEE_LDELEM_U2
+        FLOW_NEXT,              // CEE_LDELEM_I4
+        FLOW_NEXT,              // CEE_LDELEM_U4
+        FLOW_NEXT,              // CEE_LDELEM_I8
+        FLOW_NEXT,              // CEE_LDELEM_I
+        FLOW_NEXT,              // CEE_LDELEM_R4
+        FLOW_NEXT,              // CEE_LDELEM_R8
+        FLOW_NEXT,              // CEE_LDELEM_REF
+        FLOW_NEXT,              // CEE_STELEM_I
+        FLOW_NEXT,              // CEE_STELEM_I1
+        FLOW_NEXT,              // CEE_STELEM_I2
+        FLOW_NEXT,              // CEE_STELEM_I4
+        FLOW_NEXT,              // CEE_STELEM_I8
+        FLOW_NEXT,              // CEE_STELEM_R4
+        FLOW_NEXT,              // CEE_STELEM_R8
+        FLOW_NEXT,              // CEE_STELEM_REF
+        FLOW_NEXT,              // CEE_LDELEM
+        FLOW_NEXT,              // CEE_STELEM
+        FLOW_NEXT,              // CEE_UNBOX_ANY
+        FLOW_NEXT,              // CEE_UNUSED5
+        FLOW_NEXT,              // CEE_UNUSED6
+        FLOW_NEXT,              // CEE_UNUSED7
+        FLOW_NEXT,              // CEE_UNUSED8
+        FLOW_NEXT,              // CEE_UNUSED9
+        FLOW_NEXT,              // CEE_UNUSED10
+        FLOW_NEXT,              // CEE_UNUSED11
+        FLOW_NEXT,              // CEE_UNUSED12
+        FLOW_NEXT,              // CEE_UNUSED13
+        FLOW_NEXT,              // CEE_UNUSED14
+        FLOW_NEXT,              // CEE_UNUSED15
+        FLOW_NEXT,              // CEE_UNUSED16
+        FLOW_NEXT,              // CEE_UNUSED17
+        FLOW_NEXT,              // CEE_CONV_OVF_I1
+        FLOW_NEXT,              // CEE_CONV_OVF_U1
+        FLOW_NEXT,              // CEE_CONV_OVF_I2
+        FLOW_NEXT,              // CEE_CONV_OVF_U2
+        FLOW_NEXT,              // CEE_CONV_OVF_I4
+        FLOW_NEXT,              // CEE_CONV_OVF_U4
+        FLOW_NEXT,              // CEE_CONV_OVF_I8
+        FLOW_NEXT,              // CEE_CONV_OVF_U8
+        FLOW_NEXT,              // CEE_UNUSED50
+        FLOW_NEXT,              // CEE_UNUSED18
+        FLOW_NEXT,              // CEE_UNUSED19
+        FLOW_NEXT,              // CEE_UNUSED20
+        FLOW_NEXT,              // CEE_UNUSED21
+        FLOW_NEXT,              // CEE_UNUSED22
+        FLOW_NEXT,              // CEE_UNUSED23
+        FLOW_NEXT,              // CEE_REFANYVAL
+        FLOW_NEXT,              // CEE_CKFINITE
+        FLOW_NEXT,              // CEE_UNUSED24
+        FLOW_NEXT,              // CEE_UNUSED25
+        FLOW_NEXT,              // CEE_MKREFANY
+        FLOW_NEXT,              // CEE_UNUSED59
+        FLOW_NEXT,              // CEE_UNUSED60
+        FLOW_NEXT,              // CEE_UNUSED61
+        FLOW_NEXT,              // CEE_UNUSED62
+        FLOW_NEXT,              // CEE_UNUSED63
+        FLOW_NEXT,              // CEE_UNUSED64
+        FLOW_NEXT,              // CEE_UNUSED65
+        FLOW_NEXT,              // CEE_UNUSED66
+        FLOW_NEXT,              // CEE_UNUSED67
+        FLOW_NEXT,              // CEE_LDTOKEN
+        FLOW_NEXT,              // CEE_CONV_U2
+        FLOW_NEXT,              // CEE_CONV_U1
+        FLOW_NEXT,              // CEE_CONV_I
+        FLOW_NEXT,              // CEE_CONV_OVF_I
+        FLOW_NEXT,              // CEE_CONV_OVF_U
+        FLOW_NEXT,              // CEE_ADD_OVF
+        FLOW_NEXT,              // CEE_ADD_OVF_UN
+        FLOW_NEXT,              // CEE_MUL_OVF
+        FLOW_NEXT,              // CEE_MUL_OVF_UN
+        FLOW_NEXT,              // CEE_SUB_OVF
+        FLOW_NEXT,              // CEE_SUB_OVF_UN
+        FLOW_RETURN,            // CEE_ENDFINALLY
+        FLOW_BRANCH,            // CEE_LEAVE
+        FLOW_BRANCH,            // CEE_LEAVE_S
+        FLOW_NEXT,              // CEE_STIND_I
+        FLOW_NEXT,              // CEE_CONV_U
+        FLOW_NEXT,              // CEE_UNUSED26
+        FLOW_NEXT,              // CEE_UNUSED27
+        FLOW_NEXT,              // CEE_UNUSED28
+        FLOW_NEXT,              // CEE_UNUSED29
+        FLOW_NEXT,              // CEE_UNUSED30
+        FLOW_NEXT,              // CEE_UNUSED31
+        FLOW_NEXT,              // CEE_UNUSED32
+        FLOW_NEXT,              // CEE_UNUSED33
+        FLOW_NEXT,              // CEE_UNUSED34
+        FLOW_NEXT,              // CEE_UNUSED35
+        FLOW_NEXT,              // CEE_UNUSED36
+        FLOW_NEXT,              // CEE_UNUSED37
+        FLOW_NEXT,              // CEE_UNUSED38
+        FLOW_NEXT,              // CEE_UNUSED39
+        FLOW_NEXT,              // CEE_UNUSED40
+        FLOW_NEXT,              // CEE_UNUSED41
+        FLOW_NEXT,              // CEE_UNUSED42
+        FLOW_NEXT,              // CEE_UNUSED43
+        FLOW_NEXT,              // CEE_UNUSED44
+        FLOW_NEXT,              // CEE_UNUSED45
+        FLOW_NEXT,              // CEE_UNUSED46
+        FLOW_NEXT,              // CEE_UNUSED47
+        FLOW_NEXT,              // CEE_UNUSED48
+        FLOW_META,              // CEE_PREFIX7
+        FLOW_META,              // CEE_PREFIX6
+        FLOW_META,              // CEE_PREFIX5
+        FLOW_META,              // CEE_PREFIX4
+        FLOW_META,              // CEE_PREFIX3
+        FLOW_META,              // CEE_PREFIX2
+        FLOW_META,              // CEE_PREFIX1
+        FLOW_META,              // CEE_PREFIXREF
+
+        FLOW_NEXT,              // CEE_ARGLIST
+        FLOW_NEXT,              // CEE_CEQ
+        FLOW_NEXT,              // CEE_CGT
+        FLOW_NEXT,              // CEE_CGT_UN
+        FLOW_NEXT,              // CEE_CLT
+        FLOW_NEXT,              // CEE_CLT_UN
+        FLOW_NEXT,              // CEE_LDFTN
+        FLOW_NEXT,              // CEE_LDVIRTFTN
+        FLOW_NEXT,              // CEE_UNUSED56
+        FLOW_NEXT,              // CEE_LDARG
+        FLOW_NEXT,              // CEE_LDARGA
+        FLOW_NEXT,              // CEE_STARG
+        FLOW_NEXT,              // CEE_LDLOC
+        FLOW_NEXT,              // CEE_LDLOCA
+        FLOW_NEXT,              // CEE_STLOC
+        FLOW_NEXT,              // CEE_LOCALLOC
+        FLOW_NEXT,              // CEE_UNUSED57
+        FLOW_RETURN,            // CEE_ENDFILTER
+        FLOW_META,              // CEE_UNALIGNED
+        FLOW_META,              // CEE_VOLATILE
+        FLOW_META,              // CEE_TAILCALL
+        FLOW_NEXT,              // CEE_INITOBJ
+        FLOW_META,              // CEE_CONSTRAINED
+        FLOW_NEXT,              // CEE_CPBLK
+        FLOW_NEXT,              // CEE_INITBLK
+        FLOW_NEXT,              // CEE_UNUSED69
+        FLOW_THROW,             // CEE_RETHROW
+        FLOW_NEXT,              // CEE_UNUSED51
+        FLOW_NEXT,              // CEEOF
+        FLOW_NEXT,              // CEE_REFANYTYPE
+        FLOW_META,              // CEE_READONLY
+        FLOW_NEXT,              // CEE_UNUSED53
+        FLOW_NEXT,              // CEE_UNUSED54
+        FLOW_NEXT,              // CEE_UNUSED55
+        FLOW_NEXT,              // CEE_UNUSED70
+
+#if !OPDEF_REAL_OPCODES_ONLY
+        FLOW_META,              // CEE_ILLEGAL
+        FLOW_META,              // CEE_MACRO_END
+        FLOW_META,              // CEE_CODE_LABEL
 #endif
     ];
 
@@ -944,6 +1246,15 @@ public static class OPCODEExtensions
             {
                 assert(s_argKinds.Length == (int)(CEE_COUNT));
                 return s_argKinds[(int)(opcode)];
+            }
+        }
+
+        public OpFlow FlowKind
+        {
+            get
+            {
+                assert(s_flowKinds.Length == (int)(CEE_COUNT));
+                return s_flowKinds[(int)(opcode)];
             }
         }
 
