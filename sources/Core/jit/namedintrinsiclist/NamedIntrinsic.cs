@@ -140,6 +140,7 @@ public enum NamedIntrinsic : ushort
     NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference,
 
     NI_System_String_Equals,
+    NI_System_String_FastAllocateString,
     NI_System_String_get_Chars,
     NI_System_String_get_Length,
     NI_System_String_op_Implicit,
@@ -2602,8 +2603,8 @@ public enum NamedIntrinsic : ushort
 #endif
 
 #if FEATURE_SIMD
-    NI_SIMD_UpperRestore,
-    NI_SIMD_UpperSave,
+    NI_Simd_UpperRestore,
+    NI_Simd_UpperSave,
 #endif
 
     //

@@ -603,7 +603,7 @@ public partial class Compiler
                     {
                         var clsHnd = eeGetArgClass(sigInfo, argLst);
 
-                        // For some SIMD struct types we can get a null back from eeGetArgClass on Linux/X64
+                        // For some simd struct types we can get a null back from eeGetArgClass on Linux/X64
                         if (clsHnd != NO_CLASS_HANDLE)
                         {
                             _ = eePrintType(stringBuilder, clsHnd, true);

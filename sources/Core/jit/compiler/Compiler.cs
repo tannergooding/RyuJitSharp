@@ -194,11 +194,11 @@ public partial class Compiler
     public ICodeGen? codeGen;
 
 #if FEATURE_SIMD
-    /// <summary>Have we identified any SIMD types?</summary>
-    /// <remarks>This is currently used by struct promotion to avoid getting type information for a struct field to see if it is a SIMD type, if we haven't seen any SIMD types or operations in the method.</remarks>
+    /// <summary>Have we identified any simd types?</summary>
+    /// <remarks>This is currently used by struct promotion to avoid getting type information for a struct field to see if it is a simd type, if we haven't seen any simd types or operations in the method.</remarks>
     public bool _usesSimdTypes;
 
-    public SimdHandlesCache? m_simdHandleCache;
+    public simdHandlesCache? m_SimdHandleCache;
 #endif
 
     /// <summary>The Compiler instance for the inlinee</summary>
@@ -266,7 +266,7 @@ public partial class Compiler
     // Max value of scope count for which we would use linear search; for larger values we would use hashtable lookup.
     public const int MAX_LINEAR_FIND_LCL_SCOPELIST = 32;
 
-    public EntryState? stackState;
+    public EntryState stackState;
 
     /// <summary>Address of global cookie for unsafe buffer checks</summary>
     public unsafe GSCookie* gsGlobalSecurityCookieAddr;
@@ -311,7 +311,7 @@ public partial class Compiler
 #if TARGET_AMD64
     // The following are for initializing register allocator "constants" defined in targetamd64.h
     // that now depend upon runtime ISA information, e.g., the presence of AVX512, which increases
-    // the number of SIMD (xmm, ymm, and zmm) registers from 16 to 32.
+    // the number of simd (xmm, ymm, and zmm) registers from 16 to 32.
     // As only 64-bit xarch has the capability to have the additional registers, we limit the changes
     // to TARGET_AMD64 only.
     //
@@ -693,18 +693,18 @@ public partial class Compiler
         }
     }
 
-    /// <summary>Returns the codegen type for a given SIMD size.</summary>
+    /// <summary>Returns the codegen type for a given simd size.</summary>
     /// <param name="size"></param>
     /// <returns></returns>
     public static var_types GetSimdTypeForSize(int size) => size switch {
-        8 => TYP_SIMD8,
-        12 => TYP_SIMD12,
-        16 => TYP_SIMD16,
+        8 => TYP_Simd8,
+        12 => TYP_Simd12,
+        16 => TYP_Simd16,
 #if TARGET_XARCH
-        32 => TYP_SIMD32,
-        64 => TYP_SIMD64,
+        32 => TYP_Simd32,
+        64 => TYP_Simd64,
 #elif TARGET_ARM64
-        SIZE_UNKNOWN => TYP_SIMD,
+        SIZE_UNKNOWN => TYP_Simd,
 #endif
         _ => TYP_UNDEF,
     };
@@ -764,6 +764,12 @@ public partial class Compiler
 
     public unsafe nint dspPtr(void* ptr) => dspOffset(unchecked((nint)(ptr)));
 
+    private void FreeBlockListNode(BlockListNode node)
+    {
+        node.Next = impBlockListNodeFreeList;
+        impBlockListNodeFreeList = node;
+    }
+
     public void FinalizeEH()
     {
         // We should not make any more alterations to the EH table structure.
@@ -814,6 +820,16 @@ public partial class Compiler
 
                 assert((arrayLength is null) || ((optMethodFlags & OMF_HAS_NEWARRAY) != 0));
             }
+            else if (call.IsSpecialIntrinsic(this, NI_System_String_FastAllocateString))
+            {
+                // String characters start at a different offset than array data, but string length itself is a GT_ARR_LENGTH.
+                assert(call.Args.CountUserArgs() == 2);
+
+                var callArg = call.Args.GetUserArgByIndex(1);
+                assert(callArg is not null);
+
+                arrayLength = callArg.Node;
+            }
         }
 
         if (arrayLength is not null)
@@ -843,7 +859,7 @@ public partial class Compiler
     }
 
     // getMaxVectorByteLength
-    // The minimum SIMD size supported by System.Numeric.Vectors or System.Runtime.Intrinsic
+    // The minimum simd size supported by System.Numeric.Vectors or System.Runtime.Intrinsic
     // Arm.AdvSimd:  16-byte Vector<T> and Vector128<T>
     // X86.SSE:      16-byte Vector<T> and Vector128<T>
     // X86.AVX:      16-byte Vector<T> and Vector256<T>
@@ -875,7 +891,7 @@ public partial class Compiler
     public unsafe CORINFO_CLASS_HANDLE getMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, int index)
         => info.compCompHnd->getMethodInstantiationArgument(ftn, index);
 
-    public int GetMinVectorByteLength() => (int)(TYP_SIMD8.EmitSize);
+    public int GetMinVectorByteLength() => (int)(TYP_Simd8.EmitSize);
 
     /// <inheritdoc cref="GetReturnTypeForStruct(CORINFO_CLASS_HANDLE, CorInfoCallConvExtension, out structPassingKind, int)" />
     public unsafe var_types GetReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd, CorInfoCallConvExtension callConv, int structSize = 0)
@@ -947,7 +963,7 @@ public partial class Compiler
                 return FP_REGSIZE_BYTES;
             }
 #else
-            assert(false, "getVectorTByteLength() unimplemented on target arch");
+            NO_WAY("getVectorTByteLength() unimplemented on target arch");
             unreached();
             return 0;
 #endif
@@ -1013,7 +1029,7 @@ public partial class Compiler
     }
 #endif
 
-    /// <summary>Use to determine if a struct *might* be a SIMD type. As this function only takes a size, many structs will fit the criteria.</summary>
+    /// <summary>Use to determine if a struct *might* be a simd type. As this function only takes a size, many structs will fit the criteria.</summary>
     /// <param name="structSize"></param>
     /// <returns></returns>
     public bool structSizeMightRepresentSimdType(nint structSize)
@@ -1095,38 +1111,38 @@ public partial class Compiler
     }
 
 #if FEATURE_SIMD
-    /// <summary>Return the base type and size of SIMD vector type given its type handle.</summary>
+    /// <summary>Return the base type and size of simd vector type given its type handle.</summary>
     /// <param name="typeHnd">The handle of the type we're interested in.</param>
     /// <param name="sizeBytes">set to size in bytes.</param>
-    /// <returns>base type of SIMD vector.</returns>
+    /// <returns>base type of simd vector.</returns>
     /// <remarks>
     ///   <para>If the size of the struct is already known call <see cref="structSizeMightRepresentSimdType" /> to determine if this api needs to be called.</para>
     ///   <para>The type handle passed here can only be used in a subset of JIT-EE calls since it may be called by promotion during AOT of a method that does not version with SPC. See CORINFO_TYPE_LAYOUT_NODE for the contract on the supported JIT-EE calls.</para>
     /// </remarks>
     private unsafe var_types getBaseTypeAndSizeOfSimdType(CORINFO_CLASS_HANDLE typeHnd, out int sizeBytes)
     {
-        var simdHandleCache = m_simdHandleCache;
+        var simdHandleCache = m_SimdHandleCache;
 
         if (simdHandleCache is null)
         {
             if (impInlineInfo is null)
             {
-                simdHandleCache = new SimdHandlesCache();
+                simdHandleCache = new simdHandlesCache();
             }
             else
             {
                 // Steal the inliner compiler's cache (create it if not available).
 
                 var inlineRoot = impInlineInfo.InlineRoot;
-                simdHandleCache = inlineRoot.m_simdHandleCache;
+                simdHandleCache = inlineRoot.m_SimdHandleCache;
 
                 if (simdHandleCache is null)
                 {
-                    simdHandleCache = new SimdHandlesCache();
-                    inlineRoot.m_simdHandleCache = simdHandleCache;
+                    simdHandleCache = new simdHandlesCache();
+                    inlineRoot.m_SimdHandleCache = simdHandleCache;
                 }
             }
-            m_simdHandleCache = simdHandleCache;
+            m_SimdHandleCache = simdHandleCache;
         }
 
         Unsafe.SkipInit(out sizeBytes);

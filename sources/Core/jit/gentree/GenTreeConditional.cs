@@ -12,7 +12,8 @@ public sealed class GenTreeConditional : GenTreeOp
     public GenTreeConditional(genTreeOps oper, var_types type, GenTree cond, GenTree op1, GenTree op2)
         : base(oper, type, op1, op2)
     {
-        _cond = cond;
+        assert(oper.IsConditional);
+         _cond = cond;
     }
 
     public GenTree Cond => _cond;

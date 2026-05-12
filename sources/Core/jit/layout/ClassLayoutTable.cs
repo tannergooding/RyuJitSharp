@@ -167,7 +167,7 @@ public sealed class ClassLayoutTable
             {
                 var layout = layoutArray[i];
 
-                if (layout.IsCustomLayout && CustomLayoutKey.Equals(key, new CustomLayoutKey(layout)))
+                if (layout.IsCustomLayout && Equals(key, new CustomLayoutKey(layout)))
                 {
                     return i;
                 }

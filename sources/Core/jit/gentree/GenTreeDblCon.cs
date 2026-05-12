@@ -11,7 +11,7 @@ public sealed class GenTreeDblCon : GenTree
 {
     private double _dconVal;
 
-    public GenTreeDblCon(double val, var_types type = TYP_DOUBLE)
+    public GenTreeDblCon(var_types type, double val)
         : base(GT_CNS_DBL, type)
     {
         assert(varTypeIsFloating(type));

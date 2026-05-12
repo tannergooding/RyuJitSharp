@@ -12,27 +12,24 @@ namespace RyuJitSharp;
 public sealed class GenTreeArrElem : GenTree
 {
     private GenTree _arrObj;
-    private ArrIndsInlineArray _arrInds;
-    private readonly byte _arrRank;
+    private GenTree[] _arrInds;
 
     // !!! Caution, this is one byte, it is used only on the optimization path of array intrinsics.
     // It stores the size of array elements WHEN it can fit into an "unsigned char".
     // This has caused VSW 571394.
     private readonly byte _arrElemSize;
 
-    public GenTreeArrElem(var_types type, GenTree arr, byte rank, byte elemSize, ReadOnlySpan<GenTree> inds)
+    public GenTreeArrElem(var_types type, GenTree arr, byte elemSize, GenTree[] inds)
         : base(GT_ARR_ELEM, type)
     {
         _arrObj = arr;
-        _arrRank = rank;
+        _arrInds = inds;
         _arrElemSize = elemSize;
 
-        assert(rank <= inds.Length);
         Flags |= (_arrObj.Flags & GTF_ALL_EFFECT);
 
-        for (byte i = 0; i < rank; i++)
+        for (var i = 0; i < inds.Length; i++)
         {
-            _arrInds[i] = inds[i];
             Flags |= (inds[i].Flags & GTF_ALL_EFFECT);
         }
 
@@ -41,7 +38,14 @@ public sealed class GenTreeArrElem : GenTree
 
     public byte ArrElemSize => _arrElemSize;
 
-    public ref ArrIndsInlineArray ArrInds => ref _arrInds;
+    public Span<GenTree> ArrInds
+    {
+        get
+        {
+            Span<GenTree> arrInds = _arrInds;
+            return arrInds[0..ArrRank];
+        }
+    }
 
     public GenTree ArrObj
     {
@@ -60,13 +64,5 @@ public sealed class GenTreeArrElem : GenTree
     public ref GenTree ArrObjRef => ref _arrObj;
 #nullable restore
 
-    public byte ArrRank => _arrRank;
-
-    [InlineArray(GT_ARR_MAX_RANK)]
-    public struct ArrIndsInlineArray
-    {
-#nullable disable
-        public GenTree e0;
-#nullable restore
-    }
+    public int ArrRank => _arrInds.Length;
 }

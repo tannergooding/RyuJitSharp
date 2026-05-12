@@ -2020,14 +2020,14 @@ public partial class Compiler
 
         if (JitConfig[ConfigMethodSet.JitBreak].contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
         {
-            assert(false, "JitBreak reached");
+            NO_WAY("JitBreak reached");
         }
 
         var jitHashBreakVal = JitConfig[ConfigInteger.JitHashBreak];
 
         if ((jitHashBreakVal is not -1) && (jitHashBreakVal == info.compMethodHash()))
         {
-            assert(false, "JitHashBreak reached");
+            NO_WAY("JitHashBreak reached");
         }
 
         if (verbose ||
@@ -2488,11 +2488,11 @@ public partial class Compiler
         varTypeCalleeTrashRegs[(int)(TYP_REF)] = (int)(RBM_INT_CALLEE_TRASH);
         varTypeCalleeTrashRegs[(int)(TYP_BYREF)] = (int)(RBM_INT_CALLEE_TRASH);
         varTypeCalleeTrashRegs[(int)(TYP_STRUCT)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegs[(int)(TYP_SIMD8)] = (int)(RBM_FLT_CALLEE_TRASH);
-        varTypeCalleeTrashRegs[(int)(TYP_SIMD12)] = (int)(RBM_FLT_CALLEE_TRASH);
-        varTypeCalleeTrashRegs[(int)(TYP_SIMD16)] = (int)(RBM_FLT_CALLEE_TRASH);
-        varTypeCalleeTrashRegs[(int)(TYP_SIMD32)] = (int)(RBM_FLT_CALLEE_TRASH);
-        varTypeCalleeTrashRegs[(int)(TYP_SIMD64)] = (int)(RBM_FLT_CALLEE_TRASH);
+        varTypeCalleeTrashRegs[(int)(TYP_Simd8)] = (int)(RBM_FLT_CALLEE_TRASH);
+        varTypeCalleeTrashRegs[(int)(TYP_Simd12)] = (int)(RBM_FLT_CALLEE_TRASH);
+        varTypeCalleeTrashRegs[(int)(TYP_Simd16)] = (int)(RBM_FLT_CALLEE_TRASH);
+        varTypeCalleeTrashRegs[(int)(TYP_Simd32)] = (int)(RBM_FLT_CALLEE_TRASH);
+        varTypeCalleeTrashRegs[(int)(TYP_Simd64)] = (int)(RBM_FLT_CALLEE_TRASH);
         varTypeCalleeTrashRegs[(int)(TYP_MASK)] = (int)(RBM_MSK_CALLEE_TRASH);
         varTypeCalleeTrashRegs[(int)(TYP_UNKNOWN)] = (int)(RBM_INT_CALLEE_TRASH);
 
@@ -3785,7 +3785,7 @@ public partial class Compiler
 
                 if (JitConfig[ConfigInteger.JitBreakOnMinOpts] != 0)
                 {
-                    assert(false, "MinOpts enabled");
+                    NO_WAY("MinOpts enabled");
                 }
             }
         }
@@ -4052,7 +4052,7 @@ public partial class Compiler
         assert(ILargNum < info.compILargsCount);
 
 #if TARGET_WASM
-        if (ILargNum >= lvaWasmSpArg)
+        if ((ILargNum >= lvaWasmSpArg) && (lvaWasmSpArg != BAD_VAR_NUM) && lvaGetDesc(lvaWasmSpArg).lvIsParam)
         {
             ILargNum++;
             assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
@@ -4212,7 +4212,7 @@ public partial class Compiler
         }
 
 #if (TARGET_WASM)
-        if (lvaWasmSpArg != BAD_VAR_NUM && originalVarNum > lvaWasmSpArg)
+        if ((lvaWasmSpArg != BAD_VAR_NUM) && (originalVarNum > lvaWasmSpArg) && lvaGetDesc(lvaWasmSpArg).lvIsParam)
         {
             varNum--;
         }

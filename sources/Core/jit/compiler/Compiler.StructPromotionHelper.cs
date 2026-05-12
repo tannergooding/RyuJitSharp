@@ -148,7 +148,7 @@ public partial class Compiler
                     }
 
                     promField.fldType = fldType;
-                    promField.fldSIMDTypeHnd = node.simdTypeHnd;
+                    promField.fldSimdTypeHnd = node.simdTypeHnd;
                     AdvanceSubTree(treeNodes, numTreeNodes, ref i);
                 }
                 else
@@ -231,8 +231,8 @@ public partial class Compiler
             assert(varTypeIsStruct(varDsc.Type));
             assert(!varDsc.lvPromoted); // Don't ask again :)
 
-            // If this lclVar is used in a SIMD intrinsic, then we don't want to struct promote it.
-            // Note, however, that SIMD lclVars that are NOT used in a SIMD intrinsic may be
+            // If this lclVar is used in a simd intrinsic, then we don't want to struct promote it.
+            // Note, however, that simd lclVars that are NOT used in a simd intrinsic may be
             // profitably promoted.
             if (varDsc.lvIsUsedInSimdIntrinsic)
             {
@@ -322,8 +322,8 @@ public partial class Compiler
 
                         // Non-HFA structs are always passed in general purpose registers.
                         // If there are any floating point fields, don't promote for now.
-                        // Likewise, since HVA structs are passed in SIMD registers
-                        // promotion of non FP or SIMD type fields is disallowed.
+                        // Likewise, since HVA structs are passed in simd registers
+                        // promotion of non FP or simd type fields is disallowed.
                         // TODO-1stClassStructs: add support in Lowering and prolog generation
                         // to enable promoting these types.
 
@@ -332,11 +332,11 @@ public partial class Compiler
                             canPromote = false;
                         }
 #if FEATURE_SIMD
-                        // If we have a register-passed struct with mixed non-opaque SIMD types (i.e. with defined fields)
-                        // and non-SIMD types, we don't currently handle that case in the prolog, so we can't promote.
+                        // If we have a register-passed struct with mixed non-opaque simd types (i.e. with defined fields)
+                        // and non-simd types, we don't currently handle that case in the prolog, so we can't promote.
                         else if ((fieldCnt > 1) && varTypeIsStruct(fieldType) &&
-                                 (structPromotionInfo.fields[i].fldSIMDTypeHnd != NO_CLASS_HANDLE) &&
-                                 !m_compiler.isOpaqueSIMDType(structPromotionInfo.fields[i].fldSIMDTypeHnd))
+                                 (structPromotionInfo.fields[i].fldSimdTypeHnd != NO_CLASS_HANDLE) &&
+                                 !m_compiler.isOpaqueSimdType(structPromotionInfo.fields[i].fldSimdTypeHnd))
                         {
                             canPromote = false;
                         }
@@ -348,7 +348,7 @@ public partial class Compiler
                 {
                     SortStructFields();
 
-                    // Only promote if the field types match the registers, unless we have a single SIMD field.
+                    // Only promote if the field types match the registers, unless we have a single simd field.
                     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
                     m_compiler.eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
 
@@ -356,7 +356,7 @@ public partial class Compiler
 
                     if ((structPromotionInfo.fieldCnt == 1) && varTypeIsSimd(structPromotionInfo.fields[0].fldType))
                     {
-                        // Allow the case of promoting a single SIMD field, even if there are multiple registers.
+                        // Allow the case of promoting a single simd field, even if there are multiple registers.
                         // We will fix this up in the prolog.
                     }
                     else if (structPromotionInfo.fieldCnt != regCount)
@@ -370,7 +370,7 @@ public partial class Compiler
                             ref var fieldInfo = ref structPromotionInfo.fields[i];
                             var fieldType = fieldInfo.fldType;
 
-                            // We don't currently support passing SIMD types in registers.
+                            // We don't currently support passing simd types in registers.
                             if (varTypeIsSimd(fieldType))
                             {
                                 canPromote = false;
@@ -444,7 +444,7 @@ public partial class Compiler
                     if ((structPromotionInfo.fieldCnt != 2) &&
                         ((structPromotionInfo.fieldCnt != 1) || !varTypeIsSimd(structPromotionInfo.fields[0].fldType)))
                     {
-                        JITDUMP($"Not promoting multireg struct local V{lclNum:D2}, because lvIsParam is true, #fields != 2 and it's not a single SIMD.\n");
+                        JITDUMP($"Not promoting multireg struct local V{lclNum:D2}, because lvIsParam is true, #fields != 2 and it's not a single simd.\n");
                         shouldPromote = false;
                     }
 #if TARGET_LOONGARCH64 || TARGET_RISCV64
@@ -589,13 +589,13 @@ public partial class Compiler
                     // be promoting this if we didn't think it could be enregistered.
                     fieldVarDsc.lvRegStruct = true;
 
-                    // SIMD types may be HFAs so we need to set the correct state on
+                    // simd types may be HFAs so we need to set the correct state on
                     // the promoted fields to get the right ABI treatment in the
                     // backend.
                     if (GlobalJitOptions.compFeatureHfa && (fieldInfo.fldSize <= MAX_PASS_MULTIREG_BYTES))
                     {
-                        // hfaType is set to float, double or SIMD type if it is an HFA, otherwise TYP_UNDEF
-                        var hfaType = m_compiler.GetHfaType(fieldInfo.fldSIMDTypeHnd);
+                        // hfaType is set to float, double or simd type if it is an HFA, otherwise TYP_UNDEF
+                        var hfaType = m_compiler.GetHfaType(fieldInfo.fldSimdTypeHnd);
 
                         if (varTypeIsValidHfaType(hfaType))
                         {

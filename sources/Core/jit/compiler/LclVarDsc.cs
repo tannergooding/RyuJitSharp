@@ -823,7 +823,7 @@ public partial struct LclVarDsc
 
 #if FEATURE_SIMD
     /// <summary>This tells lclvar is used for simd intrinsic</summary>
-    public bool lvUsedInSIMDIntrinsic
+    public bool lvUsedInSimdIntrinsic
     {
         readonly get
         {
@@ -1154,7 +1154,7 @@ public partial struct LclVarDsc
 #endif
 
 #if FEATURE_SIMD
-    public readonly bool lvIsUsedInSimdIntrinsic => lvUsedInSIMDIntrinsic;
+    public readonly bool lvIsUsedInSimdIntrinsic => lvUsedInSimdIntrinsic;
 #else
     public const bool lvIsUsedInSimdIntrinsic = false;
 #endif
@@ -1333,11 +1333,29 @@ public partial struct LclVarDsc
     {
         readonly get
         {
+            assert(Debugger.IsAttached || lvValueSize.IsExact);
             return lvStkOffs;
         }
 
         set
         {
+            assert(lvValueSize.IsExact);
+            lvStkOffs = value;
+        }
+    }
+
+    /// <summary>This is only used for locals that have an unknown size, such as TYP_SIMD/TYP_MASK on Arm64. These locals do not have an absolute stack offset.</summary>
+    public int UnknownSizeFrameIndex
+    {
+        readonly get
+        {
+            assert(Debugger.IsAttached || !lvValueSize.IsExact);
+            return lvStkOffs;
+        }
+
+        set
+        {
+            assert(!lvValueSize.IsExact);
             lvStkOffs = value;
         }
     }
@@ -1653,9 +1671,9 @@ public partial struct LclVarDsc
         }
 
 #if FEATURE_SIMD
-        // If we return `struct A { SIMD16 a; }` we split the struct into several fields.
+        // If we return `struct A { simd16 a; }` we split the struct into several fields.
         // In order to do that we have to have its field `a` in memory. Right now lowering cannot
-        // handle RETURN struct(multiple registers)->SIMD16(one register), but it can be improved.
+        // handle RETURN struct(multiple registers)->simd16(one register), but it can be improved.
         ref var fieldDsc = ref compiler.lvaGetDesc(lvFieldLclStart);
 
         if (varTypeIsSimd(fieldDsc.Type))

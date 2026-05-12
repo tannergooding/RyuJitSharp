@@ -174,7 +174,7 @@ public struct AbiPassingSegment
                 4 => TYP_FLOAT,
                 8 => TYP_DOUBLE,
 #if FEATURE_SIMD
-                16 => TYP_SIMD16,
+                16 => TYP_Simd16,
 #endif
                 _ => TYP_UNDEF,
             };

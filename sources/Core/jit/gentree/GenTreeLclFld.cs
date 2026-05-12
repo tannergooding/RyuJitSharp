@@ -17,6 +17,7 @@ public sealed class GenTreeLclFld : GenTreeLclVarCommon
     public GenTreeLclFld(genTreeOps oper, var_types type, int lclNum, ushort lclOffs, ClassLayout? layout = null)
         : base(oper, type, lclNum)
     {
+        assert(oper is GT_LCL_FLD or GT_LCL_ADDR);
         _lclOffs = lclOffs;
         _layout = layout;
     }

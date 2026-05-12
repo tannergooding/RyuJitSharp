@@ -16,6 +16,7 @@ public sealed class GenTreeCopyOrReload : GenTreeUnOp
     public GenTreeCopyOrReload(genTreeOps oper, var_types type, GenTree op1)
         : base(oper, type, op1)
     {
+        assert(oper.IsCopyOrReload);
         assert((type is not TYP_STRUCT) || op1.IsMultiRegNode);
         RegNum = REG_NA;
         ClearOtherRegs();
@@ -56,10 +57,10 @@ public sealed class GenTreeCopyOrReload : GenTreeUnOp
     }
 
     /// <summary>copy multi-reg state from the given copy/reload node to this node.</summary>
-    /// <param name="from">GenTree node from which to copy multi-reg state</param>
-    public void CopyOtherRegs(GenTreeCopyOrReload from)
+    /// <param name="tree">GenTree node from which to copy multi-reg state</param>
+    public void CopyOtherRegs(GenTreeCopyOrReload tree)
     {
-        assert(Oper == from.Oper);
+        assert(Oper == tree.Oper);
 
         // TODO-ARM: Implement this routine for Arm64 and Arm32
         // TODO-X86: Implement this routine for x86

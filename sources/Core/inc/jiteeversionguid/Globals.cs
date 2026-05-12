@@ -9,11 +9,11 @@ namespace RyuJitSharp;
 
 public partial class Globals
 {
-    // 1516ACB8-AC41-4DCB-9840-F39EE25FFA73
+    // BF284EFA-A3FB-4420-A62F-6E1A0A1B2CFC
     public static readonly Guid JITEEVersionIdentifier = new Guid(
-        0x1516ACB8,
-        0xAC41,
-        0x4DCB,
-        0x98, 0x40, 0xF3, 0x9E, 0xE2, 0x5F, 0xFA, 0x73
+        0xBF284EFA,
+        0xA3FB,
+        0x4420,
+        0xA6, 0x2F, 0x6E, 0x1A, 0x0A, 0x1B, 0x2C, 0xFC
     );
 }

@@ -31,15 +31,15 @@ public sealed class GenTreeAddrMode : GenTreeOp
 
     private int _offset;
 
-    public GenTreeAddrMode(var_types type, GenTree? @base, GenTree? index, byte scale, int offset)
-        : base(GT_LEA, type, @base, index)
+    public GenTreeAddrMode(var_types type, GenTree? baseAddress, GenTree? index, byte scale, int offset)
+        : base(GT_LEA, type, baseAddress, index)
     {
-        assert((@base is not null) || (index is not null));
+        assert((baseAddress is not null) || (index is not null));
         _scale = scale;
         _offset = offset;
     }
 
-    public GenTree? Base
+    public GenTree? BaseAddress
     {
         get
         {
@@ -52,8 +52,8 @@ public sealed class GenTreeAddrMode : GenTreeOp
         }
     }
 
-    [MemberNotNullWhen(true, nameof(Base))]
-    public bool HasBase => Op1 is not null;
+    [MemberNotNullWhen(true, nameof(BaseAddress))]
+    public bool HasBaseAddress => Op1 is not null;
 
     [MemberNotNullWhen(true, nameof(Index))]
     public bool HasIndex => Op2 is not null;

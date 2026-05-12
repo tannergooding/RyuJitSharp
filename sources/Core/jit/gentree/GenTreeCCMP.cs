@@ -8,9 +8,14 @@ namespace RyuJitSharp;
 
 public sealed class GenTreeCCMP : GenTreeOpCC
 {
-    public GenTreeCCMP(genTreeOps oper, var_types type)
-        : base(oper, type)
+    private readonly insCFlags _flagsVal;
+
+    public GenTreeCCMP(var_types type, GenCondition condition, GenTree op1, GenTree op2, insCFlags flagsVal)
+        : base(GT_CCMP, type, condition, op1, op2)
     {
+        _flagsVal = flagsVal;
     }
+
+    public insCFlags FlagsVal => _flagsVal;
 }
 #endif

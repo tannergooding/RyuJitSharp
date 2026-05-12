@@ -29,7 +29,7 @@ public sealed class GenTreeArrAddr : GenTreeUnOp
     /// <summary>The array element class. Currently only used for arrays of TYP_STRUCT.</summary>
     public unsafe CORINFO_CLASS_HANDLE ElemClassHandle => _elemClassHandle;
 
-    /// <summary>The normalized (TYP_SIMD != TYP_STRUCT) array element type.</summary>
+    /// <summary>The normalized (TYP_Simd != TYP_STRUCT) array element type.</summary>
     public var_types ElemType => _elemType;
 
     /// <summary>Offset to the first element of the array.</summary>

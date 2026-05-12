@@ -101,8 +101,8 @@ public sealed class ClassLayout
                 8 => TYP_LONG,
 #endif
 #if FEATURE_SIMD
-                // TODO: check TYP_SIMD12 profitability, it will need additional support in `BuildStoreLoc`.
-                16 => TYP_SIMD16,
+                // TODO: check TYP_Simd12 profitability, it will need additional support in `BuildStoreLoc`.
+                16 => TYP_Simd16,
 #endif
                 _ => TYP_UNDEF,
             };

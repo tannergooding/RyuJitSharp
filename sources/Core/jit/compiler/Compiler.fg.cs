@@ -167,7 +167,8 @@ public partial class Compiler
     public fgCurMemoryVNInlineArray fgCurMemoryVN;
 
 #if DEBUG
-    public static unsafe fgWalkPreFn fgStress64RsltMulCB;
+    // TODO: Port Compiler.fgStress64RsltMulCB
+    // public static unsafe fgWalkPreFn fgStress64RsltMulCB;
 #endif
 
     /// <summary>Table of pointers to the BBs</summary>
@@ -228,8 +229,8 @@ public partial class Compiler
     private Stack<int>? fgUsedSharedTemps;
 
 #if FEATURE_SIMD
-    /// <summary>used for tracking previous simd field store in function: impMarkContiguousSIMDFieldStores.</summary>
-    private Statement? fgPreviousCandidateSIMDFieldStoreStmt;
+    /// <summary>used for tracking previous simd field store in function: impMarkContiguousSimdFieldStores.</summary>
+    private Statement? fgPreviousCandidateSimdFieldStoreStmt;
 #endif
 
     private Statement? fgMorphStmt;
@@ -241,9 +242,11 @@ public partial class Compiler
     public bool fgRngChkThrowAdded;
 
 #if DEBUG
-    public static unsafe fgWalkPreFn fgDebugCheckInlineCandidates;
+    // TODO: Port Compiler.fgDebugCheckInlineCandidates
+    // public static unsafe fgWalkPreFn fgDebugCheckInlineCandidates;
 
-    public static unsafe fgWalkPreFn fgDebugCheckForTransformableIndirectCalls;
+    // TODO: Port Compiler.fgDebugCheckForTransformableIndirectCalls
+    // public static unsafe fgWalkPreFn fgDebugCheckForTransformableIndirectCalls;
 #endif
 
     public bool fgHasLoops;
@@ -826,7 +829,7 @@ public partial class Compiler
                 default:
                 {
                     // these blocks don't get created until importing
-                    noway_assert(false, "Unexpected bbKind");
+                    NO_WAY("Unexpected bbKind");
                     break;
                 }
             }
@@ -873,6 +876,45 @@ public partial class Compiler
             }
         }
     }
+
+#if DEBUG
+    /// <summary>Check if a block contains a statement, with a budget limit to avoid excessive cost.</summary>
+    /// <param name="block">the block to search</param>
+    /// <param name="stmt">the statement to look for</param>
+    /// <param name="answerOnBoundExceeded">value to return if the budget is exceeded</param>
+    /// <returns>true if the block contains the statement, or "answerOnBoundExceeded" if the budget is exceeded.</returns>
+    public static bool fgBlockContainsStatementBounded(BasicBlock block, Statement stmt, bool answerOnBoundExceeded = true)
+    {
+        const long MaxLinks = 100_000_000;
+
+        var compiler = JitTls.Compiler;
+        assert(compiler is not null);
+
+        ref var numTraversed = ref compiler.compNumStatementLinksTraversed;
+
+        if (numTraversed > MaxLinks)
+        {
+            return answerOnBoundExceeded;
+        }
+
+        var curr = block.FirstStmt;
+        assert(curr is not null);
+
+        do
+        {
+            numTraversed++;
+
+            if (curr == stmt)
+            {
+                break;
+            }
+            curr = curr.NextStmt;
+        }
+        while (curr is not null);
+
+        return curr is not null;
+    }
+#endif
 
     /// <summary>Check that the leave from the block is legal.</summary>
     /// <param name="blkSrc">the source block</param>
@@ -1486,6 +1528,111 @@ public partial class Compiler
         gtDispStmt(stmt);
     }
 #endif
+
+    /// <summary>We've inserted a new block after 'block' that should be part of the same EH region as 'block'.</summary>
+    /// <param name="block"></param>
+    /// <remarks>Update the EH table to make this so. Also, set the new block to have the right EH region data.</remarks>
+    public void fgExtendEHRegionAfter(BasicBlock block)
+    {
+        var newBlk = block.Next;
+        assert(newBlk is not null);
+
+        newBlk.copyEHRegion(block);
+        newBlk.CatchType = BBCT_NONE; // Only the first block of a catch has this set, and 'newBlk' can't be the first block of a catch.
+
+        // TODO-Throughput: if the block is not in an EH region, then we don't need to walk the EH table looking for 'last' block pointers to update.
+        ehUpdateLastBlocks(block, newBlk);
+    }
+
+    /// <summary>Modify the EH table to account for a new block.</summary>
+    /// <param name="block">The block before which a new block has been inserted</param>
+    /// <remarks>We've inserted a new block before 'block' that should be part of the same EH region as 'block'. Update the EH table to make this so. Also, set the new block to have the right EH region data (copy the bbTryIndex, bbHndIndex, and bbCatchType from 'block' to the new predecessor, and clear 'bbCatchType' from 'block').</remarks>
+    public void fgExtendEHRegionBefore(BasicBlock block)
+    {
+        assert(!block.IsFirst);
+
+        var bPrev = block.Prev;
+        assert(block.Prev is not null);
+
+        bPrev.copyEHRegion(block);
+
+        // The first block (and only the first block) of a handler has bbCatchType set
+        bPrev.CatchType = block.CatchType;
+        block.CatchType = BBCT_NONE;
+
+        foreach (ref var HBtab in new EHClauses(this))
+        {
+            /* Multiple pointers in EHblkDsc can point to same block. We can not early out after the first match. */
+            if (HBtab.ebdTryBeg == block)
+            {
+#if DEBUG
+                if (verbose)
+                {
+                    jitprintf($"EH#{ehGetIndex(HBtab)}: New first block of try: {FMT_BB(bPrev.bbNum)}\n");
+                }
+#endif
+                HBtab.ebdTryBeg = bPrev;
+                bPrev.SetFlags(BBF_DONT_REMOVE);
+            }
+
+            if (HBtab.ebdHndBeg == block)
+            {
+#if DEBUG
+                if (verbose)
+                {
+                    jitprintf($"EH#{ehGetIndex(HBtab)}: New first block of handler: {FMT_BB(bPrev.bbNum)}\n");
+                }
+#endif
+
+                HBtab.ebdHndBeg = bPrev;
+                bPrev.SetFlags(BBF_DONT_REMOVE);
+
+                // The first block of a handler has an artificial extra refcount. Transfer that to the new block.
+                noway_assert(block.CountOfInEdges > 0);
+                block.bbRefs--;
+                bPrev.bbRefs++;
+
+                // If this is a handler for a filter, the last block of the filter will end with
+                // a BBJ_EHFILTERRET block that jumps to the first block of its handler.
+                // So we need to update it to keep things in sync.
+                //
+                if (HBtab.HasFilter)
+                {
+                    var bFilterLast = HBtab.BBFilterLast;
+                    assert(bFilterLast is not null);
+                    assert(bFilterLast.Kind is BBJ_EHFILTERRET);
+                    assert(bFilterLast.Target == block);
+#if DEBUG
+                    if (verbose)
+                    {
+                        jitprintf($"EH#{ehGetIndex(HBtab)}: Updating target for filter ret block: {FMT_BB(bFilterLast.bbNum)} => {FMT_BB(bPrev.bbNum)}\n");
+                    }
+#endif
+                    // Change the target for bFilterLast from the old first 'block' to the new first 'bPrev'
+                    fgRedirectEdge(ref bFilterLast.TargetEdgeRef, bPrev);
+                }
+            }
+
+            if (HBtab.HasFilter && (HBtab.ebdFilter == block))
+            {
+#if DEBUG
+                if (verbose)
+                {
+                    jitprintf($"EH#{ehGetIndex(HBtab)}: New first block of filter: {FMT_BB(bPrev.bbNum)}\n");
+                }
+#endif
+
+                // The first block of a filter has an artificial extra refcount. Transfer that to the new block.
+                noway_assert(block.CountOfInEdges > 0);
+                block.bbRefs--;
+
+                HBtab.ebdFilter = bPrev;
+                bPrev.SetFlags(BBF_DONT_REMOVE);
+
+                bPrev.bbRefs++;
+            }
+        }
+    }
 
     /// <summary>Main entry point to discover the basic blocks for the current function.</summary>
     public unsafe void fgFindBasicBlocks()
@@ -4054,6 +4201,105 @@ public partial class Compiler
         insertAfterBlk.Next = newBlk;
     }
 
+    /// <summary>Insert the given statement after the insertion point in the given basic block.</summary>
+    /// <param name="block">the block into which 'stmt' will be inserted;</param>
+    /// <param name="insertionPoint">the statement after which `stmt` will be inserted;</param>
+    /// <param name="stmt">the statement to be inserted.</param>
+    /// <remarks>`block` is needed to update the last statement pointer and for debugging checks.</remarks>
+    public void fgInsertStmtAfter(BasicBlock block, Statement insertionPoint, Statement stmt)
+    {
+        assert(block.FirstStmt is not null);
+        assert(fgBlockContainsStatementBounded(block, insertionPoint));
+        assert(!fgBlockContainsStatementBounded(block, stmt, false));
+
+        if (insertionPoint.NextStmt is null)
+        {
+            // Ok, we want to insert after the last statement of the block.
+            stmt.NextStmt = null;
+            stmt.PrevStmt = insertionPoint;
+
+            insertionPoint.NextStmt = stmt;
+
+            // Update the backward link of the first statement of the block
+            // to point to the new last statement.
+            assert(block.FirstStmt.PrevStmt == insertionPoint);
+            block.FirstStmt.PrevStmt = stmt;
+        }
+        else
+        {
+            stmt.NextStmt = insertionPoint.NextStmt;
+            stmt.PrevStmt = insertionPoint;
+
+            insertionPoint.NextStmt.PrevStmt = stmt;
+            insertionPoint.NextStmt = stmt;
+        }
+    }
+
+    /// <summary>Insert the given statement at the end of the given basic block.</summary>
+    /// <param name="block">the block into which 'stmt' will be inserted;</param>
+    /// <param name="stmt">the statement to be inserted.</param>
+    /// <remarks>If the block can be a conditional block, use fgInsertStmtNearEnd.</remarks>
+    public void fgInsertStmtAtEnd(BasicBlock block, Statement stmt)
+    {
+        // We don't set it, and it needs to be this after the insert
+        assert(stmt.NextStmt is null);
+
+        var firstStmt = block.FirstStmt;
+
+        if (firstStmt is not null)
+        {
+            // There is at least one statement already.
+            var lastStmt = firstStmt.PrevStmt;
+            noway_assert(lastStmt is not null && lastStmt.NextStmt is null);
+
+            // Append the statement after the last one.
+            lastStmt.NextStmt = stmt;
+            stmt.PrevStmt = lastStmt;
+            firstStmt.PrevStmt = stmt;
+        }
+        else
+        {
+            // The block is completely empty.
+            block.FirstStmt = stmt;
+            stmt.PrevStmt = stmt;
+        }
+    }
+
+    /// <summary>Insert the given statement before the insertion point in the given basic block.</summary>
+    /// <param name="block">the block into which 'stmt' will be inserted;</param>
+    /// <param name="insertionPoint">the statement before which `stmt` will be inserted;</param>
+    /// <param name="stmt">the statement to be inserted.</param>
+    /// <remarks>`block` is needed to update the first statement pointer and for debugging checks.</remarks>
+    public void fgInsertStmtBefore(BasicBlock block, Statement insertionPoint, Statement stmt)
+    {
+        assert(block.FirstStmt is not null);
+        assert(fgBlockContainsStatementBounded(block, insertionPoint));
+        assert(!fgBlockContainsStatementBounded(block, stmt, false));
+
+        if (insertionPoint == block.FirstStmt)
+        {
+            // We're inserting before the first statement in the block.
+            var first = block.FirstStmt;
+            var last = block.LastStmt;
+
+            stmt.NextStmt = first;
+            stmt.PrevStmt = last;
+
+            block.FirstStmt = stmt;
+            first.PrevStmt = stmt;
+        }
+        else
+        {
+            assert(insertionPoint.PrevStmt is not null);
+
+            stmt.NextStmt = insertionPoint;
+            stmt.PrevStmt = insertionPoint.PrevStmt;
+
+            insertionPoint.PrevStmt.NextStmt = stmt;
+            insertionPoint.PrevStmt = stmt;
+        }
+    }
+
     public bool fgIsBigOffset(nint offset)
         => offset > compMaxUncheckedOffsetForNullObject;
 
@@ -4244,7 +4490,7 @@ public partial class Compiler
 
                 default:
                 {
-                    noway_assert(false, "Unexpected bbKind");
+                    NO_WAY("Unexpected bbKind");
                     break;
                 }
             }
@@ -4786,6 +5032,25 @@ public partial class Compiler
         fgThrowCount = throwBlocks;
     }
 
+    //------------------------------------------------------------------------------
+    // fgMakeTemp: Make a temp variable and store 'value' into it.
+    //
+    // Arguments:
+    //    value - The expression to store to a temp.
+    //
+    // Return Value:
+    //    'TempInfo' data that contains the GT_STORE_LCL_VAR and GT_LCL_VAR nodes for
+    //    store and variable load respectively.
+    //
+    public TempInfo fgMakeTemp(GenTree value)
+    {
+        var lclNum = lvaGrabTemp(shortLifetime: true, "fgMakeTemp is creating a new local variable");
+        return new TempInfo {
+            Store = gtNewTempStore(lclNum, value),
+            Load = gtNewLclvNode(value.Type.ActualType, lclNum),
+        };
+    }
+
     /// <summary>mark blocks indicating there is a jump backwards in IL, from a higher to lower IL offset.</summary>
     /// <param name="targetBlock">target of the jump</param>
     /// <param name="sourceBlock">source of the jump</param>
@@ -4839,6 +5104,39 @@ public partial class Compiler
 #endif // FEATURE_FIXED_OUT_ARGS
 
         return true;
+    }
+
+    /// <summary>Insert a new BasicBlock before the given block.</summary>
+    /// <param name="jumpKind">the jump kind of the new block</param>
+    /// <param name="block">the block before which the new block is inserted</param>
+    /// <param name="extendRegion">if true, extend the EH region to include the new block</param>
+    /// <returns>The new block.</returns>
+    public BasicBlock fgNewBBbefore(BBKinds jumpKind, BasicBlock block, bool extendRegion)
+    {
+        // Create a new BasicBlock and chain it in
+        var newBlk = BasicBlock.New(this, jumpKind);
+        newBlk.SetFlags(BBF_INTERNAL);
+
+        fgInsertBBbefore(block, newBlk);
+
+        newBlk.bbRefs = 0;
+
+        if (extendRegion)
+        {
+            fgExtendEHRegionBefore(block);
+        }
+        else
+        {
+            // When extendRegion is false the caller is responsible for setting these two values
+            newBlk.TryIndex = MAX_XCPTN_INDEX; // Note: this is still a legal index, just unlikely
+            newBlk.HndIndex = MAX_XCPTN_INDEX; // Note: this is still a legal index, just unlikely
+        }
+
+        // We assume that if the block we are inserting before is in the cold region, then this new
+        // block will also be in the cold region.
+        newBlk.CopyFlags(block, BBF_COLD);
+
+        return newBlk;
     }
 
     public void fgNormalizeEH()
@@ -5820,6 +6118,36 @@ public partial class Compiler
         return modified;
     }
 
+    /// <summary>Prepare an unreachable BBJ_CALLFINALLYRET block for removal from the flow graph.</summary>
+    /// <param name="block">The block to process</param>
+    /// <remarks>Remove the block as a successor to predecessor BBJ_EHFINALLYRET blocks. Don't actually remove the block: change it to a BBJ_ALWAYS. The caller can either remove it directly, or wait for an unreachable code pass to remove it. This is done to avoid altering caller flow graph iteration. Note that this must be called before changing/removing the paired BBJ_CALLFINALLY.</remarks>
+    public void fgPrepareCallFinallyRetForRemoval(BasicBlock block)
+    {
+        assert(block.Kind is BBJ_CALLFINALLYRET);
+
+        var bCallFinally = block.Prev;
+        assert(bCallFinally is not null);
+        assert(bCallFinally.Kind is BBJ_CALLFINALLY);
+
+        block.RemoveFlags(BBF_DONT_REMOVE);
+
+        // The BBJ_CALLFINALLYRET normally has a reference count of 1 and a single predecessor.
+        // However, we might not have marked the BBJ_CALLFINALLY as BBF_RETLESS_CALL even though it is.
+        // (Some early flow optimization should probably aggressively mark these as BBF_RETLESS_CALL
+        // and not depend on fgRemoveBlock() to do that.)
+        foreach (var leavePredEdge in block.PredEdges)
+        {
+            fgRemoveEhfSuccessor(leavePredEdge);
+        }
+        assert(block.bbRefs is 0);
+        assert(block.bbPreds is null);
+
+        // If the BBJ_CALLFINALLYRET is unreachable, then the BBJ_CALLFINALLY must be retless.
+        // Set to retless flag to avoid future asserts.
+        bCallFinally.SetFlags(BBF_RETLESS_CALL);
+        block.Kind = BBJ_ALWAYS;
+    }
+
     /// <summary>check if two profile weights are equal (or nearly so)</summary>
     /// <param name="weight1">first weight</param>
     /// <param name="weight2">second weight</param>
@@ -5895,6 +6223,204 @@ public partial class Compiler
         fgModified = true;
 
         return pred;
+    }
+
+    /// <summary>Remove a basic block. The block must be either unreachable or empty.</summary>
+    /// <param name="block">the block to remove</param>
+    /// <param name="unreachable">indicates whether removal is because block is unreachable or empty</param>
+    /// <returns>The block after the block, or blocks, removed.</returns>
+    /// <remarks>If the block is a non-retless BBJ_CALLFINALLY then the paired BBJ_CALLFINALLYRET is also removed.</remarks>
+    public BasicBlock fgRemoveBlock(BasicBlock block, bool unreachable)
+    {
+        assert(block is not null);
+
+        // We shouldn't churn the flowgraph after doing hot/cold splitting
+        assert(fgFirstColdBlock is null);
+
+        JITDUMP($"fgRemoveBlock {block.bbNum}, unreachable={dspBool(unreachable)}\n");
+
+        var bPrev = block.Prev;
+        var bNext = block.Next;
+
+        noway_assert((block == fgFirstBB) || (bPrev?.Next == block));
+        noway_assert(!block.HasFlag(BBF_DONT_REMOVE));
+
+        // Should never remove a genReturnBB, as we might have special hookups there.
+        noway_assert(block != genReturnBB);
+
+        if (unreachable)
+        {
+            assert(bPrev is not null);
+
+            fgUnreachableBlock(block);
+
+            // If block was the fgFirstFuncletBB then set fgFirstFuncletBB to block->bbNext
+            if (block == fgFirstFuncletBB)
+            {
+                fgFirstFuncletBB = block.Next;
+
+            }
+
+            // A BBJ_CALLFINALLY is usually paired with a BBJ_CALLFINALLYRET.
+            // If we delete such a BBJ_CALLFINALLY we also delete the BBJ_CALLFINALLYRET.
+            if (block.isBBCallFinallyPair)
+            {
+                var leaveBlock = block.Next;
+                assert(leaveBlock is not null);
+                bNext = leaveBlock.Next;
+
+                fgPrepareCallFinallyRetForRemoval(leaveBlock);
+                fgRemoveBlock(leaveBlock, unreachable: true);
+            }
+            else if (block.isBBCallFinallyPairTail)
+            {
+                // bPrev CALLFINALLY becomes RETLESS as the BBJ_CALLFINALLYRET block is unreachable
+                bPrev.SetFlags(BBF_RETLESS_CALL);
+            }
+            else if (block.Kind is BBJ_RETURN)
+            {
+                fgRemoveReturnBlock(block);
+            }
+
+            // Unlink this block from the bbNext chain
+            fgUnlinkBlockForRemoval(block);
+
+            // At this point the bbPreds and bbRefs had better be zero
+            noway_assert((block.bbRefs is 0) && (block.bbPreds is null));
+        }
+        else // block is empty
+        {
+            noway_assert(block.IsEmpty);
+
+            // The block cannot follow a non-retless BBJ_CALLFINALLY (because we don't know who may jump to it).
+            noway_assert(!block.isBBCallFinallyPairTail);
+
+#if DEBUG
+            if (verbose)
+            {
+                jitprintf($"Removing empty {FMT_BB(block.bbNum)}\n");
+            }
+
+            // Some extra checks for the empty case
+            assert(block.Kind is BBJ_ALWAYS);
+
+            // Do not remove a block that jumps to itself - used for while (true){}
+            assert(block.Target != block);
+#endif
+
+            var succBlock = block.Target;
+
+            // Update fgFirstFuncletBB if necessary
+            if (block == fgFirstFuncletBB)
+            {
+                fgFirstFuncletBB = block.Next;
+            }
+
+            // Update successor block start IL offset, if empty predecessor
+            // covers the immediately preceding range.
+            if ((block.bbCodeOffsEnd == succBlock.bbCodeOffs) && (block.bbCodeOffs != BAD_IL_OFFSET))
+            {
+                assert(block.bbCodeOffs <= succBlock.bbCodeOffs);
+                succBlock.bbCodeOffs = block.bbCodeOffs;
+            }
+
+            // Remove the block
+
+            if (bPrev is null)
+            {
+                // special case if this is the first BB
+
+                noway_assert(block == fgFirstBB);
+
+                // old block no longer gets the extra ref count for being the first block
+                block.bbRefs--;
+                succBlock.bbRefs++;
+            }
+
+            // Update bbRefs and bbPreds.
+            // All blocks jumping to 'block' will jump to 'succBlock'.
+            // First, remove 'block' from the predecessor list of succBlock.
+
+            fgRemoveRefPred(block.TargetEdge);
+
+            foreach (var predBlock in block.PredBlocksEditing)
+            {
+                // Inherit affordances
+                predBlock.CopyFlags(block, BBF_ASYNC_RESUMPTION);
+
+                // change all jumps/refs to the removed block
+                fgReplaceJumpTarget(predBlock, block, succBlock);
+            }
+
+            fgUnlinkBlockForRemoval(block);
+            block.SetFlags(BBF_REMOVED);
+        }
+
+        if (bPrev is not null)
+        {
+            switch (bPrev.Kind)
+            {
+                case BBJ_CALLFINALLY:
+                {
+                    // If prev is a BBJ_CALLFINALLY it better be marked as RETLESS
+                    noway_assert(bPrev.HasFlag(BBF_RETLESS_CALL));
+                    break;
+                }
+
+                case BBJ_COND:
+                {
+                    // block should not be a target anymore
+                    assert(bPrev.TrueTarget != block);
+                    assert(bPrev.FalseTarget != block);
+
+                    // Check if both sides of the BBJ_COND now jump to the same block
+                    if (bPrev.TrueEdge == bPrev.FalseEdge)
+                    {
+                        fgRemoveConditionalJump(bPrev);
+                    }
+                    break;
+                }
+
+                default:
+                {
+                    break;
+                }
+            }
+
+            ehUpdateForDeletedBlock(block);
+        }
+
+        assert(bNext is not null);
+        return bNext;
+    }
+
+    /// <summary>Removes `succEdge` from its BBJ_EHFINALLYRET source block's jump table.</summary>
+    /// <param name="succEdge">FlowEdge to be removed from predecessor block's jump table</param>
+    /// <remarks>Updates the predecessor list of the successor block, if necessary.</remarks>
+    public void fgRemoveEhfSuccessor(FlowEdge succEdge)
+    {
+        assert(succEdge is not null);
+        assert(fgPredsComputed);
+
+        var block = succEdge.SourceBlock;
+        assert(block is not null);
+        assert(block.Kind is BBJ_EHFINALLYRET);
+
+        fgRemoveRefPred(succEdge);
+
+        assert(block.EhfTargets is not null);
+        var succs = block.EhfTargets.Succs;
+
+        for (var i = 0; i < succs.Length; i++)
+        {
+            if (succs[i] == succEdge)
+            {
+                fgRemoveEhfSuccFromTable(block, i);
+                return;
+            }
+        }
+
+        unreached();
     }
 
     /// <summary>For a given block, replace the target 'oldTarget' with 'newTarget'.</summary>
@@ -6033,8 +6559,7 @@ public partial class Compiler
 
             default:
             {
-                assert(false, "Block doesn't have a jump target!");
-                unreached();
+                NO_WAY("Block doesn't have a jump target!");
                 break;
             }
         }
@@ -6054,6 +6579,29 @@ public partial class Compiler
     public void fgMarkDemotedImplicitByRefArgs()
     {
         // TODO: Port Compiler.fgMarkDemotedImplicitByRefArgs
+    }
+
+    /// <summary>check if two profile weights are within some small percentage of one another, or are both less than some epsilon.</summary>
+    /// <param name="weight1">first weight</param>
+    /// <param name="weight2">second weight</param>
+    /// <param name="epsilon">small weight threshold</param>
+    /// <returns>true if the weights are consistent or both are smaller than epsilon</returns>
+    public bool fgProfileWeightsConsistentOrSmall(weight_t weight1, weight_t weight2, weight_t epsilon = 1e-4)
+    {
+        if (weight2 == BB_ZERO_WEIGHT)
+        {
+            return fgProfileWeightsEqual(weight1, weight2, epsilon);
+        }
+
+        var delta = weight_t.Abs(weight2 - weight1);
+
+        if (delta <= epsilon)
+        {
+            return true;
+        }
+
+        var relativeDelta = delta / weight2;
+        return fgProfileWeightsEqual(relativeDelta, BB_ZERO_WEIGHT);
     }
 
     /// <summary>Optimize a BBJ_COND block that unconditionally jumps to the same target</summary>
@@ -6267,6 +6815,33 @@ public partial class Compiler
         }
     }
 
+    /// <summary>Removes a block from the return block list.</summary>
+    /// <param name="block">the block to remove from the return block list</param>
+    public void fgRemoveReturnBlock(BasicBlock block)
+    {
+        if (fgReturnBlocks is null)
+        {
+            return;
+        }
+
+        if (fgReturnBlocks.Block == block)
+        {
+            // It's the 1st entry, assign new head of list.
+            fgReturnBlocks = fgReturnBlocks.Next;
+            return;
+        }
+
+        for (var retBlocks = fgReturnBlocks; retBlocks.Next is not null; retBlocks = retBlocks.Next)
+        {
+            if (retBlocks.Next.Block == block)
+            {
+                // Found it; splice it out.
+                retBlocks.Next = retBlocks.Next.Next;
+                break;
+            }
+        }
+    }
+
     /// <summary>remove a statement from a block's statement list</summary>
     /// <param name="block">the block from which 'stmt' will be removed</param>
     /// <param name="stmt">the statement to be removed</param>
@@ -6412,6 +6987,24 @@ public partial class Compiler
         // TODO: Port Compiler.fgResetForSsa
     }
 
+    public void fgSetHndEnd(ref EHblkDsc handlerTab, BasicBlock newHndLast)
+    {
+        // Check if we are going to change the existing value of endHndLast
+
+        if (handlerTab.ebdHndLast != newHndLast)
+        {
+            // Update the EH table with the newHndLast block
+            handlerTab.ebdHndLast = newHndLast;
+
+#if DEBUG
+            if (verbose)
+            {
+                jitprintf($"EH#{ehGetIndex(handlerTab)}: New last block of handler: {FMT_BB(newHndLast.bbNum)}\n");
+            }
+#endif
+        }
+    }
+
     public void fgSetOptions()
     {
         // TODO: Port Compiler.fgSetOptions
@@ -6450,6 +7043,23 @@ public partial class Compiler
 #endif
 
         return new SetTreeSeqVisitor(this, tree, isLIR).Sequence();
+    }
+
+    public void fgSetTryEnd(ref EHblkDsc handlerTab, BasicBlock newTryLast)
+    {
+        // Check if we are going to change the existing value of endTryLast
+        if (handlerTab.ebdTryLast != newTryLast)
+        {
+            // Update the EH table with the newTryLast block
+            handlerTab.ebdTryLast = newTryLast;
+
+#if DEBUG
+            if (verbose)
+            {
+                jitprintf($"EH#{ehGetIndex(handlerTab)}: New last block of try: {FMT_BB(newTryLast.bbNum)}\n");
+            }
+#endif
+        }
     }
 
     public void fgSortEHTable()
@@ -7251,6 +7861,121 @@ public partial class Compiler
         return XTnum + count - 1;
     }
 
+    /// <summary>Removes the block from the bbPrev/bbNext chain.</summary>
+    /// <param name="block">the block to unlink</param>
+    /// <remarks>
+    ///   <para>Updates fgFirstBB and fgLastBB if necessary.</para>
+    ///   <para>Does not update fgFirstFuncletBB.</para>
+    /// </remarks>
+    public void fgUnlinkBlock(BasicBlock block)
+    {
+        if (block.IsFirst)
+        {
+            assert(block == fgFirstBB);
+            assert(block != fgLastBB);
+            assert(block.Next is not null);
+
+            fgFirstBB = block.Next;
+            fgFirstBB.Prev = null;
+        }
+        else if (block.IsLast)
+        {
+            assert(fgLastBB == block);
+            fgLastBB = block.Prev;
+            fgLastBB.Next = null;
+        }
+        else
+        {
+            block.Prev.Next = block.Next;
+        }
+    }
+
+    /// <summary>unlink a block from the linked list because it is being removed, and adjust fgBBcount.</summary>
+    /// <param name="block">The block</param>
+    public void fgUnlinkBlockForRemoval(BasicBlock block)
+    {
+        fgUnlinkBlock(block);
+        fgBBcount--;
+    }
+
+    /// <summary>Remove a block when it is unreachable.</summary>
+    /// <param name="block">unreachable block to remove</param>
+    /// <remarks>This function cannot remove the first block.</remarks>
+    public void fgUnreachableBlock(BasicBlock block)
+    {
+        // genReturnBB should never be removed, as we might have special hookups there.
+        // Therefore, we should never come here to remove the statements in the genReturnBB block.
+        // For example, the profiler hookup needs to have the "void GT_RETURN" statement
+        // to properly set the info.compProfilerCallback flag.
+        noway_assert(block != genReturnBB);
+
+        if (block.HasFlag(BBF_REMOVED))
+        {
+            return;
+        }
+
+#if DEBUG
+        if (verbose)
+        {
+            jitprintf($"\nRemoving unreachable {FMT_BB(block.bbNum)}\n");
+        }
+#endif
+
+        noway_assert(!block.IsFirst); // Can't use this function to remove the first block
+
+        // First, delete all the code in the block.
+
+        if (block.IsLIR)
+        {
+            if (!block.IsEmpty)
+            {
+                block.Delete(block.FirstNode, block.LastNode);
+            }
+        }
+        else
+        {
+            // TODO-Cleanup: I'm not sure why this happens -- if the block is unreachable, why does it have phis?
+            // Anyway, remove any phis.
+
+            var firstNonPhi = block.GetFirstNonPhiDef();
+
+            if (block.FirstStmt != firstNonPhi)
+            {
+                firstNonPhi?.PrevStmt = block.LastStmt;
+                block.FirstStmt = firstNonPhi;
+            }
+
+            foreach (var stmt in block.Statements)
+            {
+                fgRemoveStmt(block, stmt);
+            }
+            noway_assert(block.FirstStmt is null);
+        }
+
+        // Mark the block as removed
+        block.SetFlags(BBF_REMOVED);
+
+        // Update bbRefs and bbPreds for this block's successors
+        var profileInconsistent = false;
+
+        foreach (var succBlock in block.Succs)
+        {
+            var succEdge = fgRemoveAllRefPreds(succBlock, block);
+
+            if (block.hasProfileWeight && succBlock.hasProfileWeight)
+            {
+                succBlock.decreaseBBProfileWeight(succEdge.LikelyWeight);
+                profileInconsistent |= (succBlock.NumSucc > 0);
+            }
+        }
+
+        if (profileInconsistent)
+        {
+            JITDUMP($"Flow removal of {FMT_BB(block.bbNum)} needs to be propagated. Data {(fgPgoConsistent ? "is now" : "was already")} inconsistent.\n");
+            fgPgoConsistent = false;
+        }
+    }
+
     // TODO: Port fgAddInternal
     public PhaseStatus fgAddInternal() => PhaseStatus.MODIFIED_NOTHING;
 
@@ -7330,8 +8055,71 @@ public partial class Compiler
     // TODO: Port fgHeadTailMerge
     public PhaseStatus fgHeadTailMerge(bool early) => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgImport
-    public PhaseStatus fgImport() => PhaseStatus.MODIFIED_NOTHING;
+    /// <summary>read the IL for the method and create jit IR</summary>
+    /// <returns></returns>
+    public PhaseStatus fgImport()
+    {
+        impImport();
+
+        // Estimate how much of method IL was actually imported.
+        //
+        // Note this includes (to some extent) the impact of importer folded
+        // branches, provided the folded tree covered the entire block's IL.
+        var importedILSize = 0;
+
+        foreach (var block in Blocks)
+        {
+            if (block.HasFlag(BBF_IMPORTED))
+            {
+                // Assume if we generate any IR for the block we generate IR for the entire block.
+                if (block.FirstStmt is not null)
+                {
+                    var beginOffset = block.bbCodeOffs;
+                    var endOffset = block.bbCodeOffsEnd;
+
+                    if ((beginOffset != BAD_IL_OFFSET) && (endOffset != BAD_IL_OFFSET) && (endOffset > beginOffset))
+                    {
+                        var blockILSize = endOffset - beginOffset;
+                        importedILSize += blockILSize;
+                    }
+                }
+            }
+        }
+
+        // Could be tripped up if we ever duplicate blocks
+        assert(importedILSize <= info.compILCodeSize);
+
+        // Leave a note if we only did a partial import.
+        if (importedILSize != info.compILCodeSize)
+        {
+            JITDUMP($"\n** Note: {(compIsForInlining ? "inlinee" : "root method")} IL was partially imported -- imported {importedILSize} of {info.compILCodeSize} bytes of method IL\n");
+        }
+
+        // Record this for diagnostics and for the inliner's budget computations
+        info.compILImportSize = importedILSize;
+
+        if (compIsForInlining)
+        {
+            compInlineResult.ImportedILSize = info.compILImportSize;
+        }
+
+        // Now that we've made it through the importer, we know the IL was valid.
+        // If we synthesized profile data and thought it should be consistent,
+        // but it wasn't, assert now.
+        //
+        if (fgPgoSynthesized && fgPgoConsistent)
+        {
+            assert(!fgPgoDeferredInconsistency);
+
+#if DEBUG
+            // Reset this as it is a one-shot thing.
+            fgPgoDeferredInconsistency = false;
+#endif
+        }
+
+        fgImportDone = true;
+        return PhaseStatus.MODIFIED_EVERYTHING;
+    }
 
     // TODO: Port fgInline
     public PhaseStatus fgInline() => PhaseStatus.MODIFIED_NOTHING;

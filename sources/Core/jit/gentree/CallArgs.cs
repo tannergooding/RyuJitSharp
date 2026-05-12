@@ -3,6 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace RyuJitSharp;
 
 public partial struct CallArgs
@@ -31,11 +33,13 @@ public partial struct CallArgs
     /// <summary>true if we have one or more register arguments.</summary>
     public readonly bool HasRegArgs => (_flags & Flags.HasRegArgs) != 0;
 
+    [MemberNotNullWhen(true, nameof(RetBufferArg))]
     public readonly bool HasRetBuffer => (_flags & Flags.HasRetBuffer) != 0;
 
     /// <summary>true if we have one or more stack arguments.</summary>
     public readonly bool HasStackArgs => (_flags & Flags.HasStackArgs) != 0;
 
+    [MemberNotNullWhen(true, nameof(ThisArg))]
     public readonly bool HasThisPointer => (_flags & Flags.HasThisPointer) != 0;
 
     public readonly CallArg? Head => _head;
@@ -194,7 +198,7 @@ public partial struct CallArgs
             i++;
         }
 
-        assert(false, "Could not find argument in arg list");
+        NO_WAY("Could not find argument in arg list");
         return -1;
     }
 
@@ -240,7 +244,169 @@ public partial struct CallArgs
             i++;
         }
 
-        assert(false, "Could not find argument in arg list");
+        NO_WAY("Could not find argument in arg list");
         return -1;
+    }
+
+    /// <summary>Create a new argument after another argument.</summary>
+    /// <param name="after">The existing argument to insert the new argument after.</param>
+    /// <param name="arg">The builder for the new arg.</param>
+    /// <returns>The created representative for the argument.</returns>
+    public CallArg InsertAfter(CallArg after, in NewCallArg arg)
+    {
+#if DEBUG
+        var found = false;
+
+        foreach (var entry in Args)
+        {
+            if (entry == after)
+            {
+                found = true;
+                break;
+            }
+        }
+
+        assert(found, "Could not find arg to insert after in argument list");
+#endif
+
+        return InsertAfterUnchecked(after, arg);
+    }
+
+    /// <summary>Insert an argument after 'this' if the call has a 'this' argument, or otherwise first.</summary>
+    /// <param name="arg">The builder for the new arg.</param>
+    /// <returns>The created representative for the argument.</returns>
+    public CallArg InsertAfterThisOrFirst(in NewCallArg arg)
+    {
+        var thisArg = ThisArg;
+
+        if (thisArg is not null)
+        {
+            return InsertAfter(thisArg, arg);
+        }
+        else
+        {
+            return PushFront(arg);
+        }
+    }
+
+    /// <summary>Create a new argument after another argument, without debug checks.</summary>
+    /// <param name="after">The existing argument to insert the new argument after.</param>
+    /// <param name="arg">The builder for the new arg.</param>
+    /// <returns>The created representative for the argument.</returns>
+    public CallArg InsertAfterUnchecked(CallArg after, in NewCallArg arg)
+    {
+        var newArg = new CallArg(arg) {
+            Next = after.Next
+        };
+        after.Next = newArg;
+
+        AddedWellKnownArg(arg.WellKnownArg);
+        return newArg;
+    }
+
+    /// <summary>Create a new argument at the back of the argument list.</summary>
+    /// <param name="arg">The argument to add.</param>
+    /// <returns>The created representative for the argument.</returns>
+    public CallArg PushBack(in NewCallArg arg)
+    {
+        ref var slot = ref _head;
+
+        while (slot is not null)
+        {
+            slot = ref slot.NextRef;
+        }
+
+        slot = new CallArg(arg);
+        AddedWellKnownArg(arg.WellKnownArg);
+        return slot;
+    }
+
+    /// <summary>Create a new argument at the front of the argument list.</summary>
+    /// <param name="arg">The argument to add.</param>
+    /// <returns>The created representative for the argument.</returns>
+    public CallArg PushFront(in NewCallArg arg)
+    {
+        var callArg = new CallArg(arg) {
+            Next = _head
+        };
+        _head = callArg;
+
+        AddedWellKnownArg(arg.WellKnownArg);
+        return callArg;
+    }
+
+    /// <summary>Copy all information from the specified `CallArgs`, making these argument lists equivalent. Nodes are cloned.</summary>
+    /// <param name="compiler"></param>
+    /// <param name="other"></param>
+    internal void InternalCopyFrom(Compiler compiler, in CallArgs other)
+    {
+        assert((_head is null) && (_lateHead is null));
+
+#if UNIX_X86_ABI
+        // Unix x86 info related to stack alignment intentionally not copied as they depend on where the call will be inserted.
+        _flags = other._flags & ~Flags.AlignmentDone;
+        _argsStackSize = other._argsStackSize;
+#else
+        _flags = other._flags;
+#endif
+
+#nullable disable
+        ref var tail = ref _head;
+#nullable restore
+
+        foreach (var arg in other.Args)
+        {
+            var argCopy = new CallArg(compiler, arg);
+            tail = argCopy;
+            tail = ref argCopy.NextRef;
+        }
+
+#nullable disable
+        // Now copy late pointers. Note that these may not come in order.
+        tail = ref _lateHead;
+#nullable restore
+
+        foreach (var lateArg in other.LateArgs)
+        {
+            var arg = _head;
+            var otherArg = other._head;
+
+            while (otherArg != lateArg)
+            {
+                assert((arg is not null) && (otherArg is not null));
+                arg = arg.Next;
+                otherArg = otherArg.Next;
+            }
+            assert(arg is not null);
+
+            tail = arg;
+            tail = ref arg.LateNextRef;
+        }
+    }
+
+    /// <summary>Record details when a well known arg was added.</summary>
+    /// <param name="arg">The type of well-known arg that was just added.</param>
+    /// <remarks>This is used to improve performance of some common argument lookups.</remarks>
+    private void AddedWellKnownArg(WellKnownArg arg)
+    {
+        switch (arg)
+        {
+            case WellKnownArg.ThisPointer:
+            {
+                _flags |= Flags.HasThisPointer;
+                break;
+            }
+
+            case WellKnownArg.RetBuffer:
+            {
+                _flags |= Flags.HasRetBuffer;
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
+        }
     }
 }

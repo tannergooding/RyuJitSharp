@@ -8,10 +8,15 @@ namespace RyuJitSharp;
 
 public sealed class GenTreeVecCon : GenTree
 {
-    public GenTreeVecCon(var_types type)
+    private simd_t _SimdVal;
+
+    public GenTreeVecCon(var_types type, simd_t simdVal)
         : base(GT_CNS_VEC, type)
     {
         assert(varTypeIsSimd(type));
+        _SimdVal = simdVal;
     }
+
+    public ref simd_t simdVal => ref _SimdVal;
 }
 #endif

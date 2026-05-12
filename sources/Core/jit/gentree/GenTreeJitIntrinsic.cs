@@ -19,20 +19,21 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
     private regNumber _otherReg;
     private MultiRegSpillFlags _spillFlags;   
     private var_types _auxiliaryType;
-    private var_types _simdBaseType;
-    private byte _simdSize;
+    private var_types _SimdBaseType;
+    private byte _SimdSize;
 
     protected NamedIntrinsic _hwIntrinsicId;
 
-    protected GenTreeJitIntrinsic(genTreeOps oper, var_types type, var_types simdBaseType, byte simdSize, params ReadOnlySpan<GenTree> operands)
+    protected GenTreeJitIntrinsic(genTreeOps oper, var_types type, var_types simdBaseType, byte simdSize, GenTree[] operands)
         : base(oper, type, operands)
     {
+        assert(oper.IsHWIntrinsic);
         _otherReg = REG_NA;
-        _simdBaseType = simdBaseType;
-        _simdSize = simdSize;
+        _SimdBaseType = simdBaseType;
+        _SimdSize = simdSize;
     }
 
-    /// <summary>For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))</summary>
+    /// <summary>For intrinsics than need another type (e.g. Avx2.Gather* or simd (by element))</summary>
     public var_types AuxiliaryType
     {
         get
@@ -55,7 +56,7 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
             return _entryPoint;
         }
 
-        init
+        set
         {
             assert(IsUserCall);
             _entryPoint = value;
@@ -63,7 +64,7 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
     }
 #endif
 
-    public bool IsSimd => _simdSize != 0;
+    public bool IsSimd => _SimdSize != 0;
 
     public unsafe CORINFO_METHOD_HANDLE MethodHandle
     {
@@ -73,7 +74,7 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
             return _methodHandle;
         }
 
-        init
+        set
         {
             assert(!IsUserCall);
             Flags |= (GTF_HW_USER_CALL | GTF_EXCEPT | GTF_CALL);
@@ -81,32 +82,38 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
         }
     }
 
-    /// <summary>SIMD vector base JIT type</summary>
-    public var_types SimdBaseType
+    /// <summary>simd vector base JIT type</summary>
+    public var_types simdBaseType
     {
         get
         {
-            return _simdBaseType;
+            return _SimdBaseType;
         }
 
         set
         {
-            _simdBaseType = value;
+            _SimdBaseType = value;
         }
     }
 
-    /// <summary>SIMD vector size in bytes, use 0 for scalar intrinsics</summary>
-    public byte SimdSize
+    /// <summary>simd vector size in bytes, use 0 for scalar intrinsics</summary>
+    public byte simdSize
     {
         get
         {
-            return _simdSize;
+            return _SimdSize;
         }
 
         set
         {
-            _simdSize = value;
+            _SimdSize = value;
         }
+    }
+
+    public void CopyOtherRegs(GenTreeHWIntrinsic tree)
+    {
+        _otherReg = tree._otherReg;
+        _spillFlags = tree._spillFlags;
     }
 
     /// <summary> Get regNumber of i'th position.</summary>

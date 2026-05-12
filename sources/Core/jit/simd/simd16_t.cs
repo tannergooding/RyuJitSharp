@@ -5,9 +5,6 @@
 
 namespace RyuJitSharp;
 
-public partial class Compiler
+public struct simd16_t
 {
-    public sealed class fgWalkData
-    {
-    }
 }

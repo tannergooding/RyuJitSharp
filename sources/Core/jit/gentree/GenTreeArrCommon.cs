@@ -11,6 +11,7 @@ public abstract class GenTreeArrCommon : GenTreeUnOp
     protected GenTreeArrCommon(genTreeOps oper, var_types type, GenTree arrRef)
         : base(oper, type, arrRef)
     {
+        assert(oper.IsArrMetadata);
     }
 
     /// <summary>The array address node</summary>

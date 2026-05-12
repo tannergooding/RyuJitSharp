@@ -25,9 +25,6 @@ public struct CORINFO_ASYNC_INFO
     /// <summary>Method handle for AsyncHelpers.CaptureExecutionContext, used during suspension</summary>
     public unsafe CORINFO_METHOD_HANDLE captureExecutionContextMethHnd;
 
-    /// <summary>Method handle for AsyncHelpers.RestoreExecutionContext, used during resumption</summary>
-    public unsafe CORINFO_METHOD_HANDLE restoreExecutionContextMethHnd;
-
     /// <summary>Method handle for AsyncHelpers.CaptureContinuationContext, used during suspension</summary>
     public unsafe CORINFO_METHOD_HANDLE captureContinuationContextMethHnd;
 

@@ -690,6 +690,7 @@ public static class genTreeOpsExtensions
         public bool IsArrLength => oper is GT_ARR_LENGTH or GT_MDARR_LENGTH;
 
         /// <summary>Is this an access of an SZ array length, MD array length, or MD array lower bounds?</summary>
+        /// <remarks>Valid oper kinds for <see cref="GenTreeArrCommon" />.</remarks>
         public bool IsArrMetadata
         {
             get

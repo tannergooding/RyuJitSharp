@@ -69,7 +69,7 @@ public readonly partial struct ValueSize : IEquatable<ValueSize>
 
         return type switch {
 #if TARGET_ARM64
-            TYP_SIMD => ValueSize.Vector,
+            TYP_Simd => ValueSize.Vector,
             TYP_MASK => ValueSize.Mask,
 #endif
             _ => new ValueSize(type.Size),

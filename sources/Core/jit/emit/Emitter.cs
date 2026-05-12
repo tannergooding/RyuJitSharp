@@ -129,13 +129,13 @@ public partial class Emitter
     private instrDescAlign? emitCurIGAlignList;
 
     /// <summary>Start IG of last inner loop</summary>
-    private int emitLastLoopStart;
+    private insGroup? emitLastLoopStart;
 
     /// <summary>End IG of last inner loop</summary>
-    private int emitLastLoopEnd;
+    private insGroup? emitLastLoopEnd;
 
     /// <summary>last IG that has align instruction</summary>
-    private int emitLastAlignedIgNum;
+    private insGroup? emitLastAlignedIg;
 
     /// <summary>list of all align instructions in method</summary>
     private instrDescAlign? emitAlignList;

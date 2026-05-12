@@ -33,6 +33,17 @@ public sealed partial class CallArg
         _signatureLayout = arg.SignatureLayout;
     }
 
+    public CallArg(Compiler compiler, CallArg other)
+    {
+        _earlyNode = compiler.gtCloneExpr(other._earlyNode);
+        _lateNode = compiler.gtCloneExpr(other._lateNode);
+        _signatureLayout = other._signatureLayout;
+        _signatureType = other._signatureType;
+        _wellKnownArg = other._wellKnownArg;
+        _flags = other._flags;
+        _abiInfo = other._abiInfo;
+    }
+
     public ref readonly AbiPassingInformation AbiInfo => ref _abiInfo;
 
     public GenTree EarlyNode

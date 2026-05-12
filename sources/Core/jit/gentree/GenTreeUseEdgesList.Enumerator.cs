@@ -172,8 +172,7 @@ public partial struct GenTreeUseEdgesList
                         }
                         else if (index < arrElem.ArrRank)
                         {
-                            Span<GenTree> arrInds = arrElem.ArrInds;
-                            current = ref arrInds[index]!;
+                            current = ref arrElem.ArrInds[index]!;
                         }
                         break;
                     }

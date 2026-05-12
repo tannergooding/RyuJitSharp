@@ -188,6 +188,9 @@ public enum GenTreeFlags
     /// <summary>GT_FIELD_ADDR -- used to preserve previous behavior</summary>
     GTF_FLD_DEREFERENCED = 1 << 30,
 
+    /// <summary>GT_FIELD_ADDR -- consuming indir must perform the implicit null check.</summary>
+    GTF_FLD_TGT_NONFAULTING = 1 << 29,
+
     /// <summary>GT_INDEX_ADDR -- this array address should be range-checked</summary>
     GTF_INX_RNGCHK = 1 << 31,
 
@@ -309,7 +312,7 @@ public enum GenTreeFlags
     // GTF_ICON_REUSE_REG_VAL = 1 << 23,
 
     /// <summary>GT_CNS_INT -- constant is Vector&lt;T&gt;.Count</summary>
-    GTF_ICON_SIMD_COUNT = 1 << 21,
+    GTF_ICON_Simd_COUNT = 1 << 21,
 
     /// <summary>Supported for: GT_ADD, GT_SUB, GT_MUL and GT_CAST.</summary>
     /// <remarks>Requires an overflow check. Use gtOverflow(Ex)() to check this flag.</remarks>

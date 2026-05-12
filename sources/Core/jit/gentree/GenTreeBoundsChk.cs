@@ -18,7 +18,7 @@ public sealed class GenTreeBoundsChk : GenTreeOp
     // Store some information about the array element type that was in the GT_INDEX_ADDR node before morphing.
     // Note that this information is also stored in the ARR_ADDR node of the morphed tree, but that can be hard
     // to find.
-    private readonly var_types _inxType; 
+    private var_types _inxType; 
 
     public GenTreeBoundsChk(GenTree index, GenTree length, SpecialCodeKind kind)
         : base(GT_BOUNDS_CHECK, TYP_VOID, index, length)
@@ -53,7 +53,18 @@ public sealed class GenTreeBoundsChk : GenTreeOp
     public GenTree Index => Op1;
 
     /// <summary>The array element type.</summary>
-    public var_types InxType => _inxType;
+    public var_types InxType
+    {
+        get
+        {
+            return _inxType;
+        }
+
+        set
+        {
+            _inxType = value;
+        }
+    }
 
     /// <summary>Kind of throw block to branch to on failure</summary>
     public SpecialCodeKind ThrowKind => _throwKind;

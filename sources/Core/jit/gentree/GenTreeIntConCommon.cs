@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -16,6 +17,7 @@ public abstract class GenTreeIntConCommon : GenTree
     protected GenTreeIntConCommon(genTreeOps oper, var_types type)
         : base(oper, type)
     {
+        assert(oper.IsIntegralConst);
     }
 
     public nint IconValue
@@ -65,6 +67,15 @@ public abstract class GenTreeIntConCommon : GenTree
         }
     }
 
+    public ulong UnsignedIntegralValue
+    {
+        get
+        {
+            var mask = ulong.MaxValue >> (64 - (Type.Size * 8));
+            return unchecked((ulong)(IntegralValue)) & mask;
+        }
+    }
+
     public long LngValue
     {
         get
@@ -90,7 +101,7 @@ public abstract class GenTreeIntConCommon : GenTree
         }
     }
 
-    public bool IsIntegralConst(nint value)
+    public new bool IsIntegralConst(nint value)
     {
 #if TARGET_32BIT
         if (Oper.IsCnsIntOrI)

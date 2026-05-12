@@ -5,6 +5,16 @@
 
 namespace RyuJitSharp;
 
-public sealed class AsyncCallInfo
+public struct AsyncCallInfo
 {
+    /// <summary>DebugInfo with SOURCE_TYPE_ASYNC pointing at the await call IL instruction</summary>
+    public DebugInfo CallAsyncDebugInfo;
+
+    /// <summary>Behavior where we continue for each call depends on how it was configured and whether it is a task await or custom await. This field records that behavior.</summary>
+    public ContinuationContextHandling ContinuationContextHandling;
+
+    /// <summary>Tail awaits do not generate suspension points and the JIT instead directly returns the callee's continuation to the caller.</summary>
+    public bool IsTailAwait;
+
+    public readonly bool NeedsToSaveAndRestoreExecutionContext => true;
 }

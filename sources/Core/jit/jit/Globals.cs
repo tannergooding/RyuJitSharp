@@ -615,7 +615,7 @@ public partial class Globals
 
             default:
             {
-                assert(false, "Bad argKind");
+                NO_WAY("Bad argKind");
                 break;
             }
         }

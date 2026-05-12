@@ -5,6 +5,6 @@
 
 namespace RyuJitSharp;
 
-public sealed class TailCallSiteInfo
+public struct TailCallSiteInfo
 {
 }

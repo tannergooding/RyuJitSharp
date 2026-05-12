@@ -31,10 +31,10 @@ public enum SpecialCodeKind
     // target on overflow
     SCK_OVERFLOW = SCK_ARITH_EXCPN, 
 
-    // target on ArgumentException (currently used only for SIMD intrinsics)
+    // target on ArgumentException (currently used only for simd intrinsics)
     SCK_ARG_EXCPN,                  
 
-    // target on ArgumentOutOfRangeException (currently used only for SIMD intrinsics)
+    // target on ArgumentOutOfRangeException (currently used only for simd intrinsics)
     SCK_ARG_RNG_EXCPN,              
 
     // target for fail fast exception

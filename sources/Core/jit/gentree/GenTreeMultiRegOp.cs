@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_64BIT
+#if !TARGET_64BIT
 namespace RyuJitSharp;
 
 public sealed class GenTreeMultiRegOp : GenTreeOp
@@ -20,6 +20,7 @@ public sealed class GenTreeMultiRegOp : GenTreeOp
     public GenTreeMultiRegOp(genTreeOps oper, var_types type, GenTree op1, GenTree op2)
         : base(oper, type, op1, op2)
     {
+        assert(oper.IsMultiRegOp);
         _otherReg = REG_NA;
     }
 
@@ -31,6 +32,12 @@ public sealed class GenTreeMultiRegOp : GenTreeOp
     public void ClearOtherRegFlags()
     {
         _spillFlags = 0;
+    }
+
+    public void CopyOtherRegs(GenTreeMultiRegOp tree)
+    {
+        _otherReg = tree._otherReg;
+        _spillFlags = tree._spillFlags;
     }
 
     /// <summary>get i'th register allocated to this struct argument.</summary>

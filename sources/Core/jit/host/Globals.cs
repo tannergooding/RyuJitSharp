@@ -98,7 +98,7 @@ public partial class Globals
                 // Use value of 0 to get the dump
                 if (s_currentLine == breakOnDumpToken)
                 {
-                    assert(false, "Dump token reached");
+                    NO_WAY("Dump token reached");
                 }
 
                 jitprintf($"(Token=0x{s_currentLine:X})");

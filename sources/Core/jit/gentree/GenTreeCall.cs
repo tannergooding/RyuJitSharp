@@ -4,55 +4,35 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
 public sealed class GenTreeCall : GenTree
 {
-    private CallArgs _args;
+    internal CallArgs _args;
 
-#if DEBUG
+#if DEBUG || TARGET_WASM
     // Used to register callsites with the EE
-    private unsafe CORINFO_SIG_INFO* _callSig;
+    internal unsafe CORINFO_SIG_INFO* _callSig;
 #endif
 
-    private object? _anonymous1;
+    internal _Anonymous1_e__Union _anonymous1;
 
     /// <summary>Used for explicit tail prefixed calls</summary>
-    private TailCallSiteInfo? TailCallInfo
-    {
-        get
-        {
-            return _anonymous1 as TailCallSiteInfo;
-        }
-
-        set
-        {
-            _anonymous1 = value;
-        }
-    }
+    private ref TailCallSiteInfo TailCallInfo => ref _anonymous1.TailCallInfo;
 
     /// <summary>Used for async calls</summary>
-    private AsyncCallInfo? AsyncInfo
-    {
-        get
-        {
-            return _anonymous1 as AsyncCallInfo;
-        }
-
-        set
-        {
-            _anonymous1 = value;
-        }
-    }
+    private ref AsyncCallInfo AsyncInfo => ref _anonymous1.AsyncInfo;
 
     /// <summary>Only used for unmanaged calls, which cannot be tail-called</summary>
-    private CorInfoCallConvExtension UnmgdCallConv;
+    private ref CorInfoCallConvExtension UnmgdCallConv => ref _anonymous1.UnmgdCallConv;
 
 #if FEATURE_MULTIREG_RET
     // TODO-AllArch: enable for all call nodes to unify single-reg and multi-reg returns.
-    private ReturnTypeDesc _returnTypeDesc;
+    internal ReturnTypeDesc _returnTypeDesc;
 
     // RegNum would always be the first return reg.
     // The following array holds the other reg numbers of multi-reg return.
@@ -62,9 +42,9 @@ public sealed class GenTreeCall : GenTree
 #endif
 
     // in addition to gtFlags
-    private GenTreeCallFlags _callMoreFlags;
+    internal GenTreeCallFlags _callMoreFlags;
 
-    private byte _bitfield;
+    internal byte _bitfield;
 
     // value from the gtCallTypes enumeration
     internal gtCallTypes _callType
@@ -95,11 +75,11 @@ public sealed class GenTreeCall : GenTree
     }
 
     /// <summary>number of inline candidates for the given call</summary>
-    private byte _inlineInfoCount;
+    internal byte _inlineInfoCount;
 
-    private unsafe CORINFO_CLASS_HANDLE _retClsHnd;
+    internal unsafe CORINFO_CLASS_HANDLE _retClsHnd;
 
-    private unsafe void* _anonymous2;
+    internal unsafe void* _anonymous2;
 
     /// <summary>GTF_CALL_VIRT_STUB - these are never inlined</summary>
     private unsafe void* StubCallStubAddr
@@ -143,7 +123,7 @@ public sealed class GenTreeCall : GenTree
         }
     }
 
-    private object? _anonymous3;
+    internal object? _anonymous3;
 
     // Only used when inlining methods
     private InlineCandidateInfo? InlineCandidateInfo
@@ -186,10 +166,10 @@ public sealed class GenTreeCall : GenTree
         }
     }
 
-    private unsafe void* _anonymous4;
+    internal unsafe void* _anonymous4;
 
     /// <summary>The serialized CALLI unmanaged call (CT_INDIRECT) cookie; reified into argument IR in morph</summary>
-    private unsafe CORINFO_CONST_LOOKUP* CallCookie
+    internal unsafe CORINFO_CONST_LOOKUP* CallCookie
     {
         get
         {
@@ -231,31 +211,31 @@ public sealed class GenTreeCall : GenTree
     }
 
     // Always available for user virtual calls
-    private LateDevirtualizationInfo? _lateDevirtualizationInfo;
+    internal LateDevirtualizationInfo? _lateDevirtualizationInfo;
 
     /// <summary>expression evaluated after args are placed which determines the control target</summary>
     /// <remarks>Applicable to any call type</remarks>
-    private GenTree? _controlExpr;
+    internal GenTree? _controlExpr;
 
     // CT_USER_FUNC or CT_HELPER
     internal unsafe CORINFO_METHOD_HANDLE _callMethHnd;
 
 #if FEATURE_READYTORUN
     /// <summary>Call target lookup info for method call from a Ready To Run module</summary>
-    private CORINFO_CONST_LOOKUP _entryPoint;
+    internal CORINFO_CONST_LOOKUP _entryPoint;
 #endif
 
 #if DEBUG
-    private GenTreeCallDebugFlags _callDebugFlags;
+    internal GenTreeCallDebugFlags _callDebugFlags;
 
     /// <summary>For non-inline candidates, track the first observation that blocks candidacy.</summary>
-    private InlineObservation _inlineObservation;
+    internal InlineObservation _inlineObservation;
 
     // IL offset of the call wrt its parent method.
-    private IL_OFFSET _rawILOffset;
+    internal IL_OFFSET _rawILOffset;
 #endif
 
-    private InlineContext? _inlineContext;
+    internal InlineContext? _inlineContext;
 
     public GenTreeCall(var_types type)
         : base(GT_CALL, type)
@@ -321,6 +301,16 @@ public sealed class GenTreeCall : GenTree
     public unsafe CorInfoHelpFunc HelperNum
         => IsHelperCall() ? Compiler.eeGetHelperNum(_callMethHnd) : CORINFO_HELP_UNDEF;
 
+    public byte InlineCandidatesCount => _inlineInfoCount;
+
+    /// <summary>Whether or not this call is to an async function.</summary>
+    /// <remarks>
+    ///   <para>async involves passing an async continuation as a separate argument and returning an async continuation in REG_ASYNC_CONTINUATION_RET.</para>
+    ///   <para>The async continuation is usually JIT added (WellKnownArg.AsyncContinuation). This is the case for an async method calling another async method by normal means. However, the VM also creates stubs that call async methods through calli where the async continuations are passed explicitly. See CEEJitInfo.getAsyncResumptionStub and MethodDesc.EmitTaskReturningThunk for examples. In those cases the JIT does not know (and does not need to know) which arg is the async continuation.</para>
+    ///   <para>The VM also uses the AsyncHelpers.AsyncCallContinuation() intrinsic in the stubs discussed above. The JIT must take care in those cases to still mark the preceding call as an async call; this is required for correct LSRA behavior and GC reporting around the returned async continuation. This is currently done in lowering; see LowerAsyncContinuation().</para>
+    /// </remarks>
+    public bool IsAsync => (_callMoreFlags & GTF_CALL_M_ASYNC) != 0;
+
     public bool IsDelegateInvoke => (_callMoreFlags & GTF_CALL_M_DELEGATE_INV) != 0;
 
 #if DEBUG
@@ -378,6 +368,7 @@ public sealed class GenTreeCall : GenTree
     public bool IsImplicitTailCall => false;
 #endif
 
+    [MemberNotNullWhen(true, nameof(InlineCandidateInfo), nameof(InlineCandidateInfoList))]
     public bool IsInlineCandidate => (Flags & GTF_CALL_INLINE_CANDIDATE) != 0;
 
     public bool IsNoReturn
@@ -470,7 +461,7 @@ public sealed class GenTreeCall : GenTree
 
     /// <summary>get the type descriptor of return value of the call</summary>
 #if FEATURE_MULTIREG_RET
-    public ref readonly ReturnTypeDesc ReturnTypeDesc => _returnTypeDesc;
+    internal ref readonly ReturnTypeDesc ReturnTypeDesc => ref _returnTypeDesc;
 #else
     public ref readonly ReturnTypeDesc ReturnTypeDesc => ref Unsafe.NullRef<ReturnTypeDesc>();
 #endif
@@ -479,20 +470,15 @@ public sealed class GenTreeCall : GenTree
     /// <remarks>This may be out of sync with gtArgs.HasRetBuffer during import until we actually create the ret buffer.</remarks>
     public bool ShouldHaveRetBufArg => (_callMoreFlags & GTF_CALL_M_RETBUFFARG) != 0;
 
-    public InlineCandidateInfo? SingleInlineCandidateInfo
+    public InlineCandidateInfo SingleInlineCandidateInfo
     {
         get
         {
-            // gtInlineInfoCount can be 0 (not an inline candidate) or 1
-            if (_inlineInfoCount == 0)
+            assert(IsInlineCandidate);
+
+            if (_inlineInfoCount > 1)
             {
-                assert(!IsInlineCandidate);
-                assert(InlineCandidateInfo is null);
-                return null;
-            }
-            else if (_inlineInfoCount > 1)
-            {
-                assert(false, "Call has multiple inline candidates");
+                NO_WAY("Call has multiple inline candidates");
             }
             return InlineCandidateInfo;
         }
@@ -503,6 +489,27 @@ public sealed class GenTreeCall : GenTree
 #if DEBUG
     public bool WasInlineCandidate => (_callDebugFlags & GTF_CALL_MD_WAS_CANDIDATE) != 0;
 #endif
+
+#if FEATURE_MULTIREG_RET
+    public void CopyOtherRegs(GenTreeCall tree)
+    {
+        // TODO: Port Call.CopyOtherRegs
+        _spillFlags = tree._spillFlags;
+    }
+#endif
+
+    public InlineCandidateInfo GetGDVCandidateInfo(byte index)
+    {
+        assert(IsInlineCandidate);
+        assert(index < _inlineInfoCount);
+
+        if (_inlineInfoCount > 1)
+        {
+            // In this case we should access it through gtInlineCandidateInfoList
+            return InlineCandidateInfoList[index];
+        }
+        return InlineCandidateInfo;
+    }
 
     /// <summary>get i'th return register allocated to this call node.</summary>
     /// <param name="idx">index of the return register</param>
@@ -632,5 +639,18 @@ public sealed class GenTreeCall : GenTree
     public unsafe bool IsSpecialIntrinsic(Compiler compiler, NamedIntrinsic ni)
     {
         return IsSpecialIntrinsic() && (compiler.lookupNamedIntrinsic(_callMethHnd) == ni);
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    internal struct _Anonymous1_e__Union
+    {
+        [FieldOffset(0)]
+        public TailCallSiteInfo TailCallInfo;
+
+        [FieldOffset(0)]
+        public AsyncCallInfo AsyncInfo;
+
+        [FieldOffset(0)]
+        public CorInfoCallConvExtension UnmgdCallConv;
     }
 }

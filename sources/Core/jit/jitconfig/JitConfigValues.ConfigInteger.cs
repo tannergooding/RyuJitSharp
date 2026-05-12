@@ -472,7 +472,7 @@ public partial struct JitConfigValues
 #endif
 
 #if DEBUG && TARGET_XARCH
-        /// <summary>Enable EVEX encoding for SIMD instructions when AVX-512VL is available.</summary>
+        /// <summary>Enable EVEX encoding for simd instructions when AVX-512VL is available.</summary>
         JitStressEvexEncoding,
 #endif
 
@@ -615,10 +615,10 @@ public partial struct JitConfigValues
 
 #if FEATURE_SIMD
         /// <summary>
-        ///     <para>Default 0, ValueNumbering of SIMD nodes and HW Intrinsic nodes enabled</para>
-        ///     <para>If 1, then disable ValueNumbering of SIMD nodes</para>
+        ///     <para>Default 0, ValueNumbering of simd nodes and HW Intrinsic nodes enabled</para>
+        ///     <para>If 1, then disable ValueNumbering of simd nodes</para>
         ///     <para>If 2, then disable ValueNumbering of HW Intrinsic nodes</para>
-        ///     <para>If 3, disable both SIMD and HW Intrinsic nodes</para>
+        ///     <para>If 3, disable both simd and HW Intrinsic nodes</para>
         /// </summary>
         JitDisableSimdVN,
 #endif
@@ -703,7 +703,7 @@ public partial struct JitConfigValues
         JitELTHookEnabled,
 
         /// <summary></summary>
-        JitInlineSIMDMultiplier,
+        JitInlineSimdMultiplier,
 
         /// <summary>Ex lclMAX_TRACKED constant.</summary>
         JitMaxLocalsToTrack,
@@ -1376,7 +1376,7 @@ public partial struct JitConfigValues
 
         [JitAggressiveInlining] = ((nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitAggressiveInlining"u8))), 0),
         [JitELTHookEnabled] = ((nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitELTHookEnabled"u8))), 0),
-        [JitInlineSIMDMultiplier] = ((nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlineSIMDMultiplier"u8))), 3),
+        [JitInlineSimdMultiplier] = ((nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlineSimdMultiplier"u8))), 3),
         [JitMaxLocalsToTrack] = ((nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitMaxLocalsToTrack"u8))), 0x400),
 
 #if FEATURE_ENABLE_NO_RANGE_CHECKS

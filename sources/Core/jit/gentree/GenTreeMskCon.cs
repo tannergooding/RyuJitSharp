@@ -8,10 +8,14 @@ namespace RyuJitSharp;
 
 public sealed class GenTreeMskCon : GenTree
 {
-    public GenTreeMskCon(var_types type)
-        : base(GT_CNS_MSK, type)
+    private simdmask_t _SimdMaskVal;
+
+    public GenTreeMskCon(simdmask_t simdMaskVal)
+        : base(GT_CNS_MSK, TYP_MASK)
     {
-        assert(varTypeIsMask(type));
+        _SimdMaskVal = simdMaskVal;
     }
+
+    public ref simdmask_t simdMaskVal => ref _SimdMaskVal;
 }
 #endif

@@ -218,7 +218,8 @@ public partial class LIR
             }
 
             var store = compiler.gtNewTempStore(lclNum, node);
-            var load = new GenTreeLclVar(GT_LCL_VAR, store.Type, store.LclNum);
+            assert(store.Oper is GT_STORE_LCL_VAR);
+            var load = new GenTreeLclVar(store.Type, store.AsLclVar().LclNum);
 
             _range.InsertAfter(node, store, load);
 

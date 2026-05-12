@@ -19,6 +19,14 @@ public sealed class InlineStrategy
     /// <summary>Maximum number of over-budget [Intrinsic]-type inlines allowed per root method.</summary>
     public const int MAX_OVER_BUDGET_INTRINSIC_INLINES = 50;
 
+    // When the root method or an already-imported inlinee references a
+    // Vector*/HW-intrinsic IsSupported / IsHardwareAccelerated property,
+    // multiply the initial inline time budget by this factor (one-shot).
+    // Methods with SIMD ISA fallbacks tend to be IL-heavy, and inlining one
+    // such callee can otherwise consume the budget for trivial helpers
+    // (e.g., Span.Slice, property getters) that follow.
+    public const long SIMD_BUDGET_BOOST_MULTIPLIER = 5;
+
 #if DEBUG
     private static bool s_HasDumpedDataHeader;
     private static bool s_HasDumpedXmlHeader;
@@ -50,6 +58,7 @@ public sealed class InlineStrategy
     private int m_InitialSizeEstimate;
     private int m_CurrentSizeEstimate;
     private bool m_HasForceViaDiscretionary;
+    private bool m_HasHardwareIntrinsicCheck;
 
 #if DEBUG
     private int m_MethodXmlFilePosition;
@@ -120,6 +129,8 @@ public sealed class InlineStrategy
     /// <summary>Return the current code size estimate for this method</summary>
     public int CurrentSizeEstimate => m_CurrentSizeEstimate;
 
+    public bool HasObservedHardwareIntrinsicCheck => m_HasHardwareIntrinsicCheck;
+
     /// <summary>Return number of import attempts</summary>
     public int ImportCount => m_ImportCount;
 
@@ -181,6 +192,32 @@ public sealed class InlineStrategy
 
     /// <summary>Inform strategy that there's a new inline candidate.</summary>
     public void NoteCandidate() => m_CandidateCount++;
+
+    /// <summary>record that the root method or an already-imported inlinee references a HW-intrinsic IsSupported / IsHardwareAccelerated capability check, and grow the inline time budget on the first such observation per root method.</summary>
+    /// <remarks>
+    ///   <para>Methods with SIMD paths typically carry several ISA-specific fallbacks (e.g. Vector512/Vector256/Vector128/scalar variants), making them IL-heavy. Inlining one such callee can otherwise consume nearly the entire inline time budget for the root method, blocking subsequent inlines of trivial helpers (Span.Slice, property getters, etc.).</para>
+    ///   <para>The boost is one-shot per root method and monotonic: it never lowers the current budget (preserving any prior growth from force inlines).</para>
+    /// </remarks>
+    public void NoteHardwareIntrinsicCheckObserved()
+    {
+        if (m_HasHardwareIntrinsicCheck)
+        {
+            return;
+        }
+
+        m_HasHardwareIntrinsicCheck = true;
+
+        // Compute the boosted budget in 64-bit to avoid signed overflow when
+        // an unusually large JitInlineBudget is configured.
+        var boosted64 = m_InitialTimeBudget * SIMD_BUDGET_BOOST_MULTIPLIER;
+        var boosted = (boosted64 > int.MaxValue) ? int.MaxValue : (int)(boosted64);
+
+        if (m_CurrentTimeBudget < boosted)
+        {
+            JITDUMP($"\nBudget: HW intrinsic IsSupported/IsHardwareAccelerated check observed; boosting inline time budget from {m_CurrentTimeBudget} to {boosted} (initial={m_InitialTimeBudget}, multiplier={SIMD_BUDGET_BOOST_MULTIPLIER})\n");
+            m_CurrentTimeBudget = boosted;
+        }
+    }
 
     /// <summary>Inform strategy that jit is about to import the inlinee IL.</summary>
     public void NoteImport() => m_ImportCount++;

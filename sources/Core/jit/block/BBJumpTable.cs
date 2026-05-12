@@ -12,6 +12,12 @@ public class BBJumpTable
     private FlowEdge[] _succs;
     private int _succCount;
 
+    public BBJumpTable()
+    {
+        _succs = [];
+        _succCount = 0;
+    }
+
     public BBJumpTable(FlowEdge[] succs)
     {
         _succs = succs;

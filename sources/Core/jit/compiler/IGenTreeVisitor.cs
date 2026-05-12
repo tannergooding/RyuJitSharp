@@ -214,7 +214,7 @@ public interface IGenTreeVisitor<TSelf>
 
                         if (result is not fgWalkResult.WALK_ABORT)
                         {
-                            Span<GenTree> arrInds = arrElem.ArrInds;
+                            var arrInds = arrElem.ArrInds;
 
                             foreach (ref var arrInd in arrInds[..arrElem.ArrRank])
                             {

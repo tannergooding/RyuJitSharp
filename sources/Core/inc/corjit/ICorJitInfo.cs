@@ -391,40 +391,42 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
     // ICorJitInfo
     //
 
-    public void allocMem(AllocMemArgs* pArgs) => lpVtbl->allocMem((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), pArgs);
+    public void allocMem(AllocMemArgs* pArgs) => lpVtbl->allocMem((ICorJitInfo*)(Unsafe.AsPointer(ref this)), pArgs);
 
-    public void reserveUnwindInfo(bool isFunclet, bool isColdCode, int unwindSize) => lpVtbl->reserveUnwindInfo((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), isFunclet, isColdCode, unwindSize);
+    public void reserveUnwindInfo(bool isFunclet, bool isColdCode, int unwindSize) => lpVtbl->reserveUnwindInfo((ICorJitInfo*)(Unsafe.AsPointer(ref this)), isFunclet, isColdCode, unwindSize);
 
-    public void allocUnwindInfo(byte* pHotCode, byte* pColdCode, int startOffset, int endOffset, int unwindSize, byte* pUnwindBlock, CorJitFuncKind funcKind) => lpVtbl->allocUnwindInfo((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), pHotCode, pColdCode, startOffset, endOffset, unwindSize, pUnwindBlock, funcKind);
+    public void allocUnwindInfo(byte* pHotCode, byte* pColdCode, int startOffset, int endOffset, int unwindSize, byte* pUnwindBlock, CorJitFuncKind funcKind) => lpVtbl->allocUnwindInfo((ICorJitInfo*)(Unsafe.AsPointer(ref this)), pHotCode, pColdCode, startOffset, endOffset, unwindSize, pUnwindBlock, funcKind);
 
-    public void* allocGCInfo(nint size) => lpVtbl->allocGCInfo((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), size);
+    public void* allocGCInfo(nint size) => lpVtbl->allocGCInfo((ICorJitInfo*)(Unsafe.AsPointer(ref this)), size);
 
-    public void setEHcount(int cEH) => lpVtbl->setEHcount((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), cEH);
+    public void setEHcount(int cEH) => lpVtbl->setEHcount((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cEH);
 
-    public void setEHinfo(int EHnumber, CORINFO_EH_CLAUSE* clause) => lpVtbl->setEHinfo((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), EHnumber, clause);
+    public void setEHinfo(int EHnumber, CORINFO_EH_CLAUSE* clause) => lpVtbl->setEHinfo((ICorJitInfo*)(Unsafe.AsPointer(ref this)), EHnumber, clause);
 
-    public bool logMsg(int level, byte* fmt, void* args) => lpVtbl->logMsg((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), level, fmt, args);
+    public bool logMsg(int level, byte* fmt, void* args) => lpVtbl->logMsg((ICorJitInfo*)(Unsafe.AsPointer(ref this)), level, fmt, args);
 
-    public int doAssert(byte* szFile, int iLine, byte* szExpr) => lpVtbl->doAssert((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), szFile, iLine, szExpr);
+    public int doAssert(byte* szFile, int iLine, byte* szExpr) => lpVtbl->doAssert((ICorJitInfo*)(Unsafe.AsPointer(ref this)), szFile, iLine, szExpr);
 
-    public void reportFatalError(CorJitResult result) => lpVtbl->reportFatalError((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), result);
+    public void reportFatalError(CorJitResult result) => lpVtbl->reportFatalError((ICorJitInfo*)(Unsafe.AsPointer(ref this)), result);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsUnknownHandle(nint handle) => handle is >= UNKNOWN_HANDLE_MIN and <= UNKNOWN_HANDLE_MAX;
 
-    public JITINTERFACE_HRESULT getPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, PgoInstrumentationSchema** pSchema, int* pCountSchemaItems, byte** pInstrumentationData, PgoSource* pPgoSource, bool* pDynamicPgo) => lpVtbl->getPgoInstrumentationResults((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource, pDynamicPgo);
+    public JITINTERFACE_HRESULT getPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, PgoInstrumentationSchema** pSchema, int* pCountSchemaItems, byte** pInstrumentationData, PgoSource* pPgoSource, bool* pDynamicPgo) => lpVtbl->getPgoInstrumentationResults((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource, pDynamicPgo);
 
-    public JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, PgoInstrumentationSchema* pSchema, int countSchemaItems, byte** pInstrumentationData) => lpVtbl->allocPgoInstrumentationBySchema((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), ftnHnd, pSchema, countSchemaItems, pInstrumentationData);
+    public JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, PgoInstrumentationSchema* pSchema, int countSchemaItems, byte** pInstrumentationData) => lpVtbl->allocPgoInstrumentationBySchema((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftnHnd, pSchema, countSchemaItems, pInstrumentationData);
 
-    public void recordCallSite(int instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle) => lpVtbl->recordCallSite((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), instrOffset, callSig, methodHandle);
+    public void recordCallSite(int instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle) => lpVtbl->recordCallSite((ICorJitInfo*)(Unsafe.AsPointer(ref this)), instrOffset, callSig, methodHandle);
 
-    public void recordRelocation(void* location, void* locationRW, void* target, ushort fRelocType, int addlDelta = 0) => lpVtbl->recordRelocation((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), location, locationRW, target, fRelocType, addlDelta);
+    public void recordWasmManagedCallSig(CORINFO_SIG_INFO* callSig) => lpVtbl->recordWasmManagedCallSig((ICorJitInfo*)(Unsafe.AsPointer(ref this)), callSig);
 
-    public ushort getRelocTypeHint(void* target) => lpVtbl->getRelocTypeHint((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), target);
+    public void recordRelocation(void* location, void* locationRW, void* target, ushort fRelocType, int addlDelta = 0) => lpVtbl->recordRelocation((ICorJitInfo*)(Unsafe.AsPointer(ref this)), location, locationRW, target, fRelocType, addlDelta);
 
-    public CorInfoArch getExpectedTargetArchitecture() => lpVtbl->getExpectedTargetArchitecture((ICorDynamicInfo*) (Unsafe.AsPointer(ref this)));
+    public ushort getRelocTypeHint(void* target) => lpVtbl->getRelocTypeHint((ICorJitInfo*)(Unsafe.AsPointer(ref this)), target);
 
-    public int getJitFlags(CORJIT_FLAGS* flags, int sizeInBytes) => lpVtbl->getJitFlags((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), flags, sizeInBytes);
+    public CorInfoArch getExpectedTargetArchitecture() => lpVtbl->getExpectedTargetArchitecture((ICorJitInfo*)(Unsafe.AsPointer(ref this)));
+
+    public int getJitFlags(CORJIT_FLAGS* flags, int sizeInBytes) => lpVtbl->getJitFlags((ICorJitInfo*)(Unsafe.AsPointer(ref this)), flags, sizeInBytes);
 
     public interface Interface : ICorDynamicInfo.Interface
     {
@@ -542,6 +544,10 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
         // the call site has no signature information (e.g. a helper call) or has no method handle
         // (e.g. a CALLI P/Invoke), then null should be passed instead.
         void recordCallSite(int instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle);
+
+        // Records the signature of a managed call site for Wasm R2R thunk generation.
+        // This is a no-op on all targets except ReadyToRun Wasm compilation.
+        void recordWasmManagedCallSig(CORINFO_SIG_INFO* callSig);
 
         // A relocation is recorded if we are pre-jitting.
         // A jump thunk may be inserted if we are jitting
@@ -938,36 +944,38 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
         // ICorJitInfo
         //
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, AllocMemArgs*, void> allocMem;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, AllocMemArgs*, void> allocMem;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, bool, bool, int, void> reserveUnwindInfo;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, bool, bool, int, void> reserveUnwindInfo;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, byte*, byte*, int, int, int, byte*, CorJitFuncKind, void> allocUnwindInfo;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, byte*, byte*, int, int, int, byte*, CorJitFuncKind, void> allocUnwindInfo;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, nint, void*> allocGCInfo;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, nint, void*> allocGCInfo;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, int, void> setEHcount;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, int, void> setEHcount;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, int, CORINFO_EH_CLAUSE*, void> setEHinfo;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, int, CORINFO_EH_CLAUSE*, void> setEHinfo;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, int, byte*, void*, bool> logMsg;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, int, byte*, void*, bool> logMsg;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, byte*, int, byte*, int> doAssert;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, byte*, int, byte*, int> doAssert;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CorJitResult, void> reportFatalError;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CorJitResult, void> reportFatalError;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CORINFO_METHOD_HANDLE, PgoInstrumentationSchema**, int*, byte**, PgoSource*, bool*, JITINTERFACE_HRESULT> getPgoInstrumentationResults;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, PgoInstrumentationSchema**, int*, byte**, PgoSource*, bool*, JITINTERFACE_HRESULT> getPgoInstrumentationResults;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CORINFO_METHOD_HANDLE, PgoInstrumentationSchema*, int, byte**, JITINTERFACE_HRESULT> allocPgoInstrumentationBySchema;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_HANDLE, PgoInstrumentationSchema*, int, byte**, JITINTERFACE_HRESULT> allocPgoInstrumentationBySchema;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, int, CORINFO_SIG_INFO*, CORINFO_METHOD_HANDLE, void> recordCallSite;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, int, CORINFO_SIG_INFO*, CORINFO_METHOD_HANDLE, void> recordCallSite;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, void*, void*, void*, ushort, int, void> recordRelocation;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_SIG_INFO*, void> recordWasmManagedCallSig;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, void*, ushort> getRelocTypeHint;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, void*, void*, void*, ushort, int, void> recordRelocation;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CorInfoArch> getExpectedTargetArchitecture;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, void*, ushort> getRelocTypeHint;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CORJIT_FLAGS*, int, int> getJitFlags;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CorInfoArch> getExpectedTargetArchitecture;
+
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORJIT_FLAGS*, int, int> getJitFlags;
     }
 }

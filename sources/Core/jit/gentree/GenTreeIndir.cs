@@ -14,6 +14,7 @@ public class GenTreeIndir : GenTreeOp
     protected internal GenTreeIndir(genTreeOps oper, var_types type, GenTree addr, GenTree? data = null)
         : base(oper, type, addr, data)
     {
+        assert(oper.IsIndir);
     }
 
     /// <summary>The address for the indirection.</summary>
@@ -44,7 +45,7 @@ public class GenTreeIndir : GenTreeOp
 
             if (IsIndirAddrMode)
             {
-                var result = addr.AsAddrMode().Base;
+                var result = addr.AsAddrMode().BaseAddress;
 
                 if (result is not null)
                 {
@@ -60,7 +61,7 @@ public class GenTreeIndir : GenTreeOp
         }
     }
 
-    public GenTree Data
+    public new GenTree Data
     {
         get
         {
@@ -76,7 +77,7 @@ public class GenTreeIndir : GenTreeOp
     }
 
 #nullable disable
-    public ref GenTree DataRef => ref Op2Ref;
+    public new ref GenTree DataRef => ref Op2Ref;
 #nullable restore
 
     [MemberNotNullWhen(true, nameof(Base))]

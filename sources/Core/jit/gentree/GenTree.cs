@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -77,6 +76,8 @@ public partial class GenTree
 
     protected internal GenTree(genTreeOps oper, var_types type)
     {
+        assert(type.ActualType == type);
+
         _oper = oper;
         _type = type;
 
@@ -162,6 +163,52 @@ public partial class GenTree
         }
     }
 
+    public GenTree Data
+    {
+        get
+        {
+            if (_oper.IsStore)
+            {
+                if (_oper.IsLocalStore)
+                {
+                    return AsLclVarCommon().Data;
+                }
+                else
+                {
+                    return AsIndir().Data;
+                }
+            }
+            else
+            {
+                assert(Debugger.IsAttached);
+                return null!;
+            }
+        }
+    }
+
+    public ref GenTree DataRef
+    {
+        get
+        {
+            if (_oper.IsStore)
+            {
+                if (_oper.IsLocalStore)
+                {
+                    return ref AsLclVarCommon().DataRef;
+                }
+                else
+                {
+                    return ref AsIndir().DataRef;
+                }
+            }
+            else
+            {
+                assert(Debugger.IsAttached);
+                return ref Unsafe.NullRef<GenTree>();
+            }
+        }
+    }
+
     public GenTree EffectiveVal
     {
         get
@@ -178,6 +225,21 @@ public partial class GenTree
     }
 
     public bool GeneratesAssertion => _assertionInfo.HasAssertion;
+
+    public bool HasOrderingSideEffect
+    {
+        get
+        {
+            assert(Debugger.IsAttached || SupportsOrderingSideEffect());
+            return (_flags & GTF_ORDER_SIDEEFF) != 0;
+        }
+
+        set
+        {
+            assert(SupportsOrderingSideEffect());
+            _flags |= GTF_ORDER_SIDEEFF;
+        }
+    }
 
     public bool HasOverflowCheck
     {
@@ -321,13 +383,7 @@ public partial class GenTree
             if (_oper.IsIntegralConst)
             {
                 var value = AsIntConCommon().IntegralValue;
-
-                if (value != long.MinValue)
-                {
-                    value = long.Abs(value);
-                }
-
-                result = ulong.IsPow2(unchecked((ulong)(value)));
+                result = (value == long.MinValue) || long.IsPow2(long.Abs(value));
             }
 
             return result;
@@ -338,7 +394,7 @@ public partial class GenTree
     public bool IsIntegralConstPow2 => _oper.IsIntegralConst && long.IsPow2(AsIntConCommon().IntegralValue);
 
     /// <summary>Determines whether the unsigned value of an integral constant is the power of 2.</summary>
-    public bool IsIntegralConstUnsignedPow2 => _oper.IsIntegralConst && ulong.IsPow2(unchecked((ulong)(AsIntConCommon().IntegralValue)));
+    public bool IsIntegralConstUnsignedPow2 => _oper.IsIntegralConst && ulong.IsPow2(AsIntConCommon().UnsignedIntegralValue);
 
     public bool IsLclVarAddr => (_oper is GT_LCL_ADDR) && (AsLclFld().LclOffs == 0);
 
@@ -642,6 +698,48 @@ public partial class GenTree
         }
     }
 
+    /// <summary>Check whether the operation supports the GTF_ORDER_SIDEEFF flag.</summary>
+    /// <returns>True if the given operator supports GTF_ORDER_SIDEEFF.</returns>
+    /// <remarks>A node will still have this flag set if an operand has it set, even if the parent does not support it. This situation indicates that reordering the parent may be ok as long as it does not break ordering dependencies of the operand.</remarks>
+    public bool SupportsOrderingSideEffect()
+    {
+        if (_type is TYP_BYREF)
+        {
+            // Forming byrefs may only be legal due to previous checks.
+            return true;
+        }
+
+        return _oper switch {
+            GT_ARR_LENGTH => true,
+            GT_MDARR_LENGTH => true,
+            GT_MDARR_LOWER_BOUND => true,
+            GT_ARR_ADDR => true,
+            GT_BOUNDS_CHECK => true,
+            GT_IND => true,
+            GT_BLK => true,
+            GT_STOREIND => true,
+            GT_NULLCHECK => true,
+            GT_STORE_BLK => true,
+            GT_XADD => true,
+            GT_XORR => true,
+            GT_XAND => true,
+            GT_XCHG => true,
+            GT_LOCKADD => true,
+            GT_CMPXCHG => true,
+            GT_MEMORYBARRIER => true,
+            GT_CATCH_ARG => true,
+            GT_ASYNC_CONTINUATION => true,
+            GT_RETURN_SUSPEND => true,
+            GT_PATCHPOINT => true,
+            GT_PATCHPOINT_FORCED => true,
+            GT_NONLOCAL_JMP => true,
+#if SWIFT_SUPPORT
+            GT_SWIFT_ERROR => true,
+#endif
+            _ => false,
+        };
+    }
+
 #if DEBUG
     public int TreeId => _treeId;
 #endif
@@ -838,12 +936,27 @@ public partial class GenTree
     /// </remarks>
     public void CopyCostsRaw(GenTree tree)
     {
+        assert(tree._oper == _oper);
+
 #if DEBUG
         _costsInitialized = true;
 #endif
 
         _costEx = tree._costEx;
         _costSz = tree._costSz;
+    }
+
+    /// <summary>Copy the _gtRegNum/gtRegTag fields.</summary>
+    /// <param name="tree">GenTree node from which to copy</param>
+    public void CopyReg(GenTree tree)
+    {
+        assert(tree._oper == _oper);
+
+        _regNum = tree._regNum;
+
+#if DEBUG
+        _regTag = tree._regTag;
+#endif
     }
 
     /// <summary>Get exception set this tree may throw.</summary>
@@ -999,7 +1112,7 @@ public partial class GenTree
                 {
                     // We currently don't try to avoid setting these flags and GTF_EXCEPT when
                     // we know that the operation in fact cannot overflow/divide by zero.
-                    assert(varTypeIsInt(hwintrinsic.SimdBaseType));
+                    assert(varTypeIsInt(hwintrinsic.simdBaseType));
                     flags |= (ExceptionSetFlags.OverflowException | ExceptionSetFlags.DivideByZeroException);
                 }
 #endif
@@ -1172,7 +1285,7 @@ public partial class GenTree
                         }
                         else
                         {
-                            Span<GenTree> arrInds = arrElemNode.ArrInds;
+                            var arrInds = arrElemNode.ArrInds;
 
                             foreach (ref var arrInd in arrInds[..arrElemNode.ArrRank])
                             {
@@ -1329,6 +1442,17 @@ public partial class GenTree
         return ((_flags & GTF_IND_NONFAULTING) == 0) && compiler.fgAddrCouldBeNull(IndirOrArrMetaDataAddr);
     }
 
+    public bool IsIntegralConst(nint value)
+    {
+        var result = false;
+
+        if (_oper.IsIntegralConst)
+        {
+            result = AsIntConCommon().IsIntegralConst(value);
+        }
+        return result;
+    }
+
     public bool IsNeverNegative(Compiler comp)
     {
         assert(varTypeIsIntegral(_type));
@@ -1364,28 +1488,29 @@ public partial class GenTree
     public bool IsNeverNegativeOne(Compiler comp)
     {
         assert(varTypeIsIntegral(_type));
+        var result = false;
 
         if (IsNeverNegative(comp))
         {
-            return true;
+            result = true;
         }
-
-        if (_oper.IsIntegralConst)
+        else if (_oper.IsIntegralConst)
         {
-            return !AsIntConCommon().IsIntegralConst(-1);
+            result = !AsIntConCommon().IsIntegralConst(-1);
         }
-        return false;
+        return result;
     }
 
     public bool IsNeverZero()
     {
         assert(varTypeIsIntegral(_type));
+        var result = false;
 
         if (_oper.IsIntegralConst)
         {
-            return !AsIntConCommon().IsIntegralConst(0);
+            result = !AsIntConCommon().IsIntegralConst(0);
         }
-        return false;
+        return result;
     }
 
     /// <summary>Check whether the operation may throw.</summary>
@@ -1416,6 +1541,53 @@ public partial class GenTree
     {
         assert(Unsafe.AreSame(in GetUseRefOrNullRef(useEdge), in useEdge));
         useEdge = replacement;
+    }
+
+    /// <summary>Check whether the operation requires GTF_CALL flag regardless of the children's flags.</summary>
+    /// <param name="comp"></param>
+    /// <returns></returns>
+    public bool RequiresCallFlag(Compiler comp) => _oper switch {
+        GT_ASYNC_CONTINUATION => true,
+        GT_GCPOLL => true,
+        GT_INTRINSIC => comp.IsIntrinsicImplementedByUserCall(AsIntrinsic().IntrinsicName),
+        GT_KEEPALIVE => true,
+        GT_NONLOCAL_JMP => true,
+#if FEATURE_HW_INTRINSICS
+        GT_HWINTRINSIC => AsHWIntrinsic().RequiresCallFlag(),
+#endif
+        GT_CALL => true,
+        GT_RETURN_SUSPEND => true,
+        GT_PATCHPOINT => true,
+        GT_PATCHPOINT_FORCED => true,
+#if SWIFT_SUPPORT
+        GT_SWIFT_ERROR => true,
+#endif
+#if FEATURE_FIXED_OUT_ARGS && !TARGET_64BIT
+        // Variable shifts of a long end up being helper calls, so mark the tree as such in morph.
+        // This is potentially too conservative, since they'll get treated as having side effects.
+        // It is important to mark them as calls so if they are part of an argument list,
+        // they will get sorted and processed properly (for example, it is important to handle
+        // all nested calls before putting struct arguments in the argument registers). We
+        // could mark the trees just before argument processing, but it would require a full
+        // tree walk of the argument tree, so we just do it when morphing, instead, even though we'll
+        // mark non-argument trees (that will still get converted to calls, anyway).
+        case GT_LSH => TypeIs(TYP_LONG) && !gtGetOp2()->OperIs(GT_CNS_INT)
+        case GT_RSH => TypeIs(TYP_LONG) && !gtGetOp2()->OperIs(GT_CNS_INT)
+        case GT_RSZ => TypeIs(TYP_LONG) && !gtGetOp2()->OperIs(GT_CNS_INT)
+#endif
+        _ => false,
+    };
+
+    public void SetAllEffectsFlags(GenTree source)
+        => SetAllEffectsFlags(source._flags & GTF_ALL_EFFECT);
+
+    public void SetAllEffectsFlags(GenTree source1, GenTree source2)
+        => SetAllEffectsFlags((source1._flags | source2._flags) & GTF_ALL_EFFECT);
+
+    public void SetAllEffectsFlags(GenTreeFlags sourceFlags)
+    {
+        assert((sourceFlags & ~GTF_ALL_EFFECT) == 0);
+        _flags = (_flags & ~GTF_ALL_EFFECT) | sourceFlags;
     }
 
     // Set the costs. They are always both set at the same time.
@@ -1651,7 +1823,7 @@ public partial class GenTree
 
                     if (result is not VisitResult.Abort)
                     {
-                        Span<GenTree> arrInds = arrElem.ArrInds;
+                        var arrInds = arrElem.ArrInds;
 
                         foreach (ref var arrInd in arrInds[..arrElem.ArrRank])
                         {

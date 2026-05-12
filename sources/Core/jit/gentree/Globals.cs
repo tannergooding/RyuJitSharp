@@ -31,8 +31,6 @@ public partial class Globals
 
     public const int EMPTY_STRING_SCON = -1;
 
-    public const int GT_ARR_MAX_RANK = 3;
-
     // We use the following format when printing the Statement number: Statement->GetID()
     // This define is used with string concatenation to put this in printf format strings
     public static string FMT_STMT(int id) => $"STMT{id:D5}";

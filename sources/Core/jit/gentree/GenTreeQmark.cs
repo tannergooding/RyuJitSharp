@@ -19,6 +19,12 @@ public sealed class GenTreeQmark : GenTreeOp
         assert(colon.Oper is GT_COLON);
     }
 
+    public GenTree Cond => Op1;
+
+    public GenTreeColon Colon => Op2.AsColon();
+
+    public GenTree ElseNode => Colon.ElseNode;
+
     public byte ElseNodeLikelihood
     {
         get
@@ -27,10 +33,6 @@ public sealed class GenTreeQmark : GenTreeOp
             return (byte)(100 - _thenLikelihood);
         }
     }
-
-    public GenTreeColon Colon => Op2.AsColon();
-
-    public GenTree ElseNode => Colon.ElseNode;
 
     public bool IsEarlyExpandableQmark
     {
@@ -44,6 +46,8 @@ public sealed class GenTreeQmark : GenTreeOp
             Flags = (Flags & ~GTF_QMARK_EARLY_EXPAND) | (value ? GTF_QMARK_EARLY_EXPAND : 0);
         }
     }
+
+    public GenTree ThenNode => Colon.ThenNode;
 
     public byte ThenNodeLikelihood
     {
@@ -59,6 +63,4 @@ public sealed class GenTreeQmark : GenTreeOp
             _thenLikelihood = value;
         }
     }
-
-    public GenTree ThenNode => Colon.ThenNode;
 }

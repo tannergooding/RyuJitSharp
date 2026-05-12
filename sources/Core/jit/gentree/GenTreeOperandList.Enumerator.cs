@@ -173,8 +173,7 @@ public partial struct GenTreeOperandsList
                         }
                         else if (index < arrElem.ArrRank)
                         {
-                            Span<GenTree> arrInds = arrElem.ArrInds;
-                            current = arrInds[index];
+                            current = arrElem.ArrInds[index];
                         }
                         break;
                     }

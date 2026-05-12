@@ -18,14 +18,14 @@ public sealed class GenTreeIntrinsic : GenTreeOp
 #endif // FEATURE_READYTORUN
 
     public unsafe GenTreeIntrinsic(var_types type, GenTree op1, NamedIntrinsic intrinsicName, CORINFO_METHOD_HANDLE methodHandle)
-        : base(GT_INTRINSIC, type, op1, null)
+        : base(GT_INTRINSIC, type, op1, op2: null)
     {
         assert(intrinsicName != NI_Illegal);
         _intrinsicName = intrinsicName;
         _methodHandle = methodHandle;
     }
 
-    public  unsafe GenTreeIntrinsic(var_types type, GenTree op1, GenTree op2, NamedIntrinsic intrinsicName, CORINFO_METHOD_HANDLE methodHandle)
+    public unsafe GenTreeIntrinsic(var_types type, GenTree op1, GenTree op2, NamedIntrinsic intrinsicName, CORINFO_METHOD_HANDLE methodHandle)
         : base(GT_INTRINSIC, type, op1, op2)
     {
         assert(intrinsicName != NI_Illegal);
@@ -34,14 +34,14 @@ public sealed class GenTreeIntrinsic : GenTreeOp
     }
 
 #if FEATURE_READYTORUN
-    public required CORINFO_CONST_LOOKUP EntryPoint
+    public CORINFO_CONST_LOOKUP EntryPoint
     {
         get
         {
             return _entryPoint;
         }
 
-        init
+        set
         {
             _entryPoint = value;
         }

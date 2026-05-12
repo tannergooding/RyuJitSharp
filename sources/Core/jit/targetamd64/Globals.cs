@@ -19,10 +19,10 @@ public partial class Globals
     public const int MAX_PASS_SINGLEREG_BYTES = 8;
 
 #if UNIX_AMD64_ABI
-    /// <summary>Maximum size of a struct that could be passed in more than one register (Max is two SIMD16s)</summary>
+    /// <summary>Maximum size of a struct that could be passed in more than one register (Max is two simd16s)</summary>
     public const int MAX_PASS_MULTIREG_BYTES = 32;
 
-    /// <summary>Maximum size of a struct that could be returned in more than one register  (Max is two SIMD16s)</summary>
+    /// <summary>Maximum size of a struct that could be returned in more than one register  (Max is two simd16s)</summary>
     public const int MAX_RET_MULTIREG_BYTES = 32;
 
     /// <summary>Maximum registers used to pass a single argument in multiple registers.</summary>

@@ -9,5 +9,14 @@ public partial class Compiler
 {
     private sealed class BlockListNode
     {
+        public BasicBlock Blk;
+
+        public BlockListNode? Next;
+
+        public BlockListNode(BasicBlock blk, BlockListNode? next = null)
+        {
+            Blk = blk;
+            Next = next;
+        }
     }
 }

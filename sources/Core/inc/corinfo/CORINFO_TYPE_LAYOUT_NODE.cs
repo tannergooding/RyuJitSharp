@@ -7,9 +7,9 @@ namespace RyuJitSharp;
 
 public struct CORINFO_TYPE_LAYOUT_NODE
 {
-    // Type handle if this is a SIMD type, i.e. for intrinsic types in
+    // Type handle if this is a simd type, i.e. for intrinsic types in
     // System.Numerics and System.Runtime.Intrinsics namespaces. This handle
-    // should be used for SIMD type recognition ONLY. During prejitting the
+    // should be used for simd type recognition ONLY. During prejitting the
     // returned handle cannot safely be used for arbitrary JIT-EE calls. The
     // safe operations on this handle are:
     // - getClassNameFromMetadata

@@ -12,7 +12,7 @@ public sealed class GenTreeRuntimeLookup : GenTreeUnOp
     private unsafe CORINFO_GENERIC_HANDLE gtHnd;
     private CorInfoGenericHandleType gtHndType;
 
-    public unsafe GenTreeRuntimeLookup(CORINFO_GENERIC_HANDLE hnd, CorInfoGenericHandleType hndTyp, GenTree tree)
+    internal unsafe GenTreeRuntimeLookup(GenTree tree, CORINFO_GENERIC_HANDLE hnd, CorInfoGenericHandleType hndTyp)
         : base(GT_RUNTIMELOOKUP, tree.Type, tree)
     {
         assert(hnd is not null);
@@ -37,6 +37,10 @@ public sealed class GenTreeRuntimeLookup : GenTreeUnOp
             return (CORINFO_FIELD_HANDLE)(gtHnd);
         }
     }
+
+    public unsafe CORINFO_GENERIC_HANDLE Handle => gtHnd;
+
+    public CorInfoGenericHandleType HandleType => gtHndType;
 
     public bool IsClassHandle => gtHndType is CORINFO_HANDLETYPE_CLASS;
 

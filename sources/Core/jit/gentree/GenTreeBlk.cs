@@ -11,12 +11,30 @@ public sealed class GenTreeBlk : GenTreeIndir
 {
     private ClassLayout _layout;
 
-    public GenTreeBlk(genTreeOps oper, var_types type, GenTree addr, ClassLayout layout)
-        : base(oper, type, addr, data: null)
+    public GenTreeBlk(var_types type, GenTree addr, ClassLayout layout)
+        : base(GT_BLK, type, addr, data: null)
     {
         assert(layout.Size != 0);
         _layout = layout;
     }
+
+    public GenTreeBlk(var_types type, GenTree addr, GenTree data, ClassLayout layout)
+        : base(GT_STORE_BLK, type, addr, data)
+    {
+        assert(layout.Size != 0);
+
+        if (data.IsIntegralConst(0))
+        {
+            data.Flags |= GTF_DONT_CSE;
+        }
+        _layout = layout;
+    }
+
+    public bool ContainsReferences => _layout.HasGCPtr;
+
+    public bool IsOnHeapAndContainsReferences => (Addr.Oper is not GT_LCL_ADDR) && ContainsReferences;
+
+    public bool IsZeroingGCPointersOnHeap => (Oper is GT_STORE_BLK) && Data.IsIntegralConst(0) && IsOnHeapAndContainsReferences;
 
     public ClassLayout Layout
     {
@@ -31,4 +49,6 @@ public sealed class GenTreeBlk : GenTreeIndir
             _layout = value;
         }
     }
+
+    public new int Size => _layout.Size;
 }

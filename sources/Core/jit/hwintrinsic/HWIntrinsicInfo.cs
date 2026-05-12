@@ -7,6 +7,12 @@ namespace RyuJitSharp;
 
 public struct HWIntrinsicInfo
 {
+    public static bool HasSpecialSideEffect(NamedIntrinsic id)
+    {
+        // TODO: Port HWIntrinsicInfo.HasSpecialSideEffect
+        return false;
+    }
+
     public static bool IsMultiReg(NamedIntrinsic id)
     {
         // TODO: Port HWIntrinsicInfo.IsMultiReg

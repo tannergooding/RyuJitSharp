@@ -1,0 +1,19 @@
+// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+namespace RyuJitSharp;
+
+public partial class Compiler
+{
+    /// <summary>used to save/restore stack contents.</summary>
+    public struct SavedStack
+    {
+        /// <summary>number of values on stack</summary>
+        public int ssDepth;
+
+        /// <summary>saved tree values</summary>
+        public StackEntry[] ssTrees;
+    }
+}

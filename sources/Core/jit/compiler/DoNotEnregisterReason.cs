@@ -68,9 +68,11 @@ public enum DoNotEnregisterReason
     /// <summary>the local is used to do SP check on every call</summary>
     CallSpCheck,          
 
-    /// <summary>a promoted struct was used by a SIMD/HWI node; it must be dependently promoted</summary>
-    SimdUserForcesDep,
+    /// <summary>a promoted struct was used by a simd/HWI node; it must be dependently promoted</summary>
+    simdUserForcesDep,
 
     /// <summary>the argument is a hidden return buffer passed to a method.</summary>
     HiddenBufferStructArg,
+
+    WasmGCVisibility,
 }

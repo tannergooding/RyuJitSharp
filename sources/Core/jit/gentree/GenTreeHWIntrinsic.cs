@@ -10,7 +10,7 @@ namespace RyuJitSharp;
 
 public sealed class GenTreeHWIntrinsic : GenTreeJitIntrinsic
 {
-    public GenTreeHWIntrinsic(var_types type, NamedIntrinsic hwIntrinsicId, var_types simdBaseType, byte simdSize, params ReadOnlySpan<GenTree> operands)
+    public GenTreeHWIntrinsic(var_types type, NamedIntrinsic hwIntrinsicId, var_types simdBaseType, byte simdSize, params GenTree[] operands)
         : base(GT_HWINTRINSIC, type, simdBaseType, simdSize, operands)
     {
         Initialize(hwIntrinsicId);
@@ -64,6 +64,62 @@ public sealed class GenTreeHWIntrinsic : GenTreeJitIntrinsic
         addr = null;
         // TODO: Port GenTreeHWIntrinsic.IsMemoryStore
         return false;
+    }
+
+    /// <summary>Check whether the operation requires GTF_CALL flag regardless of the children's flags.</summary>
+    public bool RequiresCallFlag()
+    {
+        var intrinsicId = HWIntrinsicId;
+
+        if (HWIntrinsicInfo.HasSpecialSideEffect(intrinsicId))
+        {
+            switch (intrinsicId)
+            {
+#if TARGET_XARCH
+                case NI_X86Base_Pause:
+                case NI_X86Base_Prefetch0:
+                case NI_X86Base_Prefetch1:
+                case NI_X86Base_Prefetch2:
+                case NI_X86Base_PrefetchNonTemporal:
+                {
+                    return true;
+                }
+#endif
+
+#if TARGET_ARM64
+                case NI_ArmBase_Yield:
+                case NI_Sve_GatherPrefetch16Bit:
+                case NI_Sve_GatherPrefetch32Bit:
+                case NI_Sve_GatherPrefetch64Bit:
+                case NI_Sve_GatherPrefetch8Bit:
+                case NI_Sve_GetFfrByte:
+                case NI_Sve_GetFfrDouble:
+                case NI_Sve_GetFfrInt16:
+                case NI_Sve_GetFfrInt32:
+                case NI_Sve_GetFfrInt64:
+                case NI_Sve_GetFfrSByte:
+                case NI_Sve_GetFfrSingle:
+                case NI_Sve_GetFfrUInt16:
+                case NI_Sve_GetFfrUInt32:
+                case NI_Sve_GetFfrUInt64:
+                case NI_Sve_Prefetch16Bit:
+                case NI_Sve_Prefetch32Bit:
+                case NI_Sve_Prefetch64Bit:
+                case NI_Sve_Prefetch8Bit:
+                case NI_Sve_SetFfr:
+                {
+                    return true;
+                }
+#endif
+
+                default:
+                {
+                    break;
+                }
+            }
+        }
+
+        return IsUserCall;
     }
 }
 #endif

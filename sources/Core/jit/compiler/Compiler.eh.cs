@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace RyuJitSharp;
 
@@ -117,6 +118,17 @@ public partial class Compiler
     }
 #endif
 
+    public bool ehBlockHasExnFlowDsc(BasicBlock block)
+    {
+        if (block.hasTryIndex)
+        {
+            return true;
+        }
+
+        ref var hndDesc = ref ehGetBlockHndDsc(block);
+        return (!Unsafe.IsNullRef(in hndDesc) && hndDesc.InFilterRegionBBRange(block) && (hndDesc.ebdEnclosingTryIndex != EHblkDsc.NO_ENCLOSING_INDEX));
+    }
+
     /// <summary>Return the EH descriptor for the most nested filter or handler region this BasicBlock is a member of (or null if this block is not in a filter or handler region).</summary>
     /// <param name="block"></param>
     /// <returns></returns>
@@ -193,6 +205,48 @@ public partial class Compiler
             tryEnd = info.compILCodeSize;
         }
         return ref tryTab;
+    }
+
+    /// <summary>The argument 'block' has been deleted. Update the EH table so 'block' is no longer listed as a 'last' block.</summary>
+    /// <param name="block"></param>
+    /// <remarks>You can't delete a 'begin' block this way.</remarks>
+    public void ehUpdateForDeletedBlock(BasicBlock block)
+    {
+        assert(block.HasFlag(BBF_REMOVED));
+
+        if (!block.hasTryIndex && !block.hasHndIndex)
+        {
+            // The block is not part of any EH region, so there is nothing to do.
+            return;
+        }
+
+        var bPrev = block.Prev;
+        assert(bPrev is not null);
+
+        ehUpdateLastBlocks(block, bPrev);
+    }
+
+    /// <summary>The 'last' block of one or more EH regions might have changed. Update the EH table.</summary>
+    /// <param name="oldLast">Search for this block as the 'last' block of one or more EH regions.</param>
+    /// <param name="newLast">If 'oldLast' is found to be the 'last' block of an EH region, replace it by 'newLast'.</param>
+    /// <remarks>
+    ///   <para>This can happen if the EH region shrinks, where one or more blocks have been removed from the region.It can happen if the EH region grows, where one or more blocks have been added at the end of the region.</para>
+    ///   <para>We might like to verify the handler table integrity after doing this update, but we can't because this might just be one step by the caller in a transformation back to a legal state.</para>
+    /// </remarks>
+    public void ehUpdateLastBlocks(BasicBlock oldLast, BasicBlock newLast)
+    {
+        foreach (ref var HBtab in new EHClauses(this))
+        {
+            if (HBtab.ebdTryLast == oldLast)
+            {
+                fgSetTryEnd(ref HBtab, newLast);
+            }
+
+            if (HBtab.ebdHndLast == oldLast)
+            {
+                fgSetHndEnd(ref HBtab, newLast);
+            }
+        }
     }
 
     // ToEHHandlerType: Convert a CORINFO_EH_CLAUSE_FLAGS value obtained from the VM in the EH clause structure

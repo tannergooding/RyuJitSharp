@@ -9,5 +9,13 @@ public partial class Compiler
 {
     private sealed class PendingDsc
     {
+        public PendingDsc? pdNext;
+        public BasicBlock? pdBB;
+        public SavedStack pdSavedStack;
+
+        public PendingDsc(BasicBlock block)
+        {
+            pdBB = block;
+        }
     }
 }

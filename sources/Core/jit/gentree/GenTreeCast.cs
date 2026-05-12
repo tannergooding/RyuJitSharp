@@ -22,5 +22,7 @@ public sealed class GenTreeCast : GenTreeOp
         Flags |= (fromUnsigned ? GTF_UNSIGNED : GTF_EMPTY);
     }
 
+    public GenTree CastOp => Op1;
+
     public var_types CastType => _castType;
 }

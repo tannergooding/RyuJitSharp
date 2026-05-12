@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -26,7 +27,7 @@ public sealed partial class BasicBlock : LIR.Range
     private bbCatchType bbCatchType;
 
     /// <summary>verifier tracked state of all entries in stack.</summary>
-    private EntryState? bbEntryState;
+    private EntryState bbEntryState;
 
     /// <summary>PC offset (temporary only)</summary>
     private int bbTargetOffs;
@@ -151,8 +152,8 @@ public sealed partial class BasicBlock : LIR.Range
         }
     }
 
-    /// <summary>schema index for histogram instrumentation</summary>
-    public int bbHistogramSchemaIndex
+    /// <summary>schema index for handle (class/method) histogram instrumentation</summary>
+    public int bbHandleHistogramSchemaIndex
     {
         get
         {
@@ -164,6 +165,10 @@ public sealed partial class BasicBlock : LIR.Range
             _anonymous2 = value;
         }
     }
+
+    /// <summary>schema index for value histogram instrumentation</summary>
+    /// <remarks>Placed here so it consumes the existing tail padding before bbTryIndex/bbHndIndex without growing BasicBlock.</remarks>
+    public int bbValueHistogramSchemaIndex;
 
     /// <summary>index, into the compHndBBtab table, of innermost 'try' clause containing the BB (used for raising exceptions).</summary>
     /// <remarks>Stored as index + 1; 0 means "no try index".</remarks>
@@ -477,6 +482,18 @@ public sealed partial class BasicBlock : LIR.Range
     {
     }
 
+    /// <summary>"bbNum" is one-based (for unknown reasons); it is sometimes useful to have the corresponding zero-based number for use as an array index.</summary>
+    public int bbInd
+    {
+        get
+        {
+            assert(bbNum > 0);
+            return bbNum - 1;
+        }
+    }
+
+    public ref EntryState EntryState => ref bbEntryState;
+
     public GenTree? FirstLIRNode
     {
         get
@@ -523,6 +540,59 @@ public sealed partial class BasicBlock : LIR.Range
         }
     }
 
+    /// <summary>Determine if this is the first block of a BBJ_CALLFINALLY/BBJ_CALLFINALLYRET pair</summary>
+    public bool isBBCallFinallyPair
+    {
+        get
+        {
+            // Notes:
+            //    In the flow graph, this becomes a block that calls the finally, and a second, immediately
+            //    following (in the bbNext chain) empty block to which the finally will return, and which
+            //    branches unconditionally to the next block to be executed outside the try/finally.
+            //    Note that code is often generated differently than this description. For example, on x86,
+            //    the target of the BBJ_CALLFINALLYRET is pushed on the stack and a direct jump is
+            //    made to the 'finally'. The effect is that the 'finally' returns directly to the target of
+            //    the BBJ_CALLFINALLYRET. A "retless" BBJ_CALLFINALLY is one that has no corresponding BBJ_CALLFINALLYRET.
+            //    This can happen if the finally is known to not return (e.g., it contains a 'throw'). In
+            //    that case, the BBJ_CALLFINALLY flags has BBF_RETLESS_CALL set.
+
+            if ((_kind is BBJ_CALLFINALLY) && !HasFlag(BBF_RETLESS_CALL))
+            {
+                // Some asserts that the next block is of the proper form.
+                assert(!IsLast);
+                assert(Next.Kind is BBJ_CALLFINALLYRET);
+                assert(Next.IsEmpty);
+
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+    }
+
+    /// <summary>Determine if this is the last block of a BBJ_CALLFINALLY/BBJ_CALLFINALLYRET pair</summary>
+    public bool isBBCallFinallyPairTail
+    {
+        get
+        {
+            if (_kind is BBJ_CALLFINALLYRET)
+            {
+                // Some asserts that the previous block is of the proper form.
+                assert(!IsFirst);
+                assert(Prev.Kind is BBJ_CALLFINALLY);
+                assert(!Prev.HasFlag(BBF_RETLESS_CALL));
+
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+    }
+
     public bool IsLIR
     {
         get
@@ -531,6 +601,12 @@ public sealed partial class BasicBlock : LIR.Range
             return HasFlag(BBF_IS_LIR);
         }
     }
+
+    /// <summary>depth of IL stack at block entry</summary>
+    /// <returns></returns>
+    public int bbStackDepthOnEntry => bbEntryState.esStackDepth;
+
+    public Span<StackEntry> bbStackOnEntry => bbEntryState.esStack;
 
     /// <summary>Checks that the basic block doesn't mix statements and LIR lists.</summary>
     public bool isValid
@@ -751,6 +827,18 @@ public sealed partial class BasicBlock : LIR.Range
 
     public BasicBlock FalseTarget => FalseEdge.DestinationBlock;
 
+    public bool HasAllFlags(BasicBlockFlags flags)
+    {
+        assert((flags != BBF_EMPTY) && !long.IsPow2((long)(flags)));
+        return (bbFlags & flags) == flags;
+    }
+
+    public BasicBlockFlags HasAnyFlag(BasicBlockFlags flags)
+    {
+        assert((flags != BBF_EMPTY) && !long.IsPow2((long)(flags)));
+        return (bbFlags & flags);
+    }
+
     [MemberNotNullWhen(true, nameof(bbTargetEdge), nameof(TargetEdge))]
     public bool HasInitializedTarget
     {
@@ -769,7 +857,40 @@ public sealed partial class BasicBlock : LIR.Range
 
     public bool JumpsToNext => Target == _next;
 
+    /// <summary>gives the number of successors, and GetSucc() returns a given numbered successor.</summary>
+    public int NumSucc => _kind switch {
+        // There are two versions of these functions: ones that take a Compiler* and ones that don't. You must
+        // always use a matching set. Thus, if you call NumSucc() without a Compiler*, you must also call
+        // GetSucc() without a Compiler*.
+        //
+        // The behavior of NumSucc()/GetSucc() is different when passed a Compiler* for blocks that end in:
+        // (1) BBJ_SWITCH
+        //
+        // For BBJ_SWITCH, if Compiler* is not passed, then all switch successors are returned. If Compiler*
+        // is passed, then only unique switch successors are returned; the duplicate successors are omitted.
+        //
+        // Note that for BBJ_COND, which has two successors (fall through (condition false), and condition true
+        // branch target), only the unique targets are returned. Thus, if both targets are the same, NumSucc()
+        // will only return 1 instead of 2.
+        BBJ_THROW => 0,
+        BBJ_RETURN => 0,
+        BBJ_EHFAULTRET => 0,
+        BBJ_CALLFINALLY => 1,
+        BBJ_CALLFINALLYRET => 1,
+        BBJ_ALWAYS => 1,
+        BBJ_EHCATCHRET => 1,
+        BBJ_EHFILTERRET => 1,
+        BBJ_LEAVE => 1,
+        BBJ_COND => (bbTrueEdge == bbFalseEdge) ? 1 : 2,
+        // We may call this method before we realize we have invalid IL or before we've computed the BBJ_EHFINALLYRET successors in the importer. Tolerate.
+        BBJ_EHFINALLYRET => hasHndIndex && (bbEhfTargets != null) ? bbEhfTargets.Succs.Length : 0,
+        BBJ_SWITCH => bbSwtTargets.Succs.Length,
+        _ => -1,
+    };
+
     public PredBlockList PredBlocks => new PredBlockList(bbPreds, allowEdits: false);
+
+    public PredBlockList PredBlocksEditing => new PredBlockList(bbPreds, allowEdits: true);
 
     public BBJumpTableList SwitchSuccs
     {
@@ -1010,6 +1131,19 @@ public sealed partial class BasicBlock : LIR.Range
         bbTryIndex = 0;
     }
 
+    /// <summary>sum the weights of the flow edges into this block</summary>
+    /// <returns></returns>
+    public weight_t computeIncomingWeight()
+    {
+        var incomingWeight = BB_ZERO_WEIGHT;
+
+        foreach (var predEdge in PredEdges)
+        {
+            incomingWeight += predEdge.LikelyWeight;
+        }
+        return incomingWeight;
+    }
+
     public void copyEHRegion(BasicBlock source)
     {
         bbHndIndex = source.bbHndIndex;
@@ -1046,6 +1180,14 @@ public sealed partial class BasicBlock : LIR.Range
     public void copyTryIndex(BasicBlock source)
     {
         bbTryIndex = source.bbTryIndex;
+    }
+
+    /// <summary>Decrease the profile-derived weight for a basic block, ensuring it remains non-negative, and update the run rarely flag as appropriate.</summary>
+    /// <param name="weight"></param>
+    public void decreaseBBProfileWeight(weight_t weight)
+    {
+        assert(weight >= BB_ZERO_WEIGHT);
+        setBBProfileWeight(weight_t.Max(BB_ZERO_WEIGHT, bbWeight - weight));
     }
 
     /// <summary>get the normalized weight of this block</summary>
@@ -1098,6 +1240,38 @@ public sealed partial class BasicBlock : LIR.Range
             }
         }
         return calledCount;
+    }
+
+    /// <summary>Returns the first statement in the statement list of "this" that is not an SSA definition (a lcl = phi(...) store).</summary>
+    /// <returns></returns>
+    public Statement? GetFirstNonPhiDef()
+    {
+        var stmt = FirstStmt;
+
+        while ((stmt is not null) && stmt.IsPhiDefnStmt)
+        {
+            stmt = stmt.NextStmt;
+        }
+
+        return stmt;
+    }
+
+    public Statement? GetFirstNonPhiDefOrCatchArgStore()
+    {
+        var stmt = GetFirstNonPhiDef();
+
+        if (stmt is null)
+        {
+            return null;
+        }
+
+        var tree = stmt.RootNode;
+
+        if ((tree.Oper is GT_STORE_LCL_VAR) && (tree.AsLclVar().Data.Oper is GT_CATCH_ARG))
+        {
+            stmt = stmt.NextStmt;
+        }
+        return stmt;
     }
 
     public void inheritWeight(BasicBlock source)

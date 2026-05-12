@@ -53,6 +53,19 @@ public sealed class InlineResult
         }
     }
 
+    public int ImportedILSize
+    {
+        get
+        {
+            return m_ImportedILSize;
+        }
+
+        set
+        {
+            m_ImportedILSize = value;
+        }
+    }
+
     /// <summary>Has the policy determined this inline attempt is still viable?</summary>
     public bool IsCandidate => m_Policy.Decision.IsCandidate;
 

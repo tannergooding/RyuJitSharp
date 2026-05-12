@@ -36,15 +36,6 @@ public class GenTreeOp : GenTreeUnOp
         }
     }
 
-    // A small set of types are unary operators with optional arguments.
-    // We use this constructor to build those.
-    public GenTreeOp(genTreeOps oper, var_types type)
-        : base(oper, type)
-    {
-        // Unary operators with optional arguments:
-        assert((oper is GT_RETURN or GT_RETFILT) || oper.IsBlk);
-    }
-
 #if DEBUG
     public bool IsNullOp2Legal => !Oper.IsBinary || Oper switch {
         GT_INTRINSIC => true,

@@ -8,7 +8,7 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    public sealed class SimdHandlesCache
+    public sealed class simdHandlesCache
     {
         public unsafe CORINFO_CLASS_HANDLE PlaneHandle;
         public unsafe CORINFO_CLASS_HANDLE QuaternionHandle;

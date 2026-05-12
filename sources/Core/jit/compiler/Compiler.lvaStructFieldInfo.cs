@@ -9,8 +9,8 @@ public partial class Compiler
 {
     public struct lvaStructFieldInfo
     {
-        /// <summary>Class handle for SIMD type recognition, see CORINFO_TYPE_LAYOUT_NODE for more details on the restrictions.</summary>
-        public unsafe CORINFO_CLASS_HANDLE fldSIMDTypeHnd;
+        /// <summary>Class handle for simd type recognition, see CORINFO_TYPE_LAYOUT_NODE for more details on the restrictions.</summary>
+        public unsafe CORINFO_CLASS_HANDLE fldSimdTypeHnd;
         public byte fldOffset;
         public byte fldOrdinal;
         public var_types fldType;

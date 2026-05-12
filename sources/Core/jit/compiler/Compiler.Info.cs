@@ -182,7 +182,7 @@ public partial class Compiler
             }
         }
 
-        /// <summary>Return type of the method as declared in IL (including SIMD normalization)</summary>
+        /// <summary>Return type of the method as declared in IL (including simd normalization)</summary>
         public var_types compRetType;
 
         /// <summary>Normalized return type as per target arch ABI</summary>

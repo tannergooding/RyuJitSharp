@@ -179,12 +179,14 @@ public partial class Globals
 
     public static IRegAlloc GetRegisterAllocator(Compiler compiler) => new LinearScan(compiler);
 
+    public static bool handlerGetsXcptnObj(bbCatchType hndType) => hndType is not BBCT_NONE and not BBCT_FAULT and not BBCT_FINALLY;
+
     public static var_types HfaTypeFromElemKind(CorInfoHFAElemType kind) => kind switch {
         CORINFO_HFA_ELEM_NONE => TYP_UNDEF,
         CORINFO_HFA_ELEM_FLOAT => TYP_FLOAT,
         CORINFO_HFA_ELEM_DOUBLE => TYP_DOUBLE,
-        CORINFO_HFA_ELEM_VECTOR64 => TYP_SIMD8,
-        CORINFO_HFA_ELEM_VECTOR128 => TYP_SIMD16,
+        CORINFO_HFA_ELEM_VECTOR64 => TYP_Simd8,
+        CORINFO_HFA_ELEM_VECTOR128 => TYP_Simd16,
         _ => TYP_UNKNOWN,
     };
 

@@ -13,10 +13,11 @@ public abstract class GenTreeMultiOp : GenTree
     private readonly GenTree[] _operands;
 
     // template<unsigned InlineOperandCount, typename...Operands>
-    protected GenTreeMultiOp(genTreeOps oper, var_types type, params ReadOnlySpan<GenTree> operands)
+    protected GenTreeMultiOp(genTreeOps oper, var_types type, GenTree[] operands)
         : base(oper, type)
     {
-        _operands = operands.ToArray();
+        assert(oper.IsHWIntrinsic);
+        _operands = operands;
 
         foreach (var operand in operands)
         {

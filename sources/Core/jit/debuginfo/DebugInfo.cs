@@ -108,7 +108,7 @@ public readonly struct DebugInfo
             }
             else
             {
-                assert(false, "Detected invalid debug info: IL offset is out of range");
+                NO_WAY("Detected invalid debug info: IL offset is out of range");
             }
         }
         while (di.GetParent(out di));

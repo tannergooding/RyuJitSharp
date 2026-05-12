@@ -7,8 +7,8 @@ namespace RyuJitSharp;
 
 public sealed class GenTreePhiArg : GenTreeLclVarCommon
 {
-    public GenTreePhiArg(genTreeOps oper, var_types type, int lclNum)
-        : base(oper, type, lclNum)
+    public GenTreePhiArg(var_types type, int lclNum)
+        : base(GT_PHI_ARG, type, lclNum)
     {
     }
 }

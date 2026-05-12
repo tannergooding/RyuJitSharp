@@ -6,6 +6,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
+using RyuJitSharp;
 using static RyuJitSharp.ICorDebugInfo;
 
 namespace RyuJitSharp;
@@ -44,7 +45,7 @@ public partial class Compiler
     public VARSET_TP lvaLongVars = [];
 #endif
 
-    /// <summary>set of floating-point (32-bit and 64-bit) or SIMD variables</summary>
+    /// <summary>set of floating-point (32-bit and 64-bit) or simd variables</summary>
     public VARSET_TP lvaFloatVars = [];
 
 #if FEATURE_MASKED_HW_INTRINSICS
@@ -167,7 +168,8 @@ public partial class Compiler
     public int lvaNewObjArrayArgs = BAD_VAR_NUM;
 
 #if DEBUG
-    public static unsafe fgWalkPreFn lvaStressLclFldCB;
+    // TODO: Port Compiler.lvaStressLclFldCB
+    // public static unsafe fgWalkPreFn lvaStressLclFldCB;
 #endif
 
     /// <summary>LclVar number</summary>
@@ -182,12 +184,12 @@ public partial class Compiler
     public int lvaStubArgumentVar = BAD_VAR_NUM;
 
 #if FEATURE_SIMD
-    /// <summary>This is a temp lclVar allocated on the stack as TYP_SIMD.</summary>
+    /// <summary>This is a temp lclVar allocated on the stack as TYP_Simd.</summary>
     /// <remarks>
     ///   <para>It is used to implement intrinsics that require indexed access to the individual fields of the vector, which is not well supported by the hardware.</para>
     ///   <para>It is allocated when/if such situations are encountered during Lowering.</para> 
     /// </remarks>
-    public int lvaSIMDInitTempVarNum = BAD_VAR_NUM;
+    public int lvaSimdInitTempVarNum = BAD_VAR_NUM;
 #endif
 
     /// <summary>The highest frame layout state that we've completed.</summary>
@@ -773,7 +775,33 @@ public partial class Compiler
     /// <param name="minLength"></param>
     public void lvaDumpFrameLocation(int lclNum, int minLength)
     {
-        // TODO: Port Compiler.lvaDumpFrameLocation
+// TODO: Port: Compiler.lvaDumpFrameLocation
+//         var message = "";
+// 
+// #if TARGET_ARM64
+//         if (lvaIsUnknownSizeLocal(lclNum))
+//         {
+//             ref var varDsc = ref lvaGetDesc(lclNum);
+//             var offset = unkSizeFrame.GetAddressingOffset(varDsc);
+//             jitprintf($"[{REG_UNKBASE.Name,2}{(offset < 0 ? "-" : "+")}0x{(offset < 0 ? -offset : offset):X2}*{((varDsc.Type is TYP_MASK) ? "PL" : "VL")}] ");
+//         }
+//         else
+// #endif
+//         {
+// #if TARGET_ARM
+//             var offset = lvaFrameAddress(lclNum, compLocallocUsed, out var baseReg, 0, isFloatUsage: false);
+// #else
+//             var offset = lvaFrameAddress(lclNum, out var EBPbased);
+//             var baseReg = EBPbased ? codeGen.GetFramePointerReg(ROOT_FUNC_IDX) : codeGen.GetStackPointerReg(ROOT_FUNC_IDX);
+// #endif
+// 
+//             message = $"[{baseReg.Name,2}{(offset < 0 ? "-" : "+")}0x{(offset < 0 ? -offset : offset):X2}] ";
+//         }
+// 
+//         if (message.Length is not 0)
+//         {
+//             jitprintf($"{new string(' ', int.Max(0, minLength - message.Length))}{message}");
+//         }
     }
 
     public void lvaTableDump(FrameLayoutState curState = NO_FRAME_LAYOUT)
@@ -1019,6 +1047,77 @@ public partial class Compiler
             jitprintf($"){(shortLifetime ? "" : " (a long lifetime temp)")} called for {reason}.\n");
         }
 #endif
+
+        return tempNum;
+    }
+
+    public int lvaGrabTemps(int cnt, string reason)
+    {
+        if (compIsForInlining)
+        {
+            var inlinerCompiler = impInlineInfo.InlinerCompiler;
+
+            // Grab the temps using Inliner's Compiler instance.
+            var tmpNum = inlinerCompiler.lvaGrabTemps(cnt, reason);
+
+            lvaTable = inlinerCompiler.lvaTable;
+            lvaCount = inlinerCompiler.lvaCount;
+
+            return tmpNum;
+        }
+
+    #if DEBUG
+        if (verbose)
+        {
+            jitprintf($"\nlvaGrabTemps({cnt}) returning {lvaCount}..{lvaCount + cnt - 1} (long lifetime temps) called for {reason}");
+        }
+    #endif
+
+        // Could handle this...
+        assert(!lvaLocalVarRefCounted);
+
+    // You cannot allocate more space after frame layout!
+    noway_assert(lvaDoneFrameLayout < Compiler.TENTATIVE_FRAME_LAYOUT);
+
+    // Check if the lvaTable has to be grown
+    if ((lvaCount + cnt) > lvaTable.Length)
+    {
+        var newLvaTableCnt = lvaCount + int.Max(lvaCount / 2 + 1, cnt);
+
+        // Check for overflow
+        if (newLvaTableCnt <= lvaCount)
+        {
+            IMPL_LIMITATION("too many locals");
+        }
+
+        var newLvaTable = new LclVarDsc[newLvaTableCnt];
+        lvaTable.AsSpan(0, lvaCount).CopyTo(newLvaTable);
+
+        for (var i = lvaCount; i < newLvaTableCnt; i++)
+        {
+            newLvaTable[i] = new LclVarDsc(); // call the constructor.
+        }
+
+    #if DEBUG
+        // Fill the old table with junks. So to detect the un-intended use.
+        lvaTable.AsSpan(0, lvaCount).Clear();
+    #endif
+
+        lvaTable = newLvaTable;
+    }
+
+    var tempNum = lvaCount;
+
+        while (cnt-- != 0)
+        {
+            ref var lvaDsc = ref lvaTable[tempNum];
+
+            lvaDsc.Type = TYP_UNDEF;
+            lvaDsc.lvIsTemp = false;
+            lvaDsc.lvOnFrame = true;
+
+            lvaCount++;
+        }
 
         return tempNum;
     }
@@ -1644,7 +1743,7 @@ public partial class Compiler
             {
                 if (varTypeIsSimd(varDsc.Type))
                 {
-                    IMPL_LIMITATION("SIMD types are currently unsupported in Swift reverse pinvokes");
+                    IMPL_LIMITATION("simd types are currently unsupported in Swift reverse pinvokes");
                 }
 
                 if (lvaInitSpecialSwiftParam(argLst, curVarNum, strip(corInfoType), typeHnd))
@@ -1763,7 +1862,14 @@ public partial class Compiler
         }
 
 #if DEBUG
-        varDsc.StackOffset = BAD_STK_OFFS;
+        if (varDsc.lvValueSize.IsExact)
+        {
+            varDsc.StackOffset = BAD_STK_OFFS;
+        }
+        else
+        {
+            varDsc.UnknownSizeFrameIndex = BAD_STK_OFFS;
+        }
 #endif
     }
 
@@ -1842,11 +1948,11 @@ public partial class Compiler
         }
 
 #if FEATURE_SIMD && !TARGET_64BIT
-        // For 32-bit architectures, we make local variable SIMD12 types 16 bytes instead of just 12. We can't do
+        // For 32-bit architectures, we make local variable simd12 types 16 bytes instead of just 12. We can't do
         // this for arguments, which must be passed according the defined ABI. We don't want to do this for
         // dependently promoted struct fields, but we don't know that here. See lvaMapSimd12ToSimd16().
         // (Note that for 64-bits, we are already rounding up to 16.)
-        if (varDsc.Type is TYP_SIMD12)
+        if (varDsc.Type is TYP_Simd12)
         {
             return 16;
         }
@@ -2092,6 +2198,12 @@ public partial class Compiler
                 break;
             }
 
+            case DoNotEnregisterReason.WasmGCVisibility:
+            {
+                JITDUMP("Wasm GC needs to see it\n");
+                break;
+            }
+
             case DoNotEnregisterReason.VMNeedsStackAddr:
             {
                 JITDUMP("VM needs stack addr\n");
@@ -2197,9 +2309,9 @@ public partial class Compiler
                 break;
             }
 
-            case DoNotEnregisterReason.SimdUserForcesDep:
+            case DoNotEnregisterReason.simdUserForcesDep:
             {
-                JITDUMP("Promoted struct used by a SIMD/HWI node\n");
+                JITDUMP("Promoted struct used by a simd/HWI node\n");
                 break;
             }
 
@@ -2338,6 +2450,26 @@ public partial class Compiler
             var numNodes = (nint)(256);
             var nodes = stackalloc CORINFO_TYPE_LAYOUT_NODE[(int)(numNodes)];
             _ = compiler.info.compCompHnd->getTypeLayout(structHandle, nodes, &numNodes);
+        }
+    }
+#endif
+
+#if FEATURE_SIMD
+    /// <summary>Set the flag that indicates that the lclVar referenced by this tree is used in a simd intrinsic.</summary>
+    /// <param name="tree"></param>
+    public void setLclRelatedToSimdIntrinsic(GenTreeLclVarCommon tree)
+    {
+        ref var lclVarDsc = ref lvaGetDesc(tree.LclNum);
+        lclVarDsc.lvUsedInSimdIntrinsic = true;
+    }
+
+    /// <summary>Determine if the tree has a local var that needs to be set as used by a simd intrinsic, and if so, set that local var appropriately.</summary>
+    /// <param name="op">The tree, to be an operand of a new simd-related node, to check.</param>
+    public void SetOpLclRelatedToSimdIntrinsic(GenTree op)
+    {
+        if (op.Oper.IsScalarLocal)
+        {
+            setLclRelatedToSimdIntrinsic(op.AsLclVarCommon());
         }
     }
 #endif

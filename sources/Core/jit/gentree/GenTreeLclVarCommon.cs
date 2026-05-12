@@ -16,7 +16,7 @@ public abstract class GenTreeLclVarCommon : GenTreeUnOp
     // private SsaNumInfo _ssaNum;
 
     protected GenTreeLclVarCommon(genTreeOps oper, var_types type, int lclNum)
-        : base(oper, type)
+        : base(oper, type, op1: null)
     {
         LclNum = lclNum;
     }
@@ -28,12 +28,21 @@ public abstract class GenTreeLclVarCommon : GenTreeUnOp
         LclNum = lclNum;
     }
 
-    public GenTree Data
+    public new GenTree Data
     {
         get
         {
             assert(Debugger.IsAttached || Oper.IsLocalStore);
             return Op1!;
+        }
+    }
+
+    public new ref GenTree DataRef
+    {
+        get
+        {
+            assert(Debugger.IsAttached || Oper.IsLocalStore);
+            return ref Op1Ref;
         }
     }
 
@@ -52,5 +61,15 @@ public abstract class GenTreeLclVarCommon : GenTreeUnOp
     }
 
     // TODO: Port GenTreeLclVarCommon.GetSsaNum
-    public int SsaNum => 0;
+    public int SsaNum
+    {
+        get
+        {
+            return 0;
+        }
+
+        set
+        {
+        }
+    }
 }

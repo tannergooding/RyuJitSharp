@@ -253,10 +253,10 @@
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' != 'true'">$(DefineConstants);WINDOWS_AMD64_ABI</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);UNIX_X86_ABI</DefineConstants>
 
-    <!-- ALIGN_SIMD_TYPES: Whether SIMD type locals are to be aligned -->
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);ALIGN_SIMD_TYPES</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64'">$(DefineConstants);ALIGN_SIMD_TYPES</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);ALIGN_SIMD_TYPES</DefineConstants>
+    <!-- ALIGN_Simd_TYPES: Whether simd type locals are to be aligned -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);ALIGN_Simd_TYPES</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64'">$(DefineConstants);ALIGN_Simd_TYPES</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);ALIGN_Simd_TYPES</DefineConstants>
     
     <!-- CPU_HAS_BYTE_REGS -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);CPU_HAS_BYTE_REGS</DefineConstants>
@@ -271,9 +271,6 @@
     <!--   This aligns ESP to 0 mod 8 in function prolog, then uses ESP to reference locals, EBP to reference parameters. -->
     <!--   It only makes sense if frameless method support is on (frameless method support is now always on) -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);DOUBLE_ALIGN</DefineConstants>
-
-    <!-- EMIT_GENERATE_GCINFO: Track GC ref liveness in codegen and emit and generate GCInfo based on that -->
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' != 'wasm'">$(DefineConstants);EMIT_GENERATE_GCINFO</DefineConstants>
 
     <!-- EMIT_TRACK_STACK_DEPTH -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' != 'wasm'">$(DefineConstants);EMIT_TRACK_STACK_DEPTH</DefineConstants>
@@ -357,9 +354,9 @@
     <!-- FEATURE_MULTITHREADING -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' != 'wasm'">$(DefineConstants);FEATURE_MULTITHREADING</DefineConstants>
 
-    <!-- FEATURE_PARTIAL_SIMD_CALLEE_SAVE: Whether SIMD registers are partially saved at calls -->
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_PARTIAL_SIMD_CALLEE_SAVE</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);FEATURE_PARTIAL_SIMD_CALLEE_SAVE</DefineConstants>
+    <!-- FEATURE_PARTIAL_Simd_CALLEE_SAVE: Whether simd registers are partially saved at calls -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_PARTIAL_Simd_CALLEE_SAVE</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);FEATURE_PARTIAL_Simd_CALLEE_SAVE</DefineConstants>
     
     <!-- FEATURE_REMAP_FUNCTION -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_REMAP_FUNCTION</DefineConstants>
@@ -445,6 +442,9 @@
 
     <!-- DUMP_GC_TABLES -->
     <DefineConstants>$(DefineConstants);DUMP_GC_TABLES</DefineConstants>
+
+    <!-- EMIT_GENERATE_GCINFO: Track GC ref liveness in codegen and emit and generate GCInfo based on that -->
+    <DefineConstants>$(DefineConstants);EMIT_GENERATE_GCINFO</DefineConstants>
 
     <!-- LATE_DISAM -->
     <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);LATE_DISASM;USE_COREDISTOOLS</DefineConstants>

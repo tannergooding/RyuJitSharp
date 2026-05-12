@@ -132,7 +132,7 @@ public partial class Globals
 
     // Is this type promotable?
     // In general only structs are promotable.
-    // However, a SIMD type, e.g. TYP_SIMD may be handled as either a struct, OR a
+    // However, a simd type, e.g. TYP_Simd may be handled as either a struct, OR a
     // fully-promoted register type.
     // On 32-bit systems longs are split into an upper and lower half, and they are
     // handled as if they are structs with two integer fields.
@@ -173,7 +173,7 @@ public partial class Globals
     public static bool varTypeUsesFloatArgReg(var_types vt)
     {
 #if TARGET_ARM64
-        // Arm64 passes SIMD types in floating point registers.
+        // Arm64 passes simd types in floating point registers.
         // Exception: Windows arm64 native varargs passes them using general-purpose (integer) registers or
         // by value on the stack, or split between registers and stack.
         return varTypeUsesFloatReg(vt);
@@ -188,7 +188,7 @@ public partial class Globals
     /// <returns>Returns true iff the type is a valid HFA type.</returns>
     /// <remarks>
     ///   <para>This should only be called with the return value from GetHfaType().</para>
-    ///   <para>The only valid values are TYP_UNDEF, for which this returns false, TYP_FLOAT, TYP_DOUBLE, or (ARM64-only) TYP_SIMD*.</para>
+    ///   <para>The only valid values are TYP_UNDEF, for which this returns false, TYP_FLOAT, TYP_DOUBLE, or (ARM64-only) TYP_Simd*.</para>
     /// </remarks>
     public static bool varTypeIsValidHfaType(var_types vt)
     {

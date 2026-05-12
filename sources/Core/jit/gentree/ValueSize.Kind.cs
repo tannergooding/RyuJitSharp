@@ -12,7 +12,7 @@ public partial struct ValueSize
         /// <summary>Value has size known at compile time</summary>
         Exact,  
 
-        /// <summary>Value represents the platform vector length (Vector&lt;T&gt;/TYP_SIMD)</summary>
+        /// <summary>Value represents the platform vector length (Vector&lt;T&gt;/TYP_Simd)</summary>
         Vector, 
 
         /// <summary>Value represents the platform mask length (TYP_MASK)</summary>

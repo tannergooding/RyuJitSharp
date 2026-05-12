@@ -5,8 +5,8 @@
 
 namespace RyuJitSharp;
 
-public sealed class StackEntry
+public struct StackEntry
 {
-    public GenTree? val;
+    public GenTree val;
     public typeInfo seTypeInfo;
 }

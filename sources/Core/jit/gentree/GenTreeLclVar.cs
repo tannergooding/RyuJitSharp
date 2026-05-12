@@ -17,13 +17,15 @@ public sealed class GenTreeLclVar : GenTreeLclVarCommon
     private IL_OFFSET _lclIlOffs = BAD_IL_OFFSET;
 #endif
 
-    public GenTreeLclVar(genTreeOps oper, var_types type, int lclNum)
-        : base(oper, type, lclNum)
+    internal GenTreeLclVar(var_types type, int lclNum, IL_OFFSET offs = BAD_IL_OFFSET)
+        : base(GT_LCL_VAR, type, lclNum)
     {
-        assert(oper.IsScalarLocal);
+#if DEBUG
+        _lclIlOffs = offs;
+#endif
     }
 
-    public GenTreeLclVar(var_types type, int lclNum, GenTree data)
+    internal GenTreeLclVar(var_types type, int lclNum, GenTree data)
         : base(GT_STORE_LCL_VAR, type, lclNum, data)
     {
     }
@@ -44,6 +46,8 @@ public sealed class GenTreeLclVar : GenTreeLclVarCommon
             _lclIlOffs = value;
         }
     }
+#else
+    public IL_OFFSET LclIlOffs => _lclIlOffs;
 #endif
 
     public void ClearMultiReg()
@@ -57,11 +61,14 @@ public sealed class GenTreeLclVar : GenTreeLclVarCommon
         _spillFlags = 0;
     }
 
-    /// <summary>copy GTF_* flags associated with gtOtherRegs from the given LclVar node.</summary>
-    /// <param name="from">GenTreeLclVar node from which to copy</param>
-    public void CopyOtherRegFlags(GenTreeLclVar from)
+    public void CopyOtherRegs(GenTreeLclVar tree)
     {
-        _spillFlags = from._spillFlags;
+        for (byte i = 1; i < MAX_MULTIREG_COUNT; i++)
+        {
+            var regNum = tree.GetRegNumByIdx(i);
+            SetRegNumByIdx(regNum, i);
+        }
+        _spillFlags = tree._spillFlags;
     }
 
     /// <summary>Return the register count for a multi-reg lclVar.</summary>

@@ -27,13 +27,7 @@ public sealed class GenTreeIntCon : GenTreeIntConCommon
     private nint _targetHandle;
 #endif
 
-    public GenTreeIntCon(var_types type, nint value)
-        : base(GT_CNS_INT, type)
-    {
-        _value.Icon = value;
-    }
-
-    public GenTreeIntCon(var_types type, nint value, FieldSeq fields)
+    internal GenTreeIntCon(var_types type, nint value, FieldSeq? fields = null)
         : base(GT_CNS_INT, type)
     {
         _value.Icon = value;

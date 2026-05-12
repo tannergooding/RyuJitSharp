@@ -5,11 +5,11 @@
 
 namespace RyuJitSharp;
 
-public sealed class EntryState
+public struct EntryState
 {
     /// <summary>size of esStack</summary>
     public int esStackDepth;
 
     /// <summary>the stack</summary>
-    public StackEntry? esStack;
+    public StackEntry[] esStack;
 }

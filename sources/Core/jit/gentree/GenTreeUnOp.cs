@@ -12,16 +12,11 @@ namespace RyuJitSharp;
 // argument.  We check that this is true dynamically.  We could tighten this and get static
 // checking, but that would entail accessing the first child of a unary operator via something
 // like gtUnOp.gtOp1 instead of AsOp()->gtOp1.
-public abstract class GenTreeUnOp : GenTree
+public class GenTreeUnOp : GenTree
 {
     private GenTree? _op1;
 
-    protected GenTreeUnOp(genTreeOps oper, var_types type)
-        : base(oper, type)
-    {
-    }
-
-    protected GenTreeUnOp(genTreeOps oper, var_types type, GenTree? op1)
+    internal GenTreeUnOp(genTreeOps oper, var_types type, GenTree? op1)
         : base(oper, type)
     {
         _op1 = op1;
@@ -48,6 +43,25 @@ public abstract class GenTreeUnOp : GenTree
         _ => false,
     };
 #endif
+
+    public bool IsUnsigned
+    {
+        get
+        {
+            return ((Flags & GTF_UNSIGNED) != 0);
+        }
+
+        set
+        {
+#if TARGET_64BIT
+            assert(Oper.IsCompare || Oper.IsMul || (Oper is GT_ADD or GT_SUB or GT_CAST));
+#else
+            assert(Oper.IsCompare || Oper.IsMul || (Oper is GT_ADD or GT_SUB or GT_CAST or GT_ADD_HI or GT_SUB_HI));
+#endif
+
+            Flags |= GTF_UNSIGNED;
+        }
+    }
 
     public GenTree Op1
     {

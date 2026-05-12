@@ -14,7 +14,7 @@ public partial class GenTreeFieldList
         private Use? _next;
 
         // We can save space on 32 bit hosts by storing the offset as ushort.
-        // Struct promotion only accepts structs which are much smaller than that - 128 bytes = max 4 fields * max SIMD vector size (32 bytes).
+        // Struct promotion only accepts structs which are much smaller than that - 128 bytes = max 4 fields * max simd vector size (32 bytes).
         private ushort _offset;
 
         private var_types _type;

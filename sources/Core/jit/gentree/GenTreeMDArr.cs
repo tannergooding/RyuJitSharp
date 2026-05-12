@@ -15,10 +15,9 @@ public sealed class GenTreeMDArr : GenTreeArrCommon
     public GenTreeMDArr(genTreeOps oper, GenTree arrRef, int dim, int rank)
         : base(oper, TYP_INT, arrRef)
     {
+        assert(oper.IsMdArr);
         _dim = dim;
         _rank = rank;
-
-        assert(oper.IsMdArr);
     }
 
     /// <summary>Array dimension of this array length</summary>

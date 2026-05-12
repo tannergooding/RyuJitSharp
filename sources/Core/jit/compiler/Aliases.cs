@@ -16,10 +16,6 @@ global using BlockToFlowEdgeMap = System.Collections.Generic.Dictionary<RyuJitSh
 
 global using BasicBlockLocalPairSet = System.Collections.Generic.Dictionary<RyuJitSharp.Compiler.BasicBlockLocalPair, bool>;
 
-global using unsafe fgWalkPostFn = delegate*<ref RyuJitSharp.GenTree, RyuJitSharp.Compiler.fgWalkData, RyuJitSharp.Compiler.fgWalkResult>;
-
-global using unsafe fgWalkPreFn = delegate*<ref RyuJitSharp.GenTree, RyuJitSharp.Compiler.fgWalkData, RyuJitSharp.Compiler.fgWalkResult>;
-
 global using GenTreeStack = System.Collections.Generic.Stack<RyuJitSharp.GenTree>;
 
 global using NodeToUnsignedMap = System.Collections.Generic.Dictionary<RyuJitSharp.GenTree, int>;
@@ -35,9 +31,6 @@ global using SignatureToLookupInfoMap = System.Collections.Generic.Dictionary<Ry
 #if SWIFT_SUPPORT
 global using SwiftLoweringMap = System.Collections.Generic.Dictionary<RyuJitSharp.Pointer<RyuJitSharp.CORINFO_CLASS_STRUCT_>, RyuJitSharp.Pointer<RyuJitSharp.CORINFO_SWIFT_LOWERING>>;
 #endif
-
-// method that returns if you should split here
-global using unsafe fgSplitPredicate = delegate*<RyuJitSharp.GenTree, RyuJitSharp.GenTree, RyuJitSharp.Compiler.fgWalkData, bool>;
 
 global using AddCodeDscMap = System.Collections.Generic.Dictionary<RyuJitSharp.Compiler.AddCodeDscKey, RyuJitSharp.Compiler.AddCodeDsc>;
 

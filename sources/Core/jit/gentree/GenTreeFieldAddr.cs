@@ -26,9 +26,24 @@ public sealed class GenTreeFieldAddr : GenTreeUnOp
 
     public unsafe CORINFO_FIELD_HANDLE FldHnd => _fldHnd;
 
+#if FEATURE_READYTORUN
+    public CORINFO_CONST_LOOKUP FieldLookup
+    {
+        get
+        {
+            return _fieldLookup;
+        }
+
+        set
+        {
+            _fieldLookup = value;
+        }
+    }
+#endif
+
     // The object this field belongs to. Will be "null" for static fields.
     // Note that this is an address, i. e. for struct fields it will be ADDR(STRUCT).
-    public GenTree? FldObj => Op1;
+    public GenTree FldObj => Op1;
 
     public int FldOffset => _fldOffset;
 
@@ -71,7 +86,18 @@ public sealed class GenTreeFieldAddr : GenTreeUnOp
         }
     }
 
-    public bool MayOverlap => (_flags & FieldAddrFlags.MayOverlap) != 0;
+    public bool MayOverlap
+    {
+        get
+        {
+            return (_flags & FieldAddrFlags.MayOverlap) != 0;
+        }
+
+        set
+        {
+            _flags = (_flags & ~FieldAddrFlags.MayOverlap) | (value ? FieldAddrFlags.MayOverlap : FieldAddrFlags.None);
+        }
+    }
 
     private enum FieldAddrFlags : byte
     {
