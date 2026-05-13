@@ -3,8 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System.Runtime.CompilerServices;
-
 namespace RyuJitSharp;
 
 /// <summary>Indicates the details of the runtime lookup operation to be performed.</summary>
@@ -30,7 +28,7 @@ public struct CORINFO_RUNTIME_LOOKUP
 
     public ushort sizeOffset;
 
-    public offsetsInlineArray offsets;
+    public InlineArrayCorInfoMaxIndirections<nint> offsets;
 
     /// <summary>If set, first offset is indirect.</summary>
     /// <remarks>
@@ -48,10 +46,4 @@ public struct CORINFO_RUNTIME_LOOKUP
 
     /// <summary>Used for the helper call's entry point when indirections == CORINFO_USEHELPER and this is an AOT compilation</summary>
     public CORINFO_CONST_LOOKUP helperEntryPoint;
-
-    [InlineArray(CORINFO_MAXINDIRECTIONS)]
-    public struct offsetsInlineArray
-    {
-        public nint e0;
-    }
 }

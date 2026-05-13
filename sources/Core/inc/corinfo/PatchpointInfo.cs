@@ -10,23 +10,23 @@ namespace RyuJitSharp;
 /// <summary>Patchpoint info is passed back and forth across the interface but is opaque.</summary>
 public partial struct PatchpointInfo
 {
-    private long m_calleeSaveRegisters;
-    private nint m_tier0Version;
-    private int m_numberOfLocals;
-    private int m_totalFrameSize;
-    private int m_genericContextArgOffset;
-    private int m_keptAliveThisOffset;
-    private int m_securityCookieOffset;
-    private int m_monitorAcquiredOffset;
-    private int m_asyncExecutionContextOffset;
-    private int m_asyncSynchronizationContextOffset;
-    private int m_offsetAndExposureData;
+    private long _calleeSaveRegisters;
+    private nint _tier0Version;
+    private int _numberOfLocals;
+    private int _totalFrameSize;
+    private int _genericContextArgOffset;
+    private int _keptAliveThisOffset;
+    private int _securityCookieOffset;
+    private int _monitorAcquiredOffset;
+    private int _asyncExecutionContextOffset;
+    private int _asyncSynchronizationContextOffset;
+    private int _offsetAndExposureData;
 
     /// <summary>Number of locals in the original method (including special locals)</summary>
-    public readonly int NumberOfLocals => m_numberOfLocals;
+    public readonly int NumberOfLocals => _numberOfLocals;
 
     /// <summary>Total frame size of the original method</summary>
-    public readonly int TotalFrameSize => m_totalFrameSize;
+    public readonly int TotalFrameSize => _totalFrameSize;
 
     /// <summary>Determine how much storage is needed to hold this info</summary>
     /// <param name="localCount"></param>
@@ -41,33 +41,33 @@ public partial struct PatchpointInfo
 
     public void Initialize(int localCount, int totalFrameSize)
     {
-        m_calleeSaveRegisters = 0;
-        m_tier0Version = 0;
-        m_numberOfLocals = localCount;
-        m_totalFrameSize = totalFrameSize;
-        m_genericContextArgOffset = -1;
-        m_keptAliveThisOffset = -1;
-        m_securityCookieOffset = -1;
-        m_monitorAcquiredOffset = -1;
-        m_asyncExecutionContextOffset = -1;
-        m_asyncSynchronizationContextOffset = -1;
+        _calleeSaveRegisters = 0;
+        _tier0Version = 0;
+        _numberOfLocals = localCount;
+        _totalFrameSize = totalFrameSize;
+        _genericContextArgOffset = -1;
+        _keptAliveThisOffset = -1;
+        _securityCookieOffset = -1;
+        _monitorAcquiredOffset = -1;
+        _asyncExecutionContextOffset = -1;
+        _asyncSynchronizationContextOffset = -1;
     }
 
     // Copy
     public unsafe void Copy(PatchpointInfo* original)
     {
-        m_calleeSaveRegisters = original->m_calleeSaveRegisters;
-        m_tier0Version = original->m_tier0Version;
-        m_genericContextArgOffset = original->m_genericContextArgOffset;
-        m_keptAliveThisOffset = original->m_keptAliveThisOffset;
-        m_securityCookieOffset = original->m_securityCookieOffset;
-        m_monitorAcquiredOffset = original->m_monitorAcquiredOffset;
-        m_asyncExecutionContextOffset = original->m_asyncExecutionContextOffset;
-        m_asyncSynchronizationContextOffset = original->m_asyncSynchronizationContextOffset;
+        _calleeSaveRegisters = original->_calleeSaveRegisters;
+        _tier0Version = original->_tier0Version;
+        _genericContextArgOffset = original->_genericContextArgOffset;
+        _keptAliveThisOffset = original->_keptAliveThisOffset;
+        _securityCookieOffset = original->_securityCookieOffset;
+        _monitorAcquiredOffset = original->_monitorAcquiredOffset;
+        _asyncExecutionContextOffset = original->_asyncExecutionContextOffset;
+        _asyncSynchronizationContextOffset = original->_asyncSynchronizationContextOffset;
 
-        for (var i = 0; i < original->m_numberOfLocals; i++)
+        for (var i = 0; i < original->_numberOfLocals; i++)
         {
-            Unsafe.Add(ref m_offsetAndExposureData, i) = Unsafe.Add(ref original->m_offsetAndExposureData, i);
+            Unsafe.Add(ref _offsetAndExposureData, i) = Unsafe.Add(ref original->_offsetAndExposureData, i);
         }
     }
 }

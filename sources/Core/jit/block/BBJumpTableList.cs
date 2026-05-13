@@ -7,12 +7,12 @@ namespace RyuJitSharp;
 
 public partial struct BBJumpTableList
 {
-    private BBJumpTable m_bbJumpTable;
+    private BBJumpTable _bbJumpTable;
 
     public BBJumpTableList(BBJumpTable bbJumpTable)
     {
-        m_bbJumpTable = bbJumpTable;
+        _bbJumpTable = bbJumpTable;
     }
 
-    public readonly BlockEnumerator GetEnumerator() => new BlockEnumerator(m_bbJumpTable.Succs);
+    public readonly BlockEnumerator GetEnumerator() => new BlockEnumerator(_bbJumpTable.Succs);
 }

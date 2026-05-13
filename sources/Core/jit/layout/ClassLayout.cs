@@ -27,7 +27,7 @@ public sealed class ClassLayout
 
     private unsafe byte* _gcPtrs => (byte*)(_anonymous);
 
-    private ref GCPtrsArrayInlineArray _gcPtrsArray => ref Unsafe.As<nint, GCPtrsArrayInlineArray>(ref _anonymous);
+    private ref InlineArrayTargetPointerSize<byte> _gcPtrsArray => ref Unsafe.As<nint, InlineArrayTargetPointerSize<byte>>(ref _anonymous);
 
     private SegmentList? _nonPadding;
 
@@ -73,9 +73,9 @@ public sealed class ClassLayout
 
     /// <summary>The number of GC pointers in this layout.</summary>
     /// <remarks>Since the maximum size == 2^32-1 the count can fit in at most 30 bits.</remarks>
-    public int GcPtrCount => (_bitfield >>> 1) & 0x3FFF_FFFF;
+    public int GCPtrCount => (_bitfield >>> 1) & 0x3FFF_FFFF;
 
-    public bool HasGCPtr => GcPtrCount != 0;
+    public bool HasGCPtr => GCPtrCount != 0;
 
     public bool IsBlockLayout => IsCustomLayout && !HasGCPtr;
 
@@ -101,15 +101,15 @@ public sealed class ClassLayout
                 8 => TYP_LONG,
 #endif
 #if FEATURE_SIMD
-                // TODO: check TYP_Simd12 profitability, it will need additional support in `BuildStoreLoc`.
-                16 => TYP_Simd16,
+                // TODO: check TYP_SIMD12 profitability, it will need additional support in `BuildStoreLoc`.
+                16 => TYP_SIMD16,
 #endif
                 _ => TYP_UNDEF,
             };
         }
     }
 
-    public int SlotCount => roundUp(_size, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
+    public ushort SlotCount => (ushort)(roundUp(_size, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE);
 
     public int Size => _size;
 
@@ -193,7 +193,7 @@ public sealed class ClassLayout
 
         assert(layout1.HasGCPtr && layout2.HasGCPtr);
 
-        if (layout1.GcPtrCount != layout2.GcPtrCount)
+        if (layout1.GCPtrCount != layout2.GCPtrCount)
         {
             return false;
         }
@@ -223,6 +223,92 @@ public sealed class ClassLayout
         return null!;
     }
 
+    /// <summary>true if assignment to this layout from the indicated layout is sensible</summary>
+    /// <param name="sourceLayout">the source of a possible assigment</param>
+    /// <returns>true if assignable, false otherwise.</returns>
+    /// <remarks>This may not be an equivalence relation: a->CanAssignFrom(b) and b->CanAssignFrom(a) may differ.</remarks>
+    public bool CanAssignFrom(ClassLayout sourceLayout)
+    {
+        if (this == sourceLayout)
+        {
+            return true;
+        }
+
+        // Do the normal compatibility check first
+        if (AreCompatible(this, sourceLayout))
+        {
+            return true;
+        }
+
+        // Must be same size
+        if (Size != sourceLayout.Size)
+        {
+            return false;
+        }
+
+        // Must be same IR type
+        if (Type != sourceLayout.Type)
+        {
+            return false;
+        }
+
+        // Dest is GC, source is GC. Allow, slotwise:
+        //
+        //   byref <- ref, byref, nint
+        //   ref   <- ref
+        //   nint  <- nint
+
+        if (HasGCPtr && sourceLayout.HasGCPtr)
+        {
+            var slotsCount = SlotCount;
+            assert(slotsCount == sourceLayout.SlotCount);
+
+            for (var i = 0; i < slotsCount; i++)
+            {
+                var slotType = GetGCPtrType(i);
+                var layoutSlotType = sourceLayout.GetGCPtrType(i);
+
+                if ((slotType is not TYP_BYREF) && (slotType != layoutSlotType))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Dest is GC, source is noGC. Allow, slotwise:
+        //
+        //    byref <- nint
+        //    nint  <- nint
+
+        if (HasGCPtr && !sourceLayout.HasGCPtr)
+        {
+            var slotsCount = SlotCount;
+
+            for (var i = 0; i < slotsCount; i++)
+            {
+                var slotType = GetGCPtrType(i);
+
+                if (slotType is TYP_REF)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Dest is noGC, source is GC. Disallow.
+
+        if (!HasGCPtr && sourceLayout.HasGCPtr)
+        {
+            assert(!HasGCPtr);
+            return false;
+        }
+
+        // Dest is noGC, source is noGC, and they're not compatible.
+        return false;
+    }
+
     public var_types GetGCPtrType(int slot) => GetGCPtr(slot) switch {
         TYPE_GC_NONE => TYP_I_IMPL,
         TYPE_GC_REF => TYP_REF,
@@ -249,12 +335,6 @@ public sealed class ClassLayout
     private CorInfoGCType GetGCPtr(int slot)
     {
         assert(slot < SlotCount);
-        return (GcPtrCount != 0) ? (CorInfoGCType)(GCPtrs[slot]) : TYPE_GC_NONE;
-    }
-
-    [InlineArray(TARGET_POINTER_SIZE)]
-    internal struct GCPtrsArrayInlineArray
-    {
-        public byte e0;
+        return (GCPtrCount != 0) ? (CorInfoGCType)(GCPtrs[slot]) : TYPE_GC_NONE;
     }
 }

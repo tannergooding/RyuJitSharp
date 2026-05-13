@@ -7,7 +7,7 @@ namespace RyuJitSharp;
 
 public sealed class GenTreeCC : GenTree
 {
-    private readonly GenCondition _condition;
+    private GenCondition _condition;
 
     public GenTreeCC(genTreeOps oper, var_types type, GenCondition condition)
         : base(oper, type)
@@ -15,5 +15,16 @@ public sealed class GenTreeCC : GenTree
         assert(oper.IsCC);
     }
 
-    public GenCondition Condition => _condition;
+    public GenCondition Condition
+    {
+        get
+        {
+            return _condition;
+        }
+
+        set
+        {
+            _condition = value;
+        }
+    }
 }

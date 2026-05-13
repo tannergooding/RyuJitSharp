@@ -39,4 +39,13 @@ public partial class Compiler
     /// <summary>Local number for the Swift error value when applicable.</summary>
     public int genReturnErrorLocal = BAD_VAR_NUM;
 #endif
+
+    public bool IsFramePointerUsed
+    {
+        get
+        {
+            assert(codeGen is not null);
+            return codeGen.IsFramePointerUsed;
+        }
+    }
 }

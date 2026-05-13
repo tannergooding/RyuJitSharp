@@ -6,15 +6,14 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
 public readonly ref partial struct BBSuccBlockList
 {
-    private readonly ReadOnlySpan<FlowEdge> m_succs;
-    private readonly succsInlineArray m_succsInline;
-    private readonly int m_succCount;
+    private readonly ReadOnlySpan<FlowEdge> _succs;
+    private readonly InlineArray2<FlowEdge> _succsInline;
+    private readonly int _succCount;
 
     public BBSuccBlockList(BasicBlock block)
     {
@@ -24,8 +23,8 @@ public readonly ref partial struct BBSuccBlockList
             case BBJ_RETURN:
             case BBJ_EHFAULTRET:
             {
-                m_succs = [];
-                m_succCount = 0;
+                _succs = [];
+                _succCount = 0;
                 break;
             }
 
@@ -36,8 +35,8 @@ public readonly ref partial struct BBSuccBlockList
             case BBJ_EHFILTERRET:
             case BBJ_LEAVE:
             {
-                m_succsInline[0] = block.TargetEdge;
-                m_succCount = 1;
+                _succsInline[0] = block.TargetEdge;
+                _succCount = 1;
                 break;
             }
 
@@ -47,34 +46,34 @@ public readonly ref partial struct BBSuccBlockList
                 // them once in the iteration (this is the same behavior as NumSucc()/GetSucc()).
                 if (block.TrueEdge == block.FalseEdge)
                 {
-                    m_succsInline[0] = block.FalseEdge;
-                    m_succCount = 1;
+                    _succsInline[0] = block.FalseEdge;
+                    _succCount = 1;
                 }
                 else
                 {
-                    m_succsInline[0] = block.FalseEdge;
-                    m_succsInline[1] = block.TrueEdge;
-                    m_succCount = 2;
+                    _succsInline[0] = block.FalseEdge;
+                    _succsInline[1] = block.TrueEdge;
+                    _succCount = 2;
                 }
                 break;
             }
 
             case BBJ_EHFINALLYRET:
             {
-                // We don't use the m_succs in-line data; use the existing successor table in the block.
+                // We don't use the _succs in-line data; use the existing successor table in the block.
                 // We must tolerate iterating successors early in the system, before EH_FINALLYRET successors have
                 // been computed.
                 var ehfTargets = block.EhfTargets;
-                m_succs = (ehfTargets is not null) ? ehfTargets.Succs : [];
-                m_succCount = m_succs.Length;
+                _succs = (ehfTargets is not null) ? ehfTargets.Succs : [];
+                _succCount = _succs.Length;
                 break;
             }
 
             case BBJ_SWITCH:
             {
-                // We don't use the m_succs in-line data for switches; use the existing jump table in the block.
-                m_succs = block.SwitchTargets.Succs;
-                m_succCount = m_succs.Length;
+                // We don't use the _succs in-line data for switches; use the existing jump table in the block.
+                _succs = block.SwitchTargets.Succs;
+                _succCount = _succs.Length;
                 break;
             }
 
@@ -89,13 +88,7 @@ public readonly ref partial struct BBSuccBlockList
     [UnscopedRef]
     public readonly BlockEnumerator GetEnumerator()
     {
-        var succs = (m_succCount <= 2) ? m_succsInline : m_succs;
-        return new BlockEnumerator(succs[0..m_succCount]);
-    }
-
-    [InlineArray(2)]
-    private struct succsInlineArray
-    {
-        public FlowEdge e0;
+        var succs = (_succCount <= 2) ? _succsInline : _succs;
+        return new BlockEnumerator(succs[0.._succCount]);
     }
 }

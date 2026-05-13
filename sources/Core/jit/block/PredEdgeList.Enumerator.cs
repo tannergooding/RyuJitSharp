@@ -24,7 +24,7 @@ public partial struct PredEdgeList
         //   cache the edge we think should be next, then check it when we actually do the `MoveNext`
         //   This is a bit conservative, but attempts to protect against callers assuming too much about this iterator implementation.
         // allowEdits=true
-        //   m_next is always used to update m_pred, so changes to m_pred don't break the iterator.
+        //   _next is always used to update _pred, so changes to _pred don't break the iterator.
         private FlowEdge? _next;
 
         public Enumerator(FlowEdge? pred, bool allowEdits)

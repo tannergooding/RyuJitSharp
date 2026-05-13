@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -61,11 +62,11 @@ public partial class Compiler
 #endif
 
     // This table is useful for memoization of BlockDominancePreds.
-    public BlockToFlowEdgeMap? m_blockToEHPreds;
+    public BlockToFlowEdgeMap? _blockToEHPreds;
 
     public ushort asyncContextRestoreEHID = ushort.MaxValue;
 
-    public BasicBlockLocalPairSet? m_insertedSsaLocalsLiveIn;
+    public BasicBlockLocalPairSet? _insertedSsaLocalsLiveIn;
 
     // TODO-Review: Prior to reg predict we reserve 24 bytes for Spill temps.
     //              after the reg predict we will use a computed maxTmpSize
@@ -77,7 +78,7 @@ public partial class Compiler
 
     public StructPromotionHelper? structPromotionHelper;
 
-    public InlineStrategy? m_inlineStrategy;
+    public InlineStrategy? _inlineStrategy;
 
     /// <summary>Keeps the mapping from SSA #'s to VN's for the implicit memory variables.</summary>
     protected SsaDefArray<SsaMemDef> lvMemoryPerSsaData;
@@ -92,7 +93,7 @@ public partial class Compiler
     /// <remarks>It allows to limit the maximum tree size and depth.</remarks>
     private const int MAX_TREE_SIZE = 200;
 
-    private bool m_nextAwaitIsTail;
+    private bool _nextAwaitIsTail;
 
     private static int jitTotalMethodCompiled;
 
@@ -100,27 +101,27 @@ public partial class Compiler
     private static int jitNestingLevel;
 #endif
 
-    private HelperToManagedMap? m_helperToManagedMap;
+    private HelperToManagedMap? _helperToManagedMap;
 
-    public FlowGraphDfsTree? m_dfsTree;
+    public FlowGraphDfsTree? _dfsTree;
 
     // The next members are annotations on the flow graph used during the optimization phases.
     // They are invalidated once RBO runs and modifies the flow graph.
 
-    public FlowGraphNaturalLoops? m_loops;
+    public FlowGraphNaturalLoops? _loops;
 
-    public LoopSideEffects? m_loopSideEffects;
+    public LoopSideEffects? _loopSideEffects;
 
-    public BlockToNaturalLoopMap? m_blockToLoop;
+    public BlockToNaturalLoopMap? _blockToLoop;
 
     // Dominator tree used by SSA construction and copy propagation (the two are expected to use the same tree
     // in order to avoid the need for SSA reconstruction and an "out of SSA" phase).
 
-    public FlowGraphDominatorTree? m_domTree;
+    public FlowGraphDominatorTree? _domTree;
 
-    public FlowGraphDominanceFrontiers? m_domFrontiers;
+    public FlowGraphDominanceFrontiers? _domFrontiers;
 
-    public BlockReachabilitySets? m_reachabilitySets;
+    public BlockReachabilitySets? _reachabilitySets;
 
 #if DEBUG
     /// <summary>Are we doing a fallback compile?</summary>
@@ -130,11 +131,11 @@ public partial class Compiler
 
     /// <summary>This field keep the R2R helper call that would be inserted to trigger the constructor of the static class.</summary>
     /// <remarks>It is set as nongc or gc static base if they are imported, so CSE can eliminate the repeated call, or the chepeast helper function that triggers it.</remarks>
-    public CorInfoHelpFunc m_preferredInitCctor;
+    public CorInfoHelpFunc _preferredInitCctor;
 
     /// <summary>This stack, managed by the SSA numbering infrastructure, keeps "outlined composite SSA numbers".</summary>
     /// <remarks>See "SsaNumInfo.GetNum" for more details on when this is needed.</remarks>
-    public Stack<int>? m_outlinedCompositeSsaNums;
+    public Stack<int>? _outlinedCompositeSsaNums;
 
     /// <summary>This map tracks nodes whose value numbers explicitly or implicitly depend on memory states.</summary>
     /// <remarks>
@@ -143,16 +144,16 @@ public partial class Compiler
     ///   <para>It is not fine-grained enough to track memory dependence within loops, so cannot be used for more general code motion.</para>
     ///   <para>If a node does not have an entry in the map we currently assume the VN is not memory dependent and so memory does not constrain hoisting.</para>
     /// </remarks>
-    public NodeToLoopMemoryBlockMap? m_nodeToLoopMemoryBlockMap;
+    public NodeToLoopMemoryBlockMap? _nodeToLoopMemoryBlockMap;
 
-    public SignatureToLookupInfoMap? m_signatureToLookupInfoMap;
+    public SignatureToLookupInfoMap? _signatureToLookupInfoMap;
 
 #if SWIFT_SUPPORT
-    public SwiftLoweringMap? m_swiftLoweringCache;
+    public SwiftLoweringMap? _swiftLoweringCache;
 #endif
 
 #if TARGET_X86 && FEATURE_IJW
-    public bool[]? m_specialCopyArgs;
+    public bool[]? _specialCopyArgs;
 #endif
 
     /// <summary>The value numbers for this compilation.</summary>
@@ -178,12 +179,12 @@ public partial class Compiler
     protected bool rpMustCreateEBPCalled;
 
     /// <summary>Lowering; needed to Lower IR that's added or modified after Lowering.</summary>
-    private Lowering? m_pLowering;
+    private Lowering? _pLowering;
 
     /// <summary>Register allocator</summary>
-    private IRegAlloc? m_regAlloc;
+    private IRegAlloc? _regAlloc;
 
-    public Stack<ParameterRegisterLocalMapping>? m_paramRegLocalMappings;
+    public Stack<ParameterRegisterLocalMapping>? _paramRegLocalMappings;
 
     public CORINFO_ASYNC_INFO asyncInfo;
 
@@ -198,7 +199,7 @@ public partial class Compiler
     /// <remarks>This is currently used by struct promotion to avoid getting type information for a struct field to see if it is a simd type, if we haven't seen any simd types or operations in the method.</remarks>
     public bool _usesSimdTypes;
 
-    public simdHandlesCache? m_SimdHandleCache;
+    public simdHandlesCache? _simdHandleCache;
 #endif
 
     /// <summary>The Compiler instance for the inlinee</summary>
@@ -222,7 +223,7 @@ public partial class Compiler
 
     public Info info;
 
-    private ClassLayoutTable? m_classLayoutTable;
+    private ClassLayoutTable? _classLayoutTable;
 
     /// <summary>the most recently active phase</summary>
     public Phases mostRecentlyActivePhase;
@@ -239,13 +240,13 @@ public partial class Compiler
 #endif
 
 #if LOOP_HOIST_STATS
-    public int m_loopsConsidered;
+    public int _loopsConsidered;
 
-    public bool m_curLoopHasHoistedExpression;
+    public bool _curLoopHasHoistedExpression;
 
-    public int m_loopsWithHoistedExpressions;
+    public int _loopsWithHoistedExpressions;
 
-    public int m_totalHoistedExpressions;
+    public int _totalHoistedExpressions;
 
     /// <summary>This lock protects the data structures below.</summary>
     public static Lock? s_loopHoistStatsLock;
@@ -280,32 +281,32 @@ public partial class Compiler
     public int gsShadowVarInfoCount;
 
 #if DEBUG
-    private NodeToTestDataMap? m_nodeTestData;
+    private NodeToTestDataMap? _nodeTestData;
 
     private const int FIRST_LOOP_HOIST_CSE_CLASS = 1000;
 
     /// <summary>LoopHoist test annotations turn into CSE requirements</summary>
     /// <remarks>we label them with CSE Class #'s starting at FIRST_LOOP_HOIST_CSE_CLASS. Current kept in this.</remarks>
-    private int m_loopHoistCSEClass = FIRST_LOOP_HOIST_CSE_CLASS;
+    private int _loopHoistCSEClass = FIRST_LOOP_HOIST_CSE_CLASS;
 #endif
 
-    public FieldSeqStore? m_fieldSeqStore;
+    public FieldSeqStore? _fieldSeqStore;
 
-    public m_memorySsaMapInlineArray m_memorySsaMap;
+    public InlineArrayMemoryKindCount<NodeToUnsignedMap> _memorySsaMap;
 
     // The Refany type is the only struct type whose structure is implicitly assumed by IL.  We need its fields.
-    public unsafe CORINFO_CLASS_HANDLE m_refAnyClass;
+    public unsafe CORINFO_CLASS_HANDLE _refAnyClass;
 
 #if VARSET_COUNTOPS
-    public static BitSetSupport.BitSetOpCounter m_varsetOpCounter;
+    public static BitSetSupport.BitSetOpCounter _varsetOpCounter;
 #endif
 
 #if ALLVARSET_COUNTOPS
-    public static BitSetSupport.BitSetOpCounter m_allvarsetOpCounter;
+    public static BitSetSupport.BitSetOpCounter _allvarsetOpCounter;
 #endif
 
 #if TARGET_RISCV64 || TARGET_LOONGARCH64
-    public FpStructLoweringMap? m_fpStructLoweringCache;
+    public FpStructLoweringMap? _fpStructLoweringCache;
 #endif
 
 #if TARGET_AMD64
@@ -365,7 +366,7 @@ public partial class Compiler
 
     private int cntCalleeTrashMask;
 
-    private VarTypeCalleeTrashRegs varTypeCalleeTrashRegs;
+    private InlineArrayTypCount<int> varTypeCalleeTrashRegMasks;
 #endif
 
 #if DEBUG
@@ -426,12 +427,12 @@ public partial class Compiler
 
         if (compIsForInlining)
         {
-            m_inlineStrategy = null;
+            _inlineStrategy = null;
             compInlineResult = impInlineInfo.inlineResult;
         }
         else
         {
-            m_inlineStrategy = new InlineStrategy(this);
+            _inlineStrategy = new InlineStrategy(this);
             compInlineResult = null;
         }
 
@@ -539,6 +540,21 @@ public partial class Compiler
 
     public int CurLVEpoch => lvaCurEpoch;
 
+    public FieldSeqStore FieldSeqStore
+    {
+        get
+        {
+            var fieldSeqStore = impInlineRoot._fieldSeqStore;
+
+            if (fieldSeqStore is null)
+            {
+                fieldSeqStore = new FieldSeqStore();
+                impInlineRoot._fieldSeqStore = fieldSeqStore;
+            }
+            return fieldSeqStore;
+        }
+    }
+
     public unsafe bool IsAot => opts.jitFlags->IsSet(JitFlags.JIT_FLAG_AOT);
 
     public bool IsFullPtrRegMapRequired
@@ -560,17 +576,170 @@ public partial class Compiler
 
     public unsafe bool IsReadyToRun => IsAot && !IsTargetAbi(CORINFO_NATIVEAOT_ABI);
 
-#if DEBUG
-    /// <summary>Should we enable JitStress mode?</summary>
-    /// <remarks>
-    ///   <list type="bullet">
-    ///     <item>0:   No stress</item>
-    ///     <item>!=2: Vary stress. Performance will be slightly/moderately degraded</item>
-    ///     <item>2:   Check-all stress. Performance will be REALLY horrible</item>
-    ///   </list>
-    /// </remarks>
-    public int JitStressLevel => JitConfig[ConfigInteger.JitStress];
+#if FEATURE_JIT_METHOD_PERF
+    private static string? _jitTimeLogCsv;
+
+    public static unsafe string JitTimeLogCsv
+    {
+        get
+        {
+            var jitTimeLogCsv = _jitTimeLogCsv;
+
+            if (jitTimeLogCsv is null)
+            {
+                var pJitTimeLogCsvUtf8 = JitConfig[ConfigString.JitTimeLogCsv];
+                var jitTimeLogCsvUtf8 = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pJitTimeLogCsvUtf8);
+
+                jitTimeLogCsv = Encoding.UTF8.GetString(jitTimeLogCsvUtf8);
+                _jitTimeLogCsv = jitTimeLogCsv; 
+            }
+            return jitTimeLogCsv;
+        }
+    }
 #endif
+
+    public bool MethodHasBoundsChecks
+    {
+        get
+        {
+            return (optMethodFlags & OMF_HAS_BOUNDS_CHECKS) is not 0;
+        }
+
+        set
+        {
+            optMethodFlags = (optMethodFlags & ~OMF_HAS_BOUNDS_CHECKS) | (value ? OMF_HAS_BOUNDS_CHECKS : 0);
+        }
+    }
+
+    public bool MethodHasExpandableCasts
+    {
+        get
+        {
+            return (optMethodFlags & OMF_HAS_EXPANDABLE_CAST) is not 0;
+        }
+
+        set
+        {
+            optMethodFlags = (optMethodFlags & ~OMF_HAS_EXPANDABLE_CAST) | (value ? OMF_HAS_EXPANDABLE_CAST : 0);
+        }
+    }
+
+    public bool MethodHasExpRuntimeLookup
+    {
+        get
+        {
+            return (optMethodFlags & OMF_HAS_EXPRUNTIMELOOKUP) is not 0;
+        }
+
+        set
+        {
+            optMethodFlags = (optMethodFlags & ~OMF_HAS_EXPRUNTIMELOOKUP) | (value ? OMF_HAS_EXPRUNTIMELOOKUP : 0);
+        }
+    }
+
+    public bool MethodHasFatPointer
+    {
+        get
+        {
+            return (optMethodFlags & OMF_HAS_FATPOINTER) is not 0;
+        }
+
+        set
+        {
+            optMethodFlags = (optMethodFlags & ~OMF_HAS_FATPOINTER) | (value ? OMF_HAS_FATPOINTER : 0);
+        }
+    }
+
+    public bool MethodHasGuardedDevirtualization
+    {
+        get
+        {
+            return (optMethodFlags & OMF_HAS_GUARDEDDEVIRT) is not 0;
+        }
+
+        set
+        {
+            optMethodFlags = (optMethodFlags & ~OMF_HAS_GUARDEDDEVIRT) | (value ? OMF_HAS_GUARDEDDEVIRT : 0);
+        }
+    }
+
+    public bool MethodHasPatchpoint
+    {
+        get
+        {
+            return (optMethodFlags & OMF_HAS_PATCHPOINT) != 0;
+        }
+
+        set
+        {
+            optMethodFlags = (optMethodFlags & ~OMF_HAS_PATCHPOINT) | (value ? OMF_HAS_PATCHPOINT : 0);
+        }
+    }
+
+    public bool MethodHasRecursiveTailCall
+    {
+        get
+        {
+            return (optMethodFlags & OMF_HAS_RECURSIVE_TAILCALL) is not 0;
+        }
+
+        set
+        {
+            optMethodFlags = (optMethodFlags & ~OMF_HAS_RECURSIVE_TAILCALL) | (value ? OMF_HAS_RECURSIVE_TAILCALL : 0);
+        }
+    }
+
+    public bool MethodHasSpecialIntrinsics
+    {
+        get
+        {
+            return (optMethodFlags & OMF_HAS_SPECIAL_INTRINSICS) is not 0;
+        }
+
+        set
+        {
+            optMethodFlags = (optMethodFlags & ~OMF_HAS_SPECIAL_INTRINSICS) | (value ? OMF_HAS_SPECIAL_INTRINSICS : 0);
+        }
+    }
+
+    public bool MethodHasStackAllocatedArray
+    {
+        get
+        {
+            return (optMethodFlags & OMF_HAS_STACK_ARRAY) is not 0;
+        }
+
+        set
+        {
+            optMethodFlags = (optMethodFlags & ~OMF_HAS_STACK_ARRAY) | (value ? OMF_HAS_STACK_ARRAY : 0);
+        }
+    }
+
+    public bool MethodHasStaticInit
+    {
+        get
+        {
+            return (optMethodFlags & OMF_HAS_STATIC_INIT) is not 0;
+        }
+
+        set
+        {
+            optMethodFlags = (optMethodFlags & ~OMF_HAS_STATIC_INIT) | (value ? OMF_HAS_STATIC_INIT : 0);
+        }
+    }
+
+    public bool MethodHasTlsFieldAccess
+    {
+        get
+        {
+            return (optMethodFlags & OMF_HAS_TLS_FIELD) is not 0;
+        }
+
+        set
+        {
+            optMethodFlags = (optMethodFlags & ~OMF_HAS_TLS_FIELD) | (value ? OMF_HAS_TLS_FIELD : 0);
+        }
+    }
 
     public bool NeedsGSSecurityCookie
     {
@@ -599,6 +768,21 @@ public partial class Compiler
                 compGSReorderStackLayout = true;
                 compNeedsGSSecurityCookie = true;
             }
+        }
+    }
+
+    public NodeToLoopMemoryBlockMap NodeToLoopMemoryBlockMap
+    {
+        get
+        {
+            var nodeToLoopMemoryBlockMap = _nodeToLoopMemoryBlockMap;
+
+            if (nodeToLoopMemoryBlockMap is null)
+            {
+                nodeToLoopMemoryBlockMap = [];
+                _nodeToLoopMemoryBlockMap = nodeToLoopMemoryBlockMap;
+            }
+            return nodeToLoopMemoryBlockMap;
         }
     }
 
@@ -638,6 +822,25 @@ public partial class Compiler
     public bool RunningSuperPmiReplay => false;
 #endif
 
+    /// <summary>Returns underlying type of handles returned by ldtoken instruction</summary>
+    /// <remarks>RuntimeTypeHandle is backed by raw pointer on NativeAOT and by object reference on other runtimes</remarks>
+    public var_types RuntimeHandleUnderlyingType => IsTargetAbi(CORINFO_NATIVEAOT_ABI) ? TYP_I_IMPL : TYP_REF;
+
+    public SignatureToLookupInfoMap SignatureToLookupInfoMap
+    {
+        get
+        {
+            var signatureToLookupInfoMap = _signatureToLookupInfoMap;
+
+            if (signatureToLookupInfoMap is null)
+            {
+                signatureToLookupInfoMap = [];
+                _signatureToLookupInfoMap = signatureToLookupInfoMap;
+            }
+            return signatureToLookupInfoMap;
+        }
+    }
+
 #if DEBUG
     /// <summary>Should we use only ASCII characters for tree dumps?</summary>
     /// <remarks>This is set to default to 1 in JitConfig</remarks>
@@ -652,18 +855,18 @@ public partial class Compiler
     {
         get
         {
-            var result = m_classLayoutTable;
+            var result = _classLayoutTable;
 
             if (result is null)
             {
                 result = CreateClassLayoutTable(this);
-                m_classLayoutTable = result;
+                _classLayoutTable = result;
             }
             return result;
 
             static ClassLayoutTable CreateClassLayoutTable(Compiler compiler)
             {
-                assert(compiler.m_classLayoutTable is null);
+                assert(compiler._classLayoutTable is null);
                 ClassLayoutTable? result;
 
                 if (compiler.compIsForInlining)
@@ -697,17 +900,26 @@ public partial class Compiler
     /// <param name="size"></param>
     /// <returns></returns>
     public static var_types GetSimdTypeForSize(int size) => size switch {
-        8 => TYP_Simd8,
-        12 => TYP_Simd12,
-        16 => TYP_Simd16,
+        8 => TYP_SIMD8,
+        12 => TYP_SIMD12,
+        16 => TYP_SIMD16,
 #if TARGET_XARCH
-        32 => TYP_Simd32,
-        64 => TYP_Simd64,
+        32 => TYP_SIMD32,
+        64 => TYP_SIMD64,
 #elif TARGET_ARM64
         SIZE_UNKNOWN => TYP_Simd,
 #endif
         _ => TYP_UNDEF,
     };
+
+    [Conditional("DEBUG")]
+    public void assertImp([DoesNotReturnIf(false)] bool condition, GenTree? op1 = null, GenTree? op2 = null, [CallerArgumentExpression(nameof(condition))] string conditionExpression = "", [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
+    {
+        if (!condition)
+        {
+            assertAbort($"{conditionExpression} : Possibly bad IL with CEE_{impCurOpcName} at offset {impCurOpcOffs:X4} (op1={(op1 is not null ? op1.Type.Name : "NULL")} op2={(op2 is not null ? op2.Type.Name : "NULL")} stkDepth={stackState.esStackDepth})\"", filePath, lineNumber);
+        }
+    }
 
     /// <summary>begin execution of a phase</summary>
     /// <param name="phase">the phase that is about to begin</param>
@@ -721,10 +933,7 @@ public partial class Compiler
     public void EndPhase(Phases phase)
     {
 #if FEATURE_JIT_METHOD_PERF
-        if (pCompJitTimer is not null)
-        {
-            pCompJitTimer.EndPhase(this, phase);
-        }
+        compJitTimer?.EndPhase(this, phase);
 #endif
 
         mostRecentlyActivePhase = phase;
@@ -747,6 +956,150 @@ public partial class Compiler
     /// <returns></returns>
     public bool canUseApxEvexEncoding() => canUseApxEncoding() && canUseEvexEncoding();
 #endif
+
+    public unsafe bool checkTailCallConstraint(OPCODE opcode, in CORINFO_RESOLVED_TOKEN resolvedToken, in CORINFO_RESOLVED_TOKEN constrainedResolvedToken)
+    {
+        assert(impOpcodeIsCallOpcode(opcode));
+
+        if (compIsForInlining)
+        {
+            return false;
+        }
+
+        CORINFO_SIG_INFO sig;
+        CorInfoFlag mflags;
+        CorInfoFlag methodClassFlgs;
+        CORINFO_CLASS_HANDLE methodClassHnd;
+
+        if (opcode is CEE_CALLI)
+        {
+            // For calli, check that this is not a virtual method.
+            eeGetSig(resolvedToken.token, resolvedToken.tokenScope, resolvedToken.tokenContext, out sig);
+
+            // We don't know the target method, so we have to infer the flags, or assume the worst-case.
+            mflags = ((sig.callConv & CORINFO_CALLCONV_HASTHIS) is not 0) ? 0 : CORINFO_FLG_STATIC;
+
+            methodClassFlgs = 0;
+            methodClassHnd = NO_CLASS_HANDLE;
+        }
+        else
+        {
+            var methodHnd = resolvedToken.hMethod;
+            mflags = info.compCompHnd->getMethodAttribs(methodHnd);
+
+            // In generic code we pair the method handle with its owning class to get the exact method signature.
+            methodClassHnd = resolvedToken.hClass;
+            assert(methodClassHnd != NO_CLASS_HANDLE);
+
+            eeGetMethodSig(methodHnd, out sig, methodClassHnd);
+
+            // opcode specific check
+            methodClassFlgs = info.compCompHnd->getClassAttribs(methodClassHnd);
+        }
+
+        if ((sig.callConv & CORINFO_CALLCONV_MASK) is CORINFO_CALLCONV_VARARG)
+        {
+            eeGetCallSiteSig(resolvedToken.token, resolvedToken.tokenScope, resolvedToken.tokenContext, out sig);
+        }
+
+        // Check compatibility of the arguments.
+        var argCount = sig.numArgs;
+
+        CORINFO_ARG_LIST_HANDLE args;
+        args = sig.args;
+
+        while (argCount-- is not 0)
+        {
+            // For unsafe code, we might have parameters containing pointer to the stack location.
+            // Disallow the tailcall for this kind.
+
+            CORINFO_CLASS_HANDLE classHandle;
+            var ciType = strip(info.compCompHnd->getArgType(&sig, args, &classHandle));
+
+            if (ciType is CORINFO_TYPE_PTR or CORINFO_TYPE_BYREF or CORINFO_TYPE_REFANY)
+            {
+                return false;
+            }
+
+            // Check that the argument is not a byref-like for tailcalls.
+            if ((ciType is CORINFO_TYPE_VALUECLASS) && eeIsByrefLike(classHandle))
+            {
+                return false;
+            }
+
+            args = info.compCompHnd->getArgNext(args);
+        }
+
+        var popCount = sig.totalILArgs();
+
+        // Check for 'this' which is on non-static methods, not called via NEWOBJ
+        if ((mflags & CORINFO_FLG_STATIC) is 0)
+        {
+            if (opcode is CEE_CALLI)
+            {
+                // For CALLI, we don't know the methodClassHnd. Therefore, let's check the "this" object on the stack.
+                if (impStackTop(popCount).val.Type is not TYP_REF)
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                // Check that the "this" argument is not a byref.
+                if (TypeHandleToVarType(methodClassHnd) != TYP_REF)
+                {
+                    return false;
+                }
+            }
+        }
+
+        // Tail calls on constrained calls should be illegal too:
+        // when instantiated at a value type, a constrained call may pass the address of a stack allocated value
+        if (!Unsafe.IsNullRef(in constrainedResolvedToken))
+        {
+            return false;
+        }
+
+        // Get the exact view of the signature for an array method
+        if (sig.retType != CORINFO_TYPE_VOID)
+        {
+            if ((methodClassFlgs & CORINFO_FLG_ARRAY) is not 0)
+            {
+                assert(opcode != CEE_CALLI);
+                eeGetCallSiteSig(resolvedToken.token, resolvedToken.tokenScope, resolvedToken.tokenContext, out sig);
+            }
+        }
+
+        var calleeRetType = sig.retType.VarType.ActualType;
+        var callerRetType = info.compMethodInfo->args.retType.VarType.ActualType;
+
+        if (calleeRetType is TYP_FLOAT)
+        {
+            // Normalize TYP_FLOAT to TYP_DOUBLE (it is ok to return one as the other and vice versa).
+            calleeRetType = TYP_DOUBLE;
+            callerRetType = TYP_DOUBLE;
+        }
+
+        // Make sure the types match.
+
+        if (calleeRetType != callerRetType)
+        {
+            return false;
+        }
+        else if ((callerRetType is TYP_STRUCT) && (sig.retTypeClass != info.compMethodInfo->args.retTypeClass))
+        {
+            return false;
+        }
+
+        // For tailcall, stack must be empty.
+        if (stackState.esStackDepth != popCount)
+        {
+            return false;
+        }
+
+        // Yes, tailcall is legal
+        return true;
+    }
 
     public nint dspOffset(nint offs)
     {
@@ -891,11 +1244,11 @@ public partial class Compiler
     public unsafe CORINFO_CLASS_HANDLE getMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, int index)
         => info.compCompHnd->getMethodInstantiationArgument(ftn, index);
 
-    public int GetMinVectorByteLength() => (int)(TYP_Simd8.EmitSize);
+    public int GetMinVectorByteLength() => (int)(TYP_SIMD8.EmitSize);
 
     /// <inheritdoc cref="GetReturnTypeForStruct(CORINFO_CLASS_HANDLE, CorInfoCallConvExtension, out structPassingKind, int)" />
     public unsafe var_types GetReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd, CorInfoCallConvExtension callConv, int structSize = 0)
-        => GetReturnTypeForStruct(clsHnd, callConv, out Unsafe.NullRef<structPassingKind>(), structSize);
+        => GetReturnTypeForStruct(clsHnd, callConv, out _, structSize);
 
     /// <summary>Get the type that is used to return values of the given struct type.</summary>
     /// <param name="clsHnd"></param>
@@ -909,6 +1262,12 @@ public partial class Compiler
         // TODO: Port getReturnTypeForStruct
         wbPassStruct = default;
         return TYP_UNKNOWN;
+    }
+
+    public unsafe int GetSimdTypeSizeInBytes(CORINFO_CLASS_HANDLE typeHnd)
+    {
+        _ = getBaseTypeAndSizeOfSimdType(typeHnd, out var sizeBytes);
+        return sizeBytes;
     }
 
     public unsafe CORINFO_CLASS_HANDLE getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, int index)
@@ -969,6 +1328,26 @@ public partial class Compiler
 #endif
     }
 
+    /// <summary>Returns true if the type is returned in multiple registers</summary>
+    /// <param name="hClass">type handle</param>
+    /// <param name="callConv"></param>
+    /// <returns>true if type is returned in multiple registers, false otherwise.</returns>
+    public unsafe bool IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass, CorInfoCallConvExtension callConv)
+    {
+        if (hClass == NO_CLASS_HANDLE)
+        {
+            return false;
+        }
+
+#if TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+        var returnType = GetReturnTypeForStruct(hClass, callConv, out var howToReturnStruct);
+        return varTypeIsStruct(returnType) && (howToReturnStruct is not SPK_PrimitiveType);
+#else
+        var returnType = GetReturnTypeForStruct(hClass, callConv, out _);
+        return varTypeIsStruct(returnType);
+#endif
+    }
+
     public unsafe bool isSpanClass(CORINFO_CLASS_HANDLE clsHnd)
     {
         if (isIntrinsicType(clsHnd))
@@ -978,6 +1357,74 @@ public partial class Compiler
                    (className.Equals("Span`1", StringComparison.Ordinal) || className.Equals("ReadOnlySpan`1", StringComparison.Ordinal));
         }
         return false;
+    }
+
+    public static bool IsStaticHelperEligibleForExpansion(GenTree tree)
+        => IsStaticHelperEligibleForExpansion(tree, out _, out _);
+
+    /// <summary> Determine whether this node is a static init helper eligible for late expansion</summary>
+    /// <param name="tree">tree node</param>
+    /// <param name="isGc">whether the helper returns GCStaticBase or NonGCStaticBase</param>
+    /// <param name="retValKind">describes its return value</param>
+    /// <returns>Returns true if eligible for late expansion</returns>
+    public static bool IsStaticHelperEligibleForExpansion(GenTree tree, out bool isGc, out StaticHelperReturnValue retValKind)
+    {
+        isGc = false;
+        retValKind = SHRV_STATIC_BASE_PTR;
+
+        if (!tree.Oper.IsCall)
+        {
+            return false;
+        }
+
+        var call = tree.AsCall();
+
+        if (!call.IsHelperCall())
+        {
+            return false;
+        }
+
+        switch (call.HelperNum)
+        {
+            case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
+            case CORINFO_HELP_GET_GCSTATIC_BASE:
+            case CORINFO_HELP_GETPINNED_GCSTATIC_BASE:
+            {
+                isGc = true;
+                break;
+            }
+
+            case CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GET_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE:
+            {
+                break;
+            }
+
+            // TODO: other helpers
+
+            default:
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /// <summary>Can the given local address be represented as "LCL_ADDR"?</summary>
+    /// <param name="lclNum">The local's number</param>
+    /// <param name="offset">The address' offset</param>
+    /// <returns>Whether "LCL_ADDR&lt;lclNum&gt; [+offset]" would be valid IR.</returns>
+    /// <remarks>Local address nodes cannot point beyond the local and can only store 16 bits worth of offset.</remarks>
+    public bool IsValidLclAddr(int lclNum, int offset)
+    {
+#if TARGET_ARM64
+        if (lvaIsUnknownSizeLocal(lclNum))
+        {
+            return offset is 0;
+        }
+#endif
+        return (offset < ushort.MaxValue) && (offset < lvaLclExactSize(lclNum));
     }
 
     /// <summary>One line log function.</summary>
@@ -1029,6 +1476,23 @@ public partial class Compiler
     }
 #endif
 
+    public unsafe typeInfo makeTypeInfoForLocal(int lclNum)
+    {
+        ref var varDsc = ref lvaGetDesc(lclNum);
+        return (varDsc.Type is TYP_REF) ? new typeInfo(varDsc.lvClassHnd) : new typeInfo(varDsc.Type);
+    }
+
+    public unsafe typeInfo makeTypeInfo(CORINFO_CLASS_HANDLE clsHnd)
+    {
+        assert(clsHnd != NO_CLASS_HANDLE);
+        return makeTypeInfo(info.compCompHnd->asCorInfoType(clsHnd), clsHnd);
+    }
+
+    public unsafe typeInfo makeTypeInfo(CorInfoType ciType, CORINFO_CLASS_HANDLE clsHnd)
+    {
+        return (ciType == CORINFO_TYPE_CLASS) ? new typeInfo(clsHnd) : new typeInfo(ciType.VarType);
+    }
+
     /// <summary>Use to determine if a struct *might* be a simd type. As this function only takes a size, many structs will fit the criteria.</summary>
     /// <param name="structSize"></param>
     /// <returns></returns>
@@ -1055,6 +1519,33 @@ public partial class Compiler
         // TODO: Port RecordNowayAssert
     }
 #endif
+
+    public unsafe var_types TypeHandleToVarType(CORINFO_CLASS_HANDLE handle) => TypeHandleToVarType(handle, out _);
+
+    public unsafe var_types TypeHandleToVarType(CORINFO_CLASS_HANDLE handle, out ClassLayout? layout)
+    {
+        var jitType = info.compCompHnd->asCorInfoType(handle);
+        return TypeHandleToVarType(jitType, handle, out layout);
+    }
+
+    public unsafe var_types TypeHandleToVarType(CorInfoType jitType, CORINFO_CLASS_HANDLE handle)
+        => TypeHandleToVarType(jitType, handle, out _);
+
+    public unsafe var_types TypeHandleToVarType(CorInfoType jitType, CORINFO_CLASS_HANDLE handle, out ClassLayout? layout)
+    {
+        var type = jitType.VarType;
+
+        if (type == TYP_STRUCT)
+        {
+            layout = typGetObjLayout(handle);
+            type = layout.Type;
+        }
+        else
+        {
+            layout = null;
+        }
+        return type;
+    }
 
     public ClassLayout typGetBlkLayout(int blockSize)
         => typGetCustomLayout(new ClassLayoutBuilder(this, blockSize));
@@ -1121,7 +1612,7 @@ public partial class Compiler
     /// </remarks>
     private unsafe var_types getBaseTypeAndSizeOfSimdType(CORINFO_CLASS_HANDLE typeHnd, out int sizeBytes)
     {
-        var simdHandleCache = m_SimdHandleCache;
+        var simdHandleCache = _simdHandleCache;
 
         if (simdHandleCache is null)
         {
@@ -1134,23 +1625,18 @@ public partial class Compiler
                 // Steal the inliner compiler's cache (create it if not available).
 
                 var inlineRoot = impInlineInfo.InlineRoot;
-                simdHandleCache = inlineRoot.m_SimdHandleCache;
+                simdHandleCache = inlineRoot._simdHandleCache;
 
                 if (simdHandleCache is null)
                 {
                     simdHandleCache = new simdHandlesCache();
-                    inlineRoot.m_SimdHandleCache = simdHandleCache;
+                    inlineRoot._simdHandleCache = simdHandleCache;
                 }
             }
-            m_SimdHandleCache = simdHandleCache;
+            _simdHandleCache = simdHandleCache;
         }
 
-        Unsafe.SkipInit(out sizeBytes);
-
-        if (!Unsafe.IsNullRef(in sizeBytes))
-        {
-            sizeBytes = 0;
-        }
+        sizeBytes = 0;
 
         if ((typeHnd is null) || !isIntrinsicType(typeHnd))
         {
@@ -1404,10 +1890,7 @@ public partial class Compiler
         }
 #endif
 
-        if (!Unsafe.IsNullRef(in sizeBytes))
-        {
-            sizeBytes = size;
-        }
+        sizeBytes = size;
 
         if (simdBaseType != TYP_UNDEF)
         {
@@ -1429,7 +1912,7 @@ public partial class Compiler
     }
 
     private unsafe var_types getBaseTypeOfSimdType(CORINFO_CLASS_HANDLE typeHnd)
-        => getBaseTypeAndSizeOfSimdType(typeHnd, out Unsafe.NullRef<int>());
+        => getBaseTypeAndSizeOfSimdType(typeHnd, out _);
 #endif
 
     private unsafe string getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, out string namespaceName)
@@ -1442,6 +1925,107 @@ public partial class Compiler
 
         namespaceName = Encoding.UTF8.GetString(namespaceNameUtf8);
         return Encoding.UTF8.GetString(classNameUtf8);
+    }
+
+    /// <summary>Gets the preferred length, in bytes, to use for vectorization</summary>
+    /// <returns></returns>
+    public int GetPreferredVectorByteLength()
+    {
+        var maxVectorByteLength = GetMaxVectorByteLength();
+
+#if FEATURE_HW_INTRINSICS && TARGET_XARCH
+        var preferredVectorByteLength = opts.preferredVectorByteLength;
+
+        if (preferredVectorByteLength is not 0)
+        {
+            return int.Min(maxVectorByteLength, preferredVectorByteLength);
+        }
+#endif
+
+        return maxVectorByteLength;
+    }
+
+    /// <summary>Calculates the unrolling threshold for the given operation</summary>
+    /// <param name="type">kind of the operation (memset/memcpy)</param>
+    /// <param name="canUseSimd">whether it is allowed to use SIMD or not</param>
+    /// <returns>The unrolling threshold for the given operation in bytes</returns>
+    public int GetUnrollThreshold(UnrollKind type, bool canUseSimd = true)
+    {
+        var maxRegSize = REGSIZE_BYTES;
+        var threshold = maxRegSize;
+
+#if FEATURE_SIMD
+        if (canUseSimd)
+        {
+            maxRegSize = GetPreferredVectorByteLength();
+
+#if TARGET_XARCH
+            assert(maxRegSize <= ZMM_REGSIZE_BYTES);
+            threshold = maxRegSize;
+#elif TARGET_ARM64
+            // ldp/stp instructions can load/store two 16-byte vectors at once, e.g.:
+            //
+            //   ldp q0, q1, [x1]
+            //   stp q0, q1, [x0]
+            //
+            threshold = maxRegSize * 2;
+#endif
+        }
+#if TARGET_XARCH
+        else
+        {
+            // Compatibility with previous logic: we used to allow memset:128/memcpy:64
+            // on AMD64 (and 64/32 on x86) for cases where we don't use SIMD
+            // see https://github.com/dotnet/runtime/issues/83297
+            threshold *= 2;
+        }
+#endif
+#endif
+
+        if (type is Memset)
+        {
+            // Typically, memset-like operations require less instructions than memcpy
+            threshold *= 2;
+        }
+
+        // Use 4 as a multiplier by default, thus, the final threshold will be:
+        //
+        // | arch        | memset | memcpy |
+        // |-------------|--------|--------|
+        // | x86 avx512  |   512  |   256  |
+        // | x86 avx     |   256  |   128  |
+        // | x86 sse     |   128  |    64  |
+        // | arm64       |   256  |   128  | ldp/stp (2x128bit)
+        // | arm         |    32  |    16  | no SIMD support
+        // | loongarch64 |    64  |    32  | no SIMD support
+        // | riscv64     |    64  |    32  | no SIMD support
+        //
+        // We might want to use a different multiplier for truly hot/cold blocks based on PGO data
+        //
+        threshold *= 4;
+
+        if (type is Memmove)
+        {
+            // NOTE: Memmove's unrolling is currently limited with LSRA -
+            // up to LinearScan.MaxInternalCount number of temp regs, e.g. 5*16=80 bytes on arm64
+            threshold = maxRegSize * 4;
+        }
+
+        if (type is MemcmpU16)
+        {
+            threshold = maxRegSize * 2;
+#if TARGET_ARM64
+            threshold = maxRegSize * 6;
+#endif
+        }
+
+        // For profiled memcmp/memmove we don't want to unroll too much as it's just a guess, and it works better for small sizes.
+
+        if (type is ProfiledMemcmp or ProfiledMemmove)
+        {
+            threshold = maxRegSize * 2;
+        }
+        return threshold;
     }
 
 #if FEATURE_SIMD
@@ -1509,16 +2093,4 @@ public partial class Compiler
         return rejectThisPromo;
     }
 #endif
-
-    [InlineArray((int)(MemoryKindCount))]
-    public struct m_memorySsaMapInlineArray
-    {
-        public NodeToUnsignedMap e0;
-    }
-
-    [InlineArray((int)(TYP_COUNT))]
-    private struct VarTypeCalleeTrashRegs
-    {
-        public int e0;
-    }
 }

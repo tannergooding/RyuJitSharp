@@ -20,7 +20,7 @@ public ref partial struct EHClauses
 
     public EHClauses(Compiler compiler, ushort start)
     {
-        _first = ref compiler.compHndBBtab[start];
+        _first = ref compiler.ehGetDsc(start);
         _count = (ushort)(compiler.compHndBBtabCount - start);
     }
 

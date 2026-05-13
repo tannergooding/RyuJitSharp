@@ -4,8 +4,6 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 #if FEATURE_HW_INTRINSICS
-using System;
-
 namespace RyuJitSharp;
 
 public sealed class GenTreeHWIntrinsic : GenTreeJitIntrinsic
@@ -17,6 +15,12 @@ public sealed class GenTreeHWIntrinsic : GenTreeJitIntrinsic
     }
 
     public NamedIntrinsic HWIntrinsicId => _hwIntrinsicId;
+
+#if TARGET_ARM64
+    public bool IsCreate => _hwIntrinsicId is NI_Vector64_Create or NI_Vector128_Create;
+#elif TARGET_XARCH
+    public bool IsCreate => _hwIntrinsicId is NI_Vector128_Create or NI_Vector256_Create or NI_Vector512_Create;
+#endif
 
     /// <summary>Does this HWI node have memory load or store semantics?</summary>
     public bool IsMemoryLoadOrStore => IsMemoryLoad() || IsMemoryStore(out _);

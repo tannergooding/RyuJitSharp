@@ -3,12 +3,43 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
 using System.Diagnostics;
 
 namespace RyuJitSharp;
 
 public class GenTreeOp : GenTreeUnOp
 {
+    private static ReadOnlySpan<genTreeOps> s_reverseOpers => [
+        GT_NE,          // GT_EQ
+        GT_EQ,          // GT_NE
+        GT_GE,          // GT_LT
+        GT_GT,          // GT_LE
+        GT_LT,          // GT_GE
+        GT_LE,          // GT_GT
+        GT_TEST_NE,     // GT_TEST_EQ
+        GT_TEST_EQ,     // GT_TEST_NE
+#if TARGET_XARCH
+        GT_BITTEST_NE,  // GT_BITTEST_EQ
+        GT_BITTEST_EQ,  // GT_BITTEST_NE
+#endif
+    ];
+
+    private static ReadOnlySpan<genTreeOps> s_swapOpers => [
+        GT_EQ,          // GT_EQ
+        GT_NE,          // GT_NE
+        GT_GT,          // GT_LT
+        GT_GE,          // GT_LE
+        GT_LE,          // GT_GE
+        GT_LT,          // GT_GT
+        GT_TEST_EQ,     // GT_TEST_EQ
+        GT_TEST_NE,     // GT_TEST_NE
+#if TARGET_XARCH
+        GT_BITTEST_EQ,  // GT_BITTEST_EQ
+        GT_BITTEST_NE,  // GT_BITTEST_NE
+#endif
+    ];
+
     private GenTree? _op2;
 
     internal GenTreeOp(genTreeOps oper, var_types type, GenTree? op1, GenTree? op2)
@@ -121,5 +152,28 @@ public class GenTreeOp : GenTreeUnOp
 
         // Not enough known information; therefore we might overflow.
         return true;
+    }
+
+    public void ReverseRelop()
+    {
+        assert(Oper.IsCompare);
+        _oper = s_reverseOpers[Oper - GT_EQ];
+
+        // Flip the GTF_RELOP_NAN_UN bit
+        //     a ord b   === (a != NaN && b != NaN)
+        //     a unord b === (a == NaN || b == NaN)
+        // => !(a ord b) === (a unord b)
+
+        if (varTypeIsFloating(Op1.Type))
+        {
+            Flags ^= GTF_RELOP_NAN_UN;
+        }
+    }
+
+    public void SwapRelop()
+    {
+        assert(Oper.IsCompare);
+        _oper = s_swapOpers[Oper - GT_EQ];
+        (Op1, Op2) = (Op2, Op1);
     }
 }

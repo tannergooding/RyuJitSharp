@@ -18,7 +18,7 @@ public partial struct CallArgs
     private int _argsStackSize;
 
     /// <summary>Stack alignment in bytes required before arguments are pushed for this call.</summary>
-    /// <remarks>Computed dynamically during codegen, based on m_stkSizeBytes and the current stack level (genStackLevel) when the first stack adjustment is made for this call.</remarks>
+    /// <remarks>Computed dynamically during codegen, based on _stkSizeBytes and the current stack level (genStackLevel) when the first stack adjustment is made for this call.</remarks>
     private int _padStkAlign;
 #endif
 

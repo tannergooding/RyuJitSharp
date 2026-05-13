@@ -5,6 +5,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 
 namespace RyuJitSharp;
 
@@ -33,127 +34,127 @@ public sealed class InlineStrategy
     private static object? s_XmlWriterLock;
 #endif
 
-    private Compiler m_compiler;
-    private InlineContext? m_RootContext;
-    private InlinePolicy? m_LastSuccessfulPolicy;
-    private InlineContext? m_LastContext;
-    private InlineDecision m_PrejitRootDecision;
-    private InlineObservation m_PrejitRootObservation;
-    private int m_CallCount;
-    private int m_CandidateCount;
-    private int m_AlwaysCandidateCount;
-    private int m_ForceCandidateCount;
-    private int m_DiscretionaryCandidateCount;
-    private int m_UnprofitableCandidateCount;
-    private int m_ImportCount;
-    private int m_InlineCount;
-    private int m_MaxInlineSize;
-    private int m_MaxInlineDepth;
-    private int m_MaxForceInlineDepth;
-    private int m_OverBudgetIntrinsicInlineCount;
-    private int m_InitialTimeBudget;
-    private int m_InitialTimeEstimate;
-    private int m_CurrentTimeBudget;
-    private int m_CurrentTimeEstimate;
-    private int m_InitialSizeEstimate;
-    private int m_CurrentSizeEstimate;
-    private bool m_HasForceViaDiscretionary;
-    private bool m_HasHardwareIntrinsicCheck;
+    private Compiler _compiler;
+    private InlineContext? _rootContext;
+    private InlinePolicy? _lastSuccessfulPolicy;
+    private InlineContext? _lastContext;
+    private InlineDecision _prejitRootDecision;
+    private InlineObservation _prejitRootObservation;
+    private int _callCount;
+    private int _candidateCount;
+    private int _alwaysCandidateCount;
+    private int _forceCandidateCount;
+    private int _discretionaryCandidateCount;
+    private int _unprofitableCandidateCount;
+    private int _importCount;
+    private int _inlineCount;
+    private int _maxInlineSize;
+    private int _maxInlineDepth;
+    private int _maxForceInlineDepth;
+    private int _overBudgetIntrinsicInlineCount;
+    private int _initialTimeBudget;
+    private int _initialTimeEstimate;
+    private int _currentTimeBudget;
+    private int _currentTimeEstimate;
+    private int _initialSizeEstimate;
+    private int _currentSizeEstimate;
+    private bool _hasForceViaDiscretionary;
+    private bool _hasHardwareIntrinsicCheck;
 
 #if DEBUG
-    private int m_MethodXmlFilePosition;
-    private Random? m_Random;
+    private int _methodXmlFilePosition;
+    private Random? _random;
 #endif
 
     public InlineStrategy(Compiler compiler)
     {
-        m_compiler = compiler;
-        m_MaxInlineSize = DEFAULT_MAX_INLINE_SIZE;
-        m_MaxInlineDepth = DEFAULT_MAX_INLINE_DEPTH;
-        m_MaxForceInlineDepth = DEFAULT_MAX_FORCE_INLINE_DEPTH;
+        _compiler = compiler;
+        _maxInlineSize = DEFAULT_MAX_INLINE_SIZE;
+        _maxInlineDepth = DEFAULT_MAX_INLINE_DEPTH;
+        _maxForceInlineDepth = DEFAULT_MAX_FORCE_INLINE_DEPTH;
 
         // Verify compiler is a root compiler instance
-        assert(m_compiler.impInlineRoot == m_compiler);
+        assert(_compiler.impInlineRoot == _compiler);
 
 #if DEBUG
         // Possibly modify the max inline size.
         //
         // Default value of JitInlineSize is the same as our default.
         // So normally this next line does not change the size.
-        m_MaxInlineSize = JitConfig[ConfigInteger.JitInlineSize];
+        _maxInlineSize = JitConfig[ConfigInteger.JitInlineSize];
 
         // Up the max size under stress
-        if (m_compiler.compInlineStress())
+        if (_compiler.compInlineStress())
         {
-            m_MaxInlineSize *= 10;
+            _maxInlineSize *= 10;
         }
 
         // But don't overdo it
-        if (m_MaxInlineSize > IMPLEMENTATION_MAX_INLINE_SIZE)
+        if (_maxInlineSize > IMPLEMENTATION_MAX_INLINE_SIZE)
         {
-            m_MaxInlineSize = IMPLEMENTATION_MAX_INLINE_SIZE;
+            _maxInlineSize = IMPLEMENTATION_MAX_INLINE_SIZE;
         }
 
         // Verify: not too small, not too big.
-        assert(m_MaxInlineSize >= ALWAYS_INLINE_SIZE);
-        assert(m_MaxInlineSize <= IMPLEMENTATION_MAX_INLINE_SIZE);
+        assert(_maxInlineSize >= ALWAYS_INLINE_SIZE);
+        assert(_maxInlineSize <= IMPLEMENTATION_MAX_INLINE_SIZE);
 
         // Possibly modify the max inline depth
         //
         // Default value of JitInlineDepth is the same as our default.
         // So normally this next line does not change the size.
-        m_MaxInlineDepth = JitConfig[ConfigInteger.JitInlineDepth];
+        _maxInlineDepth = JitConfig[ConfigInteger.JitInlineDepth];
 
         // But don't overdo it
-        if (m_MaxInlineDepth > IMPLEMENTATION_MAX_INLINE_DEPTH)
+        if (_maxInlineDepth > IMPLEMENTATION_MAX_INLINE_DEPTH)
         {
-            m_MaxInlineDepth = IMPLEMENTATION_MAX_INLINE_DEPTH;
+            _maxInlineDepth = IMPLEMENTATION_MAX_INLINE_DEPTH;
         }
 
         // Possibly modify the max force inline depth
         //
         // Default value of JitForceInlineDepth is the same as our default.
         // So normally this next line does not change the size.
-        m_MaxForceInlineDepth = JitConfig[ConfigInteger.JitForceInlineDepth];
+        _maxForceInlineDepth = JitConfig[ConfigInteger.JitForceInlineDepth];
 
         // But don't overdo it
-        if (m_MaxForceInlineDepth > m_MaxInlineDepth)
+        if (_maxForceInlineDepth > _maxInlineDepth)
         {
-            m_MaxForceInlineDepth = m_MaxInlineDepth;
+            _maxForceInlineDepth = _maxInlineDepth;
         }
 #endif
     }
 
-    public Compiler Compiler => m_compiler;
+    public Compiler Compiler => _compiler;
 
     /// <summary>Return the current code size estimate for this method</summary>
-    public int CurrentSizeEstimate => m_CurrentSizeEstimate;
+    public int CurrentSizeEstimate => _currentSizeEstimate;
 
-    public bool HasObservedHardwareIntrinsicCheck => m_HasHardwareIntrinsicCheck;
+    public bool HasObservedHardwareIntrinsicCheck => _hasHardwareIntrinsicCheck;
 
     /// <summary>Return number of import attempts</summary>
-    public int ImportCount => m_ImportCount;
+    public int ImportCount => _importCount;
 
     /// <summary>Return the initial code size estimate for this method</summary>
-    public int InitialSizeEstimate => m_InitialSizeEstimate;
+    public int InitialSizeEstimate => _initialSizeEstimate;
 
     /// <summary>Number of successful inlines into the root</summary>
-    public int InlineCount => m_InlineCount;
+    public int InlineCount => _inlineCount;
 
     /// <summary>Context for the last successful inline, or root if no inlines</summary>
-    public InlineContext? LastContext => m_LastContext;
+    public InlineContext? LastContext => _lastContext;
 
     /// <summary>Get depth of maximum allowable force inline</summary>
-    public int MaxForceInlineDepth => m_MaxForceInlineDepth;
+    public int MaxForceInlineDepth => _maxForceInlineDepth;
 
     /// <summary>Get IL size for maximum allowable inline</summary>
-    public int MaxInlineILSize => m_MaxInlineSize;
+    public int MaxInlineILSize => _maxInlineSize;
 
     /// <summary>Get depth of maximum allowable inline</summary>
-    public int MaxInlineDepth => m_MaxInlineDepth;
+    public int MaxInlineDepth => _maxInlineDepth;
 
     /// <summary>Number of over-budget inlines admitted because the callee was on an [Intrinsic] type.</summary>
-    public int OverBudgetIntrinsicInlineCount => m_OverBudgetIntrinsicInlineCount;
+    public int OverBudgetIntrinsicInlineCount => _overBudgetIntrinsicInlineCount;
 
     /// <summary>get the InlineContext for the root method</summary>
     /// <remarks>Also initializes the jit time estimate and budget.</remarks>
@@ -161,10 +162,66 @@ public sealed class InlineStrategy
     {
         get
         {
-            var rootContext = m_RootContext;
+            var rootContext = _rootContext;
             rootContext ??= CreateRootContext();
             return rootContext;
         }
+    }
+
+    // Dump csv header for inline stats to indicated file.
+    public static void DumpCsvHeader(StreamWriter streamWriter)
+    {
+        streamWriter.Write("\"InlineCalls\",");
+        streamWriter.Write("\"InlineCandidates\",");
+        streamWriter.Write("\"InlineAlways\",");
+        streamWriter.Write("\"InlineForce\",");
+        streamWriter.Write("\"InlineDiscretionary\",");
+        streamWriter.Write("\"InlineUnprofitable\",");
+        streamWriter.Write("\"InlineEarlyFail\",");
+        streamWriter.Write("\"InlineImport\",");
+        streamWriter.Write("\"InlineLateFail\",");
+        streamWriter.Write("\"InlineSuccess\",");
+    }
+
+    // Dump csv data for inline stats to indicated file.
+    public void DumpCsvData(StreamWriter streamWriter)
+    {
+        streamWriter.Write($"{_callCount},");
+        streamWriter.Write($"{_candidateCount},");
+        streamWriter.Write($"{_alwaysCandidateCount},");
+        streamWriter.Write($"{_forceCandidateCount},");
+        streamWriter.Write($"{_discretionaryCandidateCount},");
+        streamWriter.Write($"{_unprofitableCandidateCount},");
+
+        // Early failures are cases where candates are rejected between
+        // the time the jit invokes the inlinee compiler and the time it
+        // starts to import the inlinee IL.
+        //
+        // So they are "cheaper" that late failures.
+
+        var profitableCandidateCount = _discretionaryCandidateCount - _unprofitableCandidateCount;
+
+        var earlyFailCount = (_candidateCount - _alwaysCandidateCount) - (_forceCandidateCount + profitableCandidateCount);
+
+        streamWriter.Write($"{earlyFailCount},");
+
+        var lateFailCount = _importCount - _inlineCount;
+
+        streamWriter.Write($"{_importCount},");
+        streamWriter.Write($"{lateFailCount},");
+        streamWriter.Write($"{_inlineCount},");
+    }
+
+    public Random GetRandom(int optionalSeed = 0)
+    {
+        var random = _random;
+
+        if (random is null)
+        {
+            random = CreateRandom(optionalSeed);
+            _random = random;
+        }
+        return random;
     }
 
     /// <summary>Inform strategy that a candidate has passed screening and that the jit will attempt to inline.</summary>
@@ -175,23 +232,23 @@ public sealed class InlineStrategy
 
         if (obs == InlineObservation.CALLEE_BELOW_ALWAYS_INLINE_SIZE)
         {
-            m_AlwaysCandidateCount++;
+            _alwaysCandidateCount++;
         }
         else if (obs == InlineObservation.CALLEE_IS_FORCE_INLINE)
         {
-            m_ForceCandidateCount++;
+            _forceCandidateCount++;
         }
         else
         {
-            m_DiscretionaryCandidateCount++;
+            _discretionaryCandidateCount++;
         }
     }
 
     /// <summary>Inform strategy that there's another call</summary>
-    public void NoteCall() => m_CallCount++;
+    public void NoteCall() => _callCount++;
 
     /// <summary>Inform strategy that there's a new inline candidate.</summary>
-    public void NoteCandidate() => m_CandidateCount++;
+    public void NoteCandidate() => _candidateCount++;
 
     /// <summary>record that the root method or an already-imported inlinee references a HW-intrinsic IsSupported / IsHardwareAccelerated capability check, and grow the inline time budget on the first such observation per root method.</summary>
     /// <remarks>
@@ -200,52 +257,87 @@ public sealed class InlineStrategy
     /// </remarks>
     public void NoteHardwareIntrinsicCheckObserved()
     {
-        if (m_HasHardwareIntrinsicCheck)
+        if (_hasHardwareIntrinsicCheck)
         {
             return;
         }
 
-        m_HasHardwareIntrinsicCheck = true;
+        _hasHardwareIntrinsicCheck = true;
 
         // Compute the boosted budget in 64-bit to avoid signed overflow when
         // an unusually large JitInlineBudget is configured.
-        var boosted64 = m_InitialTimeBudget * SIMD_BUDGET_BOOST_MULTIPLIER;
+        var boosted64 = _initialTimeBudget * SIMD_BUDGET_BOOST_MULTIPLIER;
         var boosted = (boosted64 > int.MaxValue) ? int.MaxValue : (int)(boosted64);
 
-        if (m_CurrentTimeBudget < boosted)
+        if (_currentTimeBudget < boosted)
         {
-            JITDUMP($"\nBudget: HW intrinsic IsSupported/IsHardwareAccelerated check observed; boosting inline time budget from {m_CurrentTimeBudget} to {boosted} (initial={m_InitialTimeBudget}, multiplier={SIMD_BUDGET_BOOST_MULTIPLIER})\n");
-            m_CurrentTimeBudget = boosted;
+            JITDUMP($"\nBudget: HW intrinsic IsSupported/IsHardwareAccelerated check observed; boosting inline time budget from {_currentTimeBudget} to {boosted} (initial={_initialTimeBudget}, multiplier={SIMD_BUDGET_BOOST_MULTIPLIER})\n");
+            _currentTimeBudget = boosted;
         }
     }
 
     /// <summary>Inform strategy that jit is about to import the inlinee IL.</summary>
-    public void NoteImport() => m_ImportCount++;
+    public void NoteImport() => _importCount++;
 
     /// <summary>Note an over-budget inline that was admitted due to the callee's [Intrinsic] type.</summary>
-    public void NoteOverBudgetIntrinsicInline() => m_OverBudgetIntrinsicInlineCount++;
+    public void NoteOverBudgetIntrinsicInline() => _overBudgetIntrinsicInlineCount++;
 
     /// <summary>Inform strategy about the inline decision for a prejit root</summary>
     public void NotePrejitDecision(InlineResult r)
     {
-        m_PrejitRootDecision = r.Policy.Decision;
-        m_PrejitRootObservation = r.Policy.Observation;
+        _prejitRootDecision = r.Policy.Decision;
+        _prejitRootObservation = r.Policy.Observation;
     }
 
     /// <summary>Inform strategy that a candidate was assessed and determined to be unprofitable.</summary>
-    public void NoteUnprofitable() => m_UnprofitableCandidateCount++;
+    public void NoteUnprofitable() => _unprofitableCandidateCount++;
 
-    [MemberNotNull(nameof(m_RootContext), nameof(m_LastContext))]
+    private Random CreateRandom(int optionalSeed)
+    {
+        var externalSeed = optionalSeed;
+
+#if DEBUG
+        if (_compiler.compRandomInlineStress())
+        {
+            externalSeed = JitStressLevel;
+
+            // We can set DOTNET_JitStressModeNames without setting DOTNET_JitStress,
+            // but we need external seed to be non-zero.
+            if (externalSeed is 0)
+            {
+                externalSeed = 2;
+            }
+        }
+#endif
+
+        var randomPolicyFlag = JitConfig[ConfigInteger.JitInlinePolicyRandom];
+
+        if (randomPolicyFlag is not 0)
+        {
+            externalSeed = randomPolicyFlag;
+        }
+
+        var internalSeed = _compiler.info.compMethodHash();
+
+        assert(externalSeed is not 0);
+        assert(internalSeed is not 0);
+
+        var seed = externalSeed ^ internalSeed;
+        JITDUMP($"\n*** Using random seed ext({externalSeed}) ^ int({internalSeed}) = {seed}\n");
+        return new Random(seed);
+    }
+
+    [MemberNotNull(nameof(_rootContext), nameof(_lastContext))]
     private InlineContext CreateRootContext()
     {
         var rootContext = NewRoot();
-        m_RootContext = rootContext;
+        _rootContext = rootContext;
 
         // Estimate how long the jit will take if there's no inlining done to this method.
         var initialTimeEstimate = EstimateTime(rootContext);
 
-        m_InitialTimeEstimate = initialTimeEstimate;
-        m_CurrentTimeEstimate = initialTimeEstimate;
+        _initialTimeEstimate = initialTimeEstimate;
+        _currentTimeEstimate = initialTimeEstimate;
 
         // Set the initial budget for inlining. Note this is
         // deliberately set very high and is intended to catch
@@ -259,38 +351,38 @@ public sealed class InlineStrategy
 
         var initialTimeBudget = budget * initialTimeEstimate;
 
-        m_InitialTimeBudget = initialTimeBudget;
-        m_CurrentTimeBudget = initialTimeBudget;
+        _initialTimeBudget = initialTimeBudget;
+        _currentTimeBudget = initialTimeBudget;
 
         // Estimate the code size  if there's no inlining
         var initialSizeEstimate = EstimateSize(rootContext);
 
-        m_InitialSizeEstimate = initialSizeEstimate;
-        m_CurrentSizeEstimate = initialSizeEstimate;
+        _initialSizeEstimate = initialSizeEstimate;
+        _currentSizeEstimate = initialSizeEstimate;
 
         // Sanity check
-        assert(m_CurrentTimeEstimate > 0);
-        assert(m_CurrentSizeEstimate > 0);
+        assert(_currentTimeEstimate > 0);
+        assert(_currentSizeEstimate > 0);
 
         // Cache as the "last" context created
-        m_LastContext = rootContext;
+        _lastContext = rootContext;
 
         return rootContext;
     }
 
     /// <summary>construct an InlineContext for the root method.</summary>
     /// <returns>InlineContext for use as the root context</returns>
-    /// <remarks>We leave <see cref="InlineContext.m_Code" /> as <c>null</c> here (rather than the IL buffer address of the root method) to preserve existing behavior, which is to allow one recursive inline.</remarks>
+    /// <remarks>We leave <see cref="InlineContext._code" /> as <c>null</c> here (rather than the IL buffer address of the root method) to preserve existing behavior, which is to allow one recursive inline.</remarks>
     private unsafe InlineContext NewRoot()
     {
         var rootContext = new InlineContext(this) {
-            m_ILSize = m_compiler.info.compILCodeSize,
-            m_Code = m_compiler.info.compCode,
-            m_Callee = m_compiler.info.compMethodHnd,
+            _ilSize = _compiler.info.compILCodeSize,
+            _code = _compiler.info.compCode,
+            _callee = _compiler.info.compMethodHnd,
 
             // May fail to block recursion for normal methods
             // Might need the actual context handle here
-            m_RuntimeContext = METHOD_BEING_COMPILED_CONTEXT(),
+            _runtimeContext = METHOD_BEING_COMPILED_CONTEXT(),
         };
         return rootContext;
     }
@@ -316,7 +408,7 @@ public sealed class InlineStrategy
     private int EstimateSize(InlineContext context)
     {
         // Prediction varies for root and inlines.
-        if (context == m_RootContext)
+        if (context == _rootContext)
         {
             // Simple linear models based on observations show root method
             // native code size is fairly well predicted by IL size.
@@ -341,7 +433,7 @@ public sealed class InlineStrategy
         // Simple linear models based on observations show time is fairly well predicted by IL size.
         // Prediction varies for root and inlines.
 
-        if (context == m_RootContext)
+        if (context == _rootContext)
         {
             return EstimateRootTime(context.ILSize);
         }

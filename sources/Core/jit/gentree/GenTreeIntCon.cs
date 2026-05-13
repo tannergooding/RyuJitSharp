@@ -78,4 +78,23 @@ public sealed class GenTreeIntCon : GenTreeIntConCommon
 
         return ((Flags & GTF_ICON_HDL_MASK) == handleType);
     }
+
+    public bool IsIconHandle(GenTreeFlags handleType1, GenTreeFlags handleType2, GenTreeFlags handleType3)
+    {
+        // check that handleType is one of the valid GTF_ICON_* values
+
+        assert((handleType1 & GTF_ICON_HDL_MASK) != 0);
+        assert((handleType1 & ~GTF_ICON_HDL_MASK) == 0);
+
+        assert((handleType2 & GTF_ICON_HDL_MASK) != 0);
+        assert((handleType2 & ~GTF_ICON_HDL_MASK) == 0);
+
+        assert((handleType3 & GTF_ICON_HDL_MASK) != 0);
+        assert((handleType3 & ~GTF_ICON_HDL_MASK) == 0);
+
+        var handleType = (Flags & GTF_ICON_HDL_MASK);
+        return (handleType == handleType1)
+            || (handleType == handleType2)
+            || (handleType == handleType3);
+    }
 }

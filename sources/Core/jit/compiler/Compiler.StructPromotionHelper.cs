@@ -15,12 +15,12 @@ public partial class Compiler
     // necessary information for fgMorphStructField to use.
     public sealed class StructPromotionHelper
     {
-        private Compiler m_compiler;
+        private Compiler _compiler;
         private lvaStructPromotionInfo structPromotionInfo;
 
         public StructPromotionHelper(Compiler compiler)
         {
-            m_compiler = compiler;
+            _compiler = compiler;
         }
 
         /// <summary>checks if the struct type can be promoted.</summary>
@@ -35,7 +35,7 @@ public partial class Compiler
         {
             assert(typeHnd is not null);
 
-            if (!m_compiler.eeIsValueClass(typeHnd))
+            if (!_compiler.eeIsValueClass(typeHnd))
             {
                 // TODO-ObjectStackAllocation: Enable promotion of fields of stack-allocated objects.
                 return false;
@@ -54,7 +54,7 @@ public partial class Compiler
 
 #if FEATURE_SIMD
             // getMaxVectorByteLength() represents the size of the largest primitive type that we can struct promote.
-            var maxSize = MAX_NumOfFieldsInPromotableStruct * int.Max(m_compiler.GetMaxVectorByteLength(), sizeof(double));
+            var maxSize = MAX_NumOfFieldsInPromotableStruct * int.Max(_compiler.GetMaxVectorByteLength(), sizeof(double));
 #else
             // sizeof(double) represents the size of the largest primitive type that we can struct promote.
             var maxSize = MAX_NumOfFieldsInPromotableStruct * sizeof(double);
@@ -63,7 +63,7 @@ public partial class Compiler
             // lvaStructFieldInfo.fldOffset is byte-sized and offsets start from 0, so the max size can be 256
             assert((byte)(maxSize - 1) == (maxSize - 1));
 
-            var compHandle = m_compiler.info.compCompHnd;
+            var compHandle = _compiler.info.compCompHnd;
             var structSize = compHandle->getClassSize(typeHnd);
 
             if (structSize > maxSize)
@@ -226,7 +226,7 @@ public partial class Compiler
         /// <returns>true if the struct var can be promoted.</returns>
         private unsafe bool CanPromoteStructVar(int lclNum)
         {
-            ref var varDsc = ref m_compiler.lvaGetDesc(lclNum);
+            ref var varDsc = ref _compiler.lvaGetDesc(lclNum);
 
             assert(varTypeIsStruct(varDsc.Type));
             assert(!varDsc.lvPromoted); // Don't ask again :)
@@ -242,19 +242,19 @@ public partial class Compiler
 
             // Reject struct promotion of parameters when -GS stack reordering is enabled
             // as we could introduce shadow copies of them.
-            if (varDsc.lvIsParam && m_compiler.compGSReorderStackLayout)
+            if (varDsc.lvIsParam && _compiler.compGSReorderStackLayout)
             {
                 JITDUMP($"  struct promotion of V{lclNum:D2} is disabled because lvIsParam and compGSReorderStackLayout\n");
                 return false;
             }
 
-            if (varDsc.lvIsParam && m_compiler.fgNoStructParamPromotion)
+            if (varDsc.lvIsParam && _compiler.fgNoStructParamPromotion)
             {
                 JITDUMP($"  struct promotion of V{lclNum:D2} is disabled by fgNoStructParamPromotion\n");
                 return false;
             }
 
-            if (!m_compiler.lvaEnregMultiRegVars && varDsc.lvIsMultiRegArgOrRet)
+            if (!_compiler.lvaEnregMultiRegVars && varDsc.lvIsMultiRegArgOrRet)
             {
                 JITDUMP($"  struct promotion of V{lclNum:D2} is disabled because lvIsMultiRegArgOrRet()\n");
                 return false;
@@ -262,7 +262,7 @@ public partial class Compiler
 
             // If the local was exposed at Tier0, we currently have to assume it's aliased for OSR.
             //
-            if (m_compiler.lvaIsOSRLocal(lclNum) && m_compiler.info.compPatchpointInfo->IsExposed(lclNum))
+            if (_compiler.lvaIsOSRLocal(lclNum) && _compiler.info.compPatchpointInfo->IsExposed(lclNum))
             {
                 JITDUMP($"  struct promotion of V{lclNum:D2} is disabled because it is an exposed OSR local\n");
                 return false;
@@ -294,7 +294,7 @@ public partial class Compiler
             // Swift structs are not passed in a way that match their layout and
             // require reassembling on the local stack frame. Skip promotion for these
             // (which would result in dependent promotion anyway).
-            if ((m_compiler.info.compCallConv == CorInfoCallConvExtension.Swift) && varDsc.lvIsParam)
+            if ((_compiler.info.compCallConv == CorInfoCallConvExtension.Swift) && varDsc.lvIsParam)
             {
                 JITDUMP($"  struct promotion of V{lclNum:D2} is disabled because it is a parameter to a Swift function\n");
                 return false;
@@ -336,7 +336,7 @@ public partial class Compiler
                         // and non-simd types, we don't currently handle that case in the prolog, so we can't promote.
                         else if ((fieldCnt > 1) && varTypeIsStruct(fieldType) &&
                                  (structPromotionInfo.fields[i].fldSimdTypeHnd != NO_CLASS_HANDLE) &&
-                                 !m_compiler.isOpaqueSimdType(structPromotionInfo.fields[i].fldSimdTypeHnd))
+                                 !_compiler.isOpaqueSimdType(structPromotionInfo.fields[i].fldSimdTypeHnd))
                         {
                             canPromote = false;
                         }
@@ -350,7 +350,7 @@ public partial class Compiler
 
                     // Only promote if the field types match the registers, unless we have a single simd field.
                     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-                    m_compiler.eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
+                    _compiler.eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
 
                     var regCount = structDesc.eightByteCount;
 
@@ -394,7 +394,7 @@ public partial class Compiler
         /// <remarks>This routine mainly performs profitability checks.  Right now it also has some correctness checks due to limitations of down-stream phases.</remarks>
         private unsafe bool ShouldPromoteStructVar(int lclNum)
         {
-            ref var varDsc = ref m_compiler.lvaGetDesc(lclNum);
+            ref var varDsc = ref _compiler.lvaGetDesc(lclNum);
 
             assert(varTypeIsStruct(varDsc.Type));
             assert(varDsc.Layout is not null);
@@ -434,7 +434,7 @@ public partial class Compiler
                 shouldPromote = false;
             }
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
-            else if (varDsc.lvIsParam && !m_compiler.lvaIsImplicitByRefLocal(lclNum) && !IsArmHfaParameter(lclNum))
+            else if (varDsc.lvIsParam && !_compiler.lvaIsImplicitByRefLocal(lclNum) && !IsArmHfaParameter(lclNum))
             {
 #if FEATURE_MULTIREG_STRUCT_PROMOTE
                 // Is this a variable holding a value with exactly two fields passed in
@@ -448,7 +448,7 @@ public partial class Compiler
                         shouldPromote = false;
                     }
 #if TARGET_LOONGARCH64 || TARGET_RISCV64
-                    else if (m_compiler.lvaGetParameterABIInfo(lclNum).IsSplitAcrossRegistersAndStack())
+                    else if (_compiler.lvaGetParameterABIInfo(lclNum).IsSplitAcrossRegistersAndStack())
                     {
                         JITDUMP($"Not promoting multireg struct local V{lclNum:D2}, because it is splitted.\n");
                         shouldPromote = false;
@@ -470,13 +470,13 @@ public partial class Compiler
                     }
                 }
             }
-            else if ((lclNum == m_compiler.genReturnLocal) && (structPromotionInfo.fieldCnt > 1))
+            else if ((lclNum == _compiler.genReturnLocal) && (structPromotionInfo.fieldCnt > 1))
             {
                 // TODO-1stClassStructs: a temporary solution to keep diffs small, it will be fixed later.
                 shouldPromote = false;
             }
 #if DEBUG
-            else if (m_compiler.compPromoteFewerStructs(lclNum))
+            else if (_compiler.compPromoteFewerStructs(lclNum))
             {
                 // Do not promote some structs, that can be promoted, to stress promoted/unpromoted moves.
                 JITDUMP($"Not promoting promotable struct local V{lclNum:D2}, because of STRESS_PROMOTE_FEWER_STRUCTS\n");
@@ -498,7 +498,7 @@ public partial class Compiler
         /// <param name="lclNum">struct local number</param>
         private unsafe void PromoteStructVar(int lclNum)
         {
-            ref var varDsc = ref m_compiler.lvaGetDesc(lclNum);
+            ref var varDsc = ref _compiler.lvaGetDesc(lclNum);
 
             // We should never see a reg-sized non-field-addressed struct here.
             assert(!varDsc.lvRegStruct);
@@ -507,7 +507,7 @@ public partial class Compiler
             assert(structPromotionInfo.canPromote);
 
             varDsc.lvFieldCnt = structPromotionInfo.fieldCnt;
-            varDsc.lvFieldLclStart = m_compiler.lvaCount;
+            varDsc.lvFieldLclStart = _compiler.lvaCount;
             varDsc.lvPromoted = true;
             varDsc.lvContainsHoles = structPromotionInfo.containsHoles;
 
@@ -515,7 +515,7 @@ public partial class Compiler
             // Don't stress this in LCL_FLD stress.
             varDsc.lvKeepType = true;
 
-            if (m_compiler.verbose)
+            if (_compiler.verbose)
             {
                 jitprintf($"\nPromoting struct local V{lclNum:D2} ({varDsc.Layout.ClassName}):");
             }
@@ -533,14 +533,14 @@ public partial class Compiler
                     // it's possible we transition from a method that originally only had integer
                     // local vars to start having FP.  We have to communicate this through this flag
                     // since LSRA later on will use this flag to determine whether or not to track FP register sets.
-                    m_compiler.compFloatingPointUsed = true;
+                    _compiler.compFloatingPointUsed = true;
                 }
 
                 // Now grab the temp for the field local.
                 var reason = "";
 
 #if DEBUG
-                reason = $"field V{lclNum:D2}.{m_compiler.eeGetFieldName(fieldInfo.diagFldHnd, includeType: false)} (fldOffset=0x{fieldInfo.fldOffset:X})";
+                reason = $"field V{lclNum:D2}.{_compiler.eeGetFieldName(fieldInfo.diagFldHnd, includeType: false)} (fldOffset=0x{fieldInfo.fldOffset:X})";
 
                 if (index > 0)
                 {
@@ -549,13 +549,13 @@ public partial class Compiler
 #endif
 
                 // Lifetime of field locals might span multiple BBs, so they must be long lifetime temps.
-                var varNum = m_compiler.lvaGrabTemp(false, reason);
+                var varNum = _compiler.lvaGrabTemp(false, reason);
 
                 // lvaGrabTemp can reallocate the lvaTable, so
                 // refresh the cached varDsc for lclNum.
-                varDsc = m_compiler.lvaGetDesc(lclNum);
+                varDsc = _compiler.lvaGetDesc(lclNum);
 
-                ref var fieldVarDsc = ref m_compiler.lvaGetDesc(varNum);
+                ref var fieldVarDsc = ref _compiler.lvaGetDesc(varNum);
                 fieldVarDsc.Type = fieldInfo.fldType;
                 fieldVarDsc.lvIsStructField = true;
                 fieldVarDsc.lvFldOffset = fieldInfo.fldOffset;
@@ -573,7 +573,7 @@ public partial class Compiler
                 // This new local may be the first time we've seen a long typed local.
                 if (fieldVarDsc.Type is TYP_LONG)
                 {
-                    m_compiler.compLongUsed = true;
+                    _compiler.compLongUsed = true;
                 }
 
 #if FEATURE_IMPLICIT_BYREFS
@@ -595,7 +595,7 @@ public partial class Compiler
                     if (GlobalJitOptions.compFeatureHfa && (fieldInfo.fldSize <= MAX_PASS_MULTIREG_BYTES))
                     {
                         // hfaType is set to float, double or simd type if it is an HFA, otherwise TYP_UNDEF
-                        var hfaType = m_compiler.GetHfaType(fieldInfo.fldSimdTypeHnd);
+                        var hfaType = _compiler.GetHfaType(fieldInfo.fldSimdTypeHnd);
 
                         if (varTypeIsValidHfaType(hfaType))
                         {
@@ -616,7 +616,7 @@ public partial class Compiler
             if (varDsc.lvIsParam)
             {
                 // TODO-Cleanup: Allow independent promotion for ARM struct parameters
-                m_compiler.lvaSetVarDoNotEnregister(lclNum, DoNotEnregisterReason.IsStructArg);
+                _compiler.lvaSetVarDoNotEnregister(lclNum, DoNotEnregisterReason.IsStructArg);
             }
 #endif
         }
@@ -644,10 +644,10 @@ public partial class Compiler
                 return false;
             }
 
-            var layout = m_compiler.lvaGetDesc(lclNum).Layout;
+            var layout = _compiler.lvaGetDesc(lclNum).Layout;
             assert(layout is not null);
 
-            var hfaType = m_compiler.info.compCompHnd->getHFAType(layout.ClassHandle);
+            var hfaType = _compiler.info.compCompHnd->getHFAType(layout.ClassHandle);
             return hfaType != CORINFO_HFA_ELEM_NONE;
         }
 
@@ -659,7 +659,7 @@ public partial class Compiler
         private unsafe bool IsSysVMultiRegType(ClassLayout layout)
         {
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-            m_compiler.eeGetSystemVAmd64PassStructInRegisterDescriptor(layout.ClassHandle, &structDesc);
+            _compiler.eeGetSystemVAmd64PassStructInRegisterDescriptor(layout.ClassHandle, &structDesc);
             return structDesc.passedInRegisters && (structDesc.eightByteCount == 2);
         }
 #else

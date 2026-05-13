@@ -147,9 +147,9 @@ public partial class Compiler
 #endif
 
 #if DEBUG
-    public static s_compStressModeNamesInlineArray s_compStressModeNames;
+    public static InlineArrayCompilerStressCount<string> s_compStressModeNames;
 
-    public compActiveStressModesInlineArray compActiveStressModes;
+    public InlineArrayCompilerStressCount<byte> compActiveStressModes;
 #endif
 
     /// <summary>ABI return type descriptor for the method</summary>
@@ -194,21 +194,17 @@ public partial class Compiler
     /// <summary>unique ID for EH data array entries</summary>
     public ushort compEHID;
 
-    //-------------------------------------------------------------------------
-    //  The following keeps track of how many bytes of local frame space we've
-    //  grabbed so far in the current function, and how many argument bytes we
-    //  need to pop when we return.
-    //
     /// <summary>secObject+lclBlk+locals+temps</summary>
+    /// <remarks>keeps track of how many bytes of local frame space we've grabbed so far in the current function, and how many argument bytes we need to pop when we return.</remarks>
     public int compLclFrameSize;
 
 #if HAS_FIXED_REGISTER_SET
     /// <summary>Count of callee-saved regs we pushed in the prolog.</summary>
     /// <remarks>
-    ///   <para>Does not include EBP for isFramePointerUsed() and double-aligned frames.</para>
+    ///   <para>Does not include EBP for IsFramePointerUsed and double-aligned frames.</para>
     ///   <para>In case of Amd64 this doesn't include float regs saved on stack.</para>
     /// </remarks>
-    public int compCalleeRegsPushed;
+    public int compCalleeRegsPushed = -1;
 #endif
 
 #if TARGET_XARCH
@@ -258,23 +254,23 @@ public partial class Compiler
 
 #if FEATURE_JIT_METHOD_PERF
     /// <summary>Timer data structure (by phases) for current compilation.</summary>
-    private unsafe JitTimer? pCompJitTimer;
+    private unsafe JitTimer? compJitTimer;
     
     /// <summary>Summary of the Timer information for the whole run.</summary>
     private static CompTimeSummaryInfo s_compJitTimerSummary;
     
     /// <summary>If a log file for JIT time is desired, filename to write it to.</summary>
-    private static string? compJitTimeLogFilename;
+    private static nint compJitTimeLogFilename;
 #endif
 
 #if DEBUG
     // These variables are associated with maintaining SQM data about compile time.
 
     /// <summary>Raw timer count at the end of the inlining phase in the current compilation.</summary>
-    private long m_compCyclesAtEndOfInlining;
+    private long _compCyclesAtEndOfInlining;
 
     /// <summary>Wall clock elapsed time for current compilation (microseconds)</summary>
-    private long m_compCycles;
+    private long _compCycles;
 #endif
 
 #if FUNC_INFO_LOGGING
@@ -308,8 +304,60 @@ public partial class Compiler
 
     /// <summary>Returns true if the compiler instance is created for inlining.</summary>
     [MemberNotNullWhen(true, nameof(impInlineInfo), nameof(compInlineResult))]
-    [MemberNotNullWhen(false, nameof(codeGen), nameof(m_inlineStrategy))]
+    [MemberNotNullWhen(false, nameof(codeGen), nameof(_inlineStrategy))]
     public bool compIsForInlining => impInlineInfo is not null;
+
+    /// <summary>Does this method return a multi-reg value?</summary>
+    public bool compMethodReturnsMultiRegRetType => compRetTypeDesc.IsMultiRegRetType;
+
+    /// <summary>Returns true if the method being compiled returns RetBuf addr as its return value</summary>
+    /// <remarks>
+    ///   <para>There are cases where implicit RetBuf argument should be explicitly returned in a register.</para>
+    ///   <para>In such cases the return type is changed to TYP_BYREF and appropriate IR is generated.</para>
+    /// </remarks>
+#if TARGET_AMD64
+    // 1. on x64 Windows and Unix the address of RetBuf needs to be returned by
+    //    methods with hidden RetBufArg in RAX. In such case GT_RETURN is of TYP_BYREF,
+    //    returning the address of RetBuf.
+    public bool compMethodReturnsRetBufAddr => info.compRetBuffArg != BAD_VAR_NUM;
+#else
+    public bool compMethodReturnsRetBufAddr
+    {
+        get
+        {
+#if PROFILING_SUPPORTED
+            // 2. Profiler Leave callback expects the address of retbuf as return value for
+            //    methods with hidden RetBuf argument.  impReturnInstruction() when profiler
+            //    callbacks are needed creates GT_RETURN(TYP_BYREF, op1 = Addr of RetBuf) for
+            //    methods with hidden RetBufArg.
+            if (compIsProfilerHookNeeded)
+            {
+                return info.compRetBuffArg is not BAD_VAR_NUM;
+            }
+#endif
+
+#if TARGET_ARM64
+            if (TargetOS.IsWindows)
+            {
+                // 3. Windows ARM64 native instance calling convention requires the address of RetBuff to be returned in x0.
+
+                if (callConvIsInstanceMethodCallConv(info.compCallConv))
+                {
+                    return info.compRetBuffArg is not BAD_VAR_NUM;
+                }
+            }
+#elif TARGET_X86
+            if (info.compCallConv is not CorInfoCallConvExtension.Managed)
+            {
+                // 4. x86 unmanaged calling conventions require the address of RetBuff to be returned in eax.
+                return info.compRetBuffArg is not BAD_VAR_NUM;
+            }
+#endif
+
+            return false;
+        }
+    }
+#endif
 
     // Object stack allocation takes the address of locals around suspension points. Disable entirely under async for now.
     public bool compObjectStackAllocation => !compIsAsync && (JitConfig[ConfigInteger.JitObjectStackAllocation] != 0);
@@ -454,6 +502,8 @@ public partial class Compiler
     private static ConfigMethodRange s_jitInstrumentIfOptimizingRange;
 #endif
 
+    private static bool s_checkedForJitTimeLog;
+
     public unsafe CorJitResult compCompileAfterInit(CORINFO_MODULE_HANDLE moduleHandle, out void* methodCodePtr, out int methodCodeSize, JitFlags* jitFlags)
     {
         // compInit should have set these already.
@@ -462,21 +512,19 @@ public partial class Compiler
         noway_assert(info.compMethodHnd is not null);
 
 #if FEATURE_JIT_METHOD_PERF
-        static bool checkedForJitTimeLog = false;
-
-        if (!checkedForJitTimeLog)
+        if (!s_checkedForJitTimeLog)
         {
-            InterlockedCompareExchangeT(&Compiler.compJitTimeLogFilename, JitConfig.JitTimeLogFile(), null);
+            _ = Interlocked.CompareExchange(ref compJitTimeLogFilename, (nint)(JitConfig[ConfigString.JitTimeLogFile]), comparand: 0);
 
             // At a process or module boundary clear the file and start afresh.
             JitTimer.PrintCsvHeader();
 
-            checkedForJitTimeLog = true;
+            s_checkedForJitTimeLog = true;
         }
 
-        if ((compJitTimeLogFilename is not null) || (JitTimeLogCsv() is not null))
+        if ((compJitTimeLogFilename is not 0) || (JitTimeLogCsv is ""))
         {
-            pCompJitTimer = JitTimer.Create(this, info.compMethodInfo->ILCodeSize);
+            compJitTimer = new JitTimer(info.compMethodInfo->ILCodeSize);
         }
 #endif
 
@@ -880,8 +928,7 @@ public partial class Compiler
 #endif
 
     /// <summary>Returns true if the jit supports having patchpoints in this method.</summary>
-    public bool compCanHavePatchpoints()
-        => compCanHavePatchpoints(out Unsafe.NullRef<string>());
+    public bool compCanHavePatchpoints() => compCanHavePatchpoints(out _);
 
     /// <summary>Returns true if the jit supports having patchpoints in this method.</summary>
     public bool compCanHavePatchpoints(out string reason)
@@ -909,12 +956,7 @@ public partial class Compiler
         whyNot = "OSR feature not defined in build";
 #endif
 
-        Unsafe.SkipInit(out reason);
-
-        if (!Unsafe.IsNullRef(in reason))
-        {
-            reason = whyNot;
-        }
+        reason = whyNot;
         return whyNot.Length != 0;
     }
 
@@ -942,7 +984,7 @@ public partial class Compiler
         else
         {
             info.compFlags = info.compCompHnd->getMethodAttribs(info.compMethodHnd);
-            compInlineContext = m_inlineStrategy.RootContext;
+            compInlineContext = _inlineStrategy.RootContext;
         }
 
         // compInitOptions will set the correct verbose flag.
@@ -1132,7 +1174,7 @@ public partial class Compiler
                 prejitResult.DetermineProfitability(in *methodInfo);
             }
 
-            m_inlineStrategy.NotePrejitDecision(prejitResult);
+            _inlineStrategy.NotePrejitDecision(prejitResult);
 
             // Handle the results of the inline analysis.
             if (prejitResult.IsFailure)
@@ -1418,6 +1460,26 @@ public partial class Compiler
 #endif // DEBUG
     }
 
+    public unsafe CORINFO_CONST_LOOKUP compGetHelperFtn(CorInfoHelpFunc ftnNum)
+    {
+        Unsafe.SkipInit<CORINFO_CONST_LOOKUP>(out var lookup);
+
+        if (info.compMatchedVM)
+        {
+            _ = info.compCompHnd->getHelperFtn(ftnNum, &lookup);
+
+            // The JIT only expects these two possible access types
+            assert(lookup.accessType is IAT_VALUE or IAT_PVALUE);
+        }
+        else
+        {
+            // If we don't have a matched VM, we won't get valid results when asking for a helper function.
+            lookup.addr = unchecked((void*)(0xCA11CA11)); // "callcall"
+            lookup.accessType = IAT_VALUE;
+        }
+        return lookup;
+    }
+
 #if DEBUG
     private static ConfigMethodRange s_jitEnablePgoRange;
     private static ConfigMethodRange s_jitInlineMethodsWithEHRange;
@@ -1460,8 +1522,6 @@ public partial class Compiler
             opts.compCodeOpt = FAST_CODE;
             assert(!jitFlags->IsSet(JitFlags.JIT_FLAG_SIZE_OPT));
         }
-
-        //-------------------------------------------------------------------------
 
         opts.compDbgCode = jitFlags->IsSet(JitFlags.JIT_FLAG_DEBUG_CODE);
         opts.compDbgInfo = jitFlags->IsSet(JitFlags.JIT_FLAG_DEBUG_INFO);
@@ -2473,28 +2533,28 @@ public partial class Compiler
 
         // Make sure we copy the register info and initialize the trash regs after the underlying fields are initialized
 
-        varTypeCalleeTrashRegs[(int)(TYP_UNDEF)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegs[(int)(TYP_VOID)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegs[(int)(TYP_BYTE)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegs[(int)(TYP_UBYTE)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegs[(int)(TYP_SHORT)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegs[(int)(TYP_USHORT)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegs[(int)(TYP_INT)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegs[(int)(TYP_UINT)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegs[(int)(TYP_LONG)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegs[(int)(TYP_ULONG)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegs[(int)(TYP_FLOAT)] = (int)(RBM_FLT_CALLEE_TRASH);
-        varTypeCalleeTrashRegs[(int)(TYP_DOUBLE)] = (int)(RBM_FLT_CALLEE_TRASH);
-        varTypeCalleeTrashRegs[(int)(TYP_REF)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegs[(int)(TYP_BYREF)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegs[(int)(TYP_STRUCT)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegs[(int)(TYP_Simd8)] = (int)(RBM_FLT_CALLEE_TRASH);
-        varTypeCalleeTrashRegs[(int)(TYP_Simd12)] = (int)(RBM_FLT_CALLEE_TRASH);
-        varTypeCalleeTrashRegs[(int)(TYP_Simd16)] = (int)(RBM_FLT_CALLEE_TRASH);
-        varTypeCalleeTrashRegs[(int)(TYP_Simd32)] = (int)(RBM_FLT_CALLEE_TRASH);
-        varTypeCalleeTrashRegs[(int)(TYP_Simd64)] = (int)(RBM_FLT_CALLEE_TRASH);
-        varTypeCalleeTrashRegs[(int)(TYP_MASK)] = (int)(RBM_MSK_CALLEE_TRASH);
-        varTypeCalleeTrashRegs[(int)(TYP_UNKNOWN)] = (int)(RBM_INT_CALLEE_TRASH);
+        varTypeCalleeTrashRegMasks[(int)(TYP_UNDEF)] = (int)(RBM_INT_CALLEE_TRASH);
+        varTypeCalleeTrashRegMasks[(int)(TYP_VOID)] = (int)(RBM_INT_CALLEE_TRASH);
+        varTypeCalleeTrashRegMasks[(int)(TYP_BYTE)] = (int)(RBM_INT_CALLEE_TRASH);
+        varTypeCalleeTrashRegMasks[(int)(TYP_UBYTE)] = (int)(RBM_INT_CALLEE_TRASH);
+        varTypeCalleeTrashRegMasks[(int)(TYP_SHORT)] = (int)(RBM_INT_CALLEE_TRASH);
+        varTypeCalleeTrashRegMasks[(int)(TYP_USHORT)] = (int)(RBM_INT_CALLEE_TRASH);
+        varTypeCalleeTrashRegMasks[(int)(TYP_INT)] = (int)(RBM_INT_CALLEE_TRASH);
+        varTypeCalleeTrashRegMasks[(int)(TYP_UINT)] = (int)(RBM_INT_CALLEE_TRASH);
+        varTypeCalleeTrashRegMasks[(int)(TYP_LONG)] = (int)(RBM_INT_CALLEE_TRASH);
+        varTypeCalleeTrashRegMasks[(int)(TYP_ULONG)] = (int)(RBM_INT_CALLEE_TRASH);
+        varTypeCalleeTrashRegMasks[(int)(TYP_FLOAT)] = (int)(RBM_FLT_CALLEE_TRASH);
+        varTypeCalleeTrashRegMasks[(int)(TYP_DOUBLE)] = (int)(RBM_FLT_CALLEE_TRASH);
+        varTypeCalleeTrashRegMasks[(int)(TYP_REF)] = (int)(RBM_INT_CALLEE_TRASH);
+        varTypeCalleeTrashRegMasks[(int)(TYP_BYREF)] = (int)(RBM_INT_CALLEE_TRASH);
+        varTypeCalleeTrashRegMasks[(int)(TYP_STRUCT)] = (int)(RBM_INT_CALLEE_TRASH);
+        varTypeCalleeTrashRegMasks[(int)(TYP_SIMD8)] = (int)(RBM_FLT_CALLEE_TRASH);
+        varTypeCalleeTrashRegMasks[(int)(TYP_SIMD12)] = (int)(RBM_FLT_CALLEE_TRASH);
+        varTypeCalleeTrashRegMasks[(int)(TYP_SIMD16)] = (int)(RBM_FLT_CALLEE_TRASH);
+        varTypeCalleeTrashRegMasks[(int)(TYP_SIMD32)] = (int)(RBM_FLT_CALLEE_TRASH);
+        varTypeCalleeTrashRegMasks[(int)(TYP_SIMD64)] = (int)(RBM_FLT_CALLEE_TRASH);
+        varTypeCalleeTrashRegMasks[(int)(TYP_MASK)] = (int)(RBM_MSK_CALLEE_TRASH);
+        varTypeCalleeTrashRegMasks[(int)(TYP_UNKNOWN)] = (int)(RBM_INT_CALLEE_TRASH);
 
         codeGen.CopyRegisterInfo();
 #endif
@@ -2899,8 +2959,8 @@ public partial class Compiler
             if (compIsForInlining)
             {
                 // Notify root instance that an inline attempt is about to import IL
-                assert(impInlineRoot.m_inlineStrategy is not null);
-                impInlineRoot.m_inlineStrategy.NoteImport();
+                assert(impInlineRoot._inlineStrategy is not null);
+                impInlineRoot._inlineStrategy.NoteImport();
             }
 
             hashBv.Init(this);
@@ -2947,12 +3007,12 @@ public partial class Compiler
         if (compIsForInlining && compInlineResult.IsFailure)
         {
 #if FEATURE_JIT_METHOD_PERF
-            if (pCompJitTimer is not null)
+            if (compJitTimer is not null)
             {
 #if MEASURE_CLRAPI_CALLS
                 EndPhase(PHASE_CLR_API);
 #endif
-                pCompJitTimer->Terminate(this, CompTimeSummaryInfo.s_compTimeSummary, false);
+                compJitTimer.Terminate(this, CompTimeSummaryInfo.s_compTimeSummary, includePhases: false);
             }
 #endif
 
@@ -2985,12 +3045,12 @@ public partial class Compiler
         if (compIsForInlining)
         {
 #if FEATURE_JIT_METHOD_PERF
-            if (pCompJitTimer is not null)
+            if (compJitTimer is not null)
             {
 #if MEASURE_CLRAPI_CALLS
                 EndPhase(PHASE_CLR_API);
 #endif
-                pCompJitTimer->Terminate(this, CompTimeSummaryInfo.s_compTimeSummary, false);
+                compJitTimer.Terminate(this, CompTimeSummaryInfo.s_compTimeSummary, false);
             }
 #endif
 
@@ -3503,16 +3563,16 @@ public partial class Compiler
         // Create the RA before Lowering, so that Lowering can call RA methods for
         // determining whether locals are register candidates and (for xarch) whether
         // a node is a containable memory op.
-        m_regAlloc = GetRegisterAllocator(this);
+        _regAlloc = GetRegisterAllocator(this);
 
         // Lower
-        m_pLowering = new Lowering(this, m_regAlloc);
-        m_pLowering.Run(); // PHASE_LOWERING
+        _pLowering = new Lowering(this, _regAlloc);
+        _pLowering.Run(); // PHASE_LOWERING
 
         // Set stack levels and analyze throw helper usage.
         var stackLevelSetter = new StackLevelSetter(this);
         stackLevelSetter.Run();
-        m_pLowering.FinalizeOutgoingArgSpace();
+        _pLowering.FinalizeOutgoingArgSpace();
 
 #if TARGET_WASM
         // Determine if a Virtual IP is needed and add code as needed to keep the Virtual IP updated.
@@ -3525,7 +3585,7 @@ public partial class Compiler
         lvaTrackedFixed = true;
 
         // Now that lowering is completed we can proceed to perform register allocation
-        DoPhase(this, PHASE_LINEAR_SCAN, m_regAlloc.DoRegisterAllocation);
+        DoPhase(this, PHASE_LINEAR_SCAN, _regAlloc.DoRegisterAllocation);
 
         // Copied from rpPredictRegUse()
         IsFullPtrRegMapRequired = codeGen.Interruptible || !codeGen.IsFramePointerUsed;
@@ -3562,7 +3622,7 @@ public partial class Compiler
 #if TRACK_LSRA_STATS
         if (JitConfig[ConfigInteger.DisplayLsraStats] == 2)
         {
-            m_regAlloc.dumpLsraStatsCsv(jitstdout());
+            _regAlloc.dumpLsraStatsCsv(jitstdout());
         }
 #endif
 
@@ -3570,14 +3630,14 @@ public partial class Compiler
         mostRecentlyActivePhase = PHASE_POST_EMIT;
 
 #if FEATURE_JIT_METHOD_PERF
-        if (pCompJitTimer)
+        if (compJitTimer is not null)
         {
 #if MEASURE_CLRAPI_CALLS
             EndPhase(PHASE_CLR_API);
 #else
             EndPhase(PHASE_POST_EMIT);
 #endif
-            pCompJitTimer->Terminate(this, CompTimeSummaryInfo.s_compTimeSummary, true);
+            compJitTimer.Terminate(this, CompTimeSummaryInfo.s_compTimeSummary, true);
         }
 #endif
 
@@ -3626,12 +3686,16 @@ public partial class Compiler
             flogf(compJitFuncInfoFile, $"{info.compFullName}\n");
             flogf(compJitFuncInfoFile, ""); // flush
 #elif FEATURE_SIMD
-            compJitFuncInfoFile.Write($" {eeGetMethodFullName(info.compMethodHnd)}\n");
+            compJitFuncInfoFile.WriteLine($" {eeGetMethodFullName(info.compMethodHnd)}");
             compJitFuncInfoFile.Flush();
 #endif
         }
 #endif
     }
+
+#if DEBUG
+    public bool compRandomInlineStress() => compStressCompile(STRESS_RANDOM_INLINE, 50);
+#endif
 
     protected unsafe void compSetOptimizationLevel()
     {
@@ -4234,16 +4298,4 @@ public partial class Compiler
     /// </remarks>
     private bool compOpportunisticallyDependsOn(CORINFO_InstructionSet isa)
         => opts.compSupportsISA.HasInstructionSet(isa) && compExactlyDependsOn(isa);
-
-    [InlineArray((int)(STRESS_COUNT + 1))]
-    public struct s_compStressModeNamesInlineArray
-    {
-        public string e0;
-    }
-
-    [InlineArray((int)(STRESS_COUNT))]
-    public struct compActiveStressModesInlineArray
-    {
-        public byte e0;
-    }
 }

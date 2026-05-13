@@ -74,6 +74,27 @@ public partial class Compiler
     public unsafe CORINFO_CLASS_HANDLE eeGetArgClass(CORINFO_SIG_INFO* sigInfo, CORINFO_ARG_LIST_HANDLE argListHandle)
         => info.compCompHnd->getArgClass(sigInfo, argListHandle);
 
+    public unsafe void eeGetCallInfo(in CORINFO_RESOLVED_TOKEN resolvedToken, in CORINFO_RESOLVED_TOKEN constrainedToken, CORINFO_CALLINFO_FLAGS flags, out CORINFO_CALL_INFO result)
+    {
+        fixed (CORINFO_RESOLVED_TOKEN* pResolvedToken = &resolvedToken)
+        fixed (CORINFO_RESOLVED_TOKEN* pConstrainedToken = &constrainedToken)
+        fixed (CORINFO_CALL_INFO* pResult = &result)
+        {
+            info.compCompHnd->getCallInfo(pResolvedToken, pConstrainedToken, info.compMethodHnd, flags, pResult);
+        }
+    }
+
+    public unsafe void eeGetCallSiteSig(int sigTok, CORINFO_MODULE_HANDLE scope, CORINFO_CONTEXT_HANDLE context, out CORINFO_SIG_INFO sigInfo)
+    {
+        // For varargs we need the number of arguments at the call site
+
+        fixed (CORINFO_SIG_INFO* pSigInfo = &sigInfo)
+        {
+            info.compCompHnd->findCallSiteSig(scope, sigTok, context, pSigInfo);
+        }
+        assert(!varTypeIsComposite(sigInfo.retType.VarType) || (sigInfo.retTypeClass is not null));
+    }
+
     /// <summary>Get the assembly name of a type.</summary>
     /// <param name="clsHnd">the handle of the class</param>
     /// <returns>The name string.</returns>
@@ -137,6 +158,15 @@ public partial class Compiler
             eeInfoInitialized = true;
         }
         return ref eeInfo;
+    }
+
+    public unsafe void eeGetFieldInfo(in CORINFO_RESOLVED_TOKEN resolvedToken, CORINFO_ACCESS_FLAGS flags, out CORINFO_FIELD_INFO result)
+    {
+        fixed (CORINFO_RESOLVED_TOKEN* pResolvedToken = &resolvedToken)
+        fixed (CORINFO_FIELD_INFO* pResult = &result)
+        {
+            info.compCompHnd->getFieldInfo(pResolvedToken, info.compMethodHnd, flags, pResult);
+        }
     }
 
     /// <summary>Get a string describing a field.</summary>
@@ -275,6 +305,15 @@ public partial class Compiler
             info.compCompHnd->getMethodSig(methHnd, pReturnSigInfo, owner);
         }
         assert(!varTypeIsComposite(returnSigInfo.retType.VarType) || (returnSigInfo.retTypeClass is not null));
+    }
+
+    public unsafe void eeGetSig(int sigTok, CORINFO_MODULE_HANDLE scope, CORINFO_CONTEXT_HANDLE context, out CORINFO_SIG_INFO sigInfo)
+    {
+        fixed (CORINFO_SIG_INFO* pSigInfo = &sigInfo)
+        {
+            info.compCompHnd->findSig(scope, sigTok, context, pSigInfo);
+        }
+        assert(!varTypeIsComposite(sigInfo.retType.VarType) || (sigInfo.retTypeClass is not null));
     }
 
     public unsafe void eeGetStmtOffsets()

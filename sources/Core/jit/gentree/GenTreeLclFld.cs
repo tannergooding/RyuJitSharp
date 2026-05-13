@@ -22,12 +22,17 @@ public sealed class GenTreeLclFld : GenTreeLclVarCommon
         _layout = layout;
     }
 
-    public GenTreeLclFld(var_types type, int lclNum, ushort lclOffs, GenTree data, ClassLayout layout)
+    public GenTreeLclFld(var_types type, int lclNum, ushort lclOffs, GenTree data, ClassLayout? layout)
         : base(GT_STORE_LCL_FLD, type, lclNum, data)
     {
         _lclOffs = lclOffs;
         _layout = layout;
     }
+
+#if TARGET_ARM
+    /// <summary>check if the field needs a special handling on arm.</summary>
+    public bool IsOffsetMisaligned => varTypeIsFloating(Type) && ((_lclOffs % TYP_FLOAT.EmitSize) is not 0);
+#endif
 
     /// <summary>offset into the variable to access</summary>
     public ushort LclOffs
@@ -54,5 +59,32 @@ public sealed class GenTreeLclFld : GenTreeLclVarCommon
         {
             _layout = value;
         }
+    }
+
+    public int Size => ValueSize.ExactSize;
+
+    public ValueSize ValueSize
+    {
+        get
+        {
+            if (Type is TYP_STRUCT)
+            {
+                assert(_layout is not null);
+                return new ValueSize(_layout.Size);
+            }
+            else
+            {
+                return ValueSize.FromJitType(Type);
+            }
+        }
+    }
+
+    /// <summary>Check for a GT_LCL_FLD whose type is a different size than the lclVar.</summary>
+    /// <param name="compiler">the Compiler object.</param>
+    /// <returns>Returns "true" iff 'this' is a GT_LCL_FLD or GT_STORE_LCL_FLD on which the type is not the same size as the type of the GT_LCL_VAR</returns>
+    public bool IsPartial(Compiler compiler)
+    {
+        return (Oper is GT_LCL_FLD or GT_STORE_LCL_FLD)
+            && (compiler.lvaGetDesc(LclNum).lvValueSize != ValueSize);
     }
 }

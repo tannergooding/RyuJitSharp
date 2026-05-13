@@ -31,6 +31,29 @@ public sealed class GenTreeDblCon : GenTree
         }
     }
 
+    public bool IsAllBitsSet
+    {
+        get
+        {
+            if (Type is TYP_FLOAT)
+            {
+                return BitConverter.SingleToInt32Bits((float)_dconVal) == -1;
+
+            }
+            else
+            {
+                assert(Type is TYP_DOUBLE);
+                return BitConverter.DoubleToInt64Bits(_dconVal) == -1;
+            }
+        }
+    }
+
+    public bool IsNaN => double.IsNaN(_dconVal);
+
+    public bool IsNegativeZero => (_dconVal == 0.0) && double.IsNegative(_dconVal);
+
+    public bool IsPositiveZero => (_dconVal == 0.0) && double.IsPositive(_dconVal);
+
     public bool IsBitwiseEqual(GenTreeDblCon other)
     {
         var otherBits = BitConverter.DoubleToInt64Bits(other._dconVal);

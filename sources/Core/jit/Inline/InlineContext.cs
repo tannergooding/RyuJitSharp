@@ -10,107 +10,107 @@ namespace RyuJitSharp;
 public sealed class InlineContext
 {
     /// <summary>overall strategy</summary>
-    private InlineStrategy m_InlineStrategy;
+    private InlineStrategy _inlineStrategy;
 
     /// <summary>logical caller (parent)</summary>
-    private InlineContext? m_Parent;
+    private InlineContext? _parent;
 
     /// <summary>first child</summary>
-    private InlineContext? m_Child;
+    private InlineContext? _child;
 
     /// <summary>next child of the parent</summary>
-    private InlineContext? m_Sibling;
+    private InlineContext? _sibling;
 
     /// <summary>address of IL buffer for the method</summary>
-    internal unsafe byte* m_Code;
+    internal unsafe byte* _code;
 
     /// <summary>handle to the method</summary>
-    internal unsafe CORINFO_METHOD_HANDLE m_Callee;
+    internal unsafe CORINFO_METHOD_HANDLE _callee;
 
     /// <summary>handle to the exact context</summary>
-    internal unsafe CORINFO_CONTEXT_HANDLE m_RuntimeContext;
+    internal unsafe CORINFO_CONTEXT_HANDLE _runtimeContext;
 
     /// <summary>profile data</summary>
-    private PgoInfo m_PgoInfo;
+    private PgoInfo _pgoInfo;
 
     /// <summary>size of IL buffer for the method</summary>
-    internal int m_ILSize;
+    internal int _ilSize;
 
     /// <summary>estimated size of imported IL</summary>
-    private int m_ImportedILSize;
+    private int _importedILSize;
 
     /// <summary>inlining statement location within parent</summary>
-    private ILLocation m_Location;
+    private ILLocation _location;
 
     /// <summary>IL offset of actual call instruction leading to the inline</summary>
-    private IL_OFFSET m_ActualCallOffset;
+    private IL_OFFSET _actualCallOffset;
 
     /// <summary>what lead to this inline success or failure</summary>
-    private InlineObservation m_Observation;
+    private InlineObservation _observation;
 
     /// <summary>in bytes * 10</summary>
-    private int m_CodeSizeEstimate;
+    private int _codeSizeEstimate;
 
     /// <summary>Ordinal number of this inline</summary>
-    private int m_Ordinal;
+    private int _ordinal;
 
-    private Flags m_Flags;
+    private Flags _flags;
 
 #if DEBUG
     /// <summary>policy that evaluated this inline</summary>
-    private InlinePolicy? m_Policy;
+    private InlinePolicy? _policy;
 
     /// <summary>ID of the GenTreeCall in the parent</summary>
-    private int m_TreeID;
+    private int _treeId;
 
     /// <summary>Set of offsets where instructions begin</summary>
-    internal BitArray m_ILInstsSet;
+    internal BitArray _ilInstsSet;
 #endif
 
     internal InlineContext(InlineStrategy strategy)
     {
-        m_InlineStrategy = strategy;
-        m_ActualCallOffset = BAD_IL_OFFSET;
-        m_Observation = InlineObservation.CALLEE_UNUSED_INITIAL;
-        m_Flags = Flags.Success;
+        _inlineStrategy = strategy;
+        _actualCallOffset = BAD_IL_OFFSET;
+        _observation = InlineObservation.CALLEE_UNUSED_INITIAL;
+        _flags = Flags.Success;
 
 #if DEBUG
-        m_ILInstsSet = new BitArray(0);
+        _ilInstsSet = new BitArray(0);
 #endif
     }
 
     /// <summary>Get the native code size estimate for this inline.</summary>
-    public int CodeSizeEstimate => m_CodeSizeEstimate;
+    public int CodeSizeEstimate => _codeSizeEstimate;
 
-    public unsafe bool HasPgoInfo => (m_PgoInfo.PgoSchema is not null) && (m_PgoInfo.PgoSchemaCount > 0) && (m_PgoInfo.PgoData is not null);
+    public unsafe bool HasPgoInfo => (_pgoInfo.PgoSchema is not null) && (_pgoInfo.PgoSchemaCount > 0) && (_pgoInfo.PgoData is not null);
 
 #if DEBUG
-    public BitArray ILInstsSet => m_ILInstsSet;
+    public BitArray ILInstsSet => _ilInstsSet;
 #endif
 
     /// <summary>Get the IL code size for this inline.</summary>
-    public int ILSize => m_ILSize;
+    public int ILSize => _ilSize;
 
-    public int ImportedILSize => m_ImportedILSize;
+    public int ImportedILSize => _importedILSize;
 
-    public bool IsRoot => m_Parent is null;
+    public bool IsRoot => _parent is null;
 
-    public ILLocation Location => m_Location;
+    public ILLocation Location => _location;
 
-    public int Ordinal => m_Ordinal;
+    public int Ordinal => _ordinal;
 
-    public InlineContext? Parent => m_Parent;
+    public InlineContext? Parent => _parent;
 
     public PgoInfo PgoInfo
     {
         get
         {
-            return m_PgoInfo;
+            return _pgoInfo;
         }
 
         set
         {
-            m_PgoInfo = value;
+            _pgoInfo = value;
         }
     }
 

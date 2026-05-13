@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System;
 using static RyuJitSharp.Compiler;
 
 namespace RyuJitSharp;
@@ -13,7 +12,7 @@ namespace RyuJitSharp;
 public interface IGenTreeVisitor<TSelf>
     where TSelf : struct, IGenTreeVisitor<TSelf>
 {
-    /// <summary>when true, the walker will push each node onto the `m_ancestors` stack. "Ancestors" is a bit of a misnomer, as the first entry will always be the current node.</summary>
+    /// <summary>when true, the walker will push each node onto the `_ancestors` stack. "Ancestors" is a bit of a misnomer, as the first entry will always be the current node.</summary>
     static virtual bool ComputeStack => false;
 
     /// <summary>when true, the walker will invoke `TVisitor.PreOrderVisit` with the current node as an argument before visiting the node's operands.</summary>
@@ -299,7 +298,7 @@ public interface IGenTreeVisitor<TSelf>
         return result;
     }
 
-    abstract fgWalkResult WalkTree(ref GenTree use, GenTree? user);
+    fgWalkResult WalkTree(ref GenTree use, GenTree? user);
 
     protected fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user);
 

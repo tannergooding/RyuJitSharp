@@ -7,9 +7,11 @@ using System;
 using System.Buffers.Binary;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace RyuJitSharp;
@@ -164,7 +166,7 @@ public partial class Compiler
 
     /// <summary>These are the current value number for the memory implicit variables while doing value numbering.</summary>
     /// <remarks>These are the value numbers under the "liberal" interpretation of memory values; the "conservative" interpretation needs no VN, since every access of memory yields an unknown value.</remarks>
-    public fgCurMemoryVNInlineArray fgCurMemoryVN;
+    public InlineArrayMemoryKindCount<ValueNum> fgCurMemoryVN;
 
 #if DEBUG
     // TODO: Port Compiler.fgStress64RsltMulCB
@@ -235,7 +237,7 @@ public partial class Compiler
 
     private Statement? fgMorphStmt;
 
-    private fgBigOffsetMorphingTempsInlineArray fgBigOffsetMorphingTemps;
+    private InlineArrayTypCount<int> fgBigOffsetMorphingTemps;
 
     private AddCodeDscMap? fgAddCodeDscMap;
 
@@ -346,6 +348,16 @@ public partial class Compiler
     /// <summary>true if we have real profile data for this method or if we have some fake profile data for the stress mode</summary>
     public bool fgIsUsingProfileWeights => fgHaveProfileWeights || fgStressBBProf();
 
+    /// <summary>Answers does the inlinee need to spill all returns as a temp.</summary>
+    public bool fgNeedReturnSpillTemp
+    {
+        get
+        {
+            assert(Debugger.IsAttached || compIsForInlining);
+            return lvaInlineeReturnSpillTemp != BAD_VAR_NUM;
+        }
+    }
+
     /// <summary>find acd map key for a given block</summary>
     /// <param name="blk">block that may eventually throw an exception</param>
     /// <param name="dsg">designator for which region controls throw block placement</param>
@@ -376,7 +388,7 @@ public partial class Compiler
         // Now we have to figure out if blk is in the filter or handler
         assert(hndIndex >= 1);
 
-        if (ehGetDsc(hndIndex - 1).InFilterRegionBBRange(blk))
+        if (ehGetDsc((ushort)(hndIndex - 1)).InFilterRegionBBRange(blk))
         {
             dsg = AcdKeyDesignator.KD_FLT;
             return hndIndex | int.MinValue;
@@ -680,7 +692,7 @@ public partial class Compiler
 #endif
             arg0varDsc.lvHasILStoreOp = thisVarDsc.lvHasILStoreOp;
 
-            // Note that here we don't clear `m_doNotEnregReason` and it stays `doNotEnreg` with `AddrExposed` reason.
+            // Note that here we don't clear `_doNotEnregReason` and it stays `doNotEnreg` with `AddrExposed` reason.
             thisVarDsc.CleanAddressExposed();
             thisVarDsc.lvHasILStoreOp = false;
         }
@@ -705,6 +717,73 @@ public partial class Compiler
 
         compHndBBtab = new EHblkDsc[compHndBBtabLength];
         compHndBBtabCount = info.compXcptnsCount;
+    }
+
+    /// <summary>Check whether a cast is needed to convert a tree's type to the specified type.</summary>
+    /// <param name="tree">The tree whose type we are converting from</param>
+    /// <param name="toType">The target type</param>
+    /// <returns>True if an additional cast is necessary; false otherwise.</returns>
+    public bool fgCastNeeded(GenTree tree, var_types toType)
+    {
+        if (tree.Oper.IsCompare && (toType.ActualType is TYP_INT))
+        {
+            // If tree is a relop and we need an 4-byte integer then we never need to insert a cast
+            return false;
+        }
+
+        var_types fromType;
+
+        if (tree.Oper is GT_CAST)
+        {
+            fromType = tree.AsCast().CastType;
+        }
+        else if (tree.Oper is GT_CALL)
+        {
+            fromType = tree.AsCall()._returnType;
+        }
+        else if (tree.Oper is GT_LCL_VAR)
+        {
+            ref var varDsc = ref lvaGetDesc(tree.AsLclVarCommon().LclNum);
+
+            if (varDsc.lvNormalizeOnStore)
+            {
+                fromType = varDsc.Type;
+            }
+            else
+            {
+                fromType = tree.Type;
+            }
+        }
+        else
+        {
+            fromType = tree.Type;
+        }
+
+        if (toType == fromType)
+        {
+            // If both types are the same then an additional cast is not necessary
+            return false;
+        }
+
+        // If the sign-ness of the two types are different then a cast is necessary, except for
+        // an uint -> signed cast where we already know the sign bit is zero.
+
+        if (varTypeIsUnsigned(toType) != varTypeIsUnsigned(fromType))
+        {
+            if (!varTypeIsUnsigned(fromType) && (fromType.Size < toType.Size))
+            {
+                return true;
+            }
+        }
+
+        if (toType.Size >= fromType.Size)
+        {
+            // If the from type is the same size or smaller then an additional cast is not necessary
+            return false;
+        }
+
+        // Looks like we will need the cast
+        return true;
     }
 
     /// <summary>Check control flow constraints for well formed IL. Bail if any of the constraints are violated.</summary>
@@ -834,6 +913,112 @@ public partial class Compiler
                 }
             }
         }
+    }
+
+    /// <summary> Determine if a block can be inserted after 'blk' and legally be put in the EH region specified by 'regionIndex'.</summary>
+    /// <param name="blk">the BasicBlock we are checking to see if we can insert after.</param>
+    /// <param name="regionIndex">the EH region we want to insert a block into. regionIndex is in the range [0..compHndBBtabCount]; 0 means "main method".</param>
+    /// <param name="putInTryRegion">'true' if the new block should be inserted in the 'try' region of 'regionIndex'. For regionIndex 0 (the "main method"), this should be 'true'.</param>
+    /// <returns>'true' if a block can be inserted after 'blk' and put in EH region 'regionIndex', else 'false'.</returns>
+    public bool fgCheckEHCanInsertAfterBlock(BasicBlock blk, ushort regionIndex, bool putInTryRegion)
+    {
+        // This can be true if the most nested region the block is in is already 'regionIndex',
+        // as we'll just extend the most nested region (and any region ending at the same block).
+        // It can also be true if it is the end of (a set of) EH regions, such that
+        // inserting the block and properly extending some EH regions (if necessary)
+        // puts the block in the correct region. We only consider the case of extending
+        // an EH region after 'blk' (that is, to include 'blk' and the newly insert block);
+        // we don't consider inserting a block as the first block of an EH region following 'blk'.
+        //
+        // Consider this example:
+        //
+        //      try3   try2   try1
+        //      |---   |      |      BB01
+        //      |      |---   |      BB02
+        //      |      |      |---   BB03
+        //      |      |      |      BB04
+        //      |      |---   |---   BB05
+        //      |                    BB06
+        //      |-----------------   BB07
+        //
+        // Passing BB05 and try1/try2/try3 as the region to insert into (as well as putInTryRegion==true)
+        // will all return 'true'. Here are the cases:
+        // 1. Insert into try1: the most nested EH region BB05 is in is already try1, so we can insert after
+        //    it and extend try1 (and try2).
+        // 2. Insert into try2: we can extend try2, but leave try1 alone.
+        // 3. Insert into try3: we can leave try1 and try2 alone, and put the new block just in try3. Note that
+        //    in this case, after we "loop outwards" in the EH nesting, we get to a place where we're in the middle
+        //    of the try3 region, not at the end of it.
+        // In all cases, it is possible to put a block after BB05 and put it in any of these three 'try' regions legally.
+        //
+        // Filters are ignored; if 'blk' is in a filter, the answer will be false.
+
+        assert(blk is not null);
+        assert(regionIndex <= compHndBBtabCount);
+
+        if (regionIndex == 0)
+        {
+            assert(putInTryRegion);
+        }
+
+        var nestedRegionIndex = ehGetMostNestedRegionIndex(blk, out var inTryRegion);
+        bool insertOK;
+
+        while (true)
+        {
+            if (nestedRegionIndex == regionIndex)
+            {
+                // This block is in the region we want to be in. We can insert here if it's the right type of region.
+                // (If we want to be in the 'try' region, but the block is in the handler region, then inserting a
+                // new block after 'blk' can't put it in the 'try' region, and vice-versa, since we only consider
+                // extending regions after, not prepending to regions.)
+                // This check will be 'true' if we are trying to put something in the main function (as putInTryRegion
+                // must be 'true' if regionIndex is zero, and inTryRegion will also be 'true' if nestedRegionIndex is zero).
+                insertOK = (putInTryRegion == inTryRegion);
+                break;
+            }
+            else if (nestedRegionIndex == 0)
+            {
+                // The block is in the main function, but we want to put something in a nested region. We can't do that.
+                insertOK = false;
+                break;
+            }
+
+            assert(nestedRegionIndex > 0);
+
+            // ehGetDsc uses [0..compHndBBtabCount) form.
+            ref var ehDsc = ref ehGetDsc((ushort)(nestedRegionIndex - 1));
+
+            if (inTryRegion)
+            {
+                if (blk != ehDsc.ebdTryLast)
+                {
+                    // Not the last block? Then it must be somewhere else within the try region, so we can't insert here.
+                    insertOK = false;
+                    break;
+                }
+            }
+            else
+            {
+                // We ignore filters.
+                if (blk != ehDsc.ebdHndLast)
+                {
+                    // Not the last block? Then it must be somewhere else within the handler region, so we can't insert
+                    // here.
+                    insertOK = false;
+                    break;
+                }
+            }
+
+            // Things look good for this region; check the enclosing regions, if any.
+
+            // ehGetEnclosingRegionIndex uses [0..compHndBBtabCount) form.
+            nestedRegionIndex = ehGetEnclosingRegionIndex((ushort)(nestedRegionIndex - 1), out inTryRegion);
+
+            // Convert to [0..compHndBBtabCount] form.
+            nestedRegionIndex = (nestedRegionIndex == EHblkDsc.NO_ENCLOSING_INDEX) ? (ushort)(0) : (ushort)(nestedRegionIndex + 1);
+        }
+        return insertOK;
     }
 
     /// <summary>scan blocks seeing if any handler block is a backedge target.</summary>
@@ -1015,9 +1200,9 @@ public partial class Compiler
             // false if we are jumping out of a non-catch handler
             var bCatchHandlerOnly = true;
 
-            for (var i = 0; bCatchHandlerOnly && (i < compHndBBtabCount); i++)
+            for (ushort XTnum = 0; bCatchHandlerOnly && (XTnum < compHndBBtabCount); XTnum++)
             {
-                ref var ehDsc = ref ehGetDsc(i);
+                ref var ehDsc = ref ehGetDsc(XTnum);
 
                 if (ehDsc.InHndRegionILRange(blkSrc))
                 {
@@ -1425,7 +1610,7 @@ public partial class Compiler
 
         for (ushort XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
         {
-            ref var HBtab = ref compHndBBtab[XTnum];
+            ref var HBtab = ref ehGetDsc(XTnum);
             HBtab.DispEntry(XTnum);
         }
     }
@@ -1485,7 +1670,7 @@ public partial class Compiler
                 jitprintf(" = phi(");
                 var sep = "";
 
-                for (var arg = block.bbMemorySsaPhiFunc[(int)(memoryKind)]; arg is not null; arg = arg.m_nextArg)
+                for (var arg = block.bbMemorySsaPhiFunc[(int)(memoryKind)]; arg is not null; arg = arg._nextArg)
                 {
                     jitprintf($"{sep}m:{arg.SsaNum}");
                     sep = ", ";
@@ -1528,6 +1713,21 @@ public partial class Compiler
         gtDispStmt(stmt);
     }
 #endif
+
+    /// <summary>Return the first basic block after the main part of the function. With funclets, it is the block of the first funclet. Otherwise it is null if there are no funclets. This is equivalent to fgLastBBInMainFunction()->Next().</summary>
+    /// <returns></returns>
+    public BasicBlock? fgEndBBAfterMainFunction()
+    {
+        if (fgFirstFuncletBB is not null)
+        {
+            return fgFirstFuncletBB;
+        }
+
+        assert(fgLastBB is not null);
+        assert(fgLastBB.IsLast);
+
+        return null;
+    }
 
     /// <summary>We've inserted a new block after 'block' that should be part of the same EH region as 'block'.</summary>
     /// <param name="block"></param>
@@ -1935,7 +2135,7 @@ public partial class Compiler
                 BADCODE($"end of hnd block beyond end of method for try at offset {tryBegOff:X4}");
             }
 
-            ref var HBtab = ref compHndBBtab[XTnum];
+            ref var HBtab = ref ehGetDsc(XTnum);
 
             HBtab.ebdID = impInlineRoot.compEHID++;
             HBtab._ebdTryBegOffset = tryBegOff;
@@ -2091,7 +2291,7 @@ public partial class Compiler
         for (XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
         {
             // Mark all blocks in the finally/fault or catch clause
-            ref var HBtab = ref compHndBBtab[XTnum];
+            ref var HBtab = ref ehGetDsc(XTnum);
 
             var tryBegBB = HBtab.ebdTryBeg;
             var hndBegBB = HBtab.ebdHndBeg;
@@ -2162,7 +2362,7 @@ public partial class Compiler
 
             for (ushort XTnum2 = 0; XTnum2 < XTnum; XTnum2++)
             {
-                ref var xtab = ref compHndBBtab[XTnum2];
+                ref var xtab = ref ehGetDsc(XTnum2);
 
                 // If we haven't recorded an enclosing try index for xtab then see
                 //  if this EH region should be recorded.  We check if the
@@ -2223,6 +2423,240 @@ public partial class Compiler
         fgCheckForLoopsInHandlers();
     }
 
+    public BasicBlock fgFindInsertPoint(ushort regionIndex, bool putInTryRegion, BasicBlock startBlk, BasicBlock? endBlk, BasicBlock? nearBlk, BasicBlock? jumpBlk, bool runRarely)
+    {
+        noway_assert(startBlk is not null);
+        noway_assert(startBlk != endBlk);
+        noway_assert(((regionIndex is 0) && putInTryRegion) || // Search in the main method
+                     (putInTryRegion && (regionIndex > 0) && (startBlk.bbTryIndex == regionIndex)) || // Search in the specified try region
+                     (!putInTryRegion && (regionIndex > 0) && (startBlk.bbHndIndex == regionIndex))); // Search in the specified handler region
+
+#if DEBUG
+        // Assert that startBlk precedes endBlk in the block list.
+        // We don't want to use bbNum to assert this condition, as we cannot depend on the block numbers being sequential at all times.
+
+        for (var block = startBlk; block != endBlk; block = block.Next)
+        {
+            // We reached the end of the block list, but never found endBlk.
+            assert(block is not null);
+        }
+#endif
+
+        JITDUMP($"fgFindInsertPoint(regionIndex={regionIndex}, putInTryRegion={dspBool(putInTryRegion)}, startBlk={FMT_BB(startBlk.bbNum)}, endBlk={FMT_BB((endBlk is null) ? 0 : endBlk.bbNum)}, nearBlk={FMT_BB((nearBlk is null) ? 0 : nearBlk.bbNum)}, jumpBlk={FMT_BB((jumpBlk is null) ? 0 : jumpBlk.bbNum)}, runRarely={dspBool(runRarely)})\n");
+
+        var  insertingIntoFilter = false;
+
+        if (!putInTryRegion)
+        {
+            ref var dsc = ref ehGetDsc((ushort)(regionIndex - 1));
+            insertingIntoFilter = dsc.HasFilter && (startBlk == dsc.ebdFilter) && (endBlk == dsc.ebdHndBeg);
+        }
+
+        // Have we reached 'nearBlk' in our search? If not, we'll keep searching.
+        var reachedNear = false;
+
+        // Are we in a filter region that we need to skip?
+        var inFilter = false;
+
+        // Set to the best insertion point we've found so far that meets all the EH requirements.
+        var bestBlk = null as BasicBlock;
+
+        // Set to an acceptable insertion point that we'll use if we don't find a 'best' option.
+        var goodBlk = null as BasicBlock;
+
+        if (nearBlk is not null)
+        {
+            // Does the nearBlk precede the startBlk?
+            for (var blk = nearBlk; blk is not null; blk = blk.Next)
+            {
+                if (blk == startBlk)
+                {
+                    reachedNear = true;
+                    break;
+                }
+                else if (blk == endBlk)
+                {
+                    break;
+                }
+            }
+        }
+
+        for (var blk = startBlk; blk != endBlk; blk = blk.Next)
+        {
+            // The only way (blk is null) could be true is if the caller passed an endBlk that preceded startBlk in the
+            // block list, or if endBlk isn't in the block list at all. In DEBUG, we'll instead hit the similar
+            // well-formedness assert earlier in this function.
+            noway_assert(blk is not null);
+
+            if (blk == nearBlk)
+            {
+                reachedNear = true;
+            }
+
+            if (blk.CatchType is BBCT_FILTER)
+            {
+                // Record the fact that we entered a filter region, so we don't insert into filters...
+                // Unless the caller actually wanted the block inserted in this exact filter region.
+                if (!insertingIntoFilter || (blk != startBlk))
+                {
+                    inFilter = true;
+                }
+            }
+            else if (blk.CatchType is BBCT_FILTER_HANDLER)
+            {
+                // Record the fact that we exited a filter region.
+                inFilter = false;
+            }
+
+            // Don't insert a block inside this filter region.
+            if (inFilter)
+            {
+                continue;
+            }
+
+            // Note that the new block will be inserted AFTER "blk". We check to make sure that doing so
+            // would put the block in the correct EH region. We make an assumption here that you can
+            // ALWAYS insert the new block before "endBlk" (that is, at the end of the search range)
+            // and be in the correct EH region. This is must be guaranteed by the caller (as it is by
+            // fgNewBBinRegion(), which passes the search range as an exact EH region block range).
+            // Because of this assumption, we only check the EH information for blocks before the last block.
+            if (blk.Next != endBlk)
+            {
+                // We are in the middle of the search range. We can't insert the new block in
+                // an inner try or handler region. We can, however, set the insertion
+                // point to the last block of an EH try/handler region, if the enclosing
+                // region is the region we wish to insert in. (Since multiple regions can
+                // end at the same block, we need to search outwards, checking that the
+                // block is the last block of every EH region out to the region we want
+                // to insert in.) This is especially useful for putting a call-to-finally
+                // block on AMD64 immediately after its corresponding 'try' block, so in the
+                // common case, we'll just fall through to it. For example:
+                //
+                //      BB01
+                //      BB02 -- first block of try
+                //      BB03
+                //      BB04 -- last block of try
+                //      BB05 -- first block of finally
+                //      BB06
+                //      BB07 -- last block of handler
+                //      BB08
+                //
+                // Assume there is only one try/finally, so BB01 and BB08 are in the "main function".
+                // For AMD64 call-to-finally, we'll want to insert the BBJ_CALLFINALLY in
+                // the main function, immediately after BB04. This allows us to do that.
+
+                if (!fgCheckEHCanInsertAfterBlock(blk, regionIndex, putInTryRegion))
+                {
+                    // Can't insert here.
+                    continue;
+                }
+            }
+
+            // Look for an insert location.
+            // Avoid splitting up call-finally pairs, or jumps/false branches to the next block.
+            // (We need the HasInitializedTarget() call because fgFindInsertPoint can be called during importation,
+            // before targets are set)
+
+            var jumpsToNext = (blk.Kind is BBJ_ALWAYS) && blk.HasInitializedTarget && blk.JumpsToNext;
+            var falseBranchToNext = (blk.Kind is BBJ_COND) && (blk.Next == blk.FalseTarget);
+
+            if (!blk.isBBCallFinallyPair && !jumpsToNext && !falseBranchToNext)
+            {
+                var updateBestBlk = true; // We will probably update the bestBlk
+
+                // If we already have a best block, see if the 'runRarely' flags influences
+                // our choice. If we want a runRarely insertion point, and the existing best
+                // block is run rarely but the current block isn't run rarely, then don't
+                // update the best block.
+                // TODO-CQ: We should also handle the reverse case, where runRarely is false (we
+                // want a non-rarely-run block), but bestBlock->isRunRarely() is true. In that
+                // case, we should update the block, also. Probably what we want is:
+                //    (bestBlk->isRunRarely() != runRarely) && (blk->isRunRarely() == runRarely)
+                if ((bestBlk is not null) && runRarely && bestBlk.isRunRarely && !blk.isRunRarely)
+                {
+                    updateBestBlk = false;
+                }
+
+                if (updateBestBlk)
+                {
+                    // We found a 'best' insertion location, so save it away.
+                    bestBlk = blk;
+
+                    // If we've reached nearBlk, we've satisfied all the criteria,
+                    // so we're done.
+                    if (reachedNear)
+                    {
+                        return Done(bestBlk, insertingIntoFilter, startBlk, endBlk);
+                    }
+
+                    // If we haven't reached nearBlk, keep looking for a 'best' location, just
+                    // in case we'll find one at or after nearBlk. If no nearBlk was specified,
+                    // we prefer inserting towards the end of the given range, so keep looking
+                    // for more acceptable insertion locations.
+                }
+            }
+
+            // No need to update goodBlk after we have set bestBlk, but we could still find a better
+            // bestBlk, so keep looking.
+            if (bestBlk is not null)
+            {
+                continue;
+            }
+
+            // Set the current block as a "good enough" insertion point, if it meets certain criteria.
+            // We'll return this block if we don't find a "best" block in the search range. The block
+            // can't be a BBJ_CALLFINALLY of a BBJ_CALLFINALLY/BBJ_CALLFINALLYRET pair (since we don't want
+            // to insert anything between these two blocks). Otherwise, we can use it. However,
+            // if we'd previously chosen a BBJ_COND block, then we'd prefer the "good" block to be
+            // something else. We keep updating it until we've reached the 'nearBlk', to push it as
+            // close to endBlk as possible.
+            //
+            if (!blk.isBBCallFinallyPair)
+            {
+                if (goodBlk is null)
+                {
+                    goodBlk = blk;
+                }
+                else if ((goodBlk.Kind is BBJ_COND) || (blk.Kind is not BBJ_COND))
+                {
+                    if ((blk == nearBlk) || !reachedNear)
+                    {
+                        goodBlk = blk;
+                    }
+                }
+            }
+        }
+
+        // If we didn't find a non-fall_through block, then insert at the last good block.
+
+        assert(goodBlk is not null);
+        bestBlk ??= goodBlk;
+
+        return Done(bestBlk, insertingIntoFilter, startBlk, endBlk);
+
+        static BasicBlock Done(BasicBlock bestBlk, bool insertingIntoFilter, BasicBlock startBlk, BasicBlock? endBlk)
+        {
+#if JIT32_GCENCODER
+            // If we are inserting into a filter and the best block is the end of the filter region, we need to
+            // insert after its predecessor instead: the JIT32 GC encoding used by the x86 CLR ABI  states that the
+            // terminal block of a filter region is its exit block. If the filter region consists of a single block,
+            // a new block cannot be inserted without either splitting the single block before inserting a new block
+            // or inserting the new block before the single block and updating the filter description such that the
+            // inserted block is marked as the entry block for the filter. Becuase this sort of split can be complex
+            // (especially given that it must ensure that the liveness of the exception object is properly tracked),
+            // we avoid this situation by never generating single-block filters on x86 (see impPushCatchArgOnStack).
+            if (insertingIntoFilter && (bestBlk == endBlk.Prev))
+            {
+                assert(bestBlk != startBlk);
+                assert(bestBlk.Prev is not null);
+                bestBlk = bestBlk.Prev;
+            }
+#endif
+
+            return bestBlk;
+        }
+    }
+
     /// <summary>walk the IL stream, determining jump target offsets</summary>
     /// <param name="codeAddr">base address of the IL code buffer</param>
     /// <param name="codeSize">number of bytes in the IL code buffer</param>
@@ -2231,7 +2665,7 @@ public partial class Compiler
     /// <remarks>
     ///   <para>May throw an exception if the IL is malformed.</para>
     ///   <para>jumpTarget[N] is set to 1 if IL offset N is a jump target in the method.</para>
-    ///   <para>Also sets m_addrExposed and lvHasILStoreOp, ilHasMultipleILStoreOp in lvaTable[].</para>
+    ///   <para>Also sets _addrExposed and lvHasILStoreOp, ilHasMultipleILStoreOp in lvaTable[].</para>
     /// </remarks>
     public unsafe void fgFindJumpTargets(byte* codeAddr, IL_OFFSET codeSize, BitArray jumpTarget, bool makeInlineObservations)
     {
@@ -2729,7 +3163,7 @@ public partial class Compiler
 
                         case CEE_BOX:
                         {
-                            toSkip = impBoxPatternMatch(null, codeAddr + sz, codeEndp, BoxPatterns.MakeInlineObservation);
+                            toSkip = impBoxPatternMatch(Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), codeAddr + sz, codeEndp, BoxPatterns.MakeInlineObservation);
                             break;
                         }
 
@@ -3317,7 +3751,7 @@ public partial class Compiler
         }
 
 #if DEBUG
-        compInlineContext.m_ILInstsSet = ilInstsSet;
+        compInlineContext._ilInstsSet = ilInstsSet;
 #endif
 
         if (makeInlineObservations)
@@ -3365,8 +3799,8 @@ public partial class Compiler
 
                     if (compInlineResult.IsFailure)
                     {
-                        assert(impInlineRoot.m_inlineStrategy is not null);
-                        impInlineRoot.m_inlineStrategy.NoteUnprofitable();
+                        assert(impInlineRoot._inlineStrategy is not null);
+                        impInlineRoot._inlineStrategy.NoteUnprofitable();
                         JITDUMP("\n\nInline expansion aborted, inline not profitable\n");
                         return;
                     }
@@ -4137,6 +4571,167 @@ public partial class Compiler
         return ref Unsafe.NullRef<FlowEdge?>();
     }
 
+    /// <summary>Get the shared class constructor call node.</summary>
+    /// <param name="cls">The class handle</param>
+    /// <returns>The call node corresponding to the shared class constructor helper.</returns>
+    public unsafe GenTreeCall? fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
+    {
+#if TARGET_WASM
+        // Wasm does not support dynamically created helpers
+        return fgGetStaticsCCtorHelper(cls, CORINFO_HELP_INITCLASS);
+#endif
+
+#if FEATURE_READYTORUN
+        if (IsAot)
+        {
+            var resolvedToken = new CORINFO_RESOLVED_TOKEN {
+                hClass = cls,
+            };
+            fgSetPreferredInitCctor();
+            return impReadyToRunHelperToTree(resolvedToken, _preferredInitCctor, TYP_BYREF);
+        }
+#endif
+
+        // Call the shared non gc static helper, as its the fastest
+        return fgGetStaticsCCtorHelper(cls, info.compCompHnd->getSharedCCtorHelper(cls));
+    }
+
+    /// <summary>Get the helper call node for a static class constructor.</summary>
+    /// <param name="cls">The class handle</param>
+    /// <param name="helper">The helper function</param>
+    /// <param name="typeIndex">The static block type index. Used only for CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED, CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED, or CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2 to cache the static block in an array at index typeIndex.</param>
+    /// <returns>The call node corresponding to the helper</returns>
+    public unsafe GenTreeCall fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper, int typeIndex = 0)
+    {
+        var callFlags = GTF_EMPTY;
+        var type = TYP_BYREF;
+
+        // This is sort of ugly, as we have knowledge of what the helper is returning.
+        // We need the return type.
+
+        switch (helper)
+        {
+            case CORINFO_HELP_GET_GCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GET_NONGCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            {
+                callFlags |= GTF_CALL_HOISTABLE;
+                break;
+            }
+
+            case CORINFO_HELP_GET_GCSTATIC_BASE:
+            case CORINFO_HELP_GET_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GET_GCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
+            {
+                break;
+            }
+
+            case CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT:
+            {
+                callFlags |= GTF_CALL_HOISTABLE;
+                type = TYP_I_IMPL;
+                break;
+            }
+
+            case CORINFO_HELP_GETPINNED_GCSTATIC_BASE:
+            case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE:
+            {
+                type = TYP_I_IMPL;
+                break;
+            }
+
+            case CORINFO_HELP_INITCLASS:
+            {
+                type = TYP_VOID;
+                break;
+            }
+
+            default:
+            {
+                NO_WAY("unknown shared statics helper");
+                break;
+            }
+        }
+
+        if ((callFlags & GTF_CALL_HOISTABLE) is 0)
+        {
+            if ((info.compCompHnd->getClassAttribs(cls) & CORINFO_FLG_BEFOREFIELDINIT) is not 0)
+            {
+                callFlags |= GTF_CALL_HOISTABLE;
+            }
+        }
+
+        GenTreeCall result;
+
+        if (helper is CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED
+                   or CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED
+                   or CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2
+                   or CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT)
+        {
+            result = gtNewHelperCallNode(type, helper, gtNewIconNode(TYP_INT, typeIndex));
+        }
+        else if (helper is CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR
+                        or CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR
+                        or CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE
+                        or CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE)
+        {
+            result = gtNewHelperCallNode(type, helper, gtNewIconNode(TYP_I_IMPL, unchecked((nint)(info.compCompHnd->getClassThreadStaticDynamicInfo(cls)))));
+        }
+        else if (helper is CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE
+                        or CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE
+                        or CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR
+                        or CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE_NOCTOR
+                        or CORINFO_HELP_GETPINNED_GCSTATIC_BASE
+                        or CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE
+                        or CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR
+                        or CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR)
+        {
+            result = gtNewHelperCallNode(type, helper, gtNewIconNode(TYP_I_IMPL, unchecked((nint)(info.compCompHnd->getClassStaticDynamicInfo(cls)))));
+        }
+        else
+        {
+            result = gtNewHelperCallNode(type, helper, gtNewIconEmbClsHndNode(cls));
+        }
+
+        if (IsStaticHelperEligibleForExpansion(result))
+        {
+            // Keep class handle attached to the helper call since it's difficult to restore it.
+            result.InitClsHnd = cls;
+        }
+        result.Flags |= callFlags;
+
+        // If we're importing the special EqualityComparer<T>.Default or Comparer<T>.Default
+        // intrinsics, flag the helper call. Later during inlining, we can
+        // remove the helper call if the associated field lookup is unused.
+        if ((info.compFlags & CORINFO_FLG_INTRINSIC) is not 0)
+        {
+            var ni = lookupNamedIntrinsic(info.compMethodHnd);
+
+            if (ni is NI_System_Collections_Generic_EqualityComparer_get_Default
+                   or NI_System_Collections_Generic_Comparer_get_Default)
+            {
+                JITDUMP($"\nmarking helper call [{result.TreeId:D6}] as special dce...\n");
+                result._callMoreFlags |= GTF_CALL_M_HELPER_SPECIAL_DCE;
+            }
+        }
+        return result;
+    }
+
     /// <summary>Initialize the basic block lookup table used by fgLookupBB.</summary>
     public void fgInitBBLookup()
     {
@@ -4311,6 +4906,22 @@ public partial class Compiler
         fgBBs = [];
     }
 #endif
+
+    /// <summary>Return the last basic block in the main part of the function. With funclets, it is the block immediately before the first funclet.</summary>
+    /// <returns></returns>
+    public BasicBlock fgLastBBInMainFunction()
+    {
+        if (fgFirstFuncletBB is not null)
+        {
+            assert(fgFirstFuncletBB.Prev is not null);
+            return fgFirstFuncletBB.Prev;
+        }
+
+        assert(fgLastBB is not null);
+        assert(fgLastBB.IsLast);
+
+        return fgLastBB;
+    }
 
     /// <summary>set block jump targets and add pred edges</summary>
     /// <remarks>
@@ -5032,16 +5643,9 @@ public partial class Compiler
         fgThrowCount = throwBlocks;
     }
 
-    //------------------------------------------------------------------------------
-    // fgMakeTemp: Make a temp variable and store 'value' into it.
-    //
-    // Arguments:
-    //    value - The expression to store to a temp.
-    //
-    // Return Value:
-    //    'TempInfo' data that contains the GT_STORE_LCL_VAR and GT_LCL_VAR nodes for
-    //    store and variable load respectively.
-    //
+    /// <summary>Make a temp variable and store 'value' into it.</summary>
+    /// <param name="value">The expression to store to a temp.</param>
+    /// <returns>'TempInfo' data that contains the GT_STORE_LCL_VAR and GT_LCL_VAR nodes for store and variable load respectively.</returns>
     public TempInfo fgMakeTemp(GenTree value)
     {
         var lclNum = lvaGrabTemp(shortLifetime: true, "fgMakeTemp is creating a new local variable");
@@ -5106,6 +5710,70 @@ public partial class Compiler
         return true;
     }
 
+#if FEATURE_JIT_METHOD_PERF
+    /// <summary>count and return the number of IR nodes in the function.</summary>
+    /// <returns>The number of IR nodes in the function.</returns>
+    public int fgMeasureIR()
+    {
+        var nodeCount = 0;
+
+        foreach (var block in Blocks)
+        {
+            if (!block.IsLIR)
+            {
+                foreach (var stmt in block.Statements)
+                {
+                    var visitor = new MeasureIRVisitor();
+                    _ = visitor.WalkTree(ref stmt.RootNodeRef, user: null);
+                    nodeCount = visitor.NodeCount;
+                }
+            }
+            else
+            {
+                foreach (var node in block)
+                {
+                    nodeCount++;
+                }
+            }
+        }
+        return nodeCount;
+    }
+#endif
+
+    /// <summary>Insert a new BasicBlock after the given block.</summary>
+    /// <param name="jumpKind">the jump kind of the new block</param>
+    /// <param name="block">the block after which the new block is inserted</param>
+    /// <param name="extendRegion">if true, extend the EH region to include the new block</param>
+    /// <returns>The new block.</returns>
+    public BasicBlock fgNewBBafter(BBKinds jumpKind, BasicBlock block, bool extendRegion)
+    {
+        // Create a new BasicBlock and chain it in
+
+        var newBlk = BasicBlock.New(this, jumpKind);
+        newBlk.SetFlags(BBF_INTERNAL);
+
+        fgInsertBBafter(block, newBlk);
+
+        newBlk.bbRefs = 0;
+
+        if (extendRegion)
+        {
+            fgExtendEHRegionAfter(block);
+        }
+        else
+        {
+            // When extendRegion is false the caller is responsible for setting these two values
+            newBlk.TryIndex = MAX_XCPTN_INDEX; // Note: this is still a legal index, just unlikely
+            newBlk.HndIndex = MAX_XCPTN_INDEX; // Note: this is still a legal index, just unlikely
+        }
+
+        // If the new block is in the cold region (because the block we are inserting after
+        // is in the cold region), mark it as such.
+        newBlk.CopyFlags(block, BBF_COLD);
+
+        return newBlk;
+    }
+
     /// <summary>Insert a new BasicBlock before the given block.</summary>
     /// <param name="jumpKind">the jump kind of the new block</param>
     /// <param name="block">the block before which the new block is inserted</param>
@@ -5135,6 +5803,333 @@ public partial class Compiler
         // We assume that if the block we are inserting before is in the cold region, then this new
         // block will also be in the cold region.
         newBlk.CopyFlags(block, BBF_COLD);
+
+        return newBlk;
+    }
+
+    /// <summary>Creates a new BasicBlock and inserts it at the end of the function.</summary>
+    /// <param name="jumpKind">the jump kind of the new block to create.</param>
+    /// <returns>The new block.</returns>
+    /// <remarks>See the implementation of fgNewBBinRegion() used by this one for more notes.</remarks>
+    public BasicBlock fgNewBBinRegion(BBKinds jumpKind)
+    {
+        return fgNewBBinRegion(jumpKind, tryIndex: 0, hndIndex: 0, nearBlk: null, putInFilter: false, runRarely: false, insertAtEnd: true);
+    }
+
+    /// <summary>Creates a new BasicBlock and inserts it in the same EH region as 'srcBlk'.</summary>
+    /// <param name="jumpKind">the jump kind of the new block to create.</param>
+    /// <param name="srcBlk">insert the new block in the same EH region as this block, and closely after it if possible.</param>
+    /// <param name="runRarely">'true' if the new block is run rarely.</param>
+    /// <param name="insertAtEnd">'true' if the block should be inserted at the end of the region. Note: this is currently only implemented when inserting into the main function (not into any EH region).</param>
+    /// <returns>The new block.</returns>
+    /// <remarks>See the implementation of fgNewBBinRegion() used by this one for more notes.</remarks>
+    public BasicBlock fgNewBBinRegion(BBKinds jumpKind, BasicBlock srcBlk, bool runRarely = false, bool insertAtEnd = false)
+    {
+        var tryIndex = srcBlk.bbTryIndex;
+        var hndIndex = srcBlk.bbHndIndex;
+
+        var putInFilter = false;
+
+        // Check to see if we need to put the new block in a filter. We do if srcBlk is in a filter.
+        // This can only be true if there is a handler index, and the handler region is more nested than the
+        // try region (if any). This is because no EH regions can be nested within a filter.
+        if (BasicBlock.ehIndexMaybeMoreNested(hndIndex, tryIndex))
+        {
+            assert(hndIndex is not 0); // If hndIndex is more nested, we must be in some handler!
+            putInFilter = ehGetDsc((ushort)(hndIndex - 1)).InFilterRegionBBRange(srcBlk);
+        }
+
+        return fgNewBBinRegion(jumpKind, tryIndex, hndIndex, srcBlk, putInFilter, runRarely, insertAtEnd);
+    }
+
+    /// <summary>Creates a new BasicBlock and inserts it in a specific EH region, given by 'tryIndex', 'hndIndex', and 'putInFilter'.</summary>
+    /// <param name="jumpKind">the jump kind of the new block to create.</param>
+    /// <param name="tryIndex">the try region to insert the new block in, described above. This must be a number in the range [0..compHndBBtabCount].</param>
+    /// <param name="hndIndex">the handler region to insert the new block in, described above. This must be a number in the range [0..compHndBBtabCount].</param>
+    /// <param name="nearBlk">insert the new block closely after this block, if possible. If null, put the new block anywhere in the requested region.</param>
+    /// <param name="putInFilter">put the new block in the filter region given by hndIndex, as described above.</param>
+    /// <param name="runRarely">'true' if the new block is run rarely.</param>
+    /// <param name="insertAtEnd">'true' if the block should be inserted at the end of the region. Note: this is currently only implemented when inserting into the main function (not into any EH region).</param>
+    /// <returns>The new block.</returns>
+    public BasicBlock fgNewBBinRegion(BBKinds jumpKind, ushort tryIndex, ushort hndIndex, BasicBlock? nearBlk, bool putInFilter = false, bool runRarely = false, bool insertAtEnd = false)
+    {
+        // If 'putInFilter' it true, then the block is inserted in the filter region given by 'hndIndex'. In this case, tryIndex
+        // must be a less nested EH region (that is, tryIndex > hndIndex).
+        //
+        // Otherwise, the block is inserted in either the try region or the handler region, depending on which one is the inner
+        // region. In other words, if the try region indicated by tryIndex is nested in the handler region indicated by
+        // hndIndex,
+        // then the new BB will be created in the try region. Vice versa.
+        //
+        // Note that tryIndex and hndIndex are numbered the same as BasicBlock.bbTryIndex and BasicBlock.bbHndIndex, that is,
+        // "0" is "main method" and otherwise is +1 from normal, so we can call, e.g., ehGetDsc(tryIndex - 1).
+        //
+        // To be more specific, this function will create a new BB in one of the following 5 regions (if putInFilter is false):
+        // 1. When tryIndex = 0 and hndIndex = 0:
+        //    The new BB will be created in the method region.
+        // 2. When tryIndex is not 0 and hndIndex = 0:
+        //    The new BB will be created in the try region indicated by tryIndex.
+        // 3. When tryIndex is 0 and hndIndex is not 0:
+        //    The new BB will be created in the handler region indicated by hndIndex.
+        // 4. When tryIndex is not 0 and hndIndex is not 0 and tryIndex < hndIndex:
+        //    In this case, the try region is nested inside the handler region. Therefore, the new BB will be created
+        //    in the try region indicated by tryIndex.
+        // 5. When tryIndex is not 0 and hndIndex is not 0 and tryIndex > hndIndex:
+        //    In this case, the handler region is nested inside the try region. Therefore, the new BB will be created
+        //    in the handler region indicated by hndIndex.
+        //
+        // Note that if tryIndex is not 0 and hndIndex is not 0 then tryIndex must not be equal to hndIndex (this makes sense because
+        // if they are equal, you are asking to put the new block in both the try and handler, which is impossible).
+        //
+        // The BasicBlock will not be inserted inside an EH region that is more nested than the requested tryIndex/hndIndex
+        // region (so the function is careful to skip more nested EH regions when searching for a place to put the new block).
+        //
+        // This function cannot be used to insert a block as the first block of any region. It always inserts a block after
+        // an existing block in the given region.
+        //
+        // If nearBlk is null, or the block is run rarely, then the new block is assumed to be run rarely.
+
+        assert(tryIndex <= compHndBBtabCount);
+        assert(hndIndex <= compHndBBtabCount);
+
+        // afterBlk is the block which will precede the newBB
+        var afterBlk = null as BasicBlock;
+
+        // start and end limit for inserting the block
+        var startBlk = null as BasicBlock;
+        BasicBlock? endBlk;
+
+        var putInTryRegion = true;
+        var regionIndex = (ushort)(0);
+
+        // First, figure out which region (the "try" region or the "handler" region) to put the newBB in.
+        if ((tryIndex is 0) && (hndIndex is 0))
+        {
+            assert(!putInFilter);
+            endBlk = fgEndBBAfterMainFunction(); // don't put new BB in funclet region
+
+            if (insertAtEnd || (nearBlk is null))
+            {
+                // We'll just insert the block at the end of the method, before the funclets
+
+                afterBlk = fgLastBBInMainFunction();
+            }
+            else
+            {
+                // We'll search through the entire method
+                startBlk = fgFirstBB;
+            }
+        }
+        else
+        {
+            noway_assert((tryIndex > 0) || (hndIndex > 0));
+
+            assert(tryIndex <= compHndBBtabCount);
+            assert(hndIndex <= compHndBBtabCount);
+
+            // Decide which region to put in, the "try" region or the "handler" region.
+            if (tryIndex is 0)
+            {
+                noway_assert(hndIndex > 0);
+                putInTryRegion = false;
+            }
+            else if (hndIndex is 0)
+            {
+                noway_assert(tryIndex > 0);
+                noway_assert(putInTryRegion);
+                assert(!putInFilter);
+            }
+            else
+            {
+                noway_assert(tryIndex > 0 && hndIndex > 0 && tryIndex != hndIndex);
+                putInTryRegion = (tryIndex < hndIndex);
+            }
+
+            if (putInTryRegion)
+            {
+                // Try region is the inner region.
+                // In other words, try region must be nested inside the handler region.
+                noway_assert(hndIndex is 0 || bbInHandlerRegions((ushort)(hndIndex - 1), ehGetDsc((ushort)(tryIndex - 1)).ebdTryBeg));
+                assert(!putInFilter);
+            }
+            else
+            {
+                // Handler region is the inner region.
+                // In other words, handler region must be nested inside the try region.
+                noway_assert(tryIndex is 0 || bbInTryRegions((ushort)(tryIndex - 1), ehGetDsc((ushort)(hndIndex - 1)).ebdHndBeg));
+            }
+
+            // Figure out the start and end block range to search for an insertion location. Pick the beginning and
+            // ending blocks of the target EH region (the 'endBlk' is one past the last block of the EH region, to make
+            // loop iteration easier). Note that, after funclets have been created,
+            // this linear block range will not include blocks of handlers for try/handler clauses nested within
+            // this EH region, as those blocks have been extracted as funclets. That is ok, though, because we don't
+            // want to insert a block in any nested EH region.
+
+            if (putInTryRegion)
+            {
+                // We will put the newBB in the try region.
+                ref var ehDsc = ref ehGetDsc((ushort)(tryIndex - 1));
+
+                startBlk = ehDsc.ebdTryBeg;
+                endBlk = ehDsc.ebdTryLast.Next;
+
+                regionIndex = tryIndex;
+            }
+            else if (putInFilter)
+            {
+                // We will put the newBB in the filter region.
+                ref var ehDsc = ref ehGetDsc((ushort)(hndIndex - 1));
+
+                startBlk = ehDsc.ebdFilter;
+                endBlk = ehDsc.ebdHndBeg;
+
+                regionIndex = hndIndex;
+            }
+            else
+            {
+                // We will put the newBB in the handler region.
+                ref var ehDsc = ref ehGetDsc((ushort)(hndIndex - 1));
+
+                startBlk = ehDsc.ebdHndBeg;
+                endBlk = ehDsc.ebdHndLast.Next;
+
+                regionIndex = hndIndex;
+            }
+
+            noway_assert(regionIndex > 0);
+        }
+
+        // Now find the insertion point.
+        assert(startBlk is not null);
+        afterBlk ??= fgFindInsertPoint(regionIndex, putInTryRegion, startBlk, endBlk, nearBlk, jumpBlk: null, runRarely);
+
+        // We have decided to insert the block after 'afterBlk'.
+        JITDUMP($"fgNewBBinRegion(jumpKind={jumpKind}, tryIndex={tryIndex}, hndIndex={hndIndex}, putInFilter={dspBool(putInFilter)}, runRarely={dspBool(runRarely)}, insertAtEnd={dspBool(insertAtEnd)}): inserting after {FMT_BB(afterBlk.bbNum)}\n");
+
+        return fgNewBBinRegionWorker(jumpKind, afterBlk, regionIndex, putInTryRegion);
+    }
+
+    /// <summary>Creates a new BasicBlock, and inserts it after 'afterBlk'.</summary>
+    /// <param name="jumpKind">the jump kind of the new block to create.</param>
+    /// <param name="afterBlk">insert the new block after this one.</param>
+    /// <param name="regionIndex">the block will be put in this EH region.</param>
+    /// <param name="putInTryRegion">If true, put the new block in the 'try' region corresponding to 'regionIndex', and set its handler index to the most nested handler region enclosing that 'try' region. Otherwise, put the block in the handler region specified by 'regionIndex', and set its 'try' index to the most nested 'try' region enclosing that handler region.</param>
+    /// <returns>The new block.</returns>
+    /// <remarks>The block cannot be inserted into a more nested try/handler region than that specified by 'regionIndex'. (It is given exactly 'regionIndex'.) Thus, the parameters must be passed to ensure proper EH nesting rules are followed.</remarks>
+    public BasicBlock fgNewBBinRegionWorker(BBKinds jumpKind, BasicBlock afterBlk, ushort regionIndex, bool putInTryRegion)
+    {
+        var afterBlkNext = afterBlk.Next;
+
+        // Insert the new block
+        var newBlk = fgNewBBafter(jumpKind, afterBlk, false);
+
+        if (putInTryRegion)
+        {
+            noway_assert(regionIndex <= MAX_XCPTN_INDEX);
+            newBlk.bbTryIndex = regionIndex;
+            newBlk.bbHndIndex = bbFindInnermostHandlerRegionContainingTryRegion(regionIndex);
+        }
+        else
+        {
+            newBlk.bbTryIndex = bbFindInnermostTryRegionContainingHandlerRegion(regionIndex);
+            noway_assert(regionIndex <= MAX_XCPTN_INDEX);
+            newBlk.bbHndIndex = regionIndex;
+        }
+
+        // We're going to compare for equal try regions (to handle the case of 'mutually protect'
+        // regions). We need to save off the current try region, otherwise we might change it
+        // before it gets compared later, thereby making future comparisons fail.
+
+        _ = ehInitTryBlockRange(newBlk, out var newTryBeg, out var newTryLast);
+
+        for (ushort XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+        {
+            ref var HBtab = ref ehGetDsc(XTnum);
+
+            // Is afterBlk at the end of a try region?
+            if (HBtab.ebdTryLast == afterBlk)
+            {
+                noway_assert(newBlk.Next == afterBlkNext);
+                var extendTryRegion = false;
+
+                if (newBlk.hasTryIndex)
+                {
+                    // We're adding a block after the last block of some try region. Do
+                    // we extend the try region to include the block, or not?
+                    // If the try region is exactly the same as the try region
+                    // associated with the new block (based on the block's try index,
+                    // which represents the innermost try the block is a part of), then
+                    // we extend it.
+                    // If the try region is a "parent" try region -- an enclosing try region
+                    // that has the same last block as the new block's try region -- then
+                    // we also extend. For example:
+                    //      try { // 1
+                    //          ...
+                    //          try { // 2
+                    //          ...
+                    //      } /* 2 */ } // 1
+                    // This example is meant to indicate that both try regions 1 and 2 end at
+                    // the same block, and we're extending 2. Thus, we must also extend 1. If we
+                    // only extended 2, we would break proper nesting. (Dev11 bug 137967)
+
+                    extendTryRegion = HBtab.ebdIsSameTry(newTryBeg, newTryLast) || bbInTryRegions(XTnum, newBlk);
+                }
+
+                // Does newBlk extend this try region?
+                if (extendTryRegion)
+                {
+                    // Yes, newBlk extends this try region
+
+                    // newBlk is the now the new try last block
+                    fgSetTryEnd(ref HBtab, newBlk);
+                }
+            }
+
+            // Is afterBlk at the end of a handler region?
+            if (HBtab.ebdHndLast == afterBlk)
+            {
+                noway_assert(newBlk.Next == afterBlkNext);
+
+                // Does newBlk extend this handler region?
+                var extendHndRegion = false;
+
+                if (newBlk.hasHndIndex)
+                {
+                    // We're adding a block after the last block of some handler region. Do
+                    // we extend the handler region to include the block, or not?
+                    // If the handler region is exactly the same as the handler region
+                    // associated with the new block (based on the block's handler index,
+                    // which represents the innermost handler the block is a part of), then
+                    // we extend it.
+                    // If the handler region is a "parent" handler region -- an enclosing
+                    // handler region that has the same last block as the new block's handler
+                    // region -- then we also extend. For example:
+                    //      catch { // 1
+                    //          ...
+                    //          catch { // 2
+                    //          ...
+                    //      } /* 2 */ } // 1
+                    // This example is meant to indicate that both handler regions 1 and 2 end at
+                    // the same block, and we're extending 2. Thus, we must also extend 1. If we
+                    // only extended 2, we would break proper nesting. (Dev11 bug 372051)
+
+                    extendHndRegion = bbInHandlerRegions(XTnum, newBlk);
+                }
+
+                if (extendHndRegion)
+                {
+                    // Yes, newBlk extends this handler region
+
+                    // newBlk is now the last block of the handler.
+                    fgSetHndEnd(ref HBtab, newBlk);
+                }
+            }
+        }
+
+#if DEBUG
+        fgVerifyHandlerTab();
+#endif
 
         return newBlk;
     }
@@ -5358,7 +6353,7 @@ public partial class Compiler
         // blocks (and only those within the 'try' region's parents), not handler begin blocks, when we are inserting new
         // header blocks.
 
-        for (var XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+        for (ushort XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
         {
             ref var eh = ref ehGetDsc(XTnum);
 
@@ -5437,7 +6432,7 @@ public partial class Compiler
 
         var interestingPreds = new Stack<BasicBlock>();
 
-        for (var XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+        for (ushort XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
         {
             ref var eh = ref ehGetDsc(XTnum);
 
@@ -5709,7 +6704,7 @@ public partial class Compiler
         // the nested handler has the same 'last' block as the outer handler, then, due to nesting rules, the nested 'try'
         // must also be within the outer handler, and obviously cannot share the same 'last' block.
 
-        for (var XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+        for (ushort XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
         {
             ref var eh = ref ehGetDsc(XTnum);
 
@@ -5778,8 +6773,8 @@ public partial class Compiler
                 //          BB05 // try=5, hnd=0 (no enclosing hnd)
                 //      }
 
-                int nextTryIndex = EHblkDsc.NO_ENCLOSING_INDEX; // Initialization only needed to quell compiler warnings.
-                int nextHndIndex = EHblkDsc.NO_ENCLOSING_INDEX;
+                var nextTryIndex = EHblkDsc.NO_ENCLOSING_INDEX; // Initialization only needed to quell compiler warnings.
+                var nextHndIndex = EHblkDsc.NO_ENCLOSING_INDEX;
 
                 // We compare the outer region against the inner region's 'try' or handler, determined by the
                 // 'outerIsTryRegion' variable. Once we decide that, we know exactly the 'last' pointer that we will use to
@@ -6423,6 +7418,104 @@ public partial class Compiler
         unreached();
     }
 
+    public void fgRepairProfileCondToUncond(BasicBlock block, FlowEdge retainedEdge, FlowEdge removedEdge)
+    {
+        var metric = 0;
+        fgRepairProfileCondToUncond(block, retainedEdge, removedEdge, ref metric);
+    }
+
+    /// <summary>attempt to repair profile after modifying a conditional branch to an unconditional branch.</summary>
+    /// <param name="block">block that was just altered</param>
+    /// <param name="retainedEdge">flow edge that remains</param>
+    /// <param name="removedEdge">flow edge that was removed</param>
+    /// <param name="metric">metric to update if profile becomes inconsistent</param>
+    public void fgRepairProfileCondToUncond(BasicBlock block, FlowEdge retainedEdge, FlowEdge removedEdge, ref int metric)
+    {
+        assert(block.Kind is BBJ_ALWAYS);
+        assert(block.TargetEdge == retainedEdge);
+
+        if (!block.hasProfileWeight)
+        {
+            // If block does not have profile data, there's nothing to do.
+            return;
+        }
+
+        // If the removed edge was not carrying away any profile, there's nothing to do.
+        var weight = removedEdge.LikelyWeight;
+
+        if (weight is BB_ZERO_WEIGHT)
+        {
+            return;
+        }
+
+        if (retainedEdge == removedEdge)
+        {
+            // If the branch was degenerate, there is nothing to do
+            return;
+        }
+
+        // This flow graph change will affect profile transitively, so in general the profile will become inconsistent.
+        var repairWasComplete = false;
+        var missingProfileData = false;
+
+        // Target block weight will increase.
+        var target = block.Target;
+
+        if (target.hasProfileWeight)
+        {
+            target.increaseBBProfileWeight(weight);
+        }
+        else
+        {
+            missingProfileData = true;
+        }
+
+        // Alternate weight will decrease
+        var alternate = removedEdge.DestinationBlock;
+
+        if (alternate.hasProfileWeight)
+        {
+            alternate.decreaseBBProfileWeight(weight);
+        }
+        else
+        {
+            missingProfileData = true;
+        }
+
+        // Check for the special cases where both successors are leaves,
+        // or the block's postdominator is target's target (simple if/then/else/join).
+        //
+        // TODO: try a bit harder to find a postdominator, if it's "nearby"
+        //
+        if (!missingProfileData)
+        {
+            if ((target.NumSucc is 0) && (alternate.NumSucc is 0))
+            {
+                repairWasComplete = true;
+            }
+            else if (target.Kind is BBJ_ALWAYS)
+            {
+                repairWasComplete = (target.Target == alternate.UniqueSucc);
+            }
+        }
+
+        if (missingProfileData)
+        {
+            JITDUMP("Profile data could not be locally repaired. Data was missing.\n");
+        }
+
+        if (!repairWasComplete)
+        {
+            JITDUMP($"Profile data could not be locally repaired. Data {(fgPgoConsistent ? "is now" : "was already")} inconsistent.\n");
+
+            if (fgPgoConsistent)
+            {
+                metric++;
+                fgPgoConsistent = false;
+            }
+        }
+    }
+
     /// <summary>For a given block, replace the target 'oldTarget' with 'newTarget'.</summary>
     /// <param name="block">the block in which a jump target will be replaced.</param>
     /// <param name="oldTarget">the new branch target of the block.</param>
@@ -7010,6 +8103,16 @@ public partial class Compiler
         // TODO: Port Compiler.fgSetOptions
     }
 
+    /// <summary>Set CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE as the preferred call constructure if it is undefined.</summary>
+    public void fgSetPreferredInitCctor()
+    {
+        if (_preferredInitCctor is CORINFO_HELP_UNDEF)
+        {
+            // This is the cheapest helper that triggers the constructor.
+            _preferredInitCctor = CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE;
+        }
+    }
+
     public void fgSetStmtSeq(Statement stmt)
     {
         var rootNode = stmt.RootNode;
@@ -7144,13 +8247,13 @@ public partial class Compiler
         }
 #endif
 
-        for (var xtabnum1 = 0; xtabnum1 < compHndBBtabCount; xtabnum1++)
+        for (ushort xtabnum1 = 0; xtabnum1 < compHndBBtabCount; xtabnum1++)
         {
-            ref var xtab1 = ref compHndBBtab[xtabnum1];
+            ref var xtab1 = ref ehGetDsc(xtabnum1);
 
-            for (var xtabnum2 = xtabnum1 + 1; xtabnum2 < compHndBBtabCount; xtabnum2++)
+            for (var xtabnum2 = (ushort)(xtabnum1 + 1); xtabnum2 < compHndBBtabCount; xtabnum2++)
             {
-                ref var xtab2 = ref compHndBBtab[xtabnum2];
+                ref var xtab2 = ref ehGetDsc(xtabnum2);
 
                 // If the nesting is wrong, swap them. The nesting is wrong if
                 // EH region 2 is nested in the try, handler, or filter of EH region 1.
@@ -8247,6 +9350,109 @@ public partial class Compiler
         info.compCompHnd->setMethodAttribs(info.compMethodHnd, CORINFO_FLG_SWITCHED_TO_OPTIMIZED);
     }
 
+    /// <summary>Check whether the variable is never zero initialized in the prolog.</summary>
+    /// <param name="varNum">local variable number</param>
+    /// <returns>true if this is a special variable that is never zero initialized in the prolog; false otherwise</returns>
+    public bool fgVarIsNeverZeroInitializedInProlog(int varNum)
+    {
+        ref var varDsc = ref lvaGetDesc(varNum);
+
+        var result = varDsc.lvIsParam
+                  || varDsc.lvIsParamRegTarget
+                  || lvaIsOSRLocal(varNum)
+                  || (varNum == lvaGSSecurityCookie)
+                  || (varNum == lvaInlinedPInvokeFrameVar)
+                  || (varNum == lvaStubArgumentVar)
+                  || (varNum == lvaRetAddrVar);
+
+#if TARGET_ARM64
+        result |= (varNum == lvaFfrRegister);
+#endif
+
+#if FEATURE_FIXED_OUT_ARGS
+        result |= (varNum == lvaOutgoingArgSpaceVar);
+#endif
+
+        return result;
+    }
+
+    /// <summary>Check whether the variable needs an explicit zero initialization.</summary>
+    /// <param name="varNum">local var number</param>
+    /// <param name="bbInALoop">true if the basic block may be in a loop</param>
+    /// <param name="bbIsReturn">true if the basic block always returns</param>
+    /// <returns>true if the var needs explicit zero-initialization in this basic block; false otherwise</returns>
+    /// <remarks>
+    ///   <para>If the variable is not being initialized in a loop, we can avoid explicit zero initialization if</para>
+    ///   <list type="bullet">
+    ///     <item>the variable is a gc pointer, or</item>
+    ///     <item>the variable is a struct with gc pointer fields and either all fields are gc pointer fields or the struct is big enough to guarantee block initialization, or</item>
+    ///     <item>compInitMem is set and the variable has a long lifetime or has gc fields.</item>
+    ///   </list>
+    ///   <para>In these cases we will insert zero-initialization in the prolog if necessary.</para>
+    /// </remarks>
+    public bool fgVarNeedsExplicitZeroInit(int varNum, bool bbInALoop, bool bbIsReturn)
+    {
+        ref var varDsc = ref lvaGetDesc(varNum);
+
+        if (lvaIsFieldOfDependentlyPromotedStruct(varDsc))
+        {
+            // Fields of dependently promoted structs may only be initialized in the prolog when the whole
+            // struct is initialized in the prolog.
+            return fgVarNeedsExplicitZeroInit(varDsc.lvParentLcl, bbInALoop, bbIsReturn);
+        }
+
+        if (bbInALoop && !bbIsReturn)
+        {
+            return true;
+        }
+
+        if (varDsc.lvHasExplicitInit)
+        {
+            return true;
+        }
+
+        if (fgVarIsNeverZeroInitializedInProlog(varNum))
+        {
+            return true;
+        }
+
+        if (varTypeIsGC(varDsc.Type))
+        {
+            return false;
+        }
+
+        if ((varDsc.Type is TYP_STRUCT) && varDsc.HasGCPtr)
+        {
+            var layout = varDsc.Layout;
+            assert(layout is not null);
+
+            if (layout.SlotCount == layout.GCPtrCount)
+            {
+                return false;
+            }
+
+            // Below conditions guarantee block initialization, which will initialize
+            // all struct fields. If the logic for block initialization in CodeGen.genCheckUseBlockInit()
+            // changes, these conditions need to be updated.
+            var stackHomeSize = lvaLclStackHomeSize(varNum);
+
+#if TARGET_AMD64
+            // We can clear using aligned SIMD so the threshold is lower,
+            // and clears in order which is better for auto-prefetching
+            if ((roundUp(stackHomeSize, TARGET_POINTER_SIZE) / sizeof(int)) > 4)
+#elif TARGET_64BIT
+            if ((roundUp(stackHomeSize, TARGET_POINTER_SIZE) / sizeof(int)) > 8)
+#else
+            if ((roundUp(stackHomeSize, TARGET_POINTER_SIZE) / sizeof(int)) > 4)
+#endif
+            {
+                return false;
+            }
+        }
+
+        return !info.compInitMem || (varDsc.lvIsTemp && !varDsc.HasGCPtr);
+    }
+
     // TODO: Port fgForwardSub
     private PhaseStatus fgForwardSub() => PhaseStatus.MODIFIED_NOTHING;
 
@@ -8283,16 +9489,4 @@ public partial class Compiler
         return ref listp;
     }
 #nullable restore
-
-    [InlineArray((int)(MemoryKindCount))]
-    public struct fgCurMemoryVNInlineArray
-    {
-        public ValueNum e0;
-    }
-
-    [InlineArray((int)(TYP_COUNT))]
-    private struct fgBigOffsetMorphingTempsInlineArray
-    {
-        public int e0;
-    }
 }

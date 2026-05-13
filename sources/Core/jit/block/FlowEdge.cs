@@ -10,68 +10,68 @@ namespace RyuJitSharp;
 public sealed class FlowEdge
 {
     // The next predecessor edge in the list, null for end of list.
-    private FlowEdge? m_nextPredEdge;
+    private FlowEdge? _nextPredEdge;
 
     // The source of the control flow
-    private BasicBlock m_sourceBlock;
+    private BasicBlock _sourceBlock;
 
     // The destination of the control flow
-    private BasicBlock m_destBlock;
+    private BasicBlock _destBlock;
 
-    // Likelihood that m_sourceBlock transfers control along this edge.
+    // Likelihood that _sourceBlock transfers control along this edge.
     // Values in range [0..1]
-    private weight_t m_likelihood;
+    private weight_t _likelihood;
 
     // The count of duplicate "edges" (used for switch stmts or degenerate branches)
-    private int m_dupCount;
+    private int _dupCount;
 
     // Convenience flag for phases that need to track edge visitation
-    private bool m_visited;
+    private bool _visited;
 
-    // Indicates if m_likelihood was determined using profile synthesis's heuristics
-    private bool m_heuristicBasedLikelihood;
+    // Indicates if _likelihood was determined using profile synthesis's heuristics
+    private bool _heuristicBasedLikelihood;
 
     // True if likelihood has been set
 #if DEBUG
-    private bool m_likelihoodSet;
+    private bool _likelihoodSet;
 #endif
 
     public FlowEdge(BasicBlock sourceBlock, BasicBlock destBlock, FlowEdge? rest)
     {
-        m_nextPredEdge = rest;
-        m_sourceBlock = sourceBlock;
-        m_destBlock = destBlock;
+        _nextPredEdge = rest;
+        _sourceBlock = sourceBlock;
+        _destBlock = destBlock;
     }
 
     public BasicBlock DestinationBlock
     {
         get
         {
-            return m_destBlock;
+            return _destBlock;
         }
 
         set
         {
-            m_destBlock = value;
+            _destBlock = value;
         }
     }
 
-    public int DupCount => m_dupCount;
+    public int DupCount => _dupCount;
 
 #if DEBUG
-    public bool hasLikelihood => m_likelihoodSet;
+    public bool hasLikelihood => _likelihoodSet;
 #endif
 
     public bool isHeuristicBased
     {
         get
         {
-            return m_heuristicBasedLikelihood;
+            return _heuristicBasedLikelihood;
         }
 
         set
         {
-            m_heuristicBasedLikelihood = value;
+            _heuristicBasedLikelihood = value;
         }
     }
 
@@ -80,9 +80,9 @@ public sealed class FlowEdge
         get
         {
 #if DEBUG
-            assert(Debugger.IsAttached || m_likelihoodSet);
+            assert(Debugger.IsAttached || _likelihoodSet);
 #endif
-            return m_likelihood;
+            return _likelihood;
         }
 
         set
@@ -91,19 +91,19 @@ public sealed class FlowEdge
             assert(value <= 1.0);
 
 #if DEBUG
-            if (m_likelihoodSet)
+            if (_likelihoodSet)
             {
-                JITDUMP($"setting likelihood of {FMT_BB(m_sourceBlock.bbNum)} -> {FMT_BB(m_destBlock.bbNum)} from {FMT_WT(m_likelihood)} to {FMT_WT(value)}\n");
+                JITDUMP($"setting likelihood of {FMT_BB(_sourceBlock.bbNum)} -> {FMT_BB(_destBlock.bbNum)} from {FMT_WT(_likelihood)} to {FMT_WT(value)}\n");
             }
             else
             {
-                JITDUMP($"setting likelihood of {FMT_BB(m_sourceBlock.bbNum)} -> {FMT_BB(m_destBlock.bbNum)} to {FMT_WT(value)}\n");
+                JITDUMP($"setting likelihood of {FMT_BB(_sourceBlock.bbNum)} -> {FMT_BB(_destBlock.bbNum)} to {FMT_WT(value)}\n");
             }
 
-            m_likelihoodSet = true;
+            _likelihoodSet = true;
 #endif
 
-            m_likelihood = value;
+            _likelihood = value;
         }
     }
 
@@ -112,9 +112,9 @@ public sealed class FlowEdge
         get
         {
 #if DEBUG
-            assert(m_likelihoodSet);
+            assert(_likelihoodSet);
 #endif
-            return m_likelihood * m_sourceBlock.bbWeight;
+            return _likelihood * _sourceBlock.bbWeight;
         }
     }
 
@@ -122,47 +122,41 @@ public sealed class FlowEdge
     {
         get
         {
-            return m_nextPredEdge;
+            return _nextPredEdge;
         }
 
         set
         {
-            m_nextPredEdge = value;
+            _nextPredEdge = value;
         }
     }
 
 #nullable disable
-    public ref FlowEdge NextPredEdgeRef => ref m_nextPredEdge;
+    public ref FlowEdge NextPredEdgeRef => ref _nextPredEdge;
 #nullable restore
 
     public BasicBlock SourceBlock
     {
         get
         {
-            return m_sourceBlock;
+            return _sourceBlock;
         }
 
         set
         {
-            m_sourceBlock = value;
+            _sourceBlock = value;
         }
     }
 
-    //------------------------------------------------------------------------
-    // addLikelihood: 
-    //
-    // Arguments:
-    //   addedLikelihood -- 
-    //
     /// <summary>adjust the likelihood of a flow edge </summary>
     /// <param name="addedLikelihood">value in range [-likelihood, 1.0 - likelihood] to add to current likelihood.</param>
     public void AddLikelihood(weight_t addedLikelihood)
     {
 #if DEBUG
-        assert(m_likelihoodSet);
+        assert(_likelihoodSet);
 #endif
 
-        var newLikelihood = m_likelihood + addedLikelihood;
+        var newLikelihood = _likelihood + addedLikelihood;
 
         // Tolerate slight overflow or underflow
         const weight_t eps = 0.0001;
@@ -179,18 +173,18 @@ public sealed class FlowEdge
         assert(newLikelihood >= 0.0);
         assert(newLikelihood <= 1.0);
 
-        JITDUMP($"updating likelihood of {FMT_BB(m_sourceBlock.bbNum)} -> {FMT_BB(m_destBlock.bbNum)} from {FMT_WT(m_likelihood)} to {FMT_WT(newLikelihood)}\n");
-        m_likelihood = newLikelihood;
+        JITDUMP($"updating likelihood of {FMT_BB(_sourceBlock.bbNum)} -> {FMT_BB(_destBlock.bbNum)} from {FMT_WT(_likelihood)} to {FMT_WT(newLikelihood)}\n");
+        _likelihood = newLikelihood;
     }
 
     public void decrementDupCount(int dupCount = 1)
     {
-        assert(m_dupCount >= dupCount);
-        m_dupCount -= dupCount;
+        assert(_dupCount >= dupCount);
+        _dupCount -= dupCount;
     }
 
     public void incrementDupCount(int dupCount = 1)
     {
-        m_dupCount += dupCount;
+        _dupCount += dupCount;
     }
 }

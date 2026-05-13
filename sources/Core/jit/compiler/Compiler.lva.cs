@@ -5,9 +5,6 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
-using RyuJitSharp;
-using static RyuJitSharp.ICorDebugInfo;
 
 namespace RyuJitSharp;
 
@@ -201,6 +198,16 @@ public partial class Compiler
 
     public bool lvaLocalVarRefCounted => lvaRefCountState == RCS_NORMAL;
 
+    /// <summary>Return an upper bound estimate for the size of the compiler spill temps</summary>
+    public int lvaMaxSpillTempSize
+    {
+        get
+        {
+            assert(codeGen is not null);
+            return codeGen.RegSet.HasComputedTmpSize ? codeGen.RegSet.tmpTotalSize : MAX_SPILL_TEMP_SIZE;
+        }
+    }
+
     /// <summary>true if the LclVar was introduced by the CSE phase of the compiler</summary>
     /// <param name="lclNum"></param>
     /// <returns></returns>
@@ -374,7 +381,7 @@ public partial class Compiler
         // these registers, and is called very early.
         if (compIsProfilerHookNeeded)
         {
-            codeGen.regSet.rsMaskPreSpillRegArg |= RBM_ARG_REGS;
+            codeGen.RegSet.rsMaskPreSpillRegArg |= RBM_ARG_REGS;
         }
 
         var doubleAlignMask = RBM_NONE;
@@ -402,7 +409,7 @@ public partial class Compiler
                 }
             }
 
-            codeGen.regSet.rsMaskPreSpillRegArg |= regs;
+            codeGen.RegSet.rsMaskPreSpillRegArg |= regs;
 
             if (varDsc.lvStructDoubleAlign || (varDsc.Type is TYP_DOUBLE))
             {
@@ -433,11 +440,11 @@ public partial class Compiler
                 // ; -c r0    r0   <-- misaligned.
                 // ; callee saved regs
                 var startsAtR0 = (doubleAlignMask & 1) is 1;
-                var r2XorR3    = ((codeGen.regSet.rsMaskPreSpillRegArg & RBM_R2) is 0) !=
-                                 ((codeGen.regSet.rsMaskPreSpillRegArg & RBM_R3) is 0);
+                var r2XorR3    = ((codeGen.RegSet.rsMaskPreSpillRegArg & RBM_R2) is 0) !=
+                                 ((codeGen.RegSet.rsMaskPreSpillRegArg & RBM_R3) is 0);
                 if (startsAtR0 && r2XorR3)
                 {
-                    codeGen.regSet.rsMaskPreSpillAlign = (~codeGen.regSet.rsMaskPreSpillRegArg & ~doubleAlignMask) & RBM_ARG_REGS;
+                    codeGen.RegSet.rsMaskPreSpillAlign = (~codeGen.RegSet.rsMaskPreSpillRegArg & ~doubleAlignMask) & RBM_ARG_REGS;
                 }
             }
         }
@@ -775,34 +782,290 @@ public partial class Compiler
     /// <param name="minLength"></param>
     public void lvaDumpFrameLocation(int lclNum, int minLength)
     {
-// TODO: Port: Compiler.lvaDumpFrameLocation
-//         var message = "";
-// 
-// #if TARGET_ARM64
-//         if (lvaIsUnknownSizeLocal(lclNum))
-//         {
-//             ref var varDsc = ref lvaGetDesc(lclNum);
-//             var offset = unkSizeFrame.GetAddressingOffset(varDsc);
-//             jitprintf($"[{REG_UNKBASE.Name,2}{(offset < 0 ? "-" : "+")}0x{(offset < 0 ? -offset : offset):X2}*{((varDsc.Type is TYP_MASK) ? "PL" : "VL")}] ");
-//         }
-//         else
-// #endif
-//         {
-// #if TARGET_ARM
-//             var offset = lvaFrameAddress(lclNum, compLocallocUsed, out var baseReg, 0, isFloatUsage: false);
-// #else
-//             var offset = lvaFrameAddress(lclNum, out var EBPbased);
-//             var baseReg = EBPbased ? codeGen.GetFramePointerReg(ROOT_FUNC_IDX) : codeGen.GetStackPointerReg(ROOT_FUNC_IDX);
-// #endif
-// 
-//             message = $"[{baseReg.Name,2}{(offset < 0 ? "-" : "+")}0x{(offset < 0 ? -offset : offset):X2}] ";
-//         }
-// 
-//         if (message.Length is not 0)
-//         {
-//             jitprintf($"{new string(' ', int.Max(0, minLength - message.Length))}{message}");
-//         }
+        var message = "";
+
+#if TARGET_ARM64
+        if (lvaIsUnknownSizeLocal(lclNum))
+        {
+            ref var varDsc = ref lvaGetDesc(lclNum);
+            var offset = unkSizeFrame.GetAddressingOffset(varDsc);
+            jitprintf($"[{REG_UNKBASE.Name,2}{(offset < 0 ? "-" : "+")}0x{(offset < 0 ? -offset : offset):X2}*{((varDsc.Type is TYP_MASK) ? "PL" : "VL")}] ");
+        }
+        else
+#endif
+        {
+#if TARGET_ARM
+            var offset = lvaFrameAddress(lclNum, compLocallocUsed, out var baseReg, 0, isFloatUsage: false);
+#else
+            assert(codeGen is not null);
+            var offset = lvaFrameAddress(lclNum, out var EBPbased);
+            var baseReg = EBPbased ? codeGen.GetFramePointerReg(ROOT_FUNC_IDX) : codeGen.GetStackPointerReg(ROOT_FUNC_IDX);
+#endif
+
+            message = $"[{baseReg.Name,2}{(offset < 0 ? "-" : "+")}0x{(offset < 0 ? -offset : offset):X2}] ";
+        }
+
+        if (message.Length is not 0)
+        {
+            jitprintf($"{new string(' ', int.Max(0, minLength - message.Length))}{message}");
+        }
     }
+
+#if TARGET_ARM
+    /// <summary>Determine the stack frame offset of the given variable, and how to generate an address to that stack frame.</summary>
+    /// <param name="varNum">The variable to inquire about. Positive for user variables or arguments, negative for spill-temporaries.</param>
+    /// <param name="mustBeFPBased">True if the base register must be FP. After FINAL_FRAME_LAYOUT, if false, it also requires SP base register.</param>
+    /// <param name="baseReg">Set to the base register to use.</param>
+    /// <param name="addrModeOffset">The mode offset within the variable that we need to address. For example, for a large struct local, and a struct field reference, this will be the offset of the field. Thus, for V02 + 0x28, if V02 itself is at offset SP + 0x10 then addrModeOffset is what gets added beyond that, here 0x28.</param>
+    /// <param name="isFloatUsage">True if the instruction being generated is a floating point instruction. This requires using floating-point offset restrictions. Note that a variable can be non-float, e.g., struct, but accessed as a float local field.</param>
+    /// <returns>Returns the variable offset from the given base register.</returns>
+    public int lvaFrameAddress(int varNum, bool mustBeFPBased, out regNumber baseReg, int addrModeOffset, bool isFloatUsage)
+#elif TARGET_ARM64
+    /// <summary>Determine the stack frame offset of the given variable, and how to generate an address to that stack frame.</summary>
+    /// <param name="varNum">The variable to inquire about. Positive for user variables or arguments, negative for spill-temporaries.</param>
+    /// <param name="fpBased">Set to true if the variable is addressed off of FP, false if it's addressed off of SP.</param>
+    /// <param name="suppressFPtoSPRewrite"></param>
+    /// <returns>Returns the variable offset from the given base register.</returns>
+    public int lvaFrameAddress(int varNum, out bool fpBased, bool suppressFPtoSPRewrite = false)
+#else
+    /// <summary>Determine the stack frame offset of the given variable, and how to generate an address to that stack frame.</summary>
+    /// <param name="varNum">The variable to inquire about. Positive for user variables or arguments, negative for spill-temporaries.</param>
+    /// <param name="fpBased">Set to true if the variable is addressed off of FP, false if it's addressed off of SP.</param>
+    /// <returns>Returns the variable offset from the given base register.</returns>
+    public int lvaFrameAddress(int varNum, out bool fpBased)
+#endif
+    {
+        assert(lvaDoneFrameLayout != NO_FRAME_LAYOUT);
+
+        int varOffset;
+
+#if TARGET_ARM
+        var fConservative = false;
+#endif
+
+        if (varNum >= 0)
+        {
+            assert(!lvaIsUnknownSizeLocal(varNum));
+            ref var varDsc = ref lvaGetDesc(varNum);
+
+#if TARGET_ARM && PROFILING_SUPPORTED
+            var isPrespilledArg = varDsc.lvIsParam && compIsProfilerHookNeeded && lvaIsPreSpilled(varNum, codeGen.RegSet.rsMaskPreSpillRegs(false));
+#elif TARGET_ARM 
+            var isPrespilledArg = false;
+#endif
+
+            // If we have finished with register allocation, and this isn't a stack-based local, check that this has a valid stack location.
+            if ((lvaDoneFrameLayout > REGALLOC_FRAME_LAYOUT) && !varDsc.lvOnFrame)
+            {
+#if !TARGET_AMD64
+                // For other targets, a stack parameter that is enregistered or prespilled for profiling on ARM will have a stack location.
+                assert((varDsc.lvIsParam && !varDsc.lvIsRegArg) || isPrespilledArg);
+#elif !UNIX_AMD64_ABI
+                // On amd64, every param has a stack location, except on Unix-like systems.
+                assert(varDsc.lvIsParam);
+#endif
+            }
+
+            fpBased = varDsc.lvFramePointerBased;
+
+#if DEBUG
+#if FEATURE_FIXED_OUT_ARGS
+            if (varNum == lvaOutgoingArgSpaceVar)
+            {
+                assert(!fpBased);
+            }
+            else
+#endif
+            {
+#if DOUBLE_ALIGN
+                assert(fpBased == (IsFramePointerUsed || (genDoubleAlign && varDsc.lvIsParam && !varDsc.lvIsRegArg)));
+#elif TARGET_X86
+                assert(fpBased == IsFramePointerUsed);
+#endif
+            }
+#endif
+
+            varOffset = varDsc.StackOffset;
+        }
+        else
+        {
+            // Its a spill-temp
+            fpBased = IsFramePointerUsed;
+
+            if (lvaDoneFrameLayout is FINAL_FRAME_LAYOUT)
+            {
+                assert(codeGen is not null);
+                var tempDsc = codeGen.RegSet.tmpGetNum(varNum);
+
+                assert(!varTypeHasUnknownSize(tempDsc.tdTempType));
+                varOffset = tempDsc.tdTempOffs;
+            }
+            else
+            {
+                // This value is an estimate until we calculate the
+                // offset after the final frame layout
+                // ---------------------------------------------------
+                //   :                         :
+                //   +-------------------------+ base --+
+                //   | LR, ++N for ARM         |        |   frameBaseOffset (= N)
+                //   +-------------------------+        |
+                //   | R11, ++N for ARM        | <---FP |
+                //   +-------------------------+      --+
+                //   | compCalleeRegsPushed - N|        |   lclFrameOffset
+                //   +-------------------------+      --+
+                //   | lclVars                 |        |
+                //   +-------------------------+        |
+                //   | tmp[MAX_SPILL_TEMP]     |        |
+                //   | tmp[1]                  |        |
+                //   | tmp[0]                  |        |   compLclFrameSize
+                //   +-------------------------+        |
+                //   | outgoingArgSpaceSize    |        |
+                //   +-------------------------+      --+
+                //   |                         | <---SP
+                //   :                         :
+                // ---------------------------------------------------
+
+#if TARGET_ARM
+                fConservative = true;
+#endif
+
+                if (!fpBased)
+                {
+                    // Worst case stack based offset.
+#if FEATURE_FIXED_OUT_ARGS
+                    var outGoingArgSpaceSize = lvaOutgoingArgSpaceSize.Value;
+#else
+                    var outGoingArgSpaceSize = 0;
+#endif
+                    varOffset = outGoingArgSpaceSize + int.Max(-varNum * TARGET_POINTER_SIZE, lvaMaxSpillTempSize);
+                }
+                else
+                {
+                    // Worst case FP based offset.
+                    assert(codeGen is not null);
+
+#if TARGET_ARM
+                    varOffset = codeGen.genCallerSPtoInitialSPdelta - codeGen.genCallerSPtoFPdelta;
+#else
+                    varOffset = -codeGen.genTotalFrameSize;
+#endif
+                }
+            }
+        }
+
+#if TARGET_ARM
+        if (fpBased)
+        {
+            if (mustBeFPBased)
+            {
+                baseReg = REG_FPBASE;
+            }
+            else
+            {
+                // Change the Frame Pointer (R11)-based addressing to the SP-based addressing when possible because it generates smaller code on ARM. See frame picture above for the math.
+
+                // If it is the final frame layout phase, we don't have a choice, we should stick
+                // to either FP based or SP based that we decided in the earlier phase. Because
+                // we have already selected the instruction. MinOpts will always reserve R10, so
+                // for MinOpts always use SP-based offsets, using R10 as necessary, for simplicity.
+
+                var spVarOffset = fConservative ? compLclFrameSize : varOffset + codeGen.genSPtoFPdelta;
+                var actualSPOffset = spVarOffset + addrModeOffset;
+                var actualFPOffset = varOffset + addrModeOffset;
+                var encodingLimitUpper = isFloatUsage ? 0x3FC : 0xFFF;
+                var encodingLimitLower = isFloatUsage ? -0x3FC : -0xFF;
+
+                if (opts.MinOpts || (actualSPOffset <= encodingLimitUpper))
+                {
+                    // Use SP-based encoding. During encoding, we'll pick the best encoding for the actual offset we have.
+                    varOffset = spVarOffset;
+                    baseReg = compLocallocUsed ? REG_SAVED_LOCALLOC_SP : REG_SPBASE;
+                }
+                else if ((encodingLimitLower <= actualFPOffset) && (actualFPOffset <= encodingLimitUpper))
+                {
+                    // Use Frame Pointer (R11)-based encoding.
+                    baseReg = REG_FPBASE;
+                }
+                else
+                {
+                    // Otherwise, use SP-based encoding. This is either (1) a small positive offset using a single movw,
+                    // (2) a large offset using movw/movt. In either case, we must have already reserved
+                    // the "reserved register", which will get used during encoding.
+
+                    varOffset = spVarOffset;
+                    baseReg = compLocallocUsed ? REG_SAVED_LOCALLOC_SP : REG_SPBASE;
+                }
+            }
+        }
+        else
+        {
+            baseReg = REG_SPBASE;
+        }
+
+#elif TARGET_ARM64
+        if (fpBased && !suppressFPtoSPRewrite && !codeGen.IsFramePointerRequired && (varOffset < 0) && !opts.IsOSR && (lvaDoneFrameLayout == FINAL_FRAME_LAYOUT) && codeGen.IsSaveFpLrWithAllCalleeSavedRegisters)
+        {
+            var spVarOffset = varOffset + codeGen.genSPtoFPdelta;
+            JITDUMP($"lvaFrameAddress optimization for V{varNum:D2}: [FP-{-varOffset}] -> [SP+{spVarOffset}]\n");
+
+            fpBased   = false;
+            varOffset = spVarOffset;
+        }
+#endif
+
+        return varOffset;
+    }
+
+    /// <summary>Return true if the local is a field local of a promoted struct of type PROMOTION_TYPE_DEPENDENT; otherwise, false.</summary>
+    /// <param name="varDsc"></param>
+    /// <returns></returns>
+    public bool lvaIsFieldOfDependentlyPromotedStruct(in LclVarDsc varDsc)
+    {
+        if (!varDsc.lvIsStructField)
+        {
+            return false;
+        }
+
+        var promotionType = lvaGetParentPromotionType(varDsc);
+
+        if (promotionType is PROMOTION_TYPE_DEPENDENT)
+        {
+            return true;
+        }
+
+        assert(promotionType is PROMOTION_TYPE_INDEPENDENT);
+        return false;
+    }
+
+    /// <summary>Determine whether this var should be reported as tracked for GC purposes.</summary>
+    /// <param name="varDsc">the LclVarDsc for the var in question.</param>
+    /// <returns>Returns true if the variable should be reported as tracked in the GC info.</returns>
+    /// <remarks>
+    ///   <para>This never returns true for struct variables, even if they are tracked. This is because struct variables are never tracked as a whole for GC purposes. It is up to the caller to ensure that the fields of struct variables are correctly tracked.</para>
+    ///   <para>We never GC-track fields of dependently promoted structs, even though they may be tracked for optimization purposes.</para>
+    /// </remarks>
+    public bool lvaIsGCTracked(in LclVarDsc varDsc)
+    {
+        if (varDsc.lvTracked && (varDsc.Type is TYP_REF or TYP_BYREF))
+        {
+            // Stack parameters are always untracked w.r.t. GC reportings
+            var isStackParam = varDsc.lvIsParam && !varDsc.lvIsRegArg;
+            return !isStackParam && !lvaIsFieldOfDependentlyPromotedStruct(varDsc);
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    /// <summary>Does the local have an unknown size at compile-time?</summary>
+    /// <param name="varNum"></param>
+    /// <returns>True if the local does not have an exact size, else false.</returns>
+#if TARGET_ARM64
+    public bool lvaIsUnknownSizeLocal(int varNum) => !lvaLclValueSize(varNum).IsExact;
+#else
+    public bool lvaIsUnknownSizeLocal(int varNum) => false;
+#endif
 
     public void lvaTableDump(FrameLayoutState curState = NO_FRAME_LAYOUT)
     {
@@ -877,22 +1140,24 @@ public partial class Compiler
         //-------------------------------------------------------------------------
         // Display the code-gen temps
 
-        // TODO: Port the rest of Compiler.lvaTableDump
-        // assert(codeGen.regSet.tmpAllFree());
-        // for (TempDsc* temp = codeGen.regSet.tmpListBeg(); temp is not null; temp = codeGen.regSet.tmpListNxt(temp))
-        // {
-        //     jitprintf($";  TEMP_%02u %26s%*s%7s  -> ", -temp->tdTempNum(), " ", refCntWtdWidth, " ",
-        //            varTypeName(temp->tdTempType()));
-        //     int offset = temp->tdTempOffs();
-        //     jitprintf($" [%2s%1s0x%02X]\n", isFramePointerUsed() ? STR_FPBASE : STR_SPBASE, (offset < 0 ? "-" : "+"),
-        //            (offset < 0 ? -offset : offset));
-        // }
-        // 
-        // if (curState >= TENTATIVE_FRAME_LAYOUT)
-        // {
-        //     jitprintf(";\n");
-        //     jitprintf($"; Lcl frame size = {compLclFrameSize}\n");
-        // }
+        assert(codeGen is not null);
+
+#if DEBUG
+        assert(codeGen.RegSet.tmpGetAllFree());
+#endif
+
+        for (var tempDsc = codeGen.RegSet.tmpListBeg(); tempDsc is not null; tempDsc = codeGen.RegSet.tmpListNxt(tempDsc))
+        {
+            jitprintf($";  TEMP_{-tempDsc.tdTempNum:D2} {new string(' ', 26 + refCntWtdWidth)}{tempDsc.tdTempType.Name,7}  -> ");
+            var offset = tempDsc.tdTempOffs;
+            jitprintf($" [{(IsFramePointerUsed ? STR_FPBASE : STR_SPBASE),2}{(offset < 0 ? "-" : "+")}0x{(offset < 0 ? -offset : offset):X2}]\n");
+        }
+        
+        if (curState >= TENTATIVE_FRAME_LAYOUT)
+        {
+            jitprintf(";\n");
+            jitprintf($"; Lcl frame size = {compLclFrameSize}\n");
+        }
     }
 #endif
 
@@ -1165,7 +1430,7 @@ public partial class Compiler
         // these registers, and is called very early.
         if (compIsProfilerHookNeeded)
         {
-            codeGen.regSet.rsMaskPreSpillRegArg |= RBM_ARG_REGS;
+            codeGen.RegSet.rsMaskPreSpillRegArg |= RBM_ARG_REGS;
         }
 #endif
 
@@ -1952,7 +2217,7 @@ public partial class Compiler
         // this for arguments, which must be passed according the defined ABI. We don't want to do this for
         // dependently promoted struct fields, but we don't know that here. See lvaMapSimd12ToSimd16().
         // (Note that for 64-bits, we are already rounding up to 16.)
-        if (varDsc.Type is TYP_Simd12)
+        if (varDsc.Type is TYP_SIMD12)
         {
             return 16;
         }
@@ -2323,6 +2588,99 @@ public partial class Compiler
         }
 #endif
     }
+
+#if DEBUG
+    /// <summary>update class information for a local var.</summary>
+    /// <param name="varNum">number of the variable</param>
+    /// <param name="clsHnd">class handle to use in set or update</param>
+    /// <param name="isExact">true if class is known exactly</param>
+    /// <param name="singleDefOnly">true if we should only update single-def locals</param>
+    /// <remarks>
+    ///   <para>This method models the type update rule for a store.</para>
+    ///   <para>Updates currently should only happen for single-def user args or locals, when we are processing the expression actually being used to initialize the local (or inlined arg). The update will change the local from the declared type to the type of the initial value.</para>
+    ///   <para>These updates should always *improve* what we know about the type, that is making an inexact type exact, or changing a type to some subtype. However the jit lacks precise type information for shared code, so ensuring this is so is currently not possible.</para>
+    /// </remarks>
+    public unsafe void lvaUpdateClass(int varNum, CORINFO_CLASS_HANDLE clsHnd, bool isExact = false, bool singleDefOnly = true)
+    {
+        assert(varNum < lvaCount);
+
+        // Else we should have a class handle to consider
+        assert(clsHnd is not null);
+
+        ref var varDsc = ref lvaGetDesc(varNum);
+        assert(varDsc.Type == TYP_REF);
+
+        // We should already have a class
+        assert(varDsc.lvClassHnd != NO_CLASS_HANDLE);
+
+        // We should only be updating classes for single-def locals if requested
+        if (singleDefOnly && !varDsc.lvSingleDef)
+        {
+            NO_WAY("Updating class for multi-def local");
+        }
+        else
+        {
+            // Now see if we should update.
+            //
+            // New information may not always be "better" so do some
+            // simple analysis to decide if the update is worthwhile.
+            var isNewClass = clsHnd != varDsc.lvClassHnd;
+            var shouldUpdate = false;
+
+            // Are we attempting to update the class? Only check this when we have
+            // an new type and the existing class is inexact... we should not be
+            // updating exact classes.
+            if (!varDsc.lvClassIsExact && isNewClass)
+            {
+                shouldUpdate = info.compCompHnd->isMoreSpecificType(varDsc.lvClassHnd, clsHnd);
+            }
+            else if (isExact && !varDsc.lvClassIsExact && !isNewClass)
+            {
+                // Else are we attempting to update exactness?
+                shouldUpdate = true;
+            }
+
+#if DEBUG
+            if (isNewClass || (isExact != varDsc.lvClassIsExact))
+            {
+                JITDUMP($"\nlvaUpdateClass:{(shouldUpdate ? "" : " NOT")} Updating class for V{varNum:D2}");
+                JITDUMP($" from ({dspPtr(varDsc.lvClassHnd)}) {eeGetClassName(varDsc.lvClassHnd)}{(varDsc.lvClassIsExact ? " [exact]" : "")}");
+                JITDUMP($" to ({dspPtr(clsHnd)}) {eeGetClassName(clsHnd)}{(isExact ? " [exact]" : "")}\n");
+            }
+#endif
+
+            if (shouldUpdate)
+            {
+                varDsc.lvClassHnd = clsHnd;
+                varDsc.lvClassIsExact = isExact;
+
+#if DEBUG
+                // Note we've modified the type...
+                varDsc.lvClassInfoUpdated = true;
+#endif
+            }
+        }
+    }
+
+    /// <summary>Update class information for a local var from a tree or stack type</summary>
+    /// <param name="varNum">number of the variable. Must be a single def local</param>
+    /// <param name="tree">tree establishing the variable's value</param>
+    /// <param name="stackHandle">handle for the type from the evaluation stack</param>
+    /// <remarks>Preferentially uses the tree's type, when available. Since not all tree kinds can track ref types, the stack type is used as a fallback.</remarks>
+    public unsafe void lvaUpdateClass(int varNum, GenTree tree, CORINFO_CLASS_HANDLE stackHandle = null)
+    {
+        var clsHnd = gtGetClassHandle(tree, out var isExact, out _);
+
+        if (clsHnd is not null)
+        {
+            lvaUpdateClass(varNum, clsHnd, isExact);
+        }
+        else if (stackHandle is not null)
+        {
+            lvaUpdateClass(varNum, stackHandle);
+        }
+    }
+#endif
 
     public unsafe bool lvaIsOriginalThisArg(int varNum)
     {

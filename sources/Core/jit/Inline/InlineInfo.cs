@@ -3,8 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System.Runtime.CompilerServices;
-
 namespace RyuJitSharp;
 
 /// <summary>Provides detailed information about a particular inline candidate.</summary>
@@ -33,15 +31,15 @@ public sealed class InlineInfo
 
     public int argCnt;
 
-    public inlArgInfoInlineArray inlArgInfo;
+    public InlineArrayMaxInlineArgsPlusOne<InlArgInfo> inlArgInfo;
 
     public InlArgInfo[]? inlInstParamArgInfo;
 
     /// <summary>map local# -> temp# (-1 if unused)</summary>
-    public lclTmpNumInlineArray lclTmpNum;
+    public InlineArrayMaxInlineLcls<int> lclTmpNum;
 
     /// <summary>type information from local sig</summary>
-    public lclVarInfoInlineArray lclVarInfo;
+    public InlineArrayMaxInlLclsAndArgsPlusOne<InlLclVarInfo> lclVarInfo;
 
     /// <summary>Number of TYP_REF and TYP_BYREF locals</summary>
     public int numberOfGcRefLocals;
@@ -62,22 +60,4 @@ public sealed class InlineInfo
     public BasicBlock? iciBlock;
 
     public bool HasGcRefLocals => numberOfGcRefLocals > 0;
-
-    [InlineArray(MAX_INL_ARGS + 1)]
-    public struct inlArgInfoInlineArray
-    {
-        public InlArgInfo e0;
-    }
-
-    [InlineArray(MAX_INL_LCLS)]
-    public struct lclTmpNumInlineArray
-    {
-        public int e0;
-    }
-
-    [InlineArray(MAX_INL_LCLS + MAX_INL_ARGS + 1)]
-    public struct lclVarInfoInlineArray
-    {
-        public InlLclVarInfo e0;
-    }
 }

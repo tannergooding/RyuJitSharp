@@ -301,6 +301,9 @@
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);FEATURE_FIXED_OUT_ARGS</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_FIXED_OUT_ARGS</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64'">$(DefineConstants);FEATURE_FIXED_OUT_ARGS</DefineConstants>
+
+    <!-- FEATURE_HFA -->
+    <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);FEATURE_HFA</DefineConstants>
     
     <!-- FEATURE_HW_INTRINSICS -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_HW_INTRINSICS</DefineConstants>
@@ -354,6 +357,9 @@
     <!-- FEATURE_MULTITHREADING -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' != 'wasm'">$(DefineConstants);FEATURE_MULTITHREADING</DefineConstants>
 
+    <!-- FEATURE_PAL_ANSI -->
+    <DefineConstants Condition="'$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);FEATURE_PAL_ANSI</DefineConstants>
+    
     <!-- FEATURE_PARTIAL_Simd_CALLEE_SAVE: Whether simd registers are partially saved at calls -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_PARTIAL_Simd_CALLEE_SAVE</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);FEATURE_PARTIAL_Simd_CALLEE_SAVE</DefineConstants>
@@ -362,6 +368,10 @@
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_REMAP_FUNCTION</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64'">$(DefineConstants);FEATURE_REMAP_FUNCTION</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86' and '$(RyuJitTargetOS)' == 'win'">$(DefineConstants);FEATURE_REMAP_FUNCTION</DefineConstants>
+
+    <!-- FEATURE_SIMD -->
+    <DefineConstants Condition="'$(RyuJitTargetIsXarch)' == 'true'">$(DefineConstants);FEATURE_SIMD</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_SIMD</DefineConstants>
 
     <!-- FEATURE_TAILCALL_OPT: opportunistic Tail calls (i.e. without ".tail" prefix) made as fast tail calls -->
     <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);FEATURE_TAILCALL_OPT</DefineConstants>
@@ -380,14 +390,7 @@
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);FEATURE_TAILCALL_OPT_SHARED_RETURN</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_TAILCALL_OPT_SHARED_RETURN</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64'">$(DefineConstants);FEATURE_TAILCALL_OPT_SHARED_RETURN</DefineConstants>
-
-    <!-- FEATURE_PAL_ANSI -->
-    <DefineConstants Condition="'$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);FEATURE_PAL_ANSI</DefineConstants>
-
-    <!-- FEATURE_SIMD -->
-    <DefineConstants Condition="'$(RyuJitTargetIsXarch)' == 'true'">$(DefineConstants);FEATURE_SIMD</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_SIMD</DefineConstants>
-
+    
     <!-- HAS_FIXED_REGISTER_SET -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' != 'wasm'">$(DefineConstants);HAS_FIXED_REGISTER_SET</DefineConstants>
     
@@ -477,6 +480,12 @@
     <!-- CSE_CONSTS: Enable if we want to CSE constants -->
     <DefineConstants>$(DefineConstants);CSE_CONSTS</DefineConstants>
 
+    <!-- FEATURE_JIT_METHOD_PERF -->
+    <DefineConstants>$(DefineConstants);FEATURE_JIT_METHOD_PERF</DefineConstants>
+    
+    <!-- FEATURE_ON_STACK_REPLACEMENT -->
+    <DefineConstants>$(DefineConstants);FEATURE_ON_STACK_REPLACEMENT</DefineConstants>
+    
     <!-- FEATURE_READYTORUN -->
     <DefineConstants>$(DefineConstants);FEATURE_READYTORUN</DefineConstants>
     

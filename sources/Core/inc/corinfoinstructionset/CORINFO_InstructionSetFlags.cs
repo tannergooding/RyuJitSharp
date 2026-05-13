@@ -14,7 +14,7 @@ public struct CORINFO_InstructionSetFlags
     private const int FlagsFieldCount = 2;
     private const int BitsPerFlagsField = sizeof(long) * 8;
 
-    private flagsInlineArray _flags;
+    private InlineArray2<long> _flags;
 
     public void Add(CORINFO_InstructionSetFlags other)
     {
@@ -43,7 +43,7 @@ public struct CORINFO_InstructionSetFlags
     }
 
     [UnscopedRef]
-    public ref flagsInlineArray GetFlagsRaw() => ref _flags;
+    public Span<long> GetFlagsRaw() => _flags;
 
     public readonly int GetInstructionFlagsFieldCount() => FlagsFieldCount;
 
@@ -232,11 +232,5 @@ public struct CORINFO_InstructionSetFlags
             AddInstructionSet(InstructionSet_X86Serialize_X64);
         }
 #endif // TARGET_AMD64
-    }
-
-    [InlineArray(FlagsFieldCount)]
-    public struct flagsInlineArray
-    {
-        public long e0;
     }
 }

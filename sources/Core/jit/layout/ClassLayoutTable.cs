@@ -11,36 +11,34 @@ namespace RyuJitSharp;
 
 public sealed class ClassLayoutTable
 {
-    // Up to 3 layouts can be stored "inline" and finding a layout by handle/size can be done using linear search.
-    // Most methods need no more than 2 layouts
-    private const int LayoutInlineArrayLength = 3;
-
     // Each layout is assigned a number, starting with TYP_UNKNOWN + 1.
     // This way one could use a single value to represent the notion of type
     // - values below TYP_UNKNOWN are var_types and values above it are struct layouts.
     private const int ZeroSizedBlockLayoutNum = (int)(TYP_UNKNOWN + 1);
     private const int FirstLayoutNum = (int)(TYP_UNKNOWN + 2);
 
-    private LayoutInlineArray m_layoutArray;
-    private ClassLayout[] m_layoutLargeArray = [];
-    private Dictionary<CustomLayoutKey, int> m_customLayoutMap = [];
-    private Dictionary<nint, int> m_objLayoutMap = [];
+    // Up to 3 layouts can be stored "inline" and finding a layout by handle/size can be done using linear search.
+    // Most methods need no more than 2 layouts
+    private InlineArray3<ClassLayout> _layoutArray;
+    private ClassLayout[] _layoutLargeArray = [];
+    private Dictionary<CustomLayoutKey, int> _customLayoutMap = [];
+    private Dictionary<nint, int> _objLayoutMap = [];
 
     // We furthermore fast-path the 0-sized block layout which is used for
     // block locals that may grow (e.g. the outgoing arg area in every non-x86
     // compilation).
-    private ClassLayout m_zeroSizedBlockLayout = new ClassLayout(0);
+    private ClassLayout _zeroSizedBlockLayout = new ClassLayout(0);
 
-    private int m_layoutCount;
+    private int _layoutCount;
 
-    private bool HasSmallCapacity => m_layoutCount <= LayoutInlineArrayLength;
+    private bool HasSmallCapacity => _layoutCount <= 3;
 
     // Get the layout that corresponds to the specified identifier number.
     public ClassLayout GetLayoutByNum(int num)
     {
         if (num == ZeroSizedBlockLayoutNum)
         {
-            return m_zeroSizedBlockLayout;
+            return _zeroSizedBlockLayout;
         }
         assert(num >= FirstLayoutNum);
         return GetLayoutByIndex(num - FirstLayoutNum);
@@ -49,7 +47,7 @@ public sealed class ClassLayoutTable
     // Get a number that uniquely identifies the specified layout.
     public int GetLayoutNum(ClassLayout layout)
     {
-        if (layout == m_zeroSizedBlockLayout)
+        if (layout == _zeroSizedBlockLayout)
         {
             return ZeroSizedBlockLayoutNum;
         }
@@ -59,9 +57,9 @@ public sealed class ClassLayoutTable
     // Get the layout having the specified size but no class handle.
     public ClassLayout GetCustomLayout(Compiler compiler, in ClassLayoutBuilder builder)
     {
-        if (builder.m_size == 0)
+        if (builder._size == 0)
         {
-            return m_zeroSizedBlockLayout;
+            return _zeroSizedBlockLayout;
         }
         return GetLayoutByIndex(GetCustomLayoutIndex(compiler, builder));
     }
@@ -69,7 +67,7 @@ public sealed class ClassLayoutTable
     // Get a number that uniquely identifies a layout having the specified size but no class handle.
     public int GetCustomLayoutNum(Compiler compiler, in ClassLayoutBuilder builder)
     {
-        if (builder.m_size == 0)
+        if (builder._size == 0)
         {
             return ZeroSizedBlockLayoutNum;
         }
@@ -91,77 +89,77 @@ public sealed class ClassLayoutTable
     {
         if (HasSmallCapacity)
         {
-            var layoutCount = m_layoutCount++;
-            m_layoutArray[layoutCount] = layout;
+            var layoutCount = _layoutCount++;
+            _layoutArray[layoutCount] = layout;
             return layoutCount;
         }
 
         var index = AddLayoutLarge(compiler, layout);
-        m_customLayoutMap[new CustomLayoutKey(layout)] = index;
+        _customLayoutMap[new CustomLayoutKey(layout)] = index;
         return index;
     }
 
     private unsafe int AddLayoutLarge(Compiler compiler, ClassLayout layout)
     {
-        if (m_layoutCount >= m_layoutLargeArray.Length)
+        if (_layoutCount >= _layoutLargeArray.Length)
         {
-            var newCapacity = m_layoutCount * 2;
+            var newCapacity = _layoutCount * 2;
             var newArray = new ClassLayout[newCapacity];
 
-            if (m_layoutCount <= LayoutInlineArrayLength)
+            if (_layoutCount <= 3)
             {
-                for (var i = 0; i < m_layoutCount; i++)
+                for (var i = 0; i < _layoutCount; i++)
                 {
-                    var l = m_layoutArray[i];
+                    var l = _layoutArray[i];
                     newArray[i] = l;
 
                     if (l.IsCustomLayout)
                     {
-                        m_customLayoutMap[new CustomLayoutKey(l)] = i;
+                        _customLayoutMap[new CustomLayoutKey(l)] = i;
                     }
                     else
                     {
-                        m_objLayoutMap[unchecked((nint)(l.ClassHandle))] = i;
+                        _objLayoutMap[unchecked((nint)(l.ClassHandle))] = i;
                     }
                 }
             }
             else
             {
-                m_layoutLargeArray.AsSpan().CopyTo(newArray);
+                _layoutLargeArray.AsSpan().CopyTo(newArray);
             }
 
-            m_layoutLargeArray = newArray;
+            _layoutLargeArray = newArray;
         }
 
-        m_layoutLargeArray[m_layoutCount] = layout;
-        return m_layoutCount++;
+        _layoutLargeArray[_layoutCount] = layout;
+        return _layoutCount++;
     }
 
     public unsafe int AddObjLayout(Compiler compiler, ClassLayout layout)
     {
         if (HasSmallCapacity)
         {
-            var layoutCount = m_layoutCount++;
-            m_layoutArray[layoutCount] = layout;
+            var layoutCount = _layoutCount++;
+            _layoutArray[layoutCount] = layout;
             return layoutCount;
         }
 
         var index = AddLayoutLarge(compiler, layout);
-        m_objLayoutMap[unchecked((nint)(layout.ClassHandle))] = index;
+        _objLayoutMap[unchecked((nint)(layout.ClassHandle))] = index;
         return index;
     }
 
     private int GetCustomLayoutIndex(Compiler compiler, in ClassLayoutBuilder builder)
     {
         // The 0-sized layout has its own fast path.
-        assert(builder.m_size != 0);
+        assert(builder._size != 0);
 
         var key = new CustomLayoutKey(builder);
 
         if (HasSmallCapacity)
         {
-            var layoutArray = (ReadOnlySpan<ClassLayout>)(m_layoutArray);
-            layoutArray = layoutArray[..m_layoutCount];
+            var layoutArray = (ReadOnlySpan<ClassLayout>)(_layoutArray);
+            layoutArray = layoutArray[.._layoutCount];
 
             for (var i = 0; i < layoutArray.Length; i++)
             {
@@ -173,7 +171,7 @@ public sealed class ClassLayoutTable
                 }
             }
         }
-        else if (m_customLayoutMap.TryGetValue(key, out var index))
+        else if (_customLayoutMap.TryGetValue(key, out var index))
         {
             return index;
         }
@@ -182,29 +180,29 @@ public sealed class ClassLayoutTable
 
     private ClassLayout GetLayoutByIndex(int index)
     {
-        assert(index < m_layoutCount);
+        assert(index < _layoutCount);
 
         if (HasSmallCapacity)
         {
-            return m_layoutArray[index];
+            return _layoutArray[index];
         }
         else
         {
-            return m_layoutLargeArray[index];
+            return _layoutLargeArray[index];
         }
     }
 
     private unsafe int GetLayoutIndex(ClassLayout layout)
     {
         assert(layout is not null);
-        assert(layout != m_zeroSizedBlockLayout);
+        assert(layout != _zeroSizedBlockLayout);
 
         var index = -1;
 
         if (HasSmallCapacity)
         {
-            var layoutArray = (ReadOnlySpan<ClassLayout>)(m_layoutArray);
-            layoutArray = layoutArray[..m_layoutCount];
+            var layoutArray = (ReadOnlySpan<ClassLayout>)(_layoutArray);
+            layoutArray = layoutArray[.._layoutCount];
 
             for (var i = 0; i < layoutArray.Length; i++)
             {
@@ -214,8 +212,8 @@ public sealed class ClassLayoutTable
                 }
             }
         }
-        else if (layout.IsCustomLayout ? !m_customLayoutMap.TryGetValue(new CustomLayoutKey(layout), out index)
-                                       : !m_objLayoutMap.TryGetValue(unchecked((nint)(layout.ClassHandle)), out index))
+        else if (layout.IsCustomLayout ? !_customLayoutMap.TryGetValue(new CustomLayoutKey(layout), out index)
+                                       : !_objLayoutMap.TryGetValue(unchecked((nint)(layout.ClassHandle)), out index))
         {
             unreached();
         }
@@ -228,8 +226,8 @@ public sealed class ClassLayoutTable
 
         if (HasSmallCapacity)
         {
-            var layoutArray = (ReadOnlySpan<ClassLayout>)(m_layoutArray);
-            layoutArray = layoutArray[..m_layoutCount];
+            var layoutArray = (ReadOnlySpan<ClassLayout>)(_layoutArray);
+            layoutArray = layoutArray[.._layoutCount];
 
             for (var i = 0; i < layoutArray.Length; i++)
             {
@@ -239,16 +237,10 @@ public sealed class ClassLayoutTable
                 }
             }
         }
-        else if (m_objLayoutMap.TryGetValue(unchecked((nint)(classHandle)), out var index))
+        else if (_objLayoutMap.TryGetValue(unchecked((nint)(classHandle)), out var index))
         {
             return index;
         }
         return AddObjLayout(compiler, ClassLayout.Create(compiler, classHandle));
-    }
-
-    [InlineArray(LayoutInlineArrayLength)]
-    private struct LayoutInlineArray
-    {
-        public ClassLayout e0;
     }
 }

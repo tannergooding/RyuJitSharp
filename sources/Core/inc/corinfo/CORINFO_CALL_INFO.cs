@@ -14,10 +14,10 @@ public struct CORINFO_CALL_INFO
     public unsafe CORINFO_METHOD_HANDLE hMethod;
 
     /// <summary>Flags for the target method.</summary>
-    public int methodFlags;
+    public CorInfoFlag methodFlags;
 
     /// <summary>Flags for <see cref="CORINFO_RESOLVED_TOKEN.hClass" />.</summary>
-    public int classFlags;
+    public CorInfoFlag classFlags;
 
     public CORINFO_SIG_INFO sig;
 

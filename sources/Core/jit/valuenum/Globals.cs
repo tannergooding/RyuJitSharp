@@ -11,6 +11,6 @@ public partial class Globals
     // This define is used with string concatenation to put this in printf format strings
     public const string FMT_VN = "${0:X}";
 
-    // This is the constant value used for the default value of m_mapSelectBudget. used by JitVNMapSelBudget
+    // This is the constant value used for the default value of _mapSelectBudget. used by JitVNMapSelBudget
     public const int DEFAULT_MAP_SELECT_BUDGET = 100;
 }

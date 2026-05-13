@@ -47,37 +47,37 @@ public partial class Globals
 
     public const int CORINFO_String_MaxLength = 0x3FFFFFDF;
 
-    public const int OFFSETOF__CORINFO_Array__length = SIZEOF__CORINFO_Object;
+    public const ushort OFFSETOF__CORINFO_Array__length = SIZEOF__CORINFO_Object;
 
 #if TARGET_64BIT
-    public const int OFFSETOF__CORINFO_Array__data = OFFSETOF__CORINFO_Array__length
-                                                   + sizeof(int)  // length
-                                                   + sizeof(int); // alignpad
+    public const ushort OFFSETOF__CORINFO_Array__data = OFFSETOF__CORINFO_Array__length
+                                                      + sizeof(int)  // length
+                                                      + sizeof(int); // alignpad
 #else
-    public const int OFFSETOF__CORINFO_Array__data = OFFSETOF__CORINFO_Array__length
-                                                   + sizeof(int);  // length
+    public const ushort OFFSETOF__CORINFO_Array__data = OFFSETOF__CORINFO_Array__length
+                                                      + sizeof(int);  // length
 #endif
 
-    public const int OFFSETOF__CORINFO_TypedReference__dataPtr = 0;
+    public const ushort OFFSETOF__CORINFO_TypedReference__dataPtr = 0;
 
-    public const int OFFSETOF__CORINFO_TypedReference__type = OFFSETOF__CORINFO_TypedReference__dataPtr
-                                                            + TARGET_POINTER_SIZE; // dataPtr
+    public const ushort OFFSETOF__CORINFO_TypedReference__type = OFFSETOF__CORINFO_TypedReference__dataPtr
+                                                               + TARGET_POINTER_SIZE; // dataPtr
 
-    public const int OFFSETOF__CORINFO_String__stringLen = SIZEOF__CORINFO_Object;
+    public const ushort OFFSETOF__CORINFO_String__stringLen = SIZEOF__CORINFO_Object;
 
-    public const int OFFSETOF__CORINFO_String__chars = OFFSETOF__CORINFO_String__stringLen
-                                                     + sizeof(int); // stringLen
+    public const ushort OFFSETOF__CORINFO_String__chars = OFFSETOF__CORINFO_String__stringLen
+                                                        + sizeof(int); // stringLen
 
-    public const int OFFSETOF__CORINFO_NullableOfT__hasValue = 0;
+    public const ushort OFFSETOF__CORINFO_NullableOfT__hasValue = 0;
 
-    public const int OFFSETOF__CORINFO_Span__reference = 0;
+    public const ushort OFFSETOF__CORINFO_Span__reference = 0;
 
-    public const int OFFSETOF__CORINFO_Span__length = TARGET_POINTER_SIZE;
+    public const ushort OFFSETOF__CORINFO_Span__length = TARGET_POINTER_SIZE;
 
-    public const int OFFSETOF__CORINFO_Continuation__data = SIZEOF__CORINFO_Object
-                                                            + TARGET_POINTER_SIZE // Next
-                                                            + TARGET_POINTER_SIZE // Resume
-                                                            + 8;                  // Flags + State
+    public const ushort OFFSETOF__CORINFO_Continuation__data = SIZEOF__CORINFO_Object
+                                                             + TARGET_POINTER_SIZE // Next
+                                                             + TARGET_POINTER_SIZE // Resume
+                                                             + 8;                  // Flags + State
 
     // Some compilers cannot arbitrarily allow the handler nesting level to grow
     // arbitrarily during Edit'n'Continue.

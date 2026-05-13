@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -10,6 +11,30 @@ namespace RyuJitSharp;
 
 public partial class GenTree
 {
+    public static ReadOnlySpan<HandleKindFlag> s_handleKindFlags => [
+        HKF_INVARIANT,                  // GTF_ICON_SCOPE_HDL
+        HKF_INVARIANT,                  // GTF_ICON_CLASS_HDL
+        HKF_INVARIANT,                  // GTF_ICON_METHOD_HDL
+        HKF_INVARIANT,                  // GTF_ICON_FIELD_HDL
+        0,                              // GTF_ICON_STATIC_HDL
+        HKF_INVARIANT | HKF_NONNULL,    // GTF_ICON_STR_HDL
+        0,                              // GTF_ICON_OBJ_HDL
+        HKF_INVARIANT,                  // GTF_ICON_CONST_PTR
+        0,                              // GTF_ICON_GLOBAL_PTR
+        HKF_INVARIANT,                  // GTF_ICON_VARG_HDL
+        0,                              // GTF_ICON_PINVKI_HDL
+        HKF_INVARIANT,                  // GTF_ICON_TOKEN_HDL
+        HKF_INVARIANT,                  // GTF_ICON_TLS_HDL
+        0,                              // GTF_ICON_FTN_ADDR
+        HKF_INVARIANT,                  // GTF_ICON_CIDMID_HDL
+        0,                              // GTF_ICON_BBC_PTR
+        0,                              // GTF_ICON_STATIC_BOX_PTR
+        0,                              // GTF_ICON_FIELD_SEQ
+        HKF_INVARIANT | HKF_NONNULL,    // GTF_ICON_STATIC_ADDR_PTR
+        HKF_INVARIANT,                  // GTF_ICON_SECREL_OFFSET
+        HKF_INVARIANT,                  // GTF_ICON_TLSGD_OFFSET
+    ];
+
     internal genTreeOps _oper;
 
     internal var_types _type;
@@ -140,6 +165,19 @@ public partial class GenTree
         }
     }
 #endif
+
+    public bool CanCse
+    {
+        get
+        {
+            return (_flags & GTF_DONT_CSE) is 0;
+        }
+
+        set
+        {
+            _flags = (_flags & ~GTF_DONT_CSE) | (value ? 0 : GTF_DONT_CSE);
+        }
+    }
 
     public byte CostEx
     {
@@ -350,6 +388,14 @@ public partial class GenTree
         }
     }
 
+    public bool IsFloatAllBitsSet => _oper.IsCnsFltOrDbl && AsDblCon().IsAllBitsSet;
+
+    public bool IsFloatNaN => _oper.IsCnsFltOrDbl && AsDblCon().IsNaN;
+
+    public bool IsFloatPositiveZero => _oper.IsCnsFltOrDbl && AsDblCon().IsPositiveZero;
+
+    public bool IsFloatNegativeZero => _oper.IsCnsFltOrDbl && AsDblCon().IsNegativeZero;
+
     public bool IsIndirAddrMode
     {
         get
@@ -418,6 +464,16 @@ public partial class GenTree
             return result;
         }
     }
+#endif
+
+#if FEATURE_MASKED_HW_INTRINSICS
+    public bool IsMaskAllBitsSet => _oper.IsCnsMsk && AsMskCon().IsAllBitsSet;
+
+    public bool IsMaskZero => _oper.IsCnsMsk && AsMskCon().IsZero;
+#else
+    public bool IsMaskAllBitsSet => false;
+
+    public bool IsMaskZero => false;
 #endif
 
     /// <summary>Indicates whether it is a memory op.</summary>
@@ -600,6 +656,20 @@ public partial class GenTree
             return result;
         }
     }
+
+#if FEATURE_SIMD
+    public bool IsVectorAllBitsSet => _oper.IsCnsVec && AsVecCon().IsAllBitsSet;
+
+    public bool IsVectorCreate => _oper.IsHWIntrinsic && AsHWIntrinsic().IsCreate;
+
+    public bool IsVectorZero => _oper.IsCnsVec && AsVecCon().IsZero;
+#else
+    public bool IsVectorAllBitsSet => false;
+
+    public bool IsVectorCreate => false;
+
+    public bool IsVectorZero => false;
+#endif
 
     public GenTree? Next
     {
@@ -785,6 +855,17 @@ public partial class GenTree
     public static void InitNodeSize()
     {
         // TODO: Port GenTree.InitNodeSize
+    }
+
+    public void AddAllEffectsFlags(GenTree source)
+    {
+        AddAllEffectsFlags(source.Flags & GTF_ALL_EFFECT);
+    }
+
+    public void AddAllEffectsFlags(GenTreeFlags sourceFlags)
+    {
+        assert((sourceFlags & ~GTF_ALL_EFFECT) == 0);
+        _flags |= sourceFlags;
     }
 
     public GenTreeUnOp AsUnOp() => Unsafe.As<GenTreeUnOp>(this);
@@ -1133,7 +1214,7 @@ public partial class GenTree
     /// <param name="compiler">The Compiler instance</param>
     /// <returns>The struct layout of this node; it must have one.</returns>
     /// <remarks>This is the "general" method for getting the layout, the more efficient node-specific ones should be used in case the node's oper is known.</remarks>
-    public unsafe ClassLayout? GetLayout(Compiler compiler)
+    public unsafe ClassLayout GetLayout(Compiler compiler)
     {
         assert(varTypeIsStruct(_type));
         var structHnd = NO_CLASS_HANDLE;
@@ -1143,13 +1224,17 @@ public partial class GenTree
             case GT_LCL_VAR:
             case GT_STORE_LCL_VAR:
             {
-                return compiler.lvaGetDesc(AsLclVar().LclNum).Layout;
+                var layout = compiler.lvaGetDesc(AsLclVar().LclNum).Layout;
+                assert(layout is not null);
+                return layout;
             }
 
             case GT_LCL_FLD:
             case GT_STORE_LCL_FLD:
             {
-                return AsLclFld().Layout;
+                var layout = AsLclFld().Layout;
+                assert(layout is not null);
+                return layout;
             }
 
             case GT_BLK:
@@ -1361,6 +1446,33 @@ public partial class GenTree
     }
 #nullable restore
 
+    /// <summary>Returns true if the data pointed to by a handle address is guaranteed to be invariant.</summary>
+    /// <param name="flags">the handle kind</param>
+    /// <returns></returns>
+    public static bool HandleKindDataIsInvariant(GenTreeFlags flags)
+    {
+        var handleKindIndex = HandleKindToHandleKindIndex(flags);
+        return (s_handleKindFlags[handleKindIndex] & HKF_INVARIANT) is not 0;
+    }
+
+    /// <summary>Returns true if the data pointed to by a handle address is guaranteed to be non-null if interpreted as a pointer.</summary>
+    /// <param name="flags">the handle kind</param>
+    /// <returns></returns>
+    public static bool HandleKindDataIsNotNull(GenTreeFlags flags)
+    {
+        var handleKindIndex = HandleKindToHandleKindIndex(flags);
+        return (s_handleKindFlags[handleKindIndex] & HKF_NONNULL) is not 0;
+    }
+
+    public static int HandleKindToHandleKindIndex(GenTreeFlags kind)
+    {
+        assert((kind & GTF_ICON_HDL_MASK) != 0);
+        var index = ((int)(kind) >> HANDLE_KIND_INDEX_SHIFT) - 1;
+
+        assert(index < (int)(HandleKindIndex.COUNT));
+        return index;
+    }
+
     /// <summary>Whether node been assigned a register by LSRA</summary>
     /// <param name="compiler">Compiler instance. Required for multi-reg lcl var; ignored otherwise.</param>
     /// <returns>Returns true if the node was assigned a register.</returns>
@@ -1442,16 +1554,7 @@ public partial class GenTree
         return ((_flags & GTF_IND_NONFAULTING) == 0) && compiler.fgAddrCouldBeNull(IndirOrArrMetaDataAddr);
     }
 
-    public bool IsIntegralConst(nint value)
-    {
-        var result = false;
-
-        if (_oper.IsIntegralConst)
-        {
-            result = AsIntConCommon().IsIntegralConst(value);
-        }
-        return result;
-    }
+    public bool IsIntegralConst(nint value) => _oper.IsIntegralConst && AsIntConCommon().IsIntegralConst(value);
 
     public bool IsNeverNegative(Compiler comp)
     {
@@ -1512,6 +1615,18 @@ public partial class GenTree
         }
         return result;
     }
+
+#if FEATURE_MASKED_HW_INTRINSICS
+    public bool IsTrueMask(var_types simdBaseType) => _oper.IsCnsMsk && AsMskCon().IsTrue(simdBaseType);
+#else
+    public bool IsTrueMask(var_types simdBaseType) => false;
+#endif
+
+    public bool IsVectorBroadcast(var_types simdBaseType) => _oper.IsCnsVec && AsVecCon().IsBroadcast(simdBaseType);
+
+    public bool IsVectorNaN(var_types simdBaseType) => _oper.IsCnsVec && AsVecCon().IsNaN(simdBaseType);
+
+    public bool IsVectorNegativeZero(var_types simdBaseType) => _oper.IsCnsVec && AsVecCon().IsNegativeZero(simdBaseType);
 
     /// <summary>Check whether the operation may throw.</summary>
     /// <param name="comp">Compiler instance</param>

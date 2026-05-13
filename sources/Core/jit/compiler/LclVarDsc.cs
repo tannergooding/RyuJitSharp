@@ -282,7 +282,7 @@ public partial struct LclVarDsc
 
     /// <summary>The address of this variable is "exposed" -- passed as an argument, stored in a global location, etc.</summary>
     /// <remarks>We cannot reason reliably about the value of the variable.</remarks>
-    private bool m_addrExposed
+    private bool _addrExposed
     {
         readonly get
         {
@@ -1082,7 +1082,7 @@ public partial struct LclVarDsc
 
     public void SetAddressExposed(bool value, AddressExposedReason reason)
     {
-        m_addrExposed = value;
+        _addrExposed = value;
 
 #if DEBUG
         _addrExposedReason = reason;
@@ -1091,10 +1091,10 @@ public partial struct LclVarDsc
 
     public void CleanAddressExposed()
     {
-        m_addrExposed = false;
+        _addrExposed = false;
     }
 
-    public readonly bool IsAddressExposed => m_addrExposed;
+    public readonly bool IsAddressExposed => _addrExposed;
 
 #if DEBUG
     public bool IsDefinedViaAddress
@@ -1408,10 +1408,10 @@ public partial struct LclVarDsc
     //   3. Hence, all NOL uses(unless proven otherwise) are assumed in morph to have undefined upper bits and
     //      explicit casts have be inserted to "normalize" them back to conform to IL semantics.
     // OSR exposed locals were normalize on load in the Tier0 frame so must be so for OSR too.
-    public readonly bool lvNormalizeOnLoad => varTypeIsSmall(Type) && (lvIsParam || m_addrExposed || lvIsStructField || lvIsOSRExposedLocal);
+    public readonly bool lvNormalizeOnLoad => varTypeIsSmall(Type) && (lvIsParam || _addrExposed || lvIsStructField || lvIsOSRExposedLocal);
 
     // OSR exposed locals were normalize on load in the Tier0 frame so must be so for OSR too.
-    public readonly bool lvNormalizeOnStore => varTypeIsSmall(Type) && !(lvIsParam || m_addrExposed || lvIsStructField || lvIsOSRExposedLocal);
+    public readonly bool lvNormalizeOnStore => varTypeIsSmall(Type) && !(lvIsParam || _addrExposed || lvIsStructField || lvIsOSRExposedLocal);
 
     public void incRefCnts(weight_t weight, Compiler compiler, RefCountState state = RCS_NORMAL, bool propagate = true)
     {

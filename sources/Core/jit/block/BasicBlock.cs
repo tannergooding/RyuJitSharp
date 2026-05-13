@@ -325,13 +325,13 @@ public sealed partial class BasicBlock : LIR.Range
 
     /// <summary>If the "in" Heap SSA var is not a phi definition, this value is null.</summary>
     /// <remarks>Otherwise, it is either the special value EmptyMemoryPhiDefn, to indicate that Heap needs a phi definition on entry, or else it is the linked list of the phi arguments.</remarks>
-    public bbMemorySsaPhiFuncInlineArray bbMemorySsaPhiFunc;
+    public InlineArrayMemoryKindCount<MemoryPhiArg?> bbMemorySsaPhiFunc;
 
     /// <summary>The SSA # of memory on entry to the block.</summary>
-    public bbMemorySsaNumInInlineArray bbMemorySsaNumIn;
+    public InlineArrayMemoryKindCount<int> bbMemorySsaNumIn;
 
     /// <summary>The SSA # of memory on exit from the block.</summary>
-    public bbMemorySsaNumOutInlineArray bbMemorySsaNumOut;
+    public InlineArrayMemoryKindCount<int> bbMemorySsaNumOut;
 
     // The following are the standard bit sets for dataflow analysis.
     // We perform CSE and range-checks at the same time and assertion propagation separately, thus we can union them since the two operations are completely disjunct.
@@ -525,7 +525,7 @@ public sealed partial class BasicBlock : LIR.Range
 
     public bool hasTryIndex => bbTryIndex != 0;
 
-    public int HndIndex
+    public ushort HndIndex
     {
         get
         {
@@ -676,7 +676,7 @@ public sealed partial class BasicBlock : LIR.Range
 
     public StatementList Statements => new StatementList(_stmtList);
 
-    public int TryIndex
+    public ushort TryIndex
     {
         get
         {
@@ -1009,6 +1009,10 @@ public sealed partial class BasicBlock : LIR.Range
 
     public BBSuccBlockList Succs => new BBSuccBlockList(this);
 
+    /// <summary> Returns the unique successor of a block, if one exists.</summary>
+    /// <remarks>Only considers BBJ_ALWAYS block types.</remarks>
+    public BasicBlock? UniqueSucc => (Kind is BBJ_ALWAYS) ? Target : null;
+
     public static BasicBlock New(Compiler compiler)
     {
 #if DEBUG
@@ -1190,6 +1194,33 @@ public sealed partial class BasicBlock : LIR.Range
         setBBProfileWeight(weight_t.Max(BB_ZERO_WEIGHT, bbWeight - weight));
     }
 
+    /// <summary>Given two EH indices that are either bbTryIndex or bbHndIndex (or related), determine if index1 might be more deeply nested than index2.</summary>
+    /// <param name="index1"></param>
+    /// <param name="index2"></param>
+    /// <returns></returns>
+    /// <remarks>Both index1 and index2 are in the range [0..compHndBBtabCount], where 0 means "main function" and otherwise the value is an index into compHndBBtab[]. Note that "sibling" EH regions will have a numeric index relationship that doesn't indicate nesting, whereas a more deeply nested region must have a lower index than the region it is nested within. Note that if you compare a single block's bbTryIndex and bbHndIndex, there is guaranteed to be a nesting relationship, since that block can't be simultaneously in two sibling EH regions. In that case, "maybe" is actually "definitely".</remarks>
+    public static bool ehIndexMaybeMoreNested(ushort index1, ushort index2)
+    {
+        if (index1 is 0)
+        {
+            // index1 is in the main method. It can't be more deeply nested than index2.
+            return false;
+        }
+        else if (index2 is 0)
+        {
+            // index1 represents an EH region, whereas index2 is the main method. Thus, index1 is more deeply nested.
+            assert(index1 > 0);
+            return true;
+        }
+        else
+        {
+            // If index1 has a smaller index, it might be more deeply nested than index2.
+            assert(index1 > 0);
+            assert(index2 > 0);
+            return index1 < index2;
+        }
+    }
+
     /// <summary>get the normalized weight of this block</summary>
     /// <param name="comp">Compiler instance</param>
     /// <returns></returns>
@@ -1274,6 +1305,14 @@ public sealed partial class BasicBlock : LIR.Range
         return stmt;
     }
 
+    /// <summary>Increase the profile-derived weight for a basic block and update the run rarely flag as appropriate.</summary>
+    /// <param name="weight"></param>
+    public void increaseBBProfileWeight(weight_t weight)
+    {
+        assert(weight >= BB_ZERO_WEIGHT);
+        setBBProfileWeight(bbWeight + weight);
+    }
+
     public void inheritWeight(BasicBlock source)
     {
         inheritWeightPercentage(source, 100);
@@ -1328,7 +1367,7 @@ public sealed partial class BasicBlock : LIR.Range
         bbFlags |= flags;
     }
 
-    public void SetKindAndTargetEdge(BBKinds kind, FlowEdge targetEdge)
+    public void SetKindAndTargetEdge(BBKinds kind, FlowEdge? targetEdge)
     {
         _kind = kind;
         bbTargetEdge = targetEdge;
@@ -1671,22 +1710,4 @@ public sealed partial class BasicBlock : LIR.Range
     public string dspToString(int blockNumPadding = 0)
         => $"{FMT_BB(bbNum)}{new string(' ', blockNumPadding)} [{bbID:D4}]";
 #endif
-
-    [InlineArray((int)(MemoryKindCount))]
-    public struct bbMemorySsaPhiFuncInlineArray
-    {
-        public MemoryPhiArg? e0;
-    }
-
-    [InlineArray((int)(MemoryKindCount))]
-    public struct bbMemorySsaNumInInlineArray
-    {
-        public int e0;
-    }
-
-    [InlineArray((int)(MemoryKindCount))]
-    public struct bbMemorySsaNumOutInlineArray
-    {
-        public int e0;
-    }
 }

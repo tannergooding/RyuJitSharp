@@ -9,7 +9,7 @@ public struct CORINFO_FIELD_INFO
 {
     public CORINFO_FIELD_ACCESSOR fieldAccessor;
 
-    public int fieldFlags;
+    public CORINFO_FIELD_FLAGS fieldFlags;
 
     /// <summary>Helper to use if the field access requires it.</summary>
     public CorInfoHelpFunc helper;

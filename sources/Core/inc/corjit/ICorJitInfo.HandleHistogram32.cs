@@ -3,8 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System.Runtime.CompilerServices;
-
 namespace RyuJitSharp;
 
 public partial struct ICorJitInfo
@@ -37,12 +35,6 @@ public partial struct ICorJitInfo
 
         public int Count;
 
-        public HandleTableInlineArray HandleTable;
-
-        [InlineArray(SIZE)]
-        public struct HandleTableInlineArray
-        {
-            public unsafe nint e0;
-        }
+        public InlineArrayHistogramTableSize<nint> HandleTable;        
     }
 }

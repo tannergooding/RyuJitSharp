@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
 using System.Diagnostics.CodeAnalysis;
 
 namespace RyuJitSharp;
@@ -53,7 +54,7 @@ public partial struct CORJIT_FLAGS
 
     /// <summary>DO NOT USE THIS FUNCTION! (except in very restricted special cases)</summary>
     [UnscopedRef]
-    public ref CORINFO_InstructionSetFlags.flagsInlineArray GetInstructionSetFlagsRaw() => ref instructionSetFlags.GetFlagsRaw();
+    public Span<long> GetInstructionSetFlagsRaw() => instructionSetFlags.GetFlagsRaw();
 
     public readonly bool IsEmpty() => (corJitFlags == 0) && instructionSetFlags.IsEmpty();
 

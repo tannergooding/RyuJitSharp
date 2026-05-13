@@ -3,8 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System.Runtime.CompilerServices;
-
 namespace RyuJitSharp;
 
 /// <summary>Represents classification information for a struct.</summary>
@@ -22,14 +20,14 @@ public struct SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR
     public byte eightByteCount;
 
     /// <summary>The eight-bytes type classification.</summary>
-    public eightByteClassificationsInlineArray eightByteClassifications;
+    public InlineArrayClrSystemVMaxEightBytesCountToPassInRegisters<SystemVClassificationType> eightByteClassifications;
 
     /// <summary>The size of the eight-bytes.</summary>
     /// <remarks>An eight-byte could include padding. This represents the no padding size of the eight-byte.</remarks>
-    public eightByteSizesInlineArray eightByteSizes;
+    public InlineArrayClrSystemVMaxEightBytesCountToPassInRegisters<byte> eightByteSizes;
 
     /// <summary>The start offset of the eight-bytes (in bytes).</summary>
-    public eightByteOffsetsInlineArray eightByteOffsets;
+    public InlineArrayClrSystemVMaxEightBytesCountToPassInRegisters<byte> eightByteOffsets;
 
     /// <summary>Copies a struct classification into this one.</summary>
     /// <param name="copyFrom">The struct classification to copy from.</param>
@@ -76,23 +74,5 @@ public struct SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR
             eightByteSizes[i] = 0;
             eightByteOffsets[i] = 0;
         }
-    }
-
-    [InlineArray(CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS)]
-    public struct eightByteClassificationsInlineArray
-    {
-        public SystemVClassificationType e0;
-    }
-
-    [InlineArray(CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS)]
-    public struct eightByteSizesInlineArray
-    {
-        public byte e0;
-    }
-
-    [InlineArray(CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS)]
-    public struct eightByteOffsetsInlineArray
-    {
-        public byte e0;
     }
 }

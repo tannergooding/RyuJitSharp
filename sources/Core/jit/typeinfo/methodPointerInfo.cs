@@ -6,11 +6,11 @@
 namespace RyuJitSharp;
 
 /// <summary>Captures information about a method pointer</summary>
-public struct methodPointerInfo
+public sealed class methodPointerInfo
 {
     /// <summary>The CORINFO_RESOLVED_TOKEN from the IL, potentially with a more precise method handle from getCallInfo</summary>
-    public CORINFO_RESOLVED_TOKEN m_token;
+    public CORINFO_RESOLVED_TOKEN _token;
 
     /// <summary>The constraint if this was a constrained ldftn.</summary>
-    public mdToken m_tokenConstraint;
+    public mdToken _tokenConstraint;
 }

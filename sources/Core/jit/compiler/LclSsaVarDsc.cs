@@ -13,46 +13,46 @@ public struct LclSsaVarDsc
 
     /// <summary>The basic block where the definition occurs.</summary>
     /// <remarks>Definitions of uninitialized variables are considered to occur at the start of the first basic block (fgFirstBB).</remarks>
-    private BasicBlock? m_block;
+    private BasicBlock? _block;
 
     /// <summary>The store node that generates the definition, or null for definitions of uninitialized variables.</summary>
-    private GenTreeLclVarCommon? m_defNode;
+    private GenTreeLclVarCommon? _defNode;
 
     /// <summary>The SSA number associated with the previous definition for partial (GTF_USEASG) defs.</summary>
-    private int m_useDefSsaNum;
+    private int _useDefSsaNum;
 
     /// <summary>Number of uses of this SSA def (may be an over-estimate).</summary>
     /// <remarks>May not be accurate for for promoted fields.</remarks>
-    private ushort m_numUses = 0;
+    private ushort _numUses = 0;
 
     /// <summary>True if there may be phi args uses of this def</summary>
     /// <remarks>
     ///   <para>May not be accurate for for promoted fields.</para>
     ///   <para>false implies all uses are non-phi</para>
     /// </remarks>
-    private bool m_hasPhiUse = false;
+    private bool _hasPhiUse = false;
     /// <summary>True if there may be uses of the def in a different block.</summary>
     /// <remarks>May not be accurate for for promoted fields.</remarks>
-    private bool m_hasGlobalUse = false;
+    private bool _hasGlobalUse = false;
 
-    public ValueNumPair m_vnPair;
+    public ValueNumPair _vnPair;
 
 #if DEBUG
     /// <summary>True if this ssa def VN was updated</summary>
-    public bool m_updated;
+    public bool _updated;
 
     /// <summary>Originally assigned VN</summary>
-    public ValueNumPair m_origVNPair;
+    public ValueNumPair _origVNPair;
 #endif
 
     public LclSsaVarDsc(BasicBlock block)
     {
-        m_block = block;
+        _block = block;
     }
 
     public LclSsaVarDsc(BasicBlock block, GenTreeLclVarCommon defNode)
     {
-        m_block = block;
+        _block = block;
         DefNode = defNode;
     }
 
@@ -60,12 +60,12 @@ public struct LclSsaVarDsc
     {
         readonly get
         {
-            return m_block;
+            return _block;
         }
 
         set
         {
-            m_block = value;
+            _block = value;
         }
     }
 
@@ -73,51 +73,51 @@ public struct LclSsaVarDsc
     {
         readonly get
         {
-            return m_defNode;
+            return _defNode;
         }
 
         set
         {
             assert((value is null) || value.Oper.IsLocalStore);
-            m_defNode = value;
+            _defNode = value;
         }
     }
 
-    public readonly bool HasGlobalUse => m_hasGlobalUse;
+    public readonly bool HasGlobalUse => _hasGlobalUse;
 
-    public readonly bool HasPhiUse => m_hasPhiUse;
+    public readonly bool HasPhiUse => _hasPhiUse;
 
-    public readonly ushort NumUses => m_numUses;
+    public readonly ushort NumUses => _numUses;
 
     public int UseDefSsaNum
     {
         readonly get
         {
-            return m_useDefSsaNum;
+            return _useDefSsaNum;
         }
 
         set
         {
-            m_useDefSsaNum = value;
+            _useDefSsaNum = value;
         }
     }
 
     public void AddPhiUse(BasicBlock block)
     {
-        m_hasPhiUse = true;
+        _hasPhiUse = true;
         AddUse(block);
     }
 
     public void AddUse(BasicBlock block)
     {
-        if (block != m_block)
+        if (block != _block)
         {
-            m_hasGlobalUse = true;
+            _hasGlobalUse = true;
         }
 
-        if (m_numUses < ushort.MaxValue)
+        if (_numUses < ushort.MaxValue)
         {
-            m_numUses++;
+            _numUses++;
         }
     }
 }

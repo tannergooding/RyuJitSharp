@@ -7,21 +7,21 @@ namespace RyuJitSharp;
 
 public abstract class InlinePolicy
 {
-    protected InlineDecision m_Decision;
+    protected InlineDecision _decision;
 
-    protected InlineObservation m_Observation;
+    protected InlineObservation _observation;
 
-    protected bool m_IsPrejitRoot;
+    protected bool _isPrejitRoot;
 
 #if DEBUG
-    protected bool m_IsDataCollectionTarget;
+    protected bool _isDataCollectionTarget;
 #endif
 
     /// <summary>Get the current decision</summary>
-    public InlineDecision Decision => m_Decision;
+    public InlineDecision Decision => _decision;
 
     /// <summary>Get the observation responsible for the result</summary>
-    public InlineObservation Observation => m_Observation;
+    public InlineObservation Observation => _observation;
 
     /// <summary>Does Policy require a more precise IL scan?</summary>
     public virtual bool RequiresPreciseScan => false;

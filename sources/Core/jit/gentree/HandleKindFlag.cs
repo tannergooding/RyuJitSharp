@@ -9,7 +9,7 @@ using System;
 namespace RyuJitSharp;
 
 [Flags]
-public enum HandleKindFlag
+public enum HandleKindFlag : byte
 {
     // Points to invariant data.
     HKF_INVARIANT = 1,

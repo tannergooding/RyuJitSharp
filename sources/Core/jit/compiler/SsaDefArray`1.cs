@@ -13,24 +13,24 @@ public struct SsaDefArray<T>
     /// <summary>Get the minimum valid SSA number.</summary>
     private const int MinSsaNum = SsaConfig.FIRST_SSA_NUM;
 
-    private T[] m_array;
-    private int m_count;
+    private T[] _array;
+    private int _count;
 
     /// <summary>Get the number of SSA definitions in the array.</summary>
-    public readonly int Count => m_count;
+    public readonly int Count => _count;
 
     public int AllocSsaNum()
     {
-        if (m_count == m_array.Length)
+        if (_count == _array.Length)
         {
             GrowArray();
         }
 
-        var ssaNum = MinSsaNum + m_count;
-        m_array[m_count++] = default!;
+        var ssaNum = MinSsaNum + _count;
+        _array[_count++] = default!;
 
         // Ensure that the first SSA number we allocate is SsaConfig::FIRST_SSA_NUM
-        assert((ssaNum == SsaConfig.FIRST_SSA_NUM) || (m_count > 1));
+        assert((ssaNum == SsaConfig.FIRST_SSA_NUM) || (_count > 1));
 
         return ssaNum;
     }
@@ -47,8 +47,8 @@ public struct SsaDefArray<T>
     // Get a pointer to the SSA definition at the specified index.
     public readonly ref T GetSsaDefByIndex(int index)
     {
-        assert((index >= 0) && (index < m_count));
-        return ref m_array[index];
+        assert((index >= 0) && (index < _count));
+        return ref _array[index];
     }
 
     /// <summary>Get an SSA number associated with the specified SSA def (that must be in this array).</summary>
@@ -56,10 +56,10 @@ public struct SsaDefArray<T>
     /// <returns></returns>
     public readonly int GetSsaNum(in T ssaDef)
     {
-        assert(Unsafe.IsAddressGreaterThanOrEqualTo(in ssaDef, in m_array[0]) && Unsafe.IsAddressLessThan(in ssaDef, ref Unsafe.Add(ref m_array[0], m_count)));
-        var ssaNum = MinSsaNum + (int)(Unsafe.ByteOffset(in m_array[0], in ssaDef) / Unsafe.SizeOf<T>());
+        assert(Unsafe.IsAddressGreaterThanOrEqualTo(in ssaDef, in _array[0]) && Unsafe.IsAddressLessThan(in ssaDef, ref Unsafe.Add(ref _array[0], _count)));
+        var ssaNum = MinSsaNum + (int)(Unsafe.ByteOffset(in _array[0], in ssaDef) / Unsafe.SizeOf<T>());
 
-        assert(Unsafe.AreSame(in ssaDef, in m_array[ssaNum - MinSsaNum]));
+        assert(Unsafe.AreSame(in ssaDef, in _array[ssaNum - MinSsaNum]));
         return ssaNum;
     }
 
@@ -67,16 +67,16 @@ public struct SsaDefArray<T>
     /// <param name="ssaNum"></param>
     /// <returns></returns>
     public readonly bool IsValidSsaNum(int ssaNum)
-        => (MinSsaNum <= ssaNum) && (ssaNum < (MinSsaNum + m_count));
+        => (MinSsaNum <= ssaNum) && (ssaNum < (MinSsaNum + _count));
 
     public void Reset()
     {
-        m_count = 0;
+        _count = 0;
     }
 
     private void GrowArray()
     {
-        var oldArray = m_array;
+        var oldArray = _array;
 
         var oldSize = oldArray.Length;
         var newSize = int.Max(2, oldSize * 2);
@@ -84,6 +84,6 @@ public struct SsaDefArray<T>
         var newArray = new T[newSize];
         oldArray.AsSpan().CopyTo(newArray);
 
-        m_array = newArray;
+        _array = newArray;
     }
 }

@@ -4,7 +4,6 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
 
@@ -28,13 +27,13 @@ public struct ReturnTypeDesc
     // This would allow us not to lie or normalize single struct return
     // values in importer/morph.
 
-    private _regTypeInlineArray _regType;
+    private InlineArrayMaxRetRegCount<var_types> _regType;
 
 #if TARGET_RISCV64 || TARGET_LOONGARCH64
     // Structs according to hardware floating-point calling convention are passed as two logical fields, each in
     // separate register, disregarding struct layout such as packing, custom alignment, padding with empty structs, etc.
-    // We need size (can be derived from m_regType) & offset of each field for memory load/stores
-    private _fieldOffsetInlineArray _fieldOffset;
+    // We need size (can be derived from _regType) & offset of each field for memory load/stores
+    private InlineArrayMaxRetRegCount<int> _fieldOffset;
 #endif
 
 #if DEBUG
@@ -89,7 +88,7 @@ public struct ReturnTypeDesc
             }
 
 #if DEBUG
-            // Any remaining elements in m_regTypes[] should also be TYP_UNKNOWN
+            // Any remaining elements in _regTypes[] should also be TYP_UNKNOWN
             for (var i = regCount + 1; i < MAX_RET_REG_COUNT; i++)
             {
                 assert(_regType[i] == TYP_UNKNOWN);
@@ -635,20 +634,6 @@ public struct ReturnTypeDesc
         {
             _regType[i] = JitType2VarType(lowering->loweredElements[i]);
         }
-    }
-#endif
-
-    [InlineArray(MAX_RET_REG_COUNT)]
-    private struct _regTypeInlineArray
-    {
-        public var_types e0;
-    }
-
-#if TARGET_RISCV64 || TARGET_LOONGARCH64
-    [InlineArray(MAX_RET_REG_COUNT)]
-    private struct _fieldOffsetInlineArray
-    {
-        public int e0;
     }
 #endif
 }

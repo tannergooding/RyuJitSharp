@@ -9,9 +9,9 @@ namespace RyuJitSharp;
 
 public struct AbiPassingSegment
 {
-    private regNumber m_register = REG_NA;
-    private bool m_isFullStackSlot = true;
-    private int m_stackOffset;
+    private regNumber _register = REG_NA;
+    private bool _isFullStackSlot = true;
+    private int _stackOffset;
 
     public int Offset;
     public int Size;
@@ -20,9 +20,9 @@ public struct AbiPassingSegment
     {
     }
 
-    public readonly bool IsPassedInRegister => m_register != REG_NA;
+    public readonly bool IsPassedInRegister => _register != REG_NA;
 
-    public readonly bool IsPassedOnStack => m_register == REG_NA;
+    public readonly bool IsPassedOnStack => _register == REG_NA;
 
     // If this segment is passed in a register, return the particular register.
     public readonly regNumber Register
@@ -30,7 +30,7 @@ public struct AbiPassingSegment
         get
         {
             assert(Debugger.IsAttached || IsPassedInRegister);
-            return m_register;
+            return _register;
         }
     }
 
@@ -38,7 +38,7 @@ public struct AbiPassingSegment
     {
         get
         {
-            var regNum = m_register;
+            var regNum = _register;
             var regMsk = 1 << ((int)(regNum) - RegisterMaskBase);
 
 #if TARGET_ARM
@@ -57,7 +57,7 @@ public struct AbiPassingSegment
     {
         get
         {
-            var regNum = m_register;
+            var regNum = _register;
 
 #if FEATURE_MASKED_HW_INTRINSICS
             if (regNum >= REG_MASK_FIRST)
@@ -95,7 +95,7 @@ public struct AbiPassingSegment
             //   argument's address.
 
             assert(Debugger.IsAttached || IsPassedOnStack);
-            return m_stackOffset;
+            return _stackOffset;
         }
     }
 
@@ -107,7 +107,7 @@ public struct AbiPassingSegment
         get
         {
             assert(Debugger.IsAttached || IsPassedOnStack);
-            return m_isFullStackSlot ? roundUp(Size, TARGET_POINTER_SIZE) : Size;
+            return _isFullStackSlot ? roundUp(Size, TARGET_POINTER_SIZE) : Size;
         }
     }
 
@@ -120,7 +120,7 @@ public struct AbiPassingSegment
     {
         assert(reg != REG_NA);
         return new AbiPassingSegment {
-            m_register = reg,
+            _register = reg,
             Offset = offset,
             Size = size,
         };
@@ -134,8 +134,8 @@ public struct AbiPassingSegment
     public static AbiPassingSegment OnStack(int stackOffset, int offset, int size)
     {
         return new AbiPassingSegment {
-            m_register = REG_NA,
-            m_stackOffset = stackOffset,
+            _register = REG_NA,
+            _stackOffset = stackOffset,
             Offset = offset,
             Size = size,
         };
@@ -157,7 +157,7 @@ public struct AbiPassingSegment
 
     public readonly var_types GetRegisterType()
     {
-        var regNum = m_register;
+        var regNum = _register;
         var regMskBase = RegisterMaskBase;
 
 #if FEATURE_MASKED_HW_INTRINSICS
@@ -174,7 +174,7 @@ public struct AbiPassingSegment
                 4 => TYP_FLOAT,
                 8 => TYP_DOUBLE,
 #if FEATURE_SIMD
-                16 => TYP_Simd16,
+                16 => TYP_SIMD16,
 #endif
                 _ => TYP_UNDEF,
             };

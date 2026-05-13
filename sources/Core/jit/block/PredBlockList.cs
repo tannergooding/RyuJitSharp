@@ -10,16 +10,16 @@ namespace RyuJitSharp;
 
 public readonly partial struct PredBlockList : IEnumerable<BasicBlock>
 {
-    private readonly FlowEdge? m_begin;
-    private readonly bool m_allowEdits;
+    private readonly FlowEdge? _begin;
+    private readonly bool _allowEdits;
 
     public PredBlockList(FlowEdge? pred, bool allowEdits)
     {
-        m_begin = pred;
-        m_allowEdits = allowEdits;
+        _begin = pred;
+        _allowEdits = allowEdits;
     }
 
-    public Enumerator GetEnumerator() => new Enumerator(m_begin, m_allowEdits);
+    public Enumerator GetEnumerator() => new Enumerator(_begin, _allowEdits);
 
     IEnumerator<BasicBlock> IEnumerable<BasicBlock>.GetEnumerator() => GetEnumerator();
 

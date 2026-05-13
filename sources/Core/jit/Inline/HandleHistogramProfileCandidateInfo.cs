@@ -5,6 +5,9 @@
 
 namespace RyuJitSharp;
 
-public abstract class HandleHistogramProfileCandidateInfo
+/// <summary> provides information about profiling an indirect or virtual call.</summary>
+public class HandleHistogramProfileCandidateInfo
 {
+    public IL_OFFSET ilOffset;
+    public int probeIndex;
 }

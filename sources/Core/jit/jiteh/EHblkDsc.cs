@@ -4,7 +4,6 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
 
@@ -197,18 +196,18 @@ public struct EHblkDsc
     // if this region is directly in the main function body. Set '*inTryRegion' to 'true' if this region is
     // most nested within a 'try' region, or 'false' if this region is most nested within a handler. (Note
     // that filters cannot contain nested EH regions.)
-    public readonly int ebdGetEnclosingRegionIndex(out bool inTryRegion)
+    public readonly ushort ebdGetEnclosingRegionIndex(out bool inTryRegion)
     {
         if (ebdEnclosingTryIndex == NO_ENCLOSING_INDEX)
         {
+            inTryRegion = false;
+
             if (ebdEnclosingHndIndex == NO_ENCLOSING_INDEX)
             {
-                Unsafe.SkipInit(out inTryRegion);
                 return NO_ENCLOSING_INDEX;
             }
             else
             {
-                inTryRegion = false;
                 return ebdEnclosingHndIndex;
             }
         }
@@ -240,7 +239,7 @@ public struct EHblkDsc
         return ebdIsSameTry(this, h2);
     }
 
-    public readonly bool ebdIsSameTry(BasicBlock ebdTryBeg, BasicBlock ebdTryLast)
+    public readonly bool ebdIsSameTry(BasicBlock? ebdTryBeg, BasicBlock? ebdTryLast)
         => ((this.ebdTryBeg == ebdTryBeg) && (this.ebdTryLast == ebdTryLast));
 
 #if DEBUG

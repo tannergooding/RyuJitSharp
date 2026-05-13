@@ -3,6 +3,9 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+
 namespace RyuJitSharp;
 
 /// <summary>Declares the typeInfo class, which represents the type of an entity on the stack.</summary>
@@ -10,13 +13,11 @@ public readonly struct typeInfo
 {
     private readonly var_types _type;
 
-    private readonly unsafe void* _anonymous;
-
     // Valid, but not always available, for TYP_REFs.
-    private unsafe CORINFO_CLASS_HANDLE _cls => (CORINFO_CLASS_HANDLE)(_anonymous);
+    private readonly unsafe CORINFO_CLASS_HANDLE _cls;
 
     // Valid only for function pointers.
-    private unsafe methodPointerInfo* _methodPointerInfo => (methodPointerInfo*)(_anonymous);
+    private readonly methodPointerInfo? _methodPointerInfo;
 
     public unsafe typeInfo() : this(TYP_UNDEF)
     {
@@ -25,55 +26,48 @@ public readonly struct typeInfo
     public unsafe typeInfo(var_types type)
     {
         _type = type;
-        _anonymous = NO_CLASS_HANDLE;
     }
 
     public unsafe typeInfo(CORINFO_CLASS_HANDLE cls)
     {
         _type = TYP_REF;
-        _anonymous = cls;
+        _cls = cls;
     }
 
-    public unsafe typeInfo(methodPointerInfo* methodPointerInfo)
+    public unsafe typeInfo(methodPointerInfo methodPointerInfo)
     {
         assert(methodPointerInfo is not null);
-        assert(methodPointerInfo->m_token.hMethod is not null);
+        assert(methodPointerInfo._token.hMethod is not null);
 
         _type = TYP_I_IMPL;
-        _anonymous = methodPointerInfo;
+        _methodPointerInfo = methodPointerInfo;
     }
 
-    public unsafe CORINFO_CLASS_HANDLE GetClassHandleForObjRef()
+    public unsafe CORINFO_CLASS_HANDLE ClassHandleForObjRef
     {
-        assert((_type == TYP_REF) || (_type == TYP_UNDEF));
-        return (CORINFO_CLASS_HANDLE)(_anonymous);
+        get
+        {
+            assert(Debugger.IsAttached || (_type is TYP_REF or TYP_UNDEF));
+            return _cls;
+        }
     }
 
-    public unsafe CORINFO_METHOD_HANDLE GetMethod()
+    [MemberNotNullWhen(true, nameof(_methodPointerInfo), nameof(MethodPointerInfo))]
+    public unsafe bool IsMethod => (_type is TYP_I_IMPL) && (_methodPointerInfo is not null);
+
+    public unsafe CORINFO_METHOD_HANDLE Method
     {
-        assert(IsMethod());
-        return _methodPointerInfo->m_token.hMethod;
+        get
+        {
+            if (IsMethod)
+            {
+                return _methodPointerInfo._token.hMethod;
+            }
+            return NO_METHOD_HANDLE;
+        }
     }
 
-    public unsafe methodPointerInfo* GetMethodPointerInfo()
-    {
-        assert(IsMethod());
-        return _methodPointerInfo;
-    }
+    public methodPointerInfo? MethodPointerInfo => _methodPointerInfo;
 
-    public new var_types GetType()
-    {
-        return _type;
-    }
-
-    public bool IsType(var_types type)
-    {
-        return _type == type;
-    }
-
-    // Returns whether this is a method desc
-    public unsafe bool IsMethod()
-    {
-        return IsType(TYP_I_IMPL) && (_methodPointerInfo is not null);
-    }
+    public var_types Type => _type;
 }

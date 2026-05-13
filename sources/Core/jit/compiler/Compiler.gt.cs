@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -17,6 +18,318 @@ public partial class Compiler
 
     // TODO: Port Compiler.gtClearColonCond
     // public static unsafe fgWalkPreFn gtClearColonCond;
+
+    /// <summary>see if storing a ref type value to an array can skip the array store covariance check.</summary>
+    /// <param name="value">tree producing the value to store</param>
+    /// <param name="array">tree representing the array to store to</param>
+    /// <returns>true if the store does not require a covariance check.</returns>
+    public unsafe bool gtCanSkipCovariantStoreCheck(GenTree value, GenTree array)
+    {
+        // We should only call this when optimizing.
+        assert(opts.OptimizationEnabled);
+
+        // Check for store to same array, ie. arrLcl[i] = arrLcl[j]
+        if ((value.Oper is GT_IND))
+        {
+            var valueAddr = value.AsIndir().Addr;
+
+            if ((valueAddr.Oper is GT_INDEX_ADDR) && (array.Oper is GT_LCL_VAR))
+            {
+                var valueArray = valueAddr.AsIndexAddr().Arr;
+
+                if (valueArray.Oper is GT_LCL_VAR)
+                {
+                    var valueArrayLcl = valueArray.AsLclVar().LclNum;
+                    var arrayLcl = array.AsLclVar().LclNum;
+
+                    if ((valueArrayLcl == arrayLcl) && !lvaGetDesc(arrayLcl).IsAddressExposed)
+                    {
+                        JITDUMP("\nstelem of ref from same array: skipping covariant store check\n");
+                        return true;
+                    }
+                }
+            }
+        }
+
+        // Check for store of NULL.
+        if (value.Oper is GT_CNS_INT)
+        {
+            assert(value.Type is TYP_REF);
+            var intCon = value.AsIntCon();
+
+            if (intCon.IconVal is 0)
+            {
+                JITDUMP("\nstelem of null: skipping covariant store check\n");
+                return true;
+            }
+
+            // Non-0 const refs can only occur with frozen objects
+            assert(intCon.IsIconHandle(GTF_ICON_OBJ_HDL));
+        }
+
+        // Try and get a class handle for the array
+        if (value.Type is not TYP_REF)
+        {
+            return false;
+        }
+
+        var arrayHandle = gtGetClassHandle(array, out var arrayIsExact, out var arrayIsNonNull);
+
+        if (arrayHandle == NO_CLASS_HANDLE)
+        {
+            return false;
+        }
+
+        // There are some methods in corelib where we're storing to an array but the IL
+        // doesn't reflect this (see SZArrayHelper). Avoid.
+        var attribs = info.compCompHnd->getClassAttribs(arrayHandle);
+
+        if ((attribs & CORINFO_FLG_ARRAY) is 0)
+        {
+            return false;
+        }
+
+        CORINFO_CLASS_HANDLE arrayElementHandle = null;
+        var arrayElemType = info.compCompHnd->getChildType(arrayHandle, &arrayElementHandle);
+
+        // Verify array type handle is really an array of ref type
+        assert(arrayElemType == CORINFO_TYPE_CLASS);
+
+        // Check for exactly object[]
+        if (arrayIsExact && (arrayElementHandle == impObjectClass))
+        {
+            JITDUMP("\nstelem to (exact) object[]: skipping covariant store check\n");
+            return true;
+        }
+
+        var arrayTypeIsSealed = info.compCompHnd->isExactType(arrayElementHandle);
+
+        if ((!arrayIsExact && !arrayTypeIsSealed) || (arrayElementHandle == NO_CLASS_HANDLE))
+        {
+            // Bail out if we don't know array's exact type
+            return false;
+        }
+
+        var valueHandle = gtGetClassHandle(value, out var valueIsExact, out var valueIsNonNull);
+
+        // Array's type is sealed and equals to value's type
+        if (arrayTypeIsSealed && (valueHandle == arrayElementHandle))
+        {
+            JITDUMP("\nstelem to T[] with T exact: skipping covariant store check\n");
+            return true;
+        }
+
+        // Array's type is not sealed but we know its exact type
+        if (arrayIsExact && (valueHandle != NO_CLASS_HANDLE) && (info.compCompHnd->compareTypesForCast(valueHandle, arrayElementHandle) == TypeCompareState.Must))
+        {
+            JITDUMP("\nstelem to T[] with T exact: skipping covariant store check\n");
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>Clones the given tree value and returns a copy of the given tree.</summary>
+    /// <param name="tree"></param>
+    /// <param name="complexOK">When false, the cloning is only done provided the tree is not too complex(whatever that may mean);</param>
+    /// <returns><c>null</c> is returned if the tree cannot be cloned</returns>
+    /// <remarks>Note that there is the function <see cref="gtCloneExpr(GenTree?)" /> which does a more complete job if you can't handle this function failing.</remarks>
+    public unsafe GenTree? gtClone(GenTree tree, bool complexOK = false)
+    {
+        var copy = null as GenTree;
+
+        switch (tree.Oper)
+        {
+            case GT_LCL_VAR:
+            {
+                copy = gtCloneLclVar(tree.AsLclVar());
+                break;
+            }
+
+            case GT_LCL_FLD:
+            {
+                copy = gtCloneLclFld(tree.AsLclFld());
+                break;
+            }
+
+            case GT_LCL_ADDR:
+            {
+                var lclFld = tree.AsLclFld();
+
+                if (complexOK || (lclFld.LclOffs is not 0))
+                {
+                    copy = gtCloneLclAddr(tree.AsLclFld());
+                }
+                break;
+            }
+
+            case GT_FTN_ADDR:
+            {
+                copy = gtCloneFtnAddr(tree.AsFptrVal());
+                break;
+            }
+
+            case GT_CNS_INT:
+            {
+                copy = gtCloneCnsInt(tree.AsIntCon());
+                break;
+            }
+
+            case GT_CNS_LNG:
+                copy = gtCloneCnsLng(tree.AsLngCon());
+                break;
+
+            case GT_CNS_DBL:
+            {
+                copy = gtCloneCnsDbl(tree.AsDblCon());
+                break;
+            }
+
+#if FEATURE_SIMD
+            case GT_CNS_VEC:
+            {
+                copy = gtCloneCnsVec(tree.AsVecCon());
+                break;
+            }
+#endif
+
+#if FEATURE_MASKED_HW_INTRINSICS
+            case GT_CNS_MSK:
+            {
+                copy = gtCloneCnsMsk(tree.AsMskCon());
+                break;
+            }
+#endif
+
+            default:
+            {
+                if (!complexOK)
+                {
+                    break;
+                }
+
+                if (tree.Oper.IsLoad)
+                {
+                    var indir = tree.AsIndir();
+                    var indirAddr = indir.Addr;
+
+                    var fldObjCopy = null as GenTree;
+
+                    if (indirAddr.Oper is GT_FIELD_ADDR)
+                    {
+                        var fieldAddr = indirAddr.AsFieldAddr();
+
+                        if (fieldAddr.IsInstance)
+                        {
+                            fldObjCopy = gtClone(fieldAddr.FldObj, complexOK: false);
+
+                            if (fldObjCopy is null)
+                            {
+                                break;
+                            }
+                        }
+
+                        var fieldAddrCopy = gtNewFieldAddrNode(fieldAddr.Type, fldObjCopy, fieldAddr.FldHnd, fieldAddr.FldOffset);
+
+                        fieldAddrCopy.MayOverlap = fieldAddr.MayOverlap;
+                        fieldAddrCopy.IsSpanLength = fieldAddr.IsSpanLength;
+
+#if FEATURE_READYTORUN
+                        fieldAddrCopy.FieldLookup = fieldAddr.FieldLookup;
+#endif
+
+                        var indirCopy = (tree.Oper is GT_BLK) ? gtNewBlkIndir(fieldAddrCopy, tree.AsBlk().Layout) : gtNewIndir(tree.Type, fieldAddrCopy);
+                        impAnnotateFieldIndir(indirCopy);
+                        copy = indirCopy;
+                    }
+                }
+                else if (tree.Oper is GT_ADD or GT_SUB)
+                {
+                    var op = tree.AsOp();
+
+                    var op1 = op.Op1;
+                    var op2 = op.Op2;
+
+                    if (op1.Oper.IsLeaf && op2.Oper.IsLeaf)
+                    {
+                        op1 = gtClone(op1);
+
+                        if (op1 is null)
+                        {
+                            break;
+                        }
+
+                        op2 = gtClone(op2);
+
+                        if (op2 is null)
+                        {
+                            break;
+                        }
+
+                        copy = gtNewBinaryNode(tree.Oper, tree.Type, op1, op2);
+                    }
+                }
+                break;
+            }
+        }
+
+        if (copy is not null)
+        {
+            copy.Flags |= (tree.Flags & ~GTF_NODE_MASK);
+
+#if DEBUG
+            copy._debugFlags |= (tree._debugFlags & ~GTF_DEBUG_NODE_MASK);
+#endif
+        }
+        return copy;
+    }
+
+    public GenTreeDblCon gtCloneCnsDbl(GenTreeDblCon dblCon)
+    {
+        return gtNewDconNode(dblCon.Type, dblCon.DconVal);
+    }
+
+    public GenTreeIntCon gtCloneCnsInt(GenTreeIntCon intCon)
+    {
+        var intConCopy = null as GenTreeIntCon;
+
+        if (intCon.IsIconHandle())
+        {
+            intConCopy = gtNewIconHandleNode(intCon.IconVal, intCon.Flags, intCon.FieldSeq);
+        }
+        else
+        {
+            intConCopy = new GenTreeIntCon(intCon.Type, intCon.IconVal, intCon.FieldSeq);
+        }
+
+        intConCopy.CompileTimeHandle = intCon.CompileTimeHandle;
+#if DEBUG
+        intConCopy.TargetHandle = intCon.TargetHandle;
+#endif
+
+        return intConCopy;
+    }
+
+    public GenTreeIntConCommon gtCloneCnsLng(GenTreeLngCon lngCon)
+    {
+        return gtNewLconNode(lngCon.LconValue);
+    }
+
+#if FEATURE_MASKED_HW_INTRINSICS
+    public GenTreeMskCon gtCloneCnsMsk(GenTreeMskCon mskCon)
+    {
+        return gtNewMskConNode(mskCon.SimdMaskVal);
+    }
+#endif
+
+#if FEATURE_SIMD
+    public GenTreeVecCon gtCloneCnsVec(GenTreeVecCon vecCon)
+    {
+        var vecConClone = gtNewVconNode(vecCon.Type);
+        vecConClone.SimdVal = vecCon.SimdVal;
+        return vecConClone;
+    }
+#endif
 
     /// <summary>Create a copy of `tree`</summary>
     /// <param name="tree">GenTree to create a copy of</param>
@@ -143,7 +456,7 @@ public partial class Compiler
                 case GT_COLON:
                 {
                     var colon = tree.AsColon();
-                    copy = new GenTreeColon(
+                    copy = compiler.gtNewColonNode(
                         colon.Type,
                         compiler.gtCloneExpr(colon.ThenNode),
                         compiler.gtCloneExpr(colon.ElseNode)
@@ -319,34 +632,19 @@ public partial class Compiler
             {
                 case GT_LCL_VAR:
                 {
-                    // Remember that the local node has been cloned. The flag will be set on 'copy' as well.
-                    var lclVar = tree.AsLclVar();
-                    lclVar.Flags |= GTF_VAR_MOREUSES;
-
-                    var lclVarCopy = compiler.gtNewLclvNode(lclVar.Type, lclVar.LclNum, lclVar.LclIlOffs);
-                    lclVarCopy.SsaNum = lclVar.SsaNum;
-                    lclVarCopy.CopyOtherRegs(lclVar);
-
-                    copy = lclVarCopy;
+                    copy = compiler.gtCloneLclVar(tree.AsLclVar());
                     break;
                 }
 
                 case GT_LCL_FLD:
                 {
-                    // Remember that the local node has been cloned. The flag will be set on 'copy' as well.
-                    var lclFld = tree.AsLclFld();
-                    lclFld.Flags |= GTF_VAR_MOREUSES;
-
-                    var lclFldCopy = compiler.gtNewLclFldNode(lclFld.Type, lclFld.LclNum, lclFld.LclOffs, lclFld.Layout);
-                    lclFldCopy.SsaNum = lclFld.SsaNum;
-                    copy = lclFldCopy;
+                    copy = compiler.gtCloneLclFld(tree.AsLclFld());
                     break;
                 }
 
                 case GT_LCL_ADDR:
                 {
-                    var lclFld = tree.AsLclFld();
-                    copy = compiler.gtNewLclAddrNode(lclFld.Type, lclFld.LclNum, lclFld.LclOffs, lclFld.Layout);
+                    copy = compiler.gtCloneLclAddr(tree.AsLclFld());
                     break;
                 }
 
@@ -379,15 +677,7 @@ public partial class Compiler
 
                 case GT_FTN_ADDR:
                 {
-                    var fptrVal = tree.AsFptrVal();
-                    var fptrValCopy = gtNewFptrValNode(fptrVal.Type, fptrVal.FptrMethod);
-
-                    fptrValCopy.FptrDelegateTarget = fptrVal.FptrDelegateTarget;
-#if FEATURE_READYTORUN
-                    fptrValCopy.EntryPoint = fptrVal.EntryPoint;
-#endif
-
-                    copy = fptrValCopy;
+                    copy = compiler.gtCloneFtnAddr(tree.AsFptrVal());
                     break;
                 }
 
@@ -402,38 +692,19 @@ public partial class Compiler
 
                 case GT_CNS_INT:
                 {
-                    var intCon = tree.AsIntCon();
-                    var intConCopy = null as GenTreeIntCon;
-
-                    if (intCon.IsIconHandle())
-                    {
-                        intConCopy = compiler.gtNewIconHandleNode(intCon.IconVal, intCon.Flags, intCon.FieldSeq);
-                    }
-                    else
-                    {
-                        intConCopy = compiler.gtNewIconNode(intCon.Type, intCon.IconVal, intCon.FieldSeq);
-                    }
-
-                    intConCopy.CompileTimeHandle = intCon.CompileTimeHandle;
-#if DEBUG
-                    intConCopy.TargetHandle = intCon.TargetHandle;
-#endif
-
-                    copy = intConCopy;
+                    copy = compiler.gtCloneCnsInt(tree.AsIntCon());
                     break;
                 }
 
                 case GT_CNS_LNG:
                 {
-                    var lngCon = tree.AsLngCon();
-                    copy = compiler.gtNewLconNode(lngCon.LconValue);
+                    copy = compiler.gtCloneCnsLng(tree.AsLngCon());
                     break;
                 }
 
                 case GT_CNS_DBL:
                 {
-                    var dblCon = tree.AsDblCon();
-                    copy = compiler.gtNewDconNode(dblCon.Type, dblCon.DconVal);
+                    copy = compiler.gtCloneCnsDbl(tree.AsDblCon());
                     break;
                 }
 
@@ -447,8 +718,7 @@ public partial class Compiler
 #if FEATURE_SIMD
                 case GT_CNS_VEC:
                 {
-                    var vecCon = tree.AsVecCon();
-                    copy = compiler.gtNewVconNode(vecCon.Type, vecCon.simdVal);
+                    copy = compiler.gtCloneCnsVec(tree.AsVecCon());
                     break;
                 }
 #endif
@@ -456,8 +726,7 @@ public partial class Compiler
 #if (FEATURE_MASKED_HW_INTRINSICS)
                 case GT_CNS_MSK:
                 {
-                    var mskCon = tree.AsMskCon();
-                    copy = compiler.gtNewMskConNode(mskCon.simdMaskVal);
+                    copy = compiler.gtCloneCnsMsk(tree.AsMskCon());
                     break;
                 }
 #endif
@@ -767,18 +1036,7 @@ public partial class Compiler
 
                 case GT_FIELD_ADDR:
                 {
-                    var fieldAddr = tree.AsFieldAddr();
-                    copy = new GenTreeFieldAddr(
-                        fieldAddr.Type,
-                        compiler.gtCloneExpr(fieldAddr.FldObj),
-                        fieldAddr.FldHnd,
-                        fieldAddr.FldOffset) {
-                        MayOverlap = fieldAddr.MayOverlap,
-                        IsSpanLength = fieldAddr.IsSpanLength,
-#if FEATURE_READYTORUN
-                        FieldLookup = fieldAddr.FieldLookup,
-#endif
-                    };
+                    copy = compiler.gtCloneFieldAddr(tree.AsFieldAddr());
                     break;
                 }
 
@@ -884,6 +1142,76 @@ public partial class Compiler
 
             return copy;
         }
+    }
+
+    public unsafe GenTreeFieldAddr gtCloneFieldAddr(GenTreeFieldAddr fieldAddr)
+    {
+        var fieldAddrCopy = gtNewFieldAddrNode(
+            fieldAddr.Type,
+            gtCloneExpr(fieldAddr.FldObj),
+            fieldAddr.FldHnd,
+            fieldAddr.FldOffset
+        );
+
+        fieldAddrCopy.MayOverlap = fieldAddr.MayOverlap;
+        fieldAddrCopy.IsSpanLength = fieldAddr.IsSpanLength;
+
+#if FEATURE_READYTORUN
+        fieldAddrCopy.FieldLookup = fieldAddr.FieldLookup;
+#endif
+
+        return fieldAddrCopy;
+    }
+
+    public unsafe GenTreeFptrVal gtCloneFtnAddr(GenTreeFptrVal fptrVal)
+    {
+        var fptrValCopy = gtNewFptrValNode(fptrVal.Type, fptrVal.FptrMethod);
+
+        fptrValCopy.FptrDelegateTarget = fptrVal.FptrDelegateTarget;
+#if FEATURE_READYTORUN
+        fptrValCopy.EntryPoint = fptrVal.EntryPoint;
+#endif
+
+        return fptrValCopy;
+    }
+
+    public GenTreeLclFld gtCloneLclAddr(GenTreeLclFld lclFld)
+    {
+        return gtNewLclAddrNode(lclFld.Type, lclFld.LclNum, lclFld.LclOffs, lclFld.Layout);
+    }
+
+    public GenTreeLclFld gtCloneLclFld(GenTreeLclFld lclFld)
+    {
+        // Remember that the local node has been cloned. The flag will be set on 'copy' as well.
+        lclFld.Flags |= GTF_VAR_MOREUSES;
+
+        var lclFldCopy = gtNewLclFldNode(lclFld.Type, lclFld.LclNum, lclFld.LclOffs, lclFld.Layout);
+        lclFldCopy.SsaNum = lclFld.SsaNum;
+        return lclFldCopy;
+    }
+
+    public GenTreeLclVar gtCloneLclVar(GenTreeLclVar lclVar)
+    {
+        // Remember that the local node has been cloned. The flag will be set on 'copy' as well.
+        lclVar.Flags |= GTF_VAR_MOREUSES;
+
+        var lclVarCopy = gtNewLclvNode(lclVar.Type, lclVar.LclNum, lclVar.LclIlOffs);
+        lclVarCopy.SsaNum = lclVar.SsaNum;
+        lclVarCopy.CopyOtherRegs(lclVar);
+
+        return lclVarCopy;
+    }
+
+    /// <summary>alk a tree collecting a bit set of exceptions the tree may throw.</summary>
+    /// <param name="tree">tree to examine</param>
+    /// <returns>Bit set of exceptions the tree may throw.</returns>
+    public ExceptionSetFlags gtCollectExceptions(GenTree tree)
+    {
+        var walker = new ExceptionsWalker(this);
+        _ = walker.WalkTree(ref tree, user: null);
+
+        assert(((tree.Flags & GTF_EXCEPT) is 0) || (walker.Flags is not ExceptionSetFlags.None));
+        return walker.Flags;
     }
 
 #if DEBUG
@@ -1298,6 +1626,41 @@ public partial class Compiler
         _ => "",
     };
 #endif
+
+    /// <summary>Check if a tree contains a node matching the specified predicate. Descend only into subtrees with the specified flags set on them (can be GTF_EMPTY to descend into all nodes).</summary>
+    /// <param name="tree">The tree</param>
+    /// <param name="predicate">Predicate that the call must match</param>
+    /// <param name="requiredFlagsToDescendIntoTree">Flags that must be set on the node to descend into it (GTF_EMPTY to descend into all nodes)</param>
+    /// <returns>Node matching the predicate, or null if no such node was found.</returns>
+    public GenTree? gtFindNodeInTree(GenTree tree, Func<GenTree, bool> predicate, GenTreeFlags requiredFlagsToDescendIntoTree)
+    {
+        if ((tree.Flags & requiredFlagsToDescendIntoTree) != requiredFlagsToDescendIntoTree)
+        {
+            return null;
+        }
+
+        var findNodeVisitor = new FindNodeVisitor(predicate, requiredFlagsToDescendIntoTree);
+        _ = findNodeVisitor.WalkTree(ref tree, user: null);
+        return findNodeVisitor.Result;
+    }
+
+    public GenTree gtFoldExpr(GenTree tree)
+    {
+        // TODO: Port gtFoldExpr
+        return tree;
+    }
+
+    /// <summary>Can any side-effects be observed externally, say by a caller method?</summary>
+    /// <param name="flags"></param>
+    /// <returns></returns>
+    /// <remarks>
+    ///   <para>For stores, only stores to global memory can be observed externally, whereas simple stores to local variables can not.</para>
+    ///   <para>Be careful when using this inside a "try" protected region as the order of stores to local variables would need to be preserved wrt side effects if the variables are alive on entry to the handler region. In such cases, even stores to locals will have to be restricted.</para>
+    /// </remarks>
+    public static bool GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(GenTreeFlags flags)
+    {
+        return ((flags & (GTF_CALL | GTF_EXCEPT)) is not 0) || ((flags & (GTF_ASG | GTF_GLOB_REF)) == (GTF_ASG | GTF_GLOB_REF));
+    }
 
     /// <summary>find class handle for elements of an array of ref types</summary>
     /// <param name="array">array to find handle for</param>
@@ -2185,11 +2548,34 @@ public partial class Compiler
         return result;
     }
 
+    /// <summary>Initialize an indirection node.</summary>
+    /// <param name="indir">The indirection node</param>
+    /// <param name="indirFlags">The indirection flags</param>
+    /// <remarks>Sets side effect flags based on the passed-in indirection flags.</remarks>
+    public void gtInitializeIndirNode(GenTreeIndir indir, GenTreeFlags indirFlags)
+    {
+        assert(varTypeIsI(indir.Addr.Type.ActualType));
+        assert((indirFlags & ~GTF_IND_FLAGS) == GTF_EMPTY);
+
+        indir.Flags |= indirFlags;
+        indir.SetIndirExceptionFlags(this);
+
+        if ((indirFlags & GTF_IND_INVARIANT) is 0)
+        {
+            indir.Flags |= GTF_GLOB_REF;
+        }
+
+        if ((indirFlags & GTF_IND_VOLATILE) is not 0)
+        {
+            indir.HasOrderingSideEffect = true;
+        }
+    }
+
     /// <summary>Initialize a store node.</summary>
     /// <param name="store">The store node</param>
     /// <param name="value">The value to store</param>
     /// <remarks>Common initialization for all STORE nodes. Marks simd locals as "used in a HW intrinsic".</remarks>
-    public void gtInitializeStoreNode(GenTreeLclVar store, GenTree value)
+    public void gtInitializeStoreNode(GenTree store, GenTree value)
     {
         // TODO-ASG: add asserts that the types match here.
         assert(store.Data == value);
@@ -2210,6 +2596,30 @@ public partial class Compiler
 #endif
     }
 
+    private bool gtIsAsyncCall(GenTree tree)
+    {
+        if (tree.Oper.IsCall && tree.AsCall().IsAsync)
+        {
+            return true;
+        }
+
+        if ((tree.Oper is GT_RET_EXPR) && gtTreeContainsAsyncCall(tree.AsRetExpr().InlineCandidate))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private static bool gtIsTailCall(GenTree tree)
+    {
+        if (tree.Oper.IsCall)
+        {
+            var call = tree.AsCall();
+            return call.CanTailCall || call.IsTailCall;
+        }
+        return false;
+    }
+
     /// <summary>A little helper to create an object allocation node.</summary>
     /// <param name="type">Tree return type (e.g. TYP_REF)</param>
     /// <param name="op1">Node containing an address of VtablePtr</param>
@@ -2220,6 +2630,74 @@ public partial class Compiler
     public unsafe GenTreeAllocObj gtNewAllocObjNode(var_types type, GenTree op1, CorInfoHelpFunc newHelper, bool newHelperHasSideEffects, CORINFO_CLASS_HANDLE clsHnd)
     {
         return new GenTreeAllocObj(type, op1, newHelper, newHelperHasSideEffects, clsHnd);
+    }
+
+    /// <summary>Helper to create an object allocation node.</summary>
+    /// <param name="resolvedToken">Resolved token for the object being allocated</param>
+    /// <param name="callerHandle"></param>
+    /// <param name="useParent">true iff the token represents a child of the object's class</param>
+    /// <returns>Returns GT_ALLOCOBJ node that will be later morphed into an allocation helper call or local variable allocation on the stack.</returns>
+    /// <remarks>Node creation can fail for inlinees when the type described by pResolvedToken can't be represented in jitted code. If this happens, this method will return null.</remarks>
+    public unsafe GenTreeAllocObj? gtNewAllocObjNode(in CORINFO_RESOLVED_TOKEN resolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool useParent)
+    {
+        var usingReadyToRunHelper = false;
+        var helper = CORINFO_HELP_UNDEF;
+        var opHandle = impTokenToHandle(resolvedToken, mustRestoreHandle: true, useParent);
+
+#if FEATURE_READYTORUN
+        var lookup = new CORINFO_CONST_LOOKUP();
+
+        if (IsAot)
+        {
+            helper = CORINFO_HELP_READYTORUN_NEW;
+
+            fixed (CORINFO_RESOLVED_TOKEN* pResolvedToken = &resolvedToken)
+            {
+                usingReadyToRunHelper = info.compCompHnd->getReadyToRunHelper(pResolvedToken, helper, callerHandle, &lookup);
+            }
+        }
+#endif
+
+        if (!usingReadyToRunHelper && (opHandle is null))
+        {
+            // We must be backing out of an inline.
+            assert(compDonotInline);
+            return null;
+        }
+
+        bool helperHasSideEffects;
+        var helperTemp = info.compCompHnd->getNewHelper(resolvedToken.hClass, &helperHasSideEffects);
+
+        if (!usingReadyToRunHelper)
+        {
+            helper = helperTemp;
+        }
+
+        assert(opHandle is not null);
+
+        // TODO: ReadyToRun: When generic dictionary lookups are necessary, replace the lookup call
+        // and the newfast call with a single call to a dynamic R2R cell that will:
+        //      1) Load the context
+        //      2) Perform the generic dictionary lookup and caching, and generate the appropriate stub
+        //      3) Allocate and return the new object for boxing
+        // Reason: performance (today, we'll always use the slow helper for the R2R generics case)
+
+        var allocObj = gtNewAllocObjNode(TYP_REF, opHandle, helper, helperHasSideEffects, resolvedToken.hClass);
+
+#if FEATURE_READYTORUN
+        if (usingReadyToRunHelper)
+        {
+            assert(lookup.addr is not null);
+            allocObj.EntryPoint = lookup;
+        }
+#endif
+
+        return allocObj;
+    }
+
+    public unsafe GenTreeIndexAddr gtNewArrayIndexAddr(GenTree arrayOp, GenTree indexOp, var_types elemType, CORINFO_CLASS_HANDLE elemClassHandle)
+    {
+        return gtNewIndexAddr(arrayOp, indexOp, elemType, elemClassHandle, OFFSETOF__CORINFO_Array__data, OFFSETOF__CORINFO_Array__length);
     }
 
     /// <summary>Helper to create an array length node.</summary>
@@ -2237,44 +2715,95 @@ public partial class Compiler
         return arrLen;
     }
 
-    /// <summary>Helper to create an MD array length node.</summary>
-    /// <param name="arrayOp">Array node</param>
-    /// <param name="dim">MD array dimension of interest</param>
-    /// <param name="rank">MD array rank</param>
-    /// <returns>New GT_MDARR_LENGTH node</returns>
-    public GenTreeMDArr gtNewMDArrLen(GenTree arrayOp, int dim, int rank)
-    {
-        // Should have been set in the importer.
-        assert((optMethodFlags & OMF_HAS_MDARRAYREF) is not 0);
-
-        var mdarr = new GenTreeMDArr(GT_MDARR_LENGTH, arrayOp, dim, rank);
-        mdarr.SetIndirExceptionFlags(this);
-        return mdarr;
-    }
-
-    /// <summary>Helper to create an MD array lower bound node.</summary>
-    /// <param name="arrayOp">Array node</param>
-    /// <param name="dim">MD array dimension of interest</param>
-    /// <param name="rank">MD array rank</param>
-    /// <returns>New GT_MDARR_LOWER_BOUND node</returns>
-    public GenTreeMDArr gtNewMDArrLowerBound(GenTree arrayOp, int dim, int rank)
-    {
-        // Should have been set in the importer.
-        assert((optMethodFlags & OMF_HAS_MDARRAYREF) is not 0);
-
-        var mdarr = new GenTreeMDArr(GT_MDARR_LOWER_BOUND, arrayOp, dim, rank);
-        mdarr.SetIndirExceptionFlags(this);
-        return mdarr;
-    }
-
     public GenTreeOp gtNewBinaryNode(genTreeOps oper, var_types type, GenTree op1, GenTree op2)
     {
         return new GenTreeOp(oper, type, op1, op2);
     }
 
+    /// <summary>Create a struct indirection node.</summary>
+    /// <param name="addr">Address of the indirection</param>
+    /// <param name="layout">The struct layout</param>
+    /// <param name="indirFlags">Indirection flags</param>
+    /// <returns>The created GT_BLK node.</returns>
+    public GenTreeBlk gtNewBlkIndir(GenTree addr, ClassLayout layout, GenTreeFlags indirFlags = GTF_EMPTY)
+    {
+        assert(layout.Type == TYP_STRUCT);
+        var blkNode = new GenTreeBlk(TYP_STRUCT, addr, layout);
+
+        gtInitializeIndirNode(blkNode, indirFlags);
+        return blkNode;
+    }
+
+    public unsafe GenTreeCall gtNewCallNode(var_types type, gtCallTypes callType, CORINFO_METHOD_HANDLE callHnd, in DebugInfo di = default)
+    {
+        var node = new GenTreeCall(type.ActualType) {
+            _callType = callType,
+            _returnType = type,
+            _callMethHnd = callHnd,
+#if DEBUG
+            _rawILOffset = BAD_IL_OFFSET,
+#endif
+            _inlineContext = compInlineContext,
+        };
+        node.Flags |= (GTF_CALL | GTF_GLOB_REF);
+
+#if UNIX_X86_ABI
+        if (callType is CT_INDIRECT or CT_HELPER)
+        {
+            node.Flags |= GTF_CALL_POP_ARGS;
+        }
+#endif
+
+        if (callType is not CT_INDIRECT)
+        {            
+            node.ClearInlineInfo();
+        }
+
+        // Spec: Managed Retval sequence points needs to be generated while generating debug info for debuggable code.
+        //
+        // Implementation note: if not generating MRV info genCallSite2ILOffsetMap will be NULL and
+        // codegen will pass DebugInfo() to emitter, which will cause emitter
+        // not to emit IP mapping entry.
+        if (opts.compDbgCode && opts.compDbgInfo && di.IsValid)
+        {
+            // Managed Retval - IL offset of the call.  This offset is used to emit a
+            // CALL_INSTRUCTION type sequence point while emitting corresponding native call.
+            //
+            // TODO-Cleanup:
+            // a) (Opt) We need not store this offset if the method doesn't return a
+            // value.  Rather it can be made BAD_IL_OFFSET to prevent a sequence
+            // point being emitted.
+            //
+            // b) (Opt) Add new sequence points only if requested by debugger through
+            // a new boundary type - ICorDebugInfo.BoundaryTypes
+
+            genCallSite2DebugInfoMap ??= [];
+            genCallSite2DebugInfoMap.Add(node, di);
+        }
+
+        // Initialize gtOtherRegs
+        node.ClearOtherRegs();
+
+#if !TARGET_64BIT
+        if (varTypeIsLong(node.Type))
+        {
+            // Initialize Return type descriptor of call node
+            assert(node._returnType == node.Type);
+            node.InitializeLongReturnType();
+        }
+#endif
+
+        return node;
+    }
+
     public GenTreeCast gtNewCastNode(var_types type, GenTree op, bool fromUnsigned, var_types castType)
     {
         return new GenTreeCast(type, op, fromUnsigned, castType);
+    }
+
+    public GenTreeColon gtNewColonNode(var_types type, GenTree thenNode, GenTree elseNode)
+    {
+        return new GenTreeColon(type, thenNode, elseNode);
     }
 
     public GenTreeOp gtNewCommaNode(var_types type, GenTree op1, GenTree op2)
@@ -2287,9 +2816,298 @@ public partial class Compiler
         return new GenTreeDblCon(type, value);
     }
 
+    public GenTreeIntCon gtNewFalse()
+    {
+        return gtNewIconNode(TYP_INT, 0);
+    }
+
+    public unsafe GenTreeFieldAddr gtNewFieldAddrNode(var_types type, CORINFO_FIELD_HANDLE fldHnd, int offset = 0)
+    {
+        return gtNewFieldAddrNode(type, obj: null, fldHnd, offset);
+    }
+
+    /// <summary>Create a new GT_FIELD_ADDR node.</summary>
+    /// <param name="type">type for the address node</param>
+    /// <param name="fldHnd">the field handle</param>
+    /// <param name="obj">the instance, an address</param>
+    /// <param name="offset">the field offset</param>
+    /// <returns>The created node.</returns>
+    public unsafe GenTreeFieldAddr gtNewFieldAddrNode(var_types type, GenTree? obj, CORINFO_FIELD_HANDLE fldHnd, int offset = 0)
+    {
+        // TODO-ADDR: consider creating a variant of this which would skip various
+        // no-op constructs (such as struct fields with zero offsets), and fold
+        // others (LCL_VAR_ADDR + FIELD_ADDR => LCL_FLD_ADDR).
+
+        assert(varTypeIsI(type.ActualType));
+        var fieldAddr = new GenTreeFieldAddr(type, obj, fldHnd, offset);
+
+        // If "obj" is the address of a local, note that a field of that struct local has been accessed.
+        if ((obj is not null) && obj.IsLclVarAddr)
+        {
+            ref var varDsc = ref lvaGetDesc(obj.AsLclVarCommon().LclNum);
+            varDsc.lvFieldAccessed = true;
+        }
+
+        if ((obj is not null) && fgAddrCouldBeNull(obj))
+        {
+            fieldAddr.Flags |= GTF_EXCEPT;
+        }
+        return fieldAddr;
+    }
+
+    public unsafe GenTreeFieldAddr gtNewFieldAddrNode(GenTree obj, CORINFO_FIELD_HANDLE fldHnd, int offset)
+    {
+        return gtNewFieldAddrNode(varTypeIsGC(obj.Type) ? TYP_BYREF : TYP_I_IMPL, obj, fldHnd, offset);
+    }
+
     public static unsafe GenTreeFptrVal gtNewFptrValNode(var_types type, CORINFO_METHOD_HANDLE fptrMethod)
     {
         return new GenTreeFptrVal(type, fptrMethod);
+    }
+
+    /// <summary>Create an IR node representing a constant value of any type.</summary>
+    /// <param name="type">The primitive type. For small types the constant will be zero/sign-extended and a TYP_INT node will be returned.</param>
+    /// <param name="cnsVal">Pointer to data</param>
+    /// <returns>An IR node representing the constant.</returns>
+    public unsafe GenTree gtNewGenericCon(var_types type, ReadOnlySpan<byte> cnsVal)
+    {
+        switch (type)
+        {
+            case TYP_BYTE:
+            {
+                assert(cnsVal.Length == sizeof(sbyte));
+                var val = Unsafe.ReadUnaligned<sbyte>(in cnsVal[0]);
+                return gtNewIconNode(TYP_INT, val);
+            }
+
+            case TYP_UBYTE:
+            {
+                assert(cnsVal.Length == sizeof(byte));
+                var val = Unsafe.ReadUnaligned<byte>(in cnsVal[0]);
+                return gtNewIconNode(TYP_INT, val);
+            }
+
+            case TYP_SHORT:
+            {
+                assert(cnsVal.Length == sizeof(short));
+                var val = Unsafe.ReadUnaligned<short>(in cnsVal[0]);
+                return gtNewIconNode(TYP_INT, val);
+            }
+
+            case TYP_USHORT:
+            {
+                assert(cnsVal.Length == sizeof(ushort));
+                var val = Unsafe.ReadUnaligned<ushort>(in cnsVal[0]);
+                return gtNewIconNode(TYP_INT, val);
+            }
+
+            case TYP_INT:
+            {
+                assert(cnsVal.Length == sizeof(int));
+                var val = Unsafe.ReadUnaligned<int>(in cnsVal[0]);
+                return gtNewIconNode(TYP_INT, val);
+            }
+
+            case TYP_LONG:
+            {
+                assert(cnsVal.Length == sizeof(long));
+                var val = Unsafe.ReadUnaligned<long>(in cnsVal[0]);
+                return gtNewLconNode(val);
+            }
+
+            case TYP_FLOAT:
+            {
+                assert(cnsVal.Length == sizeof(float));
+                var val = Unsafe.ReadUnaligned<float>(in cnsVal[0]);
+                return gtNewDconNode(TYP_FLOAT, val);
+            }
+
+            case TYP_DOUBLE:
+            {
+                assert(cnsVal.Length == sizeof(double));
+                var val = Unsafe.ReadUnaligned<double>(in cnsVal[0]);
+                return gtNewDconNode(TYP_DOUBLE, val);
+            }
+
+            case TYP_REF:
+            {
+                assert(cnsVal.Length == sizeof(nint));
+                var val = Unsafe.ReadUnaligned<nint>(in cnsVal[0]);
+                return (val is 0) ? gtNewNull() : gtNewIconEmbObjHndNode((CORINFO_OBJECT_HANDLE)(val));
+            }
+
+#if FEATURE_SIMD
+            case TYP_SIMD8:
+            case TYP_SIMD12:
+            case TYP_SIMD16:
+#if TARGET_XARCH
+            case TYP_SIMD32:
+            case TYP_SIMD64:
+#endif
+            {
+                assert(cnsVal.Length == type.Size);
+                var vecCon = gtNewVconNode(type);
+
+                Unsafe.CopyBlockUnaligned(ref vecCon.SimdVal.u8[0], in cnsVal[0], type.Size);
+                return vecCon;
+            }
+#endif
+
+            default:
+            {
+                unreached();
+                return null;
+            }
+        }
+    }
+
+    /// <summary>Helper to create a call helper node.</summary>
+    /// <param name="type">Type of the node</param>
+    /// <param name="helper">Call helper</param>
+    /// <param name="args">Call args (struct args not supported)</param>
+    /// <returns>New CT_HELPER node</returns>
+    public unsafe GenTreeCall gtNewHelperCallNode(var_types type, CorInfoHelpFunc helper, params ReadOnlySpan<GenTree> args)
+    {
+        var result = gtNewCallNode(type, CT_HELPER, eeFindHelper(helper));
+
+        if (!helper.NoThrow)
+        {
+            result.Flags |= GTF_EXCEPT;
+
+            if (helper.AlwaysThrow)
+            {
+                setCallDoesNotReturn(result);
+            }
+        }
+#if DEBUG
+        // Helper calls are never candidates.
+        result._inlineObservation = InlineObservation.CALLSITE_IS_CALL_TO_HELPER;
+#endif
+
+        ref var callArgs = ref result.Args;
+
+        for (var i = args.Length - 1; i >= 0; i--)
+        {
+            var arg = args[i];
+
+            var callArg = NewCallArg.CreateForPrimitive(arg);
+            callArgs.PushFront(callArg);
+
+            result.Flags |= (arg.Flags & GTF_ALL_EFFECT);
+        }
+        return result;
+    }
+
+    public unsafe GenTree gtNewIconEmbClsHndNode(CORINFO_CLASS_HANDLE clsHnd)
+    {
+        void* pEmbedClsHnd;
+        var embedClsHnd = info.compCompHnd->embedClassHandle(clsHnd, &pEmbedClsHnd);
+
+        assert((embedClsHnd is not null) != (pEmbedClsHnd is not null));
+        return gtNewIconEmbHndNode(embedClsHnd, pEmbedClsHnd, GTF_ICON_CLASS_HDL, clsHnd);
+    }
+
+    /// <summary>Create a tree that computes a constant lookup.</summary>
+    /// <param name="lookup">The lookup</param>
+    /// <param name="flags">The handle kind of the computed value</param>
+    /// <param name="compileTimeHandle">The compile-time handle of the computed value</param>
+    /// <returns>"CNS_INT" or "IND(CNS_INT)" that computes "pLookup".</returns>
+    public unsafe GenTree gtNewIconEmbHndNode(in CORINFO_CONST_LOOKUP lookup, GenTreeFlags flags, void* compileTimeHandle)
+    {
+        assert(lookup.accessType is not IAT_PPVALUE and not IAT_RELPVALUE);
+
+        CORINFO_GENERIC_HANDLE handle = null;
+        void* pIndirection = null;
+
+        if (lookup.accessType == IAT_VALUE)
+        {
+            handle = lookup.handle;
+        }
+        else if (lookup.accessType == IAT_PVALUE)
+        {
+            pIndirection = lookup.addr;
+        }
+        return gtNewIconEmbHndNode(handle, pIndirection, flags, compileTimeHandle);
+    }
+
+    public unsafe GenTree gtNewIconEmbHndNode(void* value, void* pValue, GenTreeFlags flags, void* compileTimeHandle)
+    {
+        // Allocates a integer constant entry that represents a HANDLE to something.
+        // It may not be allowed to embed HANDLEs directly into the JITed code (for eg,
+        // as arguments to JIT helpers). Get a corresponding value that can be embedded.
+        // If the handle needs to be accessed via an indirection, pValue points to it.
+
+        GenTreeIntCon iconNode;
+        GenTree handleNode;
+
+        if (value is not null)
+        {
+            // When 'value' is non-null, pValue is required to be null
+            assert(pValue is null);
+
+            // use 'value' to construct an integer constant node
+            iconNode = gtNewIconHandleNode(unchecked((nint)(value)), flags);
+
+            // 'value' is the handle
+            handleNode = iconNode;
+        }
+        else
+        {
+            // When 'value' is null, pValue is required to be non-null
+            assert(pValue is not null);
+
+            // use 'pValue' to construct an integer constant node
+            iconNode = gtNewIconHandleNode(unchecked((nint)(pValue)), flags);
+
+            // 'pValue' is an address of a location that contains the handle, construct the indirection of 'pValue'.
+            handleNode = gtNewIndir(TYP_I_IMPL, iconNode, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+        }
+
+        iconNode.CompileTimeHandle = unchecked((nint)(compileTimeHandle));
+
+#if DEBUG
+        if (iconNode.IsIconHandle(GTF_ICON_CLASS_HDL, GTF_ICON_METHOD_HDL, GTF_ICON_FTN_ADDR))
+        {
+            iconNode.TargetHandle = unchecked((nint)(compileTimeHandle));
+        }
+
+        if (iconNode.IsIconHandle(GTF_ICON_OBJ_HDL))
+        {
+            iconNode.TargetHandle = (value is not null) ? unchecked((nint)(value)) : unchecked((nint)(pValue));
+        }
+#endif
+
+        return handleNode;
+    }
+
+    public unsafe GenTree gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd)
+    {
+        void* pEmbedFldHnd;
+        var embedFldHnd = (void*)info.compCompHnd->embedFieldHandle(fldHnd, &pEmbedFldHnd);
+
+        assert((embedFldHnd is not null) != (pEmbedFldHnd is not null));
+        return gtNewIconEmbHndNode(embedFldHnd, pEmbedFldHnd, GTF_ICON_FIELD_HDL, fldHnd);
+    }
+
+    public unsafe GenTree gtNewIconEmbMethHndNode(CORINFO_METHOD_HANDLE methHnd)
+    {
+        void* pEmbedMethHnd;
+        var embedMethHnd = (void*)info.compCompHnd->embedMethodHandle(methHnd, &pEmbedMethHnd);
+
+        assert((embedMethHnd is not null) != (pEmbedMethHnd is not null));
+        return gtNewIconEmbHndNode(embedMethHnd, pEmbedMethHnd, GTF_ICON_METHOD_HDL, methHnd);
+    }
+
+    public unsafe GenTree gtNewIconEmbObjHndNode(CORINFO_OBJECT_HANDLE objHnd)
+        => gtNewIconEmbHndNode(objHnd, pValue: null, GTF_ICON_OBJ_HDL, compileTimeHandle: null);
+
+    public unsafe GenTree gtNewIconEmbScpHndNode(CORINFO_MODULE_HANDLE scpHnd)
+    {
+        void* pEmbedScpHnd;
+        var embedScpHnd = info.compCompHnd->embedModuleHandle(scpHnd, &pEmbedScpHnd);
+
+        assert((embedScpHnd is not null) != (pEmbedScpHnd is not null));
+        return gtNewIconEmbHndNode(embedScpHnd, pEmbedScpHnd, GTF_ICON_SCOPE_HDL, scpHnd);
     }
 
     public GenTreeIntCon gtNewIconHandleNode(nint value, GenTreeFlags flags, FieldSeq? fields = null)
@@ -2301,9 +3119,79 @@ public partial class Compiler
         return node;
     }
 
-    public GenTreeIntCon gtNewIconNode(var_types type, nint value, FieldSeq? fields = null)
+    public GenTreeIntCon gtNewIconNode(var_types type, nint value)
     {
         return new GenTreeIntCon(type, value);
+    }
+
+    public GenTreeIntCon gtNewIconNode(nint value, FieldSeq? fields)
+    {
+        return new GenTreeIntCon(TYP_I_IMPL, value, fields);
+    }
+
+    public unsafe GenTreeIndexAddr gtNewIndexAddr(GenTree arrayOp, GenTree indexOp, var_types elemType, CORINFO_CLASS_HANDLE elemClassHandle, int firstElemOffset, int lengthOffset)
+    {
+        var elemSize = (elemType is TYP_STRUCT) ? info.compCompHnd->getClassSize(elemClassHandle) : elemType.Size;
+
+#if DEBUG
+        var boundsCheck = JitConfig[ConfigInteger.JitSkipArrayBoundCheck] is not 1;
+#else
+        var boundsCheck = true;
+#endif
+
+        return new GenTreeIndexAddr(arrayOp, indexOp, elemType, elemClassHandle, elemSize, lengthOffset, firstElemOffset, boundsCheck);
+    }
+
+    public unsafe GenTreeIndir gtNewIndexIndir(GenTreeIndexAddr indexAddr)
+    {
+        if (indexAddr.ElemType is TYP_STRUCT)
+        {
+            return gtNewBlkIndir(indexAddr, typGetObjLayout(indexAddr.StructElemClass));
+        }
+        else
+        {
+            return gtNewIndir(indexAddr.ElemType, indexAddr);
+        }
+    }
+
+    /// <summary>Create an indirection node</summary>
+    /// <param name="typ">Type of the node</param>
+    /// <param name="addr">Address of the indirection</param>
+    /// <param name="indirFlags">Indirection flags</param>
+    /// <returns>The created GT_IND node.</returns>
+    public GenTreeIndir gtNewIndir(var_types typ, GenTree addr, GenTreeFlags indirFlags = GTF_EMPTY)
+    {
+        var indir = new GenTreeIndir(GT_IND, typ, addr);
+        gtInitializeIndirNode(indir, indirFlags);
+        return indir;
+    }
+
+    /// <summary>Creates an indirection GenTree node of a constant handle</summary>
+    /// <param name="indType">The type returned by the indirection node</param>
+    /// <param name="addr">The constant address to read from</param>
+    /// <param name="iconFlags">The GTF_ICON flag value that specifies the kind of handle that we have</param>
+    /// <returns>Returns a GT_IND node representing value at the address provided by 'addr'</returns>
+    /// <remarks>
+    ///   <para>The GT_IND node is marked as non-faulting.</para>
+    ///   <para>If the indirection is not invariant, we also mark the indNode as GTF_GLOB_REF.</para>
+    /// </remarks>
+    public GenTreeIndir gtNewIndOfIconHandleNode(var_types indType, nint addr, GenTreeFlags iconFlags)
+    {
+        var addrNode = gtNewIconHandleNode(addr, iconFlags);
+
+        // This indirection won't cause an exception.
+        var indirFlags = GTF_IND_NONFAULTING;
+
+        if (GenTree.HandleKindDataIsInvariant(iconFlags))
+        {
+            indirFlags |= GTF_IND_INVARIANT;
+        }
+
+        if (GenTree.HandleKindDataIsNotNull(iconFlags))
+        {
+            indirFlags |= GTF_IND_NONNULL;
+        }
+        return gtNewIndir(indType, addrNode, indirFlags);
     }
 
     public GenTreeLclFld gtNewLclAddrNode(var_types type, int lclNum, ushort lclOffs, ClassLayout? layout = null)
@@ -2355,7 +3243,7 @@ public partial class Compiler
             var simd12ToSimd16Widening = false;
 #if FEATURE_SIMD
             // We can additionally have a simd12 that was widened to a simd16, generally as part of lowering
-            simd12ToSimd16Widening = (type is TYP_Simd16) && (varDsc.Type == TYP_Simd12);
+            simd12ToSimd16Widening = (type is TYP_SIMD16) && (varDsc.Type == TYP_SIMD12);
 #endif
             assert((type == varDsc.Type) || simd12ToSimd16Widening ||
                    (lvaIsImplicitByRefLocal(lclNum) && fgGlobalMorph && (varDsc.Type == TYP_BYREF)));
@@ -2379,9 +3267,119 @@ public partial class Compiler
 #endif
     }
 
+    public GenTreeUnOp gtNewLoadValueNode(var_types type, GenTree addr, GenTreeFlags indirFlags = GTF_EMPTY)
+    {
+        return gtNewLoadValueNode(type, addr, layout: null, indirFlags);
+    }
+
+    public GenTreeUnOp gtNewLoadValueNode(GenTree addr, ClassLayout layout, GenTreeFlags indirFlags = GTF_EMPTY)
+    {
+        return gtNewLoadValueNode(layout.Type, addr, layout, indirFlags);
+    }
+
+    /// <summary>Return a node that represents a loaded value.</summary>
+    /// <param name="type">Type to load</param>
+    /// <param name="addr">Struct layout to load</param>
+    /// <param name="layout">The address</param>
+    /// <param name="indirFlags">Indirection flags</param>
+    /// <returns>A "BLK/IND" node, or "LCL_VAR" if "addr" points to a compatible local.</returns>
+    public GenTreeUnOp gtNewLoadValueNode(var_types type, GenTree addr, ClassLayout? layout, GenTreeFlags indirFlags = GTF_EMPTY)
+    {
+        assert((indirFlags & ~GTF_IND_FLAGS) is 0);
+
+        if (((indirFlags & GTF_IND_VOLATILE) is 0) && addr.IsLclVarAddr)
+        {
+            var lclNum = addr.AsLclFld().LclNum;
+            ref var varDsc = ref lvaGetDesc(lclNum);
+
+            if (varDsc.Type == type)
+            {
+                if (type is not TYP_STRUCT)
+                {
+                    return gtNewLclvNode(type, lclNum);
+                }
+                else
+                {
+                    assert(layout is not null);
+                    assert(varDsc.Layout is not null);
+
+                    if (layout.CanAssignFrom(varDsc.Layout))
+                    {
+                        return gtNewLclvNode(type, lclNum);
+                    }
+                }
+            }
+        }
+
+        if (type == TYP_STRUCT)
+        {
+            assert(layout is not null);
+            return gtNewBlkIndir(addr, layout, indirFlags);
+        }
+        else
+        {
+            return gtNewIndir(type, addr, indirFlags);
+        }
+    }
+
+    /// <summary>Helper to create an MD array length node.</summary>
+    /// <param name="arrayOp">Array node</param>
+    /// <param name="dim">MD array dimension of interest</param>
+    /// <param name="rank">MD array rank</param>
+    /// <returns>New GT_MDARR_LENGTH node</returns>
+    public GenTreeMDArr gtNewMDArrLen(GenTree arrayOp, int dim, int rank)
+    {
+        // Should have been set in the importer.
+        assert((optMethodFlags & OMF_HAS_MDARRAYREF) is not 0);
+
+        var mdarr = new GenTreeMDArr(GT_MDARR_LENGTH, arrayOp, dim, rank);
+        mdarr.SetIndirExceptionFlags(this);
+        return mdarr;
+    }
+
+    /// <summary>Helper to create an MD array lower bound node.</summary>
+    /// <param name="arrayOp">Array node</param>
+    /// <param name="dim">MD array dimension of interest</param>
+    /// <param name="rank">MD array rank</param>
+    /// <returns>New GT_MDARR_LOWER_BOUND node</returns>
+    public GenTreeMDArr gtNewMDArrLowerBound(GenTree arrayOp, int dim, int rank)
+    {
+        // Should have been set in the importer.
+        assert((optMethodFlags & OMF_HAS_MDARRAYREF) is not 0);
+
+        var mdarr = new GenTreeMDArr(GT_MDARR_LOWER_BOUND, arrayOp, dim, rank);
+        mdarr.SetIndirExceptionFlags(this);
+        return mdarr;
+    }
+
     public static GenTree gtNewMemoryBarrierNode()
     {
         return new GenTree(GT_MEMORYBARRIER, TYP_VOID);
+    }
+
+    /// <summary>Create a memory barrier node</summary>
+    /// <param name="barrierKind">the kind of barrer we are creating</param>
+    /// <returns>The created GT_MEMORYBARRIER node.</returns>
+    public GenTree gtNewMemoryBarrierNode(BarrierKind barrierKind)
+    {
+        var tree = gtNewMemoryBarrierNode();
+        tree.Flags |= (GTF_GLOB_REF | GTF_ASG);
+
+        if (barrierKind is BARRIER_LOAD_ONLY)
+        {
+            tree.Flags |= GTF_MEMORYBARRIER_LOAD;
+        }
+        else if (barrierKind is BARRIER_STORE_ONLY)
+        {
+            tree.Flags |= GTF_MEMORYBARRIER_STORE;
+        }
+        return tree;
+    }
+
+    public GenTreeIndir gtNewMethodTableLookup(GenTree obj, bool onStack = false)
+    {
+        assert(onStack || (obj.Type is TYP_REF));
+        return gtNewIndir(TYP_I_IMPL, obj, GTF_IND_INVARIANT | GTF_IND_NONNULL);
     }
 
 #if FEATURE_MASKED_HW_INTRINSICS
@@ -2396,6 +3394,11 @@ public partial class Compiler
     /// <remarks>We currently use a "GT_NOP" node of type void for this purpose.</remarks>
     public GenTree gtNewNothingNode() => new GenTree(GT_NOP, TYP_VOID);
 
+    public GenTreeIntCon gtNewNull()
+    {
+        return gtNewIconNode(TYP_REF, 0);
+    }
+
     /// <summary>Helper to create a null check node.</summary>
     /// <param name="addr">Address to null check</param>
     /// <returns>New GT_NULLCHECK node</returns>
@@ -2409,6 +3412,179 @@ public partial class Compiler
         return nullCheck;
     }
 
+    public GenTree gtNewOneConNode(var_types type, var_types simdBaseType = TYP_UNDEF)
+    {
+        switch (type)
+        {
+            case TYP_INT:
+            case TYP_UINT:
+            {
+                return gtNewIconNode(TYP_INT, 1);
+            }
+
+            case TYP_LONG:
+            case TYP_ULONG:
+            {
+                return gtNewLconNode(1);
+            }
+
+            case TYP_FLOAT:
+            case TYP_DOUBLE:
+            {
+                return gtNewDconNode(type, 1.0);
+            }
+
+#if FEATURE_SIMD
+            case TYP_SIMD8:
+            case TYP_SIMD12:
+            case TYP_SIMD16:
+#if TARGET_XARCH
+            case TYP_SIMD32:
+            case TYP_SIMD64:
+#endif
+            {
+                var vecCon = gtNewVconNode(type);
+
+                if (varTypeIsFloating(simdBaseType))
+                {
+                    vecCon.EvaluateBroadcastInPlace(simdBaseType, 1);
+                }
+                else
+                {
+                    vecCon.EvaluateBroadcastInPlace(simdBaseType,1.0);
+                }
+                return vecCon;
+            }
+#endif
+
+            default:
+            {
+                unreached();
+                return null;
+            }
+        }
+    }
+
+    public GenTreeQmark gtNewQmarkNode(var_types type, GenTree cond, GenTreeColon colon)
+    {
+        assert(!compQmarkRationalized, "QMARKs are illegal to create after QMARK-rationalization");
+        compQmarkUsed = true;
+        return new GenTreeQmark(type, cond, colon);
+    }
+
+    public unsafe GenTree? gtNewRefComField(GenTree? objPtr, in CORINFO_RESOLVED_TOKEN resolvedToken, CORINFO_ACCESS_FLAGS access, in CORINFO_FIELD_INFO fieldInfo, var_types lclTyp, GenTree? value)
+    {
+        assert(fieldInfo.fieldAccessor is CORINFO_FIELD_INSTANCE_HELPER or CORINFO_FIELD_INSTANCE_ADDR_HELPER or CORINFO_FIELD_STATIC_ADDR_HELPER);
+
+        // Arguments in reverse order
+        var args = default(InlineArray4<GenTree>);
+        var nArgs = 0;
+
+        // If we can't access it directly, we need to call a helper function
+        var helperType = TYP_BYREF;
+        var structType = fieldInfo.structType;
+
+        if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_HELPER)
+        {
+            if ((access & CORINFO_ACCESS_SET) is not 0)
+            {
+                assert(value is not null);
+
+                if (lclTyp is TYP_DOUBLE)
+                {
+                    if (value.Type is TYP_FLOAT)
+                    {
+                        value = gtNewCastNode(TYP_DOUBLE, value, fromUnsigned: false, TYP_DOUBLE);
+                    }
+                }
+                else if (lclTyp is TYP_FLOAT)
+                {
+                    if (value.Type is TYP_DOUBLE)
+                    {
+                        value = gtNewCastNode(TYP_FLOAT, value, fromUnsigned: false, TYP_FLOAT);
+                    }
+                }
+
+                args[nArgs++] = value;
+                helperType = TYP_VOID;
+            }
+            else if ((access & CORINFO_ACCESS_GET) is not 0)
+            {
+                helperType = lclTyp;
+            }
+        }
+
+        var fieldHnd = impTokenToHandle(resolvedToken);
+
+        if (fieldHnd is null)
+        {
+            return null;
+        }
+
+        args[nArgs++] = fieldHnd;
+
+        // If it's a static field, we shouldn't have an object node
+        // If it's an instance field, we have an object node
+        assert((fieldInfo.fieldAccessor is not CORINFO_FIELD_STATIC_ADDR_HELPER) ^ (objPtr is null));
+
+        if (objPtr is not null)
+        {
+            args[nArgs++] = objPtr;
+        }
+
+        var call = gtNewHelperCallNode(helperType.ActualType, fieldInfo.helper);
+
+        for (var i = 0; i < nArgs; i++)
+        {
+            call.Args.PushFront(NewCallArg.CreateForPrimitive(args[i]));
+            call.Flags |= (args[i].Flags & GTF_ALL_EFFECT);
+        }
+
+#if FEATURE_MULTIREG_RET
+        if (varTypeIsStruct(call.Type))
+        {
+            call.InitializeStructReturnType(this, structType, call.UnmanagedCallConv);
+        }
+#endif
+
+        GenTree result = call;
+
+        if (fieldInfo.fieldAccessor is CORINFO_FIELD_INSTANCE_HELPER)
+        {
+            if (((access & CORINFO_ACCESS_GET) is not 0) && varTypeIsSmall(lclTyp))
+            {
+                // The helper does not extend the small return types.
+                result = gtNewCastNode(lclTyp.ActualType, result, fromUnsigned: false, lclTyp);
+            }
+        }
+        else if ((access & CORINFO_ACCESS_ADDRESS) is 0)
+        {
+            // OK, now do the indirection
+            lclTyp = TypeHandleToVarType(fieldInfo.fieldType, structType, out var layout);
+            assert(layout is not null);
+
+            if ((access & CORINFO_ACCESS_SET) is not 0)
+            {
+                assert(value is not null);
+
+                result = (lclTyp == TYP_STRUCT) ? gtNewStoreBlkNode(result, value, layout)
+                                                : gtNewStoreIndNode(lclTyp, result, value);
+
+                if (varTypeIsStruct(lclTyp))
+                {
+                    result = impStoreStruct(result, CHECK_SPILL_ALL);
+                }
+            }
+            else
+            {
+                assert((access & CORINFO_ACCESS_GET) is not 0);
+                result = (lclTyp == TYP_STRUCT) ? gtNewBlkIndir(result, layout) : gtNewIndir(lclTyp, result);
+            }
+        }
+
+        return result;
+    }
+
     /// <summary>Helper to create a runtime lookup node</summary>
     /// <param name="tree">tree for the lookup</param>
     /// <param name="hnd">generic handle being looked up</param>
@@ -2417,6 +3593,45 @@ public partial class Compiler
     public unsafe GenTreeRuntimeLookup gtNewRuntimeLookup(GenTree tree, CORINFO_GENERIC_HANDLE hnd, CorInfoGenericHandleType hndTyp)
     {
         return new GenTreeRuntimeLookup(tree, hnd, hndTyp);
+    }
+
+    /// <summary>Helper to create a runtime lookup call helper node.</summary>
+    /// <param name="runtimeLookup">Call helper</param>
+    /// <param name="ctxTree">Type of the node</param>
+    /// <param name="compileTimeHandle">Call args</param>
+    /// <returns>New CT_HELPER node</returns>
+    public unsafe GenTreeCall gtNewRuntimeLookupHelperCallNode(in CORINFO_RUNTIME_LOOKUP runtimeLookup, GenTree ctxTree, void* compileTimeHandle)
+    {
+#if FEATURE_READYTORUN
+        if (IsAot && (runtimeLookup.indirections == CORINFO_USEHELPER))
+        {
+            var call = gtNewHelperCallNode(TYP_I_IMPL, runtimeLookup.helper, ctxTree);
+            call._entryPoint = runtimeLookup.helperEntryPoint;
+            return call;
+        }
+#endif
+
+        // Call the helper
+        // - Setup argNode with the pointer to the signature returned by the lookup
+        var argNode = gtNewIconEmbHndNode(runtimeLookup.signature, pValue: null, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
+        var helperCall = gtNewHelperCallNode(TYP_I_IMPL, runtimeLookup.helper, ctxTree, argNode);
+
+        // No need to perform CSE/hoisting for signature node - it is expected to end up in a rarely-taken block after
+        // "Expand runtime lookups" phase.
+        argNode.Flags |= GTF_DONT_CSE;
+
+        // Leave a note that this method has runtime lookups we might want to expand (nullchecks, size checks) later.
+        // We can also consider marking current block as a runtime lookup holder to improve TP for Tier0
+        impInlineRoot.MethodHasExpRuntimeLookup = true;
+
+        var signatureToLookupInfoMap = impInlineRoot.SignatureToLookupInfoMap;
+
+        if (!signatureToLookupInfoMap.ContainsKey(runtimeLookup.signature))
+        {
+            JITDUMP($"Registering {(nuint)(runtimeLookup.signature):X} in SignatureToLookupInfoMap\n");
+            signatureToLookupInfoMap[runtimeLookup.signature] = runtimeLookup;
+        }
+        return helperCall;
     }
 
     public unsafe GenTreeStrCon gtNewSconNode(int cpx, CORINFO_MODULE_HANDLE scpHandle)
@@ -2434,6 +3649,78 @@ public partial class Compiler
         var statement = gtNewStmt(expr);
         statement.SetDebugInfo(di);
         return statement;
+    }
+
+    /// <summary>Create an indirect struct store node.</summary>
+    /// <param name="addr">Destination address</param>
+    /// <param name="value">Value to store</param>
+    /// <param name="layout">The struct layout</param>
+    /// <param name="indirFlags">Indirection flags</param>
+    /// <returns></returns>
+    /// <remarks>The created GT_STORE_BLK node.</remarks>
+    public GenTreeBlk gtNewStoreBlkNode(GenTree addr, GenTree value, ClassLayout layout, GenTreeFlags indirFlags = GTF_EMPTY)
+    {
+        assert((indirFlags & GTF_IND_INVARIANT) is 0);
+        assert(value.Oper.IsInitVal || layout.CanAssignFrom(value.GetLayout(this)));
+
+        var storeBlk = new GenTreeBlk(TYP_STRUCT, addr, value, layout);
+        storeBlk.Flags |= GTF_ASG;
+
+        gtInitializeIndirNode(storeBlk, indirFlags);
+        gtInitializeStoreNode(storeBlk, value);
+
+        return storeBlk;
+    }
+
+    /// <summary>Create an indirect store node.</summary>
+    /// <param name="type">Type of the store</param>
+    /// <param name="addr">Destination address</param>
+    /// <param name="value">Value to store</param>
+    /// <param name="indirFlags">Indirection flags</param>
+    /// <returns>The created GT_STOREIND node.</returns>
+    public GenTreeStoreInd gtNewStoreIndNode(var_types type, GenTree addr, GenTree value, GenTreeFlags indirFlags = GTF_EMPTY)
+    {
+        assert(((indirFlags & GTF_IND_INVARIANT) is 0) && (type is not TYP_STRUCT));
+
+        var storeInd = new GenTreeStoreInd(type, addr, value);
+        storeInd.Flags |= GTF_ASG;
+
+        gtInitializeIndirNode(storeInd, indirFlags);
+        gtInitializeStoreNode(storeInd, value);
+
+        return storeInd;
+    }
+
+    /// <summary>Create a local field store node.</summary>
+    /// <param name="type">Type of the store</param>
+    /// <param name="lclNum">Number of the local being stored to</param>
+    /// <param name="offset">Offset of the store</param>
+    /// <param name="value">Value to store</param>
+    /// <param name="layout">Struct layout of the store</param>
+    /// <returns>The created STORE_LCL_FLD node.</returns>
+    public GenTreeLclFld gtNewStoreLclFldNode(var_types type, int lclNum, ushort offset, GenTree value, ClassLayout? layout)
+    {
+        assert((type is TYP_STRUCT) == (layout is not null));
+
+        var storeLclFld = new GenTreeLclFld(type, lclNum, offset, value, layout);
+        storeLclFld.Flags |= (GTF_VAR_DEF | GTF_ASG);
+
+        if (storeLclFld.IsPartial(this))
+        {
+            storeLclFld.Flags |= GTF_VAR_USEASG;
+        }
+        if (lvaGetDesc(lclNum).IsAddressExposed)
+        {
+            storeLclFld.Flags |= GTF_GLOB_REF;
+        }
+        gtInitializeStoreNode(storeLclFld, value);
+
+        return storeLclFld;
+    }
+
+    public GenTreeLclFld gtNewStoreLclFldNode(var_types type, int lclNum, ushort offset, GenTree value)
+    {
+        return gtNewStoreLclFldNode(type, lclNum, offset, value, (type == TYP_STRUCT) ? value.GetLayout(this) : null);
     }
 
     /// <summary>Create a local store node.</summary>
@@ -2460,6 +3747,62 @@ public partial class Compiler
 
         gtInitializeStoreNode(store, value);
         return store;
+    }
+
+    public GenTree gtNewStoreValueNode(var_types type, GenTree addr, GenTree value, GenTreeFlags indirFlags = GTF_EMPTY)
+    {
+        return gtNewStoreValueNode(type, addr, value, layout: null, indirFlags: indirFlags);
+    }
+
+    public GenTree gtNewStoreValueNode(GenTree addr, GenTree value, ClassLayout layout, GenTreeFlags indirFlags = GTF_EMPTY)
+    {
+        return gtNewStoreValueNode(layout.Type, addr, value, layout, indirFlags);
+    }
+
+    /// <summary>Return a node that represents a store.</summary>
+    /// <param name="type">Type to store</param>
+    /// <param name="addr">Destination address</param>
+    /// <param name="value">Value to store</param>
+    /// <param name="layout">Struct layout for the store</param>
+    /// <param name="indirFlags">Indirection flags</param>
+    /// <returns>A "STORE_BLK/STORE_IND" node, or "STORE_LCL_VAR" if "addr" points to a compatible local.</returns>
+    public GenTree gtNewStoreValueNode(var_types type, GenTree addr, GenTree value, ClassLayout? layout, GenTreeFlags indirFlags = GTF_EMPTY)
+    {
+        assert((type is not TYP_STRUCT) || (layout is not null));
+
+        if (((indirFlags & GTF_IND_VOLATILE) is 0) && addr.IsLclVarAddr)
+        {
+            var lclNum = addr.AsLclFld().LclNum;
+            ref var varDsc = ref lvaGetDesc(lclNum);
+
+            if (varDsc.Type == type)
+            {
+                if (type is not TYP_STRUCT)
+                {
+                    return gtNewStoreLclVarNode(lclNum, value);
+                }
+                else
+                {
+                    assert(layout is not null);
+                    assert(varDsc.Layout is not null);
+
+                    if (varDsc.Layout.CanAssignFrom(layout))
+                    {
+                        return gtNewStoreLclVarNode(lclNum, value);
+                    }
+                }
+            }
+        }
+
+        if (type is TYP_STRUCT)
+        {
+            assert(layout is not null);
+            return gtNewStoreBlkNode(addr, value, layout, indirFlags);
+        }
+        else
+        {
+            return gtNewStoreIndNode(type, addr, value, indirFlags);
+        }
     }
 
     public GenTree gtNewTempStore(int lclNum, GenTree val, int curLevel = CHECK_SPILL_NONE, in DebugInfo di = default, BasicBlock? block = null)
@@ -2593,17 +3936,106 @@ public partial class Compiler
         return store;
     }
 
-    public GenTreeUnOp gtNewUnaryNode(genTreeOps oper, var_types type, GenTree op1)
+    public GenTreeIntCon gtNewTrue()
+    {
+        return gtNewIconNode(TYP_INT, 1);
+    }
+
+    public GenTreeUnOp gtNewUnaryNode(genTreeOps oper, var_types type, GenTree? op1)
     {
         return new GenTreeUnOp(oper, type, op1);
     }
 
 #if FEATURE_SIMD
-    public GenTreeVecCon gtNewVconNode(var_types type, simd_t simdVal)
+    public GenTreeVecCon gtNewVconNode(var_types type)
     {
-        return new GenTreeVecCon(type, simdVal);
+        return new GenTreeVecCon(type);
     }
 #endif
+
+    /// <summary>Helper to create a virtual function lookup helper node.</summary>
+    /// <param name="type">Type of the node</param>
+    /// <param name="helper">Call helper</param>
+    /// <param name="thisPtr">'this' argument</param>
+    /// <param name="methHnd">Runtime method handle argument</param>
+    /// <param name="clsHnd">Class handle argument</param>
+    /// <returns>New CT_HELPER node</returns>
+    public unsafe GenTreeCall gtNewVirtualFunctionLookupHelperCallNode(var_types type, CorInfoHelpFunc helper, GenTree thisPtr, GenTree methHnd, GenTree? clsHnd = null)
+    {
+        var result = gtNewCallNode(type, CT_HELPER, eeFindHelper(helper));
+
+        if (!helper.NoThrow)
+        {
+            result.Flags |= GTF_EXCEPT;
+
+            if (helper.AlwaysThrow)
+            {
+                setCallDoesNotReturn(result);
+            }
+        }
+
+#if DEBUG
+        // Helper calls are never candidates.
+        result._inlineObservation = InlineObservation.CALLSITE_IS_CALL_TO_HELPER;
+#endif
+
+        assert(methHnd is not null);
+
+        result.Args.PushFront(NewCallArg.CreateForPrimitive(methHnd).WithWellKnownArg(WellKnownArg.RuntimeMethodHandle));
+        result.Flags |= methHnd.Flags & GTF_ALL_EFFECT;
+
+        if (clsHnd is not null)
+        {
+            result.Args.PushFront(NewCallArg.CreateForPrimitive(clsHnd));
+            result.Flags |= clsHnd.Flags & GTF_ALL_EFFECT;
+        }
+
+        assert(thisPtr is not null);
+
+        result.Args.PushFront(NewCallArg.CreateForPrimitive(thisPtr).WithWellKnownArg(WellKnownArg.ThisPointer));
+        result.Flags |= thisPtr.Flags & GTF_ALL_EFFECT;
+
+        return result;
+    }
+
+    public GenTree gtNewZeroConNode(var_types type)
+    {
+#if FEATURE_SIMD
+        if (varTypeIsSimd(type))
+        {
+            return gtNewVconNode(type);
+        }
+#endif
+
+        type = type.ActualType;
+
+        switch (type)
+        {
+            case TYP_INT:
+            case TYP_REF:
+            case TYP_BYREF:
+            {
+                return gtNewIconNode(type, 0);
+            }
+
+            case TYP_LONG:
+            {
+                return gtNewLconNode(0);
+            }
+
+            case TYP_FLOAT:
+            case TYP_DOUBLE:
+            {
+                return gtNewDconNode(type, 0.0);
+            }
+
+            default:
+            {
+                unreached();
+                return null;
+            }
+        }
+    }
 
     /// <summary>Return true if the given node (excluding children trees) contains side effects.</summary>
     /// <param name="node"></param>
@@ -2658,7 +4090,7 @@ public partial class Compiler
 
     /// <inheritdoc cref="gtPeelOffsets(ref GenTree, out long, out FieldSeq)" />
     public void gtPeelOffsets(ref GenTree addr, out target_ssize_t offset)
-        => gtPeelOffsets(ref addr, out offset, out Unsafe.NullRef<FieldSeq?>());
+        => gtPeelOffsets(ref addr, out offset, out _);
 
     /// <summary>Peel all ADD(addr, CNS_INT(x)) nodes off the specified address node and return the base node and sum of offsets peeled.</summary>
     /// <param name="addr">The address node.</param>
@@ -2668,13 +4100,8 @@ public partial class Compiler
     {
         assert(addr.Type is TYP_I_IMPL or TYP_BYREF or TYP_REF);
 
-        Unsafe.SkipInit(out fldSeq);
         offset = 0;
-
-        if (!Unsafe.IsNullRef(in fldSeq))
-        {
-            fldSeq = null;
-        }
+        fldSeq = null;
 
         while (true)
         {
@@ -2693,11 +4120,8 @@ public partial class Compiler
                     {
                         offset += intCon.IconValue;
 
-                        if (!Unsafe.IsNullRef(in fldSeq))
-                        {
-                            assert(m_fieldSeqStore is not null);
-                            fldSeq = m_fieldSeqStore.Append(fldSeq, intCon.FieldSeq);
-                        }
+                        assert(_fieldSeqStore is not null);
+                        fldSeq = _fieldSeqStore.Append(fldSeq, intCon.FieldSeq);
 
                         addr = op1;
                         continue;
@@ -2712,11 +4136,8 @@ public partial class Compiler
                     {
                         offset += intCon.IconValue;
 
-                        if (!Unsafe.IsNullRef(in fldSeq))
-                        {
-                            assert(m_fieldSeqStore is not null);
-                            fldSeq = m_fieldSeqStore.Append(intCon.FieldSeq, fldSeq);
-                        }
+                        assert(_fieldSeqStore is not null);
+                        fldSeq = _fieldSeqStore.Append(intCon.FieldSeq, fldSeq);
 
                         addr = op2;
                         continue;
@@ -2743,6 +4164,36 @@ public partial class Compiler
                 break;
             }
         }
+    }
+
+    public GenTree gtReverseCond(GenTree tree)
+    {
+        var oper = tree.Oper;
+
+        if (oper.IsCompare)
+        {
+            tree.AsOp().ReverseRelop();
+        }
+        else if (oper is GT_JCC or GT_SETCC)
+        {
+            var cc = tree.AsCC();
+            cc.Condition = GenCondition.Reverse(cc.Condition);
+        }
+        else if (oper is GT_JCMP or GT_JTEST)
+        {
+            var opCC = tree.AsOpCC();
+            opCC.Condition = GenCondition.Reverse(opCC.Condition);
+        }
+        else if (oper.IsIntegralConst)
+        {
+            var con = tree.AsIntConCommon();
+            con.IntegralValue = con.IsIntegralConst(0) ? 1 : 0;
+        }
+        else
+        {
+            tree = gtNewBinaryNode(GT_EQ, TYP_INT, tree, gtNewZeroConNode(TYP_INT));
+        }
+        return tree;
     }
 
     /// <summary>Given a tree, figure out the order in which its sub-operands should be evaluated.</summary>
@@ -2780,6 +4231,39 @@ public partial class Compiler
     /// <param name="stmt"></param>
     /// <remarks>Necessary because the FP levels may need to be re-computed if we reverse operands</remarks>
     public void gtSetStmtInfo(Statement stmt) => gtSetEvalOrder(stmt.RootNode);
+
+    /// <summary>Converts an annotated token into an icon flags (so that we will later be able to tell the type of the handle that will be embedded in the icon node)</summary>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public GenTreeFlags gtTokenToIconFlags(int token) => TypeFromToken(token) switch {
+        mdtTypeRef => GTF_ICON_CLASS_HDL,
+        mdtTypeDef => GTF_ICON_CLASS_HDL,
+        mdtTypeSpec => GTF_ICON_CLASS_HDL,
+        mdtMethodDef => GTF_ICON_METHOD_HDL,
+        mdtFieldDef => GTF_ICON_FIELD_HDL,
+        _ => GTF_ICON_TOKEN_HDL,
+    };
+
+    /// <summary>Check if a tree contains any async call.</summary>
+    /// <param name="tree">The tree to check</param>
+    /// <returns>True if any node in the tree is an async call, false otherwise.</returns>
+    public bool gtTreeContainsAsyncCall(GenTree tree)
+    {
+        if (!compIsAsync)
+        {
+            return false;
+        }
+        return gtFindNodeInTree(tree, gtIsAsyncCall, GTF_CALL) is not null;
+    }
+
+    /// <summary>Check if a tree contains any tail call or tail call candidate.</summary>
+    /// <param name="tree">The tree</param>
+    /// <returns>true if any node in the tree is a tail call or tail call candidate; false otherwise.</returns>
+    /// <remarks>While tail calls are generally expected to be top level nodes we do allow some other shapes of calls to be tail calls, including some cascading trivial assignments and casts. This function does a tree walk to check if any sub tree is a tail call.</remarks>
+    public bool gtTreeContainsTailCall(GenTree tree)
+    {
+        return gtFindNodeInTree(tree, gtIsTailCall, GTF_CALL) is not null;
+    }
 
     public bool gtTreeHasSideEffects(GenTree tree, GenTreeFlags flags, bool ignoreCctors = false)
     {
@@ -2820,17 +4304,297 @@ public partial class Compiler
         return true;
     }
 
-    //------------------------------------------------------------------------
-    // gtUpdateNodeOperSideEffects: Update the side effects based on the node operation.
-    //
-    // Arguments:
-    //    tree            - Tree to update the side effects on
-    //
-    // Notes:
-    //    This method currently only updates GTF_EXCEPT, GTF_ASG, and GTF_CALL flags.
-    //    The other side effect flags may remain unnecessarily (conservatively) set.
-    //    The caller of this method is expected to update the flags based on the children's flags.
-    //
+    /// <summary>Given an unused value type box, try and remove the upstream allocation and unnecessary parts of the copy.</summary>
+    /// <param name="box">the box node to optimize</param>
+    /// <param name="options">controls whether and how trees are modified</param>
+    /// <returns>A tree representing the original value to box, if removal is successful/possible (but see note). null if removal fails.</returns>
+    /// <remarks>
+    ///   <para>Value typed box gets special treatment because it has associated side effects that can be removed if the box result is not used.</para>
+    ///   <para>By default (options == BR_REMOVE_AND_NARROW) this method will try and remove unnecessary trees and will try and reduce remaining operations to the minimal set, possibly narrowing the width of loads from the box source if it is a struct.</para>
+    ///   <para>To perform a trial removal, pass BR_DONT_REMOVE. This can be useful to determine if this optimization should only be performed if some other conditions hold true.</para>
+    ///   <para>To remove but not alter the access to the box source, pass BR_REMOVE_BUT_NOT_NARROW.</para>
+    ///   <para>To remove and return the tree for the type handle used for the boxed newobj, pass BR_REMOVE_BUT_NOT_NARROW_WANT_TYPE_HANDLE. This can be useful when the only part of the box that is "live" is its type.</para>
+    ///   <para>If removal fails, it is possible that a subsequent pass may be able to optimize.  Blocking side effects may now be minimized (null or bounds checks might have been removed) or might be better known (inline return placeholder updated with the actual return expression). So the box is perhaps best left as is to help trigger this re-examination.</para>
+    /// </remarks>
+    public unsafe GenTree? gtTryRemoveBoxUpstreamEffects(GenTreeBox box, BoxRemovalOptions options = BR_REMOVE_AND_NARROW)
+    {
+        assert(box.IsBoxedValue);
+
+        // grab related parts for the optimization
+        var allocStmt = box.DefStmtWhenInlinedBoxValue;
+        var copyStmt = box.CopyStmtWhenInlinedBoxValue;
+
+        JITDUMP($"gtTryRemoveBoxUpstreamEffects: {((options == BR_DONT_REMOVE) ? "checking if it is possible" : "attempting")} to {((options == BR_MAKE_LOCAL_COPY) ? "make local unboxed version" : "remove side effects")} of BOX (valuetype) [{box.TreeId:D6}] (assign/newobj {FMT_STMT(allocStmt.Id)} copy {FMT_STMT(copyStmt.Id)}\n");
+
+        // If we don't recognize the form of the store, bail.
+        var boxLclDef = allocStmt.RootNode;
+
+        if (boxLclDef.Oper is not GT_STORE_LCL_VAR)
+        {
+            JITDUMP($" bailing; unexpected alloc def op {boxLclDef.Oper}\n");
+            return null;
+        }
+
+        // If this box is no longer single-use, bail.
+        if (box.WasCloned)
+        {
+            JITDUMP(" bailing; unsafe to remove box that has been cloned\n");
+            return null;
+        }
+
+        // If we're eventually going to return the type handle, remember it now.
+        var boxTypeHandle = null as GenTree;
+
+        if ((options == BR_REMOVE_AND_NARROW_WANT_TYPE_HANDLE) || (options == BR_DONT_REMOVE_WANT_TYPE_HANDLE))
+        {
+            var defSrc = boxLclDef.AsLclVar().Data;
+            var defSrcOper = defSrc.Oper;
+
+            // Allocation may be via AllocObj or via helper call, depending
+            // on when this is invoked and whether the jit is using AllocObj
+            // for R2R allocations.
+            if (defSrcOper == GT_ALLOCOBJ)
+            {
+                var allocObj = defSrc.AsAllocObj();
+                boxTypeHandle = allocObj.AsOp().Op1;
+            }
+            else if (defSrcOper == GT_CALL)
+            {
+                var newobjCall = defSrc.AsCall();
+
+                // In R2R expansions the handle may not be an explicit operand to the helper,
+                // so we can't remove the box.
+                if (newobjCall.Args.IsEmpty)
+                {
+                    assert(newobjCall.IsHelperCall(CORINFO_HELP_READYTORUN_NEW));
+                    JITDUMP(" bailing; newobj via R2R helper\n");
+                    return null;
+                }
+
+                var callArg = newobjCall.Args.GetArgByIndex(0);
+                assert(callArg is not null);
+                boxTypeHandle = callArg.Node;
+            }
+            else
+            {
+                unreached();
+            }
+
+            assert(boxTypeHandle is not null);
+        }
+
+        // If we don't recognize the form of the copy, bail.
+        var copy = copyStmt.RootNode;
+
+        if (copy.Oper is not GT_STOREIND and not GT_STORE_BLK)
+        {
+            // GT_RET_EXPR is a tolerable temporary failure.
+            // The jit will revisit this optimization after
+            // inlining is done.
+            if (copy.Oper is GT_RET_EXPR)
+            {
+                JITDUMP($" bailing; must wait for replacement of copy {copy.Oper}\n");
+            }
+            else
+            {
+                // Anything else is a missed case we should figure out how to handle.
+                // One known case is GT_COMMAs enclosing the store we are looking for.
+                JITDUMP($" bailing; unexpected copy op {copy.Oper}\n");
+            }
+            return null;
+        }
+
+        // Handle case where we are optimizing the box into a local copy
+        if (options == BR_MAKE_LOCAL_COPY)
+        {
+            // Drill into the box to get at the box temp local and the box type
+            var boxTemp = box.BoxOp;
+            assert(boxTemp.Oper.IsLocal);
+
+            var boxTempLcl = boxTemp.AsLclVar().LclNum;
+            assert(lvaTable[boxTempLcl].Type is TYP_REF);
+
+            var boxClass = lvaTable[boxTempLcl].lvClassHnd;
+            assert(boxClass is not null);
+
+            // Verify that the copy has the expected shape
+            // (store_blk|store_ind (add (boxTempLcl, ptr-size)))
+            //
+            // The shape here is constrained to the patterns we produce
+            // over in impImportAndPushBox for the inlined box case.
+
+            var copyDstAddr = copy.AsIndir().Addr;
+
+            if (copyDstAddr.Oper is not GT_ADD)
+            {
+                JITDUMP("Unexpected copy dest address tree\n");
+                return null;
+            }
+
+            var copyDstAddrOp1 = copyDstAddr.AsOp().Op1;
+
+            if ((copyDstAddrOp1.Oper is not GT_LCL_VAR) || (copyDstAddrOp1.AsLclVarCommon().LclNum != boxTempLcl))
+            {
+                JITDUMP("Unexpected copy dest address 1st addend\n");
+                return null;
+            }
+
+            var copyDstAddrOp2 = copyDstAddr.AsOp().Op2;
+
+            if (!copyDstAddrOp2.IsIntegralConst(TARGET_POINTER_SIZE))
+            {
+                JITDUMP("Unexpected copy dest address 2nd addend\n");
+                return null;
+            }
+
+            // Screening checks have all passed. Do the transformation.
+            //
+            // Retype the box temp to be a struct
+            JITDUMP($"Retyping box temp V{boxTempLcl:D2} to struct {eeGetClassName(boxClass)}\n");
+            lvaTable[boxTempLcl].Type = TYP_UNDEF;
+
+            var isUnsafeValueClass = false;
+            lvaSetStruct(boxTempLcl, boxClass, isUnsafeValueClass);
+
+            // Remove the newobj and store to box temp
+            JITDUMP($"Bashing NEWOBJ [{boxLclDef.TreeId:D6}] to NOP\n");
+            allocStmt.RootNode = gtNewNothingNode();
+            DEBUG_DESTROY_NODE(boxLclDef);
+
+            // Update the copy from the value to be boxed to the box temp
+            copy.AsIndir().Addr = gtNewLclVarAddrNode(TYP_BYREF, boxTempLcl);
+
+            // Return the address of the now-struct typed box temp
+            return gtNewLclVarAddrNode(TYP_BYREF, boxTempLcl);
+        }
+
+        // If the copy is a struct copy, make sure we know how to isolate any source side effects.
+        var copySrc = copy.Data;
+
+        // If the copy source is from a pending inline, wait for it to resolve.
+        if (copySrc.Oper is GT_RET_EXPR)
+        {
+            JITDUMP($" bailing; must wait for replacement of copy source {copySrc.Oper}\n");
+            return null;
+        }
+
+        var hasSrcSideEffect = false;
+        var isStructCopy = false;
+
+        if (gtTreeHasSideEffects(copySrc, GTF_SIDE_EFFECT))
+        {
+            hasSrcSideEffect = true;
+
+            if (varTypeIsStruct(copySrc.Type))
+            {
+                isStructCopy = true;
+
+                if (copySrc.Oper is not GT_IND and not GT_BLK)
+                {
+                    // We don't know how to handle other cases, yet.
+                    JITDUMP($" bailing; unexpected copy source struct op with side effect {copySrc.Oper}\n");
+                    return null;
+                }
+            }
+        }
+
+        // If this was a trial removal, we're done.
+        if (options is BR_DONT_REMOVE)
+        {
+            return copySrc;
+        }
+
+        if (options is BR_DONT_REMOVE_WANT_TYPE_HANDLE)
+        {
+            return boxTypeHandle;
+        }
+
+        // Otherwise, proceed with the optimization.
+        //
+        // Change the store expression to a NOP.
+        JITDUMP($"\nBashing NEWOBJ [{boxLclDef.TreeId:D6}] to NOP\n");
+        allocStmt.RootNode = gtNewNothingNode();
+        DEBUG_DESTROY_NODE(boxLclDef);
+
+        // Change the copy expression so it preserves key
+        // source side effects.
+        JITDUMP($"\nBashing COPY [{copy.TreeId:D6}]");
+
+        if (!hasSrcSideEffect)
+        {
+            // If there were no copy source side effects just bash the copy to a NOP.
+            JITDUMP(" to NOP; no source side effects.\n");
+            copyStmt.RootNode = gtNewNothingNode();
+            DEBUG_DESTROY_NODE(copy);
+        }
+        else if (!isStructCopy)
+        {
+            // For scalar types, go ahead and produce the
+            // value as the copy is fairly cheap and likely
+            // the optimizer can trim things down to just the
+            // minimal side effect parts.
+            copyStmt.RootNode = copySrc;
+            JITDUMP($" to scalar read via [{copySrc.TreeId:D6}]\n");
+        }
+        else
+        {
+            // For struct types read the first byte of the source struct; there's
+            // no need to read the entire thing, and no place to put it.
+            assert(copySrc.Oper.IsLoad);
+            copyStmt.RootNode = copySrc;
+
+            if (options is BR_REMOVE_AND_NARROW or BR_REMOVE_AND_NARROW_WANT_TYPE_HANDLE)
+            {
+                JITDUMP($" to read first byte of struct via modified [{copySrc.TreeId:D6}]\n");
+
+                if (copySrc.Oper is GT_IND)
+                {
+                    copySrc.Type = TYP_BYTE;
+                }
+                else
+                {
+                    var indir = gtNewIndir(TYP_BYTE, copySrc.AsIndir().Addr, copySrc.Flags);
+                    copy.DataRef = indir;
+                    copySrc = indir;
+                    DEBUG_DESTROY_NODE(copySrc);
+                }
+            }
+            else
+            {
+                JITDUMP($" to read entire struct via modified [{copySrc.TreeId:D6}]\n");
+            }
+        }
+
+        if (fgNodeThreading == NodeThreading.AllTrees)
+        {
+            fgSetStmtSeq(allocStmt);
+            fgSetStmtSeq(copyStmt);
+        }
+
+        // Box effects were successfully optimized.
+
+        if (options == BR_REMOVE_AND_NARROW_WANT_TYPE_HANDLE)
+        {
+            return boxTypeHandle;
+        }
+        else
+        {
+            return copySrc;
+        }
+    }
+
+    public GenTree gtUnusedValNode(GenTree expr)
+    {
+        return gtNewCommaNode(TYP_VOID, expr, gtNewNothingNode());
+    }
+
+    /// <summary>Update the side effects based on the node operation.</summary>
+    /// <param name="tree">Tree to update the side effects on</param>
+    /// <remarks>
+    ///   <para>This method currently only updates GTF_EXCEPT, GTF_ASG, and GTF_CALL flags.</para>
+    ///   <para>The other side effect flags may remain unnecessarily (conservatively) set.</para>
+    ///   <para>The caller of this method is expected to update the flags based on the children's flags.</para>
+    /// </remarks>
     public void gtUpdateNodeOperSideEffects(GenTree tree)
     {
         var oper = tree.Oper;
@@ -2871,17 +4635,12 @@ public partial class Compiler
         tree.Flags = flags;
     }
 
-    //------------------------------------------------------------------------
-    // gtUpdateNodeSideEffects: Update the side effects based on the node operation and
-    //                          children's side efects.
-    //
-    // Arguments:
-    //    tree            - Tree to update the side effects on
-    //
-    // Notes:
-    //    This method currently only updates GTF_EXCEPT, GTF_ASG, and GTF_CALL flags.
-    //    The other side effect flags may remain unnecessarily (conservatively) set.
-    //
+    /// <summary>Update the side effects based on the node operation and children's side efects.</summary>
+    /// <param name="tree">Tree to update the side effects on</param>
+    /// <remarks>
+    ///   <para>This method currently only updates GTF_EXCEPT, GTF_ASG, and GTF_CALL flags.</para>
+    ///   <para>The other side effect flags may remain unnecessarily (conservatively) set.</para>
+    /// </remarks>
     public void gtUpdateNodeSideEffects(GenTree tree)
     {
         gtUpdateNodeOperSideEffects(tree);

@@ -7,17 +7,17 @@ namespace RyuJitSharp;
 
 public ref struct WinX64Classifier
 {
-    private RegisterQueue m_intRegs;
-    private RegisterQueue m_fltRegs;
-    private int m_stackArgSize = 32;
+    private RegisterQueue _intRegs;
+    private RegisterQueue _fltRegs;
+    private int _stackArgSize = 32;
 
     public WinX64Classifier(in ClassifierInfo info)
     {
-        m_intRegs = new RegisterQueue(IntArgRegs);
-        m_fltRegs = new RegisterQueue(FltArgRegs);
+        _intRegs = new RegisterQueue(IntArgRegs);
+        _fltRegs = new RegisterQueue(FltArgRegs);
     }
 
-    public readonly int StackSize => m_stackArgSize;
+    public readonly int StackSize => _stackArgSize;
 
     /// <summary>Classify a parameter for the Windows x64 ABI.</summary>
     /// <param name="comp">Compiler instance</param>
@@ -31,7 +31,7 @@ public ref struct WinX64Classifier
         // that do not fit are passed implicitly by reference). Passing a parameter
         // in an int register also consumes the corresponding float register and
         // vice versa.
-        assert(m_intRegs.Count == m_fltRegs.Count);
+        assert(_intRegs.Count == _fltRegs.Count);
 
         var passedByRef = false;
         int typeSize = type.Size;
@@ -50,18 +50,18 @@ public ref struct WinX64Classifier
 
         AbiPassingSegment segment;
 
-        if (m_intRegs.Count > 0)
+        if (_intRegs.Count > 0)
         {
-            var reg = varTypeUsesFloatArgReg(type) ? m_fltRegs.Peek() : m_intRegs.Peek();
+            var reg = varTypeUsesFloatArgReg(type) ? _fltRegs.Peek() : _intRegs.Peek();
             segment = AbiPassingSegment.InRegister(reg, 0, typeSize);
 
-            _ = m_intRegs.Dequeue();
-            _ = m_fltRegs.Dequeue();
+            _ = _intRegs.Dequeue();
+            _ = _fltRegs.Dequeue();
         }
         else
         {
-            segment = AbiPassingSegment.OnStack(m_stackArgSize, 0, typeSize);
-            m_stackArgSize += TARGET_POINTER_SIZE;
+            segment = AbiPassingSegment.OnStack(_stackArgSize, 0, typeSize);
+            _stackArgSize += TARGET_POINTER_SIZE;
         }
         return AbiPassingInformation.FromSegment(comp, passedByRef, segment);
     }

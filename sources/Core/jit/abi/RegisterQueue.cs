@@ -9,30 +9,30 @@ namespace RyuJitSharp;
 
 public ref struct RegisterQueue
 {
-    private readonly ReadOnlySpan<regNumber> m_regs;
-    private int m_index;
+    private readonly ReadOnlySpan<regNumber> _regs;
+    private int _index;
 
     public RegisterQueue(ReadOnlySpan<regNumber> regs)
     {
-        m_regs = regs;
+        _regs = regs;
     }
 
-    public readonly int Count => m_regs.Length - m_index;
+    public readonly int Count => _regs.Length - _index;
 
     public void Clear()
     {
-        m_index = m_regs.Length;
+        _index = _regs.Length;
     }
 
     public regNumber Dequeue()
     {
         assert(Count > 0);
-        return m_regs[m_index++];
+        return _regs[_index++];
     }
 
     public readonly regNumber Peek()
     {
         assert(Count > 0);
-        return m_regs[m_index];
+        return _regs[_index];
     }
 }

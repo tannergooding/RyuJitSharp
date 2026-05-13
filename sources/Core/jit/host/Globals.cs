@@ -10,7 +10,6 @@ using System.IO;
 using System.Runtime.CompilerServices;
 
 #if DEBUG
-using System.Globalization;
 #endif
 
 namespace RyuJitSharp;

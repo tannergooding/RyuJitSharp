@@ -152,6 +152,16 @@ public partial class Globals
     /// <summary>Fixed locallocs of this size or smaller will convert to local buffers.</summary>
     public const int DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE = 32;
 
+    /// <summary>Should we enable JitStress mode?</summary>
+    /// <remarks>
+    ///   <list type="bullet">
+    ///     <item>0:    No stress</item>
+    ///     <item>!= 2: Vary stress. Performance will be slightly/moderately degraded</item>
+    ///     <item>2:    Check-all stress. Performance will be REALLY horrible</item>
+    ///   </list>
+    /// </remarks>
+    public static int JitStressLevel => JitConfig[ConfigInteger.JitStress];
+
     /// <summary>sets value of tree to garbage to catch extra references</summary>
     /// <param name="tree">This node should not be referenced by anyone now</param>
     [Conditional("DEBUG")]
@@ -185,8 +195,8 @@ public partial class Globals
         CORINFO_HFA_ELEM_NONE => TYP_UNDEF,
         CORINFO_HFA_ELEM_FLOAT => TYP_FLOAT,
         CORINFO_HFA_ELEM_DOUBLE => TYP_DOUBLE,
-        CORINFO_HFA_ELEM_VECTOR64 => TYP_Simd8,
-        CORINFO_HFA_ELEM_VECTOR128 => TYP_Simd16,
+        CORINFO_HFA_ELEM_VECTOR64 => TYP_SIMD8,
+        CORINFO_HFA_ELEM_VECTOR128 => TYP_SIMD16,
         _ => TYP_UNKNOWN,
     };
 

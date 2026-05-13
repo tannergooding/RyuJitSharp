@@ -17,7 +17,7 @@ public sealed class GenTreeFieldAddr : GenTreeUnOp
     private CORINFO_CONST_LOOKUP _fieldLookup;
 #endif
 
-    public unsafe GenTreeFieldAddr(var_types type, GenTree obj, CORINFO_FIELD_HANDLE fldHnd, int offs)
+    public unsafe GenTreeFieldAddr(var_types type, GenTree? obj, CORINFO_FIELD_HANDLE fldHnd, int offs)
         : base(GT_FIELD_ADDR, type, obj)
     {
         _fldHnd = fldHnd;

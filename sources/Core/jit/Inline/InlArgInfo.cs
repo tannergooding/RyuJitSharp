@@ -11,7 +11,7 @@ public partial struct InlArgInfo
     public CallArg arg;
 
     /// <summary>tmp node created, if it may be replaced with actual arg</summary>
-    public GenTree argBashTmpNode;
+    public GenTree? argBashTmpNode;
 
     /// <summary>the argument tmp number</summary>
     public int argTmpNum;

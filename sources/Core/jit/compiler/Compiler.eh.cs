@@ -4,7 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System.Runtime.CompilerServices;
-using System.Threading;
+using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
@@ -23,6 +23,284 @@ public partial class Compiler
     public EHNodeDsc? ehnTree;
 
     public bool ehTableFinalized;
+
+    /// <summary>Give two blocks, return the inner-most enclosing try region that contains both of them.</summary>
+    /// <param name="bbOne"></param>
+    /// <param name="bbTwo"></param>
+    /// <returns>0 if it does not find any try region (which means the inner-most region is the method itself).</returns>
+    public ushort bbFindInnermostCommonTryRegion(BasicBlock bbOne, BasicBlock bbTwo)
+    {
+        for (ushort XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+        {
+            if (bbInTryRegions(XTnum, bbOne) && bbInTryRegions(XTnum, bbTwo))
+            {
+                noway_assert(XTnum < MAX_XCPTN_INDEX);
+                return (ushort)(XTnum + 1); // Return the tryIndex
+            }
+        }
+        return 0;
+    }
+
+    /// <summary>Given a one-biased region index (which may be 0, indicating method region) and a block, return one-biased index for the inner-most enclosing try region that contains the block and the region.</summary>
+    /// <param name="tryIndex"></param>
+    /// <param name="bbTwo"></param>
+    /// <returns>0 if it does not find any try region (which means the inner-most region is the method itself).</returns>
+    public ushort bbFindInnermostCommonTryRegion(ushort tryIndex, BasicBlock bbTwo)
+    {
+        assert(tryIndex <= compHndBBtabCount);
+
+        if (tryIndex is 0)
+        {
+            return 0;
+        }
+
+        for (var XTnum = (ushort)(tryIndex - 1); XTnum < compHndBBtabCount; XTnum++)
+        {
+            if (bbInTryRegions(XTnum, bbTwo))
+            {
+                noway_assert(XTnum < MAX_XCPTN_INDEX);
+                return (ushort)(XTnum + 1); // Return the tryIndex
+            }
+        }
+        return 0;
+    }
+
+    /// <summary>Given a try region, find the innermost handler region that contains it.</summary>
+    /// <param name="tryIndex"></param>
+    /// <returns></returns>
+    /// <remarks>NOTE: tryIndex is 1-based (0 means no handler).</remarks>
+    public ushort bbFindInnermostHandlerRegionContainingTryRegion(ushort tryIndex)
+    {
+        if (tryIndex > 0)
+        {
+            // tryIndex is 1 based, our interesting clauses start from clause compHndBBtab[tryIndex]
+            var blk = ehGetDsc((ushort)(tryIndex - 1)).ebdTryBeg;
+
+            for (var XTnum = tryIndex; XTnum < compHndBBtabCount; XTnum++)
+            {
+                ref var ehDsc = ref ehGetDsc(XTnum);
+
+                if (bbInHandlerRegions(XTnum, blk))
+                {
+                    noway_assert(XTnum < MAX_XCPTN_INDEX);
+                    return (ushort)(XTnum + 1); // Return the handlerIndex
+                }
+            }
+        }
+        return 0;
+    }
+
+    /// <summary>Given a handler region, find the innermost try region that contains it.</summary>
+    /// <param name="handlerIndex"></param>
+    /// <returns></returns>
+    /// <remarks>NOTE: handlerIndex is 1-based (0 means no handler).</remarks>
+    public ushort bbFindInnermostTryRegionContainingHandlerRegion(ushort handlerIndex)
+    {
+        if (handlerIndex > 0)
+        {
+            // handlerIndex is 1 based, therefore our interesting clauses start from clause compHndBBtab[handlerIndex]
+            var blk = ehGetDsc((ushort)(handlerIndex - 1)).ebdHndBeg;
+
+            for (var XTnum = handlerIndex; XTnum < compHndBBtabCount; XTnum++)
+            {
+                ref var ehDsc = ref ehGetDsc(XTnum);
+
+                if (bbInTryRegions(XTnum, blk))
+                {
+                    noway_assert(XTnum < MAX_XCPTN_INDEX);
+                    return (ushort)(XTnum + 1); // Return the tryIndex
+                }
+            }
+        }
+        return 0;
+    }
+
+    /// <summary>Check if this block is part of a catch handler.</summary>
+    /// <param name="blk">The block</param>
+    /// <returns>True if the block is part of a catch handler clause. Otherwise false.</returns>
+    public bool bbInCatchHandlerBBRange(BasicBlock blk)
+    {
+        ref var HBtab = ref ehGetBlockHndDsc(blk);
+
+        if (Unsafe.IsNullRef(in HBtab))
+        {
+            return false;
+        }
+        return HBtab.HasCatchHandler && HBtab.InHndRegionBBRange(blk);
+    }
+
+    public bool bbInCatchHandlerILRange(BasicBlock blk)
+    {
+        ref var HBtab = ref ehGetBlockHndDsc(blk);
+
+        if (Unsafe.IsNullRef(in HBtab))
+        {
+            return false;
+        }
+        return HBtab.HasCatchHandler && HBtab.InHndRegionILRange(blk);
+    }
+
+    /// <summary>Given a hndBlk, see if it is in one of tryBlk's catch handler regions.</summary>
+    /// <param name="tryBlk"></param>
+    /// <param name="hndBlk"></param>
+    /// <returns></returns>
+    public bool bbInCatchHandlerRegions(BasicBlock tryBlk, BasicBlock hndBlk)
+    {
+        // Since we create one EHblkDsc for each "catch" of a "try", we might end up
+        // with multiple EHblkDsc's that have the same ebdTryBeg and ebdTryLast, but different
+        // ebdHndBeg and ebdHndLast. Unfortunately getTryIndex() only returns the index of the first EHblkDsc.
+        // 
+        // E.g. The following example shows that BB02 has a catch in BB03 and another catch in BB04.
+        // 
+        //     index  nest, enclosing
+        //       0  ::   0,    1 - Try at BB01..BB02 [000..008], Handler at BB03       [009..016]
+        //       1  ::   0,      - Try at BB01..BB02 [000..008], Handler at BB04       [017..022]
+        // 
+        // This function will return true for
+        //     bbInCatchHandlerRegions(BB02, BB03) and bbInCatchHandlerRegions(BB02, BB04)
+
+        assert(tryBlk.hasTryIndex);
+
+        if (!hndBlk.hasHndIndex)
+        {
+            return false;
+        }
+
+        var XTnum = tryBlk.TryIndex;
+        ref var firstEHblkDsc = ref ehGetDsc(XTnum);
+        ref var ehDsc = ref firstEHblkDsc;
+
+        // Rather than searching the whole list, take advantage of our sorting.
+        // We will only match against blocks with the same try body (mutually
+        // protect regions).  Because of our sort ordering, such regions will
+        // always be immediately adjacent, any nested regions will be before the
+        // first of the set, and any outer regions will be after the last.
+        // Also siblings will be before or after according to their location,
+        // but never in between;
+
+        while (XTnum > 0)
+        {
+            assert(EHblkDsc.ebdIsSameTry(firstEHblkDsc, ehDsc));
+            ref var prevEhDsc = ref ehGetDsc((ushort)(XTnum - 1));
+
+            // Stop when the previous region is not mutually protect
+            if (!EHblkDsc.ebdIsSameTry(firstEHblkDsc, prevEhDsc))
+            {
+                break;
+            }
+
+            XTnum--;
+            ehDsc = ref prevEhDsc;
+        }
+
+        // XTnum and ehDsc are now referring to the first region in the set of
+        // mutually protect regions.
+        assert(EHblkDsc.ebdIsSameTry(firstEHblkDsc, ehDsc));
+        assert(Unsafe.AreSame(in ehDsc, in MemoryMarshal.GetArrayDataReference(compHndBBtab)) || !EHblkDsc.ebdIsSameTry(firstEHblkDsc, in ehGetDsc((ushort)(XTnum - 1))));
+
+        do
+        {
+            if (ehDsc.HasCatchHandler && bbInHandlerRegions(XTnum, hndBlk))
+            {
+                return true;
+            }
+            ehDsc = ref ehGetDsc(++XTnum);
+        }
+        while ((XTnum < compHndBBtabCount) && EHblkDsc.ebdIsSameTry(firstEHblkDsc, ehDsc));
+
+        return false;
+    }
+
+    /// <summary>Check to see if an exception raised in the given block could be handled by the given region (possibly after inner regions).</summary>
+    /// <param name="regionIndex">Check if this region can handle exceptions from 'blk'</param>
+    /// <param name="blk">Consider exceptions raised from this block</param>
+    /// <returns>true if The region with index 'regionIndex' can handle exceptions from 'blk'; otherwise, false</returns>
+    /// <remarks>For this check, a funclet is considered to be in the region it was extracted from.</remarks>
+    public bool bbInExnFlowRegions(ushort regionIndex, BasicBlock blk)
+    {
+        assert(regionIndex is >= 0 and < EHblkDsc.NO_ENCLOSING_INDEX);
+
+        ref var ExnFlowRegion = ref ehGetBlockExnFlowDsc(blk);
+        var tryIndex = Unsafe.IsNullRef(in ExnFlowRegion) ? EHblkDsc.NO_ENCLOSING_INDEX : ehGetIndex(ExnFlowRegion);
+
+        // Loop outward until we find an enclosing try that is the same as the one
+        // we are looking for or an outer/later one
+        while (tryIndex < regionIndex)
+        {
+            tryIndex = ehGetEnclosingTryIndex(tryIndex);
+        }
+
+        // Now we have the index of 2 try bodies, either they match or not!
+        return (tryIndex == regionIndex);
+    }
+
+    /// <summary>Check if this block is part of a filter.</summary>
+    /// <param name="blk">The block</param>
+    /// <returns>True if the block is part of a filter clause. Otherwise false.</returns>
+    public bool bbInFilterBBRange(BasicBlock blk)
+    {
+        ref var HBtab = ref ehGetBlockHndDsc(blk);
+
+        if (Unsafe.IsNullRef(in HBtab))
+        {
+            return false;
+        }
+        return HBtab.InFilterRegionBBRange(blk);
+    }
+
+    public bool bbInFilterILRange(BasicBlock blk)
+    {
+        ref var HBtab = ref ehGetBlockHndDsc(blk);
+
+        if (Unsafe.IsNullRef(in HBtab))
+        {
+            return false;
+        }
+        return HBtab.InFilterRegionILRange(blk);
+    }
+
+    /// <summary>Given a block, check to see if it is in the handler block of the EH descriptor.</summary>
+    /// <param name="regionIndex"></param>
+    /// <param name="blk"></param>
+    /// <returns></returns>
+    /// <remarks>For this check, a funclet is considered to be in the region it was extracted from.</remarks>
+    public bool bbInHandlerRegions(ushort regionIndex, BasicBlock blk)
+    {
+        assert(regionIndex is >= 0 and < EHblkDsc.NO_ENCLOSING_INDEX);
+        var hndIndex = blk.hasHndIndex ? blk.HndIndex : EHblkDsc.NO_ENCLOSING_INDEX;
+
+        // We can't use the same simple trick here because there is no required ordering
+        // of handlers (which also have no required ordering with respect to their try
+        // bodies).
+        while (hndIndex < EHblkDsc.NO_ENCLOSING_INDEX && hndIndex != regionIndex)
+        {
+            hndIndex = ehGetEnclosingHndIndex(hndIndex);
+        }
+
+        // Now we have the index of 2 try bodies, either they match or not!
+        return (hndIndex == regionIndex);
+    }
+
+    /// <summary>Given a block and a try region index, check to see if the block is within the try body.</summary>
+    /// <param name="regionIndex"></param>
+    /// <param name="blk"></param>
+    /// <returns></returns>
+    /// <remarks>For this check, a funclet is considered to be in the region it was extracted from.</remarks>
+    public bool bbInTryRegions(ushort regionIndex, BasicBlock blk)
+    {
+        assert(regionIndex is >= 0 and < EHblkDsc.NO_ENCLOSING_INDEX);
+        var tryIndex = blk.hasTryIndex ? blk.TryIndex : EHblkDsc.NO_ENCLOSING_INDEX;
+
+        // Loop outward until we find an enclosing try that is the same as the one
+        // we are looking for or an outer/later one
+        while (tryIndex < regionIndex)
+        {
+            tryIndex = ehGetEnclosingTryIndex(tryIndex);
+        }
+
+        // Now we have the index of 2 try bodies, either they match or not!
+        return (tryIndex == regionIndex);
+    }
 
     // returns true if this block is the start of any try region.
     // This is computed by examining the current values in the
@@ -129,6 +407,46 @@ public partial class Compiler
         return (!Unsafe.IsNullRef(in hndDesc) && hndDesc.InFilterRegionBBRange(block) && (hndDesc.ebdEnclosingTryIndex != EHblkDsc.NO_ENCLOSING_INDEX));
     }
 
+    /// <summary>Get the EH descriptor for the most nested region (if any) that may handle exceptions raised in the given block</summary>
+    /// <param name="block">Consider exceptions raised from this block</param>
+    /// <returns>A reference to the given block's exceptions propagate to caller or a null ref if this region is the innermost handler for exceptions raised in the given block</returns>
+    public ref EHblkDsc ehGetBlockExnFlowDsc(BasicBlock block)
+    {
+        ref var hndDesc = ref ehGetBlockHndDsc(block);
+
+        if ((!Unsafe.IsNullRef(in hndDesc)) && hndDesc.InFilterRegionBBRange(block))
+        {
+            // If an exception is thrown in a filter (or escapes a callee in a filter),
+            // or if exception_continue_search (0/false) is returned at
+            // the end of a filter, the (original) exception is propagated to
+            // the next outer handler.  The "next outer handler" is the handler
+            // of the try region enclosing the try that the filter protects.
+            // This may not be the same as the try region enclosing the filter,
+            // e.g. in cases like this:
+            //    try {
+            //      ...
+            //    } filter (filter-part) {
+            //      handler-part
+            //    } catch {  (or finally/fault/filter)
+            // which is represented as two EHblkDscs with the same try range,
+            // the inner protected by a filter and the outer protected by the
+            // other handler; exceptions in the filter-part propagate to the
+            // other handler, even though the other handler's try region does not
+            // enclose the filter.
+
+            var outerIndex = hndDesc.ebdEnclosingTryIndex;
+
+            if (outerIndex == EHblkDsc.NO_ENCLOSING_INDEX)
+            {
+                assert(!block.hasTryIndex);
+                return ref Unsafe.NullRef<EHblkDsc>();
+            }
+            return ref ehGetDsc(outerIndex);
+        }
+
+        return ref ehGetBlockTryDsc(block);
+    }
+
     /// <summary>Return the EH descriptor for the most nested filter or handler region this BasicBlock is a member of (or null if this block is not in a filter or handler region).</summary>
     /// <param name="block"></param>
     /// <returns></returns>
@@ -144,22 +462,118 @@ public partial class Compiler
     /// <summary>Return the EH descriptor for the given region index.</summary>
     /// <param name="regionIndex"></param>
     /// <returns></returns>
-    public ref EHblkDsc ehGetDsc(int regionIndex)
+    public ref EHblkDsc ehGetDsc(ushort regionIndex)
     {
         assert(regionIndex < compHndBBtabCount);
         return ref compHndBBtab[regionIndex];
     }
 
+    /// <summary>Return the EH descriptor index of the enclosing handler, for the given region index.</summary>
+    /// <param name="regionIndex"></param>
+    /// <returns></returns>
+    public ushort ehGetEnclosingHndIndex(ushort regionIndex)
+    {
+        return ehGetDsc(regionIndex).ebdEnclosingHndIndex;
+    }
+
+    /// <summary>Return the index of the most nested enclosing region for a particular EH region.</summary>
+    /// <param name="regionIndex"></param>
+    /// <param name="inTryRegion"></param>
+    /// <returns>NO_ENCLOSING_INDEX if there is no enclosing region. If the returned index is not NO_ENCLOSING_INDEX, then '*inTryRegion' is set to 'true' if the enclosing region is a 'try', or 'false' if the enclosing region is a handler. (It can never be a filter.)</returns>
+    public ushort ehGetEnclosingRegionIndex(ushort regionIndex, out bool inTryRegion)
+    {
+        assert(regionIndex is not EHblkDsc.NO_ENCLOSING_INDEX);
+        ref var ehDsc = ref ehGetDsc(regionIndex);
+        return ehDsc.ebdGetEnclosingRegionIndex(out inTryRegion);
+    }
+
+    /// <summary>Return the EH descriptor index of the enclosing try, for the given region index.</summary>
+    /// <param name="regionIndex"></param>
+    /// <returns></returns>
+    public ushort ehGetEnclosingTryIndex(ushort regionIndex)
+    {
+        return ehGetDsc(regionIndex).ebdEnclosingTryIndex;
+    }
+
     /// <summary>Return the EH index given a region descriptor</summary>
     /// <param name="ehDsc"></param>
     /// <returns></returns>
-    public int ehGetIndex(in EHblkDsc ehDsc)
+    public ushort ehGetIndex(in EHblkDsc ehDsc)
     {
         assert(Unsafe.IsAddressLessThanOrEqualTo(in compHndBBtab[0], in ehDsc) && Unsafe.IsAddressLessThan(in ehDsc, in compHndBBtab[compHndBBtabCount]));
-        var index = (int)(Unsafe.ByteOffset(in compHndBBtab[0], in ehDsc) / Unsafe.SizeOf<EHblkDsc>());
+        var index = (ushort)(Unsafe.ByteOffset(in compHndBBtab[0], in ehDsc) / Unsafe.SizeOf<EHblkDsc>());
 
         assert(Unsafe.AreSame(in ehDsc, in compHndBBtab[index]));
         return index;
+    }
+
+    /// <summary>Return the region index of the most nested EH region this block is in.</summary>
+    /// <param name="block">the BasicBlock we want the region index for.</param>
+    /// <param name="inTryRegion">an out parameter. As described above.</param>
+    /// <returns>in the range [0..compHndBBtabCount]. It is same scale as bbTryIndex/bbHndIndex: 0 means main method, N is used as an index to compHndBBtab[N - 1]. If we don't return 0, then *inTryRegion indicates whether the most nested region for the block is a 'try' clause or filter/handler clause. For 0 return, *inTryRegion is set to true.</returns>
+    public ushort ehGetMostNestedRegionIndex(BasicBlock block, out bool inTryRegion)
+    {
+        assert(block is not null);
+
+        ushort mostNestedRegion;
+
+        if (block.bbHndIndex == 0)
+        {
+            mostNestedRegion = block.bbTryIndex;
+            inTryRegion = true;
+        }
+        else if (block.bbTryIndex == 0)
+        {
+            mostNestedRegion = block.bbHndIndex;
+            inTryRegion = false;
+        }
+        else
+        {
+            if (block.bbTryIndex < block.bbHndIndex)
+            {
+                mostNestedRegion = block.bbTryIndex;
+                inTryRegion = true;
+            }
+            else
+            {
+                // A block can't be both in the 'try' and 'handler' region of the same EH region
+                assert(block.bbTryIndex != block.bbHndIndex);
+
+                mostNestedRegion = block.bbHndIndex;
+                inTryRegion = false;
+            }
+        }
+
+        assert(mostNestedRegion <= compHndBBtabCount);
+        return mostNestedRegion;
+    }
+
+    public ref EHblkDsc ehInitHndBlockRange(BasicBlock blk, out BasicBlock? hndBeg, out BasicBlock? hndLast, out bool inFilter)
+    {
+        ref var hndTab = ref ehGetBlockHndDsc(blk);
+
+        if (!Unsafe.IsNullRef(in hndTab))
+        {
+            if (hndTab.InFilterRegionBBRange(blk))
+            {
+                hndBeg = hndTab.ebdFilter;
+                hndLast = hndTab.BBFilterLast;
+                inFilter = true;
+            }
+            else
+            {
+                hndBeg = hndTab.ebdHndBeg;
+                hndLast = hndTab.ebdHndLast;
+                inFilter = false;
+            }
+        }
+        else
+        {
+            hndBeg = null;
+            hndLast = null;
+            inFilter = false;
+        }
+        return ref hndTab;
     }
 
     public ref EHblkDsc ehInitHndRange(BasicBlock blk, out IL_OFFSET hndBeg, out IL_OFFSET hndEnd, out bool inFilter)
@@ -188,6 +602,23 @@ public partial class Compiler
             inFilter = false;
         }
         return ref hndTab;
+    }
+
+    public ref EHblkDsc ehInitTryBlockRange(BasicBlock blk, out BasicBlock? tryBeg, out BasicBlock? tryLast)
+    {
+        ref var tryTab = ref ehGetBlockTryDsc(blk);
+
+        if (!Unsafe.IsNullRef(in tryTab))
+        {
+            tryBeg = tryTab.ebdTryBeg;
+            tryLast = tryTab.ebdTryLast;
+        }
+        else
+        {
+            tryBeg = null;
+            tryLast = null;
+        }
+        return ref tryTab;
     }
 
     public ref EHblkDsc ehInitTryRange(BasicBlock blk, out IL_OFFSET tryBeg, out IL_OFFSET tryEnd)
@@ -285,7 +716,7 @@ public partial class Compiler
     {
         var ehnNodeId = initRootId;
 
-        for (var XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+        for (ushort XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
         {
             var p1 = ehnNode(ehnNodeId++);
             var p2 = ehnNode(ehnNodeId++);

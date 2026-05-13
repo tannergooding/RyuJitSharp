@@ -12,18 +12,18 @@ public partial class BasicBlock
     // Instead, we use this struct.
     public sealed class MemoryPhiArg
     {
-        public int m_ssaNum;
+        public int _ssaNum;
 
         /// <summary>Next arg in the list, else null.</summary>
-        public MemoryPhiArg? m_nextArg;
+        public MemoryPhiArg? _nextArg;
 
         public MemoryPhiArg(int ssaNum, MemoryPhiArg? nextArg = null)
         {
-            m_ssaNum = ssaNum;
-            m_nextArg = nextArg;
+            _ssaNum = ssaNum;
+            _nextArg = nextArg;
         }
 
         /// <summary>SSA# for incoming value.</summary>
-        public int SsaNum => m_ssaNum;
+        public int SsaNum => _ssaNum;
     }
 }

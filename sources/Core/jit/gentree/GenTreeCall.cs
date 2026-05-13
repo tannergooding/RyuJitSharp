@@ -61,7 +61,7 @@ public sealed class GenTreeCall : GenTree
     }
 
     // exact return type
-    private var_types _returnType
+    internal var_types _returnType
     {
         get
         {
@@ -96,7 +96,7 @@ public sealed class GenTreeCall : GenTree
     }
 
     /// <summary>Used by static init helpers, represents a class they init</summary>
-    private unsafe CORINFO_CLASS_HANDLE InitClsHnd
+    internal unsafe CORINFO_CLASS_HANDLE InitClsHnd
     {
         get
         {
@@ -110,7 +110,7 @@ public sealed class GenTreeCall : GenTree
     }
 
     /// <summary>Used by cast helpers to save corresponding IL offset</summary>\
-    private unsafe IL_OFFSET CastHelperILOffset
+    internal unsafe IL_OFFSET CastHelperILOffset
     {
         get
         {
@@ -153,7 +153,7 @@ public sealed class GenTreeCall : GenTree
         }
     }
 
-    private HandleHistogramProfileCandidateInfo? HandleHistogramProfileCandidateInfo
+    internal HandleHistogramProfileCandidateInfo? HandleHistogramProfileCandidateInfo
     {
         get
         {
@@ -359,7 +359,25 @@ public sealed class GenTreeCall : GenTree
     public bool IsGuarded => (_callDebugFlags & GTF_CALL_MD_GUARDED) != 0;
 #endif
 
-    public bool IsGuardedDevirtualizationCandidate => (_callMoreFlags & GTF_CALL_M_GUARDED_DEVIRT) != 0;
+    public bool IsGuardedDevirtualizationCandidate
+    {
+        get
+        {
+            return (_callMoreFlags & GTF_CALL_M_GUARDED_DEVIRT) != 0;
+        }
+
+        set
+        {
+            if (value)
+            {
+                _callMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT;
+            }
+            else
+            {
+                _callMoreFlags &= ~(GTF_CALL_M_GUARDED_DEVIRT | GTF_CALL_M_GUARDED_DEVIRT_EXACT);
+            }
+        }
+    }
 
     /// <summary>true if this is marked for opportunistic tail calling.</summary>
 #if FEATURE_TAILCALL_OPT
@@ -482,6 +500,23 @@ public sealed class GenTreeCall : GenTree
             }
             return InlineCandidateInfo;
         }
+
+        set
+        {
+            if (value is not null)
+            {
+                _inlineInfoCount = 1;
+                Flags |= GTF_CALL_INLINE_CANDIDATE;
+            }
+            else
+            {
+                _inlineInfoCount = 0;
+                Flags &= ~GTF_CALL_INLINE_CANDIDATE;
+            }
+
+            InlineCandidateInfo = value;
+            IsGuardedDevirtualizationCandidate = false;
+        }
     }
 
     public CorInfoCallConvExtension UnmanagedCallConv => IsUnmanaged ? UnmgdCallConv : CorInfoCallConvExtension.Managed;
@@ -490,13 +525,28 @@ public sealed class GenTreeCall : GenTree
     public bool WasInlineCandidate => (_callDebugFlags & GTF_CALL_MD_WAS_CANDIDATE) != 0;
 #endif
 
+    public void ClearInlineInfo()
+    {
+        SingleInlineCandidateInfo = null!;
+    }
+
+    public void ClearOtherRegs()
+    {
 #if FEATURE_MULTIREG_RET
+        Span<regNumber> otherRegs = _otherRegs;
+        otherRegs.Fille(REG_NA);
+        _spillFlags = 0;
+#endif
+    }
+
     public void CopyOtherRegs(GenTreeCall tree)
     {
-        // TODO: Port Call.CopyOtherRegs
+#if FEATURE_MULTIREG_RET
+        Span<regNumber> otherRegs = tree._otherRegs;
+        otherRegs.CopyTo(_otherRegs);
         _spillFlags = tree._spillFlags;
-    }
 #endif
+    }
 
     public InlineCandidateInfo GetGDVCandidateInfo(byte index)
     {

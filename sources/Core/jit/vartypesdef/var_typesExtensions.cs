@@ -27,13 +27,13 @@ public static class var_typesExtensions
         TYP_STRUCT,     // TYP_STRUCT
 
 #if FEATURE_SIMD
-        TYP_Simd8,      // TYP_Simd8 
-        TYP_Simd12,     // TYP_Simd12
-        TYP_Simd16,     // TYP_Simd16
+        TYP_SIMD8,      // TYP_SIMD8 
+        TYP_SIMD12,     // TYP_SIMD12
+        TYP_SIMD16,     // TYP_SIMD16
 
 #if TARGET_XARCH
-        TYP_Simd32,     // TYP_Simd32
-        TYP_Simd64,     // TYP_Simd64
+        TYP_SIMD32,     // TYP_SIMD32
+        TYP_SIMD64,     // TYP_SIMD64
 #elif TARGET_ARM64
         TYP_Simd,       // TYP_Simd
 #endif
@@ -64,13 +64,13 @@ public static class var_typesExtensions
         4,      // TYP_STRUCT
 
 #if FEATURE_SIMD
-        8,      // TYP_Simd8     
-        16,     // TYP_Simd12   
-        16,     // TYP_Simd16   
+        8,      // TYP_SIMD8     
+        16,     // TYP_SIMD12   
+        16,     // TYP_SIMD16   
 
 #if TARGET_XARCH
-        16,     // TYP_Simd32
-        16,     // TYP_Simd64
+        16,     // TYP_SIMD32
+        16,     // TYP_SIMD64
 #elif TARGET_ARM64
         16,     // TYP_Simd     
 #endif
@@ -101,13 +101,13 @@ public static class var_typesExtensions
         VTF_S,                      // TYP_STRUCT
 
 #if FEATURE_SIMD
-        VTF_S|VTF_VEC,              // TYP_Simd8    
-        VTF_S|VTF_VEC,              // TYP_Simd12   
-        VTF_S|VTF_VEC,              // TYP_Simd16
+        VTF_S|VTF_VEC,              // TYP_SIMD8    
+        VTF_S|VTF_VEC,              // TYP_SIMD12   
+        VTF_S|VTF_VEC,              // TYP_SIMD16
 
 #if TARGET_XARCH
-        VTF_S|VTF_VEC,              // TYP_Simd32   
-        VTF_S|VTF_VEC,              // TYP_Simd64   
+        VTF_S|VTF_VEC,              // TYP_SIMD32   
+        VTF_S|VTF_VEC,              // TYP_SIMD64   
 #elif TARGET_ARM64
         VTF_S|VTF_VEC,              // TYP_Simd     
 #endif
@@ -138,13 +138,13 @@ public static class var_typesExtensions
         EA_UNKNOWN,     // TYP_STRUCT
 
 #if FEATURE_SIMD
-        EA_8BYTE,       // TYP_Simd8    
-        EA_16BYTE,      // TYP_Simd12   
-        EA_16BYTE,      // TYP_Simd16
+        EA_8BYTE,       // TYP_SIMD8    
+        EA_16BYTE,      // TYP_SIMD12   
+        EA_16BYTE,      // TYP_SIMD16
 
 #if TARGET_XARCH
-        EA_32BYTE,      // TYP_Simd32   
-        EA_64BYTE,      // TYP_Simd64   
+        EA_32BYTE,      // TYP_SIMD32   
+        EA_64BYTE,      // TYP_SIMD64   
 #elif TARGET_ARM64
         EAU,            // TYP_Simd     
 #endif
@@ -175,13 +175,13 @@ public static class var_typesExtensions
         EA_UNKNOWN,     // TYP_STRUCT
 
 #if FEATURE_SIMD
-        EA_8BYTE,       // TYP_Simd8    
-        EA_16BYTE,      // TYP_Simd12   
-        EA_16BYTE,      // TYP_Simd16
+        EA_8BYTE,       // TYP_SIMD8    
+        EA_16BYTE,      // TYP_SIMD12   
+        EA_16BYTE,      // TYP_SIMD16
 
 #if TARGET_XARCH
-        EA_32BYTE,      // TYP_Simd32   
-        EA_64BYTE,      // TYP_Simd64   
+        EA_32BYTE,      // TYP_SIMD32   
+        EA_64BYTE,      // TYP_SIMD64   
 #elif TARGET_ARM64
         EAU,            // TYP_Simd     
 #endif
@@ -213,13 +213,13 @@ public static class var_typesExtensions
         "struct",   // TYP_STRUCT
 
 #if FEATURE_SIMD
-        "simd8",    // TYP_Simd8    
-        "simd12",   // TYP_Simd12   
-        "simd16",   // TYP_Simd16
+        "simd8",    // TYP_SIMD8    
+        "simd12",   // TYP_SIMD12   
+        "simd16",   // TYP_SIMD16
 
 #if TARGET_XARCH
-        "simd32",   // TYP_Simd32   
-        "simd64",   // TYP_Simd64
+        "simd32",   // TYP_SIMD32   
+        "simd64",   // TYP_SIMD64
 
 #elif TARGET_ARM64
         "simd",     // TYP_Simd     
@@ -252,13 +252,13 @@ public static class var_typesExtensions
         VTR_INT,    // TYP_STRUCT
 
 #if FEATURE_SIMD
-        VTR_FLOAT,  // TYP_Simd8    
-        VTR_FLOAT,  // TYP_Simd12   
-        VTR_FLOAT,  // TYP_Simd16
+        VTR_FLOAT,  // TYP_SIMD8    
+        VTR_FLOAT,  // TYP_SIMD12   
+        VTR_FLOAT,  // TYP_SIMD16
 
 #if TARGET_XARCH
-        VTR_FLOAT,  // TYP_Simd32   
-        VTR_FLOAT,  // TYP_Simd64
+        VTR_FLOAT,  // TYP_SIMD32   
+        VTR_FLOAT,  // TYP_SIMD64
 
 #elif TARGET_ARM64
         VTR_FLOAT,  // TYP_Simd     
@@ -290,13 +290,13 @@ public static class var_typesExtensions
         0,      // TYP_STRUCT
 
 #if FEATURE_SIMD
-        8,      // TYP_Simd8    
-        12,     // TYP_Simd12   
-        16,     // TYP_Simd16
+        8,      // TYP_SIMD8    
+        12,     // TYP_SIMD12   
+        16,     // TYP_SIMD16
 
 #if TARGET_XARCH
-        32,     // TYP_Simd32   
-        64,     // TYP_Simd64   
+        32,     // TYP_SIMD32   
+        64,     // TYP_SIMD64   
 #elif TARGET_ARM64
         SZU,    // TYP_Simd     
 #endif
@@ -327,13 +327,13 @@ public static class var_typesExtensions
         1,      // TYP_STRUCT  
 
 #if FEATURE_SIMD
-        2,      // TYP_Simd8 
-        4,      // TYP_Simd12
-        4,      // TYP_Simd16
+        2,      // TYP_SIMD8 
+        4,      // TYP_SIMD12
+        4,      // TYP_SIMD16
 
 #if TARGET_XARCH
-        8,      // TYP_Simd32   
-        16,     // TYP_Simd64   
+        8,      // TYP_SIMD32   
+        16,     // TYP_SIMD64   
 #elif TARGET_ARM64
         0,      // TYP_Simd
 #endif

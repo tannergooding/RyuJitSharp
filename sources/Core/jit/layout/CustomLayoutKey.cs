@@ -10,7 +10,7 @@ namespace RyuJitSharp;
 
 public readonly struct CustomLayoutKey : IEquatable<CustomLayoutKey>
 {
-    private readonly int m_size;
+    private readonly int _size;
 
     // Array of CorInfoGCType (as BYTE) that describes the GC layout of the class.
     // For small classes the array is stored inline, avoiding an extra allocation and the pointer size overhead.
@@ -18,13 +18,13 @@ public readonly struct CustomLayoutKey : IEquatable<CustomLayoutKey>
 
     public CustomLayoutKey(ClassLayout layout)
     {
-        m_size = layout.Size;
-        _anonymous = layout.GcPtrCount > 0 ? layout.GcPtrs : 0;
+        _size = layout.Size;
+        _anonymous = layout.GCPtrCount > 0 ? layout.GcPtrs : 0;
     }
 
     public CustomLayoutKey(in ClassLayoutBuilder builder)
     {
-        m_size = builder.m_size;
+        _size = builder._size;
         _anonymous = builder._anonymous;
     }
 
@@ -36,12 +36,12 @@ public readonly struct CustomLayoutKey : IEquatable<CustomLayoutKey>
 
     public unsafe bool Equals(CustomLayoutKey other)
     {
-        if (m_size != other.m_size)
+        if (_size != other._size)
         {
             return false;
         }
 
-        var gcPtrCount = m_size / TARGET_POINTER_SIZE;
+        var gcPtrCount = _size / TARGET_POINTER_SIZE;
 
         if (gcPtrCount < TARGET_POINTER_SIZE)
         {
@@ -55,9 +55,9 @@ public readonly struct CustomLayoutKey : IEquatable<CustomLayoutKey>
     public override unsafe int GetHashCode()
     {
         var hashCode = new HashCode();
-        hashCode.Add(m_size);
+        hashCode.Add(_size);
 
-        var gcPtrCount = m_size / TARGET_POINTER_SIZE;
+        var gcPtrCount = _size / TARGET_POINTER_SIZE;
 
         if (gcPtrCount < TARGET_POINTER_SIZE)
         {

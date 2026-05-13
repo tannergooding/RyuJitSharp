@@ -40,16 +40,16 @@ public enum var_types : byte
     TYP_STRUCT,
 
 #if FEATURE_SIMD
-    TYP_Simd8,
+    TYP_SIMD8,
 
-    TYP_Simd12,
+    TYP_SIMD12,
 
-    TYP_Simd16,
+    TYP_SIMD16,
 
 #if TARGET_XARCH
-    TYP_Simd32,
+    TYP_SIMD32,
 
-    TYP_Simd64,
+    TYP_SIMD64,
 #elif TARGET_ARM64
     TYP_Simd,
 #endif

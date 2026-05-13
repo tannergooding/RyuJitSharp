@@ -10,13 +10,13 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    protected Compiler? m_compiler;
+    protected Compiler? _compiler;
 
     protected GCInfo gcInfo;
 
     protected CodeGen? codeGen;
 
-    private int m_debugInfoSize;
+    private int _debugInfoSize;
 
     protected int emitInsCount;
 
@@ -332,25 +332,25 @@ public partial class Emitter
     /// <param name="cmpHandle"></param>
     public unsafe void emitBegCG(Compiler comp, COMP_HANDLE cmpHandle)
     {
-        m_compiler = comp;
+        _compiler = comp;
         emitCmpHandle = cmpHandle;
-        m_debugInfoSize = sizeof(instrDescDebugInfo);
+        _debugInfoSize = sizeof(instrDescDebugInfo);
 
 #if !DEBUG
         if (!comp.opts.disAsm)
         {
-            m_debugInfoSize = 0;
+            _debugInfoSize = 0;
         }
 #endif
 
 #if TARGET_AMD64
-        rbmFltCalleeTrash = m_compiler.rbmFltCalleeTrash;
-        rbmIntCalleeTrash = m_compiler.rbmIntCalleeTrash;
-        rbmAllInt = m_compiler.rbmAllInt;
+        rbmFltCalleeTrash = _compiler.rbmFltCalleeTrash;
+        rbmIntCalleeTrash = _compiler.rbmIntCalleeTrash;
+        rbmAllInt = _compiler.rbmAllInt;
 #endif
 
 #if TARGET_XARCH
-        rbmMskCalleeTrash = m_compiler.rbmMskCalleeTrash;
+        rbmMskCalleeTrash = _compiler.rbmMskCalleeTrash;
 #endif
     }
 
@@ -385,7 +385,7 @@ public partial class Emitter
         public struct _u2_e__Struct
         {
             /// <summary>small local table to avoid malloc</summary>
-            public emitArgTrackLclInlineArray emitArgTrackLcl;
+            public InlineArray16<byte> emitArgTrackLcl;
 
             /// <summary>base of the argument tracking stack</summary>
             public unsafe byte* emitArgTrackTab;
@@ -395,12 +395,6 @@ public partial class Emitter
 
             /// <summary>count of pending arg records (stk-depth for frameless methods, gc ptrs on stk for framed methods)</summary>
             public ushort emitGcArgTrackCnt;
-        }
-
-        [InlineArray(16)]
-        public struct emitArgTrackLclInlineArray
-        {
-            public byte e0;
         }
     }
 }

@@ -508,7 +508,7 @@ public partial class Globals
 
         if (opcode >= CEE_COUNT)
         {
-            jitprintf($"\nIllegal opcode: {opcode:X2}\n");
+            jitprintf($"\nIllegal opcode: {(ushort)(opcode):X2}\n");
             return (IL_OFFSET)(opcodePtr - startOpcodePtr);
         }
 

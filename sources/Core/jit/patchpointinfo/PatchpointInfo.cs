@@ -24,118 +24,118 @@ public partial struct PatchpointInfo
     private const int EXPOSURE_MASK = 0x1;
 
     // Total size of this patchpoint info record, in bytes
-    public readonly int PatchpointInfoSize => ComputeSize(m_numberOfLocals);
+    public readonly int PatchpointInfoSize => ComputeSize(_numberOfLocals);
 
     // Original method caller SP offset for generic context arg
     public int GenericContextArgOffset
     {
         readonly get
         {
-            return m_genericContextArgOffset;
+            return _genericContextArgOffset;
         }
 
         set
         {
-            m_genericContextArgOffset = value;
+            _genericContextArgOffset = value;
         }
     }
 
-    public readonly bool HasGenericContextArgOffset => m_genericContextArgOffset is not -1;
+    public readonly bool HasGenericContextArgOffset => _genericContextArgOffset is not -1;
 
     // Original method FP relative offset for kept-alive this
     public int KeptAliveThisOffset
     {
         readonly get
         {
-            return m_keptAliveThisOffset;
+            return _keptAliveThisOffset;
         }
 
         set
         {
-            m_keptAliveThisOffset = value;
+            _keptAliveThisOffset = value;
         }
     }
 
-    public readonly bool HasKeptAliveThis => m_keptAliveThisOffset is not -1;
+    public readonly bool HasKeptAliveThis => _keptAliveThisOffset is not -1;
 
     // Original method FP relative offset for security cookie
     public int SecurityCookieOffset
     {
         readonly get
         {
-            return m_securityCookieOffset;
+            return _securityCookieOffset;
         }
 
         set
         {
-            m_securityCookieOffset = value;
+            _securityCookieOffset = value;
         }
     }
 
-    public readonly bool HasSecurityCookie => m_securityCookieOffset is not -1;
+    public readonly bool HasSecurityCookie => _securityCookieOffset is not -1;
 
     // Original method FP relative offset for monitor acquired flag
     public int MonitorAcquiredOffset
     {
         readonly get
         {
-            return m_monitorAcquiredOffset;
+            return _monitorAcquiredOffset;
         }
 
         set
         {
-            m_monitorAcquiredOffset = value;
+            _monitorAcquiredOffset = value;
         }
     }
 
-    public readonly bool HasMonitorAcquired => m_monitorAcquiredOffset is not -1;
+    public readonly bool HasMonitorAcquired => _monitorAcquiredOffset is not -1;
 
     // Original method FP relative offset for async contexts
     public int AsyncExecutionContextOffset
     {
         readonly get
         {
-            return m_asyncExecutionContextOffset;
+            return _asyncExecutionContextOffset;
         }
 
         set
         {
-            m_asyncExecutionContextOffset = value;
+            _asyncExecutionContextOffset = value;
         }
     }
 
-    public readonly bool HasAsyncExecutionContextOffset => m_asyncExecutionContextOffset is not -1;
+    public readonly bool HasAsyncExecutionContextOffset => _asyncExecutionContextOffset is not -1;
 
     public int AsyncSynchronizationContextOffset
     {
         readonly get
         {
-            return m_asyncSynchronizationContextOffset;
+            return _asyncSynchronizationContextOffset;
         }
 
         set
         {
-            m_asyncSynchronizationContextOffset = value;
+            _asyncSynchronizationContextOffset = value;
         }
     }
 
-    public readonly bool HasAsyncSynchronizationContextOffset => m_asyncSynchronizationContextOffset is not -1;
+    public readonly bool HasAsyncSynchronizationContextOffset => _asyncSynchronizationContextOffset is not -1;
 
     // True if this local was address exposed in the original method
     public readonly bool IsExposed(int localNum)
     {
-        return (Unsafe.Add(ref Unsafe.AsRef(in m_offsetAndExposureData), localNum) & EXPOSURE_MASK) != 0;
+        return (Unsafe.Add(ref Unsafe.AsRef(in _offsetAndExposureData), localNum) & EXPOSURE_MASK) != 0;
     }
 
     // FP relative offset of this local in the original method
     public readonly int Offset(int localNum)
     {
-        return (Unsafe.Add(ref Unsafe.AsRef(in m_offsetAndExposureData), localNum) >> OFFSET_SHIFT);
+        return (Unsafe.Add(ref Unsafe.AsRef(in _offsetAndExposureData), localNum) >> OFFSET_SHIFT);
     }
 
     public void SetOffsetAndExposure(int localNum, int offset, bool isExposed)
     {
-        Unsafe.Add(ref m_offsetAndExposureData, localNum) = (offset << OFFSET_SHIFT) | (isExposed ? EXPOSURE_MASK : 0);
+        Unsafe.Add(ref _offsetAndExposureData, localNum) = (offset << OFFSET_SHIFT) | (isExposed ? EXPOSURE_MASK : 0);
     }
 
     // Callee save registers saved by the original method.
@@ -144,12 +144,12 @@ public partial struct PatchpointInfo
     {
         readonly get
         {
-            return m_calleeSaveRegisters;
+            return _calleeSaveRegisters;
         }
 
         set
         {
-            m_calleeSaveRegisters = value;
+            _calleeSaveRegisters = value;
         }
     }
 
@@ -157,12 +157,12 @@ public partial struct PatchpointInfo
     {
         readonly get
         {
-            return m_tier0Version;
+            return _tier0Version;
         }
 
         set
         {
-            m_tier0Version = value;
+            _tier0Version = value;
         }
     }
 }

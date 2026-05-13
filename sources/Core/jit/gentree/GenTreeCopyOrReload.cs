@@ -3,15 +3,13 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System.Runtime.CompilerServices;
-
 namespace RyuJitSharp;
 
 public sealed class GenTreeCopyOrReload : GenTreeUnOp
 {
     // State required to support copy/reload of a multi-reg call node.
     // The first register is always given by GetRegNum().
-    private _otherRegsInlineArray _otherRegs;
+    private InlineArrayMaxMultiregCountMinusOne<regNumber> _otherRegs;
 
     public GenTreeCopyOrReload(genTreeOps oper, var_types type, GenTree op1)
         : base(oper, type, op1)
@@ -103,11 +101,5 @@ public sealed class GenTreeCopyOrReload : GenTreeUnOp
         {
             _otherRegs[idx - 1] = reg;
         }
-    }
-
-    [InlineArray(MAX_MULTIREG_COUNT - 1)]
-    private struct _otherRegsInlineArray
-    {
-        public regNumber e0;
     }
 }

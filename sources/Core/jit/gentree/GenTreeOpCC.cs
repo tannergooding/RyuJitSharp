@@ -21,5 +21,16 @@ public class GenTreeOpCC : GenTreeOp
         _condition = condition;
     }
 
-    public GenCondition Condition => _condition;
+    public GenCondition Condition
+    {
+        get
+        {
+            return _condition;
+        }
+
+        set
+        {
+            _condition = value;
+        }
+    }
 }

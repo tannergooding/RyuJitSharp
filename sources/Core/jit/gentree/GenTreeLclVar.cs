@@ -3,13 +3,11 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System.Runtime.CompilerServices;
-
 namespace RyuJitSharp;
 
 public sealed class GenTreeLclVar : GenTreeLclVarCommon
 {
-    private _otherRegInlineArray _otherReg;
+    private InlineArrayMaxMultiregCountMinusOne<regNumber> _otherReg;
 
     private MultiRegSpillFlags _spillFlags;
 
@@ -147,11 +145,5 @@ public sealed class GenTreeLclVar : GenTreeLclVarCommon
     public void SetRegSpillFlagByIdx(GenTreeFlags flags, byte idx)
     {
         _spillFlags = SetMultiRegSpillFlagsByIdx(_spillFlags, flags, idx);
-    }
-
-    [InlineArray(MAX_MULTIREG_COUNT - 1)]
-    private struct _otherRegInlineArray
-    {
-        public regNumber e0;
     }
 }

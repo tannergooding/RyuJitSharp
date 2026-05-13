@@ -15,6 +15,16 @@ public interface ICodeGen
 
     Emitter Emitter { get; }
 
+    ref GCInfo GCInfo { get; }
+
+    int genCallerSPtoFPdelta { get; }
+
+    int genCallerSPtoInitialSPdelta { get; }
+
+    int genSPtoFPdelta { get; }
+
+    int genTotalFrameSize { get; }
+
     /// <summary>true if we've determined that the current method is to be fully interruptible.</summary>
     bool Interruptible { get; set; }
 
@@ -31,7 +41,7 @@ public interface ICodeGen
 
     //  The following will be set to true if we've determined that we need to
     //  generate a full-blown pointer register map for the current method.
-    //  Currently it is equal to (GetInterruptible() || !isFramePointerUsed())
+    //  Currently it is equal to (GetInterruptible() || !IsFramePointerUsed)
     //  (i.e. We generate the full-blown map for EBP-less methods and
     //        for fully interruptible methods)
     bool IsFullPtrRegMapRequired { get; set; }
@@ -54,6 +64,8 @@ public interface ICodeGen
     regMaskMsk RBM_MSK_CALLEE_TRASH { get; }
 #endif
 
+    ref RegSet RegSet { get; }
+
     /// <summary>indicates whether to align loops.</summary>
     /// <remarks>Used to avoid effects of loop alignment when diagnosing perf issues.</remarks>
     bool ShouldAlignLoops { get; set; }
@@ -71,4 +83,8 @@ public interface ICodeGen
 #endif
 
     unsafe void genGenerateCode(out void* codePtr, out int nativeSizeOfCode);
+
+    regNumber GetFramePointerReg(int funcletIndex);
+
+    regNumber GetStackPointerReg(int funcletIndex);
 }
