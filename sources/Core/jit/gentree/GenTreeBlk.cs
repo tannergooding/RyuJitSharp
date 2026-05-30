@@ -32,7 +32,7 @@ public sealed class GenTreeBlk : GenTreeIndir
 
     public bool ContainsReferences => _layout.HasGCPtr;
 
-    public bool IsOnHeapAndContainsReferences => (Addr.Oper is not GT_LCL_ADDR) && ContainsReferences;
+    public bool IsOnHeapAndContainsReferences => ContainsReferences && (Addr.Oper is not GT_LCL_ADDR) && ((Flags & GTF_IND_TGT_NOT_HEAP) is 0);
 
     public bool IsZeroingGCPointersOnHeap => (Oper is GT_STORE_BLK) && Data.IsIntegralConst(0) && IsOnHeapAndContainsReferences;
 

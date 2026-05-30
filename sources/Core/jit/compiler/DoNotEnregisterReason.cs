@@ -44,9 +44,7 @@ public enum DoNotEnregisterReason
     LongParamField
 #endif
 
-#if JIT32_GCENCODER
     PinningRef,
-#endif
 
     /// <summary>the local is accessed with LCL_ADDR_VAR/FLD.</summary>
     LclAddrNode,

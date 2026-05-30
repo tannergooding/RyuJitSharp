@@ -40,6 +40,8 @@ public partial struct JitFlags
     public const JitFlag JIT_FLAG_SOFTFP_ABI = JitFlag.JIT_FLAG_SOFTFP_ABI;
 #endif
 
+    public const JitFlag JIT_FLAG_USE_DISPATCH_HELPERS = JitFlag.JIT_FLAG_USE_DISPATCH_HELPERS;
+
     public enum JitFlag
     {
         /// <summary>optimize for speed</summary>
@@ -136,6 +138,9 @@ public partial struct JitFlags
         /// <summary>Enable armel calling convention</summary>
         JIT_FLAG_SOFTFP_ABI = 30,
 #endif
+
+        /// <summary>The JIT should use helpers for interface dispatch instead of virtual stub dispatch</summary>
+        JIT_FLAG_USE_DISPATCH_HELPERS = 31,
 
         // Note: the mcs tool uses the currently unused upper flags bits when outputting SuperPMI MC file flags.
         // See EXTRA_JIT_FLAGS and spmidumphelper.cpp. Currently, these are bits 56 through 63. If they overlap,

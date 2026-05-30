@@ -15,7 +15,13 @@ public sealed class InlineCandidateInfo : HandleHistogramProfileCandidateInfo
 
     public unsafe CORINFO_METHOD_HANDLE guardedMethodUnboxedEntryHandle;
 
-    public unsafe CORINFO_METHOD_HANDLE guardedMethodInstantiatedEntryHandle;
+    public CORINFO_LOOKUP guardedMethodInstParamLookup;
+
+#if FEATURE_READYTORUN
+    public CORINFO_RESOLVED_TOKEN guardedMethodResolvedToken;
+
+    public CORINFO_RESOLVED_TOKEN guardedMethodUnboxedResolvedToken;
+#endif
 
     public int likelihood;
 
@@ -31,10 +37,8 @@ public sealed class InlineCandidateInfo : HandleHistogramProfileCandidateInfo
     /// <summary>Context handle to use when inlining.</summary>
     public unsafe CORINFO_CONTEXT_HANDLE exactContextHandle;
 
-    // Method and context handle of the call before any GDV/Inlining evaluation
+    /// <summary>Method handle of the call before any GDV/Inlining evaluation</summary>
     public unsafe CORINFO_METHOD_HANDLE originalMethodHandle;
-
-    public unsafe CORINFO_CONTEXT_HANDLE originalContextHandle;
 
     /// <summary>The GT_RET_EXPR node linking back to the inline candidate.</summary>
     public GenTreeRetExpr? retExpr;

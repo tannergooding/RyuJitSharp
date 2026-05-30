@@ -182,6 +182,10 @@ public partial class Compiler
         public readonly unsafe bool ShouldUsePInvokeHelpers => jitFlags->IsSet(JitFlags.JIT_FLAG_USE_PINVOKE_HELPERS)
                                                             || jitFlags->IsSet(JitFlags.JIT_FLAG_REVERSE_PINVOKE);
 
+        // true if the JIT should use helpers for interface dispatch
+        // instead of virtual stub dispatch
+        public readonly unsafe bool ShouldUseDispatchHelpers => jitFlags->IsSet(JitFlags.JIT_FLAG_USE_DISPATCH_HELPERS);
+
         /// <summary>true if we should use insert the REVERSE_PINVOKE_{ENTER,EXIT} helpers in the method prolog/epilog</summary>
         public readonly unsafe bool IsReversePInvoke => jitFlags->IsSet(JitFlags.JIT_FLAG_REVERSE_PINVOKE);
 

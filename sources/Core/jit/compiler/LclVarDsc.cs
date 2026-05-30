@@ -295,6 +295,20 @@ public partial struct LclVarDsc
         }
     }
 
+    /// <summary>The variable is live in or out of an exception handler.</summary>
+    private bool _lvLiveInOutOfHandler
+    {
+        readonly get
+        {
+            return (_flags & Flags.LiveInOutOfHandler) != 0;
+        }
+
+        set
+        {
+            _flags = (_flags & ~Flags.LiveInOutOfHandler) | (value ? Flags.LiveInOutOfHandler : Flags.None);
+        }
+    }
+
     /// <summary>Do not enregister this variable.</summary>
     public bool lvDoNotEnregister
     {
@@ -321,20 +335,6 @@ public partial struct LclVarDsc
         set
         {
             _flags = (_flags & ~Flags.FieldAccessed) | (value ? Flags.FieldAccessed : Flags.None);
-        }
-    }
-
-    /// <summary>The variable is live in or out of an exception handler, and therefore must be on the stack (at least at those boundaries.)</summary>
-    public bool lvLiveInOutOfHndlr
-    {
-        readonly get
-        {
-            return (_flags & Flags.LiveInOutOfHndlr) != 0;
-        }
-
-        set
-        {
-            _flags = (_flags & ~Flags.LiveInOutOfHndlr) | (value ? Flags.LiveInOutOfHndlr : Flags.None);
         }
     }
 
@@ -1643,9 +1643,18 @@ public partial struct LclVarDsc
 
     public readonly bool IsEnregisterableLcl => !lvDoNotEnregister && IsEnregisterableType;
 
+    public readonly bool IsLiveInOutOfHandler
+    {
+        get
+        {
+            assert(Debugger.IsAttached || lvTracked);
+            return _lvLiveInOutOfHandler;
+        }
+    }
+
     /// <summary>Determines if this variable's value is always up-to-date on stack.</summary>
     /// <remarks>This is possible if this is an EH-var or we decided to spill after single-def.</remarks>
-    public readonly bool IsAlwaysAliveInMemory => lvLiveInOutOfHndlr || lvSpillAtSingleDef;
+    public readonly bool IsAlwaysAliveInMemory => IsLiveInOutOfHandler || lvSpillAtSingleDef;
 
     /// <summary>check if a whole struct reference could be replaced by a field.</summary>
     /// <param name="compiler">the compiler instance</param>

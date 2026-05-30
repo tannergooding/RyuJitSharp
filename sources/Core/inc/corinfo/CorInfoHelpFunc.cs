@@ -267,11 +267,6 @@ public enum CorInfoHelpFunc
 
     CORINFO_HELP_CHECKED_ASSIGN_REF,
 
-    /// <summary>Do the store, and ensure that the target was not in the heap.</summary>
-    CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP,
-
-    CORINFO_HELP_ASSIGN_BYREF,
-
     CORINFO_HELP_BULK_WRITEBARRIER,
 
     //

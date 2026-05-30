@@ -98,8 +98,6 @@ public static class CorInfoHelpFuncExtensions
         MutatesHeap | IsNoGC,                       // CORINFO_HELP_CHECK_OBJ
         MutatesHeap | IsNoGC,                       // CORINFO_HELP_ASSIGN_REF
         MutatesHeap | IsNoGC,                       // CORINFO_HELP_CHECKED_ASSIGN_REF
-        MutatesHeap,                                // CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP
-        MutatesHeap | IsNoGC,                       // CORINFO_HELP_ASSIGN_BYREF
         MutatesHeap,                                // CORINFO_HELP_BULK_WRITEBARRIER
         MutatesHeap,                                // CORINFO_HELP_GETFIELDADDR
         MutatesHeap,                                // CORINFO_HELP_GETSTATICFIELDADDR
@@ -298,8 +296,6 @@ public static class CorInfoHelpFuncExtensions
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_CHECK_OBJ
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_ASSIGN_REF
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_CHECKED_ASSIGN_REF
-        ExceptionSetFlags.UnknownException,         // CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP
-        ExceptionSetFlags.UnknownException,         // CORINFO_HELP_ASSIGN_BYREF
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_BULK_WRITEBARRIER
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_GETFIELDADDR
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_GETSTATICFIELDADDR

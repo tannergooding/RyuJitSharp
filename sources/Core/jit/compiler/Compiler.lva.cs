@@ -96,6 +96,9 @@ public partial class Compiler
     /// <summary>boolean variable introduced into in synchronized methods that tracks whether the lock has been taken</summary>
     public int lvaMonAcquired = BAD_VAR_NUM;
 
+    /// <summary>Thread local for async methods</summary>
+    public int lvaAsyncThreadObjectVar = BAD_VAR_NUM;
+
     /// <summary>ExecutionContext local for async methods</summary>
     public int lvaAsyncExecutionContextVar = BAD_VAR_NUM;
 
@@ -564,7 +567,7 @@ public partial class Compiler
                 jitprintf("V");
             }
 
-            if (lvaEnregEHVars && varDsc.lvLiveInOutOfHndlr)
+            if (lvaEnregEHVars && varDsc.lvTracked && varDsc.IsLiveInOutOfHandler)
             {
                 jitprintf($"{(char)(varDsc.lvSingleDefDisqualifyReason)}");
             }
@@ -659,7 +662,7 @@ public partial class Compiler
             jitprintf(" exact");
         }
 
-        if (varDsc.lvLiveInOutOfHndlr)
+        if (varDsc.lvTracked && varDsc.IsLiveInOutOfHandler)
         {
             jitprintf(" EH-live");
         }
@@ -2092,12 +2095,9 @@ public partial class Compiler
             // pointer. We could do better by having the EE determine this for us.
             // Note that we want to keep buffers without pointers at lower memory
             // addresses than buffers with pointers.
-            case CORINFO_TYPE_STRING:
             case CORINFO_TYPE_PTR:
             case CORINFO_TYPE_BYREF:
             case CORINFO_TYPE_CLASS:
-            case CORINFO_TYPE_REFANY:
-            case CORINFO_TYPE_VAR:
             {
                 varDsc.lvIsPtr = true;
                 break;
@@ -2478,7 +2478,6 @@ public partial class Compiler
             case DoNotEnregisterReason.LiveInOutOfHandler:
             {
                 JITDUMP("live in/out of a handler\n");
-                varDsc.lvLiveInOutOfHndlr = true;
                 break;
             }
 
@@ -2523,14 +2522,12 @@ public partial class Compiler
             }
 #endif
 
-#if JIT32_GCENCODER
             case DoNotEnregisterReason.PinningRef:
             {
                 JITDUMP("pinning ref\n");
-                assert(varDsc->lvPinned);
+                assert(varDsc.lvPinned);
                 break;
             }
-#endif
 
             case DoNotEnregisterReason.LclAddrNode:
             {
@@ -2587,6 +2584,15 @@ public partial class Compiler
             }
         }
 #endif
+
+        if (varDsc.lvPromoted && !wasAlreadyMarkedDoNotEnreg)
+        {
+            for (var i = 0; i < varDsc.lvFieldCnt; i++)
+            {
+                var fieldLclNum = varDsc.lvFieldLclStart + i;
+                lvaSetVarDoNotEnregister(fieldLclNum, DoNotEnregisterReason.DepField);
+            }
+        }
     }
 
 #if DEBUG
@@ -2724,7 +2730,7 @@ public partial class Compiler
             {
                 // Sanity check for promoted fields of OSR locals.
                 //
-                if ((varNum >= info.compLocalsCount) && (varNum != lvaMonAcquired) &&
+                if ((varNum >= info.compLocalsCount) && (varNum != lvaMonAcquired) && (varNum != lvaAsyncThreadObjectVar) &&
                     (varNum != lvaAsyncExecutionContextVar) && (varNum != lvaAsyncSynchronizationContextVar))
                 {
                     assert(varDsc.lvIsStructField);

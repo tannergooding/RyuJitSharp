@@ -43,6 +43,8 @@ public partial struct CORJIT_FLAGS
     public const CorJitFlag CORJIT_FLAG_SOFTFP_ABI = CorJitFlag.CORJIT_FLAG_SOFTFP_ABI;
 #endif
 
+    public const CorJitFlag CORJIT_FLAG_USE_DISPATCH_HELPERS = CorJitFlag.CORJIT_FLAG_USE_DISPATCH_HELPERS;
+
     // No number should be re-used between different target conditions, so platform-independent code can know uniquely which number corresponds to which flag.
     public enum CorJitFlag
     {
@@ -144,5 +146,8 @@ public partial struct CORJIT_FLAGS
         /// <summary>Enable armel calling convention.</summary>
         CORJIT_FLAG_SOFTFP_ABI = 30,
 #endif
+
+        /// <summary>The JIT should use helpers for interface dispatch instead of virtual stub dispatch</summary>
+        CORJIT_FLAG_USE_DISPATCH_HELPERS = 31,
     }
 }

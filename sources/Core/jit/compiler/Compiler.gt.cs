@@ -4324,7 +4324,7 @@ public partial class Compiler
         var allocStmt = box.DefStmtWhenInlinedBoxValue;
         var copyStmt = box.CopyStmtWhenInlinedBoxValue;
 
-        JITDUMP($"gtTryRemoveBoxUpstreamEffects: {((options == BR_DONT_REMOVE) ? "checking if it is possible" : "attempting")} to {((options == BR_MAKE_LOCAL_COPY) ? "make local unboxed version" : "remove side effects")} of BOX (valuetype) [{box.TreeId:D6}] (assign/newobj {FMT_STMT(allocStmt.Id)} copy {FMT_STMT(copyStmt.Id)}\n");
+        JITDUMP($"gtTryRemoveBoxUpstreamEffects: {((options == BR_DONT_REMOVE) ? "checking if it is possible" : "attempting")} of BOX (valuetype) [{box.TreeId:D6}] (assign/newobj {FMT_STMT(allocStmt.Id)} copy {FMT_STMT(copyStmt.Id)}\n");
 
         // If we don't recognize the form of the store, bail.
         var boxLclDef = allocStmt.RootNode;
@@ -4402,70 +4402,6 @@ public partial class Compiler
                 JITDUMP($" bailing; unexpected copy op {copy.Oper}\n");
             }
             return null;
-        }
-
-        // Handle case where we are optimizing the box into a local copy
-        if (options == BR_MAKE_LOCAL_COPY)
-        {
-            // Drill into the box to get at the box temp local and the box type
-            var boxTemp = box.BoxOp;
-            assert(boxTemp.Oper.IsLocal);
-
-            var boxTempLcl = boxTemp.AsLclVar().LclNum;
-            assert(lvaTable[boxTempLcl].Type is TYP_REF);
-
-            var boxClass = lvaTable[boxTempLcl].lvClassHnd;
-            assert(boxClass is not null);
-
-            // Verify that the copy has the expected shape
-            // (store_blk|store_ind (add (boxTempLcl, ptr-size)))
-            //
-            // The shape here is constrained to the patterns we produce
-            // over in impImportAndPushBox for the inlined box case.
-
-            var copyDstAddr = copy.AsIndir().Addr;
-
-            if (copyDstAddr.Oper is not GT_ADD)
-            {
-                JITDUMP("Unexpected copy dest address tree\n");
-                return null;
-            }
-
-            var copyDstAddrOp1 = copyDstAddr.AsOp().Op1;
-
-            if ((copyDstAddrOp1.Oper is not GT_LCL_VAR) || (copyDstAddrOp1.AsLclVarCommon().LclNum != boxTempLcl))
-            {
-                JITDUMP("Unexpected copy dest address 1st addend\n");
-                return null;
-            }
-
-            var copyDstAddrOp2 = copyDstAddr.AsOp().Op2;
-
-            if (!copyDstAddrOp2.IsIntegralConst(TARGET_POINTER_SIZE))
-            {
-                JITDUMP("Unexpected copy dest address 2nd addend\n");
-                return null;
-            }
-
-            // Screening checks have all passed. Do the transformation.
-            //
-            // Retype the box temp to be a struct
-            JITDUMP($"Retyping box temp V{boxTempLcl:D2} to struct {eeGetClassName(boxClass)}\n");
-            lvaTable[boxTempLcl].Type = TYP_UNDEF;
-
-            var isUnsafeValueClass = false;
-            lvaSetStruct(boxTempLcl, boxClass, isUnsafeValueClass);
-
-            // Remove the newobj and store to box temp
-            JITDUMP($"Bashing NEWOBJ [{boxLclDef.TreeId:D6}] to NOP\n");
-            allocStmt.RootNode = gtNewNothingNode();
-            DEBUG_DESTROY_NODE(boxLclDef);
-
-            // Update the copy from the value to be boxed to the box temp
-            copy.AsIndir().Addr = gtNewLclVarAddrNode(TYP_BYREF, boxTempLcl);
-
-            // Return the address of the now-struct typed box temp
-            return gtNewLclVarAddrNode(TYP_BYREF, boxTempLcl);
         }
 
         // If the copy is a struct copy, make sure we know how to isolate any source side effects.

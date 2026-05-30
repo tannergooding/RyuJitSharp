@@ -13,6 +13,9 @@ public struct CORINFO_AsyncResumeInfo
     public nint Resume;
 
     /// <summary>Pointer in main code for diagnostics.</summary>
-    /// <remarks>See comments on ICorDebugInfo.AsyncSuspensionPoint.DiagnosticNativeOffset and ResumeInfo.DiagnosticIP in SPC.</remarks>
+    /// <remarks>
+    ///   <para>See comments on ICorDebugInfo.AsyncSuspensionPoint.DiagnosticNativeOffset and ResumeInfo.DiagnosticIP in SPC.</para>
+    ///   <para>This can be null for handrolled continuations without diagnostics.</para>
+    /// </remarks>
     public nint DiagnosticIP;
 }

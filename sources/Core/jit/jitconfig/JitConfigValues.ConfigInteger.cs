@@ -191,6 +191,10 @@ public partial struct JitConfigValues
         JitMaxUncheckedOffset,
 #endif
 
+#if TARGET_ARM64
+        JitPacEnabled,
+#endif
+
         /// <summary>Enable devirtualization for generic virtual methods</summary>
         JitEnableGenericVirtualDevirtualization,
 
@@ -1097,12 +1101,10 @@ public partial struct JitConfigValues
         JitDispIns,
 #endif
 
-#if DEBUG && TARGET_WASM
+#if TARGET_WASM
         /// <summary>Set this to 1 to turn NYI_WASM into R2R unsupported failures instead of asserts.</summary>
         JitWasmNyiToR2RUnsupported,
-#endif
 
-#if TARGET_WASM
         /// <summary>Enable processing methods with funclets.</summary>
         JitWasmFunclets,
 #endif
@@ -1179,6 +1181,10 @@ public partial struct JitConfigValues
 #if DEBUG
         [JitLongAddress] = ((nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitLongAddress"u8))), 0),
         [JitMaxUncheckedOffset] = ((nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitMaxUncheckedOffset"u8))), 8),
+#endif
+
+#if TARGET_ARM64
+        [JitPacEnabled] = ((nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitPacEnabled"u8))), 0),
 #endif
 
         [JitEnableGenericVirtualDevirtualization] = ((nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnableGenericVirtualDevirtualization"u8))), 1),
@@ -1537,11 +1543,9 @@ public partial struct JitConfigValues
         [JitDispIns] = ((nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDispIns"u8))), 0),
 #endif
 
-#if DEBUG && TARGET_WASM
-        [JitWasmNyiToR2RUnsupported] = ((nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitWasmNyiToR2RUnsupported"u8))), 0),
-#endif
-
 #if TARGET_WASM
+        [JitWasmNyiToR2RUnsupported] = ((nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitWasmNyiToR2RUnsupported"u8))), 0),
+
         [JitWasmFunclets] = ((nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitWasmFunclets"u8))), 0),
 #endif
 

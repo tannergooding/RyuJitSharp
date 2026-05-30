@@ -37,7 +37,6 @@ public struct JitMetrics
     public int ImporterSwitchFold;
     public int DevirtualizedCall;
     public int DevirtualizedCallUnboxedEntry;
-    public int DevirtualizedCallRemovedBox;
     public int GDV;
     public int ClassGDV;
     public int MethodGDV;
@@ -75,6 +74,7 @@ public struct JitMetrics
     public int MorphLocals;
     public int EnumeratorGDVProvisionalNoEscape;
     public int EnumeratorGDVCanCloneToEnsureNoEscape;
+    public int SuspensionPointsMerged;
 
     /// <summary>Report all metrics and their values back to the EE.</summary>
     /// <param name="compiler">Compiler instance</param>
@@ -110,7 +110,6 @@ public struct JitMetrics
         JitMetadata.report(compiler, nameof(ImporterSwitchFold), ImporterSwitchFold);
         JitMetadata.report(compiler, nameof(DevirtualizedCall), DevirtualizedCall);
         JitMetadata.report(compiler, nameof(DevirtualizedCallUnboxedEntry), DevirtualizedCallUnboxedEntry);
-        JitMetadata.report(compiler, nameof(DevirtualizedCallRemovedBox), DevirtualizedCallRemovedBox);
         JitMetadata.report(compiler, nameof(GDV), GDV);
         JitMetadata.report(compiler, nameof(ClassGDV), ClassGDV);
         JitMetadata.report(compiler, nameof(MethodGDV), MethodGDV);
@@ -148,6 +147,7 @@ public struct JitMetrics
         JitMetadata.report(compiler, nameof(MorphLocals), MorphLocals);
         JitMetadata.report(compiler, nameof(EnumeratorGDVProvisionalNoEscape), EnumeratorGDVProvisionalNoEscape);
         JitMetadata.report(compiler, nameof(EnumeratorGDVCanCloneToEnsureNoEscape), EnumeratorGDVCanCloneToEnsureNoEscape);
+        JitMetadata.report(compiler, nameof(SuspensionPointsMerged), SuspensionPointsMerged);
     }
 
 #if DEBUG
@@ -183,7 +183,6 @@ public struct JitMetrics
         jitprintf($"{nameof(ImporterSwitchFold)}                   : {ImporterSwitchFold}\n");
         jitprintf($"{nameof(DevirtualizedCall)}                    : {DevirtualizedCall}\n");
         jitprintf($"{nameof(DevirtualizedCallUnboxedEntry)}        : {DevirtualizedCallUnboxedEntry}\n");
-        jitprintf($"{nameof(DevirtualizedCallRemovedBox)}          : {DevirtualizedCallRemovedBox}\n");
         jitprintf($"{nameof(GDV)}                                  : {GDV}\n");
         jitprintf($"{nameof(ClassGDV)}                             : {ClassGDV}\n");
         jitprintf($"{nameof(MethodGDV)}                            : {MethodGDV}\n");
@@ -221,6 +220,7 @@ public struct JitMetrics
         jitprintf($"{nameof(MorphLocals)}                          : {MorphLocals}\n");
         jitprintf($"{nameof(EnumeratorGDVProvisionalNoEscape)}     : {EnumeratorGDVProvisionalNoEscape}\n");
         jitprintf($"{nameof(EnumeratorGDVCanCloneToEnsureNoEscape)}: {EnumeratorGDVCanCloneToEnsureNoEscape}\n");
+        jitprintf($"{nameof(SuspensionPointsMerged)}               : {SuspensionPointsMerged}\n");
     }
 
     /// <summary>Merge inlinee compiler metrics to root compiler instance</summary>
@@ -259,7 +259,6 @@ public struct JitMetrics
         root.Metrics.ImporterSwitchFold += inlineeCompiler.Metrics.ImporterSwitchFold;
         root.Metrics.DevirtualizedCall += inlineeCompiler.Metrics.DevirtualizedCall;
         root.Metrics.DevirtualizedCallUnboxedEntry += inlineeCompiler.Metrics.DevirtualizedCallUnboxedEntry;
-        root.Metrics.DevirtualizedCallRemovedBox += inlineeCompiler.Metrics.DevirtualizedCallRemovedBox;
         root.Metrics.GDV += inlineeCompiler.Metrics.GDV;
         root.Metrics.ClassGDV += inlineeCompiler.Metrics.ClassGDV;
         root.Metrics.MethodGDV += inlineeCompiler.Metrics.MethodGDV;
@@ -297,6 +296,7 @@ public struct JitMetrics
         root.Metrics.MorphLocals += inlineeCompiler.Metrics.MorphLocals;
         root.Metrics.EnumeratorGDVProvisionalNoEscape += inlineeCompiler.Metrics.EnumeratorGDVProvisionalNoEscape;
         root.Metrics.EnumeratorGDVCanCloneToEnsureNoEscape += inlineeCompiler.Metrics.EnumeratorGDVCanCloneToEnsureNoEscape;
+        root.Metrics.SuspensionPointsMerged += inlineeCompiler.Metrics.SuspensionPointsMerged;
     }
 #endif
 }

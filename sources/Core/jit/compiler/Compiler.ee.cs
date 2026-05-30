@@ -517,13 +517,10 @@ public partial class Compiler
         CORINFO_TYPE_NATIVEUINT => "nuint",
         CORINFO_TYPE_FLOAT => "float",
         CORINFO_TYPE_DOUBLE => "double",
-        CORINFO_TYPE_STRING => "string",
         CORINFO_TYPE_PTR => "ptr",
         CORINFO_TYPE_BYREF => "byref",
         CORINFO_TYPE_VALUECLASS => "struct",
         CORINFO_TYPE_CLASS => "class",
-        CORINFO_TYPE_REFANY => "typedbyref",
-        CORINFO_TYPE_VAR => "var",
         _ => "CORINFO_TYPE_INVALID"
     };
 

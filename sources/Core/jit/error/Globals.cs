@@ -376,18 +376,16 @@ public partial class Globals
     [Conditional("TARGET_WASM")]
     public static void NYI_WASM(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
     {
-#if DEBUG && TARGET_WASM
+#if TARGET_WASM
         if (JitConfig[ConfigInteger.JitWasmNyiToR2RUnsupported] > 0)
         {
-            JITDUMP($"NYI_WASM: {msg}", file, line);
+            JITDUMP($"NYI_WASM: {message}");
             implReadyToRunUnsupported();
         }
         else
         {
-            NYIRAW($"NYI_WASM: {msg}", file, line);
+            NYIRAW($"NYI_WASM: {message}", filePath, lineNumber);
         }
-#else
-        NYIRAW($"NYI_WASM: {message}", filePath, lineNumber);
 #endif
     }
 

@@ -18,6 +18,7 @@ public partial struct PatchpointInfo
     private int _keptAliveThisOffset;
     private int _securityCookieOffset;
     private int _monitorAcquiredOffset;
+    private int _asyncThreadObjectOffset;
     private int _asyncExecutionContextOffset;
     private int _asyncSynchronizationContextOffset;
     private int _offsetAndExposureData;
@@ -49,6 +50,7 @@ public partial struct PatchpointInfo
         _keptAliveThisOffset = -1;
         _securityCookieOffset = -1;
         _monitorAcquiredOffset = -1;
+        _asyncThreadObjectOffset = -1;
         _asyncExecutionContextOffset = -1;
         _asyncSynchronizationContextOffset = -1;
     }
@@ -62,6 +64,7 @@ public partial struct PatchpointInfo
         _keptAliveThisOffset = original->_keptAliveThisOffset;
         _securityCookieOffset = original->_securityCookieOffset;
         _monitorAcquiredOffset = original->_monitorAcquiredOffset;
+        _asyncThreadObjectOffset = original->_asyncThreadObjectOffset;
         _asyncExecutionContextOffset = original->_asyncExecutionContextOffset;
         _asyncSynchronizationContextOffset = original->_asyncSynchronizationContextOffset;
 

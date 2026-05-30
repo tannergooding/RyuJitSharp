@@ -1016,7 +1016,7 @@ public partial class Compiler
             CORINFO_CLASS_HANDLE classHandle;
             var ciType = strip(info.compCompHnd->getArgType(&sig, args, &classHandle));
 
-            if (ciType is CORINFO_TYPE_PTR or CORINFO_TYPE_BYREF or CORINFO_TYPE_REFANY)
+            if (ciType is CORINFO_TYPE_PTR or CORINFO_TYPE_BYREF)
             {
                 return false;
             }

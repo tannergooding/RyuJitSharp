@@ -2457,10 +2457,13 @@ public partial class Compiler
             jitprintf($"OPTIONS: compProcedureSplittingEH = {dspBool(opts.compProcedureSplittingEH)}\n");
 
             // This is rare; don't clutter up the dump with it normally.
+
+#if PROFILING_SUPPORTED
             if (compProfilerHookNeeded)
             {
                 jitprintf($"OPTIONS: compProfilerHookNeeded   = {dspBool(compProfilerHookNeeded)}\n");
             }
+#endif
 
             if (jitFlags->IsSet(JitFlags.JIT_FLAG_BBOPT))
             {
@@ -3184,9 +3187,6 @@ public partial class Compiler
             lvaRefCountState = RCS_INVALID;
             fgLocalVarLivenessDone = false;
 
-            // Decide the kind of code we want to generate
-            fgSetOptions();
-
             fgExpandQmarkNodes(early: false);
 
 #if DEBUG
@@ -3248,6 +3248,11 @@ public partial class Compiler
 #if DEBUG
         fgDebugCheckLinks();
 #endif
+
+        // Decide the kind of code we want to generate. Done here, after the second
+        // round of empty-EH removal above, so that EH eliminated post-morph doesn't
+        // force fully-interruptible codegen / a frame pointer.
+        fgSetOptions();
 
         // Morph multi-dimensional array operations.
         // (Consider deferring all array operation morphing, including single-dimensional array ops, from global morph to here, so cloning doesn't have to deal with morphed forms.)

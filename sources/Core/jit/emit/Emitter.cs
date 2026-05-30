@@ -26,7 +26,7 @@ public partial class Emitter
     protected const int emitVarRefOffs = 0;
 #endif
 
-    protected int emitPrologEndPos;
+    protected emitLocation emitPrologEndPos;
 
     protected int emitEpilogCnt;
 
@@ -110,17 +110,14 @@ public partial class Emitter
     /// <summary>last   instruction group</summary>
     private insGroup? emitIGlast;
 
-    /// <summary>issued instruction group</summary>
-    private insGroup? emitIGthis;
-
-    /// <summary>prolog instruction group</summary>
-    private insGroup? emitPrologIG;
-
     /// <summary>list of local jumps in method</summary>
     private instrDescJmp? emitJumpList;
 
     /// <summary>last of local jumps in method</summary>
     private instrDescJmp? emitJumpLast;
+
+    /// <summary>list of local jumps not eligible for shortening</summary>
+    private instrDescJmp? emitFixedSizeJumpList;
 
     private bool emitContainsRemovableJmpCandidates;
 

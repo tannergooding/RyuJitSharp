@@ -12,7 +12,6 @@ public partial class Compiler
     public const BoxRemovalOptions BR_REMOVE_BUT_NOT_NARROW = BoxRemovalOptions.BR_REMOVE_BUT_NOT_NARROW;
     public const BoxRemovalOptions BR_DONT_REMOVE = BoxRemovalOptions.BR_DONT_REMOVE;
     public const BoxRemovalOptions BR_DONT_REMOVE_WANT_TYPE_HANDLE = BoxRemovalOptions.BR_DONT_REMOVE_WANT_TYPE_HANDLE;
-    public const BoxRemovalOptions BR_MAKE_LOCAL_COPY = BoxRemovalOptions.BR_MAKE_LOCAL_COPY;
 
     public enum BoxRemovalOptions
     {
@@ -30,8 +29,5 @@ public partial class Compiler
 
         /// <summary>check if removal is possible, return type handle tree</summary>
         BR_DONT_REMOVE_WANT_TYPE_HANDLE,
-
-        /// <summary>revise box to copy to temp local and return local's address</summary>
-        BR_MAKE_LOCAL_COPY,
     }
 }

@@ -42,22 +42,13 @@ public enum CorInfoType
 
     CORINFO_TYPE_DOUBLE = 0xF,
 
-    /// <summary>Not used, should remove.</summary>
-    CORINFO_TYPE_STRING = 0x10,
+    CORINFO_TYPE_PTR = 0x10,
 
-    CORINFO_TYPE_PTR = 0x11,
+    CORINFO_TYPE_BYREF = 0x11,
 
-    CORINFO_TYPE_BYREF = 0x12,
+    CORINFO_TYPE_VALUECLASS = 0x12,
 
-    CORINFO_TYPE_VALUECLASS = 0x13,
-
-    CORINFO_TYPE_CLASS = 0x14,
-
-    CORINFO_TYPE_REFANY = 0x15,
-
-    /// <summary>For a generic type variable.</summary>
-    /// <remarks>Generic type variables only appear when the JIT is doing verification (not NOT compilation) of generic code for the EE, in which case we're running the JIT in "import only" mode.</remarks>
-    CORINFO_TYPE_VAR = 0x16,
+    CORINFO_TYPE_CLASS = 0x13,
 
     /// <summary>Number of jit types.</summary>
     CORINFO_TYPE_COUNT,

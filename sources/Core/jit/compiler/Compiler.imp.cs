@@ -3788,8 +3788,16 @@ public partial class Compiler
                     // adjusted the arg count cos this is like fetching the last param.
                     assertImp(info.compArgsCount > 0);
 
-                    var op1 = gtNewLclVarAddrNode(TYP_BYREF, lvaVarargsHandleArg);
-                    impPushOnStack(op1, new typeInfo());
+                    var clsHnd = impRuntimeArgumentHandle;
+
+                    var argListTmp = lvaGrabTemp(shortLifetime: false, "arglist tmp");
+                    lvaSetStruct(argListTmp, clsHnd, unsafeValueClsCheck: false);
+
+                    var op1 = gtNewLclVarAddrNode(TYP_I_IMPL, lvaVarargsHandleArg) as GenTreeLclVarCommon;
+                    impAppendTree(gtNewStoreLclFldNode(TYP_I_IMPL, argListTmp, offset: 0, op1), CHECK_SPILL_ALL, impCurStmtDI);
+
+                    op1 = gtNewLclVarNode(TYP_STRUCT, argListTmp);
+                    impPushOnStack(op1, makeTypeInfo(clsHnd));
                     break;
                 }
 
@@ -8253,37 +8261,51 @@ public partial class Compiler
 
                 if (newBBcreatedForTailcallStress && !hasTailPrefix)
                 {
-                    // Do a more detailed evaluation of legality
-                    var passedConstraintCheck = compiler.checkTailCallConstraint(opcode, resolvedToken, constraintCall ? constrainedResolvedToken : Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>());
-
-                    // Avoid setting compHasBackwardsJump = true via tail call stress if the method cannot have patchpoints.
-                    var mayHavePatchpoints = compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_TIER0) && (JitConfig[ConfigInteger.TC_OnStackReplacement] > 0) && compiler.compCanHavePatchpoints();
-
-                    if (passedConstraintCheck && (mayHavePatchpoints || compiler.compHasBackwardJump))
+                    // Don't stress-tailcall named intrinsics: many of them are imported as
+                    // non-CALL IR nodes (e.g. GC.KeepAlive -> GT_KEEPALIVE), which would
+                    // leave a BBJ_RETURN block that doesn't end in a CALL/RETURN and
+                    // confuse later phases (see
+                    // https://github.com/dotnet/runtime/issues/122479). Suppress both the
+                    // explicit and the implicit tailcall promotion in that case.
+                    if ((callInfo.methodFlags & CORINFO_FLG_INTRINSIC) != 0)
                     {
-                        // Now check with the runtime
-                        var declaredCalleeHnd = callInfo.hMethod;
-                        var isVirtual = (callInfo.kind == CORINFO_VIRTUALCALL_STUB) || (callInfo.kind == CORINFO_VIRTUALCALL_VTABLE);
-                        var exactCalleeHnd = isVirtual ? null : declaredCalleeHnd;
-
-                        if (compiler.info.compCompHnd->canTailCall(compiler.info.compMethodHnd, declaredCalleeHnd, exactCalleeHnd, hasTailPrefix))
-                        {
-                            // Stress the tailcall.
-                            JITDUMP(" (Tailcall stress: prefixFlags |= PREFIX_TAILCALL_EXPLICIT)");
-                            prefixFlags |= PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_STRESS;
-                        }
-                        else
-                        {
-                            // Runtime disallows this tail call
-                            JITDUMP(" (Tailcall stress: runtime preventing tailcall)");
-                            passedStressModeValidation = false;
-                        }
+                        JITDUMP(" (Tailcall stress: skipping intrinsic)");
+                        passedStressModeValidation = false;
                     }
                     else
                     {
-                        // Constraints disallow this tail call
-                        JITDUMP(" (Tailcall stress: constraint check failed)");
-                        passedStressModeValidation = false;
+                        // Do a more detailed evaluation of legality
+                        var passedConstraintCheck = compiler.checkTailCallConstraint(opcode, resolvedToken, constraintCall ? constrainedResolvedToken : Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>());
+
+                        // Avoid setting compHasBackwardsJump = true via tail call stress if the method cannot have patchpoints.
+                        var mayHavePatchpoints = compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_TIER0) && (JitConfig[ConfigInteger.TC_OnStackReplacement] > 0) && compiler.compCanHavePatchpoints();
+
+                        if (passedConstraintCheck && (mayHavePatchpoints || compiler.compHasBackwardJump))
+                        {
+                            // Now check with the runtime
+                            var declaredCalleeHnd = callInfo.hMethod;
+                            var isVirtual = callInfo.kind is CORINFO_VIRTUALCALL_STUB or CORINFO_VIRTUALCALL_VTABLE;
+                            var exactCalleeHnd = isVirtual ? null : declaredCalleeHnd;
+
+                            if (compiler.info.compCompHnd->canTailCall(compiler.info.compMethodHnd, declaredCalleeHnd, exactCalleeHnd, hasTailPrefix))
+                            {
+                                // Stress the tailcall.
+                                JITDUMP(" (Tailcall stress: prefixFlags |= PREFIX_TAILCALL_EXPLICIT)");
+                                prefixFlags |= PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_STRESS;
+                            }
+                            else
+                            {
+                                // Runtime disallows this tail call
+                                JITDUMP(" (Tailcall stress: runtime preventing tailcall)");
+                                passedStressModeValidation = false;
+                            }
+                        }
+                        else
+                        {
+                            // Constraints disallow this tail call
+                            JITDUMP(" (Tailcall stress: constraint check failed)");
+                            passedStressModeValidation = false;
+                        }
                     }
                 }
             }
@@ -13551,6 +13573,8 @@ public partial class Compiler
             case NI_System_Math_Round:
             case NI_System_Math_Sqrt:
             case NI_System_Math_Truncate:
+            case NI_PRIMITIVE_PopCount:
+            case NI_PRIMITIVE_TrailingZeroCount:
             {
                 return true;
             }

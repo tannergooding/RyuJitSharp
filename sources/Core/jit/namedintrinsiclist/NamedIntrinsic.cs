@@ -744,7 +744,8 @@ public enum NamedIntrinsic : ushort
     LAST_NI_X86Base = NI_X86Base_Xor,
 
     FIRST_NI_X86Base_X64,
-    NI_X86Base_X64_BitScanForward = FIRST_NI_X86Base_X64,
+    NI_X86Base_X64_BigMul = FIRST_NI_X86Base_X64,
+    NI_X86Base_X64_BitScanForward,
     NI_X86Base_X64_BitScanReverse,
     NI_X86Base_X64_ConvertScalarToVector128Double,
     NI_X86Base_X64_ConvertScalarToVector128Int64,

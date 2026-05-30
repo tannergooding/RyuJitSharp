@@ -39,7 +39,6 @@ public static class JitMetadata
     public const string ImporterSwitchFold = nameof(ImporterSwitchFold);
     public const string DevirtualizedCall = nameof(DevirtualizedCall);
     public const string DevirtualizedCallUnboxedEntry = nameof(DevirtualizedCallUnboxedEntry);
-    public const string DevirtualizedCallRemovedBox = nameof(DevirtualizedCallRemovedBox);
     public const string GDV = nameof(GDV);
     public const string ClassGDV = nameof(ClassGDV);
     public const string MethodGDV = nameof(MethodGDV);
@@ -77,6 +76,7 @@ public static class JitMetadata
     public const string MorphLocals = nameof(MorphLocals);
     public const string EnumeratorGDVProvisionalNoEscape = nameof(EnumeratorGDVProvisionalNoEscape);
     public const string EnumeratorGDVCanCloneToEnsureNoEscape = nameof(EnumeratorGDVCanCloneToEnsureNoEscape);
+    public const string SuspensionPointsMerged = nameof(SuspensionPointsMerged);
 
     public static unsafe void report(Compiler compiler, string name, double data)
         => report(compiler, name, &data, sizeof(double));

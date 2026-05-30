@@ -86,6 +86,7 @@ public partial struct JitFlags
 #endif
 
         FLAGS_EQUAL(CORJIT_FLAGS.CORJIT_FLAG_ASYNC, JIT_FLAG_ASYNC);
+        FLAGS_EQUAL(CORJIT_FLAGS.CORJIT_FLAG_USE_DISPATCH_HELPERS, JIT_FLAG_USE_DISPATCH_HELPERS);
 
         [Conditional("DEBUG")]
         static void FLAGS_EQUAL(CORJIT_FLAGS.CorJitFlag a, JitFlag b)

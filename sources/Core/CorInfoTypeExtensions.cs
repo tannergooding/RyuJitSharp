@@ -26,13 +26,10 @@ public static class CorInfoTypeExtensions
         TYP_U_IMPL,     // CORINFO_TYPE_NATIVEUINT
         TYP_FLOAT,      // CORINFO_TYPE_FLOAT     
         TYP_DOUBLE,     // CORINFO_TYPE_DOUBLE    
-        TYP_REF,        // CORINFO_TYPE_STRING    
         TYP_U_IMPL,     // CORINFO_TYPE_PTR       
         TYP_BYREF,      // CORINFO_TYPE_BYREF     
         TYP_STRUCT,     // CORINFO_TYPE_VALUECLASS
         TYP_REF,        // CORINFO_TYPE_CLASS     
-        TYP_STRUCT,     // CORINFO_TYPE_REFANY    
-        TYP_REF,        // CORINFO_TYPE_VAR
     ];
 
     private static ReadOnlySpan<var_types> s_varTypes => [
@@ -53,13 +50,10 @@ public static class CorInfoTypeExtensions
         TYP_I_IMPL,     // CORINFO_TYPE_NATIVEUINT
         TYP_FLOAT,      // CORINFO_TYPE_FLOAT     
         TYP_DOUBLE,     // CORINFO_TYPE_DOUBLE    
-        TYP_REF,        // CORINFO_TYPE_STRING    
         TYP_I_IMPL,     // CORINFO_TYPE_PTR       
         TYP_BYREF,      // CORINFO_TYPE_BYREF     
         TYP_STRUCT,     // CORINFO_TYPE_VALUECLASS
-        TYP_REF,        // CORINFO_TYPE_CLASS     
-        TYP_STRUCT,     // CORINFO_TYPE_REFANY    
-        TYP_REF,        // CORINFO_TYPE_VAR
+        TYP_REF,        // CORINFO_TYPE_CLASS
     ];
 
     extension(CorInfoType type)
