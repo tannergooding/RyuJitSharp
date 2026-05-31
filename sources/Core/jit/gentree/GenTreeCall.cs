@@ -16,19 +16,19 @@ public sealed class GenTreeCall : GenTree
 
 #if DEBUG || TARGET_WASM
     // Used to register callsites with the EE
-    internal unsafe CORINFO_SIG_INFO* _callSig;
+    internal CORINFO_SIG_INFO _callSig;
 #endif
 
     internal _Anonymous1_e__Union _anonymous1;
 
     /// <summary>Used for explicit tail prefixed calls</summary>
-    private ref TailCallSiteInfo TailCallInfo => ref _anonymous1.TailCallInfo;
+    internal ref TailCallSiteInfo _tailCallInfo => ref _anonymous1.TailCallInfo;
 
     /// <summary>Used for async calls</summary>
-    private ref AsyncCallInfo AsyncInfo => ref _anonymous1.AsyncInfo;
+    internal ref AsyncCallInfo _asyncInfo => ref _anonymous1.AsyncInfo;
 
     /// <summary>Only used for unmanaged calls, which cannot be tail-called</summary>
-    private ref CorInfoCallConvExtension UnmgdCallConv => ref _anonymous1.UnmgdCallConv;
+    internal ref CorInfoCallConvExtension _unmgdCallConv => ref _anonymous1.UnmgdCallConv;
 
 #if FEATURE_MULTIREG_RET
     // TODO-AllArch: enable for all call nodes to unify single-reg and multi-reg returns.
@@ -82,7 +82,7 @@ public sealed class GenTreeCall : GenTree
     internal unsafe void* _anonymous2;
 
     /// <summary>GTF_CALL_VIRT_STUB - these are never inlined</summary>
-    private unsafe void* StubCallStubAddr
+    internal unsafe void* StubCallStubAddr
     {
         get
         {
@@ -96,7 +96,7 @@ public sealed class GenTreeCall : GenTree
     }
 
     /// <summary>Used by static init helpers, represents a class they init</summary>
-    internal unsafe CORINFO_CLASS_HANDLE InitClsHnd
+    internal unsafe CORINFO_CLASS_HANDLE _initClsHnd
     {
         get
         {
@@ -110,7 +110,7 @@ public sealed class GenTreeCall : GenTree
     }
 
     /// <summary>Used by cast helpers to save corresponding IL offset</summary>\
-    internal unsafe IL_OFFSET CastHelperILOffset
+    internal unsafe IL_OFFSET _castHelperILOffset
     {
         get
         {
@@ -126,7 +126,7 @@ public sealed class GenTreeCall : GenTree
     internal object? _anonymous3;
 
     // Only used when inlining methods
-    private InlineCandidateInfo? InlineCandidateInfo
+    private InlineCandidateInfo? _inlineCandidateInfo
     {
         get
         {
@@ -140,7 +140,7 @@ public sealed class GenTreeCall : GenTree
     }
 
     // Used when we have more than one GDV candidate
-    private List<InlineCandidateInfo>? InlineCandidateInfoList
+    private List<InlineCandidateInfo>? _inlineCandidateInfoList
     {
         get
         {
@@ -153,7 +153,7 @@ public sealed class GenTreeCall : GenTree
         }
     }
 
-    internal HandleHistogramProfileCandidateInfo? HandleHistogramProfileCandidateInfo
+    internal HandleHistogramProfileCandidateInfo? _handleHistogramProfileCandidateInfo
     {
         get
         {
@@ -168,26 +168,12 @@ public sealed class GenTreeCall : GenTree
 
     internal unsafe void* _anonymous4;
 
-    /// <summary>The serialized CALLI unmanaged call (CT_INDIRECT) cookie; reified into argument IR in morph</summary>
-    internal unsafe CORINFO_CONST_LOOKUP* CallCookie
-    {
-        get
-        {
-            return (CORINFO_CONST_LOOKUP*)(_anonymous4);
-        }
-
-        set
-        {
-            _anonymous4 = value;
-        }
-    }
-
     /// <summary>Used to track type handle argument of dynamic helpers</summary>
-    internal unsafe CORINFO_GENERIC_HANDLE CompileTimeHelperArgumentHandle
+    internal unsafe CORINFO_GENERIC_HANDLE _compileTimeHelperArgumentHandle
     {
         get
         {
-            return (CORINFO_GENERIC_HANDLE)(_anonymous4);
+            return (CORINFO_GENERIC_HANDLE) (_anonymous4);
         }
 
         set
@@ -197,7 +183,7 @@ public sealed class GenTreeCall : GenTree
     }
 
     /// <summary>Used to pass direct call address between lower and codegen</summary>
-    private unsafe void* DirectCallAddress
+    private unsafe void* _directCallAddress
     {
         get
         {
@@ -210,6 +196,9 @@ public sealed class GenTreeCall : GenTree
         }
     }
 
+    /// <summary>The serialized CALLI unmanaged call (CT_INDIRECT) cookie; reified into argument IR in morph</summary>
+    internal CORINFO_CONST_LOOKUP _callCookie;
+
     // Always available for user virtual calls
     internal LateDevirtualizationInfo? _lateDevirtualizationInfo;
 
@@ -219,6 +208,9 @@ public sealed class GenTreeCall : GenTree
 
     // CT_USER_FUNC or CT_HELPER
     internal unsafe CORINFO_METHOD_HANDLE _callMethHnd;
+
+    // CT_INDIRECT
+    internal GenTree? _addr;
 
 #if FEATURE_READYTORUN
     /// <summary>Call target lookup info for method call from a Ready To Run module</summary>
@@ -353,10 +345,32 @@ public sealed class GenTreeCall : GenTree
     public bool IsFastTailCall => false;
 #endif
 
-    public bool IsFatPointerCandidate => (_callMoreFlags & GTF_CALL_M_FAT_POINTER_CHECK) != 0;
+    public bool IsFatPointerCandidate
+    {
+        get
+        {
+            return (_callMoreFlags & GTF_CALL_M_FAT_POINTER_CHECK) != 0;
+        }
+
+        set
+        {
+            _callMoreFlags = (_callMoreFlags & ~GTF_CALL_M_FAT_POINTER_CHECK) | (value ? GTF_CALL_M_FAT_POINTER_CHECK : 0);
+        }
+    }
 
 #if DEBUG
-    public bool IsGuarded => (_callDebugFlags & GTF_CALL_MD_GUARDED) != 0;
+    public bool IsGuarded
+    {
+        get
+        {
+            return (_callDebugFlags & GTF_CALL_MD_GUARDED) != 0;
+        }
+
+        set
+        {
+            _callDebugFlags = (_callDebugFlags & ~GTF_CALL_MD_GUARDED) | (value ? GTF_CALL_MD_GUARDED : 0);
+        }
+    }
 #endif
 
     public bool IsGuardedDevirtualizationCandidate
@@ -386,7 +400,7 @@ public sealed class GenTreeCall : GenTree
     public bool IsImplicitTailCall => false;
 #endif
 
-    [MemberNotNullWhen(true, nameof(InlineCandidateInfo), nameof(InlineCandidateInfoList))]
+    [MemberNotNullWhen(true, nameof(_inlineCandidateInfo), nameof(_inlineCandidateInfoList))]
     public bool IsInlineCandidate => (Flags & GTF_CALL_INLINE_CANDIDATE) != 0;
 
     public bool IsNoReturn
@@ -498,7 +512,7 @@ public sealed class GenTreeCall : GenTree
             {
                 NO_WAY("Call has multiple inline candidates");
             }
-            return InlineCandidateInfo;
+            return _inlineCandidateInfo;
         }
 
         set
@@ -514,16 +528,58 @@ public sealed class GenTreeCall : GenTree
                 Flags &= ~GTF_CALL_INLINE_CANDIDATE;
             }
 
-            InlineCandidateInfo = value;
+            _inlineCandidateInfo = value;
             IsGuardedDevirtualizationCandidate = false;
         }
     }
 
-    public CorInfoCallConvExtension UnmanagedCallConv => IsUnmanaged ? UnmgdCallConv : CorInfoCallConvExtension.Managed;
+    public CorInfoCallConvExtension UnmanagedCallConv => IsUnmanaged ? _unmgdCallConv : CorInfoCallConvExtension.Managed;
 
 #if DEBUG
-    public bool WasInlineCandidate => (_callDebugFlags & GTF_CALL_MD_WAS_CANDIDATE) != 0;
+    public bool WasInlineCandidate
+    {
+        get
+        {
+            return (_callDebugFlags & GTF_CALL_MD_WAS_CANDIDATE) != 0;
+        }
+
+        set
+        {
+            _callDebugFlags = (_callDebugFlags & ~GTF_CALL_MD_WAS_CANDIDATE) | (value ? GTF_CALL_MD_WAS_CANDIDATE : 0);
+        }
+    }
 #endif
+
+    /// <summary>Record a guarded devirtualization (GDV) candidate info for this call.</summary>
+    /// <param name="comp">Compiler instance</param>
+    /// <param name="candidateInfo">GDV candidate info</param>
+    /// <remarks>A call can't have more than MAX_GDV_TYPE_CHECKS number of candidates</remarks>
+    public void AddGdvCandidateInfo(Compiler comp, InlineCandidateInfo candidateInfo)
+    {
+        assert((_callMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT) is 0);
+        assert(_inlineInfoCount < MAX_GDV_TYPE_CHECKS);
+        assert(candidateInfo is not null);
+
+        if (_inlineInfoCount is 0)
+        {
+            // Most calls are monomorphic, so we don't need to allocate a vector
+            _inlineCandidateInfo = candidateInfo;
+        }
+        else if (_inlineInfoCount is 1)
+        {
+            // Upgrade _inlineCandidateInfo to _inlineCandidateInfoList (vector)
+            assert(_inlineCandidateInfo is not null);
+            _inlineCandidateInfoList = [_inlineCandidateInfo, candidateInfo];
+        }
+        else
+        {
+            assert(_inlineCandidateInfoList is not null);
+            _inlineCandidateInfoList.Add(candidateInfo);
+        }
+
+        _callMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT;
+        _inlineInfoCount++;
+    }
 
     public void ClearInlineInfo()
     {
@@ -548,7 +604,7 @@ public sealed class GenTreeCall : GenTree
 #endif
     }
 
-    public InlineCandidateInfo GetGDVCandidateInfo(byte index)
+    public InlineCandidateInfo GetGdvCandidateInfo(byte index)
     {
         assert(IsInlineCandidate);
         assert(index < _inlineInfoCount);
@@ -556,9 +612,9 @@ public sealed class GenTreeCall : GenTree
         if (_inlineInfoCount > 1)
         {
             // In this case we should access it through gtInlineCandidateInfoList
-            return InlineCandidateInfoList[index];
+            return _inlineCandidateInfoList[index];
         }
-        return InlineCandidateInfo;
+        return _inlineCandidateInfo;
     }
 
     /// <summary>get i'th return register allocated to this call node.</summary>
@@ -645,6 +701,15 @@ public sealed class GenTreeCall : GenTree
         return !helper.IsPure && (!helper.IsAllocator || ((_callMoreFlags & GTF_CALL_M_ALLOC_SIDE_EFFECTS) is not 0));
     }
 
+    /// <summary> Determine if this GT_CALL node is a devirtualization candidate.</summary>
+    /// <param name="compiler">the compiler instance so that we can call eeFindHelper</param>
+    /// <returns>Returns true if this GT_CALL node is a devirtualization candidate.</returns>
+    /// <remarks>A call will be unmarked from devirtualization candidate if it is devirtualized.</remarks>
+    public bool IsDevirtualizationCandidate(Compiler compiler)
+    {
+        return IsVirtual || (IsGenericVirtual(compiler) && (JitConfig[ConfigInteger.JitEnableGenericVirtualDevirtualization] is not 0));
+    }
+
     public bool IsGenericVirtual(Compiler compiler)
     {
         var result = false;
@@ -689,6 +754,42 @@ public sealed class GenTreeCall : GenTree
     public unsafe bool IsSpecialIntrinsic(Compiler compiler, NamedIntrinsic ni)
     {
         return IsSpecialIntrinsic() && (compiler.lookupNamedIntrinsic(_callMethHnd) == ni);
+    }
+
+    public void SetIsAsync(in AsyncCallInfo info)
+    {
+        _callMoreFlags |= GTF_CALL_M_ASYNC;
+        _asyncInfo = info;
+    }
+
+    /// <summary>Remove a guarded devirtualization (GDV) candidate info by its index.</summary>
+    /// <param name="comp">Compiler instance</param>
+    /// <param name="index">GDV candidate to remove</param>
+    /// <remarks>Index must not be greater than gtInlineInfoCount the call will be marked as "has no inline candidates" if the last candidate is removed</remarks>
+    public void RemoveGdvCandidateInfo(Compiler comp, byte index)
+    {
+        // We change the number of candidates so it's no longer "doesn't need a fallback"
+        _callMoreFlags &= ~GTF_CALL_M_GUARDED_DEVIRT_EXACT;
+
+        assert(index < _inlineInfoCount);
+
+        if (_inlineInfoCount is 1)
+        {
+            // No longer have any inline candidates
+            ClearInlineInfo();
+            assert(_inlineInfoCount is 0);
+            return;
+        }
+
+        assert(_inlineCandidateInfoList is not null);
+        _inlineCandidateInfoList.RemoveAt(index);
+        _inlineInfoCount--;
+
+        // Downgrade _inlineCandidateInfoList to _inlineCandidateInfo
+        if (_inlineInfoCount is 1)
+        {
+            _inlineCandidateInfo = _inlineCandidateInfoList[0];
+        }
     }
 
     [StructLayout(LayoutKind.Explicit)]

@@ -3,13 +3,16 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
+
 namespace RyuJitSharp;
 
-public partial class Compiler
+public partial struct TailCallSiteInfo
 {
-    public struct InferredGdvEntry
+    [Flags]
+    private enum Flags : byte
     {
-        public unsafe CORINFO_CLASS_HANDLE _classHandle;
-        public int _likelihood;
+        IsCallVirt = 1 << 0,
+        IsCalli = 1 << 1,
     }
 }

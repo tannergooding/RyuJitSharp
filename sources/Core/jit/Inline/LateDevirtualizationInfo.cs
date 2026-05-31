@@ -5,6 +5,12 @@
 
 namespace RyuJitSharp;
 
+/// <summary>Used to fill in missing contexts during late devirtualization.</summary>
 public sealed class LateDevirtualizationInfo
 {
+    public unsafe CORINFO_METHOD_HANDLE methodHnd;
+
+    public unsafe CORINFO_CONTEXT_HANDLE exactContextHnd;
+
+    public ILLocation ilLocation;
 }

@@ -281,6 +281,18 @@ public partial class Compiler
     public static StreamWriter? compJitFuncInfoFile;
 #endif
 
+#if false
+    // Switching between size & speed has measurable throughput impact
+    // (3.5% on AOT CoreLib when measured). It used to be enabled for
+    // DEBUG, but should generate identical code between CHK & RET builds,
+    // so that's not acceptable.
+    // TODO-Throughput: Figure out what to do about size vs. speed & throughput.
+    //                  Investigate the cause of the throughput regression.
+    public codeOptimize compCodeOpt => opts.compCodeOpt;
+#else
+    public codeOptimize compCodeOpt => BLENDED_CODE;
+#endif
+
     [MemberNotNullWhen(true, nameof(impInlineInfo), nameof(compInlineResult))]
     public bool compDonotInline
     {
@@ -426,6 +438,45 @@ public partial class Compiler
 #else
     public bool compTailCallStress => false;
 #endif
+
+    /// <summary>Classify the type of GDV probe to use for a call site.</summary>
+    /// <param name="call">The call</param>
+    /// <returns>The type of probe to use.</returns>
+    public unsafe GDVProbeType compClassifyGDVProbeType(GenTreeCall call)
+    {
+        if (!opts.jitFlags->IsSet(JitFlags.JIT_FLAG_BBINSTR) || IsAot)
+        {
+            return GDVProbeType.None;
+        }
+
+        var createTypeHistogram = false;
+
+        if (JitConfig[ConfigInteger.JitClassProfiling] > 0)
+        {
+            createTypeHistogram = call.IsVirtualStub || call.IsVirtualVtable;
+
+            // Cast helpers may conditionally (depending on whether the class is
+            // exact or not) have probes. For those helpers we do not use this
+            // function to classify the probe type until after we have decided on
+            // whether we probe them or not.
+            createTypeHistogram = createTypeHistogram || (impIsCastHelperEligibleForClassProbe(call) && (call._handleHistogramProfileCandidateInfo is not null));
+        }
+
+        var createMethodHistogram = ((JitConfig[ConfigInteger.JitDelegateProfiling] > 0) && call.IsDelegateInvoke) ||
+                                    ((JitConfig[ConfigInteger.JitVTableProfiling] > 0) && call.IsVirtualVtable);
+
+        if (createTypeHistogram)
+        {
+            return createMethodHistogram ? GDVProbeType.MethodAndClassProfile : GDVProbeType.ClassProfile;
+        }
+
+        if (createMethodHistogram)
+        {
+            return GDVProbeType.MethodProfile;
+        }
+
+        return GDVProbeType.None;
+    }
 
     public static void compDisplayStaticSizes()
     {

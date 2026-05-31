@@ -3,13 +3,12 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Runtime.CompilerServices;
+
 namespace RyuJitSharp;
 
-public partial class Compiler
+[InlineArray(HISTOGRAM_MAX_SIZE_COUNT)]
+public struct InlineArrayHistogramMaxSizeCount<T>
 {
-    public struct InferredGdvEntry
-    {
-        public unsafe CORINFO_CLASS_HANDLE _classHandle;
-        public int _likelihood;
-    }
+    public T e0;
 }

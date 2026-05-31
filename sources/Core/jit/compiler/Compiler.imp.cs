@@ -8,7 +8,6 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Dynamic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -90,6 +89,10 @@ public partial class Compiler
     public bool hasImpEnumeratorGdvLocalMap => impInlineRoot.impEnumeratorGdvLocalMap is not null;
 
     public bool hasImpEnumeratorLikelyTypeMap => impInlineRoot.impEnumeratorLikelyTypeMap is not null;
+
+    /// <summary>check whether PInvoke inlining should enabled in current method.</summary>
+    /// <remarks>Checks a number of ambient conditions where we could pinvoke but choose not to</remarks>
+    public bool impCanPInvokeInline => InlinePInvokeEnabled && (!opts.compDbgCode) && (compCodeOpt is not SMALL_CODE) && !opts.compNoPInvokeInlineCB;
 
     public NodeToUnsignedMap ImpEnumeratorGdvLocalMap
     {
@@ -189,6 +192,125 @@ public partial class Compiler
             assert(typeHandleClass is not null);
             return typeHandleClass;
         }
+    }
+
+    /// <summary>mark the call and the method, that they have a fat pointer candidate.</summary>
+    /// <param name="call">fat calli candidate</param>
+    /// <remarks>Spill ret_expr in the call node, because they can't be cloned.</remarks>
+    public void addFatPointerCandidate(GenTreeCall call)
+    {
+        JITDUMP($"Marking call [{call.TreeId:D6}] as fat pointer candidate\n");
+
+        MethodHasFatPointer = true;
+        call.IsFatPointerCandidate = true;
+
+        var helper = new SpillRetExprHelper(this);
+        helper.StoreRetExprResultsInArgs(call);
+    }
+
+    private static ConfigMethodRange s_jitGuardedDevirtualizationRange;
+
+    /// <summary>potentially mark the call as a guarded devirtualization candidate</summary>
+    /// <param name="call">potential guarded devirtualization candidate</param>
+    /// <param name="methodHandle">method that will be invoked if the class test succeeds</param>
+    /// <param name="classHandle">class that will be tested for at runtime</param>
+    /// <param name="contextHandle">context for the devirtualized method/class</param>
+    /// <param name="methodAttr">attributes of the method</param>
+    /// <param name="classAttr">attributes of the class</param>
+    /// <param name="likelihood">odds that this class is the class seen at runtime</param>
+    /// <param name="instParamLookup">lookup to use if the target signature requires an instantiation argument</param>
+    /// <param name="originalMethodHandle">method handle of base method (before devirt)</param>
+    /// <param name="resolvedToken">resolved token for methodHandle, used to get R2R call info; nullptr when unavailable</param>
+    /// <param name="unboxedResolvedToken">resolved token for the unboxed entry, paired with pResolvedToken</param>
+    /// <remarks>
+    ///   <para>Call sites in rare or unoptimized code, and calls that require cookies are not marked as candidates.</para>
+    ///   <para>As part of marking the candidate, the code spills GT_RET_EXPRs anywhere in any child tree, because and we need to clone all these trees when we clone the call as part of guarded devirtualization, and these IR nodes can't be cloned.</para>
+    /// </remarks>
+    public unsafe void addGuardedDevirtualizationCandidate(GenTreeCall call, CORINFO_METHOD_HANDLE methodHandle, CORINFO_CLASS_HANDLE classHandle, CORINFO_CONTEXT_HANDLE contextHandle, CorInfoFlag methodAttr, CorInfoFlag classAttr, int likelihood, in CORINFO_LOOKUP instParamLookup, CORINFO_METHOD_HANDLE originalMethodHandle, in CORINFO_RESOLVED_TOKEN resolvedToken, in CORINFO_RESOLVED_TOKEN unboxedResolvedToken)
+    {
+        // This transformation only makes sense for delegate and virtual calls
+        assert(call.IsDelegateInvoke || call.IsVirtual);
+
+        assert(compCurBB is not null);
+
+        // Only mark calls if the feature is enabled.
+        var isEnabled = JitConfig[ConfigInteger.JitEnableGuardedDevirtualization] > 0;
+
+        if (!isEnabled)
+        {
+            JITDUMP($"NOT Marking call [{call.TreeId:D6}] as guarded devirtualization candidate -- disabled by jit config\n");
+            return;
+        }
+
+        // Bail if not optimizing or the call site is very likely cold
+        if (compCurBB.isRunRarely || opts.OptimizationDisabled)
+        {
+            JITDUMP($"NOT Marking call [{call.TreeId:D6}] as guarded devirtualization candidate -- rare / dbg / minopts\n");
+            return;
+        }
+
+        // CT_INDIRECT calls may use the cookie, bail if so...
+        //
+        // If transforming these provides a benefit, we could save this off in the same way
+        // we save the stub address below.
+        if ((call._callType is CT_INDIRECT) && (call._callCookie.addr is not null))
+        {
+            JITDUMP($"NOT Marking call [{call.TreeId:D6}] as guarded devirtualization candidate -- CT_INDIRECT with cookie\n");
+            return;
+        }
+
+#if DEBUG
+        // See if disabled by range
+
+        s_jitGuardedDevirtualizationRange.EnsureInit(JitConfig[ConfigString.JitGuardedDevirtualizationRange]);
+        assert(!s_jitGuardedDevirtualizationRange.Error);
+
+        if (!s_jitGuardedDevirtualizationRange.Contains(impInlineRoot.info.compMethodHash()))
+        {
+            JITDUMP($"NOT Marking call [{call.TreeId:D6}] as guarded devirtualization candidate -- excluded by JitGuardedDevirtualizationRange");
+            return;
+        }
+#endif
+
+        // We're all set, proceed with candidate creation.
+        JITDUMP($"Marking call [{call.TreeId:D6}] as guarded devirtualization candidate; will guess for {(classHandle != NO_CLASS_HANDLE ? "class" : "method")} {(classHandle != NO_CLASS_HANDLE ? eeGetClassName(classHandle) : eeGetMethodFullName(methodHandle))}\n");
+
+        MethodHasGuardedDevirtualization = true;
+
+        // Spill off any GT_RET_EXPR subtrees so we can clone the call.
+        var helper = new SpillRetExprHelper(this);
+        helper.StoreRetExprResultsInArgs(call);
+
+        // Gather some information for later. Note we actually allocate InlineCandidateInfo
+        // here, as the devirtualized half of this call will likely become an inline candidate.
+        var inlineCandidateInfo = new InlineCandidateInfo {
+            guardedMethodHandle = methodHandle,
+            guardedClassHandle = classHandle,
+            likelihood = likelihood,
+            exactContextHandle = contextHandle,
+            originalMethodHandle = originalMethodHandle,
+            guardedMethodInstParamLookup = instParamLookup,
+            guardedMethodResolvedToken = resolvedToken,
+            guardedMethodUnboxedResolvedToken = unboxedResolvedToken,
+        };
+
+        // If the guarded class is a value class, look for an unboxed entry point.
+        //
+        if ((classAttr & CORINFO_FLG_VALUECLASS) is not 0)
+        {
+            JITDUMP("    ... class is a value class, looking for unboxed entry\n");
+
+            var requiresInstMethodTableArg = false;
+            var unboxedEntryMethodHandle = info.compCompHnd->getUnboxedEntry(methodHandle, &requiresInstMethodTableArg);
+
+            if (unboxedEntryMethodHandle is not null)
+            {
+                JITDUMP("    ... updating GDV candidate with unboxed entry info\n");
+                inlineCandidateInfo.guardedMethodUnboxedEntryHandle = unboxedEntryMethodHandle;
+            }
+        }
+
+        call.AddGdvCandidateInfo(this, inlineCandidateInfo);
     }
 
     /// <summary>Check whether two argument nodes are contiguous or not.</summary>
@@ -363,6 +485,286 @@ public partial class Compiler
     {
         assert(op1.Type == op2.Type);
         return (op1.LclOffs + fldSize) == op2.LclOffs;
+    }
+
+    /// <summary>see if we can profitably guess at the class involved in an interface or virtual call.</summary>
+    /// <param name="call">potential guarded devirtualization candidate</param>
+    /// <param name="ilOffset">IL ofset of the call instruction</param>
+    /// <param name="isInterface"></param>
+    /// <param name="baseMethod">target method of the call</param>
+    /// <param name="baseClass">class that introduced the target method</param>
+    /// <param name="contextHandle">context handle for the call</param>
+    /// <remarks>Consults with VM to see if there's a likely class at runtime, if so, adds a candidate for guarded devirtualization.</remarks>
+    public unsafe void considerGuardedDevirtualization(GenTreeCall call, IL_OFFSET ilOffset, bool isInterface, CORINFO_METHOD_HANDLE baseMethod, CORINFO_CLASS_HANDLE baseClass, ref CORINFO_CONTEXT_HANDLE contextHandle)
+    {
+        JITDUMP($"Considering guarded devirtualization at IL offset {ilOffset} (0x{ilOffset:X})\n");
+
+        var hasPgoData = true;
+
+        var likelyClasses = default(InlineArrayMaxGdvTypeChecks<nint>);
+        var originalContext = contextHandle;
+
+        var likelyMethods = default(InlineArrayMaxGdvTypeChecks<nint>);
+        var likelihoods = default(InlineArrayMaxGdvTypeChecks<int>);
+        var candidatesCount = 0;
+
+        // Remember the original context, if any.
+        // We currently only get likely class guesses when there is PGO data
+        // with class profiles.
+        //
+        if ((fgPgoClassProfiles is 0) && (fgPgoMethodProfiles is 0))
+        {
+            hasPgoData = false;
+        }
+        else
+        {
+            pickGDV(call, ilOffset, isInterface, likelyClasses, likelyMethods, out candidatesCount, likelihoods);
+
+            assert((uint)candidatesCount <= MAX_GDV_TYPE_CHECKS);
+            assert((uint)candidatesCount <= (uint)GetGdvMaxTypeChecks());
+
+            if (candidatesCount is 0)
+            {
+                hasPgoData = false;
+            }
+        }
+
+        // NativeAOT is the only target that currently supports getExactClasses-based GDV
+        // where we know the exact number of classes implementing the given base in compile-time.
+        // For now, let's only do this when we don't have any PGO data. In future, we should be able to benefit
+        // from both.
+        if (!hasPgoData && (baseClass != NO_CLASS_HANDLE) && (JitConfig[ConfigInteger.JitEnableExactDevirtualization] is not 0))
+        {
+            var maxTypeChecks = int.Min(GetGdvMaxTypeChecks(), MAX_GDV_TYPE_CHECKS);
+
+            var exactClasses = default(InlineArrayMaxGdvTypeChecks<nint>);
+            var numExactClasses = info.compCompHnd->getExactClasses(baseClass, MAX_GDV_TYPE_CHECKS, (CORINFO_CLASS_HANDLE*)(&exactClasses.e0));
+
+            if (numExactClasses is 0)
+            {
+                JITDUMP($"No exact classes implementing {eeGetClassName(baseClass)}\n");
+            }
+            else if (numExactClasses < 0 || numExactClasses > maxTypeChecks)
+            {
+                JITDUMP($"Too many exact classes implementing {eeGetClassName(baseClass)} ({numExactClasses} > {maxTypeChecks})\n");
+            }
+            else
+            {
+                assert((numExactClasses > 0) && (numExactClasses <= maxTypeChecks));
+                JITDUMP($"We have exactly {numExactClasses} classes implementing {eeGetClassName(baseClass)}:\n");
+
+                for (var exactClsIdx = 0; exactClsIdx < numExactClasses; exactClsIdx++)
+                {
+                    var exactCls = unchecked((CORINFO_CLASS_HANDLE)(exactClasses[exactClsIdx]));
+                    assert(exactCls != NO_CLASS_HANDLE);
+
+                    var clsAttrs = info.compCompHnd->getClassAttribs(exactCls);
+
+                    // The getExactClasses method is expected to return precise data, thus eliminating the need
+                    // to check if it is stale.
+                    //
+                    assert((clsAttrs & CORINFO_FLG_ABSTRACT) is 0);
+
+                    JITDUMP($"  {exactClsIdx}) {eeGetClassName(exactCls)}\n");
+
+                    // Figure out which method will be called.
+                    //
+                    var dvInfo = new CORINFO_DEVIRTUALIZATION_INFO {
+                        virtualMethod = baseMethod,
+                        objClass = exactCls,
+                        context = originalContext,
+                        pResolvedTokenVirtualMethod = null,
+                    };
+
+                    JITDUMP($"GDV exact: resolveVirtualMethod (method {dspPtr(dvInfo.virtualMethod)} class {dspPtr(dvInfo.objClass)} context {dspPtr(dvInfo.context)})\n");
+
+                    if (!info.compCompHnd->resolveVirtualMethod(&dvInfo))
+                    {
+                        // Maybe other candidates will be resolved.
+                        // Although, we no longer can remove the fallback (we never do it currently anyway)
+
+                        JITDUMP("Can't figure out which method would be invoked, sorry\n");
+                        break;
+                    }
+
+                    var exactContext = dvInfo.tokenLookupContext;
+                    var exactMethod = dvInfo.devirtualizedMethod;
+                    var exactMethodAttrs = info.compCompHnd->getMethodAttribs(exactMethod);
+
+                    // NOTE: This is currently used only with NativeAOT. In theory, we could also check if we
+                    // have static PGO data to decide which class to guess first. Presumably, this is a rare case.
+
+                    var likelyHood = 100 / numExactClasses;
+
+                    // If numExactClasses is 3, then likelyHood is 33 and 33*3=99.
+                    // Apply the error to the first guess, so we'll have [34,33,33]
+                    if (exactClsIdx is 0)
+                    {
+                        likelyHood += 100 - likelyHood * numExactClasses;
+                    }
+
+                    addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactContext, exactMethodAttrs, clsAttrs, likelyHood, dvInfo.instParamLookup, baseMethod, dvInfo.resolvedTokenDevirtualizedMethod, dvInfo.resolvedTokenDevirtualizedUnboxedMethod);
+                }
+
+                if (call.InlineCandidatesCount == numExactClasses)
+                {
+                    assert(numExactClasses > 0);
+                    call._callMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT_EXACT;
+                    // NOTE: we have to drop this flag if we change the number of candidates before we expand.
+                }
+
+                return;
+            }
+        }
+
+        if (!hasPgoData)
+        {
+            JITDUMP("Not guessing; no PGO and no exact classes\n");
+            return;
+        }
+
+        // Iterate over the guesses
+        for (var candidateId = 0; candidateId < candidatesCount; candidateId++)
+        {
+            var likelyClass = unchecked((CORINFO_CLASS_HANDLE)(likelyClasses[candidateId]));
+            var likelyMethod = unchecked((CORINFO_METHOD_HANDLE)(likelyMethods[candidateId]));
+            var likelihood = likelihoods[candidateId];
+
+            scoped ref var instParamLookup = ref Unsafe.NullRef<CORINFO_LOOKUP>();
+            scoped ref var resolvedToken = ref Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>();
+            scoped ref var unboxedResolvedToken = ref Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>();
+
+            var likelyContext = originalContext;
+
+            CORINFO_DEVIRTUALIZATION_INFO dvInfo;
+            var likelyClassAttribs = (CorInfoFlag)(0);
+
+            if (likelyClass != NO_CLASS_HANDLE)
+            {
+                likelyClassAttribs = info.compCompHnd->getClassAttribs(likelyClass);
+
+                if ((likelyClassAttribs & CORINFO_FLG_ABSTRACT) is not 0)
+                {
+                    // We may see an abstract likely class, if we have a stale profile.
+                    // No point guessing for this.
+                    JITDUMP("Not guessing for class; abstract (stale profile)\n");
+
+                    // Continue checking other candidates, maybe some of them aren't stale.
+                    break;
+                }
+
+                // Figure out which method will be called.
+                dvInfo.virtualMethod = baseMethod;
+                dvInfo.objClass = likelyClass;
+                dvInfo.context = originalContext;
+                dvInfo.pResolvedTokenVirtualMethod = null;
+
+                JITDUMP($"GDV likely: resolveVirtualMethod (method {dspPtr(dvInfo.virtualMethod)} class {dspPtr(dvInfo.objClass)} context {dspPtr(dvInfo.context)})\n");
+                var canResolve = info.compCompHnd->resolveVirtualMethod(&dvInfo);
+
+                if (!canResolve)
+                {
+                    // Continue checking other candidates, maybe some of them will succeed.
+                    JITDUMP($"Can't figure out which method would be invoked, sorry. [{DevirtualizationDetailToString(dvInfo.detail)}]\n");
+                    break;
+                }
+
+                likelyContext = dvInfo.tokenLookupContext;
+                likelyMethod = dvInfo.devirtualizedMethod;
+                resolvedToken = ref dvInfo.resolvedTokenDevirtualizedMethod;
+                unboxedResolvedToken = ref dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
+                instParamLookup = ref dvInfo.instParamLookup;
+            }
+            else
+            {
+                likelyContext = MAKE_METHODCONTEXT(likelyMethod);
+            }
+
+            var likelyMethodAttribs = info.compCompHnd->getMethodAttribs(likelyMethod);
+
+            if (likelyClass == NO_CLASS_HANDLE)
+            {
+                // We don't support multiple candidates for method guessing yet.
+                assert(candidateId is 0);
+
+                // For method GDV do a few more checks that we get for free in the
+                // resolve call above for class-based GDV.
+                if ((likelyMethodAttribs & CORINFO_FLG_STATIC) is not 0)
+                {
+                    assert((fgPgoSource is not ICorJitInfo.PgoSource.Dynamic) || call.IsDelegateInvoke);
+                    JITDUMP("Cannot currently handle devirtualizing static delegate calls, sorry\n");
+                    break;
+                }
+
+                var definingClass = info.compCompHnd->getMethodClass(likelyMethod);
+                likelyClassAttribs = info.compCompHnd->getClassAttribs(definingClass);
+
+                // For instance methods on value classes we need an extended check to
+                // check for the unboxing stub. This is NYI.
+                // Note: For dynamic PGO likelyMethod above will be the unboxing stub
+                // which would fail GDV for other reasons.
+                // However, with static profiles or textual PGO input it is still
+                // possible that likelyMethod is not the unboxing stub. So we do need
+                // this explicit check.
+                if ((likelyClassAttribs & CORINFO_FLG_VALUECLASS) is not 0)
+                {
+                    JITDUMP("Cannot currently handle devirtualizing delegate calls on value types, sorry\n");
+                    break;
+                }
+
+                // Verify that the call target and args look reasonable so that the JIT
+                // does not blow up during inlining/call morphing.
+                //
+                // NOTE: Once we want to support devirtualization of delegate calls to
+                // static methods and remove the check above we will start failing here
+                // for delegates pointing to static methods that have the first arg
+                // bound. For example:
+                //
+                // public static void E(this C c) ...
+                // Action a = new C().E;
+                //
+                // The delegate instance looks exactly like one pointing to an instance
+                // method in this case and the call will have zero args while the
+                // signature has 1 arg.
+                //
+                if (!isCompatibleMethodGdv(call, likelyMethod))
+                {
+                    JITDUMP("Target for method-based GDV is incompatible (stale profile?)\n");
+                    assert((fgPgoSource is not ICorJitInfo.PgoSource.Dynamic), "Unexpected stale profile in dynamic PGO data");
+                    break;
+                }
+            }
+
+#if DEBUG
+            JITDUMP($"{(isInterface ? "interface" : call.IsDelegateInvoke ? "delegate" : "virtual")} call would invoke method {eeGetMethodFullName(likelyMethod, includeReturnType: true, includeThisSpecifier: true)}\n");
+#endif
+
+            // Add this as a potential candidate.
+            addGuardedDevirtualizationCandidate(call, likelyMethod, likelyClass, likelyContext, likelyMethodAttribs, likelyClassAttribs, likelihood, instParamLookup, baseMethod, resolvedToken, unboxedResolvedToken);
+        }
+    }
+
+    public unsafe int GetGdvMaxTypeChecks()
+    {
+        var typeChecks = JitConfig[ConfigInteger.JitGuardedDevirtualizationMaxTypeChecks];
+
+        if (typeChecks < 0)
+        {
+            // Negative value means "it's up to JIT to decide"
+            if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) && !opts.jitFlags->IsSet(JitFlags.JIT_FLAG_SIZE_OPT))
+            {
+                return 3;
+            }
+
+            // We plan to use 3 for CoreCLR too, but we need to make sure it doesn't regress performance
+            // as CoreCLR heavily relies on Dynamic PGO while for NativeAOT we *usually* don't have it and
+            // can only perform the "exact" devirtualization.
+            return 1;
+        }
+
+        // MAX_GDV_TYPE_CHECKS is the upper limit. The constant can be changed, we just suspect that even
+        // 4 type checks is already too much.
+        return int.Min(MAX_GDV_TYPE_CHECKS, typeChecks);
     }
 
     /// <summary>find pointer to context for runtime lookup.</summary>
@@ -804,6 +1206,86 @@ public partial class Compiler
         return 0;
     }
 
+    /// <summary>basic legality checks using information from a call to see if the call qualifies as an inline pinvoke.</summary>
+    /// <param name="block">block containing the call</param>
+    /// <returns>true if this call can legally qualify as an inline pinvoke, false otherwise</returns>
+    public unsafe bool impCanPInvokeInlineCallSite(BasicBlock block)
+    {
+        // Notes:
+        //    For runtimes that support exception handling interop there are
+        //    restrictions on using inline pinvoke in handler regions.
+        //
+        //    * We have to disable pinvoke inlining inside of filters because
+        //    in case the main execution (i.e. in the try block) is inside
+        //    unmanaged code, we cannot reuse the inlined stub (we still need
+        //    the original state until we are in the catch handler)
+        //
+        //    TODO-CQ: The inlining frame no longer has a GSCookie, so the common on this
+        //             restriction is out of date. However, given that there is a comment
+        //             about protecting the framelet, I'm not confident about what this
+        //             is actually protecting, so I don't want to remove this
+        //             restriction without further analysis analysis.
+        //    * We disable pinvoke inlining inside handlers since the GSCookie
+        //    is in the inlined Frame (see
+        //    CORINFO_EE_INFO.InlinedCallFrameInfo.offsetOfGSCookie), but
+        //    this would not protect framelets/return-address of handlers.
+        //
+        //    These restrictions are currently also in place for CoreCLR but
+        //    can be relaxed when coreclr/#8459 is addressed.
+
+        if (block.hasHndIndex)
+        {
+            return false;
+        }
+
+        // The following limitations do not apply to NativeAOT
+        //
+        if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+        {
+            // The VM assumes that the PInvoke frame in IL Stub is only going to be used
+            // for the PInvoke target call. The PInvoke frame cannot be reused by marshalling helper
+            // calls (see InlinedCallFrame.GetActualInteropMethodDesc and related stackwalking code).
+            if (opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB))
+            {
+                return false;
+            }
+
+#if USE_PER_FRAME_PINVOKE_INIT
+            // For platforms that use per-P/Invoke InlinedCallFrame initialization,
+            // we can't inline P/Invokes inside of try blocks where we can resume execution in the same function.
+            // The runtime can correctly unwind out of an InlinedCallFrame and out of managed code. However,
+            // it cannot correctly unwind out of an InlinedCallFrame and stop at that frame without also unwinding
+            // at least one managed frame. In particular, the runtime struggles to restore non-volatile registers
+            // from the top-most unmanaged call before the InlinedCallFrame. As a result, the runtime does not support
+            // re-entering the same method frame as the InlinedCallFrame after an exception in unmanaged code.
+            if (block.hasTryIndex)
+            {
+                // Check if this block's try block or any containing try blocks have catch handlers.
+                // If any of the containing try blocks have catch handlers,
+                // we cannot inline a P/Invoke for reasons above. If the handler is a fault or finally handler,
+                // we can inline a P/Invoke into this block in the try since the code will not resume execution
+                // in the same method after throwing an exception if only fault or finally handlers are executed.
+                for (var ehIndex = block.TryIndex; ehIndex != EHblkDsc.NO_ENCLOSING_INDEX; ehIndex = ehGetEnclosingTryIndex(ehIndex))
+                {
+                    if (ehGetDsc(ehIndex).HasCatchHandler)
+                    {
+                        return false;
+                    }
+                }
+            }
+#endif
+        }
+
+        if (!compIsForInlining)
+        {
+            return true;
+        }
+
+        // If inlining, verify conditions for the call site block too.
+        assert(impInlineInfo.iciBlock is not null);
+        return impInlineRoot.impCanPInvokeInlineCallSite(impInlineInfo.iciBlock);
+    }
+
     /// <summary>Check if the specified tree can be reordered with a null check.</summary>
     /// <param name="tree">The tree</param>
     /// <returns>True if it would not be observable whether a null check threw before or after the specified node.</returns>
@@ -895,7 +1377,7 @@ public partial class Compiler
 
             var call = gtNewHelperCallNode(TYP_REF, helper, op2, op1);
 
-            call.CastHelperILOffset = ilOffset;
+            call._castHelperILOffset = ilOffset;
 
             // Instrument this castclass/isinst
             if ((JitConfig[ConfigInteger.JitClassProfiling] > 0) && impIsCastHelperEligibleForClassProbe(call) && !isClassExact && !compCurBB.isRunRarely)
@@ -907,7 +1389,7 @@ public partial class Compiler
                         ilOffset = ilOffset,
                         probeIndex = info.compHandleHistogramProbeCount++,
                     };
-                    call.HandleHistogramProfileCandidateInfo = candidateInfo;
+                    call._handleHistogramProfileCandidateInfo = candidateInfo;
                     compCurBB.SetFlags(BBF_HAS_HISTOGRAM_PROFILE);
                 }
             }
@@ -915,7 +1397,7 @@ public partial class Compiler
             {
                 // Leave a note for fgLateCastExpand to expand this helper call
                 call._callMoreFlags |= GTF_CALL_M_CAST_CAN_BE_EXPANDED;
-                call.CastHelperILOffset = ilOffset;
+                call._castHelperILOffset = ilOffset;
             }
 
             booleanCheck = false;
@@ -982,6 +1464,302 @@ public partial class Compiler
         return gtNewLclvNode(qmarkResult.Type, result);
     }
 #endif
+
+    /// <summary>do more detailed checks to determine if a method can be inlined, and collect information that will be needed later</summary>
+    /// <param name="call">inline candidate</param>
+    /// <param name="candidateIndex">index of inline candidate in the call's inline candidate list</param>
+    /// <param name="fncHandle">method that will be called</param>
+    /// <param name="methAttr">attributes for the method</param>
+    /// <param name="exactContextHnd">exact context for the method</param>
+    /// <param name="inlinersContext">the inliner's context</param>
+    /// <param name="inlineCandidateInfo">information needed later for inlining</param>
+    /// <param name="inlineResult">result of ongoing inline evaluation</param>
+    /// <remarks>Will update inlineResult with observations and possible failure status (if method cannot be inlined)</remarks>
+    public unsafe void impCheckCanInline(GenTreeCall call, byte candidateIndex, CORINFO_METHOD_HANDLE fncHandle, CorInfoFlag methAttr, CORINFO_CONTEXT_HANDLE exactContextHnd, InlineContext inlinersContext, out InlineCandidateInfo? inlineCandidateInfo, InlineResult inlineResult)
+    {
+        // Either EE or JIT might throw exceptions below.
+        // If that happens, just don't inline the method.
+
+        var candidateInfo = null as InlineCandidateInfo;
+        exactContextHnd = (exactContextHnd is not null) ? exactContextHnd : MAKE_METHODCONTEXT(fncHandle);
+
+        var success = eeRunFunctorWithErrorTrap(() => {
+            // Cache some frequently accessed state.
+            var compCompHnd = info.compCompHnd;
+
+            if (JitConfig[ConfigInteger.JitNoInline] is not 0)
+            {
+                inlineResult.NoteFatal(InlineObservation.CALLEE_IS_JIT_NOINLINE);
+                return;
+            }
+
+            JITDUMP($"\nCheckCanInline: fetching method info for inline candidate {eeGetMethodName(fncHandle)} -- context {dspPtr(exactContextHnd)}\n");
+
+            if (exactContextHnd == METHOD_BEING_COMPILED_CONTEXT())
+            {
+                JITDUMP("Current method context\n");
+            }
+            else if (((unchecked((nint)(exactContextHnd)) & (nint)(CORINFO_CONTEXTFLAGS_MASK)) == (nint)(CORINFO_CONTEXTFLAGS_METHOD)))
+            {
+                JITDUMP($"Method context: {eeGetMethodFullName((CORINFO_METHOD_HANDLE)(exactContextHnd))}\n");
+            }
+            else
+            {
+                JITDUMP($"Class context: {eeGetClassName(unchecked((CORINFO_CLASS_HANDLE)((nint)(exactContextHnd) & ~(nint)(CORINFO_CONTEXTFLAGS_MASK))))}\n");
+            }
+
+            // Fetch method info. This may fail, if the method doesn't have IL.
+
+            CORINFO_METHOD_INFO methInfo;
+            if (!compCompHnd->getMethodInfo(fncHandle, &methInfo, exactContextHnd))
+            {
+                inlineResult.NoteFatal(InlineObservation.CALLEE_NO_METHOD_INFO);
+                return;
+            }
+
+            // Profile data allows us to avoid early "too many IL bytes" outs.
+            assert(compCurBB is not null);
+
+            inlineResult.NoteBool(InlineObservation.CALLSITE_HAS_PROFILE_WEIGHTS, fgHaveSufficientProfileWeights);
+            inlineResult.NoteBool(InlineObservation.CALLSITE_INSIDE_THROW_BLOCK, (compCurBB.Kind is BBJ_THROW));
+
+            var forceInline = (methAttr & CORINFO_FLG_FORCEINLINE) is not 0;
+
+            impCanInlineIL(fncHandle, &methInfo, forceInline, inlineResult);
+
+            if (inlineResult.IsFailure)
+            {
+                assert(inlineResult.IsNever);
+                return;
+            }
+
+            // Speculatively check if initClass() can be done.
+            // If it can be done, we will try to inline the method.
+            var initClassResult = compCompHnd->initClass(field: null, fncHandle, exactContextHnd);
+
+            if ((initClassResult & CORINFO_INITCLASS_DONT_INLINE) is not 0)
+            {
+                inlineResult.NoteFatal(InlineObservation.CALLSITE_CANT_CLASS_INIT);
+                return;
+            }
+
+            // Given the VM the final say in whether to inline or not.
+            // This should be last since for verifiable code, this can be expensive
+            //
+            var vmResult = compCompHnd->canInline(info.compMethodHnd, fncHandle);
+
+            if (vmResult is INLINE_FAIL)
+            {
+                inlineResult.NoteFatal(InlineObservation.CALLSITE_IS_VM_NOINLINE);
+            }
+            else if (vmResult is INLINE_NEVER)
+            {
+                inlineResult.NoteFatal(InlineObservation.CALLEE_IS_VM_NOINLINE);
+            }
+
+            if (inlineResult.IsFailure)
+            {
+                // The VM already self-reported this failure, so mark it specially so the JIT doesn't also try reporting it.
+                inlineResult.SetVMFailure();
+                return;
+            }
+
+            // Get the method's class properties
+            var clsHandle = compCompHnd->getMethodClass(fncHandle);
+            var clsAttr = compCompHnd->getClassAttribs(clsHandle);
+
+#if DEBUG
+            // Return type
+            var fncRetType = call._returnType;
+            var fncRealRetType = methInfo.args.retType.VarType;
+
+            // <BUGNUM> VSW 288602 </BUGNUM>
+            // In case of IJW, we allow to assign a native pointer to a BYREF.
+            assert((fncRealRetType.ActualType == fncRetType.ActualType) ||
+                   ((fncRetType is TYP_BYREF) && (methInfo.args.retType is CORINFO_TYPE_PTR)) ||
+                   (varTypeIsStruct(fncRetType) && (fncRealRetType is TYP_STRUCT)));
+#endif
+
+            // Allocate an InlineCandidateInfo structure,
+            //
+            // Or, reuse the existing GuardedDevirtualizationCandidateInfo,
+            // which was pre-allocated to have extra room.
+
+            if (call.IsGuardedDevirtualizationCandidate)
+            {
+                candidateInfo = call.GetGdvCandidateInfo(candidateIndex);
+            }
+            else
+            {
+                candidateInfo = new InlineCandidateInfo();
+            }
+
+            candidateInfo.methInfo = methInfo;
+            candidateInfo.ilCallerHandle = info.compMethodHnd;
+            candidateInfo.clsHandle = clsHandle;
+            candidateInfo.exactContextHandle = exactContextHnd;
+            candidateInfo.retExpr = null;
+            candidateInfo.preexistingSpillTemp = BAD_VAR_NUM;
+            candidateInfo.clsAttr = clsAttr;
+            candidateInfo.methAttr = methAttr;
+            candidateInfo.initClassResult = initClassResult;
+            candidateInfo.exactContextNeedsRuntimeLookup = false;
+            candidateInfo.inlinersContext = inlinersContext;
+        });
+
+        // Note exactContextNeedsRuntimeLookup is reset later on, over in impMarkInlineCandidate.
+        inlineCandidateInfo = candidateInfo;
+
+        if (!success)
+        {
+            inlineResult.NoteFatal(InlineObservation.CALLSITE_COMPILATION_ERROR);
+        }
+    }
+
+    /// <summary>examine call to see if it is a pinvoke and if so if it can be expressed as an inline pinvoke.</summary>
+    /// <param name="call">tree for the call</param>
+    /// <param name="methHnd">handle for the method being called (may be null)</param>
+    /// <param name="sigInfo">signature of the method being called</param>
+    /// <param name="mflags">method flags for the method being called</param>
+    /// <param name="block">block containing the call</param>
+    /// <remarks>
+    ///   <para>Sets GTF_CALL_M_PINVOKE on the call for pinvokes.</para>
+    ///   <para>Also sets GTF_CALL_UNMANAGED on call for inline pinvokes if the call passes a combination of legality and profitability checks.</para>
+    ///   <para>If GTF_CALL_UNMANAGED is set, increments info.compUnmanagedCallCountWithGCTransition</para>
+    /// </remarks>
+    public unsafe void impCheckForPInvokeCall(GenTreeCall call, CORINFO_METHOD_HANDLE methHnd, in CORINFO_SIG_INFO sigInfo, CorInfoFlag mflags, BasicBlock block)
+    {
+        CorInfoCallConvExtension unmanagedCallConv;
+
+        // If VM flagged it as Pinvoke, flag the call node accordingly
+        if ((mflags & CORINFO_FLG_PINVOKE) is not 0)
+        {
+            call._callMoreFlags |= GTF_CALL_M_PINVOKE;
+        }
+
+        var suppressGCTransition = false;
+
+        if (methHnd is not null)
+        {
+            if ((mflags & CORINFO_FLG_PINVOKE) is 0)
+            {
+                return;
+            }
+
+            unmanagedCallConv = info.compCompHnd->getUnmanagedCallConv(methHnd, null, &suppressGCTransition);
+        }
+        else
+        {
+            if (sigInfo.getCallConv() is CORINFO_CALLCONV_DEFAULT or CORINFO_CALLCONV_VARARG)
+            {
+                return;
+            }
+
+            fixed (CORINFO_SIG_INFO* pSigInfo = &sigInfo)
+            {
+                unmanagedCallConv = info.compCompHnd->getUnmanagedCallConv(method: null, pSigInfo, &suppressGCTransition);
+            }
+            assert((call._callCookie.accessType is IAT_VALUE) && (call._callCookie.addr is null));
+        }
+
+        if (suppressGCTransition)
+        {
+            call._callMoreFlags |= GTF_CALL_M_SUPPRESS_GC_TRANSITION;
+        }
+
+        if ((unmanagedCallConv is CorInfoCallConvExtension.Thiscall) && (sigInfo.numArgs is 0))
+        {
+            BADCODE("thiscall with 0 arguments");
+        }
+
+        // If we can't get the unmanaged calling convention or the calling convention is unsupported in the JIT,
+        // return here without inlining the native call.
+        if (unmanagedCallConv is CorInfoCallConvExtension.Managed or CorInfoCallConvExtension.Fastcall or CorInfoCallConvExtension.FastcallMemberFunction)
+        {
+            return;
+        }
+        optNativeCallCount++;
+
+        if (methHnd is null && (IsTargetAbi(CORINFO_NATIVEAOT_ABI) || (opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB) && !compIsForInlining)))
+        {
+            // PInvoke CALLI in NativeAOT ABI must be always inlined. Non-inlineable CALLI cases have been
+            // converted to regular method calls earlier using convertPInvokeCalliToCall.
+
+            // PInvoke CALLI in IL stubs must be inlined
+        }
+        else if (opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB) && IsReadyToRun)
+        {
+            // The raw PInvoke call that is inside the no marshalling R2R compiled pinvoke ILStub must
+            // be inlined into the stub, otherwise we would end up with a stub that recursively calls
+            // itself, and end up with a stack overflow.
+        }
+        else
+        {
+            // Check legality
+            if (!impCanPInvokeInlineCallSite(block))
+            {
+                return;
+            }
+
+            // Legal PInvoke CALL in PInvoke IL stubs must be inlined to avoid infinite recursive
+            // inlining in NativeAOT. Skip the ambient conditions checks and profitability checks.
+            if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI) || (info.compFlags & CORINFO_FLG_PINVOKE) is 0)
+            {
+                if (!impCanPInvokeInline)
+                {
+                    return;
+                }
+
+                // Size-speed tradeoff: don't use inline pinvoke at rarely
+                // executed call sites.  The non-inline version is more
+                // compact.
+                //
+                // Zero-diff quirk: the first clause below should simply be block->isRunRarely()
+                //
+                if (compIsForInlining)
+                {
+                    assert(impInlineInfo.iciBlock is not null);
+
+                    if (impInlineInfo.iciBlock.isRunRarely)
+                    {
+                        return;
+                    }
+                }
+                else if (block.isRunRarely)
+                {
+                    return;
+                }
+            }
+
+            // The expensive check should be last
+            var pinvokeMarshallingRequired = false;
+
+            fixed (CORINFO_SIG_INFO* pSigInfo = &sigInfo)
+            {
+                pinvokeMarshallingRequired = info.compCompHnd->pInvokeMarshalingRequired(methHnd, pSigInfo);
+            }
+
+            if (pinvokeMarshallingRequired)
+            {
+                return;
+            }
+        }
+
+        JITLOG(LL_INFO1000000, $"\nInline a PINVOKE call from method {info.compFullName}\n");
+
+        call.Flags |= GTF_CALL_UNMANAGED;
+        call._unmgdCallConv = unmanagedCallConv;
+
+        if (!call.IsSuppressGCTransition)
+        {
+            info.compUnmanagedCallCountWithGCTransition++;
+        }
+
+        if (unmanagedCallConv is CorInfoCallConvExtension.C or CorInfoCallConvExtension.CMemberFunction)
+        {
+            call.Flags |= GTF_CALL_POP_ARGS;
+        }
+    }
 
     /// <summary>check that the node's type is compatible with the signature's type using ECMA implicit argument coercion table.</summary>
     /// <param name="sigType">the type in the call signature</param>
@@ -1197,6 +1975,49 @@ public partial class Compiler
         return gtNewLclvNode(type, temp);
     }
 
+    /// <summary>Consider whether a call should get a histogram probe and mark it if so.</summary>
+    /// <param name="call">The call</param>
+    /// <param name="ilOffset">The precise IL offset of the call</param>
+    /// <returns>True if the call was marked such that we will add a class or method probe for it.</returns>
+    public unsafe bool impConsiderCallProbe(GenTreeCall call, IL_OFFSET ilOffset)
+    {
+        // Possibly instrument. Note for OSR+PGO we will instrument when
+        // optimizing and (currently) won't devirtualize. We may want
+        // to revisit -- if we can devirtualize we should be able to
+        // suppress the probe.
+        //
+        if (!opts.jitFlags->IsSet(JitFlags.JIT_FLAG_BBINSTR))
+        {
+            return false;
+        }
+
+        assert(opts.OptimizationDisabled || opts.IsInstrumentedAndOptimized);
+
+        // During importation, optionally flag this block as one that
+        // contains calls requiring class profiling. Ideally perhaps
+        // we'd just keep track of the calls themselves, so we don't
+        // have to search for them later.
+        //
+        if (compClassifyGDVProbeType(call) is GDVProbeType.None)
+        {
+            return false;
+        }
+
+        assert(compCurBB is not null);
+        JITDUMP($"\n ... marking [{call.TreeId:D6}] in {FMT_BB(compCurBB.bbNum)} for method/class profile instrumentation\n");
+
+        // Record some info needed for the class profiling probe.
+        call._handleHistogramProfileCandidateInfo = new HandleHistogramProfileCandidateInfo {
+            ilOffset = ilOffset,
+            probeIndex = info.compHandleHistogramProbeCount++,
+        };
+
+        // Flag block as needing scrutiny
+        compCurBB.SetFlags(BBF_HAS_HISTOGRAM_PROFILE);
+
+        return true;
+    }
+
     /// <summary>convert a helper call to a user call and mark it for inlining.</summary>
     /// <param name="call">the helper call to convert</param>
     /// <remarks>This is used for helper calls that are known to be backed by a user method that can be inlined.</remarks>
@@ -1251,12 +2072,493 @@ public partial class Compiler
         }
     }
 
-    /*****************************************************************************
-     *
-     *  Store the given start and end stmt in the given basic block. This is
-     *  mostly called by impEndTreeList(BasicBlock *block). It is called
-     *  directly only for handling CEE_LEAVEs out of finally-protected try's.
-     */
+    /// <summary>Attempt to change a virtual vtable call into a normal call</summary>
+    /// <param name="call">the call node to examine/modify</param>
+    /// <param name="resolvedToken">the resolved token used to create the call. Used for R2R.</param>
+    /// <param name="method">the method handle for call. Updated iff call devirtualized.</param>
+    /// <param name="methodFlags">flags for the method to call. Updated iff call devirtualized.</param>
+    /// <param name="contextHandle">context handle for the call. Updated iff call devirtualized.</param>
+    /// <param name="exactContextHandle">updated context handle iff call devirtualized</param>
+    /// <param name="isLateDevirtualization">if devirtualization is happening after importation</param>
+    /// <param name="isExplicitTailCall">true if we plan on using an explicit tail call</param>
+    /// <param name="ilOffset">IL offset of the call</param>
+    public unsafe void impDevirtualizeCall(GenTreeCall call, in CORINFO_RESOLVED_TOKEN resolvedToken, ref CORINFO_METHOD_HANDLE method, ref CorInfoFlag methodFlags, ref CORINFO_CONTEXT_HANDLE contextHandle, out CORINFO_CONTEXT_HANDLE exactContextHandle, bool isLateDevirtualization, bool isExplicitTailCall, IL_OFFSET ilOffset = BAD_IL_OFFSET)
+    {
+        // Notes:
+        //     Virtual calls in IL will always "invoke" the base class method.
+        //
+        //     This transformation looks for evidence that the type of 'this'
+        //     in the call is exactly known, is a final class or would invoke
+        //     a final method, and if that and other safety checks pan out,
+        //     modifies the call and the call info to create a direct call.
+        //
+        //     This transformation is initially done in the importer and not
+        //     in some subsequent optimization pass because we want it to be
+        //     upstream of inline candidate identification.
+        //
+        //     However, later phases may supply improved type information that
+        //     can enable further devirtualization. We currently reinvoke this
+        //     code after inlining, if the return value of the inlined call is
+        //     the 'this obj' of a subsequent virtual call.
+        //
+        //     If devirtualization succeeds and the call's this object is a
+        //     (boxed) value type, the jit will ask the EE for the unboxed entry
+        //     point. If this exists, the jit will invoke the unboxed entry
+        //     on the box payload. In addition if the boxing operation is
+        //     visible to the jit and the call is the only consmer of the box,
+        //     the jit will try analyze the box to see if the call can be instead
+        //     instead made on a local copy. If that is doable, the call is
+        //     updated to invoke the unboxed entry on the local copy and the
+        //     boxing operation is removed.
+        //
+        //     When guarded devirtualization is enabled, this method will mark
+        //     calls as guarded devirtualization candidates, if the type of `this`
+        //     is not exactly known, and there is a plausible guess for the type.
+
+        // This should be a devirtualization candidate.
+        assert(call.IsDevirtualizationCandidate(this));
+        assert(opts.OptimizationEnabled);
+
+#if DEBUG
+        // Bail if devirt is disabled.
+        if (JitConfig[ConfigInteger.JitEnableDevirtualization] is 0)
+        {
+            exactContextHandle = null;
+            return;
+        }
+
+#endif
+
+        // Fetch information about the virtual method we're calling.
+        var baseMethod = method;
+        var baseMethodAttribs = methodFlags;
+
+        if (baseMethodAttribs is 0)
+        {
+            // For late devirt we may not have method attributes, so fetch them.
+            baseMethodAttribs = info.compCompHnd->getMethodAttribs(baseMethod);
+        }
+#if DEBUG
+        else
+        {
+            // Validate that callInfo has up to date method flags
+            var freshBaseMethodAttribs = info.compCompHnd->getMethodAttribs(baseMethod);
+
+            // All the base method attributes should agree, save that
+            // CORINFO_FLG_DONT_INLINE may have changed from 0 to 1
+            // because of concurrent jitting activity.
+            //
+            // Note we don't look at this particular flag bit below, and
+            // later on (if we do try and inline) we will rediscover why
+            // the method can't be inlined, so there's no danger here in
+            // seeing this particular flag bit in different states between
+            // the cached and fresh values.
+            if ((freshBaseMethodAttribs & ~CORINFO_FLG_DONT_INLINE) != (baseMethodAttribs & ~CORINFO_FLG_DONT_INLINE))
+            {
+                NO_WAY("mismatched method attributes");
+            }
+        }
+#endif
+
+        // In R2R mode, we might see virtual stub calls / gvm calls to
+        // non-virtuals. For instance cases where the non-virtual method
+        // is in a different assembly but is called via CALLVIRT. For
+        // version resilience we must allow for the fact that the method
+        // might become virtual in some update.
+        //
+        // In non-R2R modes CALLVIRT <nonvirtual> will be turned into a
+        // regular call+nullcheck by normal call importation.
+        //
+        if ((baseMethodAttribs & CORINFO_FLG_VIRTUAL) is 0)
+        {
+            exactContextHandle = null;
+
+            assert(call.IsVirtualStub || call.IsGenericVirtual(this));
+            assert(IsAot);
+
+            JITDUMP("\nimpDevirtualizeCall: [R2R] base method not virtual, sorry\n");
+            return;
+        }
+
+        // Fetch information about the class that introduced the virtual method.
+        var baseClass = info.compCompHnd->getMethodClass(baseMethod);
+        var baseClassAttribs = info.compCompHnd->getClassAttribs(baseClass);
+
+        // Is the call an interface call?
+        var isInterface = (baseClassAttribs & CORINFO_FLG_INTERFACE) is not 0;
+
+        // See what we know about the type of 'this' in the call.
+        assert(call.Args.HasThisPointer);
+
+        var thisArg = call.Args.ThisArg;
+        var thisObj = thisArg.EarlyNode.EffectiveVal;
+
+        var objClass = gtGetClassHandle(thisObj, out var isExact, out var objIsNonNull);
+
+        // Bail if we know nothing.
+        if (objClass == NO_CLASS_HANDLE)
+        {
+            JITDUMP($"\nimpDevirtualizeCall: no type available (op={thisObj.Oper})\n");
+            exactContextHandle = null;
+
+            if (isLateDevirtualization)
+            {
+                // Don't try guarded devirtualiztion when we're doing late devirtualization.
+                JITDUMP("No guarded devirt during late devirtualization\n");
+                return;
+            }
+
+            considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, baseClass, ref contextHandle);
+            return;
+        }
+
+        // If the objClass is sealed (final), then we may be able to devirtualize.
+        var objClassAttribs = info.compCompHnd->getClassAttribs(objClass);
+        var objClassIsFinal = (objClassAttribs & CORINFO_FLG_FINAL) is not 0;
+
+#if DEBUG
+        var objClassNote = "[?]";
+        var objClassName = "?objClass";
+        var baseMethodFullName = "?baseMethod";
+
+        if (verbose)
+        {
+            objClassNote = isExact ? " [exact]" : objClassIsFinal ? " [final]" : "";
+            objClassName = eeGetClassName(objClass);
+            baseMethodFullName = eeGetMethodFullName(baseMethod);
+
+            jitprintf($"\nimpDevirtualizeCall: Trying to devirtualize {(isInterface ? "interface" : "virtual")} call:\n");
+            jitprintf($"    class for 'this' is {objClassName}{objClassNote} (attrib {objClassAttribs})\n");
+            jitprintf($"    base method is {baseMethodFullName}\n");
+        }
+#endif
+
+        // See if the jit's best type for `obj` is an interface.
+        // See for instance System.ValueTuple`8.GetHashCode, where lcl 0 is System.IValueTupleInternal
+        //   IL_021d:  ldloc.0
+        //   IL_021e:  callvirt   instance int32 System.Object.GetHashCode()
+        //
+        // If so, we can't devirtualize, but we may be able to do guarded devirtualization.
+
+        if ((objClassAttribs & CORINFO_FLG_INTERFACE) is not 0)
+        {
+            exactContextHandle = null;
+
+            if (isLateDevirtualization)
+            {
+                // Don't try guarded devirtualiztion when we're doing late devirtualization.
+                JITDUMP("No guarded devirt during late devirtualization\n");
+                return;
+            }
+
+            considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, baseClass, ref contextHandle);
+            return;
+        }
+
+        // If we get this far, the jit has a lower bound class type for the `this` object being used for dispatch.
+        // It may or may not know enough to devirtualize...
+        if (isInterface)
+        {
+            assert(call.IsVirtualStub || call.IsGenericVirtual(this));
+            JITDUMP("--- base class is interface\n");
+        }
+
+        // Fetch the method that would be called based on the declared type of 'this', and prepare to fetch the method attributes.
+
+        var dvInfo = new CORINFO_DEVIRTUALIZATION_INFO {
+            virtualMethod = baseMethod,
+            objClass = objClass,
+            context = contextHandle,
+            detail = CORINFO_DEVIRTUALIZATION_UNKNOWN
+        };
+
+        fixed (CORINFO_RESOLVED_TOKEN* pResolvedToken = &resolvedToken)
+        {
+            dvInfo.pResolvedTokenVirtualMethod = pResolvedToken;
+            JITDUMP($"ResolveVirtualMethod (method {dspPtr(dvInfo.virtualMethod)} class {dspPtr(dvInfo.objClass)} context {dspPtr(dvInfo.context)})\n");
+            info.compCompHnd->resolveVirtualMethod(&dvInfo);
+        }
+
+        var derivedMethod = dvInfo.devirtualizedMethod;
+        var exactContext = dvInfo.tokenLookupContext;
+        ref var derivedResolvedToken = ref dvInfo.resolvedTokenDevirtualizedMethod;
+
+        var derivedMethodAttribs = (CorInfoFlag)(0);
+        var derivedMethodIsFinal = false;
+        var canDevirtualize = false;
+
+#if DEBUG
+        var note = "inexact or not final";
+#endif
+
+        Unsafe.SkipInit(out CORINFO_SIG_INFO derivedSig);
+
+        // If we failed to get a method handle, we can't directly devirtualize.
+        //
+        // This can happen with AOT, if the devirtualization crosses
+        // servicing bubble boundaries, or if objClass is a shared class.
+
+        if (derivedMethod is null)
+        {
+            JITDUMP($"--- no derived method: {DevirtualizationDetailToString(dvInfo.detail)}\n");
+        }
+        else
+        {
+            // Fetch method attributes to see if method is marked final.
+            derivedMethodAttribs = info.compCompHnd->getMethodAttribs(derivedMethod);
+            derivedMethodIsFinal = ((derivedMethodAttribs & CORINFO_FLG_FINAL) is not 0);
+
+            info.compCompHnd->getMethodSig(derivedMethod, &derivedSig);
+
+            // Array interface devirt can return a nonvirtual generic method of the non-generic SZArrayHelper class.
+            //
+            if (derivedSig.hasTypeArg())
+            {
+                // If we don't know the array type exactly we may have the wrong interface type here.
+                // Bail out.
+                //
+                var isArrayInterfaceDevirt = (objClassAttribs & CORINFO_FLG_ARRAY) is not 0;
+
+                if (isArrayInterfaceDevirt && !isExact)
+                {
+                    exactContextHandle = null;
+                    JITDUMP("Array interface devirt: array type is inexact, sorry.\n");
+                    return;
+                }
+            }
+
+#if DEBUG
+            if (isExact)
+            {
+                note = "exact";
+            }
+            else if (objClassIsFinal)
+            {
+                note = "final class";
+            }
+            else if (derivedMethodIsFinal)
+            {
+                note = "final method";
+            }
+
+            if (verbose)
+            {
+                jitprintf($"    devirt to {eeGetMethodFullName(derivedMethod)} -- {note}\n");
+                gtDispTree(call);
+            }
+#endif
+
+            canDevirtualize = isExact || objClassIsFinal || (!isInterface && derivedMethodIsFinal);
+        }
+
+        // We still might be able to do a guarded devirtualization.
+        // Note the call might be an interface call or a virtual call.
+        //
+        if (!canDevirtualize)
+        {
+            JITDUMP($"    Class not final or exact{(isInterface ? "" : ", and method not final")}\n");
+
+#if DEBUG
+            // If we know the object type exactly, we generally expect we can devirtualize.
+            // (don't when doing late devirt as we won't have an owner type (yet))
+
+            if (!isLateDevirtualization && (isExact || objClassIsFinal) && (JitConfig[ConfigInteger.JitNoteFailedExactDevirtualization] is not 0))
+            {
+                jitprintf($"@@@ Exact/Final devirt failure in {info.compFullName} at [{call.TreeId:D6}] $ {DevirtualizationDetailToString(dvInfo.detail)}\n");
+            }
+#endif
+
+            exactContextHandle = null;
+
+            if (isLateDevirtualization)
+            {
+                // Don't try guarded devirtualiztion if we're doing late devirtualization.
+                JITDUMP("No guarded devirt during late devirtualization\n");
+                return;
+            }
+
+            considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, objClass, ref contextHandle);
+            return;
+        }
+
+        // All checks done. Time to transform the call.
+
+        assert(canDevirtualize);
+        assert(compCurBB is not null);
+
+        JITDUMP($"    {note}; can devirtualize\n");
+
+        var dcInfo = new DevirtualizedCallInfo {
+            tokenLookupContext = exactContext,
+            instParamLookup = ref dvInfo.instParamLookup,
+            resolvedToken = ref derivedResolvedToken,
+            unboxedResolvedToken = ref dvInfo.resolvedTokenDevirtualizedUnboxedMethod,
+            methSig = ref derivedSig,
+            objIsNonNull = objIsNonNull,
+            hadImplicitNullCheck = true,
+            isDelegateCall = false,
+            isExplicitTailCall = isExplicitTailCall,
+            objClassIsExact = isExact,
+            objClassIsFinal = objClassIsFinal,
+            ilOffset = ilOffset,
+        };
+        impTransformDevirtualizedCall(call, ref derivedMethod, ref derivedMethodAttribs, in dcInfo, compCurBB, out contextHandle, baseMethod);
+
+        method = derivedMethod;
+        methodFlags = derivedMethodAttribs;
+
+        // Update exact context handle.
+        exactContextHandle = exactContext;
+    }
+
+    /// <summary>duplicates a call with a profiled argument</summary>
+    /// <param name="call">call to optimize with profiled argument</param>
+    /// <param name="ilOffset">Raw IL offset of the call</param>
+    /// <returns>Optimized tree (or the original call tree if we can't optimize it).</returns>
+    public unsafe GenTree impDuplicateWithProfiledArg(GenTreeCall call, IL_OFFSET ilOffset)
+    {
+        // Given `Buffer.Memmove(dst, src, len)` call,
+        // optimize it to:
+        //
+        // if (len == popularSize)
+        //     Buffer.Memmove(dst, src, popularSize); // can be unrolled now
+        // else
+        //     Buffer.Memmove(dst, src, len); // fallback
+        //
+        // if we can obtain the popular size from PGO data.
+
+        assert(call.IsSpecialIntrinsic());
+        assert(opts.IsOptimizedWithProfile);
+
+        if (call.IsInlineCandidate)
+        {
+            // We decided to inline the whole thing? We won't be able to clone it then.
+            return call;
+        }
+
+        var likelyValues = default(InlineArray8<LikelyValueRecord>);
+        var schemas = new ReadOnlySpan<ICorJitInfo.PgoInstrumentationSchema>(fgPgoSchema, fgPgoSchemaCount);
+
+        var valuesCount = getLikelyValues(likelyValues, schemas, fgPgoData, ilOffset);
+
+        JITDUMP($"{valuesCount} likely values:\n");
+
+        for (var i = 0; i < valuesCount; i++)
+        {
+            JITDUMP($"  {i}) {likelyValues[i].value} - {likelyValues[i].likelihood}%\n");
+        }
+
+        // For now, we only do a single guess, but it's pretty straightforward to extend it to support multiple guesses.
+        var likelyValue = likelyValues[0];
+
+#if DEBUG
+        // Re-use JitRandomGuardedDevirtualization for stress-testing.
+        var jitRandomGuardedDevirtualization = JitConfig[ConfigInteger.JitRandomGuardedDevirtualization];
+
+        if (jitRandomGuardedDevirtualization is not 0)
+        {
+            assert(impInlineRoot._inlineStrategy is not null);
+            var random = impInlineRoot._inlineStrategy.GetRandom(jitRandomGuardedDevirtualization);
+
+            valuesCount = 1;
+            likelyValue.value = random.Next(256);
+            likelyValue.likelihood = 100;
+        }
+#endif
+
+        // TODO: Tune the likelihood threshold, for now it's 50%
+        if ((valuesCount > 0) && (likelyValue.likelihood >= 50))
+        {
+            var profiledValue = likelyValue.value;
+
+            var argNum = 0;
+            var minValue = 0;
+            var maxValue = 0;
+
+            if (call.IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove))
+            {
+                // dst(0), src(1), len(2)
+                argNum = 2;
+
+                minValue = 1; // TODO: enable for 0 as well.
+                maxValue = GetUnrollThreshold(ProfiledMemmove);
+            }
+            else if (call.IsSpecialIntrinsic(this, NI_System_SpanHelpers_SequenceEqual))
+            {
+                // dst(0), src(1), len(2)
+                argNum = 2;
+
+                minValue = 1; // TODO: enable for 0 as well.
+                maxValue = GetUnrollThreshold(ProfiledMemcmp);
+            }
+            else
+            {
+                // only Memmove is expected at the moment.
+                // Possible future extensions: Memset, Memcpy
+                unreached();
+            }
+
+            if ((profiledValue >= minValue) && (profiledValue <= maxValue))
+            {
+                JITDUMP($"Duplicating for popular value = {profiledValue}\n");
+                DISPTREE(call);
+
+                var callArgs = call.Args;
+
+                var userArg = callArgs.GetUserArgByIndex(argNum);
+                assert(userArg is not null);
+
+                if (userArg.Node.Oper.IsConst)
+                {
+                    JITDUMP("Profiled arg is already a constant - bail out.\n");
+                    return call;
+                }
+
+                // Spill all the arguments to temp locals to preserve the execution order
+
+                ref var argRef = ref Unsafe.NullRef<GenTree>();
+                var argClone = null as GenTree;
+
+                var userArgCount = callArgs.CountUserArgs();
+
+                for (var i = 0; i < userArgCount; i++)
+                {
+                    userArg = callArgs.GetUserArgByIndex(i);
+                    assert(userArg is not null);
+
+                    ref var node = ref userArg.EarlyNodeRef;
+                    var cloned = impCloneExpr(node, out node, CHECK_SPILL_ALL, "spilling arg");
+
+                    if (i == argNum)
+                    {
+                        // Record the reference to the argument we're going to replace.
+                        argRef = node;
+                        argClone = cloned;
+                    }
+                }
+                assert(argClone is not null);
+
+                var fallbackCall = gtCloneExpr(call);
+                var profiledValueNode = gtNewIconNode(argClone.Type, profiledValue);
+                argRef = profiledValueNode;
+
+                // TODO: Specify weights for the branches in the Qmark node.
+                var colon = gtNewColonNode(call.Type, call, fallbackCall);
+                var cond = gtNewBinaryNode(GT_EQ, TYP_INT, argClone, gtCloneExpr(profiledValueNode));
+                var qmark = gtNewQmarkNode(call.Type, cond, colon);
+
+                JITDUMP("\n\nResulting tree:\n");
+                DISPTREE(qmark);
+    
+                return qmark;
+            }
+        }
+        return call;
+    }
+
+    // Store the given start and end stmt in the given basic block. This is
+    // mostly called by impEndTreeList(BasicBlock *block). It is called
+    // directly only for handling CEE_LEAVEs out of finally-protected try's.
 
     public void impEndTreeList(BasicBlock block, Statement firstStmt, Statement? lastStmt)
     {
@@ -1454,6 +2756,90 @@ public partial class Compiler
                 }
             }
         }
+    }
+
+    /// <summary>
+    ///   <para>For a call node that returns a struct do one of the following:</para>
+    ///   <list type="bullet">
+    ///     <item>set the flag to indicate struct return via retbuf arg;</item>
+    ///     <item>adjust the return type to a SIMD type if it is returned in 1 reg;</item>
+    ///     <item>spill call result into a temp if it is returned into 2 registers or more and not tail call or inline candidate.</item>
+    ///   </list>
+    /// </summary>
+    /// <param name="call">GT_CALL GenTree node</param>
+    /// <param name="retClsHnd">Class handle of return type of the call</param>
+    /// <returns>Returns new GenTree node after fixing struct return of call node</returns>
+    public unsafe GenTree impFixupCallStructReturn(GenTreeCall call, CORINFO_CLASS_HANDLE retClsHnd)
+    {
+        if (!varTypeIsStruct(call.Type))
+        {
+            return call;
+        }
+        call._retClsHnd = retClsHnd;
+
+        // Recognize SIMD types as we do for LCL_VARs,
+        // note it could be not the ABI specific type, for example, on x64 we can set 'TYP_SIMD8`
+        // for `System.Numerics.Vector2` here but lower will change it to long as ABI dictates.
+        var simdReturnType = impNormStructType(retClsHnd);
+
+        if (simdReturnType != call.Type)
+        {
+            assert(varTypeIsSimd(simdReturnType));
+            JITDUMP($"changing the type of a call [{call.TreeId:D6}] from {call.Type.Name} to {simdReturnType.Name}\n");
+            call.ChangeType(simdReturnType);
+        }
+
+#if FEATURE_MULTIREG_RET
+        call.InitializeStructReturnType(this, retClsHnd, call.UnmanagedCallConv);
+        var retTypeDesc = call.ReturnTypeDesc;
+        var retRegCount = retTypeDesc.ReturnRegCount;
+#endif
+
+        var returnType = GetReturnTypeForStruct(retClsHnd, call.UnmanagedCallConv, out var howToReturnStruct);
+
+        if (howToReturnStruct is SPK_ByReference)
+        {
+            assert(returnType == TYP_UNKNOWN);
+            call._callMoreFlags |= GTF_CALL_M_RETBUFFARG;
+
+            if (call.IsUnmanaged)
+            {
+                // Native ABIs do not allow retbufs to alias anything.
+                // This is allowed by the managed ABI and impStoreStruct will
+                // never introduce copies due to this.
+                var tmpNum = lvaGrabTemp(shortLifetime: true, "Retbuf for unmanaged call");
+                impStoreToTemp(tmpNum, call, CHECK_SPILL_ALL);
+                return gtNewLclvNode(lvaGetDesc(tmpNum).Type, tmpNum);
+            }
+
+            return call;
+        }
+
+#if FEATURE_MULTIREG_RET
+        if (retRegCount is not 1)
+        {
+            // It could be a SIMD returned in several regs.
+            assert(varTypeIsStruct(call.Type));
+
+            assert(returnType is TYP_STRUCT);
+            assert((howToReturnStruct is SPK_ByValueAsHfa) || (howToReturnStruct is SPK_ByValue));
+
+            assert(retRegCount >= 2);
+
+            if (!call.CanTailCall && !call.IsInlineCandidate)
+            {
+                // Force a call returning multi-reg struct to be always of the IR form
+                //   tmp = call
+                //
+                // No need to assign a multi-reg struct to a local var if:
+                //  - It is a tail call or
+                //  - The call is marked for in-lining later
+                return impStoreMultiRegValueToVar(call, retClsHnd, call.UnmanagedCallConv);
+            }
+        }
+#endif
+
+        return call;
     }
 
     /// <summary>Adjust a struct value being returned.</summary>
@@ -3878,7 +5264,7 @@ public partial class Compiler
                     // ret without call before it
                     prefixFlags &= ~PREFIX_TAILCALL;
 
-                    if (!TryRet(this, opcode, prefixFlags))
+                    if (!impReturnInstruction(prefixFlags, ref opcode))
                     {
                         return;
                     }
@@ -5250,7 +6636,7 @@ public partial class Compiler
                     // In the third case we alloc the memory, then call the constructor.
 
                     var clsFlags = callInfo.classFlags;
-                    var newObjThisPtr = null as GenTree;
+                    var newObjThis = null as GenTree;
 
                     if ((clsFlags & CORINFO_FLG_ARRAY) is not 0)
                     {
@@ -5271,7 +6657,7 @@ public partial class Compiler
                     else if ((clsFlags & CORINFO_FLG_VAROBJSIZE) is not 0)
                     {
                         // Skip this thisPtr argument
-                        newObjThisPtr = null;
+                        newObjThis = null;
 
                         // Remember that this basic block contains 'new' of an object
                         block.SetFlags(BBF_HAS_NEWOBJ);
@@ -5374,7 +6760,7 @@ public partial class Compiler
                             lclDsc.lvHasLdAddrOp = true;
 
                             // Obtain the address of the temp
-                            newObjThisPtr = gtNewLclVarAddrNode(TYP_BYREF, lclNum);
+                            newObjThis = gtNewLclVarAddrNode(TYP_BYREF, lclNum);
                         }
                         else
                         {
@@ -5443,11 +6829,21 @@ public partial class Compiler
                             JITDUMP($"Marked V{lclNum:D2} as a single def local\n");
                             lvaSetClass(lclNum, resolvedToken.hClass, isExact: true);
 
-                            newObjThisPtr = gtNewLclvNode(TYP_REF, lclNum);
+                            newObjThis = gtNewLclvNode(TYP_REF, lclNum);
                         }
                     }
 
-                    if (!TryCall(this, opcode, resolvedToken, constrainedResolvedToken, newObjThisPtr, prefixFlags, callInfo, opcodeOffs, codeAddr, codeEndp, sz))
+                    var importCallHelper = new ImportCallHelper {
+                        opcode = opcode,
+                        resolvedToken = ref resolvedToken,
+                        constrainedResolvedToken = ref constrainedResolvedToken,
+                        newObjThis = newObjThis,
+                        prefixFlags = prefixFlags,
+                        callInfo = ref callInfo,
+                        opcodeOffs = opcodeOffs,
+                    };
+
+                    if (!importCallHelper.TryImport(this, codeAddr, codeEndp, sz))
                     {
                         return;
                     }
@@ -5466,7 +6862,17 @@ public partial class Compiler
                         tokenScope = info.compScopeHnd,
                     };
 
-                    if (!TryCall(this, opcode, resolvedToken, constrainedResolvedToken, newObjThisPtr: null, prefixFlags, callInfo: default, opcodeOffs, codeAddr, codeEndp, sz))
+                    var callInfo = new CORINFO_CALL_INFO();
+
+                    var importCallHelper = new ImportCallHelper {
+                        opcode = opcode,
+                        resolvedToken = ref resolvedToken,
+                        prefixFlags = prefixFlags,
+                        callInfo = ref callInfo,
+                        opcodeOffs = opcodeOffs,
+                    };
+
+                    if (!importCallHelper.TryImport(this, codeAddr, codeEndp, sz))
                     {
                         return;
                     }
@@ -5564,7 +6970,16 @@ public partial class Compiler
                         opcodeOffs = awaitOffset;
                     }
 
-                    if (!TryCall(this, opcode, resolvedToken, constrainedResolvedToken, newObjThisPtr: null, prefixFlags, callInfo, opcodeOffs, codeAddr, codeEndp, sz))
+                    var importCallHelper = new ImportCallHelper {
+                        opcode = opcode,
+                        resolvedToken = ref resolvedToken,
+                        constrainedResolvedToken = ref constrainedResolvedToken,
+                        prefixFlags = prefixFlags,
+                        callInfo = ref callInfo,
+                        opcodeOffs = opcodeOffs,
+                    };
+
+                    if (!importCallHelper.TryImport(this, codeAddr, codeEndp, sz))
                     {
                         return;
                     }
@@ -6338,7 +7753,7 @@ public partial class Compiler
                     }
 
                     assert(op1 is not null);
-                    op1.AsCall().CompileTimeHelperArgumentHandle = (CORINFO_GENERIC_HANDLE)(resolvedToken.hClass);
+                    op1.AsCall()._compileTimeHelperArgumentHandle = (CORINFO_GENERIC_HANDLE)(resolvedToken.hClass);
 
                     // Remember that this function contains 'new' of an SD array.
                     optMethodFlags |= OMF_HAS_NEWARRAY;
@@ -8010,7 +9425,7 @@ public partial class Compiler
                     if ((retCls == NO_CLASS_HANDLE) && call.IsGuardedDevirtualizationCandidate)
                     {
                         // Just check one of the GDV candidates (all should have the same original method handle)
-                        var inlineInfo = call.GetGDVCandidateInfo(0);
+                        var inlineInfo = call.GetGdvCandidateInfo(0);
 
                         CORINFO_SIG_INFO sig;
                         compiler.info.compCompHnd->getMethodSig(inlineInfo.originalMethodHandle, &sig);
@@ -8223,159 +9638,6 @@ public partial class Compiler
             return true;
         }
 
-        static bool TryCall(Compiler compiler, OPCODE opcode, in CORINFO_RESOLVED_TOKEN resolvedToken, in CORINFO_RESOLVED_TOKEN constrainedResolvedToken, GenTree? newObjThisPtr, int prefixFlags, in CORINFO_CALL_INFO callInfo, IL_OFFSET opcodeOffs, byte* codeAddr, byte* codeEndp, byte sz)
-        {
-            // memberRef should be set.
-            // newObjThisPtr should be set for CEE_NEWOBJ
-
-            JITDUMP($" {resolvedToken.token:X8}");
-            var constraintCall = (prefixFlags & PREFIX_CONSTRAINED) is not 0;
-
-            var newBBcreatedForTailcallStress = false;
-            var passedStressModeValidation = true;
-
-            if (compiler.compIsForInlining)
-            {
-                if (compiler.compDonotInline)
-                {
-                    return false;
-                }
-                // We rule out inlinees with explicit tail calls in fgMakeBasicBlocks.
-                assert((prefixFlags & PREFIX_TAILCALL_EXPLICIT) is 0);
-            }
-#if DEBUG
-            else if (compiler.compTailCallStress)
-            {
-                // Have we created a new BB after the "call" instruction in fgMakeBasicBlocks()?
-                // Tail call stress only recognizes call+ret patterns and forces them to be
-                // explicit tail prefixed calls.  Also fgMakeBasicBlocks() under tail call stress
-                // doesn't import 'ret' opcode following the call into the basic block containing
-                // the call instead imports it to a new basic block.  Note that fgMakeBasicBlocks()
-                // is already checking that there is an opcode following call and hence it is
-                // safe here to read next opcode without bounds check.
-
-                // Next opcode is a CEE_RET
-                newBBcreatedForTailcallStress = impOpcodeIsCallOpcode(opcode) && ((OPCODE)(codeAddr[sz]) is CEE_RET);
-
-                var hasTailPrefix = (prefixFlags & PREFIX_TAILCALL_EXPLICIT) is not 0;
-
-                if (newBBcreatedForTailcallStress && !hasTailPrefix)
-                {
-                    // Don't stress-tailcall named intrinsics: many of them are imported as
-                    // non-CALL IR nodes (e.g. GC.KeepAlive -> GT_KEEPALIVE), which would
-                    // leave a BBJ_RETURN block that doesn't end in a CALL/RETURN and
-                    // confuse later phases (see
-                    // https://github.com/dotnet/runtime/issues/122479). Suppress both the
-                    // explicit and the implicit tailcall promotion in that case.
-                    if ((callInfo.methodFlags & CORINFO_FLG_INTRINSIC) != 0)
-                    {
-                        JITDUMP(" (Tailcall stress: skipping intrinsic)");
-                        passedStressModeValidation = false;
-                    }
-                    else
-                    {
-                        // Do a more detailed evaluation of legality
-                        var passedConstraintCheck = compiler.checkTailCallConstraint(opcode, resolvedToken, constraintCall ? constrainedResolvedToken : Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>());
-
-                        // Avoid setting compHasBackwardsJump = true via tail call stress if the method cannot have patchpoints.
-                        var mayHavePatchpoints = compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_TIER0) && (JitConfig[ConfigInteger.TC_OnStackReplacement] > 0) && compiler.compCanHavePatchpoints();
-
-                        if (passedConstraintCheck && (mayHavePatchpoints || compiler.compHasBackwardJump))
-                        {
-                            // Now check with the runtime
-                            var declaredCalleeHnd = callInfo.hMethod;
-                            var isVirtual = callInfo.kind is CORINFO_VIRTUALCALL_STUB or CORINFO_VIRTUALCALL_VTABLE;
-                            var exactCalleeHnd = isVirtual ? null : declaredCalleeHnd;
-
-                            if (compiler.info.compCompHnd->canTailCall(compiler.info.compMethodHnd, declaredCalleeHnd, exactCalleeHnd, hasTailPrefix))
-                            {
-                                // Stress the tailcall.
-                                JITDUMP(" (Tailcall stress: prefixFlags |= PREFIX_TAILCALL_EXPLICIT)");
-                                prefixFlags |= PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_STRESS;
-                            }
-                            else
-                            {
-                                // Runtime disallows this tail call
-                                JITDUMP(" (Tailcall stress: runtime preventing tailcall)");
-                                passedStressModeValidation = false;
-                            }
-                        }
-                        else
-                        {
-                            // Constraints disallow this tail call
-                            JITDUMP(" (Tailcall stress: constraint check failed)");
-                            passedStressModeValidation = false;
-                        }
-                    }
-                }
-            }
-#endif
-
-            var isRecursive = !compiler.compIsForInlining && (callInfo.hMethod == compiler.info.compMethodHnd);
-
-            // If we've already disqualified this call as a tail call under tail call stress,
-            // don't consider it for implicit tail calling either.
-            //
-            // When not running under tail call stress, we may mark this call as an implicit
-            // tail call candidate. We'll do an "equivalent" validation during impImportCall.
-            //
-            // Note that when running under tail call stress, a call marked as explicit
-            // tail prefixed will not be considered for implicit tail calling.
-            if (passedStressModeValidation && compiler.impIsImplicitTailCallCandidate(opcode, codeAddr + sz, codeEndp, prefixFlags, isRecursive))
-            {
-                if (compiler.compIsForInlining)
-                {
-#if FEATURE_TAILCALL_OPT_SHARED_RETURN
-                    // Are we inlining at an implicit tail call site? If so the we can flag
-                    // implicit tail call sites in the inline body. These call sites
-                    // often end up in non BBJ_RETURN blocks, so only flag them when
-                    // we're able to handle shared returns.
-                    assert(compiler.impInlineInfo.iciCall is not null);
-
-                    if (compiler.impInlineInfo.iciCall.IsImplicitTailCall)
-                    {
-                        JITDUMP("\n (Inline Implicit Tail call: prefixFlags |= PREFIX_TAILCALL_IMPLICIT)");
-                        prefixFlags |= PREFIX_TAILCALL_IMPLICIT;
-                    }
-#endif
-                }
-                else
-                {
-                    JITDUMP("\n (Implicit Tail call: prefixFlags |= PREFIX_TAILCALL_IMPLICIT)");
-                    prefixFlags |= PREFIX_TAILCALL_IMPLICIT;
-                }
-            }
-
-            // Treat this call as tail call for verification only if "tail" prefixed (i.e. explicit tail call).
-            var explicitTailCall = (prefixFlags & PREFIX_TAILCALL_EXPLICIT) is not 0;
-            var readonlyCall = (prefixFlags & PREFIX_READONLY) is not 0;
-
-            if (opcode is not CEE_CALLI and not CEE_NEWOBJ)
-            {
-                // All calls and delegates need a security callout.
-                // For delegates, this is the call to the delegate constructor, not the access check on the
-                // LD(virt)FTN.
-                compiler.impHandleAccessAllowed(callInfo.accessAllowed, callInfo.callsiteCalloutHelper);
-            }
-
-            var callTyp = compiler.impImportCall(opcode, resolvedToken, constraintCall ? constrainedResolvedToken : Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), newObjThisPtr, prefixFlags, callInfo, opcodeOffs);
-
-            if (compiler.compDonotInline)
-            {
-                // We do not check fails after lvaGrabTemp. It is covered with CoreCLR_13272 issue.
-                assert((callTyp is TYP_UNDEF) || (compiler.compInlineResult.Observation is InlineObservation.CALLSITE_TOO_MANY_LOCALS));
-                return false;
-            }
-
-            if (explicitTailCall || newBBcreatedForTailcallStress)
-            {
-                // If newBBcreatedForTailcallStress is true, we have created a new BB after the "call" instruction in fgMakeBasicBlocks(). So we need to jump to RET regardless.
-                assert(!compiler.compIsForInlining);
-                return TryRet(compiler, opcode, prefixFlags);
-            }
-            return true;
-        }
-
         static bool TryCastClass(Compiler compiler, int opcodeOffs, ref CORINFO_RESOLVED_TOKEN resolvedToken, GenTree op1, GenTree? op2)
         {
             var optTree = compiler.impOptimizeCastClassOrIsInst(op1, resolvedToken, true);
@@ -8523,11 +9785,6 @@ public partial class Compiler
             return true;
         }
 
-        static bool TryRet(Compiler compiler, OPCODE opcode, int prefixFlags)
-        {
-            return compiler.impReturnInstruction(prefixFlags, ref opcode);
-        }
-
         static void VarSt(Compiler compiler, BasicBlock block, var_types lclTyp, int lclNum, CORINFO_CLASS_HANDLE clsHnd, bool isLocal)
         {
             if ((lclNum >= compiler.info.compLocalsCount) && (lclNum != compiler.lvaArg0Var))
@@ -8561,7 +9818,7 @@ public partial class Compiler
         //   Ensures that "block" is a member of the list of BBs waiting to be imported, pushing it on the list if
         //   necessary (and ensures that it is a member of the set of BB's on the list, by setting its byte in
         //   impPendingBlockMembers).  Does *NOT* change the existing "pre-state" of the block.
-        //   
+        //
         //   Merges the current verification state into the verification state of "block" (its "pre-state")./
 
         JITDUMP($"\nimpImportBlockPending for {FMT_BB(block.bbNum)}\n");
@@ -8651,24 +9908,112 @@ public partial class Compiler
 #endif
     }
 
-    /// <summary>import a call-inspiring opcode</summary>
-    /// <param name="opcode">opcode that inspires the call</param>
-    /// <param name="pResolvedToken">resolved token for the call target</param>
-    /// <param name="pConstrainedResolvedToken">resolved constraint token (or null)</param>
-    /// <param name="newobjThis">tree for this pointer or uninitialized newobj temp (or null)</param>
-    /// <param name="prefixFlags">IL prefix flags for the call</param>
-    /// <param name="callInfo">EE supplied info for the call</param>
-    /// <param name="rawILOffset">IL offset of the opcode</param>
-    /// <returns>Type of the call's return value.</returns>
-    /// <remarks>
-    ///   <para>If we're importing an inlinee and have realized the inline must fail, the call return type should be TYP_UNDEF. However we can't assert for this here yet because there are cases we miss. See issue #13272.</para>
-    ///   <para>opcode can be CEE_CALL, CEE_CALLI, CEE_CALLVIRT, or CEE_NEWOBJ.</para>
-    ///   <para>For CEE_NEWOBJ, newobjThis should be the temp grabbed for the allocated uninitialized object.</para>
-    /// </remarks>
-    public var_types impImportCall(OPCODE opcode, in CORINFO_RESOLVED_TOKEN pResolvedToken, in CORINFO_RESOLVED_TOKEN pConstrainedResolvedToken, GenTree? newobjThis, int prefixFlags, in CORINFO_CALL_INFO callInfo, IL_OFFSET rawILOffset)
+    public GenTreeCall impImportIndirectCall(in CORINFO_SIG_INFO sig, in DebugInfo di = default)
     {
-        return TYP_UNDEF;
+        var callRetTyp = sig.retType.VarType;
+
+        // The function pointer is on top of the stack - It may be a
+        // complex expression. As it is evaluated after the args,
+        // it may cause registered args to be spilled. Simply spill it.
+
+        // Ignore no args or trivial cases.
+        if ((sig.callConv is not CORINFO_CALLCONV_DEFAULT || sig.totalILArgs() > 0) && (impStackTop().val.Oper is not GT_LCL_VAR and not GT_FTN_ADDR and not GT_CNS_INT))
+        {
+            impSpillStackEntry(stackState.esStackDepth - 1, BAD_VAR_NUM, assertOnRecursion: false, "impImportIndirectCall");
+        }
+
+        // Get the function pointer
+        var fptr = impPopStack().val;
+
+        // The function pointer is typically a sized to match the target pointer size
+        // However, stubgen IL optimization can change LDC.I8 to LDC.I4
+        // See ILCodeStream.LowerOpcode
+        assert(fptr.Type.ActualType is TYP_I_IMPL or TYP_INT);
+
+#if DEBUG
+        // This temporary must never be converted to a double in stress mode,
+        // because that can introduce a call to the cast helper after the
+        // arguments have already been evaluated.
+
+        if (fptr.Oper is GT_LCL_VAR)
+        {
+            lvaGetDesc(fptr.AsLclVarCommon().LclNum).lvKeepType = true;
+        }
+#endif
+
+        // Create the call node
+        var call = gtNewIndCallNode(callRetTyp, fptr, di);
+
+        call.Flags |= (GTF_EXCEPT | (fptr.Flags & GTF_GLOB_EFFECT));
+#if UNIX_X86_ABI
+        call.Flags &= ~GTF_CALL_POP_ARGS;
+#endif
+
+        return call;
     }
+
+#if DEBUG
+    public var_types impImportJitTestLabelMark(int numArgs)
+    {
+        TestLabelAndNum tlAndN;
+
+        if (numArgs is 2)
+        {
+            tlAndN._num = 0;
+
+            var se = impPopStack();
+            var val = se.val;
+
+            assert(val.Oper.IsCnsIntOrI);
+            tlAndN._tl = (TestLabel)val.AsIntConCommon().IconValue;
+        }
+        else if (numArgs is 3)
+        {
+            var se = impPopStack();
+            var val = se.val;
+
+            assert(val.Oper.IsCnsIntOrI);
+            tlAndN._num = val.AsIntConCommon().IconValue;
+
+            se = impPopStack();
+            val = se.val;
+
+            assert(val.Oper.IsCnsIntOrI);
+            tlAndN._tl = (TestLabel)val.AsIntConCommon().IconValue;
+        }
+        else
+        {
+            Unsafe.SkipInit(out tlAndN);
+            unreached();
+        }
+
+        var expSe = impPopStack();
+        var node = expSe.val;
+
+        // There are a small number of special cases, where we actually put the annotation on a subnode.
+        var nodeTestData = NodeTestData;
+
+        if ((tlAndN._tl == TL_LoopHoist) && (tlAndN._num >= 100))
+        {
+            // A loop hoist annotation with value >= 100 means that the expression should be a static field access,
+            // a GT_IND of a static field address, which should be the sum of a (hoistable) helper call and possibly some
+            // offset within the static field block whose address is returned by the helper call.
+            // The annotation is saying that this address calculation, but not the entire access, should be hoisted.
+            assert(node.Oper is GT_IND);
+            tlAndN._num -= 100;
+
+            nodeTestData[node.AsOp().Op1] = tlAndN;
+            _ = nodeTestData.Remove(node);
+        }
+        else
+        {
+            nodeTestData[node] = tlAndN;
+        }
+
+        impPushOnStack(node, expSe.seTypeInfo);
+        return node.Type;
+    }
+#endif
 
     public unsafe GenTree? impImportLdvirtftn(GenTree thisPtr, in CORINFO_RESOLVED_TOKEN resolvedToken, in CORINFO_CALL_INFO callInfo)
     {
@@ -9202,7 +10547,7 @@ public partial class Compiler
 
         node = gtNewHelperCallNode(TYP_REF, helper, classHandle, gtNewIconNode(TYP_INT, numArgs), node);
 
-        node.AsCall().CompileTimeHelperArgumentHandle = (CORINFO_GENERIC_HANDLE)(resolvedToken.hClass);
+        node.AsCall()._compileTimeHelperArgumentHandle = (CORINFO_GENERIC_HANDLE)(resolvedToken.hClass);
 
         // Remember that this function contains 'new' of a MD array.
         optMethodFlags |= OMF_HAS_MDNEWARRAY;
@@ -9305,7 +10650,7 @@ public partial class Compiler
                 if (IsStaticHelperEligibleForExpansion(op1))
                 {
                     // Mark the helper call with the initClsHnd so that rewriting it for expansion can reliably fail
-                    op1.AsCall().InitClsHnd = resolvedToken.hClass;
+                    op1.AsCall()._initClsHnd = resolvedToken.hClass;
                 }
 
                 op1 = gtNewBinaryNode(GT_ADD, type, op1, gtNewIconNode(fieldInfo.offset, innerFldSeq));
@@ -9351,7 +10696,7 @@ public partial class Compiler
                         assert(fieldInfo.helper is CORINFO_HELP_READYTORUN_THREADSTATIC_BASE);
                         var call = gtNewHelperCallNode(TYP_BYREF, CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR);
 
-                        call.InitClsHnd = resolvedToken.hClass;
+                        call._initClsHnd = resolvedToken.hClass;
                         call._entryPoint = fieldInfo.fieldLookup;
                         call.Flags |= callFlags;
 
@@ -9372,7 +10717,7 @@ public partial class Compiler
                         if (IsStaticHelperEligibleForExpansion(call))
                         {
                             // Keep class handle attached to the helper call since it's difficult to restore it.
-                            call.InitClsHnd = resolvedToken.hClass;
+                            call._initClsHnd = resolvedToken.hClass;
                         }
 
                         call.Flags |= callFlags;
@@ -9540,11 +10885,11 @@ public partial class Compiler
             const int PrimitiveBufferSize = 8;
 
             assert(PrimitiveBufferSize >= fieldType.Size);
-            var primitiveBuffer = stackalloc byte[PrimitiveBufferSize];
+            var primitiveBuffer = default(InlineArray8<byte>);
 
-            if (info.compCompHnd->getStaticFieldContent(field, primitiveBuffer, fieldType.Size))
+            if (info.compCompHnd->getStaticFieldContent(field, (byte*)(&primitiveBuffer), fieldType.Size))
             {
-                var cnsValue = gtNewGenericCon(fieldType, new ReadOnlySpan<byte>(primitiveBuffer, fieldType.Size));
+                var cnsValue = gtNewGenericCon(fieldType, new ReadOnlySpan<byte>((byte*)(&primitiveBuffer), fieldType.Size));
 
                 if (cnsValue is not null)
                 {
@@ -9575,9 +10920,9 @@ public partial class Compiler
                     return null;
                 }
 
-                var largeStructBuffer = stackalloc byte[LargeStructBufferSize];
+                var largeStructBuffer = default(InlineArray64<byte>);
 
-                if (info.compCompHnd->getStaticFieldContent(field, largeStructBuffer, totalSize))
+                if (info.compCompHnd->getStaticFieldContent(field, &largeStructBuffer.e0, totalSize))
                 {
 #if FEATURE_SIMD
                     // First, let's check whether field is a SIMD vector and import it as GT_CNS_VEC
@@ -9615,7 +10960,7 @@ public partial class Compiler
                     }
 #endif
 
-                    if (new ReadOnlySpan<byte>(largeStructBuffer, LargeStructBufferSize).ContainsAnyExcept((byte)(0)))
+                    if (((ReadOnlySpan<byte>)(largeStructBuffer)).ContainsAnyExcept((byte)(0)))
                     {
                         // Value is not all zeroes - bail out.
                         // Although, We might eventually support that too.
@@ -9660,9 +11005,9 @@ public partial class Compiler
             }
 
             const int SmallStructBufferSize = TARGET_POINTER_SIZE;
-            var smallStructBuffer = stackalloc byte[SmallStructBufferSize];
+            var smallStructBuffer = default(InlineArrayTargetPointerSize<byte>);
 
-            if ((totalSize > SmallStructBufferSize) || !info.compCompHnd->getStaticFieldContent(field, smallStructBuffer, totalSize))
+            if ((totalSize > SmallStructBufferSize) || !info.compCompHnd->getStaticFieldContent(field, &smallStructBuffer.e0, totalSize))
             {
                 return null;
             }
@@ -9670,7 +11015,7 @@ public partial class Compiler
             var structTempNum = lvaGrabTemp(shortLifetime: true, "folding static readonly field struct");
             lvaSetStruct(structTempNum, fieldClsHnd, unsafeValueClsCheck: false);
 
-            var constValTree = gtNewGenericCon(fieldVarType, new ReadOnlySpan<byte>(smallStructBuffer, totalSize));
+            var constValTree = gtNewGenericCon(fieldVarType, new ReadOnlySpan<byte>(&smallStructBuffer.e0, totalSize));
             assert(constValTree is not null);
 
             var fieldStoreTree = gtNewStoreLclFldNode(fieldVarType, structTempNum, fldOffset, constValTree);
@@ -9680,6 +11025,46 @@ public partial class Compiler
             return impCreateLocalNode(structTempNum, (0));
         }
         return null;
+    }
+
+    /// <summary>Inherit async args from inlining call as part of a new async call.</summary>
+    /// <param name="call">The async call</param>
+    /// <remarks>Currently we only allow inlining of async calls when all awaits are tail awaits. In that case inlining is simplified as we can just inherit everything from the inlining call.</remarks>
+    public void impInheritAsyncContextsFromInliner(GenTreeCall call)
+    {
+        if (!compIsForInlining)
+        {
+            return;
+        }
+
+        var inlCall = impInlineInfo.iciCall;
+        assert(inlCall is not null);
+
+        var execArg = inlCall.Args.FindWellKnownArg(WellKnownArg.AsyncExecutionContext);
+        var syncArg = inlCall.Args.FindWellKnownArg(WellKnownArg.AsyncSynchronizationContext);
+
+        if (execArg is null)
+        {
+            // Caller also has no async contexts handling
+            assert(syncArg is null);
+            return;
+        }
+        assert(syncArg is not null);
+
+        // We are inlining an async call that does not save contexts into a call
+        // that does. We currently allow this only in cases where the tail of the
+        // inlinee can run in the caller's context, and hence we propagate the
+        // caller's context here. It means we do not need to worry about switching
+        // into the caller's context when the inlinee is returning to the caller
+        // after the await.
+        assert((execArg.Node.Oper is GT_LCL_VAR) && (syncArg.Node.Oper is GT_LCL_VAR));
+        JITDUMP($"Inheriting contexts [{execArg.Node.TreeId:D6}] and [{syncArg.Node.TreeId:D6}] from caller node\n");
+
+        var execNode = gtCloneExpr(execArg.Node);
+        var syncNode = gtCloneExpr(syncArg.Node);
+
+        _ = call.Args.PushFront(NewCallArg.CreateForPrimitive(syncNode).WithWellKnownArg(WellKnownArg.AsyncSynchronizationContext));
+        _ = call.Args.PushFront(NewCallArg.CreateForPrimitive(execNode).WithWellKnownArg(WellKnownArg.AsyncExecutionContext));
     }
 
     /// <summary>Locate the next stmt boundary for which we need to record info.</summary>
@@ -9887,7 +11272,7 @@ public partial class Compiler
             // In these cases, don't spill the byref to a local, simply clone the tree and use it.
             // This way we will increase the chance for this byref to be optimized away by
             // a subsequent "dereference" operation.
-            // 
+            //
             // From Dev11 bug #139955: Argument node can also be TYP_I_IMPL if we've bashed the tree
             // (in impInlineInitVars()), if the arg has argHasLdargaOp as well as argIsByRefToStructLocal.
             // For example, if the caller is:
@@ -10153,7 +11538,7 @@ public partial class Compiler
     {
         // We either inline the unbox operation (if profitable) or call the helper.
         // The inline expansion is as follows:
-        // 
+        //
         // Nullable<T> result;
         // if (obj is null)
         // {
@@ -10253,6 +11638,27 @@ public partial class Compiler
         return gtNewLclvNode(TYP_STRUCT, resultTmp);
     }
 
+    /// <summary>Insert async arguments for a call the EE asked to be performed via ldvirtftn.</summary>
+    /// <param name="call">The call</param>
+    /// <remarks>Should be called before the 'this' arg is inserted, but after other IL args have been inserted.</remarks>
+    public void impInsertAsyncArgsForLdvirtftnCall(GenTreeCall call)
+    {
+        assert(call.IsAsync);
+
+        var arg = NewCallArg.CreateForPrimitive(gtNewNull(), TYP_REF).WithWellKnownArg(WellKnownArg.AsyncContinuation);
+
+        if (Target.TgtArgOrder == Target.ARG_ORDER_R2L)
+        {
+            _ = call.Args.PushFront(arg);
+        }
+        else
+        {
+            _ = call.Args.PushBack(arg);
+        }
+
+        impInheritAsyncContextsFromInliner(call);
+    }
+
     public unsafe void impInsertHelperCall(in CORINFO_HELPER_DESC helperInfo)
     {
         assert(helperInfo.helperNum != CORINFO_HELP_UNDEF);
@@ -10305,7 +11711,7 @@ public partial class Compiler
                     currentArg = gtNewIconNode(TYP_INT, helperArg.constant);
                     break;
                 }
-                
+
                 default:
                 {
                     NO_WAY("Illegal helper arg type");
@@ -10753,6 +12159,357 @@ public partial class Compiler
         }
     }
 #endif
+
+    /// <summary>determine if this call can be subsequently inlined</summary>
+    /// <param name="call">call under scrutiny</param>
+    /// <param name="exactContextHnd">context handle for inlining</param>
+    /// <param name="exactContextNeedsRuntimeLookup">true if context required runtime lookup</param>
+    /// <param name="callInfo">call info from VM</param>
+    /// <param name="inlinersContext">the inliner's context</param>
+    /// <remarks>Mostly a wrapper for impMarkInlineCandidateHelper that also undoes guarded devirtualization for virtual calls where the method we'd devirtualize to cannot be inlined.</remarks>
+    public unsafe void impMarkInlineCandidate(GenTreeCall call, CORINFO_CONTEXT_HANDLE exactContextHnd, bool exactContextNeedsRuntimeLookup, in CORINFO_CALL_INFO callInfo, InlineContext inlinersContext)
+    {
+        if (!opts.OptEnabled(CLFLG_INLINING))
+        {
+            assert(!compIsForInlining);
+            return;
+        }
+
+        // Call might not have an inline candidate info yet (will be set by impMarkInlineCandidateHelper)
+        // so we assume there is always a least one candidate:
+
+        if (call.IsGuardedDevirtualizationCandidate)
+        {
+            assert(call.InlineCandidatesCount > 0);
+
+            for (byte candidateId = 0; candidateId < call.InlineCandidatesCount; candidateId++)
+            {
+                var inlineResult = new InlineResult(this, call, stmt: null, "impMarkInlineCandidate for GDV");
+
+                // Do the actual evaluation
+                impMarkInlineCandidateHelper(call, candidateId, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, inlinersContext, inlineResult);
+
+                // Ignore non-inlineable candidates
+                // TODO: Consider keeping them to just devirtualize without inlining, at least for interface
+                // calls on NativeAOT, but that requires more changes elsewhere too.
+                if (!inlineResult.IsCandidate)
+                {
+                    call.RemoveGdvCandidateInfo(this, candidateId);
+                    candidateId--;
+                }
+            }
+
+            // None of the candidates made it, make sure the call is no longer marked as "has inline info"
+            if (call.InlineCandidatesCount is 0)
+            {
+                assert(!call.IsInlineCandidate);
+                assert(!call.IsGuardedDevirtualizationCandidate);
+            }
+        }
+        else
+        {
+            var candidatesCount = call.InlineCandidatesCount;
+            assert(candidatesCount <= 1);
+
+            var inlineResult = new InlineResult(this, call, null, "impMarkInlineCandidate");
+            impMarkInlineCandidateHelper(call, 0, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, inlinersContext, inlineResult);
+        }
+
+        // If this call is an inline candidate or is not a guarded devirtualization
+        // candidate, we're done.
+        if (call.IsInlineCandidate || !call.IsGuardedDevirtualizationCandidate)
+        {
+            return;
+        }
+
+        // If we can't inline the call we'd guardedly devirtualize to,
+        // we undo the guarded devirtualization, as the benefit from
+        // just guarded devirtualization alone is likely not worth the
+        // extra jit time and code size.
+        //
+        // TODO: it is possibly interesting to allow this, but requires
+        // fixes elsewhere too...
+        JITDUMP($"Revoking guarded devirtualization candidacy for call [{call.TreeId}]: target method can't be inlined\n");
+
+        call.ClearInlineInfo();
+    }
+
+    /// <summary>determine if this call can be subsequently inlined</summary>
+    /// <param name="call">call under scrutiny</param>
+    /// <param name="candidateIndex">index of the inline candidate to evaluate</param>
+    /// <param name="exactContextHnd">context handle for inlining</param>
+    /// <param name="exactContextNeedsRuntimeLookup">true if context required runtime lookup</param>
+    /// <param name="callInfo">call info from VM</param>
+    /// <param name="inlinersContext">the inliner's context</param>
+    /// <param name="inlineResult"></param>
+    /// <remarks>
+    ///   <para>If callNode is an inline candidate, this method sets the flag GTF_CALL_INLINE_CANDIDATE, and ensures that helper methods have filled in the associated InlineCandidateInfo.</para>
+    ///   <para>If callNode is not an inline candidate, and the reason is method may be marked as "noinline" to short-circuit any future assessments of calls to this method.</para>
+    /// </remarks>
+    public unsafe void impMarkInlineCandidateHelper(GenTreeCall call, byte candidateIndex, CORINFO_CONTEXT_HANDLE exactContextHnd, bool exactContextNeedsRuntimeLookup, in CORINFO_CALL_INFO callInfo, InlineContext inlinersContext, InlineResult inlineResult)
+    {
+        assert(compCurBB is not null);
+
+        var inlineStrategy = impInlineRoot._inlineStrategy;
+        assert(inlineStrategy is not null);
+
+        // Let the strategy know there's another call
+        inlineStrategy.NoteCall();
+
+        assert(opts.OptEnabled(CLFLG_INLINING));
+
+        // Don't inline if not optimizing root method
+        if (opts.compDbgCode)
+        {
+            inlineResult.NoteFatal(InlineObservation.CALLER_DEBUG_CODEGEN);
+            return;
+        }
+
+        // Don't inline if inlining into this method is disabled.
+        if (inlineStrategy.IsInliningDisabled())
+        {
+            inlineResult.NoteFatal(InlineObservation.CALLER_IS_JIT_NOINLINE);
+            return;
+        }
+
+        // Don't inline into callers that use the NextCallReturnAddress intrinsic.
+        if (info.compHasNextCallRetAddr)
+        {
+            inlineResult.NoteFatal(InlineObservation.CALLER_USES_NEXT_CALL_RET_ADDR);
+            return;
+        }
+
+        // Inlining candidate determination needs to honor only IL tail prefix.
+        // Inlining takes precedence over implicit tail call optimization (if the call is not directly recursive).
+        if (call.IsTailPrefixedCall)
+        {
+            inlineResult.NoteFatal(InlineObservation.CALLSITE_EXPLICIT_TAIL_PREFIX);
+            return;
+        }
+
+        // Delegate Invoke method doesn't have a body and gets special cased instead.
+        // Don't even bother trying to inline it.
+        if (call.IsDelegateInvoke && !call.IsGuardedDevirtualizationCandidate)
+        {
+            inlineResult.NoteFatal(InlineObservation.CALLEE_HAS_NO_BODY);
+            return;
+        }
+
+        // Tail recursion elimination takes precedence over inlining.
+        // TODO: We may want to do some of the additional checks from fgMorphCall
+        // here to reduce the chance we don't inline a call that won't be optimized
+        // as a fast tail call or turned into a loop.
+        if (gtIsRecursiveCall(call) && call.IsImplicitTailCall)
+        {
+            inlineResult.NoteFatal(InlineObservation.CALLSITE_IMPLICIT_REC_TAIL_CALL);
+            return;
+        }
+
+        if (call.IsVirtual && !call.IsGuardedDevirtualizationCandidate)
+        {
+            // Allow guarded devirt calls to be treated as inline candidates, but reject all other virtual calls.
+            inlineResult.NoteFatal(InlineObservation.CALLSITE_IS_NOT_DIRECT);
+            return;
+        }
+
+        if (call.IsHelperCall())
+        {
+            // Ignore helper calls
+            assert(!call.IsGuardedDevirtualizationCandidate);
+
+            inlineResult.NoteFatal(InlineObservation.CALLSITE_IS_CALL_TO_HELPER);
+            return;
+        }
+
+        if (call._callType is CT_INDIRECT)
+        {
+            // Ignore indirect calls, unless they are indirect virtual stub calls with profile info.
+
+            if (!call.IsGuardedDevirtualizationCandidate)
+            {
+                inlineResult.NoteFatal(InlineObservation.CALLSITE_IS_NOT_DIRECT_MANAGED);
+                return;
+            }
+            else
+            {
+                assert(call.IsVirtualStub);
+            }
+        }
+
+        // The inliner gets confused when the unmanaged convention reverses arg order (like x86).
+        // Just suppress for all targets for now.
+
+        if (call.UnmanagedCallConv != CorInfoCallConvExtension.Managed)
+        {
+            inlineResult.NoteFatal(InlineObservation.CALLEE_HAS_UNMANAGED_CALLCONV);
+            return;
+        }
+
+        // I removed the check for BBJ_THROW.  BBJ_THROW is usually marked as rarely run.  This more or less
+        // restricts the inliner to non-expanding inlines.  I removed the check to allow for non-expanding
+        // inlining in throw blocks.  I should consider the same thing for catch and filter regions.
+
+        CORINFO_METHOD_HANDLE fncHandle;
+        CorInfoFlag methAttr;
+
+        if (call.IsGuardedDevirtualizationCandidate)
+        {
+            var gdvCandidate = call.GetGdvCandidateInfo(candidateIndex);
+
+            if (gdvCandidate.guardedMethodUnboxedEntryHandle is not null)
+            {
+                fncHandle = gdvCandidate.guardedMethodUnboxedEntryHandle;
+            }
+            else
+            {
+                fncHandle = gdvCandidate.guardedMethodHandle;
+            }
+            exactContextHnd = gdvCandidate.exactContextHandle;
+
+            methAttr = info.compCompHnd->getMethodAttribs(fncHandle);
+        }
+        else
+        {
+            fncHandle = call._callMethHnd;
+
+            if (fncHandle == callInfo.hMethod)
+            {
+                // Reuse method flags from the original callInfo if possible
+                methAttr = callInfo.methodFlags;
+            }
+            else
+            {
+                methAttr = info.compCompHnd->getMethodAttribs(fncHandle);
+            }
+        }
+
+#if DEBUG
+        if (compStressCompile(STRESS_FORCE_INLINE, 0))
+        {
+            methAttr |= CORINFO_FLG_FORCEINLINE;
+        }
+#endif
+
+        if (compDoAggressiveInlining)
+        {
+            // Check for DOTNET_AggressiveInlining
+            methAttr |= CORINFO_FLG_FORCEINLINE;
+        }
+
+        if ((methAttr & CORINFO_FLG_FORCEINLINE) is 0)
+        {
+            // Don't bother inline blocks that are in the filter region
+
+            if (bbInCatchHandlerBBRange(compCurBB))
+            {
+#if DEBUG
+                if (verbose)
+                {
+                    jitprintf("\nWill not inline blocks that are in the catch handler region\n");
+                }
+#endif
+
+                inlineResult.NoteFatal(InlineObservation.CALLSITE_IS_WITHIN_CATCH);
+                return;
+            }
+
+            if (bbInFilterBBRange(compCurBB))
+            {
+#if DEBUG
+                if (verbose)
+                {
+                    jitprintf("\nWill not inline blocks that are in the filter region\n");
+                }
+#endif
+
+                inlineResult.NoteFatal(InlineObservation.CALLSITE_IS_WITHIN_FILTER);
+                return;
+            }
+        }
+
+        // Check if we tried to inline this method before
+
+        if ((methAttr & CORINFO_FLG_DONT_INLINE) is not 0)
+        {
+            inlineResult.NoteFatal(InlineObservation.CALLEE_IS_NOINLINE);
+            return;
+        }
+
+        // Cannot inline synchronized methods
+
+        if ((methAttr & CORINFO_FLG_SYNCH) is not 0)
+        {
+            inlineResult.NoteFatal(InlineObservation.CALLEE_IS_SYNCHRONIZED);
+            return;
+        }
+
+        // Check legality of PInvoke callsite (for inlining of marshalling code)
+
+        if ((methAttr & CORINFO_FLG_PINVOKE) is not 0)
+        {
+            if (!impCanPInvokeInlineCallSite(compCurBB))
+            {
+                inlineResult.NoteFatal(InlineObservation.CALLSITE_PINVOKE_EH);
+                return;
+            }
+        }
+
+        impCheckCanInline(call, candidateIndex, fncHandle, methAttr, exactContextHnd, inlinersContext, out var inlineCandidateInfo, inlineResult);
+
+        if (inlineResult.IsFailure)
+        {
+            return;
+        }
+
+        // The new value should not be null.
+        assert(inlineCandidateInfo is not null);
+
+        if (inlineCandidateInfo.methInfo.EHcount > 0)
+        {
+            if (bbInFilterBBRange(compCurBB))
+            {
+                // We cannot inline methods with EH into filter clauses, even if marked as aggressive inline
+                inlineResult.NoteFatal(InlineObservation.CALLSITE_IS_WITHIN_FILTER);
+                return;
+            }
+
+            if ((methAttr & CORINFO_FLG_PINVOKE) is not 0)
+            {
+                // Do not inline pinvoke stubs with EH.
+                inlineResult.NoteFatal(InlineObservation.CALLEE_HAS_EH);
+                return;
+            }
+        }
+
+        // The old value should be null OR this call should be a guarded devirtualization candidate.
+        assert(call.IsGuardedDevirtualizationCandidate || (call.SingleInlineCandidateInfo is null));
+
+        inlineCandidateInfo.exactContextNeedsRuntimeLookup = exactContextNeedsRuntimeLookup;
+
+        if (compIsForInlining && call.CanTailCall && (impInlineInfo.inlineCandidateInfo.preexistingSpillTemp is not BAD_VAR_NUM))
+        {
+            // If we're in an inlinee compiler, and have a return spill temp, and this inline candidate is also a tail call candidate, it can use the same return spill temp.
+            inlineCandidateInfo.preexistingSpillTemp = impInlineInfo.inlineCandidateInfo.preexistingSpillTemp;
+            JITDUMP($"Inline candidate [{call.TreeId:D6}] can share spill temp V{inlineCandidateInfo.preexistingSpillTemp:D2}\n");
+        }
+
+        if (call.IsGuardedDevirtualizationCandidate)
+        {
+            assert(call.GetGdvCandidateInfo(candidateIndex) == inlineCandidateInfo);
+            call.Flags |= GTF_CALL_INLINE_CANDIDATE;
+        }
+        else
+        {
+            assert(candidateIndex is 0);
+            call.SingleInlineCandidateInfo = inlineCandidateInfo;
+        }
+
+        // Let the strategy know there's another candidate.
+        inlineStrategy.NoteCandidate();
+
+        // Since we're not actually inlining yet, and this call site is still just an inline candidate, there's nothing to report.
+        inlineResult.Result = INLINE_CHECK_CAN_INLINE_SUCCESS;
+    }
 
     /// <summary>Match IL to determine whether an isinst IL instruction is used for a simple boolean check.</summary>
     /// <param name="codeAddr">IL after the isinst</param>
@@ -11346,6 +13103,252 @@ public partial class Compiler
     }
 #endif
 
+    //------------------------------------------------------------------------
+    // impPopArgsForUnmanagedCall: 
+    //
+    // Arguments:
+    //    call - 
+    //    sig  - 
+    //    swiftErrorNode - [out] 
+    //
+    /// <summary>Pop arguments from IL stack to a pinvoke call. </summary>
+    /// <param name="call">The unmanaged call</param>
+    /// <param name="sig">The signature of the call site</param>
+    /// <param name="swiftErrorNode">If this is a Swift call with a SwiftError* argument, then swiftErrorNode points to the node. Otherwise left at its existing value.</param>
+    public void impPopArgsForUnmanagedCall(GenTreeCall call, in CORINFO_SIG_INFO sig, ref GenTree? swiftErrorNode)
+    {
+        assert((call.Flags & GTF_CALL_UNMANAGED) is not 0);
+
+#if SWIFT_SUPPORT
+        if (call.unmgdCallConv is CorInfoCallConvExtension.Swift)
+        {
+            impPopArgsForSwiftCall(call, sig, swiftErrorNode);
+            return;
+        }
+#endif
+
+        // Since we push the arguments in reverse order (i.e. right -> left)
+        // spill any side effects from the stack
+        // 
+        // OBS: If there is only one side effect we do not need to spill it
+        //      thus we have to spill all side-effects except last one
+
+        var lastLevelWithSideEffects = -1;
+        var argsToReverse = sig.numArgs;
+
+        // For "thiscall", the first argument goes in a register. Since its
+        // order does not need to be changed, we do not need to spill it
+
+        if (call._unmgdCallConv is CorInfoCallConvExtension.Thiscall)
+        {
+            assert(argsToReverse is not 0);
+            argsToReverse--;
+        }
+
+#if !TARGET_X86
+        // Don't reverse args on ARM or x64 - first four args always placed in regs in order
+        argsToReverse = 0;
+#endif
+
+        var esStack = stackState.esStack.AsSpan(0, stackState.esStackDepth);
+
+        for (var level = stackState.esStackDepth - argsToReverse; level < esStack.Length; level++)
+        {
+            var val = esStack[level].val;
+
+            if ((val.Flags & GTF_ORDER_SIDEEFF) is not 0)
+            {
+                assert(lastLevelWithSideEffects is -1);
+                impSpillStackEntry(level, BAD_VAR_NUM, assertOnRecursion: false, "impPopArgsForUnmanagedCall - other side effect");
+            }
+            else if ((val.Flags & GTF_SIDE_EFFECT) is not 0)
+            {
+                if (lastLevelWithSideEffects is not -1)
+                {
+                    // We had a previous side effect - must spill it
+                    impSpillStackEntry(lastLevelWithSideEffects, BAD_VAR_NUM, assertOnRecursion: false, "impPopArgsForUnmanagedCall - side effect");
+
+                    // Record the level for the current side effect in case we will spill it
+                    lastLevelWithSideEffects = level;
+                }
+                else
+                {
+                    // This is the first side effect encountered - record its level
+                    lastLevelWithSideEffects = level;
+                }
+            }
+        }
+
+        // The argument list is now "clean" - no out-of-order side effects
+        // Pop the argument list in reverse order
+
+        impPopReverseCallArgs(sig, call, sig.numArgs - argsToReverse);
+
+        if (call._unmgdCallConv is CorInfoCallConvExtension.Thiscall)
+        {
+            var arg = call.Args.GetArgByIndex(0);
+            assert(arg is not null);
+
+            var thisPtr = arg.Node;
+            impBashVarAddrsToI(thisPtr);
+
+            assert(thisPtr.Type is TYP_I_IMPL or TYP_BYREF);
+        }
+        impRetypeUnmanagedCallArgs(call);
+    }
+
+    /// <summary>Pop the given number of values from the stack and return a list node with their values.</summary>
+    /// <param name="sigInfo">Signature used to figure out classes the runtime must load, and also to record exact receiving argument types that may be needed for ABI purposes later.</param>
+    /// <param name="call">The call to pop arguments into.</param>
+    private unsafe void impPopCallArgs(in CORINFO_SIG_INFO sigInfo, GenTreeCall call)
+    {
+        assert(call.Args.IsEmpty);
+
+        if (impStackHeight < sigInfo.numArgs)
+        {
+            BADCODE("not enough arguments for call");
+        }
+
+        var inlineParameters = default(InlineArray16<SigParamInfo>);
+        var parameters = (sigInfo.numArgs <= 16) ? (Span<SigParamInfo>)(inlineParameters) : new SigParamInfo[sigInfo.numArgs];
+
+        // We will iterate and pop the args in reverse order as we sometimes need
+        // to spill some args. However, we need signature information and the
+        // JIT-EE interface only allows us to iterate the signature forwards. We
+        // will collect the needed information here and at the same time notify the
+        // EE that the signature types need to be loaded.
+        var sigArg = sigInfo.args;
+
+        for (var i = 0; i < sigInfo.numArgs; i++)
+        {
+            ref var parameter = ref parameters[i];
+
+            fixed (CORINFO_SIG_INFO* pSigInfo = &sigInfo)
+            fixed (CORINFO_CLASS_HANDLE* pClassHandle = &parameter.ClassHandle)
+            {
+                parameter.CorType = strip(info.compCompHnd->getArgType(pSigInfo, sigArg, pClassHandle));
+            }
+
+            if (parameter.CorType is not CORINFO_TYPE_CLASS and not CORINFO_TYPE_BYREF and not CORINFO_TYPE_PTR)
+            {
+                CORINFO_CLASS_HANDLE argRealClass;
+
+                fixed (CORINFO_SIG_INFO* pSigInfo = &sigInfo)
+                {
+                    argRealClass = info.compCompHnd->getArgClass(pSigInfo, sigArg);
+                }
+
+                if (argRealClass is not null)
+                {
+                    // Make sure that all valuetypes (including enums) that we push are loaded.
+                    // This is to guarantee that if a GC is triggered from the prestub of this methods,
+                    // all valuetypes in the method signature are already loaded.
+                    // We need to be able to find the size of the valuetypes, but we cannot
+                    // do a class-load from within GC.
+                    info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(argRealClass);
+                }
+            }
+
+            sigArg = info.compCompHnd->getArgNext(sigArg);
+        }
+
+        if ((sigInfo.retTypeSigClass is not null) && (sigInfo.retType is not CORINFO_TYPE_CLASS and not CORINFO_TYPE_BYREF and not CORINFO_TYPE_PTR))
+        {
+            // Make sure that all valuetypes (including enums) that we push are loaded.
+            // This is to guarantee that if a GC is triggered from the prestub of this methods,
+            // all valuetypes in the method signature are already loaded.
+            // We need to be able to find the size of the valuetypes, but we cannot
+            // do a class-load from within GC.
+            info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(sigInfo.retTypeSigClass);
+        }
+
+        // Now create the arguments in reverse.
+        for (var i = sigInfo.numArgs; i > 0; i--)
+        {
+            var se = impPopStack();
+            var ti = se.seTypeInfo;
+            var argNode = se.val;
+
+            var parameter = parameters[i - 1];
+
+            var jitSigType = parameter.CorType.VarType;
+            var classHnd = parameter.ClassHandle;
+
+            if (!impCheckImplicitArgumentCoercion(jitSigType, argNode.Type))
+            {
+                BADCODE("the call argument has a type that can't be implicitly converted to the signature type");
+            }
+
+            if (varTypeIsStruct(argNode.Type))
+            {
+                JITDUMP("Calling impNormStructVal on:\n");
+                DISPTREE(argNode);
+
+                argNode = impNormStructVal(argNode, CHECK_SPILL_ALL);
+
+                // For SIMD types the normalization can normalize TYP_STRUCT to
+                // e.g. TYP_SIMD16 which we keep (along with the class handle) in
+                // the CallArgs.
+
+                jitSigType = argNode.Type;
+
+                JITDUMP("resulting tree:\n");
+                DISPTREE(argNode);
+            }
+            else
+            {
+                // Insert implied casts (from float to double or double to float).
+                argNode = impImplicitR4orR8Cast(argNode, jitSigType);
+
+                // insert any widening or narrowing casts for backwards compatibility
+                argNode = impImplicitIorI4Cast(argNode, jitSigType);
+
+                if ((compAppleArm64Abi() || TargetArchitecture.IsArm32) && call.IsUnmanaged && varTypeIsSmall(jitSigType))
+                {
+                    // Apple arm64 and arm32 ABIs require arguments to be zero/sign
+                    // extended up to 32 bit. The managed ABI does not require
+                    // this.
+
+                    if (fgCastNeeded(argNode, jitSigType))
+                    {
+                        argNode = gtNewCastNode(TYP_INT, argNode, fromUnsigned: false, jitSigType);
+                    }
+                }
+            }
+
+            NewCallArg arg;
+
+            if (varTypeIsStruct(jitSigType))
+            {
+                arg = NewCallArg.CreateForStruct(argNode, jitSigType, typGetObjLayout(classHnd));
+            }
+            else
+            {
+                arg = NewCallArg.CreateForPrimitive(argNode, jitSigType);
+
+                if ((i is 1) && ((sigInfo.callConv & CORINFO_CALLCONV_EXPLICITTHIS) is not 0))
+                {
+                    arg = arg.WithWellKnownArg(WellKnownArg.ThisPointer);
+                }
+            }
+
+            _ = call.Args.PushFront(arg);
+            call.Flags |= (argNode.Flags & GTF_GLOB_EFFECT);
+        }
+    }
+
+    /// <summary>Pop the given number of values from the stack in reverse order (STDCALL/CDECL etc.) </summary>
+    /// <param name="sigInfo"></param>
+    /// <param name="call"></param>
+    /// <param name="skipReverseCount"></param>
+    /// <remarks>The first "skipReverseCount" items are not reversed.</remarks>
+    private void impPopReverseCallArgs(in CORINFO_SIG_INFO sigInfo, GenTreeCall call, int skipReverseCount)
+    {
+        assert(skipReverseCount <= sigInfo.numArgs);
+        impPopCallArgs(sigInfo, call);
+        call.Args.Reverse(skipReverseCount, sigInfo.numArgs - skipReverseCount);
+    }
+
     /// <summary>Pop one tree from the stack.</summary>
     /// <returns>The stack entry for the popped tree.</returns>
     public StackEntry impPopStack()
@@ -11526,7 +13529,7 @@ public partial class Compiler
         {
             // Keep class handle attached to the helper call since it's difficult to restore it
             // Keep class handle attached to the helper call since it's difficult to restore it.
-            op1.InitClsHnd = resolvedToken.hClass;
+            op1._initClsHnd = resolvedToken.hClass;
         }
         return op1;
     }
@@ -11777,6 +13780,37 @@ public partial class Compiler
             if (tree.Oper is GT_LCL_VAR or GT_LCL_FLD)
             {
                 tree.Type = lvaGetDesc(tree.AsLclVarCommon().LclNum).Type;
+            }
+        }
+    }
+
+    /// <summary>Retype unmanaged call arguments from managed pointers to unmanaged ones.</summary>
+    /// <param name="call">The call</param>
+    /// <remarks>Make the "casting away" of GC explicit here instead of retyping.</remarks>
+    public void impRetypeUnmanagedCallArgs(GenTreeCall call)
+    {
+        foreach (var arg in call.Args.Args)
+        {
+            var argNode = arg.EarlyNode;
+
+            // We should not be passing gc typed args to an unmanaged call.
+            if (varTypeIsGC(argNode.Type))
+            {
+                // Tolerate byrefs by casting to native int.
+                //
+                // This is needed or we'll generate inconsistent GC info
+                // for this arg at the call site (gc info says byref,
+                // pinvoke sig says native int).
+
+                if (argNode.Type is TYP_BYREF)
+                {
+                    var cast = gtNewCastNode(TYP_I_IMPL, argNode, fromUnsigned: false, TYP_I_IMPL);
+                    arg.EarlyNode = cast;
+                }
+                else
+                {
+                    NO_WAY("*** invalid IL: gc ref passed to unmanaged call");
+                }
             }
         }
     }
@@ -12161,7 +14195,7 @@ public partial class Compiler
         // runtime, and not at compile-time.
         // pLookup->token1 and pLookup->token2 specify the handle that is needed.
         // The cases are:
-        // 
+        //
         // 1. pLookup->indirections == CORINFO_USEHELPER : Call a helper passing it the
         //    instantiation-specific handle, and the tokens to lookup the handle.
         // 2. pLookup->indirections == CORINFO_USENULL : Pass null. Callee won't dereference
@@ -12275,6 +14309,92 @@ public partial class Compiler
                 }
             }
         }
+    }
+
+    /// <summary>Register a call as being async and set up context handling information depending on the IL.</summary>
+    /// <param name="call">The call</param>
+    /// <param name="opcode">The IL opcode for the call</param>
+    /// <param name="prefixFlags">Flags containing context handling information from IL</param>
+    /// <param name="callDI">Debug info for the async call</param>
+    public unsafe void impSetupAsyncCall(GenTreeCall call, OPCODE opcode, int prefixFlags, in DebugInfo callDI)
+    {
+        Unsafe.SkipInit(out AsyncCallInfo asyncInfo);
+
+        if (compIsForInlining)
+        {
+            if (!_nextAwaitIsTail)
+            {
+                compInlineResult.NoteFatal(InlineObservation.CALLEE_AWAIT);
+                return;
+            }
+
+            var inlCall = impInlineInfo.iciCall;
+            assert(inlCall is not null);
+
+            JITDUMP($"Call [{inlCall.TreeId:D6}] is to call with a tail async call [{call.TreeId:D6}]\n");
+
+            assert(inlCall.IsAsync);
+            var inlAsyncInfo = inlCall._asyncInfo;
+
+            asyncInfo.ContinuationContextHandling = inlAsyncInfo.ContinuationContextHandling;
+
+            // Validate that below code won't override the handling
+            assert((prefixFlags & PREFIX_IS_TASK_AWAIT) is 0);
+            _nextAwaitIsTail = false;
+
+            asyncInfo.IsTailAwait = inlAsyncInfo.IsTailAwait;
+        }
+
+        var newSourceTypes = ICorDebugInfo.ASYNC;
+        newSourceTypes |= (callDI.Location.SourceTypes & ~ICorDebugInfo.CALL_INSTRUCTION);
+
+        var newILLocation = new ILLocation(callDI.Location.Offset, newSourceTypes);
+        asyncInfo.CallAsyncDebugInfo = new DebugInfo(callDI.InlineContext, newILLocation);
+
+        if ((prefixFlags & PREFIX_IS_TASK_AWAIT) is not 0)
+        {
+            JITDUMP("Call is an async task await\n");
+
+            if ((prefixFlags & PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT) is not 0)
+            {
+                asyncInfo.ContinuationContextHandling = ContinuationContextHandling.ContinueOnCapturedContext;
+                JITDUMP("  Continuation continues on captured context\n");
+            }
+            else
+            {
+                asyncInfo.ContinuationContextHandling = ContinuationContextHandling.ContinueOnThreadPool;
+                JITDUMP("  Continuation continues on thread pool\n");
+            }
+        }
+        else
+        {
+            JITDUMP("Call is an async non-task await\n");
+        }
+
+        if (_nextAwaitIsTail)
+        {
+            asyncInfo.ContinuationContextHandling = ContinuationContextHandling.None;
+            asyncInfo.IsTailAwait = true;
+            _nextAwaitIsTail = false;
+        }
+
+        call.SetIsAsync(asyncInfo);
+
+#if DEBUG
+        if ((JitConfig[ConfigInteger.EnableExtraSuperPmiQueries] is not 0) && (call._callType is CT_USER_FUNC))
+        {
+            // Query the async variants (twice, to get both directions)
+            var method = call._callMethHnd;
+
+            bool variantIsThunk;
+            method = info.compCompHnd->getAsyncOtherVariant(method, &variantIsThunk);
+
+            if (method != NO_METHOD_HANDLE)
+            {
+                method = info.compCompHnd->getAsyncOtherVariant(method, &variantIsThunk);
+            }
+        }
+#endif
     }
 
     /// <summary>Spill all trees referencing the given local.</summary>
@@ -12463,7 +14583,7 @@ public partial class Compiler
                 {
                     for (byte i = 0; i < call.InlineCandidatesCount; i++)
                     {
-                        call.GetGDVCandidateInfo(i).preexistingSpillTemp = tnum;
+                        call.GetGdvCandidateInfo(i).preexistingSpillTemp = tnum;
                     }
                 }
                 else
@@ -12828,6 +14948,180 @@ public partial class Compiler
         }
     }
 
+    /// <summary>Checks whether the return types of caller and callee are compatible so that calle can be tail called. sizes are not supported integral type sizes return values to temps.</summary>
+    /// <param name="allowWidening">whether to allow implicit widening by the callee. For instance, allowing int32 -> int16 tailcalls. The managed calling convention allows this, but we don't want explicit tailcalls to depend on this detail of the managed calling convention.</param>
+    /// <param name="callerRetType">the caller's return type</param>
+    /// <param name="callerRetTypeClass">the caller's return struct type</param>
+    /// <param name="callerCallConv">calling convention of the caller</param>
+    /// <param name="calleeRetType">the callee's return type</param>
+    /// <param name="calleeRetTypeClass">the callee return struct type</param>
+    /// <param name="calleeCallConv">calling convention of the callee</param>
+    /// <returns>True if the tailcall types are compatible.</returns>
+    /// <remarks>Note that here we don't check compatibility in IL Verifier sense, but on the lines of return types getting returned in the same return register.</remarks>
+    public unsafe bool impTailCallRetTypeCompatible(bool allowWidening, var_types callerRetType, CORINFO_CLASS_HANDLE callerRetTypeClass, CorInfoCallConvExtension callerCallConv, var_types calleeRetType, CORINFO_CLASS_HANDLE calleeRetTypeClass, CorInfoCallConvExtension calleeCallConv)
+    {
+        // Early out if the types are the same.
+        if (callerRetType == calleeRetType)
+        {
+            return true;
+        }
+
+        // For integral types the managed calling convention dictates that callee
+        // will widen the return value to 4 bytes, so we can allow implicit widening
+        // in managed to managed tailcalls when dealing with <= 4 bytes.
+        var isManaged = callerCallConv is CorInfoCallConvExtension.Managed or CorInfoCallConvExtension.Managed;
+
+        if (allowWidening && isManaged && varTypeIsIntegral(callerRetType) && varTypeIsIntegral(calleeRetType) && (callerRetType.Size <= 4) && (calleeRetType.Size <= callerRetType.Size))
+        {
+            return true;
+        }
+
+        // If the class handles are the same and not null, the return types are compatible.
+        if ((callerRetTypeClass is not null) && (callerRetTypeClass == calleeRetTypeClass))
+        {
+            return true;
+        }
+
+#if TARGET_64BIT
+        // Jit64 compat:
+        if (callerRetType is TYP_VOID)
+        {
+            // This needs to be allowed to support the following IL pattern that Jit64 allows:
+            //     tail.call
+            //     pop
+            //     ret
+            //
+            // Note that the above IL pattern is not valid as per IL verification rules.
+            // Therefore, only full trust code can take advantage of this pattern.
+            return true;
+        }
+
+        // These checks return true if the return value type sizes are the same and
+        // get returned in the same return register i.e. caller doesn't need to normalize
+        // return value. Some of the tail calls permitted by below checks would have
+        // been rejected by IL Verifier before we reached here.  Therefore, only full
+        // trust code can make those tail calls.
+        var isCallerRetTypMBEnreg = VarTypeIsMultiByteAndCanEnreg(callerRetType, callerRetTypeClass, out var callerRetTypeSize, info.compIsVarArgs, callerCallConv);
+        var isCalleeRetTypMBEnreg = VarTypeIsMultiByteAndCanEnreg(calleeRetType, calleeRetTypeClass, out var calleeRetTypeSize, info.compIsVarArgs, calleeCallConv);
+
+        if (varTypeIsIntegral(callerRetType) || isCallerRetTypMBEnreg)
+        {
+            return (varTypeIsIntegral(calleeRetType) || isCalleeRetTypMBEnreg) && (callerRetTypeSize == calleeRetTypeSize);
+        }
+#endif
+
+        return false;
+    }
+
+    /// <summary>Remove redundant boxing from ArgumentNullException_ThrowIfNull it is done for Tier0 where we can't remove it without inlining otherwise.</summary>
+    /// <param name="call">call representing ArgumentNullException_ThrowIfNull</param>
+    /// <returns>Optimized tree (or the original call tree if we can't optimize it).</returns>
+    public GenTree impThrowIfNull(GenTreeCall call)
+    {
+        // We have two overloads:
+        //
+        //  void ThrowIfNull(object argument, string paramName = null)
+        //  void ThrowIfNull(object argument, ExceptionArgument paramName)
+        //
+        assert(call.IsSpecialIntrinsic(this, NI_System_ArgumentNullException_ThrowIfNull));
+        assert(call.Args.CountUserArgs() is 2);
+        assert(call.Type is TYP_VOID);
+
+        if (!opts.Tier0OptimizationEnabled)
+        {
+            // Don't fold it for debug code or forced MinOpts
+            return call;
+        }
+
+        ref var callArgs = ref call.Args;
+
+        var callArg0 = callArgs.GetUserArgByIndex(0);
+        assert(callArg0 is not null);
+        var value = callArg0.Node;
+
+        var callArg1 = callArgs.GetUserArgByIndex(1);
+        assert(callArg1 is not null);
+        var valueName = callArg1.Node;
+
+        // Case 1: value-type (non-nullable):
+        //
+        //  ArgumentNullException_ThrowIfNull(GT_BOX(value), valueName)
+        //    ->
+        //  NOP (with side-effects if any)
+        //
+        if (value.Oper is GT_BOX)
+        {
+            // Now we need to spill the addr and argName arguments in the correct order  to preserve possible side effects.
+
+            var boxedValTmp = lvaGrabTemp(shortLifetime: true, "boxedVal spilled");
+            var boxedArgNameTmp = lvaGrabTemp(shortLifetime: true, "boxedArg spilled");
+
+            impStoreToTemp(boxedValTmp, value, CHECK_SPILL_ALL);
+            impStoreToTemp(boxedArgNameTmp, valueName, CHECK_SPILL_ALL);
+
+            _ = gtTryRemoveBoxUpstreamEffects(value.AsBox(), BR_REMOVE_AND_NARROW);
+            return gtNewNothingNode();
+        }
+        else
+        {
+            // Case 2: nullable:
+            //
+            //  ArgumentNullException.ThrowIfNull(CORINFO_HELP_BOX_NULLABLE(classHandle, addr), valueName);
+            //    ->
+            //  addr->hasValue is not 0 ? NOP : ArgumentNullException.ThrowIfNull(null, valueNameTmp)
+
+            if (opts.OptimizationEnabled || !value.Oper.IsCall)
+            {
+                // We're not boxing - bail out.
+                // NOTE: when opts are enabled, we remove the box as is (with better CQ)
+                return call;
+            }
+
+            var valueCall = value.AsCall();
+
+            if (!valueCall.IsHelperCall(CORINFO_HELP_BOX_NULLABLE))
+            {
+                return call;
+            }
+
+            ref var valueCallArgs = ref valueCall.Args;
+
+            var valueCallArg0 = valueCallArgs.GetUserArgByIndex(0);
+            assert(valueCallArg0 is not null);
+            var boxHelperClsArg = valueCallArg0.Node;
+
+            var valueCallArg1 = valueCallArgs.GetUserArgByIndex(1);
+            assert(valueCallArg1 is not null);
+            var boxHelperAddrArg = valueCallArg1.Node;
+
+            if ((boxHelperClsArg.Flags & GTF_SIDE_EFFECT) is not 0)
+            {
+                // boxHelperClsArg is always just a class handle constant, so we don't bother spilling it.
+                return call;
+            }
+
+            // Now we need to spill the addr and argName arguments in the correct order to preserve possible side effects.
+
+            var boxedValTmp = lvaGrabTemp(shortLifetime: true, "boxedVal spilled");
+            var boxedArgNameTmp = lvaGrabTemp(shortLifetime: true, "boxedArg spilled");
+
+            impStoreToTemp(boxedValTmp, boxHelperAddrArg, CHECK_SPILL_ALL);
+            impStoreToTemp(boxedArgNameTmp, valueName, CHECK_SPILL_ALL);
+
+            // Change arguments to 'ThrowIfNull(null, valueNameTmp)'
+            callArg0.EarlyNode = gtNewNull();
+            callArg1.EarlyNode = gtNewLclvNode(valueName.Type, boxedArgNameTmp);
+
+            // This is Tier0 specific, so we create a raw indir node to access Nullable<T>.hasValue field which is the first field of Nullable<T> struct and is of type 'bool'.
+            var hasValueField = gtNewIndir(TYP_UBYTE, gtNewLclvNode(boxHelperAddrArg.Type, boxedValTmp));
+
+            var cond = gtNewBinaryNode(GT_NE, TYP_INT, hasValueField, gtNewIconNode(TYP_INT, 0));
+            var colon = gtNewColonNode(TYP_VOID, gtNewNothingNode(), call);
+
+            return gtNewQmarkNode(TYP_VOID, cond, colon);
+        }
+    }
+
     public GenTree? impTokenToHandle(in CORINFO_RESOLVED_TOKEN resolvedToken, bool mustRestoreHandle = false, bool importParent = false)
         => impTokenToHandle(resolvedToken, out _, mustRestoreHandle, importParent);
 
@@ -12892,6 +15186,385 @@ public partial class Compiler
             result = gtNewRuntimeLookup(result, embedInfo.compileTimeHandle, embedInfo.handleType);
         }
         return result;
+    }
+
+    /// <summary>transform a resolved virtual call target into a direct call.</summary>
+    /// <param name="call">call to transform</param>
+    /// <param name="method">method handle for call. Updated to the devirtualized target method</param>
+    /// <param name="methodFlags">flags for the method to call. Updated to the devirtualized target method's flags</param>
+    /// <param name="dcInfo">resolved target information for the call</param>
+    /// <param name="block">block that will contain the transformed call</param>
+    /// <param name="contextHandle">context handle for the transformed call</param>
+    /// <param name="baseMethod"></param>
+    public unsafe void impTransformDevirtualizedCall(GenTreeCall call, ref CORINFO_METHOD_HANDLE method, ref CorInfoFlag methodFlags, in DevirtualizedCallInfo dcInfo, BasicBlock block, out CORINFO_CONTEXT_HANDLE contextHandle, CORINFO_METHOD_HANDLE baseMethod)
+    {
+        var derivedMethod = method;
+        var derivedMethodAttribs = methodFlags;
+        ref var derivedResolvedToken = ref dcInfo.resolvedToken;
+        var derivedClass = eeGetClassFromContext(dcInfo.tokenLookupContext);
+
+        assert(derivedMethod is not null);
+        assert(call.Args.HasThisPointer);
+
+        var thisArg = call.Args.ThisArg;
+        var thisObj = thisArg.EarlyNode.EffectiveVal;
+
+#if DEBUG
+        // Optionally, print info on devirtualization
+        var rootCompiler = impInlineRoot;
+        var doPrint = JitConfig[ConfigMethodSet.JitPrintDevirtualizedMethods].contains(rootCompiler.info.compMethodHnd, rootCompiler.info.compClassHnd, &rootCompiler.info.compMethodInfo->args);
+
+        if (doPrint)
+        {
+            var baseClass = info.compCompHnd->getMethodClass(baseMethod);
+            var baseClassAttribs = info.compCompHnd->getClassAttribs(baseClass);
+            var derivedMethodIsFinal = ((derivedMethodAttribs & CORINFO_FLG_FINAL) is not 0);
+            var callKind = ((baseClassAttribs & CORINFO_FLG_INTERFACE) is not 0) ? "interface" : "virtual";
+            var note = dcInfo.objClassIsExact ? "exact" : dcInfo.objClassIsFinal ? "final class" : derivedMethodIsFinal ? "final method" : "inexact or not final";
+
+            jitprintf($"Devirtualized {callKind} call to {eeGetMethodFullName(baseMethod)}; now direct call to {eeGetMethodFullName(derivedMethod)} [{note}]\n");
+        }
+#endif
+
+        Metrics.DevirtualizedCall++;
+
+        // Make the updates.
+        call.Flags &= ~GTF_CALL_VIRT_VTABLE;
+        call.Flags &= ~GTF_CALL_VIRT_STUB;
+        call._callMethHnd = derivedMethod;
+        call._callType = CT_USER_FUNC;
+        call._controlExpr = null;
+
+#if DEBUG
+        call._callDebugFlags |= GTF_CALL_MD_DEVIRTUALIZED;
+#endif
+
+        if (dcInfo.isDelegateCall)
+        {
+            call._callMoreFlags &= ~GTF_CALL_M_DELEGATE_INV;
+        }
+
+        // Virtual calls include an implicit null check, which we may
+        // now need to make explicit.
+        if (dcInfo.hadImplicitNullCheck && !dcInfo.objIsNonNull)
+        {
+            call.Flags |= GTF_CALL_NULLCHECK;
+        }
+
+        // Clear the inline candidate info (may be non-null since
+        // it's a union field used for other things by virtual
+        // stubs)
+        call.ClearInlineInfo();
+
+#if DEBUG
+        // If we successfully devirtualized based on an exact or final class,
+        // and we have dynamic PGO data describing the likely class, make sure they agree.
+        //
+        // If pgo source is not dynamic we may see likely classes from other versions of this code
+        // where types had different properties.
+        //
+        // If method is an inlinee we may be specializing to a class that wasn't seen at runtime.
+        //
+        var canSensiblyCheck = (dcInfo.objClassIsExact || dcInfo.objClassIsFinal) && (fgPgoSource is ICorJitInfo.PgoSource.Dynamic) && !compIsForInlining;
+
+        if ((JitConfig[ConfigInteger.JitCrossCheckDevirtualizationAndPGO] is not 0) && canSensiblyCheck)
+        {
+            // We only can handle a single likely class for now
+
+            var likelyClasses = default(InlineArray1<LikelyClassMethodRecord>);
+            var schema = new ReadOnlySpan<ICorJitInfo.PgoInstrumentationSchema>(fgPgoSchema, fgPgoSchemaCount);
+            var numberOfClasses = getLikelyClasses(likelyClasses, schema, fgPgoData, dcInfo.ilOffset);
+
+            var likelihood = likelyClasses[0].likelihood;
+            var likelyClass = (CORINFO_CLASS_HANDLE)(likelyClasses[0].handle);
+
+            if (numberOfClasses > 0)
+            {
+                // PGO had better agree the class we devirtualized to is plausible.
+
+                if (likelyClass != derivedClass)
+                {
+                    // Managed type system may report different addresses for a class handle
+                    // at different times....?
+                    //
+                    // Also, AOT may have a more nuanced notion of class equality.
+
+                    if (!IsAot)
+                    {
+                        var mismatch = true;
+
+                        // derivedClass will be the introducer of derived method, so it's possible
+                        // likelyClass is a non-overriding subclass. Check up the hierarchy.
+
+                        var parentClass = likelyClass;
+
+                        while (parentClass != NO_CLASS_HANDLE)
+                        {
+                            if (parentClass == derivedClass)
+                            {
+                                mismatch = false;
+                                break;
+                            }
+
+                            parentClass = info.compCompHnd->getParentType(parentClass);
+                        }
+
+                        if (mismatch || (numberOfClasses is not 1) || (likelihood is not 100))
+                        {
+                            jitprintf($"@@@ Likely {dspPtr(likelyClass)} ({eeGetClassName(likelyClass)}) != Derived {dspPtr(derivedClass)} ({eeGetClassName(derivedClass)}) [n={numberOfClasses}, l={likelihood}, il={dcInfo.ilOffset}] in {info.compFullName} \n");
+                        }
+
+                        assert(!mismatch && (numberOfClasses is 1) && (likelihood is 100));
+                    }
+                }
+            }
+        }
+#endif
+
+        var instParam = null as GenTree;
+
+        // If the 'this' object is a value class, see if we can rework the call to invoke the
+        // unboxed entry. This effectively inlines the normally un-inlineable wrapper stub
+        // and exposes the potentially inlinable unboxed entry method.
+        //
+        // We won't optimize explicit tail calls, as ensuring we get the right tail call info
+        // is tricky (we'd need to pass an updated sig and resolved token back to some callers).
+        //
+        // Note we may not have a derived class in some cases (eg interface call on an array)
+
+        if (info.compCompHnd->isValueClass(derivedClass))
+        {
+            if (dcInfo.isExplicitTailCall)
+            {
+                JITDUMP("Have a direct explicit tail call to boxed entry point; can't optimize further\n");
+            }
+            else
+            {
+                JITDUMP("Have a direct call to boxed entry point. Trying to optimize to call an unboxed entry point\n");
+
+                // Note for some shared methods the unboxed entry point requires an extra parameter.
+                var requiresInstMethodTableArg = false;
+                var unboxedEntryMethod = info.compCompHnd->getUnboxedEntry(derivedMethod, &requiresInstMethodTableArg);
+
+                if (unboxedEntryMethod is not null)
+                {
+                    // Rewrite the call to target the unboxed entry on the box payload. Keep the heap box,
+                    // since the callee may return an interior managed pointer into it; object stack allocation
+                    // can later promote the box to the stack when escape analysis proves the receiver does not
+                    // escape.
+
+                    if (requiresInstMethodTableArg)
+                    {
+                        // Get the method table from the boxed object.
+                        //
+                        // TODO-CallArgs-REVIEW: Use thisObj here? Differs by gtEffectiveVal.
+                        var clonedThisArg = gtClone(thisArg.EarlyNode);
+
+                        if (clonedThisArg is null)
+                        {
+                            JITDUMP("unboxed entry needs MT arg, but `this` was too complex to clone. Deferring update.\n");
+                        }
+                        else
+                        {
+                            JITDUMP("revising call to invoke unboxed entry with additional method table arg\n");
+
+                            instParam = gtNewMethodTableLookup(clonedThisArg);
+
+                            // Update the 'this' pointer to refer to the box payload
+
+                            var payloadOffset = gtNewIconNode(TYP_I_IMPL, TARGET_POINTER_SIZE);
+                            var boxPayload = gtNewBinaryNode(GT_ADD, TYP_BYREF, thisArg.EarlyNode, payloadOffset);
+
+                            assert(thisObj == thisArg.EarlyNode);
+
+                            thisArg.EarlyNode = boxPayload;
+                            call._callMethHnd = unboxedEntryMethod;
+
+#if DEBUG
+                            call._callDebugFlags |= GTF_CALL_MD_UNBOXED;
+#endif
+
+                            // Method attributes will differ because unboxed entry point is shared
+
+                            var unboxedMethodAttribs = info.compCompHnd->getMethodAttribs(unboxedEntryMethod);
+                            JITDUMP($"Updating method attribs from 0x{derivedMethodAttribs:X8} to 0x{unboxedMethodAttribs:X8}\n");
+
+                            derivedMethod = unboxedEntryMethod;
+                            derivedResolvedToken = dcInfo.unboxedResolvedToken;
+                            derivedMethodAttribs = unboxedMethodAttribs;
+
+                            Metrics.DevirtualizedCallUnboxedEntry++;
+                        }
+                    }
+                    else
+                    {
+                        JITDUMP("revising call to invoke unboxed entry\n");
+
+                        var payloadOffset = gtNewIconNode(TYP_I_IMPL, TARGET_POINTER_SIZE);
+                        var boxPayload = gtNewBinaryNode(GT_ADD, TYP_BYREF, thisArg.EarlyNode, payloadOffset);
+
+                        thisArg.EarlyNode = boxPayload;
+                        call._callMethHnd = unboxedEntryMethod;
+
+#if DEBUG
+                        call._callDebugFlags |= GTF_CALL_MD_UNBOXED;
+#endif
+
+                        derivedMethod = unboxedEntryMethod;
+                        derivedResolvedToken = dcInfo.unboxedResolvedToken;
+
+                        Metrics.DevirtualizedCallUnboxedEntry++;
+                    }
+                }
+                else
+                {
+                    // Many of the low-level methods on value classes won't have unboxed entries,
+                    // as they need access to the type of the object.
+                    //
+                    // Note this may be a cue for us to stack allocate the boxed object, since
+                    // we probably know that these objects don't escape.
+
+                    JITDUMP("Sorry, failed to find unboxed entry point\n");
+                }
+            }
+        }
+        else if (dcInfo.methSig.hasTypeArg())
+        {
+            if ((unchecked((nint)(dcInfo.tokenLookupContext)) & (nint)(CORINFO_CONTEXTFLAGS_MASK)) == (nint)(CORINFO_CONTEXTFLAGS_METHOD))
+            {
+                var exactMethodHandle = (CORINFO_METHOD_HANDLE)((unchecked((nint)(dcInfo.tokenLookupContext)) & ~(nint)(CORINFO_CONTEXTFLAGS_MASK)));
+                instParam = getLookupTree(dcInfo.instParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle);
+            }
+            else
+            {
+                assert((unchecked((nint)(dcInfo.tokenLookupContext)) & (nint)(CORINFO_CONTEXTFLAGS_MASK)) == (nint)(CORINFO_CONTEXTFLAGS_CLASS));
+                var exactClassHandle = (CORINFO_CLASS_HANDLE)(unchecked((nint)(dcInfo.tokenLookupContext)) & ~(nint)(CORINFO_CONTEXTFLAGS_MASK));
+                instParam = getLookupTree(dcInfo.instParamLookup, GTF_ICON_CLASS_HDL, exactClassHandle);
+            }
+        }
+
+        if (instParam is not null)
+        {
+            assert(call.Args.FindWellKnownArg(WellKnownArg.InstParam) is null);
+            call.Args.InsertInstParam(this, instParam);
+        }
+
+        // Need to update call info too.
+
+        method = derivedMethod;
+        methodFlags = derivedMethodAttribs;
+
+        // Update context handle
+        contextHandle = MAKE_METHODCONTEXT(derivedMethod);
+
+        // We might have created a new recursive tail call candidate.
+        //
+        if (call.CanTailCall && gtIsRecursiveCall(derivedMethod))
+        {
+            assert(block is not null);
+            MethodHasRecursiveTailCall = true;
+
+            block.SetFlags(BBF_RECURSIVE_TAILCALL);
+            JITDUMP($"[{call.TreeId:D6}] is a recursive call in tail position\n");
+        }
+        else
+        {
+            JITDUMP($"[{call.TreeId:D6}] is{(call.CanTailCall ? "" : " not")} in tail position and is{(gtIsRecursiveCall(derivedMethod) ? "" : " not")} recursive\n");
+        }
+
+#if FEATURE_READYTORUN
+        if (IsAot)
+        {
+            // For R2R, getCallInfo triggers bookkeeping on the zap
+            // side and acquires the actual symbol to call so we need to call it here.
+            assert(!Unsafe.IsNullRef(in derivedResolvedToken));
+
+            // Look up the new call info.
+            eeGetCallInfo(derivedResolvedToken, Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), CORINFO_CALLINFO_ALLOWINSTPARAM, out var derivedCallInfo);
+
+            // Update the call.
+            call._callMoreFlags &= ~GTF_CALL_M_VIRTSTUB_REL_INDIRECT;
+            call._entryPoint = derivedCallInfo.codePointerLookup.constLookup;
+        }
+#endif
+
+#if DEBUG
+        if (verbose)
+        {
+            jitprintf("... after devirt...\n");
+            gtDispTree(call);
+        }
+#endif
+    }
+
+    public unsafe GenTree? impTransformThis(GenTree thisPtr, in CORINFO_RESOLVED_TOKEN constrainedResolvedToken, CORINFO_THIS_TRANSFORM transform)
+    {
+        switch (transform)
+        {
+            case CORINFO_DEREF_THIS:
+            {
+                var obj = thisPtr;
+
+                // This does a LDIND on the obj, which should be a byref. pointing to a ref
+                impBashVarAddrsToI(obj);
+                assert((obj.Type.ActualType is TYP_I_IMPL) || (obj.Type is TYP_BYREF));
+
+                var constraintTyp = info.compCompHnd->asCorInfoType(constrainedResolvedToken.hClass);
+                return gtNewLoadValueNode(constraintTyp.VarType, obj, layout: null);
+            }
+
+            case CORINFO_BOX_THIS:
+            {
+                // Constraint calls where there might be no
+                // unboxed entry point require us to implement the call via helper.
+                // These only occur when a possible target of the call
+                // may have inherited an implementation of an interface
+                // method from System.Object or System.ValueType.  The EE does not provide us with
+                // "unboxed" versions of these methods.
+
+                var obj = thisPtr;
+
+                assert(obj.Type is TYP_BYREF or TYP_I_IMPL);
+                var objType = TypeHandleToVarType(constrainedResolvedToken.hClass, out var layout);
+
+                if (objType is TYP_STRUCT)
+                {
+                    assert(layout is not null);
+                    obj = gtNewBlkIndir(obj, layout);
+                }
+                else
+                {
+                    obj = gtNewIndir(objType, obj);
+                }
+
+                // This pushes on the dereferenced byref
+                // This is then used immediately to box.
+                impPushOnStack(obj, makeTypeInfo(constrainedResolvedToken.hClass));
+
+                // This pops off the byref-to-a-value-type remaining on the stack and
+                // replaces it with a boxed object.
+                // This is then used as the object to the virtual call immediately below.
+                impImportAndPushBox(constrainedResolvedToken);
+
+                if (compDonotInline)
+                {
+                    return null;
+                }
+
+                obj = impPopStack().val;
+                return obj;
+            }
+
+            case CORINFO_NO_THIS_TRANSFORM:
+            {
+                goto default;
+            }
+
+            default:
+            {
+                return thisPtr;
+            }
+        }
     }
 
     private static unsafe void impValidateMemoryAccessOpcode(byte* codeAddr, byte* codeEndp, bool volatilePrefix)
@@ -13452,6 +16125,112 @@ public partial class Compiler
         initBBEntryState(fgFirstBB, stackState);
     }
 
+    /// <summary>Check if devirtualizing a call node as a specified target method call is reasonable.</summary>
+    /// <param name="call">the call</param>
+    /// <param name="gdvTarget">the target method that we want to guess for and devirtualize to</param>
+    /// <returns>true if we can proceed with GDV.</returns>
+    /// <remarks>This implements a small simplified signature-compatibility check to verify that a guess is reasonable. The main goal here is to avoid blowing up the JIT on PGO data with stale GDV candidates; if they are not compatible in the ECMA sense then we do not expect the guard to ever pass at runtime, so we can get by with simplified rules here.</remarks>
+    public unsafe bool isCompatibleMethodGdv(GenTreeCall call, CORINFO_METHOD_HANDLE gdvTarget)
+    {
+        CORINFO_SIG_INFO sigInfo;
+        info.compCompHnd->getMethodSig(gdvTarget, &sigInfo);
+
+        var sigParam = sigInfo.args;
+        var numParams = sigInfo.numArgs;
+        var numArgs = 0;
+
+        var gdvType = sigInfo.retType.VarType;
+        var callType = call._returnType;
+
+        var sameRetTypes = (callType.ActualType == gdvType.ActualType) || (varTypeIsStruct(callType) && varTypeIsStruct(gdvType));
+
+        if (!sameRetTypes)
+        {
+            JITDUMP("Incompatible method GDV: Return types do not match - bail out.\n");
+            return false;
+        }
+
+        if (varTypeIsStruct(gdvType))
+        {
+            assert(varTypeIsStruct(callType));
+
+            CORINFO_SIG_INFO callSig;
+            info.compCompHnd->getMethodSig(call._callMethHnd, &callSig);
+
+            _ = GetReturnTypeForStruct(callSig.retTypeClass, call.UnmanagedCallConv, out var callRetKind);
+            _ = GetReturnTypeForStruct(sigInfo.retTypeClass, call.UnmanagedCallConv, out var gdvRetKind);
+
+            if ((callRetKind != gdvRetKind) || !ClassLayout.AreCompatible(typGetObjLayout(callSig.retTypeClass), typGetObjLayout(sigInfo.retTypeClass)))
+            {
+                JITDUMP("Incompatible method GDV: Return struct types do not match - bail out.\n");
+                return false;
+            }
+        }
+
+        foreach (var arg in call.Args.Args)
+        {
+            switch (arg.WellKnownArg)
+            {
+                case WellKnownArg.RetBuffer:
+                case WellKnownArg.ThisPointer:
+                case WellKnownArg.AsyncContinuation:
+                {
+                    // Not part of signature but we still expect to see it here
+                    continue;
+                }
+
+                case WellKnownArg.None:
+                {
+                    break;
+                }
+
+                default:
+                {
+                    NO_WAY("Unexpected well known arg to method GDV candidate");
+                    continue;
+                }
+            }
+            numArgs++;
+
+            if (numArgs > numParams)
+            {
+                JITDUMP($"Incompatible method GDV: call [{call.TreeId:D6}] has more arguments than signature (sig has {numParams} parameters)\n");
+                return false;
+            }
+
+            var classHnd = NO_CLASS_HANDLE;
+            var corType = strip(info.compCompHnd->getArgType(&sigInfo, sigParam, &classHnd));
+            var sigType = corType.VarType;
+
+            if (!impCheckImplicitArgumentCoercion(sigType, arg.Node.Type))
+            {
+                JITDUMP($"Incompatible method GDV: arg [{arg.Node.TreeId:D6}] is type-incompatible with signature of target\n");
+                return false;
+            }
+
+            // Best-effort check for struct compatibility here.
+            if (varTypeIsStruct(sigType) && (arg.SignatureClassHandle != classHnd))
+            {
+                var callLayout = typGetObjLayout(arg.SignatureClassHandle);
+                var tarLayout = typGetObjLayout(classHnd);
+
+                if (!ClassLayout.AreCompatible(callLayout, tarLayout))
+                {
+                    JITDUMP($"Incompatible method GDV: struct arg [{arg.Node.TreeId:D6}] is layout-incompatible with signature of target\n");
+                    return false;
+                }
+            }
+            sigParam = info.compCompHnd->getArgNext(sigParam);
+        }
+
+        if (numArgs < numParams)
+        {
+            JITDUMP($"Incompatible method GDV: call [{call.TreeId:D6}] has fewer arguments ({numArgs}) than signature ({numParams})\n");
+            return false;
+        }
+        return true;
+    }
+
     public bool IsIntrinsicImplementedByUserCall(NamedIntrinsic intrinsicName)
     {
         // Currently, if a math intrinsic is not implemented by target-specific
@@ -13653,6 +16432,381 @@ public partial class Compiler
     {
         // TODO: Port Compiler.lookupNamedIntrinsic
         return NI_Illegal;
+    }
+
+    /// <summary>Use profile information to pick a GDV/cast type candidate for a call site.</summary>
+    /// <param name="call">the call (either virtual or cast helper)</param>
+    /// <param name="ilOffset">exact IL offset of the call</param>
+    /// <param name="isInterface">whether or not the call target is defined on an interface</param>
+    /// <param name="classGuesses">the classes to guess for (mutually exclusive with methodGuess)</param>
+    /// <param name="methodGuesses">the methods to guess for (mutually exclusive with classGuess)</param>
+    /// <param name="candidatesCount">number of guesses</param>
+    /// <param name="likelihoods">estimates of the likelihoods that the guesses will succeed</param>
+    /// <param name="verboseLogging">whether or not to do verbose logging</param>
+    public unsafe void pickGDV(GenTreeCall call, IL_OFFSET ilOffset, bool isInterface, Span<nint> classGuesses, Span<nint> methodGuesses, out int candidatesCount, Span<int> likelihoods, bool verboseLogging = true)
+    {
+        candidatesCount = 0;
+
+        // Get the relevant pgo info for this call
+        assert(call._inlineContext is not null);
+
+        var pgoInfo = new PgoInfo(call._inlineContext);
+        var schema = new Span<ICorJitInfo.PgoInstrumentationSchema>(pgoInfo.PgoSchema, pgoInfo.PgoSchemaCount);
+
+        var likelyClasses = default(InlineArrayMaxGdvTypeChecks<LikelyClassMethodRecord>);
+        var numberOfClasses = 0;
+
+        if (call.IsVirtualStub || call.IsVirtualVtable || call.IsHelperCall())
+        {
+            numberOfClasses = getLikelyClasses(likelyClasses, schema, pgoInfo.PgoData, ilOffset);
+        }
+
+        var likelyMethods = default(InlineArrayMaxGdvTypeChecks<LikelyClassMethodRecord>);
+        var numberOfMethods = 0;
+        var isInferredGDV = false;
+
+        // TODO-GDV: R2R support requires additional work to reacquire the
+        // entrypoint, similar to what happens at the end of impDevirtualizeCall.
+        // As part of supporting this we should merge the tail of
+        // impDevirtualizeCall and what happens in
+        // GuardedDevirtualizationTransformer.CreateThen for method GDV.
+        //
+        if (!IsAot && (call.IsVirtualVtable || call.IsDelegateInvoke))
+        {
+            assert(!call.IsHelperCall());
+            numberOfMethods = getLikelyMethods(likelyMethods, schema, pgoInfo.PgoData, ilOffset);
+        }
+
+        if ((numberOfClasses < 1) && (numberOfMethods < 1) && hasImpEnumeratorLikelyTypeMap)
+        {
+            // See if we can infer a GDV here for enumerator var uses
+            var thisArg = call.Args.FindWellKnownArg(WellKnownArg.ThisPointer);
+
+            if (thisArg is not null)
+            {
+                var thisNode = thisArg.EarlyNode;
+
+                if (thisNode.Oper is GT_LCL_VAR)
+                {
+                    var thisLclNum = thisNode.AsLclVarCommon().LclNum;
+
+                    if (lvaGetDesc(thisLclNum).lvIsEnumerator)
+                    {
+                        var map = ImpEnumeratorLikelyTypeMap;
+
+                        if (map.TryGetValue(thisLclNum, out var e))
+                        {
+                            JITDUMP($"Recalling that V{thisLclNum:D2} has {e._likelihood}% likely class {eeGetClassName(e._classHandle)}\n");
+                            numberOfClasses = 1;
+
+                            ref var likelyClass = ref likelyClasses[0];
+
+                            likelyClass.handle = unchecked((nint)(e._classHandle));
+                            likelyClass.likelihood = e._likelihood;
+
+                            isInferredGDV = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        if ((numberOfClasses < 1) && (numberOfMethods < 1))
+        {
+            if (verboseLogging)
+            {
+                JITDUMP("No likely class or method, sorry\n");
+            }
+            return;
+        }
+
+#if DEBUG
+        if ((verbose || (JitConfig[ConfigInteger.EnableExtraSuperPmiQueries] is not 0)) && (numberOfClasses > 0) && verboseLogging)
+        {
+            JITDUMP($"Likely classes for call [{call.TreeId:D6}]");
+
+            if (!call.IsHelperCall())
+            {
+                var thisArg = call.Args.ThisArg;
+                assert(thisArg is not null);
+
+                var declaredThisClsHnd = gtGetClassHandle(thisArg.Node, out _, out _);
+
+                if (declaredThisClsHnd != NO_CLASS_HANDLE)
+                {
+                    var baseClassName = eeGetClassName(declaredThisClsHnd);
+                    JITDUMP($" on class {dspPtr(declaredThisClsHnd)} ({baseClassName})");
+                }
+            }
+            JITDUMP("\n");
+
+            for (var i = 0; i < numberOfClasses; i++)
+            {
+                ref var likelyClass = ref likelyClasses[i];
+                var classHandle = unchecked((CORINFO_CLASS_HANDLE)(likelyClass.handle));
+
+                var className = eeGetClassName(classHandle);
+                JITDUMP($"  {i + 1}) {likelyClass.handle:X8} ({className}) [likelihood:{likelyClass.likelihood}%]\n");
+            }
+        }
+
+        if ((verbose || (JitConfig[ConfigInteger.EnableExtraSuperPmiQueries] is not 0)) && (numberOfMethods > 0))
+        {
+            assert(call._callType is CT_USER_FUNC);
+
+            var baseMethName = eeGetMethodFullName(call._callMethHnd);
+            JITDUMP($"Likely methods for call [{call.TreeId:D6}] to method {baseMethName}\n");
+
+            for (var i = 0; i < numberOfMethods; i++)
+            {
+                ref var likelyMethod = ref likelyMethods[i];
+                var methodHandle = unchecked((CORINFO_METHOD_HANDLE)(likelyMethod.handle));
+
+                var lookup = new CORINFO_CONST_LOOKUP();
+                info.compCompHnd->getFunctionFixedEntryPoint(methodHandle, false, &lookup);
+
+                var methName = eeGetMethodFullName(methodHandle);
+
+                switch (lookup.accessType)
+                {
+                    case IAT_VALUE:
+                    {
+                        JITDUMP($"  {i + 1}) {dspPtr(lookup.addr)} ({methName}) [likelihood:{likelyMethod.likelihood}%]\n");
+                        break;
+                    }
+
+                    case IAT_PVALUE:
+                    {
+                        JITDUMP($"  {i + 1}) [{dspPtr(lookup.addr)}] ({methName}) [likelihood:{likelyMethod.likelihood}%]\n");
+                        break;
+                    }
+
+                    case IAT_PPVALUE:
+                    {
+                        JITDUMP($"  {i + 1}) [[{dspPtr(lookup.addr)}]] ({methName}) [likelihood:{likelyMethod.likelihood}%]\n");
+                        break;
+                    }
+
+                    default:
+                    {
+                        JITDUMP($"  {i + 1}) {methName} [likelihood:{likelyMethod.likelihood}%]\n");
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Optional stress mode to pick a random known class, rather than the most likely known class.
+        if (JitConfig[ConfigInteger.JitRandomGuardedDevirtualization] is not 0)
+        {
+            assert(impInlineRoot._inlineStrategy is not null);
+
+            // Reuse the random inliner's random state.
+            var random = impInlineRoot._inlineStrategy.GetRandom(JitConfig[ConfigInteger.JitRandomGuardedDevirtualization]);
+            var index = random.Next(numberOfClasses + numberOfMethods);
+
+            if (index < numberOfClasses)
+            {
+                ref var likelyClass = ref likelyClasses[index];
+                var classHandle = unchecked((CORINFO_CLASS_HANDLE)(likelyClass.handle));
+
+                classGuesses[0] = likelyClass.handle;
+                likelihoods[0] = 100;
+
+                candidatesCount = 1;
+
+                // TODO: report multiple random candidates. For now we don't do it because with the current impl
+                // we might give up on all candidates if one of them is not inlinable, so we don't want to reduce
+                // testing coverage.
+                //
+                JITDUMP($"Picked random class for GDV: {dspPtr(classHandle)} ({eeGetClassName(classHandle)})\n");
+                return;
+            }
+            else
+            {
+                assert(!call.IsHelperCall());
+
+                ref var likelyMethod = ref likelyMethods[index - numberOfClasses];
+                var methodHandle = unchecked((CORINFO_METHOD_HANDLE)(likelyMethod.handle));
+
+                methodGuesses[0] = likelyMethod.handle;
+                likelihoods[0] = 100;
+
+                candidatesCount = 1;
+
+                // TODO: report multiple random candidates. For now we don't do it because with the current impl
+                // we might give up on all candidates if one of them is not inlinable, so we don't want to reduce
+                // testing coverage.
+
+                JITDUMP($"Picked random method for GDV: {dspPtr(methodHandle)} ({eeGetMethodFullName(methodHandle)})\n");
+                return;
+            }
+        }
+#endif
+
+        // Prefer class guess as it is cheaper
+        if (numberOfClasses > 0)
+        {
+            var maxNumberOfGuesses = GetGdvMaxTypeChecks();
+
+            if (maxNumberOfGuesses is 0)
+            {
+                // DOTNET_JitGuardedDevirtualizationMaxTypeChecks=0 means we don't want to do any guarded devirtualization
+                // Although, we expect users to disable GDV by setting DOTNET_JitEnableGuardedDevirtualization=0
+                return;
+            }
+
+            assert((maxNumberOfGuesses > 0) && (maxNumberOfGuesses <= MAX_GDV_TYPE_CHECKS));
+
+            // Default: We're allowed to make more than 2 guesses - pick all types with likelihood >= 10%
+            var likelihoodThreshold = 10;
+
+            if (maxNumberOfGuesses is 1)
+            {
+                // We're allowed to make only a single guess - it means we want to work only with dominating types
+
+                if (call.IsHelperCall())
+                {
+                    // Casts. Most casts aren't too expensive
+                    likelihoodThreshold = 50;
+                }
+                else if (isInterface)
+                {
+                    // interface calls
+                    likelihoodThreshold = 25;
+                }
+                else
+                {
+                    // virtual calls
+                    likelihoodThreshold = 30;
+                }
+            }
+            else if (maxNumberOfGuesses is 2)
+            {
+                // Two guesses - slightly relax the thresholds
+
+                if (call.IsHelperCall())
+                {
+                    // Casts. Most casts aren't too expensive
+                    likelihoodThreshold = 40;
+                }
+                else if (isInterface)
+                {
+                    // interface calls
+                    likelihoodThreshold = 15;
+                }
+                else
+                {
+                    // virtual calls
+                    likelihoodThreshold = 20;
+                }
+            }
+
+            // We have 'maxNumberOfGuesses' number of classes available
+            // and we're allowed to make 'maxNumberOfGuesses' number of guesses
+            // Iterate over the available classes to find classes with likelihoods bigger than
+            // a specific threshold
+
+            var totalGuesses = int.Min(maxNumberOfGuesses, numberOfClasses);
+
+            for (var guessIdx = 0; guessIdx < totalGuesses; guessIdx++)
+            {
+                ref var likelyClass = ref likelyClasses[guessIdx];
+                var classHandle = unchecked((CORINFO_CLASS_HANDLE)(likelyClass.handle));
+
+                if (likelyClass.likelihood >= likelihoodThreshold)
+                {
+                    classGuesses[guessIdx] = likelyClass.handle;
+                    likelihoods[guessIdx] = likelyClass.likelihood;
+
+                    candidatesCount += 1;
+
+                    if (verboseLogging)
+                    {
+                        JITDUMP($"Accepting type {eeGetClassName(classHandle)} with likelihood {likelyClass.likelihood} as a candidate\n");
+                    }
+
+                    // If the 'this' arg to the call is an enumerator var, record any
+                    // dominant likely class so we can possibly infer a GDV at places where we
+                    // never observed the var's value. (eg an unreached Dispose call if
+                    // control is hijacked out of Tier0+i by OSR).
+                    //
+                    // Note enumerator vars are special as they are generally not redefined
+                    // and we want to ensure all methods called on them get inlined to enable
+                    // escape analysis to kick in, if possible.
+                    //
+                    var dominantLikelihood = 50;
+
+                    if (!isInferredGDV && (likelyClass.likelihood >= dominantLikelihood))
+                    {
+                        var thisArg = call.Args.FindWellKnownArg(WellKnownArg.ThisPointer);
+
+                        if (thisArg is not null)
+                        {
+                            var thisNode = thisArg.EarlyNode;
+
+                            if (thisNode.Oper is GT_LCL_VAR)
+                            {
+                                var thisLclNum = thisNode.AsLclVarCommon().LclNum;                                
+
+                                if (lvaGetDesc(thisLclNum).lvIsEnumerator)
+                                {
+                                    var map = ImpEnumeratorLikelyTypeMap;
+
+                                    // If we have multiple type observations, we just use the first.
+                                    //
+                                    // Note importation order is somewhat reverse-post-orderish;
+                                    // a block is only imported if one of its imported preds is imported.
+                                    //
+                                    // Enumerator vars tend to have a dominating MoveNext call that will
+                                    // be the one subsequent uses will see, if they lack their own
+                                    // type observations.
+
+                                    if (!map.TryGetValue(thisLclNum, out _))
+                                    {
+                                        var e = new InferredGdvEntry {
+                                            _classHandle = classHandle,
+                                            _likelihood = likelyClass.likelihood,
+                                        };
+
+                                        JITDUMP($"Remembering that V{thisLclNum:D2} has {e._likelihood}% likely class {eeGetClassName(e._classHandle)}\n");
+                                        map[thisLclNum] = e;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // The candidates are sorted by likelihood so the rest of the
+                    // guesses will have even lower likelihoods
+                    break;
+                }
+            }
+        }
+
+        if (numberOfMethods > 0)
+        {
+            // For method guessing we only support a single target for now
+            const int LikelihoodThreshold = 30;
+
+            ref var likelyMethod = ref likelyMethods[0];
+
+            if (likelyMethod.likelihood >= LikelihoodThreshold)
+            {
+                methodGuesses[0] = likelyMethod.handle;
+                likelihoods[0] = likelyMethod.likelihood;
+
+                candidatesCount = 1;
+                return;
+            }
+
+            if (verboseLogging)
+            {
+                JITDUMP($"Not guessing for method; likelihood is below {(call.IsDelegateInvoke ? "delegate" : "virtual")} call threshold {LikelihoodThreshold}\n");
+            }
+        }
     }
 
     public void ReimportSpillClique(SpillCliqueDir predOrSucc, BasicBlock blk)

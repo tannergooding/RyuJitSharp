@@ -42,6 +42,8 @@ public partial struct ConfigMethodRange
 
     public readonly bool IsEmpty => _rangeCount == 0;
 
+    public readonly bool IsInit => _ranges is not null;
+
     /// <summary>check if the range includes a particular hash</summary>
     /// <param name="hash">hash value to check</param>
     /// <returns></returns>

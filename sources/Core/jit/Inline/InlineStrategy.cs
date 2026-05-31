@@ -224,6 +224,49 @@ public sealed class InlineStrategy
         return random;
     }
 
+    private static ConfigMethodRange s_inlingDisabledRange;
+
+    /// <summary>allow strategy to disable inlining in the method being jitted</summary>
+    /// <returns></returns>
+    /// <remarks>
+    ///   <para>Only will return true in debug or special release builds.</para>
+    ///   <para>Expects JitNoInlineRange to be set to the hashes of methods where inlining is disabled.</para>
+    /// </remarks>
+    public unsafe bool IsInliningDisabled()
+    {
+#if DEBUG
+        if (!s_inlingDisabledRange.IsInit)
+        {
+            var pNoInlineRangeUtf8 = JitConfig[ConfigString.JitNoInlineRange];
+
+            if (pNoInlineRangeUtf8 is null)
+            {
+                s_inlingDisabledRange.EnsureInit(null, 0);
+                return false;
+            }
+
+            // If we have a config string we have at least one entry.  Count
+            // number of spaces in our config string to see if there are
+            // more. Number of ranges we need is 2x that value.
+            var entryCount = 1;
+
+            for (var p = pNoInlineRangeUtf8; p[0] is not (byte)('\0'); p++)
+            {
+                if (p[0] == (byte)(' '))
+                {
+                    entryCount++;
+                }
+            }
+
+            s_inlingDisabledRange.EnsureInit(pNoInlineRangeUtf8, 2 * entryCount);
+            assert(!s_inlingDisabledRange.Error);
+        }
+        return s_inlingDisabledRange.Contains(_compiler.info.compMethodHash());
+#else
+        return false;
+#endif
+    }
+
     /// <summary>Inform strategy that a candidate has passed screening and that the jit will attempt to inline.</summary>
     public void NoteAttempt(InlineResult result)
     {

@@ -7,9 +7,9 @@ namespace RyuJitSharp;
 
 public sealed partial class Target
 {
-    public const string TgtCpuName = "x64";
+    public static readonly string TgtCpuName = "x64";
 
-    public const ArgOrder TgtArgOrder = ARG_ORDER_R2L;
+    public static readonly ArgOrder TgtArgOrder = ARG_ORDER_R2L;
 
-    public const ArgOrder TgtUnmanagedArgOrder = ARG_ORDER_R2L;
+    public static readonly ArgOrder TgtUnmanagedArgOrder = ARG_ORDER_R2L;
 }

@@ -5,11 +5,9 @@
 
 namespace RyuJitSharp;
 
-public partial class Compiler
+public struct LikelyValueRecord
 {
-    public struct InferredGdvEntry
-    {
-        public unsafe CORINFO_CLASS_HANDLE _classHandle;
-        public int _likelihood;
-    }
+    public nint value;
+
+    public int likelihood;
 }

@@ -3,13 +3,12 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Diagnostics;
+
 namespace RyuJitSharp;
 
-public partial class Compiler
+public partial class Globals
 {
-    public struct InferredGdvEntry
-    {
-        public unsafe CORINFO_CLASS_HANDLE _classHandle;
-        public int _likelihood;
-    }
+    /// <summary>Maximum number of buckets in a histogram (including overflow bucket)</summary>
+    public const int HISTOGRAM_MAX_SIZE_COUNT = 64;
 }

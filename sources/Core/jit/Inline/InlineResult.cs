@@ -53,6 +53,54 @@ public sealed class InlineResult
         }
     }
 
+    /// <summary>Construct a new InlineResult to help evaluate a particular call for inlining.</summary>
+    /// <param name="compiler"></param>
+    /// <param name="call"></param>
+    /// <param name="stmt"></param>
+    /// <param name="description"></param>
+    /// <param name="doNotReport"></param>
+    public unsafe InlineResult(Compiler compiler, GenTreeCall call, Statement? stmt, string description, bool doNotReport = false)
+    {
+        _call = call;
+        _description = description;
+        _doNotReport = doNotReport;
+
+        // Set the compiler instance
+        _rootCompiler = compiler.impInlineRoot;
+
+        // Set the policy
+        const bool isPrejitRoot = false;
+        _policy = InlinePolicy.GetPolicy(_rootCompiler, isPrejitRoot);
+
+        // Pass along some optional information to the policy.
+        if (stmt is not null)
+        {
+            _inlineContext = stmt.DebugInfo.InlineContext;
+            _policy.NoteContext(_inlineContext);
+
+#if DEBUG
+            _policy.NoteOffset(call._rawILOffset);
+#else
+            _policy.NoteOffset(stmt.DebugInfo.Location.Offset);
+#endif
+        }
+
+        // Get method handle for caller. Note we use the
+        // handle for the "immediate" caller here.
+        _caller = compiler.info.compMethodHnd;
+
+        // Get method handle for callee, if known
+        if (_call._callType == CT_USER_FUNC)
+        {
+            _callee = _call._callMethHnd;
+        }
+
+        if (!_doNotReport)
+        {
+            _rootCompiler.info.compCompHnd->beginInlining(_caller, _callee);
+        }
+    }
+
     public int ImportedILSize
     {
         get
@@ -155,5 +203,10 @@ public sealed class InlineResult
     {
         assert(IsCandidate);
         _policy.NoteSuccess();
+    }
+
+    public void SetVMFailure()
+    {
+        _reportFailureAsVmFailure = true;
     }
 }

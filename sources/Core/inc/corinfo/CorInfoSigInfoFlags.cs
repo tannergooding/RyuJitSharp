@@ -9,7 +9,7 @@ using System;
 namespace RyuJitSharp;
 
 [Flags]
-public enum CorInfoSigInfoFlags
+public enum CorInfoSigInfoFlags : byte
 {
     CORINFO_SIGFLAG_IS_LOCAL_SIG = 0x01,
 

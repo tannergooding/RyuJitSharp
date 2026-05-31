@@ -89,9 +89,10 @@ public partial class Compiler
 #endif
 
             // At most 1 (root node) + (4 promoted fields) + (each could be a wrapped primitive)
-            var numTreeNodes = (nint)(1 + (MAX_NumOfFieldsInPromotableStruct * 2));
-            var treeNodes = stackalloc CORINFO_TYPE_LAYOUT_NODE[(int)(numTreeNodes)];
-            
+            const int NumTreeNodes = 1 + (MAX_NumOfFieldsInPromotableStruct * 2);
+            var treeNodes = stackalloc CORINFO_TYPE_LAYOUT_NODE[NumTreeNodes];
+
+            var numTreeNodes = (nint)(NumTreeNodes);
             var result = compHandle->getTypeLayout(typeHnd, treeNodes, &numTreeNodes);
 
             if ((result != GetTypeLayoutResult.Success) || (numTreeNodes <= 1))

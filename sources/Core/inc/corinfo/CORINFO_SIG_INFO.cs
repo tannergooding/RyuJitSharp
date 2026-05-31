@@ -31,17 +31,17 @@ public struct CORINFO_SIG_INFO
     }
 
     /// <summary>Used by IL stubs code.</summary>
-    public byte flags
+    public CorInfoSigInfoFlags flags
     {
         readonly get
         {
 
-            return unchecked((byte)(_bitfield >>> 8));
+            return unchecked((CorInfoSigInfoFlags)(_bitfield >>> 8));
         }
 
         set
         {
-            _bitfield = (_bitfield & ~(0xFF << 8)) | (value << 8);
+            _bitfield = (_bitfield & ~(0xFF << 8)) | ((int)(value) << 8);
         }
     }
 

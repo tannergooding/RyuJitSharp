@@ -11,7 +11,7 @@ namespace RyuJitSharp;
 /// <summary>Bit-twiddling of contexts assumes word-alignment of method handles and type handles.</summary>
 /// <remarks>If this ever changes, some other encoding will be needed.</remarks>
 [Flags]
-public enum CorInfoContextFlags
+public enum CorInfoContextFlags : long
 {
     /// <summary><see cref="CORINFO_CONTEXT_HANDLE" /> is really a <see cref="CORINFO_METHOD_HANDLE" />.</summary>
     CORINFO_CONTEXTFLAGS_METHOD = 0x00,

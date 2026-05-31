@@ -268,7 +268,7 @@ public struct ReturnTypeDesc
                 // a non-HFA struct returned using two registers
                 assert(structSize is > TARGET_POINTER_SIZE and <= (2 * TARGET_POINTER_SIZE));
 
-                var gcPtrs = stackalloc CorInfoGCType[2];
+                var gcPtrs = default(InlineArray2<CorInfoGCType>);
                 compiler.info.compCompHnd->getClassGClayout(retClsHnd, (byte*)(gcPtrs));
 
                 for (byte i = 0; i < 2; i++)
@@ -278,7 +278,7 @@ public struct ReturnTypeDesc
 #elif TARGET_LOONGARCH64 || TARGET_RISCV64
                 assert(structSize is > sizeof(float) and <= (2 * TARGET_POINTER_SIZE));
 
-                var gcPtrs = stackalloc CorInfoGCType[2];
+                var gcPtrs = default(InlineArray2<CorInfoGCType>);
                 compiler.info.compCompHnd->getClassGClayout(retClsHnd, (byte*)(gcPtrs));
 
                 var lowering = compiler.GetFpStructLowering(retClsHnd);
@@ -325,7 +325,7 @@ public struct ReturnTypeDesc
                 // an 8-byte struct returned using two registers
                 assert(structSize == 8);
 
-                var gcPtrs = stackalloc CorInfoGCType[2];
+                var gcPtrs = default(InlineArray2<CorInfoGCType>);
                 compiler.info.compCompHnd->getClassGClayout(retClsHnd, (byte*)(gcPtrs));
 
                 for (byte i = 0; i < 2; i++)

@@ -980,6 +980,25 @@ public partial class GenTree
     public GenTreeMultiRegOp AsMultiRegOp() => Unsafe.As<GenTreeMultiRegOp>(this);
 #endif
 
+    public void ChangeType(var_types newType)
+    {
+        var oldType = _type;
+        _type = newType;
+
+        var node = this;
+
+        while (node.Oper is GT_COMMA)
+        {
+            node = node.AsOp().Op2;
+
+            if (node._type != newType)
+            {
+                assert(node._type == oldType);
+                node._type = newType;
+            }
+        }
+    }
+
     public void ClearAssertion() => _assertionInfo.Clear();
 
     [Conditional("DEBUG")]

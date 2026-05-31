@@ -2811,8 +2811,10 @@ public partial class Compiler
         // In a lambda since this requires a lot of stack and this function is recursive.
         static void QueryLayout(Compiler compiler, CORINFO_CLASS_HANDLE structHandle)
         {
-            var numNodes = (nint)(256);
-            var nodes = stackalloc CORINFO_TYPE_LAYOUT_NODE[(int)(numNodes)];
+            const int NumNodes = 256;
+            var nodes = stackalloc CORINFO_TYPE_LAYOUT_NODE[NumNodes];
+
+            var numNodes = (nint)(NumNodes);
             _ = compiler.info.compCompHnd->getTypeLayout(structHandle, nodes, &numNodes);
         }
     }

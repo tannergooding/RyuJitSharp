@@ -122,6 +122,19 @@ public partial struct CallArgs
         }
     }
 
+    /// <summary>Count the number of arguments.</summary>
+    /// <returns></returns>
+    public readonly int CountArgs()
+    {
+        var result = 0;
+
+        foreach (var arg in Args)
+        {
+            result++;
+        }
+        return result;
+    }
+
     public readonly int CountUserArgs()
     {
         var result = 0;
@@ -304,6 +317,34 @@ public partial struct CallArgs
         return newArg;
     }
 
+    /// <summary>Insert an instantiation parameter/generic context argument.</summary>
+    /// <param name="comp">The compiler.</param>
+    /// <param name="node">The IR node for the instantiation parameter.</param>
+    /// <returns>The created representative for the argument.</returns>
+    /// <remarks>The instantiation parameter is a normal parameter, but its position in the arg list depends on a few factors. It is inserted at the end on x86 and on other platforms must always come after the ret-buffer and the 'this' argument.</remarks>
+    public CallArg InsertInstParam(Compiler comp, GenTree node)
+    {
+        var newArg = NewCallArg.CreateForPrimitive(node).WithWellKnownArg(WellKnownArg.InstParam);
+
+        if (Target.TgtArgOrder == Target.ARG_ORDER_R2L)
+        {
+            var retBufferArg = RetBufferArg;
+
+            if (retBufferArg is not null)
+            {
+                return InsertAfter(retBufferArg, newArg);
+            }
+            else
+            {
+                return InsertAfterThisOrFirst(newArg);
+            }
+        }
+        else
+        {
+            return PushBack(newArg);
+        }
+    }
+
     /// <summary>Create a new argument at the back of the argument list.</summary>
     /// <param name="arg">The argument to add.</param>
     /// <returns>The created representative for the argument.</returns>
@@ -333,6 +374,39 @@ public partial struct CallArgs
 
         AddedWellKnownArg(arg.WellKnownArg);
         return callArg;
+    }
+
+    /// <summary>Reverse the specified subrange of arguments.</summary>
+    /// <param name="index">The index of the sublist to reverse.</param>
+    /// <param name="count">The length of the sublist to reverse.</param>
+    /// <remarks>This function is used for x86 stdcall/cdecl that passes arguments in the opposite order of the managed calling convention.</remarks>
+    public void Reverse(int index, int count)
+    {
+        ref var headSlot = ref _head;
+
+        for (var i = 0; i < index; i++)
+        {
+            assert(headSlot is not null);
+            headSlot = ref headSlot.NextRef;
+        }
+
+        if (count > 1)
+        {
+            var newEnd = headSlot;
+            var cur = headSlot.Next;
+
+            for (var i = 1; i < count; i++)
+            {
+                assert(cur is not null);
+
+                var next = cur.Next;
+                cur.Next = headSlot;
+
+                headSlot = cur;
+                cur = next;
+            }
+            newEnd.Next = cur;
+        }
     }
 
     /// <summary>Copy all information from the specified `CallArgs`, making these argument lists equivalent. Nodes are cloned.</summary>

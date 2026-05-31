@@ -595,12 +595,16 @@ public partial class Compiler
             // InlineCandidateInfo or InlineCandidateInfoList or HandleHistogramProfileCandidateInfo
             copy._anonymous3 = tree._anonymous3;
 
-            // CallCookie or CompileTimeHelperArgumentHandle or DirectCallAddress
+            // CompileTimeHelperArgumentHandle or DirectCallAddress
             copy._anonymous4 = tree._anonymous4;
+
+            copy._callCookie = tree._callCookie;
 
             copy._lateDevirtualizationInfo = tree._lateDevirtualizationInfo;
             copy._controlExpr = compiler.gtCloneExpr(tree._controlExpr);
             copy._callMethHnd = tree._callMethHnd;
+
+            copy._addr = tree._addr;
 
 #if FEATURE_READYTORUN
             copy._entryPoint = tree._entryPoint;
@@ -1650,6 +1654,12 @@ public partial class Compiler
         return tree;
     }
 
+    public GenTree gtFoldExprCall(GenTreeCall tree)
+    {
+        // TODO: Port gtFoldExprCall
+        return tree;
+    }
+
     /// <summary>Can any side-effects be observed externally, say by a caller method?</summary>
     /// <param name="flags"></param>
     /// <returns></returns>
@@ -2300,7 +2310,7 @@ public partial class Compiler
             case CORINFO_HELP_NEWARR_1_ALIGN8:
             case CORINFO_HELP_READYTORUN_NEWARR_1:
             {
-                var arrayHnd = (CORINFO_CLASS_HANDLE)(call.CompileTimeHelperArgumentHandle);
+                var arrayHnd = (CORINFO_CLASS_HANDLE)(call._compileTimeHelperArgumentHandle);
 
                 if (arrayHnd != NO_CLASS_HANDLE)
                 {
@@ -2610,6 +2620,18 @@ public partial class Compiler
         return false;
     }
 
+    // Return true if call is a recursive call; return false otherwise.
+    // Note when inlining, this looks for calls back to the root method.
+    public unsafe bool gtIsRecursiveCall(GenTreeCall call, bool useInlineRoot = true)
+    {
+        return (call._callType is not CT_INDIRECT) && gtIsRecursiveCall(call._callMethHnd, useInlineRoot);
+    }
+
+    public unsafe bool gtIsRecursiveCall(CORINFO_METHOD_HANDLE callMethodHandle, bool useInlineRoot = true)
+    {
+        return callMethodHandle == (useInlineRoot ? impInlineRoot.info.compMethodHnd : info.compMethodHnd);
+    }
+
     private static bool gtIsTailCall(GenTree tree)
     {
         if (tree.Oper.IsCall)
@@ -2618,6 +2640,41 @@ public partial class Compiler
             return call.CanTailCall || call.IsTailCall;
         }
         return false;
+    }
+
+    /// <summary>see if tree is constructing a RuntimeType from a handle </summary>
+    /// <param name="call">tree to examine</param>
+    /// <returns>True if so</returns>
+    public bool gtIsTypeHandleToRuntimeTypeHelper(GenTreeCall call)
+    {
+        return call.IsHelperCall(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE) ||
+               call.IsHelperCall(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL);
+    }
+
+    public bool gtIsTypeHandleToRuntimeTypeHandleHelper(GenTreeCall call)
+        => gtIsTypeHandleToRuntimeTypeHandleHelper(call, out _);
+
+    /// <summary>see if tree is constructing a RuntimeTypeHandle from a handle</summary>
+    /// <param name="call">tree to examine</param>
+    /// <param name="helper">optional pointer to a variable that receives the type of the helper</param>
+    /// <returns>True if so</returns>
+    public bool gtIsTypeHandleToRuntimeTypeHandleHelper(GenTreeCall call, out CorInfoHelpFunc helper)
+    {
+        if (call.IsHelperCall(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE))
+        {
+            helper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE;
+            return true;
+        }
+        else if (call.IsHelperCall(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL))
+        {
+            helper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL;
+            return true;
+        }
+        else
+        {
+            helper = CORINFO_HELP_UNDEF;
+            return false;
+        }
     }
 
     /// <summary>A little helper to create an object allocation node.</summary>
@@ -3129,6 +3186,13 @@ public partial class Compiler
         return new GenTreeIntCon(TYP_I_IMPL, value, fields);
     }
 
+    public unsafe GenTreeCall gtNewIndCallNode(var_types type, GenTree? addr, in DebugInfo di = default)
+    {
+        var call = gtNewCallNode(type, CT_INDIRECT, callHnd: null, di);
+        call._addr = addr;
+        return call;
+    }
+
     public unsafe GenTreeIndexAddr gtNewIndexAddr(GenTree arrayOp, GenTree indexOp, var_types elemType, CORINFO_CLASS_HANDLE elemClassHandle, int firstElemOffset, int lengthOffset)
     {
         var elemSize = (elemType is TYP_STRUCT) ? info.compCompHnd->getClassSize(elemClassHandle) : elemType.Size;
@@ -3192,6 +3256,17 @@ public partial class Compiler
             indirFlags |= GTF_IND_NONNULL;
         }
         return gtNewIndir(indType, addrNode, indirFlags);
+    }
+
+    public GenTreeRetExpr gtNewInlineCandidateReturnExpr(GenTreeCall inlineCandidate, var_types type)
+    {
+        // GT_RET_EXPR node eventually might be turned back into GT_CALL (when inlining is aborted for example).
+        // Therefore it should carry the GTF_CALL flag so that all the rules about spilling can apply to it as well.
+        // For example, impImportLeave or CEE_POP need to spill GT_RET_EXPR before empty the evaluation stack.
+
+        var node = new GenTreeRetExpr(type, inlineCandidate);
+        node.Flags |= GTF_CALL;
+        return node;
     }
 
     public GenTreeLclFld gtNewLclAddrNode(var_types type, int lclNum, ushort lclOffs, ClassLayout? layout = null)

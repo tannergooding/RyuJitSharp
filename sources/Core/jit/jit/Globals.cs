@@ -5,7 +5,11 @@
 
 using System;
 using System.Buffers.Binary;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
@@ -672,6 +676,359 @@ public partial class Globals
             logf(message);
         }
 #endif
+    }
+
+    /// <summary>find class profile data for an IL offset, and return the most likely classes</summary>
+    /// <param name="likelyClasses">array of likely classes sorted by likelihood (descending). It must be at least of 'maxLikelyClasses' (next argument) length. The array consists of pairs "clsHandle - likelihood" ordered by likelihood (descending) where likelihood can be any value in [0..100] range. clsHandle is never null for [0..&lt;return value of this function&gt;) range, Items in [&lt;return value of this function&gt;..maxLikelyClasses) are zeroed if the number of classes seen is less than maxLikelyClasses provided.</param>
+    /// <param name="schema">profile schema</param>
+    /// <param name="pInstrumentationData">associated data</param>
+    /// <param name="ilOffset">il offset of the callvirt</param>
+    /// <returns>Estimated number of classes seen at runtime</returns>
+    /// <remarks>
+    ///   <para>A "monomorphic" call site will return likelihood 100 and number of entries = 1.</para>
+    ///   <para>This is used by the devirtualization logic below, and by crossgen2 when producing the R2R image (to reduce the sizecost of carrying the type histogram)</para>
+    ///   <para>This code can runs without a jit instance present, so JITDUMP and related cannot be used.</para>
+    /// </remarks>
+    public static unsafe int getLikelyClasses(Span<LikelyClassMethodRecord> likelyClasses, ReadOnlySpan<ICorJitInfo.PgoInstrumentationSchema> schema, byte* pInstrumentationData, IL_OFFSET ilOffset)
+    {
+        return getLikelyClassesOrMethods(likelyClasses, schema, pInstrumentationData, ilOffset, types: true);
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)], EntryPoint = nameof(getLikelyMethods))]
+    public static unsafe int getLikelyClasses(LikelyClassMethodRecord* pLikelyClasses, int maxLikelyClasses, ICorJitInfo.PgoInstrumentationSchema* schema, int countSchemaItems, byte* pInstrumentationData, int ilOffset)
+    {
+        return getLikelyClasses(new Span<LikelyClassMethodRecord>(pLikelyClasses, maxLikelyClasses), new ReadOnlySpan<ICorJitInfo.PgoInstrumentationSchema>(schema, countSchemaItems), pInstrumentationData, ilOffset);
+    }
+
+    /// <summary>Find class/method profile data for an IL offset, and return the most likely classes/methods.</summary>
+    /// <param name="likelyEntries"></param>
+    /// <param name="schemas"></param>
+    /// <param name="pInstrumentationData"></param>
+    /// <param name="ilOffset"></param>
+    /// <param name="types"></param>
+    /// <returns></returns>
+    /// <remarks>
+    ///   <para>This is a common entrypoint for getLikelyClasses and getLikelyMethods.</para>
+    ///   <para>See documentation for those for more information.</para>
+    /// </remarks>
+    public static unsafe int getLikelyClassesOrMethods(Span<LikelyClassMethodRecord> likelyEntries, ReadOnlySpan<ICorJitInfo.PgoInstrumentationSchema> schemas, byte* pInstrumentationData, IL_OFFSET ilOffset, bool types)
+    {
+        if (likelyEntries.Length is 0)
+        {
+            return 0;
+        }
+
+        var histogramKind = types ? ICorJitInfo.PgoInstrumentationKind.HandleHistogramTypes : ICorJitInfo.PgoInstrumentationKind.HandleHistogramMethods;
+        var compressedKind = types ? ICorJitInfo.PgoInstrumentationKind.GetLikelyClass : ICorJitInfo.PgoInstrumentationKind.GetLikelyMethod;
+
+        likelyEntries.Clear();
+
+        if (schemas.Length is 0)
+        {
+            return 0;
+        }
+
+        for (var i = 0; i < schemas.Length; i++)
+        {
+            ref readonly var schema = ref schemas[i];
+
+            if (schema.ILOffset != ilOffset)
+            {
+                continue;
+            }
+
+            if ((schema.InstrumentationKind == compressedKind) && (schema.Count is 1))
+            {
+                var result = ((nint*)(pInstrumentationData + schema.Offset))[0];
+
+                if (ICorJitInfo.IsUnknownHandle(result))
+                {
+                    return 0;
+                }
+
+                // we don't expect zero in GetLikelyClass/GetLikelyMethod
+                assert(result is not 0);
+
+                ref var likelyEntry = ref likelyEntries[0];
+
+                likelyEntry.likelihood = (schema.Other & 0xFF);
+                likelyEntry.handle = result;
+
+                return 1;
+            }
+
+            var isHistogramCount = (schema.InstrumentationKind is ICorJitInfo.PgoInstrumentationKind.HandleHistogramIntCount or ICorJitInfo.PgoInstrumentationKind.HandleHistogramLongCount);
+
+            if (isHistogramCount && (schema.Count is 1) && ((i + 1) < schemas.Length))
+            {
+                ref readonly var nextSchema = ref schemas[i + 1];
+
+                if (nextSchema.InstrumentationKind == histogramKind)
+                {
+                    // Form a histogram
+                    var histogramEntries = new Span<nint>(((nint*)(pInstrumentationData + nextSchema.Offset)), nextSchema.Count);
+                    var h  = new LikelyClassMethodHistogram(histogramEntries);
+
+                    // Use histogram count as number of classes estimate
+                    // Report back what we've learned
+                    // (perhaps, use count to augment likelihood?)
+
+                    switch (h.countHistogramElements)
+                    {
+                        case 0:
+                        {
+                            return 0;
+                        }
+
+                        case 1:
+                        {
+                            var hist0 = h.HistogramEntryAt(0);
+
+                            if (ICorJitInfo.IsUnknownHandle(hist0._handle))
+                            {
+                                // Fast path for monomorphic cases
+                                return 0;
+                            }
+
+                            ref var likelyEntry = ref likelyEntries[0];
+
+                            likelyEntry.likelihood = 100;
+                            likelyEntry.handle = hist0._handle;
+
+                            return 1;
+                        }
+
+                        case 2:
+                        {
+                            // Fast path for two classes
+                            var hist0 = h.HistogramEntryAt(0);
+                            var hist1 = h.HistogramEntryAt(1);
+
+                            if ((hist0._count >= hist1._count) && !ICorJitInfo.IsUnknownHandle(hist0._handle))
+                            {
+                                ref var likelyEntry = ref likelyEntries[0];
+
+                                likelyEntry.likelihood = (100 * hist0._count) / h._totalCount;
+                                likelyEntry.handle = hist0._handle;
+
+                                if ((likelyEntries.Length > 1) && !ICorJitInfo.IsUnknownHandle(hist1._handle))
+                                {
+                                    likelyEntry = ref likelyEntries[1];
+
+                                    likelyEntry.likelihood = (100 * hist1._count) / h._totalCount;
+                                    likelyEntry.handle = hist1._handle;
+
+                                    return 2;
+                                }
+                                return 1;
+                            }
+
+                            if (!ICorJitInfo.IsUnknownHandle(hist1._handle))
+                            {
+                                ref var likelyEntry = ref likelyEntries[0];
+
+                                likelyEntry.likelihood = (100 * hist1._count) / h._totalCount;
+                                likelyEntry.handle = hist1._handle;
+
+                                if ((likelyEntries.Length > 1) && !ICorJitInfo.IsUnknownHandle(hist0._handle))
+                                {
+                                    likelyEntry = ref likelyEntries[1];
+
+                                    likelyEntry.likelihood = (100 * hist0._count) / h._totalCount;
+                                    likelyEntry.handle = hist0._handle;
+
+                                    return 2;
+                                }
+                                return 1;
+                            }
+                            return 0;
+                        }
+
+                        default:
+                        {
+                            var inlineSortedEntries = default(InlineArrayHistogramMaxSizeCount<LikelyClassMethodHistogramEntry>);
+                            var sortedEntries = (Span<LikelyClassMethodHistogramEntry>)(inlineSortedEntries);
+
+                            // Since this method can be invoked without a jit instance we can't use any existing allocators
+                            var knownHandles = 0;
+                            var containsUnknownHandles = false;
+
+                            for (var m = 0; m < h.countHistogramElements; m++)
+                            {
+                                var hist = h.HistogramEntryAt(m);
+
+                                if (!ICorJitInfo.IsUnknownHandle(hist._handle))
+                                {
+                                    sortedEntries[knownHandles++] = hist;
+                                }
+                                else
+                                {
+                                    containsUnknownHandles = true;
+                                }
+                            }
+
+                            if (knownHandles == 0)
+                            {
+                                // We don't have known handles
+                                return 0;
+                            }
+
+                            // sort by m_count (descending)
+                            sortedEntries[0..knownHandles].Sort((h1, h2) => h2._count.CompareTo(h1._count));
+
+                            var numberOfClasses = int.Min(knownHandles, likelyEntries.Length);
+                            var totalLikelihood = 0;
+
+                            for (var hIdx = 0; hIdx < numberOfClasses; hIdx++)
+                            {
+                                var hc = sortedEntries[hIdx];
+                                ref var likelyEntry = ref likelyEntries[hIdx];
+
+                                likelyEntry.handle = hc._handle;
+                                likelyEntry.likelihood = (hc._count * 100) / h._totalCount;
+
+                                totalLikelihood += likelyEntry.likelihood;
+                            }
+
+                            assert(totalLikelihood <= 100);
+
+                            // Distribute the rounding error and just apply it to the first entry.
+                            // Assume that there is no error If we have unknown handles.
+
+                            if (!containsUnknownHandles)
+                            {
+                                assert(numberOfClasses > 0);
+                                assert(totalLikelihood > 0);
+
+                                ref var likelyEntry = ref likelyEntries[0];
+                                likelyEntry.likelihood += 100 - totalLikelihood;
+
+                                assert(likelyEntry.likelihood <= 100);
+                            }
+                            return numberOfClasses;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Failed to find histogram data for this method
+        return 0;
+    }
+
+    /// <summary>find method profile data for an IL offset, and return the most likely methods</summary>
+    /// <param name="likelyMethods"></param>
+    /// <param name="schemas"></param>
+    /// <param name="pInstrumentationData"></param>
+    /// <param name="ilOffset"></param>
+    /// <returns></returns>
+    /// <remarks>See documentation on getLikelyClasses above.</remarks>
+    public static unsafe int getLikelyMethods(Span<LikelyClassMethodRecord> likelyMethods, ReadOnlySpan<ICorJitInfo.PgoInstrumentationSchema> schemas, byte* pInstrumentationData, IL_OFFSET ilOffset)
+    {
+        return getLikelyClassesOrMethods(likelyMethods, schemas, pInstrumentationData, ilOffset, types: false);
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)], EntryPoint = nameof(getLikelyMethods))]
+    public static unsafe int getLikelyMethods(LikelyClassMethodRecord* pLikelyMethods, int maxLikelyMethods, ICorJitInfo.PgoInstrumentationSchema* schema, int countSchemaItems, byte* pInstrumentationData, int ilOffset)
+    {
+        return getLikelyMethods(new Span<LikelyClassMethodRecord>(pLikelyMethods, maxLikelyMethods), new ReadOnlySpan<ICorJitInfo.PgoInstrumentationSchema>(schema, countSchemaItems), pInstrumentationData, ilOffset);
+    }
+
+    /// <summary>find a value profile data for an IL offset</summary>
+    /// <param name="likelyValues">array of likely values sorted by likelihood (descending). It must be at least of 'maxLikelyValues' (next argument) length. The array consists of pairs "value - likelihood" ordered by likelihood (descending) where likelihood can be any value in [0..100] range.</param>
+    /// <param name="schemas">profile schema</param>
+    /// <param name="pInstrumentationData">associated data</param>
+    /// <param name="ilOffset">il offset of the node of interest</param>
+    /// <returns>Estimated number of different constants seen at runtime</returns>
+    public static unsafe int getLikelyValues(Span<LikelyValueRecord> likelyValues, ReadOnlySpan<ICorJitInfo.PgoInstrumentationSchema> schemas, byte* pInstrumentationData, int ilOffset)
+    {
+        if ((likelyValues.Length == 0) || schemas.IsEmpty)
+        {
+            return 0;
+        }
+        likelyValues.Clear();
+
+        for (var i = 0; i < schemas.Length; i++)
+        {
+            ref readonly var schema = ref schemas[i];
+
+            if (schema.ILOffset != ilOffset)
+            {
+                continue;
+            }
+
+            // We currently re-use existing infrastructure for type handles for simplicity.
+            //
+            var isIntHistogramCount = (schema.InstrumentationKind is ICorJitInfo.PgoInstrumentationKind.ValueHistogramIntCount);
+            var isLongHistogramCount = (schema.InstrumentationKind is ICorJitInfo.PgoInstrumentationKind.ValueHistogramLongCount);
+            var isHistogramCount = isIntHistogramCount || isLongHistogramCount;
+
+            if (isHistogramCount && (schema.Count == 1) && ((i + 1) < schemas.Length))
+            {
+                ref readonly var nextSchema = ref schemas[i + 1];
+
+                if (nextSchema.InstrumentationKind is ICorJitInfo.PgoInstrumentationKind.ValueHistogram)
+                {
+                    var h = isIntHistogramCount
+                          ? new LikelyClassMethodHistogram(new Span<int>((int*)(pInstrumentationData + nextSchema.Offset), nextSchema.Count))
+                          : new LikelyClassMethodHistogram(new Span<nint>((nint*)(pInstrumentationData + nextSchema.Offset), nextSchema.Count));
+
+                    var inlineSortedEntries = default(InlineArrayHistogramMaxSizeCount<LikelyClassMethodHistogramEntry>);
+                    var sortedEntries = (Span<LikelyClassMethodHistogramEntry>)(inlineSortedEntries);
+
+                    if (h.countHistogramElements is 0)
+                    {
+                        return 0;
+                    }
+
+                    for (var hi = 0; hi < h.countHistogramElements; hi++)
+                    {
+                        var hist = h.HistogramEntryAt(hi);
+                        sortedEntries[hi] = hist;
+                    }
+
+                    // sort by m_count (descending)
+                    // jitstd::sort(sortedEntries, sortedEntries + h.countHistogramElements,
+                    //              [](const LikelyClassMethodHistogramEntry&h1,
+                    //                     const LikelyClassMethodHistogramEntry&h2) -> bool {
+                    //     return h1.m_count > h2.m_count;
+                    // });
+
+                    var numberOfLikelyConst = int.Min(h.countHistogramElements, likelyValues.Length);
+                    var totalLikelihood = 0;
+
+                    for (var hIdx = 0; hIdx < numberOfLikelyConst; hIdx++)
+                    {
+                        var hc = sortedEntries[hIdx];
+
+                        ref var likelyValue = ref likelyValues[hIdx];
+
+                        likelyValue.value = hc._handle;
+                        likelyValue.likelihood = (hc._count * 100) / h._totalCount;
+
+                        totalLikelihood += likelyValue.likelihood;
+                    }
+
+                    assert(totalLikelihood <= 100);
+
+                    // Distribute the rounding error and just apply it to the first entry.
+                    assert(numberOfLikelyConst > 0);
+                    assert(totalLikelihood > 0);
+
+                    likelyValues[0].likelihood += (100 - totalLikelihood);
+                    assert(likelyValues[0].likelihood <= 100);
+
+                    return numberOfLikelyConst;
+                }
+            }
+        }
+        return 0;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)], EntryPoint = nameof(getLikelyMethods))]
+    public static unsafe int getLikelyValues(LikelyValueRecord* pLikelyValues, int maxLikelyValues, ICorJitInfo.PgoInstrumentationSchema* schema, int countSchemaItems, byte* pInstrumentationData, int ilOffset)
+    {
+        return getLikelyValues(new Span<LikelyValueRecord>(pLikelyValues, maxLikelyValues), new ReadOnlySpan<ICorJitInfo.PgoInstrumentationSchema>(schema, countSchemaItems), pInstrumentationData, ilOffset);
     }
 
     public static int roundUp(int size, int mult)

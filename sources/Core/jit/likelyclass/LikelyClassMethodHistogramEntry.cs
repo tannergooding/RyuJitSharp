@@ -5,11 +5,12 @@
 
 namespace RyuJitSharp;
 
-public partial class Compiler
+public struct LikelyClassMethodHistogramEntry
 {
-    public struct InferredGdvEntry
-    {
-        public unsafe CORINFO_CLASS_HANDLE _classHandle;
-        public int _likelihood;
-    }
+    /// <summary>Handle that was observed at runtime</summary>
+    /// <remarks>This may be an "unknown handle"</remarks>
+    public nint _handle;
+
+    /// <summary>Number of observations in the table</summary>
+    public int _count;
 }

@@ -3,13 +3,12 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Runtime.CompilerServices;
+
 namespace RyuJitSharp;
 
-public partial class Compiler
+[InlineArray(MAX_GDV_TYPE_CHECKS)]
+public struct InlineArrayMaxGdvTypeChecks<T>
 {
-    public struct InferredGdvEntry
-    {
-        public unsafe CORINFO_CLASS_HANDLE _classHandle;
-        public int _likelihood;
-    }
+    public T e0;
 }

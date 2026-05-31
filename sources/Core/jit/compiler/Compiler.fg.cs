@@ -11,7 +11,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
 using System.Text;
 
 namespace RyuJitSharp;
@@ -4535,6 +4534,31 @@ public partial class Compiler
         return true;
     }
 
+    //------------------------------------------------------------------------
+    // fgGetFirstILBB: Obtain the first basic block that was created due to IL.
+    //
+    // Returns:
+    //   The basic block, skipping the init BB.
+    //
+    // Remarks:
+    //   TODO-Cleanup: Refactor users to be able to remove this function.
+    //
+    public BasicBlock fgGetFirstILBlock()
+    {
+        var firstILBB = fgFirstBB;
+        assert(firstILBB is not null);
+
+        while (firstILBB.HasFlag(BBF_INTERNAL))
+        {
+            assert(firstILBB.Kind is BBJ_ALWAYS);
+            firstILBB = firstILBB.Target;
+
+            assert(firstILBB is not null);
+            assert(firstILBB != fgFirstBB);
+        }
+        return firstILBB;
+    }
+
     /// <summary>Find and return the predecessor edge corresponding to a given predecessor block.</summary>
     /// <param name="block">The block with the predecessor list to operate on.</param>
     /// <param name="blockPred">The predecessor block to find in the predecessor list.</param>
@@ -4711,7 +4735,7 @@ public partial class Compiler
         if (IsStaticHelperEligibleForExpansion(result))
         {
             // Keep class handle attached to the helper call since it's difficult to restore it.
-            result.InitClsHnd = cls;
+            result._initClsHnd = cls;
         }
         result.Flags |= callFlags;
 
@@ -7111,6 +7135,251 @@ public partial class Compiler
             }
         }
         return modified;
+    }
+
+    /// <summary>try and optimize construction of a delegate</summary>
+    /// <param name="call">call to original delegate constructor</param>
+    /// <param name="exactContextHnd">context handle to update</param>
+    /// <param name="ldftnToken">resolved token for the method the delegate will invoke, if known, or null if not known</param>
+    /// <returns>Original call tree if no optimization applies. Updated call tree if optimized.</returns>
+    public unsafe GenTreeCall fgOptimizeDelegateConstructor(GenTreeCall call, ref CORINFO_CONTEXT_HANDLE exactContextHnd, methodPointerInfo? ldftnToken)
+    {
+        JITDUMP("\nfgOptimizeDelegateConstructor: ");
+        noway_assert(call._callType is CT_USER_FUNC);
+
+        var methHnd = call._callMethHnd;
+        var clsHnd = info.compCompHnd->getMethodClass(methHnd);
+
+        assert(call.Args.HasThisPointer);
+        assert(call.Args.CountArgs() is 3);
+        assert(!call.Args.AreArgsComplete);
+
+        var arg = call.Args.GetArgByIndex(2);
+        assert(arg is not null);
+
+        var targetMethod = arg.Node;
+        noway_assert(targetMethod.Type is TYP_I_IMPL);
+
+        var oper = targetMethod.Oper;
+        var targetMethodHnd = (CORINFO_METHOD_HANDLE)(null);
+        var qmarkNode = null as GenTreeQmark;
+
+        if (oper is GT_FTN_ADDR)
+        {
+            var fptrValTree = targetMethod.AsFptrVal();
+            fptrValTree.FptrDelegateTarget = true;
+            targetMethodHnd = fptrValTree.FptrMethod;
+        }
+        else if (oper is GT_CALL)
+        {
+            var targetCall = targetMethod.AsCall();
+
+            if (targetCall.IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR))
+            {
+                assert(targetCall.Args.CountArgs() is 3);
+
+                arg = targetCall.Args.GetArgByIndex(2);
+                assert(arg is not null);
+
+                var handleNode = arg.Node;
+
+                if (handleNode.Oper is GT_CNS_INT)
+                {
+                    // it's a ldvirtftn case, fetch the methodhandle off the helper for ldvirtftn. It's the 3rd arg
+                    targetMethodHnd = (CORINFO_METHOD_HANDLE)(handleNode.AsIntCon().CompileTimeHandle);
+                }
+                else if (handleNode.Oper is GT_QMARK)
+                {
+                    // Sometimes the argument to this is the result of a generic dictionary lookup, which shows up as a GT_QMARK.
+                    qmarkNode = handleNode.AsQmark();
+                }
+            }
+        }
+        else if (oper is GT_QMARK)
+        {
+            // Sometimes we don't call CORINFO_HELP_VIRTUAL_FUNC_PTR but instead just call CORINFO_HELP_RUNTIMEHANDLE_METHOD directly.
+            qmarkNode = targetMethod.AsQmark();
+        }
+
+        if (qmarkNode is not null)
+        {
+            // The argument is actually a generic dictionary lookup. For delegate creation it looks like:
+            // GT_QMARK
+            //  GT_COLON
+            //      op1 -> call
+            //              Arg 1 -> token (has compile time handle)
+            //      op2 -> lclvar
+            //
+            //
+            // In this case I can find the token (which is a method handle) and that is the compile time handle.
+
+            noway_assert(qmarkNode.Colon.Op1.Oper is GT_CALL);
+            var runtimeLookupCall = qmarkNode.Colon.Op1.AsCall();
+
+            // This could be any of CORINFO_HELP_RUNTIMEHANDLE_(METHOD|CLASS)(_LOG?)
+            arg = runtimeLookupCall.Args.GetArgByIndex(1);
+
+            assert(arg is not null);
+            var tokenNode = arg.Node;
+
+            noway_assert(tokenNode.Oper is GT_CNS_INT);
+            targetMethodHnd = (CORINFO_METHOD_HANDLE)(tokenNode.AsIntCon().CompileTimeHandle);
+        }
+
+        // Verify using the ldftnToken gives us all of what we used to get
+        // via the above pattern match, and more...
+        if (ldftnToken is not null)
+        {
+            assert(ldftnToken._token.hMethod is not null);
+
+            if (targetMethodHnd is not null)
+            {
+                assert(targetMethodHnd == ldftnToken._token.hMethod);
+            }
+
+            targetMethodHnd = ldftnToken._token.hMethod;
+        }
+
+#if FEATURE_READYTORUN
+        if (IsAot)
+        {
+            if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+            {
+                if (ldftnToken is not null)
+                {
+                    JITDUMP("optimized\n");
+                    var thisPointer = call.Args.ThisArg.Node;
+
+                    arg = call.Args.GetArgByIndex(1);
+                    assert(arg is not null);
+
+                    var targetObjPointers = arg.Node;
+
+                    CORINFO_LOOKUP lookup;
+                    fixed (CORINFO_RESOLVED_TOKEN* pTargetMethod = &ldftnToken._token)
+                    {
+                        info.compCompHnd->getReadyToRunDelegateCtorHelper(pTargetMethod, ldftnToken._tokenConstraint, clsHnd, info.compMethodHnd, &lookup);
+                    }
+
+                    if (!lookup.lookupKind.needsRuntimeLookup)
+                    {
+                        call = gtNewHelperCallNode(TYP_VOID, CORINFO_HELP_READYTORUN_DELEGATE_CTOR, thisPointer, targetObjPointers);
+                        call._entryPoint = lookup.constLookup;
+                    }
+                    else
+                    {
+                        assert(oper is not GT_FTN_ADDR);
+
+                        if (lookup.lookupKind.runtimeLookupKind is not CORINFO_LOOKUP_NOT_SUPPORTED)
+                        {
+                            assert((lookup.runtimeLookup.indirections is CORINFO_USEHELPER) && (lookup.runtimeLookup.helper is CORINFO_HELP_READYTORUN_DELEGATE_CTOR));
+                            var ctxTree = getRuntimeContextTree(lookup.lookupKind.runtimeLookupKind);
+
+                            call = gtNewHelperCallNode(TYP_VOID, CORINFO_HELP_READYTORUN_DELEGATE_CTOR, thisPointer, targetObjPointers, ctxTree);
+                            call._entryPoint = lookup.runtimeLookup.helperEntryPoint;
+                        }
+                        else
+                        {
+                            // Runtime does not support inlining of all shapes of runtime lookups. inlining has to be aborted in such a case
+                            assert(compIsForInlining);
+
+                            compInlineResult.NoteFatal(InlineObservation.CALLSITE_GENERIC_DICTIONARY_LOOKUP);
+                            JITDUMP("not optimized, generic inlining restriction\n");
+                        }
+                    }
+                }
+                else
+                {
+                    JITDUMP("not optimized, NATIVEAOT no ldftnToken\n");
+                }
+            }
+#if !TARGET_WASM
+            else if ((oper is GT_FTN_ADDR) && (ldftnToken is not null))
+            {
+                // TODO-WASM: Wasm doesn't use the dynamically composed helpers yet. When we do, we probably will
+                // need to use a different set of arguments to construct the right helper call to avoid dynamically
+                // composing a helper
+
+                JITDUMP("optimized\n");
+
+                arg = call.Args.GetArgByIndex(0);
+                assert(arg is not null);
+                var thisPointer = arg.Node;
+
+                arg = call.Args.GetArgByIndex(1);
+                assert(arg is not null);
+                var targetObjPointers = arg.Node;
+
+                call = gtNewHelperCallNode(TYP_VOID, CORINFO_HELP_READYTORUN_DELEGATE_CTOR, thisPointer, targetObjPointers);
+
+                CORINFO_LOOKUP entryPoint;
+                fixed (CORINFO_RESOLVED_TOKEN* pTargetMethod = &ldftnToken._token)
+                {
+                    info.compCompHnd->getReadyToRunDelegateCtorHelper(pTargetMethod, ldftnToken._tokenConstraint, clsHnd, info.compMethodHnd, &entryPoint);
+                }
+
+                assert(!entryPoint.lookupKind.needsRuntimeLookup);
+                call._entryPoint = entryPoint.constLookup;
+            }
+            else
+            {
+                // ReadyToRun has this optimization for a non-virtual function pointers only for now.
+                JITDUMP("not optimized, R2R virtual case\n");
+            }
+#endif
+        }
+        else if (targetMethodHnd is not null)
+#else
+        if (targetMethodHnd is not null)
+#endif
+        {
+            var ctorData = new DelegateCtorArgs {
+                method = info.compMethodHnd,
+            };
+            var alternateCtor = info.compCompHnd->GetDelegateCtor(methHnd, clsHnd, targetMethodHnd, &ctorData);
+
+            if (alternateCtor != methHnd)
+            {
+                JITDUMP("optimized\n");
+
+                // we erase any inline info that may have been set for generics has it is not needed here,
+                // and in fact it will pass the wrong info to the inliner code
+                exactContextHnd = null;
+
+                call._callMethHnd = alternateCtor;
+
+                var lastArg = null as CallArg;
+
+                if (ctorData.arg3 is not null)
+                {
+                    var arg3 = gtNewIconHandleNode(unchecked((nint)(ctorData.arg3)), GTF_ICON_FTN_ADDR);
+                    lastArg = call.Args.PushBack(NewCallArg.CreateForPrimitive(arg3));
+                }
+
+                if (ctorData.arg4 is not null)
+                {
+                    assert(lastArg is not null);
+                    var arg4 = gtNewIconHandleNode(unchecked((nint)(ctorData.arg4)), GTF_ICON_FTN_ADDR);
+                    lastArg = call.Args.InsertAfter(lastArg, NewCallArg.CreateForPrimitive(arg4));
+                }
+
+                if (ctorData.arg5 is not null)
+                {
+                    assert(lastArg is not null);
+                    var arg5 = gtNewIconHandleNode(unchecked((nint)(ctorData.arg5)), GTF_ICON_FTN_ADDR);
+                    lastArg = call.Args.InsertAfter(lastArg, NewCallArg.CreateForPrimitive(arg5));
+                }
+            }
+            else
+            {
+                JITDUMP("not optimized, no alternate ctor\n");
+            }
+        }
+        else
+        {
+            JITDUMP("not optimized, no target method\n");
+        }
+        return call;
     }
 
     /// <summary>Prepare an unreachable BBJ_CALLFINALLYRET block for removal from the flow graph.</summary>

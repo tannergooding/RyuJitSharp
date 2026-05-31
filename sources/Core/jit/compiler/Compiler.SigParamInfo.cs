@@ -7,9 +7,10 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    public struct InferredGdvEntry
+    public struct SigParamInfo
     {
-        public unsafe CORINFO_CLASS_HANDLE _classHandle;
-        public int _likelihood;
+        public CorInfoType CorType;
+
+        public unsafe CORINFO_CLASS_HANDLE ClassHandle;
     }
 }

@@ -152,6 +152,12 @@ public partial class Globals
     /// <summary>Fixed locallocs of this size or smaller will convert to local buffers.</summary>
     public const int DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE = 32;
 
+#if DEBUG
+    public static bool InlinePInvokeEnabled => JitConfig[ConfigInteger.JitPInvokeEnabled] is not 0;
+#else
+    public static bool InlinePInvokeEnabled => true;
+#endif
+
     /// <summary>Should we enable JitStress mode?</summary>
     /// <remarks>
     ///   <list type="bullet">
@@ -186,6 +192,33 @@ public partial class Globals
         tree._oper = GT_COUNT;
 #endif
     }
+
+#if DEBUG
+    /// <summary>describe the detailed devirtualization reason</summary>
+    /// <param name="detail">detail to describe</param>
+    /// <returns>descriptive string</returns>
+    public static string DevirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DETAIL detail) => detail switch {
+        CORINFO_DEVIRTUALIZATION_UNKNOWN => "unknown",
+        CORINFO_DEVIRTUALIZATION_SUCCESS => "success",
+        CORINFO_DEVIRTUALIZATION_FAILED_CANON => "object class or method was canonical",
+        CORINFO_DEVIRTUALIZATION_FAILED_COM => "object class was com",
+        CORINFO_DEVIRTUALIZATION_FAILED_CAST => "object class could not be cast to interface class",
+        CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP => "interface method could not be found",
+        CORINFO_DEVIRTUALIZATION_FAILED_DIM => "interface method was default interface method",
+        CORINFO_DEVIRTUALIZATION_FAILED_SUBCLASS => "object not subclass of base class",
+        CORINFO_DEVIRTUALIZATION_FAILED_SLOT => "virtual method installed via explicit override",
+        CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE => "devirtualization crossed version bubble",
+        CORINFO_DEVIRTUALIZATION_MULTIPLE_IMPL => "object class has multiple implementations of interface",
+        CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_CLASS_DECL => "decl method is defined on class and decl method not in version bubble, and decl method not in type closest to version bubble",
+        CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_INTERFACE_DECL => "decl method is defined on interface and not in version bubble, and implementation type not entirely defined in bubble",
+        CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL => "object class not defined within version bubble",
+        CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE => "object class cannot be referenced from R2R code due to missing tokens",
+        CORINFO_DEVIRTUALIZATION_FAILED_DUPLICATE_INTERFACE => "crossgen2 virtual method algorithm and runtime algorithm differ in the presence of duplicate interface implementations",
+        CORINFO_DEVIRTUALIZATION_FAILED_DECL_NOT_REPRESENTABLE => "Decl method cannot be represented in R2R image",
+        CORINFO_DEVIRTUALIZATION_FAILED_TYPE_EQUIVALENCE => "Support for type equivalence in devirtualization is not yet implemented in crossgen2",
+        _ => "undefined",
+    };
+#endif
 
     public static IRegAlloc GetRegisterAllocator(Compiler compiler) => new LinearScan(compiler);
 

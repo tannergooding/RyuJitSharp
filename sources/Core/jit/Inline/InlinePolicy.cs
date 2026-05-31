@@ -43,4 +43,10 @@ public abstract class InlinePolicy
     public abstract void NoteInt(InlineObservation observation, int value);
 
     public abstract void NoteSuccess();
+
+    // Optional observations. Most policies ignore these.
+
+    public virtual void NoteContext(InlineContext? context) { }
+
+    public virtual void NoteOffset(IL_OFFSET offset) { }
 }

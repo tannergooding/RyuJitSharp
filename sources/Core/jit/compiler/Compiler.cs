@@ -786,6 +786,21 @@ public partial class Compiler
         }
     }
 
+    public NodeToTestDataMap NodeTestData
+    {
+        get
+        {
+            var nodeTestData = impInlineRoot._nodeTestData;
+
+            if (nodeTestData is null)
+            {
+                nodeTestData = [];
+                impInlineRoot._nodeTestData = nodeTestData;
+            }
+            return nodeTestData;
+        }
+    }
+
     public bool PreciseRefCountsRequired =>  opts.OptimizationEnabled;
 
 #if TARGET_AMD64
@@ -1211,6 +1226,37 @@ public partial class Compiler
         return TYP_UNDEF;
     }
 
+    /// <summary>get a lookup tree</summary>
+    /// <param name="lookup">the lookup to get the tree for</param>
+    /// <param name="handleFlags">flags to set on the result node</param>
+    /// <param name="compileTimeHandle">compile-time handle corresponding to the lookup</param>
+    /// <returns>A node representing the lookup tree</returns>
+    public unsafe GenTree getLookupTree(in CORINFO_LOOKUP lookup, GenTreeFlags handleFlags, void* compileTimeHandle)
+    {
+        if (!lookup.lookupKind.needsRuntimeLookup)
+        {
+            // No runtime lookup is required.
+            // Access is direct or memory-indirect (of a fixed address) reference
+
+            var handle = (CORINFO_GENERIC_HANDLE)(null);
+            var pIndirection = (void*)(null);
+
+            assert(lookup.constLookup.accessType is not IAT_PPVALUE and not IAT_RELPVALUE);
+
+            if (lookup.constLookup.accessType is IAT_VALUE)
+            {
+                handle = lookup.constLookup.handle;
+            }
+            else if (lookup.constLookup.accessType is IAT_PVALUE)
+            {
+                pIndirection = lookup.constLookup.addr;
+            }
+
+            return gtNewIconEmbHndNode(handle, pIndirection, handleFlags, compileTimeHandle);
+        }
+        return getRuntimeLookupTree(lookup, compileTimeHandle);
+    }
+
     // getMaxVectorByteLength
     // The minimum simd size supported by System.Numeric.Vectors or System.Runtime.Intrinsic
     // Arm.AdvSimd:  16-byte Vector<T> and Vector128<T>
@@ -1262,6 +1308,93 @@ public partial class Compiler
         // TODO: Port getReturnTypeForStruct
         wbPassStruct = default;
         return TYP_UNKNOWN;
+    }
+
+    /// <summary>get a tree for a runtime lookup</summary>
+    /// <param name="lookup">the lookup to get the tree for</param>
+    /// <param name="compileTimeHandle">compile-time handle corresponding to the lookup</param>
+    /// <returns>A node representing the runtime lookup tree</returns>
+    public unsafe GenTree getRuntimeLookupTree(in CORINFO_LOOKUP lookup, void* compileTimeHandle)
+    {
+        ref var runtimeLookup = ref lookup.runtimeLookup;
+
+        // If pRuntimeLookup->indirections is equal to CORINFO_USEHELPER, it specifies that a run-time helper should be
+        // used; otherwise, it specifies the number of indirections via pRuntimeLookup->offsets array.
+
+        if ((runtimeLookup.indirections is CORINFO_USEHELPER or CORINFO_USENULL) || runtimeLookup.testForNull)
+        {
+            return gtNewRuntimeLookupHelperCallNode(runtimeLookup, getRuntimeContextTree(lookup.lookupKind.runtimeLookupKind), compileTimeHandle);
+        }
+
+        var result = getRuntimeContextTree(lookup.lookupKind.runtimeLookupKind);
+        GenTreeStack stmts = [];
+
+        static GenTree cloneTree(Compiler compiler, GenTreeStack stmts, ref GenTree tree, string reason)
+        {
+            if ((tree.Flags & GTF_GLOB_EFFECT) is 0)
+            {
+                var clone = compiler.gtClone(tree, complexOK: true);
+
+                if (clone is not null)
+                {
+                    return clone;
+                }
+            }
+
+            var temp = compiler.lvaGrabTemp(shortLifetime: true, reason);
+            stmts.Push(compiler.gtNewTempStore(temp, tree));
+
+            var actualType = compiler.lvaGetDesc(temp).Type.ActualType;
+
+            tree = compiler.gtNewLclvNode(actualType, temp);
+            return compiler.gtNewLclvNode(actualType, temp);
+        }
+
+        // Apply repeated indirections
+        for (var i = 0; i < runtimeLookup.indirections; i++)
+        {
+            var preInd = null as GenTree;
+
+            var isFirstOrSecondOffset = ((i is 1) && runtimeLookup.indirectFirstOffset) || ((i is 2) && runtimeLookup.indirectSecondOffset);
+
+            if (isFirstOrSecondOffset)
+            {
+                preInd = cloneTree(this, stmts, ref result, "getRuntimeLookupTree indirectOffset");
+            }
+
+            if (i is not 0)
+            {
+                result = gtNewIndir(TYP_I_IMPL, result, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+            }
+
+            if (isFirstOrSecondOffset)
+            {
+                assert(preInd is not null);
+                result = gtNewBinaryNode(GT_ADD, TYP_I_IMPL, preInd, result);
+            }
+
+            if (runtimeLookup.offsets[i] is not 0)
+            {
+                result = gtNewBinaryNode(GT_ADD, TYP_I_IMPL, result, gtNewIconNode(TYP_I_IMPL, runtimeLookup.offsets[i]));
+            }
+        }
+
+        assert(!runtimeLookup.testForNull);
+
+        if (runtimeLookup.indirections > 0)
+        {
+            result = gtNewIndir(TYP_I_IMPL, result, GTF_IND_NONFAULTING);
+        }
+
+        // Produces GT_COMMA(stmt1, GT_COMMA(stmt2, ... GT_COMMA(stmtN, result)))
+
+        while (stmts.Count is not 0)
+        {
+            result = gtNewCommaNode(TYP_I_IMPL, stmts.Pop(), result);
+        }
+
+        DISPTREE(result);
+        return result;
     }
 
     public unsafe int GetSimdTypeSizeInBytes(CORINFO_CLASS_HANDLE typeHnd)
@@ -2075,6 +2208,42 @@ public partial class Compiler
 
     public static bool StructHasIndexableFields(CorInfoFlag attribs)
         => (attribs & CORINFO_FLG_INDEXABLE_FIELDS) != 0;
+
+#if TARGET_64BIT
+    /// <summary>Returns true if 'type' is a struct that can be enregistered for call args or can be returned by value in multiple registers.</summary>
+    /// <param name="type">the basic jit var_type for the item being queried</param>
+    /// <param name="typeClass">the handle for the struct when 'type' is TYP_STRUCT</param>
+    /// <param name="typeSize">updated with the size of 'type'.</param>
+    /// <param name="isVarArg">whether or not this is a vararg fixed arg or variable argument, if so on arm64 windows getArgTypeForStruct will ignore HFA types</param>
+    /// <param name="callConv">the calling convention of the call</param>
+    /// <returns></returns>
+    /// <remarks>if 'type' is not a struct the return value will be false.</remarks>
+    public unsafe bool VarTypeIsMultiByteAndCanEnreg(var_types type, CORINFO_CLASS_HANDLE typeClass, out int typeSize, bool isVarArg, CorInfoCallConvExtension callConv)
+    {
+        var result = false;
+        var size = 0;
+
+        if (varTypeIsStruct(type))
+        {
+            assert(typeClass is not null);
+            size = info.compCompHnd->getClassSize(typeClass);
+
+            type = GetReturnTypeForStruct(typeClass, callConv, out var howToReturnStruct, size);
+
+            if (type is not TYP_UNKNOWN)
+            {
+                result = true;
+            }
+        }
+        else
+        {
+            size = type.Size;
+        }
+
+        typeSize = size;
+        return result;
+    }
+#endif
 
 #if DEBUG
     /// <summary>helper to determine if the local should not be promoted under a stress mode.</summary>
