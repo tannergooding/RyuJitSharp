@@ -3,8 +3,12 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
-global using simd_t = RyuJitSharp.simd64_t;
-#else
-global using simd_t = RyuJitSharp.simd16_t;
-#endif
+using System.Runtime.CompilerServices;
+
+namespace RyuJitSharp;
+
+[InlineArray(256)]
+public struct InlineArray256<T>
+{
+    public T e0;
+}

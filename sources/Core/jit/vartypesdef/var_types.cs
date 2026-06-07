@@ -51,7 +51,7 @@ public enum var_types : byte
 
     TYP_SIMD64,
 #elif TARGET_ARM64
-    TYP_Simd,
+    TYP_SIMD,
 #endif
 
 #if FEATURE_MASKED_HW_INTRINSICS

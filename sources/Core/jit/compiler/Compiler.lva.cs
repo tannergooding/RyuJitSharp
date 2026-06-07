@@ -184,7 +184,7 @@ public partial class Compiler
     public int lvaStubArgumentVar = BAD_VAR_NUM;
 
 #if FEATURE_SIMD
-    /// <summary>This is a temp lclVar allocated on the stack as TYP_Simd.</summary>
+    /// <summary>This is a temp lclVar allocated on the stack as TYP_SIMD.</summary>
     /// <remarks>
     ///   <para>It is used to implement intrinsics that require indexed access to the individual fields of the vector, which is not well supported by the hardware.</para>
     ///   <para>It is allocated when/if such situations are encountered during Lowering.</para> 

@@ -10,36 +10,6 @@ namespace RyuJitSharp;
 
 public class GenTreeOp : GenTreeUnOp
 {
-    private static ReadOnlySpan<genTreeOps> s_reverseOpers => [
-        GT_NE,          // GT_EQ
-        GT_EQ,          // GT_NE
-        GT_GE,          // GT_LT
-        GT_GT,          // GT_LE
-        GT_LT,          // GT_GE
-        GT_LE,          // GT_GT
-        GT_TEST_NE,     // GT_TEST_EQ
-        GT_TEST_EQ,     // GT_TEST_NE
-#if TARGET_XARCH
-        GT_BITTEST_NE,  // GT_BITTEST_EQ
-        GT_BITTEST_EQ,  // GT_BITTEST_NE
-#endif
-    ];
-
-    private static ReadOnlySpan<genTreeOps> s_swapOpers => [
-        GT_EQ,          // GT_EQ
-        GT_NE,          // GT_NE
-        GT_GT,          // GT_LT
-        GT_GE,          // GT_LE
-        GT_LE,          // GT_GE
-        GT_LT,          // GT_GT
-        GT_TEST_EQ,     // GT_TEST_EQ
-        GT_TEST_NE,     // GT_TEST_NE
-#if TARGET_XARCH
-        GT_BITTEST_EQ,  // GT_BITTEST_EQ
-        GT_BITTEST_NE,  // GT_BITTEST_NE
-#endif
-    ];
-
     private GenTree? _op2;
 
     internal GenTreeOp(genTreeOps oper, var_types type, GenTree? op1, GenTree? op2)
@@ -156,8 +126,7 @@ public class GenTreeOp : GenTreeUnOp
 
     public void ReverseRelop()
     {
-        assert(Oper.IsCompare);
-        _oper = s_reverseOpers[Oper - GT_EQ];
+        _oper = _oper.ReverseRelop;
 
         // Flip the GTF_RELOP_NAN_UN bit
         //     a ord b   === (a != NaN && b != NaN)
@@ -172,8 +141,7 @@ public class GenTreeOp : GenTreeUnOp
 
     public void SwapRelop()
     {
-        assert(Oper.IsCompare);
-        _oper = s_swapOpers[Oper - GT_EQ];
+        _oper = _oper.SwapRelop;
         (Op1, Op2) = (Op2, Op1);
     }
 }

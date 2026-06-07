@@ -1212,7 +1212,7 @@ public partial class GenTree
                 {
                     // We currently don't try to avoid setting these flags and GTF_EXCEPT when
                     // we know that the operation in fact cannot overflow/divide by zero.
-                    assert(varTypeIsInt(hwintrinsic.simdBaseType));
+                    assert(varTypeIsInt(hwintrinsic.SimdBaseType));
                     flags |= (ExceptionSetFlags.OverflowException | ExceptionSetFlags.DivideByZeroException);
                 }
 #endif
@@ -1282,7 +1282,7 @@ public partial class GenTree
 
             case GT_RET_EXPR:
             {
-                structHnd = AsRetExpr().InlineCandidate.RetClsHnd;
+                structHnd = AsRetExpr().InlineCandidate.AsCall().RetClsHnd;
                 break;
             }
 
@@ -1571,6 +1571,11 @@ public partial class GenTree
     {
         assert(_oper.IsIndirOrArrMetaData);
         return ((_flags & GTF_IND_NONFAULTING) == 0) && compiler.fgAddrCouldBeNull(IndirOrArrMetaDataAddr);
+    }
+
+    public bool IsHWIntrinsic(NamedIntrinsic intrinsicId)
+    {
+        return _oper.IsHWIntrinsic && (AsHWIntrinsic().HWIntrinsicId == intrinsicId);
     }
 
     public bool IsIntegralConst(nint value) => _oper.IsIntegralConst && AsIntConCommon().IsIntegralConst(value);

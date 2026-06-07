@@ -268,8 +268,9 @@ public struct ReturnTypeDesc
                 // a non-HFA struct returned using two registers
                 assert(structSize is > TARGET_POINTER_SIZE and <= (2 * TARGET_POINTER_SIZE));
 
-                var gcPtrs = default(InlineArray2<CorInfoGCType>);
-                compiler.info.compCompHnd->getClassGClayout(retClsHnd, (byte*)(gcPtrs));
+                Unsafe.SkipInit(out InlineArray2<CorInfoGCType> inlineGcPtrs);
+                var gcPtrs = (Span<CorInfoGCType>)(inlineGcPtrs);
+                compiler.info.compCompHnd->getClassGClayout(retClsHnd, (byte*)(&gcPtrs.e0));
 
                 for (byte i = 0; i < 2; i++)
                 {
@@ -278,8 +279,8 @@ public struct ReturnTypeDesc
 #elif TARGET_LOONGARCH64 || TARGET_RISCV64
                 assert(structSize is > sizeof(float) and <= (2 * TARGET_POINTER_SIZE));
 
-                var gcPtrs = default(InlineArray2<CorInfoGCType>);
-                compiler.info.compCompHnd->getClassGClayout(retClsHnd, (byte*)(gcPtrs));
+                Unsafe.SkipInit(out InlineArray2<CorInfoGCType> inlineGcPtrs);
+                compiler.info.compCompHnd->getClassGClayout(retClsHnd, (byte*)(&gcPtrs.e0));
 
                 var lowering = compiler.GetFpStructLowering(retClsHnd);
 
@@ -325,8 +326,9 @@ public struct ReturnTypeDesc
                 // an 8-byte struct returned using two registers
                 assert(structSize == 8);
 
-                var gcPtrs = default(InlineArray2<CorInfoGCType>);
-                compiler.info.compCompHnd->getClassGClayout(retClsHnd, (byte*)(gcPtrs));
+                Unsafe.SkipInit(out InlineArray2<CorInfoGCType> inlineGcPtrs);
+                var gcPtrs = (Span<CorInfoGCType>)(inlineGcPtrs);
+                compiler.info.compCompHnd->getClassGClayout(retClsHnd, (byte*)(&gcPtrs.e0));
 
                 for (byte i = 0; i < 2; i++)
                 {

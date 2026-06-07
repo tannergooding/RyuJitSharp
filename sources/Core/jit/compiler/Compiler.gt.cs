@@ -7,6 +7,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.X86;
 using System.Text;
 
 namespace RyuJitSharp;
@@ -844,7 +845,7 @@ public partial class Compiler
                     var hwintrinsicCopy = new GenTreeHWIntrinsic(
                         hwintrinsic.Type,
                         hwintrinsic.HWIntrinsicId,
-                        hwintrinsic.simdBaseType,
+                        hwintrinsic.SimdBaseType,
                         hwintrinsic.simdSize,
                         operands
                     );
@@ -1204,6 +1205,19 @@ public partial class Compiler
         lclVarCopy.CopyOtherRegs(lclVar);
 
         return lclVarCopy;
+    }
+
+    public GenTreeLclVarCommon gtCloneLclVarCommon(GenTreeLclVarCommon lclVarCommon)
+    {
+        if (lclVarCommon.Oper is GT_LCL_VAR)
+        {
+            return gtCloneLclVar(lclVarCommon.AsLclVar());
+        }
+        else
+        {
+            assert(lclVarCommon.Oper is GT_LCL_FLD);
+            return gtCloneLclFld(lclVarCommon.AsLclFld());
+        }
     }
 
     /// <summary>alk a tree collecting a bit set of exceptions the tree may throw.</summary>
@@ -1658,6 +1672,281 @@ public partial class Compiler
     {
         // TODO: Port gtFoldExprCall
         return tree;
+    }
+
+    /// <summary>see if a type comparison can be further simplified</summary>
+    /// <param name="tree">tree possibly comparing types</param>
+    /// <returns>An alternative tree if folding happens. Original tree otherwise.</returns>
+    public unsafe GenTree gtFoldTypeCompare(GenTreeOp tree)
+    {
+        // Notes:
+        //    Checks for
+        //        typeof(...) == obj.GetType()
+        //        typeof(...) == typeof(...)
+        //        typeof(...) is null
+        //        obj1.GetType() == obj2.GetType()
+        //
+        //    And potentially optimizes away the need to obtain actual
+        //    RuntimeType objects to do the comparison.
+
+        // Only handle EQ and NE, (maybe relop vs null someday)
+        var oper = tree.Oper;
+
+        if (oper is not GT_EQ and not GT_NE)
+        {
+            return tree;
+        }
+
+        // Screen for the right kinds of operands
+
+        var op1 = tree.Op1;
+        var op2 = tree.Op2;
+
+        var op1Kind = gtGetTypeProducerKind(op1);
+        var op2Kind = gtGetTypeProducerKind(op2);
+
+        // Fold "typeof(handle) cmp null"
+        if (((op2Kind is TPK_Null) && (op1Kind is TPK_Handle)) || ((op1Kind is TPK_Null) && (op2Kind is TPK_Handle)))
+        {
+            var call = (op1Kind is TPK_Handle) ? op1 : op2;
+
+            var callArg = call.AsCall().Args.GetArgByIndex(0);
+            assert(callArg is not null);
+
+            var handle = callArg.Node;
+
+            if (gtGetHelperArgClassHandle(handle) != NO_CLASS_HANDLE)
+            {
+                return (oper is GT_EQ) ? gtNewFalse() : gtNewTrue();
+            }
+        }
+
+        // If both types are created via handles, we can simply compare
+        // handles instead of the types that they'd create.
+        if ((op1Kind is TPK_Handle) && (op2Kind is TPK_Handle))
+        {
+            JITDUMP("Optimizing compare of types-from-handles to instead compare handles\n");
+            assert((op1.AsCall().Args.CountArgs() is 1) && (op2.AsCall().Args.CountArgs() is 1));
+
+            var op1CallArg = op1.AsCall().Args.GetArgByIndex(0);
+            var op2CallArg = op2.AsCall().Args.GetArgByIndex(0);
+
+            assert((op1CallArg is not null) && (op2CallArg is not null));
+
+            var op1ClassFromHandle = op1CallArg.Node;
+            var op2ClassFromHandle = op2CallArg.Node;
+
+            var cls1Hnd = NO_CLASS_HANDLE;
+            var cls2Hnd = NO_CLASS_HANDLE;
+
+            // Try and find class handles from op1 and op2
+            cls1Hnd = gtGetHelperArgClassHandle(op1ClassFromHandle);
+            cls2Hnd = gtGetHelperArgClassHandle(op2ClassFromHandle);
+
+            // If we have both class handles, try and resolve the type equality test completely.
+            var resolveFailed = false;
+
+            if ((cls1Hnd != NO_CLASS_HANDLE) && (cls2Hnd != NO_CLASS_HANDLE))
+            {
+                JITDUMP($"Asking runtime to compare {dspPtr(cls1Hnd)} ({eeGetClassName(cls1Hnd)}) and {dspPtr(cls2Hnd)} ({eeGetClassName(cls2Hnd)}) for equality\n");
+                var s = info.compCompHnd->compareTypesForEquality(cls1Hnd, cls2Hnd);
+
+                if (s is not TypeCompareState.May)
+                {
+                    // Type comparison result is known.
+                    var typesAreEqual = s is TypeCompareState.Must;
+                    var operatorIsEQ = oper is GT_EQ;
+                    var compareResult = (operatorIsEQ ^ typesAreEqual) ? 0 : 1;
+
+                    JITDUMP($"Runtime reports comparison is known at jit time: {compareResult}\n");
+                    return gtNewIconNode(TYP_INT, compareResult);
+                }
+                else
+                {
+                    resolveFailed = true;
+                }
+            }
+
+            if (resolveFailed)
+            {
+                JITDUMP("Runtime reports comparison is NOT known at jit time\n");
+            }
+            else
+            {
+                JITDUMP($"Could not find handle for {(cls1Hnd == NO_CLASS_HANDLE ? "cls1" : "")}{(cls2Hnd == NO_CLASS_HANDLE ? " cls2" : "")}\n");
+            }
+
+            var compare = gtNewBinaryNode(oper, TYP_INT, op1ClassFromHandle, op2ClassFromHandle);
+
+            // Drop any now-irrelevant flags
+            compare.Flags |= (tree.Flags & (GTF_RELOP_JMP_USED | GTF_DONT_CSE));
+
+            return compare;
+        }
+        else if ((op1Kind is TPK_GetType) && (op2Kind is TPK_GetType))
+        {
+            GenTree arg1;
+
+            if (op1.Oper is GT_INTRINSIC)
+            {
+                arg1 = op1.AsUnOp().Op1;
+            }
+            else
+            {
+                var thisArg = op1.AsCall().Args.ThisArg;
+                assert(thisArg is not null);
+                arg1 = thisArg.Node;
+            }
+
+            arg1 = gtNewMethodTableLookup(arg1);
+
+            GenTree arg2;
+
+            if (op2.Oper is GT_INTRINSIC)
+            {
+                arg2 = op2.AsUnOp().Op1;
+            }
+            else
+            {
+                var thisArg = op2.AsCall().Args.ThisArg;
+                assert(thisArg is not null);
+                arg2 = thisArg.Node;
+            }
+
+            arg2 = gtNewMethodTableLookup(arg2);
+
+            var compare = gtNewBinaryNode(oper, TYP_INT, arg1, arg2);
+
+            // Drop any now-irrelevant flags
+            compare.Flags |= (tree.Flags & (GTF_RELOP_JMP_USED | GTF_DONT_CSE));
+
+            return compare;
+        }
+        else if ((op1Kind is not TPK_GetType || op2Kind is not TPK_Handle) && (op1Kind is not TPK_Handle || op2Kind is not TPK_GetType))
+        {
+            // If one operand creates a type from a handle and the other operand is fetching the type from an object,
+            // we can sometimes optimize the type compare into a simpler
+            // method table comparison.
+            //
+            // TODO: if other operand is null...
+            return tree;
+        }
+        else
+        {
+            var opHandle = (op1Kind is TPK_Handle) ? op1 : op2;
+            var opOther = (op1Kind is TPK_Handle) ? op2 : op1;
+
+            // Tunnel through the handle operand to get at the class handle involved.
+            var callArg = opHandle.AsCall().Args.GetArgByIndex(0);
+            assert(callArg is not null);
+
+            var opHandleArgument = callArg.Node;
+            var clsHnd = gtGetHelperArgClassHandle(opHandleArgument);
+
+            // If we couldn't find the class handle, give up.
+            if (clsHnd == NO_CLASS_HANDLE)
+            {
+                return tree;
+            }
+
+            // We're good to go.
+            JITDUMP("Optimizing compare of obj.GetType() and type-from-handle to compare method table pointer\n");
+
+            // opHandleArgument is the method table we're looking for.
+            var knownMT = opHandleArgument;
+
+            // Fetch object method table from the object itself.
+            var objOp = null as GenTree;
+
+            // Note we may see intrinsified or regular calls to GetType
+            if (opOther.Oper is GT_INTRINSIC)
+            {
+                objOp = opOther.AsUnOp().Op1;
+            }
+            else
+            {
+                var thisArg = opOther.AsCall().Args.ThisArg;
+                assert(thisArg is not null);
+                objOp = thisArg.Node;
+            }
+
+            // Check if an object of this type can even exist
+            if (info.compCompHnd->getExactClasses(clsHnd, 0, null) is 0)
+            {
+                JITDUMP($"Runtime reported {dspPtr(clsHnd)} ({eeGetClassName(clsHnd)}) is never allocated\n");
+
+                var operatorIsEQ = oper is GT_EQ;
+                var compareResult = operatorIsEQ ? 0 : 1;
+                JITDUMP($"Runtime reports comparison is known at jit time: {compareResult}\n");
+
+                var result = gtNewIconNode(TYP_INT, compareResult);
+                var sideEffects = fgAddrCouldBeNull(objOp) ? gtNewNullCheck(objOp) : objOp;
+                return gtWrapWithSideEffects(result, sideEffects, GTF_ALL_EFFECT);
+            }
+
+            var objCls = gtGetClassHandle(objOp, out var isExact, out var isNonNull);
+
+            // if both classes are "final" (e.g. System.String[]) we can replace the comparison
+            // with `true/false` + null check.
+            if ((objCls != NO_CLASS_HANDLE) && (isExact || info.compCompHnd->isExactType(objCls)))
+            {
+                var tcs = info.compCompHnd->compareTypesForEquality(objCls, clsHnd);
+
+                if (tcs is not TypeCompareState.May)
+                {
+                    var operatorIsEQ = oper is GT_EQ;
+                    var typesAreEqual = tcs is TypeCompareState.Must;
+                    var compareResult = gtNewIconNode(TYP_INT, (operatorIsEQ ^ typesAreEqual) ? 0 : 1);
+
+                    if (!isNonNull)
+                    {
+                        // we still have to emit a null-check
+                        // obj.GetType == typeof() -> (nullcheck) true/false
+
+                        var nullcheck = gtNewNullCheck(objOp);
+                        return gtNewCommaNode(tree.Type, nullcheck, compareResult);
+                    }
+                    else if ((objOp.Flags & GTF_ALL_EFFECT) is not 0)
+                    {
+                        return gtNewCommaNode(tree.Type, objOp, compareResult);
+                    }
+                    else
+                    {
+                        return compareResult;
+                    }
+                }
+            }
+
+            // Fetch the method table from the object
+            var objMT = gtNewMethodTableLookup(objOp);
+
+            // Compare the two method tables
+            var compare = gtNewBinaryNode(oper, TYP_INT, objMT, knownMT);
+
+            // Drop any now irrelevant flags
+            compare.Flags |= (tree.Flags & (GTF_RELOP_JMP_USED | GTF_DONT_CSE));
+
+            // And we're done
+            return compare;
+        }
+    }
+
+    /// <summary>see if a (potential) type equality call is foldable</summary>
+    /// <param name="isEq">is it == or != operator</param>
+    /// <param name="op1">first argument to call</param>
+    /// <param name="op2">second argument to call</param>
+    /// <returns>nulltpr if no folding happened. An alternative tree if folding happens.</returns>
+    /// <remarks>If either operand is known to be a RuntimeType, then the type equality methods will simply check object identity and so we can fold the call into a simple compare of the call's operands.</remarks>
+    public GenTreeOp? gtFoldTypeEqualityCall(bool isEq, GenTree op1, GenTree op2)
+    {
+        if ((gtGetTypeProducerKind(op1) is TPK_Unknown) && (gtGetTypeProducerKind(op2) is TPK_Unknown))
+        {
+            return null;
+        }
+
+        var simpleOp = isEq ? GT_EQ : GT_NE;
+        JITDUMP($"\nFolding call to Type:op_{(isEq ? "Equality" : "Inequality")} to a simple compare via {simpleOp}\n");
+        return gtNewBinaryNode(simpleOp, TYP_INT, op1, op2);
     }
 
     /// <summary>Can any side-effects be observed externally, say by a caller method?</summary>
@@ -2330,6 +2619,1012 @@ public partial class Compiler
         return objClass;
     }
 
+#if FEATURE_HW_INTRINSICS
+    /// <summary>Returns intrinsic ID based on the oper, base type, and simd size</summary>
+    /// <param name="oper">The oper for which to get the intrinsic ID</param>
+    /// <param name="op1">The first operand on which oper is executed</param>
+    /// <param name="op2">The second operand on which oper is executed</param>
+    /// <param name="simdBaseType">The base type on which oper is executed</param>
+    /// <param name="simdSize">The simd size on which oper is executed</param>
+    /// <param name="isScalar">True if the oper is over scalar data; otherwise false</param>
+    /// <returns>The intrinsic ID based on the oper, base type, and simd size</returns>
+    public NamedIntrinsic GetHWIntrinsicIdForBinOp(genTreeOps oper, GenTree op1, GenTree op2, var_types simdBaseType, byte simdSize, bool isScalar)
+    {
+        var simdType = GetSimdTypeForSize(simdSize);
+
+        assert(varTypeIsArithmetic(simdBaseType));
+        assert(varTypeIsSimd(simdType));
+
+        assert(op1 is not null);
+        assert(op1.Type == simdType);
+        assert(op2 is not null);
+
+#if TARGET_XARCH
+        if (simdSize is 32 or 64)
+        {
+            assert(!isScalar);
+        }
+        else
+#endif
+        {
+#if TARGET_ARM64
+        assert(!isScalar || (simdSize is 8));
+        // TODO-SVE: Add scalable length support
+        assert(simdSize is 8 or 16);
+#endif
+
+            assert(!isScalar || varTypeIsFloating(simdBaseType));
+        }
+
+        var id = NI_Illegal;
+
+        switch (oper)
+        {
+            case GT_ADD:
+            {
+                assert(op2.Type == simdType);
+
+#if TARGET_XARCH
+                if (simdSize is 64)
+                {
+                    id = NI_AVX512_Add;
+                }
+                else if (simdSize is 32)
+                {
+                    if (varTypeIsIntegral(simdBaseType))
+                    {
+                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                        id = NI_AVX2_Add;
+                    }
+                    else
+                    {
+                        id = NI_AVX_Add;
+                    }
+                }
+                else
+                {
+                    id = isScalar ? NI_X86Base_AddScalar : NI_X86Base_Add;
+                }
+#elif TARGET_ARM64
+                if ((simdSize is 8) && (isScalar || (simdBaseType.Size is 8)))
+                {
+                    id = NI_AdvSimd_AddScalar;
+                }
+                else if (simdBaseType == TYP_DOUBLE)
+                {
+                    id = NI_AdvSimd_Arm64_Add;
+                }
+                else
+                {
+                    id = NI_AdvSimd_Add;
+                }
+#endif
+                break;
+            }
+
+            case GT_AND:
+            {
+                assert(!isScalar);
+                assert(op2.Type == simdType);
+
+#if TARGET_XARCH
+                if (simdSize is 64)
+                {
+                    id = NI_AVX512_And;
+                }
+                else if (simdSize is 32)
+                {
+                    if (varTypeIsIntegral(simdBaseType))
+                    {
+                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                        id = NI_AVX2_And;
+                    }
+                    else
+                    {
+                        id = NI_AVX_And;
+                    }
+                }
+                else
+                {
+                    id = NI_X86Base_And;
+                }
+#elif TARGET_ARM64
+                id = NI_AdvSimd_And;
+#endif
+                break;
+            }
+
+            case GT_AND_NOT:
+            {
+                assert(!isScalar);
+                assert(op2.Type == simdType);
+
+                if (fgNodeThreading is not NodeThreading.LIR)
+                {
+                    // We don't want to support creating AND_NOT nodes prior to LIR
+                    // as it can break important optimizations. We'll produces this
+                    // in lowering instead.
+                    break;
+                }
+
+#if TARGET_XARCH
+                if (simdSize is 64)
+                {
+                    id = NI_AVX512_AndNot;
+                }
+                else if (simdSize is 32)
+                {
+                    if (varTypeIsIntegral(simdBaseType))
+                    {
+                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                        id = NI_AVX2_AndNotVector;
+                    }
+                    else
+                    {
+                        id = NI_AVX_AndNot;
+                    }
+                }
+                else
+                {
+                    id = NI_X86Base_AndNot;
+                }
+#elif TARGET_ARM64
+                // TODO-SVE: Add scalable length support
+                assert(simdSize is 8 or 16);
+
+                id = NI_AdvSimd_BitwiseClear;
+#endif
+                break;
+            }
+
+            case GT_DIV:
+            {
+#if TARGET_XARCH
+                assert(varTypeIsFloating(simdBaseType) || !varTypeIsLong(simdBaseType));
+#else
+                assert(varTypeIsFloating(simdBaseType));
+#endif
+                assert(op2.Type == simdType);
+
+#if TARGET_XARCH
+                if (varTypeIsFloating(simdBaseType))
+                {
+                    if (simdSize is 64)
+                    {
+                        id = NI_AVX512_Divide;
+                    }
+                    else if (simdSize is 32)
+                    {
+                        id = NI_AVX_Divide;
+                    }
+                    else
+                    {
+                        id = isScalar ? NI_X86Base_DivideScalar : NI_X86Base_Divide;
+                    }
+                }
+#elif TARGET_ARM64
+                if ((simdSize is 8) && (isScalar || (simdBaseType is TYP_DOUBLE)))
+                {
+                    id = NI_AdvSimd_DivideScalar;
+                }
+                else
+                {
+                    id = NI_AdvSimd_Arm64_Divide;
+                }
+#endif
+                break;
+            }
+
+            case GT_LSH:
+            {
+                assert(!isScalar);
+                assert((op2.Type == simdType) || varTypeIsInt(op2.Type));
+                assert(varTypeIsIntegral(simdBaseType));
+
+#if TARGET_XARCH
+                if (varTypeIsByte(simdBaseType))
+                {
+                    break;
+                }
+
+                if (varTypeIsInt(op2.Type))
+                {
+                    if (simdSize is 64)
+                    {
+                        id = NI_AVX512_ShiftLeftLogical;
+                    }
+                    else if (simdSize is 32)
+                    {
+                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                        id = NI_AVX2_ShiftLeftLogical;
+                    }
+                    else
+                    {
+                        id = NI_X86Base_ShiftLeftLogical;
+                    }
+                }
+                else if ((simdSize is 64) || varTypeIsShort(simdBaseType))
+                {
+                    if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                    {
+                        id = NI_AVX512_ShiftLeftLogicalVariable;
+                    }
+                }
+                else if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                {
+                    id = NI_AVX2_ShiftLeftLogicalVariable;
+                }
+#elif TARGET_ARM64
+                if ((simdSize is 8) && (simdBaseType.Size is 8))
+                {
+                    id = op2.Oper.IsCnsIntOrI ? NI_AdvSimd_ShiftLeftLogicalScalar : NI_AdvSimd_ShiftLogicalScalar;
+                }
+                else
+                {
+                    id = op2.Oper.IsCnsIntOrI ? NI_AdvSimd_ShiftLeftLogical : NI_AdvSimd_ShiftLogical;
+                }
+#endif
+                break;
+            }
+
+            case GT_MUL:
+            {
+#if TARGET_XARCH
+                assert(op2.Type == simdType);
+
+                if (simdSize is 64)
+                {
+                    if (varTypeIsFloating(simdBaseType))
+                    {
+                        id = NI_AVX512_Multiply;
+                    }
+                    else if (!varTypeIsByte(simdBaseType))
+                    {
+                        id = NI_AVX512_MultiplyLow;
+                    }
+                }
+                else if (varTypeIsLong(simdBaseType))
+                {
+                    if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                    {
+                        id = NI_AVX512_MultiplyLow;
+                    }
+                }
+                else if (simdSize is 32)
+                {
+                    if (varTypeIsFloating(simdBaseType))
+                    {
+                        id = NI_AVX_Multiply;
+                    }
+                    else if (!varTypeIsByte(simdBaseType))
+                    {
+                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                        id = NI_AVX2_MultiplyLow;
+                    }
+                }
+                else if (varTypeIsFloating(simdBaseType))
+                {
+                    id = isScalar ? NI_X86Base_MultiplyScalar : NI_X86Base_Multiply;
+                }
+                else if (!varTypeIsByte(simdBaseType))
+                {
+                    id = NI_X86Base_MultiplyLow;
+                }
+#elif TARGET_ARM64
+                if ((simdSize is 8) && (isScalar || (simdBaseType is TYP_DOUBLE)))
+                {
+                    id = NI_AdvSimd_MultiplyScalar;
+                }
+                else if (simdBaseType is TYP_DOUBLE)
+                {
+                    id = (op2.Type == simdType) ? NI_AdvSimd_Arm64_Multiply : NI_AdvSimd_Arm64_MultiplyByScalar;
+                }
+                else if (!varTypeIsLong(simdBaseType))
+                {
+                    id = (op2.Type == simdType) ? NI_AdvSimd_Multiply : NI_AdvSimd_MultiplyByScalar;
+                }
+#endif
+                break;
+            }
+
+            case GT_OR:
+            {
+                assert(!isScalar);
+                assert(op2.Type == simdType);
+
+#if TARGET_XARCH
+                if (simdSize is 64)
+                {
+                    id = NI_AVX512_Or;
+                }
+                else if (simdSize is 32)
+                {
+                    if (varTypeIsIntegral(simdBaseType))
+                    {
+                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                        id = NI_AVX2_Or;
+                    }
+                    else
+                    {
+                        id = NI_AVX_Or;
+                    }
+                }
+                else
+                {
+                    id = NI_X86Base_Or;
+                }
+#elif TARGET_ARM64
+                id = NI_AdvSimd_Or;
+#endif
+                break;
+            }
+
+            case GT_ROL:
+            {
+                assert(!isScalar);
+                assert((op2.Type == simdType) || varTypeIsInt(op2.Type));
+                assert(varTypeIsIntegral(simdBaseType));
+
+#if TARGET_XARCH
+                if (!varTypeIsSmall(simdBaseType) && compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                {
+                    id = varTypeIsInt(op2.Type) ? NI_AVX512_RotateLeft : NI_AVX512_RotateLeftVariable;
+                }
+#endif // TARGET_XARCH
+                break;
+            }
+
+            case GT_ROR:
+            {
+                assert(!isScalar);
+                assert((op2.Type == simdType) || varTypeIsInt(op2.Type));
+                assert(varTypeIsIntegral(simdBaseType));
+
+#if TARGET_XARCH
+                if (!varTypeIsSmall(simdBaseType) && compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                {
+                    id = varTypeIsInt(op2.Type) ? NI_AVX512_RotateRight : NI_AVX512_RotateRightVariable;
+                }
+#endif // TARGET_XARCH
+                break;
+            }
+
+            case GT_RSH:
+            {
+                assert(!isScalar);
+                assert((op2.Type == simdType) || varTypeIsInt(op2.Type));
+                assert(varTypeIsIntegral(simdBaseType));
+
+#if TARGET_XARCH
+                if (varTypeIsByte(simdBaseType))
+                {
+                    break;
+                }
+
+                if (varTypeIsInt(op2.Type))
+                {
+                    if ((simdSize is 64) || (simdBaseType.Size is 8))
+                    {
+                        if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                        {
+                            id = NI_AVX512_ShiftRightArithmetic;
+                        }
+                    }
+                    else if (simdSize is 32)
+                    {
+                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                        id = NI_AVX2_ShiftRightArithmetic;
+                    }
+                    else
+                    {
+                        id = NI_X86Base_ShiftRightArithmetic;
+                    }
+                }
+                else if ((simdSize is 64) || varTypeIsShort(simdBaseType) || (simdBaseType.Size is 8))
+                {
+                    if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                    {
+                        id = NI_AVX512_ShiftRightArithmeticVariable;
+                    }
+                }
+                else if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                {
+                    id = NI_AVX2_ShiftRightArithmeticVariable;
+                }
+#elif TARGET_ARM64
+                if ((simdSize is 8) && (simdBaseType.Size is 8))
+                {
+                    id = op2.Oper.IsCnsIntOrI ? NI_AdvSimd_ShiftRightArithmeticScalar : NI_AdvSimd_ShiftArithmeticScalar;
+                }
+                else
+                {
+                    id = op2.Oper.IsCnsIntOrI ? NI_AdvSimd_ShiftRightArithmetic : NI_AdvSimd_ShiftArithmetic;
+                }
+#endif
+                break;
+            }
+
+            case GT_RSZ:
+            {
+                assert(!isScalar);
+                assert((op2.Type == simdType) || varTypeIsInt(op2.Type));
+                assert(varTypeIsIntegral(simdBaseType));
+
+#if (TARGET_XARCH)
+                if (varTypeIsByte(simdBaseType))
+                {
+                    break;
+                }
+
+                if (varTypeIsInt(op2.Type))
+                {
+                    if (simdSize is 64)
+                    {
+                        id = NI_AVX512_ShiftRightLogical;
+                    }
+                    else if (simdSize is 32)
+                    {
+                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                        id = NI_AVX2_ShiftRightLogical;
+                    }
+                    else
+                    {
+                        id = NI_X86Base_ShiftRightLogical;
+                    }
+                }
+                else if ((simdSize is 64) || varTypeIsShort(simdBaseType))
+                {
+                    if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                    {
+                        id = NI_AVX512_ShiftRightLogicalVariable;
+                    }
+                }
+                else if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                {
+                    id = NI_AVX2_ShiftRightLogicalVariable;
+                }
+#elif TARGET_ARM64
+                if ((simdSize is 8) && (simdBaseType.Size is 8))
+                {
+                    id = varTypeIsInt(op2.Type) ? NI_AdvSimd_ShiftRightLogicalScalar : NI_AdvSimd_ShiftLogicalScalar;
+                }
+                else
+                {
+                    id = varTypeIsInt(op2.Type) ? NI_AdvSimd_ShiftRightLogical : NI_AdvSimd_ShiftLogical;
+                }
+#endif
+                break;
+            }
+
+            case GT_SUB:
+            {
+                assert(op2.Type == simdType);
+
+#if TARGET_XARCH
+                if (simdSize is 64)
+                {
+                    id = NI_AVX512_Subtract;
+                }
+                else if (simdSize is 32)
+                {
+                    if (varTypeIsIntegral(simdBaseType))
+                    {
+                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                        id = NI_AVX2_Subtract;
+                    }
+                    else
+                    {
+                        id = NI_AVX_Subtract;
+                    }
+                }
+                else
+                {
+                    id = isScalar ? NI_X86Base_SubtractScalar : NI_X86Base_Subtract;
+                }
+#elif TARGET_ARM64
+                if ((simdSize is 8) && (isScalar || (simdBaseType.Size is 8)))
+                {
+                    id = NI_AdvSimd_SubtractScalar;
+                }
+                else if (simdBaseType == TYP_DOUBLE)
+                {
+                    id = NI_AdvSimd_Arm64_Subtract;
+                }
+                else
+                {
+                    id = NI_AdvSimd_Subtract;
+                }
+#endif
+                break;
+            }
+
+            case GT_XOR:
+            {
+                assert(!isScalar);
+                assert(op2.Type == simdType);
+
+#if TARGET_XARCH
+                if (simdSize is 64)
+                {
+                    id = NI_AVX512_Xor;
+                }
+                else if (simdSize is 32)
+                {
+                    if (varTypeIsIntegral(simdBaseType))
+                    {
+                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                        id = NI_AVX2_Xor;
+                    }
+                    else
+                    {
+                        id = NI_AVX_Xor;
+                    }
+                }
+                else
+                {
+                    id = NI_X86Base_Xor;
+                }
+#elif TARGET_ARM64
+                id = NI_AdvSimd_Xor;
+#endif
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+
+        return id;
+    }
+
+    /// <summary>Returns intrinsic ID based on the oper, base type, and simd size</summary>
+    /// <param name="oper">The oper for which to get the intrinsic ID</param>
+    /// <param name="type">The return type of the comparison</param>
+    /// <param name="op1">The first operand on which oper is executed</param>
+    /// <param name="op2">The second operand on which oper is executed</param>
+    /// <param name="simdBaseType">The base type on which oper is executed</param>
+    /// <param name="simdSize">The simd size on which oper is executed</param>
+    /// <param name="isScalar">True if the oper is over scalar data; otherwise false</param>
+    /// <param name="reverseCond">True if the oper should be reversed; otherwise false</param>
+    /// <returns></returns>
+    public NamedIntrinsic GetHWIntrinsicIdForCmpOp(genTreeOps oper, var_types type, GenTree op1, GenTree op2, var_types simdBaseType, byte simdSize, bool isScalar, bool reverseCond = false)
+    {
+        var simdType = GetSimdTypeForSize(simdSize);
+        assert(varTypeIsMask(type) || (type == simdType));
+
+        assert(varTypeIsArithmetic(simdBaseType));
+        assert(varTypeIsSimd(simdType));
+
+        assert(op1 is not null);
+        assert(op1.Type == simdType);
+        assert(op2 is not null);
+
+#if TARGET_XARCH
+        if (varTypeIsMask(type))
+        {
+            assert(!isScalar);
+            assert(canUseEvexEncodingDebugOnly());
+        }
+        else if (simdSize is 32)
+        {
+            assert(!isScalar);
+        }
+        else
+#endif
+        {
+            assert((simdSize is 8) || (simdSize is 16));
+
+#if TARGET_ARM64
+            assert(!isScalar || (simdSize is 8));
+#endif
+
+            assert(!isScalar || varTypeIsFloating(simdBaseType));
+        }
+
+        var id = NI_Illegal;
+
+        if (reverseCond)
+        {
+            oper = oper.ReverseRelop;
+
+            if (varTypeIsIntegral(simdBaseType))
+            {
+                reverseCond = false;
+            }
+#if TARGET_ARM64
+            else if (oper is not GT_EQ)
+            {
+                // Unlike xarch, there is no reverse comparison
+                // for floating-point and so we cannot actually
+                // optimize these. The exception is GT_NE which
+                // becomes GT_EQ
+
+                return NI_Illegal;
+            }
+#endif
+        }
+
+        switch (oper)
+        {
+            case GT_EQ:
+            {
+                assert(op2.Type == simdType);
+
+#if TARGET_XARCH
+                if (varTypeIsMask(type))
+                {
+                    id = NI_AVX512_CompareEqualMask;
+                }
+                else if (simdSize is 32)
+                {
+                    if (varTypeIsIntegral(simdBaseType))
+                    {
+                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                        id = NI_AVX2_CompareEqual;
+                    }
+                    else
+                    {
+                        id = NI_AVX_CompareEqual;
+                    }
+                }
+                else
+                {
+                    id = isScalar ? NI_X86Base_CompareScalarEqual : NI_X86Base_CompareEqual;
+                }
+#elif TARGET_ARM64
+                if (simdBaseType.Size is 8)
+                {
+                    id = (simdSize is 8) ? NI_AdvSimd_Arm64_CompareEqualScalar : NI_AdvSimd_Arm64_CompareEqual;
+                }
+                else
+                {
+                    id = NI_AdvSimd_CompareEqual;
+                }
+#endif
+                break;
+            }
+
+            case GT_GE:
+            {
+                assert(op2.Type == simdType);
+
+#if TARGET_XARCH
+                if (varTypeIsMask(type))
+                {
+                    id = reverseCond ? NI_AVX512_CompareNotLessThanMask : NI_AVX512_CompareGreaterThanOrEqualMask;
+                }
+                else if (varTypeIsIntegral(simdBaseType))
+                {
+                    // This should have been handled by the caller setting type = TYP_MASK
+                    assert(!canUseEvexEncodingDebugOnly());
+                }
+                else if (simdSize is 32)
+                {
+                    id = reverseCond ? NI_AVX_CompareNotLessThan : NI_AVX_CompareGreaterThanOrEqual;
+                }
+                else if (isScalar)
+                {
+                    id = reverseCond ? NI_X86Base_CompareScalarNotLessThan : NI_X86Base_CompareScalarGreaterThanOrEqual;
+                }
+                else
+                {
+                    id = reverseCond ? NI_X86Base_CompareNotLessThan : NI_X86Base_CompareGreaterThanOrEqual;
+                }
+#elif TARGET_ARM64
+                if (simdBaseType.Size is 8)
+                {
+                    id = (simdSize is 8) ? NI_AdvSimd_Arm64_CompareGreaterThanOrEqualScalar
+                                         : NI_AdvSimd_Arm64_CompareGreaterThanOrEqual;
+                }
+                else
+                {
+                    id = NI_AdvSimd_CompareGreaterThanOrEqual;
+                }
+#endif
+                break;
+            }
+
+            case GT_GT:
+            {
+                assert(op2.Type == simdType);
+
+#if TARGET_XARCH
+                if (varTypeIsMask(type))
+                {
+                    id = reverseCond ? NI_AVX512_CompareNotLessThanOrEqualMask : NI_AVX512_CompareGreaterThanMask;
+                }
+                else if (varTypeIsIntegral(simdBaseType))
+                {
+                    if (varTypeIsSigned(simdBaseType))
+                    {
+                        if (simdSize is 32)
+                        {
+                            assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                            id = NI_AVX2_CompareGreaterThan;
+                        }
+                        else
+                        {
+                            id = NI_X86Base_CompareGreaterThan;
+                        }
+                    }
+                    else
+                    {
+                        // This should have been handled by the caller setting type = TYP_MASK
+                        assert(!canUseEvexEncodingDebugOnly());
+                    }
+                }
+                else if (simdSize is 32)
+                {
+                    id = reverseCond ? NI_AVX_CompareNotLessThanOrEqual : NI_AVX_CompareGreaterThan;
+                }
+                else if (isScalar)
+                {
+                    id = reverseCond ? NI_X86Base_CompareScalarNotLessThanOrEqual : NI_X86Base_CompareScalarGreaterThan;
+                }
+                else
+                {
+                    id = reverseCond ? NI_X86Base_CompareNotLessThanOrEqual : NI_X86Base_CompareGreaterThan;
+                }
+#elif TARGET_ARM64
+            if (simdBaseType.Size is 8)
+            {
+                id = (simdSize is 8) ? NI_AdvSimd_Arm64_CompareGreaterThanScalar : NI_AdvSimd_Arm64_CompareGreaterThan;
+            }
+            else
+            {
+                id = NI_AdvSimd_CompareGreaterThan;
+            }
+#endif
+                break;
+            }
+
+            case GT_LE:
+            {
+                assert(op2.Type == simdType);
+
+#if TARGET_XARCH
+                if (varTypeIsMask(type))
+                {
+                    id = reverseCond ? NI_AVX512_CompareNotGreaterThanMask : NI_AVX512_CompareLessThanOrEqualMask;
+                }
+                else if (varTypeIsIntegral(simdBaseType))
+                {
+                    // This should have been handled by the caller setting type = TYP_MASK
+                    assert(!canUseEvexEncodingDebugOnly());
+                }
+                else if (simdSize is 32)
+                {
+                    id = reverseCond ? NI_AVX_CompareNotGreaterThan : NI_AVX_CompareLessThanOrEqual;
+                }
+                else if (isScalar)
+                {
+                    id = reverseCond ? NI_X86Base_CompareScalarNotGreaterThan : NI_X86Base_CompareScalarLessThanOrEqual;
+                }
+                else
+                {
+                    id = reverseCond ? NI_X86Base_CompareNotGreaterThan : NI_X86Base_CompareLessThanOrEqual;
+                }
+#elif TARGET_ARM64
+                if (simdBaseType.Size is 8)
+                {
+                    id = (simdSize is 8) ? NI_AdvSimd_Arm64_CompareLessThanOrEqualScalar
+                                         : NI_AdvSimd_Arm64_CompareLessThanOrEqual;
+                }
+                else
+                {
+                    id = NI_AdvSimd_CompareLessThanOrEqual;
+                }
+#endif
+                break;
+            }
+
+            case GT_LT:
+            {
+                assert(op2.Type == simdType);
+
+                // !GE
+
+#if TARGET_XARCH
+                if (varTypeIsMask(type))
+                {
+                    id = reverseCond ? NI_AVX512_CompareNotGreaterThanOrEqualMask : NI_AVX512_CompareLessThanMask;
+                }
+                else if (varTypeIsIntegral(simdBaseType))
+                {
+                    if (varTypeIsSigned(simdBaseType))
+                    {
+                        if (simdSize is 32)
+                        {
+                            assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                            id = NI_AVX2_CompareLessThan;
+                        }
+                        else
+                        {
+                            id = NI_X86Base_CompareLessThan;
+                        }
+                    }
+                    else
+                    {
+                        // This should have been handled by the caller setting type = TYP_MASK
+                        assert(!canUseEvexEncodingDebugOnly());
+                    }
+                }
+                else if (simdSize is 32)
+                {
+                    id = reverseCond ? NI_AVX_CompareNotGreaterThanOrEqual : NI_AVX_CompareLessThan;
+                }
+                else if (isScalar)
+                {
+                    id = reverseCond ? NI_X86Base_CompareScalarNotGreaterThanOrEqual : NI_X86Base_CompareScalarLessThan;
+                }
+                else
+                {
+                    id = reverseCond ? NI_X86Base_CompareNotGreaterThanOrEqual : NI_X86Base_CompareLessThan;
+                }
+#elif TARGET_ARM64
+                if (simdBaseType.Size is 8)
+                {
+                    id = (simdSize is 8) ? NI_AdvSimd_Arm64_CompareLessThanScalar : NI_AdvSimd_Arm64_CompareLessThan;
+                }
+                else
+                {
+                    id = NI_AdvSimd_CompareLessThan;
+                }
+#endif
+                break;
+            }
+
+            case GT_NE:
+            {
+                assert(op2.Type == simdType);
+
+#if TARGET_XARCH
+                if (varTypeIsMask(type))
+                {
+                    id = NI_AVX512_CompareNotEqualMask;
+                }
+                else if (varTypeIsIntegral(simdBaseType))
+                {
+                    // This should have been handled by the caller setting type = TYP_MASK
+                    assert(!canUseEvexEncodingDebugOnly());
+                }
+                else if (simdSize is 32)
+                {
+                    id = NI_AVX_CompareNotEqual;
+                }
+                else
+                {
+                    id = isScalar ? NI_X86Base_CompareScalarNotEqual : NI_X86Base_CompareNotEqual;
+                }
+#endif
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+
+        return id;
+    }
+
+    /// <summary>Returns intrinsic ID based on the oper, base type, and simd size</summary>
+    /// <param name="oper">The oper for which to get the intrinsic ID</param>
+    /// <param name="op1">The first operand on which oper is executed</param>
+    /// <param name="simdBaseType">The base type on which oper is executed</param>
+    /// <param name="simdSize">The simd size on which oper is executed</param>
+    /// <param name="isScalar">True if the oper is over scalar data; otherwise false</param>
+    /// <returns>The intrinsic ID based on the oper, base type, and simd size</returns>
+    public NamedIntrinsic GetHWIntrinsicIdForUnOp(genTreeOps oper, GenTree op1, var_types simdBaseType, byte simdSize, bool isScalar)
+    {
+        var simdType = GetSimdTypeForSize(simdSize);
+
+        assert(varTypeIsArithmetic(simdBaseType));
+        assert(varTypeIsSimd(simdType));
+
+#if TARGET_XARCH
+        if (simdSize is 32 or 64)
+        {
+            assert(!isScalar);
+        }
+        else
+#endif
+        {
+#if TARGET_ARM64
+            assert(!isScalar || (simdSize is 8));
+            // TODO-SVE: Add scalable length support
+            assert(simdSize is 8 or 16);
+#endif
+
+            assert(!isScalar || varTypeIsFloating(simdBaseType));
+        }
+
+        assert(op1 is not null);
+        assert(op1.Type == simdType);
+
+        var id = NI_Illegal;
+
+        switch (oper)
+        {
+            case GT_NEG:
+            {
+#if TARGET_ARM64
+                assert(varTypeIsSigned(simdBaseType) || varTypeIsFloating(simdBaseType));
+
+                if (varTypeIsLong(simdBaseType))
+                {
+                    id = (simdSize is 8) ? NI_AdvSimd_Arm64_NegateScalar : NI_AdvSimd_Arm64_Negate;
+                }
+                else if ((simdSize is 8) && (isScalar || (simdBaseType.Size is 8)))
+                {
+                    id = NI_AdvSimd_NegateScalar;
+                }
+                else if (simdBaseType == TYP_DOUBLE)
+                {
+                    id = NI_AdvSimd_Arm64_Negate;
+                }
+                else
+                {
+                    id = NI_AdvSimd_Negate;
+                }
+#endif
+                break;
+            }
+
+            case GT_NOT:
+            {
+                assert(!isScalar);
+
+#if TARGET_ARM64
+                id = NI_AdvSimd_Not;
+#endif
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+
+        return id;
+    }
+
+    /// <summary>Returns the lookup type for a SIMD comparison operation</summary>
+    /// <param name="oper">The comparison operation</param>
+    /// <param name="type">The expected IR type of the comparison</param>
+    /// <param name="simdBaseType">The base type on which oper is executed</param>
+    /// <param name="simdSize">The simd size on which oper is executed</param>
+    /// <param name="reverseCond">True if the oper should be reversed; otherwise false</param>
+    /// <returns>The lookup type for the given operation given the expected IR type, base type, and simd size</returns>
+    /// <remarks>This API is namely meant to assist in handling cases where the underlying instruction return type doesn't match with the type IR wants us to be producing. For example, the consuming node may expect a TYP_SIMD16 but the underlying instruction may produce a TYP_MASK.</remarks>
+    public var_types GetLookupTypeForCmpOp(genTreeOps oper, var_types type, var_types simdBaseType, byte simdSize, bool reverseCond = false)
+    {
+        var simdType = GetSimdTypeForSize(simdSize);
+        assert(varTypeIsMask(type) || (type == simdType));
+
+        assert(varTypeIsArithmetic(simdBaseType));
+        assert(varTypeIsSimd(simdType));
+
+        var lookupType = type;
+
+#if (TARGET_XARCH)
+        if ((simdSize is 64) || canUseEvexEncoding())
+        {
+            lookupType = TYP_MASK;
+        }
+#endif
+
+        return lookupType;
+    }
+#endif
+
 #if DEBUG
     /// <summary>Get the local var name</summary>
     /// <param name="lclNum"></param>
@@ -2479,6 +3774,68 @@ public partial class Compiler
 #endif
 
     public static var_types gtGetTypeForIconFlags(GenTreeFlags flags) => (flags == GTF_ICON_OBJ_HDL) ? TYP_REF : TYP_I_IMPL;
+
+    /// <summary>determine if a tree produces a runtime type, and if so, how.</summary>
+    /// <param name="tree">The tree to examine</param>
+    /// <returns>TypeProducerKind for the tree.</returns>
+    public unsafe TypeProducerKind gtGetTypeProducerKind(GenTree tree)
+    {
+        // Notes:
+        //    Checks to see if this tree returns a RuntimeType value, and if so,
+        //    how that value is determined.
+        //
+        //    Currently handles these cases
+        //    1) The result of Object.GetType
+        //    2) The result of typeof(...)
+        //    3) A null reference
+        //    4) Tree is otherwise known to have type RuntimeType
+        //
+        //    The null reference case is surprisingly common because operator
+        //    overloading turns the otherwise innocuous
+        //
+        //        Type t = ....;
+        //        if (t is null)
+        //
+        //    into a method call.
+
+        if (tree.Oper is GT_CALL)
+        {
+            var call = tree.AsCall();
+
+            if (call.IsHelperCall())
+            {
+                if (gtIsTypeHandleToRuntimeTypeHelper(call))
+                {
+                    return TPK_Handle;
+                }
+            }
+            else if (call.IsSpecialIntrinsic())
+            {
+                if (lookupNamedIntrinsic(call._callMethHnd) is NI_System_Object_GetType)
+                {
+                    return TPK_GetType;
+                }
+            }
+        }
+        else if ((tree.Oper is GT_INTRINSIC) && (tree.AsIntrinsic().IntrinsicName is NI_System_Object_GetType))
+        {
+            return TPK_GetType;
+        }
+        else if ((tree.Oper is GT_CNS_INT) && (tree.AsIntCon().IconVal is 0))
+        {
+            return TPK_Null;
+        }
+        else
+        {
+            var clsHnd = gtGetClassHandle(tree, out _, out _);
+
+            if ((clsHnd != NO_CLASS_HANDLE) && (clsHnd == info.compCompHnd->getBuiltinClass(CLASSID_RUNTIME_TYPE)))
+            {
+                return TPK_Other;
+            }
+        }
+        return TPK_Unknown;
+    }
 
     public bool gtHasCatchArg(GenTree tree)
     {
@@ -2677,6 +4034,88 @@ public partial class Compiler
         }
     }
 
+    public unsafe bool gtIsTypeof(GenTree tree) => gtIsTypeof(tree, out _);
+
+    /// <summary>Checks if the tree is a typeof()</summary>
+    /// <param name="tree">the tree that is checked</param>
+    /// <param name="handle">set to the type</param>
+    /// <returns>Is the tree typeof()</returns>
+    public unsafe bool gtIsTypeof(GenTree tree, out CORINFO_CLASS_HANDLE handle)
+    {
+        if (tree.Oper.IsCall)
+        {
+            var call = tree.AsCall();
+
+            if (gtIsTypeHandleToRuntimeTypeHelper(call))
+            {
+                assert(call.Args.CountArgs() is 1);
+
+                var callArg = call.Args.GetArgByIndex(0);
+                assert(callArg is not null);
+
+                var hClass = gtGetHelperArgClassHandle(callArg.EarlyNode);
+
+                if (hClass != NO_CLASS_HANDLE)
+                {
+                    handle = hClass;
+                    return true;
+                }
+            }
+        }
+
+        handle = NO_CLASS_HANDLE;
+        return false;
+    }
+
+    public GenTree gtNewAllBitsSetConNode(var_types type)
+    {
+#if FEATURE_SIMD
+        if (varTypeIsSimd(type))
+        {
+            var allBitsSet = gtNewVconNode(type);
+            allBitsSet.SimdVal = simd_t.AllBitsSet;
+            return allBitsSet;
+        }
+#endif
+
+        switch (type)
+        {
+            case TYP_UBYTE:
+            {
+                return gtNewIconNode(TYP_INT, 0xFF);
+            }
+
+            case TYP_USHORT:
+            {
+                return gtNewIconNode(TYP_INT, 0xFFFF);
+            }
+
+            case TYP_UINT:
+            {
+                return gtNewIconNode(TYP_INT, unchecked((nint)(0xFFFF_FFFF)));
+            }
+
+            case TYP_BYTE:
+            case TYP_SHORT:
+            case TYP_INT:
+            {
+                return gtNewIconNode(TYP_INT, -1);
+            }
+
+            case TYP_LONG:
+            case TYP_ULONG:
+            {
+                return gtNewLconNode(-1);
+            }
+
+            default:
+            {
+                unreached();
+                return null;
+            }
+        }
+    }
+
     /// <summary>A little helper to create an object allocation node.</summary>
     /// <param name="type">Tree return type (e.g. TYP_REF)</param>
     /// <param name="op1">Node containing an address of VtablePtr</param>
@@ -2772,9 +4211,49 @@ public partial class Compiler
         return arrLen;
     }
 
+    /// <summary>Create a new atomic operation node.</summary>
+    /// <param name="oper">The atomic oper</param>
+    /// <param name="type">Type to store/load</param>
+    /// <param name="addr">Destination ("location") address</param>
+    /// <param name="value">Value</param>
+    /// <param name="comparand">Comparand value for a CMPXCHG</param>
+    /// <returns>The created node.</returns>
+    public GenTree gtNewAtomicNode(genTreeOps oper, var_types type, GenTree addr, GenTree value, GenTree? comparand = null)
+    {
+        assert(oper.IsAtomic && ((oper is GT_CMPXCHG) == (comparand is not null)));
+        GenTreeIndir node;
+
+        if (comparand is not null)
+        {
+            node = new GenTreeCmpXchg(type, addr, value, comparand);
+            addr.Flags |= GTF_DONT_CSE;
+        }
+        else
+        {
+            node = new GenTreeIndir(oper, type, addr, value);
+        }
+
+        // All atomics are opaque global stores.
+        node.AddAllEffectsFlags(GTF_ASG);
+
+        gtInitializeIndirNode(node, GTF_EMPTY);
+        return node;
+    }
+
     public GenTreeOp gtNewBinaryNode(genTreeOps oper, var_types type, GenTree op1, GenTree op2)
     {
         return new GenTreeOp(oper, type, op1, op2);
+    }
+
+    /// <summary>Creates a new BitCast node.</summary>
+    /// <param name="type">The actual type of the argument</param>
+    /// <param name="arg">The argument node</param>
+    /// <returns>Returns the newly created BitCast node.</returns>
+    public GenTreeUnOp gtNewBitCastNode(var_types type, GenTree arg)
+    {
+        assert(arg is not null);
+        assert(type is not TYP_STRUCT);
+        return gtNewUnaryNode(GT_BITCAST, type, arg);
     }
 
     /// <summary>Create a struct indirection node.</summary>
@@ -3269,6 +4748,20 @@ public partial class Compiler
         return node;
     }
 
+    public GenTree gtNewKeepAliveNode(GenTree op)
+    {
+        var keepalive = gtNewUnaryNode(GT_KEEPALIVE, TYP_VOID, op);
+
+        // Prevent both reordering and removal. Invalid optimizations of GC.KeepAlive are
+        // very subtle and hard to observe. Thus we are conservatively marking it with both
+        // GTF_CALL and GTF_GLOB_REF side-effects even though it may be more than strictly
+        // necessary. The conservative side-effects are unlikely to have negative impact
+        // on code quality in this case.
+        keepalive.Flags |= (GTF_CALL | GTF_GLOB_REF);
+
+        return keepalive;
+    }
+
     public GenTreeLclFld gtNewLclAddrNode(var_types type, int lclNum, ushort lclOffs, ClassLayout? layout = null)
     {
         return new GenTreeLclFld(GT_LCL_ADDR, type, lclNum, lclOffs, layout);
@@ -3464,6 +4957,44 @@ public partial class Compiler
     }
 #endif
 
+    //---------------------------------------------------------------------------------------
+    // gtNewMustThrowException:
+    //    create a throw node (calling into JIT helper) that must be thrown.
+    //    The result would be a comma node: COMMA(jithelperthrow(void), x) where x's type should be specified.
+    //
+    // Arguments
+    //    helper      -  JIT helper ID
+    //    type        -  return type of the node
+    //
+    // Return Value
+    //    pointer to the throw node
+    //
+    public unsafe GenTree gtNewMustThrowException(CorInfoHelpFunc helper, var_types type, CORINFO_CLASS_HANDLE clsHnd)
+    {
+        var node = gtNewHelperCallNode(TYP_VOID, helper);
+        assert(node.IsNoReturn);
+
+        if (type is not TYP_VOID)
+        {
+            var dummyTemp = lvaGrabTemp(shortLifetime: true, "dummy temp of must thrown exception");
+
+            if (type is TYP_STRUCT)
+            {
+                // struct type is normalized
+                lvaSetStruct(dummyTemp, clsHnd, false);
+                type = lvaTable[dummyTemp].Type;
+            }
+            else
+            {
+                lvaTable[dummyTemp].Type = type;
+            }
+
+            var dummyNode = gtNewLclvNode(type, dummyTemp);
+            return gtNewCommaNode(type, node, dummyNode);
+        }
+        return node;
+    }
+
     /// <summary>Create (and check for) a "nothing" node, i.e. a node that doesn't produce any code.</summary>
     /// <returns></returns>
     /// <remarks>We currently use a "GT_NOP" node of type void for this purpose.</remarks>
@@ -3552,7 +5083,9 @@ public partial class Compiler
         assert(fieldInfo.fieldAccessor is CORINFO_FIELD_INSTANCE_HELPER or CORINFO_FIELD_INSTANCE_ADDR_HELPER or CORINFO_FIELD_STATIC_ADDR_HELPER);
 
         // Arguments in reverse order
-        var args = default(InlineArray4<GenTree>);
+        Unsafe.SkipInit(out InlineArray4<GenTree> inlineArgs);
+        var args = (Span<GenTree>)(inlineArgs);
+
         var nArgs = 0;
 
         // If we can't access it directly, we need to call a helper function
@@ -3713,6 +5246,3568 @@ public partial class Compiler
     {
         return new GenTreeStrCon(cpx, scpHandle);
     }
+
+#if FEATURE_HW_INTRINSICS
+    public GenTreeHWIntrinsic gtNewSimdHWIntrinsicNode(var_types type, NamedIntrinsic hwIntrinsicId, var_types simdBaseType, byte simdSize, params GenTree[] operands)
+    {
+        foreach (var operand in operands)
+        {
+            SetOpLclRelatedToSimdIntrinsic(operand);
+        }
+        return new GenTreeHWIntrinsic(type, hwIntrinsicId, simdBaseType, simdSize, operands);
+    }
+
+    public GenTreeHWIntrinsic gtNewScalarHWIntrinsicNode(var_types type, NamedIntrinsic hwIntrinsicId, params GenTree[] operands)
+    {
+        foreach (var operand in operands)
+        {
+            SetOpLclRelatedToSimdIntrinsic(operand);
+        }
+        return new GenTreeHWIntrinsic(type, hwIntrinsicId, TYP_UNKNOWN, simdSize: 0, operands);
+    }
+
+    public GenTree gtNewSimdAbsNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsSimd(type));
+        assert(GetSimdTypeForSize(simdSize) == type);
+
+        assert(op1 is not null);
+        assert(op1.Type == type);
+
+        assert(varTypeIsArithmetic(simdBaseType));
+
+        if (varTypeIsUnsigned(simdBaseType))
+        {
+            return op1;
+        }
+
+#if (TARGET_XARCH)
+        if (varTypeIsFloating(simdBaseType))
+        {
+            // Abs(v) = v & ~new vector<T>(-0.0);
+            GenTree bitMask;
+
+            if (simdBaseType == TYP_FLOAT)
+            {
+                bitMask = gtNewIconNode(TYP_INT, 0x7FFFFFFF);
+                bitMask = gtNewSimdCreateBroadcastNode(type, bitMask, TYP_INT, simdSize);
+            }
+            else
+            {
+                bitMask = gtNewLconNode(0x7FFFFFFFFFFFFFFF);
+                bitMask = gtNewSimdCreateBroadcastNode(type, bitMask, TYP_LONG, simdSize);
+            }
+            return gtNewSimdBinOpNode(GT_AND, type, op1, bitMask, simdBaseType, simdSize);
+        }
+
+        var intrinsic = NI_Illegal;
+
+        if ((simdSize is 64) || (simdBaseType == TYP_LONG))
+        {
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+            {
+                intrinsic = NI_AVX512_Abs;
+            }
+        }
+        else if (simdSize is 32)
+        {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+            intrinsic = NI_AVX2_Abs;
+        }
+        else
+        {
+            intrinsic = NI_X86Base_Abs;
+        }
+
+        if (intrinsic != NI_Illegal)
+        {
+            return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1);
+        }
+        else
+        {
+            var op1Dup1 = fgMakeMultiUse(ref op1);
+            var op1Dup2 = gtCloneExpr(op1Dup1);
+
+            // op1 = IsNegative(op1)
+            op1 = gtNewSimdIsNegativeNode(type, op1, simdBaseType, simdSize);
+
+            // tmp = -op1Dup1
+            var tmp = gtNewSimdUnOpNode(GT_NEG, type, op1Dup1, simdBaseType, simdSize);
+
+            // result = ConditionalSelect(op1, tmp, op1Dup2)
+            return gtNewSimdCndSelNode(type, op1, tmp, op1Dup2, simdBaseType, simdSize);
+        }
+#elif TARGET_ARM64
+        var intrinsic = NI_AdvSimd_Abs;
+
+        if (simdBaseType == TYP_DOUBLE)
+        {
+            intrinsic = (simdSize is 8) ? NI_AdvSimd_AbsScalar : NI_AdvSimd_Arm64_Abs;
+        }
+        else if (varTypeIsLong(simdBaseType))
+        {
+            intrinsic = (simdSize is 8) ? NI_AdvSimd_Arm64_AbsScalar : NI_AdvSimd_Arm64_Abs;
+        }
+
+        assert(intrinsic != NI_Illegal);
+        return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1);
+#else
+#error Unsupported platform
+#endif
+    }
+
+    public GenTree gtNewSimdBinOpNode(genTreeOps op, var_types type, GenTree op1, GenTree op2, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsSimd(type));
+        assert(GetSimdTypeForSize(simdSize) == type);
+
+        assert(varTypeIsArithmetic(simdBaseType));
+
+        assert(op1 is not null);
+        assert(op2 is not null);
+
+        assert((op1.Type == type) || (op1.Type == simdBaseType) || (op1.Type == simdBaseType.ActualType) || ((op1.Type is TYP_SIMD12) && (type is TYP_SIMD16)));
+
+        if (op is GT_LSH or GT_RSH or GT_RSZ)
+        {
+            assert(op2.Type.ActualType is TYP_INT);
+        }
+        else
+        {
+            assert((op2.Type.ActualType == type.ActualType) || (op2.Type.ActualType == simdBaseType.ActualType) || ((op2.Type is TYP_SIMD12) && (type is TYP_SIMD16)));
+        }
+
+        var needsReverseOps = false;
+        var op2ForLookup = null as GenTree;
+
+        switch (op)
+        {
+            case GT_DIV:
+            {
+                if (varTypeIsArithmetic(op2.Type))
+                {
+                    op2 = gtNewSimdCreateBroadcastNode(type, op2, simdBaseType, simdSize);
+                }
+                break;
+            }
+
+            case GT_LSH:
+            case GT_RSH:
+            case GT_RSZ:
+            {
+                // float and double don't have actual instructions for shifting
+                // so we'll just use the equivalent integer instruction instead.
+
+                if (simdBaseType is TYP_FLOAT)
+                {
+                    simdBaseType = TYP_INT;
+                }
+                else if (simdBaseType is TYP_DOUBLE)
+                {
+                    simdBaseType = TYP_LONG;
+                }
+
+                // "over shifting" is platform specific behavior. We will match the C# behavior
+                // this requires we mask with (sizeof(T) * 8) - 1 which ensures the shift cannot
+                // exceed the number of bits available in `T`. This is roughly equivalent to
+                // x % (sizeof(T) * 8), but that is "more expensive" and only the same for uint
+                // inputs, where-as we have a signed-input and so negative values would differ.
+
+                var shiftCountMask = (simdBaseType.Size * 8) - 1;
+
+                if (op2.Oper.IsCnsIntOrI)
+                {
+                    op2.AsIntCon().IconVal &= shiftCountMask;
+
+#if TARGET_ARM64
+                    // On ARM64, ShiftRight* intrinsics cannot encode a shift value of zero, so use the generic Shift* fallback intrinsic.
+                    // GenTreeHWIntrinsic.GetHWIntrinsicIdForBinOp will see that the immediate node is not const, and return the correct fallback intrinsic.
+
+                    if ((op is not GT_LSH) && (op2.AsIntCon().IconVal is 0))
+                    {
+                        op2 = gtNewZeroConNode(type);
+                    }
+#endif
+                }
+                else
+                {
+                    op2 = gtNewBinaryNode(GT_AND, TYP_INT, op2, gtNewIconNode(TYP_INT, shiftCountMask));
+
+#if TARGET_XARCH
+                    op2ForLookup = op2;
+                    op2 = gtNewSimdCreateScalarNode(TYP_SIMD16, op2, TYP_INT, 16);
+#elif TARGET_ARM64
+                    if (op is not GT_LSH)
+                    {
+                        op2 = gtNewOperNode(GT_NEG, TYP_INT, op2);
+                    }
+
+                    op2 = gtNewSimdCreateBroadcastNode(type, op2, simdBaseType, simdSize);
+#endif
+                }
+                break;
+            }
+
+            case GT_MUL:
+            {
+                scoped ref GenTree broadcastOp = ref Unsafe.NullRef<GenTree>();
+
+                if (varTypeIsArithmetic(op1.Type))
+                {
+                    broadcastOp = ref op1;
+
+#if TARGET_ARM64
+                    if (!varTypeIsByte(simdBaseType))
+                    {
+                        // MultiplyByScalar requires the scalar op to be op2 for GetHWIntrinsicIdForBinOp
+                        needsReverseOps = true;
+                    }
+#endif
+                }
+                else if (varTypeIsArithmetic(op2.Type))
+                {
+                    broadcastOp = ref op2;
+                }
+
+                if (!Unsafe.IsNullRef(in broadcastOp))
+                {
+#if TARGET_ARM64
+                    if (varTypeIsLong(simdBaseType))
+                    {
+                        // This is handled via emulation and the scalar is consumed directly
+                        break;
+                    }
+                    else if (!varTypeIsByte(simdBaseType))
+                    {
+                        op2ForLookup = broadcastOp;
+                        broadcastOp = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, broadcastOp, simdBaseType, 8);
+                        break;
+                    }
+#endif
+
+                    broadcastOp = gtNewSimdCreateBroadcastNode(type, broadcastOp, simdBaseType, simdSize);
+                }
+                break;
+            }
+
+#if TARGET_XARCH
+            case GT_AND:
+            case GT_AND_NOT:
+            case GT_OR:
+            case GT_XOR:
+            {
+                if (simdSize is 32)
+                {
+                    if (varTypeIsIntegral(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                    {
+                        if (varTypeIsLong(simdBaseType))
+                        {
+                            simdBaseType = TYP_DOUBLE;
+                        }
+                        else
+                        {
+                            simdBaseType = TYP_FLOAT;
+                        }
+                    }
+                }
+                break;
+            }
+#endif
+
+            default:
+            {
+                break;
+            }
+        }
+
+        if (needsReverseOps)
+        {
+            // We expect op1 to have already been spilled if needed
+            (op2, op1) = (op1, op2);
+        }
+
+        if (op2ForLookup is null)
+        {
+            op2ForLookup = op2;
+        }
+        else
+        {
+            assert(op2ForLookup != op1);
+        }
+
+        var intrinsic = GetHWIntrinsicIdForBinOp(op, op1, op2ForLookup, simdBaseType, simdSize, isScalar: false);
+
+        if (intrinsic != NI_Illegal)
+        {
+            if (op == GT_AND_NOT)
+            {
+                assert(fgNodeThreading == NodeThreading.LIR);
+
+#if TARGET_XARCH
+                // GT_AND_NOT expects `op1 & ~op2`, but xarch does `~op1 & op2`
+                // We specially handle this here since we're only producing a
+                // native intrinsic node in LIR
+
+                (op1, op2) = (op2, op1);
+#endif
+            }
+            return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1, op2);
+        }
+
+        switch (op)
+        {
+            case GT_AND_NOT:
+            {
+                // Prior to LIR, we want to explicitly decompose this operation so that downstream phases can
+                // appropriately optimize around the individual operations being performed, particularly ~op2,
+                // and produce overall better codegen.
+                assert(fgNodeThreading != NodeThreading.LIR);
+
+                op2 = gtNewSimdUnOpNode(GT_NOT, type, op2, simdBaseType, simdSize);
+                return gtNewSimdBinOpNode(GT_AND, type, op1, op2, simdBaseType, simdSize);
+            }
+
+#if TARGET_XARCH
+            case GT_LSH:
+            case GT_RSH:
+            case GT_RSZ:
+            {
+                // This emulates byte shift instructions, which don't exist in x86 SIMD,
+                // plus arithmetic shift of qwords, which did not exist before AVX-512.
+
+                assert(varTypeIsByte(simdBaseType) || (varTypeIsLong(simdBaseType) && (op == GT_RSH)));
+
+                // We will emulate arithmetic shift by using logical shift and then masking in the sign bits.
+                var instrOp = op == GT_RSH ? GT_RSZ : op;
+                intrinsic = GetHWIntrinsicIdForBinOp(instrOp, op1, op2ForLookup, simdBaseType.ActualType, simdSize, isScalar: false);
+                assert(intrinsic != NI_Illegal);
+
+                GenTree maskAmountOp;
+
+                if (op2.Oper.IsCnsIntOrI)
+                {
+                    var shiftCount = (int)(op2.AsIntCon().IconValue);
+
+                    if (varTypeIsByte(simdBaseType))
+                    {
+                        var mask = (op is GT_LSH) ? ((0xFF << shiftCount) & 0xFF) : (0xFF >> shiftCount);
+                        maskAmountOp = gtNewIconNode(type, mask);
+                    }
+                    else
+                    {
+                        var mask = -1L >> shiftCount;
+                        maskAmountOp = gtNewLconNode(mask);
+                    }
+                }
+                else
+                {
+                    assert(op2.IsHWIntrinsic(NI_Vector128_CreateScalar));
+
+                    ref var op2Op1Ref = ref op2.AsHWIntrinsic().GetOpRef(1);
+                    var shiftCountDup = fgMakeMultiUse(ref op2Op1Ref);
+
+                    if (op is GT_RSH)
+                    {
+                        // For arithmetic shift, we will be using ConditionalSelect to mask in the sign bits, which means
+                        // the mask will be evaluated before the shift. We swap the copied operand with the shift amount
+                        // operand here in order to preserve correct evaluation order for the masked shift count.
+                        var tmp = shiftCountDup;
+                        shiftCountDup = op2Op1Ref;
+                        op2Op1Ref = tmp;
+                    }
+
+                    maskAmountOp = gtNewBinaryNode(instrOp, simdBaseType.ActualType, gtNewAllBitsSetConNode(simdBaseType), shiftCountDup);
+                }
+
+                if (op is GT_RSH)
+                {
+                    var op1Dup = fgMakeMultiUse(ref op1);
+                    var signOp = gtNewSimdCmpOpNode(GT_GT, type, gtNewZeroConNode(type), op1Dup, simdBaseType, simdSize);
+
+                    var shiftType = varTypeIsSmall(simdBaseType) ? TYP_INT : simdBaseType;
+
+                    var shiftOp = gtNewSimdHWIntrinsicNode(type, intrinsic, shiftType, simdSize, op1, op2);
+                    var maskOp = gtNewSimdCreateBroadcastNode(type, maskAmountOp, simdBaseType, simdSize);
+
+                    return gtNewSimdCndSelNode(type, maskOp, shiftOp, signOp, simdBaseType, simdSize);
+                }
+                else
+                {
+                    var shiftOp = gtNewSimdHWIntrinsicNode(type, intrinsic, TYP_INT, simdSize, op1, op2);
+                    var maskOp = gtNewSimdCreateBroadcastNode(type, maskAmountOp, simdBaseType, simdSize);
+
+                    return gtNewSimdBinOpNode(GT_AND, type, shiftOp, maskOp, simdBaseType, simdSize);
+                }
+            }
+#endif
+
+#if TARGET_XARCH && FEATURE_HW_INTRINSICS
+            case GT_DIV:
+            {
+                if (varTypeIsIntegral(simdBaseType))
+                {
+                    assert(!varTypeIsLong(simdBaseType));
+                    if ((varTypeIsSmall(simdBaseType) && simdSize > 16) ||
+                        (varTypeIsInt(simdBaseType) && simdSize is 32 &&
+                         !compOpportunisticallyDependsOn(InstructionSet_AVX512)) ||
+                        simdSize is 64)
+                    {
+                        var divType = simdSize is 64 ? TYP_SIMD32 : TYP_SIMD16;
+
+                        var op1Dup = fgMakeMultiUse(ref op1);
+                        var op2Dup = fgMakeMultiUse(ref op2);
+
+                        var op1Lower = gtNewSimdGetLowerNode(divType, op1, simdBaseType, simdSize);
+                        var op2Lower = gtNewSimdGetLowerNode(divType, op2, simdBaseType, simdSize);
+                        var divLower = gtNewSimdBinOpNode(GT_DIV, divType, op1Lower, op2Lower, simdBaseType, (byte)(simdSize / 2));
+
+                        var op1Upper = gtNewSimdGetUpperNode(divType, op1Dup, simdBaseType, simdSize);
+                        var op2Upper = gtNewSimdGetUpperNode(divType, op2Dup, simdBaseType, simdSize);
+                        var divUpper = gtNewSimdBinOpNode(GT_DIV, divType, op1Upper, op2Upper, simdBaseType, (byte)(simdSize / 2));
+
+                        return gtNewSimdWithUpperNode(type, divLower, divUpper, simdBaseType, simdSize);
+                    }
+
+                    if (varTypeIsSmall(simdBaseType))
+                    {
+                        assert(simdSize is 16);
+
+                        if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                        {
+                            var cvtBaseType = varTypeIsUnsigned(simdBaseType) ? TYP_UINT : TYP_INT;
+
+                            var widenCvtIntrinsic = NI_Illegal;
+                            var narrowCvtIntrinsic = NI_Illegal;
+
+                            if (varTypeIsByte(simdBaseType))
+                            {
+                                if (varTypeIsSigned(simdBaseType))
+                                {
+                                    widenCvtIntrinsic = NI_AVX512_ConvertToVector512Int32;
+                                    narrowCvtIntrinsic = NI_AVX512_ConvertToVector128SByte;
+                                }
+                                else
+                                {
+                                    widenCvtIntrinsic = NI_AVX512_ConvertToVector512UInt32;
+                                    narrowCvtIntrinsic = NI_AVX512_ConvertToVector128Byte;
+                                }
+                            }
+                            else
+                            {
+                                if (varTypeIsSigned(simdBaseType))
+                                {
+                                    narrowCvtIntrinsic = NI_AVX512_ConvertToVector128Int16;
+                                }
+                                else
+                                {
+                                    narrowCvtIntrinsic = NI_AVX512_ConvertToVector128UInt16;
+                                }
+                                widenCvtIntrinsic = NI_AVX2_ConvertToVector256Int32;
+                            }
+
+                            var cvtType = varTypeIsByte(simdBaseType) ? TYP_SIMD64 : TYP_SIMD32;
+                            var cvtSize = (byte)(varTypeIsByte(simdBaseType) ? 64 : 32);
+
+                            op1 = gtNewSimdHWIntrinsicNode(cvtType, widenCvtIntrinsic, simdBaseType, cvtSize, op1);
+                            op2 = gtNewSimdHWIntrinsicNode(cvtType, widenCvtIntrinsic, simdBaseType, cvtSize, op2);
+
+                            var div = gtNewSimdBinOpNode(GT_DIV, cvtType, op1, op2, cvtBaseType, cvtSize);
+
+                            return gtNewSimdHWIntrinsicNode(type, narrowCvtIntrinsic, cvtBaseType, cvtSize, div);
+                        }
+                        else
+                        {
+                            var signedType = TYP_SHORT;
+                            var unsignedType =  TYP_USHORT;
+
+                            if (varTypeIsShort(simdBaseType))
+                            {
+                                signedType = TYP_INT;
+                                unsignedType = TYP_UINT;
+                            }
+
+                            var cvtType = varTypeIsSigned(simdBaseType) ? signedType : unsignedType;
+
+                            var op1Dup = fgMakeMultiUse(ref op1);
+                            var op2Dup = fgMakeMultiUse(ref op2);
+
+                            var op1LowerWiden = gtNewSimdWidenLowerNode(type, op1, simdBaseType, simdSize);
+                            var op2LowerWiden = gtNewSimdWidenLowerNode(type, op2, simdBaseType, simdSize);
+                            var divLower = gtNewSimdBinOpNode(GT_DIV, type, op1LowerWiden, op2LowerWiden, cvtType, simdSize);
+
+                            var op1UpperWiden = gtNewSimdWidenUpperNode(type, op1Dup, simdBaseType, simdSize);
+                            var op2UpperWiden = gtNewSimdWidenUpperNode(type, op2Dup, simdBaseType, simdSize);
+                            var divUpper = gtNewSimdBinOpNode(GT_DIV, type, op1UpperWiden, op2UpperWiden, cvtType, simdSize);
+
+                            return gtNewSimdNarrowNode(type, divLower, divUpper, simdBaseType, simdSize);
+                        }
+                    }
+                    else
+                    {
+
+                        assert(varTypeIsInt(simdBaseType));
+
+                        if (compOpportunisticallyDependsOn(InstructionSet_AVX512) && simdSize is 32)
+                        {
+                            return gtNewSimdHWIntrinsicNode(type, NI_Vector256_op_Division, simdBaseType, simdSize, op1, op2);
+                        }
+
+                        assert(simdSize is 16);
+
+                        if (compOpportunisticallyDependsOn(InstructionSet_AVX))
+                        {
+                            return gtNewSimdHWIntrinsicNode(type, NI_Vector128_op_Division, simdBaseType, simdSize, op1, op2);
+                        }
+
+                        var op1Dup = fgMakeMultiUse(ref op1);
+                        var op2Dup = fgMakeMultiUse(ref op2);
+
+                        var op1Dup2 = gtCloneExpr(op1Dup);
+                        var op2Dup2 = gtCloneExpr(op2Dup);
+
+                        var op1Hi = gtNewSimdHWIntrinsicNode(type, NI_X86Base_MoveHighToLow, TYP_FLOAT, simdSize, op1, op1Dup);
+                        var op2Hi = gtNewSimdHWIntrinsicNode(type, NI_X86Base_MoveHighToLow, TYP_FLOAT, simdSize, op2, op2Dup);
+
+                        var divLo = gtNewSimdHWIntrinsicNode(type, NI_Vector128_op_Division, simdBaseType, simdSize, op1Dup2, op2Dup2);
+                        var divHi = gtNewSimdHWIntrinsicNode(type, NI_Vector128_op_Division, simdBaseType, simdSize, op1Hi, op2Hi);
+
+                        var div = gtNewSimdHWIntrinsicNode(type, NI_X86Base_MoveLowToHigh, TYP_FLOAT, simdSize, divHi, divLo);
+                        return gtNewSimdHWIntrinsicNode(type, NI_X86Base_Shuffle, simdBaseType, simdSize, div, gtNewIconNode(TYP_INT, 0x4E));
+                    }
+                }
+
+                unreached();
+                return null;
+            }
+#endif
+
+            case GT_MUL:
+            {
+#if TARGET_XARCH
+                if (varTypeIsByte(simdBaseType))
+                {
+                    if (simdSize is 32 && compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                    {
+                        // Input is SIMD32 [U]Byte and AVX512 is supported:
+                        // - Widen inputs as SIMD64 [U]Short
+                        // - Multiply widened inputs (SIMD64 [U]Short) as widened product (SIMD64 [U]Short)
+                        // - Narrow widened product (SIMD64 [U]Short) as SIMD32 [U]Byte
+
+                        var widenedSimdBaseType = TYP_USHORT;
+                        var widenIntrinsic = NI_AVX512_ConvertToVector512UInt16;
+                        var narrowIntrinsic = NI_AVX512_ConvertToVector256Byte;
+
+                        if (simdBaseType is TYP_BYTE)
+                        {
+                            widenedSimdBaseType = TYP_SHORT;
+                            widenIntrinsic = NI_AVX512_ConvertToVector512Int16;
+                            narrowIntrinsic = NI_AVX512_ConvertToVector256SByte;
+                        }
+
+                        var widenedType = TYP_SIMD64;
+                        var widenedSimdSize = (byte)(64);
+
+                        // Vector512<ushort> widenedOp1 = Avx512BW.ConvertToVector512UInt16(op1)
+                        var widenedOp1 = gtNewSimdHWIntrinsicNode(widenedType, widenIntrinsic, simdBaseType, widenedSimdSize, op1);
+
+                        // Vector512<ushort> widenedOp2 = Avx512BW.ConvertToVector512UInt16(op2)
+                        var widenedOp2 = gtNewSimdHWIntrinsicNode(widenedType, widenIntrinsic, simdBaseType, widenedSimdSize, op2);
+
+                        // Vector512<ushort> widenedProduct = widenedOp1 * widenedOp2;
+                        var widenedProduct = gtNewSimdBinOpNode(GT_MUL, widenedType, widenedOp1, widenedOp2, widenedSimdBaseType, widenedSimdSize);
+
+                        // Vector256<byte> product = Avx512BW.ConvertToVector256Byte(widenedProduct)
+                        return gtNewSimdHWIntrinsicNode(type, narrowIntrinsic, widenedSimdBaseType, widenedSimdSize, widenedProduct);
+                    }
+                    else if (simdSize is 16 && compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                    {
+                        if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                        {
+                            // Input is SIMD16 [U]Byte and AVX512 is supported:
+                            // - Widen inputs as SIMD32 [U]Short
+                            // - Multiply widened inputs (SIMD32 [U]Short) as widened product (SIMD32 [U]Short)
+                            // - Narrow widened product (SIMD32 [U]Short) as SIMD16 [U]Byte
+
+                            var widenIntrinsic = NI_AVX2_ConvertToVector256Int16;
+                            var widenedSimdBaseType = TYP_USHORT;
+                            var narrowIntrinsic = NI_AVX512_ConvertToVector128Byte;
+
+                            if (simdBaseType is TYP_BYTE)
+                            {
+                                widenedSimdBaseType = TYP_SHORT;
+                                narrowIntrinsic = NI_AVX512_ConvertToVector128SByte;
+                            }
+
+                            var widenedType = TYP_SIMD32;
+                            var widenedSimdSize = (byte)(32);
+
+                            // Vector256<ushort> widenedOp1 = Avx2.ConvertToVector256Int16(op1).AsUInt16()
+                            var widenedOp1 = gtNewSimdHWIntrinsicNode(widenedType, widenIntrinsic, simdBaseType, widenedSimdSize, op1);
+
+                            // Vector256<ushort> widenedOp2 = Avx2.ConvertToVector256Int16(op2).AsUInt16()
+                            var widenedOp2 = gtNewSimdHWIntrinsicNode(widenedType, widenIntrinsic, simdBaseType, widenedSimdSize, op2);
+
+                            // Vector256<ushort> widenedProduct = widenedOp1 * widenedOp2
+                            var widenedProduct = gtNewSimdBinOpNode(GT_MUL, widenedType, widenedOp1, widenedOp2, widenedSimdBaseType, widenedSimdSize);
+
+                            // Vector128<byte> product = Avx512BW.VL.ConvertToVector128Byte(widenedProduct)
+                            return gtNewSimdHWIntrinsicNode(type, narrowIntrinsic, widenedSimdBaseType, widenedSimdSize, widenedProduct);
+                        }
+                        else
+                        {
+                            // Input is SIMD16 [U]Byte and AVX512 is NOT supported (only AVX2 will be used):
+                            // - Widen inputs as SIMD32 [U]Short
+                            // - Multiply widened inputs (SIMD32 [U]Short) as widened product (SIMD32 [U]Short)
+                            // - Mask widened product (SIMD32 [U]Short) to select relevant bits
+                            // - Pack masked product so that relevant bits are packed together in upper and lower halves
+                            // - Shuffle packed product so that relevant bits are placed together in the lower half
+                            // - Select lower (SIMD16 [U]Byte) from shuffled product (SIMD32 [U]Short)
+                            var widenedSimdBaseType = (simdBaseType is TYP_BYTE) ? TYP_SHORT : TYP_USHORT;
+                            var widenIntrinsic = NI_AVX2_ConvertToVector256Int16;
+                            var widenedType = TYP_SIMD32;
+                            var widenedSimdSize = (byte)(32);
+
+                            // Vector256<ushort> widenedOp1 = Avx2.ConvertToVector256Int16(op1).AsUInt16()
+                            var widenedOp1 = gtNewSimdHWIntrinsicNode(widenedType, widenIntrinsic, simdBaseType, widenedSimdSize, op1);
+
+                            // Vector256<ushort> widenedOp2 = Avx2.ConvertToVector256Int16(op2).AsUInt16()
+                            var widenedOp2 = gtNewSimdHWIntrinsicNode(widenedType, widenIntrinsic, simdBaseType, widenedSimdSize, op2);
+
+                            // Vector256<ushort> widenedProduct = widenedOp1 * widenedOp2
+                            var widenedProduct = gtNewSimdBinOpNode(GT_MUL, widenedType, widenedOp1, widenedOp2, widenedSimdBaseType, widenedSimdSize);
+
+                            // Vector256<ushort> vecCon1 = Vector256.Create(0x00FF00FF00FF00FF).AsUInt16()
+                            var vecCon1 = gtNewVconNode(widenedType);
+                            vecCon1.EvaluateBroadcastInPlace(TYP_USHORT, 0x00FF);
+
+                            // Vector256<short> maskedProduct = Avx2.And(widenedProduct, vecCon1).AsInt16()
+                            var maskedProduct = gtNewSimdBinOpNode(GT_AND, widenedType, widenedProduct, vecCon1, widenedSimdBaseType, widenedSimdSize);
+                            var maskedProductDup = fgMakeMultiUse(ref maskedProduct);
+
+                            // Vector256<ulong> packedProduct = Avx2.PackuintSaturate(maskedProduct, maskedProduct).AsUInt64()
+                            var packedProduct = gtNewSimdHWIntrinsicNode(widenedType, NI_AVX2_PackUnsignedSaturate, TYP_UBYTE, widenedSimdSize, maskedProduct, maskedProductDup);
+
+                            var permuteBaseType = (simdBaseType == TYP_BYTE) ? TYP_LONG : TYP_ULONG;
+
+                            // Vector256<byte> shuffledProduct = Avx2.Permute4x64(w1, 0xD8).AsByte()
+                            var shuffledProduct = gtNewSimdHWIntrinsicNode(widenedType, NI_AVX2_Permute4x64, permuteBaseType, widenedSimdSize, packedProduct, gtNewIconNode(TYP_INT, SHUFFLE_WYZX));
+
+                            // Vector128<byte> product = shuffledProduct.getLower()
+                            return gtNewSimdGetLowerNode(type, shuffledProduct, simdBaseType, widenedSimdSize);
+                        }
+                    }
+                    else
+                    {
+                        // No special handling could be performed, apply fallback logic:
+                        // - Widen both inputs lower and upper halves as [U]Short (using helper method)
+                        // - Multiply corrsponding widened input halves together as widened product halves
+                        // - Narrow widened product halves as [U]Byte (using helper method)
+                        var widenedSimdBaseType = simdBaseType == TYP_BYTE ? TYP_SHORT : TYP_USHORT;
+
+                        // op1Dup = op1
+                        var op1Dup = fgMakeMultiUse(ref op1);
+
+                        // op2Dup = op2
+                        var op2Dup = fgMakeMultiUse(ref op2);
+
+                        // Vector256<ushort> lowerOp1 = Avx2.ConvertToVector256Int16(op1.GetLower()).AsUInt16()
+                        var lowerOp1 = gtNewSimdWidenLowerNode(type, op1, simdBaseType, simdSize);
+
+                        // Vector256<ushort> lowerOp2 = Avx2.ConvertToVector256Int16(op2.GetLower()).AsUInt16()
+                        var lowerOp2 = gtNewSimdWidenLowerNode(type, op2, simdBaseType, simdSize);
+
+                        // Vector256<ushort> lowerProduct = lowerOp1 * lowerOp2
+                        var lowerProduct = gtNewSimdBinOpNode(GT_MUL, type, lowerOp1, lowerOp2, widenedSimdBaseType, simdSize);
+
+                        // Vector256<ushort> upperOp1 = Avx2.ConvertToVector256Int16(op1.GetUpper()).AsUInt16()
+                        var upperOp1 = gtNewSimdWidenUpperNode(type, op1Dup, simdBaseType, simdSize);
+
+                        // Vector256<ushort> upperOp2 = Avx2.ConvertToVector256Int16(op2.GetUpper()).AsUInt16()
+                        var upperOp2 = gtNewSimdWidenUpperNode(type, op2Dup, simdBaseType, simdSize);
+
+                        // Vector256<ushort> upperProduct = upperOp1 * upperOp2
+                        var upperProduct = gtNewSimdBinOpNode(GT_MUL, type, upperOp1, upperOp2, widenedSimdBaseType, simdSize);
+
+                        // Narrow and merge halves using helper method
+                        return gtNewSimdNarrowNode(type, lowerProduct, upperProduct, simdBaseType, simdSize);
+                    }
+                }
+                else if (varTypeIsLong(simdBaseType))
+                {
+                    // This fallback path will be used only if the vpmullq instruction is not available.
+                    // The implementation is a simple decomposition using pmuludq, which multiplies
+                    // two uint32s and returns a uint64 result.
+                    //
+                    // aLo * bLo + ((aLo * bHi + aHi * bLo) << 32)
+
+                    assert(!canUseEvexEncodingDebugOnly());
+                    assert((simdSize is 16) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
+
+                    var muludq = (simdSize is 16) ? NI_X86Base_Multiply : NI_AVX2_Multiply;
+
+                    var op1Dup1 = fgMakeMultiUse(ref op1);
+                    var op1Dup2 = gtCloneExpr(op1Dup1);
+                    var op2Dup1 = fgMakeMultiUse(ref op2);
+                    var op2Dup2 = gtCloneExpr(op2Dup1);
+
+                    // Vector128<ulong> low = Sse2.Multiply(a.AsUInt32(), b.AsUInt32());
+                    var low = gtNewSimdHWIntrinsicNode(type, muludq, TYP_ULONG, simdSize, op1, op2);
+
+                    // Vector128<ulong> mid = (b >>> 32).AsUInt64();
+                    var mid = gtNewSimdBinOpNode(GT_RSZ, type, op2Dup1, gtNewIconNode(TYP_INT, 32), simdBaseType, simdSize);
+
+                    // mid = Sse2.Multiply(mid.AsUInt32(), a.AsUInt32());
+                    mid = gtNewSimdHWIntrinsicNode(type, muludq, TYP_ULONG, simdSize, mid, op1Dup1);
+
+                    // Vector128<ulong> tmp = (a >>> 32).AsUInt64();
+                    var tmp = gtNewSimdBinOpNode(GT_RSZ, type, op1Dup2, gtNewIconNode(TYP_INT, 32), simdBaseType, simdSize);
+
+                    // tmp = Sse2.Multiply(tmp.AsUInt32(), b.AsUInt32());
+                    tmp = gtNewSimdHWIntrinsicNode(type, muludq, TYP_ULONG, simdSize, tmp, op2Dup2);
+
+                    // mid += tmp;
+                    mid = gtNewSimdBinOpNode(GT_ADD, type, mid, tmp, simdBaseType, simdSize);
+
+                    // mid <<= 32;
+                    mid = gtNewSimdBinOpNode(GT_LSH, type, mid, gtNewIconNode(TYP_INT, 32), simdBaseType, simdSize);
+
+                    // return low + mid;
+                    return gtNewSimdBinOpNode(GT_ADD, type, low, mid, simdBaseType, simdSize);
+                }
+#elif TARGET_ARM64
+                if (varTypeIsLong(simdBaseType))
+                {
+                    GenTree** op2ToDup = null;
+
+                    assert(varTypeIsSimd(op1));
+                    op1                = gtNewSimdToScalarNode(TYP_LONG, op1, simdBaseType, simdSize);
+                    GenTree** op1ToDup = &op1->AsHWIntrinsic()->Op(1);
+
+                    if (varTypeIsSimd(op2))
+                    {
+                        op2      = gtNewSimdToScalarNode(TYP_LONG, op2, simdBaseType, simdSize);
+                        op2ToDup = &op2->AsHWIntrinsic()->Op(1);
+                    }
+
+                    // lower = op1.GetElement(0) * op2.GetElement(0)
+                    GenTree* lower = gtNewOperNode(GT_MUL, TYP_LONG, op1, op2);
+
+                    if (op2ToDup is null)
+                    {
+                        op2ToDup = &lower->AsOp()->gtOp2;
+                    }
+                    lower = gtNewSimdCreateScalarUnsafeNode(type, lower, simdBaseType, simdSize);
+
+                    if (simdSize is 8)
+                    {
+                        // return Vector64.CreateScalarUnsafe(lower)
+                        return lower;
+                    }
+
+                    // Make the original op1 and op2 multi-use:
+                    GenTree* op1Dup = fgMakeMultiUse(op1ToDup);
+                    GenTree* op2Dup = fgMakeMultiUse(op2ToDup);
+
+                    assert(!varTypeIsArithmetic(op1Dup));
+                    op1Dup = gtNewSimdGetElementNode(TYP_LONG, op1Dup, gtNewIconNode(1), simdBaseType, simdSize);
+
+                    if (!varTypeIsArithmetic(op2Dup))
+                    {
+                        op2Dup = gtNewSimdGetElementNode(TYP_LONG, op2Dup, gtNewIconNode(1), simdBaseType, simdSize);
+                    }
+
+                    // upper = op1.GetElement(1) * op2.GetElement(1)
+                    GenTree* upper = gtNewOperNode(GT_MUL, TYP_LONG, op1Dup, op2Dup);
+
+                    // return Vector128.Create(lower, upper)
+                    return gtNewSimdWithElementNode(type, lower, gtNewIconNode(1), upper, simdBaseType, simdSize);
+                }
+#endif
+                unreached();
+                return null;
+            }
+
+            default:
+            {
+                unreached();
+                return null;
+            }
+        }
+    }
+
+    /// <summary>Creates a new simd CreateBroadcast node</summary>
+    /// <param name="type">The return type of SIMD node being created</param>
+    /// <param name="op1">The value of broadcast to every element of the simd value</param>
+    /// <param name="simdBaseType">The base type of SIMD type of the intrinsic</param>
+    /// <param name="simdSize">The size of the SIMD type of the intrinsic</param>
+    /// <returns>The created CreateBroadcast node</returns>
+    public GenTree gtNewSimdCreateBroadcastNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        if (op1.Oper.IsConst)
+        {
+            var vecCon = gtNewVconNode(type);
+
+            if (op1.Oper.IsIntegralConst)
+            {
+                vecCon.EvaluateBroadcastInPlace(simdBaseType, op1.AsIntConCommon().IntegralValue);
+            }
+            else
+            {
+                assert(op1.Oper.IsCnsFltOrDbl);
+                vecCon.EvaluateBroadcastInPlace(simdBaseType, op1.AsDblCon().DconVal);
+            }
+            return vecCon;
+        }
+
+        var hwIntrinsicId = NI_Vector128_Create;
+
+#if TARGET_XARCH
+        if (simdSize is 64)
+        {
+            hwIntrinsicId = NI_Vector512_Create;
+        }
+        else if (simdSize is 32)
+        {
+            hwIntrinsicId = NI_Vector256_Create;
+        }
+#elif TARGET_ARM64
+        if (simdSize is 8)
+        {
+            hwIntrinsicId = NI_Vector64_Create;
+        }
+#else
+#error Unsupported platform
+#endif
+
+        return gtNewSimdHWIntrinsicNode(type, hwIntrinsicId, simdBaseType, simdSize, op1);
+    }
+
+    public GenTree gtNewSimdCmpOpNode(genTreeOps op, var_types type, GenTree op1, GenTree op2, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsSimd(type));
+        assert(GetSimdTypeForSize(simdSize) == type);
+
+        assert(op1 is not null);
+        assert(op1.Type == type);
+
+        assert(op2 is not null);
+        assert(op2.Type == type);
+
+        assert(varTypeIsArithmetic(simdBaseType));
+
+        var lookupType = GetLookupTypeForCmpOp(op, type, simdBaseType, simdSize);
+        var intrinsic = GetHWIntrinsicIdForCmpOp(op, lookupType, op1, op2, simdBaseType, simdSize, false);
+
+        if (intrinsic != NI_Illegal)
+        {
+#if FEATURE_MASKED_HW_INTRINSICS
+            if (lookupType != type)
+            {
+                assert(varTypeIsMask(lookupType));
+                var retNode = gtNewSimdHWIntrinsicNode(lookupType, intrinsic, simdBaseType, simdSize, op1, op2);
+                return gtNewSimdCvtMaskToVectorNode(type, retNode, simdBaseType, simdSize);
+            }
+#else
+            assert(lookupType == type);
+#endif
+            return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1, op2);
+        }
+
+        assert(lookupType == type);
+
+#if TARGET_XARCH
+        assert(varTypeIsIntegral(simdBaseType));
+        assert(!canUseEvexEncodingDebugOnly());
+        assert((simdSize is 16) || ((simdSize is 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2)));
+#endif // TARGET_XARCH
+
+        switch (op)
+        {
+#if TARGET_XARCH
+            case GT_GE:
+            case GT_LE:
+            {
+                // If we don't have an intrinsic set for this, try "Max(op1, op2) == op1" for GE
+                // and "Min(op1, op2) == op1" for LE
+
+                if (!varTypeIsLong(simdBaseType))
+                {
+                    var op1Dup = fgMakeMultiUse(ref op1);
+                    var isMax = (op is GT_GE);
+
+                    // EQ(MinMax(op1, op2), op1)
+                    op1 = gtNewSimdMinMaxNativeNode(type, op1, op2, simdBaseType, simdSize, isMax);
+                    return gtNewSimdCmpOpNode(GT_EQ, type, op1, op1Dup, simdBaseType, simdSize);
+                }
+                else
+                {
+                    // There is no direct support for doing a combined comparison and equality for integral types.
+                    // These have to be implemented by performing both halves and combining their results.
+                    //
+                    // op1Dup = op1
+                    // op2Dup = op2
+                    //
+                    // For greater than:
+                    //   op1 = GreaterThan(op1, op2)
+                    //   op2 = Equals(op1Dup, op2Dup)
+                    //
+                    // For less than:
+                    //   op1 = LessThan(op1, op2)
+                    //   op2 = Equals(op1Dup, op2Dup)
+                    //
+                    // result = BitwiseOr(op1, op2)
+
+                    var op1Dup = fgMakeMultiUse(ref op1);
+                    var op2Dup = fgMakeMultiUse(ref op2);
+
+                    if (op is GT_GE)
+                    {
+                        op = GT_GT;
+                    }
+                    else
+                    {
+                        op = GT_LT;
+                    }
+
+                    op1 = gtNewSimdCmpOpNode(op, type, op1, op2, simdBaseType, simdSize);
+                    op2 = gtNewSimdCmpOpNode(GT_EQ, type, op1Dup, op2Dup, simdBaseType, simdSize);
+
+                    return gtNewSimdBinOpNode(GT_OR, type, op1, op2, simdBaseType, simdSize);
+                }
+            }
+
+            case GT_GT:
+            case GT_LT:
+            {
+                assert(varTypeIsUnsigned(simdBaseType));
+
+                // Vector of byte, ushort, uint and ulong:
+                // Hardware supports > and < for signed comparison. Therefore, to use it for
+                // comparing uint numbers, we subtract a constant from both the
+                // operands such that the result fits within the corresponding signed
+                // type. The resulting signed numbers are compared using signed comparison.
+                //
+                // Vector of byte: constant to be subtracted is 2^7
+                // Vector of ushort: constant to be subtracted is 2^15
+                // Vector of uint: constant to be subtracted is 2^31
+                // Vector of ulong: constant to be subtracted is 2^63
+                //
+                // We need to treat op1 and op2 as signed for comparison purpose after
+                // the transformation.
+
+                var opType = simdBaseType;
+                var vecCon1 = gtNewVconNode(type);
+
+                switch (simdBaseType)
+                {
+                    case TYP_UBYTE:
+                    {
+                        simdBaseType = TYP_BYTE;
+                        vecCon1.EvaluateBroadcastInPlace(simdBaseType, sbyte.MinValue);
+                        break;
+                    }
+
+                    case TYP_USHORT:
+                    {
+                        simdBaseType = TYP_SHORT;
+                        vecCon1.EvaluateBroadcastInPlace(simdBaseType, short.MinValue);
+                        break;
+                    }
+
+                    case TYP_UINT:
+                    {
+                        simdBaseType = TYP_INT;
+                        vecCon1.EvaluateBroadcastInPlace(simdBaseType, int.MinValue);
+                        break;
+                    }
+
+                    case TYP_ULONG:
+                    {
+                        simdBaseType = TYP_LONG;
+                        vecCon1.EvaluateBroadcastInPlace(simdBaseType, long.MinValue);
+                        break;
+                    }
+
+                    default:
+                    {
+                        unreached();
+                        break;
+                    }
+                }
+
+                var vecCon2 = gtCloneCnsVec(vecCon1);
+
+                // op1 = op1 - constVector
+                op1 = gtNewSimdBinOpNode(GT_SUB, type, op1, vecCon1, opType, simdSize);
+
+                // op2 = op2 - constVector
+                op2 = gtNewSimdBinOpNode(GT_SUB, type, op2, vecCon2, opType, simdSize);
+
+                return gtNewSimdCmpOpNode(op, type, op1, op2, simdBaseType, simdSize);
+            }
+#endif
+
+            case GT_NE:
+            {
+                var result = gtNewSimdCmpOpNode(GT_EQ, type, op1, op2, simdBaseType, simdSize);
+                return gtNewSimdUnOpNode(GT_NOT, type, result, simdBaseType, simdSize);
+            }
+
+            default:
+            {
+                unreached();
+                return null;
+            }
+        }
+    }
+
+    public GenTree gtNewSimdCmpOpAllNode(genTreeOps op, var_types type, GenTree op1, GenTree op2, var_types simdBaseType, byte simdSize)
+    {
+        assert(type == TYP_INT);
+
+        var simdType = GetSimdTypeForSize(simdSize);
+        assert(varTypeIsSimd(simdType));
+
+        assert(op1 is not null);
+        assert(op1.Type == simdType);
+
+        assert(op2 is not null);
+        assert(op2.Type == simdType);
+
+        assert(varTypeIsArithmetic(simdBaseType));
+
+        var intrinsic = NI_Illegal;
+
+        switch (op)
+        {
+#if (TARGET_XARCH)
+            case GT_EQ:
+            {
+                if (simdSize is 32)
+                {
+                    assert(varTypeIsFloating(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                    intrinsic = NI_Vector256_op_Equality;
+                }
+                else if (simdSize is 64)
+                {
+                    intrinsic = NI_Vector512_op_Equality;
+                }
+                else
+                {
+                    intrinsic = NI_Vector128_op_Equality;
+                }
+                break;
+            }
+
+            case GT_GE:
+            case GT_GT:
+            case GT_LE:
+            case GT_LT:
+            {
+                // We want to generate a comparison along the lines of
+                // GT_XX(op1, op2).As<T, TInteger>() == Vector128<TInteger>.AllBitsSet
+
+                if (simdSize is 32)
+                {
+                    // TODO-XArch-CQ: It's a non-trivial amount of work to support these
+                    // for floating-point while only utilizing AVX. It would require, among
+                    // other things, inverting the comparison and potentially support for a
+                    // new Avx.TestNotZ intrinsic to ensure the codegen remains efficient.
+                    assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                    intrinsic = NI_Vector256_op_Equality;
+                }
+                else if (simdSize is 64)
+                {
+                    intrinsic = NI_Vector512_op_Equality;
+                }
+                else
+                {
+                    intrinsic = NI_Vector128_op_Equality;
+                }
+
+                op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseType, simdSize);
+                op2 = gtNewAllBitsSetConNode(simdType);
+
+                if (simdBaseType == TYP_FLOAT)
+                {
+                    simdBaseType = TYP_INT;
+                }
+                else if (simdBaseType == TYP_DOUBLE)
+                {
+                    simdBaseType = TYP_LONG;
+                }
+                break;
+            }
+#elif (TARGET_ARM64)
+            case GT_EQ:
+            {
+                intrinsic = (simdSize is 8) ? NI_Vector64_op_Equality : NI_Vector128_op_Equality;
+                break;
+            }
+
+            case GT_GE:
+            case GT_GT:
+            case GT_LE:
+            case GT_LT:
+            {
+                // We want to generate a comparison along the lines of
+                // GT_XX(op1, op2).As<T, TInteger>() == Vector128<TInteger>.AllBitsSet
+
+                if (simdSize is 8)
+                {
+                    intrinsic = NI_Vector64_op_Equality;
+                }
+                else
+                {
+                    intrinsic = NI_Vector128_op_Equality;
+                }
+
+                op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseType, simdSize);
+                op2 = gtNewAllBitsSetConNode(simdType);
+
+                if (simdBaseType == TYP_FLOAT)
+                {
+                    simdBaseType = TYP_INT;
+                }
+                else if (simdBaseType == TYP_DOUBLE)
+                {
+                    simdBaseType = TYP_LONG;
+                }
+                break;
+            }
+#else
+#error Unsupported platform
+#endif
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+
+        assert(intrinsic != NI_Illegal);
+        return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1, op2);
+    }
+
+    public GenTree gtNewSimdCndSelNode(var_types type, GenTree op1, GenTree op2, GenTree op3, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsSimd(type));
+        assert(GetSimdTypeForSize(simdSize) == type);
+
+        assert(op1 is not null);
+        assert(op1.Type == type);
+
+        assert(op2 is not null);
+        assert(op2.Type == type);
+
+        assert(op3 is not null);
+        assert(op3.Type == type);
+
+        assert(varTypeIsArithmetic(simdBaseType));
+
+        var intrinsic = NI_Illegal;
+
+#if (TARGET_XARCH)
+        if (simdSize is 64)
+        {
+            assert(canUseEvexEncodingDebugOnly());
+            intrinsic = NI_Vector512_ConditionalSelect;
+        }
+        else if (simdSize is 32)
+        {
+            intrinsic = NI_Vector256_ConditionalSelect;
+        }
+        else
+        {
+            intrinsic = NI_Vector128_ConditionalSelect;
+        }
+        return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1, op2, op3);
+#elif (TARGET_ARM64)
+        return gtNewSimdHWIntrinsicNode(type, NI_AdvSimd_BitwiseSelect, simdBaseType, simdSize, op1, op2, op3);
+#else
+#error Unsupported platform
+#endif
+    }
+
+    /// <summary>Creates a new simd CreateScalar node</summary>
+    /// <param name="type">The return type of SIMD node being created</param>
+    /// <param name="op1">The value of element 0 of the simd value</param>
+    /// <param name="simdBaseType">The base type of SIMD type of the intrinsic</param>
+    /// <param name="simdSize">The size of the SIMD type of the intrinsic</param>
+    /// <returns>The created CreateScalar node</returns>
+    public GenTree gtNewSimdCreateScalarNode( var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        if (op1.Oper.IsConst)
+        {
+            var vecCon = gtNewVconNode(type);
+
+            if (op1.Oper.IsIntegralConst)
+            {
+                vecCon.SetElementIntegral(simdBaseType, 0, op1.AsIntConCommon().IntegralValue);
+            }
+            else
+            {
+                assert(op1.Oper.IsCnsFltOrDbl);
+                vecCon.SetElementFloating(simdBaseType, 0, op1.AsDblCon().DconVal);
+            }
+            return vecCon;
+        }
+
+        var hwIntrinsicId = NI_Vector128_CreateScalar;
+
+#if TARGET_XARCH
+        if (simdSize is 32)
+        {
+            hwIntrinsicId = NI_Vector256_CreateScalar;
+        }
+        else if (simdSize is 64)
+        {
+            hwIntrinsicId = NI_Vector512_CreateScalar;
+        }
+#elif TARGET_ARM64
+        if (simdSize is 8)
+        {
+            hwIntrinsicId = (simdBaseType.Size is 8) ? NI_Vector64_Create : NI_Vector64_CreateScalar;
+        }
+#else
+#error Unsupported platform
+#endif
+
+        return gtNewSimdHWIntrinsicNode(type, hwIntrinsicId, simdBaseType, simdSize, op1);
+    }
+
+    /// <summary>Creates a new simd CreateScalarUnsafe node</summary>
+    /// <param name="type">The return type of SIMD node being created</param>
+    /// <param name="op1">The value of element 0 of the simd value</param>
+    /// <param name="simdBaseType">The base type of SIMD type of the intrinsic</param>
+    /// <param name="simdSize">The size of the SIMD type of the intrinsic</param>
+    /// <returns>The created CreateScalarUnsafe node</returns>
+    /// <remarks>This API is unsafe as it leaves the upper-bits of the vector undefined</remarks>
+    public GenTree gtNewSimdCreateScalarUnsafeNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        if (op1.Oper.IsConst)
+        {
+            // Since the upper bits are considered non-deterministic and we can therefore
+            // set them to anything, we broadcast the value.
+            //
+            // We do this as it simplifies the logic and allows certain code paths to
+            // have better codegen, such as for 0, AllBitsSet, or certain small constants
+
+            var vecCon = gtNewVconNode(type);
+
+            if (op1.Oper.IsIntegralConst)
+            {
+                vecCon.EvaluateBroadcastInPlace(simdBaseType, op1.AsIntConCommon().IntegralValue);
+            }
+            else
+            {
+                assert(op1.Oper.IsCnsFltOrDbl);
+                vecCon.EvaluateBroadcastInPlace(simdBaseType, op1.AsDblCon().DconVal);
+            }
+            return vecCon;
+        }
+
+        var hwIntrinsicId = NI_Vector128_CreateScalarUnsafe;
+
+#if (TARGET_XARCH)
+        if (simdSize is 32)
+        {
+            hwIntrinsicId = NI_Vector256_CreateScalarUnsafe;
+        }
+        else if (simdSize is 64)
+        {
+            hwIntrinsicId = NI_Vector512_CreateScalarUnsafe;
+        }
+#elif (TARGET_ARM64)
+        if (simdSize is 8)
+        {
+            hwIntrinsicId = (simdBaseType.Size is 8) ? NI_Vector64_Create : NI_Vector64_CreateScalarUnsafe;
+        }
+#else
+#error Unsupported platform
+#endif
+
+        return gtNewSimdHWIntrinsicNode(type, hwIntrinsicId, simdBaseType, simdSize, op1);
+    }
+
+#if FEATURE_MASKED_HW_INTRINSICS
+    /// <summary>Convert a HW intrinsic mask node to a vector</summary>
+    /// <param name="type">The type of the node to convert to</param>
+    /// <param name="op1">The node to convert</param>
+    /// <param name="simdBaseType">The base type of the converted node</param>
+    /// <param name="simdSize">the simd size of the converted node</param>
+    /// <returns>The node converted to the given type</returns>
+    public GenTree gtNewSimdCvtMaskToVectorNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsMask(op1.Type));
+        assert(varTypeIsSimd(type));
+        compMaskConvertUsed = true;
+
+#if TARGET_XARCH
+        return gtNewSimdHWIntrinsicNode(type, NI_AVX512_ConvertMaskToVector, simdBaseType, simdSize, op1);
+#elif TARGET_ARM64
+        return gtNewSimdHWIntrinsicNode(type, NI_Sve_ConvertMaskToVector, simdBaseType, simdSize, op1);
+#else
+#error Unsupported platform
+#endif
+    }
+#endif
+
+    public GenTree gtNewSimdGetLowerNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsArithmetic(simdBaseType));
+
+        var intrinsicId = NI_Illegal;
+
+#if TARGET_XARCH
+        if (simdSize is 32)
+        {
+            assert(type == TYP_SIMD16);
+            intrinsicId = NI_Vector256_GetLower;
+        }
+        else
+        {
+            assert((type == TYP_SIMD32) && (simdSize is 64));
+            intrinsicId = NI_Vector512_GetLower;
+        }
+#elif TARGET_ARM64
+        assert((type == TYP_SIMD8) && (simdSize is 16));
+        intrinsicId = NI_Vector128_GetLower;
+#else
+#error Unsupported platform
+#endif
+
+        return gtNewSimdHWIntrinsicNode(type, intrinsicId, simdBaseType, simdSize, op1);
+    }
+
+    public GenTree gtNewSimdGetUpperNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsArithmetic(simdBaseType));
+
+        var intrinsicId = NI_Illegal;
+
+#if TARGET_XARCH
+        if (simdSize is 32)
+        {
+            assert(type == TYP_SIMD16);
+            intrinsicId = NI_Vector256_GetUpper;
+        }
+        else
+        {
+            assert((type == TYP_SIMD32) && (simdSize is 64));
+            intrinsicId = NI_Vector512_GetUpper;
+        }
+#elif TARGET_ARM64
+        assert((type == TYP_SIMD8) && (simdSize is 16));
+        intrinsicId = NI_Vector128_GetUpper;
+#else
+#error Unsupported platform
+#endif
+
+        return gtNewSimdHWIntrinsicNode(type, intrinsicId, simdBaseType, simdSize, op1);
+    }
+
+    /// <summary>Creates a new simd IsEvenInteger node</summary>
+    /// <param name="type">The return type of SIMD node being created</param>
+    /// <param name="op1">The vector to check for even integers</param>
+    /// <param name="simdBaseType">The base type of SIMD type of the intrinsic</param>
+    /// <param name="simdSize">The size of the SIMD type of the intrinsic</param>
+    /// <returns>The created IsEvenInteger node</returns>
+    public GenTree gtNewSimdIsEvenIntegerNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsSimd(type));
+        assert(GetSimdTypeForSize(simdSize) == type);
+
+        assert(op1 is not null);
+        assert(op1.Type == type);
+
+        assert(varTypeIsIntegral(simdBaseType));
+
+        op1 = gtNewSimdBinOpNode(GT_AND, type, op1, gtNewOneConNode(type, simdBaseType), simdBaseType, simdSize);
+        return gtNewSimdIsZeroNode(type, op1, simdBaseType, simdSize);
+    }
+
+    /// <summary>Creates a new simd IsFinite node</summary>
+    /// <param name="type">The return type of SIMD node being created</param>
+    /// <param name="op1">The vector to check for finite values</param>
+    /// <param name="simdBaseType">The base type of SIMD type of the intrinsic</param>
+    /// <param name="simdSize">The size of the SIMD type of the intrinsic</param>
+    /// <returns>The created IsFinite node</returns>
+    public GenTree gtNewSimdIsFiniteNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsSimd(type));
+        assert(GetSimdTypeForSize(simdSize) == type);
+
+        assert(op1 is not null);
+        assert(op1.Type == type);
+
+        assert(varTypeIsArithmetic(simdBaseType));
+
+        if (varTypeIsFloating(simdBaseType))
+        {
+            GenTree cnsNode;
+
+            if (simdBaseType == TYP_FLOAT)
+            {
+                simdBaseType = TYP_INT;
+                cnsNode = gtNewIconNode(TYP_INT, 0x7F800000);
+            }
+            else
+            {
+                assert(simdBaseType == TYP_DOUBLE);
+
+                simdBaseType = TYP_LONG;
+                cnsNode = gtNewLconNode(0x7FF0000000000000);
+            }
+            cnsNode = gtNewSimdCreateBroadcastNode(type, cnsNode, simdBaseType, simdSize);
+
+            op1 = gtNewSimdBinOpNode(GT_AND_NOT, type, cnsNode, op1, simdBaseType, simdSize);
+            return gtNewSimdCmpOpNode(GT_NE, type, op1, gtNewZeroConNode(type), simdBaseType, simdSize);
+        }
+
+        assert(varTypeIsIntegral(simdBaseType));
+        return gtNewAllBitsSetConNode(type);
+    }
+
+    /// <summary>Creates a new simd IsInfinity node</summary>
+    /// <param name="type">The return type of SIMD node being created</param>
+    /// <param name="op1">The vector to check for infinities</param>
+    /// <param name="simdBaseType">The base type of SIMD type of the intrinsic</param>
+    /// <param name="simdSize">The size of the SIMD type of the intrinsic</param>
+    /// <returns>The created IsInfinity node</returns>
+    public GenTree gtNewSimdIsInfinityNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsSimd(type));
+        assert(GetSimdTypeForSize(simdSize) == type);
+
+        assert(op1 is not null);
+        assert(op1.Type == type);
+
+        assert(varTypeIsArithmetic(simdBaseType));
+
+        if (varTypeIsFloating(simdBaseType))
+        {
+            op1 = gtNewSimdAbsNode(type, op1, simdBaseType, simdSize);
+            return gtNewSimdIsPositiveInfinityNode(type, op1, simdBaseType, simdSize);
+        }
+        return gtNewZeroConNode(type);
+    }
+
+    /// <summary>Creates a new simd IsInteger node</summary>
+    /// <param name="type">The return type of SIMD node being created</param>
+    /// <param name="op1">The vector to check for integers</param>
+    /// <param name="simdBaseType">The base type of SIMD type of the intrinsic</param>
+    /// <param name="simdSize">The size of the SIMD type of the intrinsic</param>
+    /// <returns>The created IsInteger node</returns>
+    public GenTree gtNewSimdIsIntegerNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsSimd(type));
+        assert(GetSimdTypeForSize(simdSize) == type);
+
+        assert(op1 is not null);
+        assert(op1.Type == type);
+
+        assert(varTypeIsArithmetic(simdBaseType));
+
+        if (varTypeIsFloating(simdBaseType))
+        {
+            var op1Dup1 = fgMakeMultiUse(ref op1);
+            var op1Dup2 = gtCloneExpr(op1Dup1);
+
+            op1 = gtNewSimdIsFiniteNode(type, op1, simdBaseType, simdSize);
+
+            op1Dup1 = gtNewSimdTruncNode(type, op1Dup1, simdBaseType, simdSize);
+            var op2 = gtNewSimdCmpOpNode(GT_EQ, type, op1Dup1, op1Dup2, simdBaseType, simdSize);
+
+            return gtNewSimdBinOpNode(GT_AND, type, op1, op2, simdBaseType, simdSize);
+        }
+
+        assert(varTypeIsIntegral(simdBaseType));
+        return gtNewAllBitsSetConNode(type);
+    }
+
+    /// <summary>Creates a new simd IsNaN node</summary>
+    /// <param name="type">The return type of SIMD node being created</param>
+    /// <param name="op1">The vector to check for NaNs</param>
+    /// <param name="simdBaseType">The base type of SIMD type of the intrinsic</param>
+    /// <param name="simdSize">The size of the SIMD type of the intrinsic</param>
+    /// <returns>The created IsNaN node</returns>
+    public GenTree gtNewSimdIsNaNNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsSimd(type));
+        assert(GetSimdTypeForSize(simdSize) == type);
+
+        assert(op1 is not null);
+        assert(op1.Type == type);
+
+        assert(varTypeIsArithmetic(simdBaseType));
+
+        if (varTypeIsFloating(simdBaseType))
+        {
+            var op1Dup = fgMakeMultiUse(ref op1);
+            return gtNewSimdCmpOpNode(GT_NE, type, op1, op1Dup, simdBaseType, simdSize);
+        }
+        return gtNewZeroConNode(type);
+    }
+
+    /// <summary>Creates a new simd IsNegative node</summary>
+    /// <param name="type">The return type of SIMD node being created</param>
+    /// <param name="op1">The vector to check for negatives</param>
+    /// <param name="simdBaseType">The base type of SIMD type of the intrinsic</param>
+    /// <param name="simdSize">The size of the SIMD type of the intrinsic</param>
+    /// <returns>The created IsNegative node</returns>
+    public GenTree gtNewSimdIsNegativeNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsSimd(type));
+        assert(GetSimdTypeForSize(simdSize) == type);
+
+        assert(op1 is not null);
+        assert(op1.Type == type);
+
+        if (simdBaseType == TYP_FLOAT)
+        {
+            simdBaseType = TYP_INT;
+        }
+        else if (simdBaseType == TYP_DOUBLE)
+        {
+            simdBaseType = TYP_LONG;
+        }
+
+        assert(varTypeIsIntegral(simdBaseType));
+
+        if (varTypeIsUnsigned(simdBaseType))
+        {
+            return gtNewZeroConNode(type);
+        }
+        return gtNewSimdCmpOpNode(GT_LT, type, op1, gtNewZeroConNode(type), simdBaseType, simdSize);
+    }
+
+    /// <summary>Creates a new simd IsNegativeInfinity node</summary>
+    /// <param name="type">The return type of SIMD node being created</param>
+    /// <param name="op1">The vector to check for negative infinities</param>
+    /// <param name="simdBaseType">The base type of SIMD type of the intrinsic</param>
+    /// <param name="simdSize">The size of the SIMD type of the intrinsic</param>
+    /// <returns>The created IsNegativeInfinity node</returns>
+    public GenTree gtNewSimdIsNegativeInfinityNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsSimd(type));
+        assert(GetSimdTypeForSize(simdSize) == type);
+
+        assert(op1 is not null);
+        assert(op1.Type == type);
+
+        assert(varTypeIsArithmetic(simdBaseType));
+
+        if (varTypeIsFloating(simdBaseType))
+        {
+            GenTree cnsNode;
+
+            if (simdBaseType == TYP_FLOAT)
+            {
+                simdBaseType = TYP_UINT;
+                cnsNode = gtNewIconNode(TYP_INT, unchecked((int)(0xFF800000)));
+            }
+            else
+            {
+                assert(simdBaseType == TYP_DOUBLE);
+
+                simdBaseType = TYP_ULONG;
+                cnsNode = gtNewLconNode(unchecked((long)(0xFFF0000000000000)));
+            }
+
+            cnsNode = gtNewSimdCreateBroadcastNode(type, cnsNode, simdBaseType, simdSize);
+            return gtNewSimdCmpOpNode(GT_EQ, type, op1, cnsNode, simdBaseType, simdSize);
+        }
+        return gtNewZeroConNode(type);
+    }
+
+    /// <summary>Creates a new simd IsNormal node</summary>
+    /// <param name="type">The return type of SIMD node being created</param>
+    /// <param name="op1">The vector to check for normal values</param>
+    /// <param name="simdBaseType">The base type of SIMD type of the intrinsic</param>
+    /// <param name="simdSize">The size of the SIMD type of the intrinsic</param>
+    /// <returns>The created IsNormal node</returns>
+    public GenTree gtNewSimdIsNormalNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsSimd(type));
+        assert(GetSimdTypeForSize(simdSize) == type);
+
+        assert(op1 is not null);
+        assert(op1.Type == type);
+
+        assert(varTypeIsArithmetic(simdBaseType));
+
+        if (varTypeIsFloating(simdBaseType))
+        {
+            op1 = gtNewSimdAbsNode(type, op1, simdBaseType, simdSize);
+
+            GenTree cnsNode1;
+            GenTree cnsNode2;
+
+            if (simdBaseType == TYP_FLOAT)
+            {
+                simdBaseType = TYP_UINT;
+
+                cnsNode1 = gtNewIconNode(TYP_INT, 0x00800000);
+                cnsNode2 = gtNewIconNode(TYP_INT, 0x7F800000 - 0x00800000);
+            }
+            else
+            {
+                assert(simdBaseType == TYP_DOUBLE);
+
+                simdBaseType = TYP_ULONG;
+
+                cnsNode1 = gtNewLconNode(0x0010000000000000);
+                cnsNode2 = gtNewLconNode(0x7FF0000000000000 - 0x0010000000000000);
+            }
+
+            cnsNode1 = gtNewSimdCreateBroadcastNode(type, cnsNode1, simdBaseType, simdSize);
+            cnsNode2 = gtNewSimdCreateBroadcastNode(type, cnsNode2, simdBaseType, simdSize);
+
+            op1 = gtNewSimdBinOpNode(GT_SUB, type, op1, cnsNode1, simdBaseType, simdSize);
+            return gtNewSimdCmpOpNode(GT_LT, type, op1, cnsNode2, simdBaseType, simdSize);
+        }
+
+        assert(varTypeIsIntegral(simdBaseType));
+        return gtNewSimdCmpOpNode(GT_NE, type, op1, gtNewZeroConNode(type), simdBaseType, simdSize);
+    }
+
+    /// <summary>Creates a new simd IsOddInteger node</summary>
+    /// <param name="type">The return type of SIMD node being created</param>
+    /// <param name="op1">The vector to check for odd integers</param>
+    /// <param name="simdBaseType">The base type of SIMD type of the intrinsic</param>
+    /// <param name="simdSize">The size of the SIMD type of the intrinsic</param>
+    /// <returns>The created IsOddInteger node</returns>
+    public GenTree gtNewSimdIsOddIntegerNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsSimd(type));
+        assert(GetSimdTypeForSize(simdSize) == type);
+
+        assert(op1 is not null);
+        assert(op1.Type == type);
+
+        assert(varTypeIsIntegral(simdBaseType));
+
+        op1 = gtNewSimdBinOpNode(GT_AND, type, op1, gtNewOneConNode(type, simdBaseType), simdBaseType, simdSize);
+        return gtNewSimdCmpOpNode(GT_NE, type, op1, gtNewZeroConNode(type), simdBaseType, simdSize);
+    }
+
+    /// <summary>Creates a new simd IsPositive node</summary>
+    /// <param name="type">The return type of SIMD node being created</param>
+    /// <param name="op1">The vector to check for positives</param>
+    /// <param name="simdBaseType">The base type of SIMD type of the intrinsic</param>
+    /// <param name="simdSize">The size of the SIMD type of the intrinsic</param>
+    /// <returns>The created IsPositive node</returns>
+    public GenTree gtNewSimdIsPositiveNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsSimd(type));
+        assert(GetSimdTypeForSize(simdSize) == type);
+
+        assert(op1 is not null);
+        assert(op1.Type == type);
+
+        if (simdBaseType == TYP_FLOAT)
+        {
+            simdBaseType = TYP_INT;
+        }
+        else if (simdBaseType == TYP_DOUBLE)
+        {
+            simdBaseType = TYP_LONG;
+        }
+
+        assert(varTypeIsIntegral(simdBaseType));
+
+        if (varTypeIsUnsigned(simdBaseType))
+        {
+            return gtNewAllBitsSetConNode(type);
+        }
+        return gtNewSimdCmpOpNode(GT_GE, type, op1, gtNewZeroConNode(type), simdBaseType, simdSize);
+    }
+
+    /// <summary>Creates a new simd IsPositiveInfinity node </summary>
+    /// <param name="type">The return type of SIMD node being created</param>
+    /// <param name="op1">The vector to check for positive infinities</param>
+    /// <param name="simdBaseType">The base type of SIMD type of the intrinsic</param>
+    /// <param name="simdSize">The size of the SIMD type of the intrinsic</param>
+    /// <returns>The created IsPositiveInfinity node</returns>
+    public GenTree gtNewSimdIsPositiveInfinityNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsSimd(type));
+        assert(GetSimdTypeForSize(simdSize) == type);
+
+        assert(op1 is not null);
+        assert(op1.Type == type);
+
+        assert(varTypeIsArithmetic(simdBaseType));
+
+        if (varTypeIsFloating(simdBaseType))
+        {
+            GenTree cnsNode;
+
+            if (simdBaseType == TYP_FLOAT)
+            {
+                simdBaseType = TYP_UINT;
+                cnsNode = gtNewIconNode(TYP_INT, 0x7F800000);
+            }
+            else
+            {
+                assert(simdBaseType == TYP_DOUBLE);
+
+                simdBaseType = TYP_ULONG;
+                cnsNode = gtNewLconNode(0x7FF0000000000000);
+            }
+            cnsNode = gtNewSimdCreateBroadcastNode(type, cnsNode, simdBaseType, simdSize);
+
+            return gtNewSimdCmpOpNode(GT_EQ, type, op1, cnsNode, simdBaseType, simdSize);
+        }
+        return gtNewZeroConNode(type);
+    }
+
+    /// <summary>Creates a new simd IsSubnormal node</summary>
+    /// <param name="type">The return type of SIMD node being created</param>
+    /// <param name="op1">The vector to check for subnormal values</param>
+    /// <param name="simdBaseType">The base type of SIMD type of the intrinsic</param>
+    /// <param name="simdSize">The size of the SIMD type of the intrinsic</param>
+    /// <returns>The created IsSubnormal node</returns>
+    public GenTree gtNewSimdIsSubnormalNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsSimd(type));
+        assert(GetSimdTypeForSize(simdSize) == type);
+
+        assert(op1 is not null);
+        assert(op1.Type == type);
+
+        assert(varTypeIsArithmetic(simdBaseType));
+
+        if (varTypeIsFloating(simdBaseType))
+        {
+            op1 = gtNewSimdAbsNode(type, op1, simdBaseType, simdSize);
+
+            GenTree cnsNode1;
+            GenTree cnsNode2;
+
+            if (simdBaseType == TYP_FLOAT)
+            {
+                simdBaseType = TYP_UINT;
+                cnsNode2 = gtNewIconNode(TYP_INT, 0x007FFFFF);
+            }
+            else
+            {
+                assert(simdBaseType == TYP_DOUBLE);
+                simdBaseType = TYP_ULONG;
+                cnsNode2 = gtNewLconNode(0x000FFFFFFFFFFFFF);
+            }
+
+            cnsNode1 = gtNewOneConNode(type, simdBaseType);
+            cnsNode2 = gtNewSimdCreateBroadcastNode(type, cnsNode2, simdBaseType, simdSize);
+
+            op1 = gtNewSimdBinOpNode(GT_SUB, type, op1, cnsNode1, simdBaseType, simdSize);
+
+            return gtNewSimdCmpOpNode(GT_LT, type, op1, cnsNode2, simdBaseType, simdSize);
+        }
+        return gtNewZeroConNode(type);
+    }
+
+    /// <summary>Creates a new simd IsZero node</summary>
+    /// <param name="type">The return type of SIMD node being created</param>
+    /// <param name="op1">The vector to check for Zeroes</param>
+    /// <param name="simdBaseType">The base type of SIMD type of the intrinsic</param>
+    /// <param name="simdSize">The size of the SIMD type of the intrinsic</param>
+    /// <returns>The created IsZero node</returns>
+    public GenTree gtNewSimdIsZeroNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsSimd(type));
+        assert(GetSimdTypeForSize(simdSize) == type);
+
+        assert(op1 is not null);
+        assert(op1.Type == type);
+
+        assert(varTypeIsArithmetic(simdBaseType));
+
+        return gtNewSimdCmpOpNode(GT_EQ, type, op1, gtNewZeroConNode(type), simdBaseType, simdSize);
+    }
+
+    /// <summary>Creates a new HWIntrinsic node that performs a min or max computation that follows IEEE 754 semantics</summary>
+    /// <param name="type">The node representing the minimum or maximum operation</param>
+    /// <param name="op1">The node representing the minimum or maximum operation</param>
+    /// <param name="op2">The node representing the minimum or maximum operation</param>
+    /// <param name="simdBaseType">The node representing the minimum or maximum operation</param>
+    /// <param name="simdSize">The node representing the minimum or maximum operation</param>
+    /// <param name="isMax">The node representing the minimum or maximum operation</param>
+    /// <param name="isMagnitude">The node representing the minimum or maximum operation</param>
+    /// <param name="isNumber">The node representing the minimum or maximum operation</param>
+    /// <returns>The node representing the minimum or maximum operation</returns>
+    public GenTree gtNewSimdMinMaxNode(var_types type, GenTree op1, GenTree op2, var_types simdBaseType, byte simdSize, bool isMax, bool isMagnitude, bool isNumber)
+    {
+        assert(op1 is not null);
+        assert(op1.Type == type);
+
+        assert(op2 is not null);
+        assert(op2.Type == type);
+
+        assert(varTypeIsArithmetic(simdBaseType));
+
+        var isScalar = false;
+
+        if (simdSize is 0)
+        {
+            isScalar = true;
+            assert(varTypeIsFloating(type));
+            assert(simdBaseType == type);
+        }
+        else if (!varTypeIsLong(simdBaseType))
+        {
+            assert(varTypeIsSimd(type));
+            assert(GetSimdTypeForSize(simdSize) == type);
+        }
+
+        var intrinsic = NI_Illegal;
+
+        if (varTypeIsFloating(simdBaseType))
+        {
+            var retNode = null as GenTree;
+
+#if TARGET_XARCH
+            var cnsNode = null as GenTree;
+            var otherNode = op2;
+
+            if (isScalar)
+            {
+                if (op1.Oper.IsCnsFltOrDbl)
+                {
+                    cnsNode = op1;
+                    otherNode = op2;
+                }
+                else if (op2.Oper.IsCnsFltOrDbl)
+                {
+                    cnsNode = op2;
+                    otherNode = op1;
+                }
+
+                simdSize = 16;
+                type = TYP_SIMD16;
+            }
+            else if (op1.Oper.IsCnsVec)
+            {
+                cnsNode = op1;
+                otherNode = op2;
+            }
+            else if (op2.Oper.IsCnsVec)
+            {
+                cnsNode = op2;
+                otherNode = op1;
+            }
+
+            // ctrlByte: A control byte (imm8) that specifies the type of min/max operation and sign behavior for AVX512+
+            //  - Bits [1:0] (Op-select): Determines the operation performed:
+            //      - 0b00: minimum - Returns x if x ≤ y, otherwise y; NaN handling applies.
+            //      - 0b01: maximum - Returns x if x ≥ y, otherwise y; NaN handling applies.
+            //      - 0b10: minimumMagnitude - Compares absolute values, returns the smaller magnitude.
+            //      - 0b11: maximumMagnitude - Compares absolute values, returns the larger magnitude.
+            //  - Bits [3:2] (Sign control): Defines how the result’s sign is determined:
+            //      - 0b00: Select sign from the first operand (src1).
+            //      - 0b01: Select sign from the comparison result.
+            //      - 0b10: Force result sign to 0 (positive).
+            //      - 0b11: Force result sign to 1 (negative).
+            //
+            // AVX10.2 additionally adds:
+            //  - Bit [4] (min/max mode): Determines whether the instruction follows IEEE-compliant NaN handling:
+            //      - 0b0: Standard min/max (propagates NaNs).
+            //      - 0b1: Number-preferential min/max (ignores signaling NaNs).
+            //
+            var ctrlByte = 0x04; // Select sign from comparison result
+            ctrlByte |= isMax ? 0x01 : 0x00;
+            ctrlByte |= isMagnitude ? 0x02 : 0x00;
+
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+            {
+                if (isScalar)
+                {
+                    op1 = gtNewSimdCreateScalarUnsafeNode(type, op1, simdBaseType, simdSize);
+                    op2 = gtNewSimdCreateScalarUnsafeNode(type, op2, simdBaseType, simdSize);
+                }
+
+                ctrlByte |= isNumber ? 0x10 : 0x00;
+
+                var op3 = gtNewIconNode(TYP_INT, ctrlByte);
+                intrinsic = isScalar ? NI_AVX10v2_MinMaxScalar : NI_AVX10v2_MinMax;
+
+                retNode = gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1, op2, op3);
+            }
+            else if ((cnsNode is not null) && !otherNode.Oper.IsConst)
+            {
+                var isNaN = false;
+
+                if (isScalar)
+                {
+                    isNaN = cnsNode.IsFloatNaN;
+                }
+                else
+                {
+                    isNaN = cnsNode.IsVectorNaN(simdBaseType);
+                }
+
+                if (isNaN)
+                {
+                    if (isNumber)
+                    {
+                        return otherNode;
+                    }
+                    else
+                    {
+                        return cnsNode;
+                    }
+                }
+
+                if (!isMagnitude)
+                {
+                    var needsFixup = false;
+                    var canHandle = false;
+
+                    if (isMax)
+                    {
+                        // xarch max return op2 if both inputs are 0 of either sign
+                        // we require +0 to be greater than -0 we also require NaN to
+                        // not be propagated for isNumber and to be propagated otherwise.
+                        //
+                        // This means for isNumber we want to do `max other, cns` and
+                        // can only handle cns being -0 if Avx512F is supported. This is
+                        // because if other was NaN, we want to return the non-NaN cns.
+                        // But if cns was -0 and other was +0 we'd want to return +0 and
+                        // so need to be able to fixup the result.
+                        //
+                        // For !isNumber we have the inverse and want `max cns, other` and
+                        // can only handle cns being +0 if Avx512F is supported. This is
+                        // because if other was NaN, we want to return other and if cns
+                        // was +0 and other was -0 we'd want to return +0 and so need
+                        // so need to be able to fixup the result.
+
+                        if (isNumber)
+                        {
+                            if (isScalar)
+                            {
+                                needsFixup = cnsNode.IsFloatNegativeZero;
+                            }
+                            else
+                            {
+                                needsFixup = cnsNode.IsVectorNegativeZero(simdBaseType);
+                            }
+                        }
+                        else if (isScalar)
+                        {
+                            needsFixup = cnsNode.IsFloatPositiveZero;
+                        }
+                        else
+                        {
+                            needsFixup = cnsNode.IsVectorZero;
+                        }
+
+                        if (!needsFixup || compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                        {
+                            // Given the checks, op1 can safely be the cns and op2 the other node
+
+                            intrinsic = isScalar ? NI_X86Base_MaxScalar : NI_X86Base_Max;
+
+                            op1 = cnsNode;
+                            op2 = otherNode;
+
+                            canHandle = true;
+                        }
+                    }
+                    else
+                    {
+                        // xarch min return op2 if both inputs are 0 of either sign
+                        // we require -0 to be lesser than +0, we also require NaN to
+                        // not be propagated for isNumber and to be propagated otherwise.
+                        //
+                        // This means for isNumber we want to do `min other, cns` and
+                        // can only handle cns being +0 if Avx512F is supported. This is
+                        // because if other was NaN, we want to return the non-NaN cns.
+                        // But if cns was +0 and other was -0 we'd want to return -0 and
+                        // so need to be able to fixup the result.
+                        //
+                        // For !isNumber we have the inverse and want `min cns, other` and
+                        // can only handle cns being -0 if Avx512F is supported. This is
+                        // because if other was NaN, we want to return other and if cns
+                        // was -0 and other was +0 we'd want to return -0 and so need
+                        // so need to be able to fixup the result.
+
+                        if (isNumber)
+                        {
+                            if (isScalar)
+                            {
+                                needsFixup = cnsNode.IsFloatPositiveZero;
+                            }
+                            else
+                            {
+                                needsFixup = cnsNode.IsVectorZero;
+                            }
+                        }
+                        else if (isScalar)
+                        {
+                            needsFixup = cnsNode.IsFloatNegativeZero;
+                        }
+                        else
+                        {
+                            needsFixup = cnsNode.IsVectorZero;
+                        }
+                        {
+                            needsFixup = cnsNode.IsVectorNegativeZero(simdBaseType);
+                        }
+
+                        if (!needsFixup || compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                        {
+                            // Given the checks, op1 can safely be the cns and op2 the other node
+
+                            intrinsic = isScalar ? NI_X86Base_MinScalar : NI_X86Base_Min;
+
+                            op1 = cnsNode;
+                            op2 = otherNode;
+
+                            canHandle = true;
+                        }
+                    }
+
+                    if (canHandle)
+                    {
+                        assert(op1.Oper.IsConst && !op2.Oper.IsConst);
+
+                        if (isScalar)
+                        {
+                            var vecCon = gtNewVconNode(type);
+                            vecCon.EvaluateBroadcastInPlace(simdBaseType, cnsNode.AsDblCon().DconVal);
+
+                            op1 = vecCon;
+                            op2 = gtNewSimdCreateScalarUnsafeNode(type, op2, simdBaseType, simdSize);
+                        }
+
+                        retNode = gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1, op2);
+
+                        if (needsFixup)
+                        {
+                            var op2Clone = fgMakeMultiUse(ref op2);
+                            retNode.AsHWIntrinsic().GetOpRef(2) = op2;
+
+                            var tblVecCon = gtNewVconNode(type);
+
+                            // FixupScalar(left, right, table, control) computes the input type of right
+                            // adjusts it based on the table and then returns
+                            //
+                            // In our case, left is going to be the result of the RangeScalar operation
+                            // and right is going to be op1 or op2. In the case op1/op2 is QNaN or SNaN
+                            // we want to preserve it instead. Otherwise we want to preserve the original
+                            // result computed by RangeScalar.
+                            //
+                            // If both inputs are NaN, then we'll end up taking op1 by virtue of it being
+                            // the latter fixup.
+
+                            if (isMax)
+                            {
+                                // QNAN: 0b0000:  Preserve left
+                                // SNAN: 0b0000
+                                // ZERO: 0b1000:  +0
+                                // +ONE: 0b0000
+                                // -INF: 0b0000
+                                // +INF: 0b0000
+                                // -VAL: 0b0000
+                                // +VAL: 0b0000
+
+                                var tblValue = 0x00000800;
+                                tblVecCon.EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG, tblValue);
+                            }
+                            else
+                            {
+                                // QNAN: 0b0000:  Preserve left
+                                // SNAN: 0b0000
+                                // ZERO: 0b0111:  -0
+                                // +ONE: 0b0000
+                                // -INF: 0b0000
+                                // +INF: 0b0000
+                                // -VAL: 0b0000
+                                // +VAL: 0b0000
+
+                                var tblValue = 0x00000700;
+                                tblVecCon.EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG, tblValue);
+                            }
+
+                            intrinsic = isScalar ? NI_AVX512_FixupScalar : NI_AVX512_Fixup;
+
+                            retNode = gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, retNode, op2Clone, tblVecCon, gtNewIconNode(TYP_INT, 0));
+                        }
+
+                        if (isNumber)
+                        {
+                            // Swap the operands so that the cnsNode is op1, this prevents
+                            // the unknown value (which could be NaN) from being selected.
+
+                            retNode.AsHWIntrinsic().GetOpRef(1) = op2;
+                            retNode.AsHWIntrinsic().GetOpRef(2) = op1;
+                        }
+                    }
+                }
+            }
+
+            if (retNode is null)
+            {
+                if (isScalar)
+                {
+                    op1 = gtNewSimdCreateScalarUnsafeNode(type, op1, simdBaseType, simdSize);
+                    op2 = gtNewSimdCreateScalarUnsafeNode(type, op2, simdBaseType, simdSize);
+                }
+
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                {
+                    // We are constructing a chain of intrinsics similar to:
+                    //    var tmp = Avx512DQ.Range(op1, op2, imm8);
+                    //    var tbl = Vector128.Create(...);
+                    //
+                    //    tmp = Avx512F.FixupScalar(tmp, op2, tbl, 0x00);
+                    //    tmp = Avx512F.FixupScalar(tmp, op1, tbl, 0x00);
+                    //
+                    //    return tmp;
+
+                    // Range operates by default almost as MaxNumber or MinNumber
+                    // but, it propagates sNaN and does not propagate qNaN. So we need
+                    // an additional fixup to ensure we propagate qNaN as well.
+
+                    var op1Clone = fgMakeMultiUse(ref op1);
+                    var op2Clone = fgMakeMultiUse(ref op2);
+
+                    var op3 = gtNewIconNode(TYP_INT, ctrlByte);
+                    intrinsic = isScalar ? NI_AVX512_RangeScalar : NI_AVX512_Range;
+
+                    if (isNumber)
+                    {
+                        retNode = gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1Clone, op2Clone, op3);
+                    }
+                    else
+                    {
+                        retNode = gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1, op2, op3);
+                    }
+
+                    // FixupScalar(left, right, table, control) computes the input type of right
+                    // adjusts it based on the table and then returns
+                    //
+                    // In our case, left is going to be the result of the RangeScalar operation,
+                    // which is either sNaN or a normal value, and right is going to be op1 or op2.
+
+                    var tblVecCon1 = gtNewVconNode(type);
+                    var tblVecCon2 = gtNewVconNode(type);
+
+                    // We currently have (commutative)
+                    // * snan, snan = snan
+                    // * snan, qnan = snan
+                    // * snan, norm = snan
+                    // * qnan, qnan = qnan
+                    // * qnan, norm = norm
+                    // * norm, norm = norm
+
+                    intrinsic = isScalar ? NI_AVX512_FixupScalar : NI_AVX512_Fixup;
+
+                    if (isNumber)
+                    {
+                        // We need to fixup the case of:
+                        // * snan, norm = snan
+                        //
+                        // Instead, it should be:
+                        // * snan, norm = norm
+
+                        // First look at op1 and op2 using op2 as the classification
+                        //
+                        // If op2 is norm, we take op2 (norm)
+                        // If op2 is  nan, we take op1 ( nan or norm)
+                        //
+                        // Thus, if one input was norm the fixup is now norm
+
+                        // QNAN: 0b0000:  Preserve left
+                        // SNAN: 0b0000
+                        // ZERO: 0b0001:  Preserve right
+                        // +ONE: 0b0001
+                        // -INF: 0b0001
+                        // +INF: 0b0001
+                        // -VAL: 0b0001
+                        // +VAL: 0b0001
+
+                        var tblValue = 0x11111100;
+                        tblVecCon1.EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG, tblValue);
+                        tblVecCon2.EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG, tblValue);
+
+                        // Next look at result and fixup using result as the classification
+                        //
+                        // If result is norm, we take the result (norm)
+                        // If result is  nan, we take the fixup  ( nan or norm)
+                        //
+                        // Thus if either input was snan, we now have norm as expected
+                        // Otherwise, the result was already correct
+
+                        op1 = gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1, op2, tblVecCon1, gtNewIconNode(TYP_INT, 0));
+                        retNode = gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1, retNode, tblVecCon2, gtNewIconNode(TYP_INT, 0));
+                    }
+                    else
+                    {
+                        // We need to fixup the case of:
+                        // * qnan, norm = norm
+                        //
+                        // Instead, it should be:
+                        // * qnan, norm = qnan
+
+                        // First look at op1 and op2 using op2 as the classification
+                        //
+                        // If op2 is norm, we take op1 ( nan or norm)
+                        // If op2 is snan, we take op1 ( nan or norm)
+                        // If op2 is qnan, we take op2 (qnan)
+                        //
+                        // Thus, if either input was qnan the fixup is now qnan
+
+                        // QNAN: 0b0001:  Preserve right
+                        // SNAN: 0b0000:  Preserve left
+                        // ZERO: 0b0000
+                        // +ONE: 0b0000
+                        // -INF: 0b0000
+                        // +INF: 0b0000
+                        // -VAL: 0b0000
+                        // +VAL: 0b0000
+
+                        var tblValue = 0x00000001;
+                        tblVecCon1.EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG, tblValue);
+                        tblVecCon2.EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG, tblValue);
+
+                        // Next look at result and fixup using fixup as the classification
+                        //
+                        // If fixup is norm, we take the result (norm)
+                        // If fixup is sNaN, we take the result (sNaN)
+                        // If fixup is qNaN, we take the fixup  (qNaN)
+                        //
+                        // Thus if the fixup was qnan, we now have qnan as expected
+                        // Otherwise, the result was already correct
+
+                        op1Clone = gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1Clone, op2Clone, tblVecCon1, gtNewIconNode(TYP_INT, 0));
+                        retNode = gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, retNode, op1Clone, tblVecCon2, gtNewIconNode(TYP_INT, 0));
+                    }
+                }
+            }
+#elif TARGET_ARM64
+            if (!isMagnitude && !isNumber)
+            {
+                return gtNewSimdMinMaxNativeNode(type, op1, op2, simdBaseType, simdSize, isMax);
+            }
+
+            if (isScalar)
+            {
+                simdSize = 8;
+                type     = TYP_SIMD8;
+
+                op1 = gtNewSimdCreateScalarUnsafeNode(type, op1, simdBaseType, simdSize);
+                op2 = gtNewSimdCreateScalarUnsafeNode(type, op2, simdBaseType, simdSize);
+            }
+#else
+            assert(!isScalar);
+#endif
+
+            if (retNode is null)
+            {
+                var op1Dup = fgMakeMultiUse(ref op1);
+                var op2Dup = fgMakeMultiUse(ref op2);
+
+                var absOp1Dup = null as GenTree;
+                var absOp2Dup = null as GenTree;
+
+                var equalsMask = null as GenTree;
+                var signMask = null as GenTree;
+                var nanMask = null as GenTree;
+                var cmpMask = null as GenTree;
+
+                // | name               | cmpMask                 | nanMask     | equalsMask         | signMask      |
+                // | ------------------ | ----------------------- | ----------- | ------------------ | ------------- |
+                // | Max                | LessThan(y, x)          | IsNaN(x)    | Equals(x, y)       | IsNegative(y) |
+                // | Min                | LessThan(x, y)          | IsNaN(x)    | Equals(x, y)       | IsNegative(x) |
+                // | MaxMagnitude       | GreaterThan(xMag, yMag) | IsNaN(xMag) | Equals(xMag, yMag) | IsPositive(x) |
+                // | MinMagnitude       | LessThan(xMag, yMag)    | IsNaN(xMag) | Equals(xMag, yMag) | IsNegative(x) |
+                // | MaxMagnitudeNumber | GreaterThan(xMag, yMag) | IsNaN(yMag) | Equals(xMag, yMag) | IsPositive(x) |
+                // | MinMagnitudeNumber | LessThan(xMag, yMag)    | IsNaN(yMag) | Equals(xMag, yMag) | IsNegative(x) |
+                // | MaxNumber          | LessThan(y, x)          | IsNaN(y)    | Equals(x, y)       | IsNegative(y) |
+                // | MinNumber          | LessThan(x, y)          | IsNaN(y)    | Equals(x, y)       | IsNegative(x) |
+
+                if (isMagnitude)
+                {
+                    var absOp1 = gtNewSimdAbsNode(type, op1, simdBaseType, simdSize);
+                    var absOp2 = gtNewSimdAbsNode(type, op2, simdBaseType, simdSize);
+
+                    absOp1Dup = fgMakeMultiUse(ref absOp1);
+                    absOp2Dup = fgMakeMultiUse(ref absOp2);
+
+                    equalsMask = gtNewSimdCmpOpNode(GT_EQ, type, absOp1, absOp2, simdBaseType, simdSize);
+
+                    if (isMax)
+                    {
+                        signMask = gtNewSimdIsPositiveNode(type, op1Dup, simdBaseType, simdSize);
+                        cmpMask = gtNewSimdCmpOpNode(GT_GT, type, absOp1Dup, absOp2Dup, simdBaseType, simdSize);
+                    }
+                    else
+                    {
+                        signMask = gtNewSimdIsNegativeNode(type, op1Dup, simdBaseType, simdSize);
+                        cmpMask = gtNewSimdCmpOpNode(GT_LT, type, absOp1Dup, absOp2Dup, simdBaseType, simdSize);
+                    }
+
+                    if (isNumber)
+                    {
+                        nanMask = gtNewSimdIsNaNNode(type, gtCloneExpr(absOp2Dup), simdBaseType, simdSize);
+                    }
+                    else
+                    {
+                        nanMask = gtNewSimdIsNaNNode(type, gtCloneExpr(absOp1Dup), simdBaseType, simdSize);
+                    }
+                }
+                else
+                {
+                    equalsMask = gtNewSimdCmpOpNode(GT_EQ, type, op1, op2, simdBaseType, simdSize);
+
+                    if (isMax)
+                    {
+                        signMask = gtNewSimdIsNegativeNode(type, op2Dup, simdBaseType, simdSize);
+                        cmpMask = gtNewSimdCmpOpNode(GT_LT, type, gtCloneExpr(op2Dup), op1Dup, simdBaseType, simdSize);
+                    }
+                    else
+                    {
+                        signMask = gtNewSimdIsNegativeNode(type, op1Dup, simdBaseType, simdSize);
+                        cmpMask = gtNewSimdCmpOpNode(GT_LT, type, gtCloneExpr(op1Dup), op2Dup, simdBaseType, simdSize);
+                    }
+
+                    if (isNumber)
+                    {
+                        nanMask = gtNewSimdIsNaNNode(type, gtCloneExpr(op2Dup), simdBaseType, simdSize);
+                    }
+                    else
+                    {
+                        nanMask = gtNewSimdIsNaNNode(type, gtCloneExpr(op1Dup), simdBaseType, simdSize);
+                    }
+
+                    op2Dup = gtCloneExpr(op2Dup);
+                }
+
+                var mask = gtNewSimdBinOpNode(GT_AND, type, equalsMask, signMask, simdBaseType, simdSize);
+
+                mask = gtNewSimdBinOpNode(GT_OR, type, mask, nanMask, simdBaseType, simdSize);
+                mask = gtNewSimdBinOpNode(GT_OR, type, mask, cmpMask, simdBaseType, simdSize);
+
+                retNode = gtNewSimdCndSelNode(type, mask, gtCloneExpr(op1Dup), op2Dup, simdBaseType, simdSize);
+            }
+            assert(retNode is not null);
+
+            if (isScalar)
+            {
+                retNode = gtNewSimdToScalarNode(simdBaseType, retNode, simdBaseType, simdSize);
+            }
+            return retNode;
+        }
+
+        assert(!isScalar);
+
+        if (isMagnitude)
+        {
+            var op1Dup = fgMakeMultiUse(ref op1);
+            var op2Dup = fgMakeMultiUse(ref op2);
+
+            var absOp1 = gtNewSimdAbsNode(type, op1, simdBaseType, simdSize);
+            var absOp2 = gtNewSimdAbsNode(type, op2, simdBaseType, simdSize);
+
+            var absOp1Dup = fgMakeMultiUse(ref absOp1);
+            var absOp2Dup = fgMakeMultiUse(ref absOp2);
+
+            var equalsMask = gtNewSimdCmpOpNode(GT_EQ, type, absOp1, absOp2, simdBaseType, simdSize);
+
+            var signMask1 = null as GenTree;
+            var signMask2 = null as GenTree;
+            var signMask3 = null as GenTree;
+            var cmpMask = null as GenTree;
+
+            if (isMax)
+            {
+                signMask1 = gtNewSimdIsNegativeNode(type, op2Dup, simdBaseType, simdSize);
+                signMask2 = gtNewSimdIsPositiveNode(type, absOp2Dup, simdBaseType, simdSize);
+                signMask3 = gtNewSimdIsNegativeNode(type, absOp1Dup, simdBaseType, simdSize);
+                cmpMask = gtNewSimdCmpOpNode(GT_GT, type, gtCloneExpr(absOp1Dup), gtCloneExpr(absOp2Dup), simdBaseType, simdSize);
+            }
+            else
+            {
+                signMask1 = gtNewSimdIsNegativeNode(type, op1Dup, simdBaseType, simdSize);
+                signMask2 = gtNewSimdIsPositiveNode(type, absOp1Dup, simdBaseType, simdSize);
+                signMask3 = gtNewSimdIsNegativeNode(type, absOp2Dup, simdBaseType, simdSize);
+                cmpMask = gtNewSimdCmpOpNode(GT_LT, type, gtCloneExpr(absOp1Dup), gtCloneExpr(absOp2Dup), simdBaseType, simdSize);
+            }
+
+            var mask1 = gtNewSimdBinOpNode(GT_AND, type, equalsMask, signMask1, simdBaseType, simdSize);
+            var mask2 = gtNewSimdBinOpNode(GT_AND, type, cmpMask, signMask2, simdBaseType, simdSize);
+            var mask3 = gtNewSimdBinOpNode(GT_OR, type, mask1, mask2, simdBaseType, simdSize);
+
+            mask3 = gtNewSimdBinOpNode(GT_OR, type, mask3, signMask3, simdBaseType, simdSize);
+            return gtNewSimdCndSelNode(type, mask3, gtCloneExpr(op1Dup), gtCloneExpr(op2Dup), simdBaseType, simdSize);
+        }
+
+        return gtNewSimdMinMaxNativeNode(type, op1, op2, simdBaseType, simdSize, isMax);
+    }
+
+    /// <summary>Creates a new HWIntrinsic node that performs a min or max computation without consideration for IEEE 754 semantics</summary>
+    /// <param name="type">The type of the node to generate</param>
+    /// <param name="op1">The first operand</param>
+    /// <param name="op2">The second operand</param>
+    /// <param name="simdBaseType">the base type of the node</param>
+    /// <param name="simdSize">the simd size of the node</param>
+    /// <param name="isMax">true to compute the maximum; otherwise, false for the minimum</param>
+    /// <returns>The node representing the minimum or maximum operation</returns>
+    /// <remarks>This follows the platform specific behavior for comparisons and will do whatever is most efficient. This means that the exact result returned if either input is NaN or -0 can differ based on the underlying hardware.</remarks>
+    public GenTree gtNewSimdMinMaxNativeNode(var_types type, GenTree op1, GenTree op2, var_types simdBaseType, byte simdSize, bool isMax)
+    {
+        assert(op1 is not null);
+        assert(op1.Type == type);
+
+        assert(op2 is not null);
+        assert(op2.Type == type);
+
+        assert(varTypeIsArithmetic(simdBaseType));
+
+        var isScalar = false;
+
+        if (simdSize is 0)
+        {
+            isScalar = true;
+            assert(varTypeIsFloating(type));
+            assert(simdBaseType == type);
+        }
+        else
+        {
+            assert(varTypeIsSimd(type));
+            assert(GetSimdTypeForSize(simdSize) == type);
+        }
+
+        var intrinsic = NI_Illegal;
+
+#if TARGET_XARCH
+        if (simdSize is 32)
+        {
+            if (varTypeIsFloating(simdBaseType))
+            {
+                intrinsic = isMax ? NI_AVX_Max : NI_AVX_Min;
+            }
+            else
+            {
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+
+                if (!varTypeIsLong(simdBaseType))
+                {
+                    intrinsic = isMax ? NI_AVX2_Max : NI_AVX2_Min;
+                }
+                else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                {
+                    intrinsic = isMax ? NI_AVX512_Max : NI_AVX512_Min;
+                }
+            }
+        }
+        else if (simdSize is 64)
+        {
+            intrinsic = isMax ? NI_AVX512_Max : NI_AVX512_Min;
+        }
+        else if (!varTypeIsLong(simdBaseType))
+        {
+            if (isScalar)
+            {
+                simdSize = 16;
+                type = TYP_SIMD16;
+
+                op1 = gtNewSimdCreateScalarUnsafeNode(type, op1, simdBaseType, simdSize);
+                op2 = gtNewSimdCreateScalarUnsafeNode(type, op2, simdBaseType, simdSize);
+
+                intrinsic = isMax ? NI_X86Base_MaxScalar : NI_X86Base_MinScalar;
+            }
+            else
+            {
+                intrinsic = isMax ? NI_X86Base_Max : NI_X86Base_Min;
+            }
+        }
+        else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+        {
+            intrinsic = isMax ? NI_AVX512_Max : NI_AVX512_Min;
+        }
+#elif TARGET_ARM64
+        if (!varTypeIsLong(simdBaseType))
+        {
+            if (isScalar)
+            {
+                simdSize = 8;
+                type     = TYP_SIMD8;
+
+                op1 = gtNewSimdCreateScalarUnsafeNode(type, op1, simdBaseType, simdSize);
+                op2 = gtNewSimdCreateScalarUnsafeNode(type, op2, simdBaseType, simdSize);
+
+                intrinsic = isMax ? NI_AdvSimd_Arm64_MaxScalar : NI_AdvSimd_Arm64_MinScalar;
+            }
+            else if (simdBaseType == TYP_DOUBLE)
+            {
+                if (simdSize is 8)
+                {
+                    intrinsic = isMax ? NI_AdvSimd_Arm64_MaxScalar : NI_AdvSimd_Arm64_MinScalar;
+                }
+                else
+                {
+                    intrinsic = isMax ? NI_AdvSimd_Arm64_Max : NI_AdvSimd_Arm64_Min;
+                }
+            }
+            else
+            {
+                intrinsic = isMax ? NI_AdvSimd_Max : NI_AdvSimd_Min;
+            }
+        }
+#else
+#error Unsupported platform
+#endif
+
+        if (intrinsic != NI_Illegal)
+        {
+            var retNode = gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1, op2) as GenTree;
+
+            if (isScalar)
+            {
+                retNode = gtNewSimdToScalarNode(simdBaseType, retNode, simdBaseType, simdSize);
+            }
+            return retNode;
+        }
+
+        assert(!isScalar);
+
+        var op1Dup = fgMakeMultiUse(ref op1);
+        var op2Dup = fgMakeMultiUse(ref op2);
+
+        // op1 = op1 < op2
+        // -or-
+        // op1 = op1 > op2
+        op1 = gtNewSimdCmpOpNode(isMax ? GT_GT : GT_LT, type, op1, op2, simdBaseType, simdSize);
+
+        // result = ConditionalSelect(op1, op1Dup, op2Dup)
+        return gtNewSimdCndSelNode(type, op1, op1Dup, op2Dup, simdBaseType, simdSize);
+    }
+
+    public GenTree gtNewSimdNarrowNode(var_types type, GenTree op1, GenTree op2, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsSimd(type));
+        assert(GetSimdTypeForSize(simdSize) == type);
+
+        assert(op1 is not null);
+        assert(op1.Type == type);
+
+        assert(op2 is not null);
+        assert(op2.Type == type);
+
+        assert(varTypeIsArithmetic(simdBaseType) && !varTypeIsLong(simdBaseType));
+
+        GenTree tmp1;
+        GenTree tmp2;
+
+#if TARGET_XARCH
+        GenTree tmp3;
+
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+        {
+            // This is the same in principle to the other comments below, however due to
+            // code formatting, its too long to reasonably display here.
+
+            assert((simdSize is 16) || (simdSize is 32) || (simdSize is 64));
+            var tmpSimdType = (simdSize is 64) ? TYP_SIMD32 : TYP_SIMD16;
+
+            var intrinsicId = NI_Illegal;
+            var opBaseType = TYP_UNDEF;
+
+            switch (simdBaseType)
+            {
+                case TYP_BYTE:
+                {
+                    if (simdSize is 64)
+                    {
+                        intrinsicId = NI_AVX512_ConvertToVector256SByte;
+                    }
+                    else
+                    {
+                        intrinsicId = NI_AVX512_ConvertToVector128SByte;
+                    }
+
+                    opBaseType = TYP_SHORT;
+                    break;
+                }
+
+                case TYP_UBYTE:
+                {
+                    if (simdSize is 64)
+                    {
+                        intrinsicId = NI_AVX512_ConvertToVector256Byte;
+                    }
+                    else
+                    {
+                        intrinsicId = NI_AVX512_ConvertToVector128Byte;
+                    }
+
+                    opBaseType = TYP_USHORT;
+                    break;
+                }
+
+                case TYP_SHORT:
+                {
+                    if (simdSize is 64)
+                    {
+                        intrinsicId = NI_AVX512_ConvertToVector256Int16;
+                    }
+                    else
+                    {
+                        intrinsicId = NI_AVX512_ConvertToVector128Int16;
+                    }
+
+                    opBaseType = TYP_INT;
+                    break;
+                }
+
+                case TYP_USHORT:
+                {
+                    if (simdSize is 64)
+                    {
+                        intrinsicId = NI_AVX512_ConvertToVector256UInt16;
+                    }
+                    else
+                    {
+                        intrinsicId = NI_AVX512_ConvertToVector128UInt16;
+                    }
+
+                    opBaseType = TYP_UINT;
+                    break;
+                }
+
+                case TYP_INT:
+                {
+                    if (simdSize is 64)
+                    {
+                        intrinsicId = NI_AVX512_ConvertToVector256Int32;
+                    }
+                    else
+                    {
+                        intrinsicId = NI_AVX512_ConvertToVector128Int32;
+                    }
+
+                    opBaseType = TYP_LONG;
+                    break;
+                }
+
+                case TYP_UINT:
+                {
+                    if (simdSize is 64)
+                    {
+                        intrinsicId = NI_AVX512_ConvertToVector256UInt32;
+                    }
+                    else
+                    {
+                        intrinsicId = NI_AVX512_ConvertToVector128UInt32;
+                    }
+
+                    opBaseType = TYP_ULONG;
+                    break;
+                }
+
+                case TYP_FLOAT:
+                {
+                    if (simdSize is 64)
+                    {
+                        intrinsicId = NI_AVX512_ConvertToVector256Single;
+                    }
+                    else if (simdSize is 32)
+                    {
+                        intrinsicId = NI_AVX_ConvertToVector128Single;
+                    }
+                    else
+                    {
+                        intrinsicId = NI_X86Base_ConvertToVector128Single;
+                    }
+
+                    opBaseType = TYP_DOUBLE;
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                    break;
+                }
+            }
+
+            tmp1 = gtNewSimdHWIntrinsicNode(tmpSimdType, intrinsicId, opBaseType, simdSize, op1);
+            tmp2 = gtNewSimdHWIntrinsicNode(tmpSimdType, intrinsicId, opBaseType, simdSize, op2);
+
+            if (simdSize is 16)
+            {
+                return gtNewSimdHWIntrinsicNode(type, NI_X86Base_MoveLowToHigh, TYP_FLOAT, simdSize, tmp1, tmp2);
+            }
+
+            intrinsicId = (simdSize is 64) ? NI_Vector256_ToVector512Unsafe : NI_Vector128_ToVector256Unsafe;
+
+            tmp1 = gtNewSimdHWIntrinsicNode(type, intrinsicId, simdBaseType, (byte)(simdSize / 2), tmp1);
+            return gtNewSimdWithUpperNode(type, tmp1, tmp2, simdBaseType, simdSize);
+        }
+        else if (simdSize is 32)
+        {
+            switch (simdBaseType)
+            {
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                {
+                    assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+
+                    // This is the same in principle to the other comments below, however due to
+                    // code formatting, its too long to reasonably display here.
+                    var vecCon1 = gtNewVconNode(type);
+                    vecCon1.EvaluateBroadcastInPlace(TYP_USHORT, 0x00FF);
+
+                    var vecCon2 = gtCloneCnsVec(vecCon1);
+
+                    tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseType, simdSize);
+                    tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseType, simdSize);
+                    tmp3 = gtNewSimdHWIntrinsicNode(type, NI_AVX2_PackUnsignedSaturate, TYP_UBYTE, simdSize, tmp1, tmp2);
+
+                    var permuteBaseType = (simdBaseType == TYP_BYTE) ? TYP_LONG : TYP_ULONG;
+                    return gtNewSimdHWIntrinsicNode(type, NI_AVX2_Permute4x64, permuteBaseType, simdSize, tmp3, gtNewIconNode(TYP_INT, SHUFFLE_WYZX));
+                }
+
+                case TYP_SHORT:
+                case TYP_USHORT:
+                {
+                    assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+
+                    // op1 = Elements 0L, 0U, 1L, 1U, 2L, 2U, 3L, 3U | 4L, 4U, 5L, 5U, 6L, 6U, 7L, 7U
+                    // op2 = Elements 8L, 8U, 9L, 9U, AL, AU, BL, BU | CL, CU, DL, DU, EL, EU, FL, FU
+                    //
+                    // tmp2 = Elements 0L, --, 1L, --, 2L, --, 3L, -- | 4L, --, 5L, --, 6L, --, 7L, --
+                    // tmp3 = Elements 8L, --, 9L, --, AL, --, BL, -- | CL, --, DL, --, EL, --, FL, --
+                    // tmp4 = Elements 0L, 1L, 2L, 3L, 8L, 9L, AL, BL | 4L, 5L, 6L, 7L, CL, DL, EL, FL
+                    // return Elements 0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L | 8L, 9L, AL, BL, CL, DL, EL, FL
+                    //
+                    // var vcns = Vector256.Create(0x0000FFFF).AsInt16();
+                    // var tmp1 = Avx2.And(op1.AsInt16(), vcns);
+                    // var tmp2 = Avx2.And(op2.AsInt16(), vcns);
+                    // var tmp3 = Avx2.PackuintSaturate(tmp1, tmp2);
+                    // return Avx2.Permute4x64(tmp3.AsUInt64(), SHUFFLE_WYZX).As<T>();
+
+                    var vecCon1 = gtNewVconNode(type);
+                    vecCon1.EvaluateBroadcastInPlace(TYP_UINT, 0x0000FFFF);
+
+                    var vecCon2 = gtCloneCnsVec(vecCon1);
+
+                    tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseType, simdSize);
+                    tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseType, simdSize);
+                    tmp3 = gtNewSimdHWIntrinsicNode(type, NI_AVX2_PackUnsignedSaturate, TYP_USHORT, simdSize, tmp1, tmp2);
+
+                    var permuteBaseType = (simdBaseType == TYP_SHORT) ? TYP_LONG : TYP_ULONG;
+                    return gtNewSimdHWIntrinsicNode(type, NI_AVX2_Permute4x64, permuteBaseType, simdSize, tmp3, gtNewIconNode(TYP_INT, SHUFFLE_WYZX));
+                }
+
+                case TYP_INT:
+                case TYP_UINT:
+
+                case TYP_FLOAT:
+                {
+                    // op1 = Elements 0, 1 | 2, 3
+                    // op2 = Elements 4, 5 | 6, 7
+                    //
+                    // tmp1 = Elements 0, 1, 2, 3 | -, -, -, -
+                    // tmp1 = Elements 4, 5, 6, 7
+                    // return Elements 0, 1, 2, 3 | 4, 5, 6, 7
+                    //
+                    // var tmp1 = Avx.ConvertToVector128Single(op1).ToVector256Unsafe();
+                    // var tmp2 = Avx.ConvertToVector128Single(op2);
+                    // return tmp1.WithUpper(tmp2);
+
+                    var opBaseType = TYP_DOUBLE;
+
+                    tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_AVX_ConvertToVector128Single, opBaseType, simdSize, op1);
+                    tmp2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_AVX_ConvertToVector128Single, opBaseType, simdSize, op2);
+
+                    tmp1 = gtNewSimdHWIntrinsicNode(type, NI_Vector128_ToVector256Unsafe, simdBaseType, 16, tmp1);
+                    return gtNewSimdWithUpperNode(type, tmp1, tmp2, simdBaseType, simdSize);
+                }
+
+                default:
+                {
+                    unreached();
+                    return null;
+                }
+            }
+        }
+        else
+        {
+            assert(simdSize is 16);
+
+            switch (simdBaseType)
+            {
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                {
+                    // op1 = Elements 0, 1, 2, 3, 4, 5, 6, 7; 0L, 0U, 1L, 1U, 2L, 2U, 3L, 3U, 4L, 4U, 5L, 5U, 6L, 6U, 7L, 7U
+                    // op2 = Elements 8, 9, A, B, C, D, E, F; 8L, 8U, 9L, 9U, AL, AU, BL, BU, CL, CU, DL, DU, EL, EU, FL, FU
+                    //
+                    // tmp2 = Elements 0L, --, 1L, --, 2L, --, 3L, --, 4L, --, 5L, --, 6L, --, 7L, --
+                    // tmp3 = Elements 8L, --, 9L, --, AL, --, BL, --, CL, --, DL, --, EL, --, FL, --
+                    // return Elements 0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, AL, BL, CL, DL, EL, FL
+                    //
+                    // var vcns = Vector128.Create((ushort)(0x00FF)).AsSByte();
+                    // var tmp1 = Sse2.And(op1.AsSByte(), vcns);
+                    // var tmp2 = Sse2.And(op2.AsSByte(), vcns);
+                    // return Sse2.PackuintSaturate(tmp1, tmp2).As<T>();
+
+                    var vecCon1 = gtNewVconNode(type);
+                    vecCon1.EvaluateBroadcastInPlace(TYP_USHORT, 0x00FF);
+
+                    var vecCon2 = gtCloneCnsVec(vecCon1);
+
+                    tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseType, simdSize);
+                    tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseType, simdSize);
+
+                    return gtNewSimdHWIntrinsicNode(type, NI_X86Base_PackUnsignedSaturate, TYP_UBYTE, simdSize, tmp1, tmp2);
+                }
+
+                case TYP_SHORT:
+                case TYP_USHORT:
+                {
+                    // op1 = Elements 0, 1, 2, 3;      0L, 0U, 1L, 1U, 2L, 2U, 3L, 3U
+                    // op2 = Elements 4, 5, 6, 7;      4L, 4U, 5L, 5U, 6L, 6U, 7L, 7U
+                    //
+                    // tmp2 = Elements 0L, --, 1L, --, 2L, --, 3L, --
+                    // tmp3 = Elements 4L, --, 5L, --, 6L, --, 7L, --
+                    // return Elements 0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L
+                    //
+                    // var vcns = Vector128.Create(0x0000FFFF).AsInt16();
+                    // var tmp1 = Sse2.And(op1.AsInt16(), vcns);
+                    // var tmp2 = Sse2.And(op2.AsInt16(), vcns);
+                    // return Sse2.PackuintSaturate(tmp1, tmp2).As<T>();
+
+                    var vecCon1 = gtNewVconNode(type);
+                    vecCon1.EvaluateBroadcastInPlace(TYP_UINT, 0x0000FFFF);
+
+                    var vecCon2 = gtCloneCnsVec(vecCon1);
+
+                    tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseType, simdSize);
+                    tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseType, simdSize);
+
+                    return gtNewSimdHWIntrinsicNode(type, NI_X86Base_PackUnsignedSaturate, TYP_USHORT, simdSize, tmp1, tmp2);
+                }
+
+                case TYP_INT:
+                case TYP_UINT:
+                {
+                    // op1 = Elements 0, 1;      0L, 0U, 1L, 1U
+                    // op2 = Elements 2, 3;      2L, 2U, 3L, 3U
+                    //
+                    // tmp1 = Elements 0L, 2L, 0U, 2U
+                    // tmp2 = Elements 1L, 3L, 1U, 3U
+                    // return Elements 0L, 1L, 2L, 3L
+                    //
+                    // var tmp1 = Sse2.UnpackLow(op1.AsUInt32(), op2.AsUInt32());
+                    // var tmp2 = Sse2.UnpackHigh(op1.AsUInt32(), op2.AsUInt32());
+                    // return Sse2.UnpackLow(tmp1, tmp2).As<T>();
+
+                    var op1Dup = fgMakeMultiUse(ref op1);
+                    var op2Dup = fgMakeMultiUse(ref op2);
+
+                    tmp1 = gtNewSimdHWIntrinsicNode(type, NI_X86Base_UnpackLow, simdBaseType, simdSize, op1, op2);
+                    tmp2 = gtNewSimdHWIntrinsicNode(type, NI_X86Base_UnpackHigh, simdBaseType, simdSize, op1Dup, op2Dup);
+
+                    return gtNewSimdHWIntrinsicNode(type, NI_X86Base_UnpackLow, simdBaseType, simdSize, tmp1, tmp2);
+                }
+
+                case TYP_FLOAT:
+                {
+                    // op1 = Elements 0, 1
+                    // op2 = Elements 2, 3
+                    //
+                    // tmp1 = Elements 0, 1, -, -
+                    // tmp1 = Elements 2, 3, -, -
+                    // return Elements 0, 1, 2, 3
+                    //
+                    // var tmp1 = Sse2.ConvertToVector128Single(op1);
+                    // var tmp2 = Sse2.ConvertToVector128Single(op2);
+                    // return Sse.MoveLowToHigh(tmp1, tmp2);
+
+                    var opBaseType = TYP_DOUBLE;
+
+                    tmp1 = gtNewSimdHWIntrinsicNode(type, NI_X86Base_ConvertToVector128Single, opBaseType, simdSize, op1);
+                    tmp2 = gtNewSimdHWIntrinsicNode(type, NI_X86Base_ConvertToVector128Single, opBaseType, simdSize, op2);
+
+                    return gtNewSimdHWIntrinsicNode(type, NI_X86Base_MoveLowToHigh, simdBaseType, simdSize, tmp1, tmp2);
+                }
+
+                default:
+                {
+                    unreached();
+                    return null;
+                }
+            }
+        }
+#elif TARGET_ARM64
+        if (simdSize is 16)
+        {
+            if (varTypeIsFloating(simdBaseType))
+            {
+                // var tmp1 = AdvSimd.Arm64.ConvertToSingleLower(op1);
+                // return AdvSimd.Arm64.ConvertToSingleUpper(tmp1, op2);
+
+                tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, NI_AdvSimd_Arm64_ConvertToSingleLower, simdBaseType, 8, op1);
+                return gtNewSimdHWIntrinsicNode(type, NI_AdvSimd_Arm64_ConvertToSingleUpper, simdBaseType, simdSize, tmp1, op2);
+            }
+            else
+            {
+                // var tmp1 = AdvSimd.ExtractNarrowingLower(op1);
+                // return AdvSimd.ExtractNarrowingUpper(tmp1, op2);
+
+                tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, NI_AdvSimd_ExtractNarrowingLower, simdBaseType, 8, op1);
+                return gtNewSimdHWIntrinsicNode(type, NI_AdvSimd_ExtractNarrowingUpper, simdBaseType, simdSize, tmp1, op2);
+            }
+        }
+        else if (varTypeIsFloating(simdBaseType))
+        {
+            // var tmp1 = op1.ToVector128Unsafe();
+            // var tmp2 = AdvSimd.InsertScalar(tmp1, op2);
+            // return AdvSimd.Arm64.ConvertToSingleLower(tmp2);
+
+            var tmp2BaseType = TYP_DOUBLE;
+
+            tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_Vector64_ToVector128Unsafe, simdBaseType, simdSize, op1);
+            tmp2 = gtNewSimdWithUpperNode(TYP_SIMD16, tmp1, op2, tmp2BaseType, 16);
+
+            return gtNewSimdHWIntrinsicNode(type, NI_AdvSimd_Arm64_ConvertToSingleLower, simdBaseType, simdSize, tmp2);
+        }
+        else
+        {
+            // var tmp1 = op1.ToVector128Unsafe();
+            // var tmp2 = tmp1.WithUpper(op2);
+            // return AdvSimd.ExtractNarrowingLower(tmp2);
+
+            tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_Vector64_ToVector128Unsafe, simdBaseType, simdSize, op1);
+            tmp2 = gtNewSimdWithUpperNode(TYP_SIMD16, tmp1, op2, simdBaseType, 16);
+
+            return gtNewSimdHWIntrinsicNode(type, NI_AdvSimd_ExtractNarrowingLower, simdBaseType, simdSize, tmp2);
+        }
+#else
+#error Unsupported platform
+#endif
+    }
+
+    /// <summary>Creates a new simd ToScalar node.</summary>
+    /// <param name="type">The return type of SIMD node being created.</param>
+    /// <param name="op1">The SIMD operand.</param>
+    /// <param name="simdBaseType">The base type of SIMD type of the intrinsic.</param>
+    /// <param name="simdSize">The size of the SIMD type of the intrinsic.</param>
+    /// <returns>The created node that has the ToScalar implementation.</returns>
+    public GenTree gtNewSimdToScalarNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsArithmetic(type));
+
+        assert(op1 is not null);
+        assert(varTypeIsSimd(op1.Type));
+
+        assert(varTypeIsArithmetic(simdBaseType));
+
+        var intrinsic = NI_Illegal;
+
+#if TARGET_XARCH
+        if (simdSize is 64)
+        {
+            intrinsic = NI_Vector512_ToScalar;
+        }
+        else if (simdSize is 32)
+        {
+            intrinsic = NI_Vector256_ToScalar;
+        }
+        else
+        {
+            intrinsic = NI_Vector128_ToScalar;
+        }
+#elif (TARGET_ARM64)
+        if (simdSize is 8)
+        {
+            intrinsic = NI_Vector64_ToScalar;
+        }
+        else
+        {
+            intrinsic = NI_Vector128_ToScalar;
+        }
+#else
+#error Unsupported platform
+#endif
+
+        return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1);
+    }
+
+    /// <summary>Creates a new simd Truncate node</summary>
+    /// <param name="type">The type of the node</param>
+    /// <param name="op1">The node to truncate</param>
+    /// <param name="simdBaseType"></param>
+    /// <param name="simdSize">the simd size of the node</param>
+    /// <returns>The truncate node</returns>
+    public GenTree gtNewSimdTruncNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsSimd(type));
+        assert(GetSimdTypeForSize(simdSize) == type);
+
+        assert(op1 is not null);
+        assert(op1.Type == type);
+
+        assert(varTypeIsFloating(simdBaseType));
+
+        var intrinsic = NI_Illegal;
+
+#if (TARGET_XARCH)
+        if (simdSize is 32)
+        {
+            intrinsic = NI_AVX_RoundToZero;
+        }
+        else if (simdSize is 64)
+        {
+            var op2 = gtNewIconNode(TYP_INT, (int)(FloatRoundingMode.ToZero));
+            return gtNewSimdHWIntrinsicNode(type, NI_AVX512_RoundScale, simdBaseType, simdSize, op1, op2);
+        }
+        else
+        {
+            intrinsic = NI_X86Base_RoundToZero;
+        }
+#elif TARGET_ARM64
+        if (simdBaseType == TYP_DOUBLE)
+        {
+            intrinsic = (simdSize is 8) ? NI_AdvSimd_RoundToZeroScalar : NI_AdvSimd_Arm64_RoundToZero;
+        }
+        else
+        {
+            intrinsic = NI_AdvSimd_RoundToZero;
+        }
+#else
+#error Unsupported platform
+#endif
+
+        return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1);
+    }
+
+    public GenTree gtNewSimdUnOpNode(genTreeOps op, var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsSimd(type));
+        assert(GetSimdTypeForSize(simdSize) == type);
+
+        assert(op1 is not null);
+        assert(op1.Type == type);
+
+        assert(varTypeIsArithmetic(simdBaseType));
+
+#if TARGET_ARM64
+        if (op is GT_NEG)
+        {
+            simdBaseType = varTypeToSigned(simdBaseType);
+        }
+#endif
+
+        var intrinsic = GetHWIntrinsicIdForUnOp(op, op1, simdBaseType, simdSize, isScalar: false);
+
+        if (intrinsic != NI_Illegal)
+        {
+            return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1);
+        }
+
+        switch (op)
+        {
+#if TARGET_XARCH
+            case GT_NEG:
+            {
+                if (varTypeIsFloating(simdBaseType))
+                {
+                    // op1 ^ -0.0
+                    var negZero = gtNewVconNode(type);
+                    negZero.EvaluateBroadcastInPlace(simdBaseType, -0.0);
+                    return gtNewSimdBinOpNode(GT_XOR, type, op1, negZero, simdBaseType, simdSize);
+                }
+                else
+                {
+                    // Zero - op1
+                    var zero = gtNewZeroConNode(type);
+                    return gtNewSimdBinOpNode(GT_SUB, type, zero, op1, simdBaseType, simdSize);
+                }
+            }
+
+            case GT_NOT:
+            {
+                // op1 ^ AllBitsSet
+                var allBitsSet = gtNewAllBitsSetConNode(type);
+                return gtNewSimdBinOpNode(GT_XOR, type, op1, allBitsSet, simdBaseType, simdSize);
+            }
+#endif
+
+            default:
+            {
+                unreached();
+                return null;
+            }
+        }
+    }
+
+    public GenTree gtNewSimdWidenLowerNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsSimd(type));
+        assert(GetSimdTypeForSize(simdSize) == type);
+
+        assert(op1 is not null);
+        assert(op1.Type == type);
+
+        assert(varTypeIsArithmetic(simdBaseType) && !varTypeIsLong(simdBaseType));
+
+        var intrinsic = NI_Illegal;
+
+#if TARGET_XARCH
+        if (simdSize is 64)
+        {
+            var tmp1 = gtNewSimdGetLowerNode(TYP_SIMD32, op1, simdBaseType, simdSize);
+
+            switch (simdBaseType)
+            {
+                case TYP_BYTE:
+                {
+                    intrinsic = NI_AVX512_ConvertToVector512Int16;
+                    break;
+                }
+
+                case TYP_UBYTE:
+                {
+                    intrinsic = NI_AVX512_ConvertToVector512UInt16;
+                    break;
+                }
+
+                case TYP_SHORT:
+                {
+                    intrinsic = NI_AVX512_ConvertToVector512Int32;
+                    break;
+                }
+
+                case TYP_USHORT:
+                {
+                    intrinsic = NI_AVX512_ConvertToVector512UInt32;
+                    break;
+                }
+
+                case TYP_INT:
+                {
+                    intrinsic = NI_AVX512_ConvertToVector512Int64;
+                    break;
+                }
+
+                case TYP_UINT:
+                {
+                    intrinsic = NI_AVX512_ConvertToVector512UInt64;
+                    break;
+                }
+
+                case TYP_FLOAT:
+                {
+                    intrinsic = NI_AVX512_ConvertToVector512Double;
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                    break;
+                }
+            }
+
+            assert(intrinsic != NI_Illegal);
+            return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, tmp1);
+        }
+        else if (simdSize is 32)
+        {
+            assert(!varTypeIsIntegral(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
+
+            var tmp1 = gtNewSimdGetLowerNode(TYP_SIMD16, op1, simdBaseType, simdSize);
+
+            switch (simdBaseType)
+            {
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                {
+                    intrinsic = NI_AVX2_ConvertToVector256Int16;
+                    break;
+                }
+
+                case TYP_SHORT:
+                case TYP_USHORT:
+                {
+                    intrinsic = NI_AVX2_ConvertToVector256Int32;
+                    break;
+                }
+
+                case TYP_INT:
+                case TYP_UINT:
+                {
+                    intrinsic = NI_AVX2_ConvertToVector256Int64;
+                    break;
+                }
+
+                case TYP_FLOAT:
+                {
+                    intrinsic = NI_AVX_ConvertToVector256Double;
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                    break;
+                }
+            }
+
+            assert(intrinsic != NI_Illegal);
+            return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, tmp1);
+        }
+        else
+        {
+            switch (simdBaseType)
+            {
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                {
+                    intrinsic = NI_X86Base_ConvertToVector128Int16;
+                    break;
+                }
+
+                case TYP_SHORT:
+                case TYP_USHORT:
+                {
+                    intrinsic = NI_X86Base_ConvertToVector128Int32;
+                    break;
+                }
+
+                case TYP_INT:
+                case TYP_UINT:
+                {
+                    intrinsic = NI_X86Base_ConvertToVector128Int64;
+                    break;
+                }
+
+                case TYP_FLOAT:
+                {
+                    intrinsic = NI_X86Base_ConvertToVector128Double;
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                    break;
+                }
+            }
+
+            assert(intrinsic != NI_Illegal);
+            return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1);
+        }
+#elif TARGET_ARM64
+        var tmp1 = op1;
+
+        if (simdSize is 16)
+        {
+            tmp1 = gtNewSimdGetLowerNode(TYP_SIMD8, op1, simdBaseType, simdSize);
+        }
+        else
+        {
+            assert(simdSize is 8);
+        }
+
+        if (varTypeIsFloating(simdBaseType))
+        {
+            assert(simdBaseType == TYP_FLOAT);
+            intrinsic = NI_AdvSimd_Arm64_ConvertToDouble;
+        }
+        else if (varTypeIsSigned(simdBaseType))
+        {
+            intrinsic = NI_AdvSimd_SignExtendWideningLower;
+        }
+        else
+        {
+            intrinsic = NI_AdvSimd_ZeroExtendWideningLower;
+        }
+
+        assert(intrinsic != NI_Illegal);
+        tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, intrinsic, simdBaseType, 8, tmp1);
+
+        if (simdSize is 8)
+        {
+            tmp1 = gtNewSimdGetLowerNode(TYP_SIMD8, tmp1, simdBaseType, 16);
+        }
+        return tmp1;
+#else
+#error Unsupported platform
+#endif
+    }
+
+    public GenTree gtNewSimdWidenUpperNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsSimd(type));
+        assert(GetSimdTypeForSize(simdSize) == type);
+
+        assert(op1 is not null);
+        assert(op1.Type == type);
+
+        assert(varTypeIsArithmetic(simdBaseType) && !varTypeIsLong(simdBaseType));
+
+        var intrinsic = NI_Illegal;
+
+#if TARGET_XARCH
+        if (simdSize is 64)
+        {
+            var tmp1 = gtNewSimdGetUpperNode(TYP_SIMD32, op1, simdBaseType, simdSize);
+
+            switch (simdBaseType)
+            {
+                case TYP_BYTE:
+                {
+                    intrinsic = NI_AVX512_ConvertToVector512Int16;
+                    break;
+                }
+
+                case TYP_UBYTE:
+                {
+                    intrinsic = NI_AVX512_ConvertToVector512UInt16;
+                    break;
+                }
+
+                case TYP_SHORT:
+                {
+                    intrinsic = NI_AVX512_ConvertToVector512Int32;
+                    break;
+                }
+
+                case TYP_USHORT:
+                {
+                    intrinsic = NI_AVX512_ConvertToVector512UInt32;
+                    break;
+                }
+
+                case TYP_INT:
+                {
+                    intrinsic = NI_AVX512_ConvertToVector512Int64;
+                    break;
+                }
+
+                case TYP_UINT:
+                {
+                    intrinsic = NI_AVX512_ConvertToVector512UInt64;
+                    break;
+                }
+
+                case TYP_FLOAT:
+                {
+                    intrinsic = NI_AVX512_ConvertToVector512Double;
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                    break;
+                }
+            }
+
+            assert(intrinsic != NI_Illegal);
+            return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, tmp1);
+        }
+        else if (simdSize is 32)
+        {
+            assert(!varTypeIsIntegral(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
+
+            var tmp1 = gtNewSimdGetUpperNode(TYP_SIMD16, op1, simdBaseType, simdSize);
+
+            switch (simdBaseType)
+            {
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                {
+                    intrinsic = NI_AVX2_ConvertToVector256Int16;
+                    break;
+                }
+
+                case TYP_SHORT:
+                case TYP_USHORT:
+                {
+                    intrinsic = NI_AVX2_ConvertToVector256Int32;
+                    break;
+                }
+
+                case TYP_INT:
+                case TYP_UINT:
+                {
+                    intrinsic = NI_AVX2_ConvertToVector256Int64;
+                    break;
+                }
+
+                case TYP_FLOAT:
+                {
+                    intrinsic = NI_AVX_ConvertToVector256Double;
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                    break;
+                }
+            }
+
+            assert(intrinsic != NI_Illegal);
+            return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, tmp1);
+        }
+        else if (varTypeIsFloating(simdBaseType))
+        {
+            assert(simdBaseType == TYP_FLOAT);
+            var op1Dup = fgMakeMultiUse(ref op1);
+
+            var tmp1 = gtNewSimdHWIntrinsicNode(type, NI_X86Base_MoveHighToLow, simdBaseType, simdSize, op1, op1Dup);
+            return gtNewSimdHWIntrinsicNode(type, NI_X86Base_ConvertToVector128Double, simdBaseType, simdSize, tmp1);
+        }
+        else
+        {
+            var tmp1 = gtNewSimdHWIntrinsicNode(type, NI_X86Base_ShiftRightLogical128BitLane, simdBaseType, simdSize, op1, gtNewIconNode(TYP_INT, 8));
+
+            switch (simdBaseType)
+            {
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                {
+                    intrinsic = NI_X86Base_ConvertToVector128Int16;
+                    break;
+                }
+
+                case TYP_SHORT:
+                case TYP_USHORT:
+                {
+                    intrinsic = NI_X86Base_ConvertToVector128Int32;
+                    break;
+                }
+
+                case TYP_INT:
+                case TYP_UINT:
+                {
+                    intrinsic = NI_X86Base_ConvertToVector128Int64;
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                    break;
+                }
+            }
+
+            assert(intrinsic != NI_Illegal);
+            return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, tmp1);
+        }
+#elif TARGET_ARM64
+        if (simdSize is 16)
+        {
+            if (varTypeIsFloating(simdBaseType))
+            {
+                assert(simdBaseType == TYP_FLOAT);
+                intrinsic = NI_AdvSimd_Arm64_ConvertToDoubleUpper;
+            }
+            else if (varTypeIsSigned(simdBaseType))
+            {
+                intrinsic = NI_AdvSimd_SignExtendWideningUpper;
+            }
+            else
+            {
+                intrinsic = NI_AdvSimd_ZeroExtendWideningUpper;
+            }
+
+            assert(intrinsic != NI_Illegal);
+            return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseType, simdSize);
+        }
+        else
+        {
+            assert(simdSize is 8);
+            var index = 8 / simdBaseType.Size;
+
+            if (varTypeIsFloating(simdBaseType))
+            {
+                assert(simdBaseType is TYP_FLOAT);
+                intrinsic = NI_AdvSimd_Arm64_ConvertToDouble;
+            }
+            else if (varTypeIsSigned(simdBaseType))
+            {
+                intrinsic = NI_AdvSimd_SignExtendWideningLower;
+            }
+            else
+            {
+                intrinsic = NI_AdvSimd_ZeroExtendWideningLower;
+            }
+
+            assert(intrinsic != NI_Illegal);
+
+            tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, intrinsic, simdBaseType, simdSize, op1);
+            return gtNewSimdGetUpperNode(TYP_SIMD8, tmp1, simdBaseType, 16);
+        }
+#else
+#error Unsupported platform
+#endif
+    }
+
+    public GenTree gtNewSimdWithLowerNode(var_types type, GenTree op1, GenTree op2, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsArithmetic(simdBaseType));
+
+        var intrinsicId = NI_Illegal;
+
+#if (TARGET_XARCH)
+        if (simdSize is 32)
+        {
+            assert(type == TYP_SIMD32);
+            intrinsicId = NI_Vector256_WithLower;
+        }
+        else
+        {
+            assert((type == TYP_SIMD64) && (simdSize is 64));
+            intrinsicId = NI_Vector512_WithLower;
+        }
+#elif TARGET_ARM64
+        assert((type == TYP_SIMD16) && (simdSize is 16));
+        intrinsicId = NI_Vector128_WithLower;
+#else
+#error Unsupported platform
+#endif
+
+        return gtNewSimdHWIntrinsicNode(type, intrinsicId, simdBaseType, simdSize, op1, op2);
+    }
+
+    public GenTree gtNewSimdWithUpperNode(var_types type, GenTree op1, GenTree op2, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsArithmetic(simdBaseType));
+
+        var intrinsicId = NI_Illegal;
+
+#if TARGET_XARCH
+        if (simdSize is 32)
+        {
+            assert(type == TYP_SIMD32);
+            intrinsicId = NI_Vector256_WithUpper;
+        }
+        else
+        {
+            assert((type == TYP_SIMD64) && (simdSize is 64));
+            intrinsicId = NI_Vector512_WithUpper;
+        }
+#elif TARGET_ARM64
+        assert((type == TYP_SIMD16) && (simdSize is 16));
+        intrinsicId = NI_Vector128_WithUpper;
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+        return gtNewSimdHWIntrinsicNode(type, intrinsicId, simdBaseType, simdSize, op1, op2);
+    }
+#endif
 
     public Statement gtNewStmt(GenTree expr)
     {
@@ -3878,6 +8973,28 @@ public partial class Compiler
         {
             return gtNewStoreIndNode(type, addr, value, indirFlags);
         }
+    }
+
+    /// <summary>create GenTreeIntCon node for the given string literal to store its length.</summary>
+    /// <param name="node">string literal node.</param>
+    /// <returns>GenTreeIntCon node with string's length as a value or null.</returns>
+    public unsafe GenTreeIntCon? gtNewStringLiteralLength(GenTreeStrCon node)
+    {
+        if (node.IsStringEmptyField)
+        {
+            JITDUMP("Folded String.Empty.Length to 0\n");
+            return gtNewIconNode(TYP_INT, 0);
+        }
+
+        var length = info.compCompHnd->getStringLiteral(node.ScpHnd, node.SconCpx, buffer: null, bufferSize: 0);
+
+        if (length >= 0)
+        {
+            var iconNode = gtNewIconNode(TYP_INT, length);
+            JITDUMP($"Folded 'CNS_STR.Length' to '{length}'\n");
+            return iconNode;
+        }
+        return null;
     }
 
     public GenTree gtNewTempStore(int lclNum, GenTree val, int curLevel = CHECK_SPILL_NONE, in DebugInfo di = default, BasicBlock? block = null)
@@ -4161,6 +9278,173 @@ public partial class Compiler
 
         // Expressions declared as CSE by (e.g.) hoisting code are considered to have relevant side effects (if we care about GTF_MAKE_CSE).
         return ((flags & GTF_MAKE_CSE) != 0) && ((node.Flags & GTF_MAKE_CSE) != 0);
+    }
+
+    /// <summary>given the operands for a call to Enum.HasFlag, try and optimize the call to a simple and/compare tree.</summary>
+    /// <param name="thisOp">first argument to the call</param>
+    /// <param name="flagOp">second argument to the call</param>
+    /// <returns>A new cmp/amd tree if successful. null on failure.</returns>
+    /// <remarks>If successful, may allocate new temps and modify connected statements.</remarks>
+    public unsafe GenTree? gtOptimizeEnumHasFlag(GenTree thisOp, GenTree flagOp)
+    {
+        JITDUMP("Considering optimizing call to Enum.HasFlag....\n");
+
+        if ((thisOp.Oper is not GT_BOX) || (flagOp.Oper is not GT_BOX))
+        {
+            JITDUMP("bailing, need both inputs to be BOXes\n");
+            return null;
+        }
+
+        var thisBox = thisOp.AsBox();
+        var flagBox = flagOp.AsBox();
+
+        // Operands must be boxes
+        if (!thisBox.IsBoxedValue || !flagBox.IsBoxedValue)
+        {
+            JITDUMP("bailing, need both inputs to be BOXes\n");
+            return null;
+        }
+
+        // Operands must have same type
+        var thisHnd = gtGetClassHandle(thisBox, out var isExactThis, out var isNonNullThis);
+
+        if (thisHnd is null)
+        {
+            JITDUMP("bailing, can't find type for 'this' operand\n");
+            return null;
+        }
+
+        // A boxed thisOp should have exact type and non-null instance
+        assert(isExactThis);
+        assert(isNonNullThis);
+
+        var flagHnd = gtGetClassHandle(flagBox, out var isExactFlag, out var isNonNullFlag);
+
+        if (flagHnd is null)
+        {
+            JITDUMP("bailing, can't find type for 'flag' operand\n");
+            return null;
+        }
+
+        // A boxed flagOp should have exact type and non-null instance
+        assert(isExactFlag);
+        assert(isNonNullFlag);
+
+        if (flagHnd != thisHnd)
+        {
+            JITDUMP("bailing, operand types differ\n");
+            return null;
+        }
+
+        // If we have a shared type instance we can't safely check type equality, so bail.
+        if (eeIsSharedInst(thisHnd))
+        {
+            JITDUMP("bailing, have shared instance type\n");
+            return null;
+        }
+
+        // Simulate removing the box for thisOP. We need to know that it can be safely removed before we can optimize.
+        var thisVal = gtTryRemoveBoxUpstreamEffects(thisBox, BR_DONT_REMOVE);
+
+        if (thisVal is null)
+        {
+            // Note we may fail here if the this operand comes from
+            // a call. We should be able to retry this post-inlining.
+            JITDUMP("bailing, can't undo box of 'this' operand\n");
+            return null;
+        }
+
+        // Do likewise with flagOp.
+        var flagVal = gtTryRemoveBoxUpstreamEffects(flagBox, BR_DONT_REMOVE);
+
+        if (flagVal is null)
+        {
+            // Note we may fail here if the flag operand comes from
+            // a call. We should be able to retry this post-inlining.
+            JITDUMP("bailing, can't undo box of 'flag' operand\n");
+            return null;
+        }
+
+        // Only proceed when both box sources have the same actual type.
+        // (this rules out long/int mismatches)
+        if (thisVal.Type.ActualType != flagVal.Type.ActualType)
+        {
+            JITDUMP("bailing, pre-boxed values have different types\n");
+            return null;
+        }
+
+        // Yes, both boxes can be cleaned up. Optimize.
+        JITDUMP("Optimizing call to Enum.HasFlag\n");
+
+        // Undo the boxing of the Ops and prepare to operate directly
+        // on the pre-boxed values.
+        thisVal = gtTryRemoveBoxUpstreamEffects(thisBox, BR_REMOVE_BUT_NOT_NARROW);
+        flagVal = gtTryRemoveBoxUpstreamEffects(flagBox, BR_REMOVE_BUT_NOT_NARROW);
+
+        // Our trial removals above should guarantee successful removals here.
+        assert(thisVal is not null);
+        assert(flagVal is not null);
+        assert(thisVal.Type.ActualType == flagVal.Type.ActualType);
+
+        // Type to use for optimized check
+        var type = thisVal.Type.ActualType;
+
+        // The thisVal and flagVal trees come from earlier statements.
+        //
+        // Unless they are invariant values, we need to evaluate them both
+        // to temps at those points to safely transmit the values here.
+        //
+        // Also we need to use the flag twice, so we need two trees for it.
+        GenTree thisValOpt;
+        GenTree flagValOpt;
+        GenTree flagValOptCopy;
+
+        if (thisVal.Oper.IsIntegralConst)
+        {
+            thisValOpt = gtCloneCnsInt(thisVal.AsIntCon());
+            assert(thisValOpt is not null);
+        }
+        else
+        {
+            var thisTmp = lvaGrabTemp(shortLifetime: true, "Enum:HasFlag this temp");
+            var thisStore = gtNewTempStore(thisTmp, thisVal);
+            var thisStoreStmt = thisBox.CopyStmtWhenInlinedBoxValue;
+            thisStoreStmt.RootNode = thisStore;
+            thisValOpt = gtNewLclvNode(type, thisTmp);
+
+            // If this is invoked during global morph we are adding code to a remote tree
+            // Despite this being a store, we can't meaningfully add assertions
+            thisStore.SetMorphed(this);
+        }
+
+        if (flagVal.Oper.IsIntegralConst)
+        {
+            flagValOpt = gtCloneCnsInt(flagVal.AsIntCon());
+            assert(flagValOpt is not null);
+
+            flagValOptCopy = gtCloneCnsInt(flagVal.AsIntCon());
+            assert(flagValOptCopy is not null);
+        }
+        else
+        {
+            var flagTmp = lvaGrabTemp(shortLifetime: true, "Enum:HasFlag flag temp");
+            var flagStore = gtNewTempStore(flagTmp, flagVal);
+            var flagStoreStmt = flagBox.CopyStmtWhenInlinedBoxValue;
+            flagStoreStmt.RootNode = flagStore;
+            flagValOpt = gtNewLclvNode(type, flagTmp);
+            flagValOptCopy = gtNewLclvNode(type, flagTmp);
+
+            // If this is invoked during global morph we are adding code to a remote tree
+            // Despite this being a store, we can't meaningfully add assertions
+            flagStore.SetMorphed(this);
+        }
+
+        // Turn the call into (thisValTmp & flagTmp) == flagTmp.
+        var andTree = gtNewBinaryNode(GT_AND, type, thisValOpt, flagValOpt);
+        var cmpTree = gtNewBinaryNode(GT_EQ, TYP_INT, andTree, flagValOptCopy);
+
+        JITDUMP("Optimized call to Enum.HasFlag\n");
+        return cmpTree;
     }
 
     /// <inheritdoc cref="gtPeelOffsets(ref GenTree, out long, out FieldSeq)" />
@@ -4659,5 +9943,36 @@ public partial class Compiler
             tree.Flags |= (operand.Flags & GTF_ALL_EFFECT);
             return GenTree.VisitResult.Continue;
         });
+    }
+
+    /// <summary>Extracts side effects from sideEffectSource (if any) and wraps the input tree with a COMMA node with them.</summary>
+    /// <param name="tree">the expression tree to wrap with side effects (if any) it has to be either a side effect free subnode of sideEffectsSource or any tree outside sideEffectsSource's hierarchy</param>
+    /// <param name="sideEffectsSource">the expression tree to extract side effects from</param>
+    /// <param name="sideEffectsFlags">side effect flags to be considered</param>
+    /// <param name="ignoreRoot">ignore side effects on the expression root node</param>
+    /// <returns>The original tree wrapped with a COMMA node that contains the side effects or just the tree itself if sideEffectSource has no side effects.</returns>
+    public GenTree gtWrapWithSideEffects(GenTree tree, GenTree sideEffectsSource, GenTreeFlags sideEffectsFlags = GTF_SIDE_EFFECT, bool ignoreRoot = false)
+    {
+        var sideEffects = null as GenTree;
+        gtExtractSideEffList(sideEffectsSource, ref sideEffects, sideEffectsFlags, ignoreRoot);
+
+        if (sideEffects is not null)
+        {
+            // TODO: assert if tree is a subnode of sideEffectsSource and the tree has its own side effects
+            // otherwise the resulting COMMA might have some side effects to be duplicated
+            // It should be possible to be smarter here and allow such cases by extracting the side effects
+            // properly for this particular case. For now, caller is responsible for avoiding such cases.
+
+            var comma = gtNewCommaNode(tree.Type, sideEffects, tree);
+
+            if ((vnStore is not null) && tree._vnPair.BothDefined() && sideEffectsSource._vnPair.BothDefined())
+            {
+                NYI("TODO: Port once vnStore is ported");
+                // comma._vnPair = vnStore.VNPWithExc(tree._vnPair, vnStore.VNPExceptionSet(sideEffectsSource._vnPair));
+            }
+            comma.SetMorphed(this);
+            return comma;
+        }
+        return tree;
     }
 }

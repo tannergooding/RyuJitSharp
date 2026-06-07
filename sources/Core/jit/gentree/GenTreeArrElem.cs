@@ -12,13 +12,9 @@ public sealed class GenTreeArrElem : GenTree
 {
     private GenTree _arrObj;
     private GenTree[] _arrInds;
+    private readonly int _arrElemSize;
 
-    // !!! Caution, this is one byte, it is used only on the optimization path of array intrinsics.
-    // It stores the size of array elements WHEN it can fit into an "unsigned char".
-    // This has caused VSW 571394.
-    private readonly byte _arrElemSize;
-
-    public GenTreeArrElem(var_types type, GenTree arr, byte elemSize, GenTree[] inds)
+    public GenTreeArrElem(var_types type, GenTree arr, int elemSize, GenTree[] inds)
         : base(GT_ARR_ELEM, type)
     {
         _arrObj = arr;
@@ -35,7 +31,7 @@ public sealed class GenTreeArrElem : GenTree
         Flags |= GTF_EXCEPT;
     }
 
-    public byte ArrElemSize => _arrElemSize;
+    public int ArrElemSize => _arrElemSize;
 
     public Span<GenTree> ArrInds
     {

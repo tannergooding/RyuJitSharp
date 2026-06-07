@@ -253,10 +253,10 @@
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' != 'true'">$(DefineConstants);WINDOWS_AMD64_ABI</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);UNIX_X86_ABI</DefineConstants>
 
-    <!-- ALIGN_Simd_TYPES: Whether simd type locals are to be aligned -->
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);ALIGN_Simd_TYPES</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64'">$(DefineConstants);ALIGN_Simd_TYPES</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);ALIGN_Simd_TYPES</DefineConstants>
+    <!-- ALIGN_SIMD_TYPES: Whether SIMD type locals are to be aligned -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);ALIGN_SIMD_TYPES</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64'">$(DefineConstants);ALIGN_SIMD_TYPES</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);ALIGN_SIMD_TYPES</DefineConstants>
     
     <!-- CPU_HAS_BYTE_REGS -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);CPU_HAS_BYTE_REGS</DefineConstants>
@@ -360,9 +360,9 @@
     <!-- FEATURE_PAL_ANSI -->
     <DefineConstants Condition="'$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);FEATURE_PAL_ANSI</DefineConstants>
     
-    <!-- FEATURE_PARTIAL_Simd_CALLEE_SAVE: Whether simd registers are partially saved at calls -->
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_PARTIAL_Simd_CALLEE_SAVE</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);FEATURE_PARTIAL_Simd_CALLEE_SAVE</DefineConstants>
+    <!-- FEATURE_PARTIAL_SIMD_CALLEE_SAVE: Whether SIMD registers are partially saved at calls -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_PARTIAL_SIMD_CALLEE_SAVE</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);FEATURE_PARTIAL_SIMD_CALLEE_SAVE</DefineConstants>
     
     <!-- FEATURE_REMAP_FUNCTION -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_REMAP_FUNCTION</DefineConstants>

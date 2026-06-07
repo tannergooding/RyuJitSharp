@@ -49,7 +49,18 @@ public sealed class GenTreeIntCon : GenTreeIntConCommon
 
     public FieldSeq? FieldSeq => _fieldSeq;
 
-    public nint IconVal => _value.Icon;
+    public nint IconVal
+    {
+        get
+        {
+            return _value.Icon;
+        }
+
+        set
+        {
+            _value.Icon = value;
+        }
+    }
 
 #if DEBUG
     public nint TargetHandle

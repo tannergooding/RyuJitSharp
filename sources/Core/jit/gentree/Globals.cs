@@ -35,6 +35,9 @@ public partial class Globals
     // This define is used with string concatenation to put this in printf format strings
     public static string FMT_STMT(int id) => $"STMT{id:D5}";
 
+    // Overestimated threshold to avoid memory allocations
+    public const int MaxPossibleUnrollSize = 128;
+
     // GTF_SPILL or GTF_SPILLED flag on a multi-reg node indicates that one or
     // more of its result regs are in that state.  The spill flags of each register
     // are stored here. We only need 2 bits per returned register,

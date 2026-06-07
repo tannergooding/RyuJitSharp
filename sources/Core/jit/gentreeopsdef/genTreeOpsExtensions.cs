@@ -429,6 +429,21 @@ public static class genTreeOpsExtensions
     ];
 #endif
 
+    private static ReadOnlySpan<genTreeOps> s_reversedRelops => [
+        GT_NE,          // GT_EQ
+        GT_EQ,          // GT_NE
+        GT_GE,          // GT_LT
+        GT_GT,          // GT_LE
+        GT_LT,          // GT_GE
+        GT_LE,          // GT_GT
+        GT_TEST_NE,     // GT_TEST_EQ
+        GT_TEST_EQ,     // GT_TEST_NE
+#if TARGET_XARCH
+        GT_BITTEST_NE,  // GT_BITTEST_EQ
+        GT_BITTEST_EQ,  // GT_BITTEST_NE
+#endif
+    ];
+
 #if MEASURE_NODE_SIZE
     private static readonly string[] s_structNames = [
         "",                             // GT_NONE
@@ -551,7 +566,7 @@ public static class genTreeOpsExtensions
 
 #if TARGET_32BIT
         nameof(GenTreeMultiRegOp),      // GT_MUL_LONG
-#elif  TARGET_ARM64
+#elif TARGET_ARM64
         nameof(GenTreeOp),              // GT_MUL_LONG
 #endif
 
@@ -641,6 +656,21 @@ public static class genTreeOpsExtensions
         nameof(GenTreeVal),             // GT_RECORD_ASYNC_RESUME
     ];
 #endif
+
+    private static ReadOnlySpan<genTreeOps> s_swappedRelops => [
+        GT_EQ,          // GT_EQ
+        GT_NE,          // GT_NE
+        GT_GT,          // GT_LT
+        GT_GE,          // GT_LE
+        GT_LE,          // GT_GE
+        GT_LT,          // GT_GT
+        GT_TEST_EQ,     // GT_TEST_EQ
+        GT_TEST_NE,     // GT_TEST_NE
+#if TARGET_XARCH
+        GT_BITTEST_EQ,  // GT_BITTEST_EQ
+        GT_BITTEST_NE,  // GT_BITTEST_NE
+#endif
+    ];
 
     extension(genTreeOps oper)
     {
@@ -839,6 +869,8 @@ public static class genTreeOpsExtensions
         public bool IsIntegralConst => oper is GT_CNS_INT;
 #endif
 
+        public bool IsInvariant => oper.IsConst || (oper is GT_LCL_ADDR or GT_FTN_ADDR);
+
         public bool IsLclField => oper is GT_LCL_FLD or GT_STORE_LCL_FLD;
 
         public bool IsLeaf => (oper.Kind & GTK_LEAF) != 0;
@@ -1003,6 +1035,15 @@ public static class genTreeOpsExtensions
             }
         }
 
+        public genTreeOps ReverseRelop
+        {
+            get
+            {
+                assert(oper.IsCompare);
+                return s_reversedRelops[oper - GT_EQ];
+            }
+        }
+
 #if MEASURE_NODE_SIZE
         public string StructName
         {
@@ -1013,5 +1054,14 @@ public static class genTreeOpsExtensions
             }
         }
 #endif
+
+        public genTreeOps SwapRelop
+        {
+            get
+            {
+                assert(oper.IsCompare);
+                return s_swappedRelops[oper - GT_EQ];
+            }
+        }
     }
 }

@@ -5,6 +5,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices.JavaScript;
 
 namespace RyuJitSharp;
 
@@ -167,6 +168,37 @@ public partial class Globals
     ///   </list>
     /// </remarks>
     public static int JitStressLevel => JitConfig[ConfigInteger.JitStress];
+
+    /// <summary>Converts input ASCII data to lower case</summary>
+    /// <param name="input">Constant data to change casing to lower</param>
+    /// <param name="mask">Mask to apply to non-constant data</param>
+    /// <returns>false if input contains non-ASCII chars</returns>
+    public static bool ConvertToLowerCase(Span<char> input, Span<char> mask)
+    {
+        for (var i = 0; i < input.Length; i++)
+        {
+            var ch = input[i];
+
+            if (ch > 127)
+            {
+                JITDUMP("Constant data contains non-ASCII char(s), give up.\n");
+                return false;
+            }
+
+            // Inside [0..127] range only [a-z] and [A-Z] sub-ranges are
+            // eligible for case changing, we can't apply 0x20 bit for e.g. '-'
+            if ((ch is (>= 'A' and <= 'Z') or (>= 'a' and <= 'z')))
+            {
+                input[i] |= (char)(0x20);
+                mask[i] = (char)(0x20);
+            }
+            else
+            {
+                mask[i] = '\0';
+            }
+        }
+        return true;
+    }
 
     /// <summary>sets value of tree to garbage to catch extra references</summary>
     /// <param name="tree">This node should not be referenced by anyone now</param>

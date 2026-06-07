@@ -35,7 +35,7 @@ public static class var_typesExtensions
         TYP_SIMD32,     // TYP_SIMD32
         TYP_SIMD64,     // TYP_SIMD64
 #elif TARGET_ARM64
-        TYP_Simd,       // TYP_Simd
+        TYP_SIMD,       // TYP_SIMD
 #endif
 
 #if FEATURE_MASKED_HW_INTRINSICS
@@ -72,7 +72,7 @@ public static class var_typesExtensions
         16,     // TYP_SIMD32
         16,     // TYP_SIMD64
 #elif TARGET_ARM64
-        16,     // TYP_Simd     
+        16,     // TYP_SIMD     
 #endif
 
 #if FEATURE_MASKED_HW_INTRINSICS
@@ -109,7 +109,7 @@ public static class var_typesExtensions
         VTF_S|VTF_VEC,              // TYP_SIMD32   
         VTF_S|VTF_VEC,              // TYP_SIMD64   
 #elif TARGET_ARM64
-        VTF_S|VTF_VEC,              // TYP_Simd     
+        VTF_S|VTF_VEC,              // TYP_SIMD     
 #endif
 
 #if FEATURE_MASKED_HW_INTRINSICS
@@ -146,7 +146,7 @@ public static class var_typesExtensions
         EA_32BYTE,      // TYP_SIMD32   
         EA_64BYTE,      // TYP_SIMD64   
 #elif TARGET_ARM64
-        EAU,            // TYP_Simd     
+        EAU,            // TYP_SIMD     
 #endif
 
 #if FEATURE_MASKED_HW_INTRINSICS
@@ -183,7 +183,7 @@ public static class var_typesExtensions
         EA_32BYTE,      // TYP_SIMD32   
         EA_64BYTE,      // TYP_SIMD64   
 #elif TARGET_ARM64
-        EAU,            // TYP_Simd     
+        EAU,            // TYP_SIMD     
 #endif
 
 #if FEATURE_MASKED_HW_INTRINSICS
@@ -222,7 +222,7 @@ public static class var_typesExtensions
         "simd64",   // TYP_SIMD64
 
 #elif TARGET_ARM64
-        "simd",     // TYP_Simd     
+        "simd",     // TYP_SIMD     
 #endif
 
 #if FEATURE_MASKED_HW_INTRINSICS
@@ -261,7 +261,7 @@ public static class var_typesExtensions
         VTR_FLOAT,  // TYP_SIMD64
 
 #elif TARGET_ARM64
-        VTR_FLOAT,  // TYP_Simd     
+        VTR_FLOAT,  // TYP_SIMD     
 #endif
 
 #if FEATURE_MASKED_HW_INTRINSICS
@@ -298,7 +298,7 @@ public static class var_typesExtensions
         32,     // TYP_SIMD32   
         64,     // TYP_SIMD64   
 #elif TARGET_ARM64
-        SZU,    // TYP_Simd     
+        SZU,    // TYP_SIMD     
 #endif
 
 #if FEATURE_MASKED_HW_INTRINSICS
@@ -335,7 +335,7 @@ public static class var_typesExtensions
         8,      // TYP_SIMD32   
         16,     // TYP_SIMD64   
 #elif TARGET_ARM64
-        0,      // TYP_Simd
+        0,      // TYP_SIMD
 #endif
 
 #if FEATURE_MASKED_HW_INTRINSICS
@@ -434,7 +434,7 @@ public static class var_typesExtensions
             {
 #if TARGET_ARM64
                 // The size of these types cannot be evaluated in static contexts.
-                assert(varType is not TYP_Simd and not TYP_MASK);
+                assert(varType is not TYP_SIMD and not TYP_MASK);
 #endif
 
                 assert(s_stSzs.Length == (int)(TYP_COUNT));

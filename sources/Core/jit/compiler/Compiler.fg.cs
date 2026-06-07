@@ -4820,6 +4820,20 @@ public partial class Compiler
         insertAfterBlk.Next = newBlk;
     }
 
+    /// <summary>Create a new temporary variable to hold the result of treeRef, and replace treeRef with comma(store&lt;newLcl&gt;(treeRef)), newLcl)</summary>
+    /// <param name="treeRef">a reference to the child node we will be replacing with the comma expression that evaluates treeRef to a temp and returns the result</param>
+    /// <returns>A fresh GT_LCL_VAR node referencing the temp which has not been used</returns>
+    public GenTreeLclVar fgInsertCommaFormTemp(ref GenTree treeRef)
+    {
+        var tempInfo = fgMakeTemp(treeRef);
+
+        var store = tempInfo.Store;
+        var load = tempInfo.Load;
+
+        treeRef = gtNewCommaNode(treeRef.Type, store, load);
+        return gtCloneLclVar(load);
+    }
+
     /// <summary>Insert the given statement after the insertion point in the given basic block.</summary>
     /// <param name="block">the block into which 'stmt' will be inserted;</param>
     /// <param name="insertionPoint">the statement after which `stmt` will be inserted;</param>
@@ -5665,6 +5679,21 @@ public partial class Compiler
 
         fgReturnCount = retBlocks;
         fgThrowCount = throwBlocks;
+    }
+
+    /// <summary>If the node is an unaliased local or constant clone it, otherwise insert a comma form temp</summary>
+    /// <param name="treeRef">a reference to the child node we will be replacing with the comma expression that evaluates op to a temp and returns the result</param>
+    /// <returns>A fresh GT_LCL_VAR node referencing the temp which has not been used</returns>
+    /// <remarks>This function will clone invariant nodes and locals, so this function should only be used in situations where no interference between the original use and new use is possible. Otherwise, fgInsertCommaFormTemp should be used directly.</remarks>
+    public GenTree fgMakeMultiUse(ref GenTree treeRef)
+    {
+        var oper = treeRef.Oper;
+
+        if (oper.IsInvariant || oper.IsLocal)
+        {
+            return gtCloneExpr(treeRef);
+        }
+        return fgInsertCommaFormTemp(ref treeRef);
     }
 
     /// <summary>Make a temp variable and store 'value' into it.</summary>

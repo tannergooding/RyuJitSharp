@@ -5,7 +5,6 @@
 
 #if FEATURE_SIMD
 using System;
-using System.Numerics;
 
 namespace RyuJitSharp;
 
@@ -285,6 +284,89 @@ public sealed class GenTreeVecCon : GenTree
             }
         }
         return true;
+    }
+
+    public void SetElementFloating(var_types simdBaseType, int index, double value)
+    {
+        var elementCount = ElementCount(Type.Size, simdBaseType);
+
+        switch (simdBaseType)
+        {
+            case TYP_FLOAT:
+            {
+                _simdVal.AsSpan<float>()[..elementCount][index] = (float)(value);
+                break;
+            }
+
+            case TYP_DOUBLE:
+            {
+                _simdVal.AsSpan<double>()[..elementCount][index] = value;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+    }
+
+    public void SetElementIntegral(var_types simdBaseType, int index, long value)
+    {
+        var elementCount = ElementCount(Type.Size, simdBaseType);
+
+        switch (simdBaseType)
+        {
+            case TYP_BYTE:
+            {
+                _simdVal.AsSpan<sbyte>()[..elementCount][index] = (sbyte)(value);
+                break;
+            }
+
+            case TYP_UBYTE:
+            {
+                _simdVal.AsSpan<byte>()[..elementCount][index] = (byte)(value);
+                break;
+            }
+
+            case TYP_SHORT:
+            {
+                _simdVal.AsSpan<short>()[..elementCount][index] = (short)(value);
+                break;
+            }
+
+            case TYP_USHORT:
+            {
+                _simdVal.AsSpan<ushort>()[..elementCount][index] = (ushort)(value);
+                break;
+            }
+
+            case TYP_INT:
+            {
+                _simdVal.AsSpan<int>()[..elementCount][index] = (int)(value);
+                break;
+            }
+
+            case TYP_UINT:
+            {
+                _simdVal.AsSpan<uint>()[..elementCount][index] = (uint)(value);
+                break;
+            }
+
+            case TYP_LONG:
+            case TYP_ULONG:
+            {
+                _simdVal.AsSpan<long>()[..elementCount][index] = value;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
     }
 }
 #endif

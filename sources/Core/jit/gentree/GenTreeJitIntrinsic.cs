@@ -18,8 +18,8 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
     private regNumber _otherReg;
     private MultiRegSpillFlags _spillFlags;   
     private var_types _auxiliaryType;
-    private var_types _SimdBaseType;
-    private byte _SimdSize;
+    private var_types _simdBaseType;
+    private byte _simdSize;
 
     protected NamedIntrinsic _hwIntrinsicId;
 
@@ -28,8 +28,8 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
     {
         assert(oper.IsHWIntrinsic);
         _otherReg = REG_NA;
-        _SimdBaseType = simdBaseType;
-        _SimdSize = simdSize;
+        _simdBaseType = simdBaseType;
+        _simdSize = simdSize;
     }
 
     /// <summary>For intrinsics than need another type (e.g. Avx2.Gather* or simd (by element))</summary>
@@ -63,7 +63,7 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
     }
 #endif
 
-    public bool IsSimd => _SimdSize != 0;
+    public bool IsSimd => _simdSize != 0;
 
     public unsafe CORINFO_METHOD_HANDLE MethodHandle
     {
@@ -82,16 +82,16 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
     }
 
     /// <summary>simd vector base JIT type</summary>
-    public var_types simdBaseType
+    public var_types SimdBaseType
     {
         get
         {
-            return _SimdBaseType;
+            return _simdBaseType;
         }
 
         set
         {
-            _SimdBaseType = value;
+            _simdBaseType = value;
         }
     }
 
@@ -100,12 +100,12 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
     {
         get
         {
-            return _SimdSize;
+            return _simdSize;
         }
 
         set
         {
-            _SimdSize = value;
+            _simdSize = value;
         }
     }
 

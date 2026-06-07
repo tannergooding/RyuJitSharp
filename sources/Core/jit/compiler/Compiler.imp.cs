@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -501,11 +502,16 @@ public partial class Compiler
 
         var hasPgoData = true;
 
-        var likelyClasses = default(InlineArrayMaxGdvTypeChecks<nint>);
-        var originalContext = contextHandle;
+        Unsafe.SkipInit(out InlineArrayMaxGdvTypeChecks<nint> inlineLikelyClasses);
+        var likelyClasses = (Span<nint>)(inlineLikelyClasses);
 
-        var likelyMethods = default(InlineArrayMaxGdvTypeChecks<nint>);
-        var likelihoods = default(InlineArrayMaxGdvTypeChecks<int>);
+        Unsafe.SkipInit(out InlineArrayMaxGdvTypeChecks<nint> inlineLikelyMethods);
+        var likelyMethods = (Span<nint>)(inlineLikelyMethods);
+
+        Unsafe.SkipInit(out InlineArrayMaxGdvTypeChecks<int> inlineLikelihoods);
+        var likelihoods = (Span<int>)(inlineLikelihoods);
+
+        var originalContext = contextHandle;
         var candidatesCount = 0;
 
         // Remember the original context, if any.
@@ -537,8 +543,10 @@ public partial class Compiler
         {
             var maxTypeChecks = int.Min(GetGdvMaxTypeChecks(), MAX_GDV_TYPE_CHECKS);
 
-            var exactClasses = default(InlineArrayMaxGdvTypeChecks<nint>);
-            var numExactClasses = info.compCompHnd->getExactClasses(baseClass, MAX_GDV_TYPE_CHECKS, (CORINFO_CLASS_HANDLE*)(&exactClasses.e0));
+            Unsafe.SkipInit(out InlineArrayMaxGdvTypeChecks<nint> inlineExactClasses);
+            var exactClasses = (Span<nint>)(inlineExactClasses);
+
+            var numExactClasses = info.compCompHnd->getExactClasses(baseClass, MAX_GDV_TYPE_CHECKS, (CORINFO_CLASS_HANDLE*)(&inlineExactClasses.e0));
 
             if (numExactClasses is 0)
             {
@@ -977,7 +985,7 @@ public partial class Compiler
             }
             else if (oper is GT_CALL or GT_RET_EXPR) // The special case of calls with return buffers.
             {
-                var call = (oper is GT_RET_EXPR) ? expr.AsRetExpr().InlineCandidate : expr.AsCall();
+                var call = (oper is GT_RET_EXPR) ? expr.AsRetExpr().InlineCandidate.AsCall() : expr.AsCall();
 
                 if ((call.Type is TYP_VOID) && call.ShouldHaveRetBufArg)
                 {
@@ -1165,6 +1173,156 @@ public partial class Compiler
         // Append the statement to the current block's stmt list
         impAppendStmt(stmt, chkLevel, checkConsumedDebugInfo);
         return stmt;
+    }
+
+    /// <summary>try to replace a multi-dimensional array intrinsics with IR nodes.</summary>
+    /// <param name="clsHnd">handle for the intrinsic method's class</param>
+    /// <param name="sigInfo">signature of the intrinsic method</param>
+    /// <param name="memberRef">the token for the intrinsic method</param>
+    /// <param name="readonlyCall">true if call has a readonly prefix</param>
+    /// <param name="intrinsicName">the intrinsic to expand: one of NI_Array_Address, NI_Array_Get, NI_Array_Set</param>
+    /// <returns>The intrinsic expansion, or null if the expansion was not done (and a function call should be made instead).</returns>
+    public unsafe GenTree? impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd, in CORINFO_SIG_INFO sigInfo, int memberRef, bool readonlyCall, NamedIntrinsic intrinsicName)
+    {
+        assert(intrinsicName is NI_Array_Address or NI_Array_Get or NI_Array_Set);
+
+        // If we are generating SMALL_CODE, we don't want to use intrinsics, as it generates fatter code.
+        if (compCodeOpt == SMALL_CODE)
+        {
+            JITDUMP("impArrayAccessIntrinsic: rejecting array intrinsic due to SMALL_CODE\n");
+            return null;
+        }
+
+        var rank = (intrinsicName is NI_Array_Set) ? (sigInfo.numArgs - 1) : sigInfo.numArgs;
+
+        // The rank 1 case is special because it has to handle two array formats. We will simply not do that case.
+        if (rank <= 1)
+        {
+            JITDUMP($"impArrayAccessIntrinsic: rejecting array intrinsic because rank ({rank}) <= 1\n");
+            return null;
+        }
+
+        var elemClsHnd = NO_CLASS_HANDLE;
+        var elemJitType = info.compCompHnd->getChildType(clsHnd, &elemClsHnd);
+        var elemType = TypeHandleToVarType(elemJitType, elemClsHnd, out var elemLayout);
+
+        // For the ref case, we will only be able to inline if the types match
+        // (verifier checks for this, we don't care for the nonverified case and the
+        // type is final (so we don't need to do the cast))
+        if ((intrinsicName != NI_Array_Get) && !readonlyCall && varTypeIsGC(elemType))
+        {
+            // Get the call site signature
+            eeGetCallSiteSig(memberRef, info.compScopeHnd, impTokenLookupContextHandle, out var localSig);
+            assert(localSig.hasThis());
+
+            CORINFO_CLASS_HANDLE actualElemClsHnd;
+
+            if (intrinsicName is NI_Array_Set)
+            {
+                // Fetch the last argument, the one that indicates the type we are setting.
+                var argList = localSig.args;
+
+                for (var r = 0; r < rank; r++)
+                {
+                    argList = info.compCompHnd->getArgNext(argList);
+                }
+                actualElemClsHnd = eeGetArgClass(&localSig, argList);
+            }
+            else
+            {
+                assert(intrinsicName is NI_Array_Address);
+                assert(localSig.retType is CORINFO_TYPE_BYREF);
+                assert(localSig.retTypeClass != NO_CLASS_HANDLE);
+                _ = info.compCompHnd->getChildType(localSig.retTypeClass, &actualElemClsHnd);
+            }
+
+            // if it's not final, we can't do the optimization
+            if ((info.compCompHnd->getClassAttribs(actualElemClsHnd) & CORINFO_FLG_FINAL) is 0)
+            {
+                JITDUMP($"impArrayAccessIntrinsic: rejecting array intrinsic because actualElemClsHnd ({dspPtr(actualElemClsHnd)}) is not final\n");
+                return null;
+            }
+        }
+
+        var arrayElemSize = (int)(elemType.Size);
+
+        if (elemType is TYP_STRUCT)
+        {
+            assert(elemLayout is not null);
+            arrayElemSize = elemLayout.Size;
+        }
+
+        var val = null as GenTree;
+
+        if (intrinsicName is NI_Array_Set)
+        {
+            // Stores of structs require more work, and there are more gets than sets.
+            // TODO-CQ: support SET (`a[i,j,k] = s`) for struct element arrays.
+            if (varTypeIsStruct(elemType))
+            {
+                JITDUMP("impArrayAccessIntrinsic: rejecting SET array intrinsic because elemType is TYP_STRUCT (implementation limitation)\n");
+                return null;
+            }
+
+            val = impPopStack().val;
+            assert((elemType.ActualType == val.Type.ActualType) ||
+                   ((elemType is TYP_FLOAT) && (val.Type is TYP_DOUBLE)) ||
+                   ((elemType is TYP_INT) && (val.Type is TYP_BYREF)) ||
+                   ((elemType is TYP_DOUBLE) && (val.Type is TYP_FLOAT)));
+        }
+
+        // Here, we're committed to expanding the intrinsic and creating a GT_ARR_ELEM node.
+        optMethodFlags |= OMF_HAS_MDARRAYREF;
+
+        assert(compCurBB is not null);
+        compCurBB.SetFlags(BBF_HAS_MDARRAYREF);
+
+        var inds = new GenTree[rank];
+
+        for (var k = rank; k > 0; k--)
+        {
+            // The indices should be converted to `int` type, as they would be if the intrinsic was not expanded.
+            var argVal = impPopStack().val;
+            argVal = impImplicitIorI4Cast(argVal, TYP_INT);
+            inds[k - 1] = argVal;
+        }
+
+        var arr = impPopStack().val;
+        assert(arr.Type is TYP_REF);
+
+        var arrElem = new GenTreeArrElem(TYP_BYREF, arr, arrayElemSize, inds) as GenTree;
+
+        switch (intrinsicName)
+        {
+            case NI_Array_Set:
+            {
+                assert(!varTypeIsStruct(elemType));
+                assert(val is not null);
+
+                arrElem = gtNewStoreIndNode(elemType, arrElem, val);
+                break;
+            }
+
+            case NI_Array_Get:
+            {
+                if (elemType is TYP_STRUCT)
+                {
+                    assert(elemLayout is not null);
+                    arrElem = gtNewBlkIndir(arrElem, elemLayout);
+                }
+                else
+                {
+                    arrElem = gtNewIndir(elemType, arrElem);
+                }
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
+        }
+        return arrElem;
     }
 
     /// <summary>"&amp;var" can be used either as TYP_BYREF or TYP_I_IMPL, but we set its type to TYP_BYREF when we create it. We know if it can be changed to TYP_I_IMPL only at the point where we use it</summary>
@@ -2057,6 +2215,119 @@ public partial class Compiler
         return gtNewLclvNode(lclTyp, lclNum, offset);
     }
 
+    public unsafe GenTree? impCreateSpanIntrinsic(in CORINFO_SIG_INFO sigInfo)
+    {
+        assert(sigInfo.numArgs is 1);
+        assert(sigInfo.sigInst.methInstCount is 1);
+
+        var maybeFieldTokenNode = impStackTop(0).val;
+
+        // Verify that the field token is known and valid.  Note that it's also
+        // possible for the token to come from reflection, in which case we cannot do
+        // the optimization and must therefore revert to calling the helper.  You can
+        // see an example of this in bvt\DynIL\initarray2.exe (in Main).
+
+        // Check to see if the ldtoken helper call is what we see here.
+        if (maybeFieldTokenNode.Oper is not GT_CALL)
+        {
+            return null;
+        }
+
+        var call = maybeFieldTokenNode.AsCall();
+
+        if (!call.IsHelperCall(eeFindHelper(CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD)))
+        {
+            return null;
+        }
+
+        // Strip helper call away
+        var callArg = call.Args.GetArgByIndex(0);
+        assert(callArg is not null);
+        maybeFieldTokenNode = callArg.Node;
+
+        if (maybeFieldTokenNode.Oper is GT_IND)
+        {
+            maybeFieldTokenNode = maybeFieldTokenNode.AsOp().Op1;
+        }
+
+        // Check for constant
+        if (maybeFieldTokenNode.Oper is not GT_CNS_INT)
+        {
+            return null;
+        }
+
+        var fieldTokenNode = maybeFieldTokenNode.AsIntCon();
+        var fieldToken = (CORINFO_FIELD_HANDLE)(fieldTokenNode.CompileTimeHandle);
+
+        if (!fieldTokenNode.IsIconHandle(GTF_ICON_FIELD_HDL) || (fieldToken is null))
+        {
+            return null;
+        }
+
+        CORINFO_CLASS_HANDLE fieldClsHnd;
+        var fieldElementType = info.compCompHnd->getFieldType(fieldToken, &fieldClsHnd).VarType;
+
+        // Most static initialization data fields are of some structure, but it is possible for them to be of various primitive types as well
+        int totalFieldSize;
+
+        if (fieldElementType is var_types.TYP_STRUCT)
+        {
+            totalFieldSize = info.compCompHnd->getClassSize(fieldClsHnd);
+        }
+        else
+        {
+            totalFieldSize = fieldElementType.Size;
+        }
+
+        // Limit to primitive or enum type - see ArrayNative.GetSpanDataFrom()
+        var targetElemHnd = sigInfo.sigInst.methInst[0];
+
+        if (info.compCompHnd->getTypeForPrimitiveValueClass(targetElemHnd) is CORINFO_TYPE_UNDEF)
+        {
+            return null;
+        }
+
+        var targetElemSize = info.compCompHnd->getClassSize(targetElemHnd);
+        assert(targetElemSize is not 0);
+
+        var count = totalFieldSize / targetElemSize;
+
+        if (count is 0)
+        {
+            return null;
+        }
+
+        var data = info.compCompHnd->getArrayInitializationData(fieldToken, totalFieldSize);
+
+        if (data is null)
+        {
+            return null;
+        }
+
+        // Ready to commit to the work
+        _ = impPopStack();
+
+        // Turn count and pointer value into constants.
+        var lengthValue = gtNewIconNode(TYP_INT, count);
+        var fldSeq = FieldSeqStore.Create(fieldToken, unchecked((nint)(data)), FieldSeq.FieldKind.SimpleStaticKnownAddress);
+        var pointerValue = gtNewIconHandleNode(unchecked((nint)(data)), GTF_ICON_STATIC_HDL, fldSeq);
+
+        // Construct ReadOnlySpan<T> to return.
+        var spanHnd = sigInfo.retTypeClass;
+        var spanTempNum = lvaGrabTemp(shortLifetime: true, "ReadOnlySpan<T> for CreateSpan<T>");
+        lvaSetStruct(spanTempNum, spanHnd, unsafeValueClsCheck: false);
+
+        var dataFieldStore = gtNewStoreLclFldNode(TYP_BYREF, spanTempNum, OFFSETOF__CORINFO_Span__reference, pointerValue);
+        var lengthFieldStore = gtNewStoreLclFldNode(TYP_INT, spanTempNum, OFFSETOF__CORINFO_Span__length, lengthValue);
+
+        // Now append a few statements the initialize the span
+        _ = impAppendTree(lengthFieldStore, CHECK_SPILL_NONE, impCurStmtDI);
+        _ = impAppendTree(dataFieldStore, CHECK_SPILL_NONE, impCurStmtDI);
+
+        // And finally create a tree that points at the span.
+        return impCreateLocalNode(spanTempNum, offset: 0);
+    }
+
     /// <summary>Set the "current debug info" to attach to statements that we are generating next.</summary>
     /// <param name="offs">the IL offset</param>
     /// <remarks>This function will be called in the main IL processing loop when it is determined that we have reached a location in the IL stream for which we want to report debug information. This is the main way we determine which statements to report debug info for to the EE: for other statements, they will have no debug information attached.</remarks>
@@ -2436,9 +2707,10 @@ public partial class Compiler
             return call;
         }
 
-        var likelyValues = default(InlineArray8<LikelyValueRecord>);
-        var schemas = new ReadOnlySpan<ICorJitInfo.PgoInstrumentationSchema>(fgPgoSchema, fgPgoSchemaCount);
+        Unsafe.SkipInit(out InlineArray8<LikelyValueRecord> inlineLikelyValues);
+        var likelyValues = (Span<LikelyValueRecord>)(inlineLikelyValues);
 
+        var schemas = new ReadOnlySpan<ICorJitInfo.PgoInstrumentationSchema>(fgPgoSchema, fgPgoSchemaCount);
         var valuesCount = getLikelyValues(likelyValues, schemas, fgPgoData, ilOffset);
 
         JITDUMP($"{valuesCount} likely values:\n");
@@ -2598,6 +2870,239 @@ public partial class Compiler
         impStmtList = null;
     }
 
+    /// <summary>Imports one of the *Estimate intrinsics which are explicitly allowed to differ in result based on the hardware they're running against</summary>
+    /// <param name="method">The handle of the method being imported</param>
+    /// <param name="sigInfo"></param>
+    /// <param name="callJitType">The underlying type for the call</param>
+    /// <param name="intrinsicName">The intrinsic being imported</param>
+    /// <param name="mustExpand">true if the intrinsic must return a GenTree*; otherwise, false</param>
+    /// <returns></returns>
+    public unsafe GenTree? impEstimateIntrinsic(CORINFO_METHOD_HANDLE method, in CORINFO_SIG_INFO sigInfo, CorInfoType callJitType, NamedIntrinsic intrinsicName, bool mustExpand)
+    {
+        var callType = callJitType.VarType;
+        assert(varTypeIsFloating(callType));
+
+        if (BlockNonDeterministicIntrinsics(mustExpand))
+        {
+            return null;
+        }
+
+        if (IsIntrinsicImplementedByUserCall(intrinsicName))
+        {
+            return null;
+        }
+
+#if FEATURE_HW_INTRINSICS
+        // We use compExactlyDependsOn since these are estimate APIs where
+        // the behavior is explicitly allowed to differ across machines
+
+        var simdType = TYP_UNKNOWN;
+        var intrinsicId = NI_Illegal;
+        var swapOp1AndOp3 = false;
+
+        switch (intrinsicName)
+        {
+            case NI_System_Math_MultiplyAddEstimate:
+            {
+                assert(sigInfo.numArgs is 3);
+
+#if TARGET_XARCH
+                if (compExactlyDependsOn(InstructionSet_AVX2))
+                {
+                    simdType = TYP_SIMD16;
+                    intrinsicId = NI_AVX2_MultiplyAddScalar;
+                }
+#elif TARGET_ARM64
+                if (compExactlyDependsOn(InstructionSet_AdvSimd))
+                {
+                    simdType = TYP_SIMD8;
+                    intrinsicId = NI_AdvSimd_FusedMultiplyAddScalar;
+
+                    // AdvSimd.FusedMultiplyAdd expects (addend, left, right), while the APIs take (left, right, addend)
+
+                    impSpillSideEffect(true, stackState.esStackDepth - 3, "Spilling op1 side effects for MultiplyAddEstimate");
+                    impSpillSideEffect(true, stackState.esStackDepth - 2, "Spilling op2 side effects for MultiplyAddEstimate");
+
+                    swapOp1AndOp3 = true;
+                }
+#endif
+                break;
+            }
+
+            case NI_System_Math_ReciprocalEstimate:
+            {
+                assert(sigInfo.numArgs is 1);
+
+#if TARGET_XARCH
+                if (compExactlyDependsOn(InstructionSet_AVX512))
+                {
+                    simdType = TYP_SIMD16;
+                    intrinsicId = NI_AVX512_Reciprocal14Scalar;
+                }
+                else if ((callType == TYP_FLOAT) && compExactlyDependsOn(InstructionSet_X86Base))
+                {
+                    simdType = TYP_SIMD16;
+                    intrinsicId = NI_X86Base_ReciprocalScalar;
+                }
+#elif TARGET_ARM64
+                if (compExactlyDependsOn(InstructionSet_AdvSimd_Arm64))
+                {
+                    simdType = TYP_SIMD8;
+                    intrinsicId = NI_AdvSimd_Arm64_ReciprocalEstimateScalar;
+                }
+#endif
+                break;
+            }
+
+            case NI_System_Math_ReciprocalSqrtEstimate:
+            {
+                assert(sigInfo.numArgs is 1);
+
+#if TARGET_XARCH
+                if (compExactlyDependsOn(InstructionSet_AVX512))
+                {
+                    simdType = TYP_SIMD16;
+                    intrinsicId = NI_AVX512_ReciprocalSqrt14Scalar;
+                }
+                else if ((callType == TYP_FLOAT) && compExactlyDependsOn(InstructionSet_X86Base))
+                {
+                    simdType = TYP_SIMD16;
+                    intrinsicId = NI_X86Base_ReciprocalSqrtScalar;
+                }
+#elif TARGET_ARM64
+                if (compExactlyDependsOn(InstructionSet_AdvSimd_Arm64))
+                {
+                    simdType = TYP_SIMD8;
+                    intrinsicId = NI_AdvSimd_Arm64_ReciprocalSquareRootEstimateScalar;
+                }
+#endif
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+#endif
+
+        var op3 = null as GenTree;
+        var op2 = null as GenTree;
+        var op1 = null as GenTree;
+
+        switch (sigInfo.numArgs)
+        {
+            case 3:
+            {
+                op3 = impImplicitR4orR8Cast(impPopStack().val, callType);
+                goto case 2;
+            }
+
+            case 2:
+            {
+                op2 = impImplicitR4orR8Cast(impPopStack().val, callType);
+                goto case 1;
+            }
+
+            case 1:
+            {
+                op1 = impImplicitR4orR8Cast(impPopStack().val, callType);
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+
+#if FEATURE_HW_INTRINSICS
+        if (intrinsicId is not NI_Illegal)
+        {
+#if TARGET_XARCH
+            var simdSize = (byte)(16);
+#elif TARGET_ARM64
+            var simdSize = (byte)((simdType is TYP_SIMD8) ? 8 : 16);
+#endif
+
+            var simdBaseType = callJitType.PreciseVarType;
+
+            switch (sigInfo.numArgs)
+            {
+                case 3:
+                {
+                    assert(op2 is not null);
+                    assert(op3 is not null);
+
+                    if (swapOp1AndOp3)
+                    {
+                        (op1, op3) = (op3, op1);
+                    }
+
+                    op1 = gtNewSimdCreateScalarUnsafeNode(simdType, op1, simdBaseType, simdSize);
+                    op2 = gtNewSimdCreateScalarUnsafeNode(simdType, op2, simdBaseType, simdSize);
+                    op3 = gtNewSimdCreateScalarUnsafeNode(simdType, op3, simdBaseType, simdSize);
+
+                    op1 = gtNewSimdHWIntrinsicNode(simdType, intrinsicId, simdBaseType, simdSize, op1, op2, op3);
+                    break;
+                }
+
+                case 1:
+                {
+                    assert(!swapOp1AndOp3);
+                    op1 = gtNewSimdCreateScalarUnsafeNode(simdType, op1, simdBaseType, simdSize);
+                    op1 = gtNewSimdHWIntrinsicNode(simdType, intrinsicId, simdBaseType, simdSize, op1);
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                    break;
+                }
+            }
+
+            return gtNewSimdToScalarNode(callType, op1, simdBaseType, simdSize);
+        }
+
+        assert(!swapOp1AndOp3);
+#endif
+
+            callType = callType.ActualType;
+
+        switch (intrinsicName)
+        {
+            case NI_System_Math_MultiplyAddEstimate:
+            {
+                assert(op2 is not null);
+                assert(op3 is not null);
+
+                var mulNode = gtNewBinaryNode(GT_MUL, callType, op1, op2);
+                return gtNewBinaryNode(GT_ADD, callType, mulNode, op3);
+            }
+
+            case NI_System_Math_ReciprocalEstimate:
+            case NI_System_Math_ReciprocalSqrtEstimate:
+            {
+                if (intrinsicName == NI_System_Math_ReciprocalSqrtEstimate)
+                {
+                    assert(!IsIntrinsicImplementedByUserCall(NI_System_Math_Sqrt));
+
+                    op1 = new GenTreeIntrinsic(callType, op1, NI_System_Math_Sqrt, methodHandle: null);
+                }
+                return gtNewBinaryNode(GT_DIV, callType, gtNewDconNode(callType, 1.0), op1);
+            }
+
+            default:
+            {
+                unreached();
+                return null;
+            }
+        }
+    }
+
     /// <summary>Extract the last statement from the current stmts list.</summary>
     /// <returns>The extracted statement.</returns>
     /// <remarks>It assumes that the stmt will be reinserted later.</remarks>
@@ -2622,6 +3127,242 @@ public partial class Compiler
     {
         impSpillSideEffects(spillGlobEffects: false, CHECK_SPILL_ALL, "impEvalSideEffects");
         stackState.esStackDepth = 0;
+    }
+
+    /// <summary>Attempts to unroll and vectorize Equals against a constant WCHAR data for Length in [8..32] range using either SWAR or SIMD.</summary>
+    /// <param name="data">Pointer (LCL_VAR) to a data to vectorize</param>
+    /// <param name="lengthFld">Pointer (LCL_VAR or GT_IND) to Length field</param>
+    /// <param name="checkForNull">Check data for null</param>
+    /// <param name="kind">Is it StartsWith, Equals or EndsWith?</param>
+    /// <param name="cnsData">Constant data (array of 2-byte chars)</param>
+    /// <param name="dataOffset">Offset for data</param>
+    /// <param name="cmpMode">Ordinal or OrdinalIgnoreCase mode (works only for ASCII cns)</param>
+    /// <returns>A pointer to the newly created SWAR/SIMD node or nullptr if unrolling is not possible, not profitable or constant data contains non-ASCII char(s) in 'ignoreCase' mode</returns>
+    public GenTree? impExpandHalfConstEquals(GenTreeLclVarCommon data, GenTree lengthFld, bool checkForNull, StringComparisonKind kind, Span<char> cnsData, int dataOffset, StringComparison cmpMode)
+    {
+        // In a general case it will look like this:
+        //   bool equals = obj != null && obj.Length == len && (SWAR or SIMD)
+
+        assert(compCurBB is not null);
+
+        if (compCurBB.isRunRarely)
+        {
+            // Not profitable to expand
+            JITDUMP("impExpandHalfConstEquals: block is cold - not profitable to expand.\n");
+            return null;
+        }
+
+        var cmpOp = (kind is StringComparisonKind.Equals) ? GT_EQ : GT_GE;
+
+        var elementsCount = gtNewIconNode(TYP_INT, cnsData.Length);
+        GenTree lenCheckNode;
+
+        if (cnsData.Length == 0)
+        {
+            // For zero length we don't need to compare content, the following expression is enough:
+            //
+            //   varData != null && lengthFld cmpOp 0
+            //
+            lenCheckNode = gtNewBinaryNode(cmpOp, TYP_INT, lengthFld, elementsCount);
+        }
+        else
+        {
+            assert(!cnsData.IsEmpty);
+
+            var dataAddr = gtCloneLclVarCommon(data);
+
+            if (kind is StringComparisonKind.EndsWith)
+            {
+                // For EndsWith we need to adjust dataAddr to point to the end of the string minus value's length
+                // We spawn a local that we're going to set below
+                var dataTmp = lvaGrabTemp(shortLifetime: true, "clonning data ptr");
+                lvaGetDesc(dataTmp).Type = TYP_BYREF;
+                dataAddr = gtNewLclvNode(TYP_BYREF, dataTmp);
+            }
+
+            var indirCmp = impExpandHalfConstEquals(dataAddr, cnsData, dataOffset, cmpMode);
+
+            if (indirCmp is null)
+            {
+                JITDUMP("unable to compose indirCmp\n");
+                return null;
+            }
+            assert(indirCmp.Type is TYP_INT or  TYP_UBYTE);
+
+            if (kind is StringComparisonKind.EndsWith)
+            {
+                // len is expected to be small, so no overflow is possible
+                assert(CheckedOps.TryMul(cnsData.Length, 2, out _));
+
+                // dataAddr = dataAddr + (length * 2 - len * 2)
+                var castedLen = gtNewCastNode(TYP_I_IMPL, gtCloneExpr(lengthFld), false, TYP_I_IMPL);
+                var byteLen = gtNewBinaryNode(GT_MUL, TYP_I_IMPL, castedLen, gtNewIconNode(TYP_I_IMPL, 2));
+
+                var cmpStart = gtNewBinaryNode(GT_SUB, TYP_I_IMPL, byteLen, gtNewIconNode(TYP_I_IMPL, cnsData.Length * 2));
+                cmpStart = gtNewBinaryNode(GT_ADD, TYP_BYREF, gtCloneLclVarCommon(data), cmpStart);
+
+                var storeTmp = gtNewTempStore(dataAddr.LclNum, cmpStart);
+                indirCmp = gtNewCommaNode(indirCmp.Type, storeTmp, indirCmp);
+            }
+
+            var lenCheckColon = gtNewColonNode(TYP_INT, indirCmp, gtNewFalse());
+            var lenCheckCond = gtNewBinaryNode(cmpOp, TYP_INT, lengthFld, elementsCount);
+
+            // For StartsWith/EndsWith we use GT_GE, e.g.: `x.Length >= 10`
+            lenCheckNode = gtNewQmarkNode(TYP_INT, lenCheckCond, lenCheckColon);
+        }
+
+        GenTree rootQmark;
+
+        if (checkForNull)
+        {
+            // varData == nullptr
+            var nullCheckColon = gtNewColonNode(TYP_INT, lenCheckNode, gtNewFalse());
+            var nullCheckCond = gtNewBinaryNode(GT_NE, TYP_INT, data, gtNewNull());
+            rootQmark = gtNewQmarkNode(TYP_INT, nullCheckCond, nullCheckColon);
+        }
+        else
+        {
+            // no nullcheck, just "obj.Length == len && (SWAR or SIMD)"
+            rootQmark = lenCheckNode;
+        }
+        return rootQmark;
+    }
+
+    /// <summary>Attempts to unroll and vectorize Equals against a constant WCHAR data</summary>
+    /// <param name="data">Pointer to a data to vectorize</param>
+    /// <param name="cns">Constant data (array of 2-byte chars)</param>
+    /// <param name="dataOffset">Offset for data</param>
+    /// <param name="cmpMode">Ordinal or OrdinalIgnoreCase mode (works only for ASCII cns)</param>
+    /// <returns>A tree representing unrolled comparison or nullptr if unrolling is not possible (possible only if cns contains non-ASCII char(s) in OrdinalIgnoreCase mode)</returns>
+    public unsafe GenTree? impExpandHalfConstEquals(GenTreeLclVarCommon data, Span<char> cns, int dataOffset, StringComparison cmpMode)
+    {
+        assert(cns.Length <= MaxPossibleUnrollSize);
+
+        // Convert charLen to byteLen. It never overflows because charLen is a small value
+        var byteLen = cns.Length * 2;
+
+        // Find the largest possible type to read data
+        var readType = roundDownMaxType(byteLen, true);
+        var result = null as GenTree;
+        var byteLenRemaining = byteLen;
+
+        while (byteLenRemaining > 0)
+        {
+            // We have a remaining data to process and it's smaller than the
+            // previously processed data
+            if (byteLenRemaining < readType.Size)
+            {
+                if (varTypeIsIntegral(readType))
+                {
+                    // Use a smaller GPR load for the remaining data, we're going to zero-extend it
+                    // since the previous GPR load was larger. Hence, for e.g. 6 bytes we're going to do
+                    // "(IND<INT> ^ cns1) | (UINT)(IND<USHORT> ^ cns2)"
+                    readType = roundUpGprType(byteLenRemaining);
+                }
+                else
+                {
+                    // TODO-CQ: We should probably do the same for SIMD, e.g. 34 bytes -> SIMD32 and SIMD16
+                    // while currently we do SIMD32 and SIMD32. This involves a bit more complex upcasting logic.
+                }
+
+                // Overlap with the previously processed data
+                byteLenRemaining = readType.Size;
+                assert(byteLenRemaining <= byteLen);
+            }
+
+            var byteOffset = byteLen - byteLenRemaining;
+
+            // Total offset includes dataOffset (e.g. 12 for String)
+            var totalOffset = byteOffset + dataOffset;
+
+            // Clone dst and add offset if necessary.
+            var absOffset = gtNewIconNode(TYP_I_IMPL, totalOffset);
+            var currData = gtNewBinaryNode(GT_ADD, TYP_BYREF, gtCloneExpr(data), absOffset);
+            var loadedData = gtNewIndir(readType, currData, GTF_IND_UNALIGNED | GTF_IND_ALLOW_NON_ATOMIC) as GenTree;
+
+            // For OrdinalIgnoreCase mode we need to convert both data and cns to lower case
+            if (cmpMode is StringComparison.OrdinalIgnoreCase)
+            {
+                Unsafe.SkipInit(out InlineArrayMaxPossibleUnrollSize<char> inlineMask);
+                var mask = (Span<char>)(inlineMask);
+
+                var maskSize = readType.Size / 2;
+
+                if (!ConvertToLowerCase(cns[(byteOffset / 2)..], mask[..maskSize]))
+                {
+                    // value contains non-ASCII chars, we can't proceed further
+                    return null;
+                }
+
+                // 0x20 mask for the current chunk to convert it to lower case
+                var toLowerMask = gtNewGenericCon(readType, MemoryMarshal.AsBytes(mask));
+
+                // loadedData is now "loadedData | toLowerMask"
+                loadedData = BitwiseOp(this, GT_OR, readType.ActualType, loadedData, toLowerMask);
+            }
+            else
+            {
+                assert(cmpMode is StringComparison.Ordinal);
+            }
+
+            var srcCns = gtNewGenericCon(readType, MemoryMarshal.AsBytes(cns)[byteOffset..]);
+
+            // A small optimization: prefer X == Y over X ^ Y == 0 since
+            // just one comparison is needed, and we can do it with a single load.
+            if ((readType.Size == byteLen) && varTypeIsIntegral(readType))
+            {
+                // TODO-CQ: Figure out why it's a size regression for SIMD
+                return BitwiseOp(this, GT_EQ, TYP_INT, loadedData, srcCns);
+            }
+
+            // loadedData ^ srcCns
+            var xorNode = BitwiseOp(this, GT_XOR, readType.ActualType, loadedData, srcCns);
+
+            // Merge with the previous result with OR
+            if (result is null)
+            {
+                // It's the first check
+                result = xorNode;
+            }
+            else
+            {
+                if (result.Type != readType)
+                {
+                    assert(varTypeIsIntegral(result.Type) && varTypeIsIntegral(readType));
+                    xorNode = gtNewCastNode(result.Type, xorNode, true, result.Type);
+                }
+
+                // Merge with the previous result via OR
+                result = BitwiseOp(this, GT_OR, result.Type.ActualType, result, xorNode);
+            }
+
+            // Move to the next chunk.
+            byteLenRemaining -= readType.Size;
+        }
+        assert(result is not null);
+
+        // Compare the result against zero, e.g. (chunk1 ^ cns1) | (chunk2 ^ cns2) == 0
+        return BitwiseOp(this, GT_EQ, TYP_INT, result, gtNewZeroConNode(result.Type));
+
+        // A gtNewOperNode which can handle SIMD operands (used for bitwise operations):
+        static GenTree BitwiseOp(Compiler compiler, genTreeOps oper, var_types type, GenTree op1, GenTree op2)
+        {
+#if FEATURE_HW_INTRINSICS
+            if (varTypeIsSimd(type))
+            {
+                return compiler.gtNewSimdBinOpNode(oper, type, op1, op2, TYP_U_IMPL, type.Size);
+            }
+
+            if (varTypeIsSimd(op1.Type))
+            {
+                // E.g. a comparison of SIMD ops returning TYP_INT;
+                assert(varTypeIsSimd(op2.Type));
+                return compiler.gtNewSimdCmpOpAllNode(oper, type, op1, op2, TYP_U_IMPL, op1.Type.Size);
+            }
+#endif
+            return compiler.gtNewBinaryNode(oper, type, op1, op2);
+        }
     }
 
     /// <summary>add pred edges from finally returns to their continuations</summary>
@@ -2925,7 +3666,7 @@ public partial class Compiler
 
     /// <summary>Determine the result type of an arithmetic operation</summary>
     /// <param name="oper"></param>
-    /// <param name="fuint"></param>
+    /// <param name="fUnsigned"></param>
     /// <param name="op1Ref"></param>
     /// <param name="op2Ref"></param>
     /// <returns></returns>
@@ -2933,7 +3674,7 @@ public partial class Compiler
     ///   <para>On 64-bit inserts upcasts when native int is mixed with int32</para>
     ///   <para>Also inserts upcasts to double when float and double are mixed.</para>
     /// </remarks>
-    public var_types impGetByRefResultType(genTreeOps oper, bool fuint, ref GenTree op1Ref, ref GenTree op2Ref)
+    public var_types impGetByRefResultType(genTreeOps oper, bool fUnsigned, ref GenTree op1Ref, ref GenTree op2Ref)
     {
         var op1 = op1Ref;
         var op2 = op2Ref;
@@ -2955,7 +3696,7 @@ public partial class Compiler
                     assert(genActualTypeIsIntOrI(op2.Type));
 
                     // Insert an explicit upcast if needed.
-                    op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL, fuint);
+                    op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL, fUnsigned);
                     op2Ref = op2;
 
                     return TYP_BYREF;
@@ -2983,7 +3724,7 @@ public partial class Compiler
                 // So here we decide to make the resulting type to be a native int.
 
                 // Insert an explicit upcast if needed.
-                op1 = impImplicitIorI4Cast(op1, TYP_I_IMPL, fuint);
+                op1 = impImplicitIorI4Cast(op1, TYP_I_IMPL, fUnsigned);
                 op1Ref = op1;
 
                 return TYP_I_IMPL;
@@ -2998,8 +3739,8 @@ public partial class Compiler
                 assert(genActualTypeIsIntOrI(op1.Type));
 
                 // Insert explicit upcasts if needed.
-                op1 = impImplicitIorI4Cast(op1, TYP_I_IMPL, fuint);
-                op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL, fuint);
+                op1 = impImplicitIorI4Cast(op1, TYP_I_IMPL, fUnsigned);
+                op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL, fUnsigned);
 
                 op1Ref = op1;
                 op2Ref = op2;
@@ -3012,8 +3753,8 @@ public partial class Compiler
                 assert(genActualTypeIsIntOrI(op2.Type));
 
                 // Insert explicit upcasts if needed.
-                op1 = impImplicitIorI4Cast(op1, TYP_I_IMPL, fuint);
-                op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL, fuint);
+                op1 = impImplicitIorI4Cast(op1, TYP_I_IMPL, fUnsigned);
+                op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL, fUnsigned);
 
                 op1Ref = op1;
                 op2Ref = op2;
@@ -3038,12 +3779,12 @@ public partial class Compiler
             if (actualType is not TYP_I_IMPL)
             {
                 // insert an explicit upcast
-                op1 = gtNewCastNode(TYP_I_IMPL, op1, fuint, TYP_I_IMPL);
+                op1 = gtNewCastNode(TYP_I_IMPL, op1, fUnsigned, TYP_I_IMPL);
             }
             else if (op2.Type.ActualType is not TYP_I_IMPL)
             {
                 // insert an explicit upcast
-                op2 = gtNewCastNode(TYP_I_IMPL, op2, fuint, TYP_I_IMPL);
+                op2 = gtNewCastNode(TYP_I_IMPL, op2, fUnsigned, TYP_I_IMPL);
             }
 
             if (opts.OptimizationEnabled)
@@ -3077,6 +3818,36 @@ public partial class Compiler
 
         assert(actualType is TYP_BYREF or TYP_DOUBLE or TYP_FLOAT or TYP_LONG or TYP_INT);
         return actualType;
+    }
+
+    /// <summary>gets the generic type definition from a 'typeof' expression.</summary>
+    /// <param name="type">The 'GenTree' node to inspect.</param>
+    /// <returns></returns>
+    /// <remarks>If successful, this method will call 'impPopStack()' before returning.</remarks>
+    public unsafe GenTree? impGetGenericTypeDefinition(GenTree type)
+    {
+        // This intrinsic requires the first arg to be some `typeof()` expression,
+        // ie. it applies to cases such as `typeof(...).GetGenericTypeDefinition()`.
+
+        if (gtIsTypeof(type, out var hClassType))
+        {
+            // Check that the 'typeof()' expression is being used on a type that is in fact generic.
+            // If that is not the case, we don't expand the intrinsic. This will end up using
+            // the usual Type.GetGenericTypeDefinition() at runtime, which will throw in this case.
+            if (info.compCompHnd->getTypeInstantiationArgument(hClassType, 0) != NO_CLASS_HANDLE)
+            {
+                var hClassResult = info.compCompHnd->getTypeDefinition(hClassType);
+
+                var handle = gtNewIconEmbClsHndNode(hClassResult);
+                var retNode = gtNewHelperCallNode(TYP_REF, CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, handle);
+
+                // Drop the typeof(T) node
+                _ = impPopStack();
+
+                return retNode;
+            }
+        }
+        return null;
     }
 
     /// <summary>Get the address of a value.</summary>
@@ -3369,6 +4140,53 @@ public partial class Compiler
         }
     }
 
+    /// <summary>Try to obtain string literal out of a span</summary>
+    /// <param name="span">String_op_Implicit or MemoryExtensions_AsSpan call with a string literal</param>
+    /// <returns>GenTreeStrCon node or nullptr</returns>
+    public unsafe GenTreeStrCon? impGetStrConFromSpan(GenTree span)
+    {
+        // var span = "str".AsSpan();
+        // var span = (ReadOnlySpan<char>)"str"
+
+        var argCall = null as GenTreeCall;
+
+        if (span.Oper is GT_RET_EXPR)
+        {
+            // NOTE: we don't support chains of RET_EXPR here
+            var inlineCandidate = span.AsRetExpr().InlineCandidate;
+
+            if (inlineCandidate.Oper is GT_CALL)
+            {
+                argCall = inlineCandidate.AsCall();
+            }
+        }
+        else if (span.Oper is GT_CALL)
+        {
+            argCall = span.AsCall();
+        }
+
+        if ((argCall is not null) && argCall.IsSpecialIntrinsic())
+        {
+            var  ni = lookupNamedIntrinsic(argCall._callMethHnd);
+
+            if ((ni == NI_System_MemoryExtensions_AsSpan) || (ni == NI_System_String_op_Implicit))
+            {
+                assert(argCall.Args.CountArgs() == 1);
+
+                var arg = argCall.Args.GetArgByIndex(0);
+                assert(arg is not null);
+
+                var argNode = arg.Node;
+
+                if (argNode.Oper is GT_CNS_STR)
+                {
+                    return argNode.AsStrCon();
+                }
+            }
+        }
+        return null;
+    }
+
     public void impHandleAccessAllowed(CorInfoIsAccessAllowedResult result, in CORINFO_HELPER_DESC helperCall)
     {
         // In general try to call this before most of the verification work.  Most people expect the access
@@ -3387,6 +4205,26 @@ public partial class Compiler
         {
             impInsertHelperCall(helperCall);
         }
+    }
+
+    //------------------------------------------------------------------------
+    // impHWIntrinsic: Import a hardware intrinsic as a GT_HWINTRINSIC node if possible
+    //
+    // Arguments:
+    //    intrinsic  -- id of the intrinsic function.
+    //    clsHnd     -- class handle containing the intrinsic function.
+    //    method     -- method handle of the intrinsic function.
+    //    sig        -- signature of the intrinsic call
+    //    entryPoint -- The entry point information required for R2R scenarios
+    //    mustExpand -- true if the intrinsic must return a GenTree*; otherwise, false
+
+    // Return Value:
+    //    The GT_HWINTRINSIC node, or nullptr if not a supported intrinsic
+    //
+    public unsafe GenTree? impHWIntrinsic(NamedIntrinsic intrinsic, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, in CORINFO_SIG_INFO sig, in CORINFO_CONST_LOOKUP entryPoint, bool mustExpand)
+    {
+        // TODO: Port impHWIntrinsic
+        return null;
     }
 
     /// <summary>helper function that will tell us if the IL instruction at the addr passed by param consumes an address at the top of the stack.</summary>
@@ -3756,7 +4594,7 @@ public partial class Compiler
 
             if (varTypeIsStruct(exprToBox.Type) && (exprToBox.Oper is GT_RET_EXPR))
             {
-                var call = exprToBox.AsRetExpr().InlineCandidate;
+                var call = exprToBox.AsRetExpr().InlineCandidate.AsCall();
 
                 // If the call was flagged for possible enumerator cloning, flag the allocation as well.
                 //
@@ -9419,7 +10257,7 @@ public partial class Compiler
                 {
                     JITDUMP(".... checking for GDV returning IEnumerator<T>...\n");
 
-                    var call = op1.AsRetExpr().InlineCandidate;
+                    var call = op1.AsRetExpr().InlineCandidate.AsCall();
                     var retCls = compiler.gtGetClassHandle(call, out var isExact, out var isNonNull);
 
                     if ((retCls == NO_CLASS_HANDLE) && call.IsGuardedDevirtualizationCandidate)
@@ -10885,11 +11723,12 @@ public partial class Compiler
             const int PrimitiveBufferSize = 8;
 
             assert(PrimitiveBufferSize >= fieldType.Size);
-            var primitiveBuffer = default(InlineArray8<byte>);
+            Unsafe.SkipInit(out InlineArray8<byte> inlinePrimitiveBuffer);
+            var primitiveBuffer = (Span<byte>)(inlinePrimitiveBuffer);
 
-            if (info.compCompHnd->getStaticFieldContent(field, (byte*)(&primitiveBuffer), fieldType.Size))
+            if (info.compCompHnd->getStaticFieldContent(field, (byte*)(&inlinePrimitiveBuffer), fieldType.Size))
             {
-                var cnsValue = gtNewGenericCon(fieldType, new ReadOnlySpan<byte>((byte*)(&primitiveBuffer), fieldType.Size));
+                var cnsValue = gtNewGenericCon(fieldType, primitiveBuffer[..fieldType.Size]);
 
                 if (cnsValue is not null)
                 {
@@ -10920,9 +11759,10 @@ public partial class Compiler
                     return null;
                 }
 
-                var largeStructBuffer = default(InlineArray64<byte>);
+                Unsafe.SkipInit(out InlineArray64<byte> inlineLargeStructBuffer);
+                var largeStructBuffer = (Span<byte>)(inlineLargeStructBuffer);
 
-                if (info.compCompHnd->getStaticFieldContent(field, &largeStructBuffer.e0, totalSize))
+                if (info.compCompHnd->getStaticFieldContent(field, &inlineLargeStructBuffer.e0, totalSize))
                 {
 #if FEATURE_SIMD
                     // First, let's check whether field is a SIMD vector and import it as GT_CNS_VEC
@@ -11004,10 +11844,10 @@ public partial class Compiler
                 return null;
             }
 
-            const int SmallStructBufferSize = TARGET_POINTER_SIZE;
-            var smallStructBuffer = default(InlineArrayTargetPointerSize<byte>);
+            Unsafe.SkipInit(out InlineArrayTargetPointerSize<byte> inlineSmallStructBuffer);
+            var smallStructBuffer = (Span<byte>)(inlineSmallStructBuffer);
 
-            if ((totalSize > SmallStructBufferSize) || !info.compCompHnd->getStaticFieldContent(field, &smallStructBuffer.e0, totalSize))
+            if ((totalSize > smallStructBuffer.Length) || !info.compCompHnd->getStaticFieldContent(field, &inlineSmallStructBuffer.e0, totalSize))
             {
                 return null;
             }
@@ -11015,7 +11855,7 @@ public partial class Compiler
             var structTempNum = lvaGrabTemp(shortLifetime: true, "folding static readonly field struct");
             lvaSetStruct(structTempNum, fieldClsHnd, unsafeValueClsCheck: false);
 
-            var constValTree = gtNewGenericCon(fieldVarType, new ReadOnlySpan<byte>(&smallStructBuffer.e0, totalSize));
+            var constValTree = gtNewGenericCon(fieldVarType, new ReadOnlySpan<byte>(&inlineSmallStructBuffer.e0, totalSize));
             assert(constValTree is not null);
 
             var fieldStoreTree = gtNewStoreLclFldNode(fieldVarType, structTempNum, fldOffset, constValTree);
@@ -11172,6 +12012,420 @@ public partial class Compiler
             node = fgGetSharedCCtor(resolvedToken.hClass);
         }
         return node;
+    }
+
+    /// <summary>Attempts to replace a call to InitializeArray with a GT_COPYBLK node.</summary>
+    /// <param name="sigInfo">The InitializeArray signature.</param>
+    /// <returns>A pointer to the newly created GT_COPYBLK node if the replacement succeeds or null otherwise.</returns>
+    public unsafe GenTree? impInitializeArrayIntrinsic(in CORINFO_SIG_INFO sigInfo)
+    {
+        // Notes:
+        //    The function recognizes the following IL pattern:
+        //      ldc <length> or a list of ldc <lower bound>/<length>
+        //      newarr or newobj
+        //      dup
+        //      ldtoken <field handle>
+        //      call InitializeArray
+        //    The lower bounds need not be constant except when the array rank is 1.
+        //    The function recognizes all kinds of arrays thus enabling a small runtime
+        //    such as NativeAOT to skip providing an implementation for InitializeArray.
+
+        assert(sigInfo.numArgs is 2);
+
+        var maybeFieldTokenNode = impStackTop(0).val;
+        var maybeArrayLocalNode = impStackTop(1).val;
+
+        //
+        // Verify that the field token is known and valid.  Note that it's also
+        // possible for the token to come from reflection, in which case we cannot do
+        // the optimization and must therefore revert to calling the helper.  You can
+        // see an example of this in bvt\DynIL\initarray2.exe (in Main).
+        //
+
+        // Check to see if the ldtoken helper call is what we see here.
+        if (maybeFieldTokenNode.Oper is not GT_CALL)
+        {
+            return null;
+        }
+
+        var call = maybeFieldTokenNode.AsCall();
+
+        if (!call.IsHelperCall(eeFindHelper(CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD)))
+        {
+            return null;
+        }
+
+        // Strip helper call away
+
+        var callArg = call.Args.GetArgByIndex(0);
+        assert(callArg is not null);
+        maybeFieldTokenNode = callArg.EarlyNode;
+
+        if (maybeFieldTokenNode.Oper is GT_IND)
+        {
+            maybeFieldTokenNode = maybeFieldTokenNode.AsOp().Op1;
+        }
+
+        // Check for constant
+        if (maybeFieldTokenNode.Oper is not GT_CNS_INT)
+        {
+            return null;
+        }
+
+        var fieldTokenNode = maybeFieldTokenNode.AsIntCon();
+        var fieldToken = (CORINFO_FIELD_HANDLE)(fieldTokenNode.CompileTimeHandle);
+
+        if (!fieldTokenNode.IsIconHandle(GTF_ICON_FIELD_HDL) || (fieldToken is null))
+        {
+            return null;
+        }
+
+        // We need to get the number of elements in the array and the size of each element.
+        // We verify that the newarr statement is exactly what we expect it to be.
+        // If it's not then we just return NULL and we don't optimize this call
+
+        // It is possible the we don't have any statements in the block yet.
+        if (impLastStmt is null)
+        {
+            return null;
+        }
+
+        // We start by looking at the last statement, making sure it's a store.
+        var maybeArrayLocalStore = impLastStmt.RootNode;
+
+        if ((maybeArrayLocalStore.Oper is not GT_STORE_LCL_VAR) || (maybeArrayLocalNode.Oper is not GT_LCL_VAR))
+        {
+            return null;
+        }
+
+        var arrayLocalStore = maybeArrayLocalStore.AsLclVar();
+        var arrayLocalNode = maybeArrayLocalNode.AsLclVar();
+
+        // Make sure the target of the store is the array passed to InitializeArray.
+        if (arrayLocalStore.LclNum != arrayLocalNode.LclNum)
+        {
+            if (opts.OptimizationDisabled)
+            {
+                return null;
+            }
+
+            // The array can be spilled to a temp for stack allocation.
+            // Try getting the actual store node from the previous statement.
+            if (arrayLocalStore.Data.Oper is GT_LCL_VAR)
+            {
+                var prevStmt = impLastStmt.PrevStmt;
+
+                if (prevStmt is not null)
+                {
+                    maybeArrayLocalStore = prevStmt.RootNode;
+
+                    if (maybeArrayLocalStore.Oper is not GT_STORE_LCL_VAR)
+                    {
+                        return null;
+                    }
+
+                    arrayLocalStore = maybeArrayLocalStore.AsLclVar();
+
+                    if (arrayLocalStore.LclNum != arrayLocalNode.LclNum)
+                    {
+                        return null;
+                    }
+                }
+            }
+        }
+
+        // Make sure that the object being assigned is a helper call.
+        var maybeNewArrayCall = arrayLocalStore.Data;
+
+        if (maybeNewArrayCall.Oper is not GT_CALL)
+        {
+            return null;
+        }
+
+        var newArrayCall = maybeNewArrayCall.AsCall();
+
+        if (!newArrayCall.IsHelperCall())
+        {
+            return null;
+        }
+
+        // Verify that it is one of the new array helpers.
+        var isMDArray = false;
+
+        switch (newArrayCall.HelperNum)
+        {
+            case CORINFO_HELP_NEWARR_1_DIRECT:
+            case CORINFO_HELP_NEWARR_1_PTR:
+            case CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
+            case CORINFO_HELP_NEWARR_1_VC:
+            case CORINFO_HELP_NEWARR_1_ALIGN8:
+#if FEATURE_READYTORUN
+            case CORINFO_HELP_READYTORUN_NEWARR_1:
+#endif
+            {
+                break;
+            }
+
+            case CORINFO_HELP_NEW_MDARR:
+            case CORINFO_HELP_NEW_MDARR_RARE:
+            {
+                isMDArray = true;
+                break;
+            }
+
+            default:
+            {
+                return null;
+            }
+        }
+
+        var arrayClsHnd = (CORINFO_CLASS_HANDLE)(newArrayCall._compileTimeHelperArgumentHandle);
+
+        // Make sure we found a compile time handle to the array
+
+        if (arrayClsHnd is null)
+        {
+            return null;
+        }
+
+        var rank = 0;
+        var numElements = 0;
+
+        if (isMDArray)
+        {
+            rank = info.compCompHnd->getArrayRank(arrayClsHnd);
+
+            if (rank is 0)
+            {
+                return null;
+            }
+
+            assert(newArrayCall.Args.CountArgs() is 3);
+
+            var callArg1 = newArrayCall.Args.GetArgByIndex(1);
+            assert(callArg1 is not null);
+            var numArgsArg = callArg1.Node;
+
+            var callArg2 = newArrayCall.Args.GetArgByIndex(2);
+            assert(callArg2 is not null);
+            var argsArg = callArg2.Node;
+
+            // The number of arguments should be a constant between 1 and 64. The rank can't be 0
+            // so at least one length must be present and the rank can't exceed 32 so there can
+            // be at most 64 arguments - 32 lengths and 32 lower bounds.
+
+            if (!numArgsArg.Oper.IsCnsIntOrI)
+            {
+                return null;
+            }
+
+            var numArgs = numArgsArg.AsIntCon().IconValue;
+
+            if (numArgs is < 1 or > 64)
+            {
+                return null;
+            }
+
+            var lowerBoundsSpecified = false;
+
+            if (numArgs == (rank * 2))
+            {
+                lowerBoundsSpecified = true;
+            }
+            else if (numArgs == rank)
+            {
+                lowerBoundsSpecified = false;
+
+                // If the rank is 1 and a lower bound isn't specified then the runtime creates
+                // a SDArray. Note that even if a lower bound is specified it can be 0 and then
+                // we get a SDArray as well, see the for loop below.
+
+                if (rank is 1)
+                {
+                    isMDArray = false;
+                }
+            }
+            else
+            {
+                return null;
+            }
+
+            // The rank is known to be at least 1 so we can start with numElements being 1
+            // to avoid the need to special case the first dimension.
+
+            numElements = 1;
+
+            var argIndex = 0;
+            GenTree maybeComma;
+            GenTreeOp comma;
+
+            for (maybeComma = argsArg; MatchIsComma(maybeComma); maybeComma = comma.Op2)
+            {
+                comma = maybeComma.AsOp();
+
+                if (lowerBoundsSpecified)
+                {
+                    // In general lower bounds can be ignored because they're not needed to
+                    // calculate the total number of elements. But for single dimensional arrays
+                    // we need to know if the lower bound is 0 because in this case the runtime
+                    // creates a SDArray and this affects the way the array data offset is calculated.
+
+                    if (rank is 1)
+                    {
+                        var lowerBoundStore = comma.Op1;
+                        assert(MatchIsArgsFieldInit(lowerBoundStore, argIndex, lvaNewObjArrayArgs));
+                        var lowerBoundNode = lowerBoundStore.AsLclVarCommon().Data;
+
+                        if (lowerBoundNode.IsIntegralConst(0))
+                        {
+                            isMDArray = false;
+                        }
+                    }
+
+                    maybeComma = comma.Op2;
+                    argIndex++;
+                }
+
+                var lengthNodeStore = maybeComma.AsOp().Op1;
+                assert(MatchIsArgsFieldInit(lengthNodeStore, argIndex, lvaNewObjArrayArgs));
+                var lengthNode = lengthNodeStore.AsLclVarCommon().Data;
+
+                if (!lengthNode.Oper.IsCnsIntOrI)
+                {
+                    return null;
+                }
+
+                if (!CheckedOps.TryMul(numElements, (int)(lengthNode.AsIntCon().IconValue), out numElements))
+                {
+                    return null;
+                }
+                argIndex++;
+            }
+
+            assert((maybeComma is not null) && maybeComma.IsLclVarAddr);
+            assert(maybeComma.AsLclVarCommon().LclNum == lvaNewObjArrayArgs);
+
+            if (argIndex != numArgs)
+            {
+                return null;
+            }
+        }
+        else
+        {
+            // Make sure there are exactly two arguments:  the array class and the number of elements.
+            GenTree arrayLengthNode;
+
+#if FEATURE_READYTORUN
+            if (newArrayCall.IsHelperCall(CORINFO_HELP_READYTORUN_NEWARR_1) ||
+                newArrayCall.IsHelperCall(CORINFO_HELP_NEWARR_1_MAYBEFROZEN))
+            {
+                // Array length is 1st argument for readytorun helper
+                var callArg0 = newArrayCall.Args.GetArgByIndex(0);
+                assert(callArg0 is not null);
+                arrayLengthNode = callArg0.Node;
+            }
+            else
+#endif
+            {
+                // Array length is 2nd argument for regular helper
+                var callArg1 = newArrayCall.Args.GetArgByIndex(1);
+                assert(callArg1 is not null);
+                arrayLengthNode = callArg1.Node;
+            }
+
+            if (arrayLengthNode.Oper is not GT_CNS_INT)
+            {
+                // This optimization is only valid for a constant array size.
+                return null;
+            }
+
+            numElements = (int)(arrayLengthNode.AsIntCon().IconVal);
+
+            if (!info.compCompHnd->isSDArray(arrayClsHnd))
+            {
+                return null;
+            }
+        }
+
+        CORINFO_CLASS_HANDLE elemClsHnd;
+        var elementType = info.compCompHnd->getChildType(arrayClsHnd, &elemClsHnd).VarType;
+
+        //
+        // Note that genTypeSize will return zero for non primitive types, which is exactly
+        // what we want (size will then be 0, and we will catch this in the conditional below).
+        // Note that we don't expect this to fail for valid binaries, so we assert in the
+        // non-verification case (the verification case should not assert but rather correctly
+        // handle bad binaries).  This assert is not guarding any specific invariant, but rather
+        // saying that we don't expect this to happen, and if it is hit, we need to investigate
+        // why.
+        //
+
+        var elemSize = elementType.Size;
+
+        if (!CheckedOps.TryMul(elemSize, numElements, out var size))
+        {
+            return null;
+        }
+
+        if ((size is 0) || (varTypeIsGC(elementType)))
+        {
+            return null;
+        }
+
+        var initData = info.compCompHnd->getArrayInitializationData(fieldToken, size);
+
+        if (initData is null)
+        {
+            return null;
+        }
+
+        // At this point we are ready to commit to implementing the InitializeArray
+        // intrinsic using a struct store.  Pop the arguments from the stack and
+        // return the store node.
+
+        impPopStack(2);
+
+        var blkSize = size;
+        int dataOffset;
+
+        if (isMDArray)
+        {
+            dataOffset = eeGetMDArrayDataOffset(rank);
+        }
+        else
+        {
+            dataOffset = eeGetArrayDataOffset();
+        }
+
+        var blkLayout = typGetBlkLayout(blkSize);
+        var srcAddr = gtNewIconHandleNode(unchecked((nint)(initData)), GTF_ICON_CONST_PTR);
+        var src = gtNewBlkIndir(srcAddr, blkLayout);
+        var dstAddr = gtNewBinaryNode(GT_ADD, TYP_BYREF, arrayLocalNode, gtNewIconNode(TYP_I_IMPL, dataOffset));
+        var store = gtNewStoreBlkNode(dstAddr, src, blkLayout);
+
+#if DEBUG
+        src.Op1.AsIntCon().TargetHandle = (byte)(THT_InitializeArrayIntrinsics);
+#endif
+
+        return store;
+
+        static bool MatchIsArgsFieldInit(GenTree tree, int index, int lvaNewObjArrayArgs)
+        {
+            if (tree.Oper is not GT_STORE_LCL_FLD)
+            {
+                return false;
+            }
+
+            var lclFld = tree.AsLclFld();
+
+            return (lclFld.LclNum == lvaNewObjArrayArgs) &&
+                   (lclFld.LclOffs == (sizeof(int) * index));
+        }
+
+        static bool MatchIsComma(GenTree tree)
+        {
+            return (tree is not null) && (tree.Oper is GT_COMMA);
+        }
     }
 
     /// <summary>return tree node for argument value in an inlinee</summary>
@@ -11949,6 +13203,60 @@ public partial class Compiler
             return ((obj is not null) && (obj.Oper is GT_LCL_VAR) &&
                     lvaIsOriginalThisArg(obj.AsLclVarCommon().LclNum));
         }
+    }
+
+    /// <summary>Import the GC.KeepAlive intrinsic call</summary>
+    /// <param name="objToKeepAlive">the intrinisic call's argument</param>
+    /// <returns>The imported GT_KEEPALIVE or GT_NOP - see description.</returns>
+    /// <remarks>Imports the intrinsic as a GT_KEEPALIVE node, and, as an optimization, if the object to keep alive is a GT_BOX, removes its side effects and uses the address of a local (copied from the box's source if needed) as the operand for GT_KEEPALIVE. For the BOX optimization, if the class of the box has no GC fields, a GT_NOP is returned.</remarks>
+    public unsafe GenTree impKeepAliveIntrinsic(GenTree objToKeepAlive)
+    {
+        assert(objToKeepAlive.Type is TYP_REF);
+
+        if (opts.OptimizationEnabled && (objToKeepAlive.Oper is GT_BOX))
+        {
+            var box = objToKeepAlive.AsBox();
+
+            if (box.IsBoxedValue)
+            {
+                var boxedClass = lvaGetDesc(box.BoxOp.AsLclVar().LclNum).lvClassHnd;
+                var layout = typGetObjLayout(boxedClass);
+
+                if (!layout.HasGCPtr)
+                {
+                    _ = gtTryRemoveBoxUpstreamEffects(box, BR_REMOVE_AND_NARROW);
+                    JITDUMP("\nBOX class has no GC fields, KEEPALIVE is a NOP");
+
+                    return gtNewNothingNode();
+                }
+
+                var boxSrc = gtTryRemoveBoxUpstreamEffects(box, BR_REMOVE_BUT_NOT_NARROW);
+
+                if (boxSrc is not null)
+                {
+                    int boxTempNum;
+
+                    if (boxSrc.Oper is GT_LCL_VAR)
+                    {
+                        boxTempNum = boxSrc.AsLclVarCommon().LclNum;
+                    }
+                    else
+                    {
+                        boxTempNum = lvaGrabTemp(shortLifetime: true, "Temp for the box source");
+
+                        var boxTempStore = gtNewTempStore(boxTempNum, boxSrc);
+                        var boxStoreStmt = box.CopyStmtWhenInlinedBoxValue;
+
+                        boxStoreStmt.RootNode = boxTempStore;
+                    }
+
+                    JITDUMP($"\nImporting KEEPALIVE(BOX) as KEEPALIVE(LCL_VAR_ADDR V{boxTempNum:D2})");
+                    objToKeepAlive = gtNewLclVarAddrNode(TYP_I_IMPL, boxTempNum);
+                }
+            }
+        }
+
+        return gtNewKeepAliveNode(objToKeepAlive);
     }
 
     /// <summary>Load an argument on the operand stack</summary>
@@ -12749,6 +14057,93 @@ public partial class Compiler
         return null;
     }
 
+    public unsafe GenTree? impMathIntrinsic(CORINFO_METHOD_HANDLE method, in CORINFO_SIG_INFO sigInfo, in CORINFO_CONST_LOOKUP entryPoint, var_types callType, NamedIntrinsic intrinsicName, bool tailCall, out bool isSpecial)
+    {
+        assert(callType is not TYP_STRUCT);
+        assert(IsMathIntrinsic(intrinsicName));
+
+        isSpecial = false;
+
+        var op1 = null as GenTree;
+        var op2 = null as GenTree;
+
+        var isIntrinsicImplementedByUserCall = IsIntrinsicImplementedByUserCall(intrinsicName);
+
+        if (isIntrinsicImplementedByUserCall)
+        {
+#if TARGET_XARCH
+            // We want to track math intrinsics implemented as user calls as special
+            // to ensure we don't lose track of the fact it will call into native code
+            //
+            // This is used on xarch to track that it may need vzeroupper inserted to
+            // avoid the perf penalty on some hardware.
+
+            isSpecial = true;
+#endif
+        }
+
+#if !TARGET_X86
+        // Intrinsics that are not implemented directly by target instructions will
+        // be re-materialized as users calls in rationalizer. For prefixed tail calls,
+        // don't do this optimization, because
+        //  a) For back compatibility reasons on desktop .NET Framework 4.6 / 4.6.1
+        //  b) It will be non-trivial task or too late to re-materialize a surviving
+        //     tail prefixed GT_INTRINSIC as tail call in rationalizer.
+        if (!isIntrinsicImplementedByUserCall || !tailCall)
+#else
+        // On x86 RyuJIT, importing intrinsics that are implemented as user calls can cause incorrect calculation
+        // of the depth of the stack if these intrinsics are used as arguments to another call. This causes bad
+        // code generation for certain EH constructs.
+        if (!isIntrinsicImplementedByUserCall)
+#endif
+        {
+            var arg = sigInfo.args;
+
+            switch (sigInfo.numArgs)
+            {
+                case 1:
+                    assert(eeGetArgType(arg, sigInfo) == callType);
+
+                    op1 = impPopStack().val;
+                    op1 = impImplicitR4orR8Cast(op1, callType);
+                    op1 = new GenTreeIntrinsic(callType.ActualType, op1, intrinsicName, method) {
+                        EntryPoint = entryPoint,
+                    };
+                    break;
+
+                case 2:
+                    assert(eeGetArgType(arg, sigInfo) == callType);
+#if DEBUG
+                    arg = info.compCompHnd->getArgNext(arg);
+#endif
+                    assert(eeGetArgType(arg, sigInfo) == callType);
+
+                    op2 = impPopStack().val;
+                    op1 = impPopStack().val;
+
+                    op1 = impImplicitR4orR8Cast(op1, callType);
+                    op2 = impImplicitR4orR8Cast(op2, callType);
+
+                    op1 = new GenTreeIntrinsic(callType.ActualType, op1, op2, intrinsicName, method) {
+                        EntryPoint = entryPoint,
+                    };
+                    break;
+
+                default:
+                {
+                    NO_WAY("Unsupported number of args for Math Intrinsic");
+                    break;
+                }
+            }
+
+            if (isIntrinsicImplementedByUserCall)
+            {
+                op1.Flags |= GTF_CALL;
+            }
+        }
+        return op1;
+    }
+
     public unsafe GenTree impMethodPointer(in CORINFO_CALL_INFO callInfo)
     {
         var op1 = null as GenTree;
@@ -13209,7 +14604,7 @@ public partial class Compiler
             BADCODE("not enough arguments for call");
         }
 
-        var inlineParameters = default(InlineArray16<SigParamInfo>);
+        Unsafe.SkipInit(out InlineArray16<SigParamInfo> inlineParameters);
         var parameters = (sigInfo.numArgs <= 16) ? (Span<SigParamInfo>)(inlineParameters) : new SigParamInfo[sigInfo.numArgs];
 
         // We will iterate and pop the args in reverse order as we sometimes need
@@ -13385,6 +14780,690 @@ public partial class Compiler
             indirFlags |= GTF_IND_UNALIGNED;
         }
         return indirFlags;
+    }
+
+    /// <summary>import a NamedIntrinsic representing a primitive operation</summary>
+    /// <param name="intrinsic">the intrinsic being imported</param>
+    /// <param name="clsHnd">handle for the intrinsic method's class</param>
+    /// <param name="method">handle for the intrinsic method</param>
+    /// <param name="sigInfo">signature of the intrinsic method</param>
+    /// <param name="mustExpand">true if the intrinsic must return a GenTree*; otherwise, false</param>
+    /// <returns>IR tree to use in place of the call, or null if the jit should treat the intrinsic call like a normal call.</returns>
+    public unsafe GenTree? impPrimitiveNamedIntrinsic(NamedIntrinsic intrinsic, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, in CORINFO_SIG_INFO sigInfo, bool mustExpand)
+    {
+        assert(sigInfo.sigInst.classInstCount is 0);
+
+        var retType = sigInfo.retType.VarType;
+
+        if (!varTypeIsArithmetic(retType))
+        {
+            assert((intrinsic is NI_PRIMITIVE_ConvertToInteger) || (intrinsic is NI_PRIMITIVE_ConvertToIntegerNative));
+            return null;
+        }
+
+        var hwintrinsic = NI_Illegal;
+
+        var args = sigInfo.args;
+        assert(sigInfo.numArgs is 1 or 2);
+
+        CORINFO_CLASS_HANDLE op1ClsHnd;
+        CorInfoType baseJitType;
+
+        fixed (CORINFO_SIG_INFO* pSigInfo = &sigInfo)
+        {
+            baseJitType = strip(info.compCompHnd->getArgType(pSigInfo, args, &op1ClsHnd));
+        }
+        var baseType = baseJitType.VarType;
+
+        var result = null as GenTree;
+
+        switch (intrinsic)
+        {
+            case NI_PRIMITIVE_ConvertToIntegerNative:
+            {
+                if (BlockNonDeterministicIntrinsics(mustExpand))
+                {
+                    return null;
+                }
+                goto case NI_PRIMITIVE_ConvertToInteger;
+            }
+
+            case NI_PRIMITIVE_ConvertToInteger:
+            {
+                assert(sigInfo.sigInst.methInstCount is 1);
+                assert(varTypeIsFloating(baseType));
+
+                var tgtType = sigInfo.retType.PreciseVarType;
+                retType = retType.ActualType;
+                var uns = varTypeIsUnsigned(tgtType) && !varTypeIsSmall(tgtType);
+
+                var res = null as GenTree;
+                var op1 = null as GenTree;
+
+#if TARGET_XARCH && FEATURE_HW_INTRINSICS
+                if (intrinsic is NI_PRIMITIVE_ConvertToIntegerNative)
+                {
+                    var hwIntrinsicId = NI_Illegal;
+
+                    if (retType is TYP_INT)
+                    {
+                        if (baseType is TYP_FLOAT)
+                        {
+                            if (!uns)
+                            {
+                                hwIntrinsicId = NI_X86Base_ConvertToInt32WithTruncation;
+                            }
+                            else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                            {
+                                hwIntrinsicId = NI_AVX512_ConvertToUInt32WithTruncation;
+                            }
+                        }
+                        else
+                        {
+                            assert(baseType is TYP_DOUBLE);
+
+                            if (!uns)
+                            {
+                                hwIntrinsicId = NI_X86Base_ConvertToInt32WithTruncation;
+                            }
+                            else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                            {
+                                hwIntrinsicId = NI_AVX512_ConvertToUInt32WithTruncation;
+                            }
+                        }
+                    }
+#if TARGET_AMD64
+                    else
+                    {
+                        assert(retType is TYP_LONG);
+
+                        if (baseType is TYP_FLOAT)
+                        {
+                            if (!uns)
+                            {
+                                hwIntrinsicId = NI_X86Base_X64_ConvertToInt64WithTruncation;
+                            }
+                            else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                            {
+                                hwIntrinsicId = NI_AVX512_X64_ConvertToUInt64WithTruncation;
+                            }
+                        }
+                        else
+                        {
+                            assert(baseType == TYP_DOUBLE);
+
+                            if (!uns)
+                            {
+                                hwIntrinsicId = NI_X86Base_X64_ConvertToInt64WithTruncation;
+                            }
+                            else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                            {
+                                hwIntrinsicId = NI_AVX512_X64_ConvertToUInt64WithTruncation;
+                            }
+                        }
+                    }
+#endif
+
+                    if (hwIntrinsicId is not NI_Illegal)
+                    {
+                        op1 = impPopStack().val;
+                        res = gtNewSimdHWIntrinsicNode(retType, hwIntrinsicId, baseJitType.PreciseVarType, 16, op1);
+
+                        if (varTypeIsSmall(tgtType))
+                        {
+                            res = gtNewCastNode(TYP_INT, res, fromUnsigned: false, tgtType);
+                        }
+                        return res;
+                    }
+                }
+#endif
+
+                op1 = impPopStack().val;
+
+                if (varTypeIsSmall(tgtType))
+                {
+                    res = gtNewCastNode(retType, op1, fromUnsigned: false, retType);
+                    res = gtFoldExpr(res);
+                    res = gtNewCastNode(TYP_INT, res, fromUnsigned: false, tgtType);
+                }
+                else
+                {
+                    res = gtNewCastNode(retType, op1, fromUnsigned: false, tgtType);
+                }
+                return gtFoldExpr(res);
+            }
+
+            case NI_PRIMITIVE_Crc32C:
+            {
+                assert(sigInfo.numArgs is 2);
+                assert(retType is TYP_INT);
+
+                // Crc32 needs the base type from op2
+
+                CORINFO_CLASS_HANDLE op2ClsHnd;
+                args = info.compCompHnd->getArgNext(args);
+
+                fixed (CORINFO_SIG_INFO* pSigInfo = &sigInfo)
+                {
+                    baseJitType = strip(info.compCompHnd->getArgType(pSigInfo, args, &op2ClsHnd));
+                }
+                baseType = baseJitType.VarType;
+
+#if !TARGET_64BIT
+                if (varTypeIsLong(baseType))
+                {
+                    // TODO-CQ: Adding long decomposition support is more complex
+                    // and not supported today so early exit if we have a long and
+                    // either input is not a constant.
+
+                    break;
+                }
+#endif
+
+#if FEATURE_HW_INTRINSICS
+#if TARGET_XARCH
+                var op2 = impPopStack().val;
+                var op1 = impPopStack().val;
+
+                if (varTypeIsLong(baseType))
+                {
+                    hwintrinsic = NI_X86Base_X64_Crc32;
+                    op1 = gtFoldExpr(gtNewCastNode(baseType, op1, fromUnsigned: true, baseType));
+                }
+                else
+                {
+                    hwintrinsic = NI_X86Base_Crc32;
+                    baseType = baseType.ActualType;
+                }
+
+                result = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1, op2);
+
+                // We use the simdBaseJitType to bring the type of the second argument to codegen
+                result.AsHWIntrinsic().SimdBaseType = baseJitType.PreciseVarType;
+#elif TARGET_ARM64
+                if (compOpportunisticallyDependsOn(InstructionSet_Crc32))
+                {
+                    var op2 = impPopStack().val;
+                    var op1 = impPopStack().val;
+
+                    hwintrinsic = varTypeIsLong(baseType) ? NI_Crc32_Arm64_ComputeCrc32C : NI_Crc32_ComputeCrc32C;
+                    result = gtNewScalarHWIntrinsicNode(TYP_INT, hwintrinsic, op1, op2);
+                    baseType = TYP_INT;
+
+                    // We use the simdBaseJitType to bring the type of the second argument to codegen
+                    result.AsHWIntrinsic().SimdBaseType = baseJitType.PreciseVarType;
+                }
+#endif
+#endif
+
+                break;
+            }
+
+            case NI_PRIMITIVE_LeadingZeroCount:
+            {
+                assert(sigInfo.numArgs is 1);
+                assert(!varTypeIsSmall(retType) && !varTypeIsSmall(baseType));
+
+                var op1 = impStackTop().val;
+
+                if (op1.Oper.IsIntegralConst)
+                {
+                    // Pop the value from the stack
+                    _ = impPopStack();
+
+                    if (varTypeIsLong(baseType))
+                    {
+                        var cns = op1.AsIntConCommon().LngValue;
+                        result = gtNewLconNode(long.LeadingZeroCount(cns));
+                    }
+                    else
+                    {
+                        var cns = (int)(op1.AsIntConCommon().IconValue);
+                        result = gtNewIconNode(baseType, int.LeadingZeroCount(cns));
+                    }
+                    break;
+                }
+
+#if !TARGET_64BIT && !TARGET_WASM
+                if (varTypeIsLong(baseType))
+                {
+                    // TODO-CQ: Adding long decomposition support is more complex
+                    // and not supported today so early exit if we have a long and
+                    // either input is not a constant.
+
+                    break;
+                }
+#endif
+
+#if TARGET_RISCV64
+                if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
+                {
+                    _ = impPopStack();
+                    result = new GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_LeadingZeroCount, methodHandle: null);
+                }
+#elif TARGET_WASM
+                _ = impPopStack();
+                result = new GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_LeadingZeroCount, methodHandle: null);
+#elif FEATURE_HW_INTRINSICS
+#if TARGET_XARCH
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                {
+                    // Pop the value from the stack
+                    _ = impPopStack();
+
+                    hwintrinsic = varTypeIsLong(baseType) ? NI_AVX2_X64_LeadingZeroCount : NI_AVX2_LeadingZeroCount;
+                    result = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1);
+                }
+                else
+                {
+                    // Pop the value from the stack
+                    _ = impPopStack();
+
+                    // We're importing this as the following...
+                    // * 32-bit lzcnt: (value is 0) ? 32 : (31 ^ BSR(value))
+                    // * 64-bit lzcnt: (value is 0) ? 64 : (63 ^ BSR(value))
+
+                    op1 = impCloneExpr(op1, out var op1Dup, CHECK_SPILL_ALL, "Cloning op1 for LeadingZeroCount");
+                    assert(op1Dup is not null);
+
+                    hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_BitScanReverse : NI_X86Base_BitScanReverse;
+                    op1Dup = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1Dup);
+
+                    var cond = gtNewBinaryNode(GT_EQ, TYP_INT, op1, gtNewZeroConNode(baseType)) as GenTree;
+                    cond = gtFoldExpr(cond);
+
+                    GenTree trueRes;
+                    GenTree icon;
+
+                    if (varTypeIsLong(baseType))
+                    {
+                        trueRes = gtNewLconNode(64);
+                        icon = gtNewLconNode(63);
+                    }
+                    else
+                    {
+                        trueRes = gtNewIconNode(baseType, 32);
+                        icon = gtNewIconNode(baseType, 31);
+                    }
+
+                    var falseRes = gtNewBinaryNode(GT_XOR, baseType, op1Dup, icon);
+                    var colon = gtNewColonNode(baseType, trueRes, falseRes);
+
+                    result = gtNewQmarkNode(baseType, cond, colon);
+
+                    var tmp = lvaGrabTemp(shortLifetime: true, "Grabbing temp for LeadingZeroCount Qmark");
+                    impStoreToTemp(tmp, result, CHECK_SPILL_NONE);
+                    result = gtNewLclvNode(baseType, tmp);
+                }
+#elif TARGET_ARM64
+                // Pop the value from the stack
+                _ = impPopStack();
+
+                hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
+                result = gtNewScalarHWIntrinsicNode(TYP_INT, op1, hwintrinsic);
+                baseType = TYP_INT;
+#endif
+#endif
+                break;
+            }
+
+            case NI_PRIMITIVE_Log2:
+            {
+                assert(sigInfo.numArgs is 1);
+                assert(!varTypeIsSmall(retType) && !varTypeIsSmall(baseType));
+
+                var op1 = impStackTop().val;
+
+                if (op1.Oper.IsIntegralConst)
+                {
+                    // Pop the value from the stack
+                    _ = impPopStack();
+
+                    if (varTypeIsLong(baseType))
+                    {
+                        var cns = op1.AsIntConCommon().LngValue;
+
+                        if (varTypeIsUnsigned(baseJitType.PreciseVarType) || (cns >= 0))
+                        {
+                            result = gtNewLconNode(BitOperations.Log2(unchecked((ulong)(cns))));
+                        }
+                    }
+                    else
+                    {
+                        var cns = (int)(op1.AsIntConCommon().IconValue);
+
+                        if (varTypeIsUnsigned(baseJitType.PreciseVarType) || (cns >= 0))
+                        {
+                            result = gtNewIconNode(baseType, BitOperations.Log2(unchecked((uint)(cns))));
+                        }
+                    }
+                    break;
+                }
+
+#if !TARGET_64BIT
+                if (varTypeIsLong(baseType))
+                {
+                    // TODO-CQ: Adding long decomposition support is more complex
+                    // and not supported today so early exit if we have a long and
+                    // either input is not a constant.
+
+                    break;
+                }
+#endif
+
+                if (varTypeIsSigned(baseType))
+                {
+                    // TODO-CQ: We should insert the `if (value < 0) { throw }` handling
+                    break;
+                }
+
+#if FEATURE_HW_INTRINSICS
+                var lzcnt = impPrimitiveNamedIntrinsic(NI_PRIMITIVE_LeadingZeroCount, clsHnd, method, sigInfo, mustExpand);
+
+                if (lzcnt is not null)
+                {
+                    GenTree icon;
+
+                    if (varTypeIsLong(retType))
+                    {
+                        icon = gtNewLconNode(63);
+                    }
+                    else
+                    {
+                        icon = gtNewIconNode(retType, 31);
+                    }
+
+                    result = gtNewBinaryNode(GT_XOR, retType, lzcnt, icon);
+                    baseType = retType;
+                }
+#endif
+                break;
+            }
+
+            case NI_PRIMITIVE_PopCount:
+            {
+                assert(sigInfo.numArgs is 1);
+                assert(!varTypeIsSmall(retType) && !varTypeIsSmall(baseType));
+
+                var op1 = impStackTop().val;
+
+                if (op1.Oper.IsIntegralConst)
+                {
+                    // Pop the value from the stack
+                    _ = impPopStack();
+
+                    if (varTypeIsLong(baseType))
+                    {
+                        var cns = op1.AsIntConCommon().LngValue;
+                        result = gtNewLconNode(long.PopCount(cns));
+                    }
+                    else
+                    {
+                        var cns = (int)(op1.AsIntConCommon().IconValue);
+                        result = gtNewIconNode(baseType, int.PopCount(cns));
+                    }
+                    break;
+                }
+
+#if !TARGET_64BIT && !TARGET_WASM
+                if (varTypeIsLong(baseType))
+                {
+                    // TODO-CQ: Adding long decomposition support is more complex
+                    // and not supported today so early exit if we have a long and
+                    // either input is not a constant.
+
+                    break;
+                }
+#endif
+
+#if TARGET_RISCV64
+                if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
+                {
+                    _ = impPopStack();
+                    result = new GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_PopCount, methodHandle: null);
+                }
+#elif TARGET_WASM
+                _ = impPopStack();
+                result = new GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_PopCount, methodHandle: null);
+#elif FEATURE_HW_INTRINSICS
+#if TARGET_XARCH
+                // Pop the value from the stack
+                _ = impPopStack();
+
+                hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_PopCount : NI_X86Base_PopCount;
+                result = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1);
+#elif TARGET_ARM64
+                _ = impPopStack();
+
+                compFloatingPointUsed = true;
+                result = new GenTreeIntrinsic(TYP_INT, op1, NI_PRIMITIVE_PopCount, methodHandle: nullptr);
+                baseType = TYP_INT;
+#endif
+#endif
+                break;
+            }
+
+            case NI_PRIMITIVE_RotateLeft:
+            {
+                assert(sigInfo.numArgs is 2);
+                assert(!varTypeIsSmall(retType) && !varTypeIsSmall(baseType));
+
+                var op2 = impStackTop().val;
+
+                if (!op2.Oper.IsIntegralConst)
+                {
+                    // TODO-CQ: ROL currently expects op2 to be a constant
+                    break;
+                }
+
+                // Pop the value from the stack
+                _ = impPopStack();
+
+                var op1 = impPopStack().val;
+                var cns2 = (int)(op2.AsIntConCommon().IconValue);
+
+                // Mask the offset to ensure deterministic xplat behavior for overshifting
+                cns2 &= varTypeIsLong(baseType) ? 0x3F : 0x1F;
+
+                if (cns2 is 0)
+                {
+                    // No rotation is a nop
+                    return op1;
+                }
+
+                if (op1.Oper.IsIntegralConst)
+                {
+                    if (varTypeIsLong(baseType))
+                    {
+                        var cns1 = op1.AsIntConCommon().LngValue;
+                        result = gtNewLconNode(long.RotateLeft(cns1, cns2));
+                    }
+                    else
+                    {
+                        var cns1 = (int)(op1.AsIntConCommon().IconValue);
+                        result = gtNewIconNode(baseType, int.RotateLeft(cns1, cns2));
+                    }
+                    break;
+                }
+
+                op2.AsIntConCommon().IconValue = cns2;
+
+                result = gtNewBinaryNode(GT_ROL, baseType, op1, op2);
+                result = gtFoldExpr(result);
+                break;
+            }
+
+            case NI_PRIMITIVE_RotateRight:
+            {
+                assert(sigInfo.numArgs is 2);
+                assert(!varTypeIsSmall(retType) && !varTypeIsSmall(baseType));
+
+                var op2 = impStackTop().val;
+
+                if (!op2.Oper.IsIntegralConst)
+                {
+                    // TODO-CQ: ROR currently expects op2 to be a constant
+                    break;
+                }
+
+                // Pop the value from the stack
+                impPopStack();
+
+                var op1 = impPopStack().val;
+                var cns2 = (int)(op2.AsIntConCommon().IconValue);
+
+                // Mask the offset to ensure deterministic xplat behavior for overshifting
+                cns2 &= varTypeIsLong(baseType) ? 0x3F : 0x1F;
+
+                if (cns2 is 0)
+                {
+                    // No rotation is a nop
+                    return op1;
+                }
+
+                if (op1.Oper.IsIntegralConst)
+                {
+                    if (varTypeIsLong(baseType))
+                    {
+                        var cns1 = op1.AsIntConCommon().LngValue;
+                        result = gtNewLconNode(long.RotateRight(cns1, cns2));
+                    }
+                    else
+                    {
+                        var cns1 = (int)(op1.AsIntConCommon().IconValue);
+                        result = gtNewIconNode(baseType, int.RotateRight(cns1, cns2));
+                    }
+                    break;
+                }
+
+                op2.AsIntConCommon().IconValue = cns2;
+
+                result = gtNewBinaryNode(GT_ROR, baseType, op1, op2);
+                result = gtFoldExpr(result);
+                break;
+            }
+
+            case NI_PRIMITIVE_TrailingZeroCount:
+            {
+                assert(sigInfo.numArgs is 1);
+                assert(!varTypeIsSmall(baseType));
+
+                var op1 = impStackTop().val;
+
+                if (op1.Oper.IsIntegralConst)
+                {
+                    // Pop the value from the stack
+                    impPopStack();
+
+                    if (varTypeIsLong(baseType))
+                    {
+                        var cns = op1.AsIntConCommon().LngValue;
+                        result = gtNewLconNode(long.TrailingZeroCount(cns));
+                    }
+                    else
+                    {
+                        var cns = (int)(op1.AsIntConCommon().IconValue);
+                        result = gtNewIconNode(baseType, int.TrailingZeroCount(cns));
+                    }
+
+                    baseType = retType;
+                    break;
+                }
+
+#if !TARGET_64BIT && !TARGET_WASM
+                if (varTypeIsLong(baseType))
+                {
+                    // TODO-CQ: Adding long decomposition support is more complex
+                    // and not supported today so early exit if we have a long and
+                    // either input is not a constant.
+
+                    break;
+                }
+#endif
+
+#if TARGET_RISCV64
+                if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
+                {
+                    _ = impPopStack();
+                    result = new GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_TrailingZeroCount, methodHandle: null);
+                }
+#elif TARGET_WASM
+                _ = impPopStack();
+                result = new GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_TrailingZeroCount, methodHandle: null);
+#elif FEATURE_HW_INTRINSICS
+#if TARGET_XARCH
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                {
+                    // Pop the value from the stack
+                    _ = impPopStack();
+
+                    hwintrinsic = varTypeIsLong(baseType) ? NI_AVX2_X64_TrailingZeroCount : NI_AVX2_TrailingZeroCount;
+                    result = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1);
+                }
+                else
+                {
+                    // Pop the value from the stack
+                    _ = impPopStack();
+
+                    // We're importing this as the following...
+                    // * 32-bit tzcnt: (value is 0) ? 32 : BSF(value)
+                    // * 64-bit tzcnt: (value is 0) ? 64 : BSF(value)
+
+                    op1 = impCloneExpr(op1, out var op1Dup, CHECK_SPILL_ALL, "Cloning op1 for TrailingZeroCount");
+                    assert(op1Dup is not null);
+
+                    hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_BitScanForward : NI_X86Base_BitScanForward;
+                    op1Dup = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1Dup);
+
+                    var cond = gtNewBinaryNode(GT_EQ, TYP_INT, op1, gtNewZeroConNode(baseType)) as GenTree;
+                    cond = gtFoldExpr(cond);
+
+                    GenTree trueRes;
+
+                    if (varTypeIsLong(baseType))
+                    {
+                        trueRes = gtNewLconNode(64);
+                    }
+                    else
+                    {
+                        trueRes = gtNewIconNode(baseType, 32);
+                    }
+
+                    var falseRes = op1Dup;
+                    var colon = gtNewColonNode(baseType, trueRes, falseRes);
+
+                    result = gtNewQmarkNode(baseType, cond, colon);
+
+                    var tmp = lvaGrabTemp(shortLifetime: true, "Grabbing temp for TrailingZeroCount Qmark");
+                    impStoreToTemp(tmp, result, CHECK_SPILL_NONE);
+                    result = gtNewLclvNode(baseType, tmp);
+                }
+#elif TARGET_ARM64
+            // Pop the value from the stack
+            _ = impPopStack();
+
+            result = new GenTreeIntrinsic(TYP_INT, op1, NI_PRIMITIVE_TrailingZeroCount, methodHandle: nullptr);
+            baseType = TYP_INT;
+#endif
+#endif
+
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+
+        if ((result is not null) && (retType != baseType))
+        {
+            // We're either LONG->INT or INT->LONG
+            assert(!varTypeIsSmall(retType) && !varTypeIsSmall(baseType));
+            result = gtFoldExpr(gtNewCastNode(retType, result, /* uint */ true, retType));
+        }
+        return result;
     }
 
     /// <summary>Push catch arg onto the stack.</summary>
@@ -13963,7 +16042,7 @@ public partial class Compiler
                         if ((varTypeIsSmall(returnedTree.Type) || varTypeIsSmall(fncRealRetType)) && fgCastNeeded(returnedTree, fncRealRetType))
                         {
                             // Small-typed return values are normalized by the callee
-                            op2 = gtNewCastNode(TYP_INT, op2, false, fncRealRetType);
+                            op2 = gtNewCastNode(TYP_INT, op2, fromUnsigned: false, fncRealRetType);
                         }
                     }
 
@@ -14397,6 +16476,45 @@ public partial class Compiler
 #endif
     }
 
+    /// <summary>Creates a new Vector128.CreateScalar node for a System.Half value</summary>
+    /// <param name="op1">The System.Half value</param>
+    /// <returns>The Vector128.CreateScalar node that contains op1</returns>
+    public GenTree impSimdCreateScalarHalf(GenTree op1)
+    {
+        int op1Tmp;
+
+        if (op1.Oper is not GT_LCL_VAR)
+        {
+            op1Tmp = lvaGrabTemp(shortLifetime: true, "System.Half tmp");
+            impStoreToTemp(op1Tmp, op1, CHECK_SPILL_ALL);
+        }
+        else
+        {
+            op1Tmp = op1.AsLclVarCommon().LclNum;
+        }
+
+        op1 = gtNewLclFldNode(TYP_USHORT, op1Tmp, lclOffs: 0);
+        return gtNewSimdCreateScalarNode(TYP_SIMD16, op1, TYP_USHORT, 16);
+    }
+
+    /// <summary>Creates a new Vector128.ToScalar node for a System.Half value</summary>
+    /// <param name="op1">The Vector128 from which to extract the System.Half value</param>
+    /// <param name="halfClsHnd">The class handle for System.Half</param>
+    /// <returns>The System.Half value extracted from op1</returns>
+    public unsafe GenTree impSimdToScalarHalf(GenTree op1, CORINFO_CLASS_HANDLE halfClsHnd)
+    {
+        assert(IsSystemHalfClass(halfClsHnd));
+
+        var resTmp = lvaGrabTemp(shortLifetime: true, "System.Half tmp");
+        lvaSetStruct(resTmp, halfClsHnd, unsafeValueClsCheck: false);
+
+        op1 = gtNewSimdToScalarNode(TYP_INT, op1, TYP_USHORT, 16);
+        op1 = gtNewStoreLclFldNode(TYP_USHORT, resTmp, offset: 0, op1);
+
+        _ = impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
+        return gtNewLclvNode(TYP_STRUCT, resTmp);
+    }
+
     /// <summary>Spill all trees referencing the given local.</summary>
     /// <param name="lclNum">The local's number</param>
     /// <param name="chkLevel">Height (exclusive) of the portion of the stack to check</param>
@@ -14577,7 +16695,7 @@ public partial class Compiler
             if (tree.Oper is GT_RET_EXPR)
             {
                 JITDUMP($"\n*** see V{tnum:D2} = GT_RET_EXPR, noting temp\n");
-                var call = tree.AsRetExpr().InlineCandidate;
+                var call = tree.AsRetExpr().InlineCandidate.AsCall();
 
                 if (call.IsGuardedDevirtualizationCandidate)
                 {
@@ -14599,6 +16717,614 @@ public partial class Compiler
         stackEntry.val = temp;
 
         return true;
+    }
+
+    public unsafe GenTree? impSRCSUnsafeIntrinsic(NamedIntrinsic intrinsic, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, in CORINFO_SIG_INFO sig, in CORINFO_RESOLVED_TOKEN resolvedToken)
+    {
+        // NextCallRetAddr requires a CALL, so return null.
+        if (info.compHasNextCallRetAddr)
+        {
+            return null;
+        }
+
+        assert(sig.sigInst.classInstCount is 0);
+
+        switch (intrinsic)
+        {
+            case NI_SRCS_UNSAFE_Add:
+            {
+                assert(sig.sigInst.methInstCount is 1);
+
+                // ldarg.0
+                // ldarg.1
+                // sizeof !!T
+                // conv.i
+                // mul
+                // add
+                // ret
+
+                var op2 = impPopStack().val;
+                var op1 = impPopStack().val;
+
+                impBashVarAddrsToI(op1);
+                impBashVarAddrsToI(op2);
+
+                op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL);
+
+                var classSize = info.compCompHnd->getClassSize(sig.sigInst.methInst[0]);
+
+                if (classSize is not 1)
+                {
+                    var size = gtNewIconNode(TYP_I_IMPL, classSize);
+                    op2 = gtNewBinaryNode(GT_MUL, TYP_I_IMPL, op2, size);
+                }
+
+                var type = impGetByRefResultType(GT_ADD, fUnsigned: false, ref op1, ref op2);
+                return gtNewBinaryNode(GT_ADD, type, op1, op2);
+            }
+
+            case NI_SRCS_UNSAFE_AddByteOffset:
+            {
+                assert(sig.sigInst.methInstCount is 1);
+
+                // ldarg.0
+                // ldarg.1
+                // add
+                // ret
+
+                var op2 = impPopStack().val;
+                var op1 = impPopStack().val;
+
+                impBashVarAddrsToI(op1);
+                impBashVarAddrsToI(op2);
+
+                var type = impGetByRefResultType(GT_ADD, fUnsigned: false, ref op1, ref op2);
+                return gtNewBinaryNode(GT_ADD, type, op1, op2);
+            }
+
+            case NI_SRCS_UNSAFE_AreSame:
+            {
+                assert(sig.sigInst.methInstCount is 1);
+
+                // ldarg.0
+                // ldarg.1
+                // ceq
+                // ret
+
+                var op2 = impPopStack().val;
+                var op1 = impPopStack().val;
+
+                var tmp = gtNewBinaryNode(GT_EQ, TYP_INT, op1, op2);
+                return gtFoldExpr(tmp);
+            }
+
+            case NI_SRCS_UNSAFE_As:
+            {
+                assert((sig.sigInst.methInstCount is 1) || (sig.sigInst.methInstCount is 2));
+
+                if (sig.sigInst.methInstCount is 1)
+                {
+                    CORINFO_SIG_INFO exactSig;
+                    info.compCompHnd->getMethodSig(resolvedToken.hMethod, &exactSig);
+
+                    var inst = exactSig.sigInst.methInst[0];
+                    assert(inst is not null);
+
+                    var op = impPopStack().val;
+                    assert(op.Type is TYP_REF);
+
+                    JITDUMP($"Expanding Unsafe.As<{eeGetClassName(inst)}>(...)\n");
+
+                    var oldClass = gtGetClassHandle(op, out var isExact, out var isNonNull);
+
+                    if ((oldClass != NO_CLASS_HANDLE) && ((oldClass == inst) || !info.compCompHnd->isMoreSpecificType(oldClass, inst)))
+                    {
+                        JITDUMP($"Unsafe.As: Keep using old '{eeGetClassName(oldClass)}' type\n");
+                        return op;
+                    }
+
+                    // In order to change the class handle of the object we need to spill it to a temp
+                    // and update class info for that temp.
+                    var localNum = lvaGrabTemp(shortLifetime: true, "updating class info");
+                    impStoreToTemp(localNum, op, CHECK_SPILL_ALL);
+
+                    // NOTE: we still can't say for sure that it is the exact type of the argument
+                    lvaSetClass(localNum, inst, isExact: false);
+                    return gtNewLclvNode(TYP_REF, localNum);
+                }
+
+                // ldarg.0
+                // ret
+
+                return impPopStack().val;
+            }
+
+            case NI_SRCS_UNSAFE_AsPointer:
+            {
+                assert(sig.sigInst.methInstCount is 1);
+
+                // ldarg.0
+                // conv.u
+                // ret
+
+                var op1 = impPopStack().val;
+                impBashVarAddrsToI(op1);
+
+                return gtNewCastNode(TYP_I_IMPL, op1, fromUnsigned: false, TYP_I_IMPL);
+            }
+
+            case NI_SRCS_UNSAFE_AsRef:
+            {
+                assert(sig.sigInst.methInstCount is 1);
+
+                // ldarg.0
+                // ret
+
+                return impPopStack().val;
+            }
+
+            case NI_SRCS_UNSAFE_BitCast:
+            {
+                assert(sig.sigInst.methInstCount is 2);
+
+                var fromTypeHnd = sig.sigInst.methInst[0];
+                var fromType = TypeHandleToVarType(fromTypeHnd, out var fromLayout);
+
+                var toTypeHnd = sig.sigInst.methInst[1];
+                var toType = TypeHandleToVarType(toTypeHnd, out var toLayout);
+
+                if ((fromType is TYP_REF) || (toType is TYP_REF))
+                {
+                    // Fallback to the software implementation to throw for reference types
+                    return null;
+                }
+
+                var fromSize = (fromLayout is not null) ? fromLayout.Size : fromType.Size;
+                var toSize = (toLayout is not null) ? toLayout.Size : toType.Size;
+
+                // Runtime requires all types to be at least 1-byte
+                assert((fromSize is not 0) && (toSize is not 0));
+
+                if (fromSize != toSize)
+                {
+                    // Fallback to the software implementation to throw when sizes don't match
+                    return null;
+                }
+
+                var op1 = impPopStack().val;
+
+                op1 = impImplicitR4orR8Cast(op1, fromType);
+                op1 = impImplicitIorI4Cast(op1, fromType);
+
+                var valType = op1.Type;
+                var effectiveVal = op1.EffectiveVal;
+
+                if (effectiveVal.Oper is GT_LCL_VAR)
+                {
+                    valType = lvaGetDesc(effectiveVal.AsLclVar().LclNum).Type;
+                }
+
+                // Handle matching handles, compatible struct layouts or integrals where we can simply return op1
+                if (varTypeIsSmall(toType))
+                {
+                    if (genActualTypeIsInt(valType))
+                    {
+                        if (fgCastNeeded(op1, toType))
+                        {
+                            op1 = gtNewCastNode(TYP_INT, op1, false, toType);
+                        }
+                        return op1;
+                    }
+                }
+                else if (((toType != TYP_STRUCT) && (valType.ActualType == toType)) || ClassLayout.AreCompatible(fromLayout, toLayout))
+                {
+                    return op1;
+                }
+
+                // Handle bitcasting between floating and same sized integral, such as `float` to `int`
+                if (varTypeIsFloating(fromType) && varTypeIsIntegral(toType))
+                {
+                    if (op1.Oper.IsCnsFltOrDbl)
+                    {
+                        if (fromType is TYP_DOUBLE)
+                        {
+                            var f64Cns = op1.AsDblCon().DconVal;
+                            return gtNewLconNode(BitConverter.DoubleToInt64Bits(f64Cns));
+                        }
+                        else
+                        {
+                            assert(fromType is TYP_FLOAT);
+                            var f32Cns = (float)op1.AsDblCon().DconVal;
+                            return gtNewIconNode(TYP_INT, BitConverter.SingleToInt32Bits(f32Cns));
+                        }
+                    }
+                    else if (TargetArchitecture.Is64Bit || (fromType is TYP_FLOAT))
+                    {
+                        // TODO-CQ: We should support this on 32-bit via decomposition
+                        toType = varTypeToSigned(toType);
+                        return gtNewBitCastNode(toType, op1);
+                    }
+                }
+                else if (varTypeIsIntegral(fromType) && varTypeIsFloating(toType))
+                {
+                    if (op1.Oper.IsIntegralConst)
+                    {
+                        if (toType is TYP_DOUBLE)
+                        {
+                            var i64Cns = op1.AsIntConCommon().LngValue;
+                            return gtNewDconNode(TYP_DOUBLE, BitConverter.Int64BitsToDouble(i64Cns));
+                        }
+                        else
+                        {
+                            assert(toType is TYP_FLOAT);
+
+                            var i32Cns = (int)(op1.AsIntConCommon().IconValue);
+                            return gtNewDconNode(TYP_FLOAT, BitConverter.Int32BitsToSingle(i32Cns));
+                        }
+                    }
+                    else if (TargetArchitecture.Is64Bit || (toType is TYP_FLOAT))
+                    {
+                        // TODO-CQ: We should support this on 32-bit via decomposition
+                        return gtNewBitCastNode(toType, op1);
+                    }
+                }
+
+                GenTree addr;
+                var indirFlags = GTF_EMPTY;
+
+                if (varTypeIsIntegral(valType) && (valType.Size < fromSize))
+                {
+                    var lclNum = lvaGrabTemp(shortLifetime: true, "bitcast small type extension");
+                    impStoreToTemp(lclNum, op1, CHECK_SPILL_ALL);
+                    addr = gtNewLclVarAddrNode(TYP_I_IMPL, lclNum);
+                }
+                else
+                {
+                    addr = impGetNodeAddr(op1, CHECK_SPILL_ALL, GTF_IND_MUST_PRESERVE_FLAGS, out indirFlags);
+                }
+
+                if (info.compCompHnd->getClassAlignmentRequirement(fromTypeHnd) < info.compCompHnd->getClassAlignmentRequirement(toTypeHnd))
+                {
+                    indirFlags |= GTF_IND_UNALIGNED;
+                }
+                return gtNewLoadValueNode(toType, addr, toLayout, indirFlags);
+            }
+
+            case NI_SRCS_UNSAFE_ByteOffset:
+            {
+                assert(sig.sigInst.methInstCount is 1);
+
+                // ldarg.1
+                // ldarg.0
+                // sub
+                // ret
+
+                impSpillSideEffect(true, stackState.esStackDepth - 2, ("Spilling op1 side effects for Unsafe.ByteOffset"));
+
+                var op2 = impPopStack().val;
+                var op1 = impPopStack().val;
+
+                impBashVarAddrsToI(op1);
+                impBashVarAddrsToI(op2);
+
+                return gtNewBinaryNode(GT_SUB, TYP_I_IMPL, op2, op1);
+            }
+
+            case NI_SRCS_UNSAFE_Copy:
+            {
+                assert(sig.sigInst.methInstCount is 1);
+
+                // ldarg.0
+                // ldarg.1
+                // ldobj !!T
+                // stobj !!T
+                // ret
+
+                var typeHnd = sig.sigInst.methInst[0];
+                var type = TypeHandleToVarType(typeHnd, out var layout);
+
+                var source = impPopStack().val;
+                var dest = impPopStack().val;
+
+                var value = gtNewLoadValueNode(type, source, layout);
+                return gtNewStoreValueNode(type, dest, value, layout);
+            }
+
+            case NI_SRCS_UNSAFE_CopyBlock:
+            {
+                assert(sig.sigInst.methInstCount is 0);
+
+                // ldarg.0
+                // ldarg.1
+                // ldarg.2
+                // cpblk
+                // ret
+
+                return null;
+            }
+
+            case NI_SRCS_UNSAFE_CopyBlockUnaligned:
+            {
+                assert(sig.sigInst.methInstCount is 0);
+
+                // ldarg.0
+                // ldarg.1
+                // ldarg.2
+                // unaligned. 0x1
+                // cpblk
+                // ret
+
+                return null;
+            }
+
+            case NI_SRCS_UNSAFE_InitBlock:
+            {
+                assert(sig.sigInst.methInstCount is 0);
+
+                // ldarg.0
+                // ldarg.1
+                // ldarg.2
+                // initblk
+                // ret
+
+                return null;
+            }
+
+            case NI_SRCS_UNSAFE_InitBlockUnaligned:
+            {
+                assert(sig.sigInst.methInstCount is 0);
+
+                // ldarg.0
+                // ldarg.1
+                // ldarg.2
+                // unaligned. 0x1
+                // initblk
+                // ret
+
+                return null;
+            }
+
+            case NI_SRCS_UNSAFE_IsAddressGreaterThan:
+            {
+                assert(sig.sigInst.methInstCount is 1);
+
+                // ldarg.0
+                // ldarg.1
+                // cgt.un
+                // ret
+
+                var op2 = impPopStack().val;
+                var op1 = impPopStack().val;
+
+                var tmp = gtNewBinaryNode(GT_GT, TYP_INT, op1, op2);
+                tmp.IsUnsigned = true;
+                return gtFoldExpr(tmp);
+            }
+
+            case NI_SRCS_UNSAFE_IsAddressGreaterThanOrEqualTo:
+            {
+                assert(sig.sigInst.methInstCount is 1);
+
+                // ldarg.0
+                // ldarg.1
+                // clt.un
+                // ldc.i4.0
+                // ceq
+                // ret
+
+                var op2 = impPopStack().val;
+                var op1 = impPopStack().val;
+
+                var tmp = gtNewBinaryNode(GT_GE, TYP_INT, op1, op2);
+                tmp.IsUnsigned = true;
+                return gtFoldExpr(tmp);
+            }
+
+            case NI_SRCS_UNSAFE_IsAddressLessThan:
+            {
+                assert(sig.sigInst.methInstCount is 1);
+
+                // ldarg.0
+                // ldarg.1
+                // clt.un
+                // ret
+
+                var op2 = impPopStack().val;
+                var op1 = impPopStack().val;
+
+                var tmp = gtNewBinaryNode(GT_LT, TYP_INT, op1, op2);
+                tmp.IsUnsigned = true;
+                return gtFoldExpr(tmp);
+            }
+
+            case NI_SRCS_UNSAFE_IsAddressLessThanOrEqualTo:
+            {
+                assert(sig.sigInst.methInstCount is 1);
+
+                // ldarg.0
+                // ldarg.1
+                // cgt.un
+                // ldc.i4.0
+                // ceq
+                // ret
+
+                var op2 = impPopStack().val;
+                var op1 = impPopStack().val;
+
+                var tmp = gtNewBinaryNode(GT_LE, TYP_INT, op1, op2);
+                tmp.IsUnsigned = true;
+                return gtFoldExpr(tmp);
+            }
+
+            case NI_SRCS_UNSAFE_IsNullRef:
+            {
+                assert(sig.sigInst.methInstCount is 1);
+
+                // ldarg.0
+                // ldc.i4.0
+                // conv.u
+                // ceq
+                // ret
+
+                var op1 = impPopStack().val;
+                var cns = gtNewIconNode(TYP_BYREF, 0);
+
+                var tmp = gtNewBinaryNode(GT_EQ, TYP_INT, op1, cns);
+                return gtFoldExpr(tmp);
+            }
+
+            case NI_SRCS_UNSAFE_NullRef:
+            {
+                assert(sig.sigInst.methInstCount is 1);
+
+                // ldc.i4.0
+                // conv.u
+                // ret
+
+                return gtNewIconNode(TYP_BYREF, 0);
+            }
+
+            case NI_SRCS_UNSAFE_Read:
+            case NI_SRCS_UNSAFE_ReadUnaligned:
+            {
+                assert(sig.sigInst.methInstCount is 1);
+
+                // ldarg.0
+                // if NI_SRCS_UNSAFE_ReadUnaligned: unaligned. 0x1
+                // ldobj !!T
+                // ret
+
+                var typeHnd = sig.sigInst.methInst[0];
+                var type = TypeHandleToVarType(typeHnd, out var layout);
+                var flags = (intrinsic is NI_SRCS_UNSAFE_ReadUnaligned) ? GTF_IND_UNALIGNED : GTF_EMPTY;
+
+                return gtNewLoadValueNode(type, impPopStack().val, layout, flags);
+            }
+
+            case NI_SRCS_UNSAFE_SizeOf:
+            {
+                assert(sig.sigInst.methInstCount is 1);
+
+                // sizeof !!T
+                // ret
+
+                var classSize = info.compCompHnd->getClassSize(sig.sigInst.methInst[0]);
+                return gtNewIconNode(TYP_INT, classSize);
+            }
+
+            case NI_SRCS_UNSAFE_SkipInit:
+            {
+                assert(sig.sigInst.methInstCount is 1);
+
+                // ret
+
+                var op1 = impPopStack().val;
+
+                if ((op1.Flags & GTF_SIDE_EFFECT) is not 0)
+                {
+                    return gtUnusedValNode(op1);
+                }
+                else
+                {
+                    return gtNewNothingNode();
+                }
+            }
+
+            case NI_SRCS_UNSAFE_Subtract:
+            {
+                assert(sig.sigInst.methInstCount is 1);
+
+                // ldarg.0
+                // ldarg.1
+                // sizeof !!T
+                // conv.i
+                // mul
+                // sub
+                // ret
+
+                var op2 = impPopStack().val;
+                var op1 = impPopStack().val;
+
+                impBashVarAddrsToI(op1);
+                impBashVarAddrsToI(op2);
+
+                op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL);
+
+                var classSize = info.compCompHnd->getClassSize(sig.sigInst.methInst[0]);
+
+                if (classSize is not 1)
+                {
+                    var size = gtNewIconNode(TYP_I_IMPL, classSize);
+                    op2 = gtNewBinaryNode(GT_MUL, TYP_I_IMPL, op2, size);
+                }
+
+                var type = impGetByRefResultType(GT_SUB, fUnsigned: false, ref op1, ref op2);
+                return gtNewBinaryNode(GT_SUB, type, op1, op2);
+            }
+
+            case NI_SRCS_UNSAFE_SubtractByteOffset:
+            {
+                assert(sig.sigInst.methInstCount is 1);
+
+                // ldarg.0
+                // ldarg.1
+                // sub
+                // ret
+
+                var op2 = impPopStack().val;
+                var op1 = impPopStack().val;
+
+                impBashVarAddrsToI(op1);
+                impBashVarAddrsToI(op2);
+
+                var type = impGetByRefResultType(GT_SUB, fUnsigned: false, ref op1, ref op2);
+                return gtNewBinaryNode(GT_SUB, type, op1, op2);
+            }
+
+            case NI_SRCS_UNSAFE_Unbox:
+            {
+                assert(sig.sigInst.methInstCount is 1);
+
+                // ldarg.0
+                // unbox !!T
+                // ret
+
+                return null;
+            }
+
+            case NI_SRCS_UNSAFE_Write:
+            case NI_SRCS_UNSAFE_WriteUnaligned:
+            {
+                assert(sig.sigInst.methInstCount is 1);
+
+                // ldarg.0
+                // ldarg.1
+                // if NI_SRCS_UNSAFE_WriteUnaligned: unaligned. 0x01
+                // stobj !!T
+                // ret
+
+                var typeHnd = sig.sigInst.methInst[0];
+                var type = TypeHandleToVarType(typeHnd, out var layout);
+                var flags = intrinsic == NI_SRCS_UNSAFE_WriteUnaligned ? GTF_IND_UNALIGNED : GTF_EMPTY;
+
+                var value = impPopStack().val;
+                var addr = impPopStack().val;
+
+                var store = gtNewStoreValueNode(type, addr, value, layout, flags);
+
+                if (varTypeIsStruct(store.Type))
+                {
+                    store = impStoreStruct(store, CHECK_SPILL_ALL);
+                }
+                return store;
+            }
+
+            default:
+            {
+                unreached();
+                return null;
+            }
+        }
     }
 
     public ref StackEntry impStackTop(int n = 0)
@@ -14790,7 +17516,7 @@ public partial class Compiler
         else if (dataOper is GT_RET_EXPR)
         {
             var retExpr = dataRef.AsRetExpr();
-            var call = retExpr.InlineCandidate;
+            var call = retExpr.InlineCandidate.AsCall();
 
             if (call.ShouldHaveRetBufArg)
             {
@@ -15271,7 +17997,9 @@ public partial class Compiler
         {
             // We only can handle a single likely class for now
 
-            var likelyClasses = default(InlineArray1<LikelyClassMethodRecord>);
+            Unsafe.SkipInit(out InlineArray1<LikelyClassMethodRecord> inlineLikelyClasses);
+            var likelyClasses = (Span<LikelyClassMethodRecord>)(inlineLikelyClasses);
+
             var schema = new ReadOnlySpan<ICorJitInfo.PgoInstrumentationSchema>(fgPgoSchema, fgPgoSchemaCount);
             var numberOfClasses = getLikelyClasses(likelyClasses, schema, fgPgoData, dcInfo.ilOffset);
 
@@ -15565,6 +18293,39 @@ public partial class Compiler
                 return thisPtr;
             }
         }
+    }
+
+    public unsafe GenTree? impTypeIsAssignable(GenTree typeTo, GenTree typeFrom)
+    {
+        // Optimize patterns like:
+        //
+        //   typeof(TTo).IsAssignableFrom(typeof(TTFrom))
+        //   valueTypeVar.GetType().IsAssignableFrom(typeof(TTFrom))
+        //   typeof(TTFrom).IsAssignableTo(typeof(TTo))
+        //   typeof(TTFrom).IsAssignableTo(valueTypeVar.GetType())
+        //
+        // to true/false
+
+        // make sure both arguments are `typeof()`
+        if (gtIsTypeof(typeTo, out var hClassTo) && gtIsTypeof(typeFrom, out var hClassFrom))
+        {
+            var castResult = info.compCompHnd->compareTypesForCast(hClassFrom, hClassTo);
+
+            if (castResult is TypeCompareState.May)
+            {
+                // requires runtime check
+                // e.g. __Canon, COMObjects, Nullable
+                return null;
+            }
+
+            var retNode = gtNewIconNode(TYP_INT, (castResult is TypeCompareState.Must) ? 1 : 0);
+
+            // drop both CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE calls
+            impPopStack(2);
+
+            return retNode;
+        }
+        return null;
     }
 
     private static unsafe void impValidateMemoryAccessOpcode(byte* codeAddr, byte* codeEndp, bool volatilePrefix)
@@ -15940,7 +18701,7 @@ public partial class Compiler
         // Note if this method is has simd args or return value
         if ((inlineInfo is not null) && inlineInfo.hasSimdTypeArgLocalOrReturn)
         {
-            inlineResult.Note(InlineObservation.CALLEE_HAS_Simd);
+            inlineResult.Note(InlineObservation.CALLEE_HAS_SIMD);
         }
 
 #endif
@@ -16039,7 +18800,7 @@ public partial class Compiler
     /// <summary>Normalize the type of a (known to be) struct class handle.</summary>
     /// <param name="structHnd">The class handle for the struct type of interest.</param>
     /// <param name="simdBaseJitType">if the struct is a simd type, set to the simd base JIT type</param>
-    /// <returns>The JIT type for the struct (e.g. TYP_STRUCT, or TYP_Simd*).</returns>
+    /// <returns>The JIT type for the struct (e.g. TYP_STRUCT, or TYP_SIMD*).</returns>
     /// <remarks>
     ///   <para>This may also modify the compFloatingPointUsed flag if the type is a simd type.</para>
     ///   <para>Normalizing the type involves examining the struct type to determine if it should be modified to one that is handled specially by the JIT, possibly being a candidate for full enregistration, e.g. TYP_SIMD16.</para>
@@ -16078,6 +18839,446 @@ public partial class Compiler
 
         simdBaseJitType = TYP_UNDEF;
         return structType;
+    }
+
+    /// <summary>Throws an exception for an unsupported named intrinsic</summary>
+    /// <param name="helper">JIT helper ID for the exception to be thrown</param>
+    /// <param name="method">method handle of the intrinsic function.</param>
+    /// <param name="sig">signature of the intrinsic call</param>
+    /// <param name="mustExpand">true if the intrinsic must return a GenTree*; otherwise, false</param>
+    /// <returns>a gtNewMustThrowException if mustExpand is true; otherwise, null</returns>
+    public unsafe GenTree? impUnsupportedNamedIntrinsic(CorInfoHelpFunc helper, CORINFO_METHOD_HANDLE method, in CORINFO_SIG_INFO sig, bool mustExpand)
+    {
+        // We've hit some error case and may need to return a node for the given error.
+        //
+        // When `mustExpand=false`, we are attempting to inline the intrinsic directly into another method. In this
+        // scenario, we need to return `null` so that a GT_CALL to the intrinsic is emitted instead. This is to
+        // ensure that everything continues to behave correctly when optimizations are enabled (e.g. things like the
+        // inliner may expect the node we return to have a certain signature, and the `MustThrowException` node won't
+        // match that).
+        //
+        // When `mustExpand=true`, we are in a GT_CALL to the intrinsic and are attempting to JIT it. This will generally
+        // be in response to an indirect call (e.g. done via reflection) or in response to an earlier attempt returning
+        // `null` (under `mustExpand=false`). In that scenario, we are safe to return the `MustThrowException` node.
+
+        if (mustExpand)
+        {
+            for (var i = 0; i < sig.numArgs; i++)
+            {
+                _ = impPopStack();
+            }
+
+            return gtNewMustThrowException(helper, sig.retType.VarType, sig.retTypeClass);
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    /// <summary>The main entry-point for [ReadOnly]Span&lt;char&gt; methods</summary>
+    /// <param name="kind">Is it StartsWith, EndsWith or Equals?</param>
+    /// <param name="sigInfo">signature of StartsWith, EndsWith or Equals method</param>
+    /// <param name="methodFlags">its flags</param>
+    /// <returns>GenTree representing vectorized comparison or nullptr</returns>
+    public unsafe GenTree? impUtf16SpanComparison(StringComparisonKind kind, in CORINFO_SIG_INFO sigInfo, CorInfoFlag methodFlags)
+    {
+        // We're going to unroll & vectorize the following cases:
+        //  1) MemoryExtensions.SequenceEqual<char>(var, "cns")
+        //  2) MemoryExtensions.SequenceEqual<char>("cns", var)
+        //
+        //  3) MemoryExtensions.Equals(var, "cns", Ordinal or OrdinalIgnoreCase)
+        //  4) MemoryExtensions.Equals("cns", var, Ordinal or OrdinalIgnoreCase)
+        //
+        //  5) MemoryExtensions.StartsWith<char>("cns", var)
+        //  6) MemoryExtensions.StartsWith<char>(var, "cns")
+        //  7) MemoryExtensions.StartsWith("cns", var, Ordinal or OrdinalIgnoreCase)
+        //  8) MemoryExtensions.StartsWith(var, "cns", Ordinal or OrdinalIgnoreCase)
+        //
+        //  9) MemoryExtensions.EndsWith<char>("cns", var)
+        //  10) MemoryExtensions.EndsWith<char>(var, "cns")
+        //  11) MemoryExtensions.EndsWith("cns", var, Ordinal or OrdinalIgnoreCase)
+        //  12) MemoryExtensions.EndsWith(var, "cns", Ordinal or OrdinalIgnoreCase)
+
+        var isStatic = (methodFlags & CORINFO_FLG_STATIC) is not 0;
+        var argsCount = sigInfo.numArgs + (isStatic ? 0 : 1);
+
+        if (lvaHaveManyLocals(0.75f))
+        {
+            // This optimization spawns several temps so make sure we have a room
+            JITDUMP("impUtf16SpanComparison: Method has too many locals - bail out.\n");
+            return null;
+        }
+
+        var cmpMode = StringComparison.Ordinal;
+
+        GenTree op1;
+        GenTree op2;
+
+        if (argsCount == 3)
+        {
+            // overload with StringComparison
+
+            var stackTop = impStackTop(0).val;
+
+            if (stackTop.Oper.IsIntegralConst)
+            {
+                var intCon = stackTop.AsIntCon();
+
+                if (intCon.IsIntegralConst((int)(StringComparison.OrdinalIgnoreCase)))
+                {
+                    cmpMode = StringComparison.OrdinalIgnoreCase;
+                }
+                else if (!intCon.IsIntegralConst((int)(StringComparison.Ordinal)))
+                {
+                    return null;
+                }
+            }
+
+            op1 = impStackTop(2).val;
+            op2 = impStackTop(1).val;
+        }
+        else
+        {
+            assert(argsCount is 2);
+
+            op1 = impStackTop(1).val;
+            op2 = impStackTop(0).val;
+        }
+
+        // For generic StartsWith, EndsWith and Equals we need to make sure T is char
+        if (sigInfo.sigInst.methInstCount is not 0)
+        {
+            assert(sigInfo.sigInst.methInstCount is 1);
+
+            var targetElemHnd = sigInfo.sigInst.methInst[0];
+            var typ = info.compCompHnd->getTypeForPrimitiveValueClass(targetElemHnd);
+
+            if (typ is not CORINFO_TYPE_SHORT and not CORINFO_TYPE_USHORT and not CORINFO_TYPE_CHAR)
+            {
+                return null;
+            }
+        }
+
+        // Try to obtain original string literals out of span arguments
+        var op1Str = impGetStrConFromSpan(op1);
+        var op2Str = impGetStrConFromSpan(op2);
+
+        GenTree spanObj;
+        GenTreeStrCon cnsStr;
+
+        if (op2Str is not null)
+        {
+            cnsStr = op2Str;
+            spanObj = op1;
+        }
+        else if (op1Str is not null)
+        {
+            if (kind != StringComparisonKind.Equals)
+            {
+                // StartsWith and EndsWith are not commutative
+                return null;
+            }
+
+            cnsStr = op1Str;
+            spanObj = op2;
+        }
+        else
+        {
+            return null;
+        }
+
+        var cnsLength = -1;
+        var str = (Span<char>)(stackalloc char[MaxPossibleUnrollSize]);
+
+        if (cnsStr.IsStringEmptyField)
+        {
+            // check for fake "" first
+            cnsLength = 0;
+            JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"\")...\n");
+        }
+        else
+        {
+            fixed (char* pStr = str)
+            {
+                cnsLength = info.compCompHnd->getStringLiteral(cnsStr.ScpHnd, cnsStr.SconCpx, pStr, str.Length, MaxPossibleUnrollSize);
+            }
+
+            if (cnsLength < 0)
+            {
+                // We were unable to get the literal (e.g. dynamic context)
+                return null;
+            }
+            if (cnsLength > (GetUnrollThreshold(MemcmpU16) / 2))
+            {
+                JITDUMP("UTF16 data is too long to unroll - bail out.\n");
+                return null;
+            }
+
+            JITDUMP($"Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"{str[..int.Min(cnsLength, 50)]}{((cnsLength > 50) ? "..." : "")}%s\")...\n");
+        }
+
+        int spanLclNum;
+
+        if (spanObj.Oper is GT_LCL_VAR)
+        {
+            // Argument is already a local
+            spanLclNum = spanObj.AsLclVarCommon().LclNum;
+        }
+        else
+        {
+            CORINFO_CLASS_HANDLE spanCls;
+
+            // Access a local that will be set if we successfully unroll it
+            spanLclNum = lvaGrabTemp(shortLifetime: true, "spilling spanObj");
+
+            fixed (CORINFO_SIG_INFO* pSigInfo = &sigInfo)
+            {
+                _ = info.compCompHnd->getArgType(pSigInfo, sigInfo.args, &spanCls);
+            }
+            lvaSetStruct(spanLclNum, spanCls, unsafeValueClsCheck: false);
+        }
+
+        var spanReferenceFld = gtNewLclFldNode(TYP_BYREF, spanLclNum, OFFSETOF__CORINFO_Span__reference);
+        var spanLengthFld = gtNewLclFldNode(TYP_INT, spanLclNum, OFFSETOF__CORINFO_Span__length);
+        var unrolled = impExpandHalfConstEquals(spanReferenceFld, spanLengthFld, checkForNull: false, kind, str[..cnsLength], dataOffset: 0, cmpMode);
+
+        if (unrolled is not null)
+        {
+            // Wrap with the reference equality check for Equals.
+            // We believe it's less likely to be useful for StartsWith/EndsWith.
+            if (kind == StringComparisonKind.Equals)
+            {
+                var refEqualityColon = gtNewColonNode(TYP_INT, gtNewTrue(), unrolled);
+                unrolled = gtNewQmarkNode(TYP_INT, gtNewBinaryNode(GT_EQ, TYP_INT, gtCloneExpr(spanReferenceFld), gtCloneExpr(cnsStr)), refEqualityColon);
+            }
+
+            if (spanObj.Oper is not GT_LCL_VAR)
+            {
+                impStoreToTemp(spanLclNum, spanObj, CHECK_SPILL_NONE);
+            }
+
+            if (unrolled.Oper is GT_QMARK)
+            {
+                // QMARK can't be a root node, spill it to a temp
+                var rootTmp = lvaGrabTemp(shortLifetime: true, "spilling unroll qmark");
+
+                impStoreToTemp(rootTmp, unrolled, CHECK_SPILL_NONE);
+                unrolled = gtNewLclvNode(TYP_INT, rootTmp);
+            }
+
+            JITDUMP("... Successfully unrolled to:\n");
+            DISPTREE(unrolled);
+    
+            for (var i = 0; i < argsCount; i++)
+            {
+                _ = impPopStack();
+            }
+
+            // We have to clean up GT_RET_EXPR for String.op_Implicit or MemoryExtensions.AsSpans
+            if ((spanObj != op1) && (op1.Oper is GT_RET_EXPR))
+            {
+                var inlineCandidate = op1.AsRetExpr().InlineCandidate;
+                assert(inlineCandidate.Oper.IsCall);
+                inlineCandidate  = gtNewNothingNode();
+            }
+            else if ((spanObj != op2) && (op2.Oper is GT_RET_EXPR))
+            {
+                var inlineCandidate = op2.AsRetExpr().InlineCandidate;
+                assert(inlineCandidate.Oper.IsCall);
+                inlineCandidate  = gtNewNothingNode();
+            }
+        }
+        return unrolled;
+    }
+
+    /// <summary>The main entry-point for String methods</summary>
+    /// <param name="kind">Is it StartsWith, EndsWith or Equals?</param>
+    /// <param name="sig">signature of StartsWith, EndsWith or Equals method</param>
+    /// <param name="methodFlags">its flags</param>
+    /// <returns>GenTree representing vectorized comparison or nullptr</returns>
+    public unsafe GenTree? impUtf16StringComparison(StringComparisonKind kind, in CORINFO_SIG_INFO sig, CorInfoFlag methodFlags)
+    {
+        // We're going to unroll & vectorize the following cases:
+        //  1) String.Equals(obj, "cns")
+        //  2) String.Equals(obj, "cns", Ordinal or OrdinalIgnoreCase)
+        //  3) String.Equals("cns", obj)
+        //  4) String.Equals("cns", obj, Ordinal or OrdinalIgnoreCase)
+        //
+        //  5) obj.Equals("cns")
+        //  5) obj.Equals("cns")
+        //  6) obj.Equals("cns", Ordinal or OrdinalIgnoreCase)
+        //
+        //  7) "cns".Equals(obj)
+        //  8) "cns".Equals(obj, Ordinal or OrdinalIgnoreCase)
+        //
+        //  9) obj.StartsWith("cns", Ordinal or OrdinalIgnoreCase)
+        // 10) "cns".StartsWith(obj, Ordinal or OrdinalIgnoreCase)
+        //
+        // 11) obj.EndsWith("cns", Ordinal or OrdinalIgnoreCase)
+        // 12) "cns".EndsWith(obj, Ordinal or OrdinalIgnoreCase)
+        //
+        // For cases 5, 6 and 9 we don't emit "obj != null"
+        // NOTE: String.Equals(object) is not supported currently
+
+        var isStatic = (methodFlags & CORINFO_FLG_STATIC) is not 0;
+        var argsCount = sig.numArgs + (isStatic ? 0 : 1);
+
+        // This optimization spawns several temps so make sure we have a room
+        if (lvaHaveManyLocals(0.75f))
+        {
+            JITDUMP("impUtf16StringComparison: Method has too many locals - bail out.\n");
+            return null;
+        }
+
+        var cmpMode = StringComparison.Ordinal;
+
+        GenTree op1;
+        GenTree op2;
+
+        if (argsCount == 3) // overload with StringComparison
+        {
+            var stackTop = impStackTop(0).val;
+
+            if (stackTop.Oper.IsIntegralConst)
+            {
+                var intCon = stackTop.AsIntCon();
+
+                if (intCon.IsIntegralConst((int)(StringComparison.OrdinalIgnoreCase)))
+                {
+                    cmpMode = StringComparison.OrdinalIgnoreCase;
+                }
+                else if (!intCon.IsIntegralConst((int)(StringComparison.Ordinal)))
+                {
+                    return null;
+                }
+            }
+            op1 = impStackTop(2).val;
+            op2 = impStackTop(1).val;
+        }
+        else
+        {
+            assert(argsCount == 2);
+
+            op1 = impStackTop(1).val;
+            op2 = impStackTop(0).val;
+        }
+
+        GenTree varStr;
+        GenTreeStrCon cnsStr;
+
+        if (op2.Oper is GT_CNS_STR)
+        {
+            cnsStr = op2.AsStrCon();
+            varStr = op1;
+        }
+        else if (op1.Oper is GT_CNS_STR)
+        {
+            if (kind != StringComparisonKind.Equals)
+            {
+                // StartsWith and EndsWith are not commutative
+                return null;
+            }
+            cnsStr = op1.AsStrCon();
+            varStr = op2;
+        }
+        else
+        {
+            return null;
+        }
+
+        var needsNullcheck = true;
+
+        if ((op1 != cnsStr) && !isStatic)
+        {
+            // for the following cases we should not check varStr for null:
+            //
+            //  obj.Equals("cns")
+            //  obj.Equals("cns", Ordinal or OrdinalIgnoreCase)
+            //  obj.StartsWith("cns", Ordinal or OrdinalIgnoreCase)
+            //  obj.EndsWith("cns", Ordinal or OrdinalIgnoreCase)
+            //
+            // instead, it should throw NRE if it's null
+            needsNullcheck = false;
+        }
+
+        int cnsLength;
+        var str = (Span<char>)(stackalloc char[MaxPossibleUnrollSize]);
+
+        if (cnsStr.IsStringEmptyField)
+        {
+            // check for fake "" first
+            cnsLength = 0;
+            JITDUMP($"Trying to unroll String.Equals|StartsWith|EndsWith(op1, \"{str}\")...\n");
+        }
+        else
+        {
+            fixed (char* pStr = str)
+            {
+                cnsLength = info.compCompHnd->getStringLiteral(cnsStr.ScpHnd, cnsStr.SconCpx, pStr, MaxPossibleUnrollSize);
+            }
+
+            if (cnsLength < 0)
+            {
+                // We were unable to get the literal (e.g. dynamic context)
+                return null;
+            }
+
+            if (cnsLength > (GetUnrollThreshold(MemcmpU16) / 2))
+            {
+                JITDUMP("UTF16 data is too long to unroll - bail out.\n");
+                return null;
+            }
+            JITDUMP("Trying to unroll String.Equals|StartsWith|EndsWith(op1, \"cns\")...\n");
+        }
+
+        // Create a temp which is safe to gtClone for varStr
+        // We're not appending it as a statement until we figure out unrolling is profitable (and possible)
+        var varStrTmp = lvaGrabTemp(shortLifetime: true, "spilling varStr");
+        lvaGetDesc(varStrTmp).Type = varStr.Type;
+        var varStrLcl = gtNewLclvNode(varStr.Type, varStrTmp);
+
+        // Create a tree representing string's Length:
+        var strLenOffset = OFFSETOF__CORINFO_String__stringLen;
+        var lenNode = gtNewArrLen(TYP_INT, varStrLcl, strLenOffset);
+        varStrLcl = gtCloneLclVar(varStrLcl);
+
+        var unrolled = null as GenTree;
+
+        fixed (char* pStr = str)
+        {
+            unrolled = impExpandHalfConstEquals(varStrLcl, lenNode, needsNullcheck, kind, str[..cnsLength], strLenOffset + sizeof(int), cmpMode);
+        }
+
+        if (unrolled is not null)
+        {
+            // Wrap with the reference equality check for Equals.
+            // We believe it's less likely to be useful for StartsWith/EndsWith.
+            if (kind is StringComparisonKind.Equals)
+            {
+                var refEqualityColon = gtNewColonNode(TYP_INT, gtNewTrue(), unrolled);
+                unrolled = gtNewQmarkNode(TYP_INT, gtNewBinaryNode(GT_EQ, TYP_INT, gtCloneExpr(varStrLcl), gtCloneExpr(cnsStr)), refEqualityColon);
+            }
+
+            impStoreToTemp(varStrTmp, varStr, CHECK_SPILL_NONE);
+
+            if (unrolled.Oper is GT_QMARK)
+            {
+                // QMARK nodes cannot reside on the evaluation stack
+                var rootTmp = lvaGrabTemp(true, "spilling unroll qmark");
+                impStoreToTemp(rootTmp, unrolled, CHECK_SPILL_NONE);
+                unrolled = gtNewLclvNode(TYP_INT, rootTmp);
+            }
+
+            JITDUMP("\n... Successfully unrolled to:\n");
+            DISPTREE(unrolled);
+
+            for (var i = 0; i < argsCount; i++)
+            {
+                _ = impPopStack();
+            }
+        }
+        return unrolled;
     }
 
     public static bool impValidSpilledStackEntry(GenTree tree)
@@ -16453,7 +19654,9 @@ public partial class Compiler
         var pgoInfo = new PgoInfo(call._inlineContext);
         var schema = new Span<ICorJitInfo.PgoInstrumentationSchema>(pgoInfo.PgoSchema, pgoInfo.PgoSchemaCount);
 
-        var likelyClasses = default(InlineArrayMaxGdvTypeChecks<LikelyClassMethodRecord>);
+        Unsafe.SkipInit(out InlineArrayMaxGdvTypeChecks<LikelyClassMethodRecord> inlineLikelyClasses);
+        var likelyClasses = (Span<LikelyClassMethodRecord>)(inlineLikelyClasses);
+
         var numberOfClasses = 0;
 
         if (call.IsVirtualStub || call.IsVirtualVtable || call.IsHelperCall())
@@ -16461,7 +19664,9 @@ public partial class Compiler
             numberOfClasses = getLikelyClasses(likelyClasses, schema, pgoInfo.PgoData, ilOffset);
         }
 
-        var likelyMethods = default(InlineArrayMaxGdvTypeChecks<LikelyClassMethodRecord>);
+        Unsafe.SkipInit(out InlineArrayMaxGdvTypeChecks<LikelyClassMethodRecord> inlineLikelyMethods);
+        var likelyMethods = (Span<LikelyClassMethodRecord>)(inlineLikelyMethods);
+
         var numberOfMethods = 0;
         var isInferredGDV = false;
 

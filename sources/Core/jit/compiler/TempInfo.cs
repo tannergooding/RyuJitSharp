@@ -8,5 +8,5 @@ namespace RyuJitSharp;
 public struct TempInfo
 {
     public GenTree Store;
-    public GenTree Load;
+    public GenTreeLclVar Load;
 }

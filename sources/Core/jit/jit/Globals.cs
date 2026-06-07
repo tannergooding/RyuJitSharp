@@ -846,7 +846,7 @@ public partial class Globals
 
                         default:
                         {
-                            var inlineSortedEntries = default(InlineArrayHistogramMaxSizeCount<LikelyClassMethodHistogramEntry>);
+                            Unsafe.SkipInit(out InlineArrayHistogramMaxSizeCount<LikelyClassMethodHistogramEntry> inlineSortedEntries);
                             var sortedEntries = (Span<LikelyClassMethodHistogramEntry>)(inlineSortedEntries);
 
                             // Since this method can be invoked without a jit instance we can't use any existing allocators
@@ -973,7 +973,7 @@ public partial class Globals
                           ? new LikelyClassMethodHistogram(new Span<int>((int*)(pInstrumentationData + nextSchema.Offset), nextSchema.Count))
                           : new LikelyClassMethodHistogram(new Span<nint>((nint*)(pInstrumentationData + nextSchema.Offset), nextSchema.Count));
 
-                    var inlineSortedEntries = default(InlineArrayHistogramMaxSizeCount<LikelyClassMethodHistogramEntry>);
+                    Unsafe.SkipInit(out InlineArrayHistogramMaxSizeCount<LikelyClassMethodHistogramEntry> inlineSortedEntries);
                     var sortedEntries = (Span<LikelyClassMethodHistogramEntry>)(inlineSortedEntries);
 
                     if (h.countHistogramElements is 0)

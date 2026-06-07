@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -922,7 +923,7 @@ public partial class Compiler
         32 => TYP_SIMD32,
         64 => TYP_SIMD64,
 #elif TARGET_ARM64
-        SIZE_UNKNOWN => TYP_Simd,
+        SIZE_UNKNOWN => TYP_SIMD,
 #endif
         _ => TYP_UNDEF,
     };
@@ -941,6 +942,22 @@ public partial class Compiler
     public void BeginPhase(Phases phase)
     {
         mostRecentlyActivePhase = phase;
+    }
+
+    public bool BlockNonDeterministicIntrinsics(bool mustExpand)
+    {
+        // We explicitly block these APIs from being expanded in R2R
+        // since we know they are non-deterministic across hardware
+
+        if (IsReadyToRun)
+        {
+            if (mustExpand)
+            {
+                implReadyToRunUnsupported();
+            }
+            return true;
+        }
+        return false;
     }
 
     /// <summary>finish execution of a phase</summary>
@@ -962,6 +979,12 @@ public partial class Compiler
     /// <summary>Answer the question: Is Evex encoding supported on this target</summary>
     /// <returns></returns>
     public bool canUseEvexEncoding() => compOpportunisticallyDependsOn(InstructionSet_AVX512);
+
+#if DEBUG
+    /// <summary>Answer the question: Is Evex encoding supported on this target.</summary>
+    /// <returns>`true` if Evex encoding is supported, `false` if not.</returns>
+    public bool canUseEvexEncodingDebugOnly() => compIsaSupportedDebugOnly(InstructionSet_AVX512);
+#endif
 
     /// <summary>Answer the question: Are APX encodings supported on this target.</summary>
     /// <returns></returns>
@@ -1461,6 +1484,18 @@ public partial class Compiler
 #endif
     }
 
+    public unsafe bool IsHwSimdClass(CORINFO_CLASS_HANDLE clsHnd)
+    {
+#if FEATURE_HW_INTRINSICS
+        if (isIntrinsicType(clsHnd))
+        {
+            _ = getClassNameFromMetadata(clsHnd, out var namespaceName);
+            return namespaceName.Equals("System.Runtime.Intrinsics", StringComparison.Ordinal);
+        }
+#endif
+        return false;
+    }
+
     /// <summary>Returns true if the type is returned in multiple registers</summary>
     /// <param name="hClass">type handle</param>
     /// <param name="callConv"></param>
@@ -1479,6 +1514,21 @@ public partial class Compiler
         var returnType = GetReturnTypeForStruct(hClass, callConv, out _);
         return varTypeIsStruct(returnType);
 #endif
+    }
+
+    public unsafe bool IsSimdClass(CORINFO_CLASS_HANDLE clsHnd)
+    {
+        if (isIntrinsicType(clsHnd))
+        {
+            _ = getClassNameFromMetadata(clsHnd, out var namespaceName);
+            return namespaceName.Equals("System.Numerics", StringComparison.Ordinal);
+        }
+        return false;
+    }
+
+    public unsafe bool IsSimdOrHwSimdClass(CORINFO_CLASS_HANDLE clsHnd)
+    {
+        return IsSimdClass(clsHnd) || IsHwSimdClass(clsHnd);
     }
 
     public unsafe bool isSpanClass(CORINFO_CLASS_HANDLE clsHnd)
@@ -1542,6 +1592,16 @@ public partial class Compiler
             }
         }
         return true;
+    }
+
+    public unsafe bool IsSystemHalfClass(CORINFO_CLASS_HANDLE clsHnd)
+    {
+        if (isIntrinsicType(clsHnd))
+        {
+            var className = getClassNameFromMetadata(clsHnd, out var namespaceName);
+            return className.Equals("Half", StringComparison.Ordinal) && namespaceName.Equals("System", StringComparison.Ordinal);
+        }
+        return false;
     }
 
     /// <summary>Can the given local address be represented as "LCL_ADDR"?</summary>
@@ -1652,6 +1712,142 @@ public partial class Compiler
         // TODO: Port RecordNowayAssert
     }
 #endif
+
+    public var_types roundDownMaxType(int size)
+    {
+        assert(size > 0);
+
+#if FEATURE_SIMD
+        if (roundDownSimdSize(size) > 0)
+        {
+            return GetSimdTypeForSize(roundDownSimdSize(size));
+        }
+#endif
+
+        var nearestPow2 = 1 << int.Log2(size);
+        return int.Min(nearestPow2, REGSIZE_BYTES) switch {
+            1 => TYP_UBYTE,
+            2 => TYP_USHORT,
+            4 => TYP_INT,
+#if TARGET_64BIT
+            8 => TYP_LONG,
+#endif
+            _ => TYP_UNDEF,
+        };
+    }
+
+    public var_types roundDownMaxType(int size, bool conservative)
+    {
+        var result = roundDownMaxType(size);
+#if FEATURE_SIMD && TARGET_XARCH
+        if (conservative)
+        {
+            if (result == TYP_SIMD32)
+            {
+                result = compOpportunisticallyDependsOn(InstructionSet_AVX2) ? result : TYP_SIMD16;
+            }
+        }
+#endif
+        return result;
+    }
+
+    /// <summary>rounds the given size down to the nearest SIMD size available on the target.</summary>
+    /// <param name="size">size of the data to process with SIMD</param>
+    /// <returns></returns>
+    public int roundDownSimdSize(int size)
+    {
+#if FEATURE_HW_INTRINSICS && TARGET_XARCH
+        var maxSize = GetPreferredVectorByteLength();
+        assert(maxSize is (>= XMM_REGSIZE_BYTES and <= ZMM_REGSIZE_BYTES));
+
+        if (size >= maxSize)
+        {
+            size = maxSize;
+        }
+        else if (size >= YMM_REGSIZE_BYTES)
+        {
+            if (maxSize >= YMM_REGSIZE_BYTES)
+            {
+                size = YMM_REGSIZE_BYTES;
+            }
+        }
+        else if (size >= XMM_REGSIZE_BYTES)
+        {
+            size = XMM_REGSIZE_BYTES;
+        }
+        else
+        {
+            size = 0;
+        }
+        return size;
+#elif (TARGET_ARM64)
+        assert(GetMaxVectorByteLength() is FP_REGSIZE_BYTES);
+        return (size >= FP_REGSIZE_BYTES) ? FP_REGSIZE_BYTES : 0;
+#else
+        assert(!"roundDownSIMDSize unimplemented on target arch");
+        unreached();
+        return 0;
+#endif
+    }
+
+    public static int roundUpGprSize(int size)
+    {
+#if TARGET_64BIT
+        if (size > 4)
+        {
+            return 8;
+        }
+#endif
+        return (size > 2) ? 4 : size;
+    }
+
+    public static var_types roundUpGprType(int size)
+    {
+        return roundUpGprSize(size) switch {
+            1 => TYP_UBYTE,
+            2 => TYP_USHORT,
+            4 => TYP_INT,
+#if TARGET_64BIT
+            8 => TYP_LONG,
+#endif
+            _ => TYP_UNDEF,
+        };
+    }
+
+    /// <summary>rounds the given size up to the nearest SIMD size available on the target.</summary>
+    /// <param name="size">size of the data to process with SIMD</param>
+    /// <returns></returns>
+    /// <remarks>It's only supposed to be used for scenarios where we can perform an overlapped load/store.</remarks>
+    public int roundUpSimdSize(int size)
+    {
+#if FEATURE_HW_INTRINSICS && TARGET_XARCH
+        var maxSize = GetPreferredVectorByteLength();
+        assert(maxSize <= ZMM_REGSIZE_BYTES);
+
+        if (size <= XMM_REGSIZE_BYTES)
+        {
+            if (maxSize > XMM_REGSIZE_BYTES)
+            {
+                maxSize = XMM_REGSIZE_BYTES;
+            }
+        }
+        else if (size <= YMM_REGSIZE_BYTES)
+        {
+            if (maxSize > YMM_REGSIZE_BYTES)
+            {
+                maxSize = YMM_REGSIZE_BYTES;
+            }
+        }
+        return maxSize;
+#elif TARGET_ARM64
+        assert(GetMaxVectorByteLength() is FP_REGSIZE_BYTES);
+        return FP_REGSIZE_BYTES;
+#else
+        assert(!"roundUpSimdSize unimplemented on target arch");
+        unreached();
+        return 0;
+#endif
+    }
 
     public unsafe var_types TypeHandleToVarType(CORINFO_CLASS_HANDLE handle) => TypeHandleToVarType(handle, out _);
 

@@ -8,7 +8,7 @@ namespace RyuJitSharp;
 /// <summary>Place holder for the return expression from an inline candidate (GT_RET_EXPR)</summary>
 public sealed class GenTreeRetExpr : GenTree
 {
-    private GenTreeCall _inlineCandidate;
+    private GenTree _inlineCandidate;
 
     private GenTree? _substExpr;
 
@@ -20,7 +20,7 @@ public sealed class GenTreeRetExpr : GenTree
         _inlineCandidate = inlineCandidate;
     }
 
-    public GenTreeCall InlineCandidate
+    public GenTree InlineCandidate
     {
         get
         {

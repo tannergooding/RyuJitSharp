@@ -31,16 +31,15 @@ public partial class Compiler
     /// <param name="printFunc">A functor to print the string that follows the conventions of the JIT-EE print* functions.</param>
     public StringBuilder eeAppendPrint(StringBuilder stringBuilder, EEPrintFunc printFunc)
     {
-        const int DefaultBufferSize = 256;
-
-        var stackBuffer = (stackalloc byte[DefaultBufferSize]);
+        Unsafe.SkipInit(out InlineArray256<byte> inlineStackBuffer);
+        var stackBuffer = (Span<byte>)(inlineStackBuffer);
         var arrayBuffer = null as byte[];
 
         var printed = printFunc(stackBuffer, out var requiredBufferSize);
 
         scoped Span<byte> messageUtf8;
 
-        if (requiredBufferSize <= DefaultBufferSize)
+        if (requiredBufferSize <= stackBuffer.Length)
         {
             assert(printed == (requiredBufferSize - 1));
             messageUtf8 = stackBuffer[..printed];
@@ -96,6 +95,34 @@ public partial class Compiler
 
     public unsafe CORINFO_CLASS_HANDLE eeGetArgClass(CORINFO_SIG_INFO* sigInfo, CORINFO_ARG_LIST_HANDLE argListHandle)
         => info.compCompHnd->getArgClass(sigInfo, argListHandle);
+
+    public unsafe var_types eeGetArgType(CORINFO_ARG_LIST_HANDLE list, in CORINFO_SIG_INFO sigInfo)
+    {
+        fixed (CORINFO_SIG_INFO* pSigInfo = &sigInfo)
+        {
+            CORINFO_CLASS_HANDLE argClass;
+            return strip(info.compCompHnd->getArgType(pSigInfo, list, &argClass)).VarType;
+        }
+    }
+
+    public unsafe var_types eeGetArgType(CORINFO_ARG_LIST_HANDLE list, in CORINFO_SIG_INFO sigInfo, out bool isPinned)
+    {
+        CorInfoTypeWithMod type;
+
+        fixed (CORINFO_SIG_INFO* pSigInfo = &sigInfo)
+        {
+            CORINFO_CLASS_HANDLE argClass;
+            type = info.compCompHnd->getArgType(pSigInfo, list, &argClass);
+        }
+        isPinned = ((type & ~CORINFO_TYPE_MASK) != 0);
+
+        return strip(type).VarType;
+    }
+
+    /// <summary>Gets the offset of a SDArray's first element</summary>
+    /// <returns>The offset to the first array element</returns>
+    /// <remarks>See the comments at the definition of CORINFO_Array for a description of how arrays are laid out in memory.</remarks>
+    public static int eeGetArrayDataOffset() => OFFSETOF__CORINFO_Array__data;
 
     public unsafe void eeGetCallInfo(in CORINFO_RESOLVED_TOKEN resolvedToken, in CORINFO_RESOLVED_TOKEN constrainedToken, CORINFO_CALLINFO_FLAGS flags, out CORINFO_CALL_INFO result)
     {
@@ -251,6 +278,45 @@ public partial class Compiler
             return CORINFO_HELP_UNDEF;
         }
         return (CorInfoHelpFunc)((value >>> 2));
+    }
+
+    /// <summary>Gets the offset of a MDArray's first element</summary>
+    /// <param name="rank">The array rank</param>
+    /// <returns>The offset to the first array element.</returns>
+    /// <remarks>The rank should be greater than 0.</remarks>
+    public static int eeGetMDArrayDataOffset(int rank)
+    {
+        // Note that below we're specifically using genTypeSize(TYP_INT) because array indices are not native int.
+        assert(rank > 0);
+        return eeGetArrayDataOffset() + (2 * TYP_INT.Size * rank);
+    }
+
+    /// <summary>Returns the offset from the Array object to the size for the given dimension.</summary>
+    /// <param name="rank">the rank of the array</param>
+    /// <param name="dimension">the dimension for which the lower bound offset will be returned.</param>
+    /// <returns>The offset.</returns>
+    public static int eeGetMDArrayLengthOffset(int rank, int dimension)
+    {
+        // Note that we don't actually need the `rank` value for this calculation, but we pass it anyway, to be consistent with other MD array functions.
+        // Note that the lower bound and length fields of the Array object are always TYP_INT, even on 64-bit targets.
+
+        assert(rank > 0);
+        assert(dimension < rank);
+
+        return eeGetArrayDataOffset() + (TYP_INT.Size * dimension);
+    }
+
+    /// <summary>Returns the offset from the Array object to the lower bound for the given dimension.</summary>
+    /// <param name="rank">the rank of the array</param>
+    /// <param name="dimension">the dimension for which the lower bound offset will be returned.</param>
+    /// <returns>The offset.</returns>
+    public static int eeGetMDArrayLowerBoundOffset(int rank, int dimension)
+    {
+        assert(rank > 0);
+        assert(dimension < rank);
+
+        // Note that the lower bound and length fields of the Array object are always TYP_INT, even on 64-bit targets.
+        return eeGetArrayDataOffset() + (TYP_INT.Size * (dimension + rank));
     }
 
     /// <summary>Get a string describing a method.</summary>

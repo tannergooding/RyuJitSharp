@@ -2604,8 +2604,8 @@ public enum NamedIntrinsic : ushort
 #endif
 
 #if FEATURE_SIMD
-    NI_Simd_UpperRestore,
-    NI_Simd_UpperSave,
+    NI_SIMD_UpperRestore,
+    NI_SIMD_UpperSave,
 #endif
 
     //

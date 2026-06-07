@@ -312,7 +312,7 @@ public enum GenTreeFlags
     // GTF_ICON_REUSE_REG_VAL = 1 << 23,
 
     /// <summary>GT_CNS_INT -- constant is Vector&lt;T&gt;.Count</summary>
-    GTF_ICON_Simd_COUNT = 1 << 21,
+    GTF_ICON_SIMD_COUNT = 1 << 21,
 
     /// <summary>Supported for: GT_ADD, GT_SUB, GT_MUL and GT_CAST.</summary>
     /// <remarks>Requires an overflow check. Use gtOverflow(Ex)() to check this flag.</remarks>
