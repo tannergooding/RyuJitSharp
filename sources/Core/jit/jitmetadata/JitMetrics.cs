@@ -17,6 +17,7 @@ public struct JitMetrics
     public int LoopsFoundDuringOpts;
     public int LoopsInverted;
     public int LoopsCloned;
+    public int LoopsRejectedForInsufficientBenefit;
     public int LoopsUnrolled;
     public int LoopAlignmentCandidates;
     public int LoopsAligned;
@@ -90,6 +91,7 @@ public struct JitMetrics
         JitMetadata.report(compiler, nameof(LoopsFoundDuringOpts), LoopsFoundDuringOpts);
         JitMetadata.report(compiler, nameof(LoopsInverted), LoopsInverted);
         JitMetadata.report(compiler, nameof(LoopsCloned), LoopsCloned);
+        JitMetadata.report(compiler, nameof(LoopsRejectedForInsufficientBenefit), LoopsRejectedForInsufficientBenefit);
         JitMetadata.report(compiler, nameof(LoopsUnrolled), LoopsUnrolled);
         JitMetadata.report(compiler, nameof(LoopAlignmentCandidates), LoopAlignmentCandidates);
         JitMetadata.report(compiler, nameof(LoopsAligned), LoopsAligned);
@@ -163,6 +165,7 @@ public struct JitMetrics
         jitprintf($"{nameof(LoopsFoundDuringOpts)}                 : {LoopsFoundDuringOpts}\n");
         jitprintf($"{nameof(LoopsInverted)}                        : {LoopsInverted}\n");
         jitprintf($"{nameof(LoopsCloned)}                          : {LoopsCloned}\n");
+        jitprintf($"{nameof(LoopsRejectedForInsufficientBenefit)}  : {LoopsRejectedForInsufficientBenefit}\n");
         jitprintf($"{nameof(LoopsUnrolled)}                        : {LoopsUnrolled}\n");
         jitprintf($"{nameof(LoopAlignmentCandidates)}              : {LoopAlignmentCandidates}\n");
         jitprintf($"{nameof(LoopsAligned)}                         : {LoopsAligned}\n");
@@ -239,6 +242,7 @@ public struct JitMetrics
         root.Metrics.LoopsFoundDuringOpts += inlineeCompiler.Metrics.LoopsFoundDuringOpts;
         root.Metrics.LoopsInverted += inlineeCompiler.Metrics.LoopsInverted;
         root.Metrics.LoopsCloned += inlineeCompiler.Metrics.LoopsCloned;
+        root.Metrics.LoopsRejectedForInsufficientBenefit += inlineeCompiler.Metrics.LoopsRejectedForInsufficientBenefit;
         root.Metrics.LoopsUnrolled += inlineeCompiler.Metrics.LoopsUnrolled;
         root.Metrics.LoopAlignmentCandidates += inlineeCompiler.Metrics.LoopAlignmentCandidates;
         root.Metrics.LoopsAligned += inlineeCompiler.Metrics.LoopsAligned;

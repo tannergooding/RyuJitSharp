@@ -3129,6 +3129,9 @@ public partial class Compiler
 
         if (opts.OptimizationEnabled)
         {
+            // Trim dead code that follows no-return calls introduced by inlining, so subsequent phases see a cleaner flow graph.
+            DoPhase(this, PHASE_POST_INLINE_NORETURN, fgPostInlineNoReturnCleanup);
+
             // Try and resolve GDV checks if improved types were found during inlining
             DoPhase(this, PHASE_RESOLVE_GDVS, fgResolveGDVs);
 
@@ -3428,6 +3431,9 @@ public partial class Compiler
 
                 if (doAssertionProp)
                 {
+                    // Coalesce groups of constant-indexed bounds checks.
+                    DoPhase(this, PHASE_BOUNDS_CHECK_COALESCE, optBoundsCheckCoalesce);
+
                     // Assertion propagation
                     DoPhase(this, PHASE_ASSERTION_PROP_MAIN, optAssertionPropMain);
                 }
@@ -4232,6 +4238,11 @@ public partial class Compiler
             noway_assert(info.compTypeCtxtArg >= 0);
             varNum = info.compTypeCtxtArg;
         }
+        else if (ILvarNum == ICorDebugInfo.ASYNC_CONTINUATION_ILNUM)
+        {
+            noway_assert(lvaAsyncContinuationArg != BAD_VAR_NUM);
+            varNum = lvaAsyncContinuationArg;
+        }
         else if (ILvarNum < info.compILargsCount)
         {
             // Parameter
@@ -4258,7 +4269,7 @@ public partial class Compiler
     /// <summary>Returns the IL variable number given our internal varNum or UNKNOWN_ILNUM if it cannot be mapped.</summary>
     /// <param name="varNum"></param>
     /// <returns></returns>
-    /// <remarks>Special return values are VARG_ILNUM, RETBUF_ILNUM, TYPECTXT_ILNUM.</remarks>
+    /// <remarks>Special return values are VARG_ILNUM, RETBUF_ILNUM, TYPECTXT_ILNUM, ASYNC_CONTINUATION_ILNUM.</remarks>
     public unsafe int compMap2ILvarNum(int varNum)
     {
         if (compIsForInlining)
@@ -4295,7 +4306,7 @@ public partial class Compiler
 
         if (varNum == lvaAsyncContinuationArg)
         {
-            return ICorDebugInfo.UNKNOWN_ILNUM;
+            return ICorDebugInfo.ASYNC_CONTINUATION_ILNUM;
         }
 
 #if (TARGET_WASM)

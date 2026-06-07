@@ -17,10 +17,13 @@ public partial struct ICorDebugInfo
     /// <summary>ParamTypeArg for <c>CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG</c>.</summary>
     public const int TYPECTXT_ILNUM = -3;
 
+    /// <summary>Async continuation argument.</summary>
+    public const int ASYNC_CONTINUATION_ILNUM = -4;
+
     /// <summary>Unknown variable.</summary>
-    public const int UNKNOWN_ILNUM = -4;
+    public const int UNKNOWN_ILNUM = -5;
 
     // Sentinel value.
     // This should be set to the largest magnitude value in the enum so that the compression routines know the enum's range.
-    public const int MAX_ILNUM = -4;
+    public const int MAX_ILNUM = -5;
 }

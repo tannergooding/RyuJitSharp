@@ -229,11 +229,6 @@ public partial class Compiler
 
     private Stack<int>? fgUsedSharedTemps;
 
-#if FEATURE_SIMD
-    /// <summary>used for tracking previous simd field store in function: impMarkContiguousSimdFieldStores.</summary>
-    private Statement? fgPreviousCandidateSimdFieldStoreStmt;
-#endif
-
     private Statement? fgMorphStmt;
 
     private InlineArrayTypCount<int> fgBigOffsetMorphingTemps;
@@ -9546,6 +9541,9 @@ public partial class Compiler
     // TODO: Port fgPostImportationCleanup
     public PhaseStatus fgPostImportationCleanup() => PhaseStatus.MODIFIED_NOTHING;
 
+    // TODO: Port fgPostInlineNoReturnCleanup
+    public PhaseStatus fgPostInlineNoReturnCleanup() => PhaseStatus.MODIFIED_NOTHING;
+
     // TODO: Port fgRemoveEmptyFinally
     public PhaseStatus fgRemoveEmptyFinally() => PhaseStatus.MODIFIED_NOTHING;
 
@@ -9732,6 +9730,11 @@ public partial class Compiler
             // Below conditions guarantee block initialization, which will initialize
             // all struct fields. If the logic for block initialization in CodeGen.genCheckUseBlockInit()
             // changes, these conditions need to be updated.
+#if TARGET_WASM
+            // On WASM the prolog always uses a single memory.fill to zero any
+            // locals that need initialization, regardless of size.
+            return false;
+#else // !TARGET_WASM
             var stackHomeSize = lvaLclStackHomeSize(varNum);
 
 #if TARGET_AMD64
@@ -9746,6 +9749,7 @@ public partial class Compiler
             {
                 return false;
             }
+#endif
         }
 
         return !info.compInitMem || (varDsc.lvIsTemp && !varDsc.HasGCPtr);

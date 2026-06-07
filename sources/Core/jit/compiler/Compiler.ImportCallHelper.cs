@@ -1331,7 +1331,7 @@ public partial class Compiler
 
                                 default:
                                 {
-                                    return compiler.impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, methHnd, sigInfo, mustExpand);
+                                    return compiler.impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED, methHnd, sigInfo, mustExpand);
                                 }
                             }
                         }
@@ -1352,7 +1352,7 @@ public partial class Compiler
                 else
                 {
                     assert((ni > NI_PRIMITIVE_START) && (ni < NI_PRIMITIVE_END));
-                    return compiler.impPrimitiveNamedIntrinsic(ni, clsHnd, methHnd, sigInfo, mustExpand);
+                    return compiler.impPrimitiveNamedIntrinsic(ni, clsHnd, methHnd, sigInfo, entryPoint, mustExpand);
                 }
             }
 
@@ -3465,7 +3465,11 @@ public partial class Compiler
 
             if (mustExpand && (retNode is null))
             {
+#if TARGET_WASM
+                NYI_WASM("Unhandled must expand intrinsic");
+#else
                 NO_WAY("Unhandled must expand intrinsic, throwing PlatformNotSupportedException");
+#endif
                 return compiler.impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, methHnd, sigInfo, mustExpand);
             }
 

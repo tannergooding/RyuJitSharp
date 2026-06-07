@@ -56,7 +56,6 @@ public partial class Compiler
     public const compStressArea STRESS_IF_CONVERSION_COST = compStressArea.STRESS_IF_CONVERSION_COST;
     public const compStressArea STRESS_IF_CONVERSION_INNER_LOOPS = compStressArea.STRESS_IF_CONVERSION_INNER_LOOPS;
     public const compStressArea STRESS_POISON_IMPLICIT_BYREFS = compStressArea.STRESS_POISON_IMPLICIT_BYREFS;
-    public const compStressArea STRESS_STORE_BLOCK_UNROLLING = compStressArea.STRESS_STORE_BLOCK_UNROLLING;
     public const compStressArea STRESS_THREE_OPT_LAYOUT = compStressArea.STRESS_THREE_OPT_LAYOUT;
     public const compStressArea STRESS_COUNT = compStressArea.STRESS_COUNT;
 
@@ -185,8 +184,6 @@ public partial class Compiler
         STRESS_IF_CONVERSION_INNER_LOOPS,
 
         STRESS_POISON_IMPLICIT_BYREFS,
-
-        STRESS_STORE_BLOCK_UNROLLING,
 
         STRESS_THREE_OPT_LAYOUT,
 

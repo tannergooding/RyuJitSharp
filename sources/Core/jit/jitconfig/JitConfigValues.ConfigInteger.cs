@@ -76,6 +76,9 @@ public partial struct JitConfigValues
         /// <summary>limit cloning to loops with no more than this many tree nodes</summary>
         JitCloneLoopsSizeLimit,
 
+        /// <summary> Gate cloning on per-call benefit ratio: (cycles saved per method call) / (duplicated body nodes). Value is interpreted in hundredths (config / 100), so the default 4 means a threshold of 0.04. Higher values are stricter and produce fewer clones; 0 disables the gate.</summary>
+        JitCloneLoopsMinPerCallRatio,
+
 #if DEBUG
         /// <summary>In debug builds log places where loop cloning optimizations are performed on the fast path.</summary>
         JitDebugLogLoopCloning,
@@ -1105,7 +1108,7 @@ public partial struct JitConfigValues
         /// <summary>Set this to 1 to turn NYI_WASM into R2R unsupported failures instead of asserts.</summary>
         JitWasmNyiToR2RUnsupported,
 
-        /// <summary>Enable processing methods with funclets.</summary>
+        /// <summary>Enable processing methods with funclets. Set to 0 to bail to R2R unsupported before codegen.</summary>
         JitWasmFunclets,
 #endif
 
@@ -1133,6 +1136,7 @@ public partial struct JitConfigValues
 #endif
 
         [JitCloneLoopsSizeLimit] = ((nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitCloneLoopsSizeLimit"u8))), 400),
+        [JitCloneLoopsMinPerCallRatio] = ((nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitCloneLoopsMinPerCallRatio"u8))), 4),
 
 #if DEBUG
         [JitDebugLogLoopCloning] = ((nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDebugLogLoopCloning"u8))), 0),
@@ -1546,7 +1550,7 @@ public partial struct JitConfigValues
 #if TARGET_WASM
         [JitWasmNyiToR2RUnsupported] = ((nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitWasmNyiToR2RUnsupported"u8))), 0),
 
-        [JitWasmFunclets] = ((nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitWasmFunclets"u8))), 0),
+        [JitWasmFunclets] = ((nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitWasmFunclets"u8))), 1),
 #endif
 
         [JitEnregStructLocals] = ((nint)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnregStructLocals"u8))), 1),

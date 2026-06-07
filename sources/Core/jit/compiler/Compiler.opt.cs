@@ -132,14 +132,6 @@ public partial class Compiler
 
     protected bool optCanPropLclVar;
 
-    protected bool optCanPropEqual;
-
-    protected bool optCanPropNonNull;
-
-    protected bool optCanPropBndsChk;
-
-    protected bool optCanPropSubRange;
-
     protected RangeCheck? optRangeCheck;
 
     // TODO: Port optOptimizeCSEs
@@ -174,6 +166,9 @@ public partial class Compiler
 
     // TODO: Port optRangeCheckCloning
     public PhaseStatus optRangeCheckCloning() => PhaseStatus.MODIFIED_NOTHING;
+
+    // TODO: Port optBoundsCheckCoalesce
+    public PhaseStatus optBoundsCheckCoalesce() => PhaseStatus.MODIFIED_NOTHING;
 
     // TODO: Port optUnrollLoops
     public PhaseStatus optUnrollLoops() => PhaseStatus.MODIFIED_NOTHING;

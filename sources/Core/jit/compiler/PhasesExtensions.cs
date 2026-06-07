@@ -23,6 +23,7 @@ public static class PhasesExtensions
         "Profile instrumentation prep",                             // PHASE_IBCPREP
         "Profile instrumentation",                                  // PHASE_IBCINSTR
         "Profile incorporation",                                    // PHASE_INCPROFILE
+        "Post-inline no-return cleanup",                            // PHASE_POST_INLINE_NORETURN
         "Resolve GDV Checks",                                       // PHASE_RESOLVE_GDVS
         "Morph - Init",                                             // PHASE_MORPH_INIT
         "Morph - Inlining",                                         // PHASE_MORPH_INLINE
@@ -93,6 +94,7 @@ public static class PhasesExtensions
         "VN based copy prop",                                       // PHASE_VN_COPY_PROP
         "VN based intrinsic expansion",                             // PHASE_VN_BASED_INTRINSIC_EXPAND
         "Redundant branch opts",                                    // PHASE_OPTIMIZE_BRANCHES
+        "Coalesce bounds checks",                                   // PHASE_BOUNDS_CHECK_COALESCE
         "Assertion prop",                                           // PHASE_ASSERTION_PROP_MAIN
         "Clone blocks with range checks",                           // PHASE_RANGE_CHECK_CLONING
         "If conversion",                                            // PHASE_IF_CONVERSION
@@ -154,6 +156,7 @@ public static class PhasesExtensions
         false,      // PHASE_IBCPREP
         false,      // PHASE_IBCINSTR
         false,      // PHASE_INCPROFILE
+        false,      // PHASE_POST_INLINE_NORETURN
         false,      // PHASE_RESOLVE_GDVS
         false,      // PHASE_MORPH_INIT
         false,      // PHASE_MORPH_INLINE
@@ -224,6 +227,7 @@ public static class PhasesExtensions
         false,      // PHASE_VN_COPY_PROP
         false,      // PHASE_VN_BASED_INTRINSIC_EXPAND
         false,      // PHASE_OPTIMIZE_BRANCHES
+        false,      // PHASE_BOUNDS_CHECK_COALESCE
         false,      // PHASE_ASSERTION_PROP_MAIN
         false,      // PHASE_RANGE_CHECK_CLONING
         false,      // PHASE_IF_CONVERSION
@@ -282,6 +286,7 @@ public static class PhasesExtensions
         (Phases)(-1),           // PHASE_IBCPREP
         (Phases)(-1),           // PHASE_IBCINSTR
         (Phases)(-1),           // PHASE_INCPROFILE
+        (Phases)(-1),           // PHASE_POST_INLINE_NORETURN
         (Phases)(-1),           // PHASE_RESOLVE_GDVS
         (Phases)(-1),           // PHASE_MORPH_INIT
         (Phases)(-1),           // PHASE_MORPH_INLINE
@@ -352,6 +357,7 @@ public static class PhasesExtensions
         (Phases)(-1),           // PHASE_VN_COPY_PROP
         (Phases)(-1),           // PHASE_VN_BASED_INTRINSIC_EXPAND
         (Phases)(-1),           // PHASE_OPTIMIZE_BRANCHES
+        (Phases)(-1),           // PHASE_BOUNDS_CHECK_COALESCE
         (Phases)(-1),           // PHASE_ASSERTION_PROP_MAIN
         (Phases)(-1),           // PHASE_RANGE_CHECK_CLONING
         (Phases)(-1),           // PHASE_IF_CONVERSION
@@ -410,6 +416,7 @@ public static class PhasesExtensions
         false,      // PHASE_IBCPREP
         false,      // PHASE_IBCINSTR
         false,      // PHASE_INCPROFILE
+        false,      // PHASE_POST_INLINE_NORETURN
         false,      // PHASE_RESOLVE_GDVS
         false,      // PHASE_MORPH_INIT
         true,       // PHASE_MORPH_INLINE
@@ -480,6 +487,7 @@ public static class PhasesExtensions
         false,      // PHASE_VN_COPY_PROP
         false,      // PHASE_VN_BASED_INTRINSIC_EXPAND
         false,      // PHASE_OPTIMIZE_BRANCHES
+        false,      // PHASE_BOUNDS_CHECK_COALESCE
         false,      // PHASE_ASSERTION_PROP_MAIN
         false,      // PHASE_RANGE_CHECK_CLONING
         false,      // PHASE_IF_CONVERSION

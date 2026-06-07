@@ -19,6 +19,7 @@ public static class JitMetadata
     public const string LoopsFoundDuringOpts = nameof(LoopsFoundDuringOpts);
     public const string LoopsInverted = nameof(LoopsInverted);
     public const string LoopsCloned = nameof(LoopsCloned);
+    public const string LoopsRejectedForInsufficientBenefit = nameof(LoopsRejectedForInsufficientBenefit);
     public const string LoopsUnrolled = nameof(LoopsUnrolled);
     public const string LoopAlignmentCandidates = nameof(LoopAlignmentCandidates);
     public const string LoopsAligned = nameof(LoopsAligned);

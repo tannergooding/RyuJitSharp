@@ -314,103 +314,6 @@ public partial class Compiler
         call.AddGdvCandidateInfo(this, inlineCandidateInfo);
     }
 
-    /// <summary>Check whether two argument nodes are contiguous or not.</summary>
-    /// <param name="op1"></param>
-    /// <param name="op2"></param>
-    /// <returns>if the argument node op1 is located before argument node op2, and they are located contiguously, then return true. Otherwise, return false.</returns>
-    /// <remarks>Right now this can only check field and array. In future we should add more cases.</remarks>
-    public bool areArgumentsContiguous(GenTree op1, GenTree op2)
-    {
-        var type = op1.Type;
-
-        if (op2.Type != type)
-        {
-            return false;
-        }
-
-        assert(op1.Type is not TYP_STRUCT);
-
-        var oper = op1.Oper;
-
-        if (op2.Oper != oper)
-        {
-            return false;
-        }
-
-        if (oper.IsTrueIndir)
-        {
-            var op1IndirAddr = op1.AsIndir().Addr;
-            var op2IndirAddr = op2.AsIndir().Addr;
-
-            var indirAddrOper = op1IndirAddr.Oper;
-
-            if (op2IndirAddr.Oper != indirAddrOper)
-            {
-                return false;
-            }
-
-            if (indirAddrOper is GT_INDEX_ADDR)
-            {
-                return areArrayElementsContiguous(op1IndirAddr.AsIndexAddr(), op2IndirAddr.AsIndexAddr());
-            }
-            if (indirAddrOper is GT_FIELD_ADDR)
-            {
-                return areFieldsContiguous(op1IndirAddr.AsFieldAddr(), op2IndirAddr.AsFieldAddr(), type.Size);
-            }
-        }
-        else if (oper is GT_LCL_FLD)
-        {
-            return areLocalFieldsContiguous(op1.AsLclFld(), op2.AsLclFld(), type.Size);
-        }
-        return false;
-    }
-
-    /// <summary>Check whether two array element nodes are located contiguously or not.</summary>
-    /// <param name="op1"></param>
-    /// <param name="op2"></param>
-    /// <returns>if the array element op1 is located before array element op2, and they are contiguous, then return true. Otherwise, return false.</returns>
-    public bool areArrayElementsContiguous(GenTreeIndexAddr op1, GenTreeIndexAddr op2)
-    {
-        // TODO-CQ:
-        //   Right this can only check array element with const number as index. In future,
-        //   we should consider to allow this function to check the index using expression.
-
-        var op1Index = op1.Index;
-        var op2Index = op2.Index;
-
-        if ((op1Index.Oper is not GT_CNS_INT) || (op2Index.Oper is not GT_CNS_INT))
-        {
-            return false;
-        }
-
-        if ((op1Index.AsIntCon().IconVal + 1) != op2Index.AsIntCon().IconVal)
-        {
-            return false;
-        }
-
-        var op1Arr = op1.Arr;
-        var op2Arr = op2.Arr;
-
-        if ((op1Arr.Oper is GT_IND) && (op2Arr.Oper is GT_IND))
-        {
-            var op1ArrIndirAddr = op1Arr.AsIndir().Addr;
-            var op2ArrIndirAddr = op2Arr.AsIndir().Addr;
-
-            if ((op1ArrIndirAddr.Oper is not GT_FIELD_ADDR) || (op2ArrIndirAddr.Oper is not GT_FIELD_ADDR))
-            {
-                return false;
-            }
-
-            return areFieldAddressesTheSame(op1ArrIndirAddr.AsFieldAddr(), op2ArrIndirAddr.AsFieldAddr());
-        }
-        else if ((op1Arr.Oper is GT_LCL_VAR) && (op2Arr.Oper is GT_LCL_VAR))
-        {
-            return (op1Arr.AsLclVar().LclNum == op2Arr.AsLclVar().LclNum);
-        }
-
-        return false;
-    }
-
     /// <summary>Check if two field address nodes reference at the same location.</summary>
     /// <param name="op1">first field address</param>
     /// <param name="op2">second field address</param>
@@ -461,31 +364,6 @@ public partial class Compiler
         }
 
         return false;
-    }
-
-    /// <summary>Check whether two fields are contiguous.</summary>
-    /// <param name="op1"></param>
-    /// <param name="op2"></param>
-    /// <param name="fldSize"></param>
-    /// <returns>If the first field is located before second field, and they are located contiguously, then return true. Otherwise, return false.</returns>
-    public bool areFieldsContiguous(GenTreeFieldAddr op1, GenTreeFieldAddr op2, int fldSize)
-    {
-        if ((op1.FldOffset + fldSize) != op2.FldOffset)
-        {
-            return false;
-        }
-        return areFieldAddressesTheSame(op1, op2);
-    }
-
-    /// <summary>Check whether two local field are contiguous</summary>
-    /// <param name="op1"></param>
-    /// <param name="op2"></param>
-    /// <param name="fldSize"></param>
-    /// <returns>If the first field is located before second field, and they are located contiguously, then return true. Otherwise, return false.</returns>
-    public bool areLocalFieldsContiguous(GenTreeLclFld op1, GenTreeLclFld op2, int fldSize)
-    {
-        assert(op1.Type == op2.Type);
-        return (op1.LclOffs + fldSize) == op2.LclOffs;
     }
 
     /// <summary>see if we can profitably guess at the class involved in an interface or virtual call.</summary>
@@ -838,60 +716,6 @@ public partial class Compiler
         }
     }
 
-#if FEATURE_SIMD
-    /// <summary>Checking whether the field belongs to a simd struct or not. If it is, return the GenTree* for the struct node, also base type, field index and simd size. If it is not, just return  nullptr. Usually if the tree node is from a simd lclvar which is not used in any simd intrinsic, then we should return nullptr, since in this case we should treat simd struct as a regular struct. However if no matter what, you just want get simd struct node, you can set the ignoreUsedInSimdIntrinsic as true. Then there will be no IsUsedInSimdIntrinsic checking, and it will return simd struct node if the struct is a simd struct.</summary>
-    /// <param name="tree">This node will be checked to see this is a field which belongs to a simd struct used for simd intrinsic or not.</param>
-    /// <param name="index">if the tree is used for simd intrinsic, we will set this to the index number of this field.</param>
-    /// <param name="simdSize">if the tree is used for simd intrinsic, set this to the simd struct size which this tree belongs to.</param>
-    /// <param name="ignoreUsedInSimdIntrinsic">If this is set to true, then this function will ignore the UsedInSimdIntrinsic check.</param>
-    /// <returns>A node which points the simd lclvar tree belongs to. If the tree is not the simd instrinic related field, return nullptr.</returns>
-    public GenTreeLclFld? getSimdStructFromField(GenTree tree, out int index, out int simdSize, bool ignoreUsedInSimdIntrinsic = false)
-    {
-        index = 0;
-        simdSize = 0;
-
-        if (tree.Oper.IsTrueIndir)
-        {
-            var addr = tree.AsIndir().Addr;
-
-            if (addr.Oper is not GT_FIELD_ADDR)
-            {
-                return null;
-            }
-
-            var fieldAddr = addr.AsFieldAddr();
-
-            if (!fieldAddr.IsInstance)
-            {
-                return null;
-            }
-
-            var objRef = fieldAddr.FldObj;
-
-            if (objRef.IsLclVarAddr)
-            {
-                var lclVarAddr = objRef.AsLclFld();
-                ref var varDsc = ref lvaGetDesc(lclVarAddr.LclNum);
-
-                if (varTypeIsSimd(varDsc.Type) && (varDsc.lvIsUsedInSimdIntrinsic || ignoreUsedInSimdIntrinsic))
-                {
-                    var elementType = tree.Type;
-                    var fieldOffset = addr.AsFieldAddr().FldOffset;
-                    var elementSize = elementType.Size;
-
-                    if (varTypeIsArithmetic(elementType) && ((fieldOffset % elementSize) == 0))
-                    {
-                        simdSize = varDsc.lvExactSize;
-                        index = fieldOffset / elementSize;
-                        return lclVarAddr;
-                    }
-                }
-            }
-        }
-        return null;
-    }
-#endif
-
     /// <summary>create methodPointerInfo into jit-allocated memory and init it.</summary>
     /// <param name="token">init value for the allocated token.</param>
     /// <param name="tokenConstrained">init value for the constraint associated with the token</param>
@@ -1073,10 +897,6 @@ public partial class Compiler
 
         impAppendStmtCheck(stmt, chkLevel);
         impAppendStmt(stmt);
-
-#if FEATURE_SIMD
-        impMarkContiguousSimdFieldStores(stmt);
-#endif
 
         // Once we set the current offset as debug info in an appended tree, we are
         // ready to report the following offsets. Note that we need to compare
@@ -13389,85 +13209,6 @@ public partial class Compiler
         return impRuntimeLookupToTree(lookup, compileTimeHandle);
     }
 
-#if FEATURE_SIMD
-    /// <summary>Try to identify if there are contiguous stores from simd field to memory. If there are, then mark the related lclvar so that it won't be promoted.</summary>
-    /// <param name="stmt">Input statement node.</param>
-    public void impMarkContiguousSimdFieldStores(Statement stmt)
-    {
-        if (opts.OptimizationDisabled)
-        {
-            return;
-        }
-
-        var expr = stmt.RootNode;
-
-        if (expr.Oper.IsStore && (expr.Type is TYP_FLOAT))
-        {
-            var curValue = expr.Data;
-            var simdBaseType = curValue.Type;
-            var srcSimdLclAddr = getSimdStructFromField(curValue, out var index, out var simdSize, true);
-
-            if ((srcSimdLclAddr is null) || (simdBaseType is not TYP_FLOAT))
-            {
-                fgPreviousCandidateSimdFieldStoreStmt = null;
-            }
-            else if (index == 0)
-            {
-                fgPreviousCandidateSimdFieldStoreStmt = stmt;
-            }
-            else if (fgPreviousCandidateSimdFieldStoreStmt is not null)
-            {
-                assert(index > 0);
-
-                var curStore = expr;
-                var prevStore = fgPreviousCandidateSimdFieldStoreStmt.RootNode;
-                var prevValue = prevStore.Data;
-
-                if (!areArgumentsContiguous(prevStore, curStore) || !areArgumentsContiguous(prevValue, curValue))
-                {
-                    fgPreviousCandidateSimdFieldStoreStmt = null;
-                }
-                else
-                {
-                    if (index == (simdSize / simdBaseType.Size - 1))
-                    {
-                        // Successfully found the pattern, mark the lclvar as UsedInSimdIntrinsic
-                        setLclRelatedToSimdIntrinsic(srcSimdLclAddr);
-
-                        if (curStore.Oper is GT_STOREIND)
-                        {
-                            var indirAddr = curStore.AsIndir().Addr;
-
-                            if (indirAddr.Oper is GT_FIELD_ADDR)
-                            {
-                                var fieldAddr = indirAddr.AsFieldAddr();
-
-                                if (fieldAddr.IsInstance)
-                                {
-                                    var fldObj = fieldAddr.FldObj;
-
-                                    if (fldObj.IsLclVarAddr && varTypeIsStruct(lvaGetDesc(fldObj.AsLclFld().LclNum).Type))
-                                    {
-                                        setLclRelatedToSimdIntrinsic(fldObj.AsLclVarCommon());
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        fgPreviousCandidateSimdFieldStoreStmt = stmt;
-                    }
-                }
-            }
-        }
-        else
-        {
-            fgPreviousCandidateSimdFieldStoreStmt = null;
-        }
-    }
-#endif
-
     /// <summary>determine if this call can be subsequently inlined</summary>
     /// <param name="call">call under scrutiny</param>
     /// <param name="exactContextHnd">context handle for inlining</param>
@@ -14787,9 +14528,10 @@ public partial class Compiler
     /// <param name="clsHnd">handle for the intrinsic method's class</param>
     /// <param name="method">handle for the intrinsic method</param>
     /// <param name="sigInfo">signature of the intrinsic method</param>
+    /// <param name="entryPoint">The entry point information required for R2R scenarios</param>
     /// <param name="mustExpand">true if the intrinsic must return a GenTree*; otherwise, false</param>
     /// <returns>IR tree to use in place of the call, or null if the jit should treat the intrinsic call like a normal call.</returns>
-    public unsafe GenTree? impPrimitiveNamedIntrinsic(NamedIntrinsic intrinsic, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, in CORINFO_SIG_INFO sigInfo, bool mustExpand)
+    public unsafe GenTree? impPrimitiveNamedIntrinsic(NamedIntrinsic intrinsic, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, in CORINFO_SIG_INFO sigInfo, in CORINFO_CONST_LOOKUP entryPoint, bool mustExpand)
     {
         assert(sigInfo.sigInst.classInstCount is 0);
 
@@ -15151,30 +14893,104 @@ public partial class Compiler
                 }
 #endif
 
-                if (varTypeIsSigned(baseType))
+#if FEATURE_HW_INTRINSICS
+                _ = impPopStack();
+
+                var op1Dup = null as GenTree;
+
+                if (!varTypeIsUnsigned(baseJitType.PreciseVarType))
                 {
-                    // TODO-CQ: We should insert the `if (value < 0) { throw }` handling
-                    break;
+                    op1 = impCloneExpr(op1, out op1Dup, CHECK_SPILL_ALL, "Cloning op1 for signed Log2");
+                    assert(op1Dup is not null);
+
+                    // We will insert a qmark below that is the first use
+                    (op1, op1Dup) = (op1Dup, op1);
                 }
 
-#if FEATURE_HW_INTRINSICS
-                var lzcnt = impPrimitiveNamedIntrinsic(NI_PRIMITIVE_LeadingZeroCount, clsHnd, method, sigInfo, mustExpand);
+                // The 0->0 contract is fulfilled by setting the LSB to 1.
+                // Log(1) is 0, and setting the LSB for values > 1 does not change the log2 result.
+                op1 = gtNewBinaryNode(GT_OR, baseType, op1, gtNewIconNode(baseType, 1));
 
-                if (lzcnt is not null)
+                var isLzcnt = true;
+                var isLong = varTypeIsLong(baseType);
+
+#if TARGET_XARCH
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                {
+                    hwintrinsic = varTypeIsLong(baseType) ? NI_AVX2_X64_LeadingZeroCount : NI_AVX2_LeadingZeroCount;
+                    result      = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1);
+                }
+                else
+                {
+                    hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_BitScanReverse : NI_X86Base_BitScanReverse;
+                    result      = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1);
+                    isLzcnt     = false;
+                }
+#elif TARGET_ARM64
+                hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
+                result = gtNewScalarHWIntrinsicNode(TYP_INT, hwintrinsic, op1);
+                baseType = TYP_INT;
+#else
+#error Unsupported platform
+#endif
+
+                if (isLzcnt)
                 {
                     GenTree icon;
 
-                    if (varTypeIsLong(retType))
+                    if (isLong)
                     {
-                        icon = gtNewLconNode(63);
+                        if (varTypeIsLong(baseType))
+                        {
+                            icon = gtNewLconNode(63);
+                        }
+                        else
+                        {
+                            icon = gtNewIconNode(TYP_INT, 63);
+                        }
                     }
                     else
                     {
-                        icon = gtNewIconNode(retType, 31);
+                        icon = gtNewIconNode(TYP_INT, 31);
                     }
 
-                    result = gtNewBinaryNode(GT_XOR, retType, lzcnt, icon);
+                    result = gtNewBinaryNode(GT_XOR, baseType, result, icon);
+                }
+
+                if (retType != baseType)
+                {
+                    result = gtFoldExpr(gtNewCastNode(retType, result, fromUnsigned: true, retType));
                     baseType = retType;
+                }
+
+                if (op1Dup is not null)
+                {
+                    // The logical operation is:
+                    //   result = (value < 0) ? throw new ArgumentOutOfRangeException() : log2(value);
+                    //
+                    // However, we don't want the exception message to deviate in the case `(value < 0)`
+                    // and so we track it as a rewritable intrinsic node instead. This allows rationalization
+                    // to ensure we actually get the CALL, but still allows DCE and other opts the rest of
+                    // the JIT.
+
+                    assert(!varTypeIsUnsigned(baseJitType.PreciseVarType));
+
+                    op1 = impCloneExpr(op1Dup, out op1Dup, CHECK_SPILL_ALL, "Cloning op1 for signed Log2");
+                    assert(op1Dup is not null);
+
+                    var fallback = new GenTreeIntrinsic(retType, op1Dup, intrinsic, method) {
+                        EntryPoint = entryPoint,
+                    };
+                    var cond = gtNewBinaryNode(GT_LT, TYP_INT, op1, gtNewZeroConNode(isLong ? TYP_LONG : TYP_INT));
+                    var colon = gtNewColonNode(retType, fallback, result);
+                    var qmark = gtNewQmarkNode(retType, cond, colon);
+
+                    // Ensure the fallback will end up set to run rarely
+                    qmark.ThenNodeLikelihood = 0;
+
+                    var tmp = lvaGrabTemp(shortLifetime: true, "Grabbing temp for Log2 Qmark");
+                    impStoreToTemp(tmp, qmark, CHECK_SPILL_NONE);
+                    result = gtNewLclvNode(retType, tmp);
                 }
 #endif
                 break;

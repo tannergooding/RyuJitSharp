@@ -69,7 +69,7 @@ public static class CorInfoHelpFuncExtensions
         IsPure | IsNoEscape,                        // CORINFO_HELP_UNBOX
         IsPure,                                     // CORINFO_HELP_UNBOX_TYPETEST
         MutatesHeap,                                // CORINFO_HELP_UNBOX_NULLABLE
-#if !WINDOWS_AMD64_ABI
+#if !WINDOWS_AMD64_ABI && !TARGET_WASM
         IsPure,                                     // CORINFO_HELP_GETREFANY
 #else
         None,                                       // CORINFO_HELP_GETREFANY
