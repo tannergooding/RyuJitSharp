@@ -83,6 +83,16 @@ public partial class Globals
         return spillFlags;
     }
 
+    public static int GET_CSE_INDEX(int x) => (x > 0) ? x : -x;
+
+    public static bool IS_CSE_DEF(int x) => x < 0;
+
+    public static bool IS_CSE_INDEX(int x) => x is not 0;
+
+    public static bool IS_CSE_USE(int x) => x > 0;
+
+    public static int TO_CSE_DEF(int x) => -x;
+
     /// <summary>Set spill flags for the register specified by its index.</summary>
     /// <param name="oldFlags">The current value of the MultiRegSpillFlags for a node.</param>
     /// <param name="flagsToSet">

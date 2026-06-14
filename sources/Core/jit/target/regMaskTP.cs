@@ -13,4 +13,23 @@ public struct regMaskTP
 #if FEATURE_MASKED_HW_INTRINSICS
     private regMaskMsk _mskMask;
 #endif
+
+    public readonly bool IsSet(regNumber regNum)
+    {
+        if (regNum.IsIntReg)
+        {
+            return (_intMask & (regMaskInt)(1 << (regNum - REG_INT_FIRST))) is not 0;
+        }
+
+#if FEATURE_MASKED_HW_INTRINSICS
+        if (regNum.IsMskReg)
+        {
+            assert(regNum.IsMskReg);
+            return (_mskMask & (regMaskMsk)(1 << (regNum - REG_MASK_FIRST))) is not 0;
+        }
+#endif
+
+        assert(regNum.IsFltReg);
+        return (_fltMask & (regMaskFlt)(1 << (regNum - REG_FP_FIRST))) is not 0;
+    }
 }

@@ -391,6 +391,16 @@ public static class regNumberExtensions
     extension(regNumber regNum)
     {
 #if HAS_FIXED_REGISTER_SET
+        public bool IsFltReg => regNum is >= REG_FP_FIRST and <= REG_FP_LAST;
+
+        public bool IsIntReg => regNum is >= REG_INT_FIRST and <= REG_INT_LAST;
+
+#if FEATURE_MASKED_HW_INTRINSICS
+        public bool IsMskReg => regNum is >= REG_MASK_FIRST and <= REG_MASK_LAST;
+#else
+        public bool IsMskReg => false;
+#endif
+
         public string Name
         {
             get

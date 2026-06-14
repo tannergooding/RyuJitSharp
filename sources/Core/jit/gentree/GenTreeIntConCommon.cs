@@ -19,6 +19,12 @@ public abstract class GenTreeIntConCommon : GenTree
         assert(oper.IsIntegralConst);
     }
 
+#if TARGET_64BIT
+    public bool FitsInI32 => Globals.FitsInI32(_value.Icon);
+#else
+    public bool FitsInI32 => Oper is GT_CNS_INT || Globals.FitsInI32(_value.Lcon);
+#endif
+
     public nint IconValue
     {
         get
@@ -39,7 +45,7 @@ public abstract class GenTreeIntConCommon : GenTree
         get
         {
 #if TARGET_32BIT
-            if (OperIs(GT_CNS_LNG))
+            if (Oper is GT_CNS_LNG)
             {
                 return _value.Lcon
             }
@@ -99,6 +105,18 @@ public abstract class GenTreeIntConCommon : GenTree
 #endif
         }
     }
+
+    /// <summary>can this immediate value be folded for op?</summary>
+    /// <param name="comp">Compiler instance</param>
+    /// <param name="op">Tree operator</param>
+    /// <returns>True if this immediate value can be folded for op; false otherwise.</returns>
+    /// <remarks>In general, immediate values that need relocations can't be folded. There are cases where we do want to allow folding of handle comparisons (e.g., typeof(T) == typeof(int)).</remarks>
+    public bool ImmedValCanBeFolded(Compiler comp, genTreeOps op) => !ImmedValNeedsReloc(comp) || (op is GT_EQ or GT_NE);
+
+    /// <summary>does this immediate value needs recording a relocation with the VM?</summary>
+    /// <param name="comp">Compiler instance</param>
+    /// <returns>True if this immediate value requires us to record a relocation for it; false otherwise.</returns>
+    public bool ImmedValNeedsReloc(Compiler comp) => comp.opts.compReloc && IsIconHandle();
 
     public new bool IsIntegralConst(nint value)
     {

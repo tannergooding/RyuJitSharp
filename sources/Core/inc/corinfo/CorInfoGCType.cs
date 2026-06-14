@@ -7,7 +7,7 @@ global using static RyuJitSharp.CorInfoGCType;
 
 namespace RyuJitSharp;
 
-public enum CorInfoGCType
+public enum CorInfoGCType : byte
 {
     /// <summary>No embedded object refs.</summary>
     TYPE_GC_NONE,

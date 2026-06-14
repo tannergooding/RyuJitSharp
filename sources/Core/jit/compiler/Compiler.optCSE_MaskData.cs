@@ -5,16 +5,11 @@
 
 namespace RyuJitSharp;
 
-public sealed class GenTreePhiArg : GenTreeLclVarCommon
+public partial class Compiler
 {
-    private BasicBlock _predBB;
-
-    public GenTreePhiArg(var_types type, int lclNum, int ssaNum, BasicBlock predBB)
-        : base(GT_PHI_ARG, type, lclNum)
+    public struct optCSE_MaskData
     {
-        _predBB = predBB;
-        SsaNum = ssaNum;
+        public unsafe EXPSET_TP CSE_defMask;
+        public unsafe EXPSET_TP CSE_useMask;
     }
-
-    public BasicBlock PredBB => _predBB;
 }

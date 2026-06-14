@@ -444,216 +444,216 @@ public static class genTreeOpsExtensions
 #endif
     ];
 
-#if MEASURE_NODE_SIZE
-    private static readonly string[] s_structNames = [
-        "",                             // GT_NONE
-        nameof(GenTreePhi),             // GT_PHI
-        nameof(GenTreePhiArg),          // GT_PHI_ARG
-        nameof(GenTreeLclVar),          // GT_LCL_VAR
-        nameof(GenTreeLclFld),          // GT_LCL_FLD
-        nameof(GenTreeLclVar),          // GT_STORE_LCL_VAR
-        nameof(GenTreeLclFld),          // GT_STORE_LCL_FLD
-        nameof(GenTreeLclFld),          // GT_LCL_ADDR
-        nameof(GenTree),                // GT_CATCH_ARG
-        nameof(GenTree),                // GT_ASYNC_CONTINUATION
-        nameof(GenTree),                // GT_LABEL
-        nameof(GenTreeVal),             // GT_JMP
-        nameof(GenTreeFptrVal),         // GT_FTN_ADDR
-        nameof(GenTreeRetExpr),         // GT_RET_EXPR
-        nameof(GenTree),                // GT_GCPOLL
-        nameof(GenTreeVal),             // GT_ASYNC_RESUME_INFO
-        nameof(GenTree),                // GT_FTN_ENTRY
-        nameof(GenTreeIntCon),          // GT_CNS_INT
-        nameof(GenTreeLngCon),          // GT_CNS_LNG
-        nameof(GenTreeDblCon),          // GT_CNS_DBL
-        nameof(GenTreeStrCon),          // GT_CNS_STR
+#if DEBUG
+    private static readonly Type[] s_structTypes = [
+        typeof(GenTree),                // GT_NONE
+        typeof(GenTreePhi),             // GT_PHI
+        typeof(GenTreePhiArg),          // GT_PHI_ARG
+        typeof(GenTreeLclVar),          // GT_LCL_VAR
+        typeof(GenTreeLclFld),          // GT_LCL_FLD
+        typeof(GenTreeLclVar),          // GT_STORE_LCL_VAR
+        typeof(GenTreeLclFld),          // GT_STORE_LCL_FLD
+        typeof(GenTreeLclFld),          // GT_LCL_ADDR
+        typeof(GenTree),                // GT_CATCH_ARG
+        typeof(GenTree),                // GT_ASYNC_CONTINUATION
+        typeof(GenTree),                // GT_LABEL
+        typeof(GenTreeVal),             // GT_JMP
+        typeof(GenTreeFptrVal),         // GT_FTN_ADDR
+        typeof(GenTreeRetExpr),         // GT_RET_EXPR
+        typeof(GenTree),                // GT_GCPOLL
+        typeof(GenTreeVal),             // GT_ASYNC_RESUME_INFO
+        typeof(GenTree),                // GT_FTN_ENTRY
+        typeof(GenTreeIntCon),          // GT_CNS_INT
+        typeof(GenTreeLngCon),          // GT_CNS_LNG
+        typeof(GenTreeDblCon),          // GT_CNS_DBL
+        typeof(GenTreeStrCon),          // GT_CNS_STR
 
 #if FEATURE_SIMD
-        nameof(GenTreeVecCon),          // GT_CNS_VEC
+        typeof(GenTreeVecCon),          // GT_CNS_VEC
 #endif
 
 #if FEATURE_MASKED_HW_INTRINSICS
-        nameof(GenTreeMskCon),          // GT_CNS_MSK
+        typeof(GenTreeMskCon),          // GT_CNS_MSK
 #endif
 
-        nameof(GenTree),                // GT_NOP
-        nameof(GenTreeIntrinsic),       // GT_INTRINSIC
-        nameof(GenTree),                // GT_KEEPALIVE
-        nameof(GenTreeCast),            // GT_CAST
-        nameof(GenTreeOp),              // GT_BITCAST
-        nameof(GenTreeOp),              // GT_CKFINITE
-        nameof(GenTreeOp),              // GT_LCLHEAP
-        nameof(GenTreeBoundsChk),       // GT_BOUNDS_CHECK
-        nameof(GenTree),                // GT_MEMORYBARRIER
-        nameof(GenTreeOp),              // GT_LOCKADD
-        nameof(GenTreeOp),              // GT_XAND
-        nameof(GenTreeOp),              // GT_XORR
-        nameof(GenTreeOp),              // GT_XADD
-        nameof(GenTreeOp),              // GT_XCHG
-        nameof(GenTreeCmpXchg),         // GT_CMPXCHG
-        nameof(GenTreeIndir),           // GT_IND
-        nameof(GenTreeStoreInd),        // GT_STOREIND
-        nameof(GenTreeBlk),             // GT_BLK
-        nameof(GenTreeBlk),             // GT_STORE_BLK
-        nameof(GenTreeIndir),           // GT_NULLCHECK
-        nameof(GenTreeArrLen),          // GT_ARR_LENGTH
-        nameof(GenTreeMDArr),           // GT_MDARR_LENGTH
-        nameof(GenTreeMDArr),           // GT_MDARR_LOWER_BOUND
-        nameof(GenTreeFieldAddr),       // GT_FIELD_ADDR
-        nameof(GenTreeAllocObj),        // GT_ALLOCOBJ
-        nameof(GenTreeOp),              // GT_INIT_VAL
-        nameof(GenTreeBox),             // GT_BOX
-        nameof(GenTreeRuntimeLookup),   // GT_RUNTIMELOOKUP
-        nameof(GenTreeArrAddr),         // GT_ARR_ADDR
-        nameof(GenTreeOp),              // GT_BSWAP
-        nameof(GenTreeOp),              // GT_BSWAP16
-        nameof(GenTreeOp),              // GT_LZCNT
-        nameof(GenTreeOp),              // GT_NONLOCAL_JMP
-        nameof(GenTreeOp),              // GT_NOT
-        nameof(GenTreeOp),              // GT_NEG
-        nameof(GenTreeOp),              // GT_OR
-        nameof(GenTreeOp),              // GT_XOR
-        nameof(GenTreeOp),              // GT_AND
-        nameof(GenTreeOp),              // GT_LSH
-        nameof(GenTreeOp),              // GT_RSH
-        nameof(GenTreeOp),              // GT_RSZ
-        nameof(GenTreeOp),              // GT_ROL
-        nameof(GenTreeOp),              // GT_ROR
-        nameof(GenTreeOp),              // GT_ADD
-        nameof(GenTreeOp),              // GT_SUB
-        nameof(GenTreeOp),              // GT_MUL
-        nameof(GenTreeOp),              // GT_DIV
-        nameof(GenTreeOp),              // GT_MOD
-        nameof(GenTreeOp),              // GT_UDIV
-        nameof(GenTreeOp),              // GT_UMOD
-        nameof(GenTreeOp),              // GT_EQ
-        nameof(GenTreeOp),              // GT_NE
-        nameof(GenTreeOp),              // GT_LT
-        nameof(GenTreeOp),              // GT_LE
-        nameof(GenTreeOp),              // GT_GE
-        nameof(GenTreeOp),              // GT_GT
-        nameof(GenTreeOp),              // GT_TEST_EQ
-        nameof(GenTreeOp),              // GT_TEST_NE
+        typeof(GenTree),                // GT_NOP
+        typeof(GenTreeIntrinsic),       // GT_INTRINSIC
+        typeof(GenTree),                // GT_KEEPALIVE
+        typeof(GenTreeCast),            // GT_CAST
+        typeof(GenTreeOp),              // GT_BITCAST
+        typeof(GenTreeOp),              // GT_CKFINITE
+        typeof(GenTreeOp),              // GT_LCLHEAP
+        typeof(GenTreeBoundsChk),       // GT_BOUNDS_CHECK
+        typeof(GenTree),                // GT_MEMORYBARRIER
+        typeof(GenTreeOp),              // GT_LOCKADD
+        typeof(GenTreeOp),              // GT_XAND
+        typeof(GenTreeOp),              // GT_XORR
+        typeof(GenTreeOp),              // GT_XADD
+        typeof(GenTreeOp),              // GT_XCHG
+        typeof(GenTreeCmpXchg),         // GT_CMPXCHG
+        typeof(GenTreeIndir),           // GT_IND
+        typeof(GenTreeStoreInd),        // GT_STOREIND
+        typeof(GenTreeBlk),             // GT_BLK
+        typeof(GenTreeBlk),             // GT_STORE_BLK
+        typeof(GenTreeIndir),           // GT_NULLCHECK
+        typeof(GenTreeArrLen),          // GT_ARR_LENGTH
+        typeof(GenTreeMDArr),           // GT_MDARR_LENGTH
+        typeof(GenTreeMDArr),           // GT_MDARR_LOWER_BOUND
+        typeof(GenTreeFieldAddr),       // GT_FIELD_ADDR
+        typeof(GenTreeAllocObj),        // GT_ALLOCOBJ
+        typeof(GenTreeOp),              // GT_INIT_VAL
+        typeof(GenTreeBox),             // GT_BOX
+        typeof(GenTreeRuntimeLookup),   // GT_RUNTIMELOOKUP
+        typeof(GenTreeArrAddr),         // GT_ARR_ADDR
+        typeof(GenTreeOp),              // GT_BSWAP
+        typeof(GenTreeOp),              // GT_BSWAP16
+        typeof(GenTreeOp),              // GT_LZCNT
+        typeof(GenTreeOp),              // GT_NONLOCAL_JMP
+        typeof(GenTreeOp),              // GT_NOT
+        typeof(GenTreeOp),              // GT_NEG
+        typeof(GenTreeOp),              // GT_OR
+        typeof(GenTreeOp),              // GT_XOR
+        typeof(GenTreeOp),              // GT_AND
+        typeof(GenTreeOp),              // GT_LSH
+        typeof(GenTreeOp),              // GT_RSH
+        typeof(GenTreeOp),              // GT_RSZ
+        typeof(GenTreeOp),              // GT_ROL
+        typeof(GenTreeOp),              // GT_ROR
+        typeof(GenTreeOp),              // GT_ADD
+        typeof(GenTreeOp),              // GT_SUB
+        typeof(GenTreeOp),              // GT_MUL
+        typeof(GenTreeOp),              // GT_DIV
+        typeof(GenTreeOp),              // GT_MOD
+        typeof(GenTreeOp),              // GT_UDIV
+        typeof(GenTreeOp),              // GT_UMOD
+        typeof(GenTreeOp),              // GT_EQ
+        typeof(GenTreeOp),              // GT_NE
+        typeof(GenTreeOp),              // GT_LT
+        typeof(GenTreeOp),              // GT_LE
+        typeof(GenTreeOp),              // GT_GE
+        typeof(GenTreeOp),              // GT_GT
+        typeof(GenTreeOp),              // GT_TEST_EQ
+        typeof(GenTreeOp),              // GT_TEST_NE
 
 #if TARGET_XARCH
-        nameof(GenTreeOp),              // GT_BITTEST_EQ
-        nameof(GenTreeOp),              // GT_BITTEST_NE
+        typeof(GenTreeOp),              // GT_BITTEST_EQ
+        typeof(GenTreeOp),              // GT_BITTEST_NE
 #endif
 
-        nameof(GenTreeConditional),     // GT_SELECT
-        nameof(GenTreeOp),              // GT_COMMA
-        nameof(GenTreeQmark),           // GT_QMARK
-        nameof(GenTreeColon),           // GT_COLON
-        nameof(GenTreeIndexAddr),       // GT_INDEX_ADDR
-        nameof(GenTreeAddrMode),        // GT_LEA
+        typeof(GenTreeConditional),     // GT_SELECT
+        typeof(GenTreeOp),              // GT_COMMA
+        typeof(GenTreeQmark),           // GT_QMARK
+        typeof(GenTreeColon),           // GT_COLON
+        typeof(GenTreeIndexAddr),       // GT_INDEX_ADDR
+        typeof(GenTreeAddrMode),        // GT_LEA
 
 #if TARGET_32BIT
-        nameof(GenTreeOp),              // GT_LONG
-        nameof(GenTreeOp),              // GT_ADD_LO
-        nameof(GenTreeOp),              // GT_ADD_HI
-        nameof(GenTreeOp),              // GT_SUB_LO
-        nameof(GenTreeOp),              // GT_SUB_HI
-        nameof(GenTreeOp),              // GT_LSH_HI
-        nameof(GenTreeOp),              // GT_RSH_LO
+        typeof(GenTreeOp),              // GT_LONG
+        typeof(GenTreeOp),              // GT_ADD_LO
+        typeof(GenTreeOp),              // GT_ADD_HI
+        typeof(GenTreeOp),              // GT_SUB_LO
+        typeof(GenTreeOp),              // GT_SUB_HI
+        typeof(GenTreeOp),              // GT_LSH_HI
+        typeof(GenTreeOp),              // GT_RSH_LO
 #endif
 
 #if FEATURE_HW_INTRINSICS
-        nameof(GenTreeHWIntrinsic),     // GT_HWINTRINSIC
+        typeof(GenTreeHWIntrinsic),     // GT_HWINTRINSIC
 #endif
 
-        nameof(GenTreeOp),              // GT_INC_SATURATE
-        nameof(GenTreeOp),              // GT_MULHI
+        typeof(GenTreeOp),              // GT_INC_SATURATE
+        typeof(GenTreeOp),              // GT_MULHI
 
 #if TARGET_32BIT
-        nameof(GenTreeMultiRegOp),      // GT_MUL_LONG
+        typeof(GenTreeMultiRegOp),      // GT_MUL_LONG
 #elif TARGET_ARM64
-        nameof(GenTreeOp),              // GT_MUL_LONG
+        typeof(GenTreeOp),              // GT_MUL_LONG
 #endif
 
-        nameof(GenTreeOp),              // GT_AND_NOT
-        nameof(GenTreeOp),              // GT_OR_NOT
-        nameof(GenTreeOp),              // GT_XOR_NOT
+        typeof(GenTreeOp),              // GT_AND_NOT
+        typeof(GenTreeOp),              // GT_OR_NOT
+        typeof(GenTreeOp),              // GT_XOR_NOT
 
 #if TARGET_ARM64
-        nameof(GenTreeOp),              // GT_BFIZ
+        typeof(GenTreeOp),              // GT_BFIZ
 #endif
 
-        nameof(GenTreeOp),              // GT_CMP 
-        nameof(GenTreeOp),              // GT_TEST 
+        typeof(GenTreeOp),              // GT_CMP 
+        typeof(GenTreeOp),              // GT_TEST 
 
 #if TARGET_XARCH
-        nameof(GenTreeOp),              // GT_BT
+        typeof(GenTreeOp),              // GT_BT
 #endif
 
-        nameof(GenTreeOpCC),            // GT_JCMP
-        nameof(GenTreeOpCC),            // GT_JTEST
-        nameof(GenTreeCC),              // GT_JCC
-        nameof(GenTreeCC),              // GT_SETCC
-        nameof(GenTreeOpCC),            // GT_SELECTCC
+        typeof(GenTreeOpCC),            // GT_JCMP
+        typeof(GenTreeOpCC),            // GT_JTEST
+        typeof(GenTreeCC),              // GT_JCC
+        typeof(GenTreeCC),              // GT_SETCC
+        typeof(GenTreeOpCC),            // GT_SELECTCC
 
 #if TARGET_ARM64 || TARGET_AMD64
-        nameof(GenTreeCCMP),            // GT_CCMP
+        typeof(GenTreeCCMP),            // GT_CCMP
 #endif
 
 #if TARGET_ARM64
-        nameof(GenTreeOpCC),            // GT_SELECT_INCCC
-        nameof(GenTreeOpCC),            // GT_SELECT_INVCC
-        nameof(GenTreeOpCC),            // GT_SELECT_NEGCC
-        nameof(GenTreeOpConditional),   // GT_SELECT_INC
-        nameof(GenTreeOpConditional),   // GT_SELECT_INV
-        nameof(GenTreeOpConditional),   // GT_SELECT_NEG
+        typeof(GenTreeOpCC),            // GT_SELECT_INCCC
+        typeof(GenTreeOpCC),            // GT_SELECT_INVCC
+        typeof(GenTreeOpCC),            // GT_SELECT_NEGCC
+        typeof(GenTreeOpConditional),   // GT_SELECT_INC
+        typeof(GenTreeOpConditional),   // GT_SELECT_INV
+        typeof(GenTreeOpConditional),   // GT_SELECT_NEG
 #endif
 
 #if TARGET_RISCV64
-        nameof(GenTreeOp),              // GT_SH1ADD
-        nameof(GenTreeOp),              // GT_SH1ADD_UW
-        nameof(GenTreeOp),              // GT_SH2ADD
-        nameof(GenTreeOp),              // GT_SH2ADD_UW
-        nameof(GenTreeOp),              // GT_SH3ADD
-        nameof(GenTreeOp),              // GT_SH3ADD_UW
-        nameof(GenTreeOp),              // GT_ADD_UW
-        nameof(GenTreeOp),              // GT_SLLI_UW
-        nameof(GenTreeOp),              // GT_BIT_SET
-        nameof(GenTreeOp),              // GT_BIT_CLEAR
-        nameof(GenTreeOp),              // GT_BIT_INVERT
+        typeof(GenTreeOp),              // GT_SH1ADD
+        typeof(GenTreeOp),              // GT_SH1ADD_UW
+        typeof(GenTreeOp),              // GT_SH2ADD
+        typeof(GenTreeOp),              // GT_SH2ADD_UW
+        typeof(GenTreeOp),              // GT_SH3ADD
+        typeof(GenTreeOp),              // GT_SH3ADD_UW
+        typeof(GenTreeOp),              // GT_ADD_UW
+        typeof(GenTreeOp),              // GT_SLLI_UW
+        typeof(GenTreeOp),              // GT_BIT_SET
+        typeof(GenTreeOp),              // GT_BIT_CLEAR
+        typeof(GenTreeOp),              // GT_BIT_INVERT
 #endif
 
-        nameof(GenTreeOp),              // GT_JTRUE
-        nameof(GenTreeArrElem),         // GT_ARR_ELEM
-        nameof(GenTreeCall),            // GT_CALL
-        nameof(GenTreeFieldList),       // GT_FIELD_LIST
-        nameof(GenTreeOp),              // GT_RETURN
-        nameof(GenTreeOp),              // GT_SWITCH
-        nameof(GenTree),                // GT_NO_OP
-        nameof(GenTreeOp),              // GT_RETURN_SUSPEND
-        nameof(GenTreeOp),              // GT_PATCHPOINT
-        nameof(GenTreeOp),              // GT_PATCHPOINT_FORCED
-        nameof(GenTree),                // GT_START_NONGC
-        nameof(GenTree),                // GT_START_PREEMPTGC
-        nameof(GenTree),                // GT_PROF_HOOK
-        nameof(GenTreeOp),              // GT_RETFILT
+        typeof(GenTreeOp),              // GT_JTRUE
+        typeof(GenTreeArrElem),         // GT_ARR_ELEM
+        typeof(GenTreeCall),            // GT_CALL
+        typeof(GenTreeFieldList),       // GT_FIELD_LIST
+        typeof(GenTreeOp),              // GT_RETURN
+        typeof(GenTreeOp),              // GT_SWITCH
+        typeof(GenTree),                // GT_NO_OP
+        typeof(GenTreeOp),              // GT_RETURN_SUSPEND
+        typeof(GenTreeOp),              // GT_PATCHPOINT
+        typeof(GenTreeOp),              // GT_PATCHPOINT_FORCED
+        typeof(GenTree),                // GT_START_NONGC
+        typeof(GenTree),                // GT_START_PREEMPTGC
+        typeof(GenTree),                // GT_PROF_HOOK
+        typeof(GenTreeOp),              // GT_RETFILT
 
 #if SWIFT_SUPPORT
-        nameof(GenTree),                // GT_SWIFT_ERROR
-        nameof(GenTreeOp),              // GT_SWIFT_ERROR_RET
+        typeof(GenTree),                // GT_SWIFT_ERROR
+        typeof(GenTreeOp),              // GT_SWIFT_ERROR_RET
 #endif
 
 #if TARGET_WASM
-        nameof(GenTree),                // GT_WASM_JEXCEPT
-        nameof(GenTree),                // GT_WASM_THROW_REF
+        typeof(GenTree),                // GT_WASM_JEXCEPT
+        typeof(GenTree),                // GT_WASM_THROW_REF
 #endif
 
-        nameof(GenTree),                // GT_JMPTABLE
-        nameof(GenTreeOp),              // GT_SWITCH_TABLE
-        nameof(GenTreePhysReg),         // GT_PHYSREG
-        nameof(GenTreeOp),              // GT_RETURNTRAP
-        nameof(GenTreeOp),              // GT_PUTARG_REG
-        nameof(GenTreePutArgStk),       // GT_PUTARG_STK
-        nameof(GenTreeOp),              // GT_SWAP
-        nameof(GenTreeCopyOrReload),    // GT_COPY
-        nameof(GenTreeCopyOrReload),    // GT_RELOAD
-        nameof(GenTreeILOffset),        // GT_IL_OFFSET
-        nameof(GenTreeVal),             // GT_RECORD_ASYNC_RESUME
+        typeof(GenTree),                // GT_JMPTABLE
+        typeof(GenTreeOp),              // GT_SWITCH_TABLE
+        typeof(GenTreePhysReg),         // GT_PHYSREG
+        typeof(GenTreeOp),              // GT_RETURNTRAP
+        typeof(GenTreeOp),              // GT_PUTARG_REG
+        typeof(GenTreePutArgStk),       // GT_PUTARG_STK
+        typeof(GenTreeOp),              // GT_SWAP
+        typeof(GenTreeCopyOrReload),    // GT_COPY
+        typeof(GenTreeCopyOrReload),    // GT_RELOAD
+        typeof(GenTreeILOffset),        // GT_IL_OFFSET
+        typeof(GenTreeVal),             // GT_RECORD_ASYNC_RESUME
     ];
 #endif
 
@@ -1045,12 +1045,16 @@ public static class genTreeOpsExtensions
         }
 
 #if MEASURE_NODE_SIZE
-        public string StructName
+        public string StructName => oper.StructType.Name;
+#endif
+
+#if DEBUG
+        public Type StructType
         {
             get
             {
-                assert(s_structNames.Length == (int)(GT_COUNT));
-                return s_structNames[(int)(oper)];
+                assert(s_structTypes.Length == (int)(GT_COUNT));
+                return s_structTypes[(int)(oper)];
             }
         }
 #endif

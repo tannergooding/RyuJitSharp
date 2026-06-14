@@ -147,7 +147,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
     public int getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, bool fDoubleAlignHint = false) => lpVtbl->getClassAlignmentRequirement((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls, fDoubleAlignHint);
 
-    public int getClassGClayout(CORINFO_CLASS_HANDLE cls, byte* gcPtrs) => lpVtbl->getClassGClayout((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls, gcPtrs);
+    public int getClassGClayout(CORINFO_CLASS_HANDLE cls, CorInfoGCType* gcPtrs) => lpVtbl->getClassGClayout((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls, gcPtrs);
 
     public int getClassNumInstanceFields(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassNumInstanceFields((ICorJitInfo*)(Unsafe.AsPointer(ref this)), cls);
 
@@ -700,7 +700,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, bool, int> getClassAlignmentRequirement;
 
-        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, byte*, int> getClassGClayout;
+        public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, CorInfoGCType*, int> getClassGClayout;
 
         public delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, int> getClassNumInstanceFields;
 

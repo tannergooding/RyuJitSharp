@@ -336,10 +336,10 @@ public sealed partial class BasicBlock : LIR.Range
     // The following are the standard bit sets for dataflow analysis.
     // We perform CSE and range-checks at the same time and assertion propagation separately, thus we can union them since the two operations are completely disjunct.
 
-    private unsafe nint* _anonymous5;
+    private nint[]? _anonymous5;
 
     /// <summary>CSEs computed by block</summary>
-    public unsafe EXPSET_TP bbCseGen
+    public EXPSET_TP? bbCseGen
     {
         get
         {
@@ -353,7 +353,7 @@ public sealed partial class BasicBlock : LIR.Range
     }
 
     /// <summary>assertions created by block (global prop)</summary>
-    public unsafe ASSERT_TP bbAssertionGen
+    public ASSERT_TP? bbAssertionGen
     {
         get
         {
@@ -367,7 +367,7 @@ public sealed partial class BasicBlock : LIR.Range
     }
 
     /// <summary>assertions available on exit along true/jump edge (BBJ_COND, local prop)</summary>
-    public unsafe ASSERT_TP bbAssertionOutIfTrue
+    public ASSERT_TP? bbAssertionOutIfTrue
     {
         get
         {
@@ -380,10 +380,10 @@ public sealed partial class BasicBlock : LIR.Range
         }
     }
 
-    private unsafe nint* _anonymous6;
+    private nint[]? _anonymous6;
 
     /// <summary>CSEs available on entry</summary>
-    public unsafe EXPSET_TP bbCseIn
+    public EXPSET_TP? bbCseIn
     {
         get
         {
@@ -397,7 +397,7 @@ public sealed partial class BasicBlock : LIR.Range
     }
 
     /// <summary>assertions available on entry (global prop)</summary>
-    public unsafe ASSERT_TP bbAssertionIn
+    public ASSERT_TP? bbAssertionIn
     {
         get
         {
@@ -410,10 +410,10 @@ public sealed partial class BasicBlock : LIR.Range
         }
     }
 
-    private unsafe nint* _anonymous7;
+    private nint[]? _anonymous7;
 
     /// <summary>CSEs available on exit</summary>
-    public unsafe EXPSET_TP bbCseOut
+    public EXPSET_TP? bbCseOut
     {
         get
         {
@@ -427,7 +427,7 @@ public sealed partial class BasicBlock : LIR.Range
     }
 
     /// <summary>assertions available on exit (global prop, local prop &amp; !BBJ_COND)</summary>
-    public unsafe ASSERT_TP bbAssertionOut
+    public ASSERT_TP? bbAssertionOut
     {
         get
         {
@@ -441,7 +441,7 @@ public sealed partial class BasicBlock : LIR.Range
     }
 
     /// <summary>assertions available on exit along false/next edge (BBJ_COND, local prop)</summary>
-    public unsafe ASSERT_TP bbAssertionOutIfFalse
+    public ASSERT_TP? bbAssertionOutIfFalse
     {
         get
         {

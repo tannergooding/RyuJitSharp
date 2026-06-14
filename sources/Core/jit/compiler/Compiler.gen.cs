@@ -48,4 +48,14 @@ public partial class Compiler
             return codeGen.IsFramePointerUsed;
         }
     }
+
+    /// <summary>Return the normalized index to use in the EXPSET_TP for the CSE with the given CSE index.</summary>
+    /// <param name="cseNum"></param>
+    /// <returns></returns>
+    /// <remarks>Each GenTree has a `_cseNum` field. Zero is reserved to mean this node is not a CSE, positive values indicate CSE uses, and negative values indicate CSE defs. The caller must pass a non-zero positive value, as from GET_CSE_INDEX().</remarks>
+    public static int genCseNum2Bit(int cseNum)
+    {
+        assert((cseNum > 0) && (cseNum <= MAX_CSE_CNT));
+        return cseNum - 1;
+    }
 }

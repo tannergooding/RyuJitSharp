@@ -6,9 +6,13 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Linq;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
+using System.Security.AccessControl;
 using System.Text;
+using System.Xml.Linq;
 
 namespace RyuJitSharp;
 
@@ -19,6 +23,44 @@ public partial class Compiler
 
     // TODO: Port Compiler.gtClearColonCond
     // public static unsafe fgWalkPreFn gtClearColonCond;
+
+    /// <summary>Get the tree corresponding to the address of the retbuf that this call defines.</summary>
+    /// <param name="call">The call node</param>
+    /// <returns>A tree representing the address of a local.</returns>
+    public GenTreeLclVarCommon? gtCallGetDefinedRetBufLclAddr(GenTreeCall call)
+    {
+        if (!call.IsOptimizingRetBufAsLocal)
+        {
+            return null;
+        }
+
+        var retBufArg = call.Args.RetBufferArg;
+        assert(retBufArg is not null);
+
+        var node = retBufArg.Node;
+
+        switch (node.Oper)
+        {
+            // Get the value from putarg wrapper nodes
+            case GT_PUTARG_REG:
+            case GT_PUTARG_STK:
+            {
+                node = node.AsOp().Op1;
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
+        }
+
+        // This may be called very late to check validity of LIR.
+        node = node.SkipCopyOrReload;
+
+        assert((node.Oper is GT_LCL_ADDR) && lvaGetDesc(node.AsLclVarCommon().LclNum).IsDefinedViaAddress);
+        return node.AsLclVarCommon();
+    }
 
     /// <summary>see if storing a ref type value to an array can skip the array store covariance check.</summary>
     /// <param name="value">tree producing the value to store</param>
@@ -128,6 +170,80 @@ public partial class Compiler
         }
 
         return false;
+    }
+
+    //------------------------------------------------------------------------
+    // gtCanSwapOrder: 
+    //
+    // Arguments:
+    //    firstNode  - An operand of a tree that can have GTF_REVERSE_OPS set.
+    //    secondNode - The other operand of the tree.
+    //
+    // Return Value:
+    //    Returns a boolean indicating whether it is safe to reverse the execution
+    //    order of the two trees, considering any exception, global effects, or
+    //    ordering constraints.
+    //
+    /// <summary>Returns true iff the secondNode can be swapped with firstNode.</summary>
+    /// <param name="firstNode"></param>
+    /// <param name="secondNode"></param>
+    /// <returns></returns>
+    public bool gtCanSwapOrder(GenTree firstNode, GenTree secondNode)
+    {
+        var canSwap = true;
+
+        // Don't swap "CONST_HDL op CNS"
+        if (firstNode.IsIconHandle() && secondNode.Oper.IsIntegralConst)
+        {
+            canSwap = false;
+        }
+
+        // Relative of order of global / side effects can't be swapped.
+
+        if (optValnumCSE_phase)
+        {
+            canSwap = optCSE_canSwap(firstNode, secondNode);
+        }
+
+        // We cannot swap in the presence of special side effects such as GT_CATCH_ARG.
+
+        if (canSwap && ((firstNode.Flags & GTF_ORDER_SIDEEFF) is not 0))
+        {
+            canSwap = false;
+        }
+
+        // When strict side effect order is disabled we allow GTF_REVERSE_OPS to be set
+        // when one or both sides contains a GTF_CALL or GTF_EXCEPT.
+        // Currently only the C and C++ languages allow non strict side effect order.
+
+        var strictEffects = GTF_GLOB_EFFECT;
+
+        if (canSwap && ((firstNode.Flags & strictEffects) is not 0))
+        {
+            // op1 has side efects that can't be reordered.
+            // Check for some special cases where we still may be able to swap.
+
+            if ((secondNode.Flags & strictEffects) is not 0)
+            {
+                // op2 has also has non reorderable side effects - can't swap.
+                canSwap = false;
+            }
+            else
+            {
+                // No side effects in op2 - we can swap iff op1 has no way of modifying op2,
+                // i.e. through indirect stores or calls or op2 is a constant.
+
+                if ((firstNode.Flags & strictEffects & GTF_PERSISTENT_SIDE_EFFECTS) is not 0)
+                {
+                    // We have to be conservative - can swap iff op2 is constant.
+                    if (!secondNode.Oper.IsInvariant)
+                    {
+                        canSwap = false;
+                    }
+                }
+            }
+        }
+        return canSwap;
     }
 
     /// <summary>Clones the given tree value and returns a copy of the given tree.</summary>
@@ -846,7 +962,7 @@ public partial class Compiler
                         hwintrinsic.Type,
                         hwintrinsic.HWIntrinsicId,
                         hwintrinsic.SimdBaseType,
-                        hwintrinsic.simdSize,
+                        hwintrinsic.SimdSize,
                         operands
                     );
 
@@ -1233,12 +1349,51 @@ public partial class Compiler
     }
 
 #if DEBUG
-    public void gtDispRange(LIR.ReadOnlyRange range)
+    //------------------------------------------------------------------------
+    // gtDispArgList: Dump the tree for a call arg list
+    //
+    // Arguments:
+    //    call            - the call to dump arguments for
+    //    lastCallOperand - the call's last operand (to determine the arc types)
+    //    indentStack     - the specification for the current level of indentation & arcs
+    //
+    // Return Value:
+    //    None.
+    //
+    public void gtDispArgList(GenTreeCall call, GenTree lastCallOperand, ref IndentStack indentStack)
     {
-        foreach (var node in range)
+        foreach (var arg in call.Args.EarlyArgs)
         {
-            gtDispLIRNode(node);
+            var earlyNode = arg.EarlyNode;
+            assert(earlyNode is not null);
+
+            var buf = gtGetArgMsg(call, arg);
+            gtDispChild(earlyNode, ref indentStack, (earlyNode == lastCallOperand) ? IIArcBottom : IIArc, buf, topOnly: false);
         }
+    }
+
+    /// <summary>dumps all statements inside `block`.</summary>
+    /// <param name="block">the block to display statements for.</param>
+    public void gtDispBlockStmts(BasicBlock block)
+    {
+        foreach (var stmt in block.Statements)
+        {
+            gtDispStmt(stmt);
+            jitprintf("\n");
+        }
+    }
+
+    /// <summary>Print a child node to jitstdout.</summary>
+    /// <param name="child">the tree to be printed</param>
+    /// <param name="indentStack">the specification for the current level of indentation &amp; arcs</param>
+    /// <param name="arcType">the type of arc to use for this child</param>
+    /// <param name="msg">a contextual method (i.e. from the parent) to print</param>
+    /// <param name="topOnly">a boolean indicating whether to print the children, or just the top node</param>
+    public void gtDispChild(GenTree child, ref IndentStack indentStack, IndentInfo arcType, string msg = "", bool topOnly = false)
+    {
+        indentStack.Push(arcType);
+        gtDispTree(child, ref indentStack, msg, topOnly);
+        _ = indentStack.Pop();
     }
 
     public void gtDispClassLayout(ClassLayout layout, var_types type)
@@ -1257,6 +1412,292 @@ public partial class Compiler
         {
             jitprintf($"<{layout.ShortClassName}, {layout.Size}>");
         }
+    }
+
+    public void gtDispCommonEndLine(GenTree tree)
+    {
+        // Utility function that prints the following node information
+        //   1: The associated zero field sequence (if any)
+        //   2. The register assigned to this node (if any)
+        //   2. The value number assigned (if any)
+        //   3. A newline character
+
+        gtDispRegVal(tree);
+        gtDispVN(tree);
+        jitprintf("\n");
+    }
+
+    public unsafe void gtDispConst(GenTree tree)
+    {
+        assert(tree.Oper.IsConst);
+
+        switch (tree.Oper)
+        {
+            case GT_CNS_INT:
+            {
+                var intCon = tree.AsIntCon();
+
+                if (intCon.IsIconHandle(GTF_ICON_STR_HDL))
+                {
+                    jitprintf($" 0x{dspPtr(unchecked((void*)(intCon.IconVal))):X}[ICON_STR_HDL]");
+                }
+                else if (intCon.IsIconHandle(GTF_ICON_OBJ_HDL))
+                {
+                    eePrintObjectDescription(" ", (CORINFO_OBJECT_HANDLE)(intCon.IconValue));
+                }
+                else
+                {
+                    var iconVal = intCon.IconVal;
+                    var dspIconVal = intCon.IsIconHandle() ? dspPtr(unchecked((void*)(iconVal))) : iconVal;
+
+                    if (intCon.Type is TYP_REF)
+                    {
+                        if (iconVal is 0)
+                        {
+                            jitprintf(" null");
+                        }
+                        else
+                        {
+                            jitprintf($" 0x{dspIconVal:X}");
+                        }
+                    }
+                    else if ((iconVal > -1000) && (iconVal < 1000))
+                    {
+                        jitprintf($" {dspIconVal}");
+                    }
+#if TARGET_64BIT
+                    else if ((iconVal & unchecked((long)(0xFFFFFFFF_00000000))) is not 0)
+                    {
+                        if (dspIconVal >= 0)
+                        {
+                            jitprintf($" 0x{dspIconVal:X}");
+                        }
+                        else
+                        {
+                            jitprintf($" -0x{-dspIconVal:X}");
+                        }
+                    }
+#endif
+                    else
+                    {
+                        if (dspIconVal >= 0)
+                        {
+                            jitprintf($" 0x{dspIconVal:X}");
+                        }
+                        else
+                        {
+                            jitprintf($" -0x{-dspIconVal:X}");
+                        }
+                    }
+
+                    var description = intCon.IconHandleFlag switch {
+                        GTF_EMPTY => "",
+                        GTF_ICON_SCOPE_HDL => " scope",
+                        GTF_ICON_CLASS_HDL => " class",
+                        GTF_ICON_METHOD_HDL => " method",
+                        GTF_ICON_FIELD_HDL => " field",
+                        GTF_ICON_STATIC_HDL => " static",
+                        GTF_ICON_STR_HDL => " string",
+                        GTF_ICON_OBJ_HDL => " object",
+                        GTF_ICON_CONST_PTR => " const ptr",
+                        GTF_ICON_GLOBAL_PTR => " global ptr",
+                        GTF_ICON_VARG_HDL => " vararg",
+                        GTF_ICON_PINVKI_HDL => " pinvoke",
+                        GTF_ICON_TOKEN_HDL => " token",
+                        GTF_ICON_TLS_HDL => " tls",
+                        GTF_ICON_FTN_ADDR => " ftn",
+                        GTF_ICON_CIDMID_HDL => " cid/mid",
+                        GTF_ICON_BBC_PTR => " bbc",
+                        GTF_ICON_STATIC_BOX_PTR => " static box ptr",
+                        GTF_ICON_FIELD_SEQ => " field seq",
+                        GTF_ICON_STATIC_ADDR_PTR => " static base addr cell",
+                        GTF_ICON_SECREL_OFFSET => " relative offset in section",
+                        GTF_ICON_TLSGD_OFFSET => " tls global dynamic offset",
+                        _ => " ILLEGAL",
+                    };
+                    jitprintf(description);
+
+                    // Print additional details for some handles.
+                    switch (intCon.IconHandleFlag)
+                    {
+                        case GTF_ICON_CLASS_HDL:
+                        {
+                            if (!IsAot)
+                            {
+                                jitprintf($" {eeGetClassName((CORINFO_CLASS_HANDLE)(iconVal))}");
+                            }
+                            break;
+                        }
+
+                        case GTF_ICON_METHOD_HDL:
+                        {
+                            if (!IsAot)
+                            {
+                                jitprintf($" {eeGetMethodFullName((CORINFO_METHOD_HANDLE)(iconVal))}");
+                            }
+                            break;
+                        }
+
+                        case GTF_ICON_FIELD_HDL:
+                        {
+                            if (!IsAot)
+                            {
+                                jitprintf($" {eeGetFieldName((CORINFO_FIELD_HANDLE)(iconVal), true)}");
+                            }
+                            break;
+                        }
+
+                        default:
+                        {
+                            break;
+                        }
+                    }
+
+#if FEATURE_SIMD
+                    if ((tree.Flags & GTF_ICON_SIMD_COUNT) is not 0)
+                    {
+                        jitprintf(" vector element count");
+                    }
+#endif
+
+                    if (tree.IsReuseRegVal)
+                    {
+                        jitprintf(" reuse reg val");
+                    }
+                }
+
+                var fieldSeq = tree.AsIntCon().FieldSeq;
+
+                if (fieldSeq is not null)
+                {
+                    gtDispFieldSeq(fieldSeq, tree.AsIntCon().IconValue - fieldSeq.Offset);
+                }
+                break;
+            }
+
+            case GT_CNS_LNG:
+            {
+                jitprintf($" 0x{tree.AsLngCon().LconValue:X16}");
+                break;
+            }
+
+            case GT_CNS_DBL:
+            {
+                var dcon = tree.AsDblCon().DconVal;
+
+                if (double.IsNegative(dcon) && (dcon == 0))
+                {
+                    jitprintf(" -0.00000");
+                }
+                else if (double.IsNaN(dcon))
+                {
+                    var bits = BitConverter.DoubleToInt64Bits(dcon);
+                    jitprintf($" %{dcon:G17}(0x{bits:X16})\n");
+                }
+                else
+                {
+                    jitprintf($" %{dcon:G17}");
+                }
+                break;
+            }
+
+            case GT_CNS_STR:
+            {
+                var cnsStr = tree.AsStrCon();
+
+                if (cnsStr.IsStringEmptyField)
+                {
+                    // Special case: do not call getStringLiteral for the empty string field
+                    jitprintf("\"\"");
+                    break;
+                }
+
+                eePrintStringLiteral(cnsStr.ScpHnd, cnsStr.SconCpx);
+                break;
+            }
+
+#if FEATURE_SIMD
+            case GT_CNS_VEC:
+            {
+                var vecCon = tree.AsVecCon();
+
+                switch (vecCon.Type)
+                {
+                    case TYP_SIMD8:
+                    {
+                        jitprintf($"<0x{vecCon.SimdVal.u32[0]:X8}, 0x{vecCon.SimdVal.u32[1]:X8}>");
+                        break;
+                    }
+
+                    case TYP_SIMD12:
+                    {
+                        jitprintf($"<0x{vecCon.SimdVal.u32[0]:X8}, 0x{vecCon.SimdVal.u32[1]:X8}, 0x{vecCon.SimdVal.u32[2]:X8}>");
+                        break;
+                    }
+
+                    case TYP_SIMD16:
+                    {
+                        jitprintf($"<0x{vecCon.SimdVal.u32[0]:X8}, 0x{vecCon.SimdVal.u32[1]:X8}, 0x{vecCon.SimdVal.u32[2]:X8}, 0x{vecCon.SimdVal.u32[3]:X8}>");
+                        break;
+                    }
+
+#if TARGET_XARCH
+                    case TYP_SIMD32:
+                    {
+                        jitprintf($"<0x{vecCon.SimdVal.u64[0]:X16}, 0x{vecCon.SimdVal.u64[1]:X16}, 0x{vecCon.SimdVal.u64[2]:X16}, 0x{vecCon.SimdVal.u64[3]:X16}>");
+                        break;
+                    }
+
+                    case TYP_SIMD64:
+                    {
+                        jitprintf($"<0x{vecCon.SimdVal.u64[0]:X16}, 0x{vecCon.SimdVal.u64[1]:X16}, 0x{vecCon.SimdVal.u64[2]:X16}, 0x{vecCon.SimdVal.u64[3]:X16}, 0x{vecCon.SimdVal.u64[4]:X16}, 0x{vecCon.SimdVal.u64[5]:X16}, 0x{vecCon.SimdVal.u64[6]:X16}, 0x{vecCon.SimdVal.u64[7]:X16}>");
+                        break;
+                    }
+#endif
+
+                    default:
+                    {
+                        unreached();
+                        break;
+                    }
+                }
+                break;
+            }
+#endif
+
+#if FEATURE_MASKED_HW_INTRINSICS
+            case GT_CNS_MSK:
+            {
+                var mskCon = tree.AsMskCon();
+                jitprintf($"<0x{mskCon.SimdMaskVal.u32[0]:X8}, 0x{mskCon.SimdMaskVal.u32[1]:X8}>");
+                break;
+            }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
+            default:
+            {
+                NO_WAY("unexpected constant node");
+                break;
+            }
+        }
+    }
+
+    /// <summary>Print out the fields in this field sequence.</summary>
+    /// <param name="fieldSeq">The field sequence</param>
+    /// <param name="offset">Offset of the (implicit) struct fields in the sequence</param>
+    public unsafe void gtDispFieldSeq(FieldSeq fieldSeq, nint offset)
+    {
+        if (fieldSeq is null)
+        {
+            return;
+        }
+
+        jitprintf($" Fseq[{eeGetFieldName(fieldSeq.FieldHandle, includeType: false)}");
+        if (offset is not 0)
+        {
+            jitprintf($", {offset}");
+        }
+        jitprintf("]");
     }
 
     public void gtDispLclVar(int lclNum, bool padForBiggestDisp = true)
@@ -1286,6 +1727,128 @@ public partial class Compiler
             var layout = varDsc.Layout;
             assert(layout is not null);
             gtDispClassLayout(layout, type);
+        }
+    }
+
+    /// <summary>Print a single leaf node to jitstdout.</summary>
+    /// <param name="tree">the tree to be printed</param>
+    /// <param name="indentStack">the specification for the current level of indentation &amp; arcs</param>
+    public unsafe void gtDispLeaf(GenTree tree, ref IndentStack indentStack)
+    {
+        if (tree.Oper.IsConst)
+        {
+            gtDispConst(tree);
+            return;
+        }
+
+        switch (tree.Oper)
+        {
+            case GT_PHI_ARG:
+            case GT_LCL_VAR:
+            case GT_LCL_FLD:
+            case GT_LCL_ADDR:
+            {
+                gtDispLocal(tree.AsLclVarCommon(), ref indentStack);
+                break;
+            }
+
+            case GT_JMP:
+            {
+                jitprintf($" {eeGetMethodFullName((CORINFO_METHOD_HANDLE)(tree.AsVal().Val1), includeReturnType: true, includeThisSpecifier: true)}");
+            }
+            break;
+
+            case GT_LABEL:
+            {
+                break;
+            }
+
+            case GT_FTN_ADDR:
+            {
+                jitprintf($" {eeGetMethodFullName((CORINFO_METHOD_HANDLE)(tree.AsFptrVal().FptrMethod), includeReturnType: true, includeThisSpecifier: true)}\n");
+            }
+            break;
+
+            // Vanilla leaves. No qualifying information available. So do nothing
+
+            case GT_NOP:
+            case GT_NO_OP:
+            case GT_START_NONGC:
+            case GT_START_PREEMPTGC:
+            case GT_PROF_HOOK:
+            case GT_CATCH_ARG:
+            case GT_ASYNC_CONTINUATION:
+            case GT_FTN_ENTRY:
+            case GT_MEMORYBARRIER:
+            case GT_JMPTABLE:
+#if SWIFT_SUPPORT
+            case GT_SWIFT_ERROR:
+#endif
+            case GT_GCPOLL:
+#if TARGET_WASM
+            case GT_WASM_THROW_REF:
+            case GT_WASM_JEXCEPT:
+#endif
+            {
+                break;
+            }
+
+            case GT_RET_EXPR:
+            {
+                var retExpr = tree.AsRetExpr();
+                var inlineCand = retExpr.InlineCandidate;
+
+                jitprintf("(for ");
+                printTreeId(inlineCand);
+                jitprintf(")");
+
+                if (retExpr.SubstExpr is not null)
+                {
+                    jitprintf(" -> ");
+                    printTreeId(retExpr.SubstExpr);
+                }
+            }
+            break;
+
+            case GT_PHYSREG:
+            {
+                jitprintf($" {tree.AsPhysReg().SrcReg.Name}");
+                break;
+            }
+
+            case GT_IL_OFFSET:
+            {
+                jitprintf(" ");
+                tree.AsILOffset().StmtDebugInfo.Dump(recurse: true);
+                break;
+            }
+
+            case GT_RECORD_ASYNC_RESUME:
+            case GT_ASYNC_RESUME_INFO:
+            {
+                jitprintf($" state={tree.AsVal().Val1}");
+                break;
+            }
+
+            case GT_JCC:
+            case GT_SETCC:
+            {
+                jitprintf($" cond={tree.AsCC().Condition.Name}");
+                break;
+            }
+
+            case GT_JCMP:
+            case GT_JTEST:
+            {
+                jitprintf($" cond={tree.AsOpCC().Condition.Name}");
+                break;
+            }
+
+            default:
+            {
+                NO_WAY("don't know how to display tree leaf node");
+                break;
+            }
         }
     }
 
@@ -1346,7 +1909,7 @@ public partial class Compiler
 
         const bool topOnly = true;
         const bool isLIR   = true;
-        gtDispTree(node, ref indentStack, null, topOnly, isLIR);
+        gtDispTree(node, ref indentStack, "", topOnly, isLIR);
 
         static void DisplayOperand(GenTree operand, string message, IndentInfo operandArc, ref IndentStack indentStack, int prefixIndent)
         {
@@ -1368,6 +1931,842 @@ public partial class Compiler
 
             jitprintf($"  t{operand.TreeId,-5} {operand.Type.Name,-6} {message}\n");
         }
+    }
+
+    /// <summary>Print description of a local node to jitstdout.</summary>
+    /// <param name="tree">the local tree</param>
+    /// <param name="indentStack">the specification for the current level of indentation &amp; arcs</param>
+    /// <remarks>Prints the information common to all local nodes. Does not print children.</remarks>
+    public void gtDispLocal(GenTreeLclVarCommon tree, ref IndentStack indentStack)
+    {
+        jitprintf(" ");
+
+        var varNum = tree.LclNum;
+        ref var varDsc = ref lvaGetDesc(varNum);
+        var isDef = (tree.Flags & GTF_VAR_DEF) is not 0;
+        var isLclFld = tree.Oper.IsLocalField;
+
+        gtDispLclVar(varNum);
+        gtDispSsaName(varNum, tree.SsaNum, isDef);
+
+        if (isLclFld)
+        {
+            jitprintf($"[+{tree.AsLclFld().LclOffs}]");
+        }
+
+        if (varDsc.lvRegister)
+        {
+            jitprintf(" ");
+            varDsc.PrintVarReg();
+        }
+        else if (tree.InReg)
+        {
+            jitprintf($" {compRegVarName(tree.RegNum)}");
+        }
+
+        if (varDsc.lvPromoted)
+        {
+            if (!varTypeIsPromotable(varDsc.Type) && !varDsc.lvUnusedStruct)
+            {
+                // Promoted implicit byrefs can get in this state while they are being rewritten
+                // in global morph.
+            }
+            else
+            {
+                for (var index = 0; index < varDsc.lvFieldCnt; index++)
+                {
+                    var fieldLclNum = varDsc.lvFieldLclStart + index;
+                    ref var fieldVarDsc = ref lvaGetDesc(fieldLclNum);
+
+                    jitprintf("\n");
+                    jitprintf("                                                            ");
+                    indentStack.Print();
+                    jitprintf($"    {fieldVarDsc.Type.Name,-6} {fieldVarDsc.lvReason} -> ");
+                    gtDispLclVar(fieldLclNum);
+                    gtDispSsaName(fieldLclNum, tree.GetSsaNum(this, index), isDef);
+
+                    if (fieldVarDsc.lvRegister)
+                    {
+                        jitprintf(" ");
+                        fieldVarDsc.PrintVarReg();
+                    }
+
+                    if (fieldVarDsc.lvTracked && fgLocalVarLivenessDone && tree.IsLastUse(index))
+                    {
+                        jitprintf(" (last use)");
+                    }
+                }
+            }
+        }
+        else
+        {
+            // a normal not-promoted lclvar
+
+            if ((varDsc.lvTracked || varDsc.lvTrackedWithoutIndex) && fgLocalVarLivenessDone && ((tree.Flags & GTF_VAR_DEATH) is not 0))
+            {
+                jitprintf(" (last use)");
+            }
+        }
+    }
+
+    /// <summary>determine how many registers to print for a multi-reg node</summary>
+    /// <param name="tree">GenTree node whose registers we want to print</param>
+    /// <returns>The number of registers to print</returns>
+    /// <remarks> This is not the same in all cases as GenTree.GetMultiRegCount(). In particular, for COPY or RELOAD it only returns the number of *valid* registers, and for CALL, it will return 0 if the ReturnTypeDesc hasn't yet been initialized. But we want to print all register positions.</remarks>
+    public byte gtDispMultiRegCount(GenTree tree)
+    {
+        if (tree.Oper.IsCopyOrReload)
+        {
+            // GetRegCount() will return only the number of valid regs for COPY or RELOAD,
+            // but we want to print all positions, so we get the reg count for op1.
+            return gtDispMultiRegCount(tree.AsCopyOrReload().Op1);
+        }
+        else if (!tree.IsMultiRegNode)
+        {
+            // We can wind up here because IsMultiRegNode() always returns true for COPY or RELOAD,
+            // even if its op1 is not multireg.
+            // Note that this method won't be called for non-register-producing nodes.
+            return 1;
+        }
+        else if (tree.Oper is GT_CALL)
+        {
+            var regCount = tree.AsCall().ReturnTypeDesc.ReturnRegCount;
+
+            // If it hasn't yet been initialized, we'd still like to see the registers printed.
+            if (regCount is 0)
+            {
+                regCount = MAX_RET_REG_COUNT;
+            }
+            return regCount;
+        }
+        else
+        {
+            return tree.GetMultiRegCount(this);
+        }
+    }
+
+    /// <summary>Print a tree to jitstdout.</summary>
+    /// <param name="tree">the tree to be printed</param>
+    /// <param name="indentStack">the specification for the current level of indentation &amp; arcs</param>
+    /// <param name="msg">a contextual method (i.e. from the parent) to print</param>
+    /// <param name="isLIR">'indentStack' may be null, in which case no indentation or arcs are printed 'msg' may be null</param>
+    public unsafe void gtDispNode(GenTree tree, ref IndentStack indentStack, string msg, bool isLIR)
+    {
+        var printFlags = true; // always true..
+        var msgLength = 35;
+        var prev = null as GenTree;
+
+        if (tree._seqNum is not 0)
+        {
+            jitprintf($"N{tree._seqNum:D3} ");
+
+            if (tree._costsInitialized)
+            {
+                jitprintf($"({tree.CostEx:D3},{tree.CostSz:D3}) ");
+            }
+            else
+            {
+                // This probably indicates a bug: the node has a sequence number, but not costs.
+                jitprintf("(???,???) ");
+            }
+        }
+        else
+        {
+            prev = tree;
+
+            var hasSeqNum = true;
+            var dotNum = 0;
+
+            do
+            {
+                dotNum++;
+                prev = prev.Prev;
+
+                if ((prev is null) || (prev == tree))
+                {
+                    hasSeqNum = false;
+                    break;
+                }
+            }
+            while (prev._seqNum is 0);
+
+            // If we have an indent stack, don't add additional characters,
+            // as it will mess up the alignment.
+            var displayDotNum = hasSeqNum && (indentStack.Depth == 0);
+
+            if (displayDotNum)
+            {
+                assert(prev is not null);
+                jitprintf($"N{prev._seqNum:D3}.{dotNum:D2} ");
+            }
+            else
+            {
+                jitprintf("     ");
+            }
+
+            if (tree._costsInitialized)
+            {
+                jitprintf($"({tree.CostEx:D3},{tree.CostSz:D3}) ");
+            }
+            else
+            {
+                if (displayDotNum)
+                {
+                    // Do better alignment in this case
+                    jitprintf("       ");
+                }
+                else
+                {
+                    jitprintf("          ");
+                }
+            }
+        }
+
+        if (optValnumCSE_phase)
+        {
+            if (IS_CSE_INDEX(tree._cseNum))
+            {
+                jitprintf($"{FMT_CSE(GET_CSE_INDEX(tree._cseNum))} ({(IS_CSE_USE(tree._cseNum) ? "use" : "def")})");
+            }
+            else
+            {
+                jitprintf("             ");
+            }
+        }
+
+        // Print the node ID
+        printTreeId((JitConfig[ConfigInteger.JitDumpTreeIDs] is not 0) ? tree : null);
+        jitprintf(" ");
+
+        if (tree.Oper >= GT_COUNT)
+        {
+            jitprintf(" **** ILLEGAL NODE ****");
+            return;
+        }
+
+        if (printFlags)
+        {
+            // First print the flags associated with the node
+
+            switch (tree.Oper)
+            {
+                case GT_BLK:
+                case GT_IND:
+                case GT_STOREIND:
+                case GT_STORE_BLK:
+                {
+                    // We prefer printing V or U
+                    if ((tree.Flags & (GTF_IND_VOLATILE | GTF_IND_UNALIGNED)) is 0)
+                    {
+                        if ((tree.Flags & GTF_IND_TGT_NOT_HEAP) is not 0)
+                        {
+                            jitprintf("s");
+                            --msgLength;
+                            break;
+                        }
+                        else if ((tree.Flags & GTF_IND_TGT_HEAP) is not 0)
+                        {
+                            jitprintf("h");
+                            --msgLength;
+                            break;
+                        }
+                        else if ((tree.Flags & GTF_IND_INITCLASS) is not 0)
+                        {
+                            jitprintf("I");
+                            --msgLength;
+                            break;
+                        }
+                        else if ((tree.Flags & GTF_IND_INVARIANT) is not 0)
+                        {
+                            jitprintf("#");
+                            --msgLength;
+                            break;
+                        }
+                        else if ((tree.Flags & GTF_IND_NONFAULTING) is not 0)
+                        {
+                            jitprintf("n"); // print a n for non-faulting
+                            --msgLength;
+                            break;
+                        }
+                        else if ((tree.Flags & GTF_IND_NONNULL) is not 0)
+                        {
+                            jitprintf("@");
+                            --msgLength;
+                            break;
+                        }
+                    }
+
+                    if ((tree.Flags & GTF_IND_VOLATILE) is not 0)
+                    {
+                        jitprintf("V");
+                        --msgLength;
+                        break;
+                    }
+                    else if ((tree.Flags & GTF_IND_UNALIGNED) is not 0)
+                    {
+                        jitprintf("U");
+                        --msgLength;
+                        break;
+                    }
+                    goto default;
+                }
+
+                case GT_CALL:
+                {
+                    var call = tree.AsCall();
+
+                    if (call.IsInlineCandidate)
+                    {
+                        if (call.IsGuardedDevirtualizationCandidate)
+                        {
+                            jitprintf("&");
+                        }
+                        else
+                        {
+                            jitprintf("I");
+                        }
+                        --msgLength;
+                        break;
+                    }
+                    else if (call.IsGuardedDevirtualizationCandidate)
+                    {
+                        jitprintf("G");
+                        --msgLength;
+                        break;
+                    }
+                    else if ((call._callMoreFlags & GTF_CALL_M_RETBUFFARG) is not 0)
+                    {
+                        jitprintf("S");
+                        --msgLength;
+                        break;
+                    }
+                    else if ((call.Flags & GTF_CALL_HOISTABLE) is not 0)
+                    {
+                        jitprintf("H");
+                        --msgLength;
+                        break;
+                    }
+                    goto default;
+                }
+
+                case GT_MUL:
+#if !TARGET_64BIT
+                case GT_MUL_LONG:
+#endif
+                {
+                    if ((tree.Flags & GTF_MUL_64RSLT) is not 0)
+                    {
+                        jitprintf("L");
+                        --msgLength;
+                        break;
+                    }
+                    goto default;
+                }
+
+                case GT_LCL_FLD:
+                case GT_LCL_VAR:
+                case GT_LCL_ADDR:
+                case GT_STORE_LCL_FLD:
+                case GT_STORE_LCL_VAR:
+                {
+                    if ((tree.Flags & GTF_VAR_USEASG) is not 0)
+                    {
+                        jitprintf("U");
+                        --msgLength;
+                        break;
+                    }
+                    else if ((tree.Flags & GTF_VAR_MULTIREG) is not 0)
+                    {
+                        jitprintf((tree.Flags & GTF_VAR_DEF) is not 0 ? "M" : "m");
+                        --msgLength;
+                        break;
+                    }
+                    else if ((tree.Flags & GTF_VAR_DEF) is not 0)
+                    {
+                        jitprintf("D");
+                        --msgLength;
+                        break;
+                    }
+                    else if ((tree.Flags & GTF_VAR_CONTEXT) is not 0)
+                    {
+                        jitprintf("!");
+                        --msgLength;
+                        break;
+                    }
+                    goto default;
+                }
+
+                case GT_EQ:
+                case GT_NE:
+                case GT_LT:
+                case GT_LE:
+                case GT_GE:
+                case GT_GT:
+                case GT_TEST_EQ:
+                case GT_TEST_NE:
+                case GT_SELECT:
+                {
+                    if ((tree.Flags & GTF_RELOP_NAN_UN) is not 0)
+                    {
+                        jitprintf("N");
+                        --msgLength;
+                        break;
+                    }
+                    else if ((tree.Flags & GTF_RELOP_JMP_USED) is not 0)
+                    {
+                        jitprintf("J");
+                        --msgLength;
+                        break;
+                    }
+                    goto default;
+                }
+
+                case GT_CNS_INT:
+                {
+                    if (tree.AsIntCon().IsIconHandle())
+                    {
+                        jitprintf("H");
+                        --msgLength;
+                        break;
+                    }
+                    goto default;
+                }
+
+                default:
+                {
+                    jitprintf("-");
+                    --msgLength;
+                    break;
+                }
+            }
+
+            // Then print the general purpose flags
+            var flags = tree.Flags;
+
+            if (tree.IsPartOfAddressMode)
+            {
+                flags |= GTF_DONT_CSE; // Force the GTF_ADDRMODE_NO_CSE flag to print out like GTF_DONT_CSE
+            }
+            if (!(tree.Oper.IsBinary || tree.Oper.IsMultiOp))
+            {
+                // the GTF_REVERSE flag only applies to binary operations (which some MultiOp nodes are).
+                flags &= ~GTF_REVERSE_OPS;
+            }
+
+            msgLength -= GenTree.gtDispFlags(flags, tree._debugFlags);
+            /*
+                jitprintf("%c", (flags & GTF_ASG           ) ? 'A' : '-');
+                jitprintf("%c", (flags & GTF_CALL          ) ? 'C' : '-');
+                jitprintf("%c", (flags & GTF_EXCEPT        ) ? 'X' : '-');
+                jitprintf("%c", (flags & GTF_GLOB_REF      ) ? 'G' : '-');
+                jitprintf("%c", (flags & GTF_ORDER_SIDEEFF ) ? 'O' : '-');
+                jitprintf("%c", (flags & GTF_COLON_COND    ) ? '?' : '-');
+                jitprintf("%c", (flags & GTF_DONT_CSE      ) ? 'N' :        // N is for No cse
+                             (flags & GTF_MAKE_CSE      ) ? 'H' : '-');  // H is for Hoist this expr
+                jitprintf("%c", (flags & GTF_REVERSE_OPS   ) ? 'R' : '-');
+                jitprintf("%c", (flags & GTF_uint      ) ? 'U' :
+                             (flags & GTF_BOOLEAN       ) ? 'B' : '-');
+                jitprintf("%c", (flags & GTF_SET_FLAGS     ) ? 'S' : '-');
+                jitprintf("%c", ((flags & (GTF_SPILL | GTF_SPILLED)) == (GTF_SPILL | GTF_SPILLED)) ? '#' : ((flags &
+               GTF_SPILLED) ? 'z' : ((flags & GTF_SPILL) ? 'Z' : '-')));
+            */
+        }
+
+        // If we're printing a node for LIR, we use the space normally associated with the message
+        // to display the node's temp name (if any)
+        var hasOperands = tree.Operands.Any();
+
+        if (isLIR)
+        {
+            assert(msg.Length == 0);
+
+            // If the tree does not have any operands, we do not display the indent stack. This gives us
+            // two additional characters for alignment.
+            if (!hasOperands)
+            {
+                msgLength += 1;
+            }
+
+            if (tree.IsValue)
+            {
+                msg = $"{(tree.IsUnusedValue ? 'u' : 't')}{tree.TreeId} = {(hasOperands ? "" : " ")}";
+            }
+        }
+
+        // print the msg associated with the node
+
+        jitprintf(isLIR ? $" {new string(' ', msgLength)}{msg}" : $" {msg}{new string(' ', msgLength)}");
+
+        /* Indent the node accordingly */
+        if (!isLIR || hasOperands)
+        {
+            indentStack.Print();
+        }
+
+        gtDispNodeName(tree);
+
+        assert((tree is null) || (tree.Oper < GT_COUNT));
+
+        if (tree is not null)
+        {
+            // print the type of the node
+            if (tree.Oper is not GT_CAST)
+            {
+                jitprintf($" {tree.Type.Name,-6}");
+
+                if (varTypeIsStruct(tree.Type))
+                {
+                    var layout = null as ClassLayout;
+
+                    if (tree.Oper is GT_BLK or GT_STORE_BLK)
+                    {
+                        layout = tree.AsBlk().Layout;
+                    }
+                    else if (tree.Oper is GT_LCL_VAR or GT_STORE_LCL_VAR)
+                    {
+                        ref var varDsc = ref lvaGetDesc(tree.AsLclVar().LclNum);
+
+                        if (varTypeIsStruct(varDsc.Type))
+                        {
+                            layout = varDsc.Layout;
+                        }
+                    }
+                    else if (tree.Oper is GT_LCL_FLD or GT_STORE_LCL_FLD)
+                    {
+                        layout = tree.AsLclFld().Layout;
+                    }
+
+                    if (layout is not null)
+                    {
+                        gtDispClassLayout(layout, tree.Type);
+                    }
+                }
+
+                if (tree.Oper is GT_INDEX_ADDR or GT_ARR_ADDR)
+                {
+                    var elemType = (tree.Oper is GT_INDEX_ADDR) ? tree.AsIndexAddr().ElemType : tree.AsArrAddr().ElemType;
+                    var elemClsHnd = (tree.Oper is GT_INDEX_ADDR) ? tree.AsIndexAddr().StructElemClass : tree.AsArrAddr().ElemClassHandle;
+
+                    if (varTypeIsStruct(elemType) && (elemClsHnd != NO_CLASS_HANDLE))
+                    {
+                        jitprintf($" {eeGetShortClassName(elemClsHnd)}[]");
+                    }
+                    else
+                    {
+                        jitprintf($"{elemType.Name}[]");
+                    }
+                }
+
+                if (tree.Oper.IsLocal)
+                {
+                    ref var varDsc = ref lvaGetDesc(tree.AsLclVarCommon().LclNum);
+
+                    if (varDsc.IsAddressExposed)
+                    {
+                        jitprintf("(AX)"); // Variable has address exposed.
+                    }
+
+                    if (varDsc.IsDefinedViaAddress)
+                    {
+                        jitprintf("(DA)"); // Variable is defined via address
+                    }
+
+                    if (varDsc.lvUnusedStruct)
+                    {
+                        assert(varDsc.lvPromoted);
+                        jitprintf("(U)"); // Unused struct
+                    }
+                    else if (varDsc.lvPromoted)
+                    {
+                        if (varTypeIsPromotable(varDsc.Type))
+                        {
+                            jitprintf("(P)"); // Promoted struct
+                        }
+                        else
+                        {
+                            // Promoted implicit by-refs can have this state during
+                            // global morph while they are being rewritten
+                            jitprintf("(P?!)"); // Promoted struct
+                        }
+                    }
+                }
+
+                if (tree.Oper is GT_RUNTIMELOOKUP)
+                {
+                    var runtimeLookup = tree.AsRuntimeLookup();
+
+#if TARGET_64BIT
+                    jitprintf($" 0x{dspPtr(runtimeLookup.Handle):X16}");
+#else
+                    jitprintf($" 0x{dspPtr(runtimeLookup.Handle):X8}");
+#endif
+
+                    switch (runtimeLookup.HandleType)
+                    {
+                        case CORINFO_HANDLETYPE_CLASS:
+                        {
+                            jitprintf(" class");
+                            break;
+                        }
+
+                        case CORINFO_HANDLETYPE_METHOD:
+                        {
+                            jitprintf(" method");
+                            break;
+                        }
+
+                        case CORINFO_HANDLETYPE_FIELD:
+                        {
+                            jitprintf(" field");
+                            break;
+                        }
+
+                        default:
+                        {
+                            jitprintf(" unknown");
+                            break;
+                        }
+                    }
+                }
+
+                if (tree.Oper is GT_MDARR_LENGTH or GT_MDARR_LOWER_BOUND)
+                {
+                    jitprintf($" ({tree.AsMDArr().Dim})");
+                }
+            }
+
+#if HAS_FIXED_REGISTER_SET
+            // for tracking down problems in reguse prediction or liveness tracking
+            if (verbose && false)
+            {
+                ref var internalRegisters = ref JitTls.Compiler.codeGen.InternalRegisters;
+
+                jitprintf(" RR=");
+                dspRegMask(internalRegisters.GetAll(tree));
+                jitprintf("\n");
+            }
+#endif
+        }
+    }
+
+    public void gtDispNodeName(GenTree tree)
+    {
+        // print the node name
+
+        var name = "<ERROR>";
+
+        if (tree.Oper < GT_COUNT)
+        {
+            name = tree.Oper.ToString();
+        }
+
+        var buf = "";
+
+        if (tree.IsIconHandle())
+        {
+            buf = $" {name}(h)";
+        }
+        else if (tree.Oper is GT_PUTARG_STK)
+        {
+            buf = $" {name} [+0x{tree.AsPutArgStk().ArgOffset:X2}]";
+        }
+        else if (tree.Oper is GT_CALL)
+        {
+            var call = tree.AsCall();
+
+            var callType = "CALL";
+            var gtfType = "";
+            var ctType = "";
+
+            if (call._callType is CT_USER_FUNC)
+            {
+                if (call.IsVirtual)
+                {
+                    callType = "CALLV";
+                }
+            }
+            else if (call.IsHelperCall())
+            {
+                ctType = " help";
+            }
+            else if (call._callType is CT_INDIRECT)
+            {
+                if (call.IsVirtual)
+                {
+                    callType = "CALLV";
+                }
+                ctType = " ind";
+            }
+            else
+            {
+                NO_WAY("Unknown gtCallType");
+            }
+
+            if ((tree.Flags & GTF_CALL_NULLCHECK) is not 0)
+            {
+                gtfType = " nullcheck";
+            }
+
+            if (call.IsVirtualVtable)
+            {
+                gtfType = " vt-ind";
+            }
+            else if (call.IsVirtualStub)
+            {
+                gtfType = " stub";
+            }
+#if FEATURE_READYTORUN
+            else if (call.IsR2RRelativeIndir)
+            {
+                gtfType = " r2r_ind";
+            }
+            else if ((tree.Flags & GTF_TLS_GET_ADDR) is not 0)
+            {
+                gtfType = " _tls_get_addr";
+            }
+#endif
+            else if ((tree.Flags & GTF_CALL_UNMANAGED) is not 0)
+            {
+                gtfType = $" unman{(((tree.Flags & GTF_CALL_POP_ARGS) is not 0) ? " popargs" : "")}";
+#if TARGET_X86
+                gtfType += $" {GetCallConvName(call.UnmanagedCallConv)}";
+#endif
+            }
+
+            buf = $"{callType}{ctType}{gtfType}";
+        }
+        else if (tree.Oper is GT_ARR_ELEM)
+        {
+            buf = $" {name}[{new string(',', tree.AsArrElem().ArrRank)}]";
+        }
+        else if (tree.Oper is GT_LEA)
+        {
+            var addrMode = tree.AsAddrMode();
+            buf = $" {name}({(addrMode.HasBaseAddress ? "b+" : "")}{(addrMode.HasIndex ? $"(i*{addrMode.Scale})+" : "")}{addrMode.Offset})";
+        }
+        else if (tree.Oper is GT_BOUNDS_CHECK)
+        {
+            switch (tree.AsBoundsChk().ThrowKind)
+            {
+                case SCK_RNGCHK_FAIL:
+                {
+                    buf = $" {name}_Rng";
+                    break;
+                }
+
+                case SCK_ARG_EXCPN:
+                {
+                    buf = $" {name}_Arg";
+                    break;
+                }
+
+                case SCK_ARG_RNG_EXCPN:
+                {
+                    buf = $" {name}_ArgRng";
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                    break;
+                }
+            }
+        }
+        else if (tree.HasOverflowCheckEx)
+        {
+            buf = $" {name}_ovfl";
+        }
+        else
+        {
+            buf = $" {name}";
+        }
+
+        if (buf.Length < 10)
+        {
+            jitprintf($" %{buf,-10}");
+        }
+        else
+        {
+            jitprintf($" {buf}");
+        }
+    }
+
+    public void gtDispRange(LIR.ReadOnlyRange range)
+    {
+        foreach (var node in range)
+        {
+            gtDispLIRNode(node);
+        }
+    }
+
+    /// <summary>Print the register(s) defined by the given node</summary>
+    /// <param name="tree">GenTree node whose registers we want to print</param>
+    public void gtDispRegVal(GenTree tree)
+    {
+        switch (tree.RegTag)
+        {
+            // Don't display anything for the GT_REGTAG_NONE case;
+            // the absence of printed register values will imply this state.
+
+            case GenTree.GT_REGTAG_REG:
+            {
+                jitprintf($" REG {compRegVarName(tree.RegNum)}");
+                break;
+            }
+
+            default:
+            {
+                return;
+            }
+        }
+
+        if (tree.IsMultiRegNode)
+        {
+            // 0th reg is GetRegNum(), which is already printed above.
+            // Print the remaining regs of a multi-reg node.
+            var regCount = gtDispMultiRegCount(tree);
+
+            // For some nodes, e.g. COPY, RELOAD or CALL, we may not have valid regs for all positions.
+            for (byte i = 1; i < regCount; i++)
+            {
+                var reg = tree.GetRegByIndex(i);
+                jitprintf($",{(genIsValidReg(reg) ? compRegVarName(reg) : "NA")}");
+            }
+        }
+    }
+
+    /// <summary>Display the SSA use/def for a given local.</summary>
+    /// <param name="lclNum">The local's number.</param>
+    /// <param name="ssaNum">The SSA number.</param>
+    /// <param name="isDef">Whether this is a def.</param>
+    public void gtDispSsaName(int lclNum, int ssaNum, bool isDef)
+    {
+        if (ssaNum is SsaConfig.RESERVED_SSA_NUM)
+        {
+            return;
+        }
+
+        ref var lclDsc = ref lvaGetDesc(lclNum);
+        var isValid = lclDsc.IsValidSsaNum(ssaNum);
+
+        if (isDef)
+        {
+            if (!isValid)
+            {
+                jitprintf($"?d:{ssaNum}");
+                return;
+            }
+
+            var oldDefSsaNum = lclDsc.GetPerSsaData(ssaNum).UseDefSsaNum;
+
+            if (oldDefSsaNum != SsaConfig.RESERVED_SSA_NUM)
+            {
+                jitprintf($"ud:{oldDefSsaNum}->{ssaNum}");
+                return;
+            }
+        }
+        jitprintf($"{(isValid ? "" : "?")}{(isDef ? "d" : "u")}:{ssaNum}");
     }
 
     public void gtDispStmt(Statement stmt, string? msg = null)
@@ -1414,20 +2813,591 @@ public partial class Compiler
         gtDispTree(stmt.RootNode);
     }
 
-    public void gtDispTree(GenTree tree, string? msg = null, bool topOnly = false, bool isLIR = false)
+    public void gtDispTree(GenTree tree, string msg = "", bool topOnly = false, bool isLIR = false)
     {
         var indentStack = new IndentStack(this);
         gtDispTree(tree, ref indentStack, msg, topOnly, isLIR);
     }
 
-    public void gtDispTree(GenTree tree, ref IndentStack indentStack, string? msg = null, bool topOnly = false, bool isLIR = false)
+    public unsafe void gtDispTree(GenTree tree, ref IndentStack indentStack, string msg = "", bool topOnly = false, bool isLIR = false)
     {
-        // TODO: Port Compiler.gtDispTree
+        if (tree is null)
+        {
+            jitprintf($" [{0:X8}] <NULL>\n");
+            jitprintf(""); // null string means flush
+            return;
+        }
+
+        if (tree.Oper >= GT_COUNT)
+        {
+            gtDispNode(tree, ref indentStack, msg, isLIR);
+            jitprintf("Bogus operator!\n");
+            return;
+        }
+
+        // Determine what kind of arc to propagate.
+        var myArc = IINone;
+        var lowerArc = IINone;
+
+        if (indentStack.Depth > 0)
+        {
+            myArc = indentStack.Pop();
+
+            switch (myArc)
+            {
+                case IIArcBottom:
+                {
+                    indentStack.Push(IIArc);
+                    lowerArc = IINone;
+                    break;
+                }
+
+                case IIArc:
+                {
+                    indentStack.Push(IIArc);
+                    lowerArc = IIArc;
+                    break;
+                }
+
+                case IIArcTop:
+                {
+                    indentStack.Push(IINone);
+                    lowerArc = IIArc;
+                    break;
+                }
+
+                case IINone:
+                {
+                    indentStack.Push(IINone);
+                    lowerArc = IINone;
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                    break;
+                }
+            }
+        }
+
+        // Is it a 'simple' unary/binary operator?
+
+        var childMsg = "";
+
+        if (tree.Oper.IsSimple)
+        {
+            // Now, get the right type of arc for this node
+            if (myArc is not IINone)
+            {
+                _ = indentStack.Pop();
+                indentStack.Push(myArc);
+            }
+
+            gtDispNode(tree, ref indentStack, msg, isLIR);
+
+            // Propagate lowerArc to the lower children.
+            if (indentStack.Depth > 0)
+            {
+                _ = indentStack.Pop();
+                indentStack.Push(lowerArc);
+            }
+
+            if (tree.Oper is GT_CAST)
+            {
+                // Format a message that explains the effect of this GT_CAST
+
+                var cast = tree.AsCast();
+
+                var fromType = cast.CastOp.Type.ActualType;
+                var toType = cast.CastType;
+                var finalType = cast.Type;
+
+                // if GTF_uint is set then force fromType to an unsigned type
+                if (cast.IsUnsigned)
+                {
+                    fromType = varTypeToUnsigned(fromType);
+                }
+
+                if (finalType != toType)
+                {
+                    jitprintf($" {finalType.Name} <-");
+                }
+
+                jitprintf($" {toType.Name} <- {fromType.Name}");
+            }
+            else if (tree.Oper.IsLocalStore)
+            {
+                // Local stores used to be leaf nodes.
+                gtDispLocal(tree.AsLclVarCommon(), ref indentStack);
+            }
+            else if (tree.IsBlkOp)
+            {
+                if (tree.IsCopyBlkOp)
+                {
+                    jitprintf(" (copy)");
+                }
+                else if (tree.IsInitBlkOp)
+                {
+                    jitprintf(" (init)");
+                }
+
+                if (tree.Oper.IsStoreBlk && (tree.AsBlk()._kind is not GenTreeBlk.BlkOpKindInvalid))
+                {
+                    switch (tree.AsBlk()._kind)
+                    {
+                        case GenTreeBlk.BlkOpKindUnroll:
+                        {
+                            jitprintf(" (Unroll)");
+                            break;
+                        }
+
+                        case GenTreeBlk.BlkOpKindUnrollMemmove:
+                        {
+                            jitprintf(" (Memmove)");
+                            break;
+                        }
+
+                        case GenTreeBlk.BlkOpKindLoop:
+                        {
+                            jitprintf(" (Loop)");
+                            break;
+                        }
+
+#if TARGET_WASM
+                        case GenTreeBlk.BlkOpKindNativeOpcode:
+                        {
+                            jitprintf($" (memory.{(tree.Oper.IsCopyBlkOp ? "copy" : "fill")})");
+                            break;
+                        }
+#endif
+
+                        default:
+                        {
+                            unreached();
+                            break;
+                        }
+                    }
+                }
+            }
+            else if (tree.Oper is GT_PUTARG_STK)
+            {
+                var putArg = tree.AsPutArgStk();
+                jitprintf($" ({putArg.StackByteSize} stackByteSize), ({putArg.ArgOffset} byteOffset)");
+
+                if (putArg._kind is not GenTreePutArgStk.Kind.Invalid)
+                {
+                    switch (putArg._kind)
+                    {
+                        case GenTreePutArgStk.Kind.RepInstr:
+                        {
+                            jitprintf(" (RepInstr)");
+                            break;
+                        }
+
+                        case GenTreePutArgStk.Kind.PartialRepInstr:
+                        {
+                            jitprintf(" (PartialRepInstr)");
+                            break;
+                        }
+
+                        case GenTreePutArgStk.Kind.Unroll:
+                        {
+                            jitprintf(" (Unroll)");
+                            break;
+                        }
+
+                        case GenTreePutArgStk.Kind.Push:
+                        {
+                            jitprintf(" (Push)");
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                            break;
+                        }
+                    }
+                }
+            }
+            else if (tree.Oper is GT_FIELD_ADDR)
+            {
+                jitprintf($" {eeGetFieldName(tree.AsFieldAddr().FldHnd, includeType: true)}");
+            }
+            else if (tree.Oper is GT_INTRINSIC)
+            {
+                var intrinsic = tree.AsIntrinsic();
+
+                var name = intrinsic.IntrinsicName switch {
+                    NI_System_Math_Abs => " abs",
+                    NI_System_Math_Acos => " acos",
+                    NI_System_Math_Acosh => " acosh",
+                    NI_System_Math_Asin => " asin",
+                    NI_System_Math_Asinh => " asinh",
+                    NI_System_Math_Atan => " atan",
+                    NI_System_Math_Atanh => " atanh",
+                    NI_System_Math_Atan2 => " atan2",
+                    NI_System_Math_Cbrt => " cbrt",
+                    NI_System_Math_Ceiling => " ceiling",
+                    NI_System_Math_Cos => " cos",
+                    NI_System_Math_Cosh => " cosh",
+                    NI_System_Math_Exp => " exp",
+                    NI_System_Math_Floor => " floor",
+                    NI_System_Math_FusedMultiplyAdd => " fma",
+                    NI_System_Math_ILogB => " ilogb",
+                    NI_System_Math_Log => " log",
+                    NI_System_Math_Log2 => " log2",
+                    NI_System_Math_Log10 => " log10",
+#if (TARGET_RISCV64)
+                    NI_System_Math_Max => " max",
+                    NI_System_Math_MaxNative => " maxNative",
+                    NI_System_Math_Maxuint => " maxuint",
+                    NI_System_Math_Min => " min",
+                    NI_System_Math_MinNative => " minNative",
+                    NI_System_Math_Minuint => " minuint",
+                    NI_PRIMITIVE_LeadingZeroCount => " leadingZeroCount",
+                    NI_PRIMITIVE_TrailingZeroCount => " trailingZeroCount",
+                    NI_PRIMITIVE_PopCount => " popCount",
+#endif
+                    NI_System_Math_Pow => " pow",
+                    NI_System_Math_Round => " round",
+                    NI_System_Math_Sin => " sin",
+                    NI_System_Math_Sinh => " sinh",
+                    NI_System_Math_Sqrt => " sqrt",
+                    NI_System_Math_Tan => " tan",
+                    NI_System_Math_Tanh => " tanh",
+                    NI_System_Math_Truncate => " truncate",
+                    NI_System_Object_GetType => " objGetType",
+                    NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant => " isKnownConst",
+                    NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier => " WriteBarrier",
+#if FEATURE_SIMD
+                    NI_SIMD_UpperRestore => " simdUpperRestore",
+                    NI_SIMD_UpperSave => " simdUpperSave",
+#endif
+                    _ => "",
+                };
+
+                if (name.Length != 0)
+                {
+                    jitprintf(name);
+                }
+                else
+                {
+                    jitprintf("Unknown intrinsic: ");
+                    printTreeId(tree);
+                }
+            }
+            else if (tree.Oper is GT_SELECTCC)
+            {
+                jitprintf($" cond={tree.AsOpCC().Condition.Name}");
+            }
+#if TARGET_ARM64
+            else if (tree.Oper is GT_SELECT_INCCC or GT_SELECT_INVCC or GT_SELECT_NEGCC)
+            {
+                jitprintf($" cond={tree.AsOpCC().Condition.Name}");
+            }
+            else if (tree.Oper is GT_CCMP)
+            {
+                var ccmp = tree.AsCCMP();
+                jitprintf(" cond={ccmp.Condition.Name} flags={InsCflagsToString(ccmp.FlagsVal)}");
+            }
+#endif
+            gtDispCommonEndLine(tree);
+
+            if (!topOnly && (tree is GenTreeUnOp unOp))
+            {
+                var op1 = unOp.Op1;
+                var op2 = null as GenTree;
+
+                if (unOp is GenTreeOp op)
+                {
+                    op2 = op.Op2;
+                }
+
+                if (op1 is not null)
+                {
+                    // Label the child of the GT_COLON operator
+                    // op1 is the else part
+                    if (tree.Oper is GT_COLON)
+                    {
+                        childMsg = "else";
+                    }
+                    else if (tree.Oper is GT_QMARK)
+                    {
+                        childMsg = "   if";
+                    }
+                    gtDispChild(op1, ref indentStack, (op2 is null) ? IIArcBottom : IIArc, childMsg, topOnly);
+                }
+
+                if (op2 is not null)
+                {
+                    // Label the childMsgs of the GT_COLON operator
+                    // op2 is the then part
+
+                    if (tree.Oper is GT_COLON)
+                    {
+                        childMsg = "then";
+                    }
+                    gtDispChild(op2, ref indentStack, IIArcBottom, childMsg, topOnly);
+                }
+            }
+
+            return;
+        }
+
+        // Now, get the right type of arc for this node
+        if (myArc != IINone)
+        {
+            _ = indentStack.Pop();
+            indentStack.Push(myArc);
+        }
+        gtDispNode(tree, ref indentStack, msg, isLIR);
+
+        // Propagate lowerArc to the lower children.
+        if (indentStack.Depth > 0)
+        {
+            _ = indentStack.Pop();
+            indentStack.Push(lowerArc);
+        }
+
+        // See what kind of a special operator we have here, and handle its special children.
+
+        switch (tree.Oper)
+        {
+            case GT_FIELD_LIST:
+            {
+                gtDispCommonEndLine(tree);
+
+                if (!topOnly)
+                {
+                    var fieldList = tree.AsFieldList();
+
+                    foreach (var use in fieldList.Uses)
+                    {
+                        var offset = $"ofs {use.Offset}";
+                        gtDispChild(use.Node, ref indentStack, (use.Next is null) ? IIArcBottom : IIArc, offset);
+                    }
+                }
+                break;
+            }
+
+            case GT_PHI:
+            {
+                gtDispCommonEndLine(tree);
+
+                if (!topOnly)
+                {
+                    var phi = tree.AsPhi();
+
+                    foreach (var use in phi.Uses)
+                    {
+                        var block = $"pred {FMT_BB(use.Node.AsPhiArg().PredBB.bbNum)}";
+                        gtDispChild(use.Node, ref indentStack, (use.Next is null) ? IIArcBottom : IIArc, block);
+                    }
+                }
+                break;
+            }
+
+            case GT_CALL:
+            {
+                var call = tree.AsCall();
+                var lastChild = null as GenTree;
+
+                call.VisitOperands((GenTree operand) => {
+                    lastChild = operand;
+                    return GenTree.VisitResult.Continue;
+                });
+
+                if (call._callType is not CT_INDIRECT)
+                {
+                    jitprintf($" {eeGetMethodFullName(call._callMethHnd, includeReturnType: true, includeThisSpecifier: true)}");
+                }
+
+                if (call.IsAsync)
+                {
+                    jitprintf(" (async)");
+                }
+
+                if (((call.Flags & GTF_CALL_UNMANAGED) is not 0) && ((call._callMoreFlags & GTF_CALL_M_FRAME_VAR_DEATH) is not 0))
+                {
+                    jitprintf(" (FramesRoot last use)");
+                }
+
+                if ((call.Flags & GTF_CALL_INLINE_CANDIDATE) is not 0)
+                {
+                    InlineCandidateInfo inlineInfo;
+
+                    if (call.IsGuardedDevirtualizationCandidate)
+                    {
+                        inlineInfo = call.GetGdvCandidateInfo(0);
+                    }
+                    else
+                    {
+                        inlineInfo = call.SingleInlineCandidateInfo;
+                    }
+
+                    if ((inlineInfo is not null) && (inlineInfo.exactContextHandle is not null))
+                    {
+                        jitprintf($" (exactContextHandle=0x{dspPtr(inlineInfo.exactContextHandle)})");
+                    }
+                }
+
+                // Dump profile if any
+                if (call.IsHelperCall() && impIsCastHelperMayHaveProfileData(eeGetHelperNum(call._callMethHnd)))
+                {
+                    Unsafe.SkipInit(out InlineArrayMaxGdvTypeChecks<nint> likelyClasses);
+                    Unsafe.SkipInit(out InlineArrayMaxGdvTypeChecks<int> likelyLikelihoods);
+
+                    pickGDV(call, call._castHelperILOffset, isInterface: false, likelyClasses, methodGuesses: [], out var likelyClassCount, likelyLikelihoods, verboseLogging: false);
+
+                    if (likelyClassCount > 0)
+                    {
+                        jitprintf($" ({likelyLikelihoods[0]}% likely '{eeGetClassName(unchecked((CORINFO_CLASS_HANDLE)(likelyClasses[0])))}')");
+                    }
+                }
+
+                gtDispCommonEndLine(tree);
+
+                if (!topOnly)
+                {
+                    assert(lastChild is not null);
+                    gtDispArgList(call, lastChild, ref indentStack);
+
+                    foreach (var arg in call.Args.LateArgs)
+                    {
+                        assert(arg is not null);
+                        assert(arg.LateNode is not null);
+
+                        var arcType = (arg.LateNode == lastChild) ? IIArcBottom : IIArc;
+                        var buf = gtGetLateArgMsg(call, arg);
+
+                        gtDispChild(arg.LateNode, ref indentStack, arcType, buf, topOnly);
+                    }
+
+                    if (call._controlExpr is not null)
+                    {
+                        gtDispChild(call._controlExpr, ref indentStack, (call._controlExpr == lastChild) ? IIArcBottom : IIArc, "control expr", topOnly);
+                    }
+                }
+                break;
+            }
+
+#if FEATURE_HW_INTRINSICS
+            case GT_HWINTRINSIC:
+            {
+                var hwintrinsic = tree.AsHWIntrinsic();
+                jitprintf($" {hwintrinsic.SimdSize}");
+
+                if (hwintrinsic.SimdBaseType is not TYP_UNKNOWN)
+                {
+                    jitprintf($" {hwintrinsic.SimdBaseType.Name}");
+                }
+
+                if (hwintrinsic.AuxiliaryType is not TYP_UNKNOWN)
+                {
+                    jitprintf($" (aux {hwintrinsic.AuxiliaryType.Name})");
+                }
+                jitprintf($" {HWIntrinsicInfo.lookupName(hwintrinsic.HWIntrinsicId)}");
+
+                gtDispCommonEndLine(tree);
+
+                if (!topOnly)
+                {
+                    var operands = hwintrinsic.Operands;
+                    var index = 0;
+                    var count = operands.Length;
+
+                    foreach (var operand in operands)
+                    {
+                        gtDispChild(operand, ref indentStack, (++index < count) ? IIArc : IIArcBottom, "", topOnly);
+                    }
+                }
+                break;
+            }
+#endif
+
+            case GT_ARR_ELEM:
+            {
+                gtDispCommonEndLine(tree);
+
+                if (!topOnly)
+                {
+                    var arrElem = tree.AsArrElem();
+
+                    gtDispChild(arrElem.ArrObj, ref indentStack, IIArc, "", topOnly);
+
+                    for (var dim = 0; dim < arrElem.ArrRank; dim++)
+                    {
+                        var arcType = ((dim + 1) == arrElem.ArrRank) ? IIArcBottom : IIArc;
+                        gtDispChild(arrElem.ArrInds[dim], ref indentStack, arcType, "", topOnly);
+                    }
+                }
+                break;
+            }
+
+            case GT_CMPXCHG:
+            {
+                gtDispCommonEndLine(tree);
+
+                if (!topOnly)
+                {
+                    var cmpXchg = tree.AsCmpXchg();
+
+                    gtDispChild(cmpXchg.Addr, ref indentStack, IIArc, "", topOnly);
+                    gtDispChild(cmpXchg.Data, ref indentStack, IIArc, "", topOnly);
+                    gtDispChild(cmpXchg.Comparand, ref indentStack, IIArcBottom, "", topOnly);
+                }
+                break;
+            }
+
+            case GT_SELECT:
+            {
+                gtDispCommonEndLine(tree);
+
+                if (!topOnly)
+                {
+                    var conditional = tree.AsConditional();
+
+                    gtDispChild(conditional.Cond, ref indentStack, IIArc, childMsg, topOnly);
+                    gtDispChild(conditional.Op1, ref indentStack, IIArc, childMsg, topOnly);
+                    gtDispChild(conditional.Op2, ref indentStack, IIArcBottom, childMsg, topOnly);
+                }
+                break;
+            }
+
+            default:
+            {
+                if (tree.Oper.IsLeaf)
+                {
+                    gtDispLeaf(tree, ref indentStack);
+                    gtDispCommonEndLine(tree);
+                }
+                else
+                {
+                    jitprintf("<DON'T KNOW HOW TO DISPLAY THIS NODE> :");
+                    jitprintf(""); // null string means flush
+                }
+                break;
+            }
+        }
     }
 
     public void gtDispTreeRange(LIR.Range containingRange, GenTree tree)
     {
         gtDispRange(containingRange.GetTreeRangeWithFlags(tree, out _, out _));
+    }
+
+    /// <summary>Utility function that prints a tree's ValueNumber: gtVNPair</summary>
+    /// <param name="tree"></param>
+    public void gtDispVN(GenTree tree)
+    {
+        if (tree._vnPair.Liberal != ValueNumStore.NoVN)
+        {
+            assert(tree._vnPair.Conservative != ValueNumStore.NoVN);
+            jitprintf(" ");
+            vnpPrint(tree._vnPair, 0);
+        }
     }
 #endif
 
@@ -1959,6 +3929,60 @@ public partial class Compiler
     public static bool GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(GenTreeFlags flags)
     {
         return ((flags & (GTF_CALL | GTF_EXCEPT)) is not 0) || ((flags & (GTF_ASG | GTF_GLOB_REF)) == (GTF_ASG | GTF_GLOB_REF));
+    }
+
+    /// <summary>Calculate the cost for the address of an indirection node.</summary>
+    /// <param name="addr">The address node in question</param>
+    /// <param name="type">The type of the indirection</param>
+    /// <param name="isVolatile">true if the indirection is volatile</param>
+    /// <param name="costEx">parameter for the execution cost</param>
+    /// <param name="costSz">parameter for the size cost</param>
+    /// <returns>Whether the cost calculated includes that of address.</returns>
+    /// <remarks>Used for both loads and stores.</remarks>
+    public bool gtGetAddrNodeCost(GenTree addr, var_types type, bool isVolatile, out byte costEx, out byte costSz)
+    {
+        costEx = 0;
+        costSz = 0;
+
+        var includesAddrCost = false;
+
+        if (addr.EffectiveVal.Oper is GT_ADD)
+        {
+            // See if we can form a complex addressing mode.
+            var doAddrMode = true;
+
+#if TARGET_ARM64
+            if (isVolatile)
+            {
+                // For volatile store/loads when address is contained we always emit `dmb`
+                // if it's not - we emit one-way barriers i.e. ldar/stlr
+                doAddrMode = false;
+            }
+#endif
+
+            if (doAddrMode && gtMarkAddrMode(addr, ref costEx, ref costSz, type))
+            {
+                includesAddrCost = true;
+            }
+        }
+        else if (gtIsLikelyRegVar(addr))
+        {
+            // Indirection of an enregister LCL_VAR, don't increase costEx/costSz.
+            includesAddrCost = true;
+        }
+#if TARGET_XARCH
+        else if (addr.Oper.IsCnsIntOrI)
+        {
+            // Indirection of a CNS_INT, subtract 1 from costEx makes costEx 3 for x86 and 4 for amd64.
+
+            costEx += (byte)(addr.CostEx - 1);
+            costSz += addr.CostSz;
+
+            includesAddrCost = true;
+        }
+#endif
+
+        return includesAddrCost;
     }
 
     /// <summary>find class handle for elements of an array of ref types</summary>
@@ -3977,6 +6001,364 @@ public partial class Compiler
         return false;
     }
 
+    private bool gtIsLikelyRegVar(GenTree tree)
+    {
+        if (!tree.Oper.IsScalarLocal)
+        {
+            return false;
+        }
+
+        ref var varDsc = ref lvaGetDesc(tree.AsLclVar().LclNum);
+
+        if (varDsc.lvDoNotEnregister)
+        {
+            return false;
+        }
+
+        // If this is an EH-live var, return false if it is a def,
+        // as it will have to go to memory.
+        if (varDsc.lvTracked && varDsc.IsLiveInOutOfHandler && ((tree.Flags & GTF_VAR_DEF) is not 0))
+        {
+            return false;
+        }
+
+        // Be pessimistic if ref counts are not yet set up.
+        //
+        // Perhaps we should be optimistic though.
+        // See notes in GitHub issue 18969.
+        if (!lvaLocalVarRefCounted)
+        {
+            return false;
+        }
+
+        if (varDsc.lvRefCntWtd() < (BB_UNITY_WEIGHT * 3))
+        {
+            return false;
+        }
+
+#if TARGET_X86
+        if (!varTypeUsesIntReg(tree.Type))
+        {
+            return false;
+        }
+
+        if (varTypeIsLong(tree.Type))
+        {
+            return false;
+        }
+#endif
+
+        return true;
+    }
+
+    /// <summary>Given an address expression, compute its costs and addressing mode opportunities, and mark addressing mode candidates as GTF_DONT_CSE.</summary>
+    /// <param name="addr">The address expression</param>
+    /// <param name="costEx">The execution cost of this address expression (in/out arg to be updated)</param>
+    /// <param name="costSz">The size cost of this address expression (in/out arg to be updated)</param>
+    /// <param name="type">The type of the value being referenced by the parent of this address expression.</param>
+    /// <returns>Returns true if it finds an addressing mode.</returns>
+    public bool gtMarkAddrMode(GenTree addr, ref byte costEx, ref byte costSz, var_types type)
+    {
+        // TODO-Throughput - Consider actually instantiating these early, to avoid having to re-run the algorithm that looks for them (might also improve CQ).
+
+        var addrComma = addr;
+        addr = addr.EffectiveVal;
+
+        var naturalMul = 0;
+
+#if TARGET_ARM64
+        // Multiplier should be a "natural-scale" power of two number which is equal to target's width.
+        //
+        //   *(ulong*)(data + index * 8); - can be optimized
+        //   *(ulong*)(data + index * 7); - can not be optimized
+        //     *(int*)(data + index * 2); - can not be optimized
+        //
+        naturalMul = type.Size;
+#endif
+
+        assert(codeGen is not null);
+
+        if (codeGen.genCreateAddrMode(addr.AsOp(), fold: false, naturalMul, out var rev, out var baseAddr, out var idx, out var mul, out var cns))
+        {
+#if TARGET_ARM64
+            assert((mul is 0 or 1) || (mul == naturalMul));
+#endif
+
+            // We can form a complex addressing mode, so mark each of the interior
+            // nodes with GTF_ADDRMODE_NO_CSE and calculate a more accurate cost.
+            addr.Flags |= GTF_ADDRMODE_NO_CSE;
+
+            var originalAddrCostEx = addr.CostEx;
+            var originalAddrCostSz = addr.CostSz;
+            var addrModeCostEx = (byte)(0);
+            var addrModeCostSz = (byte)(0);
+
+#if TARGET_WASM
+            NYI_WASM("gtMarkAddrMode");
+#else
+#if TARGET_XARCH
+            // addrmodeCount is the count of items that we used to form
+            // an addressing mode.  The maximum value is 4 when we have
+            // all of these:   { base, idx, cns, mul }
+            //
+            var addrmodeCount = 0;
+#endif
+
+            if (baseAddr is not null)
+            {
+                addrModeCostEx += baseAddr.CostEx;
+                addrModeCostSz += baseAddr.CostSz;
+
+#if TARGET_XARCH
+                addrmodeCount++;
+#elif TARGET_ARM
+                if ((baseAddr.Oper is GT_LCL_VAR) && ((idx is null) || (cns is 0)))
+                {
+                    addrModeCostSz -= 1;
+                }
+#endif
+            }
+
+            if (idx is not null)
+            {
+                addrModeCostEx += idx.CostEx;
+                addrModeCostSz += idx.CostSz;
+
+#if TARGET_XARCH
+                addrmodeCount++;
+#elif TARGET_ARM
+                if (mul > 0)
+                {
+                    addrModeCostSz += 2;
+                }
+#endif
+            }
+
+            if (cns is not 0)
+            {
+#if TARGET_XARCH
+                if ((sbyte)(cns) == cns)
+                {
+                    addrModeCostSz += 1;
+                }
+                else
+                {
+                    addrModeCostSz += 4;
+                }
+
+                addrmodeCount++;
+#elif TARGET_ARM
+                if (cns >= 128) // small offsets fits into a 16-bit instruction
+                {
+                    if (cns < 4096) // medium offsets require a 32-bit instruction
+                    {
+                        if (!varTypeIsFloating(type))
+                        {
+                            addrModeCostSz += 2;
+                        }
+                    }
+                    else
+                    {
+                        addrModeCostEx += 2; // Very large offsets require movw/movt instructions
+                        addrModeCostSz += 8;
+                    }
+                }
+#elif TARGET_ARM64
+                if (cns >= (4096 * type.Size))
+                {
+                    addrModeCostEx += 1;
+                    addrModeCostSz += 4;
+                }
+#elif TARGET_LOONGARCH64 || TARGET_RISCV64
+                if (!emitter.isValidSimm12(cns))
+                {
+                    // TODO-LoongArch64-CQ: tune for LoongArch64.
+                    // TODO-RISCV64-CQ: tune for RISCV64.
+                    addrModeCostEx += 1;
+                    addrModeCostSz += 4;
+                }
+#else
+#error "Unknown TARGET"
+#endif
+            }
+
+#if TARGET_XARCH
+            if (mul is not 0)
+            {
+                addrmodeCount++;
+            }
+
+            // When we form a complex addressing mode we can reduced the costs
+            // associated with the interior GT_ADD and GT_LSH nodes:
+            //
+            //                      GT_ADD      -- reduce this interior GT_ADD by (-3,-3)
+            //                      /   \       --
+            //                  GT_ADD  'cns'   -- reduce this interior GT_ADD by (-2,-2)
+            //                  /   \           --
+            //               'base'  GT_LSL     -- reduce this interior GT_LSL by (-1,-1)
+            //                      /   \       --
+            //                   'idx'  'mul'
+            //
+            if (addrmodeCount > 1)
+            {
+                // The number of interior GT_ADD and GT_LSL will always be one less than addrmodeCount
+                //
+                addrmodeCount--;
+
+                var tmp = addr;
+                while (addrmodeCount > 0)
+                {
+                    // decrement the gtCosts for the interior GT_ADD or GT_LSH node by the remaining addrmodeCount
+
+                    tmp.SetCosts((byte)(tmp.CostEx - addrmodeCount), (byte)(tmp.CostSz - addrmodeCount));
+                    addrmodeCount--;
+
+                    if (addrmodeCount > 0)
+                    {
+                        var tmpOp = tmp.AsOp();
+
+                        var tmpOp1 = tmpOp.Op1;
+                        var tmpOp2 = tmpOp.Op2;
+
+                        if ((tmpOp1 != baseAddr) && (tmpOp1.Oper is GT_ADD))
+                        {
+                            tmp = tmpOp1;
+                        }
+                        else if (tmpOp2.Oper is GT_LSH)
+                        {
+                            tmp = tmpOp2;
+                        }
+                        else if (tmpOp1.Oper is GT_LSH)
+                        {
+                            tmp = tmpOp1;
+                        }
+                        else if (tmpOp2.Oper is GT_ADD)
+                        {
+                            tmp = tmpOp2;
+                        }
+                        else
+                        {
+                            // We can very rarely encounter a tree that has a GT_COMMA node
+                            // that is difficult to walk, so we just early out without decrementing.
+                            addrmodeCount = 0;
+                        }
+                    }
+                }
+            }
+#endif
+#endif
+
+            assert(addr.Oper is GT_ADD);
+            assert(!addr.HasOverflowCheck);
+            assert(mul is not 1);
+
+            // If we have an addressing mode, we have one of:
+            //   [base             + cns]
+            //   [       idx * mul      ]  // mul >= 2, else we would use base instead of idx
+            //   [       idx * mul + cns]  // mul >= 2, else we would use base instead of idx
+            //   [base + idx * mul      ]  // mul can be 0, 2, 4, or 8
+            //   [base + idx * mul + cns]  // mul can be 0, 2, 4, or 8
+            // Note that mul is 0 is semantically equivalent to mul is 1.
+            // Note that cns can be zero.
+
+            assert((baseAddr is not null) || ((idx is not null) && (mul >= 2)));
+
+            // Walk 'addr' identifying non-overflow ADDs that will be part of the address mode.
+            // Note that we will be modifying 'op1' and 'op2' so that eventually they should
+            // map to the base and index.
+            var op1 = addr;
+            var op2 = null as GenTree;
+
+            gtWalkOp(ref op1, ref op2, baseAddr, false);
+
+            // op1 and op2 are now descendents of the root GT_ADD of the addressing mode.
+#if TARGET_XARCH
+            // Walk the operands again (the third operand is unused in this case).
+            // This time we will only consider adds with constant op2's, since
+            // we have already found either a non-ADD op1 or a non-constant op2.
+            // NOTE: we don't support ADD(op1, cns) addressing for ARM/ARM64 yet so
+            // this walk makes no sense there.
+            gtWalkOp(ref op1, ref op2, null, true);
+            assert(op2 is not null);
+
+            // For XARCH we will fold GT_ADDs in the op2 position into the addressing mode, so we call
+            // gtWalkOp on both operands of the original GT_ADD.
+            // This is not done for ARMARCH. Though the stated reason is that we don't try to create a
+            // scaled index, in fact we actually do create them (even base + index*scale + offset).
+
+            // At this point, 'op2' may itself be an ADD of a constant that should be folded
+            // into the addressing mode.
+            // Walk op2 looking for non-overflow GT_ADDs of constants.
+            gtWalkOp(ref op2, ref op1, null, true);
+#endif
+
+            var noCSE = (op2 is not null) && (op2.Oper is GT_LSH or GT_MUL);
+
+#if TARGET_RISCV64
+            noCSE &= compOpportunisticallyDependsOn(InstructionSet_Zba);
+#else
+            noCSE &= (mul > 1);
+#endif
+
+            if (noCSE)
+            {
+                assert(op2 is not null);
+                op2.Flags |= GTF_ADDRMODE_NO_CSE;
+
+#if TARGET_RISCV64
+                // RISC-V addressing mode follows the form: (base + index*scale) + offset.
+                // To emit sh1/2/3add.uw, GT_ADD + GT_LSH/MUL + GT_CAST(zero-extend) nodes are required (Zba extension).
+                // Disabling CSE for GT_CAST prevents breaking the pattern and ensures emitting sh1/2/3add.uw.
+                // Note that emitting sh1/2/3add instructions (without .uw) don't require a GT_CAST node.
+                //
+                // Example:
+                //      ADD
+                //      |- ADD
+                //      |  |- LCL_VAR       (base)
+                //      |  |- LSH (or MUL)  (index * scale)
+                //      |     |- GT_CAST    (index, CSE must be disabled here to emit sh1/2/3add.uw)
+                //      |        |- OP1     (CSE/ConstCSE allowed here)
+                //      |     |- CNS_INT    (scale)
+                //      |- CNS_INT          (offset)
+
+                var index = op2.Op1;
+
+                if ((index is not null) && (index.Oper is GT_CAST))
+                {
+                    assert(index.Type is TYP_I_IMPL);
+                    index->gtFlags |= GTF_ADDRMODE_NO_CSE;
+                }
+#endif
+            }
+
+            // Finally, adjust the costs on the parenting COMMAs.
+            while (addrComma != addr)
+            {
+                var addrCostExDelta = originalAddrCostEx - addrModeCostEx;
+                var addrCostSzDelta = originalAddrCostSz - addrModeCostSz;
+
+                addrComma.SetCosts((byte)(addrComma.CostEx - addrCostExDelta), (byte)(addrComma.CostSz - addrCostSzDelta));
+
+                var addrCommaOp = addrComma.AsOp();
+
+                var addrCommaOp1 = addrCommaOp.Op1;
+                var addrCommaOp2 = addrCommaOp.Op2;
+
+                costEx += addrCommaOp1.CostEx;
+                costSz += addrCommaOp1.CostSz;
+
+                addrComma = addrCommaOp2;
+            }
+
+            costEx += addrModeCostEx;
+            costSz += addrModeCostSz;
+
+            return true;
+
+        }
+        return false;
+    }
+
     // Return true if call is a recursive call; return false otherwise.
     // Note when inlining, this looks for calls back to the root method.
     public unsafe bool gtIsRecursiveCall(GenTreeCall call, bool useInlineRoot = true)
@@ -4065,6 +6447,21 @@ public partial class Compiler
 
         handle = NO_CLASS_HANDLE;
         return false;
+    }
+
+    /// <summary>Check if two trees may interfere because of a store in one of the trees.</summary>
+    /// <param name="treeWithStores">Tree that may have stores in it</param>
+    /// <param name="tree">Tree that may be reading from a local stored to in "treeWithStores"</param>
+    /// <returns>False if there is no interference. Returns true if there is any GT_LCL_VAR or GT_LCL_FLD in "tree" whose value depends on a local stored in "treeWithStores". May also return true in cases without interference if the trees are too large and the function runs out of budget.</returns>
+    public bool gtMayHaveStoreInterference(GenTree treeWithStores, GenTree tree)
+    {
+        if (((treeWithStores.Flags & GTF_ASG) is 0) || tree.Oper.IsInvariant)
+        {
+            return false;
+        }
+
+        var visitor = new MayHaveStoreInterferenceVisitor(this, tree);
+        return visitor.WalkTree(ref treeWithStores, user: null) == WALK_ABORT;
     }
 
     public GenTree gtNewAllBitsSetConNode(var_types type)
@@ -9577,14 +11974,1096 @@ public partial class Compiler
         return 0;
     }
 
+    public static void gtSetEvalOrderIndirectStore(Compiler comp, GenTreeIndir store, out bool allowReversal)
+    {
+        assert(store.Oper is GT_STORE_BLK or GT_STOREIND);
+
+#if TARGET_WASM
+        allowReversal = false;
+#else
+        var addr = store.Addr;
+        var data = store.Data;
+
+        if (addr.Oper.IsInvariant)
+        {
+            allowReversal = false;
+            store.IsReverseOp = true;
+            return;
+        }
+
+        if ((addr.Flags & GTF_ALL_EFFECT) is not 0)
+        {
+            allowReversal = true;
+            return;
+        }
+
+        // In case op2 assigns to a local var that is used in op1, we have to evaluate op1 first.
+        if (comp.gtMayHaveStoreInterference(data, addr))
+        {
+            // TODO-ASG-Cleanup: move this guard to "gtCanSwapOrder".
+            allowReversal = false;
+            return;
+        }
+
+        // If op2 is simple then evaluate op1 first
+        if (data.Oper.IsLeaf)
+        {
+            allowReversal = true;
+            return;
+        }
+
+        allowReversal = false;
+        store.IsReverseOp = true;
+#endif
+    }
+
     /// <summary>A MinOpts specific version of gtSetEvalOrder. We don't need to set costs, but we're looking for opportunities to swap operands.</summary>
     /// <param name="tree">The tree for which we are setting the evaluation order.</param>
     /// <returns>the Sethi 'complexity' estimate for this tree (the higher the number, the higher is the tree's resources requirement)</returns>
     public int gtSetEvalOrderMinOpts(GenTree tree)
     {
-        // TODO: Port Compiler.gtSetEvalOrderMinOpts
-        return 0;
+        if (fgOrder is FGOrderLinear)
+        {
+            // We don't re-order operands in LIR anyway.
+            return 0;
+        }
+
+        var oper = tree.Oper;
+
+        if (oper.IsLeaf)
+        {
+            // Nothing to do for leaves, report as having Sethi 'complexity' of 0
+            return 0;
+        }
+
+        var level = 1;
+
+        if (oper.IsSimple)
+        {
+            var op1 = null as GenTree;
+            var op2 = null as GenTree;
+
+            if (oper.IsUnary)
+            {
+                op1 = tree.AsUnOp().Op1;
+            }
+            else
+            {
+                assert(oper.IsBinary);
+                var op = tree.AsOp();
+
+                op1 = op.Op1;
+                op2 = op.Op2;
+            }
+
+            // Only GT_LEA may have a null op1 and a non-null op2
+            if ((oper is GT_LEA) && (op1 is null))
+            {
+                (op1, op2) = (op2, op1);
+            }
+
+            // Check for a nilary operator
+            if (op1 is null)
+            {
+                // E.g. void GT_RETURN, GT_RETFIT
+                assert(op2 is null);
+                return 0;
+            }
+
+            if (op2 is null)
+            {
+                gtSetEvalOrderMinOpts(op1);
+                return 1;
+            }
+
+            level = gtSetEvalOrderMinOpts(op1);
+            var levelOp2 = gtSetEvalOrderMinOpts(op2);
+
+            var allowSwap = true;
+
+            // TODO: Introduce a function to check whether we can swap the order of its operands or not.
+            switch (oper)
+            {
+                case GT_COMMA:
+                case GT_BOUNDS_CHECK:
+                case GT_INTRINSIC:
+                case GT_QMARK:
+                case GT_COLON:
+                {
+                    // We're not going to swap operands in these
+                    allowSwap = false;
+                    break;
+                }
+
+                case GT_STORE_BLK:
+                case GT_STOREIND:
+                {
+                    gtSetEvalOrderIndirectStore(this, tree.AsIndir(), out allowSwap);
+                    break;
+                }
+
+                default:
+                {
+                    break;
+                }
+            }
+
+            var shouldSwap = tree.IsReverseOp ? (level > levelOp2) : (level < levelOp2);
+
+            if (shouldSwap && allowSwap)
+            {
+                // Can we swap the order by commuting the operands?
+                var canSwap = tree.IsReverseOp ? gtCanSwapOrder(op2, op1) : gtCanSwapOrder(op1, op2);
+
+                if (canSwap)
+                {
+                    var performSwap = oper.IsCommutative;
+
+                    if (oper.IsCmpCompare)
+                    {
+                        var swapRelop = oper.SwapRelop;
+
+                        if (swapRelop != oper)
+                        {
+                            tree.SetOper(swapRelop);
+                        }
+                        performSwap = true;
+                    }
+
+                    if (performSwap)
+                    {
+                        var op = tree.AsOp();
+
+                        op.Op1 = op2;
+                        op.Op2 = op1;
+
+                        (op1, op2) = (op2, op1);
+                    }
+                    else
+                    {
+
+#if TARGET_WASM
+                        // For WASM if we can't swap the operands or swap the operator, don't swap.
+#else
+                        // Mark the operand's evaluation order to be swapped.
+                        tree.Flags ^= GTF_REVERSE_OPS;
+#endif
+                    }
+                }
+            }
+
+            // Swap the level counts
+            if (tree.IsReverseOp)
+            {
+                (level, levelOp2) = (levelOp2, level);
+            }
+
+            // Compute the sethi number for this binary operator
+            if (level < 1)
+            {
+                level = levelOp2;
+            }
+            else if (level == levelOp2)
+            {
+                level++;
+            }
+        }
+        else if (oper.IsCall)
+        {
+            var call = tree.AsCall();
+
+            // We ignore late args - they don't bring any noticeable benefits according to asmdiffs/tpdiff
+            foreach (var arg in call.Args.EarlyArgs)
+            {
+                gtSetEvalOrderMinOpts(arg.EarlyNode);
+            }
+
+            level = 3;
+        }
+#if FEATURE_HW_INTRINSICS
+        else if (oper.IsHWIntrinsic)
+        {
+            return gtSetMultiOpOrder(tree.AsMultiOp());
+        }
+#endif
+
+        // NOTE: we skip many operators here in order to maintain a good trade-off between CQ and TP.
+        return level;
     }
+
+#if FEATURE_SIMD || FEATURE_HW_INTRINSICS
+    /// <summary>Calculate the costs for a MultiOp.</summary>
+    /// <param name="multiOp">The MultiOp tree in question</param>
+    /// <returns>The Sethi "complexity" for this tree (the idealized number of registers needed to evaluate it).</returns>
+    public int gtSetMultiOpOrder(GenTreeMultiOp multiOp)
+    {
+        // Most HWI nodes are simple arithmetic operations.
+        var costEx = (byte)(1);
+        var costSz = (byte)(1);
+        var level = 0;
+
+        var optsEnabled = opts.OptimizationEnabled;
+        var opCount = multiOp.Operands.Length;
+        var addrOp = null as GenTree;
+
+#if FEATURE_HW_INTRINSICS
+        if ((multiOp.Oper is GT_HWINTRINSIC) && optsEnabled)
+        {
+            var hwTree = multiOp.AsHWIntrinsic();
+            var intrinsicId = hwTree.HWIntrinsicId;
+            var retType = hwTree.Type;
+            var simdBaseType = hwTree.SimdBaseType;
+            var simdSize = hwTree.SimdSize;
+
+#if TARGET_XARCH
+            if ((retType is TYP_SIMD64) || (simdSize is 64))
+            {
+                costSz = 6;
+            }
+            else
+            {
+                costSz = 4;
+            }
+
+            var isLoad = hwTree.IsMemoryLoad(out addrOp);
+
+            if (isLoad || hwTree.IsMemoryStore(out addrOp))
+            {
+                assert(addrOp is not null);
+                costEx = FLT_IND_COST_EX;
+
+                if (simdSize is not 16)
+                {
+                    if (simdSize is 32)
+                    {
+                        costEx += 1;
+                    }
+                    else
+                    {
+                        costEx += 2;
+                    }
+                }
+
+                if (!isLoad)
+                {
+                    costEx += 2;
+                }
+
+                switch (intrinsicId)
+                {
+                    case NI_X86Base_StoreAlignedNonTemporal:
+                    case NI_X86Base_StoreNonTemporal:
+                    case NI_X86Base_X64_StoreNonTemporal:
+                    case NI_AVX_StoreAlignedNonTemporal:
+                    case NI_AVX512_StoreAlignedNonTemporal:
+                    {
+                        costEx += 38;
+                        break;
+                    }
+
+                    case NI_AVX_MaskStore:
+                    case NI_AVX2_MaskStore:
+                    {
+                        costEx += 5;
+                        break;
+                    }
+
+                    case NI_AVX2_GatherVector128:
+                    case NI_AVX2_GatherVector256:
+                    case NI_AVX2_GatherMaskVector128:
+                    case NI_AVX2_GatherMaskVector256:
+                    {
+                        if (varTypeIsLong(simdBaseType))
+                        {
+                            costEx += (byte)((simdSize is 16) ? 13 : 14);
+                        }
+                        else
+                        {
+                            costEx += (byte)((simdSize is 16) ? 15 : 16);
+                        }
+                        break;
+                    }
+
+                    case NI_AVX2_MultiplyNoFlags:
+                    case NI_AVX2_X64_MultiplyNoFlags:
+                    {
+                        costEx = 4 + IND_COST_EX;
+                        break;
+                    }
+
+                    case NI_AVX512_CompressStoreMask:
+                    case NI_AVX512_ExpandLoadMask:
+                    case NI_AVX512_MaskLoadMask:
+                    case NI_AVX512_MaskLoadAlignedMask:
+                    case NI_AVX512_MaskStoreMask:
+                    case NI_AVX512_MaskStoreAlignedMask:
+                    {
+                        costEx += 3;
+                        break;
+                    }
+
+                    default:
+                    {
+                        // The default costing is correct
+                        break;
+                    }
+                }
+
+                // Can we form an addressing mode with this indirection?
+                level = gtSetEvalOrder(addrOp);
+
+                if (gtGetAddrNodeCost(addrOp, retType, false, out var addrCostEx, out var addrCostSz))
+                {
+                    costEx += addrCostEx;
+                    costSz += addrCostSz;
+                }
+                else
+                {
+                    addrOp = null;
+                }
+            }
+            else
+            {
+                if (varTypeUsesIntReg(simdBaseType))
+                {
+                    costEx = HWIntrinsicInfo.lookupIntCost(intrinsicId);
+                }
+                else
+                {
+                    costEx = HWIntrinsicInfo.lookupFltCost(intrinsicId);
+                }
+
+                if (costEx == byte.MaxValue)
+                {
+                    switch (intrinsicId)
+                    {
+                        case NI_Vector128_ConditionalSelect:
+                        case NI_Vector256_ConditionalSelect:
+                        case NI_Vector512_ConditionalSelect:
+                        {
+                            // We either become `(o2 & op1) | (op3 & ~op1)`
+                            // or we get optimized into some kind of single
+                            // instruction variant, so average the cost at 2
+
+                            costEx = 2;
+                            costSz *= 2;
+                            break;
+                        }
+
+                        case NI_Vector128_Create:
+                        case NI_Vector256_Create:
+                        case NI_Vector512_Create:
+                        {
+                            // We shouldn't have "all constants" as they get transformed to CNS_VEC
+
+                            if (opCount is 1)
+                            {
+                                // We will end up as a broadcast
+                                costEx = (byte)((simdSize is 16) ? 1 : 3);
+                            }
+                            else
+                            {
+                                // We will end up as a sequence of opCount inserts
+
+                                costEx = (byte)(opCount);
+                                costSz *= (byte)(opCount);
+
+                                if (varTypeIsIntegral(simdBaseType))
+                                {
+                                    costEx *= 4;
+                                }
+                            }
+                            break;
+                        }
+
+                        case NI_Vector128_CreateScalar:
+                        case NI_Vector128_CreateScalarUnsafe:
+                        case NI_Vector256_CreateScalar:
+                        case NI_Vector256_CreateScalarUnsafe:
+                        case NI_Vector512_CreateScalar:
+                        case NI_Vector512_CreateScalarUnsafe:
+                        {
+                            // We shouldn't have "all constants" as they get transformed to CNS_VEC
+
+                            if (varTypeIsIntegral(simdBaseType))
+                            {
+                                costEx = 3;
+
+#if TARGET_X86
+                                if (varTypeIsLong(simdBaseType))
+                                {
+                                    costEx += 4;
+                                    costSz *= 2;
+                                }
+#endif
+                            }
+                            else
+                            {
+                                costEx = 1;
+                            }
+                            break;
+                        }
+
+                        case NI_Vector128_Dot:
+                        case NI_Vector256_Dot:
+                        case NI_Vector512_Dot:
+                        {
+                            var elementCount = 16 / simdBaseType.Size;
+
+                            if (varTypeIsIntegral(simdBaseType))
+                            {
+                                // We have a multiply, 0-2 additions to reduce down to
+                                // V128 and then log2(V128<T>.Count) add operations
+
+                                costEx = (byte)(5 + (3 * int.Log2(elementCount)));
+                                costSz += (byte)(costSz * int.Log2(elementCount));
+                            }
+                            else
+                            {
+                                costEx = (byte)((simdBaseType == TYP_DOUBLE) ? 9 : 13);
+                            }
+
+                            if (simdSize is not 16)
+                            {
+                                if (simdSize is 32)
+                                {
+                                    costEx += 1;
+                                }
+                                else
+                                {
+                                    costEx += 2;
+                                }
+                            }
+                            break;
+                        }
+
+                        case NI_Vector128_ExtractMostSignificantBits:
+                        case NI_Vector256_ExtractMostSignificantBits:
+                        case NI_Vector512_ExtractMostSignificantBits:
+                        {
+                            costEx = 3;
+
+                            if (simdSize is not 16)
+                            {
+                                if (simdSize is 32)
+                                {
+                                    costEx += 2;
+                                }
+                                else
+                                {
+                                    // Convert vector to mask, then extract
+                                    costEx += 3;
+                                    costSz += 6;
+                                }
+                            }
+                            break;
+                        }
+
+                        case NI_Vector128_GetElement:
+                        case NI_Vector256_GetElement:
+                        case NI_Vector512_GetElement:
+                        {
+                            var op2 = hwTree.GetOp(2);
+
+                            if (op2.Oper.IsConst)
+                            {
+                                // We can extract the value, possibly
+                                // after extracting a particular V128
+
+                                if (varTypeIsIntegral(simdBaseType))
+                                {
+                                    costEx = 4;
+                                }
+                                else
+                                {
+                                    costEx = 1;
+                                }
+
+                                if (op2.AsIntCon().IconValue >= (16 / simdBaseType.Size))
+                                {
+                                    costEx += 3;
+                                    costSz *= 2;
+                                }
+                            }
+                            else
+                            {
+                                // We need a spill + load
+                                costEx = FLT_IND_COST_EX;
+
+                                if (simdSize is not 16)
+                                {
+                                    if (simdSize is 32)
+                                    {
+                                        costEx += 1;
+                                    }
+                                    else
+                                    {
+                                        costEx += 2;
+                                    }
+                                }
+
+                                if (varTypeIsIntegral(simdBaseType))
+                                {
+                                    costEx += IND_COST_EX + 1;
+                                    costSz += 4;
+
+                                    if (varTypeIsSmall(simdBaseType))
+                                    {
+                                        costEx += 1;
+                                        costSz += 1;
+                                    }
+                                }
+                                else
+                                {
+                                    costEx = FLT_IND_COST_EX + 2;
+                                    costSz += 6;
+                                }
+                            }
+                            break;
+                        }
+
+                        case NI_Vector256_GetLower:
+                        case NI_Vector512_GetLower:
+                        case NI_Vector512_GetLower128:
+                        {
+                            costEx = 1;
+                            break;
+                        }
+
+                        case NI_Vector256_GetUpper:
+                        case NI_Vector512_GetUpper:
+                        {
+                            costEx = 3;
+                            break;
+                        }
+
+                        case NI_Vector128_Shuffle:
+                        case NI_Vector128_ShuffleNative:
+                        case NI_Vector128_ShuffleNativeFallback:
+                        case NI_Vector256_Shuffle:
+                        case NI_Vector256_ShuffleNative:
+                        case NI_Vector256_ShuffleNativeFallback:
+                        case NI_Vector512_Shuffle:
+                        case NI_Vector512_ShuffleNative:
+                        case NI_Vector512_ShuffleNativeFallback:
+                        {
+                            // These are likely becoming calls
+                            costEx = 5 + (3 * IND_COST_EX);
+                            costSz = 5;
+                            break;
+                        }
+
+                        case NI_Vector128_ToScalar:
+                        case NI_Vector256_ToScalar:
+                        case NI_Vector512_ToScalar:
+                        {
+                            costEx = (byte)(varTypeIsIntegral(simdBaseType) ? 3 : 1);
+                            break;
+                        }
+
+                        case NI_Vector128_ToVector512:
+                        case NI_Vector256_ToVector512:
+                        case NI_Vector128_ToVector256:
+                        case NI_Vector128_ToVector256Unsafe:
+                        case NI_Vector256_ToVector512Unsafe:
+                        {
+                            costEx = 1;
+                            break;
+                        }
+
+                        case NI_Vector128_WithElement:
+                        case NI_Vector256_WithElement:
+                        case NI_Vector512_WithElement:
+                        {
+                            var op2 = hwTree.GetOp(2);
+
+                            if (op2.Oper.IsConst)
+                            {
+                                // We can insert the value, possibly
+                                // after extracting a particular V128,
+                                // and then reinserting the V128 as well
+
+                                if (varTypeIsIntegral(simdBaseType))
+                                {
+                                    costEx = 4;
+                                }
+                                else
+                                {
+                                    costEx = 1;
+                                }
+
+                                if (op2.AsIntCon().IconValue >= (16 / simdBaseType.Size))
+                                {
+                                    costEx += 6;
+                                    costSz *= 3;
+                                }
+                            }
+                            else
+                            {
+                                // We need a spill + write + load
+                                costEx = FLT_IND_COST_EX;
+
+                                if (simdSize is not 16)
+                                {
+                                    if (simdSize is 32)
+                                    {
+                                        costEx += 1;
+                                    }
+                                    else
+                                    {
+                                        costEx += 2;
+                                    }
+                                }
+
+                                if (varTypeIsIntegral(simdBaseType))
+                                {
+                                    costEx += IND_COST_EX + IND_COST_EX + 1;
+                                    costSz += 8;
+
+                                    if (varTypeIsSmall(simdBaseType))
+                                    {
+                                        costEx += 2;
+                                        costSz += 2;
+                                    }
+                                }
+                                else
+                                {
+                                    costEx = FLT_IND_COST_EX + FLT_IND_COST_EX + 2;
+                                    costSz += 12;
+                                }
+                            }
+                            break;
+                        }
+
+                        case NI_Vector256_WithLower:
+                        case NI_Vector256_WithUpper:
+                        case NI_Vector512_WithLower:
+                        case NI_Vector512_WithUpper:
+                        {
+                            costEx = 3;
+                            break;
+                        }
+
+                        case NI_Vector128_op_Division:
+                        case NI_Vector256_op_Division:
+                        case NI_Vector512_op_Division:
+                        {
+                            // We generate a fairly complex sequence involving
+                            // comparisons, two branches, conversions, and a fp
+                            // division
+
+                            costEx = 46;
+                            costSz = (byte)((costSz * 11) + 4);
+                            break;
+                        }
+
+                        case NI_Vector128_op_Equality:
+                        case NI_Vector128_op_Inequality:
+                        case NI_Vector256_op_Equality:
+                        case NI_Vector256_op_Inequality:
+                        case NI_Vector512_op_Equality:
+                        case NI_Vector512_op_Inequality:
+                        {
+                            // We emit a simd compare, get mask, integer compare,
+                            // and a branch or setcc
+
+                            if (varTypeIsIntegral(simdBaseType))
+                            {
+                                costEx = 6;
+                                costSz = (byte)((costSz * 2) + 3);
+                            }
+                            else
+                            {
+                                costEx = 9;
+                                costSz = (byte)((costSz * 2) + 3);
+                            }
+                            break;
+                        }
+
+                        case NI_X86Base_Divide:
+                        case NI_X86Base_DivideScalar:
+                        case NI_AVX_Divide:
+                        case NI_AVX512_Divide:
+                        case NI_AVX512_DivideScalar:
+                        {
+                            costEx = (byte)((simdBaseType == TYP_DOUBLE) ? 14 : 11);
+                            break;
+                        }
+
+                        case NI_X86Base_DotProduct:
+                        {
+                            costEx = (byte)((simdBaseType == TYP_DOUBLE) ? 9 : 13);
+                            break;
+                        }
+
+                        case NI_X86Base_LoadFence:
+                        {
+                            costEx = 4;
+                            break;
+                        }
+
+                        case NI_X86Base_MemoryFence:
+                        {
+                            costEx = 33;
+                            break;
+                        }
+
+                        case NI_X86Base_MultiplyLow:
+                        case NI_AVX2_MultiplyLow:
+                        {
+                            costEx = (byte)(varTypeIsInt(simdBaseType) ? 10 : 5);
+                            break;
+                        }
+
+                        case NI_X86Base_Pause:
+                        {
+                            costEx = 140;
+                            break;
+                        }
+
+                        case NI_X86Base_Prefetch0:
+                        case NI_X86Base_Prefetch1:
+                        case NI_X86Base_Prefetch2:
+                        case NI_X86Base_PrefetchNonTemporal:
+                        {
+                            costEx = 1;
+                            break;
+                        }
+
+                        case NI_X86Base_Sqrt:
+                        case NI_X86Base_SqrtScalar:
+                        case NI_AVX_Sqrt:
+                        case NI_AVX512_Sqrt:
+                        case NI_AVX512_SqrtScalar:
+                        {
+                            costEx = (byte)((simdBaseType == TYP_DOUBLE) ? 16 : 12);
+                            break;
+                        }
+
+                        case NI_X86Base_StoreFence:
+                        {
+                            costEx = 6;
+                            break;
+                        }
+
+                        case NI_AVX_TestC:
+                        case NI_AVX_TestNotZAndNotC:
+                        case NI_AVX_TestZ:
+                        {
+                            costEx = (byte)((simdSize is 16) ? 3 : 5);
+                            break;
+                        }
+
+                        case NI_AVX512_AlignRight32:
+                        case NI_AVX512_AlignRight64:
+                        {
+                            costEx = (byte)((simdSize is 16) ? 1 : 3);
+                            break;
+                        }
+
+                        case NI_AVX512_ConvertToVector128Byte:
+                        case NI_AVX512_ConvertToVector128ByteWithSaturation:
+                        case NI_AVX512_ConvertToVector128Int16:
+                        case NI_AVX512_ConvertToVector128Int16WithSaturation:
+                        case NI_AVX512_ConvertToVector128Int32WithSaturation:
+                        case NI_AVX512_ConvertToVector128SByte:
+                        case NI_AVX512_ConvertToVector128SByteWithSaturation:
+                        case NI_AVX512_ConvertToVector128UInt16:
+                        case NI_AVX512_ConvertToVector128UInt16WithSaturation:
+                        case NI_AVX512_ConvertToVector128UInt32WithSaturation:
+                        case NI_AVX512_ConvertToVector256Byte:
+                        case NI_AVX512_ConvertToVector256ByteWithSaturation:
+                        case NI_AVX512_ConvertToVector256Int16:
+                        case NI_AVX512_ConvertToVector256Int16WithSaturation:
+                        case NI_AVX512_ConvertToVector256Int32WithSaturation:
+                        case NI_AVX512_ConvertToVector256SByte:
+                        case NI_AVX512_ConvertToVector256SByteWithSaturation:
+                        case NI_AVX512_ConvertToVector256UInt16:
+                        case NI_AVX512_ConvertToVector256UInt16WithSaturation:
+                        case NI_AVX512_ConvertToVector256UInt32WithSaturation:
+                        {
+                            costEx = (byte)((simdSize is 16) ? 2 : 4);
+                            break;
+                        }
+
+                        case NI_AVX512_ConvertToVector128Int32:
+                        {
+                            costEx = (byte)((simdSize is 16) ? 1 : 3);
+                            break;
+                        }
+
+                        case NI_AVX512_ConvertToVector128Double:
+                        case NI_AVX512_ConvertToVector256Double:
+                        case NI_AVX512_ConvertToVector512Double:
+                        {
+                            if (varTypeIsLong(simdBaseType))
+                            {
+                                costEx = 4;
+                            }
+                            else
+                            {
+                                costEx = (byte)((retType == TYP_SIMD16) ? 5 : 7);
+                            }
+                            break;
+                        }
+
+                        case NI_AVX512_ConvertToVector128Int64:
+                        case NI_AVX512_ConvertToVector128Int64WithTruncation:
+                        {
+                            if (simdBaseType == TYP_DOUBLE)
+                            {
+                                costEx = 4;
+                            }
+                            else
+                            {
+                                costEx = (byte)((retType == TYP_SIMD16) ? 5 : 7);
+                            }
+                            break;
+                        }
+
+                        case NI_AVX512_ConvertToVector128Single:
+                        case NI_AVX512_ConvertToVector256Single:
+                        case NI_AVX512_ConvertToVector512Single:
+                        {
+                            if (varTypeIsLong(simdBaseType))
+                            {
+                                costEx = (byte)((simdSize is 16) ? 5 : 7);
+                            }
+                            else
+                            {
+                                costEx = 4;
+                            }
+                            break;
+                        }
+
+                        case NI_AVX512_ConvertToVector128UInt32:
+                        case NI_AVX512_ConvertToVector128UInt32WithTruncation:
+                        case NI_AVX512_ConvertToVector256Int32:
+                        case NI_AVX512_ConvertToVector256Int32WithTruncation:
+                        case NI_AVX512_ConvertToVector256UInt32:
+                        case NI_AVX512_ConvertToVector256UInt32WithTruncation:
+                        case NI_AVX10v2_ConvertToVectorInt32WithTruncatedSaturation:
+                        case NI_AVX10v2_ConvertToVectorUInt32WithTruncatedSaturation:
+                        {
+                            if (varTypeIsIntegral(simdBaseType))
+                            {
+                                costEx = (byte)((simdSize is 16) ? 1 : 3);
+                            }
+                            else if (simdBaseType == TYP_DOUBLE)
+                            {
+                                costEx = (byte)((simdSize is 16) ? 5 : 7);
+                            }
+                            else
+                            {
+                                costEx = 4;
+                            }
+                            break;
+                        }
+
+                        case NI_AVX512_ConvertToVector128UInt64:
+                        case NI_AVX512_ConvertToVector128UInt64WithTruncation:
+                        case NI_AVX512_ConvertToVector256Int64:
+                        case NI_AVX512_ConvertToVector256Int64WithTruncation:
+                        case NI_AVX512_ConvertToVector256UInt64:
+                        case NI_AVX512_ConvertToVector256UInt64WithTruncation:
+                        case NI_AVX512_ConvertToVector512Int64:
+                        case NI_AVX512_ConvertToVector512Int64WithTruncation:
+                        case NI_AVX512_ConvertToVector512UInt64:
+                        case NI_AVX512_ConvertToVector512UInt64WithTruncation:
+                        case NI_AVX10v2_ConvertToVectorInt64WithTruncatedSaturation:
+                        case NI_AVX10v2_ConvertToVectorUInt64WithTruncatedSaturation:
+                        {
+                            if (simdBaseType == TYP_FLOAT)
+                            {
+                                costEx = (byte)((retType == TYP_SIMD16) ? 5 : 7);
+                            }
+                            else
+                            {
+                                costEx = 4;
+                            }
+                            break;
+                        }
+
+                        case NI_AVX512_DetectConflicts:
+                        {
+                            if (simdSize is 16)
+                            {
+                                costEx = (byte)(varTypeIsLong(simdBaseType) ? 4 : 11);
+                            }
+                            else if (simdSize is 32)
+                            {
+                                costEx = (byte)(varTypeIsLong(simdBaseType) ? 13 : 16);
+                            }
+                            else
+                            {
+                                costEx = (byte)(varTypeIsLong(simdBaseType) ? 17 : 26);
+                            }
+                            break;
+                        }
+
+                        case NI_AVX512_Reciprocal14:
+                        case NI_AVX512_Reciprocal14Scalar:
+                        case NI_AVX512_ReciprocalSqrt14:
+                        case NI_AVX512_ReciprocalSqrt14Scalar:
+                        {
+                            if (simdBaseType == TYP_FLOAT)
+                            {
+                                costEx = (byte)((simdSize is 64) ? 7 : 4);
+                            }
+                            else
+                            {
+                                costEx = 4;
+                            }
+                            break;
+                        }
+
+                        case NI_X86Serialize_Serialize:
+                        {
+                            costEx = 105;
+                            break;
+                        }
+
+                        case NI_AVX_PTEST:
+                        {
+                            if (varTypeIsIntegral(simdBaseType))
+                            {
+                                costEx = (byte)((simdSize is 16) ? 4 : 6);
+                            }
+                            else
+                            {
+                                costEx = (byte)((simdSize is 16) ? 3 : 5);
+                            }
+                            break;
+                        }
+
+                        case NI_AVX512_ConvertMaskToVector:
+                        {
+                            costEx = (byte)(varTypeIsSmall(simdBaseType) ? 3 : 1);
+                            break;
+                        }
+
+                        default:
+                        {
+                            NO_WAY("Unhandled costing for HWIntrinsic");
+                            costEx = (byte)(varTypeIsIntegral(simdBaseType) ? 1 : 4);
+                            break;
+                        }
+                    }
+                }
+            }
+#endif
+        }
+#endif
+
+        // The binary case is special because of GTF_REVERSE_OPS.
+        if (opCount is 2)
+        {
+            var lvl2 = 0;
+
+            var op1 = multiOp.GetOp(1);
+            var op2 = multiOp.GetOp(2);
+
+            var addrLevel = level;
+
+            if (op1 != addrOp)
+            {
+                level = gtSetEvalOrder(op1);
+
+                if (optsEnabled)
+                {
+                    costEx += op1.CostEx;
+                    costSz += op1.CostSz;
+                }
+            }
+
+            if (op2 != addrOp)
+            {
+                lvl2 = gtSetEvalOrder(op2);
+
+                if (optsEnabled)
+                {
+                    costEx += op2.CostEx;
+                    costSz += op2.CostSz;
+                }
+            }
+            else
+            {
+                lvl2 = addrLevel;
+            }
+
+            // This way we have "level" be the complexity of the
+            // first tree to be evaluated, and "lvl2" - the second.
+
+            if (multiOp.IsReverseOp)
+            {
+                assert(!multiOp.AsHWIntrinsic().IsUserCall);
+
+                (op1, op2) = (op2, op1);
+                (level, lvl2) = (lvl2, level);
+            }
+
+            // We want the more complex tree to be evaluated first.
+            if ((level < lvl2) && !multiOp.AsHWIntrinsic().IsUserCall && gtCanSwapOrder(op1, op2))
+            {
+                multiOp.IsReverseOp ^= true;
+                (level, lvl2) = (lvl2, level);
+            }
+
+            if (level < 1)
+            {
+                level = lvl2;
+            }
+            else if (level == lvl2)
+            {
+                level += 1;
+            }
+        }
+        else if (opCount is 1)
+        {
+            var op1 = multiOp.GetOp(1);
+
+            if (op1 != addrOp)
+            {
+                level = gtSetEvalOrder(op1);
+
+                if (optsEnabled)
+                {
+                    costEx += op1.CostEx;
+                    costSz += op1.CostSz;
+                }
+            }
+        }
+        else
+        {
+            var operands = multiOp.Operands;
+
+            for (var i = operands.Length; i >= 1; i--)
+            {
+                var op = operands[i - 1];
+
+                if (op == addrOp)
+                {
+                    continue;
+                }
+
+                level = int.Max(gtSetEvalOrder(op), level + 1);
+
+                if (optsEnabled)
+                {
+                    // We don't need/have costs in MinOpts
+                    costEx += op.CostEx;
+                    costSz += op.CostSz;
+                }
+            }
+        }
+
+        if (optsEnabled)
+        {
+            multiOp.SetCosts(costEx, costSz);
+        }
+        return level;
+    }
+#endif
 
     /// <summary>A wrapper for gtSetEvalOrder and gtComputeFPlvls</summary>
     /// <param name="stmt"></param>
@@ -9622,6 +13101,26 @@ public partial class Compiler
     public bool gtTreeContainsTailCall(GenTree tree)
     {
         return gtFindNodeInTree(tree, gtIsTailCall, GTF_CALL) is not null;
+    }
+
+    /// <summary>Check if a tree has a read of the specified local, taking promotion into account.</summary>
+    /// <param name="tree">The tree to check.</param>
+    /// <param name="lclNum">The local to look for.</param>
+    /// <returns>True if there is any GT_LCL_VAR or GT_LCL_FLD node whose value depends on "lclNum".</returns>
+    public bool gtTreeHasLocalRead(GenTree tree, int lclNum)
+    {
+        var visitor = new TreeHasLocalReadVisitor(this, lclNum);
+        return visitor.WalkTree(ref tree, user: null) == WALK_ABORT;
+    }
+
+    /// <summary>Check if a tree has a store that affects the specified local, taking promotion into account.</summary>
+    /// <param name="tree">The tree to check.</param>
+    /// <param name="lclNum">The local to look for.</param>
+    /// <returns>True if there is any definition that affects "lclNum".</returns>
+    public bool gtTreeHasLocalStore(GenTree tree, int lclNum)
+    {
+        var visitor = new TreeHasLocalStoreVisitor(this, lclNum);
+        return visitor.WalkTree(ref tree, user: null) == WALK_ABORT;
     }
 
     public bool gtTreeHasSideEffects(GenTree tree, GenTreeFlags flags, bool ignoreCctors = false)
@@ -9943,6 +13442,108 @@ public partial class Compiler
             tree.Flags |= (operand.Flags & GTF_ALL_EFFECT);
             return GenTree.VisitResult.Continue;
         });
+    }
+
+    /// <summary>Traverse and mark an address expression</summary>
+    /// <param name="op1">An out parameter which is either the address expression, or one of its operands.</param>
+    /// <param name="op2">An out parameter which starts as either null or one of the operands of the address expression.</param>
+    /// <param name="baseAddr">The base address of the addressing mode, or null if 'constOnly' is false</param>
+    /// <param name="constOnly">True if we will only traverse into ADDs with constant op2.</param>
+    public void gtWalkOp(ref GenTree op1, ref GenTree? op2, GenTree? baseAddr, bool constOnly)
+    {
+        // This routine is a helper routine for gtSetEvalOrder() and is used to identify the
+        // base and index nodes, which will be validated against those identified by
+        // genCreateAddrMode().
+        // It also marks the ADD nodes involved in the address expression with the
+        // GTF_ADDRMODE_NO_CSE flag which prevents them from being considered for CSE's.
+        //
+        // Its two output parameters are modified under the following conditions:
+        //
+        // It is called once with the original address expression as 'op1WB', and
+        // with 'constOnly' set to false. On this first invocation, *op1WB is always
+        // an ADD node, and it will consider the operands of the ADD even if its op2 is
+        // not a constant. However, when it encounters a non-constant or the base in the
+        // op2 position, it stops iterating. That operand is returned in the 'op2WB' out
+        // parameter, and will be considered on the third invocation of this method if
+        // it is an ADD.
+        //
+        // It is called the second time with the two operands of the original expression, in
+        // the original order, and the third time in reverse order. For these invocations
+        // 'constOnly' is true, so it will only traverse cascaded ADD nodes if they have a
+        // constant op2.
+        //
+        // The result, after three invocations, is that the values of the two out parameters
+        // correspond to the base and index in some fashion. This method doesn't attempt
+        // to determine or validate the scale or offset, if any.
+        //
+        // Assumptions (presumed to be ensured by genCreateAddrMode()):
+        //    If an ADD has a constant operand, it is in the op2 position.
+        //
+        // Notes:
+        //    This method, and its invocation sequence, are quite confusing, and since they
+        //    were not originally well-documented, this specification is a possibly-imperfect
+        //    reconstruction.
+        //    The motivation for the handling of the NOP case is unclear.
+        //    Note that 'op2WB' is only modified in the initial (!constOnly) case,
+        //    or if a NOP is encountered in the op1 position.
+
+        op1 = op1.EffectiveVal;
+
+        // Now we look for op1's with non-overflow GT_ADDs [of constants]
+        while ((op1.Oper is GT_ADD) && !op1.HasOverflowCheck)
+        {
+            var add = op1.AsOp();
+
+            var addOp1 = add.Op1;
+            var addOp2 = add.Op2;
+
+            if (constOnly)
+            {
+                if (!addOp2.Oper.IsCnsIntOrI)
+                {
+                    break;
+                }
+
+                var intCon = addOp2.AsIntCon();
+
+                if (!intCon.AsIntCon().ImmedValCanBeFolded(this, GT_ADD))
+                {
+                    break;
+                }
+
+                if (intCon.IsIconHandle(GTF_ICON_OBJ_HDL) && !intCon.IsIntegralConst(0))
+                {
+                    // Ignore ADD(CNS, CNS-gc-handle)
+                    break;
+                }
+            }
+
+            // mark it with GTF_ADDRMODE_NO_CSE
+            add.Flags |= GTF_ADDRMODE_NO_CSE;
+
+            if (!constOnly)
+            {
+                op2 = addOp2;
+            }
+            op1 = addOp1;
+
+            if (!constOnly)
+            {
+                if (op2 == baseAddr)
+                {
+                    break;
+                }
+
+                assert(op2 is not null);
+
+                if (!op2.Oper.IsCnsIntOrI || !op2.AsIntCon().ImmedValCanBeFolded(this, GT_ADD))
+                {
+                    break;
+                }
+            }
+
+            op1 = op1.EffectiveVal;
+        }
     }
 
     /// <summary>Extracts side effects from sideEffectSource (if any) and wraps the input tree with a COMMA node with them.</summary>

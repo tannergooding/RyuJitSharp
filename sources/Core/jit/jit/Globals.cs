@@ -370,7 +370,7 @@ public partial class Globals
 
         if (compiler.verbose)
         {
-            compiler.gtDispTree(tree, msg: null, topOnly: true);
+            compiler.gtDispTree(tree, msg: "", topOnly: true);
         }
 #endif
     }

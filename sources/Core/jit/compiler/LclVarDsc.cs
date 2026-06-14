@@ -26,7 +26,7 @@ public partial struct LclVarDsc
     private int lvStkOffs;
 
     /// <summary>original slot # (if remapped)</summary>
-    private int lvSlotNum;
+    internal int lvSlotNum;
 
 #if DEBUG
     private DoNotEnregisterReason _doNotEnregReason;

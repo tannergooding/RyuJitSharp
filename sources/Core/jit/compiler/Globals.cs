@@ -30,7 +30,7 @@ public partial class Globals
     /// <summary>Number of elements in impSmallStack.</summary>
     public const int SMALL_STACK_SIZE = 16;
 
-    public const string FMT_CSE = "CSE #{0:D2}";
+    public static string FMT_CSE(int cseNum) => $"CSE #{cseNum:D2}";
 
     /// <summary>Method contains 'new' of an SD array.</summary>
     public const int OMF_HAS_NEWARRAY = 0x00000001;
@@ -264,6 +264,18 @@ public partial class Globals
         CORINFO_HFA_ELEM_VECTOR128 => TYP_SIMD16,
         _ => TYP_UNKNOWN,
     };
+
+    public static bool IsHfa(CorInfoHFAElemType kind) => kind is not CORINFO_HFA_ELEM_NONE;
+
+#if TARGET_XARCH
+    public static bool jitIsScaleIndexMul(nint val, int naturalMul = 0) => val is 1 or 2 or 4 or 8;
+#elif TARGET_ARM64
+    public static bool jitIsScaleIndexMul(nint val, int naturalMul = 0) => (val == naturalMul);
+#else
+    public static bool jitIsScaleIndexMul(nint val, int naturalMul = 0) => false;
+#endif
+
+    public static bool jitIsScaleIndexShift(nint value) => value is > 0 and < 4;
 
     // Compile a single method
     public static unsafe CorJitResult jitNativeCode(CORINFO_METHOD_HANDLE methodHandle, CORINFO_MODULE_HANDLE classHandle, COMP_HANDLE jitInfo, CORINFO_METHOD_INFO* methodInfo, out void* methodCodePtr, out int methodCodeSize, JitFlags* jitFlags, InlineInfo? inlineInfo)

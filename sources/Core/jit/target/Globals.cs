@@ -141,6 +141,24 @@ public static partial class Globals
         return TargetArchitecture.IsX86 && TargetOS.IsUnix;
     }
 
+#if TARGET_ARM
+    public static bool genIsValidDoubleReg(regNumber reg) => genIsValidFloatReg(reg) && ((reg - REG_FP_FIRST) & 0x1) is 0);
+#endif
+
+    public static bool genIsValidFloatReg(regNumber reg) => reg is >= REG_FP_FIRST and <= REG_FP_LAST;
+
+#if TARGET_ARM64
+    public static bool genIsValidIntOrFakeReg(regNumber reg) => genIsValidIntReg(reg) || (reg is REG_SP);
+#else
+    public static bool genIsValidIntOrFakeReg(regNumber reg) => genIsValidIntReg(reg);
+#endif
+
+    public static bool genIsValidIntReg(regNumber reg) => reg is >= REG_INT_FIRST and <= REG_INT_LAST;
+
+#if FEATURE_MASKED_HW_INTRINSICS
+    public static bool genIsValidMaskReg(regNumber reg) => reg is >= REG_MASK_FIRST and <= REG_MASK_LAST;
+#endif
+
     /// <summary>Return true if the register number is valid</summary>
     /// <param name="reg"></param>
     /// <returns></returns>

@@ -96,7 +96,7 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
     }
 
     /// <summary>simd vector size in bytes, use 0 for scalar intrinsics</summary>
-    public byte simdSize
+    public byte SimdSize
     {
         get
         {

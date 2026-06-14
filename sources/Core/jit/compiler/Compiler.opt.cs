@@ -134,69 +134,151 @@ public partial class Compiler
 
     protected RangeCheck? optRangeCheck;
 
-    // TODO: Port optOptimizeCSEs
+    public nint optGetArrayRefScaleAndIndex(GenTreeOp mul, out GenTree index, bool bRngChk)
+    {
+        assert(mul.Oper is GT_MUL or GT_LSH);
+        assert(mul.AsOp().Op2.Oper.IsCnsIntOrI);
+
+        var scale = mul.Op2.AsIntConCommon().IconValue;
+
+        if (mul.Oper is GT_LSH)
+        {
+            scale = 1 << (int)(scale);
+        }
+
+        index = mul.Op1;
+
+        if (index.Oper is GT_MUL)
+        {
+            var maybeIntCon = index.AsOp().Op2;
+
+            if (maybeIntCon.Oper.IsCnsIntOrI)
+            {
+                // case of two cascading multiplications for constant int (e.g.  * 20 morphed to * 5 * 4):
+                // When index->gtOper is GT_MUL and index->AsOp()->gtOp2->gtOper is GT_CNS_INT (i.e. * 5),
+                //     we can bump up the scale from 4 to 5*4, and then change index to index->AsOp()->gtOp1.
+                // Otherwise, we cannot optimize it. We will simply keep the original scale and index.
+                scale *= maybeIntCon.AsIntCon().IconValue;
+                index = index.AsOp().Op1;
+            }
+        }
+
+        assert(!bRngChk || (index.Oper is not GT_COMMA));
+        return scale;
+    }
+
+    /// <summary>Determine if the execution order of two nodes can be swapped.</summary>
+    /// <param name="op1">The first node</param>
+    /// <param name="op2">The second node</param>
+    /// <returns>Return true iff it safe to swap the execution order of 'op1' and 'op2', considering only the locations of the CSE defs and uses.</returns>
+    /// <remarks>'op1' currently occurse before 'op2' in the execution order.</remarks>
+    public bool optCSE_canSwap(GenTree op1, GenTree op2)
+    {
+        // the default result unless proven otherwise.
+        var canSwap = true;
+
+        // If we haven't setup cseMaskTraits, do it now
+        cseMaskTraits ??= new BitVecTraits(this, optCSECandidateCount);
+
+        optCSE_GetMaskData(op1, out var op1MaskData);
+        optCSE_GetMaskData(op2, out var op2MaskData);
+
+        // We cannot swap if op1 contains a CSE def that is used by op2
+        if (!BitVecOps.IsEmptyIntersection(cseMaskTraits, op1MaskData.CSE_defMask, op2MaskData.CSE_useMask))
+        {
+            canSwap = false;
+        }
+        else
+        {
+            // We also cannot swap if op2 contains a CSE def that is used by op1.
+            if (!BitVecOps.IsEmptyIntersection(cseMaskTraits, op2MaskData.CSE_defMask, op1MaskData.CSE_useMask))
+            {
+                canSwap = false;
+            }
+        }
+
+        return canSwap;
+    }
+
+    /// <summary>This functions walks all the node for an given tree and return the mask of CSE defs and uses for the tree</summary>
+    /// <param name="tree"></param>
+    /// <param name="maskData"></param>
+    public void optCSE_GetMaskData(GenTree tree, out optCSE_MaskData maskData)
+    {
+        assert(cseMaskTraits is not null);
+
+        maskData = new optCSE_MaskData {
+            CSE_defMask = BitVecOps.MakeEmpty(cseMaskTraits),
+            CSE_useMask = BitVecOps.MakeEmpty(cseMaskTraits),
+        };
+
+        var walker = new MaskDataWalker(this, ref maskData);
+        _ = walker.WalkTree(ref tree, null);
+    }
+
+    // TODO: Port phase - optOptimizeCSEs
     public void optOptimizeCSEs() { }
 
-    // TODO: Port optOptimizeBools
+    // TODO: Port phase - optOptimizeBools
     public PhaseStatus optOptimizeBools() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port optRecognizeAndOptimizeSwitchJumps
+    // TODO: Port phase - optRecognizeAndOptimizeSwitchJumps
     public PhaseStatus optRecognizeAndOptimizeSwitchJumps() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port optInvertLoops
+    // TODO: Port phase - optInvertLoops
     public PhaseStatus optInvertLoops() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port optOptimizeFlow
+    // TODO: Port phase - optOptimizeFlow
     public PhaseStatus optOptimizeFlow() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port optOptimizePreLayout
+    // TODO: Port phase - optOptimizePreLayout
     public PhaseStatus optOptimizePreLayout() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port optOptimizePostLayout
+    // TODO: Port phase - optOptimizePostLayout
     public PhaseStatus optOptimizePostLayout() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port optSetBlockWeights
+    // TODO: Port phase - optSetBlockWeights
     public PhaseStatus optSetBlockWeights() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port optFindLoopsPhase
+    // TODO: Port phase - optFindLoopsPhase
     public PhaseStatus optFindLoopsPhase() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port optCloneLoops
+    // TODO: Port phase - optCloneLoops
     public PhaseStatus optCloneLoops() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port optRangeCheckCloning
+    // TODO: Port phase - optRangeCheckCloning
     public PhaseStatus optRangeCheckCloning() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port optBoundsCheckCoalesce
+    // TODO: Port phase - optBoundsCheckCoalesce
     public PhaseStatus optBoundsCheckCoalesce() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port optUnrollLoops
+    // TODO: Port phase - optUnrollLoops
     public PhaseStatus optUnrollLoops() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port optIfConversion
+    // TODO: Port phase - optIfConversion
     public PhaseStatus optIfConversion() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port optOptimizeValnumCSEs
+    // TODO: Port phase - optOptimizeValnumCSEs
     public PhaseStatus optOptimizeValnumCSEs() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port optVnCopyProp
+    // TODO: Port phase - optVnCopyProp
     public PhaseStatus optVnCopyProp() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port optVNBasedDeadStoreRemoval
+    // TODO: Port phase - optVNBasedDeadStoreRemoval
     public PhaseStatus optVNBasedDeadStoreRemoval() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port optEarlyProp
+    // TODO: Port phase - optEarlyProp
     public PhaseStatus optEarlyProp() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port optInductionVariables
+    // TODO: Port phase - optInductionVariables
     public PhaseStatus optInductionVariables() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port optRedundantBranches
+    // TODO: Port phase - optRedundantBranches
     public PhaseStatus optRedundantBranches() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port optAssertionPropMain
+    // TODO: Port phase - optAssertionPropMain
     public PhaseStatus optAssertionPropMain() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port optHoistLoopCode
+    // TODO: Port phase - optHoistLoopCode
     protected PhaseStatus optHoistLoopCode() => PhaseStatus.MODIFIED_NOTHING;
 }

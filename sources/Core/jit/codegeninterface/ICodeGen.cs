@@ -25,6 +25,8 @@ public interface ICodeGen
 
     int genTotalFrameSize { get; }
 
+    ref NodeInternalRegisters InternalRegisters { get; }
+
     /// <summary>true if we've determined that the current method is to be fully interruptible.</summary>
     bool Interruptible { get; set; }
 
@@ -81,6 +83,8 @@ public interface ICodeGen
     /// <summary>Call this function after the equivalent fields in Compiler have been initialized.</summary>
     void CopyRegisterInfo();
 #endif
+
+    bool genCreateAddrMode(GenTreeOp addr, bool fold, int naturalMul, out bool rev, out GenTree? rv1, out GenTree? rv2, out int mul, out nint cns);
 
     unsafe void genGenerateCode(out void* codePtr, out int nativeSizeOfCode);
 

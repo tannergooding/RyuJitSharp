@@ -5,6 +5,8 @@
 
 using System;
 using System.Buffers;
+using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -394,6 +396,23 @@ public partial class Compiler
             info.compCompHnd->getMethodSig(methHnd, pReturnSigInfo, owner);
         }
         assert(!varTypeIsComposite(returnSigInfo.retType.VarType) || (returnSigInfo.retTypeClass is not null));
+    }
+
+    /// <summary>Returns class name with no instantiation.</summary>
+    /// <param name="clsHnd">the class handle to get the type name of</param>
+    /// <returns>String without instantiation.</returns>
+    public unsafe string eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
+    {
+        var stringBuilder = new StringBuilder();
+
+        var success = eeRunFunctorWithSpmiErrorTrap(() =>
+            eePrintType(
+                stringBuilder,
+                clsHnd,
+                includeInstantiation: false
+            )
+        );
+        return success ? stringBuilder.ToString() : "<unknown class>";
     }
 
     public unsafe void eeGetSig(int sigTok, CORINFO_MODULE_HANDLE scope, CORINFO_CONTEXT_HANDLE context, out CORINFO_SIG_INFO sigInfo)
@@ -804,6 +823,47 @@ public partial class Compiler
             return stringBuilder;
         }
     }
+
+    public unsafe void eePrintObjectDescription(string prefix, CORINFO_OBJECT_HANDLE handle)
+    {
+        var objectDescription = "";
+
+        // Ignore potential SPMI failures
+        var success = eeRunFunctorWithSpmiErrorTrap(() => {
+            Unsafe.SkipInit(out InlineArray64<byte> inlineObjectDecsriptionUtf8);
+
+            var actualLen = info.compCompHnd->printObjectDescription(handle, &inlineObjectDecsriptionUtf8.e0, 64);
+            var objectDescriptionUtf8 = ((Span<byte>)(inlineObjectDecsriptionUtf8))[..(int)(actualLen)];
+
+            objectDescriptionUtf8.ReplaceAny(SearchValues.Create((byte)('\n'), (byte)('\r')), (byte)(' '));
+            objectDescription = Encoding.UTF8.GetString(inlineObjectDecsriptionUtf8);
+        });
+
+        if (!success)
+        {
+            return;
+        }
+        jitprintf($"{prefix} '{objectDescription}'");
+    }
+
+#if DEBUG
+    /// <summary>Print a string literal. If missing information (in SPMI), then print a placeholder string.</summary>
+    /// <param name="module">The literal's scope handle</param>
+    /// <param name="token">The literal's token</param>
+    public unsafe void eePrintStringLiteral(CORINFO_MODULE_HANDLE module, int token)
+    {
+        var str = "";
+
+        var succeeded = eeRunFunctorWithSpmiErrorTrap(() => {
+            Unsafe.SkipInit(out InlineArray64<char> inlineStrLiteral);
+            var length = info.compCompHnd->getStringLiteral(module, token, &inlineStrLiteral.e0, 50);
+
+            var strLiteral = ((Span<char>)(inlineStrLiteral))[..length];
+            str = (length > 50) ? $"{strLiteral}..." : $"{strLiteral}";
+        });
+        jitprintf(succeeded ? str : "<unknown string literal>");
+    }
+#endif
 
     /// <summary>Print a type given by a class handle.</summary>
     /// <param name="stringBuilder">the builder</param>

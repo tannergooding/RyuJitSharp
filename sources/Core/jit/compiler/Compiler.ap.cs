@@ -10,11 +10,11 @@ public partial class Compiler
     /// <summary>Data structures for assertion prop</summary>
     public BitVecTraits? apTraits;
 
-    public unsafe ASSERT_TP apFull;
+    public unsafe ASSERT_TP? apFull;
 
-    public unsafe ASSERT_TP apLocal;
+    public unsafe ASSERT_TP? apLocal;
 
-    public unsafe ASSERT_TP apLocalPostorder;
+    public unsafe ASSERT_TP? apLocalPostorder;
 
-    public unsafe ASSERT_TP apLocalIfTrue;
+    public unsafe ASSERT_TP? apLocalIfTrue;
 }

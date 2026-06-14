@@ -13,6 +13,8 @@ public sealed class GenTreeLngCon : GenTreeIntConCommon
         LngValue = val;
     }
 
+    public new bool FitsInI32 => Globals.FitsInI32(_value.Lcon);
+
     public int HiVal => unchecked((int)(_value.Lcon >>> 32));
 
     public long LconValue

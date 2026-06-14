@@ -1410,7 +1410,7 @@ public partial class Compiler
     }
 
 #if DEBUG
-    // TODO: Port fgDebugCheckBBlist
+    // TODO: Port phase check - fgDebugCheckBBlist
     public void fgDebugCheckBBlist(bool checkBBNum = false, bool checkBBRefs = true) { }
 
     /// <summary>Check that the block list bbNum are in increasing order in the bbNext traversal</summary>
@@ -1426,31 +1426,31 @@ public partial class Compiler
         }
     }
 
-    // TODO: Port fgDebugCheckInitBB
+    // TODO: Port phase check - fgDebugCheckInitBB
     public void fgDebugCheckInitBB() { }
 
-    // TODO: Port fgDebugCheckFlowGraphAnnotations
+    // TODO: Port phase check - fgDebugCheckFlowGraphAnnotations
     public void fgDebugCheckFlowGraphAnnotations() { }
 
-    // TODO: Port fgDebugCheckLinkedLocals
+    // TODO: Port phase check - fgDebugCheckLinkedLocals
     public void fgDebugCheckLinkedLocals() { }
 
-    // TODO: Port fgDebugCheckLinks
+    // TODO: Port phase check - fgDebugCheckLinks
     public void fgDebugCheckLinks(bool morphTrees = false) { }
 
-    // TODO: Port fgDebugCheckLoops
+    // TODO: Port phase check - fgDebugCheckLoops
     public void fgDebugCheckLoops() { }
 
-    // TODO: Port fgDebugCheckNodesUniqueness
+    // TODO: Port phase check - fgDebugCheckNodesUniqueness
     public void fgDebugCheckNodesUniqueness() { }
 
-    // TODO: Port fgDebugCheckProfile
+    // TODO: Port phase check - fgDebugCheckProfile
     public void fgDebugCheckProfile(PhaseChecks checks = PhaseChecks.CHECK_NONE) { }
 
     // TODO: Port fgStress64RsltMul
     public void fgStress64RsltMul() { }
 
-    // TODO: Port fgVerifyHandlerTab
+    // TODO: Port phase check - fgVerifyHandlerTab
     public void fgVerifyHandlerTab() { }
 #endif
 
@@ -9372,11 +9372,11 @@ public partial class Compiler
         }
     }
 
-    // TODO: Port fgAddInternal
+    // TODO: Port phase - fgAddInternal
     public PhaseStatus fgAddInternal() => PhaseStatus.MODIFIED_NOTHING;
 
 #if SWIFT_SUPPORT
-    // TODO: Port fgAddSwiftErrorReturns
+    // TODO: Port phase - fgAddSwiftErrorReturns
     public PhaseStatus fgAddSwiftErrorReturns() => PhaseStatus.MODIFIED_NOTHING;
 #endif
 
@@ -9409,46 +9409,46 @@ public partial class Compiler
         return PhaseStatus.MODIFIED_EVERYTHING;
     }
 
-    // TODO: Port fgCloneFinally
+    // TODO: Port phase - fgCloneFinally
     public PhaseStatus fgCloneFinally() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgComputeBlockWeights
+    // TODO: Port phase - fgComputeBlockWeights
     public PhaseStatus fgComputeBlockWeights() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgCreateFunclets
+    // TODO: Port phase - fgCreateFunclets
     public PhaseStatus fgCreateFunclets() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgDetermineFirstColdBlock
+    // TODO: Port phase - fgDetermineFirstColdBlock
     public PhaseStatus fgDetermineFirstColdBlock() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgDfsBlocksAndRemove
+    // TODO: Port phase - fgDfsBlocksAndRemove
     public PhaseStatus fgDfsBlocksAndRemove() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgEarlyLiveness
+    // TODO: Port phase - fgEarlyLiveness
     public PhaseStatus fgEarlyLiveness() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgExpandHelper
+    // TODO: Port phase - fgExpandHelper
     public PhaseStatus fgExpandHelper(bool skipRarelyRunBlocks) => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgExpandQmarkNodes
+    // TODO: Port phase - fgExpandQmarkNodes
     public PhaseStatus fgExpandQmarkNodes(bool early) => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgExpandRuntimeLookups
+    // TODO: Port phase - fgExpandRuntimeLookups
     public PhaseStatus fgExpandRuntimeLookups() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgExpandStackArrayAllocations
+    // TODO: Port phase - fgExpandStackArrayAllocations
     public PhaseStatus fgExpandStackArrayAllocations() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgExpandStaticInit
+    // TODO: Port phase - fgExpandStaticInit
     public PhaseStatus fgExpandStaticInit() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgExpandThreadLocalAccess
+    // TODO: Port phase - fgExpandThreadLocalAccess
     public PhaseStatus fgExpandThreadLocalAccess() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgFindOperOrder
+    // TODO: Port phase - fgFindOperOrder
     public PhaseStatus fgFindOperOrder() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgHeadTailMerge
+    // TODO: Port phase - fgHeadTailMerge
     public PhaseStatus fgHeadTailMerge(bool early) => PhaseStatus.MODIFIED_NOTHING;
 
     /// <summary>read the IL for the method and create jit IR</summary>
@@ -9517,102 +9517,102 @@ public partial class Compiler
         return PhaseStatus.MODIFIED_EVERYTHING;
     }
 
-    // TODO: Port fgInline
+    // TODO: Port phase - fgInline
     public PhaseStatus fgInline() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgInsertGCPolls
+    // TODO: Port phase - fgInsertGCPolls
     public PhaseStatus fgInsertGCPolls() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgLateCastExpansion
+    // TODO: Port phase - fgLateCastExpansion
     public PhaseStatus fgLateCastExpansion() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgMergeFinallyChains
+    // TODO: Port phase - fgMergeFinallyChains
     public PhaseStatus fgMergeFinallyChains() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgMorphArrayOps
+    // TODO: Port phase - fgMorphArrayOps
     public PhaseStatus fgMorphArrayOps() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgMorphBlocks
+    // TODO: Port phase - fgMorphBlocks
     public PhaseStatus fgMorphBlocks() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgMorphInit
+    // TODO: Port phase - fgMorphInit
     public PhaseStatus fgMorphInit() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgPostImportationCleanup
+    // TODO: Port phase - fgPostImportationCleanup
     public PhaseStatus fgPostImportationCleanup() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgPostInlineNoReturnCleanup
+    // TODO: Port phase - fgPostInlineNoReturnCleanup
     public PhaseStatus fgPostInlineNoReturnCleanup() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgRemoveEmptyFinally
+    // TODO: Port phase - fgRemoveEmptyFinally
     public PhaseStatus fgRemoveEmptyFinally() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgRemoveEmptyTry
+    // TODO: Port phase - fgRemoveEmptyTry
     public PhaseStatus fgRemoveEmptyTry() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgRemoveEmptyTryCatchOrTryFault
+    // TODO: Port phase - fgRemoveEmptyTryCatchOrTryFault
     public PhaseStatus fgRemoveEmptyTryCatchOrTryFault() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgRepairProfile
+    // TODO: Port phase - fgRepairProfile
     public PhaseStatus fgRepairProfile() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgResolveGDVs
+    // TODO: Port phase - fgResolveGDVs
     public PhaseStatus fgResolveGDVs() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgSearchImprovedLayout
+    // TODO: Port phase - fgSearchImprovedLayout
     public PhaseStatus fgSearchImprovedLayout() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgSetBlockOrder
+    // TODO: Port phase - fgSetBlockOrder
     public PhaseStatus fgSetBlockOrder() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgSsaBuild
+    // TODO: Port phase - fgSsaBuild
     public PhaseStatus fgSsaBuild() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgTailMergeThrows
+    // TODO: Port phase - fgTailMergeThrows
     public PhaseStatus fgTailMergeThrows() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgTransformIndirectCalls
+    // TODO: Port phase - fgTransformIndirectCalls
     public PhaseStatus fgTransformIndirectCalls() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgTransformPatchpoints
+    // TODO: Port phase - fgTransformPatchpoints
     public PhaseStatus fgTransformPatchpoints() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgUpdateFlowGraphPhase
+    // TODO: Port phase - fgUpdateFlowGraphPhase
     public PhaseStatus fgUpdateFlowGraphPhase() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgValueNumber
+    // TODO: Port phase - fgValueNumber
     public PhaseStatus fgValueNumber() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgVNBasedIntrinsicExpansion
+    // TODO: Port phase - fgVNBasedIntrinsicExpansion
     public PhaseStatus fgVNBasedIntrinsicExpansion() => PhaseStatus.MODIFIED_NOTHING;
 
 #if TARGET_WASM
-    // TODO: Port fgWasmEhFlow
+    // TODO: Port phase - fgWasmEhFlow
     public PhaseStatus fgWasmEhFlow() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgWasmControlFlow
+    // TODO: Port phase - fgWasmControlFlow
     public PhaseStatus fgWasmControlFlow() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgWasmTransformSccs
+    // TODO: Port phase - fgWasmTransformSccs
     public PhaseStatus fgWasmTransformSccs() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgWasmVirtualIP
+    // TODO: Port phase - fgWasmVirtualIP
     public PhaseStatus fgWasmVirtualIP() => PhaseStatus.MODIFIED_NOTHING;
 #endif
 
-    // TODO: Port fgComputeDominators
+    // TODO: Port phase - fgComputeDominators
     protected PhaseStatus fgComputeDominators() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgIncorporateProfileData
+    // TODO: Port phase - fgIncorporateProfileData
     protected PhaseStatus fgIncorporateProfileData() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgInstrumentMethod
+    // TODO: Port phase - fgInstrumentMethod
     protected PhaseStatus fgInstrumentMethod() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgInstrumentMethodCore
+    // TODO: Port phase - fgInstrumentMethodCore
     protected PhaseStatus fgInstrumentMethodCore() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgPrepareToInstrumentMethod
+    // TODO: Port phase - fgPrepareToInstrumentMethod
     protected PhaseStatus fgPrepareToInstrumentMethod() => PhaseStatus.MODIFIED_NOTHING;
 
 #if DEBUG
@@ -9755,22 +9755,22 @@ public partial class Compiler
         return !info.compInitMem || (varDsc.lvIsTemp && !varDsc.HasGCPtr);
     }
 
-    // TODO: Port fgForwardSub
+    // TODO: Port phase - fgForwardSub
     private PhaseStatus fgForwardSub() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgLocalMorph
+    // TODO: Port phase - fgLocalMorph
     private PhaseStatus fgLocalMorph() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgMarkImplicitByRefCopyOmissionCandidates
+    // TODO: Port phase - fgMarkImplicitByRefCopyOmissionCandidates
     private PhaseStatus fgMarkImplicitByRefCopyOmissionCandidates() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgOptimizeMaskConversions
+    // TODO: Port phase - fgOptimizeMaskConversions
     private PhaseStatus fgOptimizeMaskConversions() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgPromoteStructs
+    // TODO: Port phase - fgPromoteStructs
     private PhaseStatus fgPromoteStructs() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port fgRetypeImplicitByRefArgs
+    // TODO: Port phase - fgRetypeImplicitByRefArgs
     private PhaseStatus fgRetypeImplicitByRefArgs() => PhaseStatus.MODIFIED_NOTHING;
 
 #nullable disable

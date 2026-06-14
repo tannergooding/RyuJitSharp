@@ -396,7 +396,7 @@ public partial class Globals
 #endif
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool ShouldThrowOnNoway() => (JitTls.Compiler is not Compiler compiler) || compiler.compShouldThrowOnNoway();
+    private static bool ShouldThrowOnNoway() => (JitTls.Compiler is not Compiler compiler) || compiler.compShouldThrowOnNoway;
 
     private static void noWayAssertAbortHelper(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, int lineNumber)
     {

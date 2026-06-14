@@ -13,7 +13,7 @@ public abstract class GenTreeLclVarCommon : GenTreeUnOp
     private int _lclNum;
 
     // The SSA info.
-    // private SsaNumInfo _ssaNum;
+    private SsaNumInfo _ssaNum;
 
     protected GenTreeLclVarCommon(genTreeOps oper, var_types type, int lclNum)
         : base(oper, type, op1: null)
@@ -46,6 +46,12 @@ public abstract class GenTreeLclVarCommon : GenTreeUnOp
         }
     }
 
+    public bool HasCompositeSsaName => _ssaNum.IsComposite;
+
+    public bool HasSsaIdentity => !_ssaNum.IsInvalid;
+
+    public bool HasSsaName => SsaNum != SsaConfig.RESERVED_SSA_NUM;
+
     public int LclNum
     {
         get
@@ -56,20 +62,30 @@ public abstract class GenTreeLclVarCommon : GenTreeUnOp
         set
         {
             _lclNum = value;
-            // _ssaNum = new SsaNumInfo();
+            _ssaNum = new SsaNumInfo();
         }
     }
 
-    // TODO: Port GenTreeLclVarCommon.GetSsaNum
     public int SsaNum
     {
         get
         {
-            return 0;
+            return _ssaNum.IsSimple ? _ssaNum.Num : SsaConfig.RESERVED_SSA_NUM;
         }
 
         set
         {
+            _ssaNum = SsaNumInfo.Simple(value);
         }
+    }
+
+    public int GetSsaNum(Compiler compiler, int index)
+    {
+        return _ssaNum.IsComposite ? _ssaNum.GetNum(compiler, index) : SsaConfig.RESERVED_SSA_NUM;
+    }
+
+    public void SetSsaNum(Compiler compiler, int index, int ssaNum)
+    {
+        _ssaNum = SsaNumInfo.Composite(_ssaNum, compiler, _lclNum, index, ssaNum);
     }
 }

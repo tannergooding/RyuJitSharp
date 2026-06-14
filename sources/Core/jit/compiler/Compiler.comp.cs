@@ -387,6 +387,11 @@ public partial class Compiler
         _ => "Unknown PGO",
     };
 
+    /// <summary>Should we actually fire the noway assert body and the exception handler?</summary>
+    /// <returns></returns>
+    /// <remarks>In min opts, we don't want the noway assert to go through the exception path. Instead we want it to just silently go through codegen for compat reasons.</remarks>
+    public bool compShouldThrowOnNoway => !opts.MinOpts;
+
     /// <summary>get a string describing jitstress capability for this method</summary>
     /// <remarks>Returns an empty string if stress is not enabled, else a string describing if this method is subject to stress or is excluded by name or hash.</remarks>
     public unsafe string compStressMessage
@@ -2831,6 +2836,28 @@ public partial class Compiler
         }
     }
 
+    public string compRegVarName(regNumber reg, bool displayVar = false, bool isFloatReg = false)
+    {
+#if TARGET_ARM
+        isFloatReg = genIsValidFloatReg(reg);
+#endif
+
+#if DEBUG
+        if (displayVar && (reg != REG_NA))
+        {
+            var varName = compVarName(reg, isFloatReg);
+
+            if (varName is not null)
+            {
+                return $"{reg.Name}'{varName}'";
+            }
+        }
+#endif
+
+        // no debug info required or no variable in that register -> return standard name
+        return reg.Name;
+    }
+
     public unsafe void compResetScopeLists()
     {
         if (info.compVarScopesCount is 0)
@@ -2891,14 +2918,6 @@ public partial class Compiler
 #else
     public bool compStressCompile(compStressArea stressArea, int weightPercentage) => false;
 #endif
-
-    /// <summary>Should we actually fire the noway assert body and the exception handler?</summary>
-    /// <returns></returns>
-    public bool compShouldThrowOnNoway()
-    {
-        // TODO: Port compShouldThrowOnNoway
-        return true;
-    }
 
 #if OPT_CONFIG
     private static ConfigMethodRange s_onlyOptimizeRange;
@@ -4159,6 +4178,79 @@ public partial class Compiler
 #endif
     }
 
+    /// <summary>Search for variable's scope containing offset.</summary>
+    /// <param name="varNum">The variable number to search for in the array of scopes.</param>
+    /// <param name="offs">The offset value which should occur within the life of the variable.</param>
+    /// <returns>VarScopeDsc* of a matching variable that contains the offset within its life begin and life end or NULL if one couldn't be found.</returns>
+    /// <remarks>Linear search for matching variables with their life begin and end containing the offset only when the scope count is &lt; MAX_LINEAR_FIND_LCL_SCOPELIST, else use the hashtable lookup.</remarks>
+    public ref VarScopeDsc compFindLocalVar(int varNum, int offs)
+    {
+        if (info.compVarScopesCount < MAX_LINEAR_FIND_LCL_SCOPELIST)
+        {
+            return ref compFindLocalVarLinear(varNum, offs);
+        }
+        else
+        {
+            ref var ret = ref compFindLocalVar(varNum, offs, offs);
+            assert(Unsafe.AreSame(ref ret, ref compFindLocalVarLinear(varNum, offs)));
+            return ref ret;
+        }
+    }
+
+    /// <summary>Search for variable's scope containing offset.</summary>
+    /// <param name="varNum">The variable number to search for in the array of scopes.</param>
+    /// <param name="lifeBeg">The life begin of the variable's scope</param>
+    /// <param name="lifeEnd">The life end of the variable's scope</param>
+    /// <returns>VarScopeDsc reference of a matching variable that contains the offset within its life begin and life end, or NULL if one couldn't be found.</returns>
+    public ref VarScopeDsc compFindLocalVar(int varNum, int lifeBeg, int lifeEnd)
+    {
+        // Following are the steps used:
+        //   1. Index into the hashtable using varNum.
+        //   2. Iterate through the linked list at index varNum to find a matching var scope.
+
+        assert(compVarScopeMap is not null);
+
+        if (compVarScopeMap.TryGetValue(varNum, out var varScopeMapInfo))
+        {
+            var entry = varScopeMapInfo.Head;
+
+            while (entry is not null)
+            {
+                ref var data = ref info.compVarScopes[entry.DataIndex];
+
+                if ((data.vsdLifeBeg <= lifeBeg) && (data.vsdLifeEnd > lifeEnd))
+                {
+                    return ref data;
+                }
+                entry = entry.Next;
+            }
+        }
+        return ref Unsafe.NullRef<VarScopeDsc>();
+    }
+
+    /// <summary>Linear search for variable's scope containing offset.</summary>
+    /// <param name="varNum">The variable number to search for in the array of scopes.</param>
+    /// <param name="offs">The offset value which should occur within the life of the variable.</param>
+    /// <returns>A VarScopeDsc reference of a matching variable that contains the offset within its life begin and life end or null when there is no match found.</returns>
+    /// <remarks>
+    ///   <para>Linear search for matching variables with their life begin and end containing the offset or NULL if one couldn't be found.</para>
+    ///   <para>Usually called for scope count = 4. Could be called for values upto 8.</para>
+    /// </remarks>
+    public ref VarScopeDsc compFindLocalVarLinear(int varNum, int offs)
+    {
+        for (var i = 0; i < info.compVarScopesCount; i++)
+        {
+            ref var dsc = ref info.compVarScopes[i];
+
+            if ((dsc.vsdVarNum == varNum) && (dsc.vsdLifeBeg <= offs) && (dsc.vsdLifeEnd > offs))
+            {
+                return ref dsc;
+            }
+        }
+        return ref Unsafe.NullRef<VarScopeDsc>();
+
+    }
+
     /// <summary>Answer the question: Is a particular ISA supported?</summary>
     /// <param name="isa"></param>
     /// <returns></returns>
@@ -4365,4 +4457,46 @@ public partial class Compiler
     /// </remarks>
     private bool compOpportunisticallyDependsOn(CORINFO_InstructionSet isa)
         => opts.compSupportsISA.HasInstructionSet(isa) && compExactlyDependsOn(isa);
+
+#if DEBUG
+    public VarName? compVarName(regNumber reg, bool isFloatReg = false)
+    {
+        if (isFloatReg)
+        {
+            assert(genIsValidFloatReg(reg));
+        }
+        else
+        {
+            assert(genIsValidReg(reg));
+        }
+
+        if ((info.compVarScopesCount > 0) && (compCurBB is not null) && opts.varNames)
+        {
+            // Look for the matching register
+            for (var lclNum = 0; lclNum < lvaCount; lclNum++)
+            {
+                ref var varDsc = ref lvaGetDesc(lclNum);
+
+                // If the variable is not in a register, or not in the register we're looking for, quit.
+                // Also, if it is a compiler generated variable (i.e. slot# > info.compVarScopesCount), don't bother.
+
+                if (varDsc.lvRegister && (varDsc.RegNum == reg) && (varDsc.lvSlotNum < info.compVarScopesCount))
+                {
+                    // check if variable in that register is live
+                    if (VarSetOps.IsMember(this, compCurLife, varDsc._varIndex))
+                    {
+                        // variable is live - find the corresponding slot
+                        ref var varScope = ref compFindLocalVar(varDsc.lvSlotNum, compCurBB.bbCodeOffs, compCurBB.bbCodeOffsEnd);
+
+                        if (!Unsafe.IsNullRef(in varScope))
+                        {
+                            return varScope.vsdName;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+#endif
 }

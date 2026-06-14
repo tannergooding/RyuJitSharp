@@ -10,7 +10,7 @@ namespace RyuJitSharp;
 /// <summary>a flexible tree walker implemented using the curiously-recurring-template pattern.</summary>
 /// <typeparam name="TSelf"></typeparam>
 public interface IGenTreeVisitor<TSelf>
-    where TSelf : struct, IGenTreeVisitor<TSelf>
+    where TSelf : struct, IGenTreeVisitor<TSelf>, allows ref struct
 {
     /// <summary>when true, the walker will push each node onto the `_ancestors` stack. "Ancestors" is a bit of a misnomer, as the first entry will always be the current node.</summary>
     static virtual bool ComputeStack => false;

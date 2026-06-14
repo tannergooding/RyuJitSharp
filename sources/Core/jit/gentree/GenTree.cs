@@ -5,6 +5,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
@@ -46,7 +47,7 @@ public partial class GenTree
 
     /// <summary>0 or the CSE index (negated if def)</summary>
     /// <remarks>valid only for CSE expressions</remarks>
-    private sbyte _cseNum;
+    internal sbyte _cseNum;
 
     /// <summary>Used for nodes that are in LIR. See LIR.Flags in lir.h for the various flags.</summary>
     internal LIR.Flags _lirFlags;
@@ -58,7 +59,7 @@ public partial class GenTree
     // Keep track of whether the costs have been initialized, and assert if they are read before being initialized.
     // Obviously, this information does need to be initialized when a node is created.
     // This is public so the dumpers can see it.
-    private bool _costsInitialized;
+    internal bool _costsInitialized;
 #endif
 
     /// <summary>estimate of expression execution cost</summary>
@@ -101,7 +102,10 @@ public partial class GenTree
 
     protected internal GenTree(genTreeOps oper, var_types type)
     {
+#if DEBUG
         assert(type.ActualType == type);
+        assert(oper.StructType == GetType());
+#endif
 
         _oper = oper;
         _type = type;
@@ -264,6 +268,17 @@ public partial class GenTree
 
     public bool GeneratesAssertion => _assertionInfo.HasAssertion;
 
+    /// <summary>Determine whether this node is a last use of any value</summary>
+    /// <remarks>This must be a GenTreeLclVar or GenTreeCopyOrReload node.</remarks>
+    public bool HasLastUse
+    {
+        get
+        {
+            assert(Debugger.IsAttached || _oper.IsAnyLocal || _oper.IsCopyOrReload);
+            return (_flags & (GTF_VAR_DEATH_MASK)) is not 0;
+        }
+    }
+
     public bool HasOrderingSideEffect
     {
         get
@@ -284,9 +299,11 @@ public partial class GenTree
         get
         {
             assert(Debugger.IsAttached || _oper.MayOverflow);
-            return (_flags & GTF_OVERFLOW) != 0;
+            return (_flags & GTF_OVERFLOW) is not 0;
         }
     }
+
+    public bool HasOverflowCheckEx => _oper.MayOverflow && HasOverflowCheck;
 
     public GenTree IndirOrArrMetaDataAddr
     {
@@ -308,7 +325,15 @@ public partial class GenTree
         }
     }
 
+#if DEBUG
+    public bool InReg => RegTag is not GT_REGTAG_NONE;
+#endif
+
+    public bool IsBlkOp => _oper.IsStore && varTypeIsStruct(_type);
+
     public bool IsCnsNonZeroFltOrDbl => _oper.IsCnsFltOrDbl && AsDblCon().IsBitwiseEqual(0);
+
+    public bool IsCnsInitVal => _oper.IsCnsIntOrI || (_oper.IsInitVal && AsOp().Op1.Oper.IsCnsIntOrI);
 
 #if FEATURE_HW_INTRINSICS
     // TODO: Port isContainableHWIntrinsic
@@ -373,6 +398,8 @@ public partial class GenTree
 
     public bool IsContainedVecImmed => IsContained && _oper.IsCnsVec;
 
+    public bool IsCopyBlkOp => IsBlkOp && !IsInitBlkOp;
+
     /// <summary>whether this is a GT_COPY or GT_RELOAD of a multi-reg</summary>
     public bool IsCopyOrReloadOfMultiRegCall
     {
@@ -412,8 +439,12 @@ public partial class GenTree
         }
     }
 
+    public bool IsInitBlkOp => IsBlkOp && (Data.Type is TYP_INT) && Data.SkipCopyOrReload.IsInitVal;
+
+    public bool IsInitVal => IsIntegralConst(0) || Oper.IsInitVal;
+
     /// <summary>Is this node an integer constant that fits in a 32-bit signed integer</summary>
-#if TARGET_32BIT
+#if TARGET_64BIT
     public bool IsIntCnsFitsInI32 => _oper.IsCnsIntOrI && AsIntCon().FitsInI32;
 #else
     public bool IsIntCnsFitsInI32 => _oper.IsCnsIntOrI;
@@ -527,6 +558,8 @@ public partial class GenTree
 
     public bool IsNothingNode => (_oper is GT_NOP) && (_type is TYP_VOID);
 
+    public bool IsPartOfAddressMode => (_oper is GT_ADD or GT_MUL or GT_LSH or GT_CAST) && ((_flags & GTF_ADDRMODE_NO_CSE) is not 0);
+
     public bool IsPhiDefn
     {
         get
@@ -552,6 +585,21 @@ public partial class GenTree
         set
         {
             _lirFlags = (_lirFlags & ~LIR.Flags.RegOptional) | (value ? LIR.Flags.RegOptional : 0);
+        }
+    }
+
+    /// <summary>This can be extended to non-constant nodes, but not to local or indir nodes.</summary>
+    public bool IsReuseRegVal
+    {
+        get
+        {
+            return _oper.IsConst && ((_flags & GTF_REUSE_REG_VAL) is not 0);
+        }
+
+        set
+        {
+            assert(_oper.IsConst);
+            _flags = (_flags & ~GTF_REUSE_REG_VAL) | (value ? GTF_REUSE_REG_VAL : GTF_EMPTY);
         }
     }
 
@@ -701,6 +749,10 @@ public partial class GenTree
         }
     }
 
+#if DEBUG
+    public regNumber Reg => (_regTag is not GT_REGTAG_NONE) ? RegNum : REG_NA;
+#endif
+
     public regNumber RegNum
     {
         get
@@ -750,6 +802,80 @@ public partial class GenTree
         GT_HWINTRINSIC => AsHWIntrinsic().IsMemoryStoreOrBarrier,
         _ => false,
     };
+
+    /// <summary>If the given tree is a scaled index (i.e. "op * 4" or "op &lt;&lt; 2"), returns the multiplier: 2, 4, or 8; otherwise returns 0.Note that "1" is never returned.</summary>
+    public int ScaledIndex
+    {
+        get
+        {
+            if (_oper.IsUnary)
+            {
+                if (AsUnOp().Op1.Oper.IsCnsIntOrI)
+                {
+                    return 0;
+                }
+            }
+
+            switch (_oper)
+            {
+                case GT_MUL:
+                {
+                    return AsOp().Op2.ScaleIndexMul;
+                }
+
+#if TARGET_RISCV64
+                case GT_SLLI_UW:
+#endif
+                case GT_LSH:
+                {
+                    return AsOp().Op2.ScaleIndexShf;
+                }
+
+                default:
+                {
+                    assert(Debugger.IsAttached, "GenTree.ScaledIndex called with illegal gtOper");
+                    break;
+                }
+            }
+            return 0;
+        }
+    }
+
+    /// <summary>If the given tree is an integer constant that can be used in a scaled index address mode as a multiplier(e.g. "[4*index]"), then return the scale factor: 2, 4, or 8. Otherwise, return 0. Note that we never return 1, to match the behavior of GetScaleIndexShf().</summary>
+    public int ScaleIndexMul
+    {
+        get
+        {
+            if (_oper.IsCnsIntOrI)
+            {
+                var iconValue = AsIntCon().IconValue;
+
+                if (jitIsScaleIndexMul(iconValue) && (iconValue is not 1))
+                {
+                    return (int)(iconValue);
+                }
+            }
+            return 0;
+        }
+    }
+
+    /// <summary>If the given tree is the right-hand side of a left shift (that is, 'y' in the tree 'x' &lt;&lt; 'y'), and it is an integer constant that can be used in a scaled index address mode as a multiplier(e.g. "[4*index]"), then return the scale factor: 2, 4, or 8. Otherwise, return 0.</summary>
+    public int ScaleIndexShf
+    {
+        get
+        {
+            if (_oper.IsCnsIntOrI)
+            {
+                var iconValue = AsIntCon().IconValue;
+
+                if (jitIsScaleIndexShift(iconValue))
+                {
+                    return 1 << (int)(iconValue);
+                }
+            }
+            return 0;
+        }
+    }
 
     public GenTree SkipCopyOrReload
     {
@@ -868,116 +994,316 @@ public partial class GenTree
         _flags |= sourceFlags;
     }
 
-    public GenTreeUnOp AsUnOp() => Unsafe.As<GenTreeUnOp>(this);
+    public GenTreeUnOp AsUnOp()
+    {
+        assert(this is GenTreeUnOp);
+        return Unsafe.As<GenTreeUnOp>(this);
+    }
 
-    public GenTreeOp AsOp() => Unsafe.As<GenTreeOp>(this);
+    public GenTreeOp AsOp()
+    {
+        assert(this is GenTreeOp);
+        return Unsafe.As<GenTreeOp>(this);
+    }
 
-    public GenTreeVal AsVal() => Unsafe.As<GenTreeVal>(this);
+    public GenTreeVal AsVal()
+    {
+        assert(this is GenTreeVal);
+        return Unsafe.As<GenTreeVal>(this);
+    }
 
-    public GenTreeIntConCommon AsIntConCommon() => Unsafe.As<GenTreeIntConCommon>(this);
+    public GenTreeIntConCommon AsIntConCommon()
+    {
+        assert(this is GenTreeIntConCommon);
+        return Unsafe.As<GenTreeIntConCommon>(this);
+    }
 
-    public GenTreeIntCon AsIntCon() => Unsafe.As<GenTreeIntCon>(this);
+    public GenTreeIntCon AsIntCon()
+    {
+        assert(this is GenTreeIntCon);
+        return Unsafe.As<GenTreeIntCon>(this);
+    }
 
-    public GenTreeLngCon AsLngCon() => Unsafe.As<GenTreeLngCon>(this);
+    public GenTreeLngCon AsLngCon()
+    {
+        assert(this is GenTreeLngCon);
+        return Unsafe.As<GenTreeLngCon>(this);
+    }
 
-    public GenTreeDblCon AsDblCon() => Unsafe.As<GenTreeDblCon>(this);
+    public GenTreeDblCon AsDblCon()
+    {
+        assert(this is GenTreeDblCon);
+        return Unsafe.As<GenTreeDblCon>(this);
+    }
 
-    public GenTreeStrCon AsStrCon() => Unsafe.As<GenTreeStrCon>(this);
+    public GenTreeStrCon AsStrCon()
+    {
+        assert(this is GenTreeStrCon);
+        return Unsafe.As<GenTreeStrCon>(this);
+    }
 
 #if FEATURE_SIMD
-    public GenTreeVecCon AsVecCon() => Unsafe.As<GenTreeVecCon>(this);
+    public GenTreeVecCon AsVecCon()
+    {
+        assert(this is GenTreeVecCon);
+        return Unsafe.As<GenTreeVecCon>(this);
+    }
 #endif
 
 #if FEATURE_MASKED_HW_INTRINSICS
-    public GenTreeMskCon AsMskCon() => Unsafe.As<GenTreeMskCon>(this);
+    public GenTreeMskCon AsMskCon()
+    {
+        assert(this is GenTreeMskCon);
+        return Unsafe.As<GenTreeMskCon>(this);
+    }
 #endif
 
-    public GenTreeLclVarCommon AsLclVarCommon() => Unsafe.As<GenTreeLclVarCommon>(this);
+    public GenTreeLclVarCommon AsLclVarCommon()
+    {
+        assert(this is GenTreeLclVarCommon);
+        return Unsafe.As<GenTreeLclVarCommon>(this);
+    }
 
-    public GenTreeLclVar AsLclVar() => Unsafe.As<GenTreeLclVar>(this);
+    public GenTreeLclVar AsLclVar()
+    {
+        assert(this is GenTreeLclVar);
+        return Unsafe.As<GenTreeLclVar>(this);
+    }
 
-    public GenTreeLclFld AsLclFld() => Unsafe.As<GenTreeLclFld>(this);
+    public GenTreeLclFld AsLclFld()
+    {
+        assert(this is GenTreeLclFld);
+        return Unsafe.As<GenTreeLclFld>(this);
+    }
 
-    public GenTreeCast AsCast() => Unsafe.As<GenTreeCast>(this);
+    public GenTreeCast AsCast()
+    {
+        assert(this is GenTreeCast);
+        return Unsafe.As<GenTreeCast>(this);
+    }
 
-    public GenTreeBox AsBox() => Unsafe.As<GenTreeBox>(this);
+    public GenTreeBox AsBox()
+    {
+        assert(this is GenTreeBox);
+        return Unsafe.As<GenTreeBox>(this);
+    }
 
-    public GenTreeFieldAddr AsFieldAddr() => Unsafe.As<GenTreeFieldAddr>(this);
+    public GenTreeFieldAddr AsFieldAddr()
+    {
+        assert(this is GenTreeFieldAddr);
+        return Unsafe.As<GenTreeFieldAddr>(this);
+    }
 
-    public GenTreeCall AsCall() => Unsafe.As<GenTreeCall>(this);
+    public GenTreeCall AsCall()
+    {
+        assert(this is GenTreeCall);
+        return Unsafe.As<GenTreeCall>(this);
+    }
 
-    public GenTreeFieldList AsFieldList() => Unsafe.As<GenTreeFieldList>(this);
+    public GenTreeFieldList AsFieldList()
+    {
+        assert(this is GenTreeFieldList);
+        return Unsafe.As<GenTreeFieldList>(this);
+    }
 
-    public GenTreeColon AsColon() => Unsafe.As<GenTreeColon>(this);
+    public GenTreeColon AsColon()
+    {
+        assert(this is GenTreeColon);
+        return Unsafe.As<GenTreeColon>(this);
+    }
 
-    public GenTreeFptrVal AsFptrVal() => Unsafe.As<GenTreeFptrVal>(this);
+    public GenTreeFptrVal AsFptrVal()
+    {
+        assert(this is GenTreeFptrVal);
+        return Unsafe.As<GenTreeFptrVal>(this);
+    }
 
-    public GenTreeIntrinsic AsIntrinsic() => Unsafe.As<GenTreeIntrinsic>(this);
+    public GenTreeIntrinsic AsIntrinsic()
+    {
+        assert(this is GenTreeIntrinsic);
+        return Unsafe.As<GenTreeIntrinsic>(this);
+    }
 
-    public GenTreeIndexAddr AsIndexAddr() => Unsafe.As<GenTreeIndexAddr>(this);
+    public GenTreeIndexAddr AsIndexAddr()
+    {
+        assert(this is GenTreeIndexAddr);
+        return Unsafe.As<GenTreeIndexAddr>(this);
+    }
 
 #if FEATURE_HW_INTRINSICS
-    public GenTreeMultiOp AsMultiOp() => Unsafe.As<GenTreeMultiOp>(this);
+    public GenTreeMultiOp AsMultiOp()
+    {
+        assert(this is GenTreeMultiOp);
+        return Unsafe.As<GenTreeMultiOp>(this);
+    }
 #endif
 
-    public GenTreeBoundsChk AsBoundsChk() => Unsafe.As<GenTreeBoundsChk>(this);
+    public GenTreeBoundsChk AsBoundsChk()
+    {
+        assert(this is GenTreeBoundsChk);
+        return Unsafe.As<GenTreeBoundsChk>(this);
+    }
 
-    public GenTreeArrCommon AsArrCommon() => Unsafe.As<GenTreeArrCommon>(this);
+    public GenTreeArrCommon AsArrCommon()
+    {
+        assert(this is GenTreeArrCommon);
+        return Unsafe.As<GenTreeArrCommon>(this);
+    }
 
-    public GenTreeArrLen AsArrLen() => Unsafe.As<GenTreeArrLen>(this);
+    public GenTreeArrLen AsArrLen()
+    {
+        assert(this is GenTreeArrLen);
+        return Unsafe.As<GenTreeArrLen>(this);
+    }
 
-    public GenTreeMDArr AsMDArr() => Unsafe.As<GenTreeMDArr>(this);
+    public GenTreeMDArr AsMDArr()
+    {
+        assert(this is GenTreeMDArr);
+        return Unsafe.As<GenTreeMDArr>(this);
+    }
 
-    public GenTreeArrElem AsArrElem() => Unsafe.As<GenTreeArrElem>(this);
+    public GenTreeArrElem AsArrElem()
+    {
+        assert(this is GenTreeArrElem);
+        return Unsafe.As<GenTreeArrElem>(this);
+    }
 
-    public GenTreeRetExpr AsRetExpr() => Unsafe.As<GenTreeRetExpr>(this);
+    public GenTreeRetExpr AsRetExpr()
+    {
+        assert(this is GenTreeRetExpr);
+        return Unsafe.As<GenTreeRetExpr>(this);
+    }
 
-    public GenTreeILOffset AsILOffset() => Unsafe.As<GenTreeILOffset>(this);
+    public GenTreeILOffset AsILOffset()
+    {
+        assert(this is GenTreeILOffset);
+        return Unsafe.As<GenTreeILOffset>(this);
+    }
 
-    public GenTreeCopyOrReload AsCopyOrReload() => Unsafe.As<GenTreeCopyOrReload>(this);
+    public GenTreeCopyOrReload AsCopyOrReload()
+    {
+        assert(this is GenTreeCopyOrReload);
+        return Unsafe.As<GenTreeCopyOrReload>(this);
+    }
 
-    public GenTreeAddrMode AsAddrMode() => Unsafe.As<GenTreeAddrMode>(this);
+    public GenTreeAddrMode AsAddrMode()
+    {
+        assert(this is GenTreeAddrMode);
+        return Unsafe.As<GenTreeAddrMode>(this);
+    }
 
-    public GenTreeQmark AsQmark() => Unsafe.As<GenTreeQmark>(this);
+    public GenTreeQmark AsQmark()
+    {
+        assert(this is GenTreeQmark);
+        return Unsafe.As<GenTreeQmark>(this);
+    }
 
-    public GenTreePhiArg AsPhiArg() => Unsafe.As<GenTreePhiArg>(this);
+    public GenTreePhiArg AsPhiArg()
+    {
+        assert(this is GenTreePhiArg);
+        return Unsafe.As<GenTreePhiArg>(this);
+    }
 
-    public GenTreePhi AsPhi() => Unsafe.As<GenTreePhi>(this);
+    public GenTreePhi AsPhi()
+    {
+        assert(this is GenTreePhi);
+        return Unsafe.As<GenTreePhi>(this);
+    }
 
-    public GenTreeIndir AsIndir() => Unsafe.As<GenTreeIndir>(this);
+    public GenTreeIndir AsIndir()
+    {
+        assert(this is GenTreeIndir);
+        return Unsafe.As<GenTreeIndir>(this);
+    }
 
-    public GenTreeBlk AsBlk() => Unsafe.As<GenTreeBlk>(this);
+    public GenTreeBlk AsBlk()
+    {
+        assert(this is GenTreeBlk);
+        return Unsafe.As<GenTreeBlk>(this);
+    }
 
-    public GenTreeStoreInd AsStoreInd() => Unsafe.As<GenTreeStoreInd>(this);
+    public GenTreeStoreInd AsStoreInd()
+    {
+        assert(this is GenTreeStoreInd);
+        return Unsafe.As<GenTreeStoreInd>(this);
+    }
 
-    public GenTreeCmpXchg AsCmpXchg() => Unsafe.As<GenTreeCmpXchg>(this);
+    public GenTreeCmpXchg AsCmpXchg()
+    {
+        assert(this is GenTreeCmpXchg);
+        return Unsafe.As<GenTreeCmpXchg>(this);
+    }
 
-    public GenTreeConditional AsConditional() => Unsafe.As<GenTreeConditional>(this);
+    public GenTreeConditional AsConditional()
+    {
+        assert(this is GenTreeConditional);
+        return Unsafe.As<GenTreeConditional>(this);
+    }
 
-    public GenTreePutArgStk AsPutArgStk() => Unsafe.As<GenTreePutArgStk>(this);
+    public GenTreePutArgStk AsPutArgStk()
+    {
+        assert(this is GenTreePutArgStk);
+        return Unsafe.As<GenTreePutArgStk>(this);
+    }
 
-    public GenTreePhysReg AsPhysReg() => Unsafe.As<GenTreePhysReg>(this);
+    public GenTreePhysReg AsPhysReg()
+    {
+        assert(this is GenTreePhysReg);
+        return Unsafe.As<GenTreePhysReg>(this);
+    }
 
 #if FEATURE_HW_INTRINSICS
-    public GenTreeHWIntrinsic AsHWIntrinsic() => Unsafe.As<GenTreeHWIntrinsic>(this);
+    public GenTreeHWIntrinsic AsHWIntrinsic()
+    {
+        assert(this is GenTreeHWIntrinsic);
+        return Unsafe.As<GenTreeHWIntrinsic>(this);
+    }
 #endif
 
-    public GenTreeAllocObj AsAllocObj() => Unsafe.As<GenTreeAllocObj>(this);
+    public GenTreeAllocObj AsAllocObj()
+    {
+        assert(this is GenTreeAllocObj);
+        return Unsafe.As<GenTreeAllocObj>(this);
+    }
 
-    public GenTreeRuntimeLookup AsRuntimeLookup() => Unsafe.As<GenTreeRuntimeLookup>(this);
+    public GenTreeRuntimeLookup AsRuntimeLookup()
+    {
+        assert(this is GenTreeRuntimeLookup);
+        return Unsafe.As<GenTreeRuntimeLookup>(this);
+    }
 
-    public GenTreeArrAddr AsArrAddr() => Unsafe.As<GenTreeArrAddr>(this);
+    public GenTreeArrAddr AsArrAddr()
+    {
+        assert(this is GenTreeArrAddr);
+        return Unsafe.As<GenTreeArrAddr>(this);
+    }
 
-    public GenTreeCC AsCC() => Unsafe.As<GenTreeCC>(this);
+    public GenTreeCC AsCC()
+    {
+        assert(this is GenTreeCC);
+        return Unsafe.As<GenTreeCC>(this);
+    }
 
 #if TARGET_ARM64 || TARGET_AMD64
-    public GenTreeCCMP AsCCMP() => Unsafe.As<GenTreeCCMP>(this);
+    public GenTreeCCMP AsCCMP()
+    {
+        assert(this is GenTreeCCMP);
+        return Unsafe.As<GenTreeCCMP>(this);
+    }
 #endif
 
-    public GenTreeOpCC AsOpCC() => Unsafe.As<GenTreeOpCC>(this);
+    public GenTreeOpCC AsOpCC()
+    {
+        assert(this is GenTreeOpCC);
+        return Unsafe.As<GenTreeOpCC>(this);
+    }
 
 #if TARGET_32BIT
-    public GenTreeMultiRegOp AsMultiRegOp() => Unsafe.As<GenTreeMultiRegOp>(this);
+    public GenTreeMultiRegOp AsMultiRegOp()
+    {
+        assert(this is GenTreeMultiRegOp);
+        return Unsafe.As<GenTreeMultiRegOp>(this);
+    }
 #endif
 
     public void ChangeType(var_types newType)
@@ -1057,6 +1383,34 @@ public partial class GenTree
 #if DEBUG
         _regTag = tree._regTag;
 #endif
+    }
+
+    public static int gtDispFlags(GenTreeFlags flags, GenTreeDebugFlags debugFlags)
+    {
+        // the "baseline" number of flag characters displayed
+        var charsDisplayed = 10;
+
+        jitprintf($"{(((flags & GTF_ASG) is not 0) ? 'A' : (((flags & GTF_CONTAINED) is not 0) ? 'c' : '-'))}");
+        jitprintf($"{(((flags & GTF_CALL) is not 0) ? 'C' : '-')}");
+        jitprintf($"{(((flags & GTF_EXCEPT) is not 0) ? 'X' : '-')}");
+        jitprintf($"{(((flags & GTF_GLOB_REF) is not 0) ? 'G' : '-')}");
+
+        // First print '+' if GTF_DEBUG_NODE_MORPHED is set, otherwise print 'O' or '-'
+        jitprintf($"{(((debugFlags & GTF_DEBUG_NODE_MORPHED) is not 0) ? '+' : (((flags & GTF_ORDER_SIDEEFF) is not 0) ? 'O' : '-'))}");
+        jitprintf($"{(((flags & GTF_COLON_COND) is not 0) ? '?' : '-')}");
+
+        // N is for No cse, H is for Hoist this expr
+        jitprintf($"{(((flags & GTF_DONT_CSE) is not 0) ? 'N' : ((flags & GTF_MAKE_CSE) is not 0) ? 'H' : '-')}");
+        jitprintf($"{(((flags & GTF_REVERSE_OPS) is not 0) ? 'R' : '-')}");
+
+        jitprintf($"{(((flags & GTF_UNSIGNED) is not 0) ? 'U' : '-')}");
+
+        // Both GTF_SPILL and GTF_SPILLED: '#'
+        //               Only GTF_SPILLED: 'z'
+        //                 Only GTF_SPILL: 'Z'
+        jitprintf($"{(((flags & (GTF_SPILL | GTF_SPILLED)) == (GTF_SPILL | GTF_SPILLED)) ? '#' : (((flags & GTF_SPILLED) is not 0) ? 'z' : (((flags & GTF_SPILL) is not 0) ? 'Z' : '-')))}");
+
+        return charsDisplayed;
     }
 
     /// <summary>Get exception set this tree may throw.</summary>
@@ -1229,6 +1583,13 @@ public partial class GenTree
         }
     }
 
+    private GenTreeFlags GetLastUseBit(int fieldIndex)
+    {
+        assert(fieldIndex < 4);
+        assert(_oper.IsAnyLocal || _oper.IsCopyOrReload);
+        return (GenTreeFlags)(1 << (FIELD_LAST_USE_SHIFT + fieldIndex));
+    }
+
     /// <summary>Get the struct layout for this node.</summary>
     /// <param name="compiler">The Compiler instance</param>
     /// <returns>The struct layout of this node; it must have one.</returns>
@@ -1293,6 +1654,93 @@ public partial class GenTree
             }
         }
         return compiler.typGetObjLayout(structHnd);
+    }
+
+    /// <summary>Return the register count for a multi-reg node.</summary>
+    /// <param name="comp">Compiler instance. Required for MultiRegLclVar, unused otherwise.</param>
+    /// <returns>Returns the number of registers defined by this node.</returns>
+    public byte GetMultiRegCount(Compiler comp)
+    {
+#if FEATURE_MULTIREG_RET
+        if (IsMultiRegCall())
+        {
+            return AsCall().ReturnTypeDesc.ReturnRegCount;
+        }
+
+#if !TARGET_64BIT
+        if (_oper.IsMultiRegOp)
+        {
+            return AsMultiRegOp().RegCount;
+        }
+#endif
+#endif
+
+        if (_oper.IsCopyOrReload)
+        {
+            return AsCopyOrReload().RegCount;
+        }
+
+#if FEATURE_HW_INTRINSICS
+        if (_oper.IsHWIntrinsic)
+        {
+            return HWIntrinsicInfo.GetMultiRegCount(AsHWIntrinsic().HWIntrinsicId);
+        }
+#endif
+
+        if (IsMultiRegLclVar)
+        {
+            assert(comp is not null);
+            return AsLclVar().GetFieldCount(comp);
+        }
+
+        NO_WAY("GetMultiRegCount called with non-multireg node");
+        return 1;
+    }
+
+    /// <summary>Get a specific register, based on regIndex, that is produced by this node.</summary>
+    /// <param name="regIndex">which register to return (must be 0 for non-multireg nodes)</param>
+    /// <returns>The register, if any, assigned to this index for this node.</returns>
+    /// <remarks>All targets that support multi-reg ops of any kind also support multi-reg return values for calls. Should that change with a future target, this method will need to change accordingly.</remarks>
+    public regNumber GetRegByIndex(byte regIndex)
+    {
+        if (regIndex is 0)
+        {
+            return RegNum;
+        }
+
+#if FEATURE_MULTIREG_RET
+        if (IsMultiRegCall)
+        {
+            return AsCall().GetRegNumByIdx(regIndex);
+        }
+
+#if !TARGET_64BIT
+        if (_oper.IsMultiRegOp)
+        {
+            return AsMultiRegOp().GetRegNumByIdx(regIndex);
+        }
+#endif
+#endif
+
+        if (_oper.IsCopyOrReload)
+        {
+            return AsCopyOrReload().GetRegNumByIdx(regIndex);
+        }
+
+#if FEATURE_HW_INTRINSICS
+        if (_oper.IsHWIntrinsic)
+        {
+            return AsHWIntrinsic().GetRegNumByIdx(regIndex);
+        }
+#endif
+
+        if (_oper.IsScalarLocal)
+        {
+            return AsLclVar().GetRegNumByIdx(regIndex);
+        }
+
+        NO_WAY("Invalid regIndex for GetRegFromMultiRegNode");
+        return REG_NA;
     }
 
     /// <summary>Get the use edge for an operand of this tree.</summary>
@@ -1573,12 +2021,17 @@ public partial class GenTree
         return ((_flags & GTF_IND_NONFAULTING) == 0) && compiler.fgAddrCouldBeNull(IndirOrArrMetaDataAddr);
     }
 
-    public bool IsHWIntrinsic(NamedIntrinsic intrinsicId)
-    {
-        return _oper.IsHWIntrinsic && (AsHWIntrinsic().HWIntrinsicId == intrinsicId);
-    }
+    public bool IsHWIntrinsic(NamedIntrinsic intrinsicId) => _oper.IsHWIntrinsic && (AsHWIntrinsic().HWIntrinsicId == intrinsicId);
+
+    public bool IsIconHandle() => _oper.IsCnsIntOrI && AsIntCon().IsIconHandle();
 
     public bool IsIntegralConst(nint value) => _oper.IsIntegralConst && AsIntConCommon().IsIntegralConst(value);
+
+    public bool IsLastUse(int fieldIndex)
+    {
+        assert(_oper.IsAnyLocal || _oper.IsCopyOrReload);
+        return (_flags & GetLastUseBit(fieldIndex)) is not 0;
+    }
 
     public bool IsNeverNegative(Compiler comp)
     {
@@ -1671,6 +2124,33 @@ public partial class GenTree
         }
         return false;
     }
+
+#if NODEBASH_STATS
+    private const int BASH_HASH_SIZE = 211;
+
+    private static BashHashDsc[] BashHash = new BashHashDsc[BASH_HASH_SIZE];
+
+    private static int hashme(genTreeOps op1, genTreeOps op2)
+    {
+        return (((int)(op1) * 104729) ^ ((int)(op2) * 56569)) % BASH_HASH_SIZE;
+    }
+
+    private void RecordOperBashing(genTreeOps operOld, genTreeOps operNew)
+    {
+        var hash = hashme(operOld, operNew);
+        ref var desc = ref BashHash[hash];
+
+        if (desc.bhFullHash != hash)
+        {
+            noway_assert(desc.bhCount is 0); // if this ever fires, need fix the hash fn
+            desc.bhFullHash = hash;
+        }
+
+        desc.bhCount += 1;
+        desc.bhOperOld = operOld;
+        desc.bhOperNew = operNew;
+    }
+#endif
 
     /// <summary>Replace a given operand to this node with a new operand.</summary>
     /// <param name="useEdge">the use edge that points to the operand to be replaced.</param>
@@ -1774,6 +2254,13 @@ public partial class GenTree
         }
     }
 
+    public void SetLastUse(int fieldIndex, bool value)
+    {
+        assert(_oper.IsAnyLocal || _oper.IsCopyOrReload);
+        var lastUseBit = GetLastUseBit(fieldIndex);
+        _flags = (_flags & ~lastUseBit) | (value ? lastUseBit : 0);
+    }
+
     /// <summary>mark a node as having been morphed</summary>
     /// <param name="compiler">compiler instance</param>
     /// <param name="doChilren">recursive mark child nodes</param>
@@ -1806,6 +2293,60 @@ public partial class GenTree
             _morphCount++;
         }
 #endif
+    }
+
+    public void SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate = CLEAR_VN)
+    {
+#if DEBUG
+        assert(oper.StructType == GetType());
+#endif
+
+        // Make sure the node isn't too small for the new operator
+        SetOperRaw(oper);
+
+        if (vnUpdate is CLEAR_VN)
+        {
+            // Clear the ValueNum field as well.
+            _vnPair.SetBoth(ValueNumStore.NoVN);
+        }
+    }
+
+    private void SetOperRaw(genTreeOps oper)
+    {
+        // Please do not do anything here other than assign to _oper (debug-only code is OK, but should be kept to a minimum).
+
+#if NODEBASH_STATS
+        // nop unless NODEBASH_STATS is enabled
+        RecordOperBashing(_oper, oper);
+#endif
+
+        // Bashing to MultiOp nodes is currently not supported.
+        assert(!oper.IsMultiOp);
+
+        _oper = oper;
+    }
+
+    public VisitResult VisitLocalDefNodes(Compiler comp, GenTreeVisitorFunc visitor)
+    {
+        if (_oper is GT_STORE_LCL_VAR)
+        {
+            return visitor(AsLclVarCommon());
+        }
+        else if (_oper is GT_STORE_LCL_FLD)
+        {
+            return visitor(AsLclFld());
+        }
+        else if (_oper is GT_CALL)
+        {
+            var call = AsCall();
+            var lclAddr = comp.gtCallGetDefinedRetBufLclAddr(call);
+
+            if (lclAddr is not null)
+            {
+                return visitor(lclAddr);
+            }
+        }
+        return VisitResult.Continue;
     }
 
     // Visits each operand of this node. The operand must be either a lambda, function, or functor with the signature

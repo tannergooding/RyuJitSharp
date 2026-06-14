@@ -139,7 +139,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
     public int getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, bool fDoubleAlignHint = false) => lpVtbl->getClassAlignmentRequirement((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), cls, fDoubleAlignHint);
 
-    public int getClassGClayout(CORINFO_CLASS_HANDLE cls, byte* gcPtrs) => lpVtbl->getClassGClayout((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), cls, gcPtrs);
+    public int getClassGClayout(CORINFO_CLASS_HANDLE cls, CorInfoGCType* gcPtrs) => lpVtbl->getClassGClayout((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), cls, gcPtrs);
 
     public int getClassNumInstanceFields(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassNumInstanceFields((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), cls);
 
@@ -603,12 +603,12 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         // in representing of 'cls' from a GC perspective.  The class is
         // assumed to be an array of machine words
         // (of length // getClassSize(cls) / TARGET_POINTER_SIZE),
-        // 'gcPtrs' is a pointer to an array of uint8_ts of this length.
+        // 'gcPtrs' is a pointer to an array of CorInfoGCType of this length.
         // getClassGClayout fills in this array so that gcPtrs[i] is set
         // to one of the CorInfoGCType values which is the GC type of
         // the i-th machine word of an object of type 'cls'
         // returns the number of GC pointers in the array
-        int getClassGClayout(CORINFO_CLASS_HANDLE cls, byte* gcPtrs);
+        int getClassGClayout(CORINFO_CLASS_HANDLE cls, CorInfoGCType* gcPtrs);
 
         // returns the number of instance fields in a class
         int getClassNumInstanceFields(CORINFO_CLASS_HANDLE cls);
@@ -1251,7 +1251,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, bool, int> getClassAlignmentRequirement;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, byte*, int> getClassGClayout;
+        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CorInfoGCType*, int> getClassGClayout;
 
         public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, int> getClassNumInstanceFields;
 

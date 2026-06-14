@@ -136,7 +136,7 @@ public partial class Compiler
 
     /// <summary>This stack, managed by the SSA numbering infrastructure, keeps "outlined composite SSA numbers".</summary>
     /// <remarks>See "SsaNumInfo.GetNum" for more details on when this is needed.</remarks>
-    public Stack<int>? _outlinedCompositeSsaNums;
+    public List<int>? _outlinedCompositeSsaNums;
 
     /// <summary>This map tracks nodes whose value numbers explicitly or implicitly depend on memory states.</summary>
     /// <remarks>
@@ -172,7 +172,7 @@ public partial class Compiler
 
     protected const int MIN_CSE_COST = 2;
 
-    protected unsafe ASSERT_TP* bbJtrueAssertionOut;
+    protected ASSERT_TP[]? bbJtrueAssertionOut;
 
     protected FrameType rpFrameType;
 
@@ -1249,6 +1249,36 @@ public partial class Compiler
         return TYP_UNDEF;
     }
 
+    /// <summary>Given the VM's CorInfoGCType convert it to the JIT's var_types</summary>
+    /// <param name="gcType">an enum value that originally came from an element of the BYTE[] returned from getClassGClayout()</param>
+    /// <returns>The corresponding enum value from the JIT's var_types</returns>
+    /// <remarks>
+    ///   <para>The gcLayout of each field of a struct is returned from getClassGClayout() as a BYTE[] but each BYTE element is actually a CorInfoGCType value</para>
+    ///   <para>Note when we 'know' that there is only one element in this array the JIT will often pass the address of a single BYTE, instead of a BYTE[]</para>
+    /// </remarks>
+    public var_types getJitGCType(CorInfoGCType gcType)
+    {
+        var result = TYP_UNKNOWN;
+
+        if (gcType is TYPE_GC_NONE)
+        {
+            result = TYP_I_IMPL;
+        }
+        else if (gcType is TYPE_GC_REF)
+        {
+            result = TYP_REF;
+        }
+        else if (gcType is TYPE_GC_BYREF)
+        {
+            result = TYP_BYREF;
+        }
+        else
+        {
+            NO_WAY("Bad value of 'gcType'");
+        }
+        return result;
+    }
+
     /// <summary>get a lookup tree</summary>
     /// <param name="lookup">the lookup to get the tree for</param>
     /// <param name="handleFlags">flags to set on the result node</param>
@@ -1315,22 +1345,462 @@ public partial class Compiler
 
     public int GetMinVectorByteLength() => (int)(TYP_SIMD8.EmitSize);
 
+    /// <summary>Get the "primitive" type that is used for a struct of size 'structSize'.</summary>
+    /// <param name="structSize">the size of the struct type, cannot be zero</param>
+    /// <param name="clsHnd">the handle for the struct type, used when may have an HFA or if we need the GC layout for an object ref.</param>
+    /// <returns>The primitive type (i.e. byte, short, int, long, ref, float, double) used to pass or return structs of this size. If we shouldn't use a "primitive" type then TYP_UNKNOWN is returned.</returns>
+    /// <remarks>
+    ///   <para>We examine 'clsHnd' to check the GC layout of the struct and return TYP_REF for structs that simply wrap an object.</para>
+    ///   <para>If the struct is a one element HFA/HVA, we will return the proper floating point or vector type.</para>
+    ///   <para>For 32-bit targets (X86/ARM32) the 64-bit TYP_LONG type is not considered a primitive type by this method.</para>
+    ///   <para>So a struct that wraps a 'long' is passed and returned in the same way as any other 8-byte struct</para>
+    ///   <para>For ARM32 if we have an HFA struct that wraps a 64-bit double we will return TYP_DOUBLE.</para>
+    ///   <para>For vector calling conventions, a vector is considered a "primitive" type, as it is passed in a single register.</para> 
+    /// </remarks>
+    public unsafe var_types getPrimitiveTypeForStruct(int structSize, CORINFO_CLASS_HANDLE clsHnd)
+    {
+        assert(structSize is not 0);
+
+        var useType = TYP_UNKNOWN;
+
+        // Start by determining if we have an HFA/HVA with a single element.
+        if (GlobalJitOptions.compFeatureHfa)
+        {
+            switch (structSize)
+            {
+                case 4:
+                case 8:
+#if TARGET_ARM64
+                case 16:
+#endif
+                {
+                    var hfaType = GetHfaType(clsHnd);
+
+                    // We're only interested in the case where the struct size is equal to the size of the hfaType.
+                    if (varTypeIsValidHfaType(hfaType))
+                    {
+                        if (hfaType.Size == structSize)
+                        {
+                            useType = hfaType;
+                        }
+                        else
+                        {
+                            return TYP_UNKNOWN;
+                        }
+                    }
+                    break;
+                }
+            }
+
+            if (useType is not TYP_UNKNOWN)
+            {
+                return useType;
+            }
+        }
+
+        // Now deal with non-HFA/HVA structs.
+        switch (structSize)
+        {
+            case 1:
+            {
+                useType = TYP_UBYTE;
+                break;
+            }
+
+            case 2:
+            {
+                useType = TYP_USHORT;
+                break;
+            }
+
+#if !TARGET_XARCH || UNIX_AMD64_ABI
+            case 3:
+            {
+                useType = TYP_INT;
+                break;
+            }
+
+#endif
+
+#if TARGET_64BIT
+            case 4:
+            {
+                // We dealt with the one-float HFA above. All other 4-byte structs are handled as INT.
+                useType = TYP_INT;
+                break;
+            }
+
+#if !TARGET_XARCH || UNIX_AMD64_ABI
+            case 5:
+            case 6:
+            case 7:
+            {
+                useType = TYP_I_IMPL;
+                break;
+            }
+
+#endif
+#endif
+
+            case TARGET_POINTER_SIZE:
+            {
+                var gcPtr = TYPE_GC_NONE;
+                // Check if this pointer-sized struct is wrapping a GC object
+                info.compCompHnd->getClassGClayout(clsHnd, &gcPtr);
+                useType = getJitGCType(gcPtr);
+                break;
+            }
+
+            default:
+            {
+                useType = TYP_UNKNOWN;
+                break;
+            }
+        }
+        return useType;
+    }
+
     /// <inheritdoc cref="GetReturnTypeForStruct(CORINFO_CLASS_HANDLE, CorInfoCallConvExtension, out structPassingKind, int)" />
     public unsafe var_types GetReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd, CorInfoCallConvExtension callConv, int structSize = 0)
         => GetReturnTypeForStruct(clsHnd, callConv, out _, structSize);
 
     /// <summary>Get the type that is used to return values of the given struct type.</summary>
-    /// <param name="clsHnd"></param>
-    /// <param name="callConv"></param>
-    /// <param name="wbPassStruct"></param>
-    /// <param name="structSize"></param>
-    /// <returns></returns>
-    /// <remarks>If the size is unknown, pass 0 and it will be determined from 'clsHnd'.</remarks>
-    public unsafe var_types GetReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd, CorInfoCallConvExtension callConv, out structPassingKind wbPassStruct, int structSize = 0)
+    /// <param name="clsHnd">the handle for the struct type</param>
+    /// <param name="callConv">the calling convention of the function that returns this struct.</param>
+    /// <param name="wbReturnStruct">information about how the struct is to be returned</param>
+    /// <param name="structSize">the size of the struct type, or zero if we should call getClassSize(clsHnd)</param>
+    /// <returns>
+    ///   <para>When wbReturnStruct is SPK_PrimitiveType this method's return value is the primitive type used to return the struct.</para>
+    ///   <para>When wbReturnStruct is SPK_ByReference this method's return value is always TYP_UNKNOWN and the struct type is returned using a return buffer</para>
+    ///   <para>When wbReturnStruct is SPK_ByValue or SPK_ByValueAsHfa this method's return value is always TYP_STRUCT and the struct type is returned using multiple registers.</para>
+    /// </returns>
+    /// <remarks>
+    ///   <para>If the size is unknown, pass 0 and it will be determined from 'clsHnd'; however, if you have already retrieved the struct size then it should be passed as the optional third argument, as this allows us to avoid an extra call to getClassSize(clsHnd)</para>
+    ///   <para>The size must be the size of the given type.</para>
+    ///   <para>The given class handle must be for a value type (struct).</para>
+    /// </remarks>
+    public unsafe var_types GetReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd, CorInfoCallConvExtension callConv, out structPassingKind wbReturnStruct, int structSize = 0)
     {
-        // TODO: Port getReturnTypeForStruct
-        wbPassStruct = default;
-        return TYP_UNKNOWN;
+        // About HFA types:
+        //     When the clsHnd is a one element HFA type then this method's return value is the appropriate floating point primitive type and wbReturnStruct is SPK_PrimitiveType.
+        //     If there are two or more elements in the HFA type and the target supports multireg return types then the return value is TYP_STRUCT and wbReturnStruct is SPK_ByValueAsHfa.
+        //     Additionally if there are two or more elements in the HFA type and the target doesn't support multreg return types then it is treated as if it wasn't an HFA type.
+        //
+        // About returning TYP_STRUCT:
+        //     Whenever this method's return value is TYP_STRUCT it always means that multiple registers are used to return this struct.
+
+        var useType = TYP_UNKNOWN;
+        var howToReturnStruct = SPK_Unknown; // We must change this before we return
+        var canReturnInRegister = true;
+
+        assert(clsHnd != NO_CLASS_HANDLE);
+
+        if (structSize is 0)
+        {
+            structSize = info.compCompHnd->getClassSize(clsHnd);
+        }
+        assert(structSize > 0);
+
+#if TARGET_WASM
+        var abiType = info.compCompHnd->getWasmLowering(clsHnd);
+
+        if (abiType is CORINFO_WASM_TYPE_VOID)
+        {
+            howToReturnStruct = SPK_ByReference;
+            useType = TYP_UNKNOWN;
+        }
+        else
+        {
+            howToReturnStruct = SPK_PrimitiveType;
+            useType = WasmClassifier.ToJitType(abiType);
+        }
+
+        wbReturnStruct = howToReturnStruct;
+        return useType;
+#elif DEBUG
+        // Extra query to facilitate wasm replay of native collections.
+        // TODO-WASM: delete once we can get a wasm collection.
+
+        if ((JitConfig[ConfigInteger.EnableExtraSuperPmiQueries] is not 0) && IsReadyToRun)
+        {
+            info.compCompHnd->getWasmLowering(clsHnd);
+        }
+#endif
+
+#if SWIFT_SUPPORT
+        if (callConv is CorInfoCallConvExtension.Swift)
+        {
+            ref var lowering = ref GetSwiftLowering(clsHnd);
+
+            if (lowering.byReference)
+            {
+                howToReturnStruct = SPK_ByReference;
+                useType = TYP_UNKNOWN;
+            }
+            else if (lowering.numLoweredElements is 1)
+            {
+                useType = lowering.loweredElements[0].VarType;
+
+                if (useType.Size == structSize)
+                {
+                    howToReturnStruct = SPK_PrimitiveType;
+                }
+                else
+                {
+                    howToReturnStruct = SPK_EnclosingType;
+                }
+            }
+            else
+            {
+                howToReturnStruct = SPK_ByValue;
+                useType = TYP_STRUCT;
+            }
+
+            wbReturnStruct = howToReturnStruct;
+            return useType;
+        }
+#endif
+
+#if UNIX_AMD64_ABI
+        // An 8-byte struct may need to be returned in a floating point registerm, so we always consult the struct "Classifier" routine
+        eeGetSystemVAmd64PassStructInRegisterDescriptor(clsHnd, out var structDesc);
+
+        if (structDesc.eightByteCount is 1)
+        {
+            assert(structSize <= sizeof(double));
+            assert(structDesc.passedInRegisters);
+
+            if (structDesc.eightByteClassifications[0] == SystemVClassificationTypeSSE)
+            {
+                // If this is returned as a floating type, use that.
+                // Otherwise, leave as TYP_UNKNOWN and we'll sort things out below.
+                useType = GetEightByteType(structDesc, 0);
+                howToReturnStruct = SPK_PrimitiveType;
+            }
+        }
+        else
+        {
+            // Return classification is not always size based...
+            canReturnInRegister = structDesc.passedInRegisters;
+
+            if (!canReturnInRegister)
+            {
+                assert(structDesc.eightByteCount is 0);
+                howToReturnStruct = SPK_ByReference;
+                useType = TYP_UNKNOWN;
+            }
+        }
+#elif UNIX_X86_ABI
+        if ((callConv is not CorInfoCallConvExtension.Managed) && !isNativePrimitiveStructType(clsHnd))
+        {
+            canReturnInRegister = false;
+            howToReturnStruct = SPK_ByReference;
+            useType = TYP_UNKNOWN;
+        }
+#elif TARGET_RISCV64 || TARGET_LOONGARCH64
+        if (structSize <= (TARGET_POINTER_SIZE * 2))
+        {
+            ref var lowering = ref GetFpStructLowering(clsHnd);
+
+            if (!lowering.byIntegerCallConv)
+            {
+                if (lowering.numLoweredElements is 1)
+                {
+                    useType = lowering.loweredElements[0].VarType;
+                    assert(varTypeIsFloating(useType));
+                    howToReturnStruct = SPK_PrimitiveType;
+                }
+                else
+                {
+                    assert(lowering.numLoweredElements is 2);
+                    howToReturnStruct = SPK_ByValue;
+                    useType = TYP_STRUCT;
+                }
+            }
+        }
+#endif
+
+        if (TargetOS.IsWindows && !TargetArchitecture.IsArm32 && callConvIsInstanceMethodCallConv(callConv) && !isNativePrimitiveStructType(clsHnd))
+        {
+            canReturnInRegister = false;
+            howToReturnStruct = SPK_ByReference;
+            useType = TYP_UNKNOWN;
+        }
+
+        // Check for cases where a small struct is returned in a register
+        // via a primitive type.
+        //
+        // The largest "primitive type" is MAX_PASS_SINGLEREG_BYTES
+        // so we can skip calling getPrimitiveTypeForStruct when we
+        // have a struct that is larger than that.
+
+#if UNIX_AMD64_ABI || TARGET_RISCV64 || TARGET_LOONGARCH64
+        var unknownUseType = useType is TYP_UNKNOWN;
+#else
+        var unknownUseType = true;
+#endif
+
+        if (canReturnInRegister && unknownUseType && (structSize <= MAX_PASS_SINGLEREG_BYTES))
+        {
+            // We set the "primitive" useType based upon the structSize
+            // and also examine the clsHnd to see if it is an HFA of count one
+            //
+            // The ABI for struct returns in varArg methods, is same as the normal case,
+            // so pass false for isVararg
+            useType = getPrimitiveTypeForStruct(structSize, clsHnd);
+
+            if (useType != TYP_UNKNOWN)
+            {
+                if (structSize == useType.Size)
+                {
+                    // Currently: 1, 2, 4, or 8 byte structs
+                    howToReturnStruct = SPK_PrimitiveType;
+                }
+                else
+                {
+                    // Currently: 3, 5, 6, or 7 byte structs
+                    assert(structSize < useType.Size);
+                    howToReturnStruct = SPK_EnclosingType;
+                }
+            }
+        }
+
+#if TARGET_64BIT
+        // Note this handles an odd case when FEATURE_MULTIREG_RET is disabled and HFAs are enabled
+        //
+        // getPrimitiveTypeForStruct will return TYP_UNKNOWN for a struct that is an HFA of two floats
+        // because when HFA are enabled, normally we would use two FP registers to pass or return it
+        //
+        // But if we don't have support for multiple register return types, we have to change this.
+        // Since what we have is an 8-byte struct (float + float)  we change useType to TYP_I_IMPL
+        // so that the struct is returned instead using an 8-byte integer register.
+
+#if !FEATURE_MULTIREG_RET
+        if ((useType is TYP_UNKNOWN) && (structSize is (2 * sizeof(float))) && IsHfa(clsHnd))
+        {
+            useType = TYP_I_IMPL;
+            howToReturnStruct = SPK_PrimitiveType;
+        }
+#endif
+#endif
+
+        // Did we change this struct type into a simple "primitive" type?
+        if (useType is not TYP_UNKNOWN)
+        {
+            // If so, we should have already set howToReturnStruct, too.
+            assert(howToReturnStruct is not SPK_Unknown);
+        }
+        else if (canReturnInRegister)
+        {
+            // We can't replace the struct with a "primitive" type
+            // See if we can return this struct by value, possibly in multiple registers
+            // or if we should return it using a return buffer register
+
+#if FEATURE_MULTIREG_RET
+            if (structSize <= MAX_RET_MULTIREG_BYTES)
+            {
+                // Structs that are HFA's are returned in multiple registers
+                if (IsHfa(clsHnd))
+                {
+                    // HFA's of count one should have been handled by getPrimitiveTypeForStruct
+                    assert(GetHfaCount(clsHnd) >= 2);
+
+                    // setup wbPassType and useType indicate that this is returned by value as an HFA
+                    //  using multiple registers
+                    howToReturnStruct = SPK_ByValueAsHfa;
+                    useType = TYP_STRUCT;
+                }
+                else
+                {
+                    // Not an HFA struct type
+#if UNIX_AMD64_ABI
+                    // The cases of (structDesc.eightByteCount is 1) and (structDesc.eightByteCount is 0)
+                    // should have already been handled
+                    assert(structDesc.eightByteCount > 1);
+
+                    // setup wbPassType and useType indicate that this is returned by value in multiple registers
+                    howToReturnStruct = SPK_ByValue;
+                    useType = TYP_STRUCT;
+
+                    assert(structDesc.passedInRegisters == true);
+#elif TARGET_ARM64
+                    // Structs that are pointer sized or smaller should have been handled by getPrimitiveTypeForStruct
+                    assert(structSize > TARGET_POINTER_SIZE);
+
+                    // TODO-SVE: For now, we always pass Vector<T> by reference. Support passing Vector<T> in Z registers.
+                    if (structSizeMightRepresentSIMDType(structSize) && (getBaseTypeAndSizeOfSIMDType(clsHnd, out var simdSize) is not TYP_UNDEF) && (simdSize is SIZE_UNKNOWN))
+                    {
+                        howToReturnStruct = SPK_ByReference;
+                        useType = TYP_UNKNOWN;
+                    }
+                    else if (structSize <= (TARGET_POINTER_SIZE * 2))
+                    {
+                        // On ARM64 structs that are 9-16 bytes are returned by value in multiple registers
+                        // setup wbPassType and useType indicate that this is return by value in multiple registers
+                        howToReturnStruct = SPK_ByValue;
+                        useType = TYP_STRUCT;
+                    }
+                    else
+                    {
+                        // a structSize that is 17-32 bytes in size
+                        // Otherwise we return this struct using a return buffer
+                        // setup wbPassType and useType indicate that this is returned using a return buffer register
+                        //  (reference to a return buffer)
+                        howToReturnStruct = SPK_ByReference;
+                        useType = TYP_UNKNOWN;
+                    }
+#elif TARGET_X86
+                    // Only 8-byte structs are return in multiple registers.
+                    // We also only support multireg struct returns on x86 to match the native calling convention.
+                    // So return 8-byte structs only when the calling convention is a native calling convention.
+                    if ((structSize is MAX_RET_MULTIREG_BYTES) && (callConv is not CorInfoCallConvExtension.Managed))
+                    {
+                        // setup wbPassType and useType indicate that this is return by value in multiple registers
+                        howToReturnStruct = SPK_ByValue;
+                        useType = TYP_STRUCT;
+                    }
+                    else
+                    {
+                        // Otherwise we return this struct using a return buffer
+                        // setup wbPassType and useType indicate that this is returned using a return buffer register
+                        //  (reference to a return buffer)
+                        howToReturnStruct = SPK_ByReference;
+                        useType = TYP_UNKNOWN;
+                    }
+#elif TARGET_ARM
+                    // Otherwise we return this struct using a return buffer
+                    // setup wbPassType and useType indicate that this is returned using a return buffer register
+                    //  (reference to a return buffer)
+                    howToReturnStruct = SPK_ByReference;
+                    useType = TYP_UNKNOWN;
+#elif TARGET_LOONGARCH64 || TARGET_RISCV64
+                    // On LOONGARCH64/RISCV64 struct that is 1-16 bytes is returned by value in one/two register(s)
+                    howToReturnStruct = SPK_ByValue;
+                    useType = TYP_STRUCT;
+#else
+                    NO_WAY("Unhandled TARGET in getReturnTypeForStruct (with FEATURE_MULTIREG_ARGS=1)");
+#endif
+                }
+            }
+            else // (structSize > MAX_RET_MULTIREG_BYTES)
+#endif
+            {
+                // We have a (large) struct that can't be replaced with a "primitive" type
+                // and can't be returned in multiple registers
+
+                // We return this struct using a return buffer register
+                // setup wbPassType and useType indicate that this is returned using a return buffer register
+                //  (reference to a return buffer)
+                howToReturnStruct = SPK_ByReference;
+                useType = TYP_UNKNOWN;
+            }
+        }
+
+        // 'howToReturnStruct' must be set to one of the valid values before we return
+        assert(howToReturnStruct != SPK_Unknown);
+
+        wbReturnStruct = howToReturnStruct;
+        return useType;
     }
 
     /// <summary>get a tree for a runtime lookup</summary>
@@ -1484,6 +1954,8 @@ public partial class Compiler
 #endif
     }
 
+    public unsafe bool IsHfa(CORINFO_CLASS_HANDLE hClass) => varTypeIsValidHfaType(GetHfaType(hClass));
+
     public unsafe bool IsHwSimdClass(CORINFO_CLASS_HANDLE clsHnd)
     {
 #if FEATURE_HW_INTRINSICS
@@ -1514,6 +1986,27 @@ public partial class Compiler
         var returnType = GetReturnTypeForStruct(hClass, callConv, out _);
         return varTypeIsStruct(returnType);
 #endif
+    }
+
+    /// <summary>Check if the given struct type is an intrinsic type that should be treated as though it is not a struct at the unmanaged ABI boundary.</summary>
+    /// <param name="clsHnd">the handle for the struct type.</param>
+    /// <returns>true if the given struct type should be treated as a primitive for unmanaged calls, false otherwise.</returns>
+    public unsafe bool isNativePrimitiveStructType(CORINFO_CLASS_HANDLE clsHnd)
+    {
+        if (!isIntrinsicType(clsHnd))
+        {
+            return false;
+        }
+
+        var typeName = getClassNameFromMetadata(clsHnd, out var namespaceName);
+
+        if (namespaceName.Equals("System.Runtime.InteropServices", StringComparison.Ordinal))
+        {
+            return false;
+        }
+        return typeName.Equals("CLong", StringComparison.Ordinal) ||
+               typeName.Equals("CULong", StringComparison.Ordinal) ||
+               typeName.Equals("NFloat", StringComparison.Ordinal);
     }
 
     public unsafe bool IsSimdClass(CORINFO_CLASS_HANDLE clsHnd)
@@ -1685,6 +2178,25 @@ public partial class Compiler
     {
         return (ciType == CORINFO_TYPE_CLASS) ? new typeInfo(clsHnd) : new typeInfo(ciType.VarType);
     }
+
+#if DEBUG
+    public static void printStmtId(Statement stmt)
+    {
+        jitprintf(FMT_STMT(stmt.Id));
+    }
+
+    public static void printTreeId(GenTree? tree)
+    {
+        if (tree is null)
+        {
+            jitprintf("[------]");
+        }
+        else
+        {
+            jitprintf($"[{tree.TreeId:D6}]");
+        }
+    }
+#endif
 
     /// <summary>Use to determine if a struct *might* be a simd type. As this function only takes a size, many structs will fit the criteria.</summary>
     /// <param name="structSize"></param>
@@ -1895,27 +2407,27 @@ public partial class Compiler
 
     public unsafe int typGetObjLayoutNum(CORINFO_CLASS_HANDLE classHandle) => typClassLayoutTable.GetObjLayoutNum(this, classHandle);
 
-    // TODO: Port gsPhase
+    // TODO: Port phase - gsPhase
     public PhaseStatus gsPhase() => PhaseStatus.MODIFIED_NOTHING;
 
 #if FEATURE_LOOP_ALIGN
-    // TODO: Port: placeLoopAlignInstructions
+    // TODO: Port phase - placeLoopAlignInstructions
     public PhaseStatus placeLoopAlignInstructions() => PhaseStatus.MODIFIED_NOTHING;
 #endif
 
-    // TODO: Port rangeCheckPhase
+    // TODO: Port phase - rangeCheckPhase
     public PhaseStatus rangeCheckPhase() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port SaveAsyncContexts
+    // TODO: Port phase - SaveAsyncContexts
     public PhaseStatus SaveAsyncContexts() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port StressSplitTree
+    // TODO: Port phase - StressSplitTree
     public PhaseStatus StressSplitTree() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port TransformAsync
+    // TODO: Port phase - TransformAsync
     public PhaseStatus TransformAsync() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port PhysicalPromotion
+    // TODO: Port phase - PhysicalPromotion
     private PhaseStatus PhysicalPromotion() => PhaseStatus.MODIFIED_NOTHING;
 
     /// <summary>Regenerate flow graph annotations; to be used between iterations when repeating opts.</summary>
@@ -2456,6 +2968,42 @@ public partial class Compiler
             rejectThisPromo = ((info.compMethodHash() ^ lclNum) & 1) == 0;
         }
         return rejectThisPromo;
+    }
+#endif
+
+#if DEBUG
+    public void vnPrint(ValueNum vn, int level)
+    {
+        // TODO: Port vnPrint after vnStore is ported
+        // if (ValueNumStore.isReservedVN(vn))
+        // {
+        //     jitprintf(ValueNumStore.reservedName(vn));
+        // }
+        // else
+        // {
+        //     jitprintf(FMT_VN(vn));
+        // 
+        //     if (level > 0)
+        //     {
+        //         vnStore.vnDump(this, vn);
+        //     }
+        // }
+    }
+
+    public void vnpPrint(ValueNumPair vnp, int level)
+    {
+        if (vnp.BothEqual())
+        {
+            vnPrint(vnp.Liberal, level);
+        }
+        else
+        {
+            jitprintf("<l:");
+            vnPrint(vnp.Liberal, level);
+            jitprintf(", c:");
+            vnPrint(vnp.Conservative, level);
+            jitprintf(">");
+        }
     }
 #endif
 }

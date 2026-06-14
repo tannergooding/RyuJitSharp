@@ -73,7 +73,7 @@ public sealed class GenTreeLclVar : GenTreeLclVarCommon
     /// <param name="compiler">the current Compiler instance.</param>
     /// <returns>Returns the number of registers defined by this node.</returns>
     /// <remarks>This must be a multireg lclVar.</remarks>
-    public int GetFieldCount(Compiler compiler)
+    public byte GetFieldCount(Compiler compiler)
     {
         assert(IsMultiReg);
         ref var varDsc = ref compiler.lvaGetDesc(LclNum);

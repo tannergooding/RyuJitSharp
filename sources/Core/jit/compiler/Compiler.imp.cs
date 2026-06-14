@@ -12894,6 +12894,34 @@ public partial class Compiler
         }
         return false;
     }
+
+    public unsafe bool impIsCastHelperMayHaveProfileData(CorInfoHelpFunc helper)
+    {
+        if ((JitConfig[ConfigInteger.JitConsumeProfileForCasts] is not 1) || !opts.jitFlags->IsSet(JitFlags.JIT_FLAG_BBOPT))
+        {
+            return false;
+        }
+
+        switch (helper)
+        {
+            case CORINFO_HELP_ISINSTANCEOFINTERFACE:
+            case CORINFO_HELP_ISINSTANCEOFARRAY:
+            case CORINFO_HELP_ISINSTANCEOFCLASS:
+            case CORINFO_HELP_ISINSTANCEOFANY:
+            case CORINFO_HELP_CHKCASTINTERFACE:
+            case CORINFO_HELP_CHKCASTARRAY:
+            case CORINFO_HELP_CHKCASTCLASS:
+            case CORINFO_HELP_CHKCASTANY:
+            {
+                return true;
+            }
+
+            default:
+            {
+                return false;
+            }
+        }
+    }
 #endif
 
     public unsafe bool impIsImplicitTailCallCandidate(OPCODE opcode, byte* codeAddrOfNextOpcode, byte* codeEnd, int prefixFlags, bool isRecursive)

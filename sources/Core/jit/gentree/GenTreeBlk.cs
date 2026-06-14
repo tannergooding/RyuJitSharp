@@ -7,9 +7,13 @@ namespace RyuJitSharp;
 
 /// <summary>This is the base type for all of the nodes that represent block or struct values.</summary>
 /// <remarks>Since it can be a store, it includes gtBlkOpKind to specify the type of code generation that will be used for the block operation.</remarks>
-public sealed class GenTreeBlk : GenTreeIndir
+public sealed partial class GenTreeBlk : GenTreeIndir
 {
     private ClassLayout _layout;
+
+    internal BlkOpKind _kind;
+
+    private bool _gcUnsafe;
 
     public GenTreeBlk(var_types type, GenTree addr, ClassLayout layout)
         : base(GT_BLK, type, addr, data: null)

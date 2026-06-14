@@ -24,8 +24,8 @@ public partial class Compiler
     protected BitVecTraits? cseLivenessTraits;
 
     /// <summary>Computed once - A mask that is used to kill available CSEs at callsites</summary>
-    protected unsafe EXPSET_TP cseCallKillsMask;
+    protected unsafe EXPSET_TP? cseCallKillsMask;
 
     /// <summary>Computed once - A mask that is used to kill available BYREF CSEs at async suspension points</summary>
-    protected unsafe EXPSET_TP cseAsyncKillsMask;
+    protected unsafe EXPSET_TP? cseAsyncKillsMask;
 }

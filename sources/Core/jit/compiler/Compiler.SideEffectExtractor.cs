@@ -119,7 +119,7 @@ public partial class Compiler
                 // invalidated the value numbers).
                 assert((result._vnPair.BothDefined() == node._vnPair.BothDefined()) || !compiler.fgGlobalMorph);
 
-                // TODO: Port SideEffectExtractor.Append
+                // TODO: Port SideEffectExtractor.Append once vnStore is ported
                 // // Set the ValueNumber 'gtVNPair' for the new GT_COMMA node
                 // if ((compiler.vnStore is not null) && result._vnPair.BothDefined() && node._vnPair.BothDefined())
                 // {

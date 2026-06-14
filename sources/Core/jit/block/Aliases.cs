@@ -3,17 +3,17 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-global using unsafe EXPSET_TP = nint*;
+global using unsafe EXPSET_TP = nint[];
 
-global using unsafe EXPSET_VALARG_TP = nint*;
+global using unsafe EXPSET_VALARG_TP = nint[];
 
-global using unsafe EXPSET_VALRET_TP = nint*;
+global using unsafe EXPSET_VALRET_TP = nint[];
 
-global using unsafe ASSERT_TP = nint*;
+global using unsafe ASSERT_TP = nint[];
 
-global using unsafe ASSERT_VALARG_TP = nint*;
+global using unsafe ASSERT_VALARG_TP = nint[];
 
-global using unsafe ASSERT_VALRET_TP = nint*;
+global using unsafe ASSERT_VALRET_TP = nint[];
 
 // Bitmask describing a set of memory kinds (usable in bitfields)
 global using MemoryKindSet = int;

@@ -39,7 +39,7 @@ public abstract partial class Phase
 
 #if DEBUG
 #if DUMP_FLOWGRAPHS
-        _ =compiler.fgDumpFlowGraph(_phase, Compiler.PhasePosition.PostPhase);
+        _ = compiler.fgDumpFlowGraph(_phase, Compiler.PhasePosition.PostPhase);
 #endif
 
         // Don't dump or check post phase unless the phase made changes.

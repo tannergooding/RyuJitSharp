@@ -49,6 +49,14 @@ public sealed class GenTreeIntCon : GenTreeIntConCommon
 
     public FieldSeq? FieldSeq => _fieldSeq;
 
+#if TARGET_64BIT
+    public new bool FitsInI32 => Globals.FitsInI32(_value.Icon);
+#else
+    public new bool FitsInI32 => true;
+#endif
+
+    public GenTreeFlags IconHandleFlag => (Flags & GTF_ICON_HDL_MASK);
+
     public nint IconVal
     {
         get
@@ -77,7 +85,7 @@ public sealed class GenTreeIntCon : GenTreeIntConCommon
     }
 #endif
 
-    public bool IsIconHandle()
+    public new bool IsIconHandle()
         => (Flags & GTF_ICON_HDL_MASK) != 0;
 
     public bool IsIconHandle(GenTreeFlags handleType)

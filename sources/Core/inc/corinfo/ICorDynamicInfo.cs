@@ -140,7 +140,7 @@ public unsafe struct ICorDynamicInfo : ICorDynamicInfo.Interface
 
     public int getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, bool fDoubleAlignHint = false) => lpVtbl->getClassAlignmentRequirement((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), cls, fDoubleAlignHint);
 
-    public int getClassGClayout(CORINFO_CLASS_HANDLE cls, byte* gcPtrs) => lpVtbl->getClassGClayout((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), cls, gcPtrs);
+    public int getClassGClayout(CORINFO_CLASS_HANDLE cls, CorInfoGCType* gcPtrs) => lpVtbl->getClassGClayout((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), cls, gcPtrs);
 
     public int getClassNumInstanceFields(CORINFO_CLASS_HANDLE cls) => lpVtbl->getClassNumInstanceFields((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), cls);
 
@@ -668,7 +668,7 @@ public unsafe struct ICorDynamicInfo : ICorDynamicInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CORINFO_CLASS_HANDLE, bool, int> getClassAlignmentRequirement;
 
-        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CORINFO_CLASS_HANDLE, byte*, int> getClassGClayout;
+        public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CORINFO_CLASS_HANDLE, CorInfoGCType*, int> getClassGClayout;
 
         public delegate* unmanaged[MemberFunction]<ICorDynamicInfo*, CORINFO_CLASS_HANDLE, int> getClassNumInstanceFields;
 

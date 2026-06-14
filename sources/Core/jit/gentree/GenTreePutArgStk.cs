@@ -24,7 +24,7 @@ public sealed partial class GenTreePutArgStk : GenTreeUnOp
     private bool _putInIncomingArgArea;
 #endif
 
-    private Kind _kind;
+    internal Kind _kind;
 
 #if TARGET_XARCH
     private byte _argLoadSizeDelta;
