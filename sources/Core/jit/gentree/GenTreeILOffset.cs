@@ -18,7 +18,10 @@ public sealed class GenTreeILOffset : GenTree
         : base(GT_IL_OFFSET, TYP_VOID)
     {
         _stmtDebugInfo = stmtDebugInfo;
+
+#if DEBUG
         _stmtLastILOffset = stmtLastILOffset;
+#endif
     }
 
     public ref readonly DebugInfo StmtDebugInfo => ref _stmtDebugInfo;

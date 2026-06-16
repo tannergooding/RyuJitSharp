@@ -197,8 +197,6 @@ public sealed class ClassLayoutTable
         assert(layout is not null);
         assert(layout != _zeroSizedBlockLayout);
 
-        var index = -1;
-
         if (HasSmallCapacity)
         {
             var layoutArray = (ReadOnlySpan<ClassLayout>)(_layoutArray);
@@ -212,12 +210,14 @@ public sealed class ClassLayoutTable
                 }
             }
         }
-        else if (layout.IsCustomLayout ? !_customLayoutMap.TryGetValue(new CustomLayoutKey(layout), out index)
-                                       : !_objLayoutMap.TryGetValue(unchecked((nint)(layout.ClassHandle)), out index))
+        else if (layout.IsCustomLayout ? _customLayoutMap.TryGetValue(new CustomLayoutKey(layout), out var index)
+                                       : _objLayoutMap.TryGetValue(unchecked((nint)(layout.ClassHandle)), out index))
         {
-            unreached();
+            return index;
         }
-        return index;
+
+        unreached();
+        return -1;
     }
 
     private unsafe int GetObjLayoutIndex(Compiler compiler, CORINFO_CLASS_HANDLE classHandle)

@@ -504,8 +504,8 @@ public partial class Compiler
                 jitprintf("    ]");
             }
 
-            var refCntWtd = refCntWtd2str(varDsc.lvRefCntWtd(lvaRefCountState), /* padForDecimalPlaces */ true);
-            jitprintf($" ({varDsc.lvRefCnt(lvaRefCountState):D3},{new string(' ', int.Max(0, refCntWtdWidth - refCntWtd.Length))}{refCntWtd}");
+            var refCntWtd = refCntWtd2str(varDsc.lvRefCntWtd(lvaRefCountState), padForDecimalPlaces: true);
+            jitprintf($" ({varDsc.lvRefCnt(lvaRefCountState),3},{new string(' ', int.Max(0, refCntWtdWidth - refCntWtd.Length))}{refCntWtd})");
 
             jitprintf($" {type.Name,7} ");
 
@@ -813,6 +813,7 @@ public partial class Compiler
             jitprintf($"{new string(' ', int.Max(0, minLength - message.Length))}{message}");
         }
     }
+#endif
 
 #if TARGET_ARM
     /// <summary>Determine the stack frame offset of the given variable, and how to generate an address to that stack frame.</summary>
@@ -1070,6 +1071,7 @@ public partial class Compiler
     public bool lvaIsUnknownSizeLocal(int varNum) => false;
 #endif
 
+#if DEBUG
     public void lvaTableDump(FrameLayoutState curState = NO_FRAME_LAYOUT)
     {
         if (curState == NO_FRAME_LAYOUT)
@@ -1707,7 +1709,7 @@ public partial class Compiler
             {
                 var offset = compRetTypeDesc.GetReturnFieldOffset(i);
                 var size = compRetTypeDesc.GetReturnRegType(i).Size;
-                jitprintf($"  [{offset:D2}..{(offset + size):D2}) reg {compRetTypeDesc.GetAbiReturnReg(i, info.compCallConv)}\n");
+                jitprintf($"  [{offset:D2}..{(offset + size):D2}) reg {compRetTypeDesc.GetAbiReturnReg(i, info.compCallConv).Name}\n");
             }
         }
 #endif
@@ -1802,7 +1804,7 @@ public partial class Compiler
             return;
         }
 
-        lvaTable = new LclVarDsc[int.Min(16, lvaCount * 2)];
+        lvaTable = new LclVarDsc[int.Max(16, lvaCount * 2)];
 
         for (var i = 0; i < lvaTable.Length; i++)
         {
@@ -2262,7 +2264,7 @@ public partial class Compiler
         assert(varDsc.lvClassHnd == NO_CLASS_HANDLE);
         assert(!varDsc.lvClassIsExact);
 
-        JITDUMP($"\nlvaSetClass: setting class for V{varNum:D2} to ({dspPtr(clsHnd):X}) {eeGetClassName(clsHnd)} {(isExact ? " [exact]" : "")}\n");
+        JITDUMP($"\nlvaSetClass: setting class for V{varNum:D2} to ({FMT_DSP_PTR(clsHnd)}) {eeGetClassName(clsHnd)} {(isExact ? " [exact]" : "")}\n");
 
         varDsc.lvClassHnd = clsHnd;
         varDsc.lvClassIsExact = isExact;
@@ -2595,7 +2597,6 @@ public partial class Compiler
         }
     }
 
-#if DEBUG
     /// <summary>update class information for a local var.</summary>
     /// <param name="varNum">number of the variable</param>
     /// <param name="clsHnd">class handle to use in set or update</param>
@@ -2650,8 +2651,8 @@ public partial class Compiler
             if (isNewClass || (isExact != varDsc.lvClassIsExact))
             {
                 JITDUMP($"\nlvaUpdateClass:{(shouldUpdate ? "" : " NOT")} Updating class for V{varNum:D2}");
-                JITDUMP($" from ({dspPtr(varDsc.lvClassHnd)}) {eeGetClassName(varDsc.lvClassHnd)}{(varDsc.lvClassIsExact ? " [exact]" : "")}");
-                JITDUMP($" to ({dspPtr(clsHnd)}) {eeGetClassName(clsHnd)}{(isExact ? " [exact]" : "")}\n");
+                JITDUMP($" from ({FMT_DSP_PTR(varDsc.lvClassHnd)}) {eeGetClassName(varDsc.lvClassHnd)}{(varDsc.lvClassIsExact ? " [exact]" : "")}");
+                JITDUMP($" to ({FMT_DSP_PTR(clsHnd)}) {eeGetClassName(clsHnd)}{(isExact ? " [exact]" : "")}\n");
             }
 #endif
 
@@ -2686,7 +2687,6 @@ public partial class Compiler
             lvaUpdateClass(varNum, stackHandle);
         }
     }
-#endif
 
     public unsafe bool lvaIsOriginalThisArg(int varNum)
     {

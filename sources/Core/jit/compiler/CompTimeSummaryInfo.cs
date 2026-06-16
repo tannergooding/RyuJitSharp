@@ -242,7 +242,7 @@ public struct CompTimeSummaryInfo
             streamWriter.WriteLine($"  Time: total: {(_filtered._totalCycles / 1000000.0),10:F3} Mcycles/{totFilteredTime_ms,10:F3} ms");
             streamWriter.WriteLine($"          avg: {(_filtered._totalCycles / 1000000.0) / _numFilteredMethods,10:F3} Mcycles/{totFilteredTime_ms / (double)(_numFilteredMethods),10:F3} ms");
             streamWriter.WriteLine("  Total time by phases:");
-            streamWriter.WriteLine("     PHASE                            inv/meth Mcycles    time (ms)  %% of total");
+            streamWriter.WriteLine("     PHASE                            inv/meth Mcycles    time (ms)  % of total");
             streamWriter.WriteLine("     --------------------------------------------------------------------------------------");
 
             for (var phase = default(Phases); phase < PHASE_NUMBER_OF; phase++)
@@ -332,7 +332,7 @@ public struct CompTimeSummaryInfo
                     var max_ms = Stopwatch.GetElapsedTime(0, _maximum._maxClrApiCycles[(int)(api)]).TotalMilliseconds;
 
                     //                        API name  #calls,    total time   max time          avg time                               % of total
-                    streamWriter.WriteLine($"     {api,-40} {calls:D8} {ms,9:F1} ms {max_ms,8:F1} ms  {(1000000.0 * ms) / calls,8:F1} ns     {(100.0 * ms) / shownMillis,5:F1}%");
+                    streamWriter.WriteLine($"     {api,-40} {calls,8} {ms,9:F1} ms {max_ms,8:F1} ms  {(1000000.0 * ms) / calls,8:F1} ns     {(100.0 * ms) / shownMillis,5:F1}%");
 
 #if DEBUG
                     checkedCalls += _total._perClrApiCalls[(int)(api)];
@@ -349,7 +349,7 @@ public struct CompTimeSummaryInfo
             if ((shownCalls > 0) || (shownMillis > 0))
             {
                 streamWriter.WriteLine("     ----------------------------------------------------------------------------------------------------");
-                streamWriter.Write($"     Total for calls shown above              {shownCalls:D8} {shownMillis,10:F1} ms");
+                streamWriter.Write($"     Total for calls shown above              {shownCalls,8} {shownMillis,10:F1} ms");
 
                 if (totTime_ms > 0.0)
                 {

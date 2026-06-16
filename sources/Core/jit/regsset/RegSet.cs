@@ -35,7 +35,7 @@ public partial struct RegSet
 
     private static int tmpSlot(var_types type)
     {
-        var slot = -1;
+        int slot;
 
         switch (type)
         {
@@ -68,7 +68,7 @@ public partial struct RegSet
             }
         }
 
-        assert(slot < TEMP_SLOT_COUNT);
+        assert((slot >= 0) && (slot < TEMP_SLOT_COUNT));
         return slot;
     }
 

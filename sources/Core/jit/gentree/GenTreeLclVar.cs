@@ -45,7 +45,7 @@ public sealed class GenTreeLclVar : GenTreeLclVarCommon
         }
     }
 #else
-    public IL_OFFSET LclIlOffs => _lclIlOffs;
+    public IL_OFFSET LclIlOffs => BAD_IL_OFFSET;
 #endif
 
     public void ClearMultiReg()

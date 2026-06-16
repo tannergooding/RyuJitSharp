@@ -12,6 +12,7 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Microsoft.VisualBasic;
 
 namespace RyuJitSharp;
 
@@ -200,7 +201,9 @@ public partial class Compiler
     /// <remarks>Spill ret_expr in the call node, because they can't be cloned.</remarks>
     public void addFatPointerCandidate(GenTreeCall call)
     {
+#if DEBUG
         JITDUMP($"Marking call [{call.TreeId:D6}] as fat pointer candidate\n");
+#endif
 
         MethodHasFatPointer = true;
         call.IsFatPointerCandidate = true;
@@ -209,7 +212,9 @@ public partial class Compiler
         helper.StoreRetExprResultsInArgs(call);
     }
 
+#if DEBUG
     private static ConfigMethodRange s_jitGuardedDevirtualizationRange;
+#endif
 
     /// <summary>potentially mark the call as a guarded devirtualization candidate</summary>
     /// <param name="call">potential guarded devirtualization candidate</param>
@@ -239,14 +244,18 @@ public partial class Compiler
 
         if (!isEnabled)
         {
+#if DEBUG
             JITDUMP($"NOT Marking call [{call.TreeId:D6}] as guarded devirtualization candidate -- disabled by jit config\n");
+#endif
             return;
         }
 
         // Bail if not optimizing or the call site is very likely cold
         if (compCurBB.isRunRarely || opts.OptimizationDisabled)
         {
+#if DEBUG
             JITDUMP($"NOT Marking call [{call.TreeId:D6}] as guarded devirtualization candidate -- rare / dbg / minopts\n");
+#endif
             return;
         }
 
@@ -256,7 +265,9 @@ public partial class Compiler
         // we save the stub address below.
         if ((call._callType is CT_INDIRECT) && (call._callCookie.addr is not null))
         {
+#if DEBUG
             JITDUMP($"NOT Marking call [{call.TreeId:D6}] as guarded devirtualization candidate -- CT_INDIRECT with cookie\n");
+#endif
             return;
         }
 
@@ -274,7 +285,10 @@ public partial class Compiler
 #endif
 
         // We're all set, proceed with candidate creation.
+
+#if DEBUG
         JITDUMP($"Marking call [{call.TreeId:D6}] as guarded devirtualization candidate; will guess for {(classHandle != NO_CLASS_HANDLE ? "class" : "method")} {(classHandle != NO_CLASS_HANDLE ? eeGetClassName(classHandle) : eeGetMethodFullName(methodHandle))}\n");
+#endif
 
         MethodHasGuardedDevirtualization = true;
 
@@ -376,7 +390,7 @@ public partial class Compiler
     /// <remarks>Consults with VM to see if there's a likely class at runtime, if so, adds a candidate for guarded devirtualization.</remarks>
     public unsafe void considerGuardedDevirtualization(GenTreeCall call, IL_OFFSET ilOffset, bool isInterface, CORINFO_METHOD_HANDLE baseMethod, CORINFO_CLASS_HANDLE baseClass, ref CORINFO_CONTEXT_HANDLE contextHandle)
     {
-        JITDUMP($"Considering guarded devirtualization at IL offset {ilOffset} (0x{ilOffset:X})\n");
+        JITDUMP($"Considering guarded devirtualization at IL offset {ilOffset} (0x{ilOffset:x})\n");
 
         var hasPgoData = true;
 
@@ -462,7 +476,7 @@ public partial class Compiler
                         pResolvedTokenVirtualMethod = null,
                     };
 
-                    JITDUMP($"GDV exact: resolveVirtualMethod (method {dspPtr(dvInfo.virtualMethod)} class {dspPtr(dvInfo.objClass)} context {dspPtr(dvInfo.context)})\n");
+                    JITDUMP($"GDV exact: resolveVirtualMethod (method {FMT_DSP_PTR(dvInfo.virtualMethod)} class {FMT_DSP_PTR(dvInfo.objClass)} context {FMT_DSP_PTR(dvInfo.context)})\n");
 
                     if (!info.compCompHnd->resolveVirtualMethod(&dvInfo))
                     {
@@ -545,13 +559,17 @@ public partial class Compiler
                 dvInfo.context = originalContext;
                 dvInfo.pResolvedTokenVirtualMethod = null;
 
-                JITDUMP($"GDV likely: resolveVirtualMethod (method {dspPtr(dvInfo.virtualMethod)} class {dspPtr(dvInfo.objClass)} context {dspPtr(dvInfo.context)})\n");
+                JITDUMP($"GDV likely: resolveVirtualMethod (method {FMT_DSP_PTR(dvInfo.virtualMethod)} class {FMT_DSP_PTR(dvInfo.objClass)} context {FMT_DSP_PTR(dvInfo.context)})\n");
                 var canResolve = info.compCompHnd->resolveVirtualMethod(&dvInfo);
 
                 if (!canResolve)
                 {
                     // Continue checking other candidates, maybe some of them will succeed.
+
+#if DEBUG
                     JITDUMP($"Can't figure out which method would be invoked, sorry. [{DevirtualizationDetailToString(dvInfo.detail)}]\n");
+#endif
+
                     break;
                 }
 
@@ -865,7 +883,10 @@ public partial class Compiler
             if ((lastStmt != impLastStmt) && (oper is GT_RET_EXPR))
             {
                 var call = expr.AsRetExpr().InlineCandidate;
+
+#if DEBUG
                 JITDUMP($"\nimpAppendStmt: after sinking a local struct store into inline candidate [{call.TreeId:D6}], we need to reorder subsequent spills.\n");
+#endif
 
                 // Move all newly appended statements to just before the call's statement.
                 // First, find the statement containing the call.
@@ -883,7 +904,9 @@ public partial class Compiler
                 var movingStmt = lastStmt.NextStmt;
                 assert(movingStmt is not null);
 
+#if DEBUG
                 JITDUMP($"Moving {FMT_STMT(movingStmt.Id)} through {FMT_STMT(impLastStmt.Id)} before {FMT_STMT(insertBeforeStmt.Id)}\n");
+#endif
 
                 // We move these backwards, so must keep moving the insert point to keep them in order.
                 while (impLastStmt != lastStmt)
@@ -1059,7 +1082,7 @@ public partial class Compiler
             // if it's not final, we can't do the optimization
             if ((info.compCompHnd->getClassAttribs(actualElemClsHnd) & CORINFO_FLG_FINAL) is 0)
             {
-                JITDUMP($"impArrayAccessIntrinsic: rejecting array intrinsic because actualElemClsHnd ({dspPtr(actualElemClsHnd)}) is not final\n");
+                JITDUMP($"impArrayAccessIntrinsic: rejecting array intrinsic because actualElemClsHnd ({FMT_PTR(actualElemClsHnd)}) is not final\n");
                 return null;
             }
         }
@@ -1471,7 +1494,7 @@ public partial class Compiler
                 return;
             }
 
-            JITDUMP($"\nCheckCanInline: fetching method info for inline candidate {eeGetMethodName(fncHandle)} -- context {dspPtr(exactContextHnd)}\n");
+            JITDUMP($"\nCheckCanInline: fetching method info for inline candidate {eeGetMethodName(fncHandle)} -- context {FMT_DSP_PTR(exactContextHnd)}\n");
 
             if (exactContextHnd == METHOD_BEING_COMPILED_CONTEXT())
             {
@@ -1723,7 +1746,9 @@ public partial class Compiler
             }
         }
 
+#if DEBUG
         JITLOG(LL_INFO1000000, $"\nInline a PINVOKE call from method {info.compFullName}\n");
+#endif
 
         call.Flags |= GTF_CALL_UNMANAGED;
         call._unmgdCallConv = unmanagedCallConv;
@@ -1982,7 +2007,10 @@ public partial class Compiler
         }
 
         assert(compCurBB is not null);
+
+#if DEBUG
         JITDUMP($"\n ... marking [{call.TreeId:D6}] in {FMT_BB(compCurBB.bbNum)} for method/class profile instrumentation\n");
+#endif
 
         // Record some info needed for the class profiling probe.
         call._handleHistogramProfileCandidateInfo = new HandleHistogramProfileCandidateInfo {
@@ -2028,7 +2056,7 @@ public partial class Compiler
     /// <param name="lclNum">The index into lvaTable</param>
     /// <param name="offset">The offset to associate with the node</param>
     /// <returns>The node</returns>
-    public GenTreeLclVar impCreateLocalNode(int lclNum, IL_OFFSET offset)
+    public GenTreeLclVar impCreateLocalNode(int lclNum, IL_OFFSET offset = BAD_IL_OFFSET)
     {
         ref var lvaDsc = ref lvaTable[lclNum];
         var lclTyp = lvaDsc.lvNormalizeOnLoad ? lvaDsc.Type : lvaDsc.Type.ActualType;
@@ -2289,7 +2317,7 @@ public partial class Compiler
         // Bail if we know nothing.
         if (objClass == NO_CLASS_HANDLE)
         {
-            JITDUMP($"\nimpDevirtualizeCall: no type available (op={thisObj.Oper})\n");
+            JITDUMP($"\nimpDevirtualizeCall: no type available (op={thisObj.Oper.Name})\n");
             exactContextHandle = null;
 
             if (isLateDevirtualization)
@@ -2366,7 +2394,7 @@ public partial class Compiler
         fixed (CORINFO_RESOLVED_TOKEN* pResolvedToken = &resolvedToken)
         {
             dvInfo.pResolvedTokenVirtualMethod = pResolvedToken;
-            JITDUMP($"ResolveVirtualMethod (method {dspPtr(dvInfo.virtualMethod)} class {dspPtr(dvInfo.objClass)} context {dspPtr(dvInfo.context)})\n");
+            JITDUMP($"ResolveVirtualMethod (method {FMT_DSP_PTR(dvInfo.virtualMethod)} class {FMT_DSP_PTR(dvInfo.objClass)} context {FMT_DSP_PTR(dvInfo.context)})\n");
             info.compCompHnd->resolveVirtualMethod(&dvInfo);
         }
 
@@ -2391,7 +2419,9 @@ public partial class Compiler
 
         if (derivedMethod is null)
         {
+#if DEBUG
             JITDUMP($"--- no derived method: {DevirtualizationDetailToString(dvInfo.detail)}\n");
+#endif
         }
         else
         {
@@ -2477,7 +2507,9 @@ public partial class Compiler
         assert(canDevirtualize);
         assert(compCurBB is not null);
 
+#if DEBUG
         JITDUMP($"    {note}; can devirtualize\n");
+#endif
 
         var dcInfo = new DevirtualizedCallInfo {
             tokenLookupContext = exactContext,
@@ -3345,8 +3377,11 @@ public partial class Compiler
 
         if (simdReturnType != call.Type)
         {
+#if DEBUG
             assert(varTypeIsSimd(simdReturnType));
             JITDUMP($"changing the type of a call [{call.TreeId:D6}] from {call.Type.Name} to {simdReturnType.Name}\n");
+#endif
+
             call.ChangeType(simdReturnType);
         }
 
@@ -3783,14 +3818,14 @@ public partial class Compiler
     /// <returns></returns>
     /// <remarks>Operates on the map in the top-level ancestor.</remarks>
     public byte impGetPendingBlockMember(BasicBlock blk)
-        => impInlineRoot.impPendingBlockMembers[blk.bbInd];
+        => impInlineRoot.impPendingBlockMembers.ExpandAndGet(blk.bbInd);
 
     /// <summary>Set the byte for "b" to "val" (allocating/extending impPendingBlockMembers if necessary.)</summary>
     /// <param name="blk"></param>
     /// <param name="val"></param>
     /// <remarks>Operates on the map in the top-level ancestor.</remarks>
     public void impSetPendingBlockMember(BasicBlock blk, byte val)
-        => impInlineRoot.impPendingBlockMembers[blk.bbInd] = val;
+        => impInlineRoot.impPendingBlockMembers.ExpandAndSet(blk.bbInd, val);
 
     /// <summary>Look for special cases where a call to an intrinsic returns an exact type</summary>
     /// <param name="call">handle for the special intrinsic method</param>
@@ -4027,20 +4062,14 @@ public partial class Compiler
         }
     }
 
-    //------------------------------------------------------------------------
-    // impHWIntrinsic: Import a hardware intrinsic as a GT_HWINTRINSIC node if possible
-    //
-    // Arguments:
-    //    intrinsic  -- id of the intrinsic function.
-    //    clsHnd     -- class handle containing the intrinsic function.
-    //    method     -- method handle of the intrinsic function.
-    //    sig        -- signature of the intrinsic call
-    //    entryPoint -- The entry point information required for R2R scenarios
-    //    mustExpand -- true if the intrinsic must return a GenTree*; otherwise, false
-
-    // Return Value:
-    //    The GT_HWINTRINSIC node, or nullptr if not a supported intrinsic
-    //
+    /// <summary>Import a hardware intrinsic as a GT_HWINTRINSIC node if possible</summary>
+    /// <param name="intrinsic">id of the intrinsic function.</param>
+    /// <param name="clsHnd">class handle containing the intrinsic function.</param>
+    /// <param name="method">method handle of the intrinsic function.</param>
+    /// <param name="sig">signature of the intrinsic call</param>
+    /// <param name="entryPoint">The entry point information required for R2R scenarios</param>
+    /// <param name="mustExpand">true if the intrinsic must return a GenTree*; otherwise, false</param>
+    /// <returns>The GT_HWINTRINSIC node, or nullptr if not a supported intrinsic</returns>
     public unsafe GenTree? impHWIntrinsic(NamedIntrinsic intrinsic, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, in CORINFO_SIG_INFO sig, in CORINFO_CONST_LOOKUP entryPoint, bool mustExpand)
     {
         // TODO: Port impHWIntrinsic
@@ -4233,7 +4262,12 @@ public partial class Compiler
             impSetPendingBlockMember(dsc.pdBB, val: 0);
 
             // Restore the stack state
-            impRestoreStackState(dsc.pdSavedStack);
+            stackState.esStackDepth = dsc.pdSavedStack.ssDepth;
+
+            if (stackState.esStackDepth is not 0)
+            {
+                impRestoreStackState(dsc.pdSavedStack);
+            }
 
             // Add the entry to the free list for reuse
             dsc.pdNext = impPendingFree;
@@ -4254,12 +4288,15 @@ public partial class Compiler
         if (info.compXcptnsCount > 0)
         {
             impFixPredLists();
+
+#if DEBUG
             JITDUMP("\nAfter impImport() added blocks for try,catch,finally");
 
             if (verbose)
             {
                 fgDispBasicBlocks();
             }
+#endif
         }
     }
 
@@ -4427,7 +4464,10 @@ public partial class Compiler
 
                     if (map.TryGetValue(iciCall, out var enumeratorLcl))
                     {
+#if DEBUG
                         JITDUMP($"Flagging [{op1.TreeId:D6}] for enumerator cloning via V{enumeratorLcl:D2}\n");
+#endif
+
                         _ = map.Remove(iciCall);
                         map[op1] = enumeratorLcl;
                     }
@@ -4435,7 +4475,9 @@ public partial class Compiler
 
                 if (call.ShouldHaveRetBufArg)
                 {
+#if DEBUG
                     JITDUMP($"Must insert newobj stmts for box before call [{call.TreeId:D6}]\n");
+#endif
 
                     // Walk back through the statements in this block, looking for the one
                     // that has this call as the root node.
@@ -4477,7 +4519,9 @@ public partial class Compiler
                     assert(cursor.NextStmt is not null);
                     assert(allocBoxStmt == impLastStmt);
 
+#if DEBUG
                     JITDUMP($"Moving {FMT_STMT(cursor.NextStmt.Id)}...{FMT_STMT(allocBoxStmt.Id)} before {FMT_STMT(insertBeforeStmt.Id)}\n");
+#endif
 
                     do
                     {
@@ -5301,7 +5345,9 @@ public partial class Compiler
 
             if (addPartialCompilationPatchpoint)
             {
+#if DEBUG
                 JITDUMP($"\nBlock {FMT_BB(block.bbNum)} ({reason}) will be a partial compilation patchpoint -- not importing\n");
+#endif
 
                 block.SetFlags(BBF_PARTIAL_COMPILATION_PATCHPOINT);
                 MethodHasPatchpoint = true;
@@ -5382,7 +5428,7 @@ public partial class Compiler
             if (opts.compDbgInfo)
 #endif
             {
-                nxtStmtOffs = (nxtStmtIndex < info.compStmtOffsetsCount) ? info.compStmtOffsets[nxtStmtIndex] : BAD_IL_OFFSET;
+                nxtStmtOffs = ((nxtStmtIndex >= 0) && (nxtStmtIndex < info.compStmtOffsetsCount)) ? info.compStmtOffsets[nxtStmtIndex] : BAD_IL_OFFSET;
 
                 // Have we reached the next stmt boundary?
 
@@ -5478,7 +5524,7 @@ public partial class Compiler
 
 #if DEBUG
             impCurOpcOffs = (IL_OFFSET)(codeAddr - info.compCode - 1);
-            JITDUMP($"\n    [{stackState.esStackDepth:D2}] {impCurOpcOffs:D3} (0x{impCurOpcOffs:X3}) ");
+            JITDUMP($"\n    [{stackState.esStackDepth,2}] {impCurOpcOffs,3} (0x{impCurOpcOffs:x3}) ");
 #endif
             var constrainedResolvedToken = new CORINFO_RESOLVED_TOKEN();
 
@@ -5657,7 +5703,7 @@ public partial class Compiler
                     var value = BinaryPrimitives.ReadInt64LittleEndian(new ReadOnlySpan<byte>(codeAddr, sizeof(long)));
                     var lcon = gtNewLconNode(value);
                     impPushOnStack(lcon, new typeInfo(TYP_LONG));
-                    JITDUMP($" 0x{value:X16}");
+                    JITDUMP($" 0x{value:x16}");
                     break;
                 }
 
@@ -7162,7 +7208,7 @@ public partial class Compiler
                     impResolveToken(codeAddr, out var resolvedToken, CORINFO_TOKENKIND_Method);
 
                     JITDUMP($" {resolvedToken.token:X8}");
-                    eeGetCallInfo(resolvedToken, ((prefixFlags & PREFIX_CONSTRAINED) is not 0) ? constrainedResolvedToken : Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_LDFTN, out var callInfo);
+                    eeGetCallInfo(resolvedToken, ((prefixFlags & PREFIX_CONSTRAINED) is not 0) ? ref constrainedResolvedToken : ref Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_LDFTN, out var callInfo);
 
                     // This check really only applies to intrinsic Array.Address methods
                     if ((callInfo.sig.callConv & CORINFO_CALLCONV_PARAMTYPE) is not 0)
@@ -7185,7 +7231,7 @@ public partial class Compiler
                     impResolveToken(codeAddr, out var resolvedToken, CORINFO_TOKENKIND_Method);
 
                     JITDUMP($" {resolvedToken.token:X8}");
-                    eeGetCallInfo(resolvedToken, constrainedToken: Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_LDFTN | CORINFO_CALLINFO_CALLVIRT, out var callInfo);
+                    eeGetCallInfo(resolvedToken, in Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_LDFTN | CORINFO_CALLINFO_CALLVIRT, out var callInfo);
 
                     // This check really only applies to intrinsic Array.Address methods
                     if ((callInfo.sig.callConv & CORINFO_CALLCONV_PARAMTYPE) is not 0)
@@ -7272,7 +7318,7 @@ public partial class Compiler
                     prefixFlags &= ~(PREFIX_TAILCALL_EXPLICIT | PREFIX_CONSTRAINED);
 
                     impResolveToken(codeAddr, out var resolvedToken, CORINFO_TOKENKIND_NewObj);
-                    eeGetCallInfo(resolvedToken, constrainedToken: Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_ALLOWINSTPARAM, out var callInfo);
+                    eeGetCallInfo(resolvedToken, in Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_ALLOWINSTPARAM, out var callInfo);
 
                     var mflags = callInfo.methodFlags;
 
@@ -7460,7 +7506,10 @@ public partial class Compiler
 
                                 if (map.TryGetValue(call, out var enumeratorLcl))
                                 {
+#if DEBUG
                                     JITDUMP($"Flagging [{op1.TreeId:D6}] for enumerator cloning via V{enumeratorLcl:D2}\n");
+#endif
+
                                     map.Remove(call);
                                     map[op1] = enumeratorLcl;
                                 }
@@ -7494,12 +7543,16 @@ public partial class Compiler
                     var importCallHelper = new ImportCallHelper {
                         opcode = opcode,
                         resolvedToken = ref resolvedToken,
-                        constrainedResolvedToken = ref constrainedResolvedToken,
                         newObjThis = newObjThis,
                         prefixFlags = prefixFlags,
                         callInfo = ref callInfo,
                         opcodeOffs = opcodeOffs,
                     };
+
+                    if ((prefixFlags & PREFIX_CONSTRAINED) is not 0)
+                    {
+                        importCallHelper.constrainedResolvedToken = ref constrainedResolvedToken;
+                    }
 
                     if (!importCallHelper.TryImport(this, codeAddr, codeEndp, sz))
                     {
@@ -7597,7 +7650,7 @@ public partial class Compiler
                         flags |= CORINFO_CALLINFO_CALLVIRT;
                     }
 
-                    eeGetCallInfo(resolvedToken, ((prefixFlags & PREFIX_CONSTRAINED) is not 0) ? constrainedResolvedToken : Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), flags, out var callInfo);
+                    eeGetCallInfo(resolvedToken, ((prefixFlags & PREFIX_CONSTRAINED) is not 0) ? ref constrainedResolvedToken : ref Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), flags, out var callInfo);
 
                     if (isAwait && (callInfo.kind is CORINFO_CALL))
                     {
@@ -7616,7 +7669,7 @@ public partial class Compiler
                             isAwait = false;
 
                             JITDUMP("Async variant provided by VM is a thunk, switching direct call to synchronous task-returning method\n");
-                            eeGetCallInfo(resolvedToken, ((prefixFlags & PREFIX_CONSTRAINED) is not 0) ? constrainedResolvedToken : Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), flags, out callInfo);
+                            eeGetCallInfo(resolvedToken, ((prefixFlags & PREFIX_CONSTRAINED) is not 0) ? ref constrainedResolvedToken : ref Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), flags, out callInfo);
                         }
                     }
 
@@ -7631,11 +7684,15 @@ public partial class Compiler
                     var importCallHelper = new ImportCallHelper {
                         opcode = opcode,
                         resolvedToken = ref resolvedToken,
-                        constrainedResolvedToken = ref constrainedResolvedToken,
                         prefixFlags = prefixFlags,
                         callInfo = ref callInfo,
                         opcodeOffs = opcodeOffs,
                     };
+
+                    if ((prefixFlags & PREFIX_CONSTRAINED) is not 0)
+                    {
+                        importCallHelper.constrainedResolvedToken = ref constrainedResolvedToken;
+                    }
 
                     if (!importCallHelper.TryImport(this, codeAddr, codeEndp, sz))
                     {
@@ -7788,7 +7845,7 @@ public partial class Compiler
                                 op1.AsFieldAddr().MayOverlap = true;
                             }
 
-                            if (!isLoadAddress && compIsForInlining && impInlineIsGuaranteedThisDerefBeforeAnySideEffects(additionalTree: null, additionalCallArgs: Unsafe.NullRef<CallArgs>(), obj, impInlineInfo.inlArgInfo))
+                            if (!isLoadAddress && compIsForInlining && impInlineIsGuaranteedThisDerefBeforeAnySideEffects(additionalTree: null, in Unsafe.NullRef<CallArgs>(), obj, impInlineInfo.inlArgInfo))
                             {
                                 impInlineInfo.thisDereferencedFirst = true;
                             }
@@ -8161,7 +8218,7 @@ public partial class Compiler
                                 op1.AsFieldAddr().MayOverlap = mayOverlap;
                             }
 
-                            if (compIsForInlining && impInlineIsGuaranteedThisDerefBeforeAnySideEffects(op2, additionalCallArgs: Unsafe.NullRef<CallArgs>(), obj, impInlineInfo.inlArgInfo))
+                            if (compIsForInlining && impInlineIsGuaranteedThisDerefBeforeAnySideEffects(op2, in Unsafe.NullRef<CallArgs>(), obj, impInlineInfo.inlArgInfo))
                             {
                                 impInlineInfo.thisDereferencedFirst = true;
                             }
@@ -8902,7 +8959,9 @@ public partial class Compiler
                         }
                         else
                         {
+#if DEBUG
                             JITDUMP($"\nUnable to optimize {((opcode is CEE_UNBOX) ? "UNBOX" : "UNBOX.ANY")} -- class for [{op1.TreeId:D6}] not known\n");
+#endif
                         }
 
                         JITDUMP($"\n Importing {((opcode is CEE_UNBOX) ? "UNBOX" : "UNBOX.ANY")} as inline sequence\n");
@@ -10104,7 +10163,10 @@ public partial class Compiler
                             JITDUMP($"V{lclNum:D2} value is IEnumerator<T> via GDV\n");
                             compiler.lvaTable[lclNum].lvIsEnumerator = true;
 
+#if DEBUG
                             JITDUMP($"Flagging [{call.TreeId:D6}] for enumerator cloning via V{lclNum:D2}\n");
+#endif
+
                             compiler.ImpEnumeratorGdvLocalMap[call] = lclNum;
                             compiler.Metrics.EnumeratorGDV++;
                         }
@@ -10191,7 +10253,7 @@ public partial class Compiler
             {
                 // account for possible hidden param
                 lclNum = compiler.compMapILargNum(lclNum);
-                compiler.assertImp(lclNum < compiler.info.compArgsCount);
+                compiler.assertImp((lclNum >= 0) && (lclNum < compiler.info.compArgsCount));
 
                 if (lclNum == compiler.info.compThisArg)
                 {
@@ -10382,7 +10444,7 @@ public partial class Compiler
         {
             JITDUMP($" {lclNum}");
 
-            if (lclNum >= compiler.info.compILargsCount)
+            if ((lclNum < 0) || (lclNum >= compiler.info.compILargsCount))
             {
                 BADCODE("Bad IL");
             }
@@ -10409,7 +10471,7 @@ public partial class Compiler
             {
                 // account for possible hidden param
                 lclNum = compiler.compMapILargNum(lclNum);
-                compiler.assertImp(lclNum < compiler.info.compArgsCount);
+                compiler.assertImp((lclNum >= 0) && (lclNum < compiler.info.compArgsCount));
 
                 if (lclNum == compiler.info.compThisArg)
                 {
@@ -10445,7 +10507,7 @@ public partial class Compiler
 
         static void VarSt(Compiler compiler, BasicBlock block, var_types lclTyp, int lclNum, CORINFO_CLASS_HANDLE clsHnd, bool isLocal)
         {
-            if ((lclNum >= compiler.info.compLocalsCount) && (lclNum != compiler.lvaArg0Var))
+            if (((lclNum < 0) || (lclNum >= compiler.info.compLocalsCount)) && (lclNum != compiler.lvaArg0Var))
             {
                 BADCODE("Bad IL");
             }
@@ -10491,7 +10553,7 @@ public partial class Compiler
         // Initialize bbEntryState the first time we try to add this block to the pending list.
         // A null bbEntryState means that the block does not yet have a recorded pre-state,
         // which corresponds to having no established (i.e. empty) stack depth on entry.
-        if ((block.EntryState.esStackDepth is 0) && !block.HasFlag(BBF_IMPORTED) && (impGetPendingBlockMember(block) is 0))
+        if ((block.EntryState.esStack.Length is 0) && !block.HasFlag(BBF_IMPORTED) && (impGetPendingBlockMember(block) is 0))
         {
             initBBEntryState(block, stackState);
             assert(addToPending);
@@ -10503,7 +10565,7 @@ public partial class Compiler
             if (block.bbStackDepthOnEntry != stackState.esStackDepth)
             {
 #if DEBUG
-                NO_WAY($"Block at offset {block.bbCodeOffs:X} to {block.bbCodeOffsEnd:X} in {info.compFullName} entered with different stack depths.\nPrevious depth was {block.bbStackDepthOnEntry}, current depth is {stackState.esStackDepth}");
+                NO_WAY($"Block at offset {block.bbCodeOffs:x4} to {block.bbCodeOffsEnd:x4} in {info.compFullName,200} entered with different stack depths.\nPrevious depth was {block.bbStackDepthOnEntry}, current depth is {stackState.esStackDepth}");
 #else
                 NO_WAY("Block entered with different stack depths");
 #endif
@@ -10545,8 +10607,11 @@ public partial class Compiler
             dsc = new PendingDsc(block);
         }
 
-        // Save the stack trees for later
-        impSaveStackState(out dsc.pdSavedStack, false);
+        if (stackState.esStackDepth is not 0)
+        {
+            // Save the stack trees for later
+            impSaveStackState(out dsc.pdSavedStack, false);
+        }
 
         // Add the entry to the pending list
 
@@ -10561,7 +10626,7 @@ public partial class Compiler
 #if DEBUG
         if (false && verbose)
         {
-            jitprintf($"Added PendingDsc - {dsc.GetHashCode():X8} for {FMT_BB(block.bbNum)}\n");
+            jitprintf($"Added PendingDsc - {dspOffset(dsc.GetHashCode()):x8} for {FMT_BB(block.bbNum)}\n");
         }
 #endif
     }
@@ -11717,8 +11782,11 @@ public partial class Compiler
         // caller's context here. It means we do not need to worry about switching
         // into the caller's context when the inlinee is returning to the caller
         // after the await.
+
+#if DEBUG
         assert((execArg.Node.Oper is GT_LCL_VAR) && (syncArg.Node.Oper is GT_LCL_VAR));
         JITDUMP($"Inheriting contexts [{execArg.Node.TreeId:D6}] and [{syncArg.Node.TreeId:D6}] from caller node\n");
+#endif
 
         var execNode = gtCloneExpr(execArg.Node);
         var syncNode = gtCloneExpr(syncArg.Node);
@@ -11755,7 +11823,7 @@ public partial class Compiler
             impCurStmtOffsSet(blockOffs);
         }
 
-        if (info.compStmtOffsetsCount != 0)
+        if (info.compStmtOffsetsCount is 0)
         {
             return ~0;
         }
@@ -12331,7 +12399,7 @@ public partial class Compiler
                 assert(op1.Oper is GT_LCL_VAR);
 
                 // Create a new lcl var node - remember the argument lclNum
-                op1 = impCreateLocalNode(argLclNum, (op1.AsLclVar().LclIlOffs));
+                op1 = impCreateLocalNode(argLclNum, op1.AsLclVar().LclIlOffs);
 
                 // Start tracking things as a byref if the parameter is a byref.
                 if (lclTyp == TYP_BYREF)
@@ -13129,7 +13197,7 @@ public partial class Compiler
         }
         else
         {
-            if (ilArgNum >= info.compArgsCount)
+            if ((ilArgNum < 0) || (ilArgNum >= info.compArgsCount))
             {
                 BADCODE("Bad IL");
             }
@@ -13154,7 +13222,7 @@ public partial class Compiler
 
         if (compIsForInlining)
         {
-            if (ilLclNum >= info.compMethodInfo->locals.numArgs)
+            if ((ilLclNum < 0) || (ilLclNum >= info.compMethodInfo->locals.numArgs))
             {
                 compInlineResult.NoteFatal(InlineObservation.CALLEE_BAD_LOCAL_NUMBER);
                 return;
@@ -13165,7 +13233,7 @@ public partial class Compiler
         }
         else
         {
-            if (ilLclNum >= info.compMethodInfo->locals.numArgs)
+            if ((ilLclNum < 0) || (ilLclNum >= info.compMethodInfo->locals.numArgs))
             {
                 BADCODE("Bad IL");
             }
@@ -13306,7 +13374,9 @@ public partial class Compiler
         //
         // TODO: it is possibly interesting to allow this, but requires
         // fixes elsewhere too...
+#if DEBUG
         JITDUMP($"Revoking guarded devirtualization candidacy for call [{call.TreeId}]: target method can't be inlined\n");
+#endif
 
         call.ClearInlineInfo();
     }
@@ -13567,7 +13637,10 @@ public partial class Compiler
         {
             // If we're in an inlinee compiler, and have a return spill temp, and this inline candidate is also a tail call candidate, it can use the same return spill temp.
             inlineCandidateInfo.preexistingSpillTemp = impInlineInfo.inlineCandidateInfo.preexistingSpillTemp;
+
+#if DEBUG
             JITDUMP($"Inline candidate [{call.TreeId:D6}] can share spill temp V{inlineCandidateInfo.preexistingSpillTemp:D2}\n");
+#endif
         }
 
         if (call.IsGuardedDevirtualizationCandidate)
@@ -14086,7 +14159,7 @@ public partial class Compiler
 
         if (info.compCompHnd->getExactClasses(toClass, maxExactClasses: 0, exactClsRet: null) is 0)
         {
-            JITDUMP($"\nClass {dspPtr(toClass)} ({eeGetClassName(toClass)}) can never be allocated\n");
+            JITDUMP($"\nClass {FMT_DSP_PTR(toClass)} ({eeGetClassName(toClass)}) can never be allocated\n");
 
             if (!isCastClass)
             {
@@ -14119,7 +14192,7 @@ public partial class Compiler
 
         if (fromClass is not null)
         {
-            JITDUMP($"\nConsidering optimization of {(isCastClass ? "castclass" : "isinst")} from {(isExact ? "exact " : "")}{dspPtr(fromClass)} ({eeGetClassName(fromClass)}) to {dspPtr(toClass)} ({eeGetClassName(toClass)})\n");
+            JITDUMP($"\nConsidering optimization of {(isCastClass ? "castclass" : "isinst")} from {(isExact ? "exact " : "")}{FMT_DSP_PTR(fromClass)} ({eeGetClassName(fromClass)}) to {FMT_DSP_PTR(toClass)} ({eeGetClassName(toClass)})\n");
 
             // Perhaps we know if the cast will succeed or fail.
             var castResult = info.compCompHnd->compareTypesForCast(fromClass, toClass);
@@ -15507,7 +15580,7 @@ public partial class Compiler
 #if DEBUG
         if (false && verbose)
         {
-            jitprintf($"Added PendingDsc - {dsc.GetHashCode():X8} for {FMT_BB(block.bbNum)}\n");
+            jitprintf($"Added PendingDsc - {dspOffset(dsc.GetHashCode()):x8} for {FMT_BB(block.bbNum)}\n");
         }
 #endif
     }
@@ -15685,8 +15758,9 @@ public partial class Compiler
 
     public void impRestoreStackState(SavedStack savePtr)
     {
-        stackState.esStackDepth = savePtr.ssDepth;
-        stackState.esStack = (savePtr.ssDepth is not 0) ? [.. savePtr.ssTrees] : [];
+        var depth = savePtr.ssDepth;
+        stackState.esStackDepth = depth;
+        savePtr.ssTrees.AsSpan(0, depth).CopyTo(stackState.esStack);
     }
 
     /// <summary>Re-type the incoming lclVar nodes to match the varDsc.</summary>
@@ -15914,7 +15988,10 @@ public partial class Compiler
 
                             if (returnValue.Oper.IsCall)
                             {
+#if DEBUG
                                 JITDUMP($"Flagging [{returnValue.TreeId:D6}] for enumerator cloning via V{enumeratorLcl:D2}\n");
+#endif
+
                                 _ = map.Remove(origCall);
                                 map[returnValue] = enumeratorLcl;
                             }
@@ -16204,33 +16281,36 @@ public partial class Compiler
     public void impSaveStackState(out SavedStack savePtr, bool copy)
     {
         var depth = stackState.esStackDepth;
-        var stack = stackState.esStack.AsSpan(0, depth);
-        var trees = (depth is not 0) ? stack.ToArray() : [];
-
         savePtr.ssDepth = depth;
-        savePtr.ssTrees = trees;
 
-        if (copy)
+        if (depth is not 0)
         {
-            // Make a fresh copy of all the stack entries
+            var trees = stackState.esStack.AsSpan(0, depth).ToArray();
+            savePtr.ssTrees = trees;
 
-            for (var level = 0; level < stack.Length; level++)
+            if (copy)
             {
-                ref var srcEntry = ref stack[level];
-                ref var dstEntry = ref trees[level];
+                // Make a fresh copy of all the stack entries
 
-                dstEntry.seTypeInfo = srcEntry.seTypeInfo;
-                var tree = srcEntry.val;
+                for (var level = 0; level < trees.Length; level++)
+                {
+                    ref var treeEntry = ref trees[level];
+                    var tree = treeEntry.val;
 
-                if (impValidSpilledStackEntry(tree))
-                {
-                    dstEntry.val = gtCloneExpr(tree);
-                }
-                else
-                {
-                    NO_WAY("Bad oper - Not covered by impValidSpilledStackEntry()");
+                    if (impValidSpilledStackEntry(tree))
+                    {
+                        treeEntry.val = gtCloneExpr(tree);
+                    }
+                    else
+                    {
+                        NO_WAY("Bad oper - Not covered by impValidSpilledStackEntry()");
+                    }
                 }
             }
+        }
+        else
+        {
+            savePtr.ssTrees = [];
         }
     }
 
@@ -16254,7 +16334,9 @@ public partial class Compiler
             var inlCall = impInlineInfo.iciCall;
             assert(inlCall is not null);
 
+#if DEBUG
             JITDUMP($"Call [{inlCall.TreeId:D6}] is to call with a tail async call [{call.TreeId:D6}]\n");
+#endif
 
             assert(inlCall.IsAsync);
             var inlAsyncInfo = inlCall._asyncInfo;
@@ -17883,7 +17965,7 @@ public partial class Compiler
 
                         if (mismatch || (numberOfClasses is not 1) || (likelihood is not 100))
                         {
-                            jitprintf($"@@@ Likely {dspPtr(likelyClass)} ({eeGetClassName(likelyClass)}) != Derived {dspPtr(derivedClass)} ({eeGetClassName(derivedClass)}) [n={numberOfClasses}, l={likelihood}, il={dcInfo.ilOffset}] in {info.compFullName} \n");
+                            jitprintf($"@@@ Likely {FMT_PTR(likelyClass)} ({eeGetClassName(likelyClass)}) != Derived {FMT_PTR(derivedClass)} ({eeGetClassName(derivedClass)}) [n={numberOfClasses}, l={likelihood}, il={dcInfo.ilOffset}] in {info.compFullName} \n");
                         }
 
                         assert(!mismatch && (numberOfClasses is 1) && (likelihood is 100));
@@ -17959,7 +18041,7 @@ public partial class Compiler
                             // Method attributes will differ because unboxed entry point is shared
 
                             var unboxedMethodAttribs = info.compCompHnd->getMethodAttribs(unboxedEntryMethod);
-                            JITDUMP($"Updating method attribs from 0x{derivedMethodAttribs:X8} to 0x{unboxedMethodAttribs:X8}\n");
+                            JITDUMP($"Updating method attribs from 0x{derivedMethodAttribs:x8} to 0x{unboxedMethodAttribs:x8}\n");
 
                             derivedMethod = unboxedEntryMethod;
                             derivedResolvedToken = dcInfo.unboxedResolvedToken;
@@ -18037,11 +18119,16 @@ public partial class Compiler
             MethodHasRecursiveTailCall = true;
 
             block.SetFlags(BBF_RECURSIVE_TAILCALL);
+
+#if DEBUG
             JITDUMP($"[{call.TreeId:D6}] is a recursive call in tail position\n");
+#endif
         }
         else
         {
+#if DEBUG
             JITDUMP($"[{call.TreeId:D6}] is{(call.CanTailCall ? "" : " not")} in tail position and is{(gtIsRecursiveCall(derivedMethod) ? "" : " not")} recursive\n");
+#endif
         }
 
 #if FEATURE_READYTORUN
@@ -18052,7 +18139,7 @@ public partial class Compiler
             assert(!Unsafe.IsNullRef(in derivedResolvedToken));
 
             // Look up the new call info.
-            eeGetCallInfo(derivedResolvedToken, Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), CORINFO_CALLINFO_ALLOWINSTPARAM, out var derivedCallInfo);
+            eeGetCallInfo(derivedResolvedToken, in Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), CORINFO_CALLINFO_ALLOWINSTPARAM, out var derivedCallInfo);
 
             // Update the call.
             call._callMoreFlags &= ~GTF_CALL_M_VIRTSTUB_REL_INDIRECT;
@@ -18351,12 +18438,12 @@ public partial class Compiler
     {
         if (predOrSucc == SpillCliquePred)
         {
-            return impInlineRoot.impSpillCliquePredMembers[blk.bbInd];
+            return impInlineRoot.impSpillCliquePredMembers.ExpandAndGet(blk.bbInd);
         }
         else
         {
             assert(predOrSucc == SpillCliqueSucc);
-            return impInlineRoot.impSpillCliqueSuccMembers[blk.bbInd];
+            return impInlineRoot.impSpillCliqueSuccMembers.ExpandAndGet(blk.bbInd);
         }
     }
 
@@ -18364,12 +18451,12 @@ public partial class Compiler
     {
         if (predOrSucc == SpillCliquePred)
         {
-            impInlineRoot.impSpillCliquePredMembers[blk.bbInd] = val;
+            impInlineRoot.impSpillCliquePredMembers.ExpandAndSet(blk.bbInd, val);
         }
         else
         {
             assert(predOrSucc == SpillCliqueSucc);
-            impInlineRoot.impSpillCliqueSuccMembers[blk.bbInd] = val;
+            impInlineRoot.impSpillCliqueSuccMembers.ExpandAndSet(blk.bbInd, val);
         }
     }
 
@@ -19143,14 +19230,14 @@ public partial class Compiler
 
         if (depth is not 0)
         {
-            var srcStack = srcState.esStack.AsSpan(0, depth);
-            dstState.esStack = [.. srcState.esStack];
-            var dstStack = dstState.esStack.AsSpan(0, depth);
+            var stack = srcState.esStack.AsSpan(0, depth).ToArray();
+            dstState.esStack = stack;
 
-            for (var level = 0; level < srcStack.Length; level++)
+            for (var level = 0; level < stack.Length; level++)
             {
-                var tree = srcStack[level].val;
-                dstStack[level].val = gtCloneExpr(tree);
+                ref var stackEntry = ref stack[level];
+                var tree = stackEntry.val;
+                stackEntry.val = gtCloneExpr(tree);
             }
         }
         else
@@ -19239,7 +19326,9 @@ public partial class Compiler
 
             if (numArgs > numParams)
             {
+#if DEBUG
                 JITDUMP($"Incompatible method GDV: call [{call.TreeId:D6}] has more arguments than signature (sig has {numParams} parameters)\n");
+#endif
                 return false;
             }
 
@@ -19249,7 +19338,10 @@ public partial class Compiler
 
             if (!impCheckImplicitArgumentCoercion(sigType, arg.Node.Type))
             {
+#if DEBUG
                 JITDUMP($"Incompatible method GDV: arg [{arg.Node.TreeId:D6}] is type-incompatible with signature of target\n");
+#endif
+
                 return false;
             }
 
@@ -19261,7 +19353,10 @@ public partial class Compiler
 
                 if (!ClassLayout.AreCompatible(callLayout, tarLayout))
                 {
+#if DEBUG
                     JITDUMP($"Incompatible method GDV: struct arg [{arg.Node.TreeId:D6}] is layout-incompatible with signature of target\n");
+#endif
+
                     return false;
                 }
             }
@@ -19270,7 +19365,10 @@ public partial class Compiler
 
         if (numArgs < numParams)
         {
+#if DEBUG
             JITDUMP($"Incompatible method GDV: call [{call.TreeId:D6}] has fewer arguments ({numArgs}) than signature ({numParams})\n");
+#endif
+
             return false;
         }
         return true;
@@ -19584,7 +19682,7 @@ public partial class Compiler
                 if (declaredThisClsHnd != NO_CLASS_HANDLE)
                 {
                     var baseClassName = eeGetClassName(declaredThisClsHnd);
-                    JITDUMP($" on class {dspPtr(declaredThisClsHnd)} ({baseClassName})");
+                    JITDUMP($" on class {FMT_PTR(declaredThisClsHnd)} ({baseClassName})");
                 }
             }
             JITDUMP("\n");
@@ -19595,7 +19693,7 @@ public partial class Compiler
                 var classHandle = unchecked((CORINFO_CLASS_HANDLE)(likelyClass.handle));
 
                 var className = eeGetClassName(classHandle);
-                JITDUMP($"  {i + 1}) {likelyClass.handle:X8} ({className}) [likelihood:{likelyClass.likelihood}%]\n");
+                JITDUMP($"  {i + 1}) {likelyClass.handle:x8} ({className}) [likelihood:{likelyClass.likelihood}%]\n");
             }
         }
 
@@ -19620,19 +19718,19 @@ public partial class Compiler
                 {
                     case IAT_VALUE:
                     {
-                        JITDUMP($"  {i + 1}) {dspPtr(lookup.addr)} ({methName}) [likelihood:{likelyMethod.likelihood}%]\n");
+                        JITDUMP($"  {i + 1}) {FMT_PTR(lookup.addr)} ({methName}) [likelihood:{likelyMethod.likelihood}%]\n");
                         break;
                     }
 
                     case IAT_PVALUE:
                     {
-                        JITDUMP($"  {i + 1}) [{dspPtr(lookup.addr)}] ({methName}) [likelihood:{likelyMethod.likelihood}%]\n");
+                        JITDUMP($"  {i + 1}) [{FMT_PTR(lookup.addr)}] ({methName}) [likelihood:{likelyMethod.likelihood}%]\n");
                         break;
                     }
 
                     case IAT_PPVALUE:
                     {
-                        JITDUMP($"  {i + 1}) [[{dspPtr(lookup.addr)}]] ({methName}) [likelihood:{likelyMethod.likelihood}%]\n");
+                        JITDUMP($"  {i + 1}) [[{FMT_PTR(lookup.addr)}]] ({methName}) [likelihood:{likelyMethod.likelihood}%]\n");
                         break;
                     }
 
@@ -19668,7 +19766,7 @@ public partial class Compiler
                 // we might give up on all candidates if one of them is not inlinable, so we don't want to reduce
                 // testing coverage.
                 //
-                JITDUMP($"Picked random class for GDV: {dspPtr(classHandle)} ({eeGetClassName(classHandle)})\n");
+                JITDUMP($"Picked random class for GDV: {FMT_PTR(classHandle)} ({eeGetClassName(classHandle)})\n");
                 return;
             }
             else
@@ -19687,7 +19785,7 @@ public partial class Compiler
                 // we might give up on all candidates if one of them is not inlinable, so we don't want to reduce
                 // testing coverage.
 
-                JITDUMP($"Picked random method for GDV: {dspPtr(methodHandle)} ({eeGetMethodFullName(methodHandle)})\n");
+                JITDUMP($"Picked random method for GDV: {FMT_PTR(methodHandle)} ({eeGetMethodFullName(methodHandle)})\n");
                 return;
             }
         }
@@ -19868,7 +19966,6 @@ public partial class Compiler
         {
             // If we haven't imported this block (EntryState is a null ref) and we're not going to
             // (because it isn't on the pending list) then just ignore it for now.
-            assert(blk.EntryState.esStackDepth is 0);
             assert(blk.EntryState.esStack.Length is 0);
             return;
         }
@@ -19907,12 +20004,13 @@ public partial class Compiler
 
     /// <summary>Resets the current state to the state at the start of the basic block</summary>
     /// <param name="block"></param>
-    /// <param name="currentState"></param>
-    public void resetCurrentState(BasicBlock block, ref EntryState currentState)
+    /// <param name="dstState"></param>
+    public void resetCurrentState(BasicBlock block, ref EntryState dstState)
     {
-        ref var entryState = ref block.EntryState;
+        ref var srcState = ref block.EntryState;
+        var depth = srcState.esStackDepth;
 
-        currentState.esStackDepth = entryState.esStackDepth;
-        currentState.esStack = (entryState.esStack.Length is not 0) ? [.. entryState.esStack] : [];
+        dstState.esStackDepth = depth;
+        srcState.esStack.AsSpan(0, depth).CopyTo(dstState.esStack);
     }
 }

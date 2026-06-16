@@ -35,7 +35,7 @@ public class GenTreeUnOp : GenTree
     }
 
 #if DEBUG
-    public bool IsNullOp1Legal => Oper switch {
+    public bool IsNullOp1Legal => !Oper.IsSimple || Oper switch {
         GT_LEA => true,
         GT_RETFILT => true,
         GT_FIELD_ADDR => true,

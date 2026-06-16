@@ -3,9 +3,12 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Runtime.CompilerServices;
+
 namespace RyuJitSharp;
 
-public sealed partial class Target
+[InlineArray(56)]
+public struct InlineArray56<T>
 {
-    public static string TgtPlatformName => TargetOS.IsWindows? "Windows" : "Unix";
+    public T e0;
 }

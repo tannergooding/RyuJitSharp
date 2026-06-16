@@ -110,7 +110,7 @@ public partial class GenTree
         _oper = oper;
         _type = type;
 
-        RegNum = REG_NA;
+        _regNum = REG_NA;
 
 #if COUNT_AST_OPERS
         Interlocked.Increment(ref s_gtNodeCounts[oper]);
@@ -1385,6 +1385,7 @@ public partial class GenTree
 #endif
     }
 
+#if DEBUG
     public static int gtDispFlags(GenTreeFlags flags, GenTreeDebugFlags debugFlags)
     {
         // the "baseline" number of flag characters displayed
@@ -1412,6 +1413,7 @@ public partial class GenTree
 
         return charsDisplayed;
     }
+#endif
 
     /// <summary>Get exception set this tree may throw.</summary>
     /// <param name="comp">Compiler instance</param>

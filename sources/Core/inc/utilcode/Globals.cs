@@ -5,7 +5,16 @@
 
 namespace RyuJitSharp;
 
-public sealed partial class Target
+public partial class Globals
 {
-    public static string TgtPlatformName => TargetOS.IsWindows? "Windows" : "Unix";
+    public static int HashString(string str)
+    {
+        var hash = 5381;
+
+        for (var i = 0; i < str.Length; i++)
+        {
+            hash = unchecked(((hash << 5) + hash) ^ str[i]);
+        }
+        return hash;
+    }
 }

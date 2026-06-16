@@ -5,6 +5,7 @@
 
 #if DEBUG
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
@@ -40,39 +41,48 @@ public readonly struct IndentStack
         "?",    // ICError,
     ];
 
-    private readonly Stack<Compiler.IndentInfo> stack;
-    private readonly string[] indents;
+    private readonly List<Compiler.IndentInfo> _stack;
+    private readonly string[] _indents;
 
     public IndentStack(Compiler compiler)
     {
-        stack = [];
+        _stack = [];
 
         if (compiler.asciiTrees)
         {
-            indents = s_asciiIndents;
+            _indents = s_asciiIndents;
         }
         else
         {
-            indents = s_unicodeIndents;
+            _indents = s_unicodeIndents;
         }
     }
 
     // Return the depth of the current indentation.
-    public int Depth => stack.Count;
+    public int Depth => _stack.Count;
 
     // Push a new indentation onto the stack, of the given type.
-    public void Push(Compiler.IndentInfo info) => stack.Push(info);
+    public void Push(Compiler.IndentInfo info) => _stack.Add(info);
 
     // Pop the most recent indentation type off the stack.
-    public Compiler.IndentInfo Pop() => stack.Pop();
+    public Compiler.IndentInfo Pop()
+    {
+        var index = _stack.Count - 1;
+        var info = _stack[index];
+
+        _stack.RemoveAt(index);
+        return info;
+    }
 
     // Print the current indentation and arcs.
     public void Print()
     {
-        var index = 0;
+        var stack = CollectionsMarshal.AsSpan(_stack);
 
-        foreach (var entry in stack)
+        for (var i = 0; i < stack.Length; i++)
         {
+            var entry = stack[i];
+
             switch (entry)
             {
                 case Compiler.IINone:
@@ -83,32 +93,32 @@ public readonly struct IndentStack
 
                 case Compiler.IIArc:
                 {
-                    if (index is 0)
+                    if ((i + 1) == stack.Length)
                     {
-                        jitprintf($"{indents[(int)(ICMiddle)]}{indents[(int)(ICDash)]}{indents[(int)(ICDash)]}");
+                        jitprintf($"{_indents[(int)(ICMiddle)]}{_indents[(int)(ICDash)]}{_indents[(int)(ICDash)]}");
                     }
                     else
                     {
-                        jitprintf($"{indents[(int)(ICVertical)]}  ");
+                        jitprintf($"{_indents[(int)(ICVertical)]}  ");
                     }
                     break;
                 }
 
                 case Compiler.IIArcBottom:
                 {
-                    jitprintf($"{indents[(int)(ICBottom)]}{indents[(int)(ICDash)]}{indents[(int)(ICDash)]}");
+                    jitprintf($"{_indents[(int)(ICBottom)]}{_indents[(int)(ICDash)]}{_indents[(int)(ICDash)]}");
                     break;
                 }
 
                 case Compiler.IIArcTop:
                 {
-                    jitprintf($"{indents[(int)(ICTop)]}{indents[(int)(ICDash)]}{indents[(int)(ICDash)]}");
+                    jitprintf($"{_indents[(int)(ICTop)]}{_indents[(int)(ICDash)]}{_indents[(int)(ICDash)]}");
                     break;
                 }
 
                 case Compiler.IIError:
                 {
-                    jitprintf($"{indents[(int)(ICError)]}{indents[(int)(ICDash)]}{indents[(int)(ICDash)]}");
+                    jitprintf($"{_indents[(int)(ICError)]}{_indents[(int)(ICDash)]}{_indents[(int)(ICDash)]}");
                     break;
                 }
 
@@ -118,10 +128,8 @@ public readonly struct IndentStack
                     break;
                 }
             }
-
-            index++;
         }
-        jitprintf($"{indents[(int)(ICTerminal)]}");
+        jitprintf($"{_indents[(int)(ICTerminal)]}");
     }
 }
 #endif

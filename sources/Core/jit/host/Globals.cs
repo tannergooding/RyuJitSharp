@@ -100,7 +100,7 @@ public partial class Globals
                     NO_WAY("Dump token reached");
                 }
 
-                jitprintf($"(Token=0x{s_currentLine:X})");
+                jitprintf($"(Token=0x{s_currentLine:x})");
                 s_forbidEntry = 0;
             }
         }
@@ -129,7 +129,7 @@ public partial class Globals
         if (compiler is not null)
         {
             phaseName = compiler.mostRecentlyActivePhase.Name;
-            message = $"Assertion failed '{reason}' in '{compiler.info.compFullName}' during '{phaseName}' (IL size {compiler.info.compILCodeSize}; hash 0x{compiler.info.compMethodHash():X8)}; {compiler.compGetTieringName(wantShortName: true)})\n";
+            message = $"Assertion failed '{reason}' in '{compiler.info.compFullName}' during '{phaseName}' (IL size {compiler.info.compILCodeSize}; hash 0x{compiler.info.compMethodHash():x8)}; {compiler.compGetTieringName(wantShortName: true)})\n";
         }
 
 #if FUNC_INFO_LOGGING

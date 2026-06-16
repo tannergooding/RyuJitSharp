@@ -1534,7 +1534,7 @@ public partial class Compiler
 
         jitprintf("\n");
         jitprintf($"------{new string('-', int.Max(padWidth, 12))}-------------------------------------{new string('-', int.Max(ibcColWidth, 12))}--------------------------{new string('-', int.Max(blockTargetFieldWidth, 46))}--------------------------\n");
-        jitprintf($"BBnum {new string(' ', padWidth)}BBid ref try hnd {(fgPredsComputed ? "preds      " : "           ")}     weight  {new string(' ', (ibcColWidth > 0) ? ibcColWidth - 3 : 0)}{((ibcColWidth > 0) ? "IBC" : "")}[IL range]   [jump]{new string(' ', blockTargetFieldWidth - 8)} [EH region]        [flags]\n");
+        jitprintf($"BBnum {new string(' ', padWidth)}BBid ref try hnd {(fgPredsComputed ? "preds      " : "           ")}     weight  {new string(' ', (ibcColWidth > 0) ? ibcColWidth - 3 : 0)}{((ibcColWidth > 0) ? "IBC" : "")} [IL range]   [jump]{new string(' ', blockTargetFieldWidth - 8)} [EH region]        [flags]\n");
         jitprintf($"------{new string('-', int.Max(padWidth, 12))}-------------------------------------{new string('-', int.Max(ibcColWidth, 12))}--------------------------{new string('-', int.Max(blockTargetFieldWidth, 46))}--------------------------\n");
 
         for (var blockIndex = 0; blockIndex < fgBBOrder.Count; blockIndex++)
@@ -1971,7 +1971,7 @@ public partial class Compiler
                 if (jumpTarget[i])
                 {
                     anyJumpTargets = true;
-                    jitprintf($"  IL_{i:X4}\n");
+                    jitprintf($"  IL_{i:x4}\n");
                 }
             }
 
@@ -2842,7 +2842,7 @@ public partial class Compiler
 
                             // This check is only intended to prevent an AV.
                             // Bad varNum values will later be handled properly by the verifier.
-                            if (varNum < lvaTable.Length)
+                            if ((varNum >= 0) && (varNum < lvaTable.Length))
                             {
                                 // In non-inline cases, note written-to arguments.
                                 lvaTable[varNum].lvHasILStoreOp = true;
@@ -3157,7 +3157,7 @@ public partial class Compiler
 
                         case CEE_BOX:
                         {
-                            toSkip = impBoxPatternMatch(Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), codeAddr + sz, codeEndp, BoxPatterns.MakeInlineObservation);
+                            toSkip = impBoxPatternMatch(in Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), codeAddr + sz, codeEndp, BoxPatterns.MakeInlineObservation);
                             break;
                         }
 
@@ -4744,7 +4744,10 @@ public partial class Compiler
             if (ni is NI_System_Collections_Generic_EqualityComparer_get_Default
                    or NI_System_Collections_Generic_Comparer_get_Default)
             {
+#if DEBUG
                 JITDUMP($"\nmarking helper call [{result.TreeId:D6}] as special dce...\n");
+#endif
+
                 result._callMoreFlags |= GTF_CALL_M_HELPER_SPECIAL_DCE;
             }
         }
@@ -4837,8 +4840,11 @@ public partial class Compiler
     public void fgInsertStmtAfter(BasicBlock block, Statement insertionPoint, Statement stmt)
     {
         assert(block.FirstStmt is not null);
+
+#if DEBUG
         assert(fgBlockContainsStatementBounded(block, insertionPoint));
         assert(!fgBlockContainsStatementBounded(block, stmt, false));
+#endif
 
         if (insertionPoint.NextStmt is null)
         {
@@ -4901,8 +4907,11 @@ public partial class Compiler
     public void fgInsertStmtBefore(BasicBlock block, Statement insertionPoint, Statement stmt)
     {
         assert(block.FirstStmt is not null);
+
+#if DEBUG
         assert(fgBlockContainsStatementBounded(block, insertionPoint));
         assert(!fgBlockContainsStatementBounded(block, stmt, false));
+#endif
 
         if (insertionPoint == block.FirstStmt)
         {
@@ -5593,7 +5602,7 @@ public partial class Compiler
 #if DEBUG
                     if (verbose)
                     {
-                        jitprintf($"Splitting at BBoffs = {nxtBBoffs:X4}\n");
+                        jitprintf($"Splitting at BBoffs = {nxtBBoffs:D4}\n");
                     }
 #endif
                 }
@@ -8626,7 +8635,7 @@ public partial class Compiler
         // the next block?
         var terseNext = JitConfig[ConfigInteger.JitDumpTerseNextBlock] != 0;
 
-        jitprintf($"{block.dspToString(blockNumPadding)} {block.bbRefs:D2}");
+        jitprintf($"{block.dspToString(blockNumPadding)} {block.bbRefs,2}");
 
         //
         // Display EH 'try' region index
@@ -8634,7 +8643,7 @@ public partial class Compiler
 
         if (block.hasTryIndex)
         {
-            jitprintf($" {block.TryIndex:D2}");
+            jitprintf($" {block.TryIndex,2}");
         }
         else
         {
@@ -8647,7 +8656,7 @@ public partial class Compiler
 
         if (block.hasHndIndex)
         {
-            jitprintf($" {block.HndIndex:D2}");
+            jitprintf($" {block.HndIndex,2}");
         }
         else
         {
@@ -8973,7 +8982,7 @@ public partial class Compiler
         if (block.CatchType is not BBCT_NONE)
         {
             cnt += 2;
-            jitprintf("{{ ");
+            jitprintf("{ ");
             // brace matching editor workaround to compensate for the preceding line: }
         }
 
@@ -9505,9 +9514,9 @@ public partial class Compiler
         //
         if (fgPgoSynthesized && fgPgoConsistent)
         {
+#if DEBUG
             assert(!fgPgoDeferredInconsistency);
 
-#if DEBUG
             // Reset this as it is a one-shot thing.
             fgPgoDeferredInconsistency = false;
 #endif

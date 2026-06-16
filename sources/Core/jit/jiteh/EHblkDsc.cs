@@ -245,7 +245,7 @@ public struct EHblkDsc
 #if DEBUG
     public readonly void DispEntry(ushort XTnum)
     {
-        jitprintf($" {ebdID:D2}     {XTnum:D2}  ::");
+        jitprintf($" {ebdID,2}     {XTnum,2}  ::");
 
         if (ebdEnclosingTryIndex == NO_ENCLOSING_INDEX)
         {
@@ -253,7 +253,7 @@ public struct EHblkDsc
         }
         else
         {
-            jitprintf($"  {ebdEnclosingTryIndex:D2}  ");
+            jitprintf($"  {ebdEnclosingTryIndex,2}  ");
         }
 
         if (ebdEnclosingHndIndex == NO_ENCLOSING_INDEX)
@@ -262,7 +262,7 @@ public struct EHblkDsc
         }
         else
         {
-            jitprintf($"  {ebdEnclosingHndIndex:D2}  ");
+            jitprintf($"  {ebdEnclosingHndIndex,2}  ");
         }
 
         //////////////

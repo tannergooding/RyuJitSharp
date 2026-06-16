@@ -13,7 +13,7 @@ namespace RyuJitSharp;
 // interface calls.
 public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 {
-    internal Vtbl* lpVtbl;
+    internal Vtbl<ICorStaticInfo>* lpVtbl;
 
     //
     // ICorMethodInfo
@@ -1125,298 +1125,299 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         CorInfoWasmType getWasmLowering(CORINFO_CLASS_HANDLE structHnd);
     }
 
-    public struct Vtbl
+    public struct Vtbl<TSelf>
+        where TSelf : unmanaged, Interface
     {
         //
         // ICorMethodInfo
         //
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, bool> isIntrinsic;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, bool> isIntrinsic;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, bool> notifyMethodInfoUsage;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, bool> notifyMethodInfoUsage;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CorInfoFlag> getMethodAttribs;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, CorInfoFlag> getMethodAttribs;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CorInfoMethodRuntimeFlags, void> setMethodAttribs;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, CorInfoMethodRuntimeFlags, void> setMethodAttribs;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CORINFO_SIG_INFO*, CORINFO_CLASS_HANDLE, void> getMethodSig;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, CORINFO_SIG_INFO*, CORINFO_CLASS_HANDLE, void> getMethodSig;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_INFO*, CORINFO_CONTEXT_HANDLE, bool> getMethodInfo;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_INFO*, CORINFO_CONTEXT_HANDLE, bool> getMethodInfo;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE, bool> haveSameMethodDefinition;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE, bool> haveSameMethodDefinition;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE> getTypeDefinition;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE> getTypeDefinition;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE, CorInfoInline> canInline;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE, CorInfoInline> canInline;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE, void> beginInlining;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE, void> beginInlining;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE, CorInfoInline, byte*, void> reportInliningDecision;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE, CorInfoInline, byte*, void> reportInliningDecision;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE, bool, bool> canTailCall;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE, bool, bool> canTailCall;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE, bool, CorInfoTailCall, byte*, void> reportTailCallDecision;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE, bool, CorInfoTailCall, byte*, void> reportTailCallDecision;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, int, CORINFO_EH_CLAUSE*, void> getEHinfo;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, int, CORINFO_EH_CLAUSE*, void> getEHinfo;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CORINFO_CLASS_HANDLE> getMethodClass;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, CORINFO_CLASS_HANDLE> getMethodClass;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, int*, int*, bool*, void> getMethodVTableOffset;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, int*, int*, bool*, void> getMethodVTableOffset;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_DEVIRTUALIZATION_INFO*, bool> resolveVirtualMethod;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_DEVIRTUALIZATION_INFO*, bool> resolveVirtualMethod;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, bool*, CORINFO_METHOD_HANDLE> getUnboxedEntry;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, bool*, CORINFO_METHOD_HANDLE> getUnboxedEntry;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE*, CORINFO_CLASS_HANDLE*, CORINFO_METHOD_HANDLE> getInstantiatedEntry;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE*, CORINFO_CLASS_HANDLE*, CORINFO_METHOD_HANDLE> getInstantiatedEntry;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, bool*, CORINFO_METHOD_HANDLE> getAsyncOtherVariant;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, bool*, CORINFO_METHOD_HANDLE> getAsyncOtherVariant;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE> getDefaultComparerClass;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE> getDefaultComparerClass;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE> getDefaultEqualityComparerClass;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE> getDefaultEqualityComparerClass;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE> getSZArrayHelperEnumeratorClass;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE> getSZArrayHelperEnumeratorClass;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_RESOLVED_TOKEN*, CORINFO_METHOD_HANDLE, CORINFO_GENERICHANDLE_RESULT*, void> expandRawHandleIntrinsic;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_RESOLVED_TOKEN*, CORINFO_METHOD_HANDLE, CORINFO_GENERICHANDLE_RESULT*, void> expandRawHandleIntrinsic;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, bool> isIntrinsicType;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, bool> isIntrinsicType;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CORINFO_SIG_INFO*, bool*, CorInfoCallConvExtension> getUnmanagedCallConv;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, CORINFO_SIG_INFO*, bool*, CorInfoCallConvExtension> getUnmanagedCallConv;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CORINFO_SIG_INFO*, bool> pInvokeMarshalingRequired;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, CORINFO_SIG_INFO*, bool> pInvokeMarshalingRequired;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_METHOD_HANDLE, bool> satisfiesMethodConstraints;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CORINFO_METHOD_HANDLE, bool> satisfiesMethodConstraints;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, void> methodMustBeLoadedBeforeCodeIsRun;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, void> methodMustBeLoadedBeforeCodeIsRun;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, GSCookie*, GSCookie**, void> getGSCookie;
+        public delegate* unmanaged[MemberFunction]<TSelf*, GSCookie*, GSCookie**, void> getGSCookie;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, PatchpointInfo*, void> setPatchpointInfo;
+        public delegate* unmanaged[MemberFunction]<TSelf*, PatchpointInfo*, void> setPatchpointInfo;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, int*, PatchpointInfo*> getOSRInfo;
+        public delegate* unmanaged[MemberFunction]<TSelf*, int*, PatchpointInfo*> getOSRInfo;
 
         //
         // ICorModuleInfo
         //
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_RESOLVED_TOKEN*, void> resolveToken;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_RESOLVED_TOKEN*, void> resolveToken;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_MODULE_HANDLE, int, CORINFO_CONTEXT_HANDLE, CORINFO_SIG_INFO*, void> findSig;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_MODULE_HANDLE, int, CORINFO_CONTEXT_HANDLE, CORINFO_SIG_INFO*, void> findSig;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_MODULE_HANDLE, int, CORINFO_CONTEXT_HANDLE, CORINFO_SIG_INFO*, void> findCallSiteSig;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_MODULE_HANDLE, int, CORINFO_CONTEXT_HANDLE, CORINFO_SIG_INFO*, void> findCallSiteSig;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_RESOLVED_TOKEN*, CORINFO_CLASS_HANDLE> getTokenTypeAsHandle;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_RESOLVED_TOKEN*, CORINFO_CLASS_HANDLE> getTokenTypeAsHandle;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_MODULE_HANDLE, int, char*, int, int, int> getStringLiteral;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_MODULE_HANDLE, int, char*, int, int, int> getStringLiteral;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_OBJECT_HANDLE, byte*, nint, nint*, nint> printObjectDescription;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_OBJECT_HANDLE, byte*, nint, nint*, nint> printObjectDescription;
 
         //
         // ICorClassInfo
         //
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CorInfoType> asCorInfoType;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CorInfoType> asCorInfoType;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, byte**, byte*> getClassNameFromMetadata;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, byte**, byte*> getClassNameFromMetadata;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, int, CORINFO_CLASS_HANDLE> getTypeInstantiationArgument;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, int, CORINFO_CLASS_HANDLE> getTypeInstantiationArgument;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, int, CORINFO_CLASS_HANDLE> getMethodInstantiationArgument;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, int, CORINFO_CLASS_HANDLE> getMethodInstantiationArgument;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, byte*, nint, nint*, nint> printClassName;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, byte*, nint, nint*, nint> printClassName;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, bool> isValueClass;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, bool> isValueClass;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CorInfoFlag> getClassAttribs;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CorInfoFlag> getClassAttribs;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, byte*> getClassAssemblyName;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, byte*> getClassAssemblyName;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, nint, void*> LongLifetimeMalloc;
+        public delegate* unmanaged[MemberFunction]<TSelf*, nint, void*> LongLifetimeMalloc;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, void*, void> LongLifetimeFree;
+        public delegate* unmanaged[MemberFunction]<TSelf*, void*, void> LongLifetimeFree;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_CONST_LOOKUP*, int*, bool> getIsClassInitedFlagAddress;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CORINFO_CONST_LOOKUP*, int*, bool> getIsClassInitedFlagAddress;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, void*> getClassStaticDynamicInfo;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, void*> getClassStaticDynamicInfo;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, void*> getClassThreadStaticDynamicInfo;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, void*> getClassThreadStaticDynamicInfo;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, bool, CORINFO_CONST_LOOKUP*, bool> getStaticBaseAddress;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, bool, CORINFO_CONST_LOOKUP*, bool> getStaticBaseAddress;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, int> getClassSize;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, int> getClassSize;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, int> getHeapClassSize;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, int> getHeapClassSize;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, bool> canAllocateOnStack;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, bool> canAllocateOnStack;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, bool, int> getClassAlignmentRequirement;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, bool, int> getClassAlignmentRequirement;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CorInfoGCType*, int> getClassGClayout;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CorInfoGCType*, int> getClassGClayout;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, int> getClassNumInstanceFields;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, int> getClassNumInstanceFields;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, int, CORINFO_FIELD_HANDLE> getFieldInClass;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, int, CORINFO_FIELD_HANDLE> getFieldInClass;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_TYPE_LAYOUT_NODE*, nint*, GetTypeLayoutResult> getTypeLayout;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CORINFO_TYPE_LAYOUT_NODE*, nint*, GetTypeLayoutResult> getTypeLayout;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, byte*, bool, bool> checkMethodModifier;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, byte*, bool, bool> checkMethodModifier;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, bool*, CorInfoHelpFunc> getNewHelper;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, bool*, CorInfoHelpFunc> getNewHelper;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CorInfoHelpFunc> getNewArrHelper;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CorInfoHelpFunc> getNewArrHelper;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_RESOLVED_TOKEN*, bool, CorInfoHelpFunc> getCastingHelper;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_RESOLVED_TOKEN*, bool, CorInfoHelpFunc> getCastingHelper;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CorInfoHelpFunc> getSharedCCtorHelper;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CorInfoHelpFunc> getSharedCCtorHelper;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE> getTypeForBox;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE> getTypeForBox;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CorInfoHelpFunc> getBoxHelper;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CorInfoHelpFunc> getBoxHelper;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CorInfoHelpFunc> getUnBoxHelper;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CorInfoHelpFunc> getUnBoxHelper;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_OBJECT_HANDLE> getRuntimeTypePointer;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CORINFO_OBJECT_HANDLE> getRuntimeTypePointer;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_OBJECT_HANDLE, bool> isObjectImmutable;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_OBJECT_HANDLE, bool> isObjectImmutable;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_OBJECT_HANDLE, int, ushort*, bool> getStringChar;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_OBJECT_HANDLE, int, ushort*, bool> getStringChar;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_OBJECT_HANDLE, CORINFO_CLASS_HANDLE> getObjectType;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_OBJECT_HANDLE, CORINFO_CLASS_HANDLE> getObjectType;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_RESOLVED_TOKEN*, CorInfoHelpFunc, CORINFO_METHOD_HANDLE, CORINFO_CONST_LOOKUP*, bool> getReadyToRunHelper;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_RESOLVED_TOKEN*, CorInfoHelpFunc, CORINFO_METHOD_HANDLE, CORINFO_CONST_LOOKUP*, bool> getReadyToRunHelper;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_RESOLVED_TOKEN*, mdToken, CORINFO_CLASS_HANDLE, CORINFO_METHOD_HANDLE, CORINFO_LOOKUP*, void> getReadyToRunDelegateCtorHelper;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_RESOLVED_TOKEN*, mdToken, CORINFO_CLASS_HANDLE, CORINFO_METHOD_HANDLE, CORINFO_LOOKUP*, void> getReadyToRunDelegateCtorHelper;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_FIELD_HANDLE, CORINFO_METHOD_HANDLE, CORINFO_CONTEXT_HANDLE, CorInfoInitClassResult> initClass;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_FIELD_HANDLE, CORINFO_METHOD_HANDLE, CORINFO_CONTEXT_HANDLE, CorInfoInitClassResult> initClass;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, void> classMustBeLoadedBeforeCodeIsRun;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, void> classMustBeLoadedBeforeCodeIsRun;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CorInfoClassId, CORINFO_CLASS_HANDLE> getBuiltinClass;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CorInfoClassId, CORINFO_CLASS_HANDLE> getBuiltinClass;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CorInfoType> getTypeForPrimitiveValueClass;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CorInfoType> getTypeForPrimitiveValueClass;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CorInfoType> getTypeForPrimitiveNumericClass;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CorInfoType> getTypeForPrimitiveNumericClass;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE, bool> canCast;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE, bool> canCast;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE, TypeCompareState> compareTypesForCast;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE, TypeCompareState> compareTypesForCast;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE, TypeCompareState> compareTypesForEquality;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE, TypeCompareState> compareTypesForEquality;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE, bool> isMoreSpecificType;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE, bool> isMoreSpecificType;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, bool> isExactType;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, bool> isExactType;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, TypeCompareState> isGenericType;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, TypeCompareState> isGenericType;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, TypeCompareState> isNullableType;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, TypeCompareState> isNullableType;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE*, TypeCompareState> isEnum;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE*, TypeCompareState> isEnum;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE> getParentType;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE> getParentType;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE*, CorInfoType> getChildType;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CORINFO_CLASS_HANDLE*, CorInfoType> getChildType;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, bool> isSDArray;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, bool> isSDArray;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, int> getArrayRank;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, int> getArrayRank;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, CorInfoArrayIntrinsic> getArrayIntrinsicID;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, CorInfoArrayIntrinsic> getArrayIntrinsicID;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_FIELD_HANDLE, int, void*> getArrayInitializationData;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_FIELD_HANDLE, int, void*> getArrayInitializationData;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_RESOLVED_TOKEN*, CORINFO_METHOD_HANDLE, CORINFO_HELPER_DESC*, CorInfoIsAccessAllowedResult> canAccessClass;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_RESOLVED_TOKEN*, CORINFO_METHOD_HANDLE, CORINFO_HELPER_DESC*, CorInfoIsAccessAllowedResult> canAccessClass;
 
         //
         // ICorFieldInfo
         //
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_FIELD_HANDLE, byte*, nint, nint*, nint> printFieldName;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_FIELD_HANDLE, byte*, nint, nint*, nint> printFieldName;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_FIELD_HANDLE, CORINFO_CLASS_HANDLE> getFieldClass;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_FIELD_HANDLE, CORINFO_CLASS_HANDLE> getFieldClass;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_FIELD_HANDLE, CORINFO_CLASS_HANDLE*, CORINFO_CLASS_HANDLE, CorInfoType> getFieldType;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_FIELD_HANDLE, CORINFO_CLASS_HANDLE*, CORINFO_CLASS_HANDLE, CorInfoType> getFieldType;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_FIELD_HANDLE, int> getFieldOffset;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_FIELD_HANDLE, int> getFieldOffset;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_RESOLVED_TOKEN*, CORINFO_METHOD_HANDLE, CORINFO_ACCESS_FLAGS, CORINFO_FIELD_INFO*, void> getFieldInfo;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_RESOLVED_TOKEN*, CORINFO_METHOD_HANDLE, CORINFO_ACCESS_FLAGS, CORINFO_FIELD_INFO*, void> getFieldInfo;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_FIELD_HANDLE, bool, int> getThreadLocalFieldInfo;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_FIELD_HANDLE, bool, int> getThreadLocalFieldInfo;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_THREAD_STATIC_BLOCKS_INFO*, bool, void> getThreadLocalStaticBlocksInfo;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_THREAD_STATIC_BLOCKS_INFO*, bool, void> getThreadLocalStaticBlocksInfo;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_THREAD_STATIC_INFO_NATIVEAOT*, void> getThreadLocalStaticInfo_NativeAOT;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_THREAD_STATIC_INFO_NATIVEAOT*, void> getThreadLocalStaticInfo_NativeAOT;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_FIELD_HANDLE, bool> isFieldStatic;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_FIELD_HANDLE, bool> isFieldStatic;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_OBJECT_HANDLE, int> getArrayOrStringLength;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_OBJECT_HANDLE, int> getArrayOrStringLength;
 
         //
         // ICorDebugInfo
         //
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, int*, int**, ICorDebugInfo.BoundaryTypes*, void> getBoundaries;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, int*, int**, ICorDebugInfo.BoundaryTypes*, void> getBoundaries;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, int, ICorDebugInfo.OffsetMapping*, void> setBoundaries;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, int, ICorDebugInfo.OffsetMapping*, void> setBoundaries;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, int*, ICorDebugInfo.ILVarInfo**, bool*, void> getVars;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, int*, ICorDebugInfo.ILVarInfo**, bool*, void> getVars;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, int, ICorDebugInfo.NativeVarInfo*, void> setVars;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, int, ICorDebugInfo.NativeVarInfo*, void> setVars;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, ICorDebugInfo.InlineTreeNode*, int, ICorDebugInfo.RichOffsetMapping*, int, void> reportRichMappings;
+        public delegate* unmanaged[MemberFunction]<TSelf*, ICorDebugInfo.InlineTreeNode*, int, ICorDebugInfo.RichOffsetMapping*, int, void> reportRichMappings;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, ICorDebugInfo.AsyncInfo*, ICorDebugInfo.AsyncSuspensionPoint*, ICorDebugInfo.AsyncContinuationVarInfo*, int, void> reportAsyncDebugInfo;
+        public delegate* unmanaged[MemberFunction]<TSelf*, ICorDebugInfo.AsyncInfo*, ICorDebugInfo.AsyncSuspensionPoint*, ICorDebugInfo.AsyncContinuationVarInfo*, int, void> reportAsyncDebugInfo;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, byte*, void*, nint, void> reportMetadata;
+        public delegate* unmanaged[MemberFunction]<TSelf*, byte*, void*, nint, void> reportMetadata;
 
         //
         // Misc
         //
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, nint, void*> allocateArray;
+        public delegate* unmanaged[MemberFunction]<TSelf*, nint, void*> allocateArray;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, void*, void> freeArray;
+        public delegate* unmanaged[MemberFunction]<TSelf*, void*, void> freeArray;
 
         //
         // ICorArgInfo
         //
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_ARG_LIST_HANDLE, CORINFO_ARG_LIST_HANDLE> getArgNext;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_ARG_LIST_HANDLE, CORINFO_ARG_LIST_HANDLE> getArgNext;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_SIG_INFO*, CORINFO_ARG_LIST_HANDLE, CORINFO_CLASS_HANDLE*, CorInfoTypeWithMod> getArgType;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_SIG_INFO*, CORINFO_ARG_LIST_HANDLE, CORINFO_CLASS_HANDLE*, CorInfoTypeWithMod> getArgType;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, int, CORINFO_CLASS_HANDLE*, int> getExactClasses;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, int, CORINFO_CLASS_HANDLE*, int> getExactClasses;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_SIG_INFO*, CORINFO_ARG_LIST_HANDLE, CORINFO_CLASS_HANDLE> getArgClass;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_SIG_INFO*, CORINFO_ARG_LIST_HANDLE, CORINFO_CLASS_HANDLE> getArgClass;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CorInfoHFAElemType> getHFAType;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CorInfoHFAElemType> getHFAType;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, errorTrapFunction, void*, bool> runWithErrorTrap;
+        public delegate* unmanaged[MemberFunction]<TSelf*, errorTrapFunction, void*, bool> runWithErrorTrap;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, errorTrapFunction, void*, bool> runWithSPMIErrorTrap;
+        public delegate* unmanaged[MemberFunction]<TSelf*, errorTrapFunction, void*, bool> runWithSPMIErrorTrap;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_EE_INFO*, void> getEEInfo;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_EE_INFO*, void> getEEInfo;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_ASYNC_INFO*, void> getAsyncInfo;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_ASYNC_INFO*, void> getAsyncInfo;
 
         //
         // Diagnostic methods
         //
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, mdMethodDef> getMethodDefFromMethod;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, mdMethodDef> getMethodDefFromMethod;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, byte*, nint, nint*, nint> printMethodName;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, byte*, nint, nint*, nint> printMethodName;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, byte**, byte**, byte**, nint, byte*> getMethodNameFromMetadata;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, byte**, byte**, byte**, nint, byte*> getMethodNameFromMetadata;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_METHOD_HANDLE, int> getMethodHash;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, int> getMethodHash;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR*, bool> getSystemVAmd64PassStructInRegisterDescriptor;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR*, bool> getSystemVAmd64PassStructInRegisterDescriptor;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_SWIFT_LOWERING*, void> getSwiftLowering;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CORINFO_SWIFT_LOWERING*, void> getSwiftLowering;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CORINFO_FPSTRUCT_LOWERING*, void> getFpStructLowering;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CORINFO_FPSTRUCT_LOWERING*, void> getFpStructLowering;
 
-        public delegate* unmanaged[MemberFunction]<ICorStaticInfo*, CORINFO_CLASS_HANDLE, CorInfoWasmType> getWasmLowering;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CorInfoWasmType> getWasmLowering;
     }
 }

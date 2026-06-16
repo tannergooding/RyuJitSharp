@@ -102,11 +102,11 @@ public partial struct ConfigMethodRange
 
             if (range.Low == range.High)
             {
-                jitprintf($"{i} [0x{range.Low:X8}]\n");
+                jitprintf($"{i} [0x{range.Low:x8}]\n");
             }
             else
             {
-                jitprintf($"{i} [0x{range.Low:X8}-0x{range.High:X8}]\n");
+                jitprintf($"{i} [0x{range.Low:x8}-0x{range.High:x8}]\n");
             }
         }
     }

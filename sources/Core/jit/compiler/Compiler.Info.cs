@@ -46,7 +46,7 @@ public partial class Compiler
             if (compMethodHashPrivate == 0)
             {
                 // Use compFullName to generate the hash, as it contains the signature and return type
-                compMethodHashPrivate = compFullName.GetHashCode(StringComparison.Ordinal);
+                compMethodHashPrivate = HashString(compFullName);
             }
             return compMethodHashPrivate;
         }

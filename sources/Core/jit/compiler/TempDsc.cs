@@ -50,14 +50,19 @@ public sealed class TempDsc
     {
         get
         {
+#if DEBUG
             assert(Debugger.IsAttached || tdLegalOffset);
+#endif
             return _tdOffs;
         }
 
         set
         {
             _tdOffs = value;
+
+#if DEBUG
             assert(tdLegalOffset);
+#endif
         }
     }
 
@@ -73,6 +78,9 @@ public sealed class TempDsc
 #endif
 
         tdTempOffs = _tdOffs + offs;
+
+#if DEBUG
         assert(tdLegalOffset);
+#endif
     }
 }

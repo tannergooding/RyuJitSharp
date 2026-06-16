@@ -1498,7 +1498,7 @@ public partial struct LclVarDsc
 #if DEBUG
         if (compiler.verbose)
         {
-            jitprintf($"New refCnts for V{compiler.lvaGetLclNum(this):D2}: refCnt = {lvRefCnt(state):D2}, refCntWtd = {refCntWtd2str(lvRefCntWtd(state))}\n");
+            jitprintf($"New refCnts for V{compiler.lvaGetLclNum(this):D2}: refCnt = {lvRefCnt(state),2}, refCntWtd = {refCntWtd2str(lvRefCntWtd(state))}\n");
         }
 #endif
     }

@@ -70,7 +70,7 @@ public sealed class JitTimer
     {
         var jitTimeLogCsv = Compiler.JitTimeLogCsv;
 
-        if (jitTimeLogCsv is null)
+        if (string.IsNullOrEmpty(jitTimeLogCsv))
         {
             return;
         }
@@ -217,7 +217,7 @@ public sealed class JitTimer
         // for a DEBUG build (presumably not for the time info), just re-use it.
         var methName = compiler.info.compFullName;
 #else
-        var methName = comp.eeGetMethodFullName(comp.info.compMethodHnd);
+        var methName = compiler.eeGetMethodFullName(compiler.info.compMethodHnd);
 #endif
 
         // Try and access the SPMI index to report in the data set.

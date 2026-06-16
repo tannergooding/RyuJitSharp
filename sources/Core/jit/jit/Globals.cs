@@ -458,7 +458,7 @@ public partial class Globals
     {
         for (var offs = 0; offs < codeSize; offs++)
         {
-            jitprintf($" {codeAddr[offs]:X2}");
+            jitprintf($" {codeAddr[offs]:x2}");
         }
 
         var charsWritten = 3 * codeSize;
@@ -478,7 +478,7 @@ public partial class Globals
 
         while (offs < codeSize)
         {
-            var codeBytesDumped = dumpSingleInstr(codeAddr, offs, $"IL_{offs:X4}");
+            var codeBytesDumped = dumpSingleInstr(codeAddr, offs, $"IL_{offs:x4} ");
             offs += codeBytesDumped;
         }
     }
@@ -590,14 +590,14 @@ public partial class Globals
             case ShortInlineBrTarget:
             {
                 var jOp = unchecked((sbyte)(opcodePtr[0]));
-                operand = $" {jOp} (IL_{baseOffs + jOp:X4})";
+                operand = $" {jOp} (IL_{baseOffs + jOp:x4})";
                 break;
             }
 
             case InlineBrTarget:
             {
                 var jOp = BinaryPrimitives.ReadInt32LittleEndian(new ReadOnlySpan<byte>(opcodePtr, 4));
-                operand = $" {jOp} (IL_{baseOffs + jOp:X4})";
+                operand = $" {jOp} (IL_{baseOffs + jOp:x4})";
                 break;
             }
 
@@ -694,7 +694,7 @@ public partial class Globals
         return getLikelyClassesOrMethods(likelyClasses, schema, pInstrumentationData, ilOffset, types: true);
     }
 
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)], EntryPoint = nameof(getLikelyMethods))]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)], EntryPoint = nameof(getLikelyClasses))]
     public static unsafe int getLikelyClasses(LikelyClassMethodRecord* pLikelyClasses, int maxLikelyClasses, ICorJitInfo.PgoInstrumentationSchema* schema, int countSchemaItems, byte* pInstrumentationData, int ilOffset)
     {
         return getLikelyClasses(new Span<LikelyClassMethodRecord>(pLikelyClasses, maxLikelyClasses), new ReadOnlySpan<ICorJitInfo.PgoInstrumentationSchema>(schema, countSchemaItems), pInstrumentationData, ilOffset);
@@ -1025,7 +1025,7 @@ public partial class Globals
         return 0;
     }
 
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)], EntryPoint = nameof(getLikelyMethods))]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)], EntryPoint = nameof(getLikelyValues))]
     public static unsafe int getLikelyValues(LikelyValueRecord* pLikelyValues, int maxLikelyValues, ICorJitInfo.PgoInstrumentationSchema* schema, int countSchemaItems, byte* pInstrumentationData, int ilOffset)
     {
         return getLikelyValues(new Span<LikelyValueRecord>(pLikelyValues, maxLikelyValues), new ReadOnlySpan<ICorJitInfo.PgoInstrumentationSchema>(schema, countSchemaItems), pInstrumentationData, ilOffset);

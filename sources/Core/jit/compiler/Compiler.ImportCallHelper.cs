@@ -119,7 +119,7 @@ public partial class Compiler
                     else
                     {
                         // Do a more detailed evaluation of legality
-                        var passedConstraintCheck = compiler.checkTailCallConstraint(opcode, resolvedToken, constrainedCall ? constrainedResolvedToken : Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>());
+                        var passedConstraintCheck = compiler.checkTailCallConstraint(opcode, resolvedToken, constrainedCall ? ref constrainedResolvedToken : ref Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>());
 
                         // Avoid setting compHasBackwardsJump = true via tail call stress if the method cannot have patchpoints.
                         var mayHavePatchpoints = compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_TIER0) && (JitConfig[ConfigInteger.TC_OnStackReplacement] > 0) && compiler.compCanHavePatchpoints();
@@ -301,7 +301,7 @@ public partial class Compiler
 
                     if (wasConverted)
                     {
-                        compiler.eeGetCallInfo(resolvedToken, Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), CORINFO_CALLINFO_ALLOWINSTPARAM, out var calliInfo);
+                        compiler.eeGetCallInfo(resolvedToken, in Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), CORINFO_CALLINFO_ALLOWINSTPARAM, out var calliInfo);
 
                         var importCallHelper = new ImportCallHelper {
                             opcode = CEE_CALL,
@@ -328,7 +328,7 @@ public partial class Compiler
                 if (compiler.verbose)
                 {
                     var structSize = (callRetTyp is TYP_STRUCT) ? compiler.eeTryGetClassSize(sigInfo.retTypeSigClass) : 0;
-                    jitprintf($"\nIn Compiler.impImportCall: opcode is {opcode.Name}, kind={callInfo.kind}, callRetType is {callRetTyp.Name}, structSize is {structSize}\n");
+                    jitprintf($"\nIn Compiler.impImportCall: opcode is {opcode.Name}, kind={(int)(callInfo.kind)}, callRetType is {callRetTyp.Name}, structSize is {structSize}\n");
                 }
 #endif
             }
@@ -2645,7 +2645,7 @@ public partial class Compiler
                             {
                                 case TYP_FLOAT:
                                 {
-#if (TARGET_XARCH)
+#if TARGET_XARCH
                                     if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX2))
                                     {
                                         var op1 = compiler.impPopStack().val;
@@ -2674,7 +2674,7 @@ public partial class Compiler
                             {
                                 case TYP_FLOAT:
                                 {
-#if (TARGET_XARCH)
+#if TARGET_XARCH
                                     if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX2))
                                     {
                                         var op1 = compiler.impPopStack().val;
@@ -3686,9 +3686,10 @@ public partial class Compiler
                             // In case of explicit tail calls, mark it so that it is not considered
                             // for in-lining.
                             call._callMoreFlags |= GTF_CALL_M_EXPLICIT_TAILCALL;
-                            JITDUMP($"\nGTF_CALL_M_EXPLICIT_TAILCALL set for call [{call.TreeId:D6}]\n");
 
 #if DEBUG
+                            JITDUMP($"\nGTF_CALL_M_EXPLICIT_TAILCALL set for call [{call.TreeId:D6}]\n");
+
                             if ((prefixFlags & PREFIX_TAILCALL_STRESS) is not 0)
                             {
                                 call._callDebugFlags |= GTF_CALL_MD_STRESS_TAILCALL;
@@ -3709,7 +3710,10 @@ public partial class Compiler
                             // transformed into a tail call after performing additional checks.
 
                             call._callMoreFlags |= GTF_CALL_M_IMPLICIT_TAILCALL;
+
+#if DEBUG
                             JITDUMP($"\nGTF_CALL_M_IMPLICIT_TAILCALL set for call [{call.TreeId:D6}]\n");
+#endif
 #else
                             NYI("Implicit tail call prefix on a target which doesn't support opportunistic tail calls");
 #endif
@@ -3749,14 +3753,20 @@ public partial class Compiler
                     {
                         // canTailCall reported its reasons already
                         canTailCall = false;
+
+#if DEBUG
                         JITDUMP($"\ninfo.compCompHnd->canTailCall returned false for call [{call.TreeId:D6}]\n");
+#endif
                     }
                 }
                 else
                 {
                     // If this assert fires it means that canTailCall was set to false without setting a reason!
+
+#if DEBUG
                     assert(!canTailCallFailReasonUtf8.IsEmpty);
                     JITDUMP($"\nRejecting {(isExplicitTailCall ? "ex" : "im")}plicit tail call for [{call.TreeId:D6}], reason: '{Encoding.UTF8.GetString(canTailCallFailReasonUtf8)}'\n");
+#endif
 
                     fixed (byte* pCanTailCallFailReasonUtf8 = canTailCallFailReasonUtf8)
                     {
@@ -3799,8 +3809,10 @@ public partial class Compiler
                 //
                 if (call.IsDevirtualizationCandidate(compiler))
                 {
+#if DEBUG
                     JITDUMP($"\nSaving late devirtualization info for call [{call.TreeId:D6}]\n");
                     assert(call._inlineContext == compiler.impCurStmtDI.InlineContext);
+#endif
 
                     call._lateDevirtualizationInfo = new LateDevirtualizationInfo {
                         methodHnd = callInfo.hMethod,
@@ -3845,7 +3857,10 @@ public partial class Compiler
                         loopHead = compiler.fgGetFirstILBlock();
                     }
 
+#if DEBUG
                     JITDUMP($"\nTail recursive call [{call.TreeId:D6}] in the method. Mark {FMT_BB(loopHead.bbNum)} to {FMT_BB(compiler.compCurBB.bbNum)} as having a backward branch.\n");
+#endif
+
                     compiler.fgMarkBackwardJump(loopHead, compiler.compCurBB);
 
                     compiler.MethodHasRecursiveTailCall = true;

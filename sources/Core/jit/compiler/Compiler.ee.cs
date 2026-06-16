@@ -482,7 +482,7 @@ public partial class Compiler
 #if DEBUG
         if (verbose)
         {
-            jitprintf($"getVars() returned cVars = {varInfoCount}, extendOthers = {extendOthers}\n");
+            jitprintf($"getVars() returned cVars = {varInfoCount}, extendOthers = {dspBool(extendOthers)}\n");
         }
 #endif
 

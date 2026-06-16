@@ -12,12 +12,20 @@ public partial class Globals
 
     public static long INVALID_POINT_CD => unchecked((long)(0xCDCDCDCD_CDCDCDCD));
 
-    public static unsafe string FMT_DBG_ADDR(void* ptr) => $" {unchecked((int)((nint)(ptr) >>> 32)):X8}`{unchecked((int)(ptr)):X8} ";
+    public static unsafe string FMT_DBG_ADDR(void* ptr) => $" {unchecked((int)((nint)(ptr) >>> 32)):x8}`{unchecked((int)(ptr)):x8} ";
+
+    public static unsafe string FMT_DSP_PTR(void* ptr) => $"{dspPtr(ptr):X16}";
+
+    public static unsafe string FMT_PTR(void* ptr) => $"{unchecked((nint)(ptr)):X16}";
 #else
     public const int INVALID_POINT_CC = unchecked((int)(0xCCCCCCCC));
 
     public const int INVALID_POINT_CD = unchecked((int)(0xCDCDCDCD));
 
-    public static unsafe string FMT_DBG_ADDR(void* ptr) => $" {unchecked((int)(ptr)):X8} ";
+    public static unsafe string FMT_DBG_ADDR(void* ptr) => $" {unchecked((int)(ptr)):x8} ";
+
+    public static unsafe string FMT_DSP_PTR(void* ptr) => $"{dspPtr(ptr):X8}";
+
+    public static unsafe string FMT_PTR(void* ptr) => $"{unchecked((nint)(ptr)):X8}";
 #endif
 }

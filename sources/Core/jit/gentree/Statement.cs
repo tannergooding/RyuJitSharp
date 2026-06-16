@@ -57,8 +57,6 @@ public sealed class Statement
 #if DEBUG
     public int Id => _stmtId;
 
-    public bool IsPhiDefnStmt => _rootNode.IsPhiDefn;
-
     public IL_OFFSET LastILOffset
     {
         get
@@ -72,6 +70,8 @@ public sealed class Statement
         }
     }
 #endif
+
+    public bool IsPhiDefnStmt => _rootNode.IsPhiDefn;
 
     public LocalsGenTreeList LocalsTreeList
     {

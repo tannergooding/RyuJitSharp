@@ -159,6 +159,7 @@ public partial class Globals
     public static bool InlinePInvokeEnabled => true;
 #endif
 
+#if DEBUG
     /// <summary>Should we enable JitStress mode?</summary>
     /// <remarks>
     ///   <list type="bullet">
@@ -168,6 +169,7 @@ public partial class Globals
     ///   </list>
     /// </remarks>
     public static int JitStressLevel => JitConfig[ConfigInteger.JitStress];
+#endif
 
     /// <summary>Converts input ASCII data to lower case</summary>
     /// <param name="input">Constant data to change casing to lower</param>
@@ -206,7 +208,7 @@ public partial class Globals
     public static void DEBUG_DESTROY_NODE(GenTree tree)
     {
 #if DEBUG
-        // jitprintf($"DEBUG_DESTROY_NODE for [0x{tree.TreeId:X8}]\n", tree);
+        // jitprintf($"DEBUG_DESTROY_NODE for [0x{tree.TreeId:x8}]\n", tree);
 
         // Save gtOper in case we want to find out what this node was
         tree._operSave = tree._oper;

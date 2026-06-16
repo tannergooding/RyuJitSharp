@@ -174,7 +174,7 @@ public interface IGenTreeVisitor<TSelf>
                         break;
                     }
 
-#if (FEATURE_HW_INTRINSICS)
+#if FEATURE_HW_INTRINSICS
                     case GT_HWINTRINSIC:
                     {
                         var hwintrinsic = node.AsHWIntrinsic();

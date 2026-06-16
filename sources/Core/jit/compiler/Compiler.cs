@@ -787,6 +787,7 @@ public partial class Compiler
         }
     }
 
+#if DEBUG
     public NodeToTestDataMap NodeTestData
     {
         get
@@ -801,6 +802,7 @@ public partial class Compiler
             return nodeTestData;
         }
     }
+#endif
 
     public bool PreciseRefCountsRequired =>  opts.OptimizationEnabled;
 
@@ -933,7 +935,9 @@ public partial class Compiler
     {
         if (!condition)
         {
+#if DEBUG
             assertAbort($"{conditionExpression} : Possibly bad IL with CEE_{impCurOpcName} at offset {impCurOpcOffs:X4} (op1={(op1 is not null ? op1.Type.Name : "NULL")} op2={(op2 is not null ? op2.Type.Name : "NULL")} stkDepth={stackState.esStackDepth})\"", filePath, lineNumber);
+#endif
         }
     }
 
@@ -2292,7 +2296,7 @@ public partial class Compiler
             size = 0;
         }
         return size;
-#elif (TARGET_ARM64)
+#elif TARGET_ARM64
         assert(GetMaxVectorByteLength() is FP_REGSIZE_BYTES);
         return (size >= FP_REGSIZE_BYTES) ? FP_REGSIZE_BYTES : 0;
 #else

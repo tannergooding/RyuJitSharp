@@ -162,9 +162,9 @@ public partial class Compiler
 
 #if DEBUG
     internal int compGenTreeID;
+#endif
 
     public int compStatementID;
-#endif
 
     public int compBasicBlockID;
 
@@ -509,7 +509,7 @@ public partial class Compiler
         for (var i = 0; i < varScopes.Length; i++)
         {
             ref var varScope = ref varScopes[i];
-            jitprintf($"{i}: \t{varScope.vsdVarNum:X2}h \t{varScope.vsdLVnum:X2}h \t{varScope.vsdName ?? "UNKNOWN",10} \t{varScope.vsdLifeBeg:X3}h   \t{varScope.vsdLifeEnd:X3}h\n");
+            jitprintf($"{i,2}: \t{varScope.vsdVarNum:X2}h \t{varScope.vsdLVnum:X2}h \t{varScope.vsdName ?? "UNKNOWN",10} \t{varScope.vsdLifeBeg:X3}h   \t{varScope.vsdLifeEnd:X3}h\n");
         }
     }
 
@@ -894,7 +894,7 @@ public partial class Compiler
             assert(inlineCandidateInfo.clsHandle == info.compClassHnd);
             assert(inlineCandidateInfo.clsAttr == info.compCompHnd->getClassAttribs(info.compClassHnd));
 
-            // jitprintf($"{inlineCandidateInfo.clsAttr:X} != {info.compCompHnd->getClassAttribs(info.compClassHnd):X}\n");
+            // jitprintf($"{inlineCandidateInfo.clsAttr:x} != {info.compCompHnd->getClassAttribs(info.compClassHnd):x}\n");
             info.compClassAttr = inlineCandidateInfo.clsAttr;
         }
         else
@@ -1083,7 +1083,7 @@ public partial class Compiler
 
         if (compIsForInlining)
         {
-            JITLOG(LL_INFO100000, $"\nINLINER impTokenLookupContextHandle for {eeGetMethodFullName(info.compMethodHnd)} == 0x{dspPtr(impTokenLookupContextHandle):X}.\n");
+            JITLOG(LL_INFO100000, $"\nINLINER impTokenLookupContextHandle for {eeGetMethodFullName(info.compMethodHnd)} == 0x{FMT_DSP_PTR(impTokenLookupContextHandle)}.\n");
         }
 #endif
 
@@ -1484,7 +1484,7 @@ public partial class Compiler
             // Note: that is incorrect if we are compiling several methods at the same time.
             var methodNumber = jitTotalMethodCompiled - 1;
 
-            jitprintf($"}} Jitted Method {methodNumber:D4} at {FMT_DBG_ADDR(methodCodePtr)} method {info.compFullName} size {methodCodeSize:X8}{(isNyi ? "NYI" : "")}{(opts.altJit ? " altjit" : "")}\n");
+            jitprintf($"}} Jitted Method {methodNumber,4} at {FMT_DBG_ADDR(methodCodePtr)} method {info.compFullName} size {methodCodeSize:x8}{(isNyi ? "NYI" : "")}{(opts.altJit ? " altjit" : "")}\n");
         }
 #endif
     }
@@ -1511,7 +1511,7 @@ public partial class Compiler
                 jitprintf("  ");
             }
 
-            jitprintf($"{{ Start Jitting Method {jitTotalMethodCompiled:D4} {info.compFullName} (MethodHash={info.compMethodHash():X8}) {compGetTieringName()}\n");
+            jitprintf($"{{ Start Jitting Method {jitTotalMethodCompiled,4} {info.compFullName} (MethodHash={info.compMethodHash():x8}) {compGetTieringName()}\n");
         }
 #endif // DEBUG
     }
@@ -2129,8 +2129,8 @@ public partial class Compiler
 
         if (verbose)
         {
-            jitprintf($"****** START compiling {info.compFullName} (MethodHash={info.compMethodHash():08x})\n");
-            jitprintf($"Generating code for {Target.s_tgtPlatformName} {Target.TgtCpuName}\n");
+            jitprintf($"****** START compiling {info.compFullName} (MethodHash={info.compMethodHash():x8})\n");
+            jitprintf($"Generating code for {Target.TgtPlatformName} {Target.TgtCpuName}\n");
             jitprintf(""); // in our logic this causes a flush
         }
 
@@ -2452,7 +2452,7 @@ public partial class Compiler
 #if DEBUG
         if (JitConfig[ConfigInteger.JitRandomlyCollect64BitCounts] != 0)
         {
-            opts.compCollect64BitCounts = new Random(info.compMethodHash() ^ JitConfig[ConfigInteger.JitRandomlyCollect64BitCounts] ^ 0x3485e20e).Next(2) == 0;
+            opts.compCollect64BitCounts = new Random(info.compMethodHash() ^ JitConfig[ConfigInteger.JitRandomlyCollect64BitCounts] ^ 0x3485E20E).Next(2) == 0;
         }
 #endif
 #else
@@ -2498,7 +2498,7 @@ public partial class Compiler
 
             if (jitFlags->IsSet(JitFlags.JIT_FLAG_OSR))
             {
-                jitprintf($"OPTIONS: OSR variant with entry point 0x{info.compILEntry:X}\n");
+                jitprintf($"OPTIONS: OSR variant with entry point 0x{info.compILEntry:x}\n");
             }
 
             jitprintf($"OPTIONS: compCodeOpt = {(opts.compCodeOpt is BLENDED_CODE ? "BLENDED_CODE"
@@ -2974,7 +2974,7 @@ public partial class Compiler
             if (verbose)
             {
                 jitprintf($"info.compStmtOffsetsCount    = {info.compStmtOffsetsCount}\n");
-                jitprintf($"info.compStmtOffsetsImplicit = 0x{(int)(info.compStmtOffsetsImplicit):X4}");
+                jitprintf($"info.compStmtOffsetsImplicit = {(int)(info.compStmtOffsetsImplicit):X4}h");
 
                 if (info.compStmtOffsetsImplicit != ICorDebugInfo.NO_BOUNDARIES)
                 {
@@ -3003,7 +3003,7 @@ public partial class Compiler
 
                 for (var i = 0; i < stmtOffsets.Length; i++)
                 {
-                    jitprintf($"{i:D2}) IL_{stmtOffsets[i]:X4}\n");
+                    jitprintf($"{i:D2}) IL_{stmtOffsets[i]:X4}h\n");
                 }
             }
 #endif
@@ -3736,7 +3736,7 @@ public partial class Compiler
 
 #if DEBUG
             var fullName = info.compFullName;
-            var debugPart = $", hash=0x{info.compMethodHash():X8}{compStressMessage}";
+            var debugPart = $", hash=0x{info.compMethodHash():x8}{compStressMessage}";
 #else
             var fullName = eeGetMethodFullName(info.compMethodHnd, includeReturnType: false, includeThisSpecifier: false);
             var debugPart = "";
@@ -3751,7 +3751,7 @@ public partial class Compiler
 #endif
 
             var hasProf = fgHaveProfileData;
-            jitprintf($"{methodsCompiled:D4}: JIT compiled {fullName} [{compGetTieringName()}{osrName}{(hasProf ? " with " : "")}{(hasProf ? compPgoSourceName : "")}, IL size={info.compILCodeSize}, code size={methodCodeSize}{debugPart}{metricPart}]\n");
+            jitprintf($"{methodsCompiled,4}: JIT compiled {fullName} [{compGetTieringName()}{osrName}{(hasProf ? " with " : "")}{(hasProf ? compPgoSourceName : "")}, IL size={info.compILCodeSize}, code size={methodCodeSize}{debugPart}{metricPart}]\n");
             jitprintf(""); // flush
         }
 
@@ -3926,7 +3926,7 @@ public partial class Compiler
 
             if (theMinOptsValue)
             {
-                JITLOG(LL_INFO10000, $"IL Code Size,Instr {info.compILCodeSize:D4},{opts.instrCount:D4}, Basic Block count {fgBBcount:D3}, Local Variable Num,Ref count {lvaCount:D3},{opts.lvRefCount:D3} for method {info.compFullName}\n");
+                JITLOG(LL_INFO10000, $"IL Code Size,Instr {info.compILCodeSize,4},{opts.instrCount,4}, Basic Block count {fgBBcount,3}, Local Variable Num,Ref count {lvaCount,3},{opts.lvRefCount,3} for method {info.compFullName}\n");
 
                 if (JitConfig[ConfigInteger.JitBreakOnMinOpts] != 0)
                 {
@@ -3951,7 +3951,7 @@ public partial class Compiler
 #endif
 
 #if DEBUG
-        JITLOG(LL_INFO10000, $"IL Code Size,Instr {info.compILCodeSize:D4},{opts.instrCount:D4}, Basic Block count {fgBBcount:D3}, Local Variable Num,Ref count {lvaCount:D3},{opts.lvRefCount:D3} for method {info.compFullName}\n");
+        JITLOG(LL_INFO10000, $"IL Code Size,Instr {info.compILCodeSize,4},{opts.instrCount,4}, Basic Block count {fgBBcount,3}, Local Variable Num,Ref count {lvaCount,3},{opts.lvRefCount,3} for method {info.compFullName}\n");
 #endif
         SetMinOpts(this, theMinOptsValue);
 
@@ -3975,7 +3975,7 @@ public partial class Compiler
 #if DEBUG
             if (compiler.verbose && !compiler.compIsForInlining)
             {
-                jitprintf($"OPTIONS: opts.MinOpts() == {(compiler.opts.MinOpts ? "true" : "false")}\n");
+                jitprintf($"OPTIONS: opts.MinOpts() == {dspBool(compiler.opts.MinOpts)}\n");
             }
 #endif
 
@@ -4267,10 +4267,10 @@ public partial class Compiler
 
     public int compMapILargNum(int ILargNum)
     {
-        assert(ILargNum < info.compILargsCount);
+        assert((ILargNum >= 0) && (ILargNum < info.compILargsCount));
 
 #if TARGET_WASM
-        if ((ILargNum >= lvaWasmSpArg) && (lvaWasmSpArg != BAD_VAR_NUM) && lvaGetDesc(lvaWasmSpArg).lvIsParam)
+        if ((lvaWasmSpArg >= 0) && (lvaWasmSpArg <= ILargNum) && lvaGetDesc(lvaWasmSpArg).lvIsParam)
         {
             ILargNum++;
             assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
@@ -4279,37 +4279,37 @@ public partial class Compiler
 
         // Note that this works because if compRetBuffArg/compTypeCtxtArg/lvVarargsHandleArg are not present
         // they will be BAD_VAR_NUM (MAX_UINT), which is larger than any variable number.
-        if (ILargNum >= info.compRetBuffArg)
+        if ((info.compRetBuffArg >= 0) && (info.compRetBuffArg <= ILargNum))
         {
             ILargNum++;
             assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
         }
 
-        if (ILargNum >= info.compTypeCtxtArg)
+        if ((info.compTypeCtxtArg >= 0) && (info.compTypeCtxtArg <= ILargNum))
         {
             ILargNum++;
             assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
         }
 
-        if (ILargNum >= lvaAsyncContinuationArg)
+        if ((lvaAsyncContinuationArg >= 0) && (lvaAsyncContinuationArg <= ILargNum))
         {
             ILargNum++;
             assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
         }
 
-        if (ILargNum >= lvaVarargsHandleArg)
+        if ((lvaVarargsHandleArg >= 0) && (lvaVarargsHandleArg <= ILargNum))
         {
             ILargNum++;
             assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
         }
 
-        assert(ILargNum < info.compArgsCount);
-        return (ILargNum);
+        assert((ILargNum >= 0) && (ILargNum < info.compArgsCount));
+        return ILargNum;
     }
 
     public int compMapILvarNum(int ILvarNum)
     {
-        noway_assert((ILvarNum < info.compILlocalsCount) || (ILvarNum > ICorDebugInfo.UNKNOWN_ILNUM));
+        noway_assert((ILvarNum > ICorDebugInfo.UNKNOWN_ILNUM) && (ILvarNum < info.compILlocalsCount));
         var varNum = BAD_VAR_NUM;
 
         if (ILvarNum == ICorDebugInfo.VARARGS_HND_ILNUM)
@@ -4338,14 +4338,17 @@ public partial class Compiler
         else if (ILvarNum < info.compILargsCount)
         {
             // Parameter
+            assert(ILvarNum >= 0);
+
             varNum = compMapILargNum(ILvarNum);
             noway_assert(lvaTable[varNum].lvIsParam);
         }
         else if (ILvarNum < info.compILlocalsCount)
         {
             // Local variable
-            var lclNum = ILvarNum - info.compILargsCount;
+            assert(ILvarNum >= info.compILargsCount);
 
+            var lclNum = ILvarNum - info.compILargsCount;
             varNum = info.compArgsCount + lclNum;
             noway_assert(!lvaTable[varNum].lvIsParam);
         }
@@ -4369,7 +4372,7 @@ public partial class Compiler
             return impInlineInfo.InlinerCompiler.compMap2ILvarNum(varNum);
         }
 
-        noway_assert(varNum < lvaCount);
+        noway_assert((varNum >= 0) && (varNum < lvaCount));
 
         if (varNum == info.compRetBuffArg)
         {
@@ -4401,7 +4404,7 @@ public partial class Compiler
             return ICorDebugInfo.ASYNC_CONTINUATION_ILNUM;
         }
 
-#if (TARGET_WASM)
+#if TARGET_WASM
         if (varNum == lvaWasmSpArg)
         {
             return ICorDebugInfo.UNKNOWN_ILNUM;
@@ -4411,17 +4414,17 @@ public partial class Compiler
         var originalVarNum = varNum;
 
         // Now mutate varNum to remove extra parameters from the count.
-        if (((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) is not 0) && (originalVarNum > info.compTypeCtxtArg))
+        if (((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) is not 0) && (info.compTypeCtxtArg >= 0) && (info.compTypeCtxtArg < originalVarNum))
         {
             varNum--;
         }
 
-        if (info.compIsVarArgs && (originalVarNum > lvaVarargsHandleArg))
+        if (info.compIsVarArgs && (lvaVarargsHandleArg >= 0) && (lvaVarargsHandleArg < originalVarNum))
         {
             varNum--;
         }
 
-        if ((lvaAsyncContinuationArg != BAD_VAR_NUM) && (originalVarNum > lvaAsyncContinuationArg))
+        if ((lvaAsyncContinuationArg != BAD_VAR_NUM) && (lvaAsyncContinuationArg >= 0) && (lvaAsyncContinuationArg < originalVarNum))
         {
             varNum--;
         }
@@ -4429,21 +4432,22 @@ public partial class Compiler
         // Is there a hidden argument for the return buffer. Note that this code
         // works because if the RetBuffArg is not present, compRetBuffArg will be
         // BAD_VAR_NUM
-        if ((info.compRetBuffArg != BAD_VAR_NUM) && (originalVarNum > info.compRetBuffArg))
+        if ((info.compRetBuffArg != BAD_VAR_NUM) && (info.compRetBuffArg >= 0) && (info.compRetBuffArg < originalVarNum))
         {
             varNum--;
         }
 
-#if (TARGET_WASM)
-        if ((lvaWasmSpArg != BAD_VAR_NUM) && (originalVarNum > lvaWasmSpArg) && lvaGetDesc(lvaWasmSpArg).lvIsParam)
+#if TARGET_WASM
+        if ((lvaWasmSpArg >= 0) && (lvaWasmSpArg < originalVarNum) && lvaGetDesc(lvaWasmSpArg).lvIsParam)
         {
             varNum--;
         }
 #endif
 
-        if (varNum >= info.compLocalsCount)
+        if ((varNum < 0) || (varNum >= info.compLocalsCount))
         {
-            return ICorDebugInfo.UNKNOWN_ILNUM; // Cannot be mapped
+            // Cannot be mapped
+            return ICorDebugInfo.UNKNOWN_ILNUM;
         }
         return varNum;
     }

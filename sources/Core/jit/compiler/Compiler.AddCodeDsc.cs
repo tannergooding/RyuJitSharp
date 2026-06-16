@@ -126,7 +126,7 @@ public partial class Compiler
                 }
             }
 
-            jitprintf($" map key 0x{new AddCodeDscKey(this).Data:X}\n");
+            jitprintf($" map key 0x{new AddCodeDscKey(this).Data:x}\n");
         }
 #endif
     }

@@ -427,6 +427,194 @@ public static class genTreeOpsExtensions
         DBK_NOTHIR,                 // GT_IL_OFFSET
         DBK_NOTHIR,                 // GT_RECORD_ASYNC_RESUME
     ];
+
+    private static readonly string[] s_names = [
+        "NONE",                     // GT_NONE,
+        "PHI",                      // GT_PHI,
+        "PHI_ARG",                  // GT_PHI_ARG,
+        "LCL_VAR",                  // GT_LCL_VAR,
+        "LCL_FLD",                  // GT_LCL_FLD,
+        "STORE_LCL_VAR",            // GT_STORE_LCL_VAR,
+        "STORE_LCL_FLD",            // GT_STORE_LCL_FLD,
+        "LCL_ADDR",                 // GT_LCL_ADDR,
+        "CATCH_ARG",                // GT_CATCH_ARG,
+        "ASYNC_CONTINUATION",       // GT_ASYNC_CONTINUATION,
+        "LABEL",                    // GT_LABEL,
+        "JMP",                      // GT_JMP,
+        "FTN_ADDR",                 // GT_FTN_ADDR,
+        "RET_EXPR",                 // GT_RET_EXPR,
+        "GCPOLL",                   // GT_GCPOLL,
+        "ASYNC_RESUME_INFO",        // GT_ASYNC_RESUME_INFO,
+        "FTN_ENTRY",                // GT_FTN_ENTRY,
+        "CNS_INT",                  // GT_CNS_INT,
+        "CNS_LNG",                  // GT_CNS_LNG,
+        "CNS_DBL",                  // GT_CNS_DBL,
+        "CNS_STR",                  // GT_CNS_STR,
+#if FEATURE_SIMD
+        "CNS_VEC",                  // GT_CNS_VEC,
+#endif
+#if FEATURE_MASKED_HW_INTRINSICS
+        "CNS_MSK",                  // GT_CNS_MSK,
+#endif
+        "NOP",                      // GT_NOP,
+        "INTRINSIC",                // GT_INTRINSIC,
+        "KEEPALIVE",                // GT_KEEPALIVE,
+        "CAST",                     // GT_CAST,
+        "BITCAST",                  // GT_BITCAST,
+        "CKFINITE",                 // GT_CKFINITE,
+        "LCLHEAP",                  // GT_LCLHEAP,
+        "BOUNDS_CHECK",             // GT_BOUNDS_CHECK,
+        "MEMORYBARRIER",            // GT_MEMORYBARRIER,
+        "LOCKADD",                  // GT_LOCKADD,
+        "XAND",                     // GT_XAND,
+        "XORR",                     // GT_XORR,
+        "XADD",                     // GT_XADD,
+        "XCHG",                     // GT_XCHG,
+        "CMPXCHG",                  // GT_CMPXCHG,
+        "IND",                      // GT_IND,
+        "STOREIND",                 // GT_STOREIND,
+        "BLK",                      // GT_BLK,
+        "STORE_BLK",                // GT_STORE_BLK,
+        "NULLCHECK",                // GT_NULLCHECK,
+        "ARR_LENGTH",               // GT_ARR_LENGTH,
+        "MDARR_LENGTH",             // GT_MDARR_LENGTH,
+        "MDARR_LOWER_BOUND",        // GT_MDARR_LOWER_BOUND,
+        "FIELD_ADDR",               // GT_FIELD_ADDR,
+        "ALLOCOBJ",                 // GT_ALLOCOBJ,
+        "INIT_VAL",                 // GT_INIT_VAL,
+        "BOX",                      // GT_BOX,
+        "RUNTIMELOOKUP",            // GT_RUNTIMELOOKUP,
+        "ARR_ADDR",                 // GT_ARR_ADDR,
+        "BSWAP",                    // GT_BSWAP,
+        "BSWAP16",                  // GT_BSWAP16,
+        "LZCNT",                    // GT_LZCNT,
+        "NONLOCAL_JMP",             // GT_NONLOCAL_JMP,
+        "NOT",                      // GT_NOT,
+        "NEG",                      // GT_NEG,
+        "OR",                       // GT_OR,
+        "XOR",                      // GT_XOR,
+        "AND",                      // GT_AND,
+        "LSH",                      // GT_LSH,
+        "RSH",                      // GT_RSH,
+        "RSZ",                      // GT_RSZ,
+        "ROL",                      // GT_ROL,
+        "ROR",                      // GT_ROR,
+        "ADD",                      // GT_ADD,
+        "SUB",                      // GT_SUB,
+        "MUL",                      // GT_MUL,
+        "DIV",                      // GT_DIV,
+        "MOD",                      // GT_MOD,
+        "UDIV",                     // GT_UDIV,
+        "UMOD",                     // GT_UMOD,
+        "EQ",                       // GT_EQ
+        "NE",                       // GT_NE
+        "LT",                       // GT_LT
+        "LE",                       // GT_LE
+        "GE",                       // GT_GE
+        "GT",                       // GT_GT
+        "TEST_EQ",                  // GT_TEST_EQ
+        "TEST_NE",                  // GT_TEST_NE
+#if TARGET_XARCH
+        "BITTEST_EQ",               // GT_BITTEST_EQ
+        "BITTEST_NE",               // GT_BITTEST_NE
+#endif
+        "SELECT",                   // GT_SELECT
+        "COMMA",                    // GT_COMMA
+        "QMARK",                    // GT_QMARK
+        "COLON",                    // GT_COLON
+        "INDEX_ADDR",               // GT_INDEX_ADDR
+        "LEA",                      // GT_LEA
+#if TARGET_32BIT
+        "LONG",                     // GT_LONG
+        "ADD_LO",                   // GT_ADD_LO
+        "ADD_HI",                   // GT_ADD_HI
+        "SUB_LO",                   // GT_SUB_LO
+        "SUB_HI",                   // GT_SUB_HI
+        "LSH_HI",                   // GT_LSH_HI
+        "RSH_LO",                   // GT_RSH_LO
+#endif
+#if FEATURE_HW_INTRINSICS
+        "HWINTRINSIC",              // GT_HWINTRINSIC
+#endif
+        "INC_SATURATE",             // GT_INC_SATURATE
+        "MULHI",                    // GT_MULHI
+#if TARGET_32BIT || TARGET_ARM64
+        "MUL_LONG",                 // GT_MUL_LONG
+#endif
+        "AND_NOT",                  // GT_AND_NOT
+        "OR_NOT",                   // GT_OR_NOT
+        "XOR_NOT",                  // GT_XOR_NOT
+#if TARGET_ARM64
+        "BFIZ",                     // GT_BFIZ
+#endif
+        "CMP",                      // GT_CMP
+        "TEST",                     // GT_TEST
+#if TARGET_XARCH
+        "BT",                       // GT_BT
+#endif
+        "JCMP",                     // GT_JCMP
+        "JTEST",                    // GT_JTEST
+        "JCC",                      // GT_JCC
+        "SETCC",                    // GT_SETCC
+        "SELECTCC",                 // GT_SELECTCC
+#if TARGET_ARM64 || TARGET_AMD64
+        "CCMP",                     // GT_CCMP
+#endif
+#if TARGET_ARM64
+        "SELECT_INC",               // GT_SELECT_INC
+        "SELECT_INCCC",             // GT_SELECT_INCCC
+        "SELECT_INV",               // GT_SELECT_INV
+        "SELECT_INVCC",             // GT_SELECT_INVCC
+        "SELECT_NEG",               // GT_SELECT_NEG
+        "SELECT_NEGCC",             // GT_SELECT_NEGCC
+#endif
+#if TARGET_RISCV64
+        "SH1ADD",                   // GT_SH1ADD
+        "SH1ADD_UW",                // GT_SH1ADD_UW
+        "SH2ADD",                   // GT_SH2ADD
+        "SH2ADD_UW",                // GT_SH2ADD_UW
+        "SH3ADD",                   // GT_SH3ADD
+        "SH3ADD_UW",                // GT_SH3ADD_UW
+        "ADD_UW",                   // GT_ADD_UW
+        "SLLI_UW",                  // GT_SLLI_UW
+        "BIT_SET",                  // GT_BIT_SET
+        "BIT_CLEAR",                // GT_BIT_CLEAR
+        "BIT_INVERT",               // GT_BIT_INVERT
+#endif
+        "JTRUE",                    // GT_JTRUE
+        "ARR_ELEM",                 // GT_ARR_ELEM
+        "CALL",                     // GT_CALL
+        "FIELD_LIST",               // GT_FIELD_LIST
+        "RETURN",                   // GT_RETURN
+        "SWITCH",                   // GT_SWITCH
+        "NO_OP",                    // GT_NO_OP
+        "RETURN_SUSPEND",           // GT_RETURN_SUSPEND
+        "PATCHPOINT",               // GT_PATCHPOINT
+        "PATCHPOINT_FORCED",        // GT_PATCHPOINT_FORCED
+        "START_NONGC",              // GT_START_NONGC
+        "START_PREEMPTGC",          // GT_START_PREEMPTGC
+        "PROF_HOOK",                // GT_PROF_HOOK
+        "RETFILT",                  // GT_RETFILT
+#if SWIFT_SUPPORT
+        "SWIFT_ERROR",              // GT_SWIFT_ERROR
+        "SWIFT_ERROR_RET",          // GT_SWIFT_ERROR_RET
+#endif
+#if TARGET_WASM
+        "WASM_JEXCEPT",             // GT_WASM_JEXCEPT
+        "WASM_THROW_REF",           // GT_WASM_THROW_REF
+#endif
+        "JMPTABLE",                 // GT_JMPTABLE
+        "SWITCH_TABLE",             // GT_SWITCH_TABLE
+        "PHYSREG",                  // GT_PHYSREG
+        "RETURNTRAP",               // GT_RETURNTRAP
+        "PUTARG_REG",               // GT_PUTARG_REG
+        "PUTARG_STK",               // GT_PUTARG_STK
+        "SWAP",                     // GT_SWAP
+        "COPY",                     // GT_COPY
+        "RELOAD",                   // GT_RELOAD
+        "IL_OFFSET",                // GT_IL_OFFSET
+        "RECORD_ASYNC_RESUME",      // GT_RECORD_ASYNC_RESUME
+    ];
 #endif
 
     private static ReadOnlySpan<genTreeOps> s_reversedRelops => [
@@ -478,11 +666,11 @@ public static class genTreeOpsExtensions
 
         typeof(GenTree),                // GT_NOP
         typeof(GenTreeIntrinsic),       // GT_INTRINSIC
-        typeof(GenTree),                // GT_KEEPALIVE
+        typeof(GenTreeUnOp),            // GT_KEEPALIVE
         typeof(GenTreeCast),            // GT_CAST
-        typeof(GenTreeOp),              // GT_BITCAST
-        typeof(GenTreeOp),              // GT_CKFINITE
-        typeof(GenTreeOp),              // GT_LCLHEAP
+        typeof(GenTreeUnOp),            // GT_BITCAST
+        typeof(GenTreeUnOp),            // GT_CKFINITE
+        typeof(GenTreeUnOp),            // GT_LCLHEAP
         typeof(GenTreeBoundsChk),       // GT_BOUNDS_CHECK
         typeof(GenTree),                // GT_MEMORYBARRIER
         typeof(GenTreeOp),              // GT_LOCKADD
@@ -501,16 +689,16 @@ public static class genTreeOpsExtensions
         typeof(GenTreeMDArr),           // GT_MDARR_LOWER_BOUND
         typeof(GenTreeFieldAddr),       // GT_FIELD_ADDR
         typeof(GenTreeAllocObj),        // GT_ALLOCOBJ
-        typeof(GenTreeOp),              // GT_INIT_VAL
+        typeof(GenTreeUnOp),            // GT_INIT_VAL
         typeof(GenTreeBox),             // GT_BOX
         typeof(GenTreeRuntimeLookup),   // GT_RUNTIMELOOKUP
         typeof(GenTreeArrAddr),         // GT_ARR_ADDR
-        typeof(GenTreeOp),              // GT_BSWAP
-        typeof(GenTreeOp),              // GT_BSWAP16
-        typeof(GenTreeOp),              // GT_LZCNT
-        typeof(GenTreeOp),              // GT_NONLOCAL_JMP
-        typeof(GenTreeOp),              // GT_NOT
-        typeof(GenTreeOp),              // GT_NEG
+        typeof(GenTreeUnOp),            // GT_BSWAP
+        typeof(GenTreeUnOp),            // GT_BSWAP16
+        typeof(GenTreeUnOp),            // GT_LZCNT
+        typeof(GenTreeUnOp),            // GT_NONLOCAL_JMP
+        typeof(GenTreeUnOp),            // GT_NOT
+        typeof(GenTreeUnOp),            // GT_NEG
         typeof(GenTreeOp),              // GT_OR
         typeof(GenTreeOp),              // GT_XOR
         typeof(GenTreeOp),              // GT_AND
@@ -561,7 +749,7 @@ public static class genTreeOpsExtensions
         typeof(GenTreeHWIntrinsic),     // GT_HWINTRINSIC
 #endif
 
-        typeof(GenTreeOp),              // GT_INC_SATURATE
+        typeof(GenTreeUnOp),            // GT_INC_SATURATE
         typeof(GenTreeOp),              // GT_MULHI
 
 #if TARGET_32BIT
@@ -618,20 +806,20 @@ public static class genTreeOpsExtensions
         typeof(GenTreeOp),              // GT_BIT_INVERT
 #endif
 
-        typeof(GenTreeOp),              // GT_JTRUE
+        typeof(GenTreeUnOp),            // GT_JTRUE
         typeof(GenTreeArrElem),         // GT_ARR_ELEM
         typeof(GenTreeCall),            // GT_CALL
         typeof(GenTreeFieldList),       // GT_FIELD_LIST
-        typeof(GenTreeOp),              // GT_RETURN
-        typeof(GenTreeOp),              // GT_SWITCH
+        typeof(GenTreeUnOp),            // GT_RETURN
+        typeof(GenTreeUnOp),            // GT_SWITCH
         typeof(GenTree),                // GT_NO_OP
-        typeof(GenTreeOp),              // GT_RETURN_SUSPEND
+        typeof(GenTreeUnOp),            // GT_RETURN_SUSPEND
         typeof(GenTreeOp),              // GT_PATCHPOINT
-        typeof(GenTreeOp),              // GT_PATCHPOINT_FORCED
+        typeof(GenTreeUnOp),            // GT_PATCHPOINT_FORCED
         typeof(GenTree),                // GT_START_NONGC
         typeof(GenTree),                // GT_START_PREEMPTGC
         typeof(GenTree),                // GT_PROF_HOOK
-        typeof(GenTreeOp),              // GT_RETFILT
+        typeof(GenTreeUnOp),            // GT_RETFILT
 
 #if SWIFT_SUPPORT
         typeof(GenTree),                // GT_SWIFT_ERROR
@@ -646,8 +834,8 @@ public static class genTreeOpsExtensions
         typeof(GenTree),                // GT_JMPTABLE
         typeof(GenTreeOp),              // GT_SWITCH_TABLE
         typeof(GenTreePhysReg),         // GT_PHYSREG
-        typeof(GenTreeOp),              // GT_RETURNTRAP
-        typeof(GenTreeOp),              // GT_PUTARG_REG
+        typeof(GenTreeUnOp),            // GT_RETURNTRAP
+        typeof(GenTreeUnOp),            // GT_PUTARG_REG
         typeof(GenTreePutArgStk),       // GT_PUTARG_STK
         typeof(GenTreeOp),              // GT_SWAP
         typeof(GenTreeCopyOrReload),    // GT_COPY
@@ -1034,6 +1222,19 @@ public static class genTreeOpsExtensions
 #endif
             }
         }
+
+#if DEBUG
+        public string Name
+        {
+            get
+            {
+                assert(s_names.Length == (int)(GT_COUNT));
+                return s_names[(int)(oper)];
+            }
+        }
+#else
+        public string Name => varType.ToString();
+#endif
 
         public genTreeOps ReverseRelop
         {

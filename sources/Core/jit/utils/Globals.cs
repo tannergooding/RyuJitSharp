@@ -47,7 +47,7 @@ public partial class Globals
     }
 
     public static bool AreContiguous<TEnum>(params ReadOnlySpan<TEnum> values)
-        where TEnum : struct, Enum
+        where TEnum : unmanaged, Enum
     {
         var areContiguous = true;
 
@@ -59,7 +59,7 @@ public partial class Globals
             {
                 var value = values[i];
 
-                if (!AreContiguous(value, previousValue))
+                if (!AreContiguous(previousValue, value))
                 {
                     areContiguous = false;
                     break;

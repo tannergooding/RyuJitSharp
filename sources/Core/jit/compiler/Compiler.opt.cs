@@ -114,7 +114,7 @@ public partial class Compiler
     protected unsafe AssertionIndex* optComplementaryAssertionMap;
 
     /// <summary>table that holds dependent assertions (assertions using the value of a local var) for each local var</summary>
-    protected List<Pointer<nint>>? optAssertionDep;
+    protected List<ASSERT_TP>? optAssertionDep;
 
     /// <summary>table that holds info about assertions</summary>
     protected AssertionDsc? optAssertionTabPrivate;

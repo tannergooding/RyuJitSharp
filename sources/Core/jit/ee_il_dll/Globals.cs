@@ -30,6 +30,9 @@ public partial class Globals
             jitstdout = new StreamWriter(Console.OpenStandardOutput(), leaveOpen: true);
         }
 
+        jitstdout.AutoFlush = true;
+        jitstdout.NewLine = "\n";
+
         var observed = Interlocked.CompareExchange(ref s_jitstdout, jitstdout, null);
 
         if (observed is not null)

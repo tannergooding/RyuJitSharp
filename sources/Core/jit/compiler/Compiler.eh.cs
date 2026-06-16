@@ -335,7 +335,7 @@ public partial class Compiler
     public void dispIncomingEHClause(ushort num, in CORINFO_EH_CLAUSE clause)
     {
         jitprintf($"EH clause #{num}:\n");
-        jitprintf($"  Flags:         0x{clause.Flags:X}");
+        jitprintf($"  Flags:         0x{clause.Flags:x}");
 
         // Note: the flags field is kind of weird. It should be compared for equality to determine the type of clause, even though it looks like a bitfield.
         // In particular, CORINFO_EH_CLAUSE_NONE is zero, so you can't use "&" to check it.
@@ -376,22 +376,22 @@ public partial class Compiler
 
         if ((clause.Flags & ~CORINFO_EH_CLAUSE_TYPE_MASK) != 0)
         {
-            jitprintf($" (extra unknown bits: 0x{clause.Flags & ~CORINFO_EH_CLAUSE_TYPE_MASK:X})");
+            jitprintf($" (extra unknown bits: 0x{clause.Flags & ~CORINFO_EH_CLAUSE_TYPE_MASK:x})");
         }
         jitprintf("\n");
 
-        jitprintf($"  TryOffset:     0x{clause.TryOffset:X}\n");
-        jitprintf($"  TryLength:     0x{clause.TryLength:X}\n");
-        jitprintf($"  HandlerOffset: 0x{clause.HandlerOffset:X}\n");
-        jitprintf($"  HandlerLength: 0x{clause.HandlerLength:X}\n");
+        jitprintf($"  TryOffset:     0x{clause.TryOffset:x}\n");
+        jitprintf($"  TryLength:     0x{clause.TryLength:x}\n");
+        jitprintf($"  HandlerOffset: 0x{clause.HandlerOffset:x}\n");
+        jitprintf($"  HandlerLength: 0x{clause.HandlerLength:x}\n");
 
         if ((clause.Flags & CORINFO_EH_CLAUSE_FILTER) != 0)
         {
-            jitprintf($"  FilterOffset:  0x{clause.FilterOffset:X}\n");
+            jitprintf($"  FilterOffset:  0x{clause.FilterOffset:x}\n");
         }
         else
         {
-            jitprintf($"  ClassToken:    0x{clause.ClassToken:X}\n");
+            jitprintf($"  ClassToken:    0x{clause.ClassToken:x}\n");
         }
     }
 #endif

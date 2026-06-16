@@ -541,7 +541,7 @@ public partial class Compiler
                 var reason = "";
 
 #if DEBUG
-                reason = $"field V{lclNum:D2}.{_compiler.eeGetFieldName(fieldInfo.diagFldHnd, includeType: false)} (fldOffset=0x{fieldInfo.fldOffset:X})";
+                reason = $"field V{lclNum:D2}.{_compiler.eeGetFieldName(fieldInfo.diagFldHnd, includeType: false)} (fldOffset=0x{fieldInfo.fldOffset:x})";
 
                 if (index > 0)
                 {

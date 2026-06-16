@@ -27,7 +27,7 @@ public sealed partial class BasicBlock : LIR.Range
     private bbCatchType bbCatchType;
 
     /// <summary>verifier tracked state of all entries in stack.</summary>
-    private EntryState bbEntryState;
+    private EntryState bbEntryState = new EntryState();
 
     /// <summary>PC offset (temporary only)</summary>
     private int bbTargetOffs;
@@ -1424,18 +1424,18 @@ public sealed partial class BasicBlock : LIR.Range
 
         if (showPreds)
         {
-            jitprintf(", preds={{");
+            jitprintf(", preds={");
             _ = dspPreds();
-            jitprintf("}} succs={{");
+            jitprintf("} succs={");
             dspSuccs();
-            jitprintf("}}");
+            jitprintf("}");
         }
 
         if (showFlags)
         {
             var lowFlags = (int)(bbFlags);
             var highFlags = (int)((long)(bbFlags) >>> 32);
-            jitprintf($" flags=0x{highFlags:X8}.{lowFlags:X8}: ");
+            jitprintf($" flags=0x{highFlags:x8}.{lowFlags:x8}: ");
             dspFlags();
         }
         jitprintf("\n");

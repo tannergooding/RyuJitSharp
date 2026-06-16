@@ -212,6 +212,7 @@ public sealed class InlineStrategy
         streamWriter.Write($"{_inlineCount},");
     }
 
+#if DEBUG
     public Random GetRandom(int optionalSeed = 0)
     {
         var random = _random;
@@ -225,6 +226,7 @@ public sealed class InlineStrategy
     }
 
     private static ConfigMethodRange s_inlingDisabledRange;
+#endif
 
     /// <summary>allow strategy to disable inlining in the method being jitted</summary>
     /// <returns></returns>
@@ -335,11 +337,11 @@ public sealed class InlineStrategy
     /// <summary>Inform strategy that a candidate was assessed and determined to be unprofitable.</summary>
     public void NoteUnprofitable() => _unprofitableCandidateCount++;
 
+#if DEBUG
     private Random CreateRandom(int optionalSeed)
     {
         var externalSeed = optionalSeed;
 
-#if DEBUG
         if (_compiler.compRandomInlineStress())
         {
             externalSeed = JitStressLevel;
@@ -351,7 +353,6 @@ public sealed class InlineStrategy
                 externalSeed = 2;
             }
         }
-#endif
 
         var randomPolicyFlag = JitConfig[ConfigInteger.JitInlinePolicyRandom];
 
@@ -369,6 +370,7 @@ public sealed class InlineStrategy
         JITDUMP($"\n*** Using random seed ext({externalSeed}) ^ int({internalSeed}) = {seed}\n");
         return new Random(seed);
     }
+#endif
 
     [MemberNotNull(nameof(_rootContext), nameof(_lastContext))]
     private InlineContext CreateRootContext()

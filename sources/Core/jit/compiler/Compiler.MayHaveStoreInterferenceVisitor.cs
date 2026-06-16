@@ -14,7 +14,7 @@ public partial class Compiler
         public static bool DoPreOrder => true;
 
         private readonly Compiler _compiler;
-        private readonly Stack<GenTree> _ancestors;
+        private readonly GenTreeStack _ancestors;
         private readonly GenTree _readTree;
         private int _numStoresChecked;
 

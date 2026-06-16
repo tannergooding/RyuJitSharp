@@ -201,7 +201,7 @@ public sealed partial class CallArg
     /// <summary>Dump information about a CallArg to jitstdout.</summary>
     public void Dump()
     {
-        jitprintf($"CallArg[[{Node.TreeId:D6}].{Node.Oper}");
+        jitprintf($"CallArg[[{Node.TreeId:D6}].{Node.Oper.Name}");
         jitprintf($" {_signatureType.Name}");
         jitprintf($" ({(_abiInfo.IsPassedByReference ? "By ref" : "By value")})");
         jitprintf($", {_abiInfo.NumSegments} segments:");

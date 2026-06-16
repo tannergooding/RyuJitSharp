@@ -12,4 +12,10 @@ public struct EntryState
 
     /// <summary>the stack</summary>
     public StackEntry[] esStack;
+
+    public EntryState()
+    {
+        esStackDepth = 0;
+        esStack = [];
+    }
 }

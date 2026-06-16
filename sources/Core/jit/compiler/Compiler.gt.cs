@@ -58,7 +58,9 @@ public partial class Compiler
         // This may be called very late to check validity of LIR.
         node = node.SkipCopyOrReload;
 
+#if DEBUG
         assert((node.Oper is GT_LCL_ADDR) && lvaGetDesc(node.AsLclVarCommon().LclNum).IsDefinedViaAddress);
+#endif
         return node.AsLclVarCommon();
     }
 
@@ -844,7 +846,7 @@ public partial class Compiler
                 }
 #endif
 
-#if (FEATURE_MASKED_HW_INTRINSICS)
+#if FEATURE_MASKED_HW_INTRINSICS
                 case GT_CNS_MSK:
                 {
                     copy = compiler.gtCloneCnsMsk(tree.AsMskCon());
@@ -1439,7 +1441,7 @@ public partial class Compiler
 
                 if (intCon.IsIconHandle(GTF_ICON_STR_HDL))
                 {
-                    jitprintf($" 0x{dspPtr(unchecked((void*)(intCon.IconVal))):X}[ICON_STR_HDL]");
+                    jitprintf($" 0x{dspOffset(intCon.IconVal):X}[ICON_STR_HDL]");
                 }
                 else if (intCon.IsIconHandle(GTF_ICON_OBJ_HDL))
                 {
@@ -1458,7 +1460,7 @@ public partial class Compiler
                         }
                         else
                         {
-                            jitprintf($" 0x{dspIconVal:X}");
+                            jitprintf($" 0x{dspIconVal:x}");
                         }
                     }
                     else if ((iconVal > -1000) && (iconVal < 1000))
@@ -1470,11 +1472,11 @@ public partial class Compiler
                     {
                         if (dspIconVal >= 0)
                         {
-                            jitprintf($" 0x{dspIconVal:X}");
+                            jitprintf($" 0x{dspIconVal:x}");
                         }
                         else
                         {
-                            jitprintf($" -0x{-dspIconVal:X}");
+                            jitprintf($" -0x{-dspIconVal:x}");
                         }
                     }
 #endif
@@ -1577,7 +1579,7 @@ public partial class Compiler
 
             case GT_CNS_LNG:
             {
-                jitprintf($" 0x{tree.AsLngCon().LconValue:X16}");
+                jitprintf($" 0x{tree.AsLngCon().LconValue:x16}");
                 break;
             }
 
@@ -1592,11 +1594,11 @@ public partial class Compiler
                 else if (double.IsNaN(dcon))
                 {
                     var bits = BitConverter.DoubleToInt64Bits(dcon);
-                    jitprintf($" %{dcon:G17}(0x{bits:X16})\n");
+                    jitprintf($" {dcon:G17}(0x{bits:x16})\n");
                 }
                 else
                 {
-                    jitprintf($" %{dcon:G17}");
+                    jitprintf($" {dcon:G17}");
                 }
                 break;
             }
@@ -1625,32 +1627,32 @@ public partial class Compiler
                 {
                     case TYP_SIMD8:
                     {
-                        jitprintf($"<0x{vecCon.SimdVal.u32[0]:X8}, 0x{vecCon.SimdVal.u32[1]:X8}>");
+                        jitprintf($"<0x{vecCon.SimdVal.u32[0]:x8}, 0x{vecCon.SimdVal.u32[1]:x8}>");
                         break;
                     }
 
                     case TYP_SIMD12:
                     {
-                        jitprintf($"<0x{vecCon.SimdVal.u32[0]:X8}, 0x{vecCon.SimdVal.u32[1]:X8}, 0x{vecCon.SimdVal.u32[2]:X8}>");
+                        jitprintf($"<0x{vecCon.SimdVal.u32[0]:x8}, 0x{vecCon.SimdVal.u32[1]:x8}, 0x{vecCon.SimdVal.u32[2]:x8}>");
                         break;
                     }
 
                     case TYP_SIMD16:
                     {
-                        jitprintf($"<0x{vecCon.SimdVal.u32[0]:X8}, 0x{vecCon.SimdVal.u32[1]:X8}, 0x{vecCon.SimdVal.u32[2]:X8}, 0x{vecCon.SimdVal.u32[3]:X8}>");
+                        jitprintf($"<0x{vecCon.SimdVal.u32[0]:x8}, 0x{vecCon.SimdVal.u32[1]:x8}, 0x{vecCon.SimdVal.u32[2]:x8}, 0x{vecCon.SimdVal.u32[3]:x8}>");
                         break;
                     }
 
 #if TARGET_XARCH
                     case TYP_SIMD32:
                     {
-                        jitprintf($"<0x{vecCon.SimdVal.u64[0]:X16}, 0x{vecCon.SimdVal.u64[1]:X16}, 0x{vecCon.SimdVal.u64[2]:X16}, 0x{vecCon.SimdVal.u64[3]:X16}>");
+                        jitprintf($"<0x{vecCon.SimdVal.u64[0]:x16}, 0x{vecCon.SimdVal.u64[1]:x16}, 0x{vecCon.SimdVal.u64[2]:x16}, 0x{vecCon.SimdVal.u64[3]:x16}>");
                         break;
                     }
 
                     case TYP_SIMD64:
                     {
-                        jitprintf($"<0x{vecCon.SimdVal.u64[0]:X16}, 0x{vecCon.SimdVal.u64[1]:X16}, 0x{vecCon.SimdVal.u64[2]:X16}, 0x{vecCon.SimdVal.u64[3]:X16}, 0x{vecCon.SimdVal.u64[4]:X16}, 0x{vecCon.SimdVal.u64[5]:X16}, 0x{vecCon.SimdVal.u64[6]:X16}, 0x{vecCon.SimdVal.u64[7]:X16}>");
+                        jitprintf($"<0x{vecCon.SimdVal.u64[0]:x16}, 0x{vecCon.SimdVal.u64[1]:x16}, 0x{vecCon.SimdVal.u64[2]:x16}, 0x{vecCon.SimdVal.u64[3]:x16}, 0x{vecCon.SimdVal.u64[4]:x16}, 0x{vecCon.SimdVal.u64[5]:x16}, 0x{vecCon.SimdVal.u64[6]:x16}, 0x{vecCon.SimdVal.u64[7]:x16}>");
                         break;
                     }
 #endif
@@ -1669,7 +1671,7 @@ public partial class Compiler
             case GT_CNS_MSK:
             {
                 var mskCon = tree.AsMskCon();
-                jitprintf($"<0x{mskCon.SimdMaskVal.u32[0]:X8}, 0x{mskCon.SimdMaskVal.u32[1]:X8}>");
+                jitprintf($"<0x{mskCon.SimdMaskVal.u32[0]:x8}, 0x{mskCon.SimdMaskVal.u32[1]:x8}>");
                 break;
             }
 #endif // FEATURE_MASKED_HW_INTRINSICS
@@ -1713,7 +1715,7 @@ public partial class Compiler
 
         if (padForBiggestDisp && (name.Length < LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH))
         {
-            jitprintf(new string(' ', int.Max(0, LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH - name.Length)));
+            jitprintf(new string(' ', int.Max(0, LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH - name.Length) + 1));
         }
     }
 
@@ -2062,7 +2064,7 @@ public partial class Compiler
 
             if (tree._costsInitialized)
             {
-                jitprintf($"({tree.CostEx:D3},{tree.CostSz:D3}) ");
+                jitprintf($"({tree.CostEx,3},{tree.CostSz,3}) ");
             }
             else
             {
@@ -2106,7 +2108,7 @@ public partial class Compiler
 
             if (tree._costsInitialized)
             {
-                jitprintf($"({tree.CostEx:D3},{tree.CostSz:D3}) ");
+                jitprintf($"({tree.CostEx,3},{tree.CostSz,3}) ");
             }
             else
             {
@@ -2494,12 +2496,7 @@ public partial class Compiler
                 if (tree.Oper is GT_RUNTIMELOOKUP)
                 {
                     var runtimeLookup = tree.AsRuntimeLookup();
-
-#if TARGET_64BIT
-                    jitprintf($" 0x{dspPtr(runtimeLookup.Handle):X16}");
-#else
-                    jitprintf($" 0x{dspPtr(runtimeLookup.Handle):X8}");
-#endif
+                    jitprintf($" 0x{dspPtr(runtimeLookup.Handle):x}");
 
                     switch (runtimeLookup.HandleType)
                     {
@@ -2557,7 +2554,7 @@ public partial class Compiler
 
         if (tree.Oper < GT_COUNT)
         {
-            name = tree.Oper.ToString();
+            name = tree.Oper.Name;
         }
 
         var buf = "";
@@ -2568,7 +2565,7 @@ public partial class Compiler
         }
         else if (tree.Oper is GT_PUTARG_STK)
         {
-            buf = $" {name} [+0x{tree.AsPutArgStk().ArgOffset:X2}]";
+            buf = $" {name} [+0x{tree.AsPutArgStk().ArgOffset:x2}]";
         }
         else if (tree.Oper is GT_CALL)
         {
@@ -2684,7 +2681,7 @@ public partial class Compiler
 
         if (buf.Length < 10)
         {
-            jitprintf($" %{buf,-10}");
+            jitprintf($" {buf,-10}");
         }
         else
         {
@@ -3049,7 +3046,7 @@ public partial class Compiler
                     NI_System_Math_Log => " log",
                     NI_System_Math_Log2 => " log2",
                     NI_System_Math_Log10 => " log10",
-#if (TARGET_RISCV64)
+#if TARGET_RISCV64
                     NI_System_Math_Max => " max",
                     NI_System_Math_MaxNative => " maxNative",
                     NI_System_Math_Maxuint => " maxuint",
@@ -3239,7 +3236,7 @@ public partial class Compiler
 
                     if ((inlineInfo is not null) && (inlineInfo.exactContextHandle is not null))
                     {
-                        jitprintf($" (exactContextHandle=0x{dspPtr(inlineInfo.exactContextHandle)})");
+                        jitprintf($" (exactContextHandle=0x{FMT_DSP_PTR(inlineInfo.exactContextHandle)})");
                     }
                 }
 
@@ -3520,7 +3517,7 @@ public partial class Compiler
                 PrintRegs(stringBuilder, firstReg, lastReg);
 
 #if FEATURE_FIXED_OUT_ARGS
-                _ = stringBuilder.Append(CultureInfo.InvariantCulture, $" out+{segment.StackOffset:X2}");
+                _ = stringBuilder.Append(CultureInfo.InvariantCulture, $" out+{segment.StackOffset:x2}");
 #else
                 _ = stringBuilder.Append(" STK");
 #endif
@@ -3718,7 +3715,7 @@ public partial class Compiler
 
             if ((cls1Hnd != NO_CLASS_HANDLE) && (cls2Hnd != NO_CLASS_HANDLE))
             {
-                JITDUMP($"Asking runtime to compare {dspPtr(cls1Hnd)} ({eeGetClassName(cls1Hnd)}) and {dspPtr(cls2Hnd)} ({eeGetClassName(cls2Hnd)}) for equality\n");
+                JITDUMP($"Asking runtime to compare {FMT_PTR(cls1Hnd)} ({eeGetClassName(cls1Hnd)}) and {FMT_PTR(cls2Hnd)} ({eeGetClassName(cls2Hnd)}) for equality\n");
                 var s = info.compCompHnd->compareTypesForEquality(cls1Hnd, cls2Hnd);
 
                 if (s is not TypeCompareState.May)
@@ -3843,7 +3840,7 @@ public partial class Compiler
             // Check if an object of this type can even exist
             if (info.compCompHnd->getExactClasses(clsHnd, 0, null) is 0)
             {
-                JITDUMP($"Runtime reported {dspPtr(clsHnd)} ({eeGetClassName(clsHnd)}) is never allocated\n");
+                JITDUMP($"Runtime reported {FMT_PTR(clsHnd)} ({eeGetClassName(clsHnd)}) is never allocated\n");
 
                 var operatorIsEQ = oper is GT_EQ;
                 var compareResult = operatorIsEQ ? 0 : 1;
@@ -3915,7 +3912,7 @@ public partial class Compiler
         }
 
         var simpleOp = isEq ? GT_EQ : GT_NE;
-        JITDUMP($"\nFolding call to Type:op_{(isEq ? "Equality" : "Inequality")} to a simple compare via {simpleOp}\n");
+        JITDUMP($"\nFolding call to Type:op_{(isEq ? "Equality" : "Inequality")} to a simple compare via {simpleOp.Name}\n");
         return gtNewBinaryNode(simpleOp, TYP_INT, op1, op2);
     }
 
@@ -5074,7 +5071,7 @@ public partial class Compiler
                 assert((op2.Type == simdType) || varTypeIsInt(op2.Type));
                 assert(varTypeIsIntegral(simdBaseType));
 
-#if (TARGET_XARCH)
+#if TARGET_XARCH
                 if (varTypeIsByte(simdBaseType))
                 {
                     break;
@@ -5229,8 +5226,10 @@ public partial class Compiler
 #if TARGET_XARCH
         if (varTypeIsMask(type))
         {
+#if DEBUG
             assert(!isScalar);
             assert(canUseEvexEncodingDebugOnly());
+#endif
         }
         else if (simdSize is 32)
         {
@@ -5238,8 +5237,8 @@ public partial class Compiler
         }
         else
 #endif
-        {
-            assert((simdSize is 8) || (simdSize is 16));
+            {
+                assert((simdSize is 8) || (simdSize is 16));
 
 #if TARGET_ARM64
             assert(!isScalar || (simdSize is 8));
@@ -5322,8 +5321,10 @@ public partial class Compiler
                 }
                 else if (varTypeIsIntegral(simdBaseType))
                 {
+#if DEBUG
                     // This should have been handled by the caller setting type = TYP_MASK
                     assert(!canUseEvexEncodingDebugOnly());
+#endif
                 }
                 else if (simdSize is 32)
                 {
@@ -5348,7 +5349,7 @@ public partial class Compiler
                     id = NI_AdvSimd_CompareGreaterThanOrEqual;
                 }
 #endif
-                break;
+                    break;
             }
 
             case GT_GT:
@@ -5376,8 +5377,10 @@ public partial class Compiler
                     }
                     else
                     {
+#if DEBUG
                         // This should have been handled by the caller setting type = TYP_MASK
                         assert(!canUseEvexEncodingDebugOnly());
+#endif
                     }
                 }
                 else if (simdSize is 32)
@@ -5402,7 +5405,7 @@ public partial class Compiler
                 id = NI_AdvSimd_CompareGreaterThan;
             }
 #endif
-                break;
+                        break;
             }
 
             case GT_LE:
@@ -5416,8 +5419,10 @@ public partial class Compiler
                 }
                 else if (varTypeIsIntegral(simdBaseType))
                 {
+#if DEBUG
                     // This should have been handled by the caller setting type = TYP_MASK
                     assert(!canUseEvexEncodingDebugOnly());
+#endif
                 }
                 else if (simdSize is 32)
                 {
@@ -5442,7 +5447,7 @@ public partial class Compiler
                     id = NI_AdvSimd_CompareLessThanOrEqual;
                 }
 #endif
-                break;
+                    break;
             }
 
             case GT_LT:
@@ -5472,8 +5477,10 @@ public partial class Compiler
                     }
                     else
                     {
+#if DEBUG
                         // This should have been handled by the caller setting type = TYP_MASK
                         assert(!canUseEvexEncodingDebugOnly());
+#endif
                     }
                 }
                 else if (simdSize is 32)
@@ -5498,7 +5505,7 @@ public partial class Compiler
                     id = NI_AdvSimd_CompareLessThan;
                 }
 #endif
-                break;
+                        break;
             }
 
             case GT_NE:
@@ -5512,8 +5519,10 @@ public partial class Compiler
                 }
                 else if (varTypeIsIntegral(simdBaseType))
                 {
+#if DEBUG
                     // This should have been handled by the caller setting type = TYP_MASK
                     assert(!canUseEvexEncodingDebugOnly());
+#endif
                 }
                 else if (simdSize is 32)
                 {
@@ -5524,7 +5533,7 @@ public partial class Compiler
                     id = isScalar ? NI_X86Base_CompareScalarNotEqual : NI_X86Base_CompareNotEqual;
                 }
 #endif
-                break;
+                    break;
             }
 
             default:
@@ -5638,7 +5647,7 @@ public partial class Compiler
 
         var lookupType = type;
 
-#if (TARGET_XARCH)
+#if TARGET_XARCH
         if ((simdSize is 64) || canUseEvexEncoding())
         {
             lookupType = TYP_MASK;
@@ -5705,7 +5714,7 @@ public partial class Compiler
                 ilName = "FFReg";
             }
 #endif
-            else if (lclNum >= optCSEstart)
+            else if ((optCSEstart >= 0) && (optCSEstart <= lclNum))
             {
                 // Currently any new LclVar's introduced after the CSE phase
                 // are believed to be created by the "rationalizer" that is what is meant by the "rat" prefix.
@@ -7354,18 +7363,12 @@ public partial class Compiler
     }
 #endif
 
-    //---------------------------------------------------------------------------------------
-    // gtNewMustThrowException:
-    //    create a throw node (calling into JIT helper) that must be thrown.
-    //    The result would be a comma node: COMMA(jithelperthrow(void), x) where x's type should be specified.
-    //
-    // Arguments
-    //    helper      -  JIT helper ID
-    //    type        -  return type of the node
-    //
-    // Return Value
-    //    pointer to the throw node
-    //
+    /// <summary> create a throw node (calling into JIT helper) that must be thrown.</summary>
+    /// <param name="helper">JIT helper ID</param>
+    /// <param name="type">return type of the node</param>
+    /// <param name="clsHnd"></param>
+    /// <returns>pointer to the throw node</returns>
+    /// <remarks>The result would be a comma node: COMMA(jithelperthrow(void), x) where x's type should be specified.</remarks>
     public unsafe GenTree gtNewMustThrowException(CorInfoHelpFunc helper, var_types type, CORINFO_CLASS_HANDLE clsHnd)
     {
         var node = gtNewHelperCallNode(TYP_VOID, helper);
@@ -7633,7 +7636,7 @@ public partial class Compiler
 
         if (!signatureToLookupInfoMap.ContainsKey(runtimeLookup.signature))
         {
-            JITDUMP($"Registering {(nuint)(runtimeLookup.signature):X} in SignatureToLookupInfoMap\n");
+            JITDUMP($"Registering {(nuint)(runtimeLookup.signature):x} in SignatureToLookupInfoMap\n");
             signatureToLookupInfoMap[runtimeLookup.signature] = runtimeLookup;
         }
         return helperCall;
@@ -7678,7 +7681,7 @@ public partial class Compiler
             return op1;
         }
 
-#if (TARGET_XARCH)
+#if TARGET_XARCH
         if (varTypeIsFloating(simdBaseType))
         {
             // Abs(v) = v & ~new vector<T>(-0.0);
@@ -8337,8 +8340,10 @@ public partial class Compiler
                     //
                     // aLo * bLo + ((aLo * bHi + aHi * bLo) << 32)
 
+#if DEBUG
                     assert(!canUseEvexEncodingDebugOnly());
                     assert((simdSize is 16) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
+#endif
 
                     var muludq = (simdSize is 16) ? NI_X86Base_Multiply : NI_AVX2_Multiply;
 
@@ -8420,7 +8425,7 @@ public partial class Compiler
                     return gtNewSimdWithElementNode(type, lower, gtNewIconNode(1), upper, simdBaseType, simdSize);
                 }
 #endif
-                unreached();
+                    unreached();
                 return null;
             }
 
@@ -8512,11 +8517,11 @@ public partial class Compiler
 
         assert(lookupType == type);
 
-#if TARGET_XARCH
+#if DEBUG && TARGET_XARCH
         assert(varTypeIsIntegral(simdBaseType));
         assert(!canUseEvexEncodingDebugOnly());
         assert((simdSize is 16) || ((simdSize is 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2)));
-#endif // TARGET_XARCH
+#endif
 
         switch (op)
         {
@@ -8677,7 +8682,7 @@ public partial class Compiler
 
         switch (op)
         {
-#if (TARGET_XARCH)
+#if TARGET_XARCH
             case GT_EQ:
             {
                 if (simdSize is 32)
@@ -8735,7 +8740,7 @@ public partial class Compiler
                 }
                 break;
             }
-#elif (TARGET_ARM64)
+#elif TARGET_ARM64
             case GT_EQ:
             {
                 intrinsic = (simdSize is 8) ? NI_Vector64_op_Equality : NI_Vector128_op_Equality;
@@ -8805,10 +8810,13 @@ public partial class Compiler
 
         var intrinsic = NI_Illegal;
 
-#if (TARGET_XARCH)
+#if TARGET_XARCH
         if (simdSize is 64)
         {
+#if DEBUG
             assert(canUseEvexEncodingDebugOnly());
+#endif
+
             intrinsic = NI_Vector512_ConditionalSelect;
         }
         else if (simdSize is 32)
@@ -8820,12 +8828,12 @@ public partial class Compiler
             intrinsic = NI_Vector128_ConditionalSelect;
         }
         return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1, op2, op3);
-#elif (TARGET_ARM64)
+#elif TARGET_ARM64
         return gtNewSimdHWIntrinsicNode(type, NI_AdvSimd_BitwiseSelect, simdBaseType, simdSize, op1, op2, op3);
 #else
 #error Unsupported platform
 #endif
-    }
+        }
 
     /// <summary>Creates a new simd CreateScalar node</summary>
     /// <param name="type">The return type of SIMD node being created</param>
@@ -8907,7 +8915,7 @@ public partial class Compiler
 
         var hwIntrinsicId = NI_Vector128_CreateScalarUnsafe;
 
-#if (TARGET_XARCH)
+#if TARGET_XARCH
         if (simdSize is 32)
         {
             hwIntrinsicId = NI_Vector256_CreateScalarUnsafe;
@@ -8916,7 +8924,7 @@ public partial class Compiler
         {
             hwIntrinsicId = NI_Vector512_CreateScalarUnsafe;
         }
-#elif (TARGET_ARM64)
+#elif TARGET_ARM64
         if (simdSize is 8)
         {
             hwIntrinsicId = (simdBaseType.Size is 8) ? NI_Vector64_Create : NI_Vector64_CreateScalarUnsafe;
@@ -10621,7 +10629,7 @@ public partial class Compiler
         {
             intrinsic = NI_Vector128_ToScalar;
         }
-#elif (TARGET_ARM64)
+#elif TARGET_ARM64
         if (simdSize is 8)
         {
             intrinsic = NI_Vector64_ToScalar;
@@ -10655,7 +10663,7 @@ public partial class Compiler
 
         var intrinsic = NI_Illegal;
 
-#if (TARGET_XARCH)
+#if TARGET_XARCH
         if (simdSize is 32)
         {
             intrinsic = NI_AVX_RoundToZero;
@@ -11157,7 +11165,7 @@ public partial class Compiler
 
         var intrinsicId = NI_Illegal;
 
-#if (TARGET_XARCH)
+#if TARGET_XARCH
         if (simdSize is 32)
         {
             assert(type == TYP_SIMD32);
@@ -13182,14 +13190,16 @@ public partial class Compiler
         var allocStmt = box.DefStmtWhenInlinedBoxValue;
         var copyStmt = box.CopyStmtWhenInlinedBoxValue;
 
+#if DEBUG
         JITDUMP($"gtTryRemoveBoxUpstreamEffects: {((options == BR_DONT_REMOVE) ? "checking if it is possible" : "attempting")} of BOX (valuetype) [{box.TreeId:D6}] (assign/newobj {FMT_STMT(allocStmt.Id)} copy {FMT_STMT(copyStmt.Id)}\n");
+#endif
 
         // If we don't recognize the form of the store, bail.
         var boxLclDef = allocStmt.RootNode;
 
         if (boxLclDef.Oper is not GT_STORE_LCL_VAR)
         {
-            JITDUMP($" bailing; unexpected alloc def op {boxLclDef.Oper}\n");
+            JITDUMP($" bailing; unexpected alloc def op {boxLclDef.Oper.Name}\n");
             return null;
         }
 
@@ -13251,13 +13261,13 @@ public partial class Compiler
             // inlining is done.
             if (copy.Oper is GT_RET_EXPR)
             {
-                JITDUMP($" bailing; must wait for replacement of copy {copy.Oper}\n");
+                JITDUMP($" bailing; must wait for replacement of copy {copy.Oper.Name}\n");
             }
             else
             {
                 // Anything else is a missed case we should figure out how to handle.
                 // One known case is GT_COMMAs enclosing the store we are looking for.
-                JITDUMP($" bailing; unexpected copy op {copy.Oper}\n");
+                JITDUMP($" bailing; unexpected copy op {copy.Oper.Name}\n");
             }
             return null;
         }
@@ -13268,7 +13278,7 @@ public partial class Compiler
         // If the copy source is from a pending inline, wait for it to resolve.
         if (copySrc.Oper is GT_RET_EXPR)
         {
-            JITDUMP($" bailing; must wait for replacement of copy source {copySrc.Oper}\n");
+            JITDUMP($" bailing; must wait for replacement of copy source {copySrc.Oper.Name}\n");
             return null;
         }
 
@@ -13286,7 +13296,7 @@ public partial class Compiler
                 if (copySrc.Oper is not GT_IND and not GT_BLK)
                 {
                     // We don't know how to handle other cases, yet.
-                    JITDUMP($" bailing; unexpected copy source struct op with side effect {copySrc.Oper}\n");
+                    JITDUMP($" bailing; unexpected copy source struct op with side effect {copySrc.Oper.Name}\n");
                     return null;
                 }
             }
@@ -13306,13 +13316,18 @@ public partial class Compiler
         // Otherwise, proceed with the optimization.
         //
         // Change the store expression to a NOP.
+#if DEBUG
         JITDUMP($"\nBashing NEWOBJ [{boxLclDef.TreeId:D6}] to NOP\n");
+#endif
+
         allocStmt.RootNode = gtNewNothingNode();
         DEBUG_DESTROY_NODE(boxLclDef);
 
-        // Change the copy expression so it preserves key
-        // source side effects.
+        // Change the copy expression so it preserves key source side effects.
+
+#if DEBUG
         JITDUMP($"\nBashing COPY [{copy.TreeId:D6}]");
+#endif
 
         if (!hasSrcSideEffect)
         {
@@ -13328,7 +13343,10 @@ public partial class Compiler
             // the optimizer can trim things down to just the
             // minimal side effect parts.
             copyStmt.RootNode = copySrc;
+
+#if DEBUG
             JITDUMP($" to scalar read via [{copySrc.TreeId:D6}]\n");
+#endif
         }
         else
         {
@@ -13339,7 +13357,9 @@ public partial class Compiler
 
             if (options is BR_REMOVE_AND_NARROW or BR_REMOVE_AND_NARROW_WANT_TYPE_HANDLE)
             {
+#if DEBUG
                 JITDUMP($" to read first byte of struct via modified [{copySrc.TreeId:D6}]\n");
+#endif
 
                 if (copySrc.Oper is GT_IND)
                 {
@@ -13355,7 +13375,9 @@ public partial class Compiler
             }
             else
             {
+#if DEBUG
                 JITDUMP($" to read entire struct via modified [{copySrc.TreeId:D6}]\n");
+#endif
             }
         }
 
