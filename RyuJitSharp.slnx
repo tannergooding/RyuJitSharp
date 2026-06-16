@@ -48,6 +48,9 @@
   <Folder Name="/sources/Core/">
     <Project Path="sources/Core/RyuJitSharp.csproj" />
   </Folder>
+  <Folder Name="/sources/GenerateTables/">
+    <Project Path="sources/GenerateTables/GenerateTables.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <File Path="tests/Directory.Build.props" />
     <File Path="tests/Directory.Build.targets" />
