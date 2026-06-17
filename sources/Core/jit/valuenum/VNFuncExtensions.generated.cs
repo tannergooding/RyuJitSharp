@@ -9,7 +9,7 @@ namespace RyuJitSharp;
 
 public static partial class VNFuncExtensions
 {
-    internal static readonly ValueNumStore.VNFOpAttrib[] s_attribs = [
+    private static readonly ValueNumStore.VNFOpAttrib[] s_attribs = [
         ValueNumStore.GetOpAttribsForGenTree(GT_NONE, commute: false, illegalAsVNFunc: false, GT_NONE.Kind), // VNF_NONE
         ValueNumStore.GetOpAttribsForGenTree(GT_PHI, commute: false, illegalAsVNFunc: false, GT_PHI.Kind), // VNF_PHI
         ValueNumStore.GetOpAttribsForGenTree(GT_PHI_ARG, commute: false, illegalAsVNFunc: false, GT_PHI_ARG.Kind), // VNF_PHI_ARG

@@ -9,7 +9,7 @@ namespace RyuJitSharp;
 
 public partial class GenTree
 {
-    internal static ReadOnlySpan<HandleKindFlag> s_handleKindFlags => [
+    private static ReadOnlySpan<HandleKindFlag> s_handleKindFlags => [
         HKF_INVARIANT, // GTF_ICON_SCOPE_HDL
         HKF_INVARIANT, // GTF_ICON_CLASS_HDL
         HKF_INVARIANT, // GTF_ICON_METHOD_HDL

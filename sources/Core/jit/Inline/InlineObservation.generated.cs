@@ -5,7 +5,6 @@
 
 namespace RyuJitSharp;
 
-/// <summary>Describes the set of possible inline observations.</summary>
 public enum InlineObservation
 {
     CALLEE_UNUSED_INITIAL,

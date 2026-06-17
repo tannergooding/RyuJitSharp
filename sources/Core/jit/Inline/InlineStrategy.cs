@@ -168,6 +168,22 @@ public sealed class InlineStrategy
         }
     }
 
+    /// <summary>return true if an inline of this size would likely exceed the jit time budget for this method</summary>
+    /// <param name="ilSize">size of the method's IL</param>
+    /// <returns>true if the inline would go over budget</returns>
+    /// <remarks>Presumes all IL in the method will be imported.</remarks>
+    public bool BudgetCheck(int ilSize)
+    {
+        var timeDelta = EstimateInlineTime(ilSize);
+        var result = (timeDelta + _currentTimeEstimate) > _currentTimeBudget;
+
+        if (result)
+        {
+            JITDUMP($"\nBudgetCheck: for IL Size {ilSize}, timeDelta {timeDelta} +  currentEstimate {_currentTimeEstimate} > currentBudget {_currentTimeBudget}\n");
+        }
+        return result;
+    }
+
     // Dump csv header for inline stats to indicated file.
     public static void DumpCsvHeader(StreamWriter streamWriter)
     {

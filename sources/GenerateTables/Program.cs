@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
@@ -16,6 +17,7 @@ internal static class Program
     {
         Directory.Delete(@"Outputs", recursive: true);
 
+        GenerateCodeSeqSM();
         GenerateCompiler();
 
         GenerateGenTree();
@@ -26,6 +28,8 @@ internal static class Program
         GenerateHandleKindIndex();
         GenerateHWIntrinsicInfo();
 
+        GenerateInlineObservation();
+        GenerateInlineObservationExtensions();
         GenerateInstruction();
 
         GenerateJitConfigValues();
@@ -39,6 +43,9 @@ internal static class Program
         GeneratePhases();
         GeneratePhasesExtensions();
 
+        GenerateSmOpcode();
+        GenerateSmOpcodeExtensions();
+
         GenerateVarTypes();
         GenerateVarTypesExtensions();
 
@@ -46,6 +53,40 @@ internal static class Program
         GenerateVNFuncExtensions();
 
         ProcessInstructionSetDesc();
+    }
+
+    private static void GenerateCodeSeqSM()
+    {
+        var builder = ProcessMacroBasedFile(@"Inputs\smopcodemap.def", "OPCODEMAP(", (builder, inputFile, line, prefix, parts) => {
+            if (parts.Length != 3)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var opcode = parts[0].AsSpan().Trim();
+            var name = parts[2].AsSpan().Trim();
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {name}, // {opcode}");
+        });
+
+        _ = Directory.CreateDirectory(@"Outputs\jit\sm");
+
+        File.WriteAllText(@"Outputs\jit\sm\CodeSeqSM.generated.cs", $$"""
+// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+using System;
+
+namespace RyuJitSharp;
+
+public partial class CodeSeqSM
+{
+    private static ReadOnlySpan<SM_OPCODE> s_opcodeMap => [
+{{builder}}    ];
+}
+""");
     }
 
     private static void GenerateCompiler()
@@ -129,7 +170,7 @@ namespace RyuJitSharp;
 
 public partial class GenTree
 {
-    internal static ReadOnlySpan<HandleKindFlag> s_handleKindFlags => [
+    private static ReadOnlySpan<HandleKindFlag> s_handleKindFlags => [
 {{builder}}    ];
 }
 """);
@@ -215,23 +256,21 @@ public enum genTreeOps : byte
             var name = parts[0].AsSpan().Trim();
             var commutative = parts[2].AsSpan().Trim();
 
-            var part4 = parts[4].AsSpan().Trim();
+            var flags = parts[4].AsSpan().Trim();
 
-            if ((part4[0] == '(') && (part4[^1] == ')'))
+            if ((flags[0] == '(') && (flags[^1] == ')'))
             {
-                part4 = part4[1..^1].Trim();
+                flags = flags[1..^1].Trim();
             }
-            var flags = part4.ToString().Split('|');
 
-            Debug.Assert(flags.Length is not 0);
             Debug.Assert(commutative.Equals("0", StringComparison.Ordinal) || commutative.Equals("1", StringComparison.Ordinal));
 
             var separator = "        ";
             var count = 0;
 
-            for (var i = 0; i < flags.Length; i++)
+            foreach (var flagRange in flags.Split('|'))
             {
-                var flag = flags[i].AsSpan().Trim();
+                var flag = flags[flagRange].Trim();
 
                 if (flag.StartsWith("GTK_", StringComparison.Ordinal))
                 {
@@ -253,31 +292,28 @@ public enum genTreeOps : byte
             _ = builder.AppendLine(CultureInfo.InvariantCulture, $", // GT_{name}");
         });
 
-        var debugKindsBuilder = ProcessMacroBasedFile(@"Inputs\gtlist.h", "GTNODE(", (builder, inputFile, line, prefix, parts) => {
+        var debugKindsBuilder = ProcessMacroBasedFile(@"Inputs\gtlist.h", "GTNODE(", (Action<StringBuilder, string, string, string, string[]>)((builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 5)
             {
                 throw new InvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].Trim();
-            var part4 = parts[4].AsSpan().Trim();
+            var flags = parts[4].AsSpan().Trim();
 
-            if ((part4[0] == '(') && (part4[^1] == ')'))
+            if ((flags[0] == '(') && (flags[^1] == ')'))
             {
-                part4 = part4[1..^1].Trim();
+                flags = flags[1..^1].Trim();
             }
-            var flags = part4.ToString().Split('|');
-
-            Debug.Assert(flags.Length is not 0);
 
             var separator = "        ";
             var count = 0;
 
-            for (var i = 0; i < flags.Length; i++)
+            foreach (var flagRange in flags.Split('|'))
             {
-                var flag = flags[i].AsSpan().Trim();
+                var flag = flags[flagRange].Trim();
 
-                if (flag.StartsWith("DBK_", StringComparison.Ordinal))
+                if (MemoryExtensions.StartsWith(flag, "DBK_", StringComparison.Ordinal))
                 {
                     _ = builder.Append(CultureInfo.InvariantCulture, $"{separator}{flag}");
                     separator = " | ";
@@ -285,7 +321,7 @@ public enum genTreeOps : byte
                 }
                 else
                 {
-                    Debug.Assert(flag.StartsWith("GTK_"));
+                    Debug.Assert(MemoryExtensions.StartsWith<char>(flag, (ReadOnlySpan<char>)"GTK_"));
                 }
             }
 
@@ -297,7 +333,7 @@ public enum genTreeOps : byte
             {
                 _ = builder.AppendLine(CultureInfo.InvariantCulture, $", // GT_{name}");
             }
-        });
+        }));
 
         var namesBuilder = ProcessMacroBasedFile(@"Inputs\gtlist.h", "GTNODE(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 5)
@@ -542,22 +578,19 @@ public enum HandleKindIndex
             var isa = parts[0].AsSpan().Trim();
             var name = parts[1].AsSpan().Trim();
 
-            var part17 = parts[(parts.Length is 18) ? 17 : 15].AsSpan().Trim();
+            var flags = parts[(parts.Length is 18) ? 17 : 15].AsSpan().Trim();
 
-            if ((part17[0] == '(') && (part17[^1] == ')'))
+            if ((flags[0] == '(') && (flags[^1] == ')'))
             {
-                part17 = part17[1..^1].Trim();
+                flags = flags[1..^1].Trim();
             }
-            var flags = part17.ToString().Split('|');
-
-            Debug.Assert(flags.Length is not 0);
 
             var separator = "        ";
             var count = 0;
 
-            for (var i = 0; i < flags.Length; i++)
+            foreach (var flagRange in flags.Split('|'))
             {
-                var flag = flags[i].AsSpan().Trim();
+                var flag = flags[flagRange].Trim();
 
                 _ = builder.Append(CultureInfo.InvariantCulture, $"{separator}{flag}");
                 separator = " | ";
@@ -617,6 +650,102 @@ public partial struct HWIntrinsicInfo
     private static ReadOnlySpan<byte> s_simdSizes => [
 {{simdSizeBuilder}}
     ];
+}
+""");
+    }
+
+    private static void GenerateInlineObservation()
+    {
+        var builder = ProcessMacroBasedFile(@"Inputs\inline.def", "INLINE_OBSERVATION(", (builder, inputFile, line, prefix, parts) => {
+            if (parts.Length != 5)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var name = parts[0].AsSpan().Trim();
+            var scope = parts[4].AsSpan().Trim();
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    {scope}_{name},");
+        });
+
+        _ = Directory.CreateDirectory(@"Outputs\jit\inline");
+
+        File.WriteAllText(@"Outputs\jit\inline\InlineObservation.generated.cs", $$"""
+// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+namespace RyuJitSharp;
+
+public enum InlineObservation
+{
+{{builder}}}
+""");
+    }
+
+    private static void GenerateInlineObservationExtensions()
+    {
+        var descriptionsBuilder = ProcessMacroBasedFile(@"Inputs\inline.def", "INLINE_OBSERVATION(", (builder, inputFile, line, prefix, parts) => {
+            if (parts.Length != 5)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var name = parts[0].AsSpan().Trim();
+            var description = parts[2].AsSpan().Trim();
+            var scope = parts[4].AsSpan().Trim();
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {description}, // {scope}_{name}");
+        });
+
+        var targetsBuilder = ProcessMacroBasedFile(@"Inputs\inline.def", "INLINE_OBSERVATION(", (builder, inputFile, line, prefix, parts) => {
+            if (parts.Length != 5)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var name = parts[0].AsSpan().Trim();
+            var scope = parts[4].AsSpan().Trim();
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        InlineTarget.{scope}, // {scope}_{name}");
+        });
+
+        var impactsBuilder = ProcessMacroBasedFile(@"Inputs\inline.def", "INLINE_OBSERVATION(", (builder, inputFile, line, prefix, parts) => {
+            if (parts.Length != 5)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var name = parts[0].AsSpan().Trim();
+            var impact = parts[3].AsSpan().Trim();
+            var scope = parts[4].AsSpan().Trim();
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        InlineImpact.{impact}, // {scope}_{name}");
+        });
+
+        _ = Directory.CreateDirectory(@"Outputs\jit\inline");
+
+        File.WriteAllText(@"Outputs\jit\inline\InlineObservationExtensions.generated.cs", $$"""
+// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+using System;
+
+namespace RyuJitSharp;
+
+public static partial class InlineObservationExtensions
+{
+    private static readonly string[] s_descriptions = [
+{{descriptionsBuilder}}    ];
+
+    private static ReadOnlySpan<InlineImpact> s_impacts => [
+{{impactsBuilder}}    ];
+
+    private static ReadOnlySpan<InlineTarget> s_targets => [
+{{targetsBuilder}}    ];
 }
 """);
     }
@@ -1507,16 +1636,229 @@ public static partial class PhasesExtensions
 #endif
 
 #if FEATURE_JIT_METHOD_PERF
-    public static ReadOnlySpan<bool> s_hasChildren => [
+    private static ReadOnlySpan<bool> s_hasChildren => [
 {{hasChildrenBuilder}}    ];
 
-    public static ReadOnlySpan<Phases> s_parents => [
+    private static ReadOnlySpan<Phases> s_parents => [
 {{parentsBuilder}}    ];
 
-    public static ReadOnlySpan<bool> s_reportsIRSize => [
+    private static ReadOnlySpan<bool> s_reportsIRSize => [
 {{reportsIRSizeBuilder}}    ];
 #endif
 }
+""");
+    }
+
+    private static void GenerateSmOpcode()
+    {
+        var builder = ProcessMacroBasedFile(@"Inputs\smopcode.def", "SMOPDEF(", (builder, inputFile, line, prefix, parts) => {
+            if (parts.Length != 2)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var name = parts[0].AsSpan().Trim();
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    {name},");
+        });
+
+        _ = Directory.CreateDirectory(@"Outputs\jit\smopenum");
+
+        File.WriteAllText(@"Outputs\jit\smopenum\SM_OPCODE.generated.cs", $$"""
+// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+global using static RyuJitSharp.SM_OPCODE;
+
+namespace RyuJitSharp;
+
+public enum SM_OPCODE
+{
+{{builder}}    SM_COUNT,
+}
+""");
+    }
+
+    private static void GenerateSmOpcodeExtensions()
+    {
+        var namesBuilder = ProcessMacroBasedFile(@"Inputs\smopcode.def", "SMOPDEF(", (builder, inputFile, line, prefix, parts) => {
+            if (parts.Length != 2)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var name = parts[0].AsSpan().Trim();
+            var nameString = parts[1].AsSpan().Trim();
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {nameString}, // {name}");
+        });
+
+        var codeSeqsBuilder = ProcessMacroBasedFile(@"Inputs\smopcode.def", "SMOPDEF(", (builder, inputFile, line, prefix, parts) => {
+            if (parts.Length != 2)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var name = parts[0].AsSpan().Trim();
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {name}, CODE_SEQUENCE_END,");
+        });
+
+        _ = Directory.CreateDirectory(@"Outputs\jit\smopenum");
+
+        File.WriteAllText(@"Outputs\jit\smopenum\SM_OPCODEExtensions.generated.cs", $$"""
+// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+#if DEBUG || SMGEN_COMPILE
+using System;
+
+namespace RyuJitSharp;
+
+public static partial class SM_OPCODEExtensions
+{
+    private static ReadOnlySpan<SM_OPCODE> s_codeSeqs => [
+        // ==== Single opcode states ====
+{{codeSeqsBuilder}}
+        // ==== Legel prefixed opcode sequences ====
+        SM_CONSTRAINED, SM_CALLVIRT, CODE_SEQUENCE_END,
+        
+        // ==== Interesting patterns ====
+        
+        // Fetching of object field
+        SM_LDARG_0, SM_LDFLD, CODE_SEQUENCE_END,
+        SM_LDARG_1, SM_LDFLD, CODE_SEQUENCE_END,
+        SM_LDARG_2, SM_LDFLD, CODE_SEQUENCE_END,
+        SM_LDARG_3, SM_LDFLD, CODE_SEQUENCE_END,
+        
+        // Fetching of struct field
+        SM_LDARGA_S, SM_LDFLD, CODE_SEQUENCE_END,
+        SM_LDLOCA_S, SM_LDFLD, CODE_SEQUENCE_END,
+        
+        // Fetching of struct field from a normed struct
+        SM_LDARGA_S_NORMED, SM_LDFLD, CODE_SEQUENCE_END,
+        SM_LDLOCA_S_NORMED, SM_LDFLD, CODE_SEQUENCE_END,
+        
+        // stloc/ldloc --> dup
+        SM_STLOC_0, SM_LDLOC_0, CODE_SEQUENCE_END,
+        SM_STLOC_1, SM_LDLOC_1, CODE_SEQUENCE_END,
+        SM_STLOC_2, SM_LDLOC_2, CODE_SEQUENCE_END,
+        SM_STLOC_3, SM_LDLOC_3, CODE_SEQUENCE_END,
+        
+        // FPU operations
+        SM_LDC_R4, SM_ADD, CODE_SEQUENCE_END,
+        SM_LDC_R4, SM_SUB, CODE_SEQUENCE_END,
+        SM_LDC_R4, SM_MUL, CODE_SEQUENCE_END,
+        SM_LDC_R4, SM_DIV, CODE_SEQUENCE_END,
+        
+        SM_LDC_R8, SM_ADD, CODE_SEQUENCE_END,
+        SM_LDC_R8, SM_SUB, CODE_SEQUENCE_END,
+        SM_LDC_R8, SM_MUL, CODE_SEQUENCE_END,
+        SM_LDC_R8, SM_DIV, CODE_SEQUENCE_END,
+        
+        SM_CONV_R4, SM_ADD, CODE_SEQUENCE_END,
+        SM_CONV_R4, SM_SUB, CODE_SEQUENCE_END,
+        SM_CONV_R4, SM_MUL, CODE_SEQUENCE_END,
+        SM_CONV_R4, SM_DIV, CODE_SEQUENCE_END,
+        
+        // {SM_CONV_R8,       SM_ADD,        CODE_SEQUENCE_END},  // Removed since it collides with ldelem.r8 in
+        // Math.InternalRound
+        // {SM_CONV_R8,       SM_SUB,        CODE_SEQUENCE_END},  // Just remove the SM_SUB as well.
+        SM_CONV_R8, SM_MUL, CODE_SEQUENCE_END,
+        SM_CONV_R8, SM_DIV, CODE_SEQUENCE_END,
+        
+        // Constant init constructor:
+        //  L_0006: ldarg.0
+        //  L_0007: ldc.r8 0
+        //  L_0010: stfld float64 raytracer.Vec::x
+
+        SM_LDARG_0, SM_LDC_I4_0, SM_STFLD, CODE_SEQUENCE_END,
+        SM_LDARG_0, SM_LDC_R4, SM_STFLD, CODE_SEQUENCE_END,
+        SM_LDARG_0, SM_LDC_R8, SM_STFLD, CODE_SEQUENCE_END,
+        
+        // Copy constructor:
+        //  L_0006: ldarg.0
+        //  L_0007: ldarg.1
+        //  L_0008: ldfld float64 raytracer.Vec::x
+        //  L_000d: stfld float64 raytracer.Vec::x
+
+        SM_LDARG_0, SM_LDARG_1, SM_LDFLD, SM_STFLD, CODE_SEQUENCE_END,
+        
+        // Field setter:
+        //  [DebuggerNonUserCode]
+        //  private void CtorClosed(object target, IntPtr methodPtr)
+        //  {
+        //      if (target == null)
+        //      {
+        //          this.ThrowNullThisInDelegateToInstance();
+        //      }
+        //      base._target = target;
+        //      base._methodPtr = methodPtr;
+        //  }
+        //
+        //
+        //  .method private hidebysig instance void CtorClosed(object target, native int methodPtr) cil managed
+        //  {
+        //      .custom instance void System.Diagnostics.DebuggerNonUserCodeAttribute::.ctor()
+        //      .maxstack 8
+        //      L_0000: ldarg.1
+        //      L_0001: brtrue.s L_0009
+        //      L_0003: ldarg.0
+        //      L_0004: call instance void System.MulticastDelegate::ThrowNullThisInDelegateToInstance()
+        //
+        //      L_0009: ldarg.0
+        //      L_000a: ldarg.1
+        //      L_000b: stfld object System.Delegate::_target
+        //
+        //      L_0010: ldarg.0
+        //      L_0011: ldarg.2
+        //      L_0012: stfld native int System.Delegate::_methodPtr
+        //
+        //      L_0017: ret
+        //  }
+        
+        SM_LDARG_0, SM_LDARG_1, SM_STFLD, CODE_SEQUENCE_END,
+        SM_LDARG_0, SM_LDARG_2, SM_STFLD, CODE_SEQUENCE_END,
+        SM_LDARG_0, SM_LDARG_3, SM_STFLD, CODE_SEQUENCE_END,
+        
+        // Scale operator:
+        //  L_0000: ldarg.0
+        //  L_0001: dup
+        //  L_0002: ldfld float64 raytracer.Vec::x
+        //  L_0007: ldarg.1
+        //  L_0008: mul
+        //  L_0009: stfld float64 raytracer.Vec::x
+        
+        SM_LDARG_0, SM_DUP, SM_LDFLD, SM_LDARG_1, SM_ADD, SM_STFLD, CODE_SEQUENCE_END,
+        SM_LDARG_0, SM_DUP, SM_LDFLD, SM_LDARG_1, SM_SUB, SM_STFLD, CODE_SEQUENCE_END,
+        SM_LDARG_0, SM_DUP, SM_LDFLD, SM_LDARG_1, SM_MUL, SM_STFLD, CODE_SEQUENCE_END,
+        SM_LDARG_0, SM_DUP, SM_LDFLD, SM_LDARG_1, SM_DIV, SM_STFLD, CODE_SEQUENCE_END,
+        
+        // Add operator
+        //  L_0000: ldarg.0
+        //  L_0001: ldfld float64 raytracer.Vec::x
+        //  L_0006: ldarg.1
+        //  L_0007: ldfld float64 raytracer.Vec::x
+        //  L_000c: add
+        
+        SM_LDARG_0, SM_LDFLD, SM_LDARG_1, SM_LDFLD, SM_ADD, CODE_SEQUENCE_END,
+        SM_LDARG_0, SM_LDFLD, SM_LDARG_1, SM_LDFLD, SM_SUB, CODE_SEQUENCE_END,
+        // No need for mul and div since there is no mathemetical meaning of it.
+        
+        SM_LDARGA_S, SM_LDFLD, SM_LDARGA_S, SM_LDFLD, SM_ADD, CODE_SEQUENCE_END,
+        SM_LDARGA_S, SM_LDFLD, SM_LDARGA_S, SM_LDFLD, SM_SUB, CODE_SEQUENCE_END,
+        // No need for mul and div since there is no mathemetical meaning of it.
+
+        // The end:
+        CODE_SEQUENCE_END,
+    ];
+
+    private static readonly string[] s_names = [
+{{namesBuilder}}    ];
+}
+#endif
 """);
     }
 
@@ -1891,7 +2233,7 @@ namespace RyuJitSharp;
 
 public static partial class VNFuncExtensions
 {
-    internal static readonly ValueNumStore.VNFOpAttrib[] s_attribs = [
+    private static readonly ValueNumStore.VNFOpAttrib[] s_attribs = [
 {{builder1}}        0, // VNF_Boundary
 {{builder2}}    ];
 }
@@ -2539,13 +2881,12 @@ public partial class Globals
                         }
                     }
 
-                    var conditions = trimmedLine.ToString().Split(' ');
                     var separator = "";
                     var conditionBuilder = new StringBuilder();
 
-                    for (var i = 0; i < conditions.Length; i++)
+                    foreach (var conditionRange in trimmedLine.Split(' '))
                     {
-                        var condition = conditions[i].AsSpan().Trim();
+                        var condition = trimmedLine[conditionRange].Trim();
 
                         if ((condition[0] == '(') && (condition[^1] == ')'))
                         {
@@ -2555,7 +2896,7 @@ public partial class Globals
                         {
                             condition = condition[2..^1];
 
-                            if (i == 0)
+                            if (string.IsNullOrEmpty(separator))
                             {
                                 directive += '!';
                             }
@@ -2769,7 +3110,40 @@ public partial class Globals
         }
 
         macro = macro[..macroEnd];
-        parts = macro.ToString().Split(',');
+
+        var partsBuilder = ImmutableArray.CreateBuilder<string>(initialCapacity: 32);
+        var builder = null as StringBuilder;
+
+        foreach (var partRange in macro.Split(','))
+        {
+            var part = macro[partRange];
+            var trimmedPart = part.Trim();
+
+            if (builder is null)
+            {
+                if (trimmedPart.StartsWith('"') && !trimmedPart.EndsWith('"'))
+                {
+                    builder = new StringBuilder();
+                    _ = builder.Append(part.TrimStart());
+                }
+                else
+                {
+                    partsBuilder.Add(trimmedPart.ToString());
+                }
+            }
+            else if (trimmedPart.EndsWith('"'))
+            {
+                _ = builder.Append(CultureInfo.InvariantCulture, $",{part.TrimEnd()}");
+                partsBuilder.Add(builder.ToString());
+                builder = null;
+            }
+            else
+            {
+                _ = builder.Append(CultureInfo.InvariantCulture, $",{part}");
+            }
+        }
+
+        parts = partsBuilder.ToArray();
         return true;
     }
 }

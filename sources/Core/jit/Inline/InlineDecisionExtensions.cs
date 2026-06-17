@@ -29,5 +29,15 @@ public static class InlineDecisionExtensions
 
         /// <summary>check if this decision describes a successful inline</summary>
         public bool IsSuccess => decision is InlineDecision.SUCCESS;
+
+        /// <summary>get a string representing this decision</summary>
+        public string String => decision switch {
+            InlineDecision.SUCCESS => "success",
+            InlineDecision.FAILURE => "failed this call site",
+            InlineDecision.NEVER => "failed this callee",
+            InlineDecision.CANDIDATE => "candidate",
+            InlineDecision.UNDECIDED => "undecided",
+            _ => "unexpected decision",
+        };
     }
 }

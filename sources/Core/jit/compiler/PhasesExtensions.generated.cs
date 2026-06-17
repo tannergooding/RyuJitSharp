@@ -142,7 +142,7 @@ public static partial class PhasesExtensions
 #endif
 
 #if FEATURE_JIT_METHOD_PERF
-    public static ReadOnlySpan<bool> s_hasChildren => [
+    private static ReadOnlySpan<bool> s_hasChildren => [
         false, // PHASE_PRE_IMPORT
         false, // PHASE_IMPORTATION
         false, // PHASE_INDXCALL
@@ -272,7 +272,7 @@ public static partial class PhasesExtensions
 #endif
     ];
 
-    public static ReadOnlySpan<Phases> s_parents => [
+    private static ReadOnlySpan<Phases> s_parents => [
         (Phases)(-1), // PHASE_PRE_IMPORT
         (Phases)(-1), // PHASE_IMPORTATION
         (Phases)(-1), // PHASE_INDXCALL
@@ -402,7 +402,7 @@ public static partial class PhasesExtensions
 #endif
     ];
 
-    public static ReadOnlySpan<bool> s_reportsIRSize => [
+    private static ReadOnlySpan<bool> s_reportsIRSize => [
         false, // PHASE_PRE_IMPORT
         true, // PHASE_IMPORTATION
         true, // PHASE_INDXCALL
