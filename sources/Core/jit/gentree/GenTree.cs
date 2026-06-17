@@ -5,37 +5,12 @@
 
 using System;
 using System.Diagnostics;
-using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
 
 public partial class GenTree
 {
-    public static ReadOnlySpan<HandleKindFlag> s_handleKindFlags => [
-        HKF_INVARIANT,                  // GTF_ICON_SCOPE_HDL
-        HKF_INVARIANT,                  // GTF_ICON_CLASS_HDL
-        HKF_INVARIANT,                  // GTF_ICON_METHOD_HDL
-        HKF_INVARIANT,                  // GTF_ICON_FIELD_HDL
-        0,                              // GTF_ICON_STATIC_HDL
-        HKF_INVARIANT | HKF_NONNULL,    // GTF_ICON_STR_HDL
-        0,                              // GTF_ICON_OBJ_HDL
-        HKF_INVARIANT,                  // GTF_ICON_CONST_PTR
-        0,                              // GTF_ICON_GLOBAL_PTR
-        HKF_INVARIANT,                  // GTF_ICON_VARG_HDL
-        0,                              // GTF_ICON_PINVKI_HDL
-        HKF_INVARIANT,                  // GTF_ICON_TOKEN_HDL
-        HKF_INVARIANT,                  // GTF_ICON_TLS_HDL
-        0,                              // GTF_ICON_FTN_ADDR
-        HKF_INVARIANT,                  // GTF_ICON_CIDMID_HDL
-        0,                              // GTF_ICON_BBC_PTR
-        0,                              // GTF_ICON_STATIC_BOX_PTR
-        0,                              // GTF_ICON_FIELD_SEQ
-        HKF_INVARIANT | HKF_NONNULL,    // GTF_ICON_STATIC_ADDR_PTR
-        HKF_INVARIANT,                  // GTF_ICON_SECREL_OFFSET
-        HKF_INVARIANT,                  // GTF_ICON_TLSGD_OFFSET
-    ];
-
     internal genTreeOps _oper;
 
     internal var_types _type;

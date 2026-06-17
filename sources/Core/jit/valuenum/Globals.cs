@@ -13,4 +13,12 @@ public partial class Globals
 
     // This is the constant value used for the default value of _mapSelectBudget. used by JitVNMapSelBudget
     public const int DEFAULT_MAP_SELECT_BUDGET = 100;
+
+#if TARGET_XARCH
+    public const VNFunc VNF_HWI_FIRST = VNF_HWI_Vector128_Abs;
+    public const VNFunc VNF_HWI_LAST = VNF_HWI_AVX512_XnorMask;
+#elif TARGET_ARM64
+    public const VNFunc VNF_HWI_FIRST = VNF_HWI_Vector64_Abs;
+    public const VNFunc VNF_HWI_LAST = VNF_HWI_Sve_ReverseElement_Predicates;
+#endif
 }

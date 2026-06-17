@@ -240,7 +240,7 @@ public partial class Compiler
         assert(compCurBB is not null);
 
         // Only mark calls if the feature is enabled.
-        var isEnabled = JitConfig[ConfigInteger.JitEnableGuardedDevirtualization] > 0;
+        var isEnabled = JitConfig.JitEnableGuardedDevirtualization > 0;
 
         if (!isEnabled)
         {
@@ -274,7 +274,7 @@ public partial class Compiler
 #if DEBUG
         // See if disabled by range
 
-        s_jitGuardedDevirtualizationRange.EnsureInit(JitConfig[ConfigString.JitGuardedDevirtualizationRange]);
+        s_jitGuardedDevirtualizationRange.EnsureInit(JitConfig.JitGuardedDevirtualizationRange);
         assert(!s_jitGuardedDevirtualizationRange.Error);
 
         if (!s_jitGuardedDevirtualizationRange.Contains(impInlineRoot.info.compMethodHash()))
@@ -431,7 +431,7 @@ public partial class Compiler
         // where we know the exact number of classes implementing the given base in compile-time.
         // For now, let's only do this when we don't have any PGO data. In future, we should be able to benefit
         // from both.
-        if (!hasPgoData && (baseClass != NO_CLASS_HANDLE) && (JitConfig[ConfigInteger.JitEnableExactDevirtualization] is not 0))
+        if (!hasPgoData && (baseClass != NO_CLASS_HANDLE) && (JitConfig.JitEnableExactDevirtualization is not 0))
         {
             var maxTypeChecks = int.Min(GetGdvMaxTypeChecks(), MAX_GDV_TYPE_CHECKS);
 
@@ -650,7 +650,7 @@ public partial class Compiler
 
     public unsafe int GetGdvMaxTypeChecks()
     {
-        var typeChecks = JitConfig[ConfigInteger.JitGuardedDevirtualizationMaxTypeChecks];
+        var typeChecks = JitConfig.JitGuardedDevirtualizationMaxTypeChecks;
 
         if (typeChecks < 0)
         {
@@ -1381,7 +1381,7 @@ public partial class Compiler
             call._castHelperILOffset = ilOffset;
 
             // Instrument this castclass/isinst
-            if ((JitConfig[ConfigInteger.JitClassProfiling] > 0) && impIsCastHelperEligibleForClassProbe(call) && !isClassExact && !compCurBB.isRunRarely)
+            if ((JitConfig.JitClassProfiling > 0) && impIsCastHelperEligibleForClassProbe(call) && !isClassExact && !compCurBB.isRunRarely)
             {
                 // It doesn't make sense to instrument "x is T" or "(T)x" for shared T
                 if (!eeIsSharedInst(resolvedToken.hClass))
@@ -1488,7 +1488,7 @@ public partial class Compiler
             // Cache some frequently accessed state.
             var compCompHnd = info.compCompHnd;
 
-            if (JitConfig[ConfigInteger.JitNoInline] is not 0)
+            if (JitConfig.JitNoInline is not 0)
             {
                 inlineResult.NoteFatal(InlineObservation.CALLEE_IS_JIT_NOINLINE);
                 return;
@@ -2240,7 +2240,7 @@ public partial class Compiler
 
 #if DEBUG
         // Bail if devirt is disabled.
-        if (JitConfig[ConfigInteger.JitEnableDevirtualization] is 0)
+        if (JitConfig.JitEnableDevirtualization is 0)
         {
             exactContextHandle = null;
             return;
@@ -2483,7 +2483,7 @@ public partial class Compiler
             // If we know the object type exactly, we generally expect we can devirtualize.
             // (don't when doing late devirt as we won't have an owner type (yet))
 
-            if (!isLateDevirtualization && (isExact || objClassIsFinal) && (JitConfig[ConfigInteger.JitNoteFailedExactDevirtualization] is not 0))
+            if (!isLateDevirtualization && (isExact || objClassIsFinal) && (JitConfig.JitNoteFailedExactDevirtualization is not 0))
             {
                 jitprintf($"@@@ Exact/Final devirt failure in {info.compFullName} at [{call.TreeId:D6}] $ {DevirtualizationDetailToString(dvInfo.detail)}\n");
             }
@@ -2577,7 +2577,7 @@ public partial class Compiler
 
 #if DEBUG
         // Re-use JitRandomGuardedDevirtualization for stress-testing.
-        var jitRandomGuardedDevirtualization = JitConfig[ConfigInteger.JitRandomGuardedDevirtualization];
+        var jitRandomGuardedDevirtualization = JitConfig.JitRandomGuardedDevirtualization;
 
         if (jitRandomGuardedDevirtualization is not 0)
         {
@@ -5097,12 +5097,12 @@ public partial class Compiler
         impBeginTreeList();
 
 #if FEATURE_ON_STACK_REPLACEMENT
-        var enableOSR = !opts.compDbgCode && opts.jitFlags->IsSet(JitFlags.JIT_FLAG_TIER0) && (JitConfig[ConfigInteger.TC_OnStackReplacement] > 0);
-        var enablePartialCompilation = opts.jitFlags->IsSet(JitFlags.JIT_FLAG_TIER0) && (JitConfig[ConfigInteger.TC_PartialCompilation] > 0);
+        var enableOSR = !opts.compDbgCode && opts.jitFlags->IsSet(JitFlags.JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement > 0);
+        var enablePartialCompilation = opts.jitFlags->IsSet(JitFlags.JIT_FLAG_TIER0) && (JitConfig.TC_PartialCompilation > 0);
 
 #if DEBUG
         // Optionally suppress patchpoints by method hash
-        s_jitEnablePatchpointRange.EnsureInit(JitConfig[ConfigString.JitEnablePatchpointRange]);
+        s_jitEnablePatchpointRange.EnsureInit(JitConfig.JitEnablePatchpointRange);
 
         var inRange = s_jitEnablePatchpointRange.Contains(impInlineRoot.info.compMethodHash());
         enableOSR &= inRange;
@@ -5139,7 +5139,7 @@ public partial class Compiler
                     // is truly a backedge source (and not in a handler) then we should be
                     // able to find a stack empty point somewhere in the block.
 
-                    var patchpointStrategy = JitConfig[ConfigInteger.TC_PatchpointStrategy];
+                    var patchpointStrategy = JitConfig.TC_PatchpointStrategy;
                     var addPatchpoint = false;
                     var mustUseTargetPatchpoint = false;
 
@@ -5260,8 +5260,8 @@ public partial class Compiler
             //
             // Todo: enable for mid-block stack empty points too.
             //
-            var offsetOSR = JitConfig[ConfigInteger.JitOffsetOnStackReplacement];
-            var randomOSR = JitConfig[ConfigInteger.JitRandomOnStackReplacement];
+            var offsetOSR = JitConfig.JitOffsetOnStackReplacement;
+            var randomOSR = JitConfig.JitRandomOnStackReplacement;
             var tryOffsetOSR = offsetOSR >= 0;
             var tryRandomOSR = randomOSR > 0;
 
@@ -5327,7 +5327,7 @@ public partial class Compiler
 #if DEBUG
             // Stress mode
             var reason = "rarely run";
-            var randomPartialCompilation = JitConfig[ConfigInteger.JitRandomPartialCompilation];
+            var randomPartialCompilation = JitConfig.JitRandomPartialCompilation;
 
             if (randomPartialCompilation > 0)
             {
@@ -7598,7 +7598,7 @@ public partial class Compiler
                     var awaitOffset = BAD_IL_OFFSET;
 
 #if DEBUG
-                    if (compIsAsync && (JitConfig[ConfigInteger.JitDoOptimizeAwait] is not 0))
+                    if (compIsAsync && (JitConfig.JitOptimizeAwait is not 0))
 #else
                     if (compIsAsync)
 #endif
@@ -8497,7 +8497,7 @@ public partial class Compiler
                         // Under SPMI, look up info we might ask for if we stack allocate this array,
                         // but only if we know the precise type
                         //
-                        if ((JitConfig[ConfigInteger.EnableExtraSuperPmiQueries] is not 0) && !eeIsSharedInst(resolvedToken.hClass))
+                        if ((JitConfig.EnableExtraSuperPmiQueries is not 0) && !eeIsSharedInst(resolvedToken.hClass))
                         {
                             void* pEmbedClsHnd;
                             info.compCompHnd->embedClassHandle(resolvedToken.hClass, &pEmbedClsHnd);
@@ -8574,7 +8574,7 @@ public partial class Compiler
 
 #if DEBUG
                             // Optionally allow this to be modified
-                            maxSize = JitConfig[ConfigInteger.JitStackAllocToLocalSize];
+                            maxSize = JitConfig.JitStackAllocToLocalSize;
 #endif
 
                             if (allocSize <= maxSize)
@@ -12928,7 +12928,7 @@ public partial class Compiler
     /// <returns>true if the tree is a cast helper eligible to be profiled</returns>
     public bool impIsCastHelperEligibleForClassProbe(GenTree tree)
     {
-        if (!opts.IsInstrumented || (JitConfig[ConfigInteger.JitProfileCasts] is not 1))
+        if (!opts.IsInstrumented || (JitConfig.JitProfileCasts is not 1))
         {
             return false;
         }
@@ -12965,7 +12965,7 @@ public partial class Compiler
 
     public unsafe bool impIsCastHelperMayHaveProfileData(CorInfoHelpFunc helper)
     {
-        if ((JitConfig[ConfigInteger.JitConsumeProfileForCasts] is not 1) || !opts.jitFlags->IsSet(JitFlags.JIT_FLAG_BBOPT))
+        if ((JitConfig.JitConsumeProfileForCasts is not 1) || !opts.jitFlags->IsSet(JitFlags.JIT_FLAG_BBOPT))
         {
             return false;
         }
@@ -16386,7 +16386,7 @@ public partial class Compiler
         call.SetIsAsync(asyncInfo);
 
 #if DEBUG
-        if ((JitConfig[ConfigInteger.EnableExtraSuperPmiQueries] is not 0) && (call._callType is CT_USER_FUNC))
+        if ((JitConfig.EnableExtraSuperPmiQueries is not 0) && (call._callType is CT_USER_FUNC))
         {
             // Query the async variants (twice, to get both directions)
             var method = call._callMethHnd;
@@ -17864,7 +17864,7 @@ public partial class Compiler
 #if DEBUG
         // Optionally, print info on devirtualization
         var rootCompiler = impInlineRoot;
-        var doPrint = JitConfig[ConfigMethodSet.JitPrintDevirtualizedMethods].contains(rootCompiler.info.compMethodHnd, rootCompiler.info.compClassHnd, &rootCompiler.info.compMethodInfo->args);
+        var doPrint = JitConfig.JitPrintDevirtualizedMethods.contains(rootCompiler.info.compMethodHnd, rootCompiler.info.compClassHnd, &rootCompiler.info.compMethodInfo->args);
 
         if (doPrint)
         {
@@ -17919,7 +17919,7 @@ public partial class Compiler
         //
         var canSensiblyCheck = (dcInfo.objClassIsExact || dcInfo.objClassIsFinal) && (fgPgoSource is ICorJitInfo.PgoSource.Dynamic) && !compIsForInlining;
 
-        if ((JitConfig[ConfigInteger.JitCrossCheckDevirtualizationAndPGO] is not 0) && canSensiblyCheck)
+        if ((JitConfig.JitCrossCheckDevirtualizationAndPGO is not 0) && canSensiblyCheck)
         {
             // We only can handle a single likely class for now
 
@@ -19668,7 +19668,7 @@ public partial class Compiler
         }
 
 #if DEBUG
-        if ((verbose || (JitConfig[ConfigInteger.EnableExtraSuperPmiQueries] is not 0)) && (numberOfClasses > 0) && verboseLogging)
+        if ((verbose || (JitConfig.EnableExtraSuperPmiQueries is not 0)) && (numberOfClasses > 0) && verboseLogging)
         {
             JITDUMP($"Likely classes for call [{call.TreeId:D6}]");
 
@@ -19697,7 +19697,7 @@ public partial class Compiler
             }
         }
 
-        if ((verbose || (JitConfig[ConfigInteger.EnableExtraSuperPmiQueries] is not 0)) && (numberOfMethods > 0))
+        if ((verbose || (JitConfig.EnableExtraSuperPmiQueries is not 0)) && (numberOfMethods > 0))
         {
             assert(call._callType is CT_USER_FUNC);
 
@@ -19744,12 +19744,12 @@ public partial class Compiler
         }
 
         // Optional stress mode to pick a random known class, rather than the most likely known class.
-        if (JitConfig[ConfigInteger.JitRandomGuardedDevirtualization] is not 0)
+        if (JitConfig.JitRandomGuardedDevirtualization is not 0)
         {
             assert(impInlineRoot._inlineStrategy is not null);
 
             // Reuse the random inliner's random state.
-            var random = impInlineRoot._inlineStrategy.GetRandom(JitConfig[ConfigInteger.JitRandomGuardedDevirtualization]);
+            var random = impInlineRoot._inlineStrategy.GetRandom(JitConfig.JitRandomGuardedDevirtualization);
             var index = random.Next(numberOfClasses + numberOfMethods);
 
             if (index < numberOfClasses)

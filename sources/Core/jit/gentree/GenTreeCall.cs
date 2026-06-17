@@ -707,7 +707,7 @@ public sealed class GenTreeCall : GenTree
     /// <remarks>A call will be unmarked from devirtualization candidate if it is devirtualized.</remarks>
     public bool IsDevirtualizationCandidate(Compiler compiler)
     {
-        return IsVirtual || (IsGenericVirtual(compiler) && (JitConfig[ConfigInteger.JitEnableGenericVirtualDevirtualization] is not 0));
+        return IsVirtual || (IsGenericVirtual(compiler) && (JitConfig.JitEnableGenericVirtualDevirtualization is not 0));
     }
 
     public bool IsGenericVirtual(Compiler compiler)

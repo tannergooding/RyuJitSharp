@@ -1029,7 +1029,7 @@ public partial class Compiler
             return;
         }
 
-        if (JitConfig[ConfigInteger.TC_OnStackReplacement] == 0)
+        if (JitConfig.TC_OnStackReplacement == 0)
         {
             return;
         }
@@ -1506,12 +1506,12 @@ public partial class Compiler
         var inDefaultOrder = true;
 
         // Optionally sort
-        if (JitConfig[ConfigInteger.JitDumpFgBlockOrder] == 1)
+        if (JitConfig.JitDumpFgBlockOrder == 1)
         {
             fgBBOrder.Sort((bb1, bb2) => bb1.bbNum.CompareTo(bb2.bbNum));
             inDefaultOrder = false;
         }
-        else if (JitConfig[ConfigInteger.JitDumpFgBlockOrder] == 2)
+        else if (JitConfig.JitDumpFgBlockOrder == 2)
         {
             fgBBOrder.Sort((bb1, bb2) => bb1.bbID.CompareTo(bb2.bbID));
             inDefaultOrder = false;
@@ -8633,7 +8633,7 @@ public partial class Compiler
 
         // Instead of displaying a block number, should we instead display "*" when the specified block is
         // the next block?
-        var terseNext = JitConfig[ConfigInteger.JitDumpTerseNextBlock] != 0;
+        var terseNext = JitConfig.JitDumpTerseNextBlock != 0;
 
         jitprintf($"{block.dspToString(blockNumPadding)} {block.bbRefs,2}");
 
@@ -9625,7 +9625,7 @@ public partial class Compiler
     protected PhaseStatus fgPrepareToInstrumentMethod() => PhaseStatus.MODIFIED_NOTHING;
 
 #if DEBUG
-    protected bool fgStressBBProf() => (JitConfig[ConfigInteger.JitStressBBProf] != 0) || compStressCompile(STRESS_BB_PROFILE, 15);
+    protected bool fgStressBBProf() => (JitConfig.JitStressBBProf != 0) || compStressCompile(STRESS_BB_PROFILE, 15);
 #else
     protected bool fgStressBBProf() => false;
 #endif

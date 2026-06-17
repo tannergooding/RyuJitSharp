@@ -1492,32 +1492,7 @@ public partial class Compiler
                         }
                     }
 
-                    var description = intCon.IconHandleFlag switch {
-                        GTF_EMPTY => "",
-                        GTF_ICON_SCOPE_HDL => " scope",
-                        GTF_ICON_CLASS_HDL => " class",
-                        GTF_ICON_METHOD_HDL => " method",
-                        GTF_ICON_FIELD_HDL => " field",
-                        GTF_ICON_STATIC_HDL => " static",
-                        GTF_ICON_STR_HDL => " string",
-                        GTF_ICON_OBJ_HDL => " object",
-                        GTF_ICON_CONST_PTR => " const ptr",
-                        GTF_ICON_GLOBAL_PTR => " global ptr",
-                        GTF_ICON_VARG_HDL => " vararg",
-                        GTF_ICON_PINVKI_HDL => " pinvoke",
-                        GTF_ICON_TOKEN_HDL => " token",
-                        GTF_ICON_TLS_HDL => " tls",
-                        GTF_ICON_FTN_ADDR => " ftn",
-                        GTF_ICON_CIDMID_HDL => " cid/mid",
-                        GTF_ICON_BBC_PTR => " bbc",
-                        GTF_ICON_STATIC_BOX_PTR => " static box ptr",
-                        GTF_ICON_FIELD_SEQ => " field seq",
-                        GTF_ICON_STATIC_ADDR_PTR => " static base addr cell",
-                        GTF_ICON_SECREL_OFFSET => " relative offset in section",
-                        GTF_ICON_TLSGD_OFFSET => " tls global dynamic offset",
-                        _ => " ILLEGAL",
-                    };
-                    jitprintf(description);
+                    gtDispIconHandleFlag(intCon);
 
                     // Print additional details for some handles.
                     switch (intCon.IconHandleFlag)
@@ -2137,7 +2112,7 @@ public partial class Compiler
         }
 
         // Print the node ID
-        printTreeId((JitConfig[ConfigInteger.JitDumpTreeIDs] is not 0) ? tree : null);
+        printTreeId((JitConfig.JitDumpTreeIDs is not 0) ? tree : null);
         jitprintf(" ");
 
         if (tree.Oper >= GT_COUNT)
@@ -4324,7 +4299,7 @@ public partial class Compiler
             objClass = vnStore.GetObjectType(tree._vnPair.Conservative, out isExact, out isNonNull);
         }
 
-        if ((objClass != NO_CLASS_HANDLE) && !isExact && (JitConfig[ConfigInteger.JitEnableExactDevirtualization] != 0))
+        if ((objClass != NO_CLASS_HANDLE) && !isExact && (JitConfig.JitEnableExactDevirtualization != 0))
         {
             CORINFO_CLASS_HANDLE exactClass;
 
@@ -4361,13 +4336,13 @@ public partial class Compiler
             var queryForCurrentClass = true;
 
 #if DEBUG
-            queryForCurrentClass = JitConfig[ConfigInteger.JitQueryCurrentStaticFieldClass] > 0;
+            queryForCurrentClass = JitConfig.JitQueryCurrentStaticFieldClass > 0;
 #endif
 
             if (queryForCurrentClass)
             {
 #if DEBUG
-                if (verbose || (JitConfig[ConfigInteger.EnableExtraSuperPmiQueries] != 0))
+                if (verbose || (JitConfig.EnableExtraSuperPmiQueries != 0))
                 {
                     JITDUMP($"\nQuerying runtime about current class of field {eeGetFieldName(fieldHnd, true)} (declared as {eeGetClassName(fieldClass)})\n");
                 }
@@ -4387,7 +4362,7 @@ public partial class Compiler
                     isNonNull = true;
 
 #if DEBUG
-                    if (verbose || (JitConfig[ConfigInteger.EnableExtraSuperPmiQueries] != 0))
+                    if (verbose || (JitConfig.EnableExtraSuperPmiQueries != 0))
                     {
                         JITDUMP($"Runtime reports field is init-only and initialized and has class {eeGetClassName(fieldClass)}\n");
                     }
@@ -7083,7 +7058,7 @@ public partial class Compiler
         var elemSize = (elemType is TYP_STRUCT) ? info.compCompHnd->getClassSize(elemClassHandle) : elemType.Size;
 
 #if DEBUG
-        var boundsCheck = JitConfig[ConfigInteger.JitSkipArrayBoundCheck] is not 1;
+        var boundsCheck = JitConfig.JitSkipArrayBoundCheck is not 1;
 #else
         var boundsCheck = true;
 #endif
@@ -11486,7 +11461,7 @@ public partial class Compiler
                 // - TYP_I_IMPL = TYP_BYREF
                 ok = true;
             }
-            else if ((JitConfig[ConfigInteger.JitObjectStackAllocation] != 0) && (dstTyp is TYP_BYREF) && (valType is TYP_REF))
+            else if ((JitConfig.JitObjectStackAllocation != 0) && (dstTyp is TYP_BYREF) && (valType is TYP_REF))
             {
                 // - TYP_BYREF = TYP_REF when object stack allocation is enabled
                 ok = true;

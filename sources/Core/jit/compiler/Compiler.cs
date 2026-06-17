@@ -416,12 +416,12 @@ public partial class Compiler
         //
         // Note the default (with JitStressRange not set) is that all
         // methods will be subject to stress.
-        fJitStressRange.EnsureInit(JitConfig[ConfigString.JitStressRange]);
+        fJitStressRange.EnsureInit(JitConfig.JitStressRange);
         assert(!fJitStressRange.Error);
 
         if (fJitStressRange.Contains(info.compMethodHash()))
         {
-            var jitStressOnlyMethodSet = JitConfig[ConfigMethodSet.JitStressOnly];
+            var jitStressOnlyMethodSet = JitConfig.JitStressOnly;
             compAllowStress = jitStressOnlyMethodSet.isEmpty() || jitStressOnlyMethodSet.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args);
         }
 #endif
@@ -445,7 +445,7 @@ public partial class Compiler
 #if DEBUG
         if (!compIsForInlining)
         {
-            var noStructPromotionValue = JitConfig[ConfigInteger.JitNoStructPromotion];
+            var noStructPromotionValue = JitConfig.JitNoStructPromotion;
             assert(noStructPromotionValue is >= 0 and <= 2);
 
             if (noStructPromotionValue == 1)
@@ -588,7 +588,7 @@ public partial class Compiler
 
             if (jitTimeLogCsv is null)
             {
-                var pJitTimeLogCsvUtf8 = JitConfig[ConfigString.JitTimeLogCsv];
+                var pJitTimeLogCsvUtf8 = JitConfig.JitTimeLogCsv;
                 var jitTimeLogCsvUtf8 = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pJitTimeLogCsvUtf8);
 
                 jitTimeLogCsv = Encoding.UTF8.GetString(jitTimeLogCsvUtf8);
@@ -862,11 +862,11 @@ public partial class Compiler
 #if DEBUG
     /// <summary>Should we use only ASCII characters for tree dumps?</summary>
     /// <remarks>This is set to default to 1 in JitConfig</remarks>
-    public bool ShouldDumpAsciiTrees => JitConfig[ConfigInteger.JitDumpASCII] == 1;
+    public bool ShouldDumpAsciiTrees => JitConfig.JitDumpASCII == 1;
 
-    public bool ShouldUseVerboseSsa => JitConfig[ConfigInteger.JitDumpVerboseSsa] == 1;
+    public bool ShouldUseVerboseSsa => JitConfig.JitDumpVerboseSsa == 1;
 
-    public bool ShouldUseVerboseTrees => JitConfig[ConfigInteger.JitDumpVerboseTrees] == 1;
+    public bool ShouldUseVerboseTrees => JitConfig.JitDumpVerboseTrees == 1;
 #endif
 
     private ClassLayoutTable typClassLayoutTable
@@ -1525,7 +1525,7 @@ public partial class Compiler
         // Extra query to facilitate wasm replay of native collections.
         // TODO-WASM: delete once we can get a wasm collection.
 
-        if ((JitConfig[ConfigInteger.EnableExtraSuperPmiQueries] is not 0) && IsReadyToRun)
+        if ((JitConfig.EnableExtraSuperPmiQueries is not 0) && IsReadyToRun)
         {
             info.compCompHnd->getWasmLowering(clsHnd);
         }
@@ -1935,7 +1935,7 @@ public partial class Compiler
         }
 #elif TARGET_ARM64
 #if DEBUG
-        if ((JitConfig[ConfigInteger.JitUseScalableVectorT] != 0) && compExactlyDependsOn(InstructionSet_VectorT))
+        if ((JitConfig.JitUseScalableVectorT != 0) && compExactlyDependsOn(InstructionSet_VectorT))
         {
             return SIZE_UNKNOWN;
         }
@@ -2138,7 +2138,7 @@ public partial class Compiler
 
     public unsafe bool SkipMethod()
     {        
-        fJitRange.EnsureInit(JitConfig[ConfigString.JitRange]);
+        fJitRange.EnsureInit(JitConfig.JitRange);
         assert(!fJitRange.Error);
 
         // Normally JitConfig.JitRange() is null, we don't want to skip jitting any methods.
@@ -2149,14 +2149,14 @@ public partial class Compiler
             return true;
         }
 
-        var jitExcludeMethodSet = JitConfig[ConfigMethodSet.JitExclude];
+        var jitExcludeMethodSet = JitConfig.JitExclude;
 
         if (jitExcludeMethodSet.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
         {
             return true;
         }
 
-        var jitIncludeMethodSet = JitConfig[ConfigMethodSet.JitInclude];
+        var jitIncludeMethodSet = JitConfig.JitInclude;
 
         if (!jitIncludeMethodSet.isEmpty() && !jitIncludeMethodSet.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
         {

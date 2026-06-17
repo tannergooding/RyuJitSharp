@@ -103,7 +103,7 @@ public sealed class JitTimer
                 {
                     streamWriter.Write($"\"{phase.Name}\",");
 
-                    if ((JitConfig[ConfigInteger.JitMeasureIR] is not 0) && phase.ReportsIRSize)
+                    if ((JitConfig.JitMeasureIR is not 0) && phase.ReportsIRSize)
                     {
                         streamWriter.Write($"\"Node Count After {phase.Name}\",");
                     }
@@ -183,7 +183,7 @@ public sealed class JitTimer
             }
         }
 
-        if ((JitConfig[ConfigInteger.JitMeasureIR] is not 0) && phase.ReportsIRSize)
+        if ((JitConfig.JitMeasureIR is not 0) && phase.ReportsIRSize)
         {
             _info._nodeCountAfterPhase[(int)(phase)] = compiler.fgMeasureIR();
         }
@@ -276,7 +276,7 @@ public sealed class JitTimer
                 }
                 streamWriter.Write($"{_info._cyclesByPhase[(int)(phase)]},");
 
-                if ((JitConfig[ConfigInteger.JitMeasureIR] is not 0) && phase.ReportsIRSize)
+                if ((JitConfig.JitMeasureIR is not 0) && phase.ReportsIRSize)
                 {
                     streamWriter.Write($"{_info._nodeCountAfterPhase[(int)(phase)]},");
                 }
@@ -318,7 +318,7 @@ public sealed class JitTimer
         _clrCallApiNum = (API_ICorJitInfo_Names)(-1);
 
         // Ignore this one if we don't have a valid starting counter.
-        if (JitConfig[ConfigInteger.JitEECallTimingInfo] is not 0)
+        if (JitConfig.JitEECallTimingInfo is not 0)
         {
             // Compute the cycles spent in the call.
             assert(_clrCallStart is not 0);

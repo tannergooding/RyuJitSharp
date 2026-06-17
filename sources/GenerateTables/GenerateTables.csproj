@@ -8,9 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="Inputs\InstructionSetDesc.txt">
+    <None Include="Inputs\*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    </None>
   </ItemGroup>
 
 </Project>

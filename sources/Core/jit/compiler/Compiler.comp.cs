@@ -372,7 +372,7 @@ public partial class Compiler
 #endif
 
     // Object stack allocation takes the address of locals around suspension points. Disable entirely under async for now.
-    public bool compObjectStackAllocation => !compIsAsync && (JitConfig[ConfigInteger.JitObjectStackAllocation] != 0);
+    public bool compObjectStackAllocation => !compIsAsync && (JitConfig.JitObjectStackAllocation != 0);
 
     /// <summary>get a string describing PGO source</summary>
     public string compPgoSourceName => fgPgoSource switch {
@@ -402,7 +402,7 @@ public partial class Compiler
 
 #if DEBUG
             // Is stress enabled via mode name or level?
-            if ((JitConfig[ConfigString.JitStressModeNames] is not null) || (JitStressLevel > 0))
+            if ((JitConfig.JitStressModeNames is not null) || (JitStressLevel > 0))
             {
                 // Is the method being jitted excluded from stress via range?
                 if (compAllowStress)
@@ -432,7 +432,7 @@ public partial class Compiler
 
             if (!opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB) && !compIsAsync)
             {
-                if ((JitConfig[ConfigInteger.TailcallStress] is not 0) || compStressCompile(STRESS_TAILCALL, 5))
+                if ((JitConfig.TailcallStress is not 0) || compStressCompile(STRESS_TAILCALL, 5))
                 {
                     result = true;
                 }
@@ -456,7 +456,7 @@ public partial class Compiler
 
         var createTypeHistogram = false;
 
-        if (JitConfig[ConfigInteger.JitClassProfiling] > 0)
+        if (JitConfig.JitClassProfiling > 0)
         {
             createTypeHistogram = call.IsVirtualStub || call.IsVirtualVtable;
 
@@ -467,8 +467,8 @@ public partial class Compiler
             createTypeHistogram = createTypeHistogram || (impIsCastHelperEligibleForClassProbe(call) && (call._handleHistogramProfileCandidateInfo is not null));
         }
 
-        var createMethodHistogram = ((JitConfig[ConfigInteger.JitDelegateProfiling] > 0) && call.IsDelegateInvoke) ||
-                                    ((JitConfig[ConfigInteger.JitVTableProfiling] > 0) && call.IsVirtualVtable);
+        var createMethodHistogram = ((JitConfig.JitDelegateProfiling > 0) && call.IsDelegateInvoke) ||
+                                    ((JitConfig.JitVTableProfiling > 0) && call.IsVirtualVtable);
 
         if (createTypeHistogram)
         {
@@ -570,7 +570,7 @@ public partial class Compiler
 #if FEATURE_JIT_METHOD_PERF
         if (!s_checkedForJitTimeLog)
         {
-            _ = Interlocked.CompareExchange(ref compJitTimeLogFilename, (nint)(JitConfig[ConfigString.JitTimeLogFile]), comparand: 0);
+            _ = Interlocked.CompareExchange(ref compJitTimeLogFilename, (nint)(JitConfig.JitTimeLogFile), comparand: 0);
 
             // At a process or module boundary clear the file and start afresh.
             JitTimer.PrintCsvHeader();
@@ -585,7 +585,7 @@ public partial class Compiler
 #endif
 
 #if FUNC_INFO_LOGGING
-        var pTmpJitFuncInfoFilenameUtf8 = JitConfig[ConfigString.JitFuncInfoFile];
+        var pTmpJitFuncInfoFilenameUtf8 = JitConfig.JitFuncInfoFile;
 
         if (pTmpJitFuncInfoFilenameUtf8 is not null)
         {
@@ -637,7 +637,7 @@ public partial class Compiler
         var enableAvailableIsas = !info.compMatchedVM;
 
 #if DEBUG
-        if (jitFlags->IsSet(JitFlags.JIT_FLAG_ALT_JIT) && (JitConfig[ConfigInteger.RunAltJitCode] == 0))
+        if (jitFlags->IsSet(JitFlags.JIT_FLAG_ALT_JIT) && (JitConfig.RunAltJitCode == 0))
         {
             enableAvailableIsas = true;
         }
@@ -668,7 +668,7 @@ public partial class Compiler
                 }
 
 #if DEBUG
-                if ((JitConfig[ConfigInteger.JitUseScalableVectorT] != 0) && currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT))
+                if ((JitConfig.JitUseScalableVectorT != 0) && currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT))
                 {
                     // Vector<T> will use SVE instead of NEON.
                     instructionSetFlags.RemoveInstructionSet(InstructionSet_VectorT128);
@@ -680,77 +680,77 @@ public partial class Compiler
             instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
             instructionSetFlags.AddInstructionSet(InstructionSet_AdvSimd);
 
-            if (JitConfig[ConfigInteger.EnableArm64Aes] != 0)
+            if (JitConfig.EnableArm64Aes != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_Aes);
             }
 
-            if (JitConfig[ConfigInteger.EnableArm64Crc32] != 0)
+            if (JitConfig.EnableArm64Crc32 != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_Crc32);
             }
 
-            if (JitConfig[ConfigInteger.EnableArm64Dp] != 0)
+            if (JitConfig.EnableArm64Dp != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_Dp);
             }
 
-            if (JitConfig[ConfigInteger.EnableArm64Rdm] != 0)
+            if (JitConfig.EnableArm64Rdm != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_Rdm);
             }
 
-            if (JitConfig[ConfigInteger.EnableArm64Sha1] != 0)
+            if (JitConfig.EnableArm64Sha1 != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_Sha1);
             }
 
-            if (JitConfig[ConfigInteger.EnableArm64Sha256] != 0)
+            if (JitConfig.EnableArm64Sha256 != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_Sha256);
             }
 
-            if (JitConfig[ConfigInteger.EnableArm64Atomics] != 0)
+            if (JitConfig.EnableArm64Atomics != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_Atomics);
             }
 
-            if (JitConfig[ConfigInteger.EnableArm64Dczva] != 0)
+            if (JitConfig.EnableArm64Dczva != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_Dczva);
             }
 
-            if (JitConfig[ConfigInteger.EnableArm64Sve] != 0)
+            if (JitConfig.EnableArm64Sve != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_Sve);
             }
 
-            if (JitConfig[ConfigInteger.EnableArm64Sve2] != 0)
+            if (JitConfig.EnableArm64Sve2 != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_Sve2);
             }
 
-            if (JitConfig[ConfigInteger.EnableArm64Sha3] != 0)
+            if (JitConfig.EnableArm64Sha3 != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_Sha3);
             }
 
-            if (JitConfig[ConfigInteger.EnableArm64Sm4] != 0)
+            if (JitConfig.EnableArm64Sm4 != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_Sm4);
             }
 
-            if (JitConfig[ConfigInteger.EnableArm64SveAes] != 0)
+            if (JitConfig.EnableArm64SveAes != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_SveAes);
             }
 
-            if (JitConfig[ConfigInteger.EnableArm64SveSha3] != 0)
+            if (JitConfig.EnableArm64SveSha3 != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_SveSha3);
             }
 
-            if (JitConfig[ConfigInteger.EnableArm64SveSm4] != 0)
+            if (JitConfig.EnableArm64SveSm4 != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_SveSm4);
             }
@@ -774,102 +774,102 @@ public partial class Compiler
 
             instructionSetFlags.AddInstructionSet(InstructionSet_X86Base);
 
-            if (JitConfig[ConfigInteger.EnableAVX] != 0)
+            if (JitConfig.EnableAVX != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_AVX);
             }
 
-            if (JitConfig[ConfigInteger.EnableAVX2] != 0)
+            if (JitConfig.EnableAVX2 != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_AVX2);
             }
 
-            if (JitConfig[ConfigInteger.EnableAVX512] != 0)
+            if (JitConfig.EnableAVX512 != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_AVX512);
             }
 
-            if (JitConfig[ConfigInteger.EnableAVX512v2] != 0)
+            if (JitConfig.EnableAVX512v2 != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_AVX512v2);
             }
 
-            if (JitConfig[ConfigInteger.EnableAVX512v3] != 0)
+            if (JitConfig.EnableAVX512v3 != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_AVX512v3);
             }
 
-            if (JitConfig[ConfigInteger.EnableAVX10v1] != 0)
+            if (JitConfig.EnableAVX10v1 != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_AVX10v1);
             }
 
-            if (JitConfig[ConfigInteger.EnableAVX10v2] != 0)
+            if (JitConfig.EnableAVX10v2 != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_AVX10v2);
             }
 
-            if (JitConfig[ConfigInteger.EnableAPX] != 0)
+            if (JitConfig.EnableAPX != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_APX);
             }
 
-            if (JitConfig[ConfigInteger.EnableAES] != 0)
+            if (JitConfig.EnableAES != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_AES);
 
-                if (JitConfig[ConfigInteger.EnableVAES] != 0)
+                if (JitConfig.EnableVAES != 0)
                 {
                     instructionSetFlags.AddInstructionSet(InstructionSet_AES_V256);
                     instructionSetFlags.AddInstructionSet(InstructionSet_AES_V512);
                 }
             }
 
-            if (JitConfig[ConfigInteger.EnableAVX512VP2INTERSECT] != 0)
+            if (JitConfig.EnableAVX512VP2INTERSECT != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VP2INTERSECT);
             }
 
-            if (JitConfig[ConfigInteger.EnableAVXIFMA] != 0)
+            if (JitConfig.EnableAVXIFMA != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_AVXIFMA);
             }
 
-            if (JitConfig[ConfigInteger.EnableAVXVNNI] != 0)
+            if (JitConfig.EnableAVXVNNI != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_AVXVNNI);
             }
 
-            if (JitConfig[ConfigInteger.EnableGFNI] != 0)
+            if (JitConfig.EnableGFNI != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_GFNI);
                 instructionSetFlags.AddInstructionSet(InstructionSet_GFNI_V256);
                 instructionSetFlags.AddInstructionSet(InstructionSet_GFNI_V512);
             }
 
-            if (JitConfig[ConfigInteger.EnableSHA] != 0)
+            if (JitConfig.EnableSHA != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_SHA);
             }
 
-            if (JitConfig[ConfigInteger.EnableWAITPKG] != 0)
+            if (JitConfig.EnableWAITPKG != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_WAITPKG);
             }
 
-            if (JitConfig[ConfigInteger.EnableX86Serialize] != 0)
+            if (JitConfig.EnableX86Serialize != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_X86Serialize);
             }
 #elif TARGET_RISCV64
             instructionSetFlags.AddInstructionSet(InstructionSet_RiscV64Base);
 
-            if (JitConfig[ConfigInteger.EnableRiscV64Zba] != 0)
+            if (JitConfig.EnableRiscV64Zba != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_Zba);
             }
 
-            if (JitConfig[ConfigInteger.EnableRiscV64Zbb] != 0)
+            if (JitConfig.EnableRiscV64Zbb != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_Zbb);
             }
@@ -904,7 +904,7 @@ public partial class Compiler
         }
 
 #if DEBUG
-        if (JitConfig[ConfigInteger.EnableExtraSuperPmiQueries] != 0)
+        if (JitConfig.EnableExtraSuperPmiQueries != 0)
         {
             // Get the assembly name, to aid finding any particular SuperPMI method context function
             _ = eeGetClassAssemblyName(info.compClassHnd);
@@ -1064,7 +1064,7 @@ public partial class Compiler
 #endif
 
         // Check for DOTNET_AggressiveInlining
-        if (JitConfig[ConfigInteger.JitAggressiveInlining] != 0)
+        if (JitConfig.JitAggressiveInlining != 0)
         {
             compDoAggressiveInlining = true;
         }
@@ -1292,7 +1292,7 @@ public partial class Compiler
                 reason = "loop";
             }
 
-            if (compHasBackwardJump && (reason.Length == 0) && (JitConfig[ConfigInteger.TC_OnStackReplacement] > 0))
+            if (compHasBackwardJump && (reason.Length == 0) && (JitConfig.TC_OnStackReplacement > 0))
             {
                 var canEscapeViaOSR = compCanHavePatchpoints(out reason);
 
@@ -1301,7 +1301,7 @@ public partial class Compiler
                 {
                     // Optionally disable OSR by method hash.
                     // This will force any method that might otherwise get trapped in Tier0 to be optimized.
-                    s_jitEnableOsrRange.EnsureInit(JitConfig[ConfigString.JitEnableOsrRange]);
+                    s_jitEnableOsrRange.EnsureInit(JitConfig.JitEnableOsrRange);
 
                     if (!s_jitEnableOsrRange.Contains(impInlineRoot.info.compMethodHash()))
                     {
@@ -1337,10 +1337,10 @@ public partial class Compiler
         compSetOptimizationLevel();
 
 #if DEBUG
-        if ((JitConfig[ConfigInteger.JitInstrumentIfOptimizing] != 0) && opts.OptimizationEnabled && !IsReadyToRun)
+        if ((JitConfig.JitInstrumentIfOptimizing != 0) && opts.OptimizationEnabled && !IsReadyToRun)
         {
             // Optionally disable by range
-            s_jitInstrumentIfOptimizingRange.EnsureInit(JitConfig[ConfigString.JitInstrumentIfOptimizingRange]);
+            s_jitInstrumentIfOptimizingRange.EnsureInit(JitConfig.JitInstrumentIfOptimizingRange);
 
             if (s_jitInstrumentIfOptimizingRange.Contains(impInlineRoot.info.compMethodHash()))
             {
@@ -1350,7 +1350,7 @@ public partial class Compiler
         }
 #endif
 
-        if ((JitConfig[ConfigInteger.JitDisasmOnlyOptimized] != 0) && (!opts.OptimizationEnabled))
+        if ((JitConfig.JitDisasmOnlyOptimized != 0) && (!opts.OptimizationEnabled))
         {
             // Disable JitDisasm for non-optimized code.
             opts.disAsm = false;
@@ -1438,7 +1438,7 @@ public partial class Compiler
                 }
 
 #if DEBUG
-                if (compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_ALT_JIT) && (JitConfig[ConfigInteger.RunAltJitCode] == 0))
+                if (compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_ALT_JIT) && (JitConfig.RunAltJitCode == 0))
                 {
                     return CORJIT_SKIPPED;
                 }
@@ -1467,7 +1467,7 @@ public partial class Compiler
 #if DEBUG
         assert(!compIsForInlining);
 
-        if ((JitConfig[ConfigInteger.JitFunctionTrace] != 0) && !opts.disDiffable)
+        if ((JitConfig.JitFunctionTrace != 0) && !opts.disDiffable)
         {
             var newJitNestingLevel = Interlocked.Decrement(ref jitNestingLevel);
 
@@ -1497,7 +1497,7 @@ public partial class Compiler
             return;
         }
 
-        if ((JitConfig[ConfigInteger.JitFunctionTrace] != 0) && !opts.disDiffable)
+        if ((JitConfig.JitFunctionTrace != 0) && !opts.disDiffable)
         {
             var newJitNestingLevel = Interlocked.Increment(ref jitNestingLevel);
 
@@ -1584,14 +1584,14 @@ public partial class Compiler
         opts.compDbgEnC = jitFlags->IsSet(JitFlags.JIT_FLAG_DEBUG_EnC);
 
 #if DEBUG
-        opts.compJitAlignLoopAdaptive = JitConfig[ConfigInteger.JitAlignLoopAdaptive] == 1;
-        opts.compJitAlignLoopBoundary = (ushort)(JitConfig[ConfigInteger.JitAlignLoopBoundary]);
-        opts.compJitAlignLoopMinBlockWeight = (ushort)(JitConfig[ConfigInteger.JitAlignLoopMinBlockWeight]);
-        opts.compJitAlignLoopForJcc = JitConfig[ConfigInteger.JitAlignLoopForJcc] == 1;
-        opts.compJitAlignLoopMaxCodeSize = (ushort)(JitConfig[ConfigInteger.JitAlignLoopMaxCodeSize]);
-        opts.compJitHideAlignBehindJmp = JitConfig[ConfigInteger.JitHideAlignBehindJmp] == 1;
-        opts.compJitOptimizeStructHiddenBuffer = JitConfig[ConfigInteger.JitOptimizeStructHiddenBuffer] == 1;
-        opts.compJitUnrollLoopMaxIterationCount = (ushort)(JitConfig[ConfigInteger.JitUnrollLoopMaxIterationCount]);
+        opts.compJitAlignLoopAdaptive = JitConfig.JitAlignLoopAdaptive == 1;
+        opts.compJitAlignLoopBoundary = (ushort)(JitConfig.JitAlignLoopBoundary);
+        opts.compJitAlignLoopMinBlockWeight = (ushort)(JitConfig.JitAlignLoopMinBlockWeight);
+        opts.compJitAlignLoopForJcc = JitConfig.JitAlignLoopForJcc == 1;
+        opts.compJitAlignLoopMaxCodeSize = (ushort)(JitConfig.JitAlignLoopMaxCodeSize);
+        opts.compJitHideAlignBehindJmp = JitConfig.JitHideAlignBehindJmp == 1;
+        opts.compJitOptimizeStructHiddenBuffer = JitConfig.JitOptimizeStructHiddenBuffer == 1;
+        opts.compJitUnrollLoopMaxIterationCount = (ushort)(JitConfig.JitUnrollLoopMaxIterationCount);
 #else
         opts.compJitAlignLoopAdaptive           = true;
         opts.compJitAlignLoopBoundary           = DEFAULT_ALIGN_LOOP_BOUNDARY;
@@ -1650,7 +1650,7 @@ public partial class Compiler
         // Optionally suppress inliner compiler instance dumping.
         if (compIsForInlining)
         {
-            if (JitConfig[ConfigInteger.JitDumpInlinePhases] > 0)
+            if (JitConfig.JitDumpInlinePhases > 0)
             {
                 verbose = impInlineInfo.InlinerCompiler.verbose;
             }
@@ -1681,7 +1681,7 @@ public partial class Compiler
 #endif
 
 #if DEBUG
-        var pfAltJit = JitConfig[jitFlags->IsSet(JitFlags.JIT_FLAG_AOT) ? ConfigMethodSet.AltJitNgen : ConfigMethodSet.AltJit];
+        var pfAltJit = jitFlags->IsSet(JitFlags.JIT_FLAG_AOT) ? JitConfig.AltJitNgen : JitConfig.AltJit;
 
         if (jitFlags->IsSet(JitFlags.JIT_FLAG_ALT_JIT))
         {
@@ -1690,7 +1690,7 @@ public partial class Compiler
                 opts.altJit = true;
             }
 
-            var altJitLimit = ReinterpretHexAsDecimal(JitConfig[ConfigInteger.AltJitLimit]);
+            var altJitLimit = ReinterpretHexAsDecimal(JitConfig.AltJitLimit);
 
             if ((altJitLimit > 0) && (jitTotalMethodCompiled >= altJitLimit))
             {
@@ -1698,7 +1698,7 @@ public partial class Compiler
             }
         }
 #else
-        var altJitVal = JitConfig[jitFlags->IsSet(JitFlags.JIT_FLAG_AOT) ? ConfigMethodSet.AltJitNgen : ConfigMethodSet.AltJit].list();
+        var altJitVal = JitConfig.jitFlags->IsSet(JitFlags.JIT_FLAG_AOT) ? ConfigMethodSet.AltJitNgen : ConfigMethodSet.AltJit.list();
 
         if (jitFlags->IsSet(JitFlags.JIT_FLAG_ALT_JIT))
         {
@@ -1719,7 +1719,7 @@ public partial class Compiler
             // First, initialize the AltJitExcludeAssemblies list, but only do it once.
             if (!s_pAltJitExcludeAssembliesListInitialized)
             {
-                var wszAltJitExcludeAssemblyList = JitConfig[ConfigString.AltJitExcludeAssemblies];
+                var wszAltJitExcludeAssemblyList = JitConfig.AltJitExcludeAssemblies;
 
                 if (wszAltJitExcludeAssemblyList is not null)
                 {
@@ -1747,7 +1747,7 @@ public partial class Compiler
         // Setup assembly name list for disassembly and dump, if not already set up.
         if (!s_pJitDisasmIncludeAssembliesListInitialized)
         {
-            var assemblyNameList = JitConfig[ConfigString.JitDisasmAssemblies];
+            var assemblyNameList = JitConfig.JitDisasmAssemblies;
 
             if (assemblyNameList is not null)
             {
@@ -1782,14 +1782,14 @@ public partial class Compiler
             //
             if (!compIsForInlining)
             {
-                var jitDump = JitConfig[ConfigMethodSet.JitDump];
+                var jitDump = JitConfig.JitDump;
 
                 if (jitDump.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
                 {
                     verboseDump = true;
                 }
 
-                var jitHashDumpVal = JitConfig[ConfigInteger.JitHashDump];
+                var jitHashDumpVal = JitConfig.JitHashDump;
 
                 if ((jitHashDumpVal is not -1) && (jitHashDumpVal == info.compMethodHash()))
                 {
@@ -1807,17 +1807,17 @@ public partial class Compiler
         // Optionally suppress dumping Tier0 jit requests.
         if (verboseDump && jitFlags->IsSet(JitFlags.JIT_FLAG_TIER0))
         {
-            verboseDump = JitConfig[ConfigInteger.JitDumpTier0] > 0;
+            verboseDump = JitConfig.JitDumpTier0 > 0;
         }
 
         // Optionally suppress dumping OSR jit requests.
         if (verboseDump && jitFlags->IsSet(JitFlags.JIT_FLAG_OSR))
         {
-            verboseDump = (JitConfig[ConfigInteger.JitDumpOSR] > 0);
+            verboseDump = (JitConfig.JitDumpOSR > 0);
         }
 
         // Optionally suppress dumping except for a specific OSR jit request.
-        var dumpAtOsrOffset = JitConfig[ConfigInteger.JitDumpAtOSROffset];
+        var dumpAtOsrOffset = JitConfig.JitDumpAtOSROffset;
 
         if (verboseDump && (dumpAtOsrOffset is not -1))
         {
@@ -1841,8 +1841,8 @@ public partial class Compiler
         assert(_usesSimdTypes == false);
 #endif
 
-        lvaEnregEHVars = compEnregLocals && (JitConfig[ConfigInteger.EnableEHWriteThru] != 0);
-        lvaEnregMultiRegVars = compEnregLocals && (JitConfig[ConfigInteger.EnableMultiRegLocals] != 0);
+        lvaEnregEHVars = compEnregLocals && (JitConfig.EnableEHWriteThru != 0);
+        lvaEnregMultiRegVars = compEnregLocals && (JitConfig.EnableMultiRegLocals != 0);
 
 #if FEATURE_TAILCALL_OPT
         // By default opportunistic tail call optimization is enabled.
@@ -1888,7 +1888,7 @@ public partial class Compiler
                 fgPgoData = null;
                 fgPgoSchema = null;
             }
-            else if (JitConfig[ConfigInteger.JitDisablePGO] > 0)
+            else if (JitConfig.JitDisablePGO > 0)
             {
                 // Optionally, disable use of profile data.
                 fgPgoFailReason = "PGO data available, but JitDisablePGO > 0";
@@ -1902,7 +1902,7 @@ public partial class Compiler
             else
             {
                 // Optionally, enable use of profile data for only some methods.
-                s_jitEnablePgoRange.EnsureInit(JitConfig[ConfigString.JitEnablePGORange]);
+                s_jitEnablePgoRange.EnsureInit(JitConfig.JitEnablePGORange);
 
                 // Base this decision on the root method hash, so a method either sees all available profile data (including that for inlinees), or none of it.
                 if (!s_jitEnablePgoRange.Contains(impInlineRoot.info.compMethodHash()))
@@ -1948,10 +1948,10 @@ public partial class Compiler
             }
         }
 
-        var enableInliningMethodsWithEH = JitConfig[ConfigInteger.JitInlineMethodsWithEH] > 0;
+        var enableInliningMethodsWithEH = JitConfig.JitInlineMethodsWithEH > 0;
 
 #if DEBUG
-        s_jitInlineMethodsWithEHRange.EnsureInit(JitConfig[ConfigString.JitInlineMethodsWithEHRange]);
+        s_jitInlineMethodsWithEHRange.EnsureInit(JitConfig.JitInlineMethodsWithEHRange);
 
         var inRange = s_jitInlineMethodsWithEHRange.Contains(impInlineRoot.info.compMethodHash());
         enableInliningMethodsWithEH &= inRange;
@@ -2032,72 +2032,72 @@ public partial class Compiler
 
             if (disEnabled)
             {
-                if ((JitConfig[ConfigInteger.JitOrder] & 1) == 1)
+                if ((JitConfig.JitOrder & 1) == 1)
                 {
                     opts.dspOrder = true;
                 }
 
-                if (JitConfig[ConfigMethodSet.JitGCDump].contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+                if (JitConfig.JitGCDump.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
                 {
                     opts.dspGCtbls = true;
                 }
 
-                if (JitConfig[ConfigMethodSet.JitDisasm].contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+                if (JitConfig.JitDisasm.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
                 {
                     opts.disAsm = true;
                 }
 
-                if (JitConfig[ConfigInteger.JitDisasmSpilled] != 0)
+                if (JitConfig.JitDisasmSpilled != 0)
                 {
                     opts.disAsmSpilled = true;
                 }
 
-                if (JitConfig[ConfigMethodSet.JitUnwindDump].contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+                if (JitConfig.JitUnwindDump.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
                 {
                     opts.dspUnwind = true;
                 }
 
-                if (JitConfig[ConfigMethodSet.JitEHDump].contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+                if (JitConfig.JitEHDump.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
                 {
                     opts.dspEHTable = true;
                 }
 
-                if (JitConfig[ConfigMethodSet.JitDebugDump].contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+                if (JitConfig.JitDebugDump.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
                 {
                     opts.dspDebugInfo = true;
                 }
             }
 
-            if (opts.disAsm && (JitConfig[ConfigInteger.JitDisasmWithGC] != 0))
+            if (opts.disAsm && (JitConfig.JitDisasmWithGC != 0))
             {
                 opts.disasmWithGC = true;
             }
 
 #if LATE_DISASM
-            if (JitConfig[ConfigMethodSet.JitLateDisasm].contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+            if (JitConfig.JitLateDisasm.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             {
                 opts.doLateDisasm = true;
             }
 #endif // LATE_DISASM
 
-            if (JitConfig[ConfigInteger.JitDisasmWithAddress] != 0)
+            if (JitConfig.JitDisasmWithAddress != 0)
             {
                 opts.disAddr = true;
             }
 
-            if (JitConfig[ConfigInteger.JitLongAddress] != 0)
+            if (JitConfig.JitLongAddress != 0)
             {
                 opts.compLongAddress = true;
             }
 
-            if ((JitConfig[ConfigInteger.JitEnableOptRepeat] != 0) &&
-                (JitConfig[ConfigMethodSet.JitOptRepeat].contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args)))
+            if ((JitConfig.JitEnableOptRepeat != 0) &&
+                (JitConfig.JitOptRepeat.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args)))
             {
                 opts.optRepeat = true;
-                opts.optRepeatCount = JitConfig[ConfigInteger.JitOptRepeatCount];
+                opts.optRepeatCount = JitConfig.JitOptRepeatCount;
             }
 
-            opts.dspMetrics = (JitConfig[ConfigInteger.JitMetrics] != 0);
+            opts.dspMetrics = (JitConfig.JitMetrics != 0);
         }
 
         if (verboseDump)
@@ -2113,10 +2113,10 @@ public partial class Compiler
             codeGen.Verbose = true;
         }
 
-        treesBeforeAfterMorph = (JitConfig[ConfigInteger.JitDumpBeforeAfterMorph] == 1);
+        treesBeforeAfterMorph = (JitConfig.JitDumpBeforeAfterMorph == 1);
         morphNum = 0; // Initialize the morphed-trees counting.
 
-        expensiveDebugCheckLevel = JitConfig[ConfigInteger.JitExpensiveDebugCheckLevel];
+        expensiveDebugCheckLevel = JitConfig.JitExpensiveDebugCheckLevel;
 
         if (expensiveDebugCheckLevel == 0)
         {
@@ -2134,12 +2134,12 @@ public partial class Compiler
             jitprintf(""); // in our logic this causes a flush
         }
 
-        if (JitConfig[ConfigMethodSet.JitBreak].contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+        if (JitConfig.JitBreak.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
         {
             NO_WAY("JitBreak reached");
         }
 
-        var jitHashBreakVal = JitConfig[ConfigInteger.JitHashBreak];
+        var jitHashBreakVal = JitConfig.JitHashBreak;
 
         if ((jitHashBreakVal is not -1) && (jitHashBreakVal == info.compMethodHash()))
         {
@@ -2147,8 +2147,8 @@ public partial class Compiler
         }
 
         if (verbose ||
-            JitConfig[ConfigMethodSet.JitDebugBreak].contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args) ||
-            JitConfig[ConfigMethodSet.JitBreak].contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+            JitConfig.JitDebugBreak.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args) ||
+            JitConfig.JitBreak.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
         {
             compDebugBreak = true;
         }
@@ -2158,7 +2158,7 @@ public partial class Compiler
         // Read function list, if not already read, and there exists such a list.
         if (!s_pJitFunctionFileInitialized)
         {
-            var functionFileName = JitConfig[ConfigString.JitFunctionFile];
+            var functionFileName = JitConfig.JitFunctionFile;
 
             if (functionFileName is not null)
             {
@@ -2167,16 +2167,16 @@ public partial class Compiler
             s_pJitFunctionFileInitialized = true;
         }
 #else
-        if (JitConfig[ConfigMethodSet.JitDisasm].contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+        if (JitConfig.JitDisasm.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
         {
             opts.disAsm = true;
         }
 
-        if ((JitConfig[ConfigInteger.JitEnableOptRepeat] != 0) &&
-            (JitConfig[ConfigMethodSet.JitOptRepeat].contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args)))
+        if ((JitConfig.JitEnableOptRepeat != 0) &&
+            (JitConfig.JitOptRepeat.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args)))
         {
             opts.optRepeat      = true;
-            opts.optRepeatCount = JitConfig[ConfigInteger.JitOptRepeatCount];
+            opts.optRepeatCount = JitConfig.JitOptRepeatCount;
         }
 #endif
 
@@ -2184,22 +2184,22 @@ public partial class Compiler
         if (opts.disAsm)
 #endif
         {
-            if (JitConfig[ConfigInteger.JitDisasmTesting] != 0)
+            if (JitConfig.JitDisasmTesting != 0)
             {
                 opts.disTesting = true;
             }
 
-            if (JitConfig[ConfigInteger.JitDisasmWithAlignmentBoundaries] != 0)
+            if (JitConfig.JitDisasmWithAlignmentBoundaries != 0)
             {
                 opts.disAlignment = true;
             }
 
-            if (JitConfig[ConfigInteger.JitDisasmWithCodeBytes] != 0)
+            if (JitConfig.JitDisasmWithCodeBytes != 0)
             {
                 opts.disCodeBytes = true;
             }
 
-            if (JitConfig[ConfigInteger.JitDisasmDiffable] != 0)
+            if (JitConfig.JitDisasmDiffable != 0)
             {
                 opts.disDiffable = true;
                 opts.dspDiffable = true;
@@ -2211,18 +2211,18 @@ public partial class Compiler
             // Defer printing this until now, after the "START" line printed above.
             JITDUMP($"\n*************** JitOptRepeat enabled; repetition count: {opts.optRepeatCount}\n\n");
         }
-        else if (JitConfig[ConfigInteger.JitEnableOptRepeat] != 0)
+        else if (JitConfig.JitEnableOptRepeat != 0)
         {
 #if DEBUG
             // Opt-in to JitOptRepeat based on method hash ranges.
             // The default is no JitOptRepeat.
-            s_jitOptRepeatRange.EnsureInit(JitConfig[ConfigString.JitOptRepeatRange]);
+            s_jitOptRepeatRange.EnsureInit(JitConfig.JitOptRepeatRange);
             assert(!s_jitOptRepeatRange.Error);
 
             if (!s_jitOptRepeatRange.IsEmpty && s_jitOptRepeatRange.Contains(info.compMethodHash()))
             {
                 opts.optRepeat = true;
-                opts.optRepeatCount = JitConfig[ConfigInteger.JitOptRepeatCount];
+                opts.optRepeatCount = JitConfig.JitOptRepeatCount;
 
                 JITDUMP($"\n*************** JitOptRepeat enabled by JitOptRepeatRange; repetition count: {opts.optRepeatCount}\n\n");
             }
@@ -2242,7 +2242,7 @@ public partial class Compiler
 
 #if DEBUG
         assert(!codeGen.IsGcTypeFixed);
-        opts.compGcChecks = (JitConfig[ConfigInteger.JitGCChecks] != 0) || compStressCompile(STRESS_GENERIC_VARN, 5);
+        opts.compGcChecks = (JitConfig.JitGCChecks != 0) || compStressCompile(STRESS_GENERIC_VARN, 5);
 #endif
 
 #if DEBUG && TARGET_XARCH
@@ -2250,7 +2250,7 @@ public partial class Compiler
         // const int STACK_CHECK_ON_CALL = 0x2;
         const int STACK_CHECK_ALL = 0x3;
 
-        var dwJitStackChecks = JitConfig[ConfigInteger.JitStackChecks];
+        var dwJitStackChecks = JitConfig.JitStackChecks;
 
         if (compStressCompile(STRESS_GENERIC_VARN, 5))
         {
@@ -2264,7 +2264,7 @@ public partial class Compiler
 #endif
 
 #if MEASURE_MEM_ALLOC
-        s_dspMemStats = JitConfig[ConfigInteger.DisplayMemStats] != 0;
+        s_dspMemStats = JitConfig.DisplayMemStats != 0;
 #endif
 
 #if PROFILING_SUPPORTED
@@ -2299,7 +2299,7 @@ public partial class Compiler
         // in the AOT image.
         if (!compProfilerHookNeeded)
         {
-            if ((JitConfig[ConfigInteger.JitELTHookEnabled] != 0) ||
+            if ((JitConfig.JitELTHookEnabled != 0) ||
                 (!jitFlags->IsSet(JitFlags.JIT_FLAG_AOT) && compStressCompile(STRESS_PROFILER_CALLBACKS, 5)))
             {
                 opts.compJitELTHookEnabled = true;
@@ -2338,7 +2338,7 @@ public partial class Compiler
 #endif
 
 #if FEATURE_TAILCALL_OPT
-        var pStrTailCallOpt = JitConfig[ConfigString.TailCallOpt];
+        var pStrTailCallOpt = JitConfig.TailCallOpt;
 
         if (pStrTailCallOpt is not null)
         {
@@ -2346,14 +2346,14 @@ public partial class Compiler
             opts.compTailCallOpt = int.TryParse(strTailCallOpt, out var numTailCallOpt) && (numTailCallOpt != 0);
         }
 
-        if (JitConfig[ConfigInteger.TailCallLoopOpt] == 0)
+        if (JitConfig.TailCallLoopOpt == 0)
         {
             opts.compTailCallLoopOpt = false;
         }
 #endif
 
 #if FEATURE_FASTTAILCALL
-        if (JitConfig[ConfigInteger.FastTailCalls] == 0)
+        if (JitConfig.FastTailCalls == 0)
         {
             opts.compFastTailCalls = false;
         }
@@ -2392,11 +2392,11 @@ public partial class Compiler
         var enableFakeSplitting = false;
 
 #if DEBUG
-        enableFakeSplitting = JitConfig[ConfigInteger.JitFakeProcedureSplitting] != 0;
+        enableFakeSplitting = JitConfig.JitFakeProcedureSplitting != 0;
 
 #if TARGET_XARCH || TARGET_RISCV64
         // Whether encoding of absolute addr as PC-rel offset is enabled
-        opts.compEnablePCRelAddr = JitConfig[ConfigInteger.EnablePCRelAddr] != 0;
+        opts.compEnablePCRelAddr = JitConfig.EnablePCRelAddr != 0;
 #endif
 #endif
 
@@ -2427,19 +2427,19 @@ public partial class Compiler
             // JitForceProcedureSplitting is used to force procedure splitting on checked assemblies.
             // This is useful for debugging on a checked build.
             // Note that we still only do procedure splitting in the zapper.
-            if (JitConfig[ConfigMethodSet.JitForceProcedureSplitting].contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+            if (JitConfig.JitForceProcedureSplitting.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             {
                 opts.compProcedureSplitting = true;
             }
 
             // JitNoProcedureSplitting will always disable procedure splitting.
-            if (JitConfig[ConfigMethodSet.JitNoProcedureSplitting].contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+            if (JitConfig.JitNoProcedureSplitting.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             {
                 opts.compProcedureSplitting = false;
             }
 
             // JitNoProcedureSplittingEH will disable procedure splitting in functions with EH.
-            if (JitConfig[ConfigMethodSet.JitNoProcedureSplittingEH].contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+            if (JitConfig.JitNoProcedureSplittingEH.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             {
                 opts.compProcedureSplittingEH = false;
             }
@@ -2447,12 +2447,12 @@ public partial class Compiler
         }
 
 #if TARGET_64BIT
-        opts.compCollect64BitCounts = JitConfig[ConfigInteger.JitCollect64BitCounts] != 0;
+        opts.compCollect64BitCounts = JitConfig.JitCollect64BitCounts != 0;
 
 #if DEBUG
-        if (JitConfig[ConfigInteger.JitRandomlyCollect64BitCounts] != 0)
+        if (JitConfig.JitRandomlyCollect64BitCounts != 0)
         {
-            opts.compCollect64BitCounts = new Random(info.compMethodHash() ^ JitConfig[ConfigInteger.JitRandomlyCollect64BitCounts] ^ 0x3485E20E).Next(2) == 0;
+            opts.compCollect64BitCounts = new Random(info.compMethodHash() ^ JitConfig.JitRandomlyCollect64BitCounts ^ 0x3485E20E).Next(2) == 0;
         }
 #endif
 #else
@@ -2463,7 +2463,7 @@ public partial class Compiler
         // Now, set compMaxUncheckedOffsetForNullObject for STRESS_NULL_OBJECT_CHECK
         if (compStressCompile(STRESS_NULL_OBJECT_CHECK, 30))
         {
-            compMaxUncheckedOffsetForNullObject = JitConfig[ConfigInteger.JitMaxUncheckedOffset];
+            compMaxUncheckedOffsetForNullObject = JitConfig.JitMaxUncheckedOffset;
 
             if (verbose)
             {
@@ -3365,18 +3365,18 @@ public partial class Compiler
             var doVNBasedDeadStoreRemoval = true;
 
 #if OPT_CONFIG
-            doSsa = (JitConfig[ConfigInteger.JitDoSsa] != 0);
-            doEarlyProp = doSsa && (JitConfig[ConfigInteger.JitDoEarlyProp] != 0);
-            doValueNum = doSsa && (JitConfig[ConfigInteger.JitDoValueNumber] != 0);
-            doLoopHoisting = doValueNum && (JitConfig[ConfigInteger.JitDoLoopHoisting] != 0);
-            doCopyProp = doValueNum && (JitConfig[ConfigInteger.JitDoCopyProp] != 0);
-            doBranchOpt = doValueNum && (JitConfig[ConfigInteger.JitDoRedundantBranchOpts] != 0);
+            doSsa = (JitConfig.JitDoSsa != 0);
+            doEarlyProp = doSsa && (JitConfig.JitDoEarlyProp != 0);
+            doValueNum = doSsa && (JitConfig.JitDoValueNumber != 0);
+            doLoopHoisting = doValueNum && (JitConfig.JitDoLoopHoisting != 0);
+            doCopyProp = doValueNum && (JitConfig.JitDoCopyProp != 0);
+            doBranchOpt = doValueNum && (JitConfig.JitDoRedundantBranchOpts != 0);
             doCse = doValueNum;
-            doAssertionProp = doValueNum && (JitConfig[ConfigInteger.JitDoAssertionProp] != 0);
-            doRangeAnalysis = doAssertionProp && (JitConfig[ConfigInteger.JitDoRangeAnalysis] != 0);
+            doAssertionProp = doValueNum && (JitConfig.JitDoAssertionProp != 0);
+            doRangeAnalysis = doAssertionProp && (JitConfig.JitDoRangeAnalysis != 0);
             doRangeCheckCloning = doValueNum && doRangeAnalysis;
-            doOptimizeIVs = doAssertionProp && (JitConfig[ConfigInteger.JitDoOptimizeIVs] != 0);
-            doVNBasedDeadStoreRemoval = doValueNum && (JitConfig[ConfigInteger.JitDoVNBasedDeadStoreRemoval] != 0);
+            doOptimizeIVs = doAssertionProp && (JitConfig.JitDoOptimizeIVs != 0);
+            doVNBasedDeadStoreRemoval = doValueNum && (JitConfig.JitDoVNBasedDeadStoreRemoval != 0);
             doVNBasedIntrinExpansion = doValueNum;
 #endif
 
@@ -3701,7 +3701,7 @@ public partial class Compiler
         codeGen.genGenerateCode(out methodCodePtr, out methodCodeSize);
 
 #if TRACK_LSRA_STATS
-        if (JitConfig[ConfigInteger.DisplayLsraStats] == 2)
+        if (JitConfig.DisplayLsraStats == 2)
         {
             _regAlloc.dumpLsraStatsCsv(jitstdout());
         }
@@ -3729,7 +3729,7 @@ public partial class Compiler
 
         var methodsCompiled = Interlocked.Increment(ref jitTotalMethodCompiled);
 
-        if ((JitConfig[ConfigInteger.JitDisasmSummary] != 0) && !compIsForInlining)
+        if ((JitConfig.JitDisasmSummary != 0) && !compIsForInlining)
         {
             // Tiering name already includes "OSR", we just want the IL offset
             var osrName = opts.IsOSR ? $"@0x{info.compILEntry}" : "";
@@ -3744,7 +3744,7 @@ public partial class Compiler
 
             var metricPart = "";
 #if DEBUG
-            if (JitConfig[ConfigInteger.JitMetrics] > 0)
+            if (JitConfig.JitMetrics > 0)
             {
                 metricPart = $", perfScore={Metrics.PerfScore:F2}, numCse={optCSEcount}";
             }
@@ -3799,7 +3799,7 @@ public partial class Compiler
         }
 
 #if DEBUG
-        var jitMinOpts = JitConfig[ConfigInteger.JitMinOpts];
+        var jitMinOpts = JitConfig.JitMinOpts;
 
         if (!theMinOptsValue && (jitMinOpts > 0))
         {
@@ -3875,14 +3875,14 @@ public partial class Compiler
 
         if (!theMinOptsValue)
         {
-            if (JitConfig[ConfigMethodSet.JitMinOptsName].contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+            if (JitConfig.JitMinOptsName.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             {
                 theMinOptsValue = true;
             }
         }
 
 #if OPT_CONFIG
-        s_onlyOptimizeRange.EnsureInit(JitConfig[ConfigString.JitOnlyOptimizeRange]);
+        s_onlyOptimizeRange.EnsureInit(JitConfig.JitOnlyOptimizeRange);
 
         if (!theMinOptsValue && !s_onlyOptimizeRange.IsEmpty)
         {
@@ -3898,27 +3898,27 @@ public partial class Compiler
         else if (!IsAot)
         {
             // For AOT we never drop down to MinOpts unless unless CLFLG_MINOPT is set
-            if (JitConfig[ConfigInteger.JitMinOptsCodeSize] < info.compILCodeSize)
+            if (JitConfig.JitMinOptsCodeSize < info.compILCodeSize)
             {
                 JITLOG(LL_INFO10, $"IL Code Size exceeded, using MinOpts for method {info.compFullName}\n");
                 theMinOptsValue = true;
             }
-            else if (JitConfig[ConfigInteger.JitMinOptsInstrCount] < opts.instrCount)
+            else if (JitConfig.JitMinOptsInstrCount < opts.instrCount)
             {
                 JITLOG(LL_INFO10, $"IL instruction count exceeded, using MinOpts for method {info.compFullName}\n");
                 theMinOptsValue = true;
             }
-            else if (JitConfig[ConfigInteger.JitMinOptsBbCount] < fgBBcount)
+            else if (JitConfig.JitMinOptsBbCount < fgBBcount)
             {
                 JITLOG(LL_INFO10, $"Basic Block count exceeded, using MinOpts for method {info.compFullName}\n");
                 theMinOptsValue = true;
             }
-            else if (JitConfig[ConfigInteger.JitMinOptsLvNumCount] < lvaCount)
+            else if (JitConfig.JitMinOptsLvNumCount < lvaCount)
             {
                 JITLOG(LL_INFO10, $"Local Variable Num count exceeded, using MinOpts for method {info.compFullName}\n");
                 theMinOptsValue = true;
             }
-            else if (JitConfig[ConfigInteger.JitMinOptsLvRefCount] < opts.lvRefCount)
+            else if (JitConfig.JitMinOptsLvRefCount < opts.lvRefCount)
             {
                 JITLOG(LL_INFO10, $"Local Variable Ref count exceeded, using MinOpts for method {info.compFullName}\n");
                 theMinOptsValue = true;
@@ -3928,7 +3928,7 @@ public partial class Compiler
             {
                 JITLOG(LL_INFO10000, $"IL Code Size,Instr {info.compILCodeSize,4},{opts.instrCount,4}, Basic Block count {fgBBcount,3}, Local Variable Num,Ref count {lvaCount,3},{opts.lvRefCount,3} for method {info.compFullName}\n");
 
-                if (JitConfig[ConfigInteger.JitBreakOnMinOpts] != 0)
+                if (JitConfig.JitBreakOnMinOpts != 0)
                 {
                     NO_WAY("MinOpts enabled");
                 }
@@ -4024,7 +4024,7 @@ public partial class Compiler
                 }
                 else
                 {
-                    codeGen.ShouldAlignLoops = JitConfig[ConfigInteger.JitAlignLoops] == 1;
+                    codeGen.ShouldAlignLoops = JitConfig.JitAlignLoops == 1;
                 }
 
 #if DEBUG

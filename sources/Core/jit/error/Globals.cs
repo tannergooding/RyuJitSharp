@@ -42,7 +42,7 @@ public partial class Globals
 
         // We now only assert when user explicitly set DOTNET_JitRequired=1
         // If DOTNET_JitRequired == 0 or is not set, we will not assert.
-        if ((JitConfig[ConfigInteger.JitRequired] == 1) || (getBreakOnBadCode() != 0))
+        if ((JitConfig.JitRequired == 1) || (getBreakOnBadCode() != 0))
         {
             assertAbort(message, filePath, lineNumber);
         }
@@ -110,7 +110,7 @@ public partial class Globals
         // Don't stop on NYI: use DOTNET_AltJitAssertOnNYI for that.
         if (jitResult != CORJIT_SKIPPED)
         {
-            if (JitConfig[ConfigInteger.DebugBreakOnVerificationFailure] != 0)
+            if (JitConfig.DebugBreakOnVerificationFailure != 0)
             {
                 Debugger.Break();
             }
@@ -133,7 +133,7 @@ public partial class Globals
         // have the assert code to fall back on here.
         // The debug path goes through this function also, to do the call to 'fatal'.
         // This kind of noway is hit for unreached().
-        if (JitConfig[ConfigInteger.JitEnableNoWayAssert] != 0)
+        if (JitConfig.JitEnableNoWayAssert != 0)
         {
             Debugger.Break();
         }
@@ -180,7 +180,7 @@ public partial class Globals
 #if MEASURE_NOWAY
     public static void RecordNowayAssertGlobal(ReadOnlySpan<char> filePath, int lineNumber, ReadOnlySpan<char> message)
     {
-        if ((JitConfig[ConfigInteger.JitMeasureNowayAssert] == 1) && (JitTls.Compiler is Compiler compiler))
+        if ((JitConfig.JitMeasureNowayAssert == 1) && (JitTls.Compiler is Compiler compiler))
         {
             compiler.RecordNowayAssert(filePath, lineNumber, message);
         }
@@ -320,7 +320,7 @@ public partial class Globals
         compiler.compFunctionTraceEnd(null, 0, true);
 #endif
 
-        var altJitAssertOnNyi = JitConfig[ConfigInteger.AltJitAssertOnNYI];
+        var altJitAssertOnNyi = JitConfig.AltJitAssertOnNYI;
 
         // 0 means just silently skip, if we are in retail builds, assume ignore
         // 1 means popup the assert (abort=abort, retry=debugger, ignore=skip)
@@ -377,7 +377,7 @@ public partial class Globals
     public static void NYI_WASM(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
     {
 #if TARGET_WASM
-        if (JitConfig[ConfigInteger.JitWasmNyiToR2RUnsupported] > 0)
+        if (JitConfig.JitWasmNyiToR2RUnsupported > 0)
         {
             JITDUMP($"NYI_WASM: {message}");
             implReadyToRunUnsupported();
@@ -392,7 +392,7 @@ public partial class Globals
     public static void BreakIfDebuggerPresent() => Debugger.Break();
 
 #if DEBUG
-    public static int getBreakOnBadCode() => JitConfig[ConfigInteger.JitBreakOnBadCode];
+    public static int getBreakOnBadCode() => JitConfig.JitBreakOnBadCode;
 #endif
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -400,7 +400,7 @@ public partial class Globals
 
     private static void noWayAssertAbortHelper(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, int lineNumber)
     {
-        if (JitConfig[ConfigInteger.JitEnableNoWayAssert] != 0)
+        if (JitConfig.JitEnableNoWayAssert != 0)
         {
             // Show the assert UI.
             assertAbort(message, filePath, lineNumber);

@@ -168,7 +168,7 @@ public struct CompTimeSummaryInfo
             var extraHdr2 = "";
 
 #if MEASURE_CLRAPI_CALLS
-            var extraInfo = JitConfig[ConfigInteger.JitEECallTimingInfo] is not 0;
+            var extraInfo = JitConfig.JitEECallTimingInfo is not 0;
 
             if (extraInfo)
             {

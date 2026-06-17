@@ -50,7 +50,7 @@ public partial class Globals
             // 0-length string means flush
             stream.Flush();
         }
-        else if (JitConfig[ConfigInteger.JitDumpToDebugger] != 0)
+        else if (JitConfig.JitDumpToDebugger != 0)
         {
             Debug.Write(message);
             stream.Write(message);
@@ -168,7 +168,7 @@ public partial class Globals
             // to the fallback JIT behavior. This is useful when doing ASM diffs, where we only want to see
             // the first assert for any function, but we don't want to kill the whole process on the
             // first assert (which would happen if you used DOTNET_NoGuiOnAssert=1 for example).
-            if (JitConfig[ConfigInteger.AltJitSkipOnAssert] != 0)
+            if (JitConfig.AltJitSkipOnAssert != 0)
             {
                 fatal(CORJIT_SKIPPED);
             }

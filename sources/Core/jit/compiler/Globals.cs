@@ -154,7 +154,7 @@ public partial class Globals
     public const int DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE = 32;
 
 #if DEBUG
-    public static bool InlinePInvokeEnabled => JitConfig[ConfigInteger.JitPInvokeEnabled] is not 0;
+    public static bool InlinePInvokeEnabled => JitConfig.JitPInvokeEnabled is not 0;
 #else
     public static bool InlinePInvokeEnabled => true;
 #endif
@@ -168,7 +168,7 @@ public partial class Globals
     ///     <item>2:    Check-all stress. Performance will be REALLY horrible</item>
     ///   </list>
     /// </remarks>
-    public static int JitStressLevel => JitConfig[ConfigInteger.JitStress];
+    public static int JitStressLevel => JitConfig.JitStress;
 #endif
 
     /// <summary>Converts input ASCII data to lower case</summary>

@@ -364,7 +364,7 @@ public partial class Compiler
 #if DEBUG
             // Extra query to facilitate wasm replay of native collections.
             // TODO-WASM: delete once we can get a wasm collection.
-            if ((JitConfig[ConfigInteger.EnableExtraSuperPmiQueries] != 0) && IsReadyToRun && (structLayout is not null))
+            if ((JitConfig.EnableExtraSuperPmiQueries != 0) && IsReadyToRun && (structLayout is not null))
             {
                 var clsHnd = structLayout.ClassHandle;
 
@@ -1424,7 +1424,7 @@ public partial class Compiler
     public bool lvaHaveManyLocals(float percent = 1.0f)
     {
         assert((percent >= 0.0) && (percent <= 1.0));
-        return (lvaCount >= (JitConfig[ConfigInteger.JitMaxLocalsToTrack] * percent));
+        return (lvaCount >= (JitConfig.JitMaxLocalsToTrack * percent));
     }
 
     public unsafe void lvaInitArgs(bool hasRetBuffArg)
@@ -2244,7 +2244,7 @@ public partial class Compiler
     {
         noway_assert(varNum < lvaCount);
 
-        if ((clsHnd != NO_CLASS_HANDLE) && !isExact && (JitConfig[ConfigInteger.JitEnableExactDevirtualization] != 0))
+        if ((clsHnd != NO_CLASS_HANDLE) && !isExact && (JitConfig.JitEnableExactDevirtualization != 0))
         {
             CORINFO_CLASS_HANDLE exactClass;
             if (info.compCompHnd->getExactClasses(clsHnd, 1, &exactClass) == 1)
@@ -2368,7 +2368,7 @@ public partial class Compiler
             }
 
 #if DEBUG
-            if (JitConfig[ConfigInteger.EnableExtraSuperPmiQueries] != 0)
+            if (JitConfig.EnableExtraSuperPmiQueries != 0)
             {
                 makeExtraStructQueries(layout.ClassHandle, 2);
             }

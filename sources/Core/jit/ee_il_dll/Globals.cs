@@ -17,7 +17,7 @@ public partial class Globals
 
     private static unsafe StreamWriter jitstdoutInit()
     {
-        var jitStdOutFile = JitConfig[ConfigString.JitStdOutFile];
+        var jitStdOutFile = JitConfig.JitStdOutFile;
 
         StreamWriter jitstdout;
 

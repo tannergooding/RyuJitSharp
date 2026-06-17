@@ -81,7 +81,7 @@ public sealed class InlineStrategy
         //
         // Default value of JitInlineSize is the same as our default.
         // So normally this next line does not change the size.
-        _maxInlineSize = JitConfig[ConfigInteger.JitInlineSize];
+        _maxInlineSize = JitConfig.JitInlineSize;
 
         // Up the max size under stress
         if (_compiler.compInlineStress())
@@ -103,7 +103,7 @@ public sealed class InlineStrategy
         //
         // Default value of JitInlineDepth is the same as our default.
         // So normally this next line does not change the size.
-        _maxInlineDepth = JitConfig[ConfigInteger.JitInlineDepth];
+        _maxInlineDepth = JitConfig.JitInlineDepth;
 
         // But don't overdo it
         if (_maxInlineDepth > IMPLEMENTATION_MAX_INLINE_DEPTH)
@@ -115,7 +115,7 @@ public sealed class InlineStrategy
         //
         // Default value of JitForceInlineDepth is the same as our default.
         // So normally this next line does not change the size.
-        _maxForceInlineDepth = JitConfig[ConfigInteger.JitForceInlineDepth];
+        _maxForceInlineDepth = JitConfig.JitForceInlineDepth;
 
         // But don't overdo it
         if (_maxForceInlineDepth > _maxInlineDepth)
@@ -239,7 +239,7 @@ public sealed class InlineStrategy
 #if DEBUG
         if (!s_inlingDisabledRange.IsInit)
         {
-            var pNoInlineRangeUtf8 = JitConfig[ConfigString.JitNoInlineRange];
+            var pNoInlineRangeUtf8 = JitConfig.JitNoInlineRange;
 
             if (pNoInlineRangeUtf8 is null)
             {
@@ -354,7 +354,7 @@ public sealed class InlineStrategy
             }
         }
 
-        var randomPolicyFlag = JitConfig[ConfigInteger.JitInlinePolicyRandom];
+        var randomPolicyFlag = JitConfig.JitInlinePolicyRandom;
 
         if (randomPolicyFlag is not 0)
         {
@@ -387,7 +387,7 @@ public sealed class InlineStrategy
         // Set the initial budget for inlining. Note this is
         // deliberately set very high and is intended to catch
         // only pathological runaway inline cases.
-        var budget = JitConfig[ConfigInteger.JitInlineBudget];
+        var budget = JitConfig.JitInlineBudget;
 
         if (budget != DEFAULT_INLINE_BUDGET)
         {

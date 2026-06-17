@@ -133,7 +133,7 @@ public partial class Compiler
 #else
                 assert((RBM_VALIDATE_INDIRECT_CALL_TRASH & RBM_VALIDATE_INDIRECT_CALL_ADDR) == RBM_NONE);
 #endif
-                if (JitConfig[ConfigInteger.JitForceControlFlowGuard] != 0)
+                if (JitConfig.JitForceControlFlowGuard != 0)
                 {
                     return true;
                 }

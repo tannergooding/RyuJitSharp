@@ -66,7 +66,7 @@ public partial struct CILJit
 
         s_jitHost = jitHost;
 
-        assert(!JitConfig.isInitialized());
+        assert(!JitConfig.isInitialized);
         JitConfig.initialize(jitHost);
         Compiler.compStartup();
 

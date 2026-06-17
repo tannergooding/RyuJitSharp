@@ -122,7 +122,7 @@ public partial class Compiler
                         var passedConstraintCheck = compiler.checkTailCallConstraint(opcode, resolvedToken, constrainedCall ? ref constrainedResolvedToken : ref Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>());
 
                         // Avoid setting compHasBackwardsJump = true via tail call stress if the method cannot have patchpoints.
-                        var mayHavePatchpoints = compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_TIER0) && (JitConfig[ConfigInteger.TC_OnStackReplacement] > 0) && compiler.compCanHavePatchpoints();
+                        var mayHavePatchpoints = compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement > 0) && compiler.compCanHavePatchpoints();
 
                         if (passedConstraintCheck && (mayHavePatchpoints || compiler.compHasBackwardJump))
                         {
@@ -3919,7 +3919,7 @@ public partial class Compiler
 
                         if (call.IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_Memmove))
                         {
-                            if (JitConfig[ConfigInteger.JitProfileValues] is not 0)
+                            if (JitConfig.JitProfileValues is not 0)
                             {
                                 if (compiler.opts.IsOptimizedWithProfile)
                                 {
@@ -4071,7 +4071,7 @@ public partial class Compiler
                             {
                                 spillStack = false;
 
-                                if ((JitConfig[ConfigInteger.JitProfileValues] is not 0) && resultCall.IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_SequenceEqual))
+                                if ((JitConfig.JitProfileValues is not 0) && resultCall.IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_SequenceEqual))
                                 {
                                     if (compiler.opts.IsOptimizedWithProfile)
                                     {

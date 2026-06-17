@@ -10,56 +10,34 @@ namespace RyuJitSharp;
 public enum var_types : byte
 {
     TYP_UNDEF,
-
     TYP_VOID,
-
     TYP_BYTE,
-
     TYP_UBYTE,
-
     TYP_SHORT,
-
     TYP_USHORT,
-
     TYP_INT,
-
     TYP_UINT,
-
     TYP_LONG,
-
     TYP_ULONG,
-
     TYP_FLOAT,
-
     TYP_DOUBLE,
-
     TYP_REF,
-
     TYP_BYREF,
-
     TYP_STRUCT,
-
 #if FEATURE_SIMD
     TYP_SIMD8,
-
     TYP_SIMD12,
-
     TYP_SIMD16,
-
 #if TARGET_XARCH
     TYP_SIMD32,
-
     TYP_SIMD64,
 #elif TARGET_ARM64
     TYP_SIMD,
 #endif
-
 #if FEATURE_MASKED_HW_INTRINSICS
     TYP_MASK,
 #endif
 #endif
-
     TYP_UNKNOWN,
-
     TYP_COUNT,
 }

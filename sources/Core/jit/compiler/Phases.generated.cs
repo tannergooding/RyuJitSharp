@@ -133,10 +133,8 @@ public enum Phases
     PHASE_EMIT_CODE,
     PHASE_EMIT_GCEH,
     PHASE_POST_EMIT,
-
 #if MEASURE_CLRAPI_CALLS
     PHASE_CLR_API,
 #endif
-
     PHASE_NUMBER_OF,
 }

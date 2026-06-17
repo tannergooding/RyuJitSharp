@@ -5,7 +5,7 @@
 
 namespace RyuJitSharp;
 
-public partial struct HWIntrinsicInfo
+public readonly partial struct HWIntrinsicInfo
 {
     public static byte GetMultiRegCount(NamedIntrinsic id)
     {

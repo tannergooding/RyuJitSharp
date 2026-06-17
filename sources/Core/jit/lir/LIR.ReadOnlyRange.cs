@@ -83,7 +83,7 @@ public partial class LIR
             // TODO-LIR: derive this from the # of nodes in the function as well as
             // the debug level. Checking small functions is pretty cheap; checking
             // large functions is not.
-            if (JitConfig[ConfigInteger.JitExpensiveDebugCheckLevel] < 2)
+            if (JitConfig.JitExpensiveDebugCheckLevel < 2)
             {
                 return true;
             }
