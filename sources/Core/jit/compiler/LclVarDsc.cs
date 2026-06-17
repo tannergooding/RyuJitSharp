@@ -1190,17 +1190,17 @@ public partial struct LclVarDsc
     public readonly bool lvIsInReg => lvIsRegCandidate && (_lvRegNum != REG_STK);
 
 #if HAS_FIXED_REGISTER_SET
-    public readonly int lvRegMask
+    public readonly regMask lvRegMask
     {
         get
         {
             if (_lvRegNum != REG_STK)
             {
-                return 1 << (int)(_lvRegNum);
+                return (regMask)(1L << (int)(_lvRegNum));
             }
             else
             {
-                return RBM_NONE;
+                return SRBM_NONE;
             }
         }
     }

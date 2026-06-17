@@ -209,7 +209,7 @@ public partial class Compiler
 
 #if TARGET_XARCH
     /// <summary>Mask of callee saved float regs on stack.</summary>
-    public regMaskFlt compCalleeFPRegsSavedMask;
+    public regMask compCalleeFPRegsSavedMask;
 #endif
 
 #if TARGET_ARM64
@@ -1698,7 +1698,7 @@ public partial class Compiler
             }
         }
 #else
-        var altJitVal = JitConfig.jitFlags->IsSet(JitFlags.JIT_FLAG_AOT) ? ConfigMethodSet.AltJitNgen : ConfigMethodSet.AltJit.list();
+        var altJitVal = (jitFlags->IsSet(JitFlags.JIT_FLAG_AOT) ? JitConfig.AltJitNgen : JitConfig.AltJit).list();
 
         if (jitFlags->IsSet(JitFlags.JIT_FLAG_ALT_JIT))
         {
@@ -2553,67 +2553,45 @@ public partial class Compiler
 #endif
 
 #if TARGET_AMD64
-        rbmAllFloat = RBM_ALLFLOAT_INIT;
-        rbmFltCalleeTrash = RBM_FLT_CALLEE_TRASH_INIT;
+        srbmAllFloat = SRBM_ALLFLOAT_INIT;
+        srbmFltCalleeTrash = SRBM_FLT_CALLEE_TRASH_INIT;
         cntCalleeTrashFloat = CNT_CALLEE_TRASH_FLOAT_INIT;
 
-        rbmAllInt = RBM_ALLINT_INIT;
-        rbmIntCalleeTrash = RBM_INT_CALLEE_TRASH_INIT;
+        srbmAllInt = SRBM_ALLINT_INIT;
+        srbmIntCalleeTrash = SRBM_INT_CALLEE_TRASH_INIT;
         cntCalleeTrashInt = CNT_CALLEE_TRASH_INT_INIT;
         regIntLast = REG_R15;
 
         if (canUseEvexEncoding())
         {
-            rbmAllFloat |= RBM_HIGHFLOAT;
-            rbmFltCalleeTrash |= RBM_HIGHFLOAT;
+            srbmAllFloat |= SRBM_HIGHFLOAT;
+            srbmFltCalleeTrash |= SRBM_HIGHFLOAT;
             cntCalleeTrashFloat += CNT_CALLEE_TRASH_HIGHFLOAT;
         }
 
         if (canUseApxEncoding())
         {
-            rbmAllInt |= RBM_HIGHINT;
-            rbmIntCalleeTrash |= RBM_HIGHINT;
+            srbmAllInt |= SRBM_HIGHINT;
+            srbmIntCalleeTrash |= SRBM_HIGHINT;
             cntCalleeTrashInt += CNT_CALLEE_TRASH_HIGHINT;
             regIntLast = REG_R31;
         }
 #endif
 
 #if TARGET_XARCH
-        rbmAllMask = RBM_ALLMASK_INIT;
-        rbmMskCalleeTrash = RBM_MSK_CALLEE_TRASH_INIT;
+        srbmAllMask = SRBM_ALLMASK_INIT;
+        srbmMskCalleeTrash = SRBM_MSK_CALLEE_TRASH_INIT;
         cntCalleeTrashMask = CNT_CALLEE_TRASH_MASK_INIT;
 
         if (canUseEvexEncoding())
         {
-            rbmAllMask |= RBM_ALLMASK_EVEX;
-            rbmMskCalleeTrash |= RBM_MSK_CALLEE_TRASH_EVEX;
+            srbmAllMask |= SRBM_ALLMASK_EVEX;
+            srbmMskCalleeTrash |= SRBM_MSK_CALLEE_TRASH_EVEX;
             cntCalleeTrashMask += CNT_CALLEE_TRASH_MASK_EVEX;
         }
 
         // Make sure we copy the register info and initialize the trash regs after the underlying fields are initialized
-
-        varTypeCalleeTrashRegMasks[(int)(TYP_UNDEF)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegMasks[(int)(TYP_VOID)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegMasks[(int)(TYP_BYTE)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegMasks[(int)(TYP_UBYTE)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegMasks[(int)(TYP_SHORT)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegMasks[(int)(TYP_USHORT)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegMasks[(int)(TYP_INT)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegMasks[(int)(TYP_UINT)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegMasks[(int)(TYP_LONG)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegMasks[(int)(TYP_ULONG)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegMasks[(int)(TYP_FLOAT)] = (int)(RBM_FLT_CALLEE_TRASH);
-        varTypeCalleeTrashRegMasks[(int)(TYP_DOUBLE)] = (int)(RBM_FLT_CALLEE_TRASH);
-        varTypeCalleeTrashRegMasks[(int)(TYP_REF)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegMasks[(int)(TYP_BYREF)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegMasks[(int)(TYP_STRUCT)] = (int)(RBM_INT_CALLEE_TRASH);
-        varTypeCalleeTrashRegMasks[(int)(TYP_SIMD8)] = (int)(RBM_FLT_CALLEE_TRASH);
-        varTypeCalleeTrashRegMasks[(int)(TYP_SIMD12)] = (int)(RBM_FLT_CALLEE_TRASH);
-        varTypeCalleeTrashRegMasks[(int)(TYP_SIMD16)] = (int)(RBM_FLT_CALLEE_TRASH);
-        varTypeCalleeTrashRegMasks[(int)(TYP_SIMD32)] = (int)(RBM_FLT_CALLEE_TRASH);
-        varTypeCalleeTrashRegMasks[(int)(TYP_SIMD64)] = (int)(RBM_FLT_CALLEE_TRASH);
-        varTypeCalleeTrashRegMasks[(int)(TYP_MASK)] = (int)(RBM_MSK_CALLEE_TRASH);
-        varTypeCalleeTrashRegMasks[(int)(TYP_UNKNOWN)] = (int)(RBM_INT_CALLEE_TRASH);
+        compInitVarTypeCalleeTrashRegMasks();
 
         codeGen.CopyRegisterInfo();
 #endif

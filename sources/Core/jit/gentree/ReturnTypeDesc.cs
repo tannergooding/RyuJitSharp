@@ -609,7 +609,7 @@ public struct ReturnTypeDesc
     // /// <remarks>This routine can be used when the caller is not particular about the order of return registers and wants to know the set of return registers.</remarks>
     // public regMaskTP GetAbiReturnRegs(CorInfoCallConvExtension callConv)
     // {
-    //     var resultMask = RBM_NONE;
+    //     var resultMask = SRBM_NONE;
     //     var count = ReturnRegCount;
     // 
     //     for (byte i = 0; i < count; i++)

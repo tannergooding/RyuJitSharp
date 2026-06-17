@@ -91,15 +91,15 @@ public partial class Emitter
     public insGroup? emitCurIG;
 
 #if TARGET_AMD64
-    private regMaskFlt rbmFltCalleeTrash;
+    private regMask srbmFltCalleeTrash;
 
-    private regMaskInt rbmAllInt;
+    private regMask srbmAllInt;
 
-    private regMaskInt rbmIntCalleeTrash;
+    private regMask srbmIntCalleeTrash;
 #endif
 
 #if TARGET_XARCH
-    private regMaskMsk rbmMskCalleeTrash;
+    private regMask srbmMskCalleeTrash;
 #endif
 
     private nint emitIGbuffSize;
@@ -195,15 +195,15 @@ public partial class Emitter
 
     private VARSET_TP emitPrevGCrefVars = [];
 
-    private regMaskInt emitPrevGCrefRegs;
+    private regMask emitPrevGCrefRegs;
 
-    private regMaskInt emitPrevByrefRegs;
+    private regMask emitPrevByrefRegs;
 
     private VARSET_TP emitInitGCrefVars = [];
 
-    private regMaskInt emitInitGCrefRegs;
+    private regMask emitInitGCrefRegs;
 
-    private regMaskInt emitInitByrefRegs;
+    private regMask emitInitByrefRegs;
 
     /// <summary>If this is set, we ignore comparing emitPrev* and emitInit* to determine whether to save GC state (to save space in the IG), and always save it.</summary>
     private bool emitForceStoreGCState;
@@ -229,10 +229,10 @@ public partial class Emitter
     private VARSET_TP emitThisGCrefVars = [];
 
     /// <summary>Current set of registers holding GC references</summary>
-    private regMaskInt emitThisGCrefRegs;
+    private regMask emitThisGCrefRegs;
 
     /// <summary>Current set of registers holding BYREF references</summary>
-    private regMaskInt emitThisByrefRegs;
+    private regMask emitThisByrefRegs;
 
     /// <summary>Is "emitThisGCrefVars" up to date?</summary>
     private bool emitThisGCrefVset;
@@ -341,13 +341,13 @@ public partial class Emitter
 #endif
 
 #if TARGET_AMD64
-        rbmFltCalleeTrash = _compiler.rbmFltCalleeTrash;
-        rbmIntCalleeTrash = _compiler.rbmIntCalleeTrash;
-        rbmAllInt = _compiler.rbmAllInt;
+        srbmFltCalleeTrash = _compiler.srbmFltCalleeTrash;
+        srbmIntCalleeTrash = _compiler.srbmIntCalleeTrash;
+        srbmAllInt = _compiler.srbmAllInt;
 #endif
 
 #if TARGET_XARCH
-        rbmMskCalleeTrash = _compiler.rbmMskCalleeTrash;
+        srbmMskCalleeTrash = _compiler.srbmMskCalleeTrash;
 #endif
     }
 

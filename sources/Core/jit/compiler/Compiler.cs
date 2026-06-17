@@ -319,25 +319,25 @@ public partial class Compiler
     //
     // Users of these values need to define four accessor functions:
     //
-    //    regMaskFlt get_RBM_ALLFLOAT();
-    //    regMaskFlt get_RBM_FLT_CALLEE_TRASH();
-    //    int get_CNT_CALLEE_TRASH_FLOAT();
-    //    int get_AVAILABLE_REG_COUNT();
+    //    regMask SRBM_ALLFLOAT { get; }
+    //    regMask SRBM_FLT_CALLEE_TRASH { get; }
+    //    int CNT_CALLEE_TRASH_FLOAT { get; }
+    //    int AVAILABLE_REG_COUNT { get; }
     //
     // which return the values of these variables.
     //
     // This was done to avoid polluting all `targetXXX.h` macro definitions with a compiler parameter, where only
     // TARGET_AMD64 requires one.
 
-    private regMaskFlt rbmAllFloat;
+    private regMask srbmAllFloat;
 
-    internal regMaskFlt rbmFltCalleeTrash;
+    internal regMask srbmFltCalleeTrash;
 
     private int cntCalleeTrashFloat;
 
-    internal regMaskInt rbmAllInt;
+    internal regMask srbmAllInt;
 
-    internal regMaskInt rbmIntCalleeTrash;
+    internal regMask srbmIntCalleeTrash;
 
     private int cntCalleeTrashInt;
 
@@ -351,23 +351,23 @@ public partial class Compiler
     //
     // Users of these values need to define four accessor functions:
     //
-    //    regMaskMsk get_RBM_ALLMASK();
-    //    regMaskMsk get_RBM_MSK_CALLEE_TRASH();
-    //    int get_CNT_CALLEE_TRASH_MASK();
-    //    int get_AVAILABLE_REG_COUNT();
+    //    regMask SRBM_ALLMASK { get; }
+    //    regMask SRBM_MSK_CALLEE_TRASH { get; }
+    //    int CNT_CALLEE_TRASH_MASK { get; }
+    //    int AVAILABLE_REG_COUNT { get; }
     //
     // which return the values of these variables.
     //
     // This was done to avoid polluting all `targetXXX.h` macro definitions with a compiler parameter, where only
     // TARGET_XARCH requires one.
 
-    private regMaskMsk rbmAllMask;
+    private regMask srbmAllMask;
     
-    internal regMaskMsk rbmMskCalleeTrash;
+    internal regMask srbmMskCalleeTrash;
 
     private int cntCalleeTrashMask;
 
-    private InlineArrayTypCount<int> varTypeCalleeTrashRegMasks;
+    private InlineArrayTypCount<regMask> varTypeCalleeTrashRegMasks;
 #endif
 
 #if DEBUG
@@ -811,13 +811,13 @@ public partial class Compiler
 
     public int CNT_CALLEE_TRASH_INT => cntCalleeTrashInt;
 
-    public regMaskFlt RBM_ALLFLOAT => rbmAllFloat;
+    public regMask SRBM_ALLFLOAT => srbmAllFloat;
 
-    public regMaskInt RBM_ALLINT => rbmAllInt;
+    public regMask SRBM_ALLINT => srbmAllInt;
 
-    public regMaskFlt RBM_FLT_CALLEE_TRASH => rbmFltCalleeTrash;
+    public regMask SRBM_FLT_CALLEE_TRASH => srbmFltCalleeTrash;
 
-    public regMaskInt RBM_INT_CALLEE_TRASH => rbmIntCalleeTrash;
+    public regMask SRBM_INT_CALLEE_TRASH => srbmIntCalleeTrash;
 
     public int REG_INT_COUNT => REG_INT_LAST - REG_INT_FIRST + 1;
 
@@ -825,9 +825,9 @@ public partial class Compiler
 #endif
 
 #if TARGET_XARCH
-    public regMaskMsk RBM_ALLMASK => rbmAllMask;
+    public regMask SRBM_ALLMASK => srbmAllMask;
 
-    public regMaskMsk RBM_MSK_CALLEE_TRASH => rbmMskCalleeTrash;
+    public regMask SRBM_MSK_CALLEE_TRASH => srbmMskCalleeTrash;
 
     public int CNT_CALLEE_TRASH_MASK => cntCalleeTrashMask;
 #endif
@@ -2241,6 +2241,7 @@ public partial class Compiler
 #endif
 
         var nearestPow2 = 1 << int.Log2(size);
+
         return int.Min(nearestPow2, REGSIZE_BYTES) switch {
             1 => TYP_UBYTE,
             2 => TYP_USHORT,

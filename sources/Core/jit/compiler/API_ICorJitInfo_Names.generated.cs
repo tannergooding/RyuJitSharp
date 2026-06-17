@@ -190,5 +190,5 @@ public enum API_ICorJitInfo_Names
     API_getJitFlags,
     API_getWasmTypeSymbol,
     API_getSpecialCopyHelper,
-    API_COUNT
+    API_COUNT,
 }

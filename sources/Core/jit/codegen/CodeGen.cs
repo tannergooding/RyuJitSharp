@@ -31,16 +31,16 @@ public sealed class CodeGen : ICodeGen
     private NodeInternalRegisters _internalRegisters;
 
 #if TARGET_AMD64
-    private regMaskFlt _rbmAllFloat;
-    private regMaskInt _rbmAllInt;
-    private regMaskFlt _rbmFltCalleeTrash;
-    private regMaskInt _rbmIntCalleeTrash;
+    private regMask _srbmAllFloat;
+    private regMask _srbmAllInt;
+    private regMask _srbmFltCalleeTrash;
+    private regMask _srbmIntCalleeTrash;
     private regNumber _regIntLast;
 #endif
 
 #if TARGET_XARCH
-    private regMaskMsk _rbmAllMask;
-    private regMaskMsk _rbmMskCalleeTrash;
+    private regMask _srbmAllMask;
+    private regMask _srbmMskCalleeTrash;
 #endif
 
     private bool _verbose;
@@ -294,21 +294,21 @@ public sealed class CodeGen : ICodeGen
     }
 
 #if TARGET_AMD64
-    public regMaskFlt RBM_ALLFLOAT => _rbmAllFloat;
+    public regMask SRBM_ALLFLOAT => _srbmAllFloat;
 
-    public regMaskInt RBM_ALLINT => _rbmAllInt;
+    public regMask SRBM_ALLINT => _srbmAllInt;
 
-    public regMaskFlt RBM_FLT_CALLEE_TRASH => _rbmFltCalleeTrash;
+    public regMask SRBM_FLT_CALLEE_TRASH => _srbmFltCalleeTrash;
 
-    public regMaskInt RBM_INT_CALLEE_TRASH => _rbmIntCalleeTrash;
+    public regMask SRBM_INT_CALLEE_TRASH => _srbmIntCalleeTrash;
 
     public regNumber REG_INT_LAST => _regIntLast;
 #endif
 
 #if TARGET_XARCH
-    public regMaskMsk RBM_ALLMASK => _rbmAllMask;
+    public regMask SRBM_ALLMASK => _srbmAllMask;
 
-    public regMaskMsk RBM_MSK_CALLEE_TRASH => _rbmMskCalleeTrash;
+    public regMask SRBM_MSK_CALLEE_TRASH => _srbmMskCalleeTrash;
 #endif
 
     public ref RegSet RegSet => ref _regSet;
@@ -347,15 +347,15 @@ public sealed class CodeGen : ICodeGen
     public void CopyRegisterInfo()
     {
 #if TARGET_AMD64
-        _rbmAllFloat = _compiler.RBM_ALLFLOAT;
-        _rbmFltCalleeTrash = _compiler.RBM_FLT_CALLEE_TRASH;
-        _rbmAllInt = _compiler.RBM_ALLINT;
-        _rbmIntCalleeTrash = _compiler.RBM_INT_CALLEE_TRASH;
+        _srbmAllFloat = _compiler.SRBM_ALLFLOAT;
+        _srbmFltCalleeTrash = _compiler.SRBM_FLT_CALLEE_TRASH;
+        _srbmAllInt = _compiler.SRBM_ALLINT;
+        _srbmIntCalleeTrash = _compiler.SRBM_INT_CALLEE_TRASH;
         _regIntLast = _compiler.REG_INT_LAST;
 #endif
 
-        _rbmAllMask = _compiler.RBM_ALLMASK;
-        _rbmMskCalleeTrash = _compiler.RBM_MSK_CALLEE_TRASH;
+        _srbmAllMask = _compiler.SRBM_ALLMASK;
+        _srbmMskCalleeTrash = _compiler.SRBM_MSK_CALLEE_TRASH;
     }
 #endif
 

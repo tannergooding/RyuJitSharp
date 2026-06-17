@@ -412,7 +412,7 @@ public static partial class genTreeOpsExtensions
             }
         }
 #else
-        public string Name => varType.ToString();
+        public string Name => oper.ToString();
 #endif
 
         public genTreeOps ReverseRelop

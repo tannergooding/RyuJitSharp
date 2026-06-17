@@ -384,10 +384,10 @@ public partial class Compiler
         // these registers, and is called very early.
         if (compIsProfilerHookNeeded)
         {
-            codeGen.RegSet.rsMaskPreSpillRegArg |= RBM_ARG_REGS;
+            codeGen.RegSet.rsMaskPreSpillRegArg |= SRBM_ARG_REGS;
         }
 
-        var doubleAlignMask = RBM_NONE;
+        var doubleAlignMask = SRBM_NONE;
 
         // Also prespill struct parameters.
         for (var i = 0; i < info.compArgsCount; i++)
@@ -402,7 +402,7 @@ public partial class Compiler
                 continue;
             }
 
-            var regs = RBM_NONE;
+            var regs = SRBM_NONE;
 
             foreach (ref readonly var segment in abiInfo.Segments)
             {
@@ -420,12 +420,12 @@ public partial class Compiler
             }
         }
 
-        if (doubleAlignMask != RBM_NONE)
+        if (doubleAlignMask != SRBM_NONE)
         {
-            assert(RBM_ARG_REGS is 0xF);
-            assert((doubleAlignMask & RBM_ARG_REGS) == doubleAlignMask);
+            assert(SRBM_ARG_REGS is 0xF);
+            assert((doubleAlignMask & SRBM_ARG_REGS) == doubleAlignMask);
 
-            if ((doubleAlignMask != RBM_NONE) && (doubleAlignMask != RBM_ARG_REGS))
+            if ((doubleAlignMask != SRBM_NONE) && (doubleAlignMask != SRBM_ARG_REGS))
             {
                 // 'double aligned types' can begin only at r0 or r2 and we always expect at least two registers to be used
                 // Note that in rare cases, we can have double-aligned structs of 12 bytes (if specified explicitly with
@@ -443,11 +443,11 @@ public partial class Compiler
                 // ; -c r0    r0   <-- misaligned.
                 // ; callee saved regs
                 var startsAtR0 = (doubleAlignMask & 1) is 1;
-                var r2XorR3    = ((codeGen.RegSet.rsMaskPreSpillRegArg & RBM_R2) is 0) !=
-                                 ((codeGen.RegSet.rsMaskPreSpillRegArg & RBM_R3) is 0);
+                var r2XorR3    = ((codeGen.RegSet.rsMaskPreSpillRegArg & SRBM_R2) is 0) !=
+                                 ((codeGen.RegSet.rsMaskPreSpillRegArg & SRBM_R3) is 0);
                 if (startsAtR0 && r2XorR3)
                 {
-                    codeGen.RegSet.rsMaskPreSpillAlign = (~codeGen.RegSet.rsMaskPreSpillRegArg & ~doubleAlignMask) & RBM_ARG_REGS;
+                    codeGen.RegSet.rsMaskPreSpillAlign = (~codeGen.RegSet.rsMaskPreSpillRegArg & ~doubleAlignMask) & SRBM_ARG_REGS;
                 }
             }
         }
@@ -1435,7 +1435,7 @@ public partial class Compiler
         // these registers, and is called very early.
         if (compIsProfilerHookNeeded)
         {
-            codeGen.RegSet.rsMaskPreSpillRegArg |= RBM_ARG_REGS;
+            codeGen.RegSet.rsMaskPreSpillRegArg |= SRBM_ARG_REGS;
         }
 #endif
 

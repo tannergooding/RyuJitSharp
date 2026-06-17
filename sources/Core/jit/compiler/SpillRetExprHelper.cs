@@ -37,7 +37,10 @@ public struct SpillRetExprHelper : IGenTreeVisitor<SpillRetExprHelper>
         var compiler = _compiler;
         var tmp = compiler.lvaGrabTemp(shortLifetime: true, "spilling ret_expr");
 
+#if DEBUG
         JITDUMP($"Storing return expression [{retExpr.TreeId:D6}] to a local var V{tmp:D2}.\n");
+#endif
+
         compiler.impStoreToTemp(tmp, retExpr, Compiler.CHECK_SPILL_NONE);
         use = compiler.gtNewLclvNode(retExpr.Type, tmp);
 
@@ -55,7 +58,9 @@ public struct SpillRetExprHelper : IGenTreeVisitor<SpillRetExprHelper>
             }
             else
             {
+#if DEBUG
                 JITDUMP($"Could not deduce class from [{retExpr.TreeId:D6}]");
+#endif
             }
         }
     }

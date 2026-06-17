@@ -77,8 +77,6 @@ public static partial class Globals
     public const int REG_HIGH_BASE = 64;
 #endif
 
-    public const int RBM_NONE = 0;
-
 #if DEBUG
     public const int DSP_SRC_OPER_LEFT  = 0;
 

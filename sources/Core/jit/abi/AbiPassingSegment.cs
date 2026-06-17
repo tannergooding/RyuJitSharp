@@ -34,12 +34,12 @@ public struct AbiPassingSegment
         }
     }
 
-    public readonly int RegisterMask
+    public readonly regMask RegisterMask
     {
         get
         {
             var regNum = _register;
-            var regMsk = 1 << ((int)(regNum) - RegisterMaskBase);
+            var regMsk = (regMask)(1L << ((int)(regNum) - RegisterMaskBase));
 
 #if TARGET_ARM
             if (Size == 8)

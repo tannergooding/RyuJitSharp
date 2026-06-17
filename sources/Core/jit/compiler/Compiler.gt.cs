@@ -3445,11 +3445,11 @@ public partial class Compiler
 #if HAS_FIXED_REGISTER_SET
                 var regMsk = segment.RegisterMask;
 
-                while (regMsk != RBM_NONE)
+                while (regMsk != SRBM_NONE)
                 {
-                    var regIdx = int.TrailingZeroCount(regMsk);
+                    var regIdx = (int)(long.TrailingZeroCount((long)(regMsk)));
                     var reg = (regNumber)(regIdx + segment.RegisterMaskBase);
-                    regMsk &= ~(1 << regIdx);
+                    regMsk &= (regMask)(~(1L << regIdx));
 
                     if (firstReg == REG_NA)
                     {

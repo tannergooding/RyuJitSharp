@@ -127,11 +127,11 @@ public partial class Compiler
             {
 #if TARGET_ARM64 || TARGET_AMD64
                 // On these platforms we assume the register that the target is passed in is preserved by the validator and take care to get the target from the register for the call (even in debug mode).
-                // RBM_INT_CALLEE_TRASH is not known at compile time on TARGET_AMD64 since it's dependent on APX support.
+                // SRBM_INT_CALLEE_TRASH is not known at compile time on TARGET_AMD64 since it's dependent on APX support.
 #if TARGET_AMD64
-                assert((RBM_VALIDATE_INDIRECT_CALL_TRASH_ALL & RBM_VALIDATE_INDIRECT_CALL_ADDR) == RBM_NONE);
+                assert((SRBM_VALIDATE_INDIRECT_CALL_TRASH_ALL & SRBM_VALIDATE_INDIRECT_CALL_ADDR) == SRBM_NONE);
 #else
-                assert((RBM_VALIDATE_INDIRECT_CALL_TRASH & RBM_VALIDATE_INDIRECT_CALL_ADDR) == RBM_NONE);
+                assert((SRBM_VALIDATE_INDIRECT_CALL_TRASH & SRBM_VALIDATE_INDIRECT_CALL_ADDR) == SRBM_NONE);
 #endif
                 if (JitConfig.JitForceControlFlowGuard != 0)
                 {
@@ -390,12 +390,12 @@ public partial class Compiler
 
 #if FEATURE_FASTTAILCALL
         /// <summary>Whether fast tail calls are allowed.</summary>
-        bool compFastTailCalls;
+        public bool compFastTailCalls;
 #endif
 
 #if TARGET_ARM64
         /// <summary>Decision about whether to save FP/LR registers with callee-saved registers (see DOTNET_JitSaveFpLrWithCalleSavedRegisters).</summary>
-        int compJitSaveFpLrWithCalleeSavedRegisters;
+        public int compJitSaveFpLrWithCalleeSavedRegisters;
 #endif
 
 #if CONFIGURABLE_ARM_ABI

@@ -49,21 +49,21 @@ public interface ICodeGen
     bool IsFullPtrRegMapRequired { get; set; }
 
 #if TARGET_AMD64
-    regMaskFlt RBM_ALLFLOAT { get; }
+    regMask SRBM_ALLFLOAT { get; }
 
-    regMaskInt RBM_ALLINT { get; }
+    regMask SRBM_ALLINT { get; }
 
-    regMaskFlt RBM_FLT_CALLEE_TRASH { get; }
+    regMask SRBM_FLT_CALLEE_TRASH { get; }
 
-    regMaskInt RBM_INT_CALLEE_TRASH { get; }
+    regMask SRBM_INT_CALLEE_TRASH { get; }
 
     regNumber REG_INT_LAST { get; }
 #endif
 
 #if TARGET_XARCH
-    regMaskMsk RBM_ALLMASK { get; }
+    regMask SRBM_ALLMASK { get; }
 
-    regMaskMsk RBM_MSK_CALLEE_TRASH { get; }
+    regMask SRBM_MSK_CALLEE_TRASH { get; }
 #endif
 
     ref RegSet RegSet { get; }

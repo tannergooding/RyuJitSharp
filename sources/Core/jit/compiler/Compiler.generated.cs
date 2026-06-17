@@ -7,6 +7,40 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    private void compInitVarTypeCalleeTrashRegMasks()
+    {
+        varTypeCalleeTrashRegMasks[(int)(TYP_UNDEF)] = SRBM_INT_CALLEE_TRASH;
+        varTypeCalleeTrashRegMasks[(int)(TYP_VOID)] = SRBM_INT_CALLEE_TRASH;
+        varTypeCalleeTrashRegMasks[(int)(TYP_BYTE)] = SRBM_INT_CALLEE_TRASH;
+        varTypeCalleeTrashRegMasks[(int)(TYP_UBYTE)] = SRBM_INT_CALLEE_TRASH;
+        varTypeCalleeTrashRegMasks[(int)(TYP_SHORT)] = SRBM_INT_CALLEE_TRASH;
+        varTypeCalleeTrashRegMasks[(int)(TYP_USHORT)] = SRBM_INT_CALLEE_TRASH;
+        varTypeCalleeTrashRegMasks[(int)(TYP_INT)] = SRBM_INT_CALLEE_TRASH;
+        varTypeCalleeTrashRegMasks[(int)(TYP_UINT)] = SRBM_INT_CALLEE_TRASH;
+        varTypeCalleeTrashRegMasks[(int)(TYP_LONG)] = SRBM_INT_CALLEE_TRASH;
+        varTypeCalleeTrashRegMasks[(int)(TYP_ULONG)] = SRBM_INT_CALLEE_TRASH;
+        varTypeCalleeTrashRegMasks[(int)(TYP_FLOAT)] = SRBM_FLT_CALLEE_TRASH;
+        varTypeCalleeTrashRegMasks[(int)(TYP_DOUBLE)] = SRBM_FLT_CALLEE_TRASH;
+        varTypeCalleeTrashRegMasks[(int)(TYP_REF)] = SRBM_INT_CALLEE_TRASH;
+        varTypeCalleeTrashRegMasks[(int)(TYP_BYREF)] = SRBM_INT_CALLEE_TRASH;
+        varTypeCalleeTrashRegMasks[(int)(TYP_STRUCT)] = SRBM_INT_CALLEE_TRASH;
+#if FEATURE_SIMD
+        varTypeCalleeTrashRegMasks[(int)(TYP_SIMD8)] = SRBM_FLT_CALLEE_TRASH;
+        varTypeCalleeTrashRegMasks[(int)(TYP_SIMD12)] = SRBM_FLT_CALLEE_TRASH;
+        varTypeCalleeTrashRegMasks[(int)(TYP_SIMD16)] = SRBM_FLT_CALLEE_TRASH;
+#if TARGET_XARCH
+        varTypeCalleeTrashRegMasks[(int)(TYP_SIMD32)] = SRBM_FLT_CALLEE_TRASH;
+        varTypeCalleeTrashRegMasks[(int)(TYP_SIMD64)] = SRBM_FLT_CALLEE_TRASH;
+#elif TARGET_ARM64
+        varTypeCalleeTrashRegMasks[(int)(TYP_SIMD)] = SRBM_FLT_CALLEE_TRASH;
+#endif
+#if FEATURE_MASKED_HW_INTRINSICS
+        varTypeCalleeTrashRegMasks[(int)(TYP_MASK)] = SRBM_MSK_CALLEE_TRASH;
+#endif
+#endif
+        varTypeCalleeTrashRegMasks[(int)(TYP_UNKNOWN)] = SRBM_INT_CALLEE_TRASH;
+    }
+
     private void gtDispIconHandleFlag(GenTreeIntCon intCon)
     {
         switch (intCon.IconHandleFlag)

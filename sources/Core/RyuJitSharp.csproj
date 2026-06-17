@@ -294,10 +294,10 @@
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_ARG_SPLIT</DefineConstants>
 
     <!-- FEATURE_FASTTAILCALL: Tail calls made as epilog+jmp -->
-    <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);FEATURE_FIXED_OUT_ARGS</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);FEATURE_FIXED_OUT_ARGS</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_FIXED_OUT_ARGS</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64'">$(DefineConstants);FEATURE_FIXED_OUT_ARGS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);FEATURE_FASTTAILCALL</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);FEATURE_FASTTAILCALL</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_FASTTAILCALL</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64'">$(DefineConstants);FEATURE_FASTTAILCALL</DefineConstants>
     
     <!-- FEATURE_FIXED_OUT_ARGS: Preallocate the outgoing arg area in the prolog -->
     <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);FEATURE_FIXED_OUT_ARGS</DefineConstants>
@@ -401,6 +401,10 @@
     
     <!-- HAS_FIXED_REGISTER_SET -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' != 'wasm'">$(DefineConstants);HAS_FIXED_REGISTER_SET</DefineConstants>
+
+    <!-- HAS_MORE_THAN_64_REGISTERS -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);HAS_MORE_THAN_64_REGISTERS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64'">$(DefineConstants);HAS_MORE_THAN_64_REGISTERS</DefineConstants>
     
     <!-- JIT32_GCENCODER -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);JIT32_GCENCODER</DefineConstants>

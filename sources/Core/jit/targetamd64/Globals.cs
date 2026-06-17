@@ -60,11 +60,11 @@ public partial class Globals
 
     public const int CNT_HIGHFLOAT = 16;
 
-    public const regMaskFlt RBM_LOWFLOAT = RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM3 | RBM_XMM4 | RBM_XMM5 | RBM_XMM6 | RBM_XMM7 | RBM_XMM8 | RBM_XMM9 | RBM_XMM10 | RBM_XMM11 | RBM_XMM12 | RBM_XMM13 | RBM_XMM14 | RBM_XMM15;
+    public const regMask SRBM_LOWFLOAT = SRBM_XMM0 | SRBM_XMM1 | SRBM_XMM2 | SRBM_XMM3 | SRBM_XMM4 | SRBM_XMM5 | SRBM_XMM6 | SRBM_XMM7 | SRBM_XMM8 | SRBM_XMM9 | SRBM_XMM10 | SRBM_XMM11 | SRBM_XMM12 | SRBM_XMM13 | SRBM_XMM14 | SRBM_XMM15;
 
-    public const regMaskFlt RBM_HIGHFLOAT = RBM_XMM16 | RBM_XMM17 | RBM_XMM18 | RBM_XMM19 | RBM_XMM20 | RBM_XMM21 | RBM_XMM22 | RBM_XMM23 | RBM_XMM24 | RBM_XMM25 | RBM_XMM26 | RBM_XMM27 | RBM_XMM28 | RBM_XMM29 | RBM_XMM30 | RBM_XMM31;
+    public const regMask SRBM_HIGHFLOAT = SRBM_XMM16 | SRBM_XMM17 | SRBM_XMM18 | SRBM_XMM19 | SRBM_XMM20 | SRBM_XMM21 | SRBM_XMM22 | SRBM_XMM23 | SRBM_XMM24 | SRBM_XMM25 | SRBM_XMM26 | SRBM_XMM27 | SRBM_XMM28 | SRBM_XMM29 | SRBM_XMM30 | SRBM_XMM31;
 
-    public const regMaskFlt RBM_ALLFLOAT_INIT = RBM_LOWFLOAT;
+    public const regMask SRBM_ALLFLOAT_INIT = SRBM_LOWFLOAT;
 
     public const regNumber REG_FP_FIRST = REG_XMM0;
 
@@ -76,9 +76,9 @@ public partial class Globals
 
     public const regNumber REG_MASK_LAST = REG_K7;
 
-    public const regMaskMsk RBM_ALLMASK_INIT = RBM_NONE;
+    public const regMask SRBM_ALLMASK_INIT = SRBM_NONE;
 
-    public const regMaskMsk RBM_ALLMASK_EVEX = RBM_K1 | RBM_K2 | RBM_K3 | RBM_K4 | RBM_K5 | RBM_K6 | RBM_K7;
+    public const regMask SRBM_ALLMASK_EVEX = SRBM_K1 | SRBM_K2 | SRBM_K3 | SRBM_K4 | SRBM_K5 | SRBM_K6 | SRBM_K7;
 
     public const int CNT_MASK_REGS = 8;
 
@@ -113,17 +113,17 @@ public partial class Globals
     public const int STACK_ALIGN_SHIFT = 4;
 
 #if ETW_EBP_FRAMED
-    public const regMaskInt RBM_ETW_FRAMED_EBP = RBM_NONE;
+    public const regMask SRBM_ETW_FRAMED_EBP = SRBM_NONE;
 
-    public const regMaskInt RBM_ETW_FRAMED_EBP_LIST = RBM_NONE;
+    public const regMask SRBM_ETW_FRAMED_EBP_LIST = SRBM_NONE;
 
     public static ReadOnlySpan<regNumber> REG_ETW_FRAMED_EBP_LIST => [];
 
     public const int REG_ETW_FRAMED_EBP_COUNT = 0;
 #else // !ETW_EBP_FRAMED
-    public const regMaskInt RBM_ETW_FRAMED_EBP = RBM_EBP;
+    public const regMask SRBM_ETW_FRAMED_EBP = SRBM_EBP;
 
-    public const regMaskInt RBM_ETW_FRAMED_EBP_LIST = RBM_EBP;
+    public const regMask SRBM_ETW_FRAMED_EBP_LIST = SRBM_EBP;
 
     public static ReadOnlySpan<regNumber> REG_ETW_FRAMED_EBP_LIST => [REG_EBP];
 
@@ -134,58 +134,58 @@ public partial class Globals
     /// <summary>Minimum required outgoing argument space for a call.</summary>
     public const int MIN_ARG_AREA_FOR_CALL = 0;
 
-    public const regMaskInt RBM_INT_CALLEE_SAVED = RBM_EBX | RBM_ETW_FRAMED_EBP | RBM_R12 | RBM_R13 | RBM_R14 | RBM_R15;
+    public const regMask SRBM_INT_CALLEE_SAVED = SRBM_EBX | SRBM_ETW_FRAMED_EBP | SRBM_R12 | SRBM_R13 | SRBM_R14 | SRBM_R15;
 
-    public const regMaskInt RBM_INT_CALLEE_TRASH_INIT = RBM_EAX | RBM_RDI | RBM_RSI | RBM_EDX | RBM_ECX | RBM_R8 | RBM_R9 | RBM_R10 | RBM_R11;
+    public const regMask SRBM_INT_CALLEE_TRASH_INIT = SRBM_EAX | SRBM_RDI | SRBM_RSI | SRBM_EDX | SRBM_ECX | SRBM_R8 | SRBM_R9 | SRBM_R10 | SRBM_R11;
 
-    public const regMaskFlt RBM_FLT_CALLEE_SAVED = RBM_NONE;
+    public const regMask SRBM_FLT_CALLEE_SAVED = SRBM_NONE;
 
-    public const regMaskFlt RBM_FLT_CALLEE_TRASH_INIT = RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM3 | RBM_XMM4 | RBM_XMM5 | RBM_XMM6 | RBM_XMM7
-                                                      | RBM_XMM8 | RBM_XMM9 | RBM_XMM10 | RBM_XMM11 | RBM_XMM12 | RBM_XMM13 | RBM_XMM14 | RBM_XMM15;
+    public const regMask SRBM_FLT_CALLEE_TRASH_INIT = SRBM_XMM0 | SRBM_XMM1 | SRBM_XMM2 | SRBM_XMM3 | SRBM_XMM4 | SRBM_XMM5 | SRBM_XMM6 | SRBM_XMM7
+                                                    | SRBM_XMM8 | SRBM_XMM9 | SRBM_XMM10 | SRBM_XMM11 | SRBM_XMM12 | SRBM_XMM13 | SRBM_XMM14 | SRBM_XMM15;
 
     public const regNumber REG_PROFILER_ENTER_ARG_0 = REG_R14;
 
-    public const regMaskInt RBM_PROFILER_ENTER_ARG_0 = RBM_R14;
+    public const regMask SRBM_PROFILER_ENTER_ARG_0 = SRBM_R14;
 
     public const regNumber REG_PROFILER_ENTER_ARG_1 = REG_R15;
 
-    public const regMaskInt RBM_PROFILER_ENTER_ARG_1 = RBM_R15;
+    public const regMask SRBM_PROFILER_ENTER_ARG_1 = SRBM_R15;
 
     public const regNumber REG_DEFAULT_PROFILER_CALL_TARGET = REG_R11;
 #else
     /// <summary>Minimum required outgoing argument space for a call.</summary>
     public const int MIN_ARG_AREA_FOR_CALL = 4 * REGSIZE_BYTES;
 
-    public const regMaskInt RBM_INT_CALLEE_SAVED = RBM_EBX | RBM_ESI | RBM_EDI | RBM_ETW_FRAMED_EBP | RBM_R12 | RBM_R13 | RBM_R14 | RBM_R15;
+    public const regMask SRBM_INT_CALLEE_SAVED = SRBM_EBX | SRBM_ESI | SRBM_EDI | SRBM_ETW_FRAMED_EBP | SRBM_R12 | SRBM_R13 | SRBM_R14 | SRBM_R15;
 
-    public const regMaskInt RBM_INT_CALLEE_TRASH_INIT = RBM_EAX | RBM_ECX | RBM_EDX | RBM_R8 | RBM_R9 | RBM_R10 | RBM_R11;
+    public const regMask SRBM_INT_CALLEE_TRASH_INIT = SRBM_EAX | SRBM_ECX | SRBM_EDX | SRBM_R8 | SRBM_R9 | SRBM_R10 | SRBM_R11;
 
-    public const regMaskFlt RBM_FLT_CALLEE_SAVED = RBM_XMM6 | RBM_XMM7 | RBM_XMM8 | RBM_XMM9 | RBM_XMM10 | RBM_XMM11 | RBM_XMM12 | RBM_XMM13 | RBM_XMM14 | RBM_XMM15;
+    public const regMask SRBM_FLT_CALLEE_SAVED = SRBM_XMM6 | SRBM_XMM7 | SRBM_XMM8 | SRBM_XMM9 | SRBM_XMM10 | SRBM_XMM11 | SRBM_XMM12 | SRBM_XMM13 | SRBM_XMM14 | SRBM_XMM15;
 
-    public const regMaskFlt RBM_FLT_CALLEE_TRASH_INIT = RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM3 | RBM_XMM4 | RBM_XMM5;
+    public const regMask SRBM_FLT_CALLEE_TRASH_INIT = SRBM_XMM0 | SRBM_XMM1 | SRBM_XMM2 | SRBM_XMM3 | SRBM_XMM4 | SRBM_XMM5;
 #endif
 
-    public const regMaskMsk RBM_MSK_CALLEE_TRASH_INIT = RBM_NONE;
+    public const regMask SRBM_MSK_CALLEE_TRASH_INIT = SRBM_NONE;
 
-    public const regMaskMsk RBM_MSK_CALLEE_TRASH_EVEX = RBM_ALLMASK_EVEX;
+    public const regMask SRBM_MSK_CALLEE_TRASH_EVEX = SRBM_ALLMASK_EVEX;
 
-    public const regMaskMsk RBM_MSK_CALLEE_SAVED = RBM_NONE;
+    public const regMask SRBM_MSK_CALLEE_SAVED = SRBM_NONE;
 
-    public const regMaskInt RBM_OSR_INT_CALLEE_SAVED = RBM_INT_CALLEE_SAVED | RBM_EBP;
+    public const regMask SRBM_OSR_INT_CALLEE_SAVED = SRBM_INT_CALLEE_SAVED | SRBM_EBP;
 
     public const regNumber REG_FLT_CALLEE_SAVED_FIRST   = REG_XMM6;
 
     public const regNumber REG_FLT_CALLEE_SAVED_LAST = REG_XMM15;
 
-    public const regMaskInt RBM_LOWINT = RBM_ALLINT_INIT;
+    public const regMask SRBM_LOWINT = SRBM_ALLINT_INIT;
 
-    public const regMaskInt RBM_HIGHINT = RBM_R16 | RBM_R17 | RBM_R18 | RBM_R19 | RBM_R20 | RBM_R21 | RBM_R22 | RBM_R23 | RBM_R24 | RBM_R25 | RBM_R26 | RBM_R27 | RBM_R28 | RBM_R29 | RBM_R30 | RBM_R31;
+    public const regMask SRBM_HIGHINT = SRBM_R16 | SRBM_R17 | SRBM_R18 | SRBM_R19 | SRBM_R20 | SRBM_R21 | SRBM_R22 | SRBM_R23 | SRBM_R24 | SRBM_R25 | SRBM_R26 | SRBM_R27 | SRBM_R28 | SRBM_R29 | SRBM_R30 | SRBM_R31;
 
-    public const regMaskInt RBM_ALLINT_INIT = RBM_INT_CALLEE_SAVED | RBM_INT_CALLEE_TRASH_INIT;
+    public const regMask SRBM_ALLINT_INIT = SRBM_INT_CALLEE_SAVED | SRBM_INT_CALLEE_TRASH_INIT;
 
-    public const regMaskInt RBM_INT_CALLEE_TRASH_ALL = RBM_INT_CALLEE_TRASH_INIT | RBM_HIGHINT;
+    public const regMask SRBM_INT_CALLEE_TRASH_ALL = SRBM_INT_CALLEE_TRASH_INIT | SRBM_HIGHINT;
 
-    public const regMaskInt RBM_ALLINT_ALL = RBM_INT_CALLEE_SAVED | RBM_INT_CALLEE_TRASH_ALL;
+    public const regMask SRBM_ALLINT_ALL = SRBM_INT_CALLEE_SAVED | SRBM_INT_CALLEE_TRASH_ALL;
 
     // AMD64 write barrier ABI (see vm\amd64\JitHelpers_FastWriteBarriers.{asm,S},
     // vm\amd64\patchedcode.{asm,S}, vm\amd64\JitHelpers_Slow.asm,
@@ -208,17 +208,17 @@ public partial class Globals
     //           any SSE/AVX/AVX-512/EVEX-mask instruction, so no FP/SIMD/mask register is
     //           touched. This is identical on both Windows and SysV ABIs.
     //
-    // Because of the FP/SIMD/mask preservation, RBM_CALLEE_TRASH_WRITEBARRIER is reduced to
-    // RBM_INT_CALLEE_TRASH_INIT (the standard int callee-trash set, excluding APX high regs
+    // Because of the FP/SIMD/mask preservation, SRBM_CALLEE_TRASH_WRITEBARRIER is reduced to
+    // SRBM_INT_CALLEE_TRASH_INIT (the standard int callee-trash set, excluding APX high regs
     // R16-R31 which are also never touched by the helpers).
 
     public const regNumber REG_WRITE_BARRIER_DST = REG_ARG_0;
 
-    public const regMaskInt RBM_WRITE_BARRIER_DST = RBM_ARG_0;
+    public const regMask SRBM_WRITE_BARRIER_DST = SRBM_ARG_0;
 
     public const regNumber REG_WRITE_BARRIER_SRC = REG_ARG_1;
 
-    public const regMaskInt RBM_WRITE_BARRIER_SRC = RBM_ARG_1;
+    public const regMask SRBM_WRITE_BARRIER_SRC = SRBM_ARG_1;
 
     // We have two register classifications
     // * callee trash: aka     volatile or caller saved
@@ -343,7 +343,7 @@ public partial class Globals
     public const int CNT_CALLEE_TRASH_HIGHFLOAT = 16;
 
     /// <summary>For SysV we have more volatile registers so we do not save any callee saves for EnC.</summary>
-    public const int RBM_ENC_CALLEE_SAVED = 0;
+    public const int SRBM_ENC_CALLEE_SAVED = 0;
 #else
     public const int CNT_CALLEE_SAVED = 7 + REG_ETW_FRAMED_EBP_COUNT;
 
@@ -362,7 +362,7 @@ public partial class Globals
     public const int CNT_CALLEE_TRASH_HIGHFLOAT = 16;
 
     /// <summary>Callee-preserved registers we always save and allow use of for EnC code, since there are quite few volatile registers.</summary>
-    public const regMaskInt RBM_ENC_CALLEE_SAVED = RBM_RSI | RBM_RDI;
+    public const regMask SRBM_ENC_CALLEE_SAVED = SRBM_RSI | SRBM_RDI;
 #endif
 
     public const int CNT_CALLEE_SAVED_MASK = 0;
@@ -380,7 +380,7 @@ public partial class Globals
     /// <summary>register to hold shift amount</summary>
     public const regNumber REG_SHIFT = REG_ECX;
 
-    public const regMaskInt RBM_SHIFT = RBM_ECX;
+    public const regMask SRBM_SHIFT = SRBM_ECX;
 
     /// <summary>This is a general scratch register that does not conflict with the argument registers</summary>
     public const regNumber REG_SCRATCH = REG_EAX;
@@ -389,16 +389,16 @@ public partial class Globals
 #if UNIX_AMD64_ABI
     public const regNumber REG_EXCEPTION_OBJECT = REG_EDI;
 
-    public const regMaskInt RBM_EXCEPTION_OBJECT = RBM_EDI;
+    public const regMask SRBM_EXCEPTION_OBJECT = SRBM_EDI;
 #else
     public const regNumber REG_EXCEPTION_OBJECT = REG_ECX;
 
-    public const regMaskInt RBM_EXCEPTION_OBJECT = RBM_ECX;
+    public const regMask SRBM_EXCEPTION_OBJECT = SRBM_ECX;
 #endif
 
     public const regNumber REG_JUMP_THUNK_PARAM = REG_EAX;
 
-    public const regMaskInt RBM_JUMP_THUNK_PARAM = RBM_EAX;
+    public const regMask SRBM_JUMP_THUNK_PARAM = SRBM_EAX;
 
     // Register to be used for emitting helper calls whose call target is an indir of an
     // absolute memory address in case of Rel32 overflow i.e. a data address could not be
@@ -413,28 +413,28 @@ public partial class Globals
     //    profiler.
     public const regNumber REG_DEFAULT_HELPER_CALL_TARGET = REG_RAX;
 
-    public const regMaskInt RBM_DEFAULT_HELPER_CALL_TARGET = RBM_RAX;
+    public const regMask SRBM_DEFAULT_HELPER_CALL_TARGET = SRBM_RAX;
 
     /// <summary>Indirection cell for R2R fast tailcall</summary>
     /// <remarks>See ImportThunk.Kind.DelayLoadHelperWithExistingIndirectionCell in crossgen2.</remarks>
     public const regNumber REG_R2R_INDIRECT_PARAM = REG_RAX;
 
-    public const regMaskInt RBM_R2R_INDIRECT_PARAM = RBM_RAX;
+    public const regMask SRBM_R2R_INDIRECT_PARAM = SRBM_RAX;
 
     /// <summary>GenericPInvokeCalliHelper VASigCookie Parameter</summary>
     public const regNumber REG_PINVOKE_COOKIE_PARAM = REG_R11;
 
-    public const regMaskInt RBM_PINVOKE_COOKIE_PARAM = RBM_R11;
+    public const regMask SRBM_PINVOKE_COOKIE_PARAM = SRBM_R11;
 
     /// <summary>GenericPInvokeCalliHelper unmanaged target Parameter</summary>
     public const regNumber REG_PINVOKE_TARGET_PARAM = REG_R10;
 
-    public const regMaskInt RBM_PINVOKE_TARGET_PARAM = RBM_R10;
+    public const regMask SRBM_PINVOKE_TARGET_PARAM = SRBM_R10;
 
     /// <summary>IL stub's secret MethodDesc parameter (JitFlags.JIT_FLAG_PUBLISH_SECRET_PARAM)</summary>
     public const regNumber REG_SECRET_STUB_PARAM = REG_R10;
 
-    public const regMaskInt RBM_SECRET_STUB_PARAM = RBM_R10;
+    public const regMask SRBM_SECRET_STUB_PARAM = SRBM_R10;
 
     // The following defines are useful for iterating a regNumber
 
@@ -451,47 +451,47 @@ public partial class Globals
     /// <summary>Which register are int and long values returned in ?</summary>
     public const regNumber REG_INTRET = REG_EAX;
 
-    public const regMaskInt RBM_INTRET = RBM_EAX;
+    public const regMask SRBM_INTRET = SRBM_EAX;
 
-    public const regMaskInt RBM_LNGRET = RBM_EAX;
+    public const regMask SRBM_LNGRET = SRBM_EAX;
 
 #if UNIX_AMD64_ABI
     public const regNumber REG_INTRET_1 = REG_RDX;
 
-    public const regMaskInt RBM_INTRET_1 = RBM_RDX;
+    public const regMask SRBM_INTRET_1 = SRBM_RDX;
 
     public const regNumber REG_LNGRET_1 = REG_RDX;
 
-    public const regMaskInt RBM_LNGRET_1 = RBM_RDX;
+    public const regMask SRBM_LNGRET_1 = SRBM_RDX;
 #endif
 
     public const regNumber REG_FLOATRET = REG_XMM0;
 
-    public const regMaskFlt RBM_FLOATRET = RBM_XMM0;
+    public const regMask SRBM_FLOATRET = SRBM_XMM0;
 
     public const regNumber REG_DOUBLERET = REG_XMM0;
 
-    public const regMaskFlt RBM_DOUBLERET = RBM_XMM0;
+    public const regMask SRBM_DOUBLERET = SRBM_XMM0;
 
 #if UNIX_AMD64_ABI
     public const regNumber REG_FLOATRET_1 = REG_XMM1;
 
-    public const regMaskFlt RBM_FLOATRET_1 = RBM_XMM1;
+    public const regMask SRBM_FLOATRET_1 = SRBM_XMM1;
     
     public const regNumber REG_DOUBLERET_1 = REG_XMM1;
 
-    public const regMaskFlt RBM_DOUBLERET_1 = RBM_XMM1;
+    public const regMask SRBM_DOUBLERET_1 = SRBM_XMM1;
 #endif
 
     public const regNumber REG_FPBASE = REG_EBP;
 
-    public const regMaskInt RBM_FPBASE = RBM_EBP;
+    public const regMask SRBM_FPBASE = SRBM_EBP;
 
     public const string STR_FPBASE = "rbp";
 
     public const regNumber REG_SPBASE = REG_ESP;
 
-    public const regMaskInt RBM_SPBASE = RBM_ESP;
+    public const regMask SRBM_SPBASE = SRBM_ESP;
 
     public const string STR_SPBASE = "rsp";
 
@@ -527,17 +527,17 @@ public partial class Globals
     // extern const regNumber fltArgRegs[MAX_FLOAT_REG_ARG];
     // extern const regMaskTP fltArgMasks[MAX_FLOAT_REG_ARG];
 
-    public const regMaskInt RBM_ARG_0 = RBM_RDI;
+    public const regMask SRBM_ARG_0 = SRBM_RDI;
 
-    public const regMaskInt RBM_ARG_1 = RBM_RSI;
+    public const regMask SRBM_ARG_1 = SRBM_RSI;
 
-    public const regMaskInt RBM_ARG_2 = RBM_EDX;
+    public const regMask SRBM_ARG_2 = SRBM_EDX;
 
-    public const regMaskInt RBM_ARG_3 = RBM_ECX;
+    public const regMask SRBM_ARG_3 = SRBM_ECX;
 
-    public const regMaskInt RBM_ARG_4 = RBM_R8;
+    public const regMask SRBM_ARG_4 = SRBM_R8;
 
-    public const regMaskInt RBM_ARG_5 = RBM_R9;
+    public const regMask SRBM_ARG_5 = SRBM_R9;
 #else
     public const int MAX_REG_ARG = 4;
 
@@ -563,13 +563,13 @@ public partial class Globals
     // extern const regNumber fltArgRegs[MAX_FLOAT_REG_ARG];
     // extern const regMaskTP fltArgMasks[MAX_FLOAT_REG_ARG];
 
-    public const regMaskInt RBM_ARG_0 = RBM_ECX;
+    public const regMask SRBM_ARG_0 = SRBM_ECX;
 
-    public const regMaskInt RBM_ARG_1 = RBM_EDX;
+    public const regMask SRBM_ARG_1 = SRBM_EDX;
 
-    public const regMaskInt RBM_ARG_2 = RBM_R8;
+    public const regMask SRBM_ARG_2 = SRBM_R8;
 
-    public const regMaskInt RBM_ARG_3 = RBM_R9;
+    public const regMask SRBM_ARG_3 = SRBM_R9;
 #endif
 
     public const regNumber REG_FLTARG_0 = REG_XMM0;
@@ -580,13 +580,13 @@ public partial class Globals
 
     public const regNumber REG_FLTARG_3 = REG_XMM3;
 
-    public const regMaskFlt RBM_FLTARG_0 = RBM_XMM0;
+    public const regMask SRBM_FLTARG_0 = SRBM_XMM0;
 
-    public const regMaskFlt RBM_FLTARG_1 = RBM_XMM1;
+    public const regMask SRBM_FLTARG_1 = SRBM_XMM1;
 
-    public const regMaskFlt RBM_FLTARG_2 = RBM_XMM2;
+    public const regMask SRBM_FLTARG_2 = SRBM_XMM2;
 
-    public const regMaskFlt RBM_FLTARG_3 = RBM_XMM3;
+    public const regMask SRBM_FLTARG_3 = SRBM_XMM3;
 
 #if UNIX_AMD64_ABI
     public const regNumber REG_FLTARG_4 = REG_XMM4;
@@ -597,28 +597,28 @@ public partial class Globals
 
     public const regNumber REG_FLTARG_7 = REG_XMM7;
 
-    public const regMaskFlt RBM_FLTARG_4 = RBM_XMM4;
+    public const regMask SRBM_FLTARG_4 = SRBM_XMM4;
 
-    public const regMaskFlt RBM_FLTARG_5 = RBM_XMM5;
+    public const regMask SRBM_FLTARG_5 = SRBM_XMM5;
 
-    public const regMaskFlt RBM_FLTARG_6 = RBM_XMM6;
+    public const regMask SRBM_FLTARG_6 = SRBM_XMM6;
 
-    public const regMaskFlt RBM_FLTARG_7 = RBM_XMM7;
+    public const regMask SRBM_FLTARG_7 = SRBM_XMM7;
 
-    public const regMaskInt RBM_ARG_REGS = RBM_ARG_0 | RBM_ARG_1 | RBM_ARG_2 | RBM_ARG_3 | RBM_ARG_4 | RBM_ARG_5;
+    public const regMask SRBM_ARG_REGS = SRBM_ARG_0 | SRBM_ARG_1 | SRBM_ARG_2 | SRBM_ARG_3 | SRBM_ARG_4 | SRBM_ARG_5;
 
-    public const regMaskFlt RBM_FLTARG_REGS = RBM_FLTARG_0 | RBM_FLTARG_1 | RBM_FLTARG_2 | RBM_FLTARG_3 | RBM_FLTARG_4 | RBM_FLTARG_5 | RBM_FLTARG_6 | RBM_FLTARG_7;
+    public const regMask SRBM_FLTARG_REGS = SRBM_FLTARG_0 | SRBM_FLTARG_1 | SRBM_FLTARG_2 | SRBM_FLTARG_3 | SRBM_FLTARG_4 | SRBM_FLTARG_5 | SRBM_FLTARG_6 | SRBM_FLTARG_7;
 #else
-    public const regMaskInt RBM_ARG_REGS = RBM_ARG_0 | RBM_ARG_1 | RBM_ARG_2 | RBM_ARG_3;
+    public const regMask SRBM_ARG_REGS = SRBM_ARG_0 | SRBM_ARG_1 | SRBM_ARG_2 | SRBM_ARG_3;
 
-    public const regMaskFlt RBM_FLTARG_REGS = RBM_FLTARG_0 | RBM_FLTARG_1 | RBM_FLTARG_2 | RBM_FLTARG_3;
+    public const regMask SRBM_FLTARG_REGS = SRBM_FLTARG_0 | SRBM_FLTARG_1 | SRBM_FLTARG_2 | SRBM_FLTARG_3;
 #endif
 
-    public const regMaskInt RBM_VALIDATE_INDIRECT_CALL_TRASH_ALL = RBM_INT_CALLEE_TRASH_ALL & ~(RBM_R10 | RBM_RCX);
+    public const regMask SRBM_VALIDATE_INDIRECT_CALL_TRASH_ALL = SRBM_INT_CALLEE_TRASH_ALL & ~(SRBM_R10 | SRBM_RCX);
 
     public const regNumber REG_VALIDATE_INDIRECT_CALL_ADDR = REG_RCX;
 
-    public const regMaskInt RBM_VALIDATE_INDIRECT_CALL_ADDR = RBM_RCX;
+    public const regMask SRBM_VALIDATE_INDIRECT_CALL_ADDR = SRBM_RCX;
 
     public const regNumber REG_DISPATCH_INDIRECT_CALL_ADDR = REG_RAX;
 
@@ -639,22 +639,22 @@ public partial class Globals
 
     public const regNumber REG_STACK_PROBE_HELPER_ARG = REG_R11;
 
-    public const regMaskInt RBM_STACK_PROBE_HELPER_ARG = RBM_R11;
+    public const regMask SRBM_STACK_PROBE_HELPER_ARG = SRBM_R11;
 
 #if UNIX_AMD64_ABI
-    public const regMaskInt RBM_STACK_PROBE_HELPER_TRASH = RBM_NONE;
+    public const regMask SRBM_STACK_PROBE_HELPER_TRASH = SRBM_NONE;
 #else
-    public const regMaskInt RBM_STACK_PROBE_HELPER_TRASH = RBM_RAX;
+    public const regMask SRBM_STACK_PROBE_HELPER_TRASH = SRBM_RAX;
 #endif
 
 #if UNIX_AMD64_ABI
     public const regNumber REG_SWIFT_ERROR = REG_R12;
 
-    public const regMaskInt RBM_SWIFT_ERROR = RBM_R12;
+    public const regMask SRBM_SWIFT_ERROR = SRBM_R12;
 
     public const regNumber REG_SWIFT_SELF  = REG_R13;
 
-    public const regMaskInt RBM_SWIFT_SELF = RBM_R13;
+    public const regMask SRBM_SWIFT_SELF = SRBM_R13;
 
     public static ReadOnlySpan<regNumber> REG_SWIFT_INTRET_ORDER => [REG_RAX, REG_RDX, REG_RCX, REG_R8];
 
@@ -662,7 +662,7 @@ public partial class Globals
 
     public const regNumber REG_SWIFT_ARG_RET_BUFF = REG_RAX;
 
-    public const regMaskInt RBM_SWIFT_ARG_RET_BUFF = RBM_RAX;
+    public const regMask SRBM_SWIFT_ARG_RET_BUFF = SRBM_RAX;
 
     public const int SWIFT_RET_BUFF_ARGNUM = MAX_REG_ARG;
 #endif

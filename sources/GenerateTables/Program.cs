@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -16,6 +15,9 @@ internal static class Program
     public static void Main()
     {
         Directory.Delete(@"Outputs", recursive: true);
+
+        GenerateApiICorJitInfoNames();
+        GenerateApiICorJitInfoNamesExtensions();
 
         GenerateCodeSeqSM();
         GenerateCompiler();
@@ -40,11 +42,20 @@ internal static class Program
 
         GenerateNamedIntrinsic();
 
+        GenerateOpcode();
+        GenerateOpcodeExtensions();
+
         GeneratePhases();
         GeneratePhasesExtensions();
 
+        GenerateRegMask();
+        GenerateRegNumber();
+        GenerateRegNumberExtensions();
+
         GenerateSmOpcode();
         GenerateSmOpcodeExtensions();
+
+        GenerateTargetGlobals();
 
         GenerateVarTypes();
         GenerateVarTypesExtensions();
@@ -53,6 +64,69 @@ internal static class Program
         GenerateVNFuncExtensions();
 
         ProcessInstructionSetDesc();
+    }
+
+    private static void GenerateApiICorJitInfoNames()
+    {
+        var builder = ProcessMacroBasedFile(@"Inputs\ICorJitInfo_names_generated.h", "DEF_CLR_API(", (builder, inputFile, line, prefix, parts) => {
+            if (parts.Length != 1)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var name = parts[0].AsSpan().Trim();
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    API_{name},");
+        });
+
+        _ = Directory.CreateDirectory(@"Outputs\jit\compiler");
+
+        File.WriteAllText(@"Outputs\jit\compiler\API_ICorJitInfo_Names.generated.cs", $$"""
+// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+global using static RyuJitSharp.API_ICorJitInfo_Names;
+
+namespace RyuJitSharp;
+
+public enum API_ICorJitInfo_Names
+{
+{{builder}}    API_COUNT,
+}
+""");
+    }
+
+    private static void GenerateApiICorJitInfoNamesExtensions()
+    {
+        var builder = ProcessMacroBasedFile(@"Inputs\ICorJitInfo_names_generated.h", "DEF_CLR_API(", (builder, inputFile, line, prefix, parts) => {
+            if (parts.Length != 1)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var name = parts[0].AsSpan().Trim();
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        \"{name}\",");
+        });
+
+        _ = Directory.CreateDirectory(@"Outputs\jit\compiler");
+
+        File.WriteAllText(@"Outputs\jit\compiler\API_ICorJitInfo_NamesExtensions.generated.cs", $$"""
+// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+using System;
+
+namespace RyuJitSharp;
+
+public static partial class API_ICorJitInfo_NamesExtensions
+{
+    private static readonly string[] s_name = [
+{{builder}}    ];
+}
+""");
     }
 
     private static void GenerateCodeSeqSM()
@@ -91,7 +165,7 @@ public partial class CodeSeqSM
 
     private static void GenerateCompiler()
     {
-        var builder = ProcessMacroBasedFile(@"Inputs\handlekinds.h", "HANDLE_KIND(", (builder, inputFile, line, prefix, parts) => {
+        var gtDispIconHandleFlagBuilder = ProcessMacroBasedFile(@"Inputs\handlekinds.h", "HANDLE_KIND(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 3)
             {
                 throw new InvalidDataException($"Invalid line format: '{line}'");
@@ -110,6 +184,17 @@ public partial class CodeSeqSM
 """);
         });
 
+        var compInitVarTypeCalleeTrashRegMasksBuilder = ProcessMacroBasedFile(@"Inputs\typelist.h", "DEF_TP(", (builder, inputFile, line, prefix, parts) => {
+            if (parts.Length != 13)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var name = parts[0].AsSpan().Trim();
+            var calleeTrashRegs = parts[11].AsSpan().Trim();
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        varTypeCalleeTrashRegMasks[(int)(TYP_{name})] = S{calleeTrashRegs};");
+        });
+
         _ = Directory.CreateDirectory(@"Outputs\jit\compiler");
 
         File.WriteAllText(@"Outputs\jit\compiler\Compiler.generated.cs", $$"""
@@ -122,6 +207,10 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    private void compInitVarTypeCalleeTrashRegMasks()
+    {
+{{compInitVarTypeCalleeTrashRegMasksBuilder}}    }
+
     private void gtDispIconHandleFlag(GenTreeIntCon intCon)
     {
         switch (intCon.IconHandleFlag)
@@ -130,7 +219,7 @@ public partial class Compiler
             {
                 break;
             }
-{{builder}}
+{{gtDispIconHandleFlagBuilder}}
             default:
             {
                 jitprintf(" ILLEGAL");
@@ -144,7 +233,7 @@ public partial class Compiler
 
     private static void GenerateGenTree()
     {
-        var builder = ProcessMacroBasedFile(@"Inputs\handlekinds.h", "HANDLE_KIND(", (builder, inputFile, line, prefix, parts) => {
+        var handleKindFlagsBuilder = ProcessMacroBasedFile(@"Inputs\handlekinds.h", "HANDLE_KIND(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 3)
             {
                 throw new InvalidDataException($"Invalid line format: '{line}'");
@@ -156,6 +245,63 @@ public partial class Compiler
             _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {flags}, // {name}");
         });
 
+        ReadOnlySpan<string> prefixes = [
+            "GTSTRUCT_0(",
+            "GTSTRUCT_1(",
+            "GTSTRUCT_2(",
+            "GTSTRUCT_3(",
+            "GTSTRUCT_4(",
+            "GTSTRUCT_N(",
+            "GTSTRUCT_2_SPECIAL(",
+            "GTSTRUCT_3_SPECIAL(",
+        ];
+
+        var asNodeBuilder = ProcessMacroBasedFile(@"Inputs\gtstructs.h", prefixes, (builder, inputFile, line, prefix, parts) => {
+            if (parts.Length is < 2)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var name = parts[0].AsSpan().Trim();
+            var operCheck = new StringBuilder("_oper");
+
+            if (name.Equals("UnOp", StringComparison.Ordinal))
+            {
+                Debug.Assert(parts.Length is 2);
+                Debug.Assert(parts[1].AsSpan().Trim().Equals("GT_OP", StringComparison.Ordinal));
+                _ = operCheck.Append(".IsUnary");
+            }
+            else if (name.Equals("Op", StringComparison.Ordinal))
+            {
+                Debug.Assert(parts.Length is 2);
+                Debug.Assert(parts[1].AsSpan().Trim().Equals("GT_OP", StringComparison.Ordinal));
+                _ = operCheck.Append(".IsBinary");
+            }
+            else
+            {
+                var firstOper = parts[1].AsSpan().Trim();
+                _ = operCheck.Append(CultureInfo.InvariantCulture, $" is {firstOper}");
+
+                var remainingOpers = parts[2..];
+
+                foreach (var remainingOper in remainingOpers)
+                {
+                    var trimmedOper = remainingOper.AsSpan().Trim();
+
+                    _ = operCheck.Append(CultureInfo.InvariantCulture, $" or {trimmedOper}");
+                }
+            }
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $$"""
+    public GenTree{{name}} As{{name}}()
+    {
+        assert({{operCheck}});
+        assert(this is GenTree{{name}});
+        return Unsafe.As<GenTree{{name}}>(this);
+    }
+""");
+        });
+
         _ = Directory.CreateDirectory(@"Outputs\jit\gentree");
 
         File.WriteAllText(@"Outputs\jit\gentree\GenTree.generated.cs", $$"""
@@ -165,14 +311,16 @@ public partial class Compiler
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
 
 public partial class GenTree
 {
     private static ReadOnlySpan<HandleKindFlag> s_handleKindFlags => [
-{{builder}}    ];
-}
+{{handleKindFlagsBuilder}}    ];
+
+{{asNodeBuilder}}}
 """);
     }
 
@@ -1528,6 +1676,139 @@ public enum NamedIntrinsic : ushort
 """);
     }
 
+    private static void GenerateOpcode()
+    {
+        var builder = ProcessMacroBasedFile(@"Inputs\opcode.def", "OPDEF(", (builder, inputFile, line, prefix, parts) => {
+            if (parts.Length != 10)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var name = parts[0].AsSpan().Trim();
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    {name},");
+        });
+
+        _ = Directory.CreateDirectory(@"Outputs\inc\openum");
+
+        File.WriteAllText(@"Outputs\inc\openum\OPCODE.generated.cs", $$"""
+// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+global using static RyuJitSharp.OPCODE;
+
+namespace RyuJitSharp;
+
+public enum OPCODE
+{
+{{builder}}    CEE_COUNT,
+}
+""");
+    }
+
+    private static void GenerateOpcodeExtensions()
+    {
+        var flowKindsBuilder = ProcessMacroBasedFile(@"Inputs\opcode.def", "OPDEF(", (builder, inputFile, line, prefix, parts) => {
+            if (parts.Length != 10)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var name = parts[0].AsSpan().Trim();
+            var ctrl = parts[9].AsSpan().Trim();
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        FLOW_{ctrl}, // {name}");
+        });
+
+        var sizesBuilder = ProcessMacroBasedFile(@"Inputs\opcode.def", "OPDEF(", (builder, inputFile, line, prefix, parts) => {
+            if (parts.Length != 10)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var name = parts[0].AsSpan().Trim();
+            var type = parts[4].AsSpan().Trim();
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {type}_size, // {name}");
+        });
+
+        var namesBuilder = ProcessMacroBasedFile(@"Inputs\opcode.def", "OPDEF(", (builder, inputFile, line, prefix, parts) => {
+            if (parts.Length != 10)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var name = parts[0].AsSpan().Trim();
+            var nameString = parts[1].AsSpan().Trim();
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {nameString}, // {name}");
+        });
+
+        var argKindsBuilder = ProcessMacroBasedFile(@"Inputs\opcode.def", "OPDEF(", (builder, inputFile, line, prefix, parts) => {
+            if (parts.Length != 10)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var name = parts[0].AsSpan().Trim();
+            var type = parts[4].AsSpan().Trim();
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {type}, // {name}");
+        });
+
+        _ = Directory.CreateDirectory(@"Outputs\inc\openum");
+
+        File.WriteAllText(@"Outputs\inc\openum\OPCODEExtensions.generated.cs", $$"""
+// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+using System;
+
+namespace RyuJitSharp;
+
+public static partial class OPCODEExtensions
+{
+    private const byte InlineNone_size = 0;
+    private const byte ShortInlineVar_size = 1;
+    private const byte InlineVar_size = 2;
+    private const byte ShortInlineI_size = 1;
+    private const byte InlineI_size = 4;
+    private const byte InlineI8_size = 8;
+    private const byte ShortInlineR_size = 4;
+    private const byte InlineR_size = 8;
+    private const byte ShortInlineBrTarget_size = 1;
+    private const byte InlineBrTarget_size = 4;
+    private const byte InlineMethod_size = 4;
+    private const byte InlineField_size = 4;
+    private const byte InlineType_size = 4;
+    private const byte InlineString_size = 4;
+    private const byte InlineSig_size = 4;
+    private const byte InlineRVA_size = 4;
+    private const byte InlineTok_size = 4;
+    private const byte InlineSwitch_size = 0;
+    private const byte InlinePhi_size = 0;
+    private const byte InlineVarTok_size = 0;
+
+#if DEBUG
+    private static ReadOnlySpan<OPCODE_FORMAT> s_argKinds => [
+{{argKindsBuilder}}    ];
+
+    private static ReadOnlySpan<OpFlow> s_flowKinds => [
+{{flowKindsBuilder}}    ];
+
+    private static readonly string[] s_names = [
+{{namesBuilder}}    ];
+#endif
+
+    private static ReadOnlySpan<byte> s_sizes => [
+{{sizesBuilder}}    ];
+}
+""");
+    }
+
     private static void GeneratePhases()
     {
         var builder = ProcessMacroBasedFile(@"Inputs\compphases.h", "CompPhaseNameMacro(", (builder, inputFile, line, prefix, parts) => {
@@ -1645,6 +1926,221 @@ public static partial class PhasesExtensions
     private static ReadOnlySpan<bool> s_reportsIRSize => [
 {{reportsIRSizeBuilder}}    ];
 #endif
+}
+""");
+    }
+
+    private static void GenerateRegMask()
+    {
+        var builder = ProcessRegister((builder, inputFile, line, prefix, parts) => {
+            if (parts.Length is not 2 and not 4 and not 5)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var name = parts[0].AsSpan().Trim();
+
+            if (parts.Length is 2)
+            {
+                var realName = parts[1].AsSpan().Trim();
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    SRBM_{name} = SRBM_{realName},");
+            }
+            else
+            {
+                var mask = parts[2].AsSpan().Trim();
+                _ = builder.Append(CultureInfo.InvariantCulture, $"    SRBM_{name} = ");
+
+                if (inputFile.Equals(@"Inputs\registerx86.h", StringComparison.Ordinal))
+                {
+                    if (mask.StartsWith("XMMMASK(", StringComparison.Ordinal))
+                    {
+                        _ = builder.Append(CultureInfo.InvariantCulture, $"1 << ({mask[8..^1]} + XMMBASE)");
+                    }
+                    else if (mask.StartsWith("KMASK(", StringComparison.Ordinal))
+                    {
+                        _ = builder.Append(CultureInfo.InvariantCulture, $"1 << ({mask[6..^1]} + KBASE)");
+                    }
+                    else
+                    {
+                        Debug.Assert(!mask.Contains('('));
+                        _ = builder.Append(CultureInfo.InvariantCulture, $"{mask}");
+                    }
+                }
+                else if (inputFile.Equals(@"Inputs\registeramd64.h", StringComparison.Ordinal))
+                {
+                    if (mask.StartsWith("GPRMASK(", StringComparison.Ordinal))
+                    {
+                        _ = builder.Append(CultureInfo.InvariantCulture, $"1L << {mask[8..^1]}");
+                    }
+                    else if (mask.StartsWith("XMMMASK(", StringComparison.Ordinal))
+                    {
+                        _ = builder.Append(CultureInfo.InvariantCulture, $"1L << ({mask[8..^1]} + XMMBASE)");
+                    }
+                    else if (mask.StartsWith("KMASK(", StringComparison.Ordinal))
+                    {
+                        _ = builder.Append(CultureInfo.InvariantCulture, $"1L << {mask[6..^1]}");
+                    }
+                    else
+                    {
+                        Debug.Assert(!mask.Contains('('));
+                        _ = builder.Append(CultureInfo.InvariantCulture, $"{mask}");
+                    }
+                }
+                else if (inputFile.Equals(@"Inputs\registerarm.h", StringComparison.Ordinal))
+                {
+                    if (mask.StartsWith("VFPMASK(", StringComparison.Ordinal))
+                    {
+                        _ = builder.Append(CultureInfo.InvariantCulture, $"1L << ({mask[8..^1]} + FPBASE)");
+                    }
+                    else
+                    {
+                        Debug.Assert(!mask.Contains('('));
+                        _ = builder.Append(CultureInfo.InvariantCulture, $"{mask}");
+                    }
+                }
+                else if (inputFile.Equals(@"Inputs\registerarm64.h", StringComparison.Ordinal))
+                {
+                    if (mask.StartsWith("VMASK(", StringComparison.Ordinal))
+                    {
+                        _ = builder.Append(CultureInfo.InvariantCulture, $"1L << ({mask[6..^1]} + VBASE)");
+                    }
+                    else if (mask.StartsWith("RMASK(", StringComparison.Ordinal) ||
+                             mask.StartsWith("PMASK(", StringComparison.Ordinal))
+                    {
+                        _ = builder.Append(CultureInfo.InvariantCulture, $"1L << {mask[6..^1]}");
+                    }
+                    else
+                    {
+                        Debug.Assert(!mask.Contains('('));
+                        _ = builder.Append(CultureInfo.InvariantCulture, $"{mask}");
+                    }
+                }
+                else if (inputFile.Equals(@"Inputs\registerloongarch64.h", StringComparison.Ordinal) ||
+                         inputFile.Equals(@"Inputs\registerriscv64.h", StringComparison.Ordinal))
+                {
+                    if (mask.StartsWith("FMASK(", StringComparison.Ordinal))
+                    {
+                        _ = builder.Append(CultureInfo.InvariantCulture, $"1L << ({mask[6..^1]} + FBASE)");
+                    }
+                    else if (mask.StartsWith("RMASK(", StringComparison.Ordinal))
+                    {
+                        _ = builder.Append(CultureInfo.InvariantCulture, $"1L << {mask[6..^1]}");
+                    }
+                    else
+                    {
+                        Debug.Assert(!mask.Contains('('));
+                        _ = builder.Append(CultureInfo.InvariantCulture, $"{mask}");
+                    }
+                }
+                else
+                {
+                    Debug.Assert(inputFile.Equals(@"Inputs\registerwasm.h", StringComparison.Ordinal));
+                    Debug.Assert(!mask.Contains('('));
+                    _ = builder.Append(CultureInfo.InvariantCulture, $"{mask}");
+                }
+                _ = builder.AppendLine(",");
+            }
+        }, includeRegAlias: true);
+
+        _ = Directory.CreateDirectory(@"Outputs\jit\target");
+
+        File.WriteAllText(@"Outputs\jit\target\regMask.generated.cs", $$"""
+// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+global using static RyuJitSharp.regMask;
+
+namespace RyuJitSharp;
+
+#if TARGET_X86
+public enum regMask
+#else
+public enum regMask : long
+#endif
+{
+    SRBM_NONE = 0,
+{{builder}}}
+""");
+    }
+
+    private static void GenerateRegNumber()
+    {
+        var builder = ProcessRegister((builder, inputFile, line, prefix, parts) => {
+            if (parts.Length is not 2 and not 4 and not 5)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var name = parts[0].AsSpan().Trim();
+
+            if (parts.Length is 2)
+            {
+                var realName = parts[1].AsSpan().Trim();
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    REG_{name} = REG_{realName},");
+            }
+            else
+            {
+                var rnum = parts[1].AsSpan().Trim();
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    REG_{name} = {rnum},");
+            }
+        }, includeRegAlias: true);
+
+        _ = Directory.CreateDirectory(@"Outputs\jit\target");
+
+        File.WriteAllText(@"Outputs\jit\target\regNumber.generated.cs", $$"""
+// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+global using static RyuJitSharp.regNumber;
+
+namespace RyuJitSharp;
+
+public enum regNumber : byte
+{
+{{builder}}    REG_COUNT,
+
+    REG_NA = REG_COUNT,
+
+    // everything but REG_STK (only real regs)
+    ACTUAL_REG_COUNT = REG_COUNT - 1,
+}
+""");
+    }
+
+    private static void GenerateRegNumberExtensions()
+    {
+        var builder = ProcessRegister((builder, inputFile, line, prefix, parts) => {
+            if (parts.Length is not 4 and not 5)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var name = parts[0].AsSpan().Trim();
+            var sname = parts[3].AsSpan().Trim();
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {sname}, // REG_{name}");
+        }, includeRegAlias: false);
+
+        _ = Directory.CreateDirectory(@"Outputs\jit\target");
+
+        File.WriteAllText(@"Outputs\jit\target\regNumberExtensions.generated.cs", $$"""
+// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+using System;
+
+namespace RyuJitSharp;
+
+public static partial class regNumberExtensions
+{
+    private static readonly string[] s_names = [
+{{builder}}    ];
 }
 """);
     }
@@ -1859,6 +2355,48 @@ public static partial class SM_OPCODEExtensions
 {{namesBuilder}}    ];
 }
 #endif
+""");
+    }
+
+    private static void GenerateTargetGlobals()
+    {
+        var builder = ProcessRegister((builder, inputFile, line, prefix, parts) => {
+            if (parts.Length is not 2 and not 4 and not 5)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var name = parts[0].AsSpan().Trim();
+
+            if (parts.Length is 2)
+            {
+                var realName = parts[1].AsSpan().Trim();
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    public static regMaskTP RBM_{name} => RBM_{realName};");
+            }
+            else
+            {
+                var rnum = parts[1].AsSpan().Trim();
+                var mask = parts[2].AsSpan().Trim();
+
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    public static regMaskTP RBM_{name} => regMaskTP.CreateFromRegNum((regNumber)({rnum}), (regMask)({mask}));");
+            }
+        }, includeRegAlias: true);
+
+        _ = Directory.CreateDirectory(@"Outputs\jit\target");
+
+        File.WriteAllText(@"Outputs\jit\target\Globals.generated.cs", $$"""
+// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+namespace RyuJitSharp;
+
+public static partial class Globals
+{
+    public static regMaskTP RBM_NONE => default;
+{{builder}}
+}
 """);
     }
 
@@ -2850,7 +3388,8 @@ public partial class Globals
                                             depth--;
                                         }
                                     }
-                                    else if (!nextDirective.Equals("#define ", StringComparison.Ordinal))
+                                    else if (!nextDirective.Equals("#define ", StringComparison.Ordinal) &&
+                                             !nextDirective.Equals("#undef ", StringComparison.Ordinal))
                                     {
                                         regionContainsOnlyDefines = false;
 
@@ -2861,7 +3400,7 @@ public partial class Globals
                                     }
                                 }
                             }
-                            else
+                            else if (nextLine.Length is not 0)
                             {
                                 regionContainsOnlyDefines = false;
 
@@ -3055,6 +3594,58 @@ public partial class Globals
             return directive;
         }
     }
+
+    private static StringBuilder ProcessRegister(Action<StringBuilder, string, string, string, string[]> callback, bool includeRegAlias) => ProcessMacroBasedFile(@"Inputs\register.h", "REGDEF(", (builder, inputFile, line, prefix, parts) => {
+        ReadOnlySpan<string> prefixes = [
+            "REGDEF(",
+            "REGALIAS(",
+        ];
+
+        if (!includeRegAlias)
+        {
+            prefixes = prefixes[..1];
+        }
+
+        if (line.Equals("#include \"registerx86.h\"", StringComparison.Ordinal))
+        {
+            var x86Builder = ProcessMacroBasedFile(@"Inputs\registerx86.h", prefixes, callback);
+            _ = builder.Append(x86Builder);
+        }
+        else if (line.Equals("#include \"registeramd64.h\"", StringComparison.Ordinal))
+        {
+            var amd64Builder = ProcessMacroBasedFile(@"Inputs\registeramd64.h", prefixes, callback);
+            _ = builder.Append(amd64Builder);
+        }
+        else if (line.Equals("#include \"registerarm.h\"", StringComparison.Ordinal))
+        {
+            var armBuilder = ProcessMacroBasedFile(@"Inputs\registerarm.h", prefixes, callback);
+            _ = builder.Append(armBuilder);
+        }
+        else if (line.Equals("#include \"registerarm64.h\"", StringComparison.Ordinal))
+        {
+            var arm64Builder = ProcessMacroBasedFile(@"Inputs\registerarm64.h", prefixes, callback);
+            _ = builder.Append(arm64Builder);
+        }
+        else if (line.Equals("#include \"registerloongarch64.h\"", StringComparison.Ordinal))
+        {
+            var loongarch64Builder = ProcessMacroBasedFile(@"Inputs\registerloongarch64.h", prefixes, callback);
+            _ = builder.Append(loongarch64Builder);
+        }
+        else if (line.Equals("#include \"registerriscv64.h\"", StringComparison.Ordinal))
+        {
+            var riscv64Builder = ProcessMacroBasedFile(@"Inputs\registerriscv64.h", prefixes, callback);
+            _ = builder.Append(riscv64Builder);
+        }
+        else if (line.Equals("#include \"registerwasm.h\"", StringComparison.Ordinal))
+        {
+            var wasmBuilder = ProcessMacroBasedFile(@"Inputs\registerwasm.h", prefixes, callback);
+            _ = builder.Append(wasmBuilder);
+        }
+        else
+        {
+            callback(builder, inputFile, line, prefix, parts);
+        }
+    });
 
     private static bool TryExtractMacroContents(ReadOnlySpan<string> lines, ref int lineIndex, string line, ReadOnlySpan<char> prefix, out string[] parts)
     {

@@ -38,7 +38,11 @@ public sealed partial class CodeSeqSM
 
         if (s_smStates[_curState].term)
         {
+#if DEBUG
             TermStateMatch(_curState, _compiler.verbose);
+#else
+            TermStateMatch(_curState, verbose: false);
+#endif
         }
     }
 
@@ -64,7 +68,11 @@ public sealed partial class CodeSeqSM
 
             if (s_smStates[_curState].term)
             {
+#if DEBUG
                 TermStateMatch(_curState, _compiler.verbose);
+#else
+                TermStateMatch(_curState, verbose: false);
+#endif
                 _curState = SM_STATE_ID_START;
             }
             else
@@ -74,9 +82,13 @@ public sealed partial class CodeSeqSM
         }
 
         // This is hard. We need to rollback to the longest matched term state and restart from there.
-
         var rollbackState = s_smStates[_curState].longestTermState;
+
+#if DEBUG
         TermStateMatch(rollbackState, _compiler.verbose);
+#else
+        TermStateMatch(rollbackState, verbose: false);
+#endif
 
         assert(s_smStates[_curState].length > s_smStates[rollbackState].length);
         Unsafe.SkipInit(out InlineArrayMaxCodeSequenceLength<SM_OPCODE> opcodesToRevisit);

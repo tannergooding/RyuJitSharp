@@ -265,7 +265,6 @@ public enum OPCODE
     CEE_PREFIX2,
     CEE_PREFIX1,
     CEE_PREFIXREF,
-
     CEE_ARGLIST,
     CEE_CEQ,
     CEE_CGT,
@@ -301,27 +300,10 @@ public enum OPCODE
     CEE_UNUSED54,
     CEE_UNUSED55,
     CEE_UNUSED70,
-
-    // These are not real opcodes, but they are handy internally in the EE
 #if !OPDEF_REAL_OPCODES_ONLY
     CEE_ILLEGAL,
     CEE_MACRO_END,
     CEE_CODE_LABEL,
 #endif
-
-    // Number of instructions and macros pre-defined
     CEE_COUNT,
-
-    CEE_BRNULL = CEE_BRFALSE,
-    CEE_BRNULL_S = CEE_BRFALSE_S,
-    CEE_BRZERO = CEE_BRFALSE,
-    CEE_BRZERO_S = CEE_BRFALSE_S,
-    CEE_BRINST = CEE_BRTRUE,
-    CEE_BRINST_S = CEE_BRTRUE_S,
-    CEE_LDIND_U8 = CEE_LDIND_I8,
-    CEE_LDELEM_U8 = CEE_LDELEM_I8,
-    CEE_LDELEM_ANY = CEE_LDELEM,
-    CEE_STELEM_ANY = CEE_STELEM,
-    CEE_LDC_I4_M1x = CEE_LDC_I4_M1,
-    CEE_ENDFAULT = CEE_ENDFINALLY,
 }
