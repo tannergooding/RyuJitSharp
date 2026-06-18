@@ -14,7 +14,10 @@ internal static class Program
 {
     public static void Main()
     {
-        Directory.Delete(@"Outputs", recursive: true);
+        if (Directory.Exists(@"Outputs"))
+        {
+            Directory.Delete(@"Outputs", recursive: true);
+        }
 
         GenerateApiICorJitInfoNames();
         GenerateApiICorJitInfoNamesExtensions();
@@ -501,7 +504,64 @@ public enum genTreeOps : byte
 
             var name = parts[0].Trim();
             var structType = parts[1].Trim();
+            var flags = parts[4].AsSpan().Trim();
 
+            if ((flags[0] == '(') && (flags[^1] == ')'))
+            {
+                flags = flags[1..^1].Trim();
+            }
+
+            var kind = 0;
+
+            foreach (var flagRange in flags.Split('|'))
+            {
+                var flag = flags[flagRange].Trim();
+
+                if (flag.StartsWith("GTK_", StringComparison.Ordinal))
+                {
+                    flag = flag[4..].Trim();
+
+                    if (flag.Equals("SPECIAL", StringComparison.Ordinal))
+                    {
+                        Debug.Assert(kind == 0);
+                        kind |= 0;
+                    }
+                    else if (flag.Equals("LEAF", StringComparison.Ordinal))
+                    {
+                        Debug.Assert(kind == 0);
+                        kind |= 1;
+                    }
+                    else if (flag.Equals("UNOP", StringComparison.Ordinal))
+                    {
+                        Debug.Assert(kind == 0);
+                        kind |= 2;
+                    }
+                    else if (flag.Equals("BINOP", StringComparison.Ordinal))
+                    {
+                        Debug.Assert(kind == 0);
+                        kind |= 3;
+                    }
+                    else if (!flag.Equals("EXOP", StringComparison.Ordinal) &&
+                             !flag.Equals("NOVALUE", StringComparison.Ordinal) &&
+                             !flag.Equals("STORE", StringComparison.Ordinal))
+                    {
+                        throw new InvalidDataException($"Invalid line format: '{line}'");
+                    }
+                }
+                else
+                {
+                    Debug.Assert(flag.StartsWith("DBK_"));
+                }
+            }
+
+            if (kind is 2)
+            {
+                if (structType.Equals("GenTree", StringComparison.Ordinal) ||
+                    structType.Equals("GenTreeOp", StringComparison.Ordinal))
+                {
+                    structType = "GenTreeUnOp";
+                }
+            }
             _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        typeof({structType}), // GT_{name}");
         });
 

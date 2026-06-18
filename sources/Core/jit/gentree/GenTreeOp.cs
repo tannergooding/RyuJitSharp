@@ -60,7 +60,7 @@ public class GenTreeOp : GenTreeUnOp
         get
         {
 #if DEBUG
-            assert(Debugger.IsAttached || (_op2 is not null) || !IsNullOp2Legal);
+            assert(Debugger.IsAttached || (_op2 is not null) || IsNullOp2Legal);
 #endif
             return _op2!;
         }

@@ -598,15 +598,15 @@ public static partial class genTreeOpsExtensions
 #if FEATURE_MASKED_HW_INTRINSICS
         typeof(GenTreeMskCon), // GT_CNS_MSK
 #endif
-        typeof(GenTreeOp), // GT_NOT
+        typeof(GenTreeUnOp), // GT_NOT
         typeof(GenTree), // GT_NOP
-        typeof(GenTreeOp), // GT_NEG
+        typeof(GenTreeUnOp), // GT_NEG
         typeof(GenTreeIntrinsic), // GT_INTRINSIC
-        typeof(GenTree), // GT_KEEPALIVE
+        typeof(GenTreeUnOp), // GT_KEEPALIVE
         typeof(GenTreeCast), // GT_CAST
-        typeof(GenTreeOp), // GT_BITCAST
-        typeof(GenTreeOp), // GT_CKFINITE
-        typeof(GenTreeOp), // GT_LCLHEAP
+        typeof(GenTreeUnOp), // GT_BITCAST
+        typeof(GenTreeUnOp), // GT_CKFINITE
+        typeof(GenTreeUnOp), // GT_LCLHEAP
         typeof(GenTreeBoundsChk), // GT_BOUNDS_CHECK
         typeof(GenTree), // GT_MEMORYBARRIER
         typeof(GenTreeOp), // GT_LOCKADD
@@ -625,14 +625,14 @@ public static partial class genTreeOpsExtensions
         typeof(GenTreeMDArr), // GT_MDARR_LOWER_BOUND
         typeof(GenTreeFieldAddr), // GT_FIELD_ADDR
         typeof(GenTreeAllocObj), // GT_ALLOCOBJ
-        typeof(GenTreeOp), // GT_INIT_VAL
+        typeof(GenTreeUnOp), // GT_INIT_VAL
         typeof(GenTreeBox), // GT_BOX
         typeof(GenTreeRuntimeLookup), // GT_RUNTIMELOOKUP
         typeof(GenTreeArrAddr), // GT_ARR_ADDR
-        typeof(GenTreeOp), // GT_BSWAP
-        typeof(GenTreeOp), // GT_BSWAP16
-        typeof(GenTreeOp), // GT_LZCNT
-        typeof(GenTreeOp), // GT_NONLOCAL_JMP
+        typeof(GenTreeUnOp), // GT_BSWAP
+        typeof(GenTreeUnOp), // GT_BSWAP16
+        typeof(GenTreeUnOp), // GT_LZCNT
+        typeof(GenTreeUnOp), // GT_NONLOCAL_JMP
         typeof(GenTreeOp), // GT_ADD
         typeof(GenTreeOp), // GT_SUB
         typeof(GenTreeOp), // GT_MUL
@@ -678,7 +678,7 @@ public static partial class genTreeOpsExtensions
 #if FEATURE_HW_INTRINSICS
         typeof(GenTreeHWIntrinsic), // GT_HWINTRINSIC
 #endif
-        typeof(GenTreeOp), // GT_INC_SATURATE
+        typeof(GenTreeUnOp), // GT_INC_SATURATE
         typeof(GenTreeOp), // GT_MULHI
 #if !TARGET_64BIT
         typeof(GenTreeMultiRegOp), // GT_MUL_LONG
@@ -725,20 +725,20 @@ public static partial class genTreeOpsExtensions
         typeof(GenTreeOp), // GT_BIT_CLEAR
         typeof(GenTreeOp), // GT_BIT_INVERT
 #endif
-        typeof(GenTreeOp), // GT_JTRUE
+        typeof(GenTreeUnOp), // GT_JTRUE
         typeof(GenTreeArrElem), // GT_ARR_ELEM
         typeof(GenTreeCall), // GT_CALL
         typeof(GenTreeFieldList), // GT_FIELD_LIST
-        typeof(GenTreeOp), // GT_RETURN
-        typeof(GenTreeOp), // GT_SWITCH
+        typeof(GenTreeUnOp), // GT_RETURN
+        typeof(GenTreeUnOp), // GT_SWITCH
         typeof(GenTree), // GT_NO_OP
-        typeof(GenTreeOp), // GT_RETURN_SUSPEND
+        typeof(GenTreeUnOp), // GT_RETURN_SUSPEND
         typeof(GenTreeOp), // GT_PATCHPOINT
-        typeof(GenTreeOp), // GT_PATCHPOINT_FORCED
+        typeof(GenTreeUnOp), // GT_PATCHPOINT_FORCED
         typeof(GenTree), // GT_START_NONGC
         typeof(GenTree), // GT_START_PREEMPTGC
         typeof(GenTree), // GT_PROF_HOOK
-        typeof(GenTreeOp), // GT_RETFILT
+        typeof(GenTreeUnOp), // GT_RETFILT
         typeof(GenTree), // GT_SWIFT_ERROR
         typeof(GenTreeOp), // GT_SWIFT_ERROR_RET
         typeof(GenTree), // GT_WASM_JEXCEPT
@@ -746,8 +746,8 @@ public static partial class genTreeOpsExtensions
         typeof(GenTree), // GT_JMPTABLE
         typeof(GenTreeOp), // GT_SWITCH_TABLE
         typeof(GenTreePhysReg), // GT_PHYSREG
-        typeof(GenTreeOp), // GT_RETURNTRAP
-        typeof(GenTreeOp), // GT_PUTARG_REG
+        typeof(GenTreeUnOp), // GT_RETURNTRAP
+        typeof(GenTreeUnOp), // GT_PUTARG_REG
         typeof(GenTreePutArgStk), // GT_PUTARG_STK
         typeof(GenTreeOp), // GT_SWAP
         typeof(GenTreeCopyOrReload), // GT_COPY

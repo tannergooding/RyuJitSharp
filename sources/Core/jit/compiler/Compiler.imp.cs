@@ -823,7 +823,7 @@ public partial class Compiler
 
             if (oper.IsLocalStore)
             {
-                dstVarDsc = lvaGetDesc(expr.AsLclVarCommon().LclNum);
+                dstVarDsc = ref lvaGetDesc(expr.AsLclVarCommon().LclNum);
             }
             else if (oper is GT_CALL or GT_RET_EXPR) // The special case of calls with return buffers.
             {
@@ -7554,7 +7554,7 @@ public partial class Compiler
                         importCallHelper.constrainedResolvedToken = ref constrainedResolvedToken;
                     }
 
-                    if (!importCallHelper.TryImport(this, codeAddr, codeEndp, sz))
+                    if (!importCallHelper.TryImport(this, codeAddr, codeEndp, sz, ref callTyp))
                     {
                         return;
                     }
@@ -7583,7 +7583,7 @@ public partial class Compiler
                         opcodeOffs = opcodeOffs,
                     };
 
-                    if (!importCallHelper.TryImport(this, codeAddr, codeEndp, sz))
+                    if (!importCallHelper.TryImport(this, codeAddr, codeEndp, sz, ref callTyp))
                     {
                         return;
                     }
@@ -7694,7 +7694,7 @@ public partial class Compiler
                         importCallHelper.constrainedResolvedToken = ref constrainedResolvedToken;
                     }
 
-                    if (!importCallHelper.TryImport(this, codeAddr, codeEndp, sz))
+                    if (!importCallHelper.TryImport(this, codeAddr, codeEndp, sz, ref callTyp))
                     {
                         return;
                     }
@@ -7806,6 +7806,7 @@ public partial class Compiler
 
                     var usesHelper = false;
                     var op1 = null as GenTree;
+                    var done = false;
 
                     switch (fieldInfo.fieldAccessor)
                     {
@@ -7892,7 +7893,7 @@ public partial class Compiler
                                 if (newTree is not null)
                                 {
                                     op1 = newTree;
-                                    impPushOnStack(op1, tiRetVal);
+                                    done = true;
                                     break;
                                 }
                             }
@@ -7915,7 +7916,7 @@ public partial class Compiler
                             lclTyp = lclTyp.ActualType;
                             op1 = gtNewIconNode(lclTyp, 0);
 
-                            impPushOnStack(op1, tiRetVal);
+                            done = true;
                             break;
                         }
 
@@ -7926,7 +7927,7 @@ public partial class Compiler
                             // Import String.Empty as "" (GT_CNS_STR with a fake SconCPX = 0)
                             op1 = gtNewSconNode(EMPTY_STRING_SCON, scpHandle: null);
 
-                            impPushOnStack(op1, tiRetVal);
+                            done = true;
                             break;
                         }
 
@@ -7941,7 +7942,7 @@ public partial class Compiler
 #else
                             op1 = gtNewIconNode(lclTyp, 1);
 #endif
-                            impPushOnStack(op1, tiRetVal);
+                            done = true;
                             break;
                         }
 
@@ -7954,38 +7955,40 @@ public partial class Compiler
 
                     assert(op1 is not null);
 
-                    if (!isLoadAddress && !usesHelper)
+                    if (!done)
                     {
-                        lclTyp = TypeHandleToVarType(fieldInfo.fieldType, clsHnd, out var layout);
+                        if (!isLoadAddress && !usesHelper)
+                        {
+                            lclTyp = TypeHandleToVarType(fieldInfo.fieldType, clsHnd, out var layout);
 
-                        if (lclTyp is TYP_STRUCT)
-                        {
-                            assert(layout is not null);
-                            op1 = gtNewBlkIndir(op1, layout, indirFlags);
+                            if (lclTyp is TYP_STRUCT)
+                            {
+                                assert(layout is not null);
+                                op1 = gtNewBlkIndir(op1, layout, indirFlags);
+                            }
+                            else
+                            {
+                                op1 = gtNewIndir(lclTyp, op1, indirFlags);
+                            }
+                            impAnnotateFieldIndir(op1.AsIndir());
                         }
-                        else
+
+                        // Check if the class needs explicit initialization.
+                        if ((fieldInfo.fieldFlags & CORINFO_FLG_FIELD_INITCLASS) is not 0)
                         {
-                            op1 = gtNewIndir(lclTyp, op1, indirFlags);
+                            var helperNode = impInitClass(resolvedToken);
+
+                            if (compDonotInline)
+                            {
+                                return;
+                            }
+
+                            if (helperNode is not null)
+                            {
+                                op1 = gtNewCommaNode(op1.Type, helperNode, op1);
+                            }
                         }
-                        impAnnotateFieldIndir(op1.AsIndir());
                     }
-
-                    // Check if the class needs explicit initialization.
-                    if ((fieldInfo.fieldFlags & CORINFO_FLG_FIELD_INITCLASS) is not 0)
-                    {
-                        var helperNode = impInitClass(resolvedToken);
-
-                        if (compDonotInline)
-                        {
-                            return;
-                        }
-
-                        if (helperNode is not null)
-                        {
-                            op1 = gtNewCommaNode(op1.Type, helperNode, op1);
-                        }
-                    }
-
                     impPushOnStack(op1, tiRetVal);
                     break;
                 }
@@ -16632,7 +16635,7 @@ public partial class Compiler
                 }
                 else
                 {
-                    call.SingleInlineCandidateInfo.preexistingSpillTemp = tnum;
+                    call.GetGdvCandidateInfo(0).preexistingSpillTemp = tnum;
                 }
             }
         }

@@ -65,7 +65,7 @@ public partial class Compiler
         /// <summary>We only need to cast the return value of pinvoke inlined calls that return small types</summary>
         private bool checkForSmallType;
 
-        public unsafe bool TryImport(Compiler compiler, byte* codeAddr, byte* codeEndp, byte sz)
+        public unsafe bool TryImport(Compiler compiler, byte* codeAddr, byte* codeEndp, byte sz, ref var_types callTyp)
         {
             // memberRef should be set.
             // newObjThisPtr should be set for CEE_NEWOBJ
@@ -202,7 +202,7 @@ public partial class Compiler
                 compiler.impHandleAccessAllowed(callInfo.accessAllowed, callInfo.callsiteCalloutHelper);
             }
 
-            var callTyp = Import(compiler);
+            callTyp = Import(compiler);
 
             if (compiler.compDonotInline)
             {
@@ -703,7 +703,7 @@ public partial class Compiler
 
                         // These calls always follow a uniform calling convention, i.e. no extra hidden params
                         assert((sigInfo.callConv & CORINFO_CALLCONV_PARAMTYPE) is 0);
-                        assert((sigInfo.callConv & CORINFO_CALLCONV_MASK) is not CORINFO_CALLCONV_VARARG and not not CORINFO_CALLCONV_NATIVEVARARG);
+                        assert((sigInfo.callConv & CORINFO_CALLCONV_MASK) is not CORINFO_CALLCONV_VARARG and not CORINFO_CALLCONV_NATIVEVARARG);
 
                         var fptr = compiler.impLookupToTree(callInfo.codePointerLookup, GTF_ICON_FTN_ADDR, callInfo.hMethod);
                         assert(fptr is not null);
@@ -4016,7 +4016,7 @@ public partial class Compiler
                         }
                         else
                         {
-                            call.SingleInlineCandidateInfo.retExpr = retExpr;
+                            call.GetGdvCandidateInfo(0).retExpr = retExpr;
                         }
 
                         // Propagate retExpr as the placeholder for the call.

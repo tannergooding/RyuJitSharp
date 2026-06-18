@@ -1013,7 +1013,7 @@ public partial class Compiler
 #endif
 
         reason = whyNot;
-        return whyNot.Length != 0;
+        return whyNot.Length == 0;
     }
 
     public unsafe CorJitResult compCompileHelper(CORINFO_MODULE_HANDLE classPtr, COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo, out void* methodCodePtr, out int methodCodeSize, JitFlags* jitFlags)

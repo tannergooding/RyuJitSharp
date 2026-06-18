@@ -209,9 +209,6 @@ public sealed class GenTreeCall : GenTree
     // CT_USER_FUNC or CT_HELPER
     internal unsafe CORINFO_METHOD_HANDLE _callMethHnd;
 
-    // CT_INDIRECT
-    internal GenTree? _addr;
-
 #if FEATURE_READYTORUN
     /// <summary>Call target lookup info for method call from a Ready To Run module</summary>
     internal CORINFO_CONST_LOOKUP _entryPoint;
@@ -502,12 +499,10 @@ public sealed class GenTreeCall : GenTree
     /// <remarks>This may be out of sync with gtArgs.HasRetBuffer during import until we actually create the ret buffer.</remarks>
     public bool ShouldHaveRetBufArg => (_callMoreFlags & GTF_CALL_M_RETBUFFARG) != 0;
 
-    public InlineCandidateInfo SingleInlineCandidateInfo
+    public InlineCandidateInfo? SingleInlineCandidateInfo
     {
         get
         {
-            assert(IsInlineCandidate);
-
             if (_inlineInfoCount > 1)
             {
                 NO_WAY("Call has multiple inline candidates");

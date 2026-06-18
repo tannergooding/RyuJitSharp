@@ -1028,7 +1028,7 @@ public partial class GenTree
         assert(tree._oper == _oper);
 
 #if DEBUG
-        _costsInitialized = true;
+        _costsInitialized = tree._costsInitialized;
 #endif
 
         _costEx = tree._costEx;

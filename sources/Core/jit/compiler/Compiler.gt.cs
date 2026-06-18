@@ -723,8 +723,6 @@ public partial class Compiler
             copy._controlExpr = compiler.gtCloneExpr(tree._controlExpr);
             copy._callMethHnd = tree._callMethHnd;
 
-            copy._addr = tree._addr;
-
 #if FEATURE_READYTORUN
             copy._entryPoint = tree._entryPoint;
 #endif
@@ -2372,7 +2370,8 @@ public partial class Compiler
 
         // print the msg associated with the node
 
-        jitprintf(isLIR ? $" {new string(' ', msgLength)}{msg}" : $" {msg}{new string(' ', msgLength)}");
+        var padding = new string(' ', int.Max(0, msgLength - msg.Length));
+        jitprintf(isLIR ? $" {padding}{msg}" : $" {msg}{padding}");
 
         /* Indent the node accordingly */
         if (!isLIR || hasOperands)
@@ -3196,18 +3195,9 @@ public partial class Compiler
                     jitprintf(" (FramesRoot last use)");
                 }
 
-                if ((call.Flags & GTF_CALL_INLINE_CANDIDATE) is not 0)
+                if (call.IsInlineCandidate)
                 {
-                    InlineCandidateInfo inlineInfo;
-
-                    if (call.IsGuardedDevirtualizationCandidate)
-                    {
-                        inlineInfo = call.GetGdvCandidateInfo(0);
-                    }
-                    else
-                    {
-                        inlineInfo = call.SingleInlineCandidateInfo;
-                    }
+                    var inlineInfo = call.GetGdvCandidateInfo(0);
 
                     if ((inlineInfo is not null) && (inlineInfo.exactContextHandle is not null))
                     {
@@ -7049,7 +7039,7 @@ public partial class Compiler
     public unsafe GenTreeCall gtNewIndCallNode(var_types type, GenTree? addr, in DebugInfo di = default)
     {
         var call = gtNewCallNode(type, CT_INDIRECT, callHnd: null, di);
-        call._addr = addr;
+        call._controlExpr = addr;
         return call;
     }
 

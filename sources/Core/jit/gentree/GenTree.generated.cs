@@ -100,7 +100,7 @@ public partial class GenTree
 #endif
     public GenTreeLclVarCommon AsLclVarCommon()
     {
-        assert(_oper is GT_LCL_FLD or GT_STORE_LCL_FLD or GT_LCL_ADDR or GT_PHI_ARG);
+        assert(_oper is GT_LCL_VAR or GT_LCL_FLD or GT_PHI_ARG or GT_STORE_LCL_VAR or GT_STORE_LCL_FLD or GT_LCL_ADDR);
         assert(this is GenTreeLclVarCommon);
         return Unsafe.As<GenTreeLclVarCommon>(this);
     }
