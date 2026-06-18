@@ -9454,8 +9454,30 @@ public partial class Compiler
     // TODO: Port phase - fgExpandThreadLocalAccess
     public PhaseStatus fgExpandThreadLocalAccess() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port phase - fgFindOperOrder
-    public PhaseStatus fgFindOperOrder() => PhaseStatus.MODIFIED_NOTHING;
+    public PhaseStatus fgFindOperOrder()
+    {
+#if DEBUG
+        if (verbose)
+        {
+            jitprintf("*************** In fgFindOperOrder()\n");
+        }
+#endif
+
+        // Walk the basic blocks and for each statement determine the evaluation order, cost, FP levels, etc...
+
+        foreach (var block in Blocks)
+        {
+            compCurBB = block;
+
+            foreach (var stmt in block.Statements)
+            {
+                // Recursively process the statement
+                compCurStmt = stmt;
+                gtSetStmtInfo(stmt);
+            }
+        }
+        return PhaseStatus.MODIFIED_EVERYTHING;
+    }
 
     // TODO: Port phase - fgHeadTailMerge
     public PhaseStatus fgHeadTailMerge(bool early) => PhaseStatus.MODIFIED_NOTHING;

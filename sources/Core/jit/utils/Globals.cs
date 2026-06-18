@@ -252,6 +252,10 @@ public partial class Globals
         return sep;
     }
 
+    public static bool FitsInI8(long value) => unchecked((sbyte)(value)) == value;
+
+    public static bool FitsInI8(nint value) => unchecked((sbyte)(value)) == value;
+
     public static bool FitsInI32(long value) => unchecked((int)(value)) == value;
 
     public static bool FitsInI32(nint value) => unchecked((int)(value)) == value;

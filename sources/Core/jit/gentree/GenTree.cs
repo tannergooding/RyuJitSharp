@@ -1879,6 +1879,9 @@ public partial class GenTree
     // Note that costs are only set in gtSetEvalOrder() and its callees.
     public void SetCosts(byte costEx, byte costSz)
     {
+        assert(costEx != byte.MaxValue);
+        assert(costSz != byte.MaxValue);
+
 #if DEBUG
         _costsInitialized = true;
 #endif

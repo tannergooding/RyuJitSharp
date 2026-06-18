@@ -7,12 +7,9 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
-using System.Security.AccessControl;
 using System.Text;
-using System.Xml.Linq;
 
 namespace RyuJitSharp;
 
@@ -5622,6 +5619,136 @@ public partial class Compiler
         return lookupType;
     }
 #endif
+
+    /// <summary>Calculate the cost for a primitive indir node.</summary>
+    /// <param name="node">The node in question</param>
+    /// <param name="costEx">the execution cost</param>
+    /// <param name="costSz">the size cost</param>
+    /// <returns> Whether the cost calculated includes that of the node's address.</returns>
+    /// <remarks>Used for both loads and stores.</remarks>
+    public bool gtGetIndNodeCost(GenTreeIndir node, out byte costEx, out byte costSz)
+    {
+        if (varTypeIsSmall(node.Type))
+        {
+            // If we have to sign-extend or zero-extend, bump the cost.
+            costEx = 1 + IND_COST_EX;
+            costSz = 3;
+        }
+#if TARGET_XARCH
+        else if (!varTypeUsesIntReg(node.Type))
+        {
+            assert(varTypeIsFloating(node.Type) || varTypeIsSimdOrMask(node.Type));
+
+            if (node.Type is TYP_SIMD64)
+            {
+                costEx = FLT_IND_COST_EX + 2;
+                costSz = 6;
+            }
+            else if (node.Type is TYP_SIMD32)
+            {
+                costEx = FLT_IND_COST_EX + 1;
+                costSz = 4;
+            }
+            else
+            {
+                costEx = FLT_IND_COST_EX;
+                costSz = 4;
+            }
+        }
+#elif TARGET_ARM
+        else if (varTypeIsFloating(node))
+        {
+            costEx = IND_COST_EX;
+            costSz = 4;
+        }
+#endif
+        else
+        {
+            costEx = IND_COST_EX;
+            costSz = 2;
+        }
+
+        // Can we form an addressing mode with this indirection?
+        var succeeded = false;
+
+        if (gtGetAddrNodeCost(node.Addr, node.Type, node.IsVolatile, out var addrCostEx, out var addrCostSz))
+        {
+            succeeded = true;
+            costEx += addrCostEx;
+            costSz += addrCostSz;
+        }
+        return succeeded;
+    }
+
+    /// <summary>Calculate the cost for a local field node.</summary>
+    /// <param name="node">The node in question</param>
+    /// <param name="costEx">the execution cost</param>
+    /// <param name="costSz">the size cost</param>
+    /// <remarks>Used for both uses and defs. Only the node's own cost is calculated.</remarks>
+    public void gtGetLclFldNodeCost(GenTreeLclFld node, out byte costEx, out byte costSz)
+    {
+        if (varTypeIsSmall(node.Type))
+        {
+            costEx = 1 + IND_COST_EX;
+            costSz = 5;
+        }
+        else if (node.Type is TYP_STRUCT)
+        {
+            costEx = IND_COST_EX + (2 * IND_COST_EX);
+            costSz = 4 + (2 * 2);
+        }
+        else
+        {
+            costEx = IND_COST_EX;
+            costSz = 4;
+        }
+    }
+
+    /// <summary>Calculate the cost for a local variable node.</summary>
+    /// <param name="node">The node in question</param>
+    /// <param name="costEx">the execution cost</param>
+    /// <param name="costSz">the size cost</param>
+    /// <param name="isLikelyRegVar">Is the local likely to end up enregistered</param>
+    /// <remarks>Used for both uses and defs. Only the node's own cost is calculated.</remarks>
+    public void gtGetLclVarNodeCost(GenTreeLclVar node, out byte costEx, out byte costSz, bool isLikelyRegVar)
+    {
+        if (isLikelyRegVar)
+        {
+            if (lvaGetDesc(node.LclNum).lvNormalizeOnLoad)
+            {
+                // Sign-extend and zero-extend are more expensive to load
+                costEx = 2;
+                costSz = 2;
+            }
+            else
+            {
+                costEx = 1;
+                costSz = 1;
+            }
+        }
+#if TARGET_AMD64
+        else if (varTypeIsFloating(node.Type))
+        {
+            costEx = 1 + IND_COST_EX;
+            costSz = 3;
+        }
+#endif
+        else if (varTypeIsSmall(node.Type))
+        {
+            costEx = 1 + IND_COST_EX;
+            costSz = 3;
+        }
+        else if (node.Type is TYP_STRUCT)
+        {
+            costEx = IND_COST_EX + (2 * IND_COST_EX);
+            costSz = 2 + (2 * 2);
+        }
+        else
+        {
+            costEx = IND_COST_EX;
+            costSz = 2;
+        }
+    }
 
 #if DEBUG
     /// <summary>Get the local var name</summary>
@@ -11925,6 +12052,70 @@ public partial class Compiler
         return tree;
     }
 
+    public int gtSetCallArgsOrder(ref CallArgs args, bool lateArgs, ref byte callCostEx, ref byte callCostSz)
+    {
+        var level = 0;
+        byte costEx = 0;
+        byte costSz = 0;
+
+        if (lateArgs)
+        {
+            foreach (var arg in args.LateArgs)
+            {
+                var node = arg.LateNode;
+                assert(node is not null);
+
+                level = int.Max(level, gtSetEvalOrder(node));
+
+                costEx += node.CostEx;
+
+#if TARGET_XARCH
+                var nodeCostSz = node.CostSz;
+
+                if (nodeCostSz is not 0)
+                {
+                    costSz += (byte)(nodeCostSz + 1);
+                }
+#else
+                costSz += node.CostSz;
+#endif
+            }
+        }
+        else
+        {
+            foreach (var arg in args.EarlyArgs)
+            {
+                var node = arg.EarlyNode;
+                assert(node is not null);
+
+                level = int.Max(level, gtSetEvalOrder(node));
+
+                var nodeCostEx = node.CostEx;
+
+                if (nodeCostEx is not 0)
+                {
+                    costEx += (byte)(nodeCostEx + IND_COST_EX);
+                }
+
+#if TARGET_XARCH
+                costSz += node.CostSz;
+#else
+                var nodeCostSz = node.CostSz;
+
+                if (nodeCostSz is not 0)
+                {
+                    costSz += (byte)(nodeCostSz + 1);
+                }
+#endif
+            }
+        }
+
+        callCostEx += costEx;
+        callCostSz += costSz;
+
+        return level;
+    }
+
     /// <summary>Given a tree, figure out the order in which its sub-operands should be evaluated.</summary>
     /// <param name="tree"></param>
     /// <returns>Returns the Sethi 'complexity' estimate for this tree (the higher the number, the higher is the tree's resources requirement).</returns>
@@ -11943,8 +12134,1944 @@ public partial class Compiler
             return gtSetEvalOrderMinOpts(tree);
         }
 
-        // TODO: Port Compiler.gtSetEvalOrder
-        return 0;
+        // TODO-LoongArch64-CQ: tune the costs.
+        // TODO-RISCV64-CQ: tune the costs.
+
+        var oper = tree.Oper;
+
+        if (oper.IsLeaf)
+        {
+            byte costEx, costSz;
+
+            switch (oper)
+            {
+                case GT_CNS_STR:
+                {
+#if TARGET_ARM
+                    // Uses movw/movt
+                    costEx = 2;
+                    costSz = 8;
+#elif TARGET_ARM64
+                    // Uses movz/movk
+                    costEx = 4;
+                    costSz = 16;
+#elif TARGET_AMD64
+                    costEx = 2;
+                    costSz = 10;
+#elif TARGET_X86
+                    costEx = 1;
+                    costSz = 4;
+#elif TARGET_LOONGARCH64 || TARGET_RISCV64
+                    costEx = IND_COST_EX + 2;
+                    costSz = 4;
+#elif TARGET_WASM
+                    costEx = IND_COST_EX + 2;
+                    costSz = 7;
+#endif
+
+                    return CommonCns(tree, costEx, costSz);
+                }
+
+#if TARGET_32BIT
+                case GT_CNS_LNG:
+                {
+                    var lngCon = tree.AsLngCon();
+                    var lconVal = lngCon.LconValue;
+
+#if TARGET_ARM
+                    if (lconVal is 0)
+                    {
+                        costEx = 1;
+                        costSz = 1;
+                    }
+                    else
+                    {
+                        var loVal = lngCon.LoVal;
+                        var hiVal = lngCon.HiVal;
+
+                        // Minimum of one instruction to setup hiVal, and one instruction to setup loVal
+                        costEx = 1 + 1;
+                        costSz = 4 + 4;
+
+                        if (!codeGen.validImmForInstr(INS_mov, hiVal) &&
+                            !codeGen.validImmForInstr(INS_mvn, hiVal))
+                        {
+                            // Needs extra instruction: movw/movt
+                            costEx += 1;
+                            costSz += 4;
+                        }
+
+                        if (!codeGen.validImmForInstr(INS_mov, loVal) &&
+                            !codeGen.validImmForInstr(INS_mvn, loVal))
+                        {
+                            // Needs extra instruction: movw/movt
+                            costEx += 1;
+                            costSz += 4;
+                        }
+                    }
+#elif TARGET_X86
+                    if (FitsInI32(lconVal))
+                    {
+                        if (FitsInI8(lconVal))
+                        {
+                            costEx = 1 + 1;
+                            costSz = 1 + 1;
+                        }
+                        else
+                        {
+                            costEx = 1 + 1;
+                            costSz = 4 + 1;
+                        }
+                    }
+                    else
+                    {
+                        costEx = 1 + 1;
+                        costSz = 4 + 4;
+                    }
+#endif
+                    return CommonCns(lngCon, costEx, costSz);
+                }
+#endif
+
+                case GT_CNS_INT:
+                {
+                    var intCon = tree.AsIntCon();
+                    var iconVal = intCon.IconValue;
+
+#if TARGET_ARM
+                    if (intCon.ImmedValNeedsReloc(this))
+                    {
+                        costEx = 2;
+                        costSz = 8;
+                    }
+                    else if (codeGen.validImmForInstr(INS_add, iconVal))
+                    {
+                        // Typically included with parent oper
+                        costEx = 1;
+                        costSz = 2;
+                    }
+                    else if (codeGen.validImmForInstr(INS_mov, iconVal) ||
+                             codeGen.validImmForInstr(INS_mvn, iconVal))
+                    {
+                        // Uses mov or mvn
+                        costEx = 1;
+                        costSz = 4;
+                    }
+                    else
+                    {
+                        // Needs movw/movt
+                        costEx = 2;
+                        costSz = 8;
+                    }
+#elif TARGET_ARM64
+                    var size = intCon.Type.ActualType.EmitSize;
+
+                    if (intCon.ImmedValNeedsReloc(this))
+                    {
+                        costEx = 2;
+                        costSz = 8;
+                    }
+                    else if (emitter.emitIns_valid_imm_for_add(iconVal, size))
+                    {
+                        costEx = 1;
+                        costSz = 2;
+                    }
+                    else if (emitter.emitIns_valid_imm_for_mov(iconVal, size))
+                    {
+                        costEx = 1;
+                        costSz = 4;
+                    }
+#elif TARGET_XARCH
+                    if (intCon.ImmedValNeedsReloc(this))
+                    {
+                        costEx = 1;
+                        costSz = 4;
+                    }
+                    else if (FitsInI8(iconVal))
+                    {
+                        costEx = 1;
+                        costSz = 1;
+                    }
+#if TARGET_AMD64
+                    else if (!FitsInI32(iconVal))
+                    {
+                        costEx = 2;
+                        costSz = 10;
+
+                        if (intCon.IsIconHandle())
+                        {
+                            // A sort of a hint for CSE to try harder for class handles
+                            costEx += 1;
+                        }
+                    }
+#endif
+                    else
+                    {
+                        costEx = 1;
+                        costSz = 4;
+                    }
+#elif TARGET_LOONGARCH64
+                    costEx = 1;
+                    costSz = 4;
+#elif TARGET_RISCV64
+                    if (intCon.ImmedValNeedsReloc(this) ||
+                        intCon.AddrNeedsReloc(this))
+                    {
+                        // auipc + addi
+                        costEx = 2;
+                        costSz = 8;
+                    }
+                    else
+                    {
+                        var instructionCount = Emitter.emitLoadImmediate<false>(size, REG_NA, imm);
+                        assert(instructionCount is not 0);
+
+                        if (instructionCount == -1)
+                        {
+                            // Cannot emit code in a 5 instruction sequence
+                            // Create a 8-byte constant(8) and load it with auipc(4) + ld(4)
+
+                            costEx = 1 + IND_COST_EX;
+                            costSz = 16;
+                        }
+                        else
+                        {
+                            costEx = instructionCount;
+                            costSz = 4 * instructionCount;
+                        }
+                    }
+#elif TARGET_WASM
+                    costEx = 1;
+                    costSz = 1 + Emitter.SizeOfSLEB128(imm);
+#endif
+
+                    return CommonCns(intCon, costEx, costSz);
+                }
+
+                case GT_CNS_DBL:
+                {
+#if TARGET_XARCH
+                    var dblCon = tree.AsDblCon();
+
+                    if (dblCon.IsPositiveZero || dblCon.IsAllBitsSet)
+                    {
+                        // Zero:       vxorps   xmm0, xmm0, xmm0
+                        // AllBitsSet: vpcmpeqd xmm0, xmm0, xmm0
+
+                        costEx = 1;
+                        costSz = 4;
+                    }
+                    else
+                    {
+                        // float:  vmovss xmm0, [reloc @RWD00]
+                        // double: vmovsd xmm0, [reloc @RWD00]
+
+                        costEx = FLT_IND_COST_EX;
+                        costSz = 8;
+                    }
+#elif TARGET_ARM
+                    if (dblCon.Type is TYP_FLOAT)
+                    {
+                        costEx = 1 + 2;
+                        costSz = 2 + 4;
+                    }
+                    else
+                    {
+                        costEx = 1 + 4;
+                        costSz = 2 + 8;
+                    }
+#elif TARGET_ARM64
+                    if (dblCon.IsPositiveZero || Emitter.emitIns_valid_imm_for_fmov(dblCon.DconValue))
+                    {
+                        // Zero and certain other immediates can be specially created with a single instruction
+                        // These can be cheaply reconstituted but still take up 4-bytes of native codegen
+                        
+                        costEx = 1;
+                        costSz = 2;
+                    }
+                    else
+                    {
+                        // We load the constant from memory and so will take the same cost as GT_IND
+                        
+                        costEx = IND_COST_EX;
+                        costSz = 2;
+                    }
+#elif TARGET_LOONGARCH64 || TARGET_RISCV64
+                    costEx = 2;
+                    costSz = 8;
+#elif TARGET_WASM
+                    costEx = 2;
+                    costSz = (dblCon.Type is TYP_FLOAT) ? 5 : 9;
+#endif
+
+                    return CommonCns(dblCon, costEx, costSz);
+                }
+
+#if FEATURE_SIMD
+                case GT_CNS_VEC:
+                {
+                    var vecCon = tree.AsVecCon();
+
+#if TARGET_XARCH
+                    if (vecCon.IsZero)
+                    {
+                        // vxorps xmm0, xmm0, xmm0
+                        costEx = 1;
+                        costSz = 4;
+                    }
+                    else if (vecCon.IsAllBitsSet)
+                    {
+                        if (vecCon.Type is TYP_SIMD64)
+                        {
+                            // vpternlogd xmm0, xmm0, xmm0, -1
+                            costEx = 1;
+                            costSz = 7;
+                        }
+                        else
+                        {
+                            // vpcmpeqd xmm0, xmm0, xmm0
+                            costEx = 1;
+                            costSz = 4;
+                        }
+                    }
+                    else
+                    {
+                        // vmovups xmm0, [reloc @RWD00]
+
+                        costEx = FLT_IND_COST_EX;
+                        costSz = 8;
+
+                        if (vecCon.Type is TYP_SIMD64)
+                        {
+                            costEx += 2;
+                            costSz += 2;
+                        }
+                        else if (vecCon.Type is TYP_SIMD32)
+                        {
+                            costEx += 1;
+                        }
+                    }
+#else
+                    if (vecCon.IsAllBitsSet || vecCon.IsZero)
+                    {
+                        costEx = 1;
+                        costSz = 2;
+                    }
+                    else
+                    {
+                        costEx = IND_COST_EX;
+                        costSz = 2;
+                    }
+#endif
+                    return CommonCns(vecCon, costEx, costSz);
+                }
+#endif
+
+#if FEATURE_MASKED_HW_INTRINSICS
+                case GT_CNS_MSK:
+                {
+                    var mskCon = tree.AsMskCon();
+
+#if TARGET_XARCH
+                    if (mskCon.IsZero || mskCon.IsAllBitsSet)
+                    {
+                        // Zero:       kxorq  k1, k1, k1
+                        // AllBitsSet: kxnorq k1, k1, k1
+
+                        costEx = 1;
+                        costSz = 5;
+                    }
+                    else
+                    {
+                        // kmovq k1, [reloc @RWD00]
+                        costEx = IND_COST_EX;
+                        costSz = 9;
+                    }
+#else
+                    if (mskCon.IsAllBitsSet || mskCon.IsZero)
+                    {
+                        costEx = 1;
+                        costSz = 2;
+                    }
+                    else
+                    {
+                        costEx = IND_COST_EX;
+                        costSz = 2;
+                    }
+#endif
+
+                    return CommonCns(mskCon, costEx, costSz);
+                }
+#endif
+
+                case GT_LCL_VAR:
+                {
+                    var lclVar = tree.AsLclVar();
+                    gtGetLclVarNodeCost(lclVar, out costEx, out costSz, gtIsLikelyRegVar(lclVar));
+                    break;
+                }
+
+                case GT_LCL_FLD:
+                {
+                    var lclFld = tree.AsLclFld();
+                    gtGetLclFldNodeCost(lclFld, out costEx, out costSz);
+                    break;
+                }
+
+                case GT_LCL_ADDR:
+                {
+                    costEx = 3;
+                    costSz = 3;
+                    break;
+                }
+
+                case GT_PHI_ARG:
+                case GT_NOP:
+                case GT_GCPOLL:
+                {
+                    return Done(tree, costEx: 0, costSz: 0, level: 0);
+                }
+
+                case GT_CATCH_ARG:
+                case GT_ASYNC_CONTINUATION:
+                case GT_LABEL:
+                case GT_JMP:
+                case GT_FTN_ADDR:
+                case GT_RET_EXPR:
+                case GT_ASYNC_RESUME_INFO:
+                case GT_FTN_ENTRY:
+                case GT_MEMORYBARRIER:
+                case GT_JCC:
+                case GT_SETCC:
+                case GT_NO_OP:
+                case GT_START_NONGC:
+                case GT_START_PREEMPTGC:
+                case GT_PROF_HOOK:
+                case GT_SWIFT_ERROR:
+                case GT_WASM_JEXCEPT:
+                case GT_WASM_THROW_REF:
+                case GT_JMPTABLE:
+                case GT_PHYSREG:
+                case GT_IL_OFFSET:
+                case GT_RECORD_ASYNC_RESUME:
+                {
+                    costEx = 1;
+                    costSz = 1;
+                    break;
+                }
+
+                default:
+                {
+                    costEx = 1;
+                    costSz = 1;
+
+                    unreached();
+                    break;
+                }
+            }
+            return Done(tree, costEx, costSz, level: 1);
+        }
+        else if (oper.IsSimple)
+        {
+            var unOp = tree.AsUnOp();
+
+            var op1 = unOp.Op1;
+            var op2 = null as GenTree;
+
+            if (oper.IsBinary)
+            {
+                op2 = unOp.AsOp().Op2;
+
+                if (oper.IsAddrMode && (op1 is null))
+                {
+                    (op1, op2) = (op2, op1);
+                }
+            }
+
+            if (op1 is null)
+            {
+                assert(op2 is null);
+                return Done(unOp, costEx: 0, costSz: 0, level: 0);
+            }
+
+            if (op2 is null)
+            {
+                byte costEx, costSz;
+                var level = gtSetEvalOrder(op1);
+
+                switch (oper)
+                {
+                    case GT_JTRUE:
+                    {
+                        costEx = 2;
+                        costSz = 2;
+                        break;
+                    }
+
+                    case GT_SWITCH:
+                    {
+                        costEx = 10;
+                        costSz = 5;
+                        break;
+                    }
+
+                    case GT_CAST:
+                    {
+#if TARGET_ARM
+                        costEx = 1;
+                        costSz = 1;
+
+                        if (varTypeIsFloating(unOp.Type) || varTypeIsFloating(op1.Type))
+                        {
+                            costEx = 3;
+                            costSz = 4;
+                        }
+#elif TARGET_ARM64
+                        costEx = 1;
+                        costSz = 2;
+
+                        if (varTypeIsFloating(unOp.Type) || varTypeIsFloating(op1.Type))
+                        {
+                            costEx = 2;
+                            costSz = 4;
+                        }
+#elif TARGET_XARCH
+                        costEx = 1;
+                        costSz = 2;
+
+                        if (varTypeIsFloating(unOp.Type))
+                        {
+                            if (varTypeIsFloating(op1.Type))
+                            {
+                                // float:  vcvtss2sd xmm0, xmm1
+                                // double: vcvtsd2ss xmm0, xmm1
+
+                                costEx = 4;
+                                costSz = 4;
+                            }
+                            else if (varTypeIsLong(op1.Type))
+                            {
+#if TARGET_AMD64
+                                if (unOp.IsUnsigned)
+                                {
+                                    if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                                    {
+                                        // vxorps     xmm0, xmm0, xmm0
+                                        // vcvtusi2s* xmm0, xmm0, rcx
+
+                                        costEx = 1 + 5; // 6
+                                        costSz = 4 + 6; // 10
+                                    }
+                                    else
+                                    {
+                                        // vxorps    xmm0, xmm0, xmm0
+                                        // mov       rdx, rcx
+                                        // shr       rdx, 1
+                                        // mov       eax, ecx
+                                        // and       eax, 1
+                                        // or        rax, rdx
+                                        // test      rcx, rcx
+                                        // cmovns    rax, rcx
+                                        // vcvtsi2s* xmm0, rax
+                                        // jns       LABEL
+                                        // vadds*    xmm0, xmm0
+
+                                        costEx = 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 5 + 2 + 4; // 19
+                                        costSz = 4 + 3 + 3 + 2 + 3 + 3 + 3 + 4 + 5 + 2 + 4; // 36
+                                    }
+                                }
+                                else
+                                {
+                                    // vxorps    xmm0, xmm0, xmm0
+                                    // vcvtsi2s* xmm0, xmm0, rcx
+
+                                    costEx = 1 + 5; // 6
+                                    costSz = 4 + 5; // 9
+                                }
+#else
+                                if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                                {
+                                    // uint: vmovq      xmm0, [mem]
+                                    //           vcvtuqq2p* xmm0, xmm0
+                                    //
+                                    // signed:   vmovq      xmm0, [mem]
+                                    //           vcvtqq2p*  xmm0, xmm0
+
+                                    costEx = FLT_IND_COST_EX + 4; // 4 + FLT_IND_COST_EX
+                                    costSz = 6 + 6;               // 12
+                                }
+                                else if (unOp.IsUnsigned)
+                                {
+                                    // uint float:  call CORINFO_HELP_ULNG2FLT
+                                    //          double: call CORINFO_HELP_ULNG2DBL
+                                    //
+                                    // signed   float:  call CORINFO_HELP_LNG2FLT
+                                    //          double: call CORINFO_HELP_LNG2DBL
+
+                                    costEx = 5 + (3 * IND_COST_EX); // CALL
+                                    costSz = 5;                     // 5
+
+                                    level++;
+                                }
+#endif
+                            }
+                            else if (unOp.IsUnsigned)
+                            {
+                                if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                                {
+                                    // vxorps     xmm0, xmm0, xmm0
+                                    // vcvtusi2s* xmm0, xmm0, ecx
+
+                                    costEx = 1 + 5; // 6
+                                    costSz = 4 + 6; // 10
+                                }
+                                else
+                                {
+#if TARGET_AMD64
+                                    // vxorps    xmm0, xmm0, xmm0
+                                    // vcvtsi2s* xmm0, xmm0, rax
+
+                                    costEx = 1 + 5; // 6
+                                    costSz = 4 + 5; // 9
+#else
+                                    // vxorps    xmm0, xmm0, xmm0
+                                    // vcvtsi2sd xmm0, xmm0, ecx
+                                    // vaddsd    xmm1, xmm0, [@RWD00]
+                                    // vblendvpd xmm0, xmm0, xmm1, xmm0
+                                    // ...
+
+                                    costEx = 1 + 5 + (4 + FLT_IND_COST_EX) + 1; // 10 + FLT_IND_COST_EX
+                                    costSz = 4 + 4 + 8 + 6;                     // 22
+
+                                    if (unOp.Type is TYP_FLOAT)
+                                    {
+                                        // ...
+                                        // vcvtpd2ps xmm0, xmm0
+
+                                        costEx += 5; // 15 + FLT_IND_COST_EX
+                                        costSz += 4; // 26
+                                    }
+#endif
+                                }
+                            }
+                            else
+                            {
+                                // vxorps    xmm0, xmm0, xmm0
+                                // vcvtsi2s* xmm0, xmm0, ecx
+
+                                costEx = 1 + 5; // 6
+                                costSz = 4 + 4; // 8
+                            }
+                        }
+                        else if (varTypeIsFloating(op1.Type))
+                        {
+                            var dstType = unOp.AsCast().CastType;
+
+                            if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+                            {
+#if (TARGET_X86)
+                                if (varTypeIsLong(dstType))
+                                {
+                                    // uint: vcvttp*2uqqs xmm0, xmm0
+                                    //           vmovq        [mem], xmm0
+                                    //
+                                    // signed:   vcvttp*2qqs  xmm0, xmm0
+                                    //           vmovq        [mem], xmm0
+
+                                    costEx = 4 + FLT_IND_COST_EX; // 4 + FLT_IND_COST_EX
+                                    costSz = 6 + 6;               // 12
+
+                                    if (op1Type == TYP_FLOAT)
+                                    {
+                                        // vector widening float->long instructions take 1 extra cycle
+                                        // compared to same-size conversion
+                                        costEx += 1;
+                                    }
+                                }
+                                else
+#endif
+                                {
+                                    // uint: vcvtts*2usis eax, xmm0
+                                    // signed:   vcvtts*2sis  eax, xmm0
+
+                                    costEx = 7;
+                                    costSz = 6;
+                                }
+                            }
+                            else if (varTypeIsLong(dstType))
+                            {
+#if (TARGET_AMD64)
+                                if (varTypeIsUnsigned(dstType))
+                                {
+                                    if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                                    {
+                                        // vxorps      xmm1, xmm1, xmm1
+                                        // vmaxs*      xmm0, xmm0, xmm1
+                                        // vcvtts*2usi rax, xmm0
+
+                                        costEx = 1 + 4 + 7; // 12
+                                        costSz = 4 + 4 + 6; // 14
+                                    }
+                                    else
+                                    {
+                                        // vxorps     xmm1, xmm1, xmm1
+                                        // vmaxs*     xmm1, xmm0, xmm1
+                                        // vmovs*     xmm2, [reloc @RWD00]
+                                        // vsubs*     xmm3, xmm0, xmm2
+                                        // vcvtts*2si rax, xmm1
+                                        // vcvtts*2si rcx, xmm3
+                                        // mov        rdx, rax
+                                        // sar        rdx, 63
+                                        // and        rcx, rdx
+                                        // mov        rdx, -1
+                                        // or         rax, rcx
+                                        // vucomis*   xmm0, xmm2
+                                        // cmovae     rax, rdx
+
+                                        costEx = 1 + 4 + FLT_IND_COST_EX + 4 + 7 + 7 + 1 + 1 + 1 + 1 + 1 + 3 +
+                                                 1;                                                  // 32 + FLT_IND_COST_EX
+                                        costSz = 4 + 4 + 8 + 4 + 5 + 5 + 3 + 4 + 3 + 10 + 3 + 4 + 4; // 61
+                                    }
+                                }
+                                else
+                                {
+                                    // vcmpords*  xmm1, xmm0, xmm0
+                                    // vandp*     xmm1, xmm1, xmm0
+                                    // mov        rax, 0x7FFFFFFFFFFFFFFF
+                                    // vcvtts*2si rcx, xmm1
+                                    // vucomis*   xmm0, [reloc @RWD00]
+                                    // cmovb      rax, rcx
+
+                                    costEx = 4 + 1 + 1 + 7 + (3 + FLT_IND_COST_EX) + 1; // 17 + FLT_IND_COST_EX
+                                    costSz = 5 + 4 + 10 + 5 + 8 + 4;                    // 36
+                                }
+#else
+                                if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                                {
+                                    if (varTypeIsUnsigned(dstType))
+                                    {
+                                        // vxorps       xmm1, xmm1, xmm1
+                                        // vmaxs*       xmm0, xmm0, xmm1
+                                        // vcvttp*2uqq  xmm0, xmm0
+                                        // vmovq        [mem], xmm0
+
+                                        costEx = 1 + 4 + 4 + FLT_IND_COST_EX; // 9 + FLT_IND_COST_EX
+                                        costSz = 4 + 4 + 6 + 6;               // 20
+                                    }
+                                    else
+                                    {
+                                        // vcmpords*    k1, xmm0, xmm0
+                                        // vcmpge_oqs*  k2, xmm0, qword ptr [@RWD00]
+                                        // vcvttp*2qq   xmm0 {k1}{z}, xmm0
+                                        // vpblendmq    xmm0 {k2}, xmm0, qword ptr [@RWD08] {1to2}
+                                        // vmovq        [mem], xmm0
+
+                                        costEx = 4 + (4 + FLT_IND_COST_EX) + 4 + (1 + FLT_IND_COST_EX) +
+                                                 FLT_IND_COST_EX;     // 13 + (3 * FLT_IND_COST_EX)
+                                        costSz = 7 + 11 + 6 + 10 + 6; // 40
+                                    }
+
+                                    if (op1.Type is TYP_FLOAT)
+                                    {
+                                        // vector widening float->long instructions take 1 extra cycle
+                                        // compared to same-size conversion
+                                        costEx += 1;
+                                    }
+                                }
+                                else
+                                {
+                                    // uint: ...
+                                    //           call CORINFO_HELP_DBL2ULNG
+                                    //
+                                    // signed:   ...
+                                    //           call CORINFO_HELP_DBL2ULNG
+
+                                    costEx = 5 + (3 * IND_COST_EX); // CALL
+                                    costSz = 5;                     // 5
+
+                                    level++;
+
+                                    if (op1.Type is TYP_FLOAT)
+                                    {
+                                        // vcvtss2sd xmm0, xmm0, xmm0
+                                        // ...
+
+                                        costEx += 4; // 4 + CALL
+                                        costSz += 4; // 9
+                                    }
+                                }
+#endif
+                            }
+                            else if (varTypeIsUnsigned(dstType))
+                            {
+                                if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                                {
+                                    // vxorps      xmm1, xmm1, xmm1
+                                    // vmaxs*      xmm0, xmm0, xmm1
+                                    // vcvtts*2usi eax, xmm0
+
+                                    costEx = 1 + 4 + 7; // 12
+                                    costSz = 4 + 4 + 6; // 14
+                                }
+                                else
+                                {
+#if (TARGET_AMD64)
+                                    // vxorps     xmm1, xmm1, xmm1
+                                    // vmaxss     xmm1, xmm0, xmm1
+                                    // mov        eax, 0xFFFFFFFF
+                                    // vcvtts*2si rcx, xmm1
+                                    // vucomis*   xmm0, [reloc @RWD00]
+                                    // cmovb      eax, ecx
+
+                                    costEx = 1 + 4 + 1 + 7 + (3 + FLT_IND_COST_EX) + 1; // 17 + FLT_IND_COST_EX
+                                    costSz = 4 + 4 + 5 + 5 + 8 + 3;                     // 29
+#else
+                                    // vxorps     xmm1, xmm1, xmm1
+                                    // vmaxs*     xmm1, xmm0, xmm1
+                                    // vmovs*     xmm2, [@RWD00]
+                                    // ...
+                                    // vsubs*     xmm3, xmm0, xmm2
+                                    // vcvttp*2dq xmm1, xmm1
+                                    // vcvttp*2dq xmm3, xmm3
+                                    // vblendvp*  xmm1, xmm1, xmm3, xmm1
+                                    // mov        eax, 0xFFFFFFFF
+                                    // vmovd      edx, xmm1
+                                    // vucomis*   xmm0, xmm2
+                                    // cmovb      eax, edx
+
+                                    costEx = 1 + 4 + FLT_IND_COST_EX + 4 + 4 + 4 + 1 + 1 + 3 + 3 + 1; // 26 + FLT_IND_COST_EX
+                                    costSz = 4 + 4 + 8 + 4 + 4 + 4 + 6 + 5 + 4 + 4 + 3;               // 50
+
+                                    if (op1Type is TYP_DOUBLE)
+                                    {
+                                        // ...
+                                        // vroundsd xmm3, xmm0, xmm0, 3
+                                        // ...
+
+                                        costEx += 8; // 34 + FLT_IND_COST_EX
+                                        costSz += 6; // 56
+                                    }
+#endif
+                                }
+                            }
+                            else
+                            {
+                                // vcmpords*  xmm1, xmm0, xmm0
+                                // vandp*     xmm1, xmm1, xmm0
+                                // mov        eax, 0x7FFFFFFF
+                                // vcvtts*2si ecx, xmm1
+                                // vucomis*   xmm0, [reloc @RWD00]
+                                // cmovb      eax, ecx
+
+                                costEx = 4 + 1 + 1 + 7 + (3 + FLT_IND_COST_EX) + 1; // 17 + FLT_IND_COST_EX
+                                costSz = 5 + 4 + 5 + 4 + 8 + 3;                     // 29
+                            }
+                        }
+#elif TARGET_LOONGARCH64 || TARGET_RISCV64
+                        costEx = 1;
+                        costSz = 4;
+#elif TARGET_WASM
+                        // TODO-WASM: Determine if we need a better costing model for casts.
+                        // Some operations may use 2-byte opcodes, and some operations may need
+                        // multiple wasm instructions.
+                        costEx = 2;
+                        costSz = varTypeIsFloating(op1) && !varTypeIsFloating(unOp.Type) ? 2 : 1;
+#else
+#error "Unknown TARGET"
+#endif
+
+                        if (unOp.HasOverflowCheck)
+                        {
+                            // Overflow casts are a lot more expensive
+                            costEx += 6;
+                            costSz += 6;
+                        }
+                        break;
+                    }
+
+                    case GT_INTRINSIC:
+                    {
+                        var intrinsic = unOp.AsIntrinsic();
+
+                        var intrinsicName = intrinsic.IntrinsicName;
+                        assert(intrinsicName is not NI_Illegal);
+
+                        // GT_INTRINSIC intrinsics Sin, Cos, Sqrt, Abs ... have higher costs.
+                        // TODO: tune these costs target specific as some of these are
+                        // target intrinsics and would cost less to generate code.
+                        switch (intrinsicName)
+                        {
+                            default:
+                            {
+                                costEx = 12;
+                                costSz = 12;
+
+                                NO_WAY("missing case for gtIntrinsicName");
+                                break;
+                            }
+
+                            case NI_System_Math_Abs:
+                            {
+#if TARGET_XARCH
+                                // vandp* xmm0, xmm0, [reloc @RWD00]
+                                costEx = 1 + FLT_IND_COST_EX;
+                                costSz = 8;
+#else
+                                costEx = 5;
+                                costSz = 15;
+#endif
+                                break;
+                            }
+
+                            case NI_System_Math_Acos:
+                            case NI_System_Math_Acosh:
+                            case NI_System_Math_Asin:
+                            case NI_System_Math_Asinh:
+                            case NI_System_Math_Atan:
+                            case NI_System_Math_Atanh:
+                            case NI_System_Math_Cbrt:
+                            case NI_System_Math_Ceiling:
+                            case NI_System_Math_Cos:
+                            case NI_System_Math_Cosh:
+                            case NI_System_Math_Exp:
+                            case NI_System_Math_Floor:
+                            case NI_System_Math_ILogB:
+                            case NI_System_Math_Log:
+                            case NI_System_Math_Log2:
+                            case NI_System_Math_Log10:
+                            case NI_System_Math_Round:
+                            case NI_System_Math_Sin:
+                            case NI_System_Math_Sinh:
+                            case NI_System_Math_Sqrt:
+                            case NI_System_Math_Tan:
+                            case NI_System_Math_Tanh:
+                            case NI_System_Math_Truncate:
+                            case NI_PRIMITIVE_LeadingZeroCount:
+                            case NI_PRIMITIVE_Log2:
+                            case NI_PRIMITIVE_PopCount:
+                            case NI_PRIMITIVE_TrailingZeroCount:
+                            {
+                                // Giving intrinsics a large fixed execution cost is because we'd like to CSE
+                                // them, even if they are implemented by calls. This is different from modeling
+                                // user calls since we never CSE user calls. We don't do this for target intrinsics
+                                // however as they typically represent single instruction calls
+
+                                if (IsIntrinsicImplementedByUserCall(intrinsicName))
+                                {
+                                    costEx = 36;
+                                    costSz = 4;
+                                }
+                                else
+                                {
+#if TARGET_XARCH
+                                    switch (intrinsicName)
+                                    {
+                                        case NI_System_Math_Ceiling:
+                                        case NI_System_Math_Floor:
+                                        case NI_System_Math_Round:
+                                        case NI_System_Math_Truncate:
+                                        {
+                                            // Ceiling:  vrounds* xmm0, xmm0, xmm0, 10
+                                            // Floor:    vrounds* xmm0, xmm0, xmm0,  9
+                                            // Round:    vrounds* xmm0, xmm0, xmm0,  4
+                                            // Truncate: vrounds* xmm0, xmm0, xmm0, 11
+
+                                            costEx = 8;
+                                            costSz = 6;
+                                            break;
+                                        }
+
+                                        case NI_System_Math_Sqrt:
+                                        {
+                                            // vsqrts* xmm0, xmm0, xmm0
+                                            costEx = (byte)((unOp.Type is TYP_FLOAT) ? 12 : 16);
+                                            costSz = 4;
+                                            break;
+                                        }
+
+                                        default:
+                                        {
+                                            // There are other non user call intrinsics, but they are
+                                            // specially imported as HWIntrinsic nodes or are non unary,
+                                            // so should never be encountered here.
+
+                                            costEx = 1;
+                                            costSz = 4;
+
+                                            unreached();
+                                            break;
+                                        }
+                                    }
+#else
+                                    costEx = 3;
+                                    costSz = 4;
+#endif
+                                }
+                                break;
+                            }
+
+                            case NI_System_Object_GetType:
+                            {
+                                // Giving intrinsics a large fixed execution cost is because we'd like to CSE
+                                // them, even if they are implemented by calls. This is different from modeling
+                                // user calls since we never CSE user calls.
+                                costEx = 36;
+                                costSz = 4;
+                                break;
+                            }
+
+#if FEATURE_SIMD
+                            case NI_SIMD_UpperRestore:
+                            case NI_SIMD_UpperSave:
+                            {
+#if TARGET_XARCH
+                                // UpperSave:    vextractf128 xmm0, ymm1, 1
+                                // UpperRestore: vinsertf128  ymm1, xmm0, 1
+
+                                costEx = 3;
+                                costSz = 6;
+#else
+                                // TODO-CQ: 1 Ex/Sz isn't necessarily "accurate" but it is what the previous
+                                // cost was computed as, in gtSetMultiOpOrder, when this was handled by the
+                                // older SIMD intrinsic support.
+
+                                costEx = 1;
+                                costSz = 1;
+#endif
+                                break;
+                            }
+#endif
+                        }
+
+                        level++;
+                        break;
+                    }
+
+                    case GT_NOT:
+                    case GT_NEG:
+                    {
+                        costEx = 1;
+                        costSz = 1;
+
+#if TARGET_XARCH
+                        if (varTypeIsFloating(unOp.Type))
+                        {
+                            // vxorp* xmm0, xmm0, [reloc @RWD00]
+                            costEx += FLT_IND_COST_EX;
+                            costSz += 7;
+                        }
+#endif
+                        // We need to ensure that -x is evaluated before x or else
+                        // we get burned while adjusting genFPstkLevel in x*-x where
+                        // the rhs x is the last use of the enregistered x.
+                        //
+                        // Even in the integer case we want to prefer to
+                        // evaluate the side without the GT_NEG node, all other things
+                        // being equal.  Also a GT_NOT requires a scratch register
+
+                        level++;
+                        break;
+                    }
+
+                    case GT_ARR_LENGTH:
+                    case GT_MDARR_LENGTH:
+                    case GT_MDARR_LOWER_BOUND:
+                    {
+                        level++;
+
+                        // Array meta-data access should be the same as an indirection, which has a costEx of IND_COST_EX.
+                        costEx = IND_COST_EX - 1;
+                        costSz = 2;
+                        break;
+                    }
+
+                    case GT_BLK:
+                    {
+                        // We estimate the cost of a GT_BLK to be two loads (GT_INDs)
+                        costEx = 2 * IND_COST_EX;
+                        costSz = 2 * 2;
+                        break;
+                    }
+
+                    case GT_BOX:
+                    {
+                        // We estimate the cost of a GT_BOX to be two stores (GT_INDs)
+                        costEx = 2 * IND_COST_EX;
+                        costSz = 2 * 2;
+                        break;
+                    }
+
+                    case GT_ARR_ADDR:
+                    {
+                        var arrAddr = unOp.AsArrAddr();
+
+                        costEx = 0;
+                        costSz = 0;
+
+                        // To preserve previous behavior, we will always use "gtMarkAddrMode" for ARR_ADDR.
+                        if ((op1.Oper is GT_ADD) && gtMarkAddrMode(op1, ref costEx, ref costSz, arrAddr.ElemType))
+                        {
+                            op1.SetCosts(costEx, costSz);
+                            return Done(arrAddr, costEx, costSz, level);
+                        }
+                        break;
+                    }
+
+                    case GT_IND:
+                    {
+                        var ind = unOp.AsIndir();
+
+                        // An indirection should always have a non-zero level.
+                        // Only constant leaf nodes have level 0.
+                        if (level is 0)
+                        {
+                            level = 1;
+                        }
+
+                        if (gtGetIndNodeCost(ind, out costEx, out costSz))
+                        {
+                            return Done(ind, costEx, costSz, level);
+                        }
+                        else
+                        {
+                            costEx = 1;
+                            costSz = 1;
+                        }
+                        break;
+                    }
+
+                    case GT_STORE_LCL_VAR:
+                    case GT_STORE_LCL_FLD:
+                    {
+                        if (oper is GT_STORE_LCL_FLD)
+                        {
+                            gtGetLclFldNodeCost(unOp.AsLclFld(), out costEx, out costSz);
+                        }
+                        else
+                        {
+                            if (gtIsLikelyRegVar(unOp))
+                            {
+                                // Store to an enregistered local.
+                                // 3 is an estimate for a reg-reg move.
+
+                                costEx = op1.CostEx;
+                                costSz = byte.Max(3, op1.CostSz);
+
+                                return Done(unOp, costEx, costSz, level);
+                            }
+
+                            gtGetLclVarNodeCost(unOp.AsLclVar(), out costEx, out costSz, isLikelyRegVar: false);
+                        }
+
+                        costEx += 1;
+                        costSz += 1;
+#if TARGET_ARM
+                        if (varTypeIsFloating(unOp.Type))
+                        {
+                            costSz += 2;
+                        }
+#endif
+
+#if !TARGET_64BIT
+                        if (unOp.Type is TYP_LONG)
+                        {
+                            // Operations on longs are more expensive.
+                            costEx += 3;
+                            costSz += 3;
+                        }
+#endif
+                        break;
+                    }
+
+                    case GT_KEEPALIVE:
+                    case GT_BITCAST:
+                    case GT_CKFINITE:
+                    case GT_LCLHEAP:
+                    case GT_NULLCHECK:
+                    case GT_FIELD_ADDR:
+                    case GT_ALLOCOBJ:
+                    case GT_INIT_VAL:
+                    case GT_RUNTIMELOOKUP:
+                    case GT_BSWAP:
+                    case GT_BSWAP16:
+                    case GT_LZCNT:
+                    case GT_NONLOCAL_JMP:
+                    case GT_LEA:
+                    case GT_INC_SATURATE:
+#if TARGET_ARM64
+                    case GT_BFX:
+                    case GT_SELECT_INCCC:
+                    case GT_SELECT_NEGCC:
+#endif
+                    case GT_RETURN:
+                    case GT_RETURN_SUSPEND:
+                    case GT_PATCHPOINT_FORCED:
+                    case GT_RETFILT:
+#if SWIFT_SUPPORT
+                    case GT_SWIFT_ERROR_RET:
+#endif
+                    case GT_RETURNTRAP:
+                    case GT_PUTARG_REG:
+                    case GT_PUTARG_STK:
+                    case GT_COPY:
+                    case GT_RELOAD:
+                    {
+                        costEx = 1;
+                        costSz = 1;
+                        break;
+                    }
+
+                    default:
+                    {
+                        costEx = 1;
+                        costSz = 1;
+
+                        unreached();
+                        break;
+                    }
+                }
+
+                costEx += op1.CostEx;
+                costSz += op1.CostSz;
+
+                return Done(unOp, costEx, costSz, level);
+            }
+            else
+            {
+                var binOp = unOp.AsOp();
+
+                byte costEx, costSz;
+                var level = gtSetEvalOrder(op1);
+                var lvl2 = gtSetEvalOrder(op2);
+
+                var includeOp1Cost = true;
+                var includeOp2Cost = true;
+                var allowReversal = true;
+
+                switch (oper)
+                {
+                    case GT_MOD:
+                    case GT_UMOD:
+                    {
+                        if (op2.Oper.IsCnsIntOrI)
+                        {
+                            // Modulo by a power of 2 is easy
+                            var ival = op2.AsIntConCommon().IconValue;
+
+                            if (nint.IsPow2(ival))
+                            {
+                                costEx = 1;
+                                costSz = 1;
+                                break;
+                            }
+                        }
+                        goto case GT_DIV;
+                    }
+
+                    case GT_DIV:
+                    case GT_UDIV:
+                    {
+                        if (varTypeIsFloating(binOp.Type))
+                        {
+#if TARGET_XARCH
+                            // vdivs* xmm0, xmm0, xmm0
+                            costEx = (byte)((binOp.Type is TYP_FLOAT) ? 11 : 14);
+                            costSz = 4;
+#else
+                            costEx = 36;
+                            costSz = 4;
+#endif
+#if TARGET_ARM
+                            costSz += 2;
+#endif
+                        }
+                        else
+                        {
+                            // integer division is also very expensive
+                            costEx = 20;
+                            costSz = 3;
+
+#if !TARGET_64BIT
+                            if (binOp.Type is TYP_LONG)
+                            {
+                                costSz += 3;
+                            }
+#endif
+
+                            // Encourage the first operand to be evaluated (into EAX/EDX) first */
+                            level += 3;
+                        }
+                        break;
+                    }
+
+                    case GT_MUL:
+                    {
+                        if (varTypeIsFloating(binOp.Type))
+                        {
+#if TARGET_XARCH
+                            // vmuls* xmm0, xmm0, xmm0
+                            costEx = 4;
+                            costSz = 4;
+#else
+                            costEx = 5;
+                            costSz = 4;
+#endif
+#if TARGET_ARM
+                            costSz += 2;
+#endif
+                        }
+                        else
+                        {
+                            // Integer multiplication instructions are more expensive
+                            costEx = 4;
+                            costSz = 3;
+
+#if !TARGET_64BIT
+                            if (binOp.Type is TYP_LONG)
+                            {
+                                costEx += 3;
+                                costSz += 3;
+                            }
+#endif
+
+                            if (binOp.HasOverflowCheck)
+                            {
+                                costEx += 3;
+                                costSz += 3;
+                            }
+
+#if TARGET_X86
+                            if ((binOp.Type is TYP_LONG) || binOp.HasOverflowCheck)
+                            {
+                                // We use imulEAX for TYP_LONG and overflow multiplications
+                                // Encourage the first operand to be evaluated (into EAX/EDX) first */
+                                level += 4;
+
+                                // The 64-bit imul instruction costs more
+                                costEx += 4;
+                            }
+#endif
+                        }
+                        break;
+                    }
+
+                    case GT_ADD:
+                    case GT_SUB:
+                    {
+                        if (varTypeIsFloating(binOp.Type))
+                        {
+#if TARGET_XARCH
+                            // add: vadds* xmm0, xmm0, xmm0
+                            // sub: vsubs* xmm0, xmm0, xmm0
+
+                            costEx = 4;
+                            costSz = 4;
+#else
+                            costEx = 5;
+                            costSz = 4;
+#endif
+#if TARGET_ARM
+                            costSz += 2;
+#endif
+                        }
+                        else
+                        {
+                            costEx = 1;
+                            costSz = 1;
+
+#if !TARGET_64BIT
+                            if (binOp.Type is TYP_LONG)
+                            {
+                                costEx += 3;
+                                costSz += 3;
+                            }
+#endif
+
+                            if (binOp.HasOverflowCheck)
+                            {
+                                costEx += 3;
+                                costSz += 3;
+                            }
+                        }
+                        break;
+                    }
+
+                    case GT_LSH:
+                    case GT_RSH:
+                    case GT_RSZ:
+                    case GT_ROL:
+                    case GT_ROR:
+                    {
+                        costEx = 1;
+                        costSz = 1;
+
+#if !TARGET_64BIT
+                        if (binOp.Type is TYP_LONG)
+                        {
+                            costEx += 3;
+                            costSz += 3;
+                        }
+#endif
+
+                        if (!op2.Oper.IsCnsIntOrI)
+                        {
+                            // Variable sized shifts are more expensive and use REG_SHIFT
+                            costEx += 3;
+#if !TARGET_64BIT
+                            if (binOp.Type is TYP_LONG)
+                            {
+                                // Variable sized LONG shifts require the use of a helper call
+                                level += 5;
+                                lvl2 += 5;
+
+                                costEx += 3 * IND_COST_EX;
+                                costSz += 4;
+                            }
+#endif
+                        }
+                        break;
+                    }
+
+                    case GT_EQ:
+                    case GT_NE:
+                    case GT_LT:
+                    case GT_LE:
+                    case GT_GE:
+                    case GT_GT:
+                    {
+                        if (varTypeIsFloating(op1.Type))
+                        {
+#if TARGET_XARCH
+                            // vucomis* xmm0, xmm1
+                            costEx = 3;
+                            costSz = 4;
+#else
+                            costEx = 1;
+                            costSz = 1;
+
+                            // TODO-CQ: This is a historical artifact from when the x87 FPU was used it should be properly adjusted for all platforms
+                            level++;
+                            lvl2++;
+#endif
+                        }
+                        else
+                        {
+                            costEx = 1;
+                            costSz = 1;
+                        }
+
+                        if ((tree.Flags & GTF_RELOP_JMP_USED) is 0)
+                        {
+                            // Using a setcc instruction is more expensive
+                            costEx += 3;
+                        }
+                        break;
+                    }
+
+                    case GT_BOUNDS_CHECK:
+                    {
+                        costEx = 4; // cmp reg,reg and jae throw (not taken)
+                        costSz = 7; // jump to cold section
+                                    // Bounds check nodes used to not be binary, thus GTF_REVERSE_OPS was not enabled for them. This
+                                    // condition preserves that behavior. Additionally, CQ analysis shows that enabling GTF_REVERSE_OPS
+                                    // for these nodes leads to mixed results at best.
+                        allowReversal = false;
+                        break;
+                    }
+
+                    case GT_INTRINSIC:
+                    {
+                        var intrinsic = binOp.AsIntrinsic();
+                        var intrinsicName = intrinsic.IntrinsicName;
+
+                        // We do not swap operand execution order for intrinsics that are implemented by user calls because
+                        // of trickiness around ensuring the execution order does not change during rationalization.
+                        if (IsIntrinsicImplementedByUserCall(intrinsicName))
+                        {
+                            allowReversal = false;
+                        }
+
+                        switch (intrinsicName)
+                        {
+                            case NI_System_Math_Atan2:
+                            case NI_System_Math_Pow:
+                            {
+                                // These math intrinsics are actually implemented by user calls. Increase the
+                                // Sethi 'complexity' by two to reflect the argument register requirement.
+                                level += 2;
+                                break;
+                            }
+
+#if TARGET_RISCV64
+                            case NI_System_Math_Max:
+                            case NI_System_Math_MaxUnsigned:
+                            case NI_System_Math_MaxNative:
+                            case NI_System_Math_Min:
+                            case NI_System_Math_MinUnsigned:
+                            case NI_System_Math_MinNative:
+                            {
+                                level++;
+                                break;
+                            }
+#endif
+
+                            default:
+                            {
+                                NO_WAY("Unknown binary GT_INTRINSIC operator");
+                                break;
+                            }
+                        }
+
+                        costEx = 1;
+                        costSz = 1;
+
+#if TARGET_ARM
+                        assert(!varTypeIsFloating(binOp.Type));
+#endif
+#if !TARGET_64BIT
+                        assert(!varTypeIsLong(binOp.Type));
+#endif
+                        break;
+                    }
+
+                    case GT_COMMA:
+                    {   
+                        // GT_COMMA cost is the sum of op1 and op2 costs
+                        costEx = (byte)(op1.CostEx + op2.CostEx);
+                        costSz = (byte)(op1.CostSz + op2.CostSz);
+
+                        // Comma tosses the result of the left operand
+                        return Done(binOp, costEx, costSz, lvl2);
+                    }
+
+                    case GT_INDEX_ADDR:
+                    {
+                        costEx = 6; // cmp reg,reg; jae throw; mov reg, [addrmode]  (not taken)
+                        costSz = 9; // jump to cold section
+                        break;
+                    }
+
+                    case GT_STORE_BLK:
+                    case GT_STOREIND:
+                    {
+                        var indir = tree.AsIndir();
+
+                        if (oper is GT_STORE_BLK)
+                        {
+                            // We estimate the cost of a GT_STORE_BLK to be two stores.
+                            costEx = 1 + (2 * IND_COST_EX);
+                            costSz = 1 + (2 * 2);
+
+#if TARGET_ARM
+                            if (varTypeIsFloating(indir.Type))
+                            {
+                                costSz += 2;
+                            }
+#endif
+                        }
+                        else
+                        {
+                            if (gtGetIndNodeCost(indir, out costEx, out costSz))
+                            {
+                                includeOp1Cost = false;
+                            }
+
+                            costEx += 1;
+                            costSz += 1;
+                        }
+
+#if !TARGET_64BIT
+                        if (indir.Type is TYP_LONG)
+                        {
+                            // Operations on longs are more expensive.
+                            costEx += 3;
+                            costSz += 3;
+                        }
+#endif
+
+                        // TODO-ASG-Cleanup: this logic emulated the ASG case below. See how of much of it can be deleted.
+                        if (!optValnumCSE_phase || optCSE_canSwap(op1, op2))
+                        {
+                            gtSetEvalOrderIndirectStore(this, indir, out allowReversal);
+                        }
+                        break;
+                    }
+
+                    default:
+                    {
+                        costEx = 1;
+                        costSz = 1;
+
+                        unreached();
+                        break;
+                    }
+                }
+
+                if (includeOp1Cost)
+                {
+                    costEx += op1.CostEx;
+                    costSz += op1.CostSz;
+                }
+
+                if (includeOp2Cost)
+                {
+                    costEx += op2.CostEx;
+                    costSz += op2.CostSz;
+                }
+
+                // We need to evaluate constants later as many places in codegen
+                // can't handle op1 being a constant. This is normally naturally
+                // enforced as constants have the least level of 0. However,
+                // sometimes we end up with a tree like "cns1 < nop(cns2)". In
+                // such cases, both sides have a level of 0. So encourage constants
+                // to be evaluated last in such cases
+
+                if ((level is 0) && (level == lvl2) && op1.Oper.IsConst && (tree.Oper.IsCommutative || tree.Oper.IsCompare))
+                {
+                    lvl2++;
+                }
+
+                // We try to swap operands if the second one is more expensive.
+                // Don't swap anything if we're in linear order; we're really just interested in the costs.
+                var tryToSwap = false;
+
+                if (allowReversal && (fgOrder != FGOrderLinear))
+                {
+                    if (tree.IsReverseOp)
+                    {
+                        tryToSwap = (level > lvl2);
+                    }
+                    else
+                    {
+                        tryToSwap = (level < lvl2);
+
+                        // Try to force extra swapping when in the stress mode:
+                        if (compStressCompile(STRESS_REVERSE_FLAG, 60) && !op2.Oper.IsConst)
+                        {
+                            tryToSwap = true;
+                        }
+                    }
+                }
+
+                if (tryToSwap)
+                {
+                    var canSwap = tree.IsReverseOp ? gtCanSwapOrder(op2, op1) : gtCanSwapOrder(op1, op2);
+
+                    if (canSwap)
+                    {
+                        // Can we swap the order by commuting the operands?
+
+                        switch (oper)
+                        {
+                            case GT_EQ:
+                            case GT_NE:
+                            case GT_LT:
+                            case GT_LE:
+                            case GT_GE:
+                            case GT_GT:
+                            {
+                                var swapRelop = oper.SwapRelop;
+
+                                if (swapRelop != oper)
+                                {
+                                    tree.SetOper(swapRelop, GenTree.PRESERVE_VN);
+                                }
+                                goto case GT_ADD;
+                            }
+
+                            case GT_ADD:
+                            case GT_MUL:
+                            case GT_OR:
+                            case GT_XOR:
+                            case GT_AND:
+                            {
+                                // Swap the operands
+                                binOp.Op1Ref = op2;
+                                binOp.Op2Ref = op1;
+                                break;
+                            }
+
+                            case GT_QMARK:
+                            case GT_COLON:
+                            {
+                                break;
+                            }
+
+                            default:
+                            {
+#if TARGET_WASM
+                                // For WASM if we can't swap the operands or swap the operator, don't swap.
+#else
+                                // Mark the operand's evaluation order to be swapped.
+                                tree.Flags ^= GTF_REVERSE_OPS;
+#endif
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (tree.IsReverseOp)
+                {
+                    (level, lvl2) = (lvl2, level);
+                }
+
+                // Compute the sethi number for this binary operator
+
+                if (level < 1)
+                {
+                    level = lvl2;
+                }
+                else if (level == lvl2)
+                {
+                    level += 1;
+                }
+                return Done(binOp, costEx, costSz, level);
+            }
+        }
+        else
+        {
+            assert(oper.IsSpecial);
+
+            int level;
+            byte costEx, costSz;
+
+            // See what kind of a special operator we have here
+            switch (oper)
+            {
+                case GT_CALL:
+                {
+                    assert((tree.Flags & GTF_CALL) is not 0);
+
+                    level = 0;
+                    costEx = 5;
+                    costSz = 2;
+
+                    var call = tree.AsCall();
+
+                    // Evaluate the arguments
+                    level = int.Max(level, gtSetCallArgsOrder(ref call.Args, lateArgs: false, ref costEx, ref costSz));
+
+                    // Evaluate the temp register arguments list
+                    level = int.Max(level, gtSetCallArgsOrder(ref call.Args, lateArgs: true, ref costEx, ref costSz));
+
+                    if (call._callType is CT_INDIRECT)
+                    {
+                        var indirect = call.ControlExpr;
+                        assert(indirect is not null);
+
+                        level = int.Max(level, gtSetEvalOrder(indirect));
+
+                        costEx += (byte)(indirect.CostEx + IND_COST_EX);
+                        costSz += indirect.CostSz;
+                    }
+                    else
+                    {
+                        if (call.IsVirtual)
+                        {
+                            var controlExpr = call._controlExpr;
+
+                            if (controlExpr is not null)
+                            {
+                                level = int.Max(level, gtSetEvalOrder(controlExpr));
+
+                                costEx += controlExpr.CostEx;
+                                costSz += controlExpr.CostSz;
+                            }
+                        }
+#if TARGET_ARM
+                        if (call.IsVirtualStub)
+                        {
+                            // We generate movw/movt/ldr
+                            costEx += (1 + IND_COST_EX);
+                            costSz += 8;
+
+                            if ((call._callMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT) is not 0)
+                            {
+                                // Must use R12 for the ldr target -- REG_JUMP_THUNK_PARAM
+                                costSz += 2;
+                            }
+                        }
+                        else if (!IsAot)
+                        {
+                            costEx += 2;
+                            costSz += 6;
+                        }
+                        costSz += 2;
+#endif
+
+#if TARGET_XARCH
+                        costSz += 3;
+#endif
+                    }
+
+                    level += 1;
+
+                    if (call.IsVirtual)
+                    {
+                        costEx += 2 * IND_COST_EX;
+                        costSz += 2;
+                    }
+
+                    level += 5;
+                    costEx += 3 * IND_COST_EX;
+                    break;
+                }
+
+#if FEATURE_HW_INTRINSICS
+                case GT_HWINTRINSIC:
+                {
+                    return gtSetMultiOpOrder(tree.AsMultiOp());
+                }
+#endif
+
+                case GT_ARR_ELEM:
+                {
+                    var arrElem = tree.AsArrElem();
+                    var arrObj = arrElem.ArrObj;
+
+                    level = gtSetEvalOrder(arrObj);
+                    costEx = arrObj.CostEx;
+                    costSz = arrObj.CostSz;
+
+                    var arrInds = arrElem.ArrInds;
+
+                    for (var dim = 0; dim < arrInds.Length; dim++)
+                    {
+                        var arrInd = arrInds[dim];
+
+                        level = int.Max(level, gtSetEvalOrder(arrInd));
+
+                        costEx += arrInd.CostEx;
+                        costSz += arrInd.CostSz;
+                    }
+
+                    level += arrElem.ArrRank;
+                    costEx += (byte)(2 + (arrElem.ArrRank * (IND_COST_EX + 1)));
+                    costSz += (byte)(2 + (arrElem.ArrRank * 2));
+                    break;
+                }
+
+                case GT_PHI:
+                {
+                    var phi = tree.AsPhi();
+
+                    foreach (var use in phi.Uses)
+                    {
+                        var node = use.Node;
+
+                        level = gtSetEvalOrder(node);
+                        assert(level is 0);
+
+                        assert(node.CostEx is 0);
+                        assert(node.CostSz is 0);
+                    }
+
+                    level = 1;
+                    costEx = 0;
+                    costSz = 0;
+                    break;
+                }
+
+                case GT_FIELD_LIST:
+                {
+                    var fieldList = tree.AsFieldList();
+
+                    level = 0;
+                    costEx = 0;
+                    costSz = 0;
+
+                    foreach (var use in fieldList.Uses)
+                    {
+                        var node = use.Node;
+                        level = int.Max(level, gtSetEvalOrder(node));
+
+                        costEx += node.CostEx;
+                        costSz += node.CostSz;
+                    }
+                    break;
+                }
+
+                case GT_CMPXCHG:
+                {
+                    var cmpXchg = tree.AsCmpXchg();
+
+                    var addr = cmpXchg.Addr;
+                    level = gtSetEvalOrder(addr);
+                    costSz = addr.CostSz;
+
+                    var value = cmpXchg.Data;
+                    level = int.Max(level, gtSetEvalOrder(value));
+                    costSz += value.CostSz;
+
+                    var comparand = cmpXchg.Comparand;
+                    level = int.Max(level, gtSetEvalOrder(comparand));
+                    costSz += comparand.CostSz;
+
+                    costEx = MAX_COST; // Seriously, what could be more expensive than lock cmpxchg?
+                    costSz += 5;       // size of lock cmpxchg [reg+C], reg
+                    break;
+                }
+
+                case GT_SELECT:
+                {
+                    var conditional = tree.AsConditional();
+
+                    var cond = conditional.Cond;
+                    var op1 = conditional.Op1;
+                    var op2 = conditional.Op2;
+
+                    level = gtSetEvalOrder(cond);
+                    costEx = cond.CostEx;
+                    costSz = cond.CostSz;
+
+                    level = int.Max(level, gtSetEvalOrder(op1));
+                    costEx += op1.CostEx;
+                    costSz += op1.CostSz;
+
+                    level = int.Max(level, gtSetEvalOrder(op2));
+                    costEx += op2.CostEx;
+                    costSz += op2.CostSz;
+
+                    costEx += 1;
+                    costSz += 1;
+                    break;
+                }
+
+                default:
+                {
+                    JITDUMP("unexpected operator in this tree:\n");
+                    DISPTREE(tree);
+
+                    NO_WAY("unexpected operator");
+                    level = 0;
+
+                    costEx = 1;
+                    costSz = 1;
+                    break;
+                }
+            }
+
+            return Done(tree, costEx: 1, costSz: 1, level: 0);
+        }
+
+        static int CommonCns(GenTree tree, byte costEx, byte costSz)
+        {
+            // Note that some code below depends on constants always getting
+            // moved to be the second operand of a binary operator. This is
+            // easily accomplished by giving constants a level of 0, which
+            // we do on the next line. If you ever decide to change this, be
+            // aware that unless you make other arrangements for integer
+            // constants to be moved, stuff will break.
+
+            return Done(tree, costEx, costSz, level: 0);
+        }
+
+        static int Done(GenTree tree, byte costEx, byte costSz, int level)
+        {
+            tree.SetCosts(costEx, costSz);
+            return level;
+        }
     }
 
     public static void gtSetEvalOrderIndirectStore(Compiler comp, GenTreeIndir store, out bool allowReversal)
