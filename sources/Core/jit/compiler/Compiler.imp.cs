@@ -831,7 +831,7 @@ public partial class Compiler
 
                 if ((call.Type is TYP_VOID) && call.ShouldHaveRetBufArg)
                 {
-                    var args = call.Args;
+                    ref var args = ref call.Args;
                     assert(args.HasRetBuffer);
 
                     var retBuf = args.RetBufferArg.Node;
@@ -878,8 +878,6 @@ public partial class Compiler
                 impSpillSpecialSideEff();
             }
 
-            assert(impLastStmt is not null);
-
             if ((lastStmt != impLastStmt) && (oper is GT_RET_EXPR))
             {
                 var call = expr.AsRetExpr().InlineCandidate;
@@ -905,6 +903,7 @@ public partial class Compiler
                 assert(movingStmt is not null);
 
 #if DEBUG
+                assert(impLastStmt is not null);
                 JITDUMP($"Moving {FMT_STMT(movingStmt.Id)} through {FMT_STMT(impLastStmt.Id)} before {FMT_STMT(insertBeforeStmt.Id)}\n");
 #endif
 
@@ -1426,7 +1425,6 @@ public partial class Compiler
 
         // Spill op1 if it's a complex expression
         op1 = impCloneExpr(op1, out var op1Clone, CHECK_SPILL_ALL, "ISINST eval op1");
-        assert(op1Clone is not null);
 
         var op1Clone2 = gtClone(op1);
         assert(op1Clone2 is not null);
@@ -1943,7 +1941,7 @@ public partial class Compiler
         return prevOpcode is not CEE_LDTOKEN and not CEE_NEWARR and not CEE_NEWOBJ;
     }
 
-    public GenTree impCloneExpr(GenTree tree, out GenTree? clone, int curLevel, string reason)
+    public GenTree impCloneExpr(GenTree tree, out GenTree clone, int curLevel, string reason)
         => impCloneExpr(tree, out clone, ref Unsafe.NullRef<Statement>(), curLevel, reason);
 
     /// <summary>Given a tree, clone it. clone is set to the cloned tree.</summary>
@@ -1954,12 +1952,17 @@ public partial class Compiler
     /// <param name="reason"></param>
     /// <returns>The original tree if the cloning was easy, else returns the temp to which the tree had to be spilled to.</returns>
     /// <remarks>If the tree has side-effects, it will be spilled to a temp.</remarks>
-    public GenTree impCloneExpr(GenTree tree, out GenTree? clone, ref Statement afterStmt, int curLevel, string reason)
+    public GenTree impCloneExpr(GenTree tree, out GenTree clone, ref Statement afterStmt, int curLevel, string reason)
     {
         if ((tree.Flags & GTF_GLOB_EFFECT) is 0)
         {
-            clone = gtClone(tree, complexOK: true);
-            return tree;
+            var possibleClone = gtClone(tree, complexOK: true);
+
+            if (possibleClone is not null)
+            {
+                clone = possibleClone;
+                return tree;
+            }
         }
 
         // Store the operand in a temp and return the temp
@@ -2627,7 +2630,7 @@ public partial class Compiler
                 JITDUMP($"Duplicating for popular value = {profiledValue}\n");
                 DISPTREE(call);
 
-                var callArgs = call.Args;
+                ref var callArgs = ref call.Args;
 
                 var userArg = callArgs.GetUserArgByIndex(argNum);
                 assert(userArg is not null);
@@ -4660,7 +4663,6 @@ public partial class Compiler
         // Boxing allows the "initclass" flag, but not volatile/unaligned flags
         nullableObj = impGetNodeAddr(nullableObj, CHECK_SPILL_ALL, GTF_IND_INITCLASS, out var indirFlags);
         nullableObj = impCloneExpr(nullableObj, out var nullableObjClone, CHECK_SPILL_ALL, "nullable obj clone");
-        assert(nullableObjClone is not null);
 
         var valueFldHnd = info.compCompHnd->getFieldInClass(nullableCls, 1);
         var cnsValueOffset = info.compCompHnd->getFieldOffset(valueFldHnd);
@@ -5250,7 +5252,7 @@ public partial class Compiler
                 {
                     // Should not see backward branch targets w/o backwards branches.
                     // So if !compHasBackwardsBranch, these flags should never be set.
-                    assert(block.HasAnyFlag(BBF_BACKWARD_JUMP_TARGET | BBF_BACKWARD_JUMP_SOURCE) != 0);
+                    assert(block.HasAnyFlag(BBF_BACKWARD_JUMP_TARGET | BBF_BACKWARD_JUMP_SOURCE) == 0);
                 }
             }
 
@@ -7028,7 +7030,6 @@ public partial class Compiler
 
                     var op1 = tree;
                     var op2 = null as GenTree;
-                    ;
 
                     // In unoptimized code we leave the decision of
                     // cloning/creating temps up to impCloneExpr, while in
@@ -7085,8 +7086,6 @@ public partial class Compiler
                     {
                         op1 = impCloneExpr(op1, out op2, CHECK_SPILL_ALL, "DUP instruction");
                     }
-
-                    assert(op2 is not null);
                     assert(((op1.Flags & GTF_GLOB_EFFECT) is 0) && ((op2.Flags & GTF_GLOB_EFFECT) is 0));
 
                     impPushOnStack(op1, tiRetVal);
@@ -8920,8 +8919,6 @@ public partial class Compiler
                                 if (opcode is CEE_UNBOX)
                                 {
                                     op1 = impCloneExpr(op1, out cloneOperand, CHECK_SPILL_ALL, "optimized unbox clone");
-                                    assert(cloneOperand is not null);
-
                                     boxPayloadAddress.Op1 = cloneOperand;
 
                                     if (fgAddrCouldBeNull(op1))
@@ -8977,14 +8974,11 @@ public partial class Compiler
                         // push(clone + TARGET_POINTER_SIZE)
 
                         op1 = impCloneExpr(op1, out cloneOperand, CHECK_SPILL_ALL, "inline UNBOX clone1");
-                        assert(cloneOperand is not null);
 
                         op1 = gtNewMethodTableLookup(op1);
                         var condBox = gtNewBinaryNode(GT_EQ, TYP_INT, op1, op2);
 
                         op1 = impCloneExpr(cloneOperand, out cloneOperand, CHECK_SPILL_ALL, "inline UNBOX clone2");
-                        assert(cloneOperand is not null);
-
                         op2 = impTokenToHandle(resolvedToken);
 
                         if (op2 is null)
@@ -12731,7 +12725,6 @@ public partial class Compiler
 
         // Clone the object (and spill side effects)
         obj = impCloneExpr(obj, out var objClone, CHECK_SPILL_ALL, "op1 spilled for Nullable unbox");
-        assert(objClone is not null);
 
         // Unbox the object to the result local:
         //
@@ -12812,7 +12805,7 @@ public partial class Compiler
         // Mark as CSE'able, and hoistable.  Consider marking hoistable unless you're in the inlinee.
         // Also, consider sticking this in the first basic block.
         var call = gtNewHelperCallNode(TYP_VOID, helperInfo.helperNum);
-        var callArgs = call.Args;
+        ref var callArgs = ref call.Args;
 
         ReadOnlySpan<CORINFO_HELPER_ARG> helperArgs = helperInfo.args;
 
@@ -14910,7 +14903,6 @@ public partial class Compiler
                     // * 64-bit lzcnt: (value is 0) ? 64 : (63 ^ BSR(value))
 
                     op1 = impCloneExpr(op1, out var op1Dup, CHECK_SPILL_ALL, "Cloning op1 for LeadingZeroCount");
-                    assert(op1Dup is not null);
 
                     hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_BitScanReverse : NI_X86Base_BitScanReverse;
                     op1Dup = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1Dup);
@@ -15005,7 +14997,6 @@ public partial class Compiler
                 if (!varTypeIsUnsigned(baseJitType.PreciseVarType))
                 {
                     op1 = impCloneExpr(op1, out op1Dup, CHECK_SPILL_ALL, "Cloning op1 for signed Log2");
-                    assert(op1Dup is not null);
 
                     // We will insert a qmark below that is the first use
                     (op1, op1Dup) = (op1Dup, op1);
@@ -15078,9 +15069,7 @@ public partial class Compiler
                     // the JIT.
 
                     assert(!varTypeIsUnsigned(baseJitType.PreciseVarType));
-
                     op1 = impCloneExpr(op1Dup, out op1Dup, CHECK_SPILL_ALL, "Cloning op1 for signed Log2");
-                    assert(op1Dup is not null);
 
                     var fallback = new GenTreeIntrinsic(retType, op1Dup, intrinsic, method) {
                         EntryPoint = entryPoint,
@@ -15330,7 +15319,6 @@ public partial class Compiler
                     // * 64-bit tzcnt: (value is 0) ? 64 : BSF(value)
 
                     op1 = impCloneExpr(op1, out var op1Dup, CHECK_SPILL_ALL, "Cloning op1 for TrailingZeroCount");
-                    assert(op1Dup is not null);
 
                     hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_BitScanForward : NI_X86Base_BitScanForward;
                     op1Dup = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1Dup);
@@ -16255,7 +16243,6 @@ public partial class Compiler
             if ((i is 1 && runtimeLookup.indirectFirstOffset) || (i is 2 && runtimeLookup.indirectSecondOffset))
             {
                 indOffTree = impCloneExpr(slotPtrTree, out slotPtrTree, CHECK_SPILL_ALL, "impRuntimeLookup indirectOffset");
-                assert(slotPtrTree is not null);
             }
 
             if (i is not 0)
@@ -17351,7 +17338,7 @@ public partial class Compiler
                 }
 
 #if !TARGET_ARM
-                var args = call.Args;
+                ref var args = ref call.Args;
 
                 // Unmanaged instance methods on Windows or Unix X86 need the retbuf arg after the first (this) parameter
                 if ((TargetOS.IsWindows || compUnixX86Abi()) && call.IsUnmanaged)
@@ -17449,7 +17436,7 @@ public partial class Compiler
 
             if (call.ShouldHaveRetBufArg)
             {
-                var args = call.Args;
+                ref var args = ref call.Args;
 
                 // insert the return value buffer into the argument list as first byref parameter after 'this'
                 var destAddr = impGetNodeAddr(store, CHECK_SPILL_ALL, GTF_IND_MUST_PRESERVE_FLAGS, out var indirFlags);

@@ -1174,7 +1174,7 @@ public partial class Compiler
 
     public int lvaGetLclNum(in LclVarDsc varDsc)
     {
-        assert(Unsafe.IsAddressGreaterThanOrEqualTo(in varDsc, in lvaTable[0]) && Unsafe.IsAddressLessThan(in varDsc, in lvaTable[lvaCount]));
+        assert(Unsafe.IsAddressGreaterThanOrEqualTo(in varDsc, in lvaTable[0]) && Unsafe.IsAddressLessThanOrEqualTo(in varDsc, in lvaTable[lvaCount - 1]));
         var varNum = (int)(Unsafe.ByteOffset(in lvaTable[0], in varDsc) / Unsafe.SizeOf<LclVarDsc>());
 
         assert(Unsafe.AreSame(in varDsc, in lvaTable[varNum]));
@@ -1678,7 +1678,7 @@ public partial class Compiler
         //  2. For structs returned in a single register, make it the corresponding primitive type.
         //  3. For primitives, leave it as-is. Note this makes it "incorrect" for soft-FP conventions.
         //
-        Unsafe.SkipInit(out ReturnTypeDesc retTypeDesc);
+        var retTypeDesc = new ReturnTypeDesc();
         retTypeDesc.InitializeReturnType(this, info.compRetType, methodArgs.retTypeClass, info.compCallConv);
 
         compRetTypeDesc = retTypeDesc;

@@ -112,11 +112,7 @@ public struct EHblkDsc
     public readonly IL_OFFSET ebdTryEndOffs => _ebdTryEndOffset;
 
     /// <summary>only set if <see cref="HasFilter" /></summary>
-    public readonly IL_OFFSET ebdFilterBegOffs => _ebdHndBegOffset;
-
-    public readonly IL_OFFSET ebdFilterEndOffs => _ebdHndEndOffset;
-
-    public readonly IL_OFFSET ebdHndBegOffs
+    public readonly IL_OFFSET ebdFilterBegOffs
     {
         get
         {
@@ -125,7 +121,7 @@ public struct EHblkDsc
         }
     }
 
-    public readonly IL_OFFSET ebdHndEndOffs
+    public readonly IL_OFFSET ebdFilterEndOffs
     {
         get
         {
@@ -134,6 +130,10 @@ public struct EHblkDsc
             return _ebdHndBegOffset;
         }
     }
+
+    public readonly IL_OFFSET ebdHndBegOffs => _ebdHndBegOffset;
+
+    public readonly IL_OFFSET ebdHndEndOffs => _ebdHndEndOffset;
 
     public static bool ebdIsSameILTry(in EHblkDsc h1, in EHblkDsc h2)
         => ((h1._ebdTryBegOffset == h2._ebdTryBegOffset) && (h1._ebdTryEndOffset == h2._ebdTryEndOffset));

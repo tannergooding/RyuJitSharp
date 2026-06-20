@@ -56,7 +56,7 @@ public struct SsaDefArray<T>
     /// <returns></returns>
     public readonly int GetSsaNum(in T ssaDef)
     {
-        assert(Unsafe.IsAddressGreaterThanOrEqualTo(in ssaDef, in _array[0]) && Unsafe.IsAddressLessThan(in ssaDef, ref Unsafe.Add(ref _array[0], _count)));
+        assert(Unsafe.IsAddressGreaterThanOrEqualTo(in ssaDef, in _array[0]) && Unsafe.IsAddressLessThanOrEqualTo(in ssaDef, ref _array[_count - 1]));
         var ssaNum = MinSsaNum + (int)(Unsafe.ByteOffset(in _array[0], in ssaDef) / Unsafe.SizeOf<T>());
 
         assert(Unsafe.AreSame(in ssaDef, in _array[ssaNum - MinSsaNum]));

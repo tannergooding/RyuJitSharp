@@ -4498,48 +4498,44 @@ public partial class Compiler
 
             // find the l.u.b of the two try ranges
             // Set lastXTnum to the l.u.b.
-
-            HBtab = ref ehGetDsc(++lastXTnum);
+            lastXTnum++;
 
             while (lastXTnum < compHndBBtabCount)
             {
+                HBtab = ref ehGetDsc(lastXTnum);
+
                 if (jitIsBetweenInclusive(blkDest.bbNum, HBtab.ebdTryBeg.bbNum, HBtab.ebdTryLast.bbNum))
                 {
                     break;
                 }
-                HBtab = ref ehGetDsc(++lastXTnum);
+                lastXTnum++;
             }
         }
 
         // now check there are no intervening trys between dest and l.u.b
         // (it is ok to have intervening trys as long as they all start at
         //  the same code offset)
-
-        HBtab = ref ehGetDsc(++XTnum);
+        XTnum++;
 
         while (XTnum < lastXTnum)
         {
+            HBtab = ref ehGetDsc(XTnum);
+
             if ((HBtab.ebdTryBeg.bbNum < blkDest.bbNum) && (blkDest.bbNum <= HBtab.ebdTryLast.bbNum))
             {
                 return false;
             }
-            HBtab = ref ehGetDsc(++XTnum);
+            XTnum++;
         }
-
         return true;
     }
 
-    //------------------------------------------------------------------------
-    // fgGetFirstILBB: Obtain the first basic block that was created due to IL.
-    //
-    // Returns:
-    //   The basic block, skipping the init BB.
-    //
-    // Remarks:
-    //   TODO-Cleanup: Refactor users to be able to remove this function.
-    //
+    /// <summary>Obtain the first basic block that was created due to IL.</summary>
+    /// <returns>The basic block, skipping the init BB.</returns>
     public BasicBlock fgGetFirstILBlock()
     {
+        // TODO-Cleanup: Refactor users to be able to remove this function.
+
         var firstILBB = fgFirstBB;
         assert(firstILBB is not null);
 

@@ -88,6 +88,7 @@ public partial class Globals
 
     public static int CountDigits(double value)
     {
+        value = double.MaxNumber(value, 1.0);
         var approx = double.Log10(value);
         return (int)(double.Ceiling(approx)) + 1;
     }

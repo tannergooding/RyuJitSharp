@@ -4,7 +4,9 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Drawing;
 using System.Runtime.CompilerServices;
+using RyuJitSharp;
 
 namespace RyuJitSharp;
 
@@ -21,13 +23,9 @@ public sealed class ClassLayout
 
     private int _bitfield;
 
-    // Array of CorInfoGCType (as BYTE) that describes the GC layout of the class.
-    // For small classes the array is stored inline, avoiding an extra allocation and the pointer size overhead.
-    private nint _anonymous;
+    internal CorInfoGCType[]? _gcPtrs;
 
-    private unsafe byte* _gcPtrs => (byte*)(_anonymous);
-
-    private ref InlineArrayTargetPointerSize<byte> _gcPtrsArray => ref Unsafe.As<nint, InlineArrayTargetPointerSize<byte>>(ref _anonymous);
+    internal InlineArrayTargetPointerSize<CorInfoGCType> _inlineGCPtrs;
 
     private SegmentList? _nonPadding;
 
@@ -61,6 +59,19 @@ public sealed class ClassLayout
 #endif
     }
 
+    public unsafe ClassLayout(CORINFO_CLASS_HANDLE classHandle, bool isValueClass, int size, var_types type, string className, string shortClassName)
+    {
+        assert(size != 0);
+        _classHandle = classHandle;
+        _size = size;
+        _bitfield = isValueClass ? 1 : 0;
+        _type = type;
+#if DEBUG
+        _name = className;
+        _shortName = shortClassName;
+#endif
+    }
+
     public unsafe CORINFO_CLASS_HANDLE ClassHandle => _classHandle;
 
 #if DEBUG
@@ -69,11 +80,20 @@ public sealed class ClassLayout
     public string ShortClassName => _shortName;
 #endif
 
-    internal nint GcPtrs => _anonymous;
-
     /// <summary>The number of GC pointers in this layout.</summary>
     /// <remarks>Since the maximum size == 2^32-1 the count can fit in at most 30 bits.</remarks>
-    public int GCPtrCount => (_bitfield >>> 1) & 0x3FFF_FFFF;
+    public int GCPtrCount
+    {
+        get
+        {
+            return (_bitfield >>> 1) & 0x3FFF_FFFF;
+        }
+
+        set
+        {
+            _bitfield = (_bitfield & 1) | ((value & 0x3FFF_FFFF) << 1);
+        }
+    }
 
     public bool HasGCPtr => GCPtrCount != 0;
 
@@ -114,21 +134,6 @@ public sealed class ClassLayout
     public int Size => _size;
 
     public var_types Type => _type;
-
-    private unsafe Span<byte> GCPtrs
-    {
-        get
-        {
-            var slotCount = SlotCount;
-            Span<byte> result = _gcPtrsArray;
-
-            if (slotCount > result.Length)
-            {
-                result = new Span<byte>(_gcPtrs, slotCount);
-            }
-            return result;
-        }
-    }
 
     /// <summary>check if 2 layouts are the same for copying.</summary>
     /// <param name="layout1">the first layout</param>
@@ -211,16 +216,98 @@ public sealed class ClassLayout
         return true;
     }
 
+    /// <summary>Create a ClassLayout from an EE side class handle.</summary>
+    /// <param name="compiler">The Compiler object</param>
+    /// <param name="classHandle">The class handle</param>
+    /// <returns>New layout representing an EE side class.</returns>
     public static unsafe ClassLayout Create(Compiler compiler, CORINFO_CLASS_HANDLE classHandle)
     {
-        // TODO: Port ClassLayout.Create
-        return null!;
+        var isValueClass = compiler.eeIsValueClass(classHandle);
+        var size = isValueClass
+                 ? compiler.info.compCompHnd->getClassSize(classHandle)
+                 : compiler.info.compCompHnd->getHeapClassSize(classHandle);
+
+        var type = compiler.impNormStructType(classHandle);
+
+#if DEBUG
+        var className = compiler.eeGetClassName(classHandle);
+        var shortClassName = compiler.eeGetShortClassName(classHandle);
+#else
+        var className = "";
+        var shortClassName = "";
+#endif
+
+        var layout = new ClassLayout(classHandle, isValueClass, size, type, className, shortClassName);
+
+        if (layout._size < TARGET_POINTER_SIZE)
+        {
+            assert(layout.SlotCount == 1);
+            assert(layout.GCPtrCount == 0);
+
+            layout._inlineGCPtrs[0] = TYPE_GC_NONE;
+        }
+        else
+        {
+            Span<CorInfoGCType> gcPtrs;
+
+            if (layout.SlotCount <= TARGET_POINTER_SIZE)
+            {
+                gcPtrs = layout._inlineGCPtrs;
+            }
+            else
+            {
+                layout._gcPtrs = new CorInfoGCType[layout.SlotCount];
+                gcPtrs = layout._gcPtrs;
+            }
+
+            int gcPtrCount;
+
+            fixed (CorInfoGCType* pGCPtrs = gcPtrs)
+            {
+                gcPtrCount = compiler.info.compCompHnd->getClassGClayout(classHandle, pGCPtrs);
+            }
+
+            assert((gcPtrCount == 0) || ((compiler.info.compCompHnd->getClassAttribs(classHandle) & (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_BYREF_LIKE)) != 0));
+
+            // Since class size is unsigned there's no way we could have more than 2^30 slots
+            // so it should be safe to fit this into a 30 bits bit field.
+            assert(gcPtrCount < (1 << 30));
+
+            layout.GCPtrCount = gcPtrCount;
+        }
+
+        return layout;
     }
 
+    /// <summary>Create a ClassLayout from a ClassLayoutBuilder.</summary>
+    /// <param name="compiler">The Compiler object</param>
+    /// <param name="builder">Builder representing the layout</param>
+    /// <returns>New layout representing a custom (JIT internal) class layout.</returns>
     public static unsafe ClassLayout Create(Compiler compiler, in ClassLayoutBuilder builder)
     {
-        // TODO: Port ClassLayout.Create
-        return null!;
+        var newLayout = new ClassLayout(builder._size) {
+            GCPtrCount = builder._gcPtrCount,
+            _nonPadding = builder._nonPadding,
+#if DEBUG
+            _name = builder._name,
+            _shortName = builder._shortName,
+#endif
+        };
+
+        if (builder._gcPtrCount <= 0)
+        {
+            var slotCount = newLayout.SlotCount;
+            newLayout._gcPtrs = (slotCount != 0) ? new CorInfoGCType[newLayout.SlotCount] : [];
+        }
+        else if (newLayout.SlotCount <= TARGET_POINTER_SIZE)
+        {
+            builder._gcPtrs.CopyTo(newLayout._inlineGCPtrs);
+        }
+        else
+        {
+            newLayout._gcPtrs = builder._gcPtrs;
+        }
+        return newLayout;
     }
 
     /// <summary>true if assignment to this layout from the indicated layout is sensible</summary>
@@ -316,6 +403,106 @@ public sealed class ClassLayout
         _ => TYP_UNKNOWN,
     };
 
+    /// <summary>Get a SegmentList containing segments for all the non-padding in the layout. This is generally the areas of the layout covered by fields, but in some cases may also include other parts.</summary>
+    /// <param name="compiler">Compiler instance</param>
+    /// <returns>A segment list.</returns>
+    public unsafe SegmentList GetNonPadding(Compiler compiler)
+    {
+        if (_nonPadding is not null)
+        {
+            return _nonPadding;
+        }
+
+        var nonPadding = new SegmentList();
+        _nonPadding = nonPadding;
+
+        if (IsCustomLayout)
+        {
+            if (_size > 0)
+            {
+                var segment = new SegmentList.Segment(0, Size);
+                nonPadding.Add(segment);
+            }
+
+            return nonPadding;
+        }
+
+        Unsafe.SkipInit(out InlineArray256<CORINFO_TYPE_LAYOUT_NODE> inlineNodes);
+
+        var numNodes = (nint)(256);
+        var result = compiler.info.compCompHnd->getTypeLayout(ClassHandle, &inlineNodes.e0, &numNodes);
+
+        if (result != GetTypeLayoutResult.Success)
+        {
+            var segment = new SegmentList.Segment(0, Size);
+            nonPadding.Add(segment);
+        }
+        else
+        {
+            Span<CORINFO_TYPE_LAYOUT_NODE> nodes = inlineNodes;
+            nodes = nodes[..(int)(numNodes)];
+
+            for (var i = 0; i < nodes.Length; i++)
+            {
+                ref var node = ref nodes[i];
+
+                if ((node.type is not CORINFO_TYPE_VALUECLASS) || (node.simdTypeHnd != NO_CLASS_HANDLE) || node.hasSignificantPadding)
+                {
+                    var segment = new SegmentList.Segment(node.offset, node.offset + node.size);
+                    nonPadding.Add(segment);
+                }
+            }
+        }
+        return nonPadding;
+    }
+
+    /// <summary>Check if this classlayout has a TYP_BYREF GC pointer in it.</summary>
+    /// <returns>true if it does</returns>
+    public bool HasGCByRef()
+    {
+        if (!HasGCPtr)
+        {
+            return false;
+        }
+
+        var numSlots = SlotCount;
+
+        for (var i = 0; i < numSlots; i++)
+        {
+            if (GetGCPtrType(i) is TYP_BYREF)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>check if the specified interval intersects with a GC pointer.</summary>
+    /// <param name="offset">The start offset of the interval</param>
+    /// <param name="size">The size of the interval</param>
+    /// <returns>true if it does</returns>
+    public bool IntersectsGCPtr(int offset, int size)
+    {
+        if (!HasGCPtr)
+        {
+            return false;
+        }
+
+        var startSlot = offset / TARGET_POINTER_SIZE;
+        var endSlot = (offset + size - 1) / TARGET_POINTER_SIZE;
+
+        assert((startSlot < SlotCount) && (endSlot < SlotCount));
+
+        for (var i = startSlot; i <= endSlot; i++)
+        {
+            if (IsGCPtr(i))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public bool IsGCByRef(int slot) => GetGCPtr(slot) is TYPE_GC_BYREF;
 
     public bool IsGCPtr(int slot) => GetGCPtr(slot) is not TYPE_GC_NONE;
@@ -332,9 +519,10 @@ public sealed class ClassLayout
             && compiler.eeIsByrefLike(_classHandle);
     }
 
-    private CorInfoGCType GetGCPtr(int slot)
+    internal CorInfoGCType GetGCPtr(int slot)
     {
         assert(slot < SlotCount);
-        return (GCPtrCount != 0) ? (CorInfoGCType)(GCPtrs[slot]) : TYPE_GC_NONE;
+        var gcPtrs = _gcPtrs ?? (ReadOnlySpan<CorInfoGCType>)(_inlineGCPtrs);
+        return gcPtrs[slot];
     }
 }

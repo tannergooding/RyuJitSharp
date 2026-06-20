@@ -143,12 +143,12 @@ public sealed partial class BasicBlock : LIR.Range
     {
         get
         {
-            return _anonymous2;
+            return _anonymous3;
         }
 
         set
         {
-            _anonymous2 = value;
+            _anonymous3 = value;
         }
     }
 
@@ -157,12 +157,12 @@ public sealed partial class BasicBlock : LIR.Range
     {
         get
         {
-            return _anonymous2;
+            return _anonymous3;
         }
 
         set
         {
-            _anonymous2 = value;
+            _anonymous3 = value;
         }
     }
 
@@ -530,7 +530,7 @@ public sealed partial class BasicBlock : LIR.Range
         get
         {
             assert(Debugger.IsAttached || (bbHndIndex != 0));
-            return bbHndIndex;
+            return (ushort)(bbHndIndex - 1);
         }
 
         set
@@ -653,9 +653,8 @@ public sealed partial class BasicBlock : LIR.Range
 
         set
         {
-            assert(value is not null);
             _next = value;
-            value._prev = this;
+            _ = (value?._prev = this);
         }
     }
 
@@ -668,9 +667,8 @@ public sealed partial class BasicBlock : LIR.Range
 
         set
         {
-            assert(value is not null);
             _prev = value;
-            value._next = this;
+            _ = (value?._next = this);
         }
     }
 
@@ -681,7 +679,7 @@ public sealed partial class BasicBlock : LIR.Range
         get
         {
             assert(Debugger.IsAttached || (bbTryIndex != 0));
-            return bbTryIndex;
+            return (ushort)(bbTryIndex - 1);
         }
 
         set

@@ -855,11 +855,16 @@ public partial class Compiler
         var str = "";
 
         var succeeded = eeRunFunctorWithSpmiErrorTrap(() => {
+            const int MAX_LITERAL_LENGTH = 50;
+            
             Unsafe.SkipInit(out InlineArray64<char> inlineStrLiteral);
-            var length = info.compCompHnd->getStringLiteral(module, token, &inlineStrLiteral.e0, 50);
+            var length = info.compCompHnd->getStringLiteral(module, token, &inlineStrLiteral.e0, MAX_LITERAL_LENGTH);
 
-            var strLiteral = ((Span<char>)(inlineStrLiteral))[..length];
-            str = (length > 50) ? $"{strLiteral}..." : $"{strLiteral}";
+            // Truncate length to MAX_LITERAL_LENGTH since that's the maximum we copied into str
+            var truncatedLength = int.Min(length, MAX_LITERAL_LENGTH);
+
+            var strLiteral = ((Span<char>)(inlineStrLiteral))[..truncatedLength];
+            str = (length > MAX_LITERAL_LENGTH) ? $"{strLiteral}..." : $"{strLiteral}";
         });
         jitprintf(succeeded ? str : "<unknown string literal>");
     }

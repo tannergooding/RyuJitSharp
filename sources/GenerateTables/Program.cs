@@ -272,7 +272,7 @@ public partial class Compiler
             {
                 Debug.Assert(parts.Length is 2);
                 Debug.Assert(parts[1].AsSpan().Trim().Equals("GT_OP", StringComparison.Ordinal));
-                _ = operCheck.Append(".IsUnary");
+                _ = operCheck.Append(".IsSimple");
             }
             else if (name.Equals("Op", StringComparison.Ordinal))
             {

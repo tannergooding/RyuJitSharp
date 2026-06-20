@@ -2393,6 +2393,12 @@ public partial class Compiler
         return type;
     }
 
+    public unsafe ClassLayout typGetArrayLayout(CORINFO_CLASS_HANDLE classHandle, int length)
+    {
+        var builder = ClassLayoutBuilder.BuildArray(this, classHandle, length);
+        return typGetCustomLayout(builder);
+    }
+
     public ClassLayout typGetBlkLayout(int blockSize)
         => typGetCustomLayout(new ClassLayoutBuilder(this, blockSize));
 
@@ -2405,12 +2411,20 @@ public partial class Compiler
     public int typGetCustomLayoutNum(ClassLayoutBuilder builder)
         => typClassLayoutTable.GetCustomLayoutNum(this, builder);
 
+    public ClassLayout typGetLayoutByNum(int layoutNum)
+        => typClassLayoutTable.GetLayoutByNum(layoutNum);
+
+    public int typGetLayoutNum(ClassLayout layout)
+        => typClassLayoutTable.GetLayoutNum(layout);
+
     /// <summary>Get the layout for the specified class handle.</summary>
     /// <param name="classHandle"></param>
     /// <returns></returns>
-    public unsafe ClassLayout typGetObjLayout(CORINFO_CLASS_HANDLE classHandle) => typClassLayoutTable.GetObjLayout(this, classHandle);
+    public unsafe ClassLayout typGetObjLayout(CORINFO_CLASS_HANDLE classHandle)
+        => typClassLayoutTable.GetObjLayout(this, classHandle);
 
-    public unsafe int typGetObjLayoutNum(CORINFO_CLASS_HANDLE classHandle) => typClassLayoutTable.GetObjLayoutNum(this, classHandle);
+    public unsafe int typGetObjLayoutNum(CORINFO_CLASS_HANDLE classHandle)
+        => typClassLayoutTable.GetObjLayoutNum(this, classHandle);
 
     // TODO: Port phase - gsPhase
     public PhaseStatus gsPhase() => PhaseStatus.MODIFIED_NOTHING;

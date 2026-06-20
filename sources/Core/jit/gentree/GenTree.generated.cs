@@ -36,7 +36,7 @@ public partial class GenTree
 
     public GenTreeUnOp AsUnOp()
     {
-        assert(_oper.IsUnary);
+        assert(_oper.IsSimple);
         assert(this is GenTreeUnOp);
         return Unsafe.As<GenTreeUnOp>(this);
     }

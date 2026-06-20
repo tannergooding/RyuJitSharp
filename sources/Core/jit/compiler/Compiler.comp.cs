@@ -1445,7 +1445,8 @@ public partial class Compiler
 #endif
             }
 
-            return CORJIT_OK;
+            // TODO-PORT: This needs to return CORJIT_OK once codegen actually occurs
+            return CORJIT_SKIPPED;
         }
     }
 
@@ -3363,7 +3364,9 @@ public partial class Compiler
                 opts.optRepeatActive = true;
             }
 
-            while (++opts.optRepeatIteration <= opts.optRepeatCount)
+            opts.optRepeatIteration++;
+
+            while (opts.optRepeatIteration <= opts.optRepeatCount)
             {
 #if DEBUG
                 if (verbose && opts.optRepeat)
@@ -3508,6 +3511,7 @@ public partial class Compiler
                     fgDispBasicBlocks(true);
                 }
 #endif
+                opts.optRepeatIteration++;
             }
 
             if (opts.optRepeat)

@@ -328,7 +328,7 @@ public partial class Compiler
                 if (compiler.verbose)
                 {
                     var structSize = (callRetTyp is TYP_STRUCT) ? compiler.eeTryGetClassSize(sigInfo.retTypeSigClass) : 0;
-                    jitprintf($"\nIn Compiler.impImportCall: opcode is {opcode.Name}, kind={(int)(callInfo.kind)}, callRetType is {callRetTyp.Name}, structSize is {structSize}\n");
+                    jitprintf($"\nIn Compiler::impImportCall: opcode is {opcode.Name}, kind={(int)(callInfo.kind)}, callRetType is {callRetTyp.Name}, structSize is {structSize}\n");
                 }
 #endif
             }
@@ -353,7 +353,7 @@ public partial class Compiler
                 if (compiler.verbose)
                 {
                     var structSize = (callRetTyp is TYP_STRUCT) ? compiler.eeTryGetClassSize(sigInfo.retTypeSigClass) : 0;
-                    jitprintf($"\nIn Compiler.impImportCall: opcode is {opcode.Name}, kind={callInfo.kind}, callRetType is {callRetTyp.Name}, structSize is {structSize}\n");
+                    jitprintf($"\nIn Compiler::impImportCall: opcode is {opcode.Name}, kind={(int)(callInfo.kind)}, callRetType is {callRetTyp.Name}, structSize is {structSize}\n");
                 }
 #endif
                 if (compiler.compIsForInlining)
@@ -632,7 +632,6 @@ public partial class Compiler
 
                         // Clone the (possibly transformed) "this" pointer
                         thisPtr = compiler.impCloneExpr(thisPtr, out var thisPtrCopy, CHECK_SPILL_ALL, "LDVIRTFTN this pointer");
-                        assert(thisPtrCopy is not null);
 
                         // We cloned the "this" pointer, mark it as a single def and set the class for it
                         if (thisPtr.Oper.IsLocal && (thisPtr.Type is TYP_REF) && (origThisPtr != thisPtr))
@@ -1873,9 +1872,7 @@ public partial class Compiler
                         {
                             array = compiler.impCloneExpr(array, out var arrayClone, CHECK_SPILL_ALL, "MemoryMarshal.GetArrayDataReference array");
                             compiler.impAppendTree(compiler.gtNewNullCheck(array), CHECK_SPILL_ALL, compiler.impCurStmtDI);
-
                             array = arrayClone;
-                            assert(array is not null);
                         }
 
                         var index = compiler.gtNewIconNode(TYP_I_IMPL, 0);
@@ -1976,19 +1973,18 @@ public partial class Compiler
 
                         // We need to use both index and ptr-to-span twice, so clone or spill.
                         index = compiler.impCloneExpr(index, out var indexClone, CHECK_SPILL_ALL, "Span.get_Item index");
-                        assert(indexClone is not null);
 
                         GenTree? ptrToSpanClone;
 
                         if (compiler.impIsAddressInLocal(ptrToSpan))
                         {
                             ptrToSpanClone = compiler.gtCloneExpr(ptrToSpan);
+                            assert(ptrToSpanClone is not null);
                         }
                         else
                         {
                             ptrToSpan = compiler.impCloneExpr(ptrToSpan, out ptrToSpanClone, CHECK_SPILL_ALL, "Span.get_Item ptrToSpan");
                         }
-                        assert(ptrToSpanClone is not null);
 
                         // Bounds check
                         var lengthHnd = compiler.info.compCompHnd->getFieldInClass(clsHnd, 1);
@@ -4101,7 +4097,7 @@ public partial class Compiler
 
                         if (spillStack)
                         {
-                            compiler.impSpillSideEffects(true, CHECK_SPILL_ALL, ("non-inline candidate call"));
+                            compiler.impSpillSideEffects(true, CHECK_SPILL_ALL, "non-inline candidate call");
                         }
                     }
 

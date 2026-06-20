@@ -5,6 +5,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
@@ -12,27 +13,28 @@ public readonly struct CustomLayoutKey : IEquatable<CustomLayoutKey>
 {
     private readonly int _size;
 
-    // Array of CorInfoGCType (as BYTE) that describes the GC layout of the class.
-    // For small classes the array is stored inline, avoiding an extra allocation and the pointer size overhead.
-    private readonly nint _anonymous;
+    private readonly CorInfoGCType[]? _gcPtrs;
+
+    private readonly InlineArrayTargetPointerSize<CorInfoGCType> _inlineGCPtrs;
 
     public CustomLayoutKey(ClassLayout layout)
     {
         _size = layout.Size;
-        _anonymous = layout.GCPtrCount > 0 ? layout.GcPtrs : 0;
+        _gcPtrs = layout._gcPtrs;
+        _inlineGCPtrs = layout._inlineGCPtrs;
     }
 
     public CustomLayoutKey(in ClassLayoutBuilder builder)
     {
         _size = builder._size;
-        _anonymous = builder._anonymous;
+        _gcPtrs = builder._gcPtrs;
     }
 
     public static bool operator ==(CustomLayoutKey left, CustomLayoutKey right) => left.Equals(right);
 
     public static bool operator !=(CustomLayoutKey left, CustomLayoutKey right) => !left.Equals(right);
 
-    public override bool Equals([NotNullWhen(true)] object? obj) => (obj is CustomLayoutKey other) && Equals(other);
+    public override bool Equals([NotNullWhen(true)] object? obj) => false;
 
     public unsafe bool Equals(CustomLayoutKey other)
     {
@@ -40,16 +42,8 @@ public readonly struct CustomLayoutKey : IEquatable<CustomLayoutKey>
         {
             return false;
         }
-
-        var gcPtrCount = _size / TARGET_POINTER_SIZE;
-
-        if (gcPtrCount < TARGET_POINTER_SIZE)
-        {
-            return _anonymous == other._anonymous;
-        }
-
-        var otherSpan = new ReadOnlySpan<byte>(unchecked((byte*)(other._anonymous)), gcPtrCount);
-        return new ReadOnlySpan<byte>(unchecked((byte*)(_anonymous)), gcPtrCount).SequenceEqual(otherSpan);
+        var gcPtrs = _gcPtrs ?? (ReadOnlySpan<CorInfoGCType>)(_inlineGCPtrs);
+        return gcPtrs.SequenceEqual(other._gcPtrs ?? (ReadOnlySpan<CorInfoGCType>)(other._inlineGCPtrs));
     }
 
     public override unsafe int GetHashCode()
@@ -57,17 +51,9 @@ public readonly struct CustomLayoutKey : IEquatable<CustomLayoutKey>
         var hashCode = new HashCode();
         hashCode.Add(_size);
 
-        var gcPtrCount = _size / TARGET_POINTER_SIZE;
+        var gcPtrs = _gcPtrs ?? (ReadOnlySpan<CorInfoGCType>)(_inlineGCPtrs);
+        hashCode.AddBytes(MemoryMarshal.AsBytes(gcPtrs));
 
-        if (gcPtrCount < TARGET_POINTER_SIZE)
-        {
-            hashCode.Add(_anonymous);
-        }
-        else
-        {
-            var gcPtrs = new ReadOnlySpan<byte>(unchecked((byte*)(_anonymous)), gcPtrCount);
-            hashCode.AddBytes(gcPtrs);
-        }
         return hashCode.ToHashCode();
     }
 }

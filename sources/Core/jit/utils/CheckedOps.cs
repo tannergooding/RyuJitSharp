@@ -27,6 +27,34 @@ public static class CheckedOps
         return (result < left);
     }
 
+    public static bool TryAlignUp(int value, int alignment, out int result)
+    {
+        assert(int.IsPow2(alignment));
+
+        var adjustment = alignment - 1;
+        var succeed = TryAdd(value, adjustment, out result);
+
+        if (succeed)
+        {
+            result &= ~adjustment;
+        }
+        return succeed;
+    }
+
+    public static bool TryAlignUp(long value, long alignment, out long result)
+    {
+        assert(long.IsPow2(alignment));
+
+        var adjustment = alignment - 1;
+        var succeed = TryAdd(value, adjustment, out result);
+
+        if (succeed)
+        {
+            result &= ~adjustment;
+        }
+        return succeed;
+    }
+
     public static bool TryMul(int left, int right, out int result)
     {
         var result64 = int.BigMul(left, right);

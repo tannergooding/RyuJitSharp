@@ -78,7 +78,6 @@ public partial class GenTree
     protected internal GenTree(genTreeOps oper, var_types type)
     {
 #if DEBUG
-        assert(type.ActualType == type);
         assert(oper.StructType == GetType());
 #endif
 

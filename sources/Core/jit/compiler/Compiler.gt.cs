@@ -171,22 +171,10 @@ public partial class Compiler
         return false;
     }
 
-    //------------------------------------------------------------------------
-    // gtCanSwapOrder: 
-    //
-    // Arguments:
-    //    firstNode  - An operand of a tree that can have GTF_REVERSE_OPS set.
-    //    secondNode - The other operand of the tree.
-    //
-    // Return Value:
-    //    Returns a boolean indicating whether it is safe to reverse the execution
-    //    order of the two trees, considering any exception, global effects, or
-    //    ordering constraints.
-    //
     /// <summary>Returns true iff the secondNode can be swapped with firstNode.</summary>
-    /// <param name="firstNode"></param>
-    /// <param name="secondNode"></param>
-    /// <returns></returns>
+    /// <param name="firstNode">An operand of a tree that can have GTF_REVERSE_OPS set.</param>
+    /// <param name="secondNode">The other operand of the tree.</param>
+    /// <returns>Returns a boolean indicating whether it is safe to reverse the execution order of the two trees, considering any exception, global effects, or ordering constraints.</returns>
     public bool gtCanSwapOrder(GenTree firstNode, GenTree secondNode)
     {
         var canSwap = true;
@@ -1346,18 +1334,11 @@ public partial class Compiler
     }
 
 #if DEBUG
-    //------------------------------------------------------------------------
-    // gtDispArgList: Dump the tree for a call arg list
-    //
-    // Arguments:
-    //    call            - the call to dump arguments for
-    //    lastCallOperand - the call's last operand (to determine the arc types)
-    //    indentStack     - the specification for the current level of indentation & arcs
-    //
-    // Return Value:
-    //    None.
-    //
-    public void gtDispArgList(GenTreeCall call, GenTree lastCallOperand, ref IndentStack indentStack)
+    /// <summary>Dump the tree for a call arg list</summary>
+    /// <param name="call">the call to dump arguments for</param>
+    /// <param name="lastCallOperand">the call's last operand (to determine the arc types)</param>
+    /// <param name="indentStack">the specification for the current level of indentation &amp; arcs</param>
+    public void gtDispArgList(GenTreeCall call, GenTree? lastCallOperand, ref IndentStack indentStack)
     {
         foreach (var arg in call.Args.EarlyArgs)
         {
@@ -2601,7 +2582,7 @@ public partial class Compiler
 #endif
             }
 
-            buf = $"{callType}{ctType}{gtfType}";
+            buf = $" {callType}{ctType}{gtfType}";
         }
         else if (tree.Oper is GT_ARR_ELEM)
         {
@@ -3220,7 +3201,6 @@ public partial class Compiler
 
                 if (!topOnly)
                 {
-                    assert(lastChild is not null);
                     gtDispArgList(call, lastChild, ref indentStack);
 
                     foreach (var arg in call.Args.LateArgs)
@@ -3269,7 +3249,8 @@ public partial class Compiler
 
                     foreach (var operand in operands)
                     {
-                        gtDispChild(operand, ref indentStack, (++index < count) ? IIArc : IIArcBottom, "", topOnly);
+                        index++;
+                        gtDispChild(operand, ref indentStack, (index < count) ? IIArc : IIArcBottom, "", topOnly);
                     }
                 }
                 break;
@@ -6238,7 +6219,7 @@ public partial class Compiler
             if (cns is not 0)
             {
 #if TARGET_XARCH
-                if ((sbyte)(cns) == cns)
+                if (FitsInI8(cns))
                 {
                     addrModeCostSz += 1;
                 }
@@ -11328,7 +11309,7 @@ public partial class Compiler
     public GenTreeBlk gtNewStoreBlkNode(GenTree addr, GenTree value, ClassLayout layout, GenTreeFlags indirFlags = GTF_EMPTY)
     {
         assert((indirFlags & GTF_IND_INVARIANT) is 0);
-        assert(value.Oper.IsInitVal || layout.CanAssignFrom(value.GetLayout(this)));
+        assert(value.IsInitVal || layout.CanAssignFrom(value.GetLayout(this)));
 
         var storeBlk = new GenTreeBlk(TYP_STRUCT, addr, value, layout);
         storeBlk.Flags |= GTF_ASG;
@@ -11585,7 +11566,7 @@ public partial class Compiler
             }
             else if ((dstTyp is TYP_STRUCT) && (valType is TYP_INT))
             {
-                assert(oper.IsInitVal);
+                assert(val.IsInitVal);
                 ok = true;
             }
 
@@ -11611,18 +11592,16 @@ public partial class Compiler
             compFloatingPointUsed = true;
         }
 
-        var store = gtNewStoreLclVarNode(lclNum, val);
+        var result = gtNewStoreLclVarNode(lclNum, val) as GenTree;
 
         // TODO-ASG: delete this zero-diff quirk. Requires some forward substitution work.
-        store.Type = dstTyp;
+        result.Type = dstTyp;
 
-        if (varTypeIsStruct(dstTyp) && !oper.IsInitVal)
+        if (varTypeIsStruct(dstTyp) && !val.IsInitVal)
         {
-            var result = impStoreStruct(store, ref afterStmt, curLevel, di, block);
-            assert(result.Oper.IsLocalStore);
-            store = result.AsLclVar();
+            result = impStoreStruct(result, ref afterStmt, curLevel, di, block);
         }
-        return store;
+        return result;
     }
 
     public GenTreeIntCon gtNewTrue()
@@ -13694,6 +13673,81 @@ public partial class Compiler
                         {
                             gtSetEvalOrderIndirectStore(this, indir, out allowReversal);
                         }
+                        break;
+                    }
+
+                    case GT_LOCKADD:
+                    case GT_XAND:
+                    case GT_XORR:
+                    case GT_XADD:
+                    case GT_XCHG:
+                    case GT_OR:
+                    case GT_XOR:
+                    case GT_AND:
+                    case GT_TEST_EQ:
+                    case GT_TEST_NE:
+#if TARGET_XARCH
+                    case GT_BITTEST_EQ:
+                    case GT_BITTEST_NE:
+#endif
+                    case GT_QMARK:
+                    case GT_COLON:
+                    case GT_LEA:
+#if !TARGET_64BIT
+                    case GT_LONG:
+                    case GT_ADD_LO:
+                    case GT_ADD_HI:
+                    case GT_SUB_LO:
+                    case GT_SUB_HI:
+                    case GT_LSH_HI:
+                    case GT_RSH_LO:
+#endif
+                    case GT_MULHI:
+#if !TARGET_64BIT || TARGET_ARM64
+                    case GT_MUL_LONG:
+#endif
+                    case GT_AND_NOT:
+                    case GT_OR_NOT:
+                    case GT_XOR_NOT:
+#if TARGET_ARM64
+                    case GT_BFIZ:
+#endif
+                    case GT_CMP:
+                    case GT_TEST:
+#if TARGET_XARCH
+                    case GT_BT:
+#endif
+                    case GT_JCMP:
+                    case GT_JTEST:
+                    case GT_SELECTCC:
+#if TARGET_ARM64 || TARGET_AMD64
+                    case GT_CCMP:
+#endif
+#if TARGET_ARM64
+                    case GT_SELECT_INCCC:
+                    case GT_SELECT_INVCC:
+                    case GT_SELECT_NEGCC:
+#endif
+#if TARGET_RISCV64
+                    case GT_SH1ADD:
+                    case GT_SH1ADD_UW:
+                    case GT_SH2ADD:
+                    case GT_SH2ADD_UW:
+                    case GT_SH3ADD:
+                    case GT_SH3ADD_UW:
+                    case GT_ADD_UW:
+                    case GT_SLLI_UW:
+                    case GT_BIT_SET:
+                    case GT_BIT_CLEAR:
+                    case GT_BIT_INVERT:
+#endif
+                    case GT_PATCHPOINT:
+                    case GT_SWIFT_ERROR_RET:
+                    case GT_SWITCH_TABLE:
+                    case GT_SWAP:
+                    {
+                        costEx = 1;
+                        costSz = 1;
                         break;
                     }
 

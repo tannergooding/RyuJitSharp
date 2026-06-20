@@ -204,9 +204,11 @@ public partial class Compiler
             {
                 return true;
             }
-            ehDsc = ref ehGetDsc(++XTnum);
+
+            XTnum++;
+            ehDsc = ref ((XTnum < compHndBBtabCount) ? ref ehGetDsc(XTnum) : ref Unsafe.NullRef<EHblkDsc>());
         }
-        while ((XTnum < compHndBBtabCount) && EHblkDsc.ebdIsSameTry(firstEHblkDsc, ehDsc));
+        while (!Unsafe.IsNullRef(in ehDsc) && EHblkDsc.ebdIsSameTry(firstEHblkDsc, ehDsc));
 
         return false;
     }
@@ -500,7 +502,7 @@ public partial class Compiler
     /// <returns></returns>
     public ushort ehGetIndex(in EHblkDsc ehDsc)
     {
-        assert(Unsafe.IsAddressLessThanOrEqualTo(in compHndBBtab[0], in ehDsc) && Unsafe.IsAddressLessThan(in ehDsc, in compHndBBtab[compHndBBtabCount]));
+        assert(Unsafe.IsAddressLessThanOrEqualTo(in compHndBBtab[0], in ehDsc) && Unsafe.IsAddressLessThanOrEqualTo(in ehDsc, in compHndBBtab[compHndBBtabCount - 1]));
         var index = (ushort)(Unsafe.ByteOffset(in compHndBBtab[0], in ehDsc) / Unsafe.SizeOf<EHblkDsc>());
 
         assert(Unsafe.AreSame(in ehDsc, in compHndBBtab[index]));
