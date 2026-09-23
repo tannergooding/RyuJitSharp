@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Capture and publish the accumulated folding-support milestone, then return to the B064 representation decision. Native lowering retains the original node and LIR users, so updating importer return slots alone is insufficient; no broad IR redesign is authorized. Structural comparison, HWI initialization/classification, checked arithmetic and cast predicates are verified. Constant folding remains gated on B064; global-morph assertion bookkeeping is another remaining dependency before enabling the full inliner and resuming rationalization. Both native trees use the target revision. The first PGO dump gap remains pending.",
+    "nextAction": "Resolve B064 before implementing constant bashing: native lowering retains the original node and LIR users, so updating importer return slots alone is insufficient. A general replacement contract must cover aliases and LIR ownership, or a stable-identity mutable-payload redesign needs separate approval. Structural comparison, HWI initialization/classification, checked arithmetic and cast predicates form the validated folding-support milestone. Constant folding and global-morph assertion bookkeeping remain dependencies before enabling the full inliner and resuming rationalization. Both native trees use the target revision. The first PGO dump gap remains pending.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -209,7 +209,15 @@
         "firstDifference": "missing-BBOPT-profile-diagnostic",
         "fullPhaseParityEstablished": false
       },
-      "nativeAotPublish": "passed-at-inline-invocation-support-milestone",
+      "foldingSupportMilestone": {
+        "managedSourceCommit": "4e3457ce3f75c82c3497dd01d4757b5230fd26d7",
+        "nativeCompilationHeaders": 7,
+        "managedCompilationHeaders": 7,
+        "nativeAotRecaptured": true,
+        "firstDifference": "missing-BBOPT-profile-diagnostic",
+        "fullPhaseParityEstablished": false
+      },
+      "nativeAotPublish": "passed-at-folding-support-milestone",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "seven-method-corpus-captured-with-known-differences",
       "codegenParity": "not-available"
@@ -241,7 +249,7 @@
     "oldNativeHostPreservedAndExecuted": true,
     "managedCapture": "seven-selected-methods-loaded-with-target-abi",
     "managedGuid": "cb2fa75d-449d-4ee0-93ef-57011daefb8c",
-    "latestManagedBinarySha256": "456437BFD5D214AD77F9277BE96E04E8B62182721974099B09F96681B33C0E84",
+    "latestManagedBinarySha256": "13F0B2339C08993BD0EFFFBDC19051944483A7DD0C49BE986B643BD79DA9B06F",
     "wrongGuidCaptureRejected": true,
     "nativeLayoutMeasurements": "matched-raw-managed-sizeof-and-debug-variable-offsets",
     "latestPrefixDifference": "missing-BBOPT-profile-diagnostic",
@@ -267,6 +275,7 @@
       "Recursive-inline guards preserve exact-context rejection, depth-observation ordering, the implementation depth bound, and the 64-type generic-loading threshold in controlled EE tests. Implicit-byref demotion cleanup covers retained/undone/no promotion; global morph and end-to-end generic inlining remain unverified.",
       "Async inline-frame return helpers preserve cold resumption branches, caller context loads, frame-depth slot sharing, resumed-indicator propagation through retained fault handlers, and symbolic-offset cloning/dumps in focused IR/EE cases, including invocation through inline block splicing. Successful helper inlining, continuation layout and async lowering remain unverified.",
       "Inline invocation rollback and failed-call cleanup have controlled EE coverage. Managed exception trapping and synthetic native SEH unwinding pass a Windows-x64 NativeAOT probe, but real EE-thrown failures and successful nested inline compilation remain unexercised. fgInline stays disabled pending expression folding and its remaining closure.",
+      "The folding-support milestone republishes and loads the committed JIT in the native host. Its corpus does not exercise the new structural-comparison, HWI or checked-cast helpers; those have focused managed coverage. Constant folding and the full inliner remain gated on B064.",
       "The seven-method corpus contains no EH or pinned-local cases and establishes neither phase nor codegen parity."
     ]
   },
