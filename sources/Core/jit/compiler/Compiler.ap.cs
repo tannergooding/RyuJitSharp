@@ -31,6 +31,99 @@ public partial class Compiler
 
     public AssertionIndex AssertionCount => optAssertionCount;
 
+    public static nint optCastConstantSmall(nint iconVal, var_types smallType)
+    {
+        switch (smallType)
+        {
+            case TYP_BYTE:
+            {
+                return unchecked((sbyte)iconVal);
+            }
+
+            case TYP_SHORT:
+            {
+                return unchecked((short)iconVal);
+            }
+
+            case TYP_USHORT:
+            {
+                return unchecked((ushort)iconVal);
+            }
+
+            case TYP_UBYTE:
+            {
+                return unchecked((byte)iconVal);
+            }
+
+            default:
+            {
+                assert(false, "Unexpected type to truncate to");
+                return iconVal;
+            }
+        }
+    }
+
+    public AssertionIndex optAssertionIsSubrange(GenTree tree, IntegralRange range, ASSERT_TP assertions)
+    {
+        assert(optLocalAssertionProp);
+        assert(apTraits is not null);
+        var result = NO_ASSERTION_INDEX;
+        _ = BitVecOps.VisitBits(apTraits, assertions, bitIndex => {
+            var index = GetAssertionIndex((ushort)bitIndex);
+            var assertion = optGetAssertion(index);
+            if (assertion.CanPropSubRange && (assertion.Op1.LclNum == tree.AsLclVarCommon().LclNum)
+                && range.Contains(assertion.Op2.Range))
+            {
+                result = index;
+                return false;
+            }
+
+            return true;
+        });
+        return result;
+    }
+
+    public AssertionIndex optLocalAssertionIsEqualOrNotEqual(optOp1Kind op1Kind, int lclNum,
+        optOp2Kind op2Kind, nint cnsVal, ASSERT_TP assertions)
+    {
+        noway_assert(op1Kind is O1K_LCLVAR);
+        noway_assert(op2Kind is O2K_CONST_INT or O2K_ZEROOBJ);
+        assert(optLocalAssertionProp);
+        assert(apTraits is not null);
+        var dependent = BitVecOps.Intersection(apTraits, GetAssertionDep(lclNum), assertions);
+        var result = NO_ASSERTION_INDEX;
+        _ = BitVecOps.VisitBits(apTraits, dependent, bitIndex => {
+            var index = GetAssertionIndex((ushort)bitIndex);
+            var assertion = optGetAssertion(index);
+            if (assertion.CanPropEqualOrNotEqual && assertion.Op1.KindIs(op1Kind)
+                && (assertion.Op1.LclNum == lclNum) && assertion.Op2.KindIs(op2Kind))
+            {
+                var constantIsEqual = assertion.Op2.KindIs(O2K_ZEROOBJ) || (assertion.Op2.IntConstant == cnsVal);
+                if (constantIsEqual || assertion.KindIs(OAK_EQUAL))
+                {
+                    result = index;
+                    return false;
+                }
+            }
+
+            return true;
+        });
+        return result;
+    }
+
+    public static bool optAssertionProp_LclVarTypeCheck(GenTree tree, in LclVarDsc lclVarDsc, in LclVarDsc copyVarDsc)
+    {
+        // Small struct fields are stored at their exact width but loaded widened.
+        // Substitution must not turn a short field's load into a four-byte access.
+        if (copyVarDsc.lvIsStructField)
+        {
+            var type = copyVarDsc.Type;
+            return !varTypeIsSmall(type) || (type == tree.Type);
+        }
+
+        return true;
+    }
+
     public ref ASSERT_TP GetAssertionDep(int lclNum, bool mustExist = false)
     {
         assert(optAssertionDep is not null);

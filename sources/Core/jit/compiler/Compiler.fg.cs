@@ -18,6 +18,65 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    public void fgKillDependentAssertionsSingle(int lclNum, GenTree tree)
+    {
+        assert(apTraits is not null);
+        var killed = GetAssertionDep(lclNum);
+#if DEBUG
+        if (!BitVecOps.IsEmptyIntersection(apTraits, apLocal, killed))
+        {
+            for (var index = optAssertionCount; index > 0; index--)
+            {
+                if (BitVecOps.IsMember(apTraits, killed, index - 1))
+                {
+                    var assertion = optGetAssertion(index);
+                    noway_assert((assertion.Op1.LclNum == lclNum)
+                        || (assertion.Op2.KindIs(optOp2Kind.O2K_LCLVAR_COPY) && (assertion.Op2.LclNum == lclNum)));
+                    if (verbose)
+                    {
+                        jitprintf("\nThe store ");
+                        printTreeId(tree);
+                        jitprintf($" using V{assertion.Op1.LclNum:D2} removes: ");
+                        optPrintAssertion(assertion, index);
+                    }
+                }
+            }
+        }
+#endif
+        BitVecOps.DiffD(apTraits, apLocal, killed);
+        BitVecOps.DiffD(apTraits, apLocalPostorder, killed);
+    }
+
+    public void fgKillDependentAssertions(int lclNum, GenTree tree)
+    {
+        assert(apTraits is not null);
+        if (BitVecOps.IsEmpty(apTraits, apLocal) && BitVecOps.IsEmpty(apTraits, apLocalPostorder))
+        {
+            return;
+        }
+
+        ref var varDsc = ref lvaGetDesc(lclNum);
+        if (varDsc.lvPromoted)
+        {
+            noway_assert(varTypeIsStruct(varDsc.Type));
+            for (var field = varDsc.lvFieldLclStart; field < varDsc.lvFieldLclStart + varDsc.lvFieldCnt; field++)
+            {
+                fgKillDependentAssertionsSingle(field, tree);
+            }
+
+            fgKillDependentAssertionsSingle(lclNum, tree);
+        }
+        else if (varDsc.lvIsStructField)
+        {
+            fgKillDependentAssertionsSingle(lclNum, tree);
+            fgKillDependentAssertionsSingle(varDsc.lvParentLcl, tree);
+        }
+        else
+        {
+            fgKillDependentAssertionsSingle(lclNum, tree);
+        }
+    }
+
     /// <summary>Invoke the compiler for an inlinee method and integrate the result into the current compilation.</summary>
     /// <param name="call">the call node for the inlinee</param>
     /// <param name="inlineResult">inline result tracking object</param>

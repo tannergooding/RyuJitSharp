@@ -19,6 +19,88 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class AssertionTests
 {
+    [TestCase(0, false, 16)]
+    [TestCase(1, false, 20)]
+    [TestCase(3, false, 15)]
+    [TestCase(1, true, 20)]
+    public static void StoresInvalidateParentAndFieldDependenciesInBothOrders(int local, bool emptyPreorder, long remaining)
+    {
+        WithCompiler(compiler => {
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            compiler.lvaCount = 4;
+            compiler.lvaTable = [
+                new LclVarDsc { Type = TYP_STRUCT, lvPromoted = true, lvFieldLclStart = 1, lvFieldCnt = 2 },
+                new LclVarDsc { Type = TYP_INT, lvIsStructField = true, lvParentLcl = 0 },
+                new LclVarDsc { Type = TYP_INT, lvIsStructField = true, lvParentLcl = 0 },
+                new LclVarDsc { Type = TYP_INT },
+            ];
+            var active = InstallAssertions(compiler, [
+                AssertionDsc.CreateConstLclVarAssertion(compiler, 0, ValueNumStore.NoVN, O2K_ZEROOBJ, ValueNumStore.NoVN, true),
+                AssertionDsc.CreateConstLclVarAssertion(compiler, 1, ValueNumStore.NoVN, (nint)3, ValueNumStore.NoVN, true),
+                AssertionDsc.CreateConstLclVarAssertion(compiler, 2, ValueNumStore.NoVN, (nint)4, ValueNumStore.NoVN, true),
+                AssertionDsc.CreateLclvarCopy(compiler, 1, 2, true),
+                AssertionDsc.CreateConstLclVarAssertion(compiler, 3, ValueNumStore.NoVN, (nint)5, ValueNumStore.NoVN, true),
+            ]);
+            compiler.apLocal = emptyPreorder ? BitOps.MakeEmpty(traits) : BitOps.MakeCopy(traits, active);
+            compiler.apLocalPostorder = BitOps.MakeCopy(traits, active);
+            compiler.fgKillDependentAssertions(local, compiler.gtNewLclvNode(TYP_INT, 3));
+            Assert.That((long)compiler.apLocal[0], Is.EqualTo(emptyPreorder ? 0 : remaining));
+            Assert.That((long)compiler.apLocalPostorder[0], Is.EqualTo(remaining));
+            Assert.That((long)active[0], Is.EqualTo(31));
+        });
+    }
+
+    [Test]
+    public static void LocalQueriesRespectLiveSetsOrderingAndAccessWidth()
+    {
+        WithCompiler(compiler => {
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }, new LclVarDsc { Type = TYP_INT }];
+            var active = InstallAssertions(compiler, [
+                IntAssertion(compiler, 2).Reverse(),
+                IntAssertion(compiler, 4),
+                AssertionDsc.CreateSubrange(compiler, 1, new(Zero, One)),
+                AssertionDsc.CreateSubrange(compiler, 0, new(Zero, One)),
+            ]);
+            var tree = compiler.gtNewLclvNode(TYP_INT, 0);
+            Assert.That(compiler.optLocalAssertionIsEqualOrNotEqual(Compiler.optOp1Kind.O1K_LCLVAR, 0, O2K_CONST_INT, 2, active), Is.EqualTo(1));
+            Assert.That(compiler.optLocalAssertionIsEqualOrNotEqual(Compiler.optOp1Kind.O1K_LCLVAR, 0, O2K_CONST_INT, 3, active), Is.EqualTo(2));
+            Assert.That(compiler.optAssertionIsSubrange(tree, new(Zero, IntMax), active), Is.EqualTo(4));
+            BitOps.RemoveElemD(traits, active, 1);
+            BitOps.RemoveElemD(traits, active, 3);
+            Assert.That(compiler.optLocalAssertionIsEqualOrNotEqual(Compiler.optOp1Kind.O1K_LCLVAR, 0, O2K_CONST_INT, 3, active), Is.Zero);
+            Assert.That(compiler.optAssertionIsSubrange(tree, new(Zero, IntMax), active), Is.Zero);
+
+            var field = new LclVarDsc { Type = TYP_SHORT, lvIsStructField = true };
+            Assert.That(Compiler.optAssertionProp_LclVarTypeCheck(tree, compiler.lvaTable[0], field), Is.False);
+            field.lvIsStructField = false;
+            Assert.That(Compiler.optAssertionProp_LclVarTypeCheck(tree, compiler.lvaTable[0], field), Is.True);
+        });
+    }
+
+    private static nint[] InstallAssertions(Compiler compiler, Compiler.AssertionDsc[] assertions)
+    {
+        var table = typeof(Compiler).GetField("optAssertionTabPrivate", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException();
+        var count = typeof(Compiler).GetField("optAssertionCount", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException();
+        table.SetValue(compiler, assertions);
+        count.SetValue(compiler, (ushort)assertions.Length);
+        var traits = compiler.apTraits ?? throw new InvalidOperationException();
+        var active = BitOps.MakeEmpty(traits);
+        for (var index = 0; index < assertions.Length; index++)
+        {
+            BitOps.AddElemD(traits, active, index);
+            BitOps.AddElemD(traits, compiler.GetAssertionDep(assertions[index].Op1.LclNum), index);
+            if (assertions[index].Op2.KindIs(O2K_LCLVAR_COPY))
+            {
+                BitOps.AddElemD(traits, compiler.GetAssertionDep(assertions[index].Op2.LclNum), index);
+            }
+        }
+
+        return active;
+    }
+
     [Test]
     public static void DependenciesExpandWithoutDroppingExistingBits()
     {

@@ -12,25 +12,25 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Advance the saved-WIP morph prerequisites with assertion descriptors, independent table/dependency/complement/diagnostic support, and the full-bit-vector defect B073. This support batch is validated and ready for its logical commit; assertion generation and morph activation are not part of it.",
+      "scope": "Completed after fe43b6a: dependent-assertion invalidation, local subrange/constant queries, small-constant truncation and copy-propagation access-width checks. Preserve this boundary until the next capability is selected.",
       "doneWhen": [
-        "Complete assertion representation and independent table helpers preserve the pinned native contracts, including value-copy behavior and owned vector payloads.",
-        "The selected checks pass and the complete units, related documentation and native-ledger updates form a logical commit.",
-        "Functions blocked by the missing VN expression store remain explicit WIP with their native bodies retained; no assertion or morph phase is activated prematurely."
+        "All six native functions preserve their local/field dependency, lookup-order and access-width contracts.",
+        "The combined focused checks pass and implementation, native retirement and checkpoint form a logical commit.",
+        "No assertion generation or morph phase is activated before its remaining prerequisites exist."
       ],
       "validation": [
-        "Run the combined AssertionTests and BitVecTests selection in Debug and Release; these commands also build the affected projects.",
-        "Keep focused coverage for descriptor ownership/bit identity, table dependencies and diagnostics, and the concrete B073 word-boundary defect. The B073 before-fix run has already been performed; do not repeat it.",
-        "Do not run a full suite or recapture NativeAOT for this support-only batch unless a concrete failure or newly reachable compiler path warrants expanding validation."
+        "Build and run the combined AssertionTests and BitVecTests selection in Debug and Release.",
+        "Extend the existing fixture only for parent/field invalidation of both active sets and ordered local queries; no separate helper fixtures or before/after replay.",
+        "No full suite or NativeAOT recapture unless a concrete failure or newly reachable path requires it."
       ],
       "deferred": [
         "VN expression storage and VN-dependent assertion factories/insertion.",
-        "Assertion generation, dependent-assertion invalidation and fgMorphTreeDone completion.",
+        "Assertion generation and fgMorphTreeDone completion.",
         "Remaining integer/comparison/conditional/HWI folding and fgInline activation.",
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit the validated assertion representation/table-support batch B087, then continue with local assertion invalidation and queries as a bounded morph prerequisite batch. Assertion insertion and generation require the missing VN expression store; do not replace them with local-only implementations or silently expand into all VN support. fgAssertionGen and fgMorphTreeDone remain unported; do not substitute SetMorphed alone. Then resume required morph/folding closure (B054), keeping optional fgInline activation behind its actual prerequisites. Preserve the five established import-prefix matches without recapturing an unchanged frontier. Keep incomplete native bodies in the residual tree and follow checkpoint.activeBatch for scope and validation.",
+    "nextAction": "Assertion representation/table support and local invalidation/queries are complete (B087/B089). Select the next bounded required morph/folding capability and replace checkpoint.activeBatch before editing. Assertion insertion and generation require the missing VN expression store; do not replace them with local-only implementations or silently expand into all VN support. fgAssertionGen and fgMorphTreeDone remain unported; do not substitute SetMorphed alone. Keep optional fgInline activation behind its actual prerequisites, and preserve the five established import-prefix matches without recapturing an unchanged frontier.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -438,6 +438,18 @@
         "debugTests": "artifacts\\assertion-model-debug.trx",
         "releaseTests": "artifacts\\assertion-model-release.trx"
       },
+      "localAssertionQueries": {
+        "managedSourceCommit": "adcc5e839fc778d123a784f8eb1a6db7a99cf800",
+        "debugPassed": 33,
+        "releasePassed": 32,
+        "newCases": 5,
+        "skipped": 0,
+        "nativeDefinitionsRetired": 6,
+        "nativeAotRecaptured": false,
+        "phaseActivated": false,
+        "debugTests": "artifacts\\local-assertions-debug.trx",
+        "releaseTests": "artifacts\\local-assertions-release.trx"
+      },
       "nativeAotPublish": "passed-after-integral-ranges",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "five-of-nine-import-prefixes-equal-remaining-inline-candidate-differences",
@@ -647,6 +659,15 @@
       "commit": "8afe04c2553c68a1c0ebf049cb40dab07cfeb60e",
       "indexCommit": "6a6dbddfe846bc34f4e91250a3f064ef34f06a0a",
       "ref": "refs/porting/snapshots/native-ledger-assertion-support"
+    },
+    "localAssertionsManagedSource": {
+      "commit": "adcc5e839fc778d123a784f8eb1a6db7a99cf800",
+      "ref": "refs/porting/snapshots/local-assertions-source"
+    },
+    "localAssertionsNativeResidual": {
+      "commit": "bece5caf680755595ba28c9e6d484ab6275996a4",
+      "indexCommit": "3fd0c990a65a1dc3190e254879a872c4d15a6d57",
+      "ref": "refs/porting/snapshots/native-ledger-local-assertions"
     }
   },
   "sourceMap": [
