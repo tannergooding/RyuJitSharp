@@ -98,8 +98,8 @@ public partial class Compiler
                 inlineInfo.tokenLookupContextHandle = inlineInfo.inlineCandidateInfo.exactContextHandle;
 
                 JITLOG(
-LL_INFO100000,
- $"INLINER: inlineInfo.tokenLookupContextHandle for {eeGetMethodFullName(fncHandle)} set to 0x{FMT_DSP_PTR(inlineInfo.tokenLookupContextHandle)}:\n");
+                    LL_INFO100000,
+                    $"INLINER: inlineInfo.tokenLookupContextHandle for {eeGetMethodFullName(fncHandle)} set to 0x{FMT_DSP_PTR(inlineInfo.tokenLookupContextHandle)}:\n");
 
                 var compileFlagsForInlinee = *opts.jitFlags;
 
@@ -3795,38 +3795,38 @@ LL_INFO100000,
 
         jitprintf("\n");
         jitprintf($"------{new string(
-'-',
- int.Max(
-padWidth,
- 12))}-------------------------------------{new string(
-'-',
- int.Max(
-ibcColWidth,
- 12))}--------------------------{new string(
-'-',
- int.Max(
-blockTargetFieldWidth,
- 46))}--------------------------\n");
+            '-',
+            int.Max(
+                padWidth,
+                12))}-------------------------------------{new string(
+                    '-',
+                    int.Max(
+                        ibcColWidth,
+                        12))}--------------------------{new string(
+                            '-',
+                            int.Max(
+                                blockTargetFieldWidth,
+                                46))}--------------------------\n");
         jitprintf($"BBnum {new string(
-' ',
- padWidth)}BBid ref try hnd {(fgPredsComputed ? "preds      " : "           ")}     weight  {new string(
-' ',
- (ibcColWidth > 0) ? ibcColWidth - 3 : 0)}{((ibcColWidth > 0) ? "IBC" : "")} [IL range]   [jump]{new string(
-' ',
- blockTargetFieldWidth - 8)} [EH region]        [flags]\n");
+            ' ',
+            padWidth)}BBid ref try hnd {(fgPredsComputed ? "preds      " : "           ")}     weight  {new string(
+                ' ',
+                (ibcColWidth > 0) ? ibcColWidth - 3 : 0)}{((ibcColWidth > 0) ? "IBC" : "")} [IL range]   [jump]{new string(
+                    ' ',
+                    blockTargetFieldWidth - 8)} [EH region]        [flags]\n");
         jitprintf($"------{new string(
-'-',
- int.Max(
-padWidth,
- 12))}-------------------------------------{new string(
-'-',
- int.Max(
-ibcColWidth,
- 12))}--------------------------{new string(
-'-',
- int.Max(
-blockTargetFieldWidth,
- 46))}--------------------------\n");
+            '-',
+            int.Max(
+                padWidth,
+                12))}-------------------------------------{new string(
+                    '-',
+                    int.Max(
+                        ibcColWidth,
+                        12))}--------------------------{new string(
+                            '-',
+                            int.Max(
+                                blockTargetFieldWidth,
+                                46))}--------------------------\n");
 
         for (var blockIndex = 0; blockIndex < fgBBOrder.Count; blockIndex++)
         {
@@ -3853,35 +3853,35 @@ blockTargetFieldWidth,
             if (inDefaultOrder && block.IsFirstColdBlock(this))
             {
                 jitprintf($"~~~~~~{new string(
-'~',
- int.Max(
-padWidth,
- 12))}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{new string(
-'~',
- int.Max(
-ibcColWidth,
- 12))}~~~~~~~~~~~~~~~~~~~~~~~~~~{new string(
-'~',
- int.Max(
-blockTargetFieldWidth,
- 46))}~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+                    '~',
+                    int.Max(
+                        padWidth,
+                        12))}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{new string(
+                            '~',
+                            int.Max(
+                                ibcColWidth,
+                                12))}~~~~~~~~~~~~~~~~~~~~~~~~~~{new string(
+                                    '~',
+                                    int.Max(
+                                        blockTargetFieldWidth,
+                                        46))}~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
             }
 
             if (inDefaultOrder && (block == fgFirstFuncletBB))
             {
                 jitprintf($"++++++{new string(
-'+',
- int.Max(
-padWidth,
- 12))}+++++++++++++++++++++++++++++++++++++{new string(
-'+',
- int.Max(
-ibcColWidth,
- 12))}++++++++++++++++++++++++++{new string(
-'+',
- int.Max(
-blockTargetFieldWidth,
- 46))}++++++++++++++++++++++++++ funclets follow\n");
+                    '+',
+                    int.Max(
+                        padWidth,
+                        12))}+++++++++++++++++++++++++++++++++++++{new string(
+                            '+',
+                            int.Max(
+                                ibcColWidth,
+                                12))}++++++++++++++++++++++++++{new string(
+                                    '+',
+                                    int.Max(
+                                        blockTargetFieldWidth,
+                                        46))}++++++++++++++++++++++++++ funclets follow\n");
             }
 
             fgTableDispBasicBlock(block, nextBlock, printEdgeLikelihoods, blockTargetFieldWidth, ibcColWidth);
@@ -3893,18 +3893,18 @@ blockTargetFieldWidth,
         }
 
         jitprintf($"------{new string(
-'-',
- int.Max(
-padWidth,
- 12))}-------------------------------------{new string(
-'-',
- int.Max(
-ibcColWidth,
- 12))}--------------------------{new string(
-'-',
- int.Max(
-blockTargetFieldWidth,
- 46))}--------------------------\n");
+            '-',
+            int.Max(
+                padWidth,
+                12))}-------------------------------------{new string(
+                    '-',
+                    int.Max(
+                        ibcColWidth,
+                        12))}--------------------------{new string(
+                            '-',
+                            int.Max(
+                                blockTargetFieldWidth,
+                                46))}--------------------------\n");
 
         if (dumpTrees)
         {
@@ -8394,13 +8394,13 @@ blockTargetFieldWidth,
     /// <param name="insertAtEnd">'true' if the block should be inserted at the end of the region. Note: this is currently only implemented when inserting into the main function (not into any EH region).</param>
     /// <returns>The new block.</returns>
     public BasicBlock fgNewBBinRegion(
-BBKinds jumpKind,
- ushort tryIndex,
- ushort hndIndex,
- BasicBlock? nearBlk,
- bool putInFilter = false,
- bool runRarely = false,
- bool insertAtEnd = false)
+        BBKinds jumpKind,
+        ushort tryIndex,
+        ushort hndIndex,
+        BasicBlock? nearBlk,
+        bool putInFilter = false,
+        bool runRarely = false,
+        bool insertAtEnd = false)
     {
         // If 'putInFilter' it true, then the block is inserted in the filter region given by 'hndIndex'. In this case, tryIndex
         // must be a less nested EH region (that is, tryIndex > hndIndex).
@@ -12119,16 +12119,16 @@ BBKinds jumpKind,
                 {
                     printedBlockWidth = 3 + 1 + 9; // "-> " + comma + kind
                     jitprintf($"-> {DspBlockNum(
-block.bbTrueEdge,
- printEdgeLikelihoods,
- terseNext,
- nextBlock,
- ref printedBlockWidth)},{DspBlockNum(
-block.bbFalseEdge,
- printEdgeLikelihoods,
- terseNext,
- nextBlock,
- ref printedBlockWidth)}");
+                        block.bbTrueEdge,
+                        printEdgeLikelihoods,
+                        terseNext,
+                        nextBlock,
+                        ref printedBlockWidth)},{DspBlockNum(
+                            block.bbFalseEdge,
+                            printEdgeLikelihoods,
+                            terseNext,
+                            nextBlock,
+                            ref printedBlockWidth)}");
                     jitprintf($"{new string(' ', blockTargetFieldWidth - printedBlockWidth)} ( cond )");
                     break;
                 }

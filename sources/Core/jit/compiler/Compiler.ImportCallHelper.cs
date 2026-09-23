@@ -2846,15 +2846,15 @@ public partial class Compiler
                             var op2 = compiler.gtNewZeroConNode(TYP_SIMD16);
                             op1 = compiler.impSimdCreateScalarHalf(op1);
                             retNode = compiler.gtNewSimdHWIntrinsicNode(
-TYP_SIMD16,
- NI_AVX10v1_RoundScaleScalar,
- TYP_USHORT,
- 16,
- op2,
- op1,
- compiler.gtNewIconNode(
-TYP_INT,
- roundingMode));
+                                TYP_SIMD16,
+                                NI_AVX10v1_RoundScaleScalar,
+                                TYP_USHORT,
+                                16,
+                                op2,
+                                op1,
+                                compiler.gtNewIconNode(
+                                    TYP_INT,
+                                    roundingMode));
 #else
                             var opId = compiler.lookupHalfIntrinsic(ni);
                             assert(opId is not NI_Illegal);

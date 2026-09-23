@@ -773,17 +773,17 @@ public partial class Compiler
     ///   <para>As part of marking the candidate, the code spills GT_RET_EXPRs anywhere in any child tree, because and we need to clone all these trees when we clone the call as part of guarded devirtualization, and these IR nodes can't be cloned.</para>
     /// </remarks>
     public unsafe void addGuardedDevirtualizationCandidate(
-GenTreeCall call,
- CORINFO_METHOD_HANDLE methodHandle,
- CORINFO_CLASS_HANDLE classHandle,
- CORINFO_CONTEXT_HANDLE contextHandle,
- CorInfoFlag methodAttr,
- CorInfoFlag classAttr,
- int likelihood,
- in CORINFO_LOOKUP instParamLookup,
- CORINFO_METHOD_HANDLE originalMethodHandle,
- in CORINFO_RESOLVED_TOKEN resolvedToken,
- in CORINFO_RESOLVED_TOKEN unboxedResolvedToken)
+        GenTreeCall call,
+        CORINFO_METHOD_HANDLE methodHandle,
+        CORINFO_CLASS_HANDLE classHandle,
+        CORINFO_CONTEXT_HANDLE contextHandle,
+        CorInfoFlag methodAttr,
+        CorInfoFlag classAttr,
+        int likelihood,
+        in CORINFO_LOOKUP instParamLookup,
+        CORINFO_METHOD_HANDLE originalMethodHandle,
+        in CORINFO_RESOLVED_TOKEN resolvedToken,
+        in CORINFO_RESOLVED_TOKEN unboxedResolvedToken)
     {
         // This transformation only makes sense for delegate and virtual calls
         assert(call.IsDelegateInvoke || call.IsVirtual);
@@ -928,12 +928,12 @@ GenTreeCall call,
     /// <param name="contextHandle">context handle for the call</param>
     /// <remarks>Consults with VM to see if there's a likely class at runtime, if so, adds a candidate for guarded devirtualization.</remarks>
     public unsafe void considerGuardedDevirtualization(
-GenTreeCall call,
- IL_OFFSET ilOffset,
- bool isInterface,
- CORINFO_METHOD_HANDLE baseMethod,
- CORINFO_CLASS_HANDLE baseClass,
- ref CORINFO_CONTEXT_HANDLE contextHandle)
+        GenTreeCall call,
+        IL_OFFSET ilOffset,
+        bool isInterface,
+        CORINFO_METHOD_HANDLE baseMethod,
+        CORINFO_CLASS_HANDLE baseClass,
+        ref CORINFO_CONTEXT_HANDLE contextHandle)
     {
         JITDUMP($"Considering guarded devirtualization at IL offset {ilOffset} (0x{ilOffset:x})\n");
 
@@ -1049,17 +1049,17 @@ GenTreeCall call,
                     }
 
                     addGuardedDevirtualizationCandidate(
-call,
- exactMethod,
- exactCls,
- exactContext,
- exactMethodAttrs,
- clsAttrs,
- likelyHood,
- dvInfo.instParamLookup,
- baseMethod,
- dvInfo.resolvedTokenDevirtualizedMethod,
- dvInfo.resolvedTokenDevirtualizedUnboxedMethod);
+                        call,
+                        exactMethod,
+                        exactCls,
+                        exactContext,
+                        exactMethodAttrs,
+                        clsAttrs,
+                        likelyHood,
+                        dvInfo.instParamLookup,
+                        baseMethod,
+                        dvInfo.resolvedTokenDevirtualizedMethod,
+                        dvInfo.resolvedTokenDevirtualizedUnboxedMethod);
                 }
 
                 if (call.InlineCandidatesCount == numExactClasses)
@@ -1198,24 +1198,24 @@ call,
 
 #if DEBUG
             JITDUMP($"{(isInterface ? "interface" : call.IsDelegateInvoke ? "delegate" : "virtual")} call would invoke method {eeGetMethodFullName(
-likelyMethod,
- includeReturnType: true,
- includeThisSpecifier: true)}\n");
+                likelyMethod,
+                includeReturnType: true,
+                includeThisSpecifier: true)}\n");
 #endif
 
             // Add this as a potential candidate.
             addGuardedDevirtualizationCandidate(
-call,
- likelyMethod,
- likelyClass,
- likelyContext,
- likelyMethodAttribs,
- likelyClassAttribs,
- likelihood,
- instParamLookup,
- baseMethod,
- resolvedToken,
- unboxedResolvedToken);
+                call,
+                likelyMethod,
+                likelyClass,
+                likelyContext,
+                likelyMethodAttribs,
+                likelyClassAttribs,
+                likelihood,
+                instParamLookup,
+                baseMethod,
+                resolvedToken,
+                unboxedResolvedToken);
         }
     }
 
@@ -2081,14 +2081,14 @@ call,
     /// <param name="inlineResult">result of ongoing inline evaluation</param>
     /// <remarks>Will update inlineResult with observations and possible failure status (if method cannot be inlined)</remarks>
     public unsafe void impCheckCanInline(
-GenTreeCall call,
- byte candidateIndex,
- CORINFO_METHOD_HANDLE fncHandle,
- CorInfoFlag methAttr,
- CORINFO_CONTEXT_HANDLE exactContextHnd,
- InlineContext inlinersContext,
- out InlineCandidateInfo? inlineCandidateInfo,
- InlineResult inlineResult)
+        GenTreeCall call,
+        byte candidateIndex,
+        CORINFO_METHOD_HANDLE fncHandle,
+        CorInfoFlag methAttr,
+        CORINFO_CONTEXT_HANDLE exactContextHnd,
+        InlineContext inlinersContext,
+        out InlineCandidateInfo? inlineCandidateInfo,
+        InlineResult inlineResult)
     {
         // Either EE or JIT might throw exceptions below.
         // If that happens, just don't inline the method.
@@ -2874,15 +2874,15 @@ GenTreeCall call,
     /// <param name="isExplicitTailCall">true if we plan on using an explicit tail call</param>
     /// <param name="ilOffset">IL offset of the call</param>
     public unsafe void impDevirtualizeCall(
-GenTreeCall call,
- in CORINFO_RESOLVED_TOKEN resolvedToken,
- ref CORINFO_METHOD_HANDLE method,
- ref CorInfoFlag methodFlags,
- ref CORINFO_CONTEXT_HANDLE contextHandle,
- out CORINFO_CONTEXT_HANDLE exactContextHandle,
- bool isLateDevirtualization,
- bool isExplicitTailCall,
- IL_OFFSET ilOffset = BAD_IL_OFFSET)
+        GenTreeCall call,
+        in CORINFO_RESOLVED_TOKEN resolvedToken,
+        ref CORINFO_METHOD_HANDLE method,
+        ref CorInfoFlag methodFlags,
+        ref CORINFO_CONTEXT_HANDLE contextHandle,
+        out CORINFO_CONTEXT_HANDLE exactContextHandle,
+        bool isLateDevirtualization,
+        bool isExplicitTailCall,
+        IL_OFFSET ilOffset = BAD_IL_OFFSET)
     {
         // Notes:
         //     Virtual calls in IL will always "invoke" the base class method.
@@ -3693,13 +3693,13 @@ GenTreeCall call,
     /// <param name="cmpMode">Ordinal or OrdinalIgnoreCase mode (works only for ASCII cns)</param>
     /// <returns>A pointer to the newly created SWAR/SIMD node or nullptr if unrolling is not possible, not profitable or constant data contains non-ASCII char(s) in 'ignoreCase' mode</returns>
     public GenTree? impExpandHalfConstEquals(
-GenTreeLclVarCommon data,
- GenTree lengthFld,
- bool checkForNull,
- StringComparisonKind kind,
- Span<char> cnsData,
- int dataOffset,
- StringComparison cmpMode)
+        GenTreeLclVarCommon data,
+        GenTree lengthFld,
+        bool checkForNull,
+        StringComparisonKind kind,
+        Span<char> cnsData,
+        int dataOffset,
+        StringComparison cmpMode)
     {
         // In a general case it will look like this:
         //   bool equals = obj != null && obj.Length == len && (SWAR or SIMD)
@@ -4947,12 +4947,12 @@ GenTreeLclVarCommon data,
     /// <param name="mustExpand">true if the intrinsic must return a GenTree*; otherwise, false</param>
     /// <returns>The GT_HWINTRINSIC node, or nullptr if not a supported intrinsic</returns>
     public unsafe GenTree? impHWIntrinsic(
-NamedIntrinsic intrinsic,
- CORINFO_CLASS_HANDLE clsHnd,
- CORINFO_METHOD_HANDLE method,
- in CORINFO_SIG_INFO sig,
- in CORINFO_CONST_LOOKUP entryPoint,
- bool mustExpand)
+        NamedIntrinsic intrinsic,
+        CORINFO_CLASS_HANDLE clsHnd,
+        CORINFO_METHOD_HANDLE method,
+        in CORINFO_SIG_INFO sig,
+        in CORINFO_CONST_LOOKUP entryPoint,
+        bool mustExpand)
     {
         // TODO: Port impHWIntrinsic
         return null;
@@ -8159,10 +8159,10 @@ NamedIntrinsic intrinsic,
 
                     JITDUMP($" {resolvedToken.token:X8}");
                     eeGetCallInfo(
-resolvedToken,
- ((prefixFlags & PREFIX_CONSTRAINED) is not 0) ? ref constrainedResolvedToken : ref Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(),
- CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_LDFTN,
- out var callInfo);
+                        resolvedToken,
+                        ((prefixFlags & PREFIX_CONSTRAINED) is not 0) ? ref constrainedResolvedToken : ref Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(),
+                        CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_LDFTN,
+                        out var callInfo);
 
                     // This check really only applies to intrinsic Array.Address methods
                     if ((callInfo.sig.callConv & CORINFO_CALLCONV_PARAMTYPE) is not 0)
@@ -8187,10 +8187,10 @@ resolvedToken,
 
                     JITDUMP($" {resolvedToken.token:X8}");
                     eeGetCallInfo(
-resolvedToken,
- in Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(),
- CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_LDFTN | CORINFO_CALLINFO_CALLVIRT,
- out var callInfo);
+                        resolvedToken,
+                        in Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(),
+                        CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_LDFTN | CORINFO_CALLINFO_CALLVIRT,
+                        out var callInfo);
 
                     // This check really only applies to intrinsic Array.Address methods
                     if ((callInfo.sig.callConv & CORINFO_CALLCONV_PARAMTYPE) is not 0)
@@ -8632,10 +8632,10 @@ resolvedToken,
                     }
 
                     eeGetCallInfo(
-resolvedToken,
- ((prefixFlags & PREFIX_CONSTRAINED) is not 0) ? ref constrainedResolvedToken : ref Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(),
- flags,
- out var callInfo);
+                        resolvedToken,
+                        ((prefixFlags & PREFIX_CONSTRAINED) is not 0) ? ref constrainedResolvedToken : ref Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(),
+                        flags,
+                        out var callInfo);
 
                     if (isAwait)
                     {
@@ -8815,10 +8815,10 @@ resolvedToken,
                             }
 
                             if (!isLoadAddress && compIsForInlining && impInlineIsGuaranteedThisDerefBeforeAnySideEffects(
-additionalTree: null,
- in Unsafe.NullRef<CallArgs>(),
- obj,
- impInlineInfo.inlArgInfo))
+                                additionalTree: null,
+                                in Unsafe.NullRef<CallArgs>(),
+                                obj,
+                                impInlineInfo.inlArgInfo))
                             {
                                 impInlineInfo.thisDereferencedFirst = true;
                             }
@@ -10710,9 +10710,9 @@ additionalTree: null,
 #endif
 
             compiler.assertImp(
-(op1Type.ActualType == op2Type.ActualType) || (varTypeIsI(op1Type) && varTypeIsI(op2Type)) || (varTypeIsFloating(op1Type) && varTypeIsFloating(op2Type)),
- op1,
- op2);
+                (op1Type.ActualType == op2Type.ActualType) || (varTypeIsI(op1Type) && varTypeIsI(op2Type)) || (varTypeIsFloating(op1Type) && varTypeIsFloating(op2Type)),
+                op1,
+                op2);
 
             if (compiler.opts.OptimizationEnabled)
             {
@@ -11492,11 +11492,11 @@ additionalTree: null,
         }
 
         static bool TryDoLdftn(
-Compiler compiler,
- int prefixFlags,
- in CORINFO_RESOLVED_TOKEN resolvedToken,
- in CORINFO_RESOLVED_TOKEN constrainedResolvedToken,
- in CORINFO_CALL_INFO callInfo)
+            Compiler compiler,
+            int prefixFlags,
+            in CORINFO_RESOLVED_TOKEN resolvedToken,
+            in CORINFO_RESOLVED_TOKEN constrainedResolvedToken,
+            in CORINFO_CALL_INFO callInfo)
         {
             var op1 = compiler.impMethodPointer(callInfo);
 
@@ -12367,11 +12367,11 @@ Compiler compiler,
     }
 
     public GenTree impImportStaticFieldAddress(
-in CORINFO_RESOLVED_TOKEN resolvedToken,
- CORINFO_ACCESS_FLAGS access,
- in CORINFO_FIELD_INFO fieldInfo,
- var_types lclTyp,
- ref GenTreeFlags indirFlags)
+        in CORINFO_RESOLVED_TOKEN resolvedToken,
+        CORINFO_ACCESS_FLAGS access,
+        in CORINFO_FIELD_INFO fieldInfo,
+        var_types lclTyp,
+        ref GenTreeFlags indirFlags)
     {
         return impImportStaticFieldAddress(resolvedToken, access, fieldInfo, lclTyp, ref indirFlags, out _);
     }
@@ -12386,12 +12386,12 @@ in CORINFO_RESOLVED_TOKEN resolvedToken,
     /// <returns>Tree representing the field's address.</returns>
     /// <remarks>Ordinary static fields never overlap. RVA statics, however, can overlap (if they're mapped to the same ".data" declaration). That said, such mappings only appear to be possible with ILASM, and in ILASM-produced (ILONLY) images, RVA statics are always read-only (using "stsfld" on them is UB). In mixed-mode assemblies, RVA statics can be mutable, but the only current producer of such images, the C++/CLI compiler, does not appear to support mapping different fields to the same address. So we will say that "mutable overlapping RVA statics" are UB as well.</remarks>
     public unsafe GenTree impImportStaticFieldAddress(
-in CORINFO_RESOLVED_TOKEN resolvedToken,
- CORINFO_ACCESS_FLAGS access,
- in CORINFO_FIELD_INFO fieldInfo,
- var_types lclTyp,
- ref GenTreeFlags indirFlags,
- out bool isHoistable)
+        in CORINFO_RESOLVED_TOKEN resolvedToken,
+        CORINFO_ACCESS_FLAGS access,
+        in CORINFO_FIELD_INFO fieldInfo,
+        var_types lclTyp,
+        ref GenTreeFlags indirFlags,
+        out bool isHoistable)
     {
         // For statics that are not "boxed", the initial address tree will contain the field sequence.
         // For those that are, we will attach it later, when adding the indirection for the box, since
@@ -13762,10 +13762,10 @@ in CORINFO_RESOLVED_TOKEN resolvedToken,
     ///   <para>The importer stack and current statement list are searched for side effects. Trees that have been popped of the stack but haven't been appended to the statement list and have to be checked for side effects may be provided via additionalTree and additionalCallArgs.</para>
     /// </remarks>
     public bool impInlineIsGuaranteedThisDerefBeforeAnySideEffects(
-GenTree? additionalTree,
- in CallArgs additionalCallArgs,
- GenTree dereferencedAddress,
- ReadOnlySpan<InlArgInfo> inlArgInfo)
+        GenTree? additionalTree,
+        in CallArgs additionalCallArgs,
+        GenTree dereferencedAddress,
+        ReadOnlySpan<InlArgInfo> inlArgInfo)
     {
         assert(compIsForInlining);
         assert(opts.OptEnabled(CLFLG_INLINING));
@@ -14613,12 +14613,12 @@ GenTree? additionalTree,
     ///   <para>If callNode is not an inline candidate, and the reason is method may be marked as "noinline" to short-circuit any future assessments of calls to this method.</para>
     /// </remarks>
     public unsafe void impMarkInlineCandidateHelper(
-GenTreeCall call,
- byte candidateIndex,
- CORINFO_CONTEXT_HANDLE exactContextHnd,
- in CORINFO_CALL_INFO callInfo,
- InlineContext inlinersContext,
- InlineResult inlineResult)
+        GenTreeCall call,
+        byte candidateIndex,
+        CORINFO_CONTEXT_HANDLE exactContextHnd,
+        in CORINFO_CALL_INFO callInfo,
+        InlineContext inlinersContext,
+        InlineResult inlineResult)
     {
         assert(compCurBB is not null);
 
@@ -15263,13 +15263,13 @@ GenTreeCall call,
     }
 
     public unsafe GenTree? impMathIntrinsic(
-CORINFO_METHOD_HANDLE method,
- in CORINFO_SIG_INFO sigInfo,
- in CORINFO_CONST_LOOKUP entryPoint,
- var_types callType,
- NamedIntrinsic intrinsicName,
- bool tailCall,
- out bool isSpecial)
+        CORINFO_METHOD_HANDLE method,
+        in CORINFO_SIG_INFO sigInfo,
+        in CORINFO_CONST_LOOKUP entryPoint,
+        var_types callType,
+        NamedIntrinsic intrinsicName,
+        bool tailCall,
+        out bool isSpecial)
     {
         assert(callType is not TYP_STRUCT);
         assert(IsMathIntrinsic(intrinsicName));
@@ -16046,12 +16046,12 @@ CORINFO_METHOD_HANDLE method,
     /// <param name="mustExpand">true if the intrinsic must return a GenTree*; otherwise, false</param>
     /// <returns>IR tree to use in place of the call, or null if the jit should treat the intrinsic call like a normal call.</returns>
     public unsafe GenTree? impPrimitiveNamedIntrinsic(
-NamedIntrinsic intrinsic,
- CORINFO_CLASS_HANDLE clsHnd,
- CORINFO_METHOD_HANDLE method,
- in CORINFO_SIG_INFO sigInfo,
- in CORINFO_CONST_LOOKUP entryPoint,
- bool mustExpand)
+        NamedIntrinsic intrinsic,
+        CORINFO_CLASS_HANDLE clsHnd,
+        CORINFO_METHOD_HANDLE method,
+        in CORINFO_SIG_INFO sigInfo,
+        in CORINFO_CONST_LOOKUP entryPoint,
+        bool mustExpand)
     {
         assert(sigInfo.sigInst.classInstCount is 0);
 
@@ -17910,9 +17910,9 @@ NamedIntrinsic intrinsic,
         assert(!runtimeLookup.testForNull);
 
         return (runtimeLookup.indirections is not 0) ? gtNewIndir(
-TYP_I_IMPL,
- slotPtrTree,
- ctxTreeIsInvariant ? (GTF_IND_NONFAULTING | GTF_IND_INVARIANT) : GTF_EMPTY) : slotPtrTree;
+            TYP_I_IMPL,
+            slotPtrTree,
+            ctxTreeIsInvariant ? (GTF_IND_NONFAULTING | GTF_IND_INVARIANT) : GTF_EMPTY) : slotPtrTree;
     }
 
     public void impSaveStackState(out SavedStack savePtr, bool copy)
@@ -18359,11 +18359,11 @@ TYP_I_IMPL,
     }
 
     public unsafe GenTree? impSRCSUnsafeIntrinsic(
-NamedIntrinsic intrinsic,
- CORINFO_CLASS_HANDLE clsHnd,
- CORINFO_METHOD_HANDLE method,
- in CORINFO_SIG_INFO sig,
- in CORINFO_RESOLVED_TOKEN resolvedToken)
+        NamedIntrinsic intrinsic,
+        CORINFO_CLASS_HANDLE clsHnd,
+        CORINFO_METHOD_HANDLE method,
+        in CORINFO_SIG_INFO sig,
+        in CORINFO_RESOLVED_TOKEN resolvedToken)
     {
         // NextCallRetAddr requires a CALL, so return null.
         if (info.compHasNextCallRetAddr)
@@ -19390,13 +19390,13 @@ NamedIntrinsic intrinsic,
     /// <returns>True if the tailcall types are compatible.</returns>
     /// <remarks>Note that here we don't check compatibility in IL Verifier sense, but on the lines of return types getting returned in the same return register.</remarks>
     public unsafe bool impTailCallRetTypeCompatible(
-bool allowWidening,
- var_types callerRetType,
- CORINFO_CLASS_HANDLE callerRetTypeClass,
- CorInfoCallConvExtension callerCallConv,
- var_types calleeRetType,
- CORINFO_CLASS_HANDLE calleeRetTypeClass,
- CorInfoCallConvExtension calleeCallConv)
+        bool allowWidening,
+        var_types callerRetType,
+        CORINFO_CLASS_HANDLE callerRetTypeClass,
+        CorInfoCallConvExtension callerCallConv,
+        var_types calleeRetType,
+        CORINFO_CLASS_HANDLE calleeRetTypeClass,
+        CorInfoCallConvExtension calleeCallConv)
     {
         // Early out if the types are the same.
         if (callerRetType == calleeRetType)
@@ -19658,13 +19658,13 @@ bool allowWidening,
     /// <param name="contextHandle">context handle for the transformed call</param>
     /// <param name="baseMethod"></param>
     public unsafe void impTransformDevirtualizedCall(
-GenTreeCall call,
- ref CORINFO_METHOD_HANDLE method,
- ref CorInfoFlag methodFlags,
- in DevirtualizedCallInfo dcInfo,
- BasicBlock block,
- out CORINFO_CONTEXT_HANDLE contextHandle,
- CORINFO_METHOD_HANDLE baseMethod)
+        GenTreeCall call,
+        ref CORINFO_METHOD_HANDLE method,
+        ref CorInfoFlag methodFlags,
+        in DevirtualizedCallInfo dcInfo,
+        BasicBlock block,
+        out CORINFO_CONTEXT_HANDLE contextHandle,
+        CORINFO_METHOD_HANDLE baseMethod)
     {
         var derivedMethod = method;
         var derivedMethodAttribs = methodFlags;

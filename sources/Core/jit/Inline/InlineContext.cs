@@ -212,14 +212,14 @@ public sealed class InlineContext
                 if (offs == BAD_IL_OFFSET)
                 {
                     jitprintf($"{new string(
-' ',
- indent)}[{FMT_INL_CTX(_ordinal)} IL=???? TR={_treeId:D6} {calleeToken:X8}] [{inlineResult}{inlineTarget}: {inlineReason}{guarded}{devirtualized}{unboxed}{asyncness}] {calleeName}\n");
+                        ' ',
+                        indent)}[{FMT_INL_CTX(_ordinal)} IL=???? TR={_treeId:D6} {calleeToken:X8}] [{inlineResult}{inlineTarget}: {inlineReason}{guarded}{devirtualized}{unboxed}{asyncness}] {calleeName}\n");
                 }
                 else
                 {
                     jitprintf($"{new string(
-' ',
- indent)}[{FMT_INL_CTX(_ordinal)} IL={offs:D4} TR={_treeId:D6} {calleeToken:X8}] [{inlineResult}{inlineTarget}: {inlineReason}{guarded}{devirtualized}{unboxed}{asyncness}] {calleeName}\n");
+                        ' ',
+                        indent)}[{FMT_INL_CTX(_ordinal)} IL={offs:D4} TR={_treeId:D6} {calleeToken:X8}] [{inlineResult}{inlineTarget}: {inlineReason}{guarded}{devirtualized}{unboxed}{asyncness}] {calleeName}\n");
                 }
             }
             else

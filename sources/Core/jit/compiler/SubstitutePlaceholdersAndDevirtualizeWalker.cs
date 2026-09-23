@@ -96,14 +96,14 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
                 context = null;
 
                 _compiler.impDevirtualizeCall(
-call,
- Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(),
- ref method,
- ref methodFlags,
- ref contextInput,
- out context,
- isLateDevirtualization,
- explicitTailCall);
+                    call,
+                    Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(),
+                    ref method,
+                    ref methodFlags,
+                    ref contextInput,
+                    out context,
+                    isLateDevirtualization,
+                    explicitTailCall);
 
                 if (!call.IsDevirtualizationCandidate(_compiler))
                 {

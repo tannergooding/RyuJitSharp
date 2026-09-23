@@ -8504,14 +8504,14 @@ public partial class Compiler
 
                             var packedProduct = gtNewSimdHWIntrinsicNode(widenedType, NI_AVX2_PackUnsignedSaturate, TYP_UBYTE, widenedSimdSize, maskedProduct, maskedProductDup);
                             var shuffledProduct = gtNewSimdHWIntrinsicNode(
-widenedType,
- NI_AVX2_Permute4x64,
- TYP_LONG,
- widenedSimdSize,
- packedProduct,
- gtNewIconNode(
-TYP_INT,
- SHUFFLE_WYZX));
+                                widenedType,
+                                NI_AVX2_Permute4x64,
+                                TYP_LONG,
+                                widenedSimdSize,
+                                packedProduct,
+                                gtNewIconNode(
+                                    TYP_INT,
+                                    SHUFFLE_WYZX));
 
                             return gtNewSimdGetLowerNode(type, shuffledProduct, simdBaseType, widenedSimdSize);
                         }
