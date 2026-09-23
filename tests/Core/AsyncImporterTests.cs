@@ -10,6 +10,63 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class AsyncImporterTests
 {
+    [TestCase(new byte[] { 0x0A, 0x12, 0 }, 0)]
+    [TestCase(new byte[] { 0x0B, 0xFE, 0x0D, 1, 0 }, 1)]
+    [TestCase(new byte[] { 0x0C, 0x12, 2 }, 2)]
+    [TestCase(new byte[] { 0x0D, 0xFE, 0x0D, 3, 0 }, 3)]
+    [TestCase(new byte[] { 0x13, 255, 0x12, 255 }, 255)]
+    [TestCase(new byte[] { 0x13, 255, 0xFE, 0x0D, 255, 0 }, 255)]
+    [TestCase(new byte[] { 0xFE, 0x0E, 0, 1, 0xFE, 0x0D, 0, 1 }, 256)]
+    [TestCase(new byte[] { 0xFE, 0x0E, 255, 255, 0xFE, 0x0D, 255, 255 }, 65535)]
+    [TestCase(new byte[] { 0xFE, 0x0E, 3, 0, 0x12, 3 }, 3)]
+    public static void LocalAddressPatternsCheckEveryTruncationAndPreserveTheCursor(byte[] pattern, int expectedLocal)
+    {
+        var bytes = new byte[pattern.Length + 1];
+        pattern.CopyTo(bytes, 0);
+        fixed (byte* start = bytes)
+        {
+            for (var length = 0; length <= bytes.Length; length++)
+            {
+                var cursor = start;
+                var matched = Compiler.impMatchStlocLdloca(ref cursor, start + length, out var local);
+                var expectedMatch = length >= pattern.Length;
+                Assert.That(matched, Is.EqualTo(expectedMatch), $"Input length {length}");
+                Assert.That(local, Is.EqualTo(expectedMatch ? expectedLocal : Globals.BAD_VAR_NUM));
+                Assert.That(cursor - start, Is.EqualTo(expectedMatch ? (long)pattern.Length : 0L));
+            }
+        }
+
+        const int configuredAwaitLength = 1 + (2 * (1 + sizeof(int)));
+        var awaitBytes = new byte[sizeof(int) + pattern.Length + configuredAwaitLength];
+        pattern.CopyTo(awaitBytes, sizeof(int));
+        fixed (byte* start = awaitBytes)
+        {
+            var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+            var result = compiler.impMatchTaskAwaitPattern(start, start + awaitBytes.Length, out var config, out var awaitOffset);
+            Assert.That((nint)result, Is.EqualTo((nint)0));
+            Assert.That(config, Is.EqualTo(-1));
+            Assert.That(awaitOffset, Is.EqualTo(Globals.BAD_IL_OFFSET));
+        }
+    }
+
+    [TestCase(new byte[] { 0x0A, 0x12, 1 })]
+    [TestCase(new byte[] { 0xFE, 0x0E, 255, 255, 0x12, 255 })]
+    [TestCase(new byte[] { 0x13, 255, 0xFE, 0x0D, 255, 1 })]
+    [TestCase(new byte[] { 0xFE, 0x0D, 1, 0, 0x12, 1 })]
+    [TestCase(new byte[] { 0x0B, 0xFE, 0x0C, 1, 0 })]
+    [TestCase(new byte[] { 0x06, 0x12, 0 })]
+    public static void LocalAddressPatternsRejectMismatchedLocalsAndOpcodes(byte[] bytes)
+    {
+        fixed (byte* start = bytes)
+        {
+            var cursor = start;
+            var matched = Compiler.impMatchStlocLdloca(ref cursor, start + bytes.Length, out var local);
+            Assert.That(matched, Is.False);
+            Assert.That(local, Is.EqualTo(Globals.BAD_VAR_NUM));
+            Assert.That(cursor - start, Is.EqualTo(0L));
+        }
+    }
+
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]

@@ -13914,6 +13914,99 @@ public partial class Compiler
         }
     }
 
+    /// <summary>Match a local store followed by taking the same local's address.</summary>
+    /// <param name="codeAddr">First opcode; advanced only on a successful match.</param>
+    /// <param name="codeEndp">End of the IL stream.</param>
+    /// <param name="lclNum">The matched local, or BAD_VAR_NUM on failure.</param>
+    public static unsafe bool impMatchStlocLdloca(ref byte* codeAddr, byte* codeEndp, out int lclNum)
+    {
+        lclNum = BAD_VAR_NUM;
+        var code = codeAddr;
+        if (code >= codeEndp)
+        {
+            return false;
+        }
+
+        int matchedLclNum;
+        var opcode = (OPCODE)(*code++);
+        if (opcode is >= CEE_STLOC_0 and <= CEE_STLOC_3)
+        {
+            matchedLclNum = opcode - CEE_STLOC_0;
+        }
+        else if (opcode is CEE_STLOC_S)
+        {
+            if (code >= codeEndp)
+            {
+                return false;
+            }
+
+            matchedLclNum = *code++;
+        }
+        else if (opcode is CEE_PREFIX1)
+        {
+            if (code >= codeEndp)
+            {
+                return false;
+            }
+
+            var wideOpcode = (OPCODE)(256 + *code++);
+            if ((wideOpcode is not CEE_STLOC) || (code + 1 >= codeEndp))
+            {
+                return false;
+            }
+
+            matchedLclNum = BinaryPrimitives.ReadUInt16LittleEndian(new ReadOnlySpan<byte>(code, sizeof(ushort)));
+            code += 2;
+        }
+        else
+        {
+            return false;
+        }
+
+        if (code >= codeEndp)
+        {
+            return false;
+        }
+
+        opcode = (OPCODE)(*code++);
+        if (opcode is CEE_LDLOCA_S)
+        {
+            if ((code >= codeEndp) || (*code != matchedLclNum))
+            {
+                return false;
+            }
+
+            code++;
+        }
+        else if (opcode is CEE_PREFIX1)
+        {
+            if (code >= codeEndp)
+            {
+                return false;
+            }
+
+            var wideOpcode = (OPCODE)(256 + *code++);
+            if ((wideOpcode is not CEE_LDLOCA) || (code + 1 >= codeEndp))
+            {
+                return false;
+            }
+
+            if (BinaryPrimitives.ReadUInt16LittleEndian(new ReadOnlySpan<byte>(code, sizeof(ushort))) != matchedLclNum)
+            {
+                return false;
+            }
+            code += 2;
+        }
+        else
+        {
+            return false;
+        }
+
+        lclNum = matchedLclNum;
+        codeAddr = code;
+        return true;
+    }
+
     /// <summary>Check if a method call starts an a task await pattern that can be optimized for runtime async</summary>
     /// <param name="codeAddr">IL after call[virt]     NB: pointing at unconsumed token.</param>
     /// <param name="codeEndp">End of IL code stream</param>
@@ -13957,102 +14050,13 @@ public partial class Compiler
         {
             // ConfigureAwait on a ValueTask will start with stloc/ldloca.
             // The longest encoding should fit in the length we asked for above.
-            var maybeStLoc = (OPCODE)(nextOpcode[0]);
-
-            var nextTmp = nextOpcode + 1;
-            var stlocNum = -1;
-
-            switch (maybeStLoc)
+            if (impMatchStlocLdloca(ref nextOpcode, codeEndp, out var stlocNum))
             {
-                case CEE_STLOC_0:
-                {
-                    stlocNum = 0;
-                    break;
-                }
-
-                case CEE_STLOC_1:
-                {
-                    stlocNum = 1;
-                    break;
-                }
-
-                case CEE_STLOC_2:
-                {
-                    stlocNum = 2;
-                    break;
-                }
-
-                case CEE_STLOC_3:
-                {
-                    stlocNum = 3;
-                    break;
-                }
-
-                case CEE_STLOC_S:
-                {
-                    stlocNum = nextTmp[0];
-                    nextTmp++;
-                    break;
-                }
-
-                case CEE_PREFIX1:
-                {
-                    maybeStLoc = (OPCODE)(0x0100 + nextTmp[0]);
-                    nextTmp++;
-
-                    if (maybeStLoc is CEE_STLOC)
-                    {
-                        stlocNum = BinaryPrimitives.ReadUInt16LittleEndian(new ReadOnlySpan<byte>(nextTmp, sizeof(ushort)));
-                        nextTmp += 2;
-                    }
-                    break;
-                }
-            }
-
-            // if it was a stloc, check for matching ldloca
-            if (stlocNum != -1)
-            {
-                var maybeLdLoca = (OPCODE)(nextTmp[0]);
-                nextTmp++;
-
-                var ldlocaNum = -1;
-
-                switch (maybeLdLoca)
-                {
-                    case CEE_LDLOCA_S:
-                    {
-                        ldlocaNum = nextTmp[0];
-                        nextTmp++;
-                        break;
-                    }
-
-                    case CEE_PREFIX1:
-                    {
-                        maybeLdLoca = (OPCODE)(0x0100 + nextTmp[0]);
-                        nextTmp++;
-
-                        if (maybeLdLoca is CEE_LDLOCA)
-                        {
-                            ldlocaNum = BinaryPrimitives.ReadUInt16LittleEndian(new ReadOnlySpan<byte>(nextTmp, sizeof(ushort)));
-                            nextTmp += 2;
-                        }
-                        break;
-                    }
-                }
-
-                // no ldloca or locals did not match, this can't be await pattern
-                if (stlocNum != ldlocaNum)
-                {
-                    return null;
-                }
-
                 // locals match, but no space for ConfigureAwait call, this can't be await pattern
-                if ((nextTmp + (2 * (1 + sizeof(mdToken)))) >= codeEndp)
+                if ((nextOpcode + (2 * (1 + sizeof(mdToken)))) >= codeEndp)
                 {
                     return null;
                 }
-
-                nextOpcode = nextTmp;
             }
 
             var nextOp = (OPCODE)(nextOpcode[0]);
@@ -14060,7 +14064,7 @@ public partial class Compiler
 
             if ((nextOp is not CEE_LDC_I4_0 and not CEE_LDC_I4_1) || (nextNextOp is not CEE_CALL and not CEE_CALLVIRT))
             {
-                if (stlocNum != -1)
+                if (stlocNum != BAD_VAR_NUM)
                 {
                     // we had stloc/ldloca, we must see ConfigAwait
                     return null;
@@ -14074,7 +14078,7 @@ public partial class Compiler
 
                 if (!eeIsIntrinsic(nextCallTok.hMethod) || (lookupNamedIntrinsic(nextCallTok.hMethod) is not NI_System_Threading_Tasks_Task_ConfigureAwait))
                 {
-                    if (stlocNum != -1)
+                    if (stlocNum != BAD_VAR_NUM)
                     {
                         // we had stloc/ldloca, we must see ConfigAwait
                         return null;
