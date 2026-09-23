@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Complete ProfileSynthesis's input-weight assignment and Run orchestration, then full fgIncorporateProfileData (B067). Direct and Gauss-Seidel block-weight solving are implemented (B077), as are the constructor, likelihood policies/cyclic gains (B076), natural loops (B072), EH predecessors (B071), profile checks and throw propagation (B074). ConfigDoubleArray remains absent; B075's malformed/empty configuration handling requires an explicit compatibility decision before porting its use in input-weight assignment. Do not activate partial profile incorporation or insert the BBOPT diagnostic alone. B073's MakeFull defect does not affect discovery. B064 still gates constant bashing; folding/global-morph bookkeeping remain before enabling the full inliner. Both native trees use the target revision; read the intact oracle.",
+    "nextAction": "Implement complete fgIncorporateProfileData (B067), then publish NativeAOT and recapture the native/managed corpus. Profile synthesis, including Run/input weights (B078), solver (B077), likelihood policies/gains (B076) and its loop/EH/checking dependencies, is implemented. Debug ConfigDoubleArray preserves Windows CRT conversion but has provisional explicit failure handling (B075/R003); user approval remains pending and it is not an accepted parity exception. Do not activate partial profile incorporation or insert the BBOPT diagnostic alone. B073's MakeFull defect does not affect discovery. B064 still gates constant bashing; folding/global-morph bookkeeping remain before enabling the full inliner. Both native trees use the target revision; read the intact oracle.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -19,8 +19,8 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "10.0.401",
-      "debugBuild": "passed-after-profile-block-weight-solver",
-      "releaseBuild": "passed-after-profile-block-weight-solver",
+      "debugBuild": "passed-after-profile-synthesis-driver",
+      "releaseBuild": "passed-after-profile-synthesis-driver",
       "testSourcesPresent": true,
       "writerRegressionCases": 16,
       "writerRegressionConfigurations": ["Debug", "Release"],
@@ -253,6 +253,19 @@
         "nativeAotRecaptured": false,
         "profilePhaseActivated": false
       },
+      "profileDriverSpotChecks": {
+        "newDriverCasesDebug": 44,
+        "newDriverCasesRelease": 33,
+        "newParserCasesDebug": 24,
+        "combinedDebugPassed": 156,
+        "combinedReleasePassed": 105,
+        "fullSuiteDebugPassed": 946,
+        "fullSuiteReleasePassed": 782,
+        "skipped": 0,
+        "nativeAotRecaptured": false,
+        "profilePhaseActivated": false,
+        "invalidConfigurationDeviation": "R003-provisional"
+      },
       "savedWipSupportMilestone": {
         "managedSourceCommit": "24b9352dc6f293228d58cb24871280827f936ab7",
         "nativeCompilationHeaders": 7,
@@ -425,6 +438,11 @@
       "commit": "60ebb0bce591ac132bac136ac9f507d905a1a949",
       "indexCommit": "e494c059cafc114b20fefb92dd134bc6cc0775e5",
       "ref": "refs/porting/snapshots/2026-09-23-native-ledger-profile-solver"
+    },
+    "profileDriverNativeResidual": {
+      "commit": "c8e75503438d300d4c38b4f805bf9aec42341d3a",
+      "indexCommit": "f6e251def381f59b780c02e505b31f9c2da4edd9",
+      "ref": "refs/porting/snapshots/2026-09-23-native-ledger-profile-driver"
     }
   },
   "sourceMap": [

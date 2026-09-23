@@ -97,6 +97,14 @@ block number. EH descriptors use the existing nullable-byref convention. Its
 `std::max` comparisons retain native operand selection, including NaN and signed
 zero, rather than adopting managed `Max` semantics (B077).
 
+The synthesis driver retains entry-loop normalization, reachable EH input
+seeding, four repair retries, metadata/source selection and deferred profile
+checks (B078). Its call-count clamp and blend-factor bound preserve native
+`std::max`/`std::min` operand selection. Debug double configuration uses a managed
+array and read-only span, with the native two-pass allocation scheme; conversion
+still uses the Windows CRT rather than a narrower managed numeric grammar.
+Its invalid-input policy is separately provisional under R003.
+
 Managed error-trap callbacks capture exceptions before leaving their
 `UnmanagedCallersOnly` shim. An owned `GCHandle` keeps the action and captured
 exception alive until the native trap returns. The regular trap reports
@@ -191,6 +199,10 @@ currently supports only Windows, using the native performance-counter, OS-thread
 and process inputs. It explicitly throws on other hosts. Explicitly seeded
 initialization is portable; no unseeded cross-host sequence equivalence is claimed.
 
+Debug-only `ConfigDoubleArray.Init` currently requires Windows `ucrtbase.dll`,
+loaded from System32. Other hosts explicitly throw `PlatformNotSupportedException`;
+their host-CRT conversion remains unported. Release does not contain this parser.
+
 `GenTreeVecCon.Equals` defers `TARGET_ARM64`'s `TYP_SIMD` scalable storage.
 `GenTreeMskCon.Equals` likewise defers the scalable-mask branch selected by
 `TARGET_ARM64 && DEBUG` and `JitUseScalableVectorT`. Both report NYI and then
@@ -253,6 +265,33 @@ output. `Compiler.dspOffset` also preserves the upstream nonzero
 `0xD1FFAB1E` substitution in diffable mode. If those diagnostics are enabled later,
 review their identity and pointer formatting then; they are not a demonstrated
 active parity failure or justification for stripping hashes from comparisons.
+
+### R003: Debug double-configuration failure handling
+
+**Status:** provisional implementation for review, not an approved output exception.
+
+Pinned `utils.cpp:1025-1066` can loop indefinitely when `strtod` makes no
+progress, retains stale `errno`, and dereferences null despite documenting it as
+allowed. `fgprofilesynthesis.cpp:1164-1173` indexes the first element even when
+the array is empty (B075).
+
+`ConfigDoubleArray` retains Windows CRT `strtod` conversion, including hexadecimal
+floats, signed zero, infinities and CRT NaN encodings. It resets `errno` before
+each conversion and restores the caller's value afterward. Non-progress and
+conversion errors throw `FormatException` rather than hanging or silently
+discarding values. Null/empty input produces an initialized empty array; trailing
+ASCII whitespace and commas are accepted. The synthesis caller separately
+rejects an empty configured setting because it requires a first value.
+
+Finite factors outside `[0, 1]`, infinities and NaNs still retain the native
+default exception weight; they are not configuration syntax errors. No caller
+other than profile synthesis has been wired to this new helper.
+
+Twenty-four Debug cases cover conversion, special-value bits, separators,
+explicit failure, stale-errno isolation and dump layout. A separate direct
+CRT probe confirmed its NaN encodings, negative zero and hexadecimal conversion.
+NativeAOT execution and complete synthesis dump parity remain unestablished.
+Do not normalize malformed-configuration output differences in parity reports.
 
 ## Incomplete implementation, not intentional deviations
 

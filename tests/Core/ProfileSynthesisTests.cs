@@ -447,6 +447,153 @@ internal static unsafe class ProfileSynthesisTests
         });
     }
 
+    [TestCase(0, 100)]
+    [TestCase(0.0005, 100)]
+    [TestCase(0.002, 0.002)]
+    [TestCase(200, 200)]
+    public static void InputWeightsResetEveryBlockAndApplyNearZeroFallback(double input, double expected)
+    {
+        WithCompiler(compiler => {
+            var blocks = Blocks(compiler, BBJ_ALWAYS, BBJ_RETURN, BBJ_RETURN);
+            blocks[0].SetKindAndTargetEdge(BBJ_ALWAYS, Edge(blocks[0], blocks[1], 1));
+            foreach (var block in blocks)
+            {
+                block.setBBProfileWeight(42);
+            }
+            AssignInputWeights(CreateSynthesis(compiler), input);
+            Assert.That(blocks[0].bbWeight, Is.EqualTo(expected));
+            Assert.That(blocks[1].bbWeight, Is.Zero);
+            Assert.That(blocks[2].bbWeight, Is.Zero);
+        });
+    }
+
+    [Test]
+    public static void InputWeightRemovesEntryLoopGain()
+    {
+        WithCompiler(compiler => {
+            var blocks = Blocks(compiler, BBJ_COND, BBJ_RETURN);
+            blocks[0].SetCond(Edge(blocks[0], blocks[0], 0.75), Edge(blocks[0], blocks[1], 0.25));
+            var synthesis = CreateSynthesis(compiler);
+            ComputeCyclicProbabilities(synthesis);
+            AssignInputWeights(synthesis, 200);
+            Assert.That(blocks[0].bbWeight, Is.EqualTo(50));
+        });
+    }
+
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void ExceptionalInputsRequireReachableTryAndRootCompiler(bool reachable, bool inlinee)
+    {
+        WithCompiler(compiler => {
+            var blocks = Blocks(compiler, BBJ_ALWAYS, BBJ_RETURN, BBJ_RETURN, BBJ_RETURN, BBJ_RETURN);
+            blocks[0].SetKindAndTargetEdge(BBJ_ALWAYS, Edge(blocks[0], reachable ? blocks[1] : blocks[4], 1));
+            compiler.compHndBBtab = [new() {
+                ebdHandlerType = EHHandlerType.EH_HANDLER_FILTER,
+                ebdTryBeg = blocks[1], ebdTryLast = blocks[1],
+                ebdFilter = blocks[2], ebdHndBeg = blocks[3], ebdHndLast = blocks[3],
+                ebdEnclosingTryIndex = EHblkDsc.NO_ENCLOSING_INDEX, ebdEnclosingHndIndex = EHblkDsc.NO_ENCLOSING_INDEX,
+            }];
+            compiler.compHndBBtabCount = 1;
+            if (inlinee)
+            {
+                compiler.impInlineInfo = new InlineInfo();
+            }
+            AssignInputWeights(CreateSynthesis(compiler), 100);
+            Assert.That(blocks[2].bbWeight, Is.EqualTo(reachable && !inlinee ? 0.00001 : 0));
+            Assert.That(blocks[3].bbWeight, Is.EqualTo(reachable && !inlinee ? 0.00001 : 0));
+        });
+    }
+
+    [Test]
+    public static void DriverUpdatesMetadataAndUsesAllPolicies([Values] ProfileSynthesisOption option, [Values] bool hadWeights)
+    {
+        WithCompiler(compiler => {
+            var blocks = Blocks(compiler, BBJ_ALWAYS, BBJ_RETURN);
+            blocks[0].SetKindAndTargetEdge(BBJ_ALWAYS, Edge(blocks[0], blocks[1], 1));
+            blocks[0].setBBProfileWeight(80);
+            compiler.fgPredsComputed = true;
+            compiler.fgPgoHaveWeights = hadWeights;
+            compiler.fgPgoSource = ICorJitInfo.PgoSource.Dynamic;
+            ProfileSynthesis.Run(compiler, option);
+            var expectedSource = option == ProfileSynthesisOption.RepairLikelihoods ? ICorJitInfo.PgoSource.Dynamic
+                : hadWeights && (option == ProfileSynthesisOption.BlendLikelihoods) ? ICorJitInfo.PgoSource.Blend
+                : ICorJitInfo.PgoSource.Synthesis;
+            Assert.That(compiler.fgPgoSource, Is.EqualTo(expectedSource));
+            Assert.That(compiler.fgPgoHaveWeights && compiler.fgPgoSynthesized && compiler.fgPgoConsistent, Is.True);
+            Assert.That(compiler.fgPgoSingleEdge, Is.True);
+            Assert.That(compiler.fgCalledCount, Is.EqualTo(80));
+            Assert.That(blocks[1].bbWeight, Is.EqualTo(80));
+            Assert.That(compiler.Metrics.ProfileSynthesizedBlendedOrRepaired, Is.EqualTo(1));
+#if DEBUG
+            Assert.That(compiler.fgPgoDeferredInconsistency, Is.False);
+#endif
+        });
+    }
+
+    [TestCase(false, false, 9, true)]
+    [TestCase(false, false, 10, false)]
+    [TestCase(true, false, 0, false)]
+    [TestCase(false, true, 0, false)]
+    public static void SingleEdgeHeuristicsExcludeLargeSizeOptimizedAndStaticConstructors(bool cctor, bool size, int calls, bool expected)
+    {
+        WithCompiler(compiler => {
+            _ = Blocks(compiler, BBJ_RETURN);
+            compiler.info.compFlags = cctor ? FLG_CCTOR : 0;
+            if (size)
+            {
+                compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_SIZE_OPT);
+            }
+            compiler.opts.callInstrCount = calls;
+            ProfileSynthesis.Run(compiler, ProfileSynthesisOption.AssignLikelihoods);
+            Assert.That(compiler.fgPgoSingleEdge, Is.EqualTo(expected));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void DriverRetainsEntryLoopFrequencyAndDerivesCalledCount(bool inlinee)
+    {
+        WithCompiler(compiler => {
+            var blocks = Blocks(compiler, BBJ_COND, BBJ_RETURN);
+            blocks[0].SetCond(Edge(blocks[0], blocks[0], 0.75), Edge(blocks[0], blocks[1], 0.25));
+            blocks[0].setBBProfileWeight(200);
+            compiler.fgCalledCount = 77;
+            if (inlinee)
+            {
+                compiler.impInlineInfo = new InlineInfo();
+            }
+            ProfileSynthesis.Run(compiler, ProfileSynthesisOption.RetainLikelihoods);
+            Assert.That(blocks[0].bbWeight, Is.EqualTo(200));
+            Assert.That(blocks[1].bbWeight, Is.EqualTo(50));
+            Assert.That(compiler.fgCalledCount, Is.EqualTo(inlinee ? 77 : 50));
+            Assert.That(compiler.fgPgoSingleEdge, Is.False);
+        });
+    }
+
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void InfiniteLoopRetryPolicyIsBounded(bool retain, bool imported)
+    {
+        WithCompiler(compiler => {
+            var block = Blocks(compiler, BBJ_ALWAYS)[0];
+            block.SetKindAndTargetEdge(BBJ_ALWAYS, Edge(block, block, 1));
+            compiler.fgImportDone = imported;
+#if DEBUG
+            SolverConfig(ref JitConfig) = 0;
+#endif
+            var synthesis = CreateSynthesis(compiler);
+            RunSynthesis(synthesis, retain ? ProfileSynthesisOption.RetainLikelihoods : ProfileSynthesisOption.AssignLikelihoods);
+            Assert.That(compiler.fgPgoConsistent, Is.False);
+            Assert.That(compiler.Metrics.ProfileInconsistentInitially, Is.EqualTo(!imported ? 1 : 0));
+            Assert.That(BlendFactor(synthesis), Is.EqualTo(!retain ? 1 : 0.05));
+            Assert.That(LoopBackLikelihood(synthesis), Is.EqualTo(!retain ? 0.9 * Math.Pow(0.9, 4) : 0.9).Within(1e-15));
+        });
+    }
+
     private static BasicBlock[] Irreducible(Compiler compiler, double backLikelihood, bool selfEdge)
     {
         var blocks = Blocks(compiler, BBJ_COND, selfEdge ? BBJ_SWITCH : BBJ_ALWAYS, BBJ_COND, BBJ_RETURN);
@@ -479,6 +626,68 @@ internal static unsafe class ProfileSynthesisTests
     }
 
 #if DEBUG
+    [TestCase("0", 0)]
+    [TestCase("0x1p-2,0.8", 0.25)]
+    [TestCase("1", 1)]
+    [TestCase("-1", 0.00001)]
+    [TestCase("1.1", 0.00001)]
+    [TestCase("nan", 0.00001)]
+    [TestCase("inf", 0.00001)]
+    public static void ExceptionalWeightOverrideUsesOnlyValidFirstFactor(string setting, double expected)
+    {
+        WithCompiler(compiler => {
+            var blocks = Blocks(compiler, BBJ_RETURN, BBJ_RETURN);
+            compiler.compHndBBtab = [new() {
+                ebdHandlerType = EHHandlerType.EH_HANDLER_CATCH,
+                ebdTryBeg = blocks[0], ebdTryLast = blocks[0], ebdHndBeg = blocks[1], ebdHndLast = blocks[1],
+                ebdEnclosingTryIndex = EHblkDsc.NO_ENCLOSING_INDEX, ebdEnclosingHndIndex = EHblkDsc.NO_ENCLOSING_INDEX,
+            }];
+            compiler.compHndBBtabCount = 1;
+            var bytes = Encoding.UTF8.GetBytes(setting + '\0');
+            fixed (byte* p = bytes)
+            {
+                ExceptionWeightConfig(ref JitConfig) = p;
+                AssignInputWeights(CreateSynthesis(compiler), 100);
+            }
+            Assert.That(blocks[1].bbWeight, Is.EqualTo(expected));
+        });
+    }
+
+    [TestCase("")]
+    [TestCase(" , ")]
+    public static void EmptyExceptionalWeightOverrideFailsExplicitly(string setting)
+    {
+        WithCompiler(compiler => {
+            _ = Blocks(compiler, BBJ_RETURN);
+            var bytes = Encoding.UTF8.GetBytes(setting + '\0');
+            fixed (byte* p = bytes)
+            {
+                ExceptionWeightConfig(ref JitConfig) = p;
+                _ = Assert.Throws<FormatException>(() => AssignInputWeights(CreateSynthesis(compiler), 100));
+            }
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void InvalidPreImportFlowDefersConsistencyAssertion(bool imported)
+    {
+        WithCompiler(compiler => {
+            var blocks = Blocks(compiler, BBJ_COND, BBJ_RETURN, BBJ_RETURN);
+            blocks[0].SetCond(Edge(blocks[0], blocks[1], 0.2), Edge(blocks[0], blocks[2], 0.2));
+            compiler.fgPredsComputed = true;
+            compiler.fgImportDone = imported;
+            SolverConfig(ref JitConfig) = 1;
+            var output = Capture(compiler, () => ProfileSynthesis.Run(compiler, ProfileSynthesisOption.RetainLikelihoods));
+            Assert.That(compiler.fgPgoDeferredInconsistency, Is.EqualTo(!imported));
+            Assert.That(compiler.fgPgoConsistent, Is.EqualTo(!imported));
+            Assert.That(output.Contains("Will defer asserting until after importation", StringComparison.Ordinal), Is.EqualTo(!imported));
+        });
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitSynthesisExceptionWeight")]
+    private static extern ref byte* ExceptionWeightConfig(ref JitConfigValues config);
+
     [Test]
     public static void IncomingChecksSeparateMissingLikelihoodFromWeightBalance()
     {
@@ -670,6 +879,18 @@ internal static unsafe class ProfileSynthesisTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ComputeBlockWeights")]
     private static extern void ComputeBlockWeights(ProfileSynthesis synthesis);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "AssignInputWeights")]
+    private static extern void AssignInputWeights(ProfileSynthesis synthesis, double entryWeight);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Run")]
+    private static extern void RunSynthesis(ProfileSynthesis synthesis, ProfileSynthesisOption option);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blendFactor")]
+    private static extern ref double BlendFactor(ProfileSynthesis synthesis);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_loopBackLikelihood")]
+    private static extern ref double LoopBackLikelihood(ProfileSynthesis synthesis);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ComputeBlockWeight")]
     private static extern void ComputeBlockWeight(ProfileSynthesis synthesis, BasicBlock block);

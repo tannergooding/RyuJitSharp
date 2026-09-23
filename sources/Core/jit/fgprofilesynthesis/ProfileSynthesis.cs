@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
@@ -11,13 +12,16 @@ namespace RyuJitSharp;
 public sealed class ProfileSynthesis
 {
     public const weight_t epsilon = 0.001;
+    private const weight_t exceptionWeight = 0.00001;
     private const weight_t initialBlendFactor = 0.05;
+    private const weight_t blendFactorGrowthRate = 3;
     private const weight_t cappedLikelihood = 0.999;
     private const weight_t returnLikelihood = 0.2;
     private const weight_t ilNextLikelihood = 0.52;
     private const weight_t loopBackLikelihood = 0.9;
     private const weight_t loopExitLikelihood = 0.9;
     private const weight_t throwLikelihood = 0;
+    private const int maxRepairRetries = 4;
     private const int maxSolverIterations = 50;
     private const weight_t maxCount = 1e12;
 
@@ -55,6 +59,140 @@ public sealed class ProfileSynthesis
         _loops = loops;
         _improperLoopHeaders = loops.ImproperLoopHeaders;
         _cyclicProbabilities = new weight_t[loops.NumLoops];
+    }
+
+    public static void Run(Compiler compiler, ProfileSynthesisOption option)
+    {
+        var synthesis = new ProfileSynthesis(compiler);
+        synthesis.Run(option);
+    }
+
+    private unsafe void Run(ProfileSynthesisOption option)
+    {
+        switch (option)
+        {
+            case ProfileSynthesisOption.AssignLikelihoods:
+                AssignLikelihoods();
+                break;
+            case ProfileSynthesisOption.RetainLikelihoods:
+                break;
+            case ProfileSynthesisOption.BlendLikelihoods:
+                BlendLikelihoods();
+                break;
+            case ProfileSynthesisOption.ResetAndSynthesize:
+                ClearLikelihoods();
+                AssignLikelihoods();
+                break;
+            case ProfileSynthesisOption.ReverseLikelihoods:
+                ReverseLikelihoods();
+                break;
+            case ProfileSynthesisOption.RandomLikelihoods:
+                RandomizeLikelihoods();
+                break;
+            case ProfileSynthesisOption.RepairLikelihoods:
+                RepairLikelihoods();
+                break;
+            default:
+                assert(false, "unexpected profile synthesis option");
+                break;
+        }
+
+        // Cyclic-probability computation overwrites the entry weight if it is a loop header.
+        var entryBlockWeight = _entryBlock.bbWeight;
+        ComputeCyclicProbabilities();
+        AssignInputWeights(entryBlockWeight);
+        ComputeBlockWeights();
+
+        // Approximate profiles are progressively blended toward flatter synthetic
+        // likelihoods, reducing the high loop gains that hinder convergence.
+        var retries = 0;
+        while ((option != ProfileSynthesisOption.RetainLikelihoods) && _approximate && (retries < maxRepairRetries))
+        {
+            JITDUMP($"\n\n[{retries}] Retrying reconstruction with blend factor {FMT_WT(_blendFactor)}, because {(_cappedCyclicProbabilities != 0 ? "capped cyclic probabilities" : "solver failed to converge")}\n");
+            _approximate = false;
+            _overflow = false;
+            _cappedCyclicProbabilities = 0;
+            entryBlockWeight = _entryBlock.bbWeight;
+
+            BlendLikelihoods();
+            ComputeCyclicProbabilities();
+            AssignInputWeights(entryBlockWeight);
+            ComputeBlockWeights();
+
+            var nextBlendFactor = blendFactorGrowthRate * _blendFactor;
+            _blendFactor = nextBlendFactor < 1.0 ? nextBlendFactor : 1.0;
+            _loopExitLikelihood *= 0.9;
+            _loopBackLikelihood *= 0.9;
+            _returnLikelihood *= 1.05;
+            retries++;
+        }
+
+        var hadPgoWeights = _comp.fgPgoHaveWeights;
+        var newSource = ICorJitInfo.PgoSource.Synthesis;
+        if (option == ProfileSynthesisOption.RepairLikelihoods)
+        {
+            newSource = _comp.fgPgoSource;
+        }
+        else if (hadPgoWeights && (option == ProfileSynthesisOption.BlendLikelihoods))
+        {
+            newSource = ICorJitInfo.PgoSource.Blend;
+        }
+        _comp.fgPgoHaveWeights = true;
+        _comp.fgPgoSource = newSource;
+        _comp.fgPgoSynthesized = true;
+        _comp.fgPgoConsistent = !_approximate;
+
+        // Single-edge methods are usually uninstrumented. Exclude methods where
+        // pretending to have PGO would give an excessive inlining boost.
+        var preferSize = _comp.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_SIZE_OPT);
+        var isCctor = (_comp.info.compFlags & FLG_CCTOR) == FLG_CCTOR;
+        _comp.fgPgoSingleEdge = !isCctor && !preferSize && (_comp.opts.callInstrCount < 10);
+        if (_comp.fgPgoSingleEdge)
+        {
+            foreach (var block in _comp.Blocks)
+            {
+                if (block.NumSucc > 1)
+                {
+                    _comp.fgPgoSingleEdge = false;
+                    break;
+                }
+            }
+        }
+        _comp.Metrics.ProfileSynthesizedBlendedOrRepaired++;
+        if (_approximate)
+        {
+            JITDUMP("Profile is inconsistent. Bypassing post-phase consistency checks.\n");
+            if (!_comp.fgImportDone)
+            {
+                _comp.Metrics.ProfileInconsistentInitially++;
+            }
+        }
+
+        if (_comp.fgIsUsingProfileWeights && !_comp.compIsForInlining)
+        {
+            var entryWeight = _entryBlock.bbWeight;
+            foreach (var edge in _entryBlock.PredEdges)
+            {
+                entryWeight -= edge.LikelyWeight;
+            }
+            _comp.fgCalledCount = entryWeight > BB_ZERO_WEIGHT ? entryWeight : BB_ZERO_WEIGHT;
+            JITDUMP($"fgCalledCount is {FMT_WT(_comp.fgCalledCount)}\n");
+        }
+
+#if DEBUG
+        // Invalid IL can satisfy the pre-import single-pass convergence criterion
+        // without conserving flow. Defer asserting until import validates the IL.
+        _comp.fgPgoDeferredInconsistency = false;
+        if (_comp.fgPgoConsistent)
+        {
+            var isConsistent = _comp.fgDebugCheckProfileWeights(ProfileChecks.CHECK_LIKELY | ProfileChecks.CHECK_ALL_BLOCKS);
+            if (!isConsistent && !_comp.fgImportDone)
+            {
+                _comp.fgPgoDeferredInconsistency = true;
+                JITDUMP("Will defer asserting until after importation\n");
+            }
+        }
+#endif
     }
 
     public static PhaseStatus AdjustThrowEdgeLikelihoods(Compiler compiler)
@@ -646,6 +784,71 @@ public sealed class ProfileSynthesis
             else
             {
                 JITDUMP("Exit weight comparable or above 1.0, leaving as is\n");
+            }
+        }
+    }
+
+    private unsafe void AssignInputWeights(weight_t entryBlockWeight)
+    {
+        var entryWeight = entryBlockWeight;
+        var loop = _loops.GetLoopByHeader(_entryBlock);
+        if (loop is not null)
+        {
+            var cyclicProbability = _cyclicProbabilities[loop.Index];
+            assert(cyclicProbability != BB_ZERO_WEIGHT);
+            entryWeight /= cyclicProbability;
+        }
+        if (Compiler.fgProfileWeightsEqual(entryWeight, BB_ZERO_WEIGHT, epsilon))
+        {
+            entryWeight = BB_UNITY_WEIGHT;
+        }
+        foreach (var block in _comp.Blocks)
+        {
+            block.setBBProfileWeight(0);
+        }
+        JITDUMP($"Synthesis: entry {FMT_BB(_entryBlock.bbNum)} has input weight {FMT_WT(entryWeight)}\n");
+        _entryBlock.setBBProfileWeight(entryWeight);
+
+        var ehWeight = exceptionWeight;
+#if DEBUG
+        if (JitConfig.JitSynthesisExceptionWeight is not null)
+        {
+            ConfigDoubleArray exceptionWeights = default;
+            exceptionWeights.EnsureInit(JitConfig.JitSynthesisExceptionWeight);
+            if (exceptionWeights.GetLength() == 0)
+            {
+                throw new FormatException("JitSynthesisExceptionWeight requires at least one value.");
+            }
+            var newFactor = exceptionWeights.GetData()[0];
+            if ((newFactor >= 0) && (newFactor <= 1.0))
+            {
+                ehWeight = newFactor;
+            }
+        }
+#endif
+        JITDUMP($"Synthesis: exception weight {FMT_WT(ehWeight)}\n");
+#if DEBUG
+        if (ehWeight == 0)
+        {
+            return;
+        }
+#endif
+        if (!_comp.compIsForInlining)
+        {
+            // Inlinees share the caller's EH table; only this method's reachable
+            // try regions contribute exceptional input.
+            for (var i = 0; i < _comp.compHndBBtabCount; i++)
+            {
+                ref var handler = ref _comp.compHndBBtab[i];
+                if (!_dfsTree.Contains(handler.ebdTryBeg))
+                {
+                    continue;
+                }
+                if (handler.HasFilter)
+                {
+                    handler.ebdFilter.setBBProfileWeight(ehWeight);
+                }
+                handler.ebdHndBeg.setBBProfileWeight(ehWeight);
             }
         }
     }

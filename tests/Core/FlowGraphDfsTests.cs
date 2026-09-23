@@ -538,10 +538,7 @@ internal static unsafe class FlowGraphDfsTests
 
     private static FlowGraphDfsTree ComputeDfs(Compiler compiler, bool useProfile)
     {
-        var method = typeof(Compiler).GetMethod("fgComputeDfs", BindingFlags.Instance | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("fgComputeDfs was not found.");
-        return method.Invoke(compiler, [useProfile]) as FlowGraphDfsTree
-            ?? throw new InvalidOperationException("fgComputeDfs did not return a DFS tree.");
+        return compiler.fgComputeDfs(useProfile);
     }
 
     private static object? InvokePrivate(Compiler compiler, string name, params object[] args)
