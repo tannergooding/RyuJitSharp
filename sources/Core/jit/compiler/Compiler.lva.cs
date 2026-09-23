@@ -132,6 +132,8 @@ public partial class Compiler
     /// <remarks>The helper-based tailcall mechanism passes the address of the return address to a runtime helper where it is used to detect tail-call chains.</remarks>
     public int lvaRetAddrVar = BAD_VAR_NUM;
 
+    public int lvaSecretStubArg = BAD_VAR_NUM;
+
 #if SWIFT_SUPPORT
     public int lvaSwiftSelfArg = BAD_VAR_NUM;
 
@@ -317,6 +319,10 @@ public partial class Compiler
             {
                 wellKnownArg = WellKnownArg.RetBuffer;
             }
+            else if (i == lvaSecretStubArg)
+            {
+                wellKnownArg = WellKnownArg.SecretStubParam;
+            }
 #if SWIFT_SUPPORT
             else if (i == lvaSwiftSelfArg)
             {
@@ -370,7 +376,7 @@ public partial class Compiler
 
                 if (clsHnd != NO_CLASS_HANDLE)
                 {
-                    info.compCompHnd->getWasmLowering(clsHnd);
+                    eeRunExtraSuperPmiQueries(() => info.compCompHnd->getWasmLowering(clsHnd));
                 }
             }
 #endif
@@ -1984,6 +1990,21 @@ public partial class Compiler
             var corInfoType = info.compCompHnd->getArgType(&info.compMethodInfo->args, argLst, &typeHnd);
             varDsc.lvIsParam = true;
 
+            if ((corInfoType & CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT) is not 0)
+            {
+                if (strip(corInfoType) is not CORINFO_TYPE_NATIVEINT)
+                {
+                    BADCODE("SecretStubArgument modifier must be applied to a native int parameter");
+                }
+
+                if (lvaSecretStubArg is not BAD_VAR_NUM)
+                {
+                    BADCODE("Duplicate SecretStubArgument modifier");
+                }
+
+                lvaSecretStubArg = curVarNum;
+            }
+
 #if TARGET_X86 && FEATURE_IJW
             if ((corInfoType & CORINFO_TYPE_MOD_COPY_WITH_HELPER) is not 0)
             {
@@ -2775,7 +2796,7 @@ public partial class Compiler
         GetHfaType(structHandle);
 #endif
 
-        QueryLayout(this, structHandle);
+        eeRunExtraSuperPmiQueries(() => QueryLayout(this, structHandle));
 
         // Bypass fetching instance fields of ref classes for now,
         // as it requires traversing the class hierarchy.

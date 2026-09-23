@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -15,6 +16,7 @@ public partial class Globals
 {
     internal static volatile StreamWriter? s_jitstdout;
 
+    [SuppressMessage("Reliability", "CA2000", Justification = "Standard output is intentionally left open for the process lifetime.")]
     private static unsafe StreamWriter jitstdoutInit()
     {
         var jitStdOutFile = JitConfig.JitStdOutFile;
@@ -23,16 +25,14 @@ public partial class Globals
 
         if (jitStdOutFile is not null)
         {
-            jitstdout = new StreamWriter(Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(jitStdOutFile)), append: true);
+            jitstdout = new JitTextWriter(Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(jitStdOutFile)), append: true);
         }
         else
         {
-            jitstdout = new StreamWriter(Console.OpenStandardOutput(), leaveOpen: true);
+            jitstdout = new JitTextWriter(Console.OpenStandardOutput(), leaveOpen: true);
         }
 
         jitstdout.AutoFlush = true;
-        jitstdout.NewLine = "\n";
-
         var observed = Interlocked.CompareExchange(ref s_jitstdout, jitstdout, null);
 
         if (observed is not null)

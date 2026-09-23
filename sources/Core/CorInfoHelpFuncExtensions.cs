@@ -99,6 +99,7 @@ public static class CorInfoHelpFuncExtensions
         MutatesHeap | IsNoGC,                       // CORINFO_HELP_ASSIGN_REF
         MutatesHeap | IsNoGC,                       // CORINFO_HELP_CHECKED_ASSIGN_REF
         MutatesHeap,                                // CORINFO_HELP_BULK_WRITEBARRIER
+        MutatesHeap | IsNoGC,                       // CORINFO_HELP_BULK_WRITEBARRIER_SMALL
         MutatesHeap,                                // CORINFO_HELP_GETFIELDADDR
         MutatesHeap,                                // CORINFO_HELP_GETSTATICFIELDADDR
         IsPure | NonNullReturn | MayRunCctor,       // CORINFO_HELP_GETSTATICFIELDADDR_TLS
@@ -131,7 +132,6 @@ public static class CorInfoHelpFuncExtensions
         MutatesHeap | IsNoGC,                       // CORINFO_HELP_PROF_FCN_ENTER
         MutatesHeap | IsNoGC,                       // CORINFO_HELP_PROF_FCN_LEAVE
         MutatesHeap | IsNoGC,                       // CORINFO_HELP_PROF_FCN_TAILCALL
-        MutatesHeap,                                // CORINFO_HELP_PINVOKE_CALLI
         MutatesHeap | IsNoGC,                       // CORINFO_HELP_TAILCALL
         IsPure,                                     // CORINFO_HELP_GETCURRENTMANAGEDTHREADID
         IsNoGC,                                     // CORINFO_HELP_INIT_PINVOKE_FRAME
@@ -142,11 +142,9 @@ public static class CorInfoHelpFuncExtensions
         IsPure | NonNullReturn,                     // CORINFO_HELP_RUNTIMEHANDLE_METHOD
         IsPure | NonNullReturn,                     // CORINFO_HELP_RUNTIMEHANDLE_CLASS
         IsPure,                                     // CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE
-        IsPure,                                     // CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL
         MutatesHeap,                                // CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD
         MutatesHeap,                                // CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD
         MutatesHeap,                                // CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE
-        MutatesHeap,                                // CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL
         IsPure,                                     // CORINFO_HELP_VIRTUAL_FUNC_PTR
         IsAllocator | NonNullReturn,                // CORINFO_HELP_READYTORUN_NEW
         IsAllocator | NonNullReturn,                // CORINFO_HELP_READYTORUN_NEWARR_1
@@ -186,11 +184,13 @@ public static class CorInfoHelpFuncExtensions
         MutatesHeap,                                // CORINFO_HELP_THROW_ENTRYPOINT_NOT_FOUND_EXCEPTION
         None,                                       // CORINFO_HELP_JIT_PINVOKE_BEGIN
         None,                                       // CORINFO_HELP_JIT_PINVOKE_END
+        None,                                       // CORINFO_HELP_JIT_RESUME_AFTER_CATCH
         IsNoGC,                                     // CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER
         IsNoGC,                                     // CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS
         None,                                       // CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT
         MutatesHeap,                                // CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS
         IsPure,                                     // CORINFO_HELP_GVMLOOKUP_FOR_SLOT
+        MutatesHeap,                                // CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT
         MutatesHeap,                                // CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT
         MutatesHeap | IsNoGC,                       // CORINFO_HELP_STACK_PROBE
         MutatesHeap,                                // CORINFO_HELP_PATCHPOINT
@@ -297,6 +297,7 @@ public static class CorInfoHelpFuncExtensions
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_ASSIGN_REF
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_CHECKED_ASSIGN_REF
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_BULK_WRITEBARRIER
+        ExceptionSetFlags.UnknownException,         // CORINFO_HELP_BULK_WRITEBARRIER_SMALL
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_GETFIELDADDR
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_GETSTATICFIELDADDR
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_GETSTATICFIELDADDR_TLS
@@ -329,7 +330,6 @@ public static class CorInfoHelpFuncExtensions
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_PROF_FCN_ENTER
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_PROF_FCN_LEAVE
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_PROF_FCN_TAILCALL
-        ExceptionSetFlags.UnknownException,         // CORINFO_HELP_PINVOKE_CALLI
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_TAILCALL
         ExceptionSetFlags.None,                     // CORINFO_HELP_GETCURRENTMANAGEDTHREADID
         ExceptionSetFlags.None,                     // CORINFO_HELP_INIT_PINVOKE_FRAME
@@ -340,11 +340,9 @@ public static class CorInfoHelpFuncExtensions
         ExceptionSetFlags.None,                     // CORINFO_HELP_RUNTIMEHANDLE_METHOD
         ExceptionSetFlags.None,                     // CORINFO_HELP_RUNTIMEHANDLE_CLASS
         ExceptionSetFlags.None,                     // CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE
-        ExceptionSetFlags.None,                     // CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE
-        ExceptionSetFlags.UnknownException,         // CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL
         ExceptionSetFlags.NullReferenceException,   // CORINFO_HELP_VIRTUAL_FUNC_PTR
         ExceptionSetFlags.None,                     // CORINFO_HELP_READYTORUN_NEW
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_READYTORUN_NEWARR_1
@@ -384,11 +382,13 @@ public static class CorInfoHelpFuncExtensions
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_THROW_ENTRYPOINT_NOT_FOUND_EXCEPTION
         ExceptionSetFlags.None,                     // CORINFO_HELP_JIT_PINVOKE_BEGIN
         ExceptionSetFlags.None,                     // CORINFO_HELP_JIT_PINVOKE_END
+        ExceptionSetFlags.None,                     // CORINFO_HELP_JIT_RESUME_AFTER_CATCH
         ExceptionSetFlags.None,                     // CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER
         ExceptionSetFlags.None,                     // CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS
         ExceptionSetFlags.None,                     // CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS
         ExceptionSetFlags.NullReferenceException,   // CORINFO_HELP_GVMLOOKUP_FOR_SLOT
+        ExceptionSetFlags.UnknownException,         // CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_STACK_PROBE
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_PATCHPOINT

@@ -8,6 +8,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -521,7 +522,6 @@ public partial class Globals
         var sz = opcode.Size;
         var argKind = opcode.ArgKind;
         var name = opcode.Name;
-        var totalSize = (IL_OFFSET)(opcodePtr - startOpcodePtr) + sz;
         var baseOffs = (IL_OFFSET)(opcodePtr - codeAddr) + sz;
         var operand = "";
 
@@ -541,7 +541,7 @@ public partial class Globals
 
             case ShortInlineI:
             {
-                var iOp = unchecked((sbyte)(opcodePtr[0]));
+                long iOp = unchecked((sbyte)(opcodePtr[0]));
                 operand = $" 0x{iOp:X}";
                 break;
             }
@@ -561,7 +561,7 @@ public partial class Globals
             case InlineSig:
             case InlineI:
             {
-                var iOp = BinaryPrimitives.ReadInt32LittleEndian(new ReadOnlySpan<byte>(opcodePtr, 4));
+                long iOp = BinaryPrimitives.ReadInt32LittleEndian(new ReadOnlySpan<byte>(opcodePtr, 4));
                 operand = $" 0x{iOp:X}";
                 break;
             }
@@ -575,29 +575,29 @@ public partial class Globals
 
             case ShortInlineR:
             {
-                var dOp = BinaryPrimitives.ReadSingleLittleEndian(new ReadOnlySpan<byte>(opcodePtr, 4));
-                operand = $" {dOp}";
+                double dOp = BinaryPrimitives.ReadSingleLittleEndian(new ReadOnlySpan<byte>(opcodePtr, 4));
+                operand = $" {formatILFloat(dOp)}";
                 break;
             }
 
             case InlineR:
             {
                 var dOp = BinaryPrimitives.ReadDoubleLittleEndian(new ReadOnlySpan<byte>(opcodePtr, 8));
-                operand = $" {dOp}";
+                operand = $" {formatILFloat(dOp)}";
                 break;
             }
 
             case ShortInlineBrTarget:
             {
                 var jOp = unchecked((sbyte)(opcodePtr[0]));
-                operand = $" {jOp} (IL_{baseOffs + jOp:x4})";
+                operand = FormattableString.Invariant($" {jOp} (IL_{baseOffs + jOp:x4})");
                 break;
             }
 
             case InlineBrTarget:
             {
                 var jOp = BinaryPrimitives.ReadInt32LittleEndian(new ReadOnlySpan<byte>(opcodePtr, 4));
-                operand = $" {jOp} (IL_{baseOffs + jOp:x4})";
+                operand = FormattableString.Invariant($" {jOp} (IL_{baseOffs + jOp:x4})");
                 break;
             }
 
@@ -624,6 +624,7 @@ public partial class Globals
             }
         }
 
+        var totalSize = (IL_OFFSET)(opcodePtr - startOpcodePtr) + sz;
         dumpILBytes(startOpcodePtr, totalSize, ALIGN_WIDTH);
         jitprintf($" {name,-12}{operand}");
 
@@ -631,6 +632,38 @@ public partial class Globals
 
         jitprintf("\n");
         return (IL_OFFSET)(opcodePtr - startOpcodePtr);
+    }
+
+    private static string formatILFloat(double value)
+    {
+        // Match dumpSingleInstr's %f, including the Windows CRT's NaN encodings.
+        if (double.IsFinite(value))
+        {
+            return value.ToString("F6", CultureInfo.InvariantCulture);
+        }
+
+        var sign = double.IsNegative(value) ? "-" : "";
+
+        if (double.IsInfinity(value))
+        {
+            return sign + "inf";
+        }
+
+#if HOST_WINDOWS
+        var bits = BitConverter.DoubleToUInt64Bits(value);
+
+        if (bits == 0xFFF8000000000000)
+        {
+            return "-nan(ind)";
+        }
+
+        if ((bits & 0x0008000000000000) == 0)
+        {
+            return sign + "nan(snan)";
+        }
+#endif
+
+        return sign + "nan";
     }
 #endif
 

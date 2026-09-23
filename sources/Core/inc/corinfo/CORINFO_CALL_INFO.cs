@@ -56,8 +56,6 @@ public struct CORINFO_CALL_INFO
 
     public CORINFO_CONST_LOOKUP instParamLookup;
 
-    public bool wrapperDelegateInvoke;
-
     [StructLayout(LayoutKind.Explicit)]
     private struct _Anonymous_e__Union
     {

@@ -13,15 +13,11 @@ public sealed class InlineCandidateInfo : HandleHistogramProfileCandidateInfo
 
     public unsafe CORINFO_METHOD_HANDLE guardedMethodHandle;
 
-    public unsafe CORINFO_METHOD_HANDLE guardedMethodUnboxedEntryHandle;
-
     public CORINFO_LOOKUP guardedMethodInstParamLookup;
 
-#if FEATURE_READYTORUN
     public CORINFO_RESOLVED_TOKEN guardedMethodResolvedToken;
 
     public CORINFO_RESOLVED_TOKEN guardedMethodUnboxedResolvedToken;
-#endif
 
     public int likelihood;
 

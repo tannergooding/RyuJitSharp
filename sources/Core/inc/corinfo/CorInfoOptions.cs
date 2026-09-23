@@ -33,4 +33,7 @@ public enum CorInfoOptions
 
     /// <summary>Runtime async method must save and restore contexts</summary>
     CORINFO_ASYNC_SAVE_CONTEXTS = 0x00000200,
+
+    /// <summary>This is an async version whose IL belongs to a non-async method.</summary>
+    CORINFO_ASYNC_VERSION = 0x00000400,
 }

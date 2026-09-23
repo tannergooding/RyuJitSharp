@@ -713,11 +713,19 @@ public enum HandleKindIndex
             var insT9 = parts[12].AsSpan().Trim();
             var insT10 = parts[13].AsSpan().Trim();
 
-            Debug.Assert(insT1[0] == '{');
-            Debug.Assert(insT10[^1] == '}');
+            var hasOpeningBrace = insT1.StartsWith("{", StringComparison.Ordinal);
+            var hasClosingBrace = insT10.EndsWith("}", StringComparison.Ordinal);
 
-            insT1 = insT1[1..];
-            insT10 = insT10[..^1];
+            if (hasOpeningBrace != hasClosingBrace)
+            {
+                throw new InvalidDataException($"Invalid instruction mapping format: '{line}'");
+            }
+
+            if (hasOpeningBrace)
+            {
+                insT1 = insT1[1..];
+                insT10 = insT10[..^1];
+            }
 
             _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {insT1}, {insT2}, {insT3}, {insT4}, {insT5}, {insT6}, {insT7}, {insT8}, {insT9}, {insT10}, // NI_{isa}_{name}");
         });
@@ -2674,10 +2682,10 @@ public static partial class var_typesExtensions
         });
 
         var builder2 = ProcessMacroBasedFile(@"Inputs\valuenumfuncs.h", "ValueNumFuncDef(", (builder, inputFile, line, prefix, parts) => {
-            if (line.Equals("#include \"hwintrinsiclistxarch.h\"", StringComparison.Ordinal))
+            if (line.Equals("#include \"hwintrinsiclist.h\"", StringComparison.Ordinal))
             {
-                var xarchBuilder = ProcessHWIntrinsicListXarch((builder, inputFile, line, prefix, parts) => {
-                    if (parts.Length != 18)
+                var hwiBuilder = ProcessHWIntrinsicList((builder, inputFile, line, prefix, parts) => {
+                    if (parts.Length is not 16 and not 18)
                     {
                         throw new InvalidDataException($"Invalid line format: '{line}'");
                     }
@@ -2688,24 +2696,7 @@ public static partial class var_typesExtensions
                     _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    VNF_HWI_{isa}_{name},");
                 });
 
-                _ = builder.Append(xarchBuilder);
-                return;
-            }
-            else if (line.Equals("#include \"hwintrinsiclistarm64.h\"", StringComparison.Ordinal))
-            {
-                var arm64Builder = ProcessHWIntrinsicListArm64((builder, inputFile, line, prefix, parts) => {
-                    if (parts.Length != 16)
-                    {
-                        throw new InvalidDataException($"Invalid line format: '{line}'");
-                    }
-
-                    var isa = parts[0].AsSpan().Trim();
-                    var name = parts[1].AsSpan().Trim();
-
-                    _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    VNF_HWI_{isa}_{name},");
-                });
-
-                _ = builder.Append(arm64Builder);
+                _ = builder.Append(hwiBuilder);
                 return;
             }
 
@@ -2759,10 +2750,10 @@ public enum VNFunc
         });
 
         var builder2 = ProcessMacroBasedFile(@"Inputs\valuenumfuncs.h", "ValueNumFuncDef(", (builder, inputFile, line, prefix, parts) => {
-            if (line.Equals("#include \"hwintrinsiclistxarch.h\"", StringComparison.Ordinal))
+            if (line.Equals("#include \"hwintrinsiclist.h\"", StringComparison.Ordinal))
             {
-                var xarchBuilder = ProcessHWIntrinsicListXarch((builder, inputFile, line, prefix, parts) => {
-                    if (parts.Length != 18)
+                var hwiBuilder = ProcessHWIntrinsicList((builder, inputFile, line, prefix, parts) => {
+                    if (parts.Length is not 16 and not 18)
                     {
                         throw new InvalidDataException($"Invalid line format: '{line}'");
                     }
@@ -2770,7 +2761,7 @@ public enum VNFunc
                     var isa = parts[0].AsSpan().Trim();
                     var name = parts[1].AsSpan().Trim();
                     var numArgs = parts[3].AsSpan().Trim();
-                    var flags = parts[17].AsSpan().Trim();
+                    var flags = parts[(parts.Length is 18) ? 17 : 15].AsSpan().Trim();
 
                     var arity = numArgs.Equals("-1", StringComparison.Ordinal) ? "-1" : $"{numArgs} + 1";
                     var commute = flags.Contains("HW_Flag_Commutative", StringComparison.Ordinal) ? "true" : "false";
@@ -2778,29 +2769,7 @@ public enum VNFunc
                     _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        ValueNumStore.GetOpAttribsForFunc(arity: {arity}, commute: {commute}, knownNonNull: false), // VNF_HWI_{isa}_{name}");
                 });
 
-                _ = builder.Append(xarchBuilder);
-                return;
-            }
-            else if (line.Equals("#include \"hwintrinsiclistarm64.h\"", StringComparison.Ordinal))
-            {
-                var arm64Builder = ProcessHWIntrinsicListArm64((builder, inputFile, line, prefix, parts) => {
-                    if (parts.Length != 16)
-                    {
-                        throw new InvalidDataException($"Invalid line format: '{line}'");
-                    }
-
-                    var isa = parts[0].AsSpan().Trim();
-                    var name = parts[1].AsSpan().Trim();
-                    var numArgs = parts[3].AsSpan().Trim();
-                    var flags = parts[15].AsSpan().Trim();
-
-                    var arity = numArgs.Equals("-1", StringComparison.Ordinal) ? "-1" : $"{numArgs} + 1";
-                    var commute = flags.Contains("HW_Flag_Commutative", StringComparison.Ordinal) ? "true" : "false";
-
-                    _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        ValueNumStore.GetOpAttribsForFunc(arity: {arity}, commute: {commute}, knownNonNull: false), // VNF_HWI_{isa}_{name}");
-                });
-
-                _ = builder.Append(arm64Builder);
+                _ = builder.Append(hwiBuilder);
                 return;
             }
 
@@ -2857,6 +2826,9 @@ public static partial class VNFuncExtensions
         var previousTargetArchR2RInsSet = "";
 
         var addedInsSet = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+        var definedArchitectures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var instructionSetsByArchitecture = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+        var vectorInstructionSets = new List<(string Architecture, string Name)>();
 
         foreach (var line in lines)
         {
@@ -2870,21 +2842,83 @@ public static partial class VNFuncExtensions
             var parts = trimmedLine.Split(',');
             var kind = parts[0].Trim();
 
-            if (kind.Equals("instructionset", StringComparison.OrdinalIgnoreCase))
+            if (kind.Equals("definearch", StringComparison.OrdinalIgnoreCase))
             {
-                if (parts.Length != 7)
+                if (parts.Length != 6 || string.IsNullOrWhiteSpace(parts[1]) || string.IsNullOrWhiteSpace(parts[2]))
                 {
                     throw new InvalidDataException($"Invalid line format: '{line}'");
                 }
 
-                var targetArch = parts[1].Trim().ToUpper(CultureInfo.InvariantCulture);
-
-                if (targetArch.Equals("X86", StringComparison.OrdinalIgnoreCase))
+                if (!definedArchitectures.Add(parts[1].Trim()))
                 {
-                    targetArch = "XARCH";
+                    throw new InvalidDataException($"Architecture defined more than once: '{line}'");
                 }
 
+                continue;
+            }
+
+            if (kind.Equals("copyinstructionsets", StringComparison.OrdinalIgnoreCase))
+            {
+                if (parts.Length != 3 || !definedArchitectures.Contains(parts[1].Trim()) || !definedArchitectures.Contains(parts[2].Trim()))
+                {
+                    throw new InvalidDataException($"Invalid line format: '{line}'");
+                }
+
+                continue;
+            }
+
+            if (kind.Equals("instructionsetgroup", StringComparison.OrdinalIgnoreCase))
+            {
+                if (parts.Length != 4 || string.IsNullOrWhiteSpace(parts[1]) || string.IsNullOrWhiteSpace(parts[3]))
+                {
+                    throw new InvalidDataException($"Invalid line format: '{line}'");
+                }
+
+                var architectures = parts[2].Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+                if (architectures.Length is 0)
+                {
+                    throw new InvalidDataException($"Invalid line format: '{line}'");
+                }
+
+                foreach (var architecture in architectures)
+                {
+                    if (!definedArchitectures.Contains(architecture))
+                    {
+                        throw new InvalidDataException($"Undefined architecture in instruction-set group: '{line}'");
+                    }
+                }
+
+                continue;
+            }
+
+            if (kind.Equals("vectorinstructionset", StringComparison.OrdinalIgnoreCase))
+            {
+                if (parts.Length != 3 || !definedArchitectures.Contains(parts[1].Trim()) || string.IsNullOrWhiteSpace(parts[2]))
+                {
+                    throw new InvalidDataException($"Invalid line format: '{line}'");
+                }
+
+                vectorInstructionSets.Add((NormalizeTargetArch(parts[1].Trim()), parts[2].Trim()));
+                continue;
+            }
+
+            if (kind.Equals("instructionset", StringComparison.OrdinalIgnoreCase))
+            {
+                if (parts.Length != 7 || !definedArchitectures.Contains(parts[1].Trim()) || string.IsNullOrWhiteSpace(parts[5]))
+                {
+                    throw new InvalidDataException($"Invalid line format: '{line}'");
+                }
+
+                var targetArch = NormalizeTargetArch(parts[1].Trim());
                 var name = parts[5].Trim();
+
+                if (!instructionSetsByArchitecture.TryGetValue(targetArch, out var instructionSets))
+                {
+                    instructionSets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    instructionSetsByArchitecture[targetArch] = instructionSets;
+                }
+                _ = instructionSets.Add(name);
 
                 if (!addedInsSet.TryGetValue(targetArch, out var addedInsSetForTargetArch))
                 {
@@ -2901,11 +2935,12 @@ public static partial class VNFuncExtensions
                     _ = insSetToStringBuilder.AppendLine(CultureInfo.InvariantCulture, $"            InstructionSet_{name} => \"{name}\",");
                 }
 
-                var r2rName = parts[2].Trim();
+                // Prefer the canonical ReadyToRun name when the descriptor also provides an xarch alias.
+                var r2rName = parts[3].Trim();
 
                 if (string.IsNullOrEmpty(r2rName))
                 {
-                    r2rName = parts[3].Trim();
+                    r2rName = parts[2].Trim();
                 }
 
                 var r2rValue = parts[4].Trim();
@@ -2923,7 +2958,7 @@ public static partial class VNFuncExtensions
 
             if (kind.Equals("instructionset64bit", StringComparison.OrdinalIgnoreCase))
             {
-                if (parts.Length != 3)
+                if (parts.Length != 3 || !definedArchitectures.Contains(parts[1].Trim()) || string.IsNullOrWhiteSpace(parts[2]))
                 {
                     throw new InvalidDataException($"Invalid line format: '{line}'");
                 }
@@ -2950,7 +2985,7 @@ public static partial class VNFuncExtensions
                     _ = insSetFlagsBuilder.AppendLine();
                 }
                 _ = insSetFlagsBuilder.AppendLine(CultureInfo.InvariantCulture, $$"""
-        if (HasInstructionSet(InstructionSet_{{name}}))                    
+        if (HasInstructionSet(InstructionSet_{{name}}))
         {
             AddInstructionSet(InstructionSet_{{name}}_{{targetArchSuffix}});
         }
@@ -2980,18 +3015,13 @@ public static partial class VNFuncExtensions
 
             if (kind.Equals("implication", StringComparison.OrdinalIgnoreCase))
             {
-                if (parts.Length != 4)
+                if (parts.Length != 4 || !definedArchitectures.Contains(parts[1].Trim()) ||
+                    string.IsNullOrWhiteSpace(parts[2]) || string.IsNullOrWhiteSpace(parts[3]))
                 {
                     throw new InvalidDataException($"Invalid line format: '{line}'");
                 }
 
-                var targetArch = parts[1].Trim().ToUpper(CultureInfo.InvariantCulture);
-
-                if (targetArch.Equals("X86", StringComparison.OrdinalIgnoreCase))
-                {
-                    targetArch = "XARCH";
-                }
-
+                var targetArch = NormalizeTargetArch(parts[1].Trim());
                 var name = parts[2].Trim();
                 var dependency = parts[3].Trim();
 
@@ -3000,13 +3030,23 @@ public static partial class VNFuncExtensions
                     _ = ensureValidBuilder.AppendLine();
                 }
                 _ = ensureValidBuilder.AppendLine(CultureInfo.InvariantCulture, $$"""
-            if (resultFlags.HasInstructionSet(InstructionSet_{{name}}) && !resultFlags.HasInstructionSet(InstructionSet_{{dependency}}))        
+            if (resultFlags.HasInstructionSet(InstructionSet_{{name}}) && !resultFlags.HasInstructionSet(InstructionSet_{{dependency}}))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_{{name}});
             }
 """);
 
                 continue;
+            }
+
+            throw new InvalidDataException($"Unsupported instruction-set descriptor '{kind}': '{line}'");
+        }
+
+        foreach (var (architecture, name) in vectorInstructionSets)
+        {
+            if (!instructionSetsByArchitecture.TryGetValue(architecture, out var instructionSets) || !instructionSets.Contains(name))
+            {
+                throw new InvalidDataException($"Vector instruction set '{name}' is not defined for '{architecture}'");
             }
         }
 
@@ -3034,6 +3074,7 @@ public enum CORINFO_InstructionSet
 
 {{insSetBuilder}}
 
+    InstructionSet_Vector = 126,
     InstructionSet_NONE = 127,
 }
 """);
@@ -3128,7 +3169,7 @@ public partial class Globals
                 {
                     _ = builder.AppendLine(CultureInfo.InvariantCulture, $$"""
 #endif
-                        
+
 #if TARGET_{{targetArch}}
 """);
                 }
@@ -3138,19 +3179,42 @@ public partial class Globals
             }
             return appended;
         }
+
+        static string NormalizeTargetArch(string targetArch)
+        {
+            var normalizedTargetArch = targetArch.ToUpperInvariant();
+
+            if (normalizedTargetArch is "X86" or "X64")
+            {
+                return "XARCH";
+            }
+
+            return normalizedTargetArch;
+        }
     }
 
     private static StringBuilder ProcessHWIntrinsicList(Action<StringBuilder, string, string, string, string[]> callback)
-    {
-        var xarchBuilder = ProcessHWIntrinsicListXarch(callback);
-        var arm64Builder = ProcessHWIntrinsicListArm64(callback);
-
-        return new StringBuilder($"""
-#if TARGET_XARCH
-{xarchBuilder}#elif TARGET_ARM64
-{arm64Builder}#endif
-""");
-    }
+        => ProcessMacroBasedFile(@"Inputs\hwintrinsiclist.h", "HARDWARE_INTRINSIC(", (builder, inputFile, line, prefix, parts) => {
+            if (line.Equals("#include \"hwintrinsiclistxarch.h\"", StringComparison.Ordinal))
+            {
+                var xarchBuilder = ProcessHWIntrinsicListXarch(callback);
+                _ = builder.Append(xarchBuilder);
+            }
+            else if (line.Equals("#include \"hwintrinsiclistarm64.h\"", StringComparison.Ordinal))
+            {
+                var arm64Builder = ProcessHWIntrinsicListArm64(callback);
+                _ = builder.Append(arm64Builder);
+            }
+            else if (line.Equals("#include \"hwintrinsiclistwasm.h\"", StringComparison.Ordinal))
+            {
+                var wasmBuilder = ProcessMacroBasedFile(@"Inputs\hwintrinsiclistwasm.h", "HARDWARE_INTRINSIC(", callback);
+                _ = builder.Append(wasmBuilder);
+            }
+            else
+            {
+                callback(builder, inputFile, line, prefix, parts);
+            }
+        });
 
     private static StringBuilder ProcessInstrs(Action<StringBuilder, string, string, string, string[]> callback) => ProcessMacroBasedFile(@"Inputs\instrs.h", "HARDWARE_INTRINSIC(", (builder, inputFile, line, prefix, parts) => {
         if (line.Equals("#include \"instrsxarch.h\"", StringComparison.Ordinal))

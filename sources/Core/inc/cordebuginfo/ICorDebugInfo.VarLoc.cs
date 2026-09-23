@@ -40,9 +40,6 @@ public partial struct ICorDebugInfo
         [UnscopedRef]
         public ref vlFixedVarArg vlFixedVarArg => ref _anonymous.vlFixedVarArg;
 
-        [UnscopedRef]
-        public ref vlMemory vlMemory => ref _anonymous.vlMemory;
-
         [StructLayout(LayoutKind.Explicit)]
         private struct _Anonymous_e__Union
         {
@@ -70,8 +67,6 @@ public partial struct ICorDebugInfo
             [FieldOffset(0)]
             public vlFixedVarArg vlFixedVarArg;
 
-            [FieldOffset(0)]
-            public vlMemory vlMemory;
         }
     }
 }

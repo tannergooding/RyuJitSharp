@@ -84,6 +84,7 @@ public sealed partial class CallArg
         WellKnownArg.ThisPointer => true,
         WellKnownArg.ShiftLow => true,
         WellKnownArg.ShiftHigh => true,
+        WellKnownArg.SecretStubParam => true,
         _ => false,
     };
 

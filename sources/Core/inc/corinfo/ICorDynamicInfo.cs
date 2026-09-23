@@ -22,6 +22,8 @@ public unsafe struct ICorDynamicInfo : ICorDynamicInfo.Interface
 
     public bool isIntrinsic(CORINFO_METHOD_HANDLE ftn) => lpVtbl->Base.isIntrinsic((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), ftn);
 
+    public bool canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn) => lpVtbl->Base.canValueClassInstancePointerEscape((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), ftn);
+
     public bool notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn) => lpVtbl->Base.notifyMethodInfoUsage((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), ftn);
 
     public CorInfoFlag getMethodAttribs(CORINFO_METHOD_HANDLE ftn) => lpVtbl->Base.getMethodAttribs((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), ftn);
@@ -53,10 +55,6 @@ public unsafe struct ICorDynamicInfo : ICorDynamicInfo.Interface
     public void getMethodVTableOffset(CORINFO_METHOD_HANDLE method, int* offsetOfIndirection, int* offsetAfterIndirection, bool* isRelative) => lpVtbl->Base.getMethodVTableOffset((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), method, offsetOfIndirection, offsetAfterIndirection, isRelative);
 
     public bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO* info) => lpVtbl->Base.resolveVirtualMethod((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), info);
-
-    public CORINFO_METHOD_HANDLE getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg) => lpVtbl->Base.getUnboxedEntry((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), ftn, requiresInstMethodTableArg);
-
-    public CORINFO_METHOD_HANDLE getInstantiatedEntry(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_HANDLE* methodArg, CORINFO_CLASS_HANDLE* classArg) => lpVtbl->Base.getInstantiatedEntry((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), ftn, methodArg, classArg);
 
     public CORINFO_METHOD_HANDLE getAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk) => lpVtbl->Base.getAsyncOtherVariant((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), ftn, variantIsThunk);
 
@@ -288,6 +286,10 @@ public unsafe struct ICorDynamicInfo : ICorDynamicInfo.Interface
 
     public void getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut) => lpVtbl->Base.getAsyncInfo((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), pAsyncInfoOut);
 
+    public CORINFO_METHOD_HANDLE getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg) => lpVtbl->Base.getAwaitReturnCall((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), callerHandle, contextHandle, instArg);
+
+    public CORINFO_METHOD_HANDLE getAwaitAwaiterInContinuationCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isUnsafe, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg) => lpVtbl->Base.getAwaitAwaiterInContinuationCall((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), callerHandle, pResolvedToken, isUnsafe, contextHandle, instArg);
+
     //
     // Diagnostic methods
     //
@@ -307,6 +309,10 @@ public unsafe struct ICorDynamicInfo : ICorDynamicInfo.Interface
     public void getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering) => lpVtbl->Base.getFpStructLowering((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), structHnd, pLowering);
 
     public CorInfoWasmType getWasmLowering(CORINFO_CLASS_HANDLE structHnd) => lpVtbl->Base.getWasmLowering((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), structHnd);
+
+    public uint getAddressAlignment(void* address) => lpVtbl->Base.getAddressAlignment((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), address);
+
+    public void getWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut) => lpVtbl->Base.getWasmWellKnownGlobals((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), pWellKnownGlobalsOut);
 
     //
     // ICorDynamicInfo
@@ -335,8 +341,6 @@ public unsafe struct ICorDynamicInfo : ICorDynamicInfo.Interface
     public void getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind) => lpVtbl->getLocationOfThisType((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), context, pLookupKind);
 
     public void getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup) => lpVtbl->getAddressOfPInvokeTarget((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), method, pLookup);
-
-    public void* GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection = null) => lpVtbl->GetCookieForPInvokeCalliSig((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), szMetaSig, ppIndirection);
 
     public void* GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig) => lpVtbl->GetCookieForInterpreterCalliSig((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), szMetaSig);
 
@@ -450,10 +454,6 @@ public unsafe struct ICorDynamicInfo : ICorDynamicInfo.Interface
         // return the address of the PInvoke target. May be a fixup area in the
         // case of late-bound PInvoke calls.
         void getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup);
-
-        // Generate a cookie based on the signature that would needs to be passed
-        // to CORINFO_HELP_PINVOKE_CALLI
-        void* GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection = null);
 
         // Generate a cookie based on the signature to pass to INTOP_CALLI in the interpreter.
         void* GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig);
@@ -574,8 +574,6 @@ public unsafe struct ICorDynamicInfo : ICorDynamicInfo.Interface
         public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, CORINFO_LOOKUP_KIND*, void> getLocationOfThisType;
 
         public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, CORINFO_CONST_LOOKUP*, void> getAddressOfPInvokeTarget;
-
-        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_SIG_INFO*, void**, void*> GetCookieForPInvokeCalliSig;
 
         public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_SIG_INFO*, void*> GetCookieForInterpreterCalliSig;
 

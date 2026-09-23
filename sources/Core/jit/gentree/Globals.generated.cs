@@ -17,7 +17,6 @@ public static partial class Globals
     public const GenTreeFlags GTF_ICON_CONST_PTR = (GenTreeFlags)((int)(HandleKindIndex.GTF_ICON_CONST_PTR + 1) << HANDLE_KIND_INDEX_SHIFT);
     public const GenTreeFlags GTF_ICON_GLOBAL_PTR = (GenTreeFlags)((int)(HandleKindIndex.GTF_ICON_GLOBAL_PTR + 1) << HANDLE_KIND_INDEX_SHIFT);
     public const GenTreeFlags GTF_ICON_VARG_HDL = (GenTreeFlags)((int)(HandleKindIndex.GTF_ICON_VARG_HDL + 1) << HANDLE_KIND_INDEX_SHIFT);
-    public const GenTreeFlags GTF_ICON_PINVKI_HDL = (GenTreeFlags)((int)(HandleKindIndex.GTF_ICON_PINVKI_HDL + 1) << HANDLE_KIND_INDEX_SHIFT);
     public const GenTreeFlags GTF_ICON_TOKEN_HDL = (GenTreeFlags)((int)(HandleKindIndex.GTF_ICON_TOKEN_HDL + 1) << HANDLE_KIND_INDEX_SHIFT);
     public const GenTreeFlags GTF_ICON_TLS_HDL = (GenTreeFlags)((int)(HandleKindIndex.GTF_ICON_TLS_HDL + 1) << HANDLE_KIND_INDEX_SHIFT);
     public const GenTreeFlags GTF_ICON_FTN_ADDR = (GenTreeFlags)((int)(HandleKindIndex.GTF_ICON_FTN_ADDR + 1) << HANDLE_KIND_INDEX_SHIFT);

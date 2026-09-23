@@ -23,13 +23,14 @@ public struct CORINFO_DEVIRTUALIZATION_INFO
     // [Out] results of resolveVirtualMethod.
     // - devirtualizedMethod is set to MethodDesc of devirt'ed method iff we were able to devirtualize.
     //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod is not null)`.
-    // - requiresInstMethodTableArg is set to TRUE if the devirtualized method requires a type handle arg.
-    // - tokenLookupContext is set to the wrapped context handle to use for token lookups after devirtualization.
+    // - tokenLookupContext is set to the wrapped context handle to use for token lookups and the
+    //   instantiation parameter after devirtualization.
     // - details on the computation done by the jit host
-    // - If pResolvedTokenDevirtualizedMethod is not set to null and targeting an R2R image
-    //   use it as the parameter to getCallInfo
+    // - resolvedTokenDevirtualizedMethod is used as the parameter to getCallInfo when targeting an R2R image.
+    // - resolvedTokenDevirtualizedUnboxedMethod is set when devirtualizedMethod is an unboxing stub.
+    //   Its hMethod is the unboxed entry point, and the resolved token is used for R2R getCallInfo.
     // - instParamLookup contains all the information necessary to pass the instantiation parameter for
-    //   the devirtualized method.
+    //   the devirtualized method or its unboxed entry point.
 
     public unsafe CORINFO_METHOD_HANDLE devirtualizedMethod;
 

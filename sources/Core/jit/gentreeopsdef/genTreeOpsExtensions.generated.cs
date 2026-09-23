@@ -27,6 +27,7 @@ public static partial class genTreeOpsExtensions
         GTK_LEAF | GTK_NOVALUE, // GT_GCPOLL
         GTK_LEAF, // GT_ASYNC_RESUME_INFO
         GTK_LEAF, // GT_FTN_ENTRY
+        GTK_LEAF, // GT_CONTINUATION_MEMBER_OFFSET
         GTK_LEAF, // GT_CNS_INT
         GTK_LEAF, // GT_CNS_LNG
         GTK_LEAF, // GT_CNS_DBL
@@ -129,6 +130,7 @@ public static partial class genTreeOpsExtensions
         GTK_BINOP, // GT_XOR_NOT
 #if TARGET_ARM64
         GTK_BINOP, // GT_BFIZ
+        GTK_UNOP | GTK_EXOP, // GT_BFX
 #endif
         GTK_BINOP | GTK_NOVALUE, // GT_CMP
         GTK_BINOP | GTK_NOVALUE, // GT_TEST
@@ -160,6 +162,8 @@ public static partial class genTreeOpsExtensions
         GTK_BINOP, // GT_SH3ADD_UW
         GTK_BINOP, // GT_ADD_UW
         GTK_BINOP, // GT_SLLI_UW
+#endif
+#if TARGET_RISCV64 || TARGET_XARCH
         GTK_BINOP, // GT_BIT_SET
         GTK_BINOP, // GT_BIT_CLEAR
         GTK_BINOP, // GT_BIT_INVERT
@@ -185,6 +189,9 @@ public static partial class genTreeOpsExtensions
         GTK_LEAF, // GT_JMPTABLE
         GTK_BINOP | GTK_NOVALUE, // GT_SWITCH_TABLE
         GTK_LEAF, // GT_PHYSREG
+#if TARGET_WASM
+        GTK_LEAF, // GT_FRAME_SIZE
+#endif
         GTK_UNOP | GTK_NOVALUE, // GT_RETURNTRAP
         GTK_UNOP, // GT_PUTARG_REG
         GTK_UNOP | GTK_NOVALUE, // GT_PUTARG_STK
@@ -214,6 +221,7 @@ public static partial class genTreeOpsExtensions
         DBK_NOTLIR, // GT_GCPOLL
         DBK_NONE, // GT_ASYNC_RESUME_INFO
         DBK_NONE, // GT_FTN_ENTRY
+        DBK_NONE, // GT_CONTINUATION_MEMBER_OFFSET
         DBK_NONE, // GT_CNS_INT
         DBK_NONE, // GT_CNS_LNG
         DBK_NONE, // GT_CNS_DBL
@@ -316,6 +324,7 @@ public static partial class genTreeOpsExtensions
         DBK_NOTHIR, // GT_XOR_NOT
 #if TARGET_ARM64
         DBK_NOTHIR, // GT_BFIZ
+        DBK_NOTHIR, // GT_BFX
 #endif
         DBK_NOTHIR, // GT_CMP
         DBK_NOTHIR, // GT_TEST
@@ -347,6 +356,8 @@ public static partial class genTreeOpsExtensions
         DBK_NOTHIR, // GT_SH3ADD_UW
         DBK_NOTHIR, // GT_ADD_UW
         DBK_NOTHIR, // GT_SLLI_UW
+#endif
+#if TARGET_RISCV64 || TARGET_XARCH
         DBK_NOTHIR, // GT_BIT_SET
         DBK_NOTHIR, // GT_BIT_CLEAR
         DBK_NOTHIR, // GT_BIT_INVERT
@@ -372,6 +383,9 @@ public static partial class genTreeOpsExtensions
         DBK_NOCONTAIN | DBK_NOTHIR, // GT_JMPTABLE
         DBK_NOTHIR, // GT_SWITCH_TABLE
         DBK_NOTHIR, // GT_PHYSREG
+#if TARGET_WASM
+        DBK_NOTHIR, // GT_FRAME_SIZE
+#endif
         DBK_NOTHIR, // GT_RETURNTRAP
         DBK_NOTHIR, // GT_PUTARG_REG
         DBK_NOTHIR, // GT_PUTARG_STK
@@ -400,6 +414,7 @@ public static partial class genTreeOpsExtensions
         "GCPOLL", // GT_GCPOLL
         "ASYNC_RESUME_INFO", // GT_ASYNC_RESUME_INFO
         "FTN_ENTRY", // GT_FTN_ENTRY
+        "CONTINUATION_MEMBER_OFFSET", // GT_CONTINUATION_MEMBER_OFFSET
         "CNS_INT", // GT_CNS_INT
         "CNS_LNG", // GT_CNS_LNG
         "CNS_DBL", // GT_CNS_DBL
@@ -502,6 +517,7 @@ public static partial class genTreeOpsExtensions
         "XOR_NOT", // GT_XOR_NOT
 #if TARGET_ARM64
         "BFIZ", // GT_BFIZ
+        "BFX", // GT_BFX
 #endif
         "CMP", // GT_CMP
         "TEST", // GT_TEST
@@ -533,6 +549,8 @@ public static partial class genTreeOpsExtensions
         "SH3ADD_UW", // GT_SH3ADD_UW
         "ADD_UW", // GT_ADD_UW
         "SLLI_UW", // GT_SLLI_UW
+#endif
+#if TARGET_RISCV64 || TARGET_XARCH
         "BIT_SET", // GT_BIT_SET
         "BIT_CLEAR", // GT_BIT_CLEAR
         "BIT_INVERT", // GT_BIT_INVERT
@@ -558,6 +576,9 @@ public static partial class genTreeOpsExtensions
         "JMPTABLE", // GT_JMPTABLE
         "SWITCH_TABLE", // GT_SWITCH_TABLE
         "PHYSREG", // GT_PHYSREG
+#if TARGET_WASM
+        "FRAME_SIZE", // GT_FRAME_SIZE
+#endif
         "RETURNTRAP", // GT_RETURNTRAP
         "PUTARG_REG", // GT_PUTARG_REG
         "PUTARG_STK", // GT_PUTARG_STK
@@ -588,6 +609,7 @@ public static partial class genTreeOpsExtensions
         typeof(GenTree), // GT_GCPOLL
         typeof(GenTreeVal), // GT_ASYNC_RESUME_INFO
         typeof(GenTree), // GT_FTN_ENTRY
+        typeof(GenTreeVal), // GT_CONTINUATION_MEMBER_OFFSET
         typeof(GenTreeIntCon), // GT_CNS_INT
         typeof(GenTreeLngCon), // GT_CNS_LNG
         typeof(GenTreeDblCon), // GT_CNS_DBL
@@ -690,6 +712,7 @@ public static partial class genTreeOpsExtensions
         typeof(GenTreeOp), // GT_XOR_NOT
 #if TARGET_ARM64
         typeof(GenTreeOp), // GT_BFIZ
+        typeof(GenTreeBfm), // GT_BFX
 #endif
         typeof(GenTreeOp), // GT_CMP
         typeof(GenTreeOp), // GT_TEST
@@ -721,6 +744,8 @@ public static partial class genTreeOpsExtensions
         typeof(GenTreeOp), // GT_SH3ADD_UW
         typeof(GenTreeOp), // GT_ADD_UW
         typeof(GenTreeOp), // GT_SLLI_UW
+#endif
+#if TARGET_RISCV64 || TARGET_XARCH
         typeof(GenTreeOp), // GT_BIT_SET
         typeof(GenTreeOp), // GT_BIT_CLEAR
         typeof(GenTreeOp), // GT_BIT_INVERT
@@ -746,6 +771,9 @@ public static partial class genTreeOpsExtensions
         typeof(GenTree), // GT_JMPTABLE
         typeof(GenTreeOp), // GT_SWITCH_TABLE
         typeof(GenTreePhysReg), // GT_PHYSREG
+#if TARGET_WASM
+        typeof(GenTree), // GT_FRAME_SIZE
+#endif
         typeof(GenTreeUnOp), // GT_RETURNTRAP
         typeof(GenTreeUnOp), // GT_PUTARG_REG
         typeof(GenTreePutArgStk), // GT_PUTARG_STK

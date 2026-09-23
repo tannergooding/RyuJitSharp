@@ -94,9 +94,14 @@ public abstract partial class Phase
                 compiler.fgDebugCheckInitBB();
             }
 
+            assert(((checks & PhaseChecks.CHECK_IR_RELAXED) == 0) || ((checks & PhaseChecks.CHECK_IR) != 0));
+
             if ((checks & PhaseChecks.CHECK_IR) != 0)
             {
+                var extraFlagsBefore = compiler.Metrics.IRExtraFlags;
                 compiler.fgDebugCheckLinks();
+                var extraFlags = compiler.Metrics.IRExtraFlags - extraFlagsBefore;
+                JITDUMP($"IR flag check found {extraFlags} extra flags after {_name}\n");
             }
 
             if ((checks & PhaseChecks.CHECK_EH) != 0)

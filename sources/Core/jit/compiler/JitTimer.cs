@@ -81,7 +81,7 @@ public sealed class JitTimer
 
             if (streamWriter is null)
             {
-                streamWriter = new StreamWriter(jitTimeLogCsv, append: true);
+                streamWriter = new JitTextWriter(jitTimeLogCsv, append: true);
                 s_csvFile = streamWriter;
             }
 

@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "upstream": {
+    "repository": "https://github.com/dotnet/runtime",
+    "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
+    "targetCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+    "targetObservedAt": "2026-09-22",
+    "reconciledCommit": null
+  },
+  "checkpoint": {
+    "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
+    "stage": "syncing-upstream",
+    "planApprovedAt": "2026-09-22",
+    "nextAction": "Reconcile the pinned JIT/EE ABI and table changes, then validate against a target-revision native runtime.",
+    "primaryTarget": "win-x64",
+    "csharpWipIntegrated": false,
+    "nativeResidualIncludesCsharpWip": true,
+    "nativeOracleCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+    "nativeResidualBaseCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
+    "validation": {
+      "sdk": "10.0.401",
+      "debugBuild": "source-baseline-passed-target-sync-blocked-on-generated-tables",
+      "releaseBuild": "source-baseline-passed-target-sync-blocked-on-generated-tables",
+      "testSourcesPresent": true,
+      "writerRegressionCases": 16,
+      "writerRegressionConfigurations": ["Debug", "Release"],
+      "nativeAotPublish": "passed-at-source-baseline-with-output-fixes",
+      "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
+      "phaseDumpParity": "six-method-baseline-captured-with-known-differences",
+      "codegenParity": "not-available"
+    }
+  },
+  "baselineEvidence": {
+    "nativeConfiguration": "windows.x64.Checked",
+    "librariesConfiguration": "Release",
+    "corpusMethods": 6,
+    "nativeCompilationHeaders": 6,
+    "originalManagedCompilationHeaders": 719,
+    "correctedManagedCompilationHeaders": 6,
+    "originalManagedBareLinefeeds": 10470,
+    "newlineCorrectedManagedBareLinefeeds": 0,
+    "newlineOnlyChangeVerified": true,
+    "knownGaps": [
+      "CORJIT_SKIPPED and native fallback remain intentional until codegen is ported.",
+      "fgDebugCheckBBlist is a stub and differs from native diagnostic output.",
+      "Integer, floating and variable-length IL display fixes target the new revision and await managed validation.",
+      "Full importation/pipeline dump equality has not been established."
+    ]
+  },
+  "targetEvidence": {
+    "commit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+    "nativeConfiguration": "windows.x64.Checked",
+    "librariesConfiguration": "Release",
+    "nativeCompilationHeaders": 6,
+    "durableCorpusNativeCompilationHeaders": 6,
+    "oldNativeHostPreservedAndExecuted": true,
+    "managedCapture": "pending-coherent-target-abi-build"
+  },
+  "localRecovery": {
+    "csharpWip": {
+      "commit": "5074a81a6799ea9321fb2431ad7835ebadf4ac4b",
+      "ref": "refs/porting/snapshots/2026-09-22-csharp-wip"
+    },
+    "nativeResidual": {
+      "commit": "dd336544c97716bd6e504cb3df04aa1e1320e919",
+      "ref": "refs/porting/snapshots/2026-09-22-native-ledger"
+    }
+  },
+  "sourceMap": [
+    {
+      "area": "compiler-driver",
+      "native": ["src\\coreclr\\jit\\compiler.cpp", "src\\coreclr\\jit\\compiler.h", "src\\coreclr\\jit\\compiler.hpp"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.cs", "sources\\Core\\jit\\compiler\\Compiler.comp.cs"],
+      "reconciledCommit": null
+    },
+    {
+      "area": "importer",
+      "native": ["src\\coreclr\\jit\\importer.cpp", "src\\coreclr\\jit\\importercalls.cpp"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.imp.cs", "sources\\Core\\jit\\compiler\\Compiler.ImportCallHelper.cs"],
+      "reconciledCommit": null
+    },
+    {
+      "area": "flowgraph-and-inlining",
+      "native": ["src\\coreclr\\jit\\fgbasic.cpp", "src\\coreclr\\jit\\fginline.cpp", "src\\coreclr\\jit\\fgdiagnostic.cpp", "src\\coreclr\\jit\\inline.cpp", "src\\coreclr\\jit\\inlinepolicy.cpp"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.fg.cs", "sources\\Core\\jit\\Inline", "sources\\Core\\jit\\inlinepolicy"],
+      "reconciledCommit": null
+    },
+    {
+      "area": "trees-and-locals",
+      "native": ["src\\coreclr\\jit\\gentree.cpp", "src\\coreclr\\jit\\gentree.h", "src\\coreclr\\jit\\lclvars.cpp"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.gt.cs", "sources\\Core\\jit\\compiler\\Compiler.lva.cs", "sources\\Core\\jit\\gentree"],
+      "reconciledCommit": null
+    },
+    {
+      "area": "saved-wip-lir-and-rationalization",
+      "csharpSnapshot": "5074a81a6799ea9321fb2431ad7835ebadf4ac4b",
+      "native": ["src\\coreclr\\jit\\lclmorph.cpp", "src\\coreclr\\jit\\lir.cpp", "src\\coreclr\\jit\\lir.h", "src\\coreclr\\jit\\rationalize.cpp", "src\\coreclr\\jit\\rationalize.h", "src\\coreclr\\jit\\sideeffects.cpp", "src\\coreclr\\jit\\sideeffects.h"],
+      "csharp": ["sources\\Core\\jit\\lclmorph", "sources\\Core\\jit\\lir", "sources\\Core\\jit\\rationalize", "sources\\Core\\jit\\sideeffects"],
+      "reconciledCommit": null
+    },
+    {
+      "area": "jit-ee-abi",
+      "native": ["src\\coreclr\\inc\\corinfo.h", "src\\coreclr\\inc\\corjit.h", "src\\coreclr\\inc\\corjithost.h", "src\\coreclr\\inc\\corjitflags.h", "src\\coreclr\\inc\\jiteeversionguid.h", "src\\coreclr\\jit\\ee_il_dll.cpp", "src\\coreclr\\jit\\eeinterface.cpp"],
+      "csharp": ["sources\\Core\\inc\\corinfo", "sources\\Core\\inc\\corjit", "sources\\Core\\inc\\corjithost", "sources\\Core\\inc\\corjitflags", "sources\\Core\\inc\\jiteeversionguid", "sources\\Core\\jit\\ee_il_dll", "sources\\Core\\jit\\compiler\\Compiler.ee.cs"],
+      "reconciledCommit": null
+    }
+  ],
+  "generatorInputMapping": {
+    "directory": "sources\\GenerateTables\\Inputs",
+    "defaultNativeDirectory": "src\\coreclr\\jit",
+    "exceptions": {
+      "InstructionSetDesc.txt": "src\\coreclr\\tools\\Common\\JitInterface\\ThunkGenerator\\InstructionSetDesc.txt",
+      "loglf.h": "src\\coreclr\\inc\\loglf.h",
+      "opcode.def": "src\\coreclr\\inc\\opcode.def"
+    },
+    "reconciledCommit": null,
+    "baselineProvenanceVerifiedCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
+    "baselineInputCount": 36,
+    "baselineOutputCount": 34,
+    "baselineDeterministic": true,
+    "targetInputCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+    "targetInputCount": 38,
+    "targetOutputCount": 34,
+    "targetChangedOutputCount": 22,
+    "targetDeterministic": true,
+    "targetConsumers": "shared-vector-identity-synchronization-in-progress"
+  }
+}

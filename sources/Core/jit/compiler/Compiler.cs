@@ -1527,7 +1527,7 @@ public partial class Compiler
 
         if ((JitConfig.EnableExtraSuperPmiQueries is not 0) && IsReadyToRun)
         {
-            info.compCompHnd->getWasmLowering(clsHnd);
+            eeRunExtraSuperPmiQueries(() => info.compCompHnd->getWasmLowering(clsHnd));
         }
 #endif
 

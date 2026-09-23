@@ -10,6 +10,7 @@ A port of the dotnet/runtime RyuJIT compiler to C#.
 * [License](#license)
 * [Contributing](#contributing)
 * [Goals](#goals)
+* [Porting RyuJIT](#porting-ryujit)
 * [Languages and Frameworks](#languages-and-frameworks)
 
 ### Code of Conduct
@@ -38,6 +39,14 @@ If you are looking to contribute you should read our
 
 RyuJitSharp is an experiement around writing a .NET JIT in .NET itself. It is initially achieving this by
 porting RyuJIT from dotnet/runtime to C#.
+
+### Porting RyuJIT
+
+See the [porting workflow](porting/README.md), [continuation plan](porting/PLAN.md),
+and [deviation register](porting/DEVIATIONS.md). Pinned upstream revisions and the
+current checkpoint are recorded in [state.json](porting/state.json).
+Encountered bugs and deferred improvements are tracked in the
+[port findings backlog](porting/BACKLOG.md).
 
 ### Languages and Frameworks
 

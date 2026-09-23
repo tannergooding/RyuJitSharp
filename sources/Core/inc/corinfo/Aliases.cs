@@ -30,6 +30,9 @@ global using unsafe CORINFO_GENERIC_HANDLE = RyuJitSharp.CORINFO_GENERIC_STRUCT_
 // a handle for WASM type symbols
 global using unsafe CORINFO_WASM_TYPE_SYMBOL_HANDLE = RyuJitSharp.CORINFO_WASM_TYPE_SYMBOL_STRUCT_*;
 
+// a handle for WASM global symbols
+global using unsafe CORINFO_WASM_GLOBAL_SYMBOL_HANDLE = RyuJitSharp.CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*;
+
 // what is actually passed on the varargs call
 global using unsafe CORINFO_VARARGS_HANDLE = RyuJitSharp.CORINFO_VarArgInfo*;
 

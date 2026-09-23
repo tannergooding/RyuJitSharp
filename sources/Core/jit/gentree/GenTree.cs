@@ -1226,7 +1226,7 @@ public partial class GenTree
 #if TARGET_XARCH
                 var intrinsicId = hwintrinsic.HWIntrinsicId;
 
-                if (intrinsicId is NI_Vector128_op_Division or NI_Vector256_op_Division or NI_Vector512_op_Division)
+                if (intrinsicId is NI_Vector_op_Division)
                 {
                     // We currently don't try to avoid setting these flags and GTF_EXCEPT when
                     // we know that the operation in fact cannot overflow/divide by zero.
@@ -1688,6 +1688,23 @@ public partial class GenTree
     public bool IsHWIntrinsic(NamedIntrinsic intrinsicId) => _oper.IsHWIntrinsic && (AsHWIntrinsic().HWIntrinsicId == intrinsicId);
 
     public bool IsIconHandle() => _oper.IsCnsIntOrI && AsIntCon().IsIconHandle();
+
+    public bool IsNotGcDef()
+    {
+        if (IsIntegralConst(0) || Oper is GT_LCL_ADDR or GT_LCLHEAP)
+        {
+            return true;
+        }
+
+        if ((_oper.IsCnsIntOrI && AsIntCon().IsIconHandle(GTF_ICON_OBJ_HDL))
+            || ((Oper is GT_ADD) && AsOp().Op1.Oper.IsCnsIntOrI
+                && AsOp().Op1.AsIntCon().IsIconHandle(GTF_ICON_OBJ_HDL)))
+        {
+            return true;
+        }
+
+        return false;
+    }
 
     public bool IsIntegralConst(nint value) => _oper.IsIntegralConst && AsIntConCommon().IsIntegralConst(value);
 

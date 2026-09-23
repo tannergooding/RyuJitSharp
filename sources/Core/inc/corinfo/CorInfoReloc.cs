@@ -32,6 +32,9 @@ public enum CorInfoReloc
     /// <summary>ADD/ADDS (immediate) with zero shift, for page offset</summary>
     ARM64_PAGEOFFSET_12A,
 
+    /// <summary>LDR (indexed, unsigned immediate), for page offset</summary>
+    ARM64_PAGEOFFSET_12L,
+
     //
     // Linux arm64
     //
@@ -126,6 +129,9 @@ public enum CorInfoReloc
     /// <summary>Wasm: a function table index encoded as a 5-byte varint32. Used to refer to the immediate argument of a i32.const instruction, e.g. taking the address of a function.</summary>
     WASM_TABLE_INDEX_SLEB,
 
+    /// <summary>Wasm: a function table index stored as a 4-byte little-endian uint32 in the data section.</summary>
+    WASM_TABLE_INDEX_I32,
+
     /// <summary>Wasm: a linear memory index encoded as a 5-byte varuint32. Used for the immediate argument of a load or store instruction, e.g. directly loading from or storing to a C++ global.</summary>
     WASM_MEMORY_ADDR_LEB,
 
@@ -143,4 +149,10 @@ public enum CorInfoReloc
 
     /// <summary>Wasm: a relative linear memory index encoded as a 5-byte varuint32. Used as the immediate argument of a load or store instruction, e.g. in R2R scenarios as an offset from __image_base</summary>
     WASM_MEMORY_ADDR_REL_LEB,
+
+    /// <summary>Wasm: a restore-context exception tag index encoded as a 5-byte varuint32.</summary>
+    WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB,
+
+    /// <summary>Wasm: the method's virtual IP relative to the image virtual IP base as a 4-byte uint32.</summary>
+    WASM_METHOD_RELATIVE_VIRTUAL_IP_I32,
 }

@@ -90,6 +90,22 @@ public partial struct PatchpointInfo
 
     public readonly bool HasMonitorAcquired => _monitorAcquiredOffset is not -1;
 
+    // Original method FP relative offset for resumed indicator
+    public int ResumedIndicatorOffset
+    {
+        readonly get
+        {
+            return _resumedIndicatorOffset;
+        }
+
+        set
+        {
+            _resumedIndicatorOffset = value;
+        }
+    }
+
+    public readonly bool HasResumedIndicator => _resumedIndicatorOffset is not -1;
+
     // Original method FP relative offset for async contexts
     public int AsyncExecutionContextOffset
     {

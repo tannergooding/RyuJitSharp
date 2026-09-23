@@ -180,164 +180,164 @@ public partial class Globals
                 resultFlags.RemoveInstructionSet(InstructionSet_X86Serialize_X64);
             }
 #endif
-                        
+
 #if TARGET_XARCH
-            if (resultFlags.HasInstructionSet(InstructionSet_AVX) && !resultFlags.HasInstructionSet(InstructionSet_X86Base))        
+            if (resultFlags.HasInstructionSet(InstructionSet_AVX) && !resultFlags.HasInstructionSet(InstructionSet_X86Base))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_AVX);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_AVX2) && !resultFlags.HasInstructionSet(InstructionSet_AVX))        
+            if (resultFlags.HasInstructionSet(InstructionSet_AVX2) && !resultFlags.HasInstructionSet(InstructionSet_AVX))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_AVX2);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_AVX512) && !resultFlags.HasInstructionSet(InstructionSet_AVX2))        
+            if (resultFlags.HasInstructionSet(InstructionSet_AVX512) && !resultFlags.HasInstructionSet(InstructionSet_AVX2))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_AVX512);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_AVX512v2) && !resultFlags.HasInstructionSet(InstructionSet_AVX512))        
+            if (resultFlags.HasInstructionSet(InstructionSet_AVX512v2) && !resultFlags.HasInstructionSet(InstructionSet_AVX512))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_AVX512v2);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_AVX512v3) && !resultFlags.HasInstructionSet(InstructionSet_AVX512v2))        
+            if (resultFlags.HasInstructionSet(InstructionSet_AVX512v3) && !resultFlags.HasInstructionSet(InstructionSet_AVX512v2))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_AVX512v3);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_AVX10v1) && !resultFlags.HasInstructionSet(InstructionSet_AVX512v3))        
+            if (resultFlags.HasInstructionSet(InstructionSet_AVX10v1) && !resultFlags.HasInstructionSet(InstructionSet_AVX512v3))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_AVX10v1);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_AVX10v2) && !resultFlags.HasInstructionSet(InstructionSet_AVX10v1))        
+            if (resultFlags.HasInstructionSet(InstructionSet_AVX10v2) && !resultFlags.HasInstructionSet(InstructionSet_AVX10v1))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_AVX10v2);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_AES) && !resultFlags.HasInstructionSet(InstructionSet_X86Base))        
+            if (resultFlags.HasInstructionSet(InstructionSet_AES) && !resultFlags.HasInstructionSet(InstructionSet_X86Base))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_AES);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_AES_V256) && !resultFlags.HasInstructionSet(InstructionSet_AES))        
+            if (resultFlags.HasInstructionSet(InstructionSet_AES_V256) && !resultFlags.HasInstructionSet(InstructionSet_AES))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_AES_V256);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_AES_V256) && !resultFlags.HasInstructionSet(InstructionSet_AVX))        
+            if (resultFlags.HasInstructionSet(InstructionSet_AES_V256) && !resultFlags.HasInstructionSet(InstructionSet_AVX))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_AES_V256);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_AES_V512) && !resultFlags.HasInstructionSet(InstructionSet_AES_V256))        
+            if (resultFlags.HasInstructionSet(InstructionSet_AES_V512) && !resultFlags.HasInstructionSet(InstructionSet_AES_V256))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_AES_V512);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_AES_V512) && !resultFlags.HasInstructionSet(InstructionSet_AVX512))        
+            if (resultFlags.HasInstructionSet(InstructionSet_AES_V512) && !resultFlags.HasInstructionSet(InstructionSet_AVX512))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_AES_V512);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_AVX512VP2INTERSECT) && !resultFlags.HasInstructionSet(InstructionSet_AVX512))        
+            if (resultFlags.HasInstructionSet(InstructionSet_AVX512VP2INTERSECT) && !resultFlags.HasInstructionSet(InstructionSet_AVX512))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_AVX512VP2INTERSECT);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_AVXIFMA) && !resultFlags.HasInstructionSet(InstructionSet_AVX2))        
+            if (resultFlags.HasInstructionSet(InstructionSet_AVXIFMA) && !resultFlags.HasInstructionSet(InstructionSet_AVX2))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_AVXIFMA);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_AVXVNNI) && !resultFlags.HasInstructionSet(InstructionSet_AVX2))        
+            if (resultFlags.HasInstructionSet(InstructionSet_AVXVNNI) && !resultFlags.HasInstructionSet(InstructionSet_AVX2))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_AVXVNNI);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_GFNI) && !resultFlags.HasInstructionSet(InstructionSet_X86Base))        
+            if (resultFlags.HasInstructionSet(InstructionSet_GFNI) && !resultFlags.HasInstructionSet(InstructionSet_X86Base))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_GFNI);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_GFNI_V256) && !resultFlags.HasInstructionSet(InstructionSet_GFNI))        
+            if (resultFlags.HasInstructionSet(InstructionSet_GFNI_V256) && !resultFlags.HasInstructionSet(InstructionSet_GFNI))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_GFNI_V256);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_GFNI_V256) && !resultFlags.HasInstructionSet(InstructionSet_AVX))        
+            if (resultFlags.HasInstructionSet(InstructionSet_GFNI_V256) && !resultFlags.HasInstructionSet(InstructionSet_AVX))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_GFNI_V256);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_GFNI_V512) && !resultFlags.HasInstructionSet(InstructionSet_GFNI_V256))        
+            if (resultFlags.HasInstructionSet(InstructionSet_GFNI_V512) && !resultFlags.HasInstructionSet(InstructionSet_GFNI_V256))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_GFNI_V512);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_GFNI_V512) && !resultFlags.HasInstructionSet(InstructionSet_AVX512))        
+            if (resultFlags.HasInstructionSet(InstructionSet_GFNI_V512) && !resultFlags.HasInstructionSet(InstructionSet_AVX512))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_GFNI_V512);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_SHA) && !resultFlags.HasInstructionSet(InstructionSet_X86Base))        
+            if (resultFlags.HasInstructionSet(InstructionSet_SHA) && !resultFlags.HasInstructionSet(InstructionSet_X86Base))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_SHA);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_WAITPKG) && !resultFlags.HasInstructionSet(InstructionSet_X86Base))        
+            if (resultFlags.HasInstructionSet(InstructionSet_WAITPKG) && !resultFlags.HasInstructionSet(InstructionSet_X86Base))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_WAITPKG);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_X86Serialize) && !resultFlags.HasInstructionSet(InstructionSet_X86Base))        
+            if (resultFlags.HasInstructionSet(InstructionSet_X86Serialize) && !resultFlags.HasInstructionSet(InstructionSet_X86Base))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_X86Serialize);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_AVXVNNIINT) && !resultFlags.HasInstructionSet(InstructionSet_AVX2))        
+            if (resultFlags.HasInstructionSet(InstructionSet_AVXVNNIINT) && !resultFlags.HasInstructionSet(InstructionSet_AVX2))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_AVXVNNIINT);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_AVXVNNIINT_V512) && !resultFlags.HasInstructionSet(InstructionSet_AVX10v2))        
+            if (resultFlags.HasInstructionSet(InstructionSet_AVXVNNIINT_V512) && !resultFlags.HasInstructionSet(InstructionSet_AVX10v2))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_AVXVNNIINT_V512);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_Vector128) && !resultFlags.HasInstructionSet(InstructionSet_X86Base))        
+            if (resultFlags.HasInstructionSet(InstructionSet_Vector128) && !resultFlags.HasInstructionSet(InstructionSet_X86Base))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_Vector128);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_Vector256) && !resultFlags.HasInstructionSet(InstructionSet_AVX))        
+            if (resultFlags.HasInstructionSet(InstructionSet_Vector256) && !resultFlags.HasInstructionSet(InstructionSet_AVX))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_Vector256);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_Vector512) && !resultFlags.HasInstructionSet(InstructionSet_AVX512))        
+            if (resultFlags.HasInstructionSet(InstructionSet_Vector512) && !resultFlags.HasInstructionSet(InstructionSet_AVX512))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_Vector512);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_VectorT128) && !resultFlags.HasInstructionSet(InstructionSet_X86Base))        
+            if (resultFlags.HasInstructionSet(InstructionSet_VectorT128) && !resultFlags.HasInstructionSet(InstructionSet_X86Base))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_VectorT128);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_VectorT256) && !resultFlags.HasInstructionSet(InstructionSet_AVX2))        
+            if (resultFlags.HasInstructionSet(InstructionSet_VectorT256) && !resultFlags.HasInstructionSet(InstructionSet_AVX2))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_VectorT256);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_VectorT512) && !resultFlags.HasInstructionSet(InstructionSet_AVX512))        
+            if (resultFlags.HasInstructionSet(InstructionSet_VectorT512) && !resultFlags.HasInstructionSet(InstructionSet_AVX512))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_VectorT512);
             }
 #endif
-                        
+
 #if TARGET_ARM64
             if (resultFlags.HasInstructionSet(InstructionSet_ArmBase) && !resultFlags.HasInstructionSet(InstructionSet_ArmBase_Arm64))
             {
@@ -397,6 +397,16 @@ public partial class Globals
             if (resultFlags.HasInstructionSet(InstructionSet_Rdm_Arm64) && !resultFlags.HasInstructionSet(InstructionSet_Rdm))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_Rdm_Arm64);
+            }
+
+            if (resultFlags.HasInstructionSet(InstructionSet_Fp16) && !resultFlags.HasInstructionSet(InstructionSet_Fp16_Arm64))
+            {
+                resultFlags.RemoveInstructionSet(InstructionSet_Fp16);
+            }
+
+            if (resultFlags.HasInstructionSet(InstructionSet_Fp16_Arm64) && !resultFlags.HasInstructionSet(InstructionSet_Fp16))
+            {
+                resultFlags.RemoveInstructionSet(InstructionSet_Fp16_Arm64);
             }
 
             if (resultFlags.HasInstructionSet(InstructionSet_Sha1) && !resultFlags.HasInstructionSet(InstructionSet_Sha1_Arm64))
@@ -489,126 +499,148 @@ public partial class Globals
                 resultFlags.RemoveInstructionSet(InstructionSet_SveSm4_Arm64);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_AdvSimd) && !resultFlags.HasInstructionSet(InstructionSet_ArmBase))        
+            if (resultFlags.HasInstructionSet(InstructionSet_AdvSimd) && !resultFlags.HasInstructionSet(InstructionSet_ArmBase))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_AdvSimd);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_Aes) && !resultFlags.HasInstructionSet(InstructionSet_ArmBase))        
+            if (resultFlags.HasInstructionSet(InstructionSet_Aes) && !resultFlags.HasInstructionSet(InstructionSet_ArmBase))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_Aes);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_Crc32) && !resultFlags.HasInstructionSet(InstructionSet_ArmBase))        
+            if (resultFlags.HasInstructionSet(InstructionSet_Crc32) && !resultFlags.HasInstructionSet(InstructionSet_ArmBase))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_Crc32);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_Dp) && !resultFlags.HasInstructionSet(InstructionSet_AdvSimd))        
+            if (resultFlags.HasInstructionSet(InstructionSet_Dp) && !resultFlags.HasInstructionSet(InstructionSet_AdvSimd))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_Dp);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_Rdm) && !resultFlags.HasInstructionSet(InstructionSet_AdvSimd))        
+            if (resultFlags.HasInstructionSet(InstructionSet_Rdm) && !resultFlags.HasInstructionSet(InstructionSet_AdvSimd))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_Rdm);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_Sha1) && !resultFlags.HasInstructionSet(InstructionSet_ArmBase))        
+            if (resultFlags.HasInstructionSet(InstructionSet_Fp16) && !resultFlags.HasInstructionSet(InstructionSet_AdvSimd))
+            {
+                resultFlags.RemoveInstructionSet(InstructionSet_Fp16);
+            }
+
+            if (resultFlags.HasInstructionSet(InstructionSet_Sha1) && !resultFlags.HasInstructionSet(InstructionSet_ArmBase))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_Sha1);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_Sha256) && !resultFlags.HasInstructionSet(InstructionSet_ArmBase))        
+            if (resultFlags.HasInstructionSet(InstructionSet_Sha256) && !resultFlags.HasInstructionSet(InstructionSet_ArmBase))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_Sha256);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_Vector64) && !resultFlags.HasInstructionSet(InstructionSet_AdvSimd))        
+            if (resultFlags.HasInstructionSet(InstructionSet_Vector64) && !resultFlags.HasInstructionSet(InstructionSet_AdvSimd))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_Vector64);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_Vector128) && !resultFlags.HasInstructionSet(InstructionSet_AdvSimd))        
+            if (resultFlags.HasInstructionSet(InstructionSet_Vector128) && !resultFlags.HasInstructionSet(InstructionSet_AdvSimd))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_Vector128);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_VectorT) && !resultFlags.HasInstructionSet(InstructionSet_Sve))        
+            if (resultFlags.HasInstructionSet(InstructionSet_VectorT) && !resultFlags.HasInstructionSet(InstructionSet_Sve))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_VectorT);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_VectorT128) && !resultFlags.HasInstructionSet(InstructionSet_AdvSimd))        
+            if (resultFlags.HasInstructionSet(InstructionSet_VectorT128) && !resultFlags.HasInstructionSet(InstructionSet_AdvSimd))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_VectorT128);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_Sve) && !resultFlags.HasInstructionSet(InstructionSet_AdvSimd))        
+            if (resultFlags.HasInstructionSet(InstructionSet_Sve) && !resultFlags.HasInstructionSet(InstructionSet_AdvSimd))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_Sve);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_Sve2) && !resultFlags.HasInstructionSet(InstructionSet_Sve))        
+            if (resultFlags.HasInstructionSet(InstructionSet_Sve2) && !resultFlags.HasInstructionSet(InstructionSet_Sve))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_Sve2);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_Sha3) && !resultFlags.HasInstructionSet(InstructionSet_ArmBase))        
+            if (resultFlags.HasInstructionSet(InstructionSet_Sha3) && !resultFlags.HasInstructionSet(InstructionSet_ArmBase))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_Sha3);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_Sm4) && !resultFlags.HasInstructionSet(InstructionSet_ArmBase))        
+            if (resultFlags.HasInstructionSet(InstructionSet_Sm4) && !resultFlags.HasInstructionSet(InstructionSet_ArmBase))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_Sm4);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_SveAes) && !resultFlags.HasInstructionSet(InstructionSet_Sve))        
+            if (resultFlags.HasInstructionSet(InstructionSet_SveAes) && !resultFlags.HasInstructionSet(InstructionSet_Sve))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_SveAes);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_SveAes) && !resultFlags.HasInstructionSet(InstructionSet_Aes))        
+            if (resultFlags.HasInstructionSet(InstructionSet_SveAes) && !resultFlags.HasInstructionSet(InstructionSet_Aes))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_SveAes);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_SveSha3) && !resultFlags.HasInstructionSet(InstructionSet_Sve))        
+            if (resultFlags.HasInstructionSet(InstructionSet_SveSha3) && !resultFlags.HasInstructionSet(InstructionSet_Sve))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_SveSha3);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_SveSha3) && !resultFlags.HasInstructionSet(InstructionSet_Sha3))        
+            if (resultFlags.HasInstructionSet(InstructionSet_SveSha3) && !resultFlags.HasInstructionSet(InstructionSet_Sha3))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_SveSha3);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_SveSm4) && !resultFlags.HasInstructionSet(InstructionSet_Sve))        
+            if (resultFlags.HasInstructionSet(InstructionSet_SveSm4) && !resultFlags.HasInstructionSet(InstructionSet_Sve))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_SveSm4);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_SveSm4) && !resultFlags.HasInstructionSet(InstructionSet_Sm4))        
+            if (resultFlags.HasInstructionSet(InstructionSet_SveSm4) && !resultFlags.HasInstructionSet(InstructionSet_Sm4))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_SveSm4);
             }
 #endif
-                        
+
 #if TARGET_RISCV64
-            if (resultFlags.HasInstructionSet(InstructionSet_Zbb) && !resultFlags.HasInstructionSet(InstructionSet_RiscV64Base))        
+            if (resultFlags.HasInstructionSet(InstructionSet_Zbb) && !resultFlags.HasInstructionSet(InstructionSet_RiscV64Base))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_Zbb);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_Zba) && !resultFlags.HasInstructionSet(InstructionSet_RiscV64Base))        
+            if (resultFlags.HasInstructionSet(InstructionSet_Zba) && !resultFlags.HasInstructionSet(InstructionSet_RiscV64Base))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_Zba);
             }
 
-            if (resultFlags.HasInstructionSet(InstructionSet_Zbs) && !resultFlags.HasInstructionSet(InstructionSet_RiscV64Base))        
+            if (resultFlags.HasInstructionSet(InstructionSet_Zbs) && !resultFlags.HasInstructionSet(InstructionSet_RiscV64Base))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_Zbs);
+            }
+
+            if (resultFlags.HasInstructionSet(InstructionSet_Zicond) && !resultFlags.HasInstructionSet(InstructionSet_RiscV64Base))
+            {
+                resultFlags.RemoveInstructionSet(InstructionSet_Zicond);
+            }
+#endif
+
+#if TARGET_WASM32
+            if (resultFlags.HasInstructionSet(InstructionSet_Vector128) && !resultFlags.HasInstructionSet(InstructionSet_PackedSimd))
+            {
+                resultFlags.RemoveInstructionSet(InstructionSet_Vector128);
+            }
+
+            if (resultFlags.HasInstructionSet(InstructionSet_PackedSimd) && !resultFlags.HasInstructionSet(InstructionSet_WasmBase))
+            {
+                resultFlags.RemoveInstructionSet(InstructionSet_PackedSimd);
             }
 #endif
         }
@@ -654,7 +686,7 @@ public partial class Globals
             InstructionSet_AVXVNNIINT => "AVXVNNIINT",
             InstructionSet_AVXVNNIINT_V512 => "AVXVNNIINT_V512",
 #endif
-                        
+
 #if TARGET_AMD64
             InstructionSet_X86Base_X64 => "X86Base_X64",
             InstructionSet_AVX_X64 => "AVX_X64",
@@ -673,7 +705,7 @@ public partial class Globals
             InstructionSet_WAITPKG_X64 => "WAITPKG_X64",
             InstructionSet_X86Serialize_X64 => "X86Serialize_X64",
 #endif
-                        
+
 #if TARGET_ARM64
             InstructionSet_ArmBase => "ArmBase",
             InstructionSet_AdvSimd => "AdvSimd",
@@ -681,6 +713,7 @@ public partial class Globals
             InstructionSet_Crc32 => "Crc32",
             InstructionSet_Dp => "Dp",
             InstructionSet_Rdm => "Rdm",
+            InstructionSet_Fp16 => "Fp16",
             InstructionSet_Sha1 => "Sha1",
             InstructionSet_Sha256 => "Sha256",
             InstructionSet_Atomics => "Atomics",
@@ -698,12 +731,14 @@ public partial class Globals
             InstructionSet_SveAes => "SveAes",
             InstructionSet_SveSha3 => "SveSha3",
             InstructionSet_SveSm4 => "SveSm4",
+            InstructionSet_Cssc => "Cssc",
             InstructionSet_ArmBase_Arm64 => "ArmBase_Arm64",
             InstructionSet_AdvSimd_Arm64 => "AdvSimd_Arm64",
             InstructionSet_Aes_Arm64 => "Aes_Arm64",
             InstructionSet_Crc32_Arm64 => "Crc32_Arm64",
             InstructionSet_Dp_Arm64 => "Dp_Arm64",
             InstructionSet_Rdm_Arm64 => "Rdm_Arm64",
+            InstructionSet_Fp16_Arm64 => "Fp16_Arm64",
             InstructionSet_Sha1_Arm64 => "Sha1_Arm64",
             InstructionSet_Sha256_Arm64 => "Sha256_Arm64",
             InstructionSet_Sve_Arm64 => "Sve_Arm64",
@@ -714,12 +749,19 @@ public partial class Globals
             InstructionSet_SveSha3_Arm64 => "SveSha3_Arm64",
             InstructionSet_SveSm4_Arm64 => "SveSm4_Arm64",
 #endif
-                        
+
 #if TARGET_RISCV64
             InstructionSet_RiscV64Base => "RiscV64Base",
             InstructionSet_Zba => "Zba",
             InstructionSet_Zbb => "Zbb",
             InstructionSet_Zbs => "Zbs",
+            InstructionSet_Zicond => "Zicond",
+#endif
+
+#if TARGET_WASM32
+            InstructionSet_WasmBase => "WasmBase",
+            InstructionSet_PackedSimd => "PackedSimd",
+            InstructionSet_Vector128 => "Vector128",
 #endif
 
             _ => "UnknownInstructionSet",
@@ -806,6 +848,7 @@ public partial class Globals
             READYTORUN_INSTRUCTION_Crc32 => InstructionSet_Crc32,
             READYTORUN_INSTRUCTION_Dp => InstructionSet_Dp,
             READYTORUN_INSTRUCTION_Rdm => InstructionSet_Rdm,
+            READYTORUN_INSTRUCTION_Fp16 => InstructionSet_Fp16,
             READYTORUN_INSTRUCTION_Sha1 => InstructionSet_Sha1,
             READYTORUN_INSTRUCTION_Sha256 => InstructionSet_Sha256,
             READYTORUN_INSTRUCTION_Atomics => InstructionSet_Atomics,
@@ -819,11 +862,16 @@ public partial class Globals
             READYTORUN_INSTRUCTION_SveAes => InstructionSet_SveAes,
             READYTORUN_INSTRUCTION_SveSha3 => InstructionSet_SveSha3,
             READYTORUN_INSTRUCTION_SveSm4 => InstructionSet_SveSm4,
+            READYTORUN_INSTRUCTION_Cssc => InstructionSet_Cssc,
 #elif TARGET_RISCV64
             READYTORUN_INSTRUCTION_RiscV64Base => InstructionSet_RiscV64Base,
             READYTORUN_INSTRUCTION_Zba => InstructionSet_Zba,
             READYTORUN_INSTRUCTION_Zbb => InstructionSet_Zbb,
             READYTORUN_INSTRUCTION_Zbs => InstructionSet_Zbs,
+            READYTORUN_INSTRUCTION_Zicond => InstructionSet_Zicond,
+#elif TARGET_WASM32
+            READYTORUN_INSTRUCTION_WasmBase => InstructionSet_WasmBase,
+            READYTORUN_INSTRUCTION_PackedSimd => InstructionSet_PackedSimd,
 #endif
             _ => InstructionSet_ILLEGAL,
         };

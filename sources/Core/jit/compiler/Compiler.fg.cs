@@ -144,6 +144,11 @@ public partial class Compiler
     public bool fgGlobalMorphDone;
 
 #if DEBUG
+    // Retyping implicit byref parameters temporarily leaves field accesses using their old struct types.
+    public bool fgImplicitByRefLclFldsStale;
+#endif
+
+#if DEBUG
     public bool fgPrintInlinedMethods;
 #endif
 
@@ -4009,24 +4014,15 @@ public partial class Compiler
 
                     // These are foldable if the first argument is a constant
 #if FEATURE_HW_INTRINSICS
-                    case NI_Vector128_Create:
-                    case NI_Vector128_CreateScalar:
-                    case NI_Vector128_CreateScalarUnsafe:
+                    case NI_Vector_Create:
+                    case NI_Vector_CreateScalar:
+                    case NI_Vector_CreateScalarUnsafe:
 #if TARGET_ARM64
-                    case NI_Vector64_Create:
-                    case NI_Vector64_CreateScalar:
-                    case NI_Vector64_CreateScalarUnsafe:
                     case NI_ArmBase_LeadingZeroCount:
                     case NI_ArmBase_ReverseElementBits:
                     case NI_ArmBase_Arm64_LeadingZeroCount:
                     case NI_ArmBase_Arm64_ReverseElementBits:
 #elif TARGET_XARCH
-                    case NI_Vector256_Create:
-                    case NI_Vector256_CreateScalar:
-                    case NI_Vector256_CreateScalarUnsafe:
-                    case NI_Vector512_Create:
-                    case NI_Vector512_CreateScalar:
-                    case NI_Vector512_CreateScalarUnsafe:
                     case NI_X86Base_BitScanForward:
                     case NI_X86Base_BitScanReverse:
                     case NI_X86Base_PopCount:
@@ -4146,66 +4142,21 @@ public partial class Compiler
                     }
 
 #if FEATURE_HW_INTRINSICS
-                    case NI_Vector128_As:
-                    case NI_Vector128_AsByte:
-                    case NI_Vector128_AsDouble:
-                    case NI_Vector128_AsInt16:
-                    case NI_Vector128_AsInt32:
-                    case NI_Vector128_AsInt64:
-                    case NI_Vector128_AsNInt:
-                    case NI_Vector128_AsNUInt:
-                    case NI_Vector128_AsSByte:
-                    case NI_Vector128_AsSingle:
-                    case NI_Vector128_AsUInt16:
-                    case NI_Vector128_AsUInt32:
-                    case NI_Vector128_AsUInt64:
-                    case NI_Vector128_AsVector4:
-                    case NI_Vector128_op_UnaryPlus:
-#if TARGET_ARM64
-                    case NI_Vector64_As:
-                    case NI_Vector64_AsByte:
-                    case NI_Vector64_AsDouble:
-                    case NI_Vector64_AsInt16:
-                    case NI_Vector64_AsInt32:
-                    case NI_Vector64_AsInt64:
-                    case NI_Vector64_AsNInt:
-                    case NI_Vector64_AsNUInt:
-                    case NI_Vector64_AsSByte:
-                    case NI_Vector64_AsSingle:
-                    case NI_Vector64_AsUInt16:
-                    case NI_Vector64_AsUInt32:
-                    case NI_Vector64_AsUInt64:
-                    case NI_Vector64_op_UnaryPlus:
-#elif TARGET_XARCH
-                    case NI_Vector256_As:
-                    case NI_Vector256_AsByte:
-                    case NI_Vector256_AsDouble:
-                    case NI_Vector256_AsInt16:
-                    case NI_Vector256_AsInt32:
-                    case NI_Vector256_AsInt64:
-                    case NI_Vector256_AsNInt:
-                    case NI_Vector256_AsNUInt:
-                    case NI_Vector256_AsSByte:
-                    case NI_Vector256_AsSingle:
-                    case NI_Vector256_AsUInt16:
-                    case NI_Vector256_AsUInt32:
-                    case NI_Vector256_AsUInt64:
-                    case NI_Vector256_op_UnaryPlus:
-                    case NI_Vector512_As:
-                    case NI_Vector512_AsByte:
-                    case NI_Vector512_AsDouble:
-                    case NI_Vector512_AsInt16:
-                    case NI_Vector512_AsInt32:
-                    case NI_Vector512_AsInt64:
-                    case NI_Vector512_AsNInt:
-                    case NI_Vector512_AsNUInt:
-                    case NI_Vector512_AsSByte:
-                    case NI_Vector512_AsSingle:
-                    case NI_Vector512_AsUInt16:
-                    case NI_Vector512_AsUInt32:
-                    case NI_Vector512_AsUInt64:
-                    case NI_Vector512_op_UnaryPlus:
-#endif
+                    case NI_Vector_As:
+                    case NI_Vector_AsByte:
+                    case NI_Vector_AsDouble:
+                    case NI_Vector_AsInt16:
+                    case NI_Vector_AsInt32:
+                    case NI_Vector_AsInt64:
+                    case NI_Vector_AsNInt:
+                    case NI_Vector_AsNUInt:
+                    case NI_Vector_AsSByte:
+                    case NI_Vector_AsSingle:
+                    case NI_Vector_AsUInt16:
+                    case NI_Vector_AsUInt32:
+                    case NI_Vector_AsUInt64:
+                    case NI_Vector_AsVector4:
+                    case NI_Vector_op_UnaryPlus:
 #endif
                     case NI_SRCS_UNSAFE_As:
                     case NI_SRCS_UNSAFE_AsRef:
@@ -4222,57 +4173,18 @@ public partial class Compiler
                     }
 
 #if FEATURE_HW_INTRINSICS
-                    case NI_Vector128_get_AllBitsSet:
-                    case NI_Vector128_get_E:
-                    case NI_Vector128_get_Epsilon:
-                    case NI_Vector128_get_NaN:
-                    case NI_Vector128_get_NegativeInfinity:
-                    case NI_Vector128_get_NegativeOne:
-                    case NI_Vector128_get_NegativeZero:
-                    case NI_Vector128_get_One:
-                    case NI_Vector128_get_Pi:
-                    case NI_Vector128_get_PositiveInfinity:
-                    case NI_Vector128_get_Tau:
-                    case NI_Vector128_get_Zero:
-#if TARGET_ARM64
-                    case NI_Vector64_get_AllBitsSet:
-                    case NI_Vector64_get_E:
-                    case NI_Vector64_get_Epsilon:
-                    case NI_Vector64_get_NaN:
-                    case NI_Vector64_get_NegativeInfinity:
-                    case NI_Vector64_get_NegativeOne:
-                    case NI_Vector64_get_NegativeZero:
-                    case NI_Vector64_get_One:
-                    case NI_Vector64_get_Pi:
-                    case NI_Vector64_get_PositiveInfinity:
-                    case NI_Vector64_get_Tau:
-                    case NI_Vector64_get_Zero:
-#elif TARGET_XARCH
-                    case NI_Vector256_get_AllBitsSet:
-                    case NI_Vector256_get_E:
-                    case NI_Vector256_get_Epsilon:
-                    case NI_Vector256_get_NaN:
-                    case NI_Vector256_get_NegativeInfinity:
-                    case NI_Vector256_get_NegativeOne:
-                    case NI_Vector256_get_NegativeZero:
-                    case NI_Vector256_get_One:
-                    case NI_Vector256_get_Pi:
-                    case NI_Vector256_get_PositiveInfinity:
-                    case NI_Vector256_get_Tau:
-                    case NI_Vector256_get_Zero:
-                    case NI_Vector512_get_AllBitsSet:
-                    case NI_Vector512_get_E:
-                    case NI_Vector512_get_Epsilon:
-                    case NI_Vector512_get_NaN:
-                    case NI_Vector512_get_NegativeInfinity:
-                    case NI_Vector512_get_NegativeOne:
-                    case NI_Vector512_get_NegativeZero:
-                    case NI_Vector512_get_One:
-                    case NI_Vector512_get_Pi:
-                    case NI_Vector512_get_PositiveInfinity:
-                    case NI_Vector512_get_Tau:
-                    case NI_Vector512_get_Zero:
-#endif
+                    case NI_Vector_get_AllBitsSet:
+                    case NI_Vector_get_E:
+                    case NI_Vector_get_Epsilon:
+                    case NI_Vector_get_NaN:
+                    case NI_Vector_get_NegativeInfinity:
+                    case NI_Vector_get_NegativeOne:
+                    case NI_Vector_get_NegativeZero:
+                    case NI_Vector_get_One:
+                    case NI_Vector_get_Pi:
+                    case NI_Vector_get_PositiveInfinity:
+                    case NI_Vector_get_Tau:
+                    case NI_Vector_get_Zero:
                     {
                         // These always produce a vector constant
 
@@ -7963,7 +7875,136 @@ public partial class Compiler
 
     public void fgInvalidateDfsTree()
     {
-        // TODO: Port Compiler.fgInvalidateDfsTree
+        _dfsTree = null;
+        _loops = null;
+        _domTree = null;
+        _domFrontiers = null;
+        _reachabilitySets = null;
+        fgSsaValid = false;
+    }
+
+    private FlowGraphDfsTree fgComputeDfs()
+    {
+        var visited = new HashSet<BasicBlock>();
+        var postOrder = new List<BasicBlock>(fgBBcount);
+        var pending = new Stack<(BasicBlock Block, List<BasicBlock> Successors, int Next)>();
+
+        void VisitEntry(BasicBlock? entry)
+        {
+            if ((entry is null) || !visited.Add(entry))
+            {
+                return;
+            }
+
+            pending.Push((entry, fgGetAllSuccessors(entry), 0));
+            while (pending.Count > 0)
+            {
+                var (block, successors, next) = pending.Pop();
+                if (next == successors.Count)
+                {
+                    postOrder.Add(block);
+                    continue;
+                }
+
+                pending.Push((block, successors, next + 1));
+                var successor = successors[next];
+                if (visited.Add(successor))
+                {
+                    pending.Push((successor, fgGetAllSuccessors(successor), 0));
+                }
+            }
+        }
+
+        VisitEntry(fgFirstBB);
+        VisitEntry(fgEntryBB);
+        if (!fgGlobalMorphDone)
+        {
+            VisitEntry(genReturnBB);
+        }
+
+        return new FlowGraphDfsTree(postOrder);
+    }
+
+    private List<BasicBlock> fgGetAllSuccessors(BasicBlock block)
+    {
+        var successors = new List<BasicBlock>();
+        foreach (var successor in block.Succs)
+        {
+            successors.Add(successor);
+        }
+
+        if (block.Kind is BBJ_CALLFINALLYRET)
+        {
+            return successors;
+        }
+
+        var hasPotentialEHSuccs = block.hasTryIndex;
+        if (!hasPotentialEHSuccs && block.hasHndIndex)
+        {
+            hasPotentialEHSuccs = ehGetDsc(block.HndIndex).InFilterRegionBBRange(block);
+        }
+
+        if (!hasPotentialEHSuccs)
+        {
+            return successors;
+        }
+
+        ref var eh = ref ehGetBlockExnFlowDsc(block);
+        while (!Unsafe.IsNullRef(in eh))
+        {
+            if (eh.HasFilter)
+            {
+                successors.Add(eh.ebdFilter);
+                successors.Add(eh.ebdHndBeg);
+            }
+            else if ((block.Kind is not BBJ_CALLFINALLY) || (block.Target != eh.ebdHndBeg))
+            {
+                successors.Add(eh.ebdHndBeg);
+            }
+
+            if (eh.ebdEnclosingTryIndex == EHblkDsc.NO_ENCLOSING_INDEX)
+            {
+                break;
+            }
+
+            eh = ref ehGetDsc(eh.ebdEnclosingTryIndex);
+        }
+
+        if (block.hasHndIndex)
+        {
+            var hndIndex = block.HndIndex;
+            ref var enclosing = ref ehGetDsc(hndIndex);
+            if (enclosing.InFilterRegionBBRange(block))
+            {
+                for (var index = hndIndex - 1; index >= 0; index--)
+                {
+                    var enclosingIndex = ehGetEnclosingRegionIndex((ushort)index, out var inTry);
+                    var isEnclosed = false;
+                    while (enclosingIndex != EHblkDsc.NO_ENCLOSING_INDEX)
+                    {
+                        if (enclosingIndex == hndIndex)
+                        {
+                            isEnclosed = true;
+                            break;
+                        }
+
+                        enclosingIndex = ehGetEnclosingRegionIndex(enclosingIndex, out inTry);
+                    }
+
+                    if (!isEnclosed)
+                    {
+                        break;
+                    }
+
+                    if (inTry && ehGetDsc((ushort)index).HasFinallyOrFaultHandler)
+                    {
+                        successors.Add(ehGetDsc((ushort)index).ebdHndBeg);
+                    }
+                }
+            }
+        }
+
+        return successors;
     }
 
     /// <summary>Clear up annotations for any struct promotion temps created for implicit byrefs.</summary>
@@ -9580,6 +9621,483 @@ public partial class Compiler
     // TODO: Port phase - fgRemoveEmptyTryCatchOrTryFault
     public PhaseStatus fgRemoveEmptyTryCatchOrTryFault() => PhaseStatus.MODIFIED_NOTHING;
 
+    /// <summary>Remove EH regions whose try entry is unreachable, including structurally enclosed regions.</summary>
+    private PhaseStatus fgRemoveUnreachableTry()
+    {
+        JITDUMP("\n*************** In fgRemoveUnreachableTry()\n");
+
+        assert(!fgFuncletsCreated);
+        assert(fgPredsComputed);
+
+        var enabled = true;
+#if DEBUG
+        enabled = JitConfig.JitEnableRemoveUnreachableTry == 1;
+#endif
+        if (!enabled)
+        {
+            JITDUMP("Unreachable try removal disabled by config.\n");
+            return PhaseStatus.MODIFIED_NOTHING;
+        }
+
+        if (compHndBBtabCount == 0)
+        {
+            JITDUMP("No EH in this method; nothing to do.\n");
+            return PhaseStatus.MODIFIED_NOTHING;
+        }
+
+        if (opts.MinOpts)
+        {
+            JITDUMP("Method compiled with MinOpts; skipping.\n");
+            return PhaseStatus.MODIFIED_NOTHING;
+        }
+
+        if (opts.compDbgCode)
+        {
+            JITDUMP("Method compiled with debug codegen; skipping.\n");
+            return PhaseStatus.MODIFIED_NOTHING;
+        }
+
+        var ownsDfs = false;
+        if (_dfsTree is null)
+        {
+            _dfsTree = fgComputeDfs();
+            ownsDfs = true;
+        }
+
+        var traits = new BitVecTraits(this, compHndBBtabCount);
+        var markedDead = BitVecOps.MakeEmpty(traits);
+        var foundDead = false;
+
+        // First identify directly dead entries. Retarget call-finally pairs before
+        // dropping their handler; the continuation remains reachable.
+        for (var xtnum = 0; xtnum < compHndBBtabCount; xtnum++)
+        {
+            ref var hBtab = ref ehGetDsc((ushort)xtnum);
+            var tryBeg = hBtab.ebdTryBeg;
+            var hndBeg = hBtab.ebdHndBeg;
+
+            if (_dfsTree.Contains(tryBeg))
+            {
+                continue;
+            }
+
+            BitVecOps.AddElemD(traits, markedDead, xtnum);
+            foundDead = true;
+            JITDUMP($"EH#{xtnum} try entry {FMT_BB(tryBeg.bbNum)} is unreachable.\n");
+
+            if (hBtab.HasFinallyHandler)
+            {
+                foreach (var pred in hndBeg.PredBlocksEditing)
+                {
+                    if ((pred.Kind is not BBJ_CALLFINALLY) || !pred.isBBCallFinallyPair)
+                    {
+                        continue;
+                    }
+
+                    var tail = pred.Next;
+                    noway_assert(tail is not null);
+                    assert(tail.Kind is BBJ_CALLFINALLYRET);
+                    var continuation = tail.Target;
+                    JITDUMP($"  retargeting callfinally {FMT_BB(pred.bbNum)} to continuation {FMT_BB(continuation.bbNum)}, removing tail {FMT_BB(tail.bbNum)}\n");
+
+                    fgPrepareCallFinallyRetForRemoval(tail);
+                    fgRemoveBlock(tail, unreachable: true);
+
+                    fgRemoveRefPred(pred.TargetEdge);
+                    var newEdge = fgAddRefPred(continuation, pred);
+                    pred.SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+                    pred.RemoveFlags(BBF_RETLESS_CALL);
+
+                    if (pred.hasProfileWeight)
+                    {
+                        fgPgoConsistent = false;
+                    }
+                }
+            }
+        }
+
+        if (!foundDead)
+        {
+            JITDUMP("No unreachable EH regions found.\n");
+            if (ownsDfs)
+            {
+                fgInvalidateDfsTree();
+            }
+            return PhaseStatus.MODIFIED_NOTHING;
+        }
+
+        // EH entries are inner-first. Walk from outermost to innermost to
+        // propagate death through both enclosing try and handler regions.
+        for (var xtnum = compHndBBtabCount - 1; xtnum >= 0; xtnum--)
+        {
+            if (BitVecOps.IsMember(traits, markedDead, xtnum))
+            {
+                continue;
+            }
+
+            ref var hBtab = ref ehGetDsc((ushort)xtnum);
+            var encT = hBtab.ebdEnclosingTryIndex;
+            var encH = hBtab.ebdEnclosingHndIndex;
+            if (((encT != EHblkDsc.NO_ENCLOSING_INDEX) && BitVecOps.IsMember(traits, markedDead, encT))
+                || ((encH != EHblkDsc.NO_ENCLOSING_INDEX) && BitVecOps.IsMember(traits, markedDead, encH)))
+            {
+                BitVecOps.AddElemD(traits, markedDead, xtnum);
+                JITDUMP($"EH#{xtnum} is transitively dead (enclosed in a dead region).\n");
+            }
+        }
+
+        // Unprotect all blocks in dead regions and remove artificial entry references.
+        var removedCount = 0;
+        for (var xtnum = 0; xtnum < compHndBBtabCount; xtnum++)
+        {
+            if (!BitVecOps.IsMember(traits, markedDead, xtnum))
+            {
+                continue;
+            }
+
+            ref var hBtab = ref ehGetDsc((ushort)xtnum);
+            foreach (var block in new BasicBlockSimpleList(hBtab.ebdTryBeg))
+            {
+                block.RemoveFlags(BBF_DONT_REMOVE);
+                if (block == hBtab.ebdTryLast)
+                {
+                    break;
+                }
+            }
+
+            foreach (var block in new BasicBlockSimpleList(hBtab.ebdHndBeg))
+            {
+                block.RemoveFlags(BBF_DONT_REMOVE);
+                if (block == hBtab.ebdHndLast)
+                {
+                    break;
+                }
+            }
+
+            if (hBtab.HasFilter)
+            {
+                foreach (var block in new BasicBlockSimpleList(hBtab.ebdFilter))
+                {
+                    block.RemoveFlags(BBF_DONT_REMOVE);
+                    if (block == hBtab.BBFilterLast)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            assert(hBtab.ebdHndBeg.bbRefs >= 1);
+            hBtab.ebdHndBeg.bbRefs--;
+
+            if (hBtab.HasFilter)
+            {
+                assert(hBtab.ebdFilter.bbRefs >= 1);
+                hBtab.ebdFilter.bbRefs--;
+            }
+
+            removedCount++;
+        }
+
+        // Clear now-invalid block EH indices before dropping entries in descending order.
+        foreach (var block in Blocks)
+        {
+            if (block.hasTryIndex && BitVecOps.IsMember(traits, markedDead, block.TryIndex))
+            {
+                block.clearTryIndex();
+            }
+
+            if (block.hasHndIndex && BitVecOps.IsMember(traits, markedDead, block.HndIndex))
+            {
+                block.clearHndIndex();
+            }
+        }
+
+        for (var xtnum = compHndBBtabCount - 1; xtnum >= 0; xtnum--)
+        {
+            if (!BitVecOps.IsMember(traits, markedDead, xtnum))
+            {
+                continue;
+            }
+
+            JITDUMP($"Dropping EH#{xtnum} (try entry {FMT_BB(compHndBBtab[xtnum].ebdTryBeg.bbNum)})\n");
+            fgUpdateACDsBeforeEHTableEntryRemoval((ushort)xtnum);
+            fgRemoveEHTableEntry((ushort)xtnum);
+        }
+
+        // Rebuild reachability after retargeting and region removal, then prune
+        // blocks that have become unreachable.
+        fgInvalidateDfsTree();
+        _dfsTree = fgComputeDfs();
+        fgRemoveBlocksOutsideDfsTree();
+
+        fgInvalidateDfsTree();
+        if (!ownsDfs)
+        {
+            _dfsTree = fgComputeDfs();
+        }
+
+        JITDUMP($"\nfgRemoveUnreachableTry removed {removedCount} unreachable EH region(s)\n");
+        return PhaseStatus.MODIFIED_EVERYTHING;
+    }
+
+    private void fgUpdateACDsBeforeEHTableEntryRemoval(ushort xtnum)
+    {
+        if (!fgHasAddCodeDscMap)
+        {
+            return;
+        }
+
+        ref var eh = ref ehGetDsc(xtnum);
+        var map = fgAddCodeDscMap;
+
+        foreach (var add in new List<AddCodeDsc>(map.Values))
+        {
+            var oldKey = new AddCodeDscKey(add);
+            var inHnd = add.acdHndIndex > 0;
+            var inTry = add.acdTryIndex > 0;
+            var inThisHnd = inHnd && (add.acdHndIndex - 1 == xtnum);
+            var inThisTry = inTry && (add.acdTryIndex - 1 == xtnum);
+
+            if (inThisHnd && (add.acdKeyDsg is AcdKeyDesignator.KD_FLT))
+            {
+                var removed = map.Remove(oldKey);
+                assert(removed);
+                continue;
+            }
+
+            if (!inThisTry && !inThisHnd)
+            {
+                continue;
+            }
+
+            var rekey = false;
+            if (inThisHnd)
+            {
+                add.acdHndIndex = eh.ebdEnclosingHndIndex == EHblkDsc.NO_ENCLOSING_INDEX
+                    ? (ushort)0
+                    : (ushort)(eh.ebdEnclosingHndIndex + 1);
+                rekey = add.acdKeyDsg is AcdKeyDesignator.KD_HND;
+            }
+
+            if (inThisTry)
+            {
+                add.acdTryIndex = eh.ebdEnclosingTryIndex == EHblkDsc.NO_ENCLOSING_INDEX
+                    ? (ushort)0
+                    : (ushort)(eh.ebdEnclosingTryIndex + 1);
+                rekey = add.acdKeyDsg is AcdKeyDesignator.KD_TRY;
+            }
+
+            if (!rekey)
+            {
+                continue;
+            }
+
+            _ = add.UpdateKeyDesignator(this);
+            var oldKeyRemoved = map.Remove(oldKey);
+            assert(oldKeyRemoved);
+            var newKey = new AddCodeDscKey(add);
+            if (!map.ContainsKey(newKey))
+            {
+                map[newKey] = add;
+            }
+        }
+    }
+
+    private void fgRemoveEHTableEntry(ushort xtnum)
+    {
+        assert((compHndBBtabCount > 0) && (xtnum < compHndBBtabCount) && !ehTableFinalized);
+        JITDUMP($"\nRemoving EH#{xtnum}\n");
+
+        compHndBBtabCount--;
+        if (compHndBBtabCount != 0)
+        {
+            ref var removed = ref compHndBBtab[xtnum];
+            for (var i = 0; i < compHndBBtabCount; i++)
+            {
+                if (i == xtnum)
+                {
+                    continue;
+                }
+
+                ref var clause = ref compHndBBtab[i];
+                if ((clause.ebdEnclosingTryIndex != EHblkDsc.NO_ENCLOSING_INDEX)
+                    && (clause.ebdEnclosingTryIndex >= xtnum))
+                {
+                    if (clause.ebdEnclosingTryIndex == xtnum)
+                    {
+                        clause.ebdEnclosingTryIndex = removed.ebdEnclosingTryIndex;
+                    }
+
+                    if ((clause.ebdEnclosingTryIndex > xtnum)
+                        && (clause.ebdEnclosingTryIndex != EHblkDsc.NO_ENCLOSING_INDEX))
+                    {
+                        clause.ebdEnclosingTryIndex--;
+                    }
+                }
+
+                if ((clause.ebdEnclosingHndIndex != EHblkDsc.NO_ENCLOSING_INDEX)
+                    && (clause.ebdEnclosingHndIndex >= xtnum))
+                {
+                    if (clause.ebdEnclosingHndIndex == xtnum)
+                    {
+                        clause.ebdEnclosingHndIndex = removed.ebdEnclosingHndIndex;
+                    }
+
+                    if ((clause.ebdEnclosingHndIndex > xtnum)
+                        && (clause.ebdEnclosingHndIndex != EHblkDsc.NO_ENCLOSING_INDEX))
+                    {
+                        clause.ebdEnclosingHndIndex--;
+                    }
+                }
+            }
+
+            foreach (var block in Blocks)
+            {
+                if (block.hasTryIndex)
+                {
+                    if (block.TryIndex == xtnum)
+                    {
+                        noway_assert(block.HasFlag(BBF_REMOVED));
+                    }
+                    else if (block.TryIndex > xtnum)
+                    {
+                        block.TryIndex = (ushort)(block.TryIndex - 1);
+                    }
+                }
+
+                if (block.hasHndIndex)
+                {
+                    if (block.HndIndex == xtnum)
+                    {
+                        noway_assert(block.HasFlag(BBF_REMOVED));
+                    }
+                    else if (block.HndIndex > xtnum)
+                    {
+                        block.HndIndex = (ushort)(block.HndIndex - 1);
+                    }
+                }
+            }
+
+            if (xtnum < compHndBBtabCount)
+            {
+                compHndBBtab.AsSpan(xtnum + 1, compHndBBtabCount - xtnum)
+                    .CopyTo(compHndBBtab.AsSpan(xtnum));
+            }
+        }
+
+        if (fgHasAddCodeDscMap)
+        {
+            var map = fgAddCodeDscMap;
+            var modified = new Stack<AddCodeDsc>();
+            foreach (var add in new List<AddCodeDsc>(map.Values))
+            {
+                var oldKey = new AddCodeDscKey(add);
+                assert((add.acdTryIndex == 0) || (add.acdTryIndex - 1 != xtnum));
+                assert((add.acdHndIndex == 0) || (add.acdHndIndex - 1 != xtnum));
+
+                var isModified = false;
+                if (add.acdTryIndex > xtnum)
+                {
+                    add.acdTryIndex--;
+                    isModified = true;
+                }
+
+                if (add.acdHndIndex > xtnum)
+                {
+                    add.acdHndIndex--;
+                    isModified = true;
+                }
+
+                if (isModified)
+                {
+                    _ = add.UpdateKeyDesignator(this);
+                    var removed = map.Remove(oldKey);
+                    assert(removed);
+                    modified.Push(add);
+                }
+            }
+
+            while (modified.Count > 0)
+            {
+                var add = modified.Pop();
+                var key = new AddCodeDscKey(add);
+                if (!map.ContainsKey(key))
+                {
+                    map[key] = add;
+                }
+            }
+        }
+    }
+
+    private bool fgRemoveBlocksOutsideDfsTree()
+    {
+        assert(_dfsTree is not null);
+        if (_dfsTree.PostOrderCount == fgBBcount)
+        {
+            return false;
+        }
+
+        // Removing a call-finally pair can expose additional dead blocks; recompute
+        // reachability only in that case and repeat until the graph is closed.
+        while (true)
+        {
+            var anyCallFinallyPairs = false;
+            var hasUnreachableBlocks = false;
+
+            foreach (var block in Blocks)
+            {
+                if (block.HasFlag(BBF_THROW_HELPER) || (block == genReturnBB)
+                    || (block.HasFlag(BBF_DONT_REMOVE) && block.IsEmpty && (block.Kind is BBJ_THROW))
+                    || _dfsTree.Contains(block))
+                {
+                    continue;
+                }
+
+                anyCallFinallyPairs |= block.isBBCallFinallyPair;
+                fgUnreachableBlock(block);
+                noway_assert(block.HasFlag(BBF_REMOVED));
+
+                if (block.HasFlag(BBF_DONT_REMOVE))
+                {
+                    if (block.isBBCallFinallyPair)
+                    {
+                        var tail = block.Next;
+                        noway_assert(tail is not null);
+                        fgPrepareCallFinallyRetForRemoval(tail);
+                    }
+
+                    block.RemoveFlags(BBF_REMOVED | BBF_INTERNAL);
+                    block.SetFlags(BBF_IMPORTED);
+                    block.SetKindAndTargetEdge(BBJ_THROW, null);
+                    block.bbSetRunRarely();
+                }
+                else
+                {
+                    hasUnreachableBlocks = true;
+                }
+            }
+
+            if (hasUnreachableBlocks)
+            {
+                for (var block = fgFirstBB; block is not null;)
+                {
+                    block = block.HasFlag(BBF_REMOVED)
+                        ? fgRemoveBlock(block, unreachable: true)
+                        : block.Next;
+                }
+            }
+
+            if (!anyCallFinallyPairs)
+            {
+                break;
+            }
+
+            _dfsTree = fgComputeDfs();
+        }
+
+        return true;
+    }
+
     // TODO: Port phase - fgRepairProfile
     public PhaseStatus fgRepairProfile() => PhaseStatus.MODIFIED_NOTHING;
 
@@ -9594,9 +10112,6 @@ public partial class Compiler
 
     // TODO: Port phase - fgSsaBuild
     public PhaseStatus fgSsaBuild() => PhaseStatus.MODIFIED_NOTHING;
-
-    // TODO: Port phase - fgTailMergeThrows
-    public PhaseStatus fgTailMergeThrows() => PhaseStatus.MODIFIED_NOTHING;
 
     // TODO: Port phase - fgTransformIndirectCalls
     public PhaseStatus fgTransformIndirectCalls() => PhaseStatus.MODIFIED_NOTHING;
@@ -9616,6 +10131,12 @@ public partial class Compiler
 #if TARGET_WASM
     // TODO: Port phase - fgWasmEhFlow
     public PhaseStatus fgWasmEhFlow() => PhaseStatus.MODIFIED_NOTHING;
+
+#if TARGET_WASM
+    public PhaseStatus fgWasmRepairTryEntries() => throw new NotImplementedException("Wasm repair try entries is not ported.");
+
+    public PhaseStatus fgWasmSpillRefs() => throw new NotImplementedException("Wasm reference spilling is not ported.");
+#endif
 
     // TODO: Port phase - fgWasmControlFlow
     public PhaseStatus fgWasmControlFlow() => PhaseStatus.MODIFIED_NOTHING;
@@ -9787,6 +10308,179 @@ public partial class Compiler
 
     // TODO: Port phase - fgLocalMorph
     private PhaseStatus fgLocalMorph() => PhaseStatus.MODIFIED_NOTHING;
+
+    /// <summary>Unpin locals whose every definition produces a non-movable value.</summary>
+    private PhaseStatus fgUnpinNonMovableLocals()
+    {
+        if (opts.OptimizationDisabled)
+        {
+            return PhaseStatus.MODIFIED_NOTHING;
+        }
+
+        var traits = new BitVecTraits(this, lvaCount);
+        var hasNoGcValue = BitVecOps.MakeEmpty(traits);
+        var anyPinned = false;
+
+        for (var lclNum = 0; lclNum < lvaCount; lclNum++)
+        {
+            ref var varDsc = ref lvaGetDesc(lclNum);
+            anyPinned |= varDsc.lvPinned;
+
+            // Parameters, implicit references, and address-exposed locals may have unseen definitions.
+            if (!varDsc.lvImplicitlyReferenced && !varDsc.lvIsParam && !varDsc.IsAddressExposed)
+            {
+                BitVecOps.AddElemD(traits, hasNoGcValue, lclNum);
+            }
+        }
+
+        if (!anyPinned)
+        {
+            return PhaseStatus.MODIFIED_NOTHING;
+        }
+
+        // A local leaves the no-GC lattice on its first unproven definition; repeated
+        // passes propagate this monotonically through chains of local-to-local stores.
+        var iterations = 0;
+        var changed = true;
+
+        while (changed)
+        {
+            changed = false;
+            iterations++;
+
+            foreach (var block in Blocks)
+            {
+                foreach (var stmt in block.Statements)
+                {
+                    foreach (var lcl in stmt.LocalsTreeList)
+                    {
+                        if (lcl.Oper is GT_STORE_LCL_VAR)
+                        {
+                            var dstLclNum = lcl.LclNum;
+                            ref var dstDsc = ref lvaGetDesc(dstLclNum);
+                            var value = lcl.Data;
+
+                            // Struct stores implicitly define the promoted fields. Propagate
+                            // only when corresponding source and destination fields match.
+                            if (varTypeIsStruct(dstDsc.Type) && dstDsc.lvPromoted)
+                            {
+                                var srcLclNum = BAD_VAR_NUM;
+                                var srcEligible = false;
+
+                                if (value.Oper is GT_LCL_VAR)
+                                {
+                                    srcLclNum = value.AsLclVar().LclNum;
+                                    ref var srcDsc = ref lvaGetDesc(srcLclNum);
+                                    srcEligible = varTypeIsStruct(srcDsc.Type) && srcDsc.lvPromoted
+                                        && (srcDsc.lvFieldCnt == dstDsc.lvFieldCnt);
+                                }
+
+                                for (var i = 0; i < dstDsc.lvFieldCnt; i++)
+                                {
+                                    var dstFieldLclNum = dstDsc.lvFieldLclStart + i;
+                                    if (!BitVecOps.IsMember(traits, hasNoGcValue, dstFieldLclNum))
+                                    {
+                                        continue;
+                                    }
+
+                                    var isNoGc = false;
+                                    if (srcEligible)
+                                    {
+                                        ref var dstFld = ref lvaGetDesc(dstFieldLclNum);
+                                        ref var srcDsc = ref lvaGetDesc(srcLclNum);
+                                        var srcFieldLclNum = srcDsc.lvFieldLclStart + i;
+                                        ref var srcFld = ref lvaGetDesc(srcFieldLclNum);
+
+                                        if (dstFld.lvIsStructField && srcFld.lvIsStructField
+                                            && (dstFld.lvParentLcl == dstLclNum) && (srcFld.lvParentLcl == srcLclNum)
+                                            && (dstFld.lvFldOffset == srcFld.lvFldOffset)
+                                            && (dstFld.lvFldOrdinal == srcFld.lvFldOrdinal)
+                                            && (dstFld.Type == srcFld.Type))
+                                        {
+                                            isNoGc = BitVecOps.IsMember(traits, hasNoGcValue, srcFieldLclNum);
+                                        }
+                                    }
+
+                                    if (!isNoGc)
+                                    {
+                                        BitVecOps.RemoveElemD(traits, hasNoGcValue, dstFieldLclNum);
+                                        changed = true;
+                                    }
+                                }
+
+                                if (BitVecOps.IsMember(traits, hasNoGcValue, dstLclNum))
+                                {
+                                    BitVecOps.RemoveElemD(traits, hasNoGcValue, dstLclNum);
+                                    changed = true;
+                                }
+
+                                continue;
+                            }
+
+                            if (!BitVecOps.IsMember(traits, hasNoGcValue, dstLclNum))
+                            {
+                                continue;
+                            }
+
+                            var isNoGcValue = value.IsNotGcDef();
+                            if (!isNoGcValue && (value.Oper is GT_LCL_VAR))
+                            {
+                                isNoGcValue = BitVecOps.IsMember(traits, hasNoGcValue, value.AsLclVar().LclNum);
+                            }
+
+                            if (!isNoGcValue)
+                            {
+                                BitVecOps.RemoveElemD(traits, hasNoGcValue, dstLclNum);
+                                changed = true;
+                            }
+
+                            continue;
+                        }
+
+                        if ((lcl.Flags & GTF_VAR_DEF) != 0)
+                        {
+                            var dstLclNum = lcl.LclNum;
+                            ref var dstDsc = ref lvaGetDesc(dstLclNum);
+
+                            if (BitVecOps.IsMember(traits, hasNoGcValue, dstLclNum))
+                            {
+                                BitVecOps.RemoveElemD(traits, hasNoGcValue, dstLclNum);
+                                changed = true;
+                            }
+
+                            if (varTypeIsStruct(dstDsc.Type) && dstDsc.lvPromoted)
+                            {
+                                for (var i = 0; i < dstDsc.lvFieldCnt; i++)
+                                {
+                                    var dstFieldLclNum = dstDsc.lvFieldLclStart + i;
+                                    if (BitVecOps.IsMember(traits, hasNoGcValue, dstFieldLclNum))
+                                    {
+                                        BitVecOps.RemoveElemD(traits, hasNoGcValue, dstFieldLclNum);
+                                        changed = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        var unpinned = 0;
+        for (var lclNum = 0; lclNum < lvaCount; lclNum++)
+        {
+            ref var varDsc = ref lvaGetDesc(lclNum);
+            if (varDsc.lvPinned && BitVecOps.IsMember(traits, hasNoGcValue, lclNum))
+            {
+                varDsc.lvPinned = false;
+                unpinned++;
+                JITDUMP($"V{lclNum:D2} unpinned: all defs are no-gc\n");
+            }
+        }
+
+        JITDUMP($"fgUnpinNonMovableLocals: {unpinned} local{(unpinned == 1 ? "" : "s")} unpinned after {iterations} iteration{(iterations == 1 ? "" : "s")}\n");
+        return PhaseStatus.MODIFIED_NOTHING;
+    }
 
     // TODO: Port phase - fgMarkImplicitByRefCopyOmissionCandidates
     private PhaseStatus fgMarkImplicitByRefCopyOmissionCandidates() => PhaseStatus.MODIFIED_NOTHING;

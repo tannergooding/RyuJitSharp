@@ -110,12 +110,6 @@ public partial class Compiler
                 break;
             }
 
-            case GTF_ICON_PINVKI_HDL:
-            {
-                jitprintf($" {"pinvoke"}");
-                break;
-            }
-
             case GTF_ICON_TOKEN_HDL:
             {
                 jitprintf($" {"token"}");

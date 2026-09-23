@@ -28,9 +28,6 @@ public struct CORINFO_EE_INFO
 
     public int offsetOfDelegateFirstTarget;
 
-    // Wrapper delegate offsets
-    public int offsetOfWrapperDelegateIndirectCell;
-
     // Reverse PInvoke offsets
     public int sizeOfReversePInvokeFrame;
 

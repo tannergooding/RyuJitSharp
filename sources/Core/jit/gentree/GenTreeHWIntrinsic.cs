@@ -18,10 +18,8 @@ public sealed class GenTreeHWIntrinsic : GenTreeJitIntrinsic
 
     public NamedIntrinsic HWIntrinsicId => _hwIntrinsicId;
 
-#if TARGET_ARM64
-    public bool IsCreate => _hwIntrinsicId is NI_Vector64_Create or NI_Vector128_Create;
-#elif TARGET_XARCH
-    public bool IsCreate => _hwIntrinsicId is NI_Vector128_Create or NI_Vector256_Create or NI_Vector512_Create;
+#if FEATURE_HW_INTRINSICS
+    public bool IsCreate => _hwIntrinsicId is NI_Vector_Create;
 #endif
 
     /// <summary>Does this HWI node have memory load or store semantics?</summary>

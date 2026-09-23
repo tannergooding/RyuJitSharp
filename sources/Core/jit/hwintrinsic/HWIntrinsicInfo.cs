@@ -101,6 +101,10 @@ public readonly partial struct HWIntrinsicInfo
         return s_flags[id - NI_HW_INTRINSIC_START];
     }
 
+    public static bool ReturnsBoolean(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_ReturnsBoolean) != 0;
+
+    public static bool ReturnsScalarT(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_ReturnsScalarT) != 0;
+
 #if TARGET_XARCH
     public static byte lookupFltCost(NamedIntrinsic id)
     {

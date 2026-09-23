@@ -8,12 +8,8 @@ namespace RyuJitSharp;
 public partial class Globals
 {
 #if TARGET_XARCH
-    public const NamedIntrinsic FIRST_NI_Vector128 = NI_Vector128_Abs;
-    public const NamedIntrinsic LAST_NI_Vector128 = NI_Vector128_op_UnsignedRightShift;
-    public const NamedIntrinsic FIRST_NI_Vector256 = NI_Vector256_Abs;
-    public const NamedIntrinsic LAST_NI_Vector256 = NI_Vector256_op_UnsignedRightShift;
-    public const NamedIntrinsic FIRST_NI_Vector512 = NI_Vector512_Abs;
-    public const NamedIntrinsic LAST_NI_Vector512 = NI_Vector512_op_UnsignedRightShift;
+    public const NamedIntrinsic FIRST_NI_Vector = NI_Vector_Abs;
+    public const NamedIntrinsic LAST_NI_Vector = NI_Vector_op_UnsignedRightShift;
     public const NamedIntrinsic FIRST_NI_X86Base = NI_X86Base_Abs;
     public const NamedIntrinsic LAST_NI_X86Base = NI_X86Base_Xor;
     public const NamedIntrinsic FIRST_NI_X86Base_X64 = NI_X86Base_X64_BigMul;
@@ -59,10 +55,8 @@ public partial class Globals
     public const NamedIntrinsic FIRST_NI_GFNI_V512 = NI_GFNI_V512_GaloisFieldAffineTransform;
     public const NamedIntrinsic LAST_NI_GFNI_V512 = NI_GFNI_V512_GaloisFieldMultiply;
 #elif TARGET_ARM64
-    public const NamedIntrinsic FIRST_NI_Vector64 = NI_Vector64_Abs;
-    public const NamedIntrinsic LAST_NI_Vector64 = NI_Vector64_op_UnsignedRightShift;
-    public const NamedIntrinsic FIRST_NI_Vector128 = NI_Vector128_Abs;
-    public const NamedIntrinsic LAST_NI_Vector128 = NI_Vector128_op_UnsignedRightShift;
+    public const NamedIntrinsic FIRST_NI_Vector = NI_Vector_Abs;
+    public const NamedIntrinsic LAST_NI_Vector = NI_Vector_op_UnsignedRightShift;
     public const NamedIntrinsic FIRST_NI_AdvSimd = NI_AdvSimd_Abs;
     public const NamedIntrinsic LAST_NI_AdvSimd = NI_AdvSimd_ZeroExtendWideningUpper;
     public const NamedIntrinsic FIRST_NI_AdvSimd_Arm64 = NI_AdvSimd_Arm64_Abs;

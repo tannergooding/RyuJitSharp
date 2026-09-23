@@ -9,7 +9,7 @@ using System;
 namespace RyuJitSharp;
 
 [Flags]
-public enum HWIntrinsicFlag
+public enum HWIntrinsicFlag : ulong
 {
     HW_Flag_NoFlag = 0,
 
@@ -174,6 +174,11 @@ public enum HWIntrinsicFlag
     // operations into mask operations when the intrinsic is operating on mask vectors (mainly bitwise operations).
     HW_Flag_HasAllMaskVariant = 0x4000000,
 
+#elif TARGET_WASM
+    HW_Flag_SupportsContainment = 0x400,
+    HW_Flag_ReturnsPerElementMask = 0x800,
+    HW_Flag_HasImmediateOperand = 0x1000,
+
 #else
 #error Unsupported platform
 #endif
@@ -193,5 +198,7 @@ public enum HWIntrinsicFlag
     // The intrinsic is a FusedMultiplyAdd intrinsic
     HW_Flag_FmaIntrinsic = 0x40000000,
 
-    HW_Flag_CanBenefitFromConstantProp = unchecked((int)(0x80000000)),
+    HW_Flag_CanBenefitFromConstantProp = 0x80000000UL,
+    HW_Flag_ReturnsBoolean = 0x100000000UL,
+    HW_Flag_ReturnsScalarT = 0x200000000UL,
 }

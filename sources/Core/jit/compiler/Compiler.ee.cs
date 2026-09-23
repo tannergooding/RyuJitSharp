@@ -820,6 +820,11 @@ public partial class Compiler
                 _ = stringBuilder.Append("COPY_WITH_HELPER__");
             }
 
+            if ((corInfoTypeWithMod & CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT) == CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT)
+            {
+                _ = stringBuilder.Append("SECRET_STUB_ARGUMENT__");
+            }
+
             return stringBuilder;
         }
     }
@@ -1004,6 +1009,13 @@ public partial class Compiler
     }
 
 #if DEBUG
+    /// <summary>Records optional SuperPMI data without allowing EE query failures to change compilation.</summary>
+    /// <remarks>Only EE queries may run inside this trap; it also absorbs JIT-origin failures.</remarks>
+    private void eeRunExtraSuperPmiQueries(Action query)
+    {
+        _ = eeRunFunctorWithErrorTrap(query);
+    }
+
     /// <summary>wraps getClassSize but if doing SuperPMI replay and the value isn't found, use a bogus size.</summary>
     /// <param name="clsHnd"></param>
     /// <returns>Either the actual class size, or (unsigned)-1 if SuperPMI didn't have it.</returns>

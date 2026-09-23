@@ -65,6 +65,7 @@ public enum CORINFO_InstructionSet
     InstructionSet_Crc32,
     InstructionSet_Dp,
     InstructionSet_Rdm,
+    InstructionSet_Fp16,
     InstructionSet_Sha1,
     InstructionSet_Sha256,
     InstructionSet_Atomics,
@@ -82,12 +83,14 @@ public enum CORINFO_InstructionSet
     InstructionSet_SveAes,
     InstructionSet_SveSha3,
     InstructionSet_SveSm4,
+    InstructionSet_Cssc,
     InstructionSet_ArmBase_Arm64,
     InstructionSet_AdvSimd_Arm64,
     InstructionSet_Aes_Arm64,
     InstructionSet_Crc32_Arm64,
     InstructionSet_Dp_Arm64,
     InstructionSet_Rdm_Arm64,
+    InstructionSet_Fp16_Arm64,
     InstructionSet_Sha1_Arm64,
     InstructionSet_Sha256_Arm64,
     InstructionSet_Sve_Arm64,
@@ -102,7 +105,13 @@ public enum CORINFO_InstructionSet
     InstructionSet_Zba,
     InstructionSet_Zbb,
     InstructionSet_Zbs,
+    InstructionSet_Zicond,
+#elif TARGET_WASM32
+    InstructionSet_WasmBase,
+    InstructionSet_PackedSimd,
+    InstructionSet_Vector128,
 #endif
 
+    InstructionSet_Vector = 126,
     InstructionSet_NONE = 127,
 }

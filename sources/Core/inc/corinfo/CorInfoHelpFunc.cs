@@ -269,6 +269,9 @@ public enum CorInfoHelpFunc
 
     CORINFO_HELP_BULK_WRITEBARRIER,
 
+    /// <summary>Raw worker for a small compile-time constant bulk copy without GC polling.</summary>
+    CORINFO_HELP_BULK_WRITEBARRIER_SMALL,
+
     //
     // Accessing fields
     //
@@ -367,9 +370,6 @@ public enum CorInfoHelpFunc
     // Miscellaneous
     //
 
-    /// <summary>Indirect p/invoke call.</summary>
-    CORINFO_HELP_PINVOKE_CALLI,
-
     /// <summary>Perform a tail call.</summary>
     CORINFO_HELP_TAILCALL,
 
@@ -399,9 +399,6 @@ public enum CorInfoHelpFunc
     /// <summary>Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time.</summary>
     CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE,
 
-    /// <summary>Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time, the type may be null.</summary>
-    CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL,
-
     /// <summary>Convert from a MethodDesc (native structure pointer) to RuntimeMethodHandle at run-time.</summary>
     CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD,
 
@@ -410,9 +407,6 @@ public enum CorInfoHelpFunc
 
     /// <summary>Convert from a TypeHandle (native structure pointer) to RuntimeTypeHandle at run-time.</summary>
     CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE,
-
-    /// <summary>Convert from a TypeHandle (native structure pointer) to RuntimeTypeHandle at run-time, handle might point to a null type.</summary>
-    CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL,
 
     /// <summary>Look up a virtual method at run-time.</summary>
     CORINFO_HELP_VIRTUAL_FUNC_PTR,
@@ -530,6 +524,8 @@ public enum CorInfoHelpFunc
     /// <summary>Transition to cooperative mode after a P/Invoke, frame is the first argument.</summary>
     CORINFO_HELP_JIT_PINVOKE_END,
 
+    /// <summary>Re-permit GC mode transitions before resuming managed code after a catch.</summary>
+    CORINFO_HELP_JIT_RESUME_AFTER_CATCH,
     /// <summary>Transition to cooperative mode in reverse P/Invoke prolog, frame is the first argument.</summary>
     CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER,
 
@@ -544,6 +540,9 @@ public enum CorInfoHelpFunc
 
     /// <summary>Resolve a generic virtual method target from this pointer and runtime method handle.</summary>
     CORINFO_HELP_GVMLOOKUP_FOR_SLOT,
+
+    /// <summary>Dispatch a non-generic interface method from this pointer and dispatch cell.</summary>
+    CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT,
 
     /// <summary>Resolve a non-generic interface method from this pointer and dispatch cell</summary>
     CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT,

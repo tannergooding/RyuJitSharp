@@ -41,6 +41,7 @@ public static partial class PhasesExtensions
         "Optimize mask conversions", // PHASE_OPTIMIZE_MASK_CONVERSIONS
         "Early liveness", // PHASE_EARLY_LIVENESS
         "Physical promotion", // PHASE_PHYSICAL_PROMOTION
+        "Unpin non-movable locals", // PHASE_UNPIN_LOCALS
         "Forward Substitution", // PHASE_FWD_SUB
         "Identify candidates for implicit byref copy omission", // PHASE_IMPBYREF_COPY_OMISSION
         "Morph - ByRefs", // PHASE_MORPH_IMPBYREF
@@ -53,7 +54,6 @@ public static partial class PhasesExtensions
         "Create EH funclets", // PHASE_CREATE_FUNCLETS
         "Head and tail merge", // PHASE_HEAD_TAIL_MERGE
         "Early QMARK expansion", // PHASE_EARLY_QMARK_EXPANSION
-        "Merge throw blocks", // PHASE_MERGE_THROWS
         "Invert loops", // PHASE_INVERT_LOOPS
         "Post-morph head and tail merge", // PHASE_HEAD_TAIL_MERGE2
         "Optimize control flow", // PHASE_OPTIMIZE_FLOW
@@ -99,6 +99,7 @@ public static partial class PhasesExtensions
         "Remove empty finally 3", // PHASE_EMPTY_FINALLY_3
         "Remove empty try 3", // PHASE_EMPTY_TRY_3
         "Remove empty try-catch-fault 3", // PHASE_EMPTY_TRY_CATCH_FAULT_3
+        "Remove unreachable try", // PHASE_REMOVE_UNREACHABLE_TRY
         "Update flow graph opt pass", // PHASE_OPT_UPDATE_FLOW_GRAPH
         "Remove unreachable blocks", // PHASE_OPT_DFS_BLOCKS
         "Stress gtSplitTree", // PHASE_STRESS_SPLIT_TREE
@@ -115,8 +116,10 @@ public static partial class PhasesExtensions
         "Repair profile pre-layout", // PHASE_REPAIR_PROFILE_PRE_LAYOUT
         "Wasm remove unreachable blocks", // PHASE_DFS_BLOCKS_WASM
         "Wasm eh control flow", // PHASE_WASM_EH_FLOW
+        "Wasm repair try entries", // PHASE_WASM_REPAIR_TRY_ENTRIES
         "Wasm transform sccs", // PHASE_WASM_TRANSFORM_SCCS
         "Wasm control flow", // PHASE_WASM_CONTROL_FLOW
+        "Wasm spill refs", // PHASE_WASM_SPILL_REFS
         "Wasm virtual IP", // PHASE_WASM_VIRTUAL_IP
         "Transform async", // PHASE_ASYNC
         "Local var liveness", // PHASE_LCLVARLIVENESS
@@ -173,6 +176,7 @@ public static partial class PhasesExtensions
         false, // PHASE_OPTIMIZE_MASK_CONVERSIONS
         false, // PHASE_EARLY_LIVENESS
         false, // PHASE_PHYSICAL_PROMOTION
+        false, // PHASE_UNPIN_LOCALS
         false, // PHASE_FWD_SUB
         false, // PHASE_IMPBYREF_COPY_OMISSION
         false, // PHASE_MORPH_IMPBYREF
@@ -185,7 +189,6 @@ public static partial class PhasesExtensions
         false, // PHASE_CREATE_FUNCLETS
         false, // PHASE_HEAD_TAIL_MERGE
         false, // PHASE_EARLY_QMARK_EXPANSION
-        false, // PHASE_MERGE_THROWS
         false, // PHASE_INVERT_LOOPS
         false, // PHASE_HEAD_TAIL_MERGE2
         false, // PHASE_OPTIMIZE_FLOW
@@ -231,6 +234,7 @@ public static partial class PhasesExtensions
         false, // PHASE_EMPTY_FINALLY_3
         false, // PHASE_EMPTY_TRY_3
         false, // PHASE_EMPTY_TRY_CATCH_FAULT_3
+        false, // PHASE_REMOVE_UNREACHABLE_TRY
         false, // PHASE_OPT_UPDATE_FLOW_GRAPH
         false, // PHASE_OPT_DFS_BLOCKS
         false, // PHASE_STRESS_SPLIT_TREE
@@ -247,8 +251,10 @@ public static partial class PhasesExtensions
         false, // PHASE_REPAIR_PROFILE_PRE_LAYOUT
         false, // PHASE_DFS_BLOCKS_WASM
         false, // PHASE_WASM_EH_FLOW
+        false, // PHASE_WASM_REPAIR_TRY_ENTRIES
         false, // PHASE_WASM_TRANSFORM_SCCS
         false, // PHASE_WASM_CONTROL_FLOW
+        false, // PHASE_WASM_SPILL_REFS
         false, // PHASE_WASM_VIRTUAL_IP
         false, // PHASE_ASYNC
         true, // PHASE_LCLVARLIVENESS
@@ -303,6 +309,7 @@ public static partial class PhasesExtensions
         (Phases)(-1), // PHASE_OPTIMIZE_MASK_CONVERSIONS
         (Phases)(-1), // PHASE_EARLY_LIVENESS
         (Phases)(-1), // PHASE_PHYSICAL_PROMOTION
+        (Phases)(-1), // PHASE_UNPIN_LOCALS
         (Phases)(-1), // PHASE_FWD_SUB
         (Phases)(-1), // PHASE_IMPBYREF_COPY_OMISSION
         (Phases)(-1), // PHASE_MORPH_IMPBYREF
@@ -315,7 +322,6 @@ public static partial class PhasesExtensions
         (Phases)(-1), // PHASE_CREATE_FUNCLETS
         (Phases)(-1), // PHASE_HEAD_TAIL_MERGE
         (Phases)(-1), // PHASE_EARLY_QMARK_EXPANSION
-        (Phases)(-1), // PHASE_MERGE_THROWS
         (Phases)(-1), // PHASE_INVERT_LOOPS
         (Phases)(-1), // PHASE_HEAD_TAIL_MERGE2
         (Phases)(-1), // PHASE_OPTIMIZE_FLOW
@@ -361,6 +367,7 @@ public static partial class PhasesExtensions
         (Phases)(-1), // PHASE_EMPTY_FINALLY_3
         (Phases)(-1), // PHASE_EMPTY_TRY_3
         (Phases)(-1), // PHASE_EMPTY_TRY_CATCH_FAULT_3
+        (Phases)(-1), // PHASE_REMOVE_UNREACHABLE_TRY
         (Phases)(-1), // PHASE_OPT_UPDATE_FLOW_GRAPH
         (Phases)(-1), // PHASE_OPT_DFS_BLOCKS
         (Phases)(-1), // PHASE_STRESS_SPLIT_TREE
@@ -377,8 +384,10 @@ public static partial class PhasesExtensions
         (Phases)(-1), // PHASE_REPAIR_PROFILE_PRE_LAYOUT
         (Phases)(-1), // PHASE_DFS_BLOCKS_WASM
         (Phases)(-1), // PHASE_WASM_EH_FLOW
+        (Phases)(-1), // PHASE_WASM_REPAIR_TRY_ENTRIES
         (Phases)(-1), // PHASE_WASM_TRANSFORM_SCCS
         (Phases)(-1), // PHASE_WASM_CONTROL_FLOW
+        (Phases)(-1), // PHASE_WASM_SPILL_REFS
         (Phases)(-1), // PHASE_WASM_VIRTUAL_IP
         (Phases)(-1), // PHASE_ASYNC
         (Phases)(-1), // PHASE_LCLVARLIVENESS
@@ -433,6 +442,7 @@ public static partial class PhasesExtensions
         false, // PHASE_OPTIMIZE_MASK_CONVERSIONS
         false, // PHASE_EARLY_LIVENESS
         false, // PHASE_PHYSICAL_PROMOTION
+        false, // PHASE_UNPIN_LOCALS
         false, // PHASE_FWD_SUB
         false, // PHASE_IMPBYREF_COPY_OMISSION
         false, // PHASE_MORPH_IMPBYREF
@@ -445,7 +455,6 @@ public static partial class PhasesExtensions
         false, // PHASE_CREATE_FUNCLETS
         false, // PHASE_HEAD_TAIL_MERGE
         false, // PHASE_EARLY_QMARK_EXPANSION
-        false, // PHASE_MERGE_THROWS
         false, // PHASE_INVERT_LOOPS
         false, // PHASE_HEAD_TAIL_MERGE2
         false, // PHASE_OPTIMIZE_FLOW
@@ -491,6 +500,7 @@ public static partial class PhasesExtensions
         false, // PHASE_EMPTY_FINALLY_3
         false, // PHASE_EMPTY_TRY_3
         false, // PHASE_EMPTY_TRY_CATCH_FAULT_3
+        false, // PHASE_REMOVE_UNREACHABLE_TRY
         false, // PHASE_OPT_UPDATE_FLOW_GRAPH
         false, // PHASE_OPT_DFS_BLOCKS
         false, // PHASE_STRESS_SPLIT_TREE
@@ -507,8 +517,10 @@ public static partial class PhasesExtensions
         false, // PHASE_REPAIR_PROFILE_PRE_LAYOUT
         false, // PHASE_DFS_BLOCKS_WASM
         false, // PHASE_WASM_EH_FLOW
+        false, // PHASE_WASM_REPAIR_TRY_ENTRIES
         false, // PHASE_WASM_TRANSFORM_SCCS
         false, // PHASE_WASM_CONTROL_FLOW
+        false, // PHASE_WASM_SPILL_REFS
         false, // PHASE_WASM_VIRTUAL_IP
         true, // PHASE_ASYNC
         false, // PHASE_LCLVARLIVENESS

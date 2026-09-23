@@ -41,4 +41,10 @@ public enum PhaseChecks
 
     /// <summary>flow graph has an init block</summary>
     CHECK_FG_INIT_BLOCK = 1 << 9,
+
+    /// <summary>LIR values with no user are marked as unused</summary>
+    CHECK_LIR_UNUSED_VALUES = 1 << 10,
+
+    /// <summary>allow and count extra IR flags</summary>
+    CHECK_IR_RELAXED = 1 << 11,
 }

@@ -3551,6 +3551,7 @@ public partial class Compiler
         WellKnownArg.AsyncSynchronizationContext => "sync ctx",
         WellKnownArg.WasmShadowStackPointer => "wasm sp",
         WellKnownArg.WasmPortableEntryPoint => "wasm pep",
+        WellKnownArg.SecretStubParam => "secret arg",
         _ => "",
     };
 #endif
@@ -4450,7 +4451,6 @@ public partial class Compiler
         switch (helper)
         {
             case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE:
-            case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL:
             {
                 // Note for some runtimes these helpers return exact types.
                 // But in those cases the types are also sealed, so there's no need to claim exactness here.
@@ -4459,7 +4459,7 @@ public partial class Compiler
                 assert(runtimeType != NO_CLASS_HANDLE);
 
                 objClass = runtimeType;
-                isNonNull = helper is CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE;
+                isNonNull = true;
                 break;
             }
 
@@ -6468,8 +6468,7 @@ public partial class Compiler
     /// <returns>True if so</returns>
     public bool gtIsTypeHandleToRuntimeTypeHelper(GenTreeCall call)
     {
-        return call.IsHelperCall(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE) ||
-               call.IsHelperCall(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL);
+        return call.IsHelperCall(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE);
     }
 
     public bool gtIsTypeHandleToRuntimeTypeHandleHelper(GenTreeCall call)
@@ -6484,11 +6483,6 @@ public partial class Compiler
         if (call.IsHelperCall(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE))
         {
             helper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE;
-            return true;
-        }
-        else if (call.IsHelperCall(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL))
-        {
-            helper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL;
             return true;
         }
         else
@@ -8074,7 +8068,7 @@ public partial class Compiler
                 }
                 else
                 {
-                    assert(op2.IsHWIntrinsic(NI_Vector128_CreateScalar));
+                    assert(op2.IsHWIntrinsic(NI_Vector_CreateScalar));
 
                     ref var op2Op1Ref = ref op2.AsHWIntrinsic().GetOpRef(1);
                     var shiftCountDup = fgMakeMultiUse(ref op2Op1Ref);
@@ -8222,14 +8216,14 @@ public partial class Compiler
 
                         if (compOpportunisticallyDependsOn(InstructionSet_AVX512) && simdSize is 32)
                         {
-                            return gtNewSimdHWIntrinsicNode(type, NI_Vector256_op_Division, simdBaseType, simdSize, op1, op2);
+                            return gtNewSimdHWIntrinsicNode(type, NI_Vector_op_Division, simdBaseType, simdSize, op1, op2);
                         }
 
                         assert(simdSize is 16);
 
                         if (compOpportunisticallyDependsOn(InstructionSet_AVX))
                         {
-                            return gtNewSimdHWIntrinsicNode(type, NI_Vector128_op_Division, simdBaseType, simdSize, op1, op2);
+                            return gtNewSimdHWIntrinsicNode(type, NI_Vector_op_Division, simdBaseType, simdSize, op1, op2);
                         }
 
                         var op1Dup = fgMakeMultiUse(ref op1);
@@ -8241,8 +8235,8 @@ public partial class Compiler
                         var op1Hi = gtNewSimdHWIntrinsicNode(type, NI_X86Base_MoveHighToLow, TYP_FLOAT, simdSize, op1, op1Dup);
                         var op2Hi = gtNewSimdHWIntrinsicNode(type, NI_X86Base_MoveHighToLow, TYP_FLOAT, simdSize, op2, op2Dup);
 
-                        var divLo = gtNewSimdHWIntrinsicNode(type, NI_Vector128_op_Division, simdBaseType, simdSize, op1Dup2, op2Dup2);
-                        var divHi = gtNewSimdHWIntrinsicNode(type, NI_Vector128_op_Division, simdBaseType, simdSize, op1Hi, op2Hi);
+                        var divLo = gtNewSimdHWIntrinsicNode(type, NI_Vector_op_Division, simdBaseType, simdSize, op1Dup2, op2Dup2);
+                        var divHi = gtNewSimdHWIntrinsicNode(type, NI_Vector_op_Division, simdBaseType, simdSize, op1Hi, op2Hi);
 
                         var div = gtNewSimdHWIntrinsicNode(type, NI_X86Base_MoveLowToHigh, TYP_FLOAT, simdSize, divHi, divLo);
                         return gtNewSimdHWIntrinsicNode(type, NI_X86Base_Shuffle, simdBaseType, simdSize, div, gtNewIconNode(TYP_INT, 0x4E));
@@ -8534,27 +8528,11 @@ public partial class Compiler
             return vecCon;
         }
 
-        var hwIntrinsicId = NI_Vector128_Create;
-
-#if TARGET_XARCH
-        if (simdSize is 64)
-        {
-            hwIntrinsicId = NI_Vector512_Create;
-        }
-        else if (simdSize is 32)
-        {
-            hwIntrinsicId = NI_Vector256_Create;
-        }
-#elif TARGET_ARM64
-        if (simdSize is 8)
-        {
-            hwIntrinsicId = NI_Vector64_Create;
-        }
+#if TARGET_XARCH || TARGET_ARM64
+        return gtNewSimdHWIntrinsicNode(type, NI_Vector_Create, simdBaseType, simdSize, op1);
 #else
 #error Unsupported platform
 #endif
-
-        return gtNewSimdHWIntrinsicNode(type, hwIntrinsicId, simdBaseType, simdSize, op1);
     }
 
     public GenTree gtNewSimdCmpOpNode(genTreeOps op, var_types type, GenTree op1, GenTree op2, var_types simdBaseType, byte simdSize)
@@ -8751,8 +8729,6 @@ public partial class Compiler
 
         assert(varTypeIsArithmetic(simdBaseType));
 
-        var intrinsic = NI_Illegal;
-
         switch (op)
         {
 #if TARGET_XARCH
@@ -8761,15 +8737,6 @@ public partial class Compiler
                 if (simdSize is 32)
                 {
                     assert(varTypeIsFloating(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
-                    intrinsic = NI_Vector256_op_Equality;
-                }
-                else if (simdSize is 64)
-                {
-                    intrinsic = NI_Vector512_op_Equality;
-                }
-                else
-                {
-                    intrinsic = NI_Vector128_op_Equality;
                 }
                 break;
             }
@@ -8789,15 +8756,6 @@ public partial class Compiler
                     // other things, inverting the comparison and potentially support for a
                     // new Avx.TestNotZ intrinsic to ensure the codegen remains efficient.
                     assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
-                    intrinsic = NI_Vector256_op_Equality;
-                }
-                else if (simdSize is 64)
-                {
-                    intrinsic = NI_Vector512_op_Equality;
-                }
-                else
-                {
-                    intrinsic = NI_Vector128_op_Equality;
                 }
 
                 op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseType, simdSize);
@@ -8816,7 +8774,6 @@ public partial class Compiler
 #elif TARGET_ARM64
             case GT_EQ:
             {
-                intrinsic = (simdSize is 8) ? NI_Vector64_op_Equality : NI_Vector128_op_Equality;
                 break;
             }
 
@@ -8827,15 +8784,6 @@ public partial class Compiler
             {
                 // We want to generate a comparison along the lines of
                 // GT_XX(op1, op2).As<T, TInteger>() == Vector128<TInteger>.AllBitsSet
-
-                if (simdSize is 8)
-                {
-                    intrinsic = NI_Vector64_op_Equality;
-                }
-                else
-                {
-                    intrinsic = NI_Vector128_op_Equality;
-                }
 
                 op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseType, simdSize);
                 op2 = gtNewAllBitsSetConNode(simdType);
@@ -8861,8 +8809,7 @@ public partial class Compiler
             }
         }
 
-        assert(intrinsic != NI_Illegal);
-        return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1, op2);
+        return gtNewSimdHWIntrinsicNode(type, NI_Vector_op_Equality, simdBaseType, simdSize, op1, op2);
     }
 
     public GenTree gtNewSimdCndSelNode(var_types type, GenTree op1, GenTree op2, GenTree op3, var_types simdBaseType, byte simdSize)
@@ -8881,26 +8828,14 @@ public partial class Compiler
 
         assert(varTypeIsArithmetic(simdBaseType));
 
-        var intrinsic = NI_Illegal;
-
 #if TARGET_XARCH
+#if DEBUG
         if (simdSize is 64)
         {
-#if DEBUG
             assert(canUseEvexEncodingDebugOnly());
+        }
 #endif
-
-            intrinsic = NI_Vector512_ConditionalSelect;
-        }
-        else if (simdSize is 32)
-        {
-            intrinsic = NI_Vector256_ConditionalSelect;
-        }
-        else
-        {
-            intrinsic = NI_Vector128_ConditionalSelect;
-        }
-        return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1, op2, op3);
+        return gtNewSimdHWIntrinsicNode(type, NI_Vector_ConditionalSelect, simdBaseType, simdSize, op1, op2, op3);
 #elif TARGET_ARM64
         return gtNewSimdHWIntrinsicNode(type, NI_AdvSimd_BitwiseSelect, simdBaseType, simdSize, op1, op2, op3);
 #else
@@ -8932,22 +8867,12 @@ public partial class Compiler
             return vecCon;
         }
 
-        var hwIntrinsicId = NI_Vector128_CreateScalar;
-
 #if TARGET_XARCH
-        if (simdSize is 32)
-        {
-            hwIntrinsicId = NI_Vector256_CreateScalar;
-        }
-        else if (simdSize is 64)
-        {
-            hwIntrinsicId = NI_Vector512_CreateScalar;
-        }
+        var hwIntrinsicId = NI_Vector_CreateScalar;
 #elif TARGET_ARM64
-        if (simdSize is 8)
-        {
-            hwIntrinsicId = (simdBaseType.Size is 8) ? NI_Vector64_Create : NI_Vector64_CreateScalar;
-        }
+        var hwIntrinsicId = ((simdSize is 8) && (simdBaseType.Size is 8))
+            ? NI_Vector_Create
+            : NI_Vector_CreateScalar;
 #else
 #error Unsupported platform
 #endif
@@ -8986,22 +8911,12 @@ public partial class Compiler
             return vecCon;
         }
 
-        var hwIntrinsicId = NI_Vector128_CreateScalarUnsafe;
-
 #if TARGET_XARCH
-        if (simdSize is 32)
-        {
-            hwIntrinsicId = NI_Vector256_CreateScalarUnsafe;
-        }
-        else if (simdSize is 64)
-        {
-            hwIntrinsicId = NI_Vector512_CreateScalarUnsafe;
-        }
+        var hwIntrinsicId = NI_Vector_CreateScalarUnsafe;
 #elif TARGET_ARM64
-        if (simdSize is 8)
-        {
-            hwIntrinsicId = (simdBaseType.Size is 8) ? NI_Vector64_Create : NI_Vector64_CreateScalarUnsafe;
-        }
+        var hwIntrinsicId = ((simdSize is 8) && (simdBaseType.Size is 8))
+            ? NI_Vector_Create
+            : NI_Vector_CreateScalarUnsafe;
 #else
 #error Unsupported platform
 #endif
@@ -9036,54 +8951,44 @@ public partial class Compiler
     {
         assert(varTypeIsArithmetic(simdBaseType));
 
-        var intrinsicId = NI_Illegal;
-
 #if TARGET_XARCH
         if (simdSize is 32)
         {
             assert(type == TYP_SIMD16);
-            intrinsicId = NI_Vector256_GetLower;
         }
         else
         {
             assert((type == TYP_SIMD32) && (simdSize is 64));
-            intrinsicId = NI_Vector512_GetLower;
         }
 #elif TARGET_ARM64
         assert((type == TYP_SIMD8) && (simdSize is 16));
-        intrinsicId = NI_Vector128_GetLower;
 #else
 #error Unsupported platform
 #endif
 
-        return gtNewSimdHWIntrinsicNode(type, intrinsicId, simdBaseType, simdSize, op1);
+        return gtNewSimdHWIntrinsicNode(type, NI_Vector_GetLower, simdBaseType, simdSize, op1);
     }
 
     public GenTree gtNewSimdGetUpperNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
     {
         assert(varTypeIsArithmetic(simdBaseType));
 
-        var intrinsicId = NI_Illegal;
-
 #if TARGET_XARCH
         if (simdSize is 32)
         {
             assert(type == TYP_SIMD16);
-            intrinsicId = NI_Vector256_GetUpper;
         }
         else
         {
             assert((type == TYP_SIMD32) && (simdSize is 64));
-            intrinsicId = NI_Vector512_GetUpper;
         }
 #elif TARGET_ARM64
         assert((type == TYP_SIMD8) && (simdSize is 16));
-        intrinsicId = NI_Vector128_GetUpper;
 #else
 #error Unsupported platform
 #endif
 
-        return gtNewSimdHWIntrinsicNode(type, intrinsicId, simdBaseType, simdSize, op1);
+        return gtNewSimdHWIntrinsicNode(type, NI_Vector_GetUpper, simdBaseType, simdSize, op1);
     }
 
     /// <summary>Creates a new simd IsEvenInteger node</summary>
@@ -10421,7 +10326,7 @@ public partial class Compiler
                 return gtNewSimdHWIntrinsicNode(type, NI_X86Base_MoveLowToHigh, TYP_FLOAT, simdSize, tmp1, tmp2);
             }
 
-            intrinsicId = (simdSize is 64) ? NI_Vector256_ToVector512Unsafe : NI_Vector128_ToVector256Unsafe;
+            intrinsicId = (simdSize is 64) ? NI_Vector_ToVector512Unsafe : NI_Vector_ToVector256Unsafe;
 
             tmp1 = gtNewSimdHWIntrinsicNode(type, intrinsicId, simdBaseType, (byte)(simdSize / 2), tmp1);
             return gtNewSimdWithUpperNode(type, tmp1, tmp2, simdBaseType, simdSize);
@@ -10503,7 +10408,7 @@ public partial class Compiler
                     tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_AVX_ConvertToVector128Single, opBaseType, simdSize, op1);
                     tmp2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_AVX_ConvertToVector128Single, opBaseType, simdSize, op2);
 
-                    tmp1 = gtNewSimdHWIntrinsicNode(type, NI_Vector128_ToVector256Unsafe, simdBaseType, 16, tmp1);
+                    tmp1 = gtNewSimdHWIntrinsicNode(type, NI_Vector_ToVector256Unsafe, simdBaseType, 16, tmp1);
                     return gtNewSimdWithUpperNode(type, tmp1, tmp2, simdBaseType, simdSize);
                 }
 
@@ -10651,7 +10556,7 @@ public partial class Compiler
 
             var tmp2BaseType = TYP_DOUBLE;
 
-            tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_Vector64_ToVector128Unsafe, simdBaseType, simdSize, op1);
+            tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_Vector_ToVector128Unsafe, simdBaseType, simdSize, op1);
             tmp2 = gtNewSimdWithUpperNode(TYP_SIMD16, tmp1, op2, tmp2BaseType, 16);
 
             return gtNewSimdHWIntrinsicNode(type, NI_AdvSimd_Arm64_ConvertToSingleLower, simdBaseType, simdSize, tmp2);
@@ -10662,7 +10567,7 @@ public partial class Compiler
             // var tmp2 = tmp1.WithUpper(op2);
             // return AdvSimd.ExtractNarrowingLower(tmp2);
 
-            tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_Vector64_ToVector128Unsafe, simdBaseType, simdSize, op1);
+            tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_Vector_ToVector128Unsafe, simdBaseType, simdSize, op1);
             tmp2 = gtNewSimdWithUpperNode(TYP_SIMD16, tmp1, op2, simdBaseType, 16);
 
             return gtNewSimdHWIntrinsicNode(type, NI_AdvSimd_ExtractNarrowingLower, simdBaseType, simdSize, tmp2);
@@ -10687,35 +10592,11 @@ public partial class Compiler
 
         assert(varTypeIsArithmetic(simdBaseType));
 
-        var intrinsic = NI_Illegal;
-
-#if TARGET_XARCH
-        if (simdSize is 64)
-        {
-            intrinsic = NI_Vector512_ToScalar;
-        }
-        else if (simdSize is 32)
-        {
-            intrinsic = NI_Vector256_ToScalar;
-        }
-        else
-        {
-            intrinsic = NI_Vector128_ToScalar;
-        }
-#elif TARGET_ARM64
-        if (simdSize is 8)
-        {
-            intrinsic = NI_Vector64_ToScalar;
-        }
-        else
-        {
-            intrinsic = NI_Vector128_ToScalar;
-        }
+#if TARGET_XARCH || TARGET_ARM64
+        return gtNewSimdHWIntrinsicNode(type, NI_Vector_ToScalar, simdBaseType, simdSize, op1);
 #else
 #error Unsupported platform
 #endif
-
-        return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1);
     }
 
     /// <summary>Creates a new simd Truncate node</summary>
@@ -11236,54 +11117,44 @@ public partial class Compiler
     {
         assert(varTypeIsArithmetic(simdBaseType));
 
-        var intrinsicId = NI_Illegal;
-
 #if TARGET_XARCH
         if (simdSize is 32)
         {
             assert(type == TYP_SIMD32);
-            intrinsicId = NI_Vector256_WithLower;
         }
         else
         {
             assert((type == TYP_SIMD64) && (simdSize is 64));
-            intrinsicId = NI_Vector512_WithLower;
         }
 #elif TARGET_ARM64
         assert((type == TYP_SIMD16) && (simdSize is 16));
-        intrinsicId = NI_Vector128_WithLower;
 #else
 #error Unsupported platform
 #endif
 
-        return gtNewSimdHWIntrinsicNode(type, intrinsicId, simdBaseType, simdSize, op1, op2);
+        return gtNewSimdHWIntrinsicNode(type, NI_Vector_WithLower, simdBaseType, simdSize, op1, op2);
     }
 
     public GenTree gtNewSimdWithUpperNode(var_types type, GenTree op1, GenTree op2, var_types simdBaseType, byte simdSize)
     {
         assert(varTypeIsArithmetic(simdBaseType));
 
-        var intrinsicId = NI_Illegal;
-
 #if TARGET_XARCH
         if (simdSize is 32)
         {
             assert(type == TYP_SIMD32);
-            intrinsicId = NI_Vector256_WithUpper;
         }
         else
         {
             assert((type == TYP_SIMD64) && (simdSize is 64));
-            intrinsicId = NI_Vector512_WithUpper;
         }
 #elif TARGET_ARM64
         assert((type == TYP_SIMD16) && (simdSize is 16));
-        intrinsicId = NI_Vector128_WithUpper;
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
-        return gtNewSimdHWIntrinsicNode(type, intrinsicId, simdBaseType, simdSize, op1, op2);
+        return gtNewSimdHWIntrinsicNode(type, NI_Vector_WithUpper, simdBaseType, simdSize, op1, op2);
     }
 #endif
 
@@ -14491,9 +14362,7 @@ public partial class Compiler
                 {
                     switch (intrinsicId)
                     {
-                        case NI_Vector128_ConditionalSelect:
-                        case NI_Vector256_ConditionalSelect:
-                        case NI_Vector512_ConditionalSelect:
+                        case NI_Vector_ConditionalSelect:
                         {
                             // We either become `(o2 & op1) | (op3 & ~op1)`
                             // or we get optimized into some kind of single
@@ -14504,9 +14373,7 @@ public partial class Compiler
                             break;
                         }
 
-                        case NI_Vector128_Create:
-                        case NI_Vector256_Create:
-                        case NI_Vector512_Create:
+                        case NI_Vector_Create:
                         {
                             // We shouldn't have "all constants" as they get transformed to CNS_VEC
 
@@ -14530,12 +14397,8 @@ public partial class Compiler
                             break;
                         }
 
-                        case NI_Vector128_CreateScalar:
-                        case NI_Vector128_CreateScalarUnsafe:
-                        case NI_Vector256_CreateScalar:
-                        case NI_Vector256_CreateScalarUnsafe:
-                        case NI_Vector512_CreateScalar:
-                        case NI_Vector512_CreateScalarUnsafe:
+                        case NI_Vector_CreateScalar:
+                        case NI_Vector_CreateScalarUnsafe:
                         {
                             // We shouldn't have "all constants" as they get transformed to CNS_VEC
 
@@ -14558,9 +14421,7 @@ public partial class Compiler
                             break;
                         }
 
-                        case NI_Vector128_Dot:
-                        case NI_Vector256_Dot:
-                        case NI_Vector512_Dot:
+                        case NI_Vector_Dot:
                         {
                             var elementCount = 16 / simdBaseType.Size;
 
@@ -14591,9 +14452,7 @@ public partial class Compiler
                             break;
                         }
 
-                        case NI_Vector128_ExtractMostSignificantBits:
-                        case NI_Vector256_ExtractMostSignificantBits:
-                        case NI_Vector512_ExtractMostSignificantBits:
+                        case NI_Vector_ExtractMostSignificantBits:
                         {
                             costEx = 3;
 
@@ -14613,9 +14472,7 @@ public partial class Compiler
                             break;
                         }
 
-                        case NI_Vector128_GetElement:
-                        case NI_Vector256_GetElement:
-                        case NI_Vector512_GetElement:
+                        case NI_Vector_GetElement:
                         {
                             var op2 = hwTree.GetOp(2);
 
@@ -14676,30 +14533,23 @@ public partial class Compiler
                             break;
                         }
 
-                        case NI_Vector256_GetLower:
-                        case NI_Vector512_GetLower:
-                        case NI_Vector512_GetLower128:
+                        case NI_Vector_GetLower:
+                        case NI_Vector_GetLower128:
                         {
                             costEx = 1;
                             break;
                         }
 
-                        case NI_Vector256_GetUpper:
-                        case NI_Vector512_GetUpper:
+                        case NI_Vector_GetUpper:
                         {
                             costEx = 3;
                             break;
                         }
 
-                        case NI_Vector128_Shuffle:
-                        case NI_Vector128_ShuffleNative:
-                        case NI_Vector128_ShuffleNativeFallback:
-                        case NI_Vector256_Shuffle:
-                        case NI_Vector256_ShuffleNative:
-                        case NI_Vector256_ShuffleNativeFallback:
-                        case NI_Vector512_Shuffle:
-                        case NI_Vector512_ShuffleNative:
-                        case NI_Vector512_ShuffleNativeFallback:
+                        case NI_Vector_Shuffle:
+                        case NI_Vector_ShuffleNative:
+                        case NI_Vector_ShuffleNativeFallback:
+                        case NI_Vector_CreateGeometricSequence:
                         {
                             // These are likely becoming calls
                             costEx = 5 + (3 * IND_COST_EX);
@@ -14707,27 +14557,22 @@ public partial class Compiler
                             break;
                         }
 
-                        case NI_Vector128_ToScalar:
-                        case NI_Vector256_ToScalar:
-                        case NI_Vector512_ToScalar:
+                        case NI_Vector_ToScalar:
                         {
                             costEx = (byte)(varTypeIsIntegral(simdBaseType) ? 3 : 1);
                             break;
                         }
 
-                        case NI_Vector128_ToVector512:
-                        case NI_Vector256_ToVector512:
-                        case NI_Vector128_ToVector256:
-                        case NI_Vector128_ToVector256Unsafe:
-                        case NI_Vector256_ToVector512Unsafe:
+                        case NI_Vector_ToVector256:
+                        case NI_Vector_ToVector256Unsafe:
+                        case NI_Vector_ToVector512:
+                        case NI_Vector_ToVector512Unsafe:
                         {
                             costEx = 1;
                             break;
                         }
 
-                        case NI_Vector128_WithElement:
-                        case NI_Vector256_WithElement:
-                        case NI_Vector512_WithElement:
+                        case NI_Vector_WithElement:
                         {
                             var op2 = hwTree.GetOp(2);
 
@@ -14789,18 +14634,14 @@ public partial class Compiler
                             break;
                         }
 
-                        case NI_Vector256_WithLower:
-                        case NI_Vector256_WithUpper:
-                        case NI_Vector512_WithLower:
-                        case NI_Vector512_WithUpper:
+                        case NI_Vector_WithLower:
+                        case NI_Vector_WithUpper:
                         {
                             costEx = 3;
                             break;
                         }
 
-                        case NI_Vector128_op_Division:
-                        case NI_Vector256_op_Division:
-                        case NI_Vector512_op_Division:
+                        case NI_Vector_op_Division:
                         {
                             // We generate a fairly complex sequence involving
                             // comparisons, two branches, conversions, and a fp
@@ -14811,12 +14652,8 @@ public partial class Compiler
                             break;
                         }
 
-                        case NI_Vector128_op_Equality:
-                        case NI_Vector128_op_Inequality:
-                        case NI_Vector256_op_Equality:
-                        case NI_Vector256_op_Inequality:
-                        case NI_Vector512_op_Equality:
-                        case NI_Vector512_op_Inequality:
+                        case NI_Vector_op_Equality:
+                        case NI_Vector_op_Inequality:
                         {
                             // We emit a simd compare, get mask, integer compare,
                             // and a branch or setcc
@@ -15337,7 +15174,7 @@ public partial class Compiler
         var copyStmt = box.CopyStmtWhenInlinedBoxValue;
 
 #if DEBUG
-        JITDUMP($"gtTryRemoveBoxUpstreamEffects: {((options == BR_DONT_REMOVE) ? "checking if it is possible" : "attempting")} of BOX (valuetype) [{box.TreeId:D6}] (assign/newobj {FMT_STMT(allocStmt.Id)} copy {FMT_STMT(copyStmt.Id)}\n");
+        JITDUMP($"gtTryRemoveBoxUpstreamEffects: {((options == BR_DONT_REMOVE) ? "checking if it is possible" : "attempting")} to {((options == BR_MAKE_LOCAL_COPY) ? "make local unboxed version" : "remove side effects")} of BOX (valuetype) [{box.TreeId:D6}] (assign/newobj {FMT_STMT(allocStmt.Id)} copy {FMT_STMT(copyStmt.Id)}\n");
 #endif
 
         // If we don't recognize the form of the store, bail.
@@ -15378,14 +15215,14 @@ public partial class Compiler
 
                 // In R2R expansions the handle may not be an explicit operand to the helper,
                 // so we can't remove the box.
-                if (newobjCall.Args.IsEmpty)
+                if (newobjCall.Args.CountUserArgs() is 0)
                 {
                     assert(newobjCall.IsHelperCall(CORINFO_HELP_READYTORUN_NEW));
                     JITDUMP(" bailing; newobj via R2R helper\n");
                     return null;
                 }
 
-                var callArg = newobjCall.Args.GetArgByIndex(0);
+                var callArg = newobjCall.Args.GetUserArgByIndex(0);
                 assert(callArg is not null);
                 boxTypeHandle = callArg.Node;
             }
@@ -15416,6 +15253,51 @@ public partial class Compiler
                 JITDUMP($" bailing; unexpected copy op {copy.Oper.Name}\n");
             }
             return null;
+        }
+
+        if (options is BR_MAKE_LOCAL_COPY)
+        {
+            var boxTemp = box.BoxOp;
+            assert(boxTemp.Oper.IsLocal);
+            var boxTempLcl = boxTemp.AsLclVar().LclNum;
+            assert(lvaTable[boxTempLcl].Type is TYP_REF);
+            var boxClass = lvaTable[boxTempLcl].lvClassHnd;
+            assert(boxClass is not null);
+
+            // The inlined-box copy must target the payload of the same box temp.
+            var copyDstAddr = copy.AsIndir().Addr;
+            if (copyDstAddr.Oper is not GT_ADD)
+            {
+                JITDUMP("Unexpected copy dest address tree\n");
+                return null;
+            }
+
+            var copyDstAddrOp1 = copyDstAddr.AsOp().Op1;
+            if ((copyDstAddrOp1.Oper is not GT_LCL_VAR) || (copyDstAddrOp1.AsLclVar().LclNum != boxTempLcl))
+            {
+                JITDUMP("Unexpected copy dest address 1st addend\n");
+                return null;
+            }
+
+            var copyDstAddrOp2 = copyDstAddr.AsOp().Op2;
+            if ((copyDstAddrOp2 is null) || !copyDstAddrOp2.IsIntegralConst(TARGET_POINTER_SIZE))
+            {
+                JITDUMP("Unexpected copy dest address 2nd addend\n");
+                return null;
+            }
+
+            JITDUMP($"Retyping box temp V{boxTempLcl:D2} to struct {eeGetClassName(boxClass)}\n");
+            lvaTable[boxTempLcl].Type = TYP_UNDEF;
+            lvaSetStruct(boxTempLcl, boxClass, unsafeValueClsCheck: false);
+
+#if DEBUG
+            JITDUMP($"Bashing NEWOBJ [{boxLclDef.TreeId:D6}] to NOP\n");
+#endif
+            allocStmt.RootNode = gtNewNothingNode();
+            DEBUG_DESTROY_NODE(boxLclDef);
+
+            copy.AsIndir().Addr = gtNewLclVarAddrNode(TYP_BYREF, boxTempLcl);
+            return gtNewLclVarAddrNode(TYP_BYREF, boxTempLcl);
         }
 
         // If the copy is a struct copy, make sure we know how to isolate any source side effects.

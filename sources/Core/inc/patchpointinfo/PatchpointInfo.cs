@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
@@ -18,6 +19,7 @@ public partial struct PatchpointInfo
     private int _keptAliveThisOffset;
     private int _securityCookieOffset;
     private int _monitorAcquiredOffset;
+    private int _resumedIndicatorOffset;
     private int _asyncThreadObjectOffset;
     private int _asyncExecutionContextOffset;
     private int _asyncSynchronizationContextOffset;
@@ -34,7 +36,8 @@ public partial struct PatchpointInfo
     /// <returns></returns>
     public static unsafe int ComputeSize(int localCount)
     {
-        var baseSize = sizeof(PatchpointInfo);
+        // The native flexible array has no element in sizeof(PatchpointInfo).
+        var baseSize = (int)Marshal.OffsetOf<PatchpointInfo>(nameof(_offsetAndExposureData));
         var variableSize = localCount * sizeof(int);
         var totalSize = baseSize + variableSize;
         return totalSize;
@@ -50,6 +53,7 @@ public partial struct PatchpointInfo
         _keptAliveThisOffset = -1;
         _securityCookieOffset = -1;
         _monitorAcquiredOffset = -1;
+        _resumedIndicatorOffset = -1;
         _asyncThreadObjectOffset = -1;
         _asyncExecutionContextOffset = -1;
         _asyncSynchronizationContextOffset = -1;
@@ -64,6 +68,7 @@ public partial struct PatchpointInfo
         _keptAliveThisOffset = original->_keptAliveThisOffset;
         _securityCookieOffset = original->_securityCookieOffset;
         _monitorAcquiredOffset = original->_monitorAcquiredOffset;
+        _resumedIndicatorOffset = original->_resumedIndicatorOffset;
         _asyncThreadObjectOffset = original->_asyncThreadObjectOffset;
         _asyncExecutionContextOffset = original->_asyncExecutionContextOffset;
         _asyncSynchronizationContextOffset = original->_asyncSynchronizationContextOffset;

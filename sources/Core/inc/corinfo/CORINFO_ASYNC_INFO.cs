@@ -37,6 +37,14 @@ public struct CORINFO_ASYNC_INFO
     /// <summary>Method handle for AsyncHelpers.RestoreContextsOnSuspension, used before suspending in async methods</summary>
     public unsafe CORINFO_METHOD_HANDLE restoreContextsOnSuspensionMethHnd;
 
+    public unsafe CORINFO_METHOD_HANDLE restoreInlinedFrameContextsMethHnd;
+
+    public unsafe CORINFO_METHOD_HANDLE captureInlinedFrameTransitionWithContinuationContextMethHnd;
+
+    public unsafe CORINFO_METHOD_HANDLE captureInlinedFrameTransitionNoContinuationContextMethHnd;
+
+    public unsafe CORINFO_METHOD_HANDLE captureInlinedFrameTransitionContinueOnThreadPoolMethHnd;
+
     /// <summary>Finish suspension without saving continuation context (i.e. custom awaiter or ConfigureAwait(false))</summary>
     public unsafe CORINFO_METHOD_HANDLE finishSuspensionNoContinuationContextMethHnd;
 

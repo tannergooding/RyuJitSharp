@@ -10,404 +10,215 @@ namespace RyuJitSharp;
 public partial struct HWIntrinsicInfo
 {
     private static ReadOnlySpan<HWIntrinsicCategory> s_categories => [
+#if FEATURE_HW_INTRINSICS
+        HW_Category_Helper, // NI_Vector_Abs
+        HW_Category_Helper, // NI_Vector_AddSaturate
+        HW_Category_Helper, // NI_Vector_AndNot
+        HW_Category_Helper, // NI_Vector_As
+        HW_Category_Helper, // NI_Vector_AsByte
+        HW_Category_Helper, // NI_Vector_AsDouble
+        HW_Category_Helper, // NI_Vector_AsInt16
+        HW_Category_Helper, // NI_Vector_AsInt32
+        HW_Category_Helper, // NI_Vector_AsInt64
+        HW_Category_Helper, // NI_Vector_AsNInt
+        HW_Category_Helper, // NI_Vector_AsNUInt
+        HW_Category_Helper, // NI_Vector_AsSByte
+        HW_Category_Helper, // NI_Vector_AsSingle
+        HW_Category_Helper, // NI_Vector_AsUInt16
+        HW_Category_Helper, // NI_Vector_AsUInt32
+        HW_Category_Helper, // NI_Vector_AsUInt64
+        HW_Category_Helper, // NI_Vector_AsVector
+        HW_Category_Helper, // NI_Vector_AsVector128
+#if TARGET_XARCH
+        HW_Category_SimpleSIMD, // NI_Vector_AsVector128Unsafe
+        HW_Category_SimpleSIMD, // NI_Vector_AsVector2
+        HW_Category_Helper, // NI_Vector_AsVector256
+        HW_Category_SimpleSIMD, // NI_Vector_AsVector3
+#elif TARGET_ARM64
+        HW_Category_SIMD, // NI_Vector_AsVector128Unsafe
+        HW_Category_Helper, // NI_Vector_AsVector2
+        HW_Category_SIMD, // NI_Vector_AsVector3
+#else
+        HW_Category_SIMD, // NI_Vector_AsVector128Unsafe
+        HW_Category_SIMD, // NI_Vector_AsVector2
+        HW_Category_SIMD, // NI_Vector_AsVector3
+#endif
+        HW_Category_Helper, // NI_Vector_AsVector4
+#if TARGET_XARCH
+        HW_Category_Helper, // NI_Vector_AsVector512
+#endif
+        HW_Category_Helper, // NI_Vector_Ceiling
+        HW_Category_Helper, // NI_Vector_ConcatLowerLower
+        HW_Category_Helper, // NI_Vector_ConcatLowerUpper
+        HW_Category_Helper, // NI_Vector_ConcatUpperLower
+        HW_Category_Helper, // NI_Vector_ConcatUpperUpper
+#if TARGET_XARCH
+        HW_Category_Helper, // NI_Vector_ConditionalSelect
+#else
+        HW_Category_Helper, // NI_Vector_ConditionalSelect
+#endif
+        HW_Category_Helper, // NI_Vector_ConvertToDouble
+        HW_Category_Helper, // NI_Vector_ConvertToInt32
+        HW_Category_Helper, // NI_Vector_ConvertToInt32Native
+        HW_Category_Helper, // NI_Vector_ConvertToInt64
+        HW_Category_Helper, // NI_Vector_ConvertToInt64Native
+        HW_Category_Helper, // NI_Vector_ConvertToSingle
+        HW_Category_Helper, // NI_Vector_ConvertToUInt32
+        HW_Category_Helper, // NI_Vector_ConvertToUInt32Native
+        HW_Category_Helper, // NI_Vector_ConvertToUInt64
+        HW_Category_Helper, // NI_Vector_ConvertToUInt64Native
+        HW_Category_Helper, // NI_Vector_Create
+        HW_Category_Helper, // NI_Vector_CreateAlternatingSequence
+        HW_Category_Helper, // NI_Vector_CreateGeometricSequence
+#if TARGET_XARCH
+        HW_Category_SIMDScalar, // NI_Vector_CreateScalar
+        HW_Category_SIMDScalar, // NI_Vector_CreateScalarUnsafe
+#elif TARGET_ARM64
+        HW_Category_Helper, // NI_Vector_CreateScalar
+        HW_Category_SIMD, // NI_Vector_CreateScalarUnsafe
+#else
+        HW_Category_Helper, // NI_Vector_CreateScalar
+        HW_Category_SIMD, // NI_Vector_CreateScalarUnsafe
+#endif
+        HW_Category_Helper, // NI_Vector_CreateSequence
+        HW_Category_Helper, // NI_Vector_Dot
+        HW_Category_Helper, // NI_Vector_Equals
+        HW_Category_Helper, // NI_Vector_EqualsAny
+        HW_Category_Helper, // NI_Vector_ExtractMostSignificantBits
+        HW_Category_Helper, // NI_Vector_Floor
+        HW_Category_Helper, // NI_Vector_FusedMultiplyAdd
+#if TARGET_XARCH
+        HW_Category_Helper, // NI_Vector_GetElement
+#elif TARGET_ARM64
+        HW_Category_Helper, // NI_Vector_GetElement
+#else
+        HW_Category_Helper, // NI_Vector_GetElement
+#endif
+#if TARGET_XARCH
+        HW_Category_SimpleSIMD, // NI_Vector_GetLower
+        HW_Category_SimpleSIMD, // NI_Vector_GetLower128
+        HW_Category_Helper, // NI_Vector_GetUpper
+#elif TARGET_ARM64
+        HW_Category_SIMD, // NI_Vector_GetLower
+        HW_Category_SIMD, // NI_Vector_GetUpper
+#endif
+        HW_Category_Helper, // NI_Vector_GreaterThan
+        HW_Category_Helper, // NI_Vector_GreaterThanAll
+        HW_Category_Helper, // NI_Vector_GreaterThanAny
+        HW_Category_Helper, // NI_Vector_GreaterThanOrEqual
+        HW_Category_Helper, // NI_Vector_GreaterThanOrEqualAll
+        HW_Category_Helper, // NI_Vector_GreaterThanOrEqualAny
+        HW_Category_Helper, // NI_Vector_IsEvenInteger
+        HW_Category_Helper, // NI_Vector_IsFinite
+        HW_Category_Helper, // NI_Vector_IsInfinity
+        HW_Category_Helper, // NI_Vector_IsInteger
+        HW_Category_Helper, // NI_Vector_IsNaN
+        HW_Category_Helper, // NI_Vector_IsNegative
+        HW_Category_Helper, // NI_Vector_IsNegativeInfinity
+        HW_Category_Helper, // NI_Vector_IsNormal
+        HW_Category_Helper, // NI_Vector_IsOddInteger
+        HW_Category_Helper, // NI_Vector_IsPositive
+        HW_Category_Helper, // NI_Vector_IsPositiveInfinity
+        HW_Category_Helper, // NI_Vector_IsSubnormal
+        HW_Category_Helper, // NI_Vector_IsZero
+        HW_Category_Helper, // NI_Vector_LessThan
+        HW_Category_Helper, // NI_Vector_LessThanAll
+        HW_Category_Helper, // NI_Vector_LessThanAny
+        HW_Category_Helper, // NI_Vector_LessThanOrEqual
+        HW_Category_Helper, // NI_Vector_LessThanOrEqualAll
+        HW_Category_Helper, // NI_Vector_LessThanOrEqualAny
+        HW_Category_Helper, // NI_Vector_LoadAligned
+        HW_Category_Helper, // NI_Vector_LoadAlignedNonTemporal
+        HW_Category_Helper, // NI_Vector_LoadUnsafe
+        HW_Category_Helper, // NI_Vector_Max
+        HW_Category_Helper, // NI_Vector_MaxMagnitude
+        HW_Category_Helper, // NI_Vector_MaxMagnitudeNumber
+        HW_Category_Helper, // NI_Vector_MaxNative
+        HW_Category_Helper, // NI_Vector_MaxNumber
+        HW_Category_Helper, // NI_Vector_Min
+        HW_Category_Helper, // NI_Vector_MinMagnitude
+        HW_Category_Helper, // NI_Vector_MinMagnitudeNumber
+        HW_Category_Helper, // NI_Vector_MinNative
+        HW_Category_Helper, // NI_Vector_MinNumber
+        HW_Category_Helper, // NI_Vector_MultiplyAddEstimate
+        HW_Category_Helper, // NI_Vector_Narrow
+#if TARGET_ARM64
+        HW_Category_Helper, // NI_Vector_NarrowWithSaturation
+#else
+        HW_Category_Helper, // NI_Vector_NarrowWithSaturation
+#endif
+        HW_Category_Helper, // NI_Vector_Reverse
+        HW_Category_Helper, // NI_Vector_Round
+        HW_Category_Helper, // NI_Vector_ShiftLeft
+        HW_Category_Helper, // NI_Vector_Shuffle
+        HW_Category_Helper, // NI_Vector_ShuffleNative
+        HW_Category_Helper, // NI_Vector_ShuffleNativeFallback
+        HW_Category_Helper, // NI_Vector_Sqrt
+        HW_Category_Helper, // NI_Vector_StoreAligned
+        HW_Category_Helper, // NI_Vector_StoreAlignedNonTemporal
+        HW_Category_Helper, // NI_Vector_StoreUnsafe
+        HW_Category_Helper, // NI_Vector_SubtractSaturate
+        HW_Category_Helper, // NI_Vector_Sum
+#if TARGET_XARCH
+        HW_Category_SIMDScalar, // NI_Vector_ToScalar
+        HW_Category_SimpleSIMD, // NI_Vector_ToVector256
+        HW_Category_SimpleSIMD, // NI_Vector_ToVector256Unsafe
+        HW_Category_SimpleSIMD, // NI_Vector_ToVector512
+        HW_Category_SimpleSIMD, // NI_Vector_ToVector512Unsafe
+#elif TARGET_ARM64
+        HW_Category_SIMD, // NI_Vector_ToScalar
+        HW_Category_SIMD, // NI_Vector_ToVector128
+        HW_Category_SIMD, // NI_Vector_ToVector128Unsafe
+#else
+        HW_Category_Helper, // NI_Vector_ToScalar
+#endif
+        HW_Category_Helper, // NI_Vector_Truncate
+        HW_Category_Helper, // NI_Vector_UnzipEven
+        HW_Category_Helper, // NI_Vector_UnzipOdd
+        HW_Category_Helper, // NI_Vector_WidenLower
+        HW_Category_Helper, // NI_Vector_WidenUpper
+        HW_Category_Helper, // NI_Vector_WithElement
+#if TARGET_XARCH || TARGET_ARM64
+        HW_Category_Helper, // NI_Vector_WithLower
+        HW_Category_Helper, // NI_Vector_WithUpper
+#endif
+        HW_Category_Helper, // NI_Vector_ZipLower
+        HW_Category_Helper, // NI_Vector_ZipUpper
+        HW_Category_Helper, // NI_Vector_get_AllBitsSet
+        HW_Category_Helper, // NI_Vector_get_E
+        HW_Category_Helper, // NI_Vector_get_Epsilon
+        HW_Category_Helper, // NI_Vector_get_Indices
+        HW_Category_Helper, // NI_Vector_get_NaN
+        HW_Category_Helper, // NI_Vector_get_NegativeInfinity
+        HW_Category_Helper, // NI_Vector_get_NegativeOne
+        HW_Category_Helper, // NI_Vector_get_NegativeZero
+        HW_Category_Helper, // NI_Vector_get_One
+        HW_Category_Helper, // NI_Vector_get_Pi
+        HW_Category_Helper, // NI_Vector_get_PositiveInfinity
+        HW_Category_Helper, // NI_Vector_get_SignSequence
+        HW_Category_Helper, // NI_Vector_get_Tau
+        HW_Category_Helper, // NI_Vector_get_Zero
+        HW_Category_Helper, // NI_Vector_op_Addition
+        HW_Category_Helper, // NI_Vector_op_BitwiseAnd
+        HW_Category_Helper, // NI_Vector_op_BitwiseOr
+#if TARGET_XARCH
+        HW_Category_Helper, // NI_Vector_op_Division
+#else
+        HW_Category_Helper, // NI_Vector_op_Division
+#endif
+        HW_Category_Helper, // NI_Vector_op_Equality
+        HW_Category_Helper, // NI_Vector_op_ExclusiveOr
+        HW_Category_Helper, // NI_Vector_op_Inequality
+        HW_Category_Helper, // NI_Vector_op_LeftShift
+        HW_Category_Helper, // NI_Vector_op_Multiply
+        HW_Category_Helper, // NI_Vector_op_OnesComplement
+        HW_Category_Helper, // NI_Vector_op_RightShift
+        HW_Category_Helper, // NI_Vector_op_Subtraction
+        HW_Category_Helper, // NI_Vector_op_UnaryNegation
+        HW_Category_Helper, // NI_Vector_op_UnaryPlus
+        HW_Category_Helper, // NI_Vector_op_UnsignedRightShift
 #if TARGET_XARCH
 #if FEATURE_HW_INTRINSICS
-        HW_Category_Helper, // NI_Vector128_Abs
-        HW_Category_Helper, // NI_Vector128_AddSaturate
-        HW_Category_Helper, // NI_Vector128_AndNot
-        HW_Category_Helper, // NI_Vector128_As
-        HW_Category_Helper, // NI_Vector128_AsByte
-        HW_Category_Helper, // NI_Vector128_AsDouble
-        HW_Category_Helper, // NI_Vector128_AsInt16
-        HW_Category_Helper, // NI_Vector128_AsInt32
-        HW_Category_Helper, // NI_Vector128_AsInt64
-        HW_Category_Helper, // NI_Vector128_AsNInt
-        HW_Category_Helper, // NI_Vector128_AsNUInt
-        HW_Category_Helper, // NI_Vector128_AsSByte
-        HW_Category_Helper, // NI_Vector128_AsSingle
-        HW_Category_Helper, // NI_Vector128_AsUInt16
-        HW_Category_Helper, // NI_Vector128_AsUInt32
-        HW_Category_Helper, // NI_Vector128_AsUInt64
-        HW_Category_Helper, // NI_Vector128_AsVector
-        HW_Category_Helper, // NI_Vector128_AsVector128
-        HW_Category_SimpleSIMD, // NI_Vector128_AsVector128Unsafe
-        HW_Category_SimpleSIMD, // NI_Vector128_AsVector2
-        HW_Category_SimpleSIMD, // NI_Vector128_AsVector3
-        HW_Category_Helper, // NI_Vector128_AsVector4
-        HW_Category_Helper, // NI_Vector128_Ceiling
-        HW_Category_Helper, // NI_Vector128_ConditionalSelect
-        HW_Category_Helper, // NI_Vector128_ConvertToDouble
-        HW_Category_Helper, // NI_Vector128_ConvertToInt32
-        HW_Category_Helper, // NI_Vector128_ConvertToInt32Native
-        HW_Category_Helper, // NI_Vector128_ConvertToInt64
-        HW_Category_Helper, // NI_Vector128_ConvertToInt64Native
-        HW_Category_Helper, // NI_Vector128_ConvertToSingle
-        HW_Category_Helper, // NI_Vector128_ConvertToUInt32
-        HW_Category_Helper, // NI_Vector128_ConvertToUInt32Native
-        HW_Category_Helper, // NI_Vector128_ConvertToUInt64
-        HW_Category_Helper, // NI_Vector128_ConvertToUInt64Native
-        HW_Category_Helper, // NI_Vector128_Create
-        HW_Category_SIMDScalar, // NI_Vector128_CreateScalar
-        HW_Category_SIMDScalar, // NI_Vector128_CreateScalarUnsafe
-        HW_Category_Helper, // NI_Vector128_CreateSequence
-        HW_Category_Helper, // NI_Vector128_Dot
-        HW_Category_Helper, // NI_Vector128_Equals
-        HW_Category_Helper, // NI_Vector128_EqualsAny
-        HW_Category_Helper, // NI_Vector128_ExtractMostSignificantBits
-        HW_Category_Helper, // NI_Vector128_Floor
-        HW_Category_Helper, // NI_Vector128_FusedMultiplyAdd
-        HW_Category_Helper, // NI_Vector128_GetElement
-        HW_Category_Helper, // NI_Vector128_GreaterThan
-        HW_Category_Helper, // NI_Vector128_GreaterThanAll
-        HW_Category_Helper, // NI_Vector128_GreaterThanAny
-        HW_Category_Helper, // NI_Vector128_GreaterThanOrEqual
-        HW_Category_Helper, // NI_Vector128_GreaterThanOrEqualAll
-        HW_Category_Helper, // NI_Vector128_GreaterThanOrEqualAny
-        HW_Category_Helper, // NI_Vector128_IsEvenInteger
-        HW_Category_Helper, // NI_Vector128_IsFinite
-        HW_Category_Helper, // NI_Vector128_IsInfinity
-        HW_Category_Helper, // NI_Vector128_IsInteger
-        HW_Category_Helper, // NI_Vector128_IsNaN
-        HW_Category_Helper, // NI_Vector128_IsNegative
-        HW_Category_Helper, // NI_Vector128_IsNegativeInfinity
-        HW_Category_Helper, // NI_Vector128_IsNormal
-        HW_Category_Helper, // NI_Vector128_IsOddInteger
-        HW_Category_Helper, // NI_Vector128_IsPositive
-        HW_Category_Helper, // NI_Vector128_IsPositiveInfinity
-        HW_Category_Helper, // NI_Vector128_IsSubnormal
-        HW_Category_Helper, // NI_Vector128_IsZero
-        HW_Category_Helper, // NI_Vector128_LessThan
-        HW_Category_Helper, // NI_Vector128_LessThanAll
-        HW_Category_Helper, // NI_Vector128_LessThanAny
-        HW_Category_Helper, // NI_Vector128_LessThanOrEqual
-        HW_Category_Helper, // NI_Vector128_LessThanOrEqualAll
-        HW_Category_Helper, // NI_Vector128_LessThanOrEqualAny
-        HW_Category_Helper, // NI_Vector128_LoadAligned
-        HW_Category_Helper, // NI_Vector128_LoadAlignedNonTemporal
-        HW_Category_Helper, // NI_Vector128_LoadUnsafe
-        HW_Category_Helper, // NI_Vector128_Max
-        HW_Category_Helper, // NI_Vector128_MaxMagnitude
-        HW_Category_Helper, // NI_Vector128_MaxMagnitudeNumber
-        HW_Category_Helper, // NI_Vector128_MaxNative
-        HW_Category_Helper, // NI_Vector128_MaxNumber
-        HW_Category_Helper, // NI_Vector128_Min
-        HW_Category_Helper, // NI_Vector128_MinMagnitude
-        HW_Category_Helper, // NI_Vector128_MinMagnitudeNumber
-        HW_Category_Helper, // NI_Vector128_MinNative
-        HW_Category_Helper, // NI_Vector128_MinNumber
-        HW_Category_Helper, // NI_Vector128_MultiplyAddEstimate
-        HW_Category_Helper, // NI_Vector128_Narrow
-        HW_Category_Helper, // NI_Vector128_NarrowWithSaturation
-        HW_Category_Helper, // NI_Vector128_Round
-        HW_Category_Helper, // NI_Vector128_ShiftLeft
-        HW_Category_Helper, // NI_Vector128_Shuffle
-        HW_Category_Helper, // NI_Vector128_ShuffleNative
-        HW_Category_Helper, // NI_Vector128_ShuffleNativeFallback
-        HW_Category_Helper, // NI_Vector128_Sqrt
-        HW_Category_Helper, // NI_Vector128_StoreAligned
-        HW_Category_Helper, // NI_Vector128_StoreAlignedNonTemporal
-        HW_Category_Helper, // NI_Vector128_StoreUnsafe
-        HW_Category_Helper, // NI_Vector128_SubtractSaturate
-        HW_Category_Helper, // NI_Vector128_Sum
-        HW_Category_SIMDScalar, // NI_Vector128_ToScalar
-        HW_Category_SimpleSIMD, // NI_Vector128_ToVector256
-        HW_Category_SimpleSIMD, // NI_Vector128_ToVector256Unsafe
-        HW_Category_SimpleSIMD, // NI_Vector128_ToVector512
-        HW_Category_Helper, // NI_Vector128_Truncate
-        HW_Category_Helper, // NI_Vector128_WidenLower
-        HW_Category_Helper, // NI_Vector128_WidenUpper
-        HW_Category_Helper, // NI_Vector128_WithElement
-        HW_Category_Helper, // NI_Vector128_get_AllBitsSet
-        HW_Category_Helper, // NI_Vector128_get_E
-        HW_Category_Helper, // NI_Vector128_get_Epsilon
-        HW_Category_Helper, // NI_Vector128_get_Indices
-        HW_Category_Helper, // NI_Vector128_get_NaN
-        HW_Category_Helper, // NI_Vector128_get_NegativeInfinity
-        HW_Category_Helper, // NI_Vector128_get_NegativeOne
-        HW_Category_Helper, // NI_Vector128_get_NegativeZero
-        HW_Category_Helper, // NI_Vector128_get_One
-        HW_Category_Helper, // NI_Vector128_get_Pi
-        HW_Category_Helper, // NI_Vector128_get_PositiveInfinity
-        HW_Category_Helper, // NI_Vector128_get_Tau
-        HW_Category_Helper, // NI_Vector128_get_Zero
-        HW_Category_Helper, // NI_Vector128_op_Addition
-        HW_Category_Helper, // NI_Vector128_op_BitwiseAnd
-        HW_Category_Helper, // NI_Vector128_op_BitwiseOr
-        HW_Category_Helper, // NI_Vector128_op_Division
-        HW_Category_Helper, // NI_Vector128_op_Equality
-        HW_Category_Helper, // NI_Vector128_op_ExclusiveOr
-        HW_Category_Helper, // NI_Vector128_op_Inequality
-        HW_Category_Helper, // NI_Vector128_op_LeftShift
-        HW_Category_Helper, // NI_Vector128_op_Multiply
-        HW_Category_Helper, // NI_Vector128_op_OnesComplement
-        HW_Category_Helper, // NI_Vector128_op_RightShift
-        HW_Category_Helper, // NI_Vector128_op_Subtraction
-        HW_Category_Helper, // NI_Vector128_op_UnaryNegation
-        HW_Category_Helper, // NI_Vector128_op_UnaryPlus
-        HW_Category_Helper, // NI_Vector128_op_UnsignedRightShift
-        HW_Category_Helper, // NI_Vector256_Abs
-        HW_Category_Helper, // NI_Vector256_AddSaturate
-        HW_Category_Helper, // NI_Vector256_AndNot
-        HW_Category_Helper, // NI_Vector256_As
-        HW_Category_Helper, // NI_Vector256_AsByte
-        HW_Category_Helper, // NI_Vector256_AsDouble
-        HW_Category_Helper, // NI_Vector256_AsInt16
-        HW_Category_Helper, // NI_Vector256_AsInt32
-        HW_Category_Helper, // NI_Vector256_AsInt64
-        HW_Category_Helper, // NI_Vector256_AsNInt
-        HW_Category_Helper, // NI_Vector256_AsNUInt
-        HW_Category_Helper, // NI_Vector256_AsSByte
-        HW_Category_Helper, // NI_Vector256_AsSingle
-        HW_Category_Helper, // NI_Vector256_AsUInt16
-        HW_Category_Helper, // NI_Vector256_AsUInt32
-        HW_Category_Helper, // NI_Vector256_AsUInt64
-        HW_Category_Helper, // NI_Vector256_AsVector
-        HW_Category_Helper, // NI_Vector256_AsVector256
-        HW_Category_Helper, // NI_Vector256_Ceiling
-        HW_Category_Helper, // NI_Vector256_ConditionalSelect
-        HW_Category_Helper, // NI_Vector256_ConvertToDouble
-        HW_Category_Helper, // NI_Vector256_ConvertToInt32
-        HW_Category_Helper, // NI_Vector256_ConvertToInt32Native
-        HW_Category_Helper, // NI_Vector256_ConvertToInt64
-        HW_Category_Helper, // NI_Vector256_ConvertToInt64Native
-        HW_Category_Helper, // NI_Vector256_ConvertToSingle
-        HW_Category_Helper, // NI_Vector256_ConvertToUInt32
-        HW_Category_Helper, // NI_Vector256_ConvertToUInt32Native
-        HW_Category_Helper, // NI_Vector256_ConvertToUInt64
-        HW_Category_Helper, // NI_Vector256_ConvertToUInt64Native
-        HW_Category_Helper, // NI_Vector256_Create
-        HW_Category_SIMDScalar, // NI_Vector256_CreateScalar
-        HW_Category_SIMDScalar, // NI_Vector256_CreateScalarUnsafe
-        HW_Category_Helper, // NI_Vector256_CreateSequence
-        HW_Category_Helper, // NI_Vector256_Dot
-        HW_Category_Helper, // NI_Vector256_Equals
-        HW_Category_Helper, // NI_Vector256_EqualsAny
-        HW_Category_Helper, // NI_Vector256_ExtractMostSignificantBits
-        HW_Category_Helper, // NI_Vector256_Floor
-        HW_Category_Helper, // NI_Vector256_FusedMultiplyAdd
-        HW_Category_Helper, // NI_Vector256_GetElement
-        HW_Category_SimpleSIMD, // NI_Vector256_GetLower
-        HW_Category_Helper, // NI_Vector256_GetUpper
-        HW_Category_Helper, // NI_Vector256_GreaterThan
-        HW_Category_Helper, // NI_Vector256_GreaterThanAll
-        HW_Category_Helper, // NI_Vector256_GreaterThanAny
-        HW_Category_Helper, // NI_Vector256_GreaterThanOrEqual
-        HW_Category_Helper, // NI_Vector256_GreaterThanOrEqualAll
-        HW_Category_Helper, // NI_Vector256_GreaterThanOrEqualAny
-        HW_Category_Helper, // NI_Vector256_IsEvenInteger
-        HW_Category_Helper, // NI_Vector256_IsFinite
-        HW_Category_Helper, // NI_Vector256_IsInfinity
-        HW_Category_Helper, // NI_Vector256_IsInteger
-        HW_Category_Helper, // NI_Vector256_IsNaN
-        HW_Category_Helper, // NI_Vector256_IsNegative
-        HW_Category_Helper, // NI_Vector256_IsNegativeInfinity
-        HW_Category_Helper, // NI_Vector256_IsNormal
-        HW_Category_Helper, // NI_Vector256_IsOddInteger
-        HW_Category_Helper, // NI_Vector256_IsPositive
-        HW_Category_Helper, // NI_Vector256_IsPositiveInfinity
-        HW_Category_Helper, // NI_Vector256_IsSubnormal
-        HW_Category_Helper, // NI_Vector256_IsZero
-        HW_Category_Helper, // NI_Vector256_LessThan
-        HW_Category_Helper, // NI_Vector256_LessThanAll
-        HW_Category_Helper, // NI_Vector256_LessThanAny
-        HW_Category_Helper, // NI_Vector256_LessThanOrEqual
-        HW_Category_Helper, // NI_Vector256_LessThanOrEqualAll
-        HW_Category_Helper, // NI_Vector256_LessThanOrEqualAny
-        HW_Category_Helper, // NI_Vector256_LoadAligned
-        HW_Category_Helper, // NI_Vector256_LoadAlignedNonTemporal
-        HW_Category_Helper, // NI_Vector256_LoadUnsafe
-        HW_Category_Helper, // NI_Vector256_Max
-        HW_Category_Helper, // NI_Vector256_MaxMagnitude
-        HW_Category_Helper, // NI_Vector256_MaxMagnitudeNumber
-        HW_Category_Helper, // NI_Vector256_MaxNative
-        HW_Category_Helper, // NI_Vector256_MaxNumber
-        HW_Category_Helper, // NI_Vector256_Min
-        HW_Category_Helper, // NI_Vector256_MinMagnitude
-        HW_Category_Helper, // NI_Vector256_MinMagnitudeNumber
-        HW_Category_Helper, // NI_Vector256_MinNative
-        HW_Category_Helper, // NI_Vector256_MinNumber
-        HW_Category_Helper, // NI_Vector256_MultiplyAddEstimate
-        HW_Category_Helper, // NI_Vector256_Narrow
-        HW_Category_Helper, // NI_Vector256_NarrowWithSaturation
-        HW_Category_Helper, // NI_Vector256_Round
-        HW_Category_Helper, // NI_Vector256_ShiftLeft
-        HW_Category_Helper, // NI_Vector256_Shuffle
-        HW_Category_Helper, // NI_Vector256_ShuffleNative
-        HW_Category_Helper, // NI_Vector256_ShuffleNativeFallback
-        HW_Category_Helper, // NI_Vector256_Sqrt
-        HW_Category_Helper, // NI_Vector256_StoreAligned
-        HW_Category_Helper, // NI_Vector256_StoreAlignedNonTemporal
-        HW_Category_Helper, // NI_Vector256_StoreUnsafe
-        HW_Category_Helper, // NI_Vector256_SubtractSaturate
-        HW_Category_Helper, // NI_Vector256_Sum
-        HW_Category_SIMDScalar, // NI_Vector256_ToScalar
-        HW_Category_SimpleSIMD, // NI_Vector256_ToVector512
-        HW_Category_SimpleSIMD, // NI_Vector256_ToVector512Unsafe
-        HW_Category_Helper, // NI_Vector256_Truncate
-        HW_Category_Helper, // NI_Vector256_WidenLower
-        HW_Category_Helper, // NI_Vector256_WidenUpper
-        HW_Category_Helper, // NI_Vector256_WithElement
-        HW_Category_Helper, // NI_Vector256_WithLower
-        HW_Category_Helper, // NI_Vector256_WithUpper
-        HW_Category_Helper, // NI_Vector256_get_AllBitsSet
-        HW_Category_Helper, // NI_Vector256_get_E
-        HW_Category_Helper, // NI_Vector256_get_Epsilon
-        HW_Category_Helper, // NI_Vector256_get_Indices
-        HW_Category_Helper, // NI_Vector256_get_NaN
-        HW_Category_Helper, // NI_Vector256_get_NegativeInfinity
-        HW_Category_Helper, // NI_Vector256_get_NegativeOne
-        HW_Category_Helper, // NI_Vector256_get_NegativeZero
-        HW_Category_Helper, // NI_Vector256_get_One
-        HW_Category_Helper, // NI_Vector256_get_Pi
-        HW_Category_Helper, // NI_Vector256_get_PositiveInfinity
-        HW_Category_Helper, // NI_Vector256_get_Tau
-        HW_Category_Helper, // NI_Vector256_get_Zero
-        HW_Category_Helper, // NI_Vector256_op_Addition
-        HW_Category_Helper, // NI_Vector256_op_BitwiseAnd
-        HW_Category_Helper, // NI_Vector256_op_BitwiseOr
-        HW_Category_Helper, // NI_Vector256_op_Division
-        HW_Category_Helper, // NI_Vector256_op_Equality
-        HW_Category_Helper, // NI_Vector256_op_ExclusiveOr
-        HW_Category_Helper, // NI_Vector256_op_Inequality
-        HW_Category_Helper, // NI_Vector256_op_LeftShift
-        HW_Category_Helper, // NI_Vector256_op_Multiply
-        HW_Category_Helper, // NI_Vector256_op_OnesComplement
-        HW_Category_Helper, // NI_Vector256_op_RightShift
-        HW_Category_Helper, // NI_Vector256_op_Subtraction
-        HW_Category_Helper, // NI_Vector256_op_UnaryNegation
-        HW_Category_Helper, // NI_Vector256_op_UnaryPlus
-        HW_Category_Helper, // NI_Vector256_op_UnsignedRightShift
-        HW_Category_Helper, // NI_Vector512_Abs
-        HW_Category_Helper, // NI_Vector512_AddSaturate
-        HW_Category_Helper, // NI_Vector512_AndNot
-        HW_Category_Helper, // NI_Vector512_As
-        HW_Category_Helper, // NI_Vector512_AsByte
-        HW_Category_Helper, // NI_Vector512_AsDouble
-        HW_Category_Helper, // NI_Vector512_AsInt16
-        HW_Category_Helper, // NI_Vector512_AsInt32
-        HW_Category_Helper, // NI_Vector512_AsInt64
-        HW_Category_Helper, // NI_Vector512_AsNInt
-        HW_Category_Helper, // NI_Vector512_AsNUInt
-        HW_Category_Helper, // NI_Vector512_AsSByte
-        HW_Category_Helper, // NI_Vector512_AsSingle
-        HW_Category_Helper, // NI_Vector512_AsUInt16
-        HW_Category_Helper, // NI_Vector512_AsUInt32
-        HW_Category_Helper, // NI_Vector512_AsUInt64
-        HW_Category_Helper, // NI_Vector512_AsVector
-        HW_Category_Helper, // NI_Vector512_AsVector512
-        HW_Category_Helper, // NI_Vector512_Ceiling
-        HW_Category_Helper, // NI_Vector512_ConditionalSelect
-        HW_Category_Helper, // NI_Vector512_ConvertToDouble
-        HW_Category_Helper, // NI_Vector512_ConvertToInt32
-        HW_Category_Helper, // NI_Vector512_ConvertToInt32Native
-        HW_Category_Helper, // NI_Vector512_ConvertToInt64
-        HW_Category_Helper, // NI_Vector512_ConvertToInt64Native
-        HW_Category_Helper, // NI_Vector512_ConvertToSingle
-        HW_Category_Helper, // NI_Vector512_ConvertToUInt32
-        HW_Category_Helper, // NI_Vector512_ConvertToUInt32Native
-        HW_Category_Helper, // NI_Vector512_ConvertToUInt64
-        HW_Category_Helper, // NI_Vector512_ConvertToUInt64Native
-        HW_Category_Helper, // NI_Vector512_Create
-        HW_Category_SIMDScalar, // NI_Vector512_CreateScalar
-        HW_Category_SIMDScalar, // NI_Vector512_CreateScalarUnsafe
-        HW_Category_Helper, // NI_Vector512_CreateSequence
-        HW_Category_Helper, // NI_Vector512_Dot
-        HW_Category_Helper, // NI_Vector512_Equals
-        HW_Category_Helper, // NI_Vector512_EqualsAny
-        HW_Category_Helper, // NI_Vector512_ExtractMostSignificantBits
-        HW_Category_Helper, // NI_Vector512_Floor
-        HW_Category_Helper, // NI_Vector512_FusedMultiplyAdd
-        HW_Category_Helper, // NI_Vector512_GetElement
-        HW_Category_SimpleSIMD, // NI_Vector512_GetLower
-        HW_Category_SimpleSIMD, // NI_Vector512_GetLower128
-        HW_Category_Helper, // NI_Vector512_GetUpper
-        HW_Category_Helper, // NI_Vector512_GreaterThan
-        HW_Category_Helper, // NI_Vector512_GreaterThanAll
-        HW_Category_Helper, // NI_Vector512_GreaterThanAny
-        HW_Category_Helper, // NI_Vector512_GreaterThanOrEqual
-        HW_Category_Helper, // NI_Vector512_GreaterThanOrEqualAll
-        HW_Category_Helper, // NI_Vector512_GreaterThanOrEqualAny
-        HW_Category_Helper, // NI_Vector512_IsEvenInteger
-        HW_Category_Helper, // NI_Vector512_IsFinite
-        HW_Category_Helper, // NI_Vector512_IsInfinity
-        HW_Category_Helper, // NI_Vector512_IsInteger
-        HW_Category_Helper, // NI_Vector512_IsNaN
-        HW_Category_Helper, // NI_Vector512_IsNegative
-        HW_Category_Helper, // NI_Vector512_IsNegativeInfinity
-        HW_Category_Helper, // NI_Vector512_IsNormal
-        HW_Category_Helper, // NI_Vector512_IsOddInteger
-        HW_Category_Helper, // NI_Vector512_IsPositive
-        HW_Category_Helper, // NI_Vector512_IsPositiveInfinity
-        HW_Category_Helper, // NI_Vector512_IsSubnormal
-        HW_Category_Helper, // NI_Vector512_IsZero
-        HW_Category_Helper, // NI_Vector512_LessThan
-        HW_Category_Helper, // NI_Vector512_LessThanAll
-        HW_Category_Helper, // NI_Vector512_LessThanAny
-        HW_Category_Helper, // NI_Vector512_LessThanOrEqual
-        HW_Category_Helper, // NI_Vector512_LessThanOrEqualAll
-        HW_Category_Helper, // NI_Vector512_LessThanOrEqualAny
-        HW_Category_Helper, // NI_Vector512_LoadAligned
-        HW_Category_Helper, // NI_Vector512_LoadAlignedNonTemporal
-        HW_Category_Helper, // NI_Vector512_LoadUnsafe
-        HW_Category_Helper, // NI_Vector512_Max
-        HW_Category_Helper, // NI_Vector512_MaxMagnitude
-        HW_Category_Helper, // NI_Vector512_MaxMagnitudeNumber
-        HW_Category_Helper, // NI_Vector512_MaxNative
-        HW_Category_Helper, // NI_Vector512_MaxNumber
-        HW_Category_Helper, // NI_Vector512_Min
-        HW_Category_Helper, // NI_Vector512_MinMagnitude
-        HW_Category_Helper, // NI_Vector512_MinMagnitudeNumber
-        HW_Category_Helper, // NI_Vector512_MinNative
-        HW_Category_Helper, // NI_Vector512_MinNumber
-        HW_Category_Helper, // NI_Vector512_MultiplyAddEstimate
-        HW_Category_Helper, // NI_Vector512_Narrow
-        HW_Category_Helper, // NI_Vector512_NarrowWithSaturation
-        HW_Category_Helper, // NI_Vector512_Round
-        HW_Category_Helper, // NI_Vector512_ShiftLeft
-        HW_Category_Helper, // NI_Vector512_Shuffle
-        HW_Category_Helper, // NI_Vector512_ShuffleNative
-        HW_Category_Helper, // NI_Vector512_ShuffleNativeFallback
-        HW_Category_Helper, // NI_Vector512_Sqrt
-        HW_Category_Helper, // NI_Vector512_StoreAligned
-        HW_Category_Helper, // NI_Vector512_StoreAlignedNonTemporal
-        HW_Category_Helper, // NI_Vector512_StoreUnsafe
-        HW_Category_Helper, // NI_Vector512_SubtractSaturate
-        HW_Category_Helper, // NI_Vector512_Sum
-        HW_Category_SIMDScalar, // NI_Vector512_ToScalar
-        HW_Category_Helper, // NI_Vector512_Truncate
-        HW_Category_Helper, // NI_Vector512_WidenLower
-        HW_Category_Helper, // NI_Vector512_WidenUpper
-        HW_Category_Helper, // NI_Vector512_WithElement
-        HW_Category_Helper, // NI_Vector512_WithLower
-        HW_Category_Helper, // NI_Vector512_WithUpper
-        HW_Category_Helper, // NI_Vector512_get_AllBitsSet
-        HW_Category_Helper, // NI_Vector512_get_E
-        HW_Category_Helper, // NI_Vector512_get_Epsilon
-        HW_Category_Helper, // NI_Vector512_get_Indices
-        HW_Category_Helper, // NI_Vector512_get_NaN
-        HW_Category_Helper, // NI_Vector512_get_NegativeInfinity
-        HW_Category_Helper, // NI_Vector512_get_NegativeOne
-        HW_Category_Helper, // NI_Vector512_get_NegativeZero
-        HW_Category_Helper, // NI_Vector512_get_One
-        HW_Category_Helper, // NI_Vector512_get_Pi
-        HW_Category_Helper, // NI_Vector512_get_PositiveInfinity
-        HW_Category_Helper, // NI_Vector512_get_Tau
-        HW_Category_Helper, // NI_Vector512_get_Zero
-        HW_Category_Helper, // NI_Vector512_op_Addition
-        HW_Category_Helper, // NI_Vector512_op_BitwiseAnd
-        HW_Category_Helper, // NI_Vector512_op_BitwiseOr
-        HW_Category_Helper, // NI_Vector512_op_Division
-        HW_Category_Helper, // NI_Vector512_op_Equality
-        HW_Category_Helper, // NI_Vector512_op_ExclusiveOr
-        HW_Category_Helper, // NI_Vector512_op_Inequality
-        HW_Category_Helper, // NI_Vector512_op_LeftShift
-        HW_Category_Helper, // NI_Vector512_op_Multiply
-        HW_Category_Helper, // NI_Vector512_op_OnesComplement
-        HW_Category_Helper, // NI_Vector512_op_RightShift
-        HW_Category_Helper, // NI_Vector512_op_Subtraction
-        HW_Category_Helper, // NI_Vector512_op_UnaryNegation
-        HW_Category_Helper, // NI_Vector512_op_UnaryPlus
-        HW_Category_Helper, // NI_Vector512_op_UnsignedRightShift
         HW_Category_SimpleSIMD, // NI_X86Base_Abs
         HW_Category_SimpleSIMD, // NI_X86Base_Add
         HW_Category_SimpleSIMD, // NI_X86Base_AddSaturate
@@ -972,6 +783,32 @@ public partial struct HWIntrinsicInfo
         HW_Category_MemoryStore, // NI_AVX512v3_CompressStore
         HW_Category_SimpleSIMD, // NI_AVX512v3_Expand
         HW_Category_MemoryLoad, // NI_AVX512v3_ExpandLoad
+        HW_Category_SimpleSIMD, // NI_AVX512v3_MultiplyWideningAndAdd
+        HW_Category_SimpleSIMD, // NI_AVX512v3_MultiplyWideningAndAddSaturate
+        HW_Category_SIMDScalar, // NI_AVX10v1_AddScalar
+        HW_Category_SIMDScalar, // NI_AVX10v1_CompareScalarOrderedEqual
+        HW_Category_SIMDScalar, // NI_AVX10v1_CompareScalarOrderedGreaterThan
+        HW_Category_SIMDScalar, // NI_AVX10v1_CompareScalarOrderedGreaterThanOrEqual
+        HW_Category_SIMDScalar, // NI_AVX10v1_CompareScalarOrderedLessThan
+        HW_Category_SIMDScalar, // NI_AVX10v1_CompareScalarOrderedLessThanOrEqual
+        HW_Category_SIMDScalar, // NI_AVX10v1_CompareScalarOrderedNotEqual
+        HW_Category_SIMDScalar, // NI_AVX10v1_CompareScalarUnorderedEqual
+        HW_Category_SIMDScalar, // NI_AVX10v1_CompareScalarUnorderedGreaterThan
+        HW_Category_SIMDScalar, // NI_AVX10v1_CompareScalarUnorderedGreaterThanOrEqual
+        HW_Category_SIMDScalar, // NI_AVX10v1_CompareScalarUnorderedLessThan
+        HW_Category_SIMDScalar, // NI_AVX10v1_CompareScalarUnorderedLessThanOrEqual
+        HW_Category_SIMDScalar, // NI_AVX10v1_CompareScalarUnorderedNotEqual
+        HW_Category_SIMDScalar, // NI_AVX10v1_ConvertScalarToVector128Double
+        HW_Category_SIMDScalar, // NI_AVX10v1_ConvertScalarToVector128Half
+        HW_Category_SIMDScalar, // NI_AVX10v1_ConvertScalarToVector128Single
+        HW_Category_SIMDScalar, // NI_AVX10v1_DivideScalar
+        HW_Category_SIMDScalar, // NI_AVX10v1_FusedMultiplyAddScalar
+        HW_Category_SIMDScalar, // NI_AVX10v1_MultiplyScalar
+        HW_Category_SIMDScalar, // NI_AVX10v1_ReciprocalScalar
+        HW_Category_SIMDScalar, // NI_AVX10v1_ReciprocalSqrtScalar
+        HW_Category_IMM, // NI_AVX10v1_RoundScaleScalar
+        HW_Category_SIMDScalar, // NI_AVX10v1_SqrtScalar
+        HW_Category_SIMDScalar, // NI_AVX10v1_SubtractScalar
         HW_Category_SimpleSIMD, // NI_AVX10v2_ConvertToByteWithSaturationAndZeroExtendToInt32
         HW_Category_SimpleSIMD, // NI_AVX10v2_ConvertToByteWithTruncatedSaturationAndZeroExtendToInt32
         HW_Category_SIMDScalar, // NI_AVX10v2_ConvertToInt32WithTruncatedSaturation
@@ -1020,6 +857,8 @@ public partial struct HWIntrinsicInfo
         HW_Category_SIMDScalar, // NI_X86Base_COMIS
         HW_Category_SimpleSIMD, // NI_X86Base_PTEST
         HW_Category_SIMDScalar, // NI_X86Base_UCOMIS
+        HW_Category_SIMDScalar, // NI_AVX10v1_VCOMISH
+        HW_Category_SIMDScalar, // NI_AVX10v1_VUCOMISH
         HW_Category_SimpleSIMD, // NI_AVX_PTEST
         HW_Category_SimpleSIMD, // NI_AVX2_AndNotVector
         HW_Category_Scalar, // NI_AVX2_AndNotScalar
@@ -1066,266 +905,6 @@ public partial struct HWIntrinsicInfo
 #endif
 #elif TARGET_ARM64
 #if FEATURE_HW_INTRINSICS
-        HW_Category_Helper, // NI_Vector64_Abs
-        HW_Category_Helper, // NI_Vector64_AddSaturate
-        HW_Category_Helper, // NI_Vector64_AndNot
-        HW_Category_Helper, // NI_Vector64_As
-        HW_Category_Helper, // NI_Vector64_AsByte
-        HW_Category_Helper, // NI_Vector64_AsDouble
-        HW_Category_Helper, // NI_Vector64_AsInt16
-        HW_Category_Helper, // NI_Vector64_AsInt32
-        HW_Category_Helper, // NI_Vector64_AsInt64
-        HW_Category_Helper, // NI_Vector64_AsNInt
-        HW_Category_Helper, // NI_Vector64_AsNUInt
-        HW_Category_Helper, // NI_Vector64_AsSByte
-        HW_Category_Helper, // NI_Vector64_AsSingle
-        HW_Category_Helper, // NI_Vector64_AsUInt16
-        HW_Category_Helper, // NI_Vector64_AsUInt32
-        HW_Category_Helper, // NI_Vector64_AsUInt64
-        HW_Category_Helper, // NI_Vector64_Ceiling
-        HW_Category_Helper, // NI_Vector64_ConditionalSelect
-        HW_Category_Helper, // NI_Vector64_ConvertToDouble
-        HW_Category_Helper, // NI_Vector64_ConvertToInt32
-        HW_Category_Helper, // NI_Vector64_ConvertToInt32Native
-        HW_Category_Helper, // NI_Vector64_ConvertToInt64
-        HW_Category_Helper, // NI_Vector64_ConvertToInt64Native
-        HW_Category_Helper, // NI_Vector64_ConvertToSingle
-        HW_Category_Helper, // NI_Vector64_ConvertToUInt32
-        HW_Category_Helper, // NI_Vector64_ConvertToUInt32Native
-        HW_Category_Helper, // NI_Vector64_ConvertToUInt64
-        HW_Category_Helper, // NI_Vector64_ConvertToUInt64Native
-        HW_Category_Helper, // NI_Vector64_Create
-        HW_Category_Helper, // NI_Vector64_CreateScalar
-        HW_Category_SIMD, // NI_Vector64_CreateScalarUnsafe
-        HW_Category_Helper, // NI_Vector64_CreateSequence
-        HW_Category_Helper, // NI_Vector64_Dot
-        HW_Category_Helper, // NI_Vector64_Equals
-        HW_Category_Helper, // NI_Vector64_EqualsAny
-        HW_Category_Helper, // NI_Vector64_ExtractMostSignificantBits
-        HW_Category_Helper, // NI_Vector64_Floor
-        HW_Category_Helper, // NI_Vector64_FusedMultiplyAdd
-        HW_Category_Helper, // NI_Vector64_GetElement
-        HW_Category_Helper, // NI_Vector64_GreaterThan
-        HW_Category_Helper, // NI_Vector64_GreaterThanAll
-        HW_Category_Helper, // NI_Vector64_GreaterThanAny
-        HW_Category_Helper, // NI_Vector64_GreaterThanOrEqual
-        HW_Category_Helper, // NI_Vector64_GreaterThanOrEqualAll
-        HW_Category_Helper, // NI_Vector64_GreaterThanOrEqualAny
-        HW_Category_Helper, // NI_Vector64_IsEvenInteger
-        HW_Category_Helper, // NI_Vector64_IsFinite
-        HW_Category_Helper, // NI_Vector64_IsInfinity
-        HW_Category_Helper, // NI_Vector64_IsInteger
-        HW_Category_Helper, // NI_Vector64_IsNaN
-        HW_Category_Helper, // NI_Vector64_IsNegative
-        HW_Category_Helper, // NI_Vector64_IsNegativeInfinity
-        HW_Category_Helper, // NI_Vector64_IsNormal
-        HW_Category_Helper, // NI_Vector64_IsOddInteger
-        HW_Category_Helper, // NI_Vector64_IsPositive
-        HW_Category_Helper, // NI_Vector64_IsPositiveInfinity
-        HW_Category_Helper, // NI_Vector64_IsSubnormal
-        HW_Category_Helper, // NI_Vector64_IsZero
-        HW_Category_Helper, // NI_Vector64_LessThan
-        HW_Category_Helper, // NI_Vector64_LessThanAll
-        HW_Category_Helper, // NI_Vector64_LessThanAny
-        HW_Category_Helper, // NI_Vector64_LessThanOrEqual
-        HW_Category_Helper, // NI_Vector64_LessThanOrEqualAll
-        HW_Category_Helper, // NI_Vector64_LessThanOrEqualAny
-        HW_Category_Helper, // NI_Vector64_LoadAligned
-        HW_Category_Helper, // NI_Vector64_LoadAlignedNonTemporal
-        HW_Category_Helper, // NI_Vector64_LoadUnsafe
-        HW_Category_Helper, // NI_Vector64_Max
-        HW_Category_Helper, // NI_Vector64_MaxMagnitude
-        HW_Category_Helper, // NI_Vector64_MaxMagnitudeNumber
-        HW_Category_Helper, // NI_Vector64_MaxNative
-        HW_Category_Helper, // NI_Vector64_MaxNumber
-        HW_Category_Helper, // NI_Vector64_Min
-        HW_Category_Helper, // NI_Vector64_MinMagnitude
-        HW_Category_Helper, // NI_Vector64_MinMagnitudeNumber
-        HW_Category_Helper, // NI_Vector64_MinNative
-        HW_Category_Helper, // NI_Vector64_MinNumber
-        HW_Category_Helper, // NI_Vector64_MultiplyAddEstimate
-        HW_Category_Helper, // NI_Vector64_Narrow
-        HW_Category_Helper, // NI_Vector64_NarrowWithSaturation
-        HW_Category_Helper, // NI_Vector64_Round
-        HW_Category_Helper, // NI_Vector64_ShiftLeft
-        HW_Category_Helper, // NI_Vector64_Shuffle
-        HW_Category_Helper, // NI_Vector64_ShuffleNative
-        HW_Category_Helper, // NI_Vector64_ShuffleNativeFallback
-        HW_Category_Helper, // NI_Vector64_Sqrt
-        HW_Category_Helper, // NI_Vector64_StoreAligned
-        HW_Category_Helper, // NI_Vector64_StoreAlignedNonTemporal
-        HW_Category_Helper, // NI_Vector64_StoreUnsafe
-        HW_Category_Helper, // NI_Vector64_SubtractSaturate
-        HW_Category_Helper, // NI_Vector64_Sum
-        HW_Category_SIMD, // NI_Vector64_ToScalar
-        HW_Category_SIMD, // NI_Vector64_ToVector128
-        HW_Category_SIMD, // NI_Vector64_ToVector128Unsafe
-        HW_Category_Helper, // NI_Vector64_Truncate
-        HW_Category_Helper, // NI_Vector64_WidenLower
-        HW_Category_Helper, // NI_Vector64_WidenUpper
-        HW_Category_Helper, // NI_Vector64_WithElement
-        HW_Category_Helper, // NI_Vector64_get_AllBitsSet
-        HW_Category_Helper, // NI_Vector64_get_E
-        HW_Category_Helper, // NI_Vector64_get_Epsilon
-        HW_Category_Helper, // NI_Vector64_get_Indices
-        HW_Category_Helper, // NI_Vector64_get_NaN
-        HW_Category_Helper, // NI_Vector64_get_NegativeInfinity
-        HW_Category_Helper, // NI_Vector64_get_NegativeOne
-        HW_Category_Helper, // NI_Vector64_get_NegativeZero
-        HW_Category_Helper, // NI_Vector64_get_One
-        HW_Category_Helper, // NI_Vector64_get_Pi
-        HW_Category_Helper, // NI_Vector64_get_PositiveInfinity
-        HW_Category_Helper, // NI_Vector64_get_Tau
-        HW_Category_Helper, // NI_Vector64_get_Zero
-        HW_Category_Helper, // NI_Vector64_op_Addition
-        HW_Category_Helper, // NI_Vector64_op_BitwiseAnd
-        HW_Category_Helper, // NI_Vector64_op_BitwiseOr
-        HW_Category_Helper, // NI_Vector64_op_Division
-        HW_Category_Helper, // NI_Vector64_op_Equality
-        HW_Category_Helper, // NI_Vector64_op_ExclusiveOr
-        HW_Category_Helper, // NI_Vector64_op_Inequality
-        HW_Category_Helper, // NI_Vector64_op_LeftShift
-        HW_Category_Helper, // NI_Vector64_op_Multiply
-        HW_Category_Helper, // NI_Vector64_op_OnesComplement
-        HW_Category_Helper, // NI_Vector64_op_RightShift
-        HW_Category_Helper, // NI_Vector64_op_Subtraction
-        HW_Category_Helper, // NI_Vector64_op_UnaryNegation
-        HW_Category_Helper, // NI_Vector64_op_UnaryPlus
-        HW_Category_Helper, // NI_Vector64_op_UnsignedRightShift
-        HW_Category_Helper, // NI_Vector128_Abs
-        HW_Category_Helper, // NI_Vector128_AddSaturate
-        HW_Category_Helper, // NI_Vector128_AndNot
-        HW_Category_Helper, // NI_Vector128_As
-        HW_Category_Helper, // NI_Vector128_AsByte
-        HW_Category_Helper, // NI_Vector128_AsDouble
-        HW_Category_Helper, // NI_Vector128_AsInt16
-        HW_Category_Helper, // NI_Vector128_AsInt32
-        HW_Category_Helper, // NI_Vector128_AsInt64
-        HW_Category_Helper, // NI_Vector128_AsNInt
-        HW_Category_Helper, // NI_Vector128_AsNUInt
-        HW_Category_Helper, // NI_Vector128_AsSByte
-        HW_Category_Helper, // NI_Vector128_AsSingle
-        HW_Category_Helper, // NI_Vector128_AsUInt16
-        HW_Category_Helper, // NI_Vector128_AsUInt32
-        HW_Category_Helper, // NI_Vector128_AsUInt64
-        HW_Category_Helper, // NI_Vector128_AsVector
-        HW_Category_Helper, // NI_Vector128_AsVector128
-        HW_Category_SIMD, // NI_Vector128_AsVector128Unsafe
-        HW_Category_Helper, // NI_Vector128_AsVector2
-        HW_Category_SIMD, // NI_Vector128_AsVector3
-        HW_Category_Helper, // NI_Vector128_AsVector4
-        HW_Category_Helper, // NI_Vector128_Ceiling
-        HW_Category_Helper, // NI_Vector128_ConditionalSelect
-        HW_Category_Helper, // NI_Vector128_ConvertToDouble
-        HW_Category_Helper, // NI_Vector128_ConvertToInt32
-        HW_Category_Helper, // NI_Vector128_ConvertToInt32Native
-        HW_Category_Helper, // NI_Vector128_ConvertToInt64
-        HW_Category_Helper, // NI_Vector128_ConvertToInt64Native
-        HW_Category_Helper, // NI_Vector128_ConvertToSingle
-        HW_Category_Helper, // NI_Vector128_ConvertToUInt32
-        HW_Category_Helper, // NI_Vector128_ConvertToUInt32Native
-        HW_Category_Helper, // NI_Vector128_ConvertToUInt64
-        HW_Category_Helper, // NI_Vector128_ConvertToUInt64Native
-        HW_Category_Helper, // NI_Vector128_Create
-        HW_Category_Helper, // NI_Vector128_CreateScalar
-        HW_Category_SIMD, // NI_Vector128_CreateScalarUnsafe
-        HW_Category_Helper, // NI_Vector128_CreateSequence
-        HW_Category_Helper, // NI_Vector128_Dot
-        HW_Category_Helper, // NI_Vector128_Equals
-        HW_Category_Helper, // NI_Vector128_EqualsAny
-        HW_Category_Helper, // NI_Vector128_ExtractMostSignificantBits
-        HW_Category_Helper, // NI_Vector128_Floor
-        HW_Category_Helper, // NI_Vector128_FusedMultiplyAdd
-        HW_Category_Helper, // NI_Vector128_GetElement
-        HW_Category_SIMD, // NI_Vector128_GetLower
-        HW_Category_SIMD, // NI_Vector128_GetUpper
-        HW_Category_Helper, // NI_Vector128_GreaterThan
-        HW_Category_Helper, // NI_Vector128_GreaterThanAll
-        HW_Category_Helper, // NI_Vector128_GreaterThanAny
-        HW_Category_Helper, // NI_Vector128_GreaterThanOrEqual
-        HW_Category_Helper, // NI_Vector128_GreaterThanOrEqualAll
-        HW_Category_Helper, // NI_Vector128_GreaterThanOrEqualAny
-        HW_Category_Helper, // NI_Vector128_IsEvenInteger
-        HW_Category_Helper, // NI_Vector128_IsFinite
-        HW_Category_Helper, // NI_Vector128_IsInfinity
-        HW_Category_Helper, // NI_Vector128_IsInteger
-        HW_Category_Helper, // NI_Vector128_IsNaN
-        HW_Category_Helper, // NI_Vector128_IsNegative
-        HW_Category_Helper, // NI_Vector128_IsNegativeInfinity
-        HW_Category_Helper, // NI_Vector128_IsNormal
-        HW_Category_Helper, // NI_Vector128_IsOddInteger
-        HW_Category_Helper, // NI_Vector128_IsPositive
-        HW_Category_Helper, // NI_Vector128_IsPositiveInfinity
-        HW_Category_Helper, // NI_Vector128_IsSubnormal
-        HW_Category_Helper, // NI_Vector128_IsZero
-        HW_Category_Helper, // NI_Vector128_LessThan
-        HW_Category_Helper, // NI_Vector128_LessThanAll
-        HW_Category_Helper, // NI_Vector128_LessThanAny
-        HW_Category_Helper, // NI_Vector128_LessThanOrEqual
-        HW_Category_Helper, // NI_Vector128_LessThanOrEqualAll
-        HW_Category_Helper, // NI_Vector128_LessThanOrEqualAny
-        HW_Category_Helper, // NI_Vector128_LoadAligned
-        HW_Category_Helper, // NI_Vector128_LoadAlignedNonTemporal
-        HW_Category_Helper, // NI_Vector128_LoadUnsafe
-        HW_Category_Helper, // NI_Vector128_Max
-        HW_Category_Helper, // NI_Vector128_MaxMagnitude
-        HW_Category_Helper, // NI_Vector128_MaxMagnitudeNumber
-        HW_Category_Helper, // NI_Vector128_MaxNative
-        HW_Category_Helper, // NI_Vector128_MaxNumber
-        HW_Category_Helper, // NI_Vector128_Min
-        HW_Category_Helper, // NI_Vector128_MinMagnitude
-        HW_Category_Helper, // NI_Vector128_MinMagnitudeNumber
-        HW_Category_Helper, // NI_Vector128_MinNative
-        HW_Category_Helper, // NI_Vector128_MinNumber
-        HW_Category_Helper, // NI_Vector128_MultiplyAddEstimate
-        HW_Category_Helper, // NI_Vector128_Narrow
-        HW_Category_Helper, // NI_Vector128_NarrowWithSaturation
-        HW_Category_Helper, // NI_Vector128_Round
-        HW_Category_Helper, // NI_Vector128_ShiftLeft
-        HW_Category_Helper, // NI_Vector128_Shuffle
-        HW_Category_Helper, // NI_Vector128_ShuffleNative
-        HW_Category_Helper, // NI_Vector128_ShuffleNativeFallback
-        HW_Category_Helper, // NI_Vector128_Sqrt
-        HW_Category_Helper, // NI_Vector128_StoreAligned
-        HW_Category_Helper, // NI_Vector128_StoreAlignedNonTemporal
-        HW_Category_Helper, // NI_Vector128_StoreUnsafe
-        HW_Category_Helper, // NI_Vector128_SubtractSaturate
-        HW_Category_Helper, // NI_Vector128_Sum
-        HW_Category_SIMD, // NI_Vector128_ToScalar
-        HW_Category_Helper, // NI_Vector128_Truncate
-        HW_Category_Helper, // NI_Vector128_WidenLower
-        HW_Category_Helper, // NI_Vector128_WidenUpper
-        HW_Category_Helper, // NI_Vector128_WithElement
-        HW_Category_Helper, // NI_Vector128_WithLower
-        HW_Category_Helper, // NI_Vector128_WithUpper
-        HW_Category_Helper, // NI_Vector128_get_AllBitsSet
-        HW_Category_Helper, // NI_Vector128_get_E
-        HW_Category_Helper, // NI_Vector128_get_Epsilon
-        HW_Category_Helper, // NI_Vector128_get_Indices
-        HW_Category_Helper, // NI_Vector128_get_NaN
-        HW_Category_Helper, // NI_Vector128_get_NegativeInfinity
-        HW_Category_Helper, // NI_Vector128_get_NegativeOne
-        HW_Category_Helper, // NI_Vector128_get_NegativeZero
-        HW_Category_Helper, // NI_Vector128_get_One
-        HW_Category_Helper, // NI_Vector128_get_Pi
-        HW_Category_Helper, // NI_Vector128_get_PositiveInfinity
-        HW_Category_Helper, // NI_Vector128_get_Tau
-        HW_Category_Helper, // NI_Vector128_get_Zero
-        HW_Category_Helper, // NI_Vector128_op_Addition
-        HW_Category_Helper, // NI_Vector128_op_BitwiseAnd
-        HW_Category_Helper, // NI_Vector128_op_BitwiseOr
-        HW_Category_Helper, // NI_Vector128_op_Division
-        HW_Category_Helper, // NI_Vector128_op_Equality
-        HW_Category_Helper, // NI_Vector128_op_ExclusiveOr
-        HW_Category_Helper, // NI_Vector128_op_Inequality
-        HW_Category_Helper, // NI_Vector128_op_LeftShift
-        HW_Category_Helper, // NI_Vector128_op_Multiply
-        HW_Category_Helper, // NI_Vector128_op_OnesComplement
-        HW_Category_Helper, // NI_Vector128_op_RightShift
-        HW_Category_Helper, // NI_Vector128_op_Subtraction
-        HW_Category_Helper, // NI_Vector128_op_UnaryNegation
-        HW_Category_Helper, // NI_Vector128_op_UnaryPlus
-        HW_Category_Helper, // NI_Vector128_op_UnsignedRightShift
         HW_Category_SIMD, // NI_AdvSimd_Abs
         HW_Category_SIMD, // NI_AdvSimd_AbsSaturate
         HW_Category_SIMD, // NI_AdvSimd_AbsScalar
@@ -1801,6 +1380,29 @@ public partial struct HWIntrinsicInfo
         HW_Category_Scalar, // NI_Crc32_Arm64_ComputeCrc32C
         HW_Category_SIMD, // NI_Dp_DotProduct
         HW_Category_SIMDByIndexedElement, // NI_Dp_DotProductBySelectedQuadruplet
+        HW_Category_SIMD, // NI_Fp16_Add
+        HW_Category_SIMD, // NI_Fp16_Ceiling
+        HW_Category_SIMD, // NI_Fp16_CompareEqual
+        HW_Category_SIMD, // NI_Fp16_CompareGreaterThan
+        HW_Category_SIMD, // NI_Fp16_CompareGreaterThanOrEqual
+        HW_Category_SIMD, // NI_Fp16_CompareLessThan
+        HW_Category_SIMD, // NI_Fp16_CompareLessThanOrEqual
+        HW_Category_SIMD, // NI_Fp16_CompareNotEqual
+        HW_Category_SIMD, // NI_Fp16_ConvertToHalf
+        HW_Category_SIMD, // NI_Fp16_ConvertToInt32
+        HW_Category_SIMD, // NI_Fp16_ConvertToInt64
+        HW_Category_SIMD, // NI_Fp16_ConvertToUInt32
+        HW_Category_SIMD, // NI_Fp16_ConvertToUInt64
+        HW_Category_SIMD, // NI_Fp16_Divide
+        HW_Category_SIMD, // NI_Fp16_Floor
+        HW_Category_SIMD, // NI_Fp16_FusedMultiplyAdd
+        HW_Category_SIMD, // NI_Fp16_Multiply
+        HW_Category_SIMD, // NI_Fp16_ReciprocalEstimate
+        HW_Category_SIMD, // NI_Fp16_ReciprocalSqrtEstimate
+        HW_Category_SIMD, // NI_Fp16_RoundToNearest
+        HW_Category_SIMD, // NI_Fp16_Sqrt
+        HW_Category_SIMD, // NI_Fp16_Subtract
+        HW_Category_SIMD, // NI_Fp16_Truncate
         HW_Category_SIMD, // NI_Rdm_MultiplyRoundedDoublingAndAddSaturateHigh
         HW_Category_SIMD, // NI_Rdm_MultiplyRoundedDoublingAndSubtractSaturateHigh
         HW_Category_SIMDByIndexedElement, // NI_Rdm_MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh
@@ -1819,6 +1421,15 @@ public partial struct HWIntrinsicInfo
         HW_Category_SIMD, // NI_Sha256_HashUpdate2
         HW_Category_SIMD, // NI_Sha256_ScheduleUpdate0
         HW_Category_SIMD, // NI_Sha256_ScheduleUpdate1
+        HW_Category_SIMD, // NI_Sha3_BitwiseClearXor
+        HW_Category_SIMD, // NI_Sha3_BitwiseRotateLeftBy1AndXor
+        HW_Category_SIMD, // NI_Sha3_Xor
+        HW_Category_SIMD, // NI_Sha3_XorRotateRight
+        HW_Category_SIMD, // NI_Sm4_Encode
+        HW_Category_SIMD, // NI_Sm4_KeyUpdate
+        HW_Category_SIMD, // NI_ArmBase_ConvertToDouble
+        HW_Category_SIMD, // NI_ArmBase_ConvertToHalf
+        HW_Category_SIMD, // NI_ArmBase_ConvertToSingle
 #endif
 #if FEATURE_HW_INTRINSICS
         HW_Category_SIMD, // NI_Sve_Abs
@@ -2185,6 +1796,16 @@ public partial struct HWIntrinsicInfo
         HW_Category_SIMD, // NI_Sve2_CreateWhileReadAfterWriteMaskUInt16
         HW_Category_SIMD, // NI_Sve2_CreateWhileReadAfterWriteMaskUInt32
         HW_Category_SIMD, // NI_Sve2_CreateWhileReadAfterWriteMaskUInt64
+        HW_Category_SIMD, // NI_Sve2_CreateWhileWriteAfterReadMaskByte
+        HW_Category_SIMD, // NI_Sve2_CreateWhileWriteAfterReadMaskDouble
+        HW_Category_SIMD, // NI_Sve2_CreateWhileWriteAfterReadMaskInt16
+        HW_Category_SIMD, // NI_Sve2_CreateWhileWriteAfterReadMaskInt32
+        HW_Category_SIMD, // NI_Sve2_CreateWhileWriteAfterReadMaskInt64
+        HW_Category_SIMD, // NI_Sve2_CreateWhileWriteAfterReadMaskSByte
+        HW_Category_SIMD, // NI_Sve2_CreateWhileWriteAfterReadMaskSingle
+        HW_Category_SIMD, // NI_Sve2_CreateWhileWriteAfterReadMaskUInt16
+        HW_Category_SIMD, // NI_Sve2_CreateWhileWriteAfterReadMaskUInt32
+        HW_Category_SIMD, // NI_Sve2_CreateWhileWriteAfterReadMaskUInt64
         HW_Category_SIMD, // NI_Sve2_DotProductRotateComplex
         HW_Category_SIMD, // NI_Sve2_DotProductRotateComplexBySelectedIndex
         HW_Category_SIMD, // NI_Sve2_FusedAddHalving
@@ -2258,6 +1879,10 @@ public partial struct HWIntrinsicInfo
         HW_Category_SIMD, // NI_Sve2_PolynomialMultiplyWideningOdd
         HW_Category_SIMD, // NI_Sve2_ReciprocalEstimate
         HW_Category_SIMD, // NI_Sve2_ReciprocalSqrtEstimate
+        HW_Category_SIMD, // NI_Sve2_SaturatingExtractNarrowingLower
+        HW_Category_SIMD, // NI_Sve2_SaturatingExtractNarrowingUpper
+        HW_Category_SIMD, // NI_Sve2_SaturatingExtractUnsignedNarrowingLower
+        HW_Category_SIMD, // NI_Sve2_SaturatingExtractUnsignedNarrowingUpper
         HW_Category_MemoryStore, // NI_Sve2_Scatter16BitNarrowingNonTemporal
         HW_Category_MemoryStore, // NI_Sve2_Scatter16BitWithByteOffsetsNarrowingNonTemporal
         HW_Category_MemoryStore, // NI_Sve2_Scatter32BitNarrowingNonTemporal
@@ -2314,6 +1939,9 @@ public partial struct HWIntrinsicInfo
         HW_Category_SIMD, // NI_Sve2_VectorTableLookupExtension
         HW_Category_SIMD, // NI_Sve2_Xor
         HW_Category_ShiftRightByImmediate, // NI_Sve2_XorRotateRight
+        HW_Category_SIMD, // NI_SveSha3_BitwiseRotateLeftBy1AndXor
+        HW_Category_SIMD, // NI_SveSm4_Encode
+        HW_Category_SIMD, // NI_SveSm4_KeyUpdate
         HW_Category_Scalar, // NI_Sve_ConditionalExtractAfterLastActiveElementScalar
         HW_Category_Scalar, // NI_Sve_ConditionalExtractLastActiveElementScalar
         HW_Category_Helper, // NI_Sve_ConvertMaskToVector
@@ -2341,408 +1969,292 @@ public partial struct HWIntrinsicInfo
         HW_Category_SIMD, // NI_Sve_TransposeOdd_Predicates
         HW_Category_SIMD, // NI_Sve_ReverseElement_Predicates
 #endif
+#elif TARGET_WASM
+#if FEATURE_HW_INTRINSICS
+        HW_Category_SIMD, // NI_PackedSimd_Abs
+        HW_Category_SIMD, // NI_PackedSimd_Add
+        HW_Category_SIMD, // NI_PackedSimd_AddPairwiseWidening
+        HW_Category_SIMD, // NI_PackedSimd_AddSaturate
+        HW_Category_SIMD, // NI_PackedSimd_AllTrue
+        HW_Category_SIMD, // NI_PackedSimd_And
+        HW_Category_SIMD, // NI_PackedSimd_AndNot
+        HW_Category_SIMD, // NI_PackedSimd_AnyTrue
+        HW_Category_SIMD, // NI_PackedSimd_AverageRounded
+        HW_Category_SIMD, // NI_PackedSimd_Bitmask
+        HW_Category_SIMD, // NI_PackedSimd_BitwiseSelect
+        HW_Category_SIMD, // NI_PackedSimd_Ceiling
+        HW_Category_SIMD, // NI_PackedSimd_CompareEqual
+        HW_Category_SIMD, // NI_PackedSimd_CompareGreaterThan
+        HW_Category_SIMD, // NI_PackedSimd_CompareGreaterThanOrEqual
+        HW_Category_SIMD, // NI_PackedSimd_CompareLessThan
+        HW_Category_SIMD, // NI_PackedSimd_CompareLessThanOrEqual
+        HW_Category_SIMD, // NI_PackedSimd_CompareNotEqual
+        HW_Category_SIMD, // NI_PackedSimd_ConvertNarrowingSaturateSigned
+        HW_Category_SIMD, // NI_PackedSimd_ConvertNarrowingSaturateUnsigned
+        HW_Category_SIMD, // NI_PackedSimd_ConvertToDoubleLower
+        HW_Category_SIMD, // NI_PackedSimd_ConvertToInt32Saturate
+        HW_Category_SIMD, // NI_PackedSimd_ConvertToSingle
+        HW_Category_SIMD, // NI_PackedSimd_ConvertToUInt32Saturate
+        HW_Category_SIMD, // NI_PackedSimd_Divide
+        HW_Category_SIMD, // NI_PackedSimd_Dot
+        HW_Category_IMM, // NI_PackedSimd_ExtractScalar
+        HW_Category_SIMD, // NI_PackedSimd_Floor
+        HW_Category_MemoryLoad, // NI_PackedSimd_LoadScalarAndInsert
+        HW_Category_MemoryLoad, // NI_PackedSimd_LoadScalarAndSplatVector128
+        HW_Category_MemoryLoad, // NI_PackedSimd_LoadScalarVector128
+        HW_Category_Helper, // NI_PackedSimd_LoadVector128
+        HW_Category_MemoryLoad, // NI_PackedSimd_LoadWideningVector128
+        HW_Category_SIMD, // NI_PackedSimd_Max
+        HW_Category_SIMD, // NI_PackedSimd_Min
+        HW_Category_SIMD, // NI_PackedSimd_Multiply
+        HW_Category_SIMD, // NI_PackedSimd_MultiplyRoundedSaturateQ15
+        HW_Category_SIMD, // NI_PackedSimd_MultiplyWideningLower
+        HW_Category_SIMD, // NI_PackedSimd_MultiplyWideningUpper
+        HW_Category_SIMD, // NI_PackedSimd_Negate
+        HW_Category_SIMD, // NI_PackedSimd_Not
+        HW_Category_SIMD, // NI_PackedSimd_Or
+        HW_Category_SIMD, // NI_PackedSimd_PopCount
+        HW_Category_SIMD, // NI_PackedSimd_PseudoMax
+        HW_Category_SIMD, // NI_PackedSimd_PseudoMin
+        HW_Category_IMM, // NI_PackedSimd_ReplaceScalar
+        HW_Category_SIMD, // NI_PackedSimd_RoundToNearest
+        HW_Category_SIMD, // NI_PackedSimd_ShiftLeft
+        HW_Category_SIMD, // NI_PackedSimd_ShiftRightArithmetic
+        HW_Category_SIMD, // NI_PackedSimd_ShiftRightLogical
+        HW_Category_SIMD, // NI_PackedSimd_Shuffle
+        HW_Category_SIMD, // NI_PackedSimd_SignExtendWideningLower
+        HW_Category_SIMD, // NI_PackedSimd_SignExtendWideningUpper
+        HW_Category_SIMD, // NI_PackedSimd_Splat
+        HW_Category_SIMD, // NI_PackedSimd_Sqrt
+        HW_Category_Helper, // NI_PackedSimd_Store
+        HW_Category_MemoryStore, // NI_PackedSimd_StoreSelectedScalar
+        HW_Category_SIMD, // NI_PackedSimd_Subtract
+        HW_Category_SIMD, // NI_PackedSimd_SubtractSaturate
+        HW_Category_SIMD, // NI_PackedSimd_Swizzle
+        HW_Category_SIMD, // NI_PackedSimd_Truncate
+        HW_Category_SIMD, // NI_PackedSimd_Xor
+        HW_Category_SIMD, // NI_PackedSimd_ZeroExtendWideningLower
+        HW_Category_SIMD, // NI_PackedSimd_ZeroExtendWideningUpper
+        HW_Category_Scalar, // NI_WasmBase_LeadingZeroCount
+        HW_Category_Scalar, // NI_WasmBase_TrailingZeroCount
 #endif
+#else
+#error Unsupported platform
+#endif
+#endif
+
     ];
 
     private static ReadOnlySpan<HWIntrinsicFlag> s_flags => [
+#if FEATURE_HW_INTRINSICS
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_Abs
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_AddSaturate
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_AndNot
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_As
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_AsByte
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_AsDouble
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_AsInt16
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_AsInt32
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_AsInt64
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_AsNInt
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_AsNUInt
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_AsSByte
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_AsSingle
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_AsUInt16
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_AsUInt32
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_AsUInt64
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_AsVector
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_AsVector128
+#if TARGET_XARCH
+        HW_Flag_SpecialImport | HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialCodeGen | HW_Flag_NoRMWSemantics | HW_Flag_NoContainment | HW_Flag_AvxOnlyCompatible, // NI_Vector_AsVector128Unsafe
+        HW_Flag_SpecialImport | HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialCodeGen | HW_Flag_AvxOnlyCompatible, // NI_Vector_AsVector2
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_AsVector256
+        HW_Flag_SpecialImport | HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialCodeGen | HW_Flag_AvxOnlyCompatible, // NI_Vector_AsVector3
+#elif TARGET_ARM64
+        HW_Flag_SpecialCodeGen, // NI_Vector_AsVector128Unsafe
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector_AsVector2
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialCodeGen | HW_Flag_SpecialImport, // NI_Vector_AsVector3
+#else
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialCodeGen | HW_Flag_SpecialImport, // NI_Vector_AsVector128Unsafe
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialCodeGen | HW_Flag_SpecialImport, // NI_Vector_AsVector2
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialCodeGen | HW_Flag_SpecialImport, // NI_Vector_AsVector3
+#endif
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_AsVector4
+#if TARGET_XARCH
+        HW_Flag_InvalidNodeId, // NI_Vector_AsVector512
+#endif
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_Ceiling
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_ConcatLowerLower
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_ConcatLowerUpper
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_ConcatUpperLower
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_ConcatUpperUpper
+#if TARGET_XARCH
+        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_AvxOnlyCompatible, // NI_Vector_ConditionalSelect
+#else
+        HW_Flag_InvalidNodeId, // NI_Vector_ConditionalSelect
+#endif
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector_ConvertToDouble
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_ConvertToInt32
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_ConvertToInt32Native
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector_ConvertToInt64
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector_ConvertToInt64Native
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_ConvertToSingle
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector_ConvertToUInt32
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector_ConvertToUInt32Native
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector_ConvertToUInt64
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector_ConvertToUInt64Native
+        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_AvxOnlyCompatible, // NI_Vector_Create
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_CreateAlternatingSequence
+        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_AvxOnlyCompatible, // NI_Vector_CreateGeometricSequence
+#if TARGET_XARCH
+        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_NoRMWSemantics | HW_Flag_AvxOnlyCompatible, // NI_Vector_CreateScalar
+        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_NoRMWSemantics | HW_Flag_AvxOnlyCompatible, // NI_Vector_CreateScalarUnsafe
+#elif TARGET_ARM64
+        HW_Flag_SpecialImport | HW_Flag_NoCodeGen, // NI_Vector_CreateScalar
+        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_SupportsContainment, // NI_Vector_CreateScalarUnsafe
+#else
+        HW_Flag_SpecialImport | HW_Flag_NoCodeGen, // NI_Vector_CreateScalar
+        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen, // NI_Vector_CreateScalarUnsafe
+#endif
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_CreateSequence
+        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_Dot
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_Equals
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector_EqualsAny
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_AvxOnlyCompatible, // NI_Vector_ExtractMostSignificantBits
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_Floor
+        HW_Flag_InvalidNodeId, // NI_Vector_FusedMultiplyAdd
+#if TARGET_XARCH
+        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_ReturnsScalarT | HW_Flag_AvxOnlyCompatible, // NI_Vector_GetElement
+#elif TARGET_ARM64
+        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_ReturnsScalarT | HW_Flag_SupportsContainment, // NI_Vector_GetElement
+#else
+        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_ReturnsScalarT, // NI_Vector_GetElement
+#endif
+#if TARGET_XARCH
+        HW_Flag_SpecialCodeGen | HW_Flag_NormalizeSmallTypeToInt | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_GetLower
+        HW_Flag_SpecialCodeGen | HW_Flag_NormalizeSmallTypeToInt | HW_Flag_BaseTypeFromFirstArg, // NI_Vector_GetLower128
+        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_GetUpper
+#elif TARGET_ARM64
+        HW_Flag_SpecialImport | HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialCodeGen, // NI_Vector_GetLower
+        HW_Flag_SpecialImport | HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialCodeGen, // NI_Vector_GetUpper
+#endif
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_GreaterThan
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector_GreaterThanAll
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector_GreaterThanAny
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_GreaterThanOrEqual
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector_GreaterThanOrEqualAll
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector_GreaterThanOrEqualAny
+        HW_Flag_InvalidNodeId, // NI_Vector_IsEvenInteger
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_IsFinite
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_IsInfinity
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_IsInteger
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_IsNaN
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_IsNegative
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_IsNegativeInfinity
+        HW_Flag_InvalidNodeId, // NI_Vector_IsNormal
+        HW_Flag_InvalidNodeId, // NI_Vector_IsOddInteger
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_IsPositive
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_IsPositiveInfinity
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_IsSubnormal
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_IsZero
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_LessThan
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector_LessThanAll
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector_LessThanAny
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_LessThanOrEqual
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector_LessThanOrEqualAll
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector_LessThanOrEqualAny
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_LoadAligned
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_LoadAlignedNonTemporal
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_LoadUnsafe
+        HW_Flag_InvalidNodeId, // NI_Vector_Max
+        HW_Flag_InvalidNodeId, // NI_Vector_MaxMagnitude
+        HW_Flag_InvalidNodeId, // NI_Vector_MaxMagnitudeNumber
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_MaxNative
+        HW_Flag_InvalidNodeId, // NI_Vector_MaxNumber
+        HW_Flag_InvalidNodeId, // NI_Vector_Min
+        HW_Flag_InvalidNodeId, // NI_Vector_MinMagnitude
+        HW_Flag_InvalidNodeId, // NI_Vector_MinMagnitudeNumber
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_MinNative
+        HW_Flag_InvalidNodeId, // NI_Vector_MinNumber
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_MultiplyAddEstimate
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_Narrow
+#if TARGET_ARM64
+        HW_Flag_InvalidNodeId, // NI_Vector_NarrowWithSaturation
+#else
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_NarrowWithSaturation
+#endif
+        HW_Flag_InvalidNodeId, // NI_Vector_Reverse
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_Round
+        HW_Flag_InvalidNodeId, // NI_Vector_ShiftLeft
+        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_CanBenefitFromConstantProp, // NI_Vector_Shuffle
+        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_CanBenefitFromConstantProp, // NI_Vector_ShuffleNative
+        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_CanBenefitFromConstantProp, // NI_Vector_ShuffleNativeFallback
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_Sqrt
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_StoreAligned
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_StoreAlignedNonTemporal
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_StoreUnsafe
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_SubtractSaturate
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_Sum
+#if TARGET_XARCH
+        HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_ReturnsScalarT | HW_Flag_SpecialImport | HW_Flag_NoRMWSemantics | HW_Flag_AvxOnlyCompatible, // NI_Vector_ToScalar
+        HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_NormalizeSmallTypeToInt | HW_Flag_NoRMWSemantics | HW_Flag_AvxOnlyCompatible, // NI_Vector_ToVector256
+        HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_NormalizeSmallTypeToInt | HW_Flag_NoRMWSemantics | HW_Flag_AvxOnlyCompatible, // NI_Vector_ToVector256Unsafe
+        HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_NormalizeSmallTypeToInt | HW_Flag_NoRMWSemantics, // NI_Vector_ToVector512
+        HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_NormalizeSmallTypeToInt, // NI_Vector_ToVector512Unsafe
+#elif TARGET_ARM64
+        HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_ReturnsScalarT | HW_Flag_SIMDScalar, // NI_Vector_ToScalar
+        HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg, // NI_Vector_ToVector128
+        HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg, // NI_Vector_ToVector128Unsafe
+#else
+        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_ReturnsScalarT, // NI_Vector_ToScalar
+#endif
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_Truncate
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_UnzipEven
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_UnzipOdd
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_WidenLower
+        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_WidenUpper
+        HW_Flag_SpecialImport | HW_Flag_NoContainment | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_WithElement
+#if TARGET_XARCH || TARGET_ARM64
+        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_WithLower
+        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector_WithUpper
+#endif
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_ZipLower
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_ZipUpper
+        HW_Flag_InvalidNodeId, // NI_Vector_get_AllBitsSet
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_get_E
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_get_Epsilon
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_get_Indices
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_get_NaN
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_get_NegativeInfinity
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_get_NegativeOne
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_get_NegativeZero
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_get_One
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_get_Pi
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_get_PositiveInfinity
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_get_SignSequence
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_get_Tau
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_get_Zero
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_op_Addition
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_op_BitwiseAnd
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_op_BitwiseOr
+#if TARGET_XARCH
+        HW_Flag_SpecialSideEffect_Other | HW_Flag_SpecialImport | HW_Flag_AvxOnlyCompatible, // NI_Vector_op_Division
+#else
+        HW_Flag_InvalidNodeId, // NI_Vector_op_Division
+#endif
+        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_Commutative | HW_Flag_CanBenefitFromConstantProp | HW_Flag_BaseTypeFromFirstArg | HW_Flag_ReturnsBoolean | HW_Flag_AvxOnlyCompatible, // NI_Vector_op_Equality
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_op_ExclusiveOr
+        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_Commutative | HW_Flag_CanBenefitFromConstantProp | HW_Flag_BaseTypeFromFirstArg | HW_Flag_ReturnsBoolean | HW_Flag_AvxOnlyCompatible, // NI_Vector_op_Inequality
+        HW_Flag_InvalidNodeId, // NI_Vector_op_LeftShift
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_op_Multiply
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_op_OnesComplement
+        HW_Flag_InvalidNodeId, // NI_Vector_op_RightShift
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_op_Subtraction
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_op_UnaryNegation
+        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector_op_UnaryPlus
+        HW_Flag_InvalidNodeId, // NI_Vector_op_UnsignedRightShift
 #if TARGET_XARCH
 #if FEATURE_HW_INTRINSICS
-        HW_Flag_InvalidNodeId, // NI_Vector128_Abs
-        HW_Flag_InvalidNodeId, // NI_Vector128_AddSaturate
-        HW_Flag_InvalidNodeId, // NI_Vector128_AndNot
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_As
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsByte
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsDouble
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsInt16
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsInt32
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsInt64
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsNInt
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsNUInt
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsSByte
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsSingle
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsUInt16
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsUInt32
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsUInt64
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsVector
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsVector128
-        HW_Flag_SpecialImport | HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialCodeGen | HW_Flag_NoRMWSemantics | HW_Flag_NoContainment, // NI_Vector128_AsVector128Unsafe
-        HW_Flag_SpecialImport | HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialCodeGen, // NI_Vector128_AsVector2
-        HW_Flag_SpecialImport | HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialCodeGen, // NI_Vector128_AsVector3
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsVector4
-        HW_Flag_InvalidNodeId, // NI_Vector128_Ceiling
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen, // NI_Vector128_ConditionalSelect
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_ConvertToDouble
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_ConvertToInt32
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_ConvertToInt32Native
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_ConvertToInt64
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_ConvertToInt64Native
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_ConvertToSingle
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_ConvertToUInt32
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_ConvertToUInt32Native
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_ConvertToUInt64
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_ConvertToUInt64Native
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen, // NI_Vector128_Create
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_NoRMWSemantics, // NI_Vector128_CreateScalar
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_NoRMWSemantics, // NI_Vector128_CreateScalarUnsafe
-        HW_Flag_InvalidNodeId, // NI_Vector128_CreateSequence
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_Dot
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_Equals
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_EqualsAny
-        HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialImport | HW_Flag_NoCodeGen, // NI_Vector128_ExtractMostSignificantBits
-        HW_Flag_InvalidNodeId, // NI_Vector128_Floor
-        HW_Flag_InvalidNodeId, // NI_Vector128_FusedMultiplyAdd
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_GetElement
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_GreaterThan
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_GreaterThanAll
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_GreaterThanAny
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_GreaterThanOrEqual
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_GreaterThanOrEqualAll
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_GreaterThanOrEqualAny
-        HW_Flag_InvalidNodeId, // NI_Vector128_IsEvenInteger
-        HW_Flag_InvalidNodeId, // NI_Vector128_IsFinite
-        HW_Flag_InvalidNodeId, // NI_Vector128_IsInfinity
-        HW_Flag_InvalidNodeId, // NI_Vector128_IsInteger
-        HW_Flag_InvalidNodeId, // NI_Vector128_IsNaN
-        HW_Flag_InvalidNodeId, // NI_Vector128_IsNegative
-        HW_Flag_InvalidNodeId, // NI_Vector128_IsNegativeInfinity
-        HW_Flag_InvalidNodeId, // NI_Vector128_IsNormal
-        HW_Flag_InvalidNodeId, // NI_Vector128_IsOddInteger
-        HW_Flag_InvalidNodeId, // NI_Vector128_IsPositive
-        HW_Flag_InvalidNodeId, // NI_Vector128_IsPositiveInfinity
-        HW_Flag_InvalidNodeId, // NI_Vector128_IsSubnormal
-        HW_Flag_InvalidNodeId, // NI_Vector128_IsZero
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_LessThan
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_LessThanAll
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_LessThanAny
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_LessThanOrEqual
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_LessThanOrEqualAll
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_LessThanOrEqualAny
-        HW_Flag_InvalidNodeId, // NI_Vector128_LoadAligned
-        HW_Flag_InvalidNodeId, // NI_Vector128_LoadAlignedNonTemporal
-        HW_Flag_InvalidNodeId, // NI_Vector128_LoadUnsafe
-        HW_Flag_InvalidNodeId, // NI_Vector128_Max
-        HW_Flag_InvalidNodeId, // NI_Vector128_MaxMagnitude
-        HW_Flag_InvalidNodeId, // NI_Vector128_MaxMagnitudeNumber
-        HW_Flag_InvalidNodeId, // NI_Vector128_MaxNative
-        HW_Flag_InvalidNodeId, // NI_Vector128_MaxNumber
-        HW_Flag_InvalidNodeId, // NI_Vector128_Min
-        HW_Flag_InvalidNodeId, // NI_Vector128_MinMagnitude
-        HW_Flag_InvalidNodeId, // NI_Vector128_MinMagnitudeNumber
-        HW_Flag_InvalidNodeId, // NI_Vector128_MinNative
-        HW_Flag_InvalidNodeId, // NI_Vector128_MinNumber
-        HW_Flag_InvalidNodeId, // NI_Vector128_MultiplyAddEstimate
-        HW_Flag_InvalidNodeId, // NI_Vector128_Narrow
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_NarrowWithSaturation
-        HW_Flag_InvalidNodeId, // NI_Vector128_Round
-        HW_Flag_InvalidNodeId, // NI_Vector128_ShiftLeft
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_CanBenefitFromConstantProp, // NI_Vector128_Shuffle
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_CanBenefitFromConstantProp, // NI_Vector128_ShuffleNative
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_CanBenefitFromConstantProp, // NI_Vector128_ShuffleNativeFallback
-        HW_Flag_InvalidNodeId, // NI_Vector128_Sqrt
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_StoreAligned
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_StoreAlignedNonTemporal
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_StoreUnsafe
-        HW_Flag_InvalidNodeId, // NI_Vector128_SubtractSaturate
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_Sum
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics, // NI_Vector128_ToScalar
-        HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics | HW_Flag_NormalizeSmallTypeToInt, // NI_Vector128_ToVector256
-        HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics | HW_Flag_NormalizeSmallTypeToInt, // NI_Vector128_ToVector256Unsafe
-        HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics | HW_Flag_NormalizeSmallTypeToInt, // NI_Vector128_ToVector512
-        HW_Flag_InvalidNodeId, // NI_Vector128_Truncate
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_WidenLower
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_WidenUpper
-        HW_Flag_SpecialImport | HW_Flag_NoContainment | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_WithElement
-        HW_Flag_InvalidNodeId, // NI_Vector128_get_AllBitsSet
-        HW_Flag_InvalidNodeId, // NI_Vector128_get_E
-        HW_Flag_InvalidNodeId, // NI_Vector128_get_Epsilon
-        HW_Flag_InvalidNodeId, // NI_Vector128_get_Indices
-        HW_Flag_InvalidNodeId, // NI_Vector128_get_NaN
-        HW_Flag_InvalidNodeId, // NI_Vector128_get_NegativeInfinity
-        HW_Flag_InvalidNodeId, // NI_Vector128_get_NegativeOne
-        HW_Flag_InvalidNodeId, // NI_Vector128_get_NegativeZero
-        HW_Flag_InvalidNodeId, // NI_Vector128_get_One
-        HW_Flag_InvalidNodeId, // NI_Vector128_get_Pi
-        HW_Flag_InvalidNodeId, // NI_Vector128_get_PositiveInfinity
-        HW_Flag_InvalidNodeId, // NI_Vector128_get_Tau
-        HW_Flag_InvalidNodeId, // NI_Vector128_get_Zero
-        HW_Flag_InvalidNodeId, // NI_Vector128_op_Addition
-        HW_Flag_InvalidNodeId, // NI_Vector128_op_BitwiseAnd
-        HW_Flag_InvalidNodeId, // NI_Vector128_op_BitwiseOr
-        HW_Flag_SpecialSideEffect_Other | HW_Flag_SpecialImport, // NI_Vector128_op_Division
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_Commutative | HW_Flag_CanBenefitFromConstantProp, // NI_Vector128_op_Equality
-        HW_Flag_InvalidNodeId, // NI_Vector128_op_ExclusiveOr
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_Commutative | HW_Flag_CanBenefitFromConstantProp, // NI_Vector128_op_Inequality
-        HW_Flag_InvalidNodeId, // NI_Vector128_op_LeftShift
-        HW_Flag_InvalidNodeId, // NI_Vector128_op_Multiply
-        HW_Flag_InvalidNodeId, // NI_Vector128_op_OnesComplement
-        HW_Flag_InvalidNodeId, // NI_Vector128_op_RightShift
-        HW_Flag_InvalidNodeId, // NI_Vector128_op_Subtraction
-        HW_Flag_InvalidNodeId, // NI_Vector128_op_UnaryNegation
-        HW_Flag_InvalidNodeId, // NI_Vector128_op_UnaryPlus
-        HW_Flag_InvalidNodeId, // NI_Vector128_op_UnsignedRightShift
-        HW_Flag_InvalidNodeId, // NI_Vector256_Abs
-        HW_Flag_InvalidNodeId, // NI_Vector256_AddSaturate
-        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector256_AndNot
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector256_As
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector256_AsByte
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector256_AsDouble
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector256_AsInt16
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector256_AsInt32
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector256_AsInt64
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector256_AsNInt
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector256_AsNUInt
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector256_AsSByte
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector256_AsSingle
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector256_AsUInt16
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector256_AsUInt32
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector256_AsUInt64
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector256_AsVector
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector256_AsVector256
-        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector256_Ceiling
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_AvxOnlyCompatible, // NI_Vector256_ConditionalSelect
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector256_ConvertToDouble
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector256_ConvertToInt32
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector256_ConvertToInt32Native
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector256_ConvertToInt64
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector256_ConvertToInt64Native
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector256_ConvertToSingle
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector256_ConvertToUInt32
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector256_ConvertToUInt32Native
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector256_ConvertToUInt64
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector256_ConvertToUInt64Native
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_AvxOnlyCompatible, // NI_Vector256_Create
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_AvxOnlyCompatible, // NI_Vector256_CreateScalar
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_AvxOnlyCompatible, // NI_Vector256_CreateScalarUnsafe
-        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector256_CreateSequence
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_BaseTypeFromFirstArg, // NI_Vector256_Dot
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector256_Equals
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector256_EqualsAny
-        HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialImport | HW_Flag_NoCodeGen, // NI_Vector256_ExtractMostSignificantBits
-        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector256_Floor
-        HW_Flag_InvalidNodeId, // NI_Vector256_FusedMultiplyAdd
-        HW_Flag_SpecialImport | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector256_GetElement
-        HW_Flag_SpecialCodeGen | HW_Flag_AvxOnlyCompatible | HW_Flag_NormalizeSmallTypeToInt, // NI_Vector256_GetLower
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_AvxOnlyCompatible, // NI_Vector256_GetUpper
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector256_GreaterThan
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector256_GreaterThanAll
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector256_GreaterThanAny
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector256_GreaterThanOrEqual
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector256_GreaterThanOrEqualAll
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector256_GreaterThanOrEqualAny
-        HW_Flag_InvalidNodeId, // NI_Vector256_IsEvenInteger
-        HW_Flag_InvalidNodeId, // NI_Vector256_IsFinite
-        HW_Flag_InvalidNodeId, // NI_Vector256_IsInfinity
-        HW_Flag_InvalidNodeId, // NI_Vector256_IsInteger
-        HW_Flag_InvalidNodeId, // NI_Vector256_IsNaN
-        HW_Flag_InvalidNodeId, // NI_Vector256_IsNegative
-        HW_Flag_InvalidNodeId, // NI_Vector256_IsNegativeInfinity
-        HW_Flag_InvalidNodeId, // NI_Vector256_IsNormal
-        HW_Flag_InvalidNodeId, // NI_Vector256_IsOddInteger
-        HW_Flag_InvalidNodeId, // NI_Vector256_IsPositive
-        HW_Flag_InvalidNodeId, // NI_Vector256_IsPositiveInfinity
-        HW_Flag_InvalidNodeId, // NI_Vector256_IsSubnormal
-        HW_Flag_InvalidNodeId, // NI_Vector256_IsZero
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector256_LessThan
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector256_LessThanAll
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector256_LessThanAny
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector256_LessThanOrEqual
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector256_LessThanOrEqualAll
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector256_LessThanOrEqualAny
-        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector256_LoadAligned
-        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector256_LoadAlignedNonTemporal
-        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector256_LoadUnsafe
-        HW_Flag_InvalidNodeId, // NI_Vector256_Max
-        HW_Flag_InvalidNodeId, // NI_Vector256_MaxMagnitude
-        HW_Flag_InvalidNodeId, // NI_Vector256_MaxMagnitudeNumber
-        HW_Flag_InvalidNodeId, // NI_Vector256_MaxNative
-        HW_Flag_InvalidNodeId, // NI_Vector256_MaxNumber
-        HW_Flag_InvalidNodeId, // NI_Vector256_Min
-        HW_Flag_InvalidNodeId, // NI_Vector256_MinMagnitude
-        HW_Flag_InvalidNodeId, // NI_Vector256_MinMagnitudeNumber
-        HW_Flag_InvalidNodeId, // NI_Vector256_MinNative
-        HW_Flag_InvalidNodeId, // NI_Vector256_MinNumber
-        HW_Flag_InvalidNodeId, // NI_Vector256_MultiplyAddEstimate
-        HW_Flag_InvalidNodeId, // NI_Vector256_Narrow
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector256_NarrowWithSaturation
-        HW_Flag_InvalidNodeId, // NI_Vector256_Round
-        HW_Flag_InvalidNodeId, // NI_Vector256_ShiftLeft
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_CanBenefitFromConstantProp, // NI_Vector256_Shuffle
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_CanBenefitFromConstantProp, // NI_Vector256_ShuffleNative
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_CanBenefitFromConstantProp, // NI_Vector256_ShuffleNativeFallback
-        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector256_Sqrt
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector256_StoreAligned
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector256_StoreAlignedNonTemporal
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector256_StoreUnsafe
-        HW_Flag_InvalidNodeId, // NI_Vector256_SubtractSaturate
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector256_Sum
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector256_ToScalar
-        HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_NormalizeSmallTypeToInt, // NI_Vector256_ToVector512
-        HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_NormalizeSmallTypeToInt, // NI_Vector256_ToVector512Unsafe
-        HW_Flag_InvalidNodeId, // NI_Vector256_Truncate
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector256_WidenLower
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector256_WidenUpper
-        HW_Flag_SpecialImport | HW_Flag_NoContainment | HW_Flag_BaseTypeFromFirstArg | HW_Flag_AvxOnlyCompatible, // NI_Vector256_WithElement
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_AvxOnlyCompatible, // NI_Vector256_WithLower
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_AvxOnlyCompatible, // NI_Vector256_WithUpper
-        HW_Flag_InvalidNodeId, // NI_Vector256_get_AllBitsSet
-        HW_Flag_InvalidNodeId, // NI_Vector256_get_E
-        HW_Flag_InvalidNodeId, // NI_Vector256_get_Epsilon
-        HW_Flag_InvalidNodeId, // NI_Vector256_get_Indices
-        HW_Flag_InvalidNodeId, // NI_Vector256_get_NaN
-        HW_Flag_InvalidNodeId, // NI_Vector256_get_NegativeInfinity
-        HW_Flag_InvalidNodeId, // NI_Vector256_get_NegativeOne
-        HW_Flag_InvalidNodeId, // NI_Vector256_get_NegativeZero
-        HW_Flag_InvalidNodeId, // NI_Vector256_get_One
-        HW_Flag_InvalidNodeId, // NI_Vector256_get_Pi
-        HW_Flag_InvalidNodeId, // NI_Vector256_get_PositiveInfinity
-        HW_Flag_InvalidNodeId, // NI_Vector256_get_Tau
-        HW_Flag_InvalidNodeId, // NI_Vector256_get_Zero
-        HW_Flag_InvalidNodeId, // NI_Vector256_op_Addition
-        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector256_op_BitwiseAnd
-        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector256_op_BitwiseOr
-        HW_Flag_SpecialSideEffect_Other | HW_Flag_SpecialImport, // NI_Vector256_op_Division
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_Commutative | HW_Flag_CanBenefitFromConstantProp, // NI_Vector256_op_Equality
-        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector256_op_ExclusiveOr
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_Commutative | HW_Flag_CanBenefitFromConstantProp, // NI_Vector256_op_Inequality
-        HW_Flag_InvalidNodeId, // NI_Vector256_op_LeftShift
-        HW_Flag_InvalidNodeId, // NI_Vector256_op_Multiply
-        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector256_op_OnesComplement
-        HW_Flag_InvalidNodeId, // NI_Vector256_op_RightShift
-        HW_Flag_InvalidNodeId, // NI_Vector256_op_Subtraction
-        HW_Flag_InvalidNodeId, // NI_Vector256_op_UnaryNegation
-        HW_Flag_InvalidNodeId | HW_Flag_AvxOnlyCompatible, // NI_Vector256_op_UnaryPlus
-        HW_Flag_InvalidNodeId, // NI_Vector256_op_UnsignedRightShift
-        HW_Flag_InvalidNodeId, // NI_Vector512_Abs
-        HW_Flag_InvalidNodeId, // NI_Vector512_AddSaturate
-        HW_Flag_InvalidNodeId, // NI_Vector512_AndNot
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_As
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_AsByte
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_AsDouble
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_AsInt16
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_AsInt32
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_AsInt64
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_AsNInt
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_AsNUInt
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_AsSByte
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_AsSingle
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_AsUInt16
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_AsUInt32
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_AsUInt64
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_AsVector
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_AsVector512
-        HW_Flag_InvalidNodeId, // NI_Vector512_Ceiling
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen, // NI_Vector512_ConditionalSelect
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_ConvertToDouble
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_ConvertToInt32
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_ConvertToInt32Native
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_ConvertToInt64
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_ConvertToInt64Native
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_ConvertToSingle
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_ConvertToUInt32
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_ConvertToUInt32Native
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_ConvertToUInt64
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_ConvertToUInt64Native
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen, // NI_Vector512_Create
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen, // NI_Vector512_CreateScalar
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen, // NI_Vector512_CreateScalarUnsafe
-        HW_Flag_InvalidNodeId, // NI_Vector512_CreateSequence
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_Dot
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_Equals
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_EqualsAny
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_ExtractMostSignificantBits
-        HW_Flag_InvalidNodeId, // NI_Vector512_Floor
-        HW_Flag_InvalidNodeId, // NI_Vector512_FusedMultiplyAdd
-        HW_Flag_SpecialImport | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_GetElement
-        HW_Flag_SpecialCodeGen | HW_Flag_NormalizeSmallTypeToInt, // NI_Vector512_GetLower
-        HW_Flag_SpecialCodeGen | HW_Flag_NormalizeSmallTypeToInt | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_GetLower128
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen, // NI_Vector512_GetUpper
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_GreaterThan
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_GreaterThanAll
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_GreaterThanAny
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_GreaterThanOrEqual
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_GreaterThanOrEqualAll
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_GreaterThanOrEqualAny
-        HW_Flag_InvalidNodeId, // NI_Vector512_IsEvenInteger
-        HW_Flag_InvalidNodeId, // NI_Vector512_IsFinite
-        HW_Flag_InvalidNodeId, // NI_Vector512_IsInfinity
-        HW_Flag_InvalidNodeId, // NI_Vector512_IsInteger
-        HW_Flag_InvalidNodeId, // NI_Vector512_IsNaN
-        HW_Flag_InvalidNodeId, // NI_Vector512_IsNegative
-        HW_Flag_InvalidNodeId, // NI_Vector512_IsNegativeInfinity
-        HW_Flag_InvalidNodeId, // NI_Vector512_IsNormal
-        HW_Flag_InvalidNodeId, // NI_Vector512_IsOddInteger
-        HW_Flag_InvalidNodeId, // NI_Vector512_IsPositive
-        HW_Flag_InvalidNodeId, // NI_Vector512_IsPositiveInfinity
-        HW_Flag_InvalidNodeId, // NI_Vector512_IsSubnormal
-        HW_Flag_InvalidNodeId, // NI_Vector512_IsZero
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_LessThan
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_LessThanAll
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_LessThanAny
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_LessThanOrEqual
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_LessThanOrEqualAll
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_LessThanOrEqualAny
-        HW_Flag_InvalidNodeId, // NI_Vector512_LoadAligned
-        HW_Flag_InvalidNodeId, // NI_Vector512_LoadAlignedNonTemporal
-        HW_Flag_InvalidNodeId, // NI_Vector512_LoadUnsafe
-        HW_Flag_InvalidNodeId, // NI_Vector512_Max
-        HW_Flag_InvalidNodeId, // NI_Vector512_MaxMagnitude
-        HW_Flag_InvalidNodeId, // NI_Vector512_MaxMagnitudeNumber
-        HW_Flag_InvalidNodeId, // NI_Vector512_MaxNative
-        HW_Flag_InvalidNodeId, // NI_Vector512_MaxNumber
-        HW_Flag_InvalidNodeId, // NI_Vector512_Min
-        HW_Flag_InvalidNodeId, // NI_Vector512_MinMagnitude
-        HW_Flag_InvalidNodeId, // NI_Vector512_MinMagnitudeNumber
-        HW_Flag_InvalidNodeId, // NI_Vector512_MinNative
-        HW_Flag_InvalidNodeId, // NI_Vector512_MinNumber
-        HW_Flag_InvalidNodeId, // NI_Vector512_MultiplyAddEstimate
-        HW_Flag_InvalidNodeId, // NI_Vector512_Narrow
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_NarrowWithSaturation
-        HW_Flag_InvalidNodeId, // NI_Vector512_Round
-        HW_Flag_InvalidNodeId, // NI_Vector512_ShiftLeft
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_CanBenefitFromConstantProp, // NI_Vector512_Shuffle
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_CanBenefitFromConstantProp, // NI_Vector512_ShuffleNative
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_CanBenefitFromConstantProp, // NI_Vector512_ShuffleNativeFallback
-        HW_Flag_InvalidNodeId, // NI_Vector512_Sqrt
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_StoreAligned
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_StoreAlignedNonTemporal
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_StoreUnsafe
-        HW_Flag_InvalidNodeId, // NI_Vector512_SubtractSaturate
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_Sum
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_ToScalar
-        HW_Flag_InvalidNodeId, // NI_Vector512_Truncate
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_WidenLower
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_WidenUpper
-        HW_Flag_SpecialImport | HW_Flag_NoContainment | HW_Flag_BaseTypeFromFirstArg, // NI_Vector512_WithElement
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen, // NI_Vector512_WithLower
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen, // NI_Vector512_WithUpper
-        HW_Flag_InvalidNodeId, // NI_Vector512_get_AllBitsSet
-        HW_Flag_InvalidNodeId, // NI_Vector512_get_E
-        HW_Flag_InvalidNodeId, // NI_Vector512_get_Epsilon
-        HW_Flag_InvalidNodeId, // NI_Vector512_get_Indices
-        HW_Flag_InvalidNodeId, // NI_Vector512_get_NaN
-        HW_Flag_InvalidNodeId, // NI_Vector512_get_NegativeInfinity
-        HW_Flag_InvalidNodeId, // NI_Vector512_get_NegativeOne
-        HW_Flag_InvalidNodeId, // NI_Vector512_get_NegativeZero
-        HW_Flag_InvalidNodeId, // NI_Vector512_get_One
-        HW_Flag_InvalidNodeId, // NI_Vector512_get_Pi
-        HW_Flag_InvalidNodeId, // NI_Vector512_get_PositiveInfinity
-        HW_Flag_InvalidNodeId, // NI_Vector512_get_Tau
-        HW_Flag_InvalidNodeId, // NI_Vector512_get_Zero
-        HW_Flag_InvalidNodeId, // NI_Vector512_op_Addition
-        HW_Flag_InvalidNodeId, // NI_Vector512_op_BitwiseAnd
-        HW_Flag_InvalidNodeId, // NI_Vector512_op_BitwiseOr
-        HW_Flag_InvalidNodeId, // NI_Vector512_op_Division
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_Commutative | HW_Flag_CanBenefitFromConstantProp, // NI_Vector512_op_Equality
-        HW_Flag_InvalidNodeId, // NI_Vector512_op_ExclusiveOr
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_Commutative | HW_Flag_CanBenefitFromConstantProp, // NI_Vector512_op_Inequality
-        HW_Flag_InvalidNodeId, // NI_Vector512_op_LeftShift
-        HW_Flag_InvalidNodeId, // NI_Vector512_op_Multiply
-        HW_Flag_InvalidNodeId, // NI_Vector512_op_OnesComplement
-        HW_Flag_InvalidNodeId, // NI_Vector512_op_RightShift
-        HW_Flag_InvalidNodeId, // NI_Vector512_op_Subtraction
-        HW_Flag_InvalidNodeId, // NI_Vector512_op_UnaryNegation
-        HW_Flag_InvalidNodeId, // NI_Vector512_op_UnaryPlus
-        HW_Flag_InvalidNodeId, // NI_Vector512_op_UnsignedRightShift
         HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics, // NI_X86Base_Abs
         HW_Flag_Commutative, // NI_X86Base_Add
         HW_Flag_Commutative, // NI_X86Base_AddSaturate
@@ -2780,19 +2292,19 @@ public partial struct HWIntrinsicInfo
         HW_Flag_CopyUpperBits | HW_Flag_NoEvexSemantics, // NI_X86Base_CompareScalarNotLessThan
         HW_Flag_CopyUpperBits | HW_Flag_NoEvexSemantics, // NI_X86Base_CompareScalarNotLessThanOrEqual
         HW_Flag_CopyUpperBits | HW_Flag_NoEvexSemantics, // NI_X86Base_CompareScalarOrdered
-        HW_Flag_Commutative | HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics, // NI_X86Base_CompareScalarOrderedEqual
-        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics, // NI_X86Base_CompareScalarOrderedGreaterThan
-        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics, // NI_X86Base_CompareScalarOrderedGreaterThanOrEqual
-        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics, // NI_X86Base_CompareScalarOrderedLessThan
-        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics, // NI_X86Base_CompareScalarOrderedLessThanOrEqual
-        HW_Flag_Commutative | HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics, // NI_X86Base_CompareScalarOrderedNotEqual
+        HW_Flag_Commutative | HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics | HW_Flag_ReturnsBoolean, // NI_X86Base_CompareScalarOrderedEqual
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics | HW_Flag_ReturnsBoolean, // NI_X86Base_CompareScalarOrderedGreaterThan
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics | HW_Flag_ReturnsBoolean, // NI_X86Base_CompareScalarOrderedGreaterThanOrEqual
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics | HW_Flag_ReturnsBoolean, // NI_X86Base_CompareScalarOrderedLessThan
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics | HW_Flag_ReturnsBoolean, // NI_X86Base_CompareScalarOrderedLessThanOrEqual
+        HW_Flag_Commutative | HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics | HW_Flag_ReturnsBoolean, // NI_X86Base_CompareScalarOrderedNotEqual
         HW_Flag_CopyUpperBits | HW_Flag_NoEvexSemantics, // NI_X86Base_CompareScalarUnordered
-        HW_Flag_Commutative | HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics, // NI_X86Base_CompareScalarUnorderedEqual
-        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics, // NI_X86Base_CompareScalarUnorderedGreaterThan
-        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics, // NI_X86Base_CompareScalarUnorderedGreaterThanOrEqual
-        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics, // NI_X86Base_CompareScalarUnorderedLessThan
-        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics, // NI_X86Base_CompareScalarUnorderedLessThanOrEqual
-        HW_Flag_Commutative | HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics, // NI_X86Base_CompareScalarUnorderedNotEqual
+        HW_Flag_Commutative | HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics | HW_Flag_ReturnsBoolean, // NI_X86Base_CompareScalarUnorderedEqual
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics | HW_Flag_ReturnsBoolean, // NI_X86Base_CompareScalarUnorderedGreaterThan
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics | HW_Flag_ReturnsBoolean, // NI_X86Base_CompareScalarUnorderedGreaterThanOrEqual
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics | HW_Flag_ReturnsBoolean, // NI_X86Base_CompareScalarUnorderedLessThan
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics | HW_Flag_ReturnsBoolean, // NI_X86Base_CompareScalarUnorderedLessThanOrEqual
+        HW_Flag_Commutative | HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics | HW_Flag_ReturnsBoolean, // NI_X86Base_CompareScalarUnorderedNotEqual
         HW_Flag_ReturnsPerElementMask | HW_Flag_NoEvexSemantics | HW_Flag_SpecialImport, // NI_X86Base_CompareUnordered
         HW_Flag_BaseTypeFromSecondArg, // NI_X86Base_ConvertScalarToVector128Double
         HW_Flag_NoRMWSemantics, // NI_X86Base_ConvertScalarToVector128Int32
@@ -2812,7 +2324,7 @@ public partial struct HWIntrinsicInfo
         HW_Flag_NoFlag, // NI_X86Base_Divide
         HW_Flag_CopyUpperBits, // NI_X86Base_DivideScalar
         HW_Flag_FullRangeIMM | HW_Flag_NoEvexSemantics, // NI_X86Base_DotProduct
-        HW_Flag_FullRangeIMM | HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialCodeGen | HW_Flag_NoRMWSemantics, // NI_X86Base_Extract
+        HW_Flag_FullRangeIMM | HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialCodeGen | HW_Flag_NoRMWSemantics | HW_Flag_ReturnsScalarT, // NI_X86Base_Extract
         HW_Flag_NoRMWSemantics, // NI_X86Base_Floor
         HW_Flag_CopyUpperBits, // NI_X86Base_FloorScalar
         HW_Flag_NoEvexSemantics, // NI_X86Base_HorizontalAdd
@@ -2896,9 +2408,9 @@ public partial struct HWIntrinsicInfo
         HW_Flag_NoFlag, // NI_X86Base_SubtractSaturate
         HW_Flag_CopyUpperBits, // NI_X86Base_SubtractScalar
         HW_Flag_NoFlag, // NI_X86Base_SumAbsoluteDifferences
-        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoEvexSemantics | HW_Flag_NormalizeSmallTypeToInt, // NI_X86Base_TestC
-        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoEvexSemantics | HW_Flag_NormalizeSmallTypeToInt, // NI_X86Base_TestNotZAndNotC
-        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoEvexSemantics | HW_Flag_NormalizeSmallTypeToInt, // NI_X86Base_TestZ
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoEvexSemantics | HW_Flag_NormalizeSmallTypeToInt | HW_Flag_ReturnsBoolean, // NI_X86Base_TestC
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoEvexSemantics | HW_Flag_NormalizeSmallTypeToInt | HW_Flag_ReturnsBoolean, // NI_X86Base_TestNotZAndNotC
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoEvexSemantics | HW_Flag_NormalizeSmallTypeToInt | HW_Flag_ReturnsBoolean, // NI_X86Base_TestZ
         HW_Flag_NoFlag, // NI_X86Base_UnpackHigh
         HW_Flag_NoFlag, // NI_X86Base_UnpackLow
         HW_Flag_Commutative | HW_Flag_CanBenefitFromConstantProp | HW_Flag_NormalizeSmallTypeToInt, // NI_X86Base_Xor
@@ -2914,7 +2426,7 @@ public partial struct HWIntrinsicInfo
         HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoRMWSemantics | HW_Flag_SpecialCodeGen, // NI_X86Base_X64_ConvertToUInt64
         HW_Flag_NoFloatingPointUsed | HW_Flag_RmwIntrinsic, // NI_X86Base_X64_Crc32
         HW_Flag_NoFloatingPointUsed | HW_Flag_BaseTypeFromSecondArg | HW_Flag_MultiReg | HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_RmwIntrinsic, // NI_X86Base_X64_DivRem
-        HW_Flag_FullRangeIMM | HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialCodeGen | HW_Flag_NoRMWSemantics, // NI_X86Base_X64_Extract
+        HW_Flag_FullRangeIMM | HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialCodeGen | HW_Flag_NoRMWSemantics | HW_Flag_ReturnsScalarT, // NI_X86Base_X64_Extract
         HW_Flag_FullRangeIMM | HW_Flag_CanBenefitFromConstantProp, // NI_X86Base_X64_Insert
         HW_Flag_NoFloatingPointUsed | HW_Flag_NoRMWSemantics | HW_Flag_SpecialCodeGen, // NI_X86Base_X64_PopCount
         HW_Flag_NoRMWSemantics | HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromSecondArg, // NI_X86Base_X64_StoreNonTemporal
@@ -2984,9 +2496,9 @@ public partial struct HWIntrinsicInfo
         HW_Flag_BaseTypeFromSecondArg | HW_Flag_NormalizeSmallTypeToInt, // NI_AVX_StoreAligned
         HW_Flag_BaseTypeFromSecondArg | HW_Flag_NormalizeSmallTypeToInt, // NI_AVX_StoreAlignedNonTemporal
         HW_Flag_NoFlag, // NI_AVX_Subtract
-        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoEvexSemantics | HW_Flag_NormalizeSmallTypeToInt, // NI_AVX_TestC
-        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoEvexSemantics | HW_Flag_NormalizeSmallTypeToInt, // NI_AVX_TestNotZAndNotC
-        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoEvexSemantics | HW_Flag_NormalizeSmallTypeToInt, // NI_AVX_TestZ
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoEvexSemantics | HW_Flag_NormalizeSmallTypeToInt | HW_Flag_ReturnsBoolean, // NI_AVX_TestC
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoEvexSemantics | HW_Flag_NormalizeSmallTypeToInt | HW_Flag_ReturnsBoolean, // NI_AVX_TestNotZAndNotC
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoEvexSemantics | HW_Flag_NormalizeSmallTypeToInt | HW_Flag_ReturnsBoolean, // NI_AVX_TestZ
         HW_Flag_NoFlag, // NI_AVX_UnpackHigh
         HW_Flag_NoFlag, // NI_AVX_UnpackLow
         HW_Flag_Commutative | HW_Flag_CanBenefitFromConstantProp, // NI_AVX_Xor
@@ -3037,7 +2549,7 @@ public partial struct HWIntrinsicInfo
         HW_Flag_FullRangeIMM | HW_Flag_NoEvexSemantics, // NI_AVX2_MultipleSumAbsoluteDifferences
         HW_Flag_Commutative, // NI_AVX2_Multiply
         HW_Flag_SpecialCodeGen | HW_Flag_FmaIntrinsic | HW_Flag_RmwIntrinsic, // NI_AVX2_MultiplyAdd
-        HW_Flag_NoFlag, // NI_AVX2_MultiplyAddAdjacent
+        HW_Flag_MaybeCommutative, // NI_AVX2_MultiplyAddAdjacent
         HW_Flag_SpecialCodeGen | HW_Flag_FmaIntrinsic | HW_Flag_RmwIntrinsic, // NI_AVX2_MultiplyAddNegated
         HW_Flag_SpecialCodeGen | HW_Flag_FmaIntrinsic | HW_Flag_RmwIntrinsic | HW_Flag_CopyUpperBits, // NI_AVX2_MultiplyAddNegatedScalar
         HW_Flag_SpecialCodeGen | HW_Flag_FmaIntrinsic | HW_Flag_RmwIntrinsic | HW_Flag_CopyUpperBits, // NI_AVX2_MultiplyAddScalar
@@ -3220,7 +2732,7 @@ public partial struct HWIntrinsicInfo
         HW_Flag_MaybeCommutative, // NI_AVX512_Min
         HW_Flag_BaseTypeFromFirstArg | HW_Flag_NoContainment | HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen, // NI_AVX512_MoveMask
         HW_Flag_MaybeCommutative | HW_Flag_EmbRoundingCompatible, // NI_AVX512_Multiply
-        HW_Flag_NoFlag, // NI_AVX512_MultiplyAddAdjacent
+        HW_Flag_MaybeCommutative, // NI_AVX512_MultiplyAddAdjacent
         HW_Flag_Commutative, // NI_AVX512_MultiplyHigh
         HW_Flag_NoFlag, // NI_AVX512_MultiplyHighRoundScale
         HW_Flag_Commutative, // NI_AVX512_MultiplyLow
@@ -3307,6 +2819,32 @@ public partial struct HWIntrinsicInfo
         HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromSecondArg, // NI_AVX512v3_CompressStore
         HW_Flag_InvalidNodeId, // NI_AVX512v3_Expand
         HW_Flag_InvalidNodeId, // NI_AVX512v3_ExpandLoad
+        HW_Flag_BaseTypeFromSecondArg | HW_Flag_RmwIntrinsic, // NI_AVX512v3_MultiplyWideningAndAdd
+        HW_Flag_BaseTypeFromSecondArg | HW_Flag_RmwIntrinsic, // NI_AVX512v3_MultiplyWideningAndAddSaturate
+        HW_Flag_EmbRoundingCompatible | HW_Flag_CopyUpperBits, // NI_AVX10v1_AddScalar
+        HW_Flag_NoFlag, // NI_AVX10v1_CompareScalarOrderedEqual
+        HW_Flag_NoFlag, // NI_AVX10v1_CompareScalarOrderedGreaterThan
+        HW_Flag_NoFlag, // NI_AVX10v1_CompareScalarOrderedGreaterThanOrEqual
+        HW_Flag_NoFlag, // NI_AVX10v1_CompareScalarOrderedLessThan
+        HW_Flag_NoFlag, // NI_AVX10v1_CompareScalarOrderedLessThanOrEqual
+        HW_Flag_NoFlag, // NI_AVX10v1_CompareScalarOrderedNotEqual
+        HW_Flag_NoFlag, // NI_AVX10v1_CompareScalarUnorderedEqual
+        HW_Flag_NoFlag, // NI_AVX10v1_CompareScalarUnorderedGreaterThan
+        HW_Flag_NoFlag, // NI_AVX10v1_CompareScalarUnorderedGreaterThanOrEqual
+        HW_Flag_NoFlag, // NI_AVX10v1_CompareScalarUnorderedLessThan
+        HW_Flag_NoFlag, // NI_AVX10v1_CompareScalarUnorderedLessThanOrEqual
+        HW_Flag_NoFlag, // NI_AVX10v1_CompareScalarUnorderedNotEqual
+        HW_Flag_CopyUpperBits | HW_Flag_EmbRoundingCompatible, // NI_AVX10v1_ConvertScalarToVector128Double
+        HW_Flag_SpecialCodeGen | HW_Flag_CopyUpperBits | HW_Flag_EmbRoundingCompatible, // NI_AVX10v1_ConvertScalarToVector128Half
+        HW_Flag_CopyUpperBits | HW_Flag_EmbRoundingCompatible, // NI_AVX10v1_ConvertScalarToVector128Single
+        HW_Flag_CopyUpperBits, // NI_AVX10v1_DivideScalar
+        HW_Flag_SpecialCodeGen | HW_Flag_FmaIntrinsic | HW_Flag_RmwIntrinsic | HW_Flag_EmbRoundingCompatible | HW_Flag_CopyUpperBits, // NI_AVX10v1_FusedMultiplyAddScalar
+        HW_Flag_CopyUpperBits, // NI_AVX10v1_MultiplyScalar
+        HW_Flag_CopyUpperBits, // NI_AVX10v1_ReciprocalScalar
+        HW_Flag_CopyUpperBits, // NI_AVX10v1_ReciprocalSqrtScalar
+        HW_Flag_FullRangeIMM | HW_Flag_CopyUpperBits, // NI_AVX10v1_RoundScaleScalar
+        HW_Flag_CopyUpperBits, // NI_AVX10v1_SqrtScalar
+        HW_Flag_CopyUpperBits, // NI_AVX10v1_SubtractScalar
         HW_Flag_BaseTypeFromFirstArg | HW_Flag_EmbRoundingCompatible, // NI_AVX10v2_ConvertToByteWithSaturationAndZeroExtendToInt32
         HW_Flag_BaseTypeFromFirstArg, // NI_AVX10v2_ConvertToByteWithTruncatedSaturationAndZeroExtendToInt32
         HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialCodeGen, // NI_AVX10v2_ConvertToInt32WithTruncatedSaturation
@@ -3327,12 +2865,12 @@ public partial struct HWIntrinsicInfo
         HW_Flag_BaseTypeFromFirstArg | HW_Flag_RmwIntrinsic, // NI_AVX512BMM_BitMultiplyMatrix16x16WithOrReduction
         HW_Flag_BaseTypeFromFirstArg | HW_Flag_RmwIntrinsic, // NI_AVX512BMM_BitMultiplyMatrix16x16WithXorReduction
         HW_Flag_BaseTypeFromFirstArg, // NI_AVX512BMM_ReverseBits
-        HW_Flag_BaseTypeFromSecondArg | HW_Flag_NoEvexSemantics, // NI_AVXVNNI_MultiplyWideningAndAdd
-        HW_Flag_BaseTypeFromSecondArg | HW_Flag_NoEvexSemantics, // NI_AVXVNNI_MultiplyWideningAndAddSaturate
-        HW_Flag_BaseTypeFromSecondArg | HW_Flag_SpecialCodeGen | HW_Flag_SpecialImport, // NI_AVXVNNIINT_MultiplyWideningAndAdd
-        HW_Flag_BaseTypeFromSecondArg | HW_Flag_SpecialCodeGen | HW_Flag_SpecialImport, // NI_AVXVNNIINT_MultiplyWideningAndAddSaturate
-        HW_Flag_BaseTypeFromSecondArg | HW_Flag_SpecialCodeGen | HW_Flag_SpecialImport, // NI_AVXVNNIINT_V512_MultiplyWideningAndAdd
-        HW_Flag_BaseTypeFromSecondArg | HW_Flag_SpecialCodeGen | HW_Flag_SpecialImport, // NI_AVXVNNIINT_V512_MultiplyWideningAndAddSaturate
+        HW_Flag_BaseTypeFromSecondArg | HW_Flag_NoEvexSemantics | HW_Flag_RmwIntrinsic, // NI_AVXVNNI_MultiplyWideningAndAdd
+        HW_Flag_BaseTypeFromSecondArg | HW_Flag_NoEvexSemantics | HW_Flag_RmwIntrinsic, // NI_AVXVNNI_MultiplyWideningAndAddSaturate
+        HW_Flag_BaseTypeFromSecondArg | HW_Flag_SpecialCodeGen | HW_Flag_SpecialImport | HW_Flag_RmwIntrinsic, // NI_AVXVNNIINT_MultiplyWideningAndAdd
+        HW_Flag_BaseTypeFromSecondArg | HW_Flag_SpecialCodeGen | HW_Flag_SpecialImport | HW_Flag_RmwIntrinsic, // NI_AVXVNNIINT_MultiplyWideningAndAddSaturate
+        HW_Flag_BaseTypeFromSecondArg | HW_Flag_SpecialCodeGen | HW_Flag_SpecialImport | HW_Flag_RmwIntrinsic, // NI_AVXVNNIINT_V512_MultiplyWideningAndAdd
+        HW_Flag_BaseTypeFromSecondArg | HW_Flag_SpecialCodeGen | HW_Flag_SpecialImport | HW_Flag_RmwIntrinsic, // NI_AVXVNNIINT_V512_MultiplyWideningAndAddSaturate
         HW_Flag_FullRangeIMM, // NI_AES_CarrylessMultiply
         HW_Flag_NoEvexSemantics, // NI_AES_Decrypt
         HW_Flag_NoEvexSemantics, // NI_AES_DecryptLast
@@ -3355,6 +2893,8 @@ public partial struct HWIntrinsicInfo
         HW_Flag_NoRMWSemantics, // NI_X86Base_COMIS
         HW_Flag_NoRMWSemantics | HW_Flag_NoEvexSemantics, // NI_X86Base_PTEST
         HW_Flag_NoRMWSemantics, // NI_X86Base_UCOMIS
+        HW_Flag_NoRMWSemantics, // NI_AVX10v1_VCOMISH
+        HW_Flag_NoRMWSemantics, // NI_AVX10v1_VUCOMISH
         HW_Flag_NoEvexSemantics, // NI_AVX_PTEST
         HW_Flag_NormalizeSmallTypeToInt, // NI_AVX2_AndNotVector
         HW_Flag_NoFloatingPointUsed | HW_Flag_NoEvexSemantics, // NI_AVX2_AndNotScalar
@@ -3401,266 +2941,6 @@ public partial struct HWIntrinsicInfo
 #endif
 #elif TARGET_ARM64
 #if FEATURE_HW_INTRINSICS
-        HW_Flag_InvalidNodeId, // NI_Vector64_Abs
-        HW_Flag_InvalidNodeId, // NI_Vector64_AddSaturate
-        HW_Flag_InvalidNodeId, // NI_Vector64_AndNot
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_As
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_AsByte
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_AsDouble
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_AsInt16
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_AsInt32
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_AsInt64
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_AsNInt
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_AsNUInt
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_AsSByte
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_AsSingle
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_AsUInt16
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_AsUInt32
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_AsUInt64
-        HW_Flag_InvalidNodeId, // NI_Vector64_Ceiling
-        HW_Flag_InvalidNodeId, // NI_Vector64_ConditionalSelect
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_ConvertToDouble
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_ConvertToInt32
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_ConvertToInt32Native
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_ConvertToInt64
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_ConvertToInt64Native
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_ConvertToSingle
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_ConvertToUInt32
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_ConvertToUInt32Native
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_ConvertToUInt64
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_ConvertToUInt64Native
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen, // NI_Vector64_Create
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen, // NI_Vector64_CreateScalar
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_SupportsContainment, // NI_Vector64_CreateScalarUnsafe
-        HW_Flag_InvalidNodeId, // NI_Vector64_CreateSequence
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_Dot
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_Equals
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_EqualsAny
-        HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialImport | HW_Flag_NoCodeGen, // NI_Vector64_ExtractMostSignificantBits
-        HW_Flag_InvalidNodeId, // NI_Vector64_Floor
-        HW_Flag_InvalidNodeId, // NI_Vector64_FusedMultiplyAdd
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_SupportsContainment, // NI_Vector64_GetElement
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_GreaterThan
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_GreaterThanAll
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_GreaterThanAny
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_GreaterThanOrEqual
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_GreaterThanOrEqualAll
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_GreaterThanOrEqualAny
-        HW_Flag_InvalidNodeId, // NI_Vector64_IsEvenInteger
-        HW_Flag_InvalidNodeId, // NI_Vector64_IsFinite
-        HW_Flag_InvalidNodeId, // NI_Vector64_IsInfinity
-        HW_Flag_InvalidNodeId, // NI_Vector64_IsInteger
-        HW_Flag_InvalidNodeId, // NI_Vector64_IsNaN
-        HW_Flag_InvalidNodeId, // NI_Vector64_IsNegative
-        HW_Flag_InvalidNodeId, // NI_Vector64_IsNegativeInfinity
-        HW_Flag_InvalidNodeId, // NI_Vector64_IsNormal
-        HW_Flag_InvalidNodeId, // NI_Vector64_IsOddInteger
-        HW_Flag_InvalidNodeId, // NI_Vector64_IsPositive
-        HW_Flag_InvalidNodeId, // NI_Vector64_IsPositiveInfinity
-        HW_Flag_InvalidNodeId, // NI_Vector64_IsSubnormal
-        HW_Flag_InvalidNodeId, // NI_Vector64_IsZero
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_LessThan
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_LessThanAll
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_LessThanAny
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_LessThanOrEqual
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_LessThanOrEqualAll
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_LessThanOrEqualAny
-        HW_Flag_InvalidNodeId, // NI_Vector64_LoadAligned
-        HW_Flag_InvalidNodeId, // NI_Vector64_LoadAlignedNonTemporal
-        HW_Flag_InvalidNodeId, // NI_Vector64_LoadUnsafe
-        HW_Flag_InvalidNodeId, // NI_Vector64_Max
-        HW_Flag_InvalidNodeId, // NI_Vector64_MaxMagnitude
-        HW_Flag_InvalidNodeId, // NI_Vector64_MaxMagnitudeNumber
-        HW_Flag_InvalidNodeId, // NI_Vector64_MaxNative
-        HW_Flag_InvalidNodeId, // NI_Vector64_MaxNumber
-        HW_Flag_InvalidNodeId, // NI_Vector64_Min
-        HW_Flag_InvalidNodeId, // NI_Vector64_MinMagnitude
-        HW_Flag_InvalidNodeId, // NI_Vector64_MinMagnitudeNumber
-        HW_Flag_InvalidNodeId, // NI_Vector64_MinNative
-        HW_Flag_InvalidNodeId, // NI_Vector64_MinNumber
-        HW_Flag_InvalidNodeId, // NI_Vector64_MultiplyAddEstimate
-        HW_Flag_InvalidNodeId, // NI_Vector64_Narrow
-        HW_Flag_InvalidNodeId, // NI_Vector64_NarrowWithSaturation
-        HW_Flag_InvalidNodeId, // NI_Vector64_Round
-        HW_Flag_InvalidNodeId, // NI_Vector64_ShiftLeft
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_CanBenefitFromConstantProp, // NI_Vector64_Shuffle
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_CanBenefitFromConstantProp, // NI_Vector64_ShuffleNative
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_CanBenefitFromConstantProp, // NI_Vector64_ShuffleNativeFallback
-        HW_Flag_InvalidNodeId, // NI_Vector64_Sqrt
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_StoreAligned
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_StoreAlignedNonTemporal
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_StoreUnsafe
-        HW_Flag_InvalidNodeId, // NI_Vector64_SubtractSaturate
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_Sum
-        HW_Flag_BaseTypeFromFirstArg | HW_Flag_SIMDScalar | HW_Flag_SpecialCodeGen, // NI_Vector64_ToScalar
-        HW_Flag_SpecialCodeGen, // NI_Vector64_ToVector128
-        HW_Flag_SpecialCodeGen, // NI_Vector64_ToVector128Unsafe
-        HW_Flag_InvalidNodeId, // NI_Vector64_Truncate
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_WidenLower
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector64_WidenUpper
-        HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialImport, // NI_Vector64_WithElement
-        HW_Flag_InvalidNodeId, // NI_Vector64_get_AllBitsSet
-        HW_Flag_InvalidNodeId, // NI_Vector64_get_E
-        HW_Flag_InvalidNodeId, // NI_Vector64_get_Epsilon
-        HW_Flag_InvalidNodeId, // NI_Vector64_get_Indices
-        HW_Flag_InvalidNodeId, // NI_Vector64_get_NaN
-        HW_Flag_InvalidNodeId, // NI_Vector64_get_NegativeInfinity
-        HW_Flag_InvalidNodeId, // NI_Vector64_get_NegativeOne
-        HW_Flag_InvalidNodeId, // NI_Vector64_get_NegativeZero
-        HW_Flag_InvalidNodeId, // NI_Vector64_get_One
-        HW_Flag_InvalidNodeId, // NI_Vector64_get_Pi
-        HW_Flag_InvalidNodeId, // NI_Vector64_get_PositiveInfinity
-        HW_Flag_InvalidNodeId, // NI_Vector64_get_Tau
-        HW_Flag_InvalidNodeId, // NI_Vector64_get_Zero
-        HW_Flag_InvalidNodeId, // NI_Vector64_op_Addition
-        HW_Flag_InvalidNodeId | HW_Flag_Commutative, // NI_Vector64_op_BitwiseAnd
-        HW_Flag_InvalidNodeId | HW_Flag_Commutative, // NI_Vector64_op_BitwiseOr
-        HW_Flag_InvalidNodeId, // NI_Vector64_op_Division
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_Commutative | HW_Flag_CanBenefitFromConstantProp, // NI_Vector64_op_Equality
-        HW_Flag_InvalidNodeId, // NI_Vector64_op_ExclusiveOr
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_Commutative | HW_Flag_CanBenefitFromConstantProp, // NI_Vector64_op_Inequality
-        HW_Flag_InvalidNodeId, // NI_Vector64_op_LeftShift
-        HW_Flag_InvalidNodeId, // NI_Vector64_op_Multiply
-        HW_Flag_InvalidNodeId, // NI_Vector64_op_OnesComplement
-        HW_Flag_InvalidNodeId, // NI_Vector64_op_RightShift
-        HW_Flag_InvalidNodeId, // NI_Vector64_op_Subtraction
-        HW_Flag_InvalidNodeId, // NI_Vector64_op_UnaryNegation
-        HW_Flag_InvalidNodeId, // NI_Vector64_op_UnaryPlus
-        HW_Flag_InvalidNodeId, // NI_Vector64_op_UnsignedRightShift
-        HW_Flag_InvalidNodeId, // NI_Vector128_Abs
-        HW_Flag_InvalidNodeId, // NI_Vector128_AddSaturate
-        HW_Flag_InvalidNodeId, // NI_Vector128_AndNot
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_As
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsByte
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsDouble
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsInt16
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsInt32
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsInt64
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsNInt
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsNUInt
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsSByte
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsSingle
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsUInt16
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsUInt32
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsUInt64
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsVector
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsVector128
-        HW_Flag_SpecialCodeGen, // NI_Vector128_AsVector128Unsafe
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsVector2
-        HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialCodeGen | HW_Flag_SpecialImport, // NI_Vector128_AsVector3
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_AsVector4
-        HW_Flag_InvalidNodeId, // NI_Vector128_Ceiling
-        HW_Flag_InvalidNodeId, // NI_Vector128_ConditionalSelect
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_ConvertToDouble
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_ConvertToInt32
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_ConvertToInt32Native
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_ConvertToInt64
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_ConvertToInt64Native
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_ConvertToSingle
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_ConvertToUInt32
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_ConvertToUInt32Native
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_ConvertToUInt64
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_ConvertToUInt64Native
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen, // NI_Vector128_Create
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen, // NI_Vector128_CreateScalar
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_SupportsContainment, // NI_Vector128_CreateScalarUnsafe
-        HW_Flag_InvalidNodeId, // NI_Vector128_CreateSequence
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_Dot
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_Equals
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_EqualsAny
-        HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialImport | HW_Flag_NoCodeGen, // NI_Vector128_ExtractMostSignificantBits
-        HW_Flag_InvalidNodeId, // NI_Vector128_Floor
-        HW_Flag_InvalidNodeId, // NI_Vector128_FusedMultiplyAdd
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_BaseTypeFromFirstArg | HW_Flag_SupportsContainment, // NI_Vector128_GetElement
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen, // NI_Vector128_GetLower
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen, // NI_Vector128_GetUpper
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_GreaterThan
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_GreaterThanAll
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_GreaterThanAny
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_GreaterThanOrEqual
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_GreaterThanOrEqualAll
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_GreaterThanOrEqualAny
-        HW_Flag_InvalidNodeId, // NI_Vector128_IsEvenInteger
-        HW_Flag_InvalidNodeId, // NI_Vector128_IsFinite
-        HW_Flag_InvalidNodeId, // NI_Vector128_IsInfinity
-        HW_Flag_InvalidNodeId, // NI_Vector128_IsInteger
-        HW_Flag_InvalidNodeId, // NI_Vector128_IsNaN
-        HW_Flag_InvalidNodeId, // NI_Vector128_IsNegative
-        HW_Flag_InvalidNodeId, // NI_Vector128_IsNegativeInfinity
-        HW_Flag_InvalidNodeId, // NI_Vector128_IsNormal
-        HW_Flag_InvalidNodeId, // NI_Vector128_IsOddInteger
-        HW_Flag_InvalidNodeId, // NI_Vector128_IsPositive
-        HW_Flag_InvalidNodeId, // NI_Vector128_IsPositiveInfinity
-        HW_Flag_InvalidNodeId, // NI_Vector128_IsSubnormal
-        HW_Flag_InvalidNodeId, // NI_Vector128_IsZero
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_LessThan
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_LessThanAll
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_LessThanAny
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_LessThanOrEqual
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_LessThanOrEqualAll
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_LessThanOrEqualAny
-        HW_Flag_InvalidNodeId, // NI_Vector128_LoadAligned
-        HW_Flag_InvalidNodeId, // NI_Vector128_LoadAlignedNonTemporal
-        HW_Flag_InvalidNodeId, // NI_Vector128_LoadUnsafe
-        HW_Flag_InvalidNodeId, // NI_Vector128_Max
-        HW_Flag_InvalidNodeId, // NI_Vector128_MaxMagnitude
-        HW_Flag_InvalidNodeId, // NI_Vector128_MaxMagnitudeNumber
-        HW_Flag_InvalidNodeId, // NI_Vector128_MaxNative
-        HW_Flag_InvalidNodeId, // NI_Vector128_MaxNumber
-        HW_Flag_InvalidNodeId, // NI_Vector128_Min
-        HW_Flag_InvalidNodeId, // NI_Vector128_MinMagnitude
-        HW_Flag_InvalidNodeId, // NI_Vector128_MinMagnitudeNumber
-        HW_Flag_InvalidNodeId, // NI_Vector128_MinNative
-        HW_Flag_InvalidNodeId, // NI_Vector128_MinNumber
-        HW_Flag_InvalidNodeId, // NI_Vector128_MultiplyAddEstimate
-        HW_Flag_InvalidNodeId, // NI_Vector128_Narrow
-        HW_Flag_InvalidNodeId, // NI_Vector128_NarrowWithSaturation
-        HW_Flag_InvalidNodeId, // NI_Vector128_Round
-        HW_Flag_InvalidNodeId, // NI_Vector128_ShiftLeft
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_CanBenefitFromConstantProp, // NI_Vector128_Shuffle
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_CanBenefitFromConstantProp, // NI_Vector128_ShuffleNative
-        HW_Flag_SpecialImport | HW_Flag_SpecialCodeGen | HW_Flag_CanBenefitFromConstantProp, // NI_Vector128_ShuffleNativeFallback
-        HW_Flag_InvalidNodeId, // NI_Vector128_Sqrt
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_StoreAligned
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_StoreAlignedNonTemporal
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_StoreUnsafe
-        HW_Flag_InvalidNodeId, // NI_Vector128_SubtractSaturate
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_Sum
-        HW_Flag_BaseTypeFromFirstArg | HW_Flag_SIMDScalar | HW_Flag_SpecialCodeGen, // NI_Vector128_ToScalar
-        HW_Flag_InvalidNodeId, // NI_Vector128_Truncate
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_WidenLower
-        HW_Flag_InvalidNodeId | HW_Flag_BaseTypeFromFirstArg, // NI_Vector128_WidenUpper
-        HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialImport, // NI_Vector128_WithElement
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen, // NI_Vector128_WithLower
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen, // NI_Vector128_WithUpper
-        HW_Flag_InvalidNodeId, // NI_Vector128_get_AllBitsSet
-        HW_Flag_InvalidNodeId, // NI_Vector128_get_E
-        HW_Flag_InvalidNodeId, // NI_Vector128_get_Epsilon
-        HW_Flag_InvalidNodeId, // NI_Vector128_get_Indices
-        HW_Flag_InvalidNodeId, // NI_Vector128_get_NaN
-        HW_Flag_InvalidNodeId, // NI_Vector128_get_NegativeInfinity
-        HW_Flag_InvalidNodeId, // NI_Vector128_get_NegativeOne
-        HW_Flag_InvalidNodeId, // NI_Vector128_get_NegativeZero
-        HW_Flag_InvalidNodeId, // NI_Vector128_get_One
-        HW_Flag_InvalidNodeId, // NI_Vector128_get_Pi
-        HW_Flag_InvalidNodeId, // NI_Vector128_get_PositiveInfinity
-        HW_Flag_InvalidNodeId, // NI_Vector128_get_Tau
-        HW_Flag_InvalidNodeId, // NI_Vector128_get_Zero
-        HW_Flag_InvalidNodeId, // NI_Vector128_op_Addition
-        HW_Flag_InvalidNodeId | HW_Flag_Commutative, // NI_Vector128_op_BitwiseAnd
-        HW_Flag_InvalidNodeId | HW_Flag_Commutative, // NI_Vector128_op_BitwiseOr
-        HW_Flag_InvalidNodeId, // NI_Vector128_op_Division
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_Commutative | HW_Flag_CanBenefitFromConstantProp, // NI_Vector128_op_Equality
-        HW_Flag_InvalidNodeId, // NI_Vector128_op_ExclusiveOr
-        HW_Flag_SpecialImport | HW_Flag_NoCodeGen | HW_Flag_Commutative | HW_Flag_CanBenefitFromConstantProp, // NI_Vector128_op_Inequality
-        HW_Flag_InvalidNodeId, // NI_Vector128_op_LeftShift
-        HW_Flag_InvalidNodeId, // NI_Vector128_op_Multiply
-        HW_Flag_InvalidNodeId, // NI_Vector128_op_OnesComplement
-        HW_Flag_InvalidNodeId, // NI_Vector128_op_RightShift
-        HW_Flag_InvalidNodeId, // NI_Vector128_op_Subtraction
-        HW_Flag_InvalidNodeId, // NI_Vector128_op_UnaryNegation
-        HW_Flag_InvalidNodeId, // NI_Vector128_op_UnaryPlus
-        HW_Flag_InvalidNodeId, // NI_Vector128_op_UnsignedRightShift
         HW_Flag_BaseTypeFromFirstArg, // NI_AdvSimd_Abs
         HW_Flag_BaseTypeFromFirstArg, // NI_AdvSimd_AbsSaturate
         HW_Flag_SIMDScalar, // NI_AdvSimd_AbsScalar
@@ -3697,8 +2977,8 @@ public partial struct HWIntrinsicInfo
         HW_Flag_Commutative | HW_Flag_SupportsContainment | HW_Flag_CanBenefitFromConstantProp, // NI_AdvSimd_CompareEqual
         HW_Flag_SupportsContainment | HW_Flag_CanBenefitFromConstantProp, // NI_AdvSimd_CompareGreaterThan
         HW_Flag_SupportsContainment | HW_Flag_CanBenefitFromConstantProp, // NI_AdvSimd_CompareGreaterThanOrEqual
-        HW_Flag_SpecialCodeGen, // NI_AdvSimd_CompareLessThan
-        HW_Flag_SpecialCodeGen, // NI_AdvSimd_CompareLessThanOrEqual
+        HW_Flag_SpecialCodeGen | HW_Flag_SupportsContainment | HW_Flag_CanBenefitFromConstantProp, // NI_AdvSimd_CompareLessThan
+        HW_Flag_SpecialCodeGen | HW_Flag_SupportsContainment | HW_Flag_CanBenefitFromConstantProp, // NI_AdvSimd_CompareLessThanOrEqual
         HW_Flag_Commutative, // NI_AdvSimd_CompareTest
         HW_Flag_BaseTypeFromFirstArg, // NI_AdvSimd_ConvertToInt32RoundAwayFromZero
         HW_Flag_BaseTypeFromFirstArg | HW_Flag_SIMDScalar, // NI_AdvSimd_ConvertToInt32RoundAwayFromZeroScalar
@@ -3727,7 +3007,7 @@ public partial struct HWIntrinsicInfo
         HW_Flag_BaseTypeFromFirstArg | HW_Flag_HasImmediateOperand | HW_Flag_SpecialCodeGen, // NI_AdvSimd_DuplicateSelectedScalarToVector64
         HW_Flag_SpecialCodeGen | HW_Flag_SupportsContainment, // NI_AdvSimd_DuplicateToVector128
         HW_Flag_SpecialCodeGen | HW_Flag_SupportsContainment, // NI_AdvSimd_DuplicateToVector64
-        HW_Flag_BaseTypeFromFirstArg | HW_Flag_HasImmediateOperand | HW_Flag_SpecialCodeGen, // NI_AdvSimd_Extract
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_HasImmediateOperand | HW_Flag_SpecialCodeGen | HW_Flag_ReturnsScalarT, // NI_AdvSimd_Extract
         HW_Flag_NoFlag, // NI_AdvSimd_ExtractNarrowingLower
         HW_Flag_NoFlag, // NI_AdvSimd_ExtractNarrowingSaturateLower
         HW_Flag_NoFlag, // NI_AdvSimd_ExtractNarrowingSaturateUnsignedLower
@@ -3943,8 +3223,8 @@ public partial struct HWIntrinsicInfo
         HW_Flag_SpecialCodeGen, // NI_AdvSimd_Arm64_AbsoluteCompareLessThanOrEqual
         HW_Flag_SIMDScalar | HW_Flag_SpecialCodeGen, // NI_AdvSimd_Arm64_AbsoluteCompareLessThanOrEqualScalar
         HW_Flag_SIMDScalar | HW_Flag_SpecialCodeGen, // NI_AdvSimd_Arm64_AbsoluteCompareLessThanScalar
-        HW_Flag_NoFlag, // NI_AdvSimd_Arm64_AbsoluteDifference
-        HW_Flag_SIMDScalar, // NI_AdvSimd_Arm64_AbsoluteDifferenceScalar
+        HW_Flag_Commutative, // NI_AdvSimd_Arm64_AbsoluteDifference
+        HW_Flag_Commutative | HW_Flag_SIMDScalar, // NI_AdvSimd_Arm64_AbsoluteDifferenceScalar
         HW_Flag_Commutative, // NI_AdvSimd_Arm64_Add
         HW_Flag_BaseTypeFromFirstArg, // NI_AdvSimd_Arm64_AddAcross
         HW_Flag_BaseTypeFromFirstArg, // NI_AdvSimd_Arm64_AddAcrossWidening
@@ -3959,10 +3239,10 @@ public partial struct HWIntrinsicInfo
         HW_Flag_SupportsContainment | HW_Flag_CanBenefitFromConstantProp, // NI_AdvSimd_Arm64_CompareGreaterThanOrEqual
         HW_Flag_SIMDScalar | HW_Flag_SupportsContainment | HW_Flag_CanBenefitFromConstantProp, // NI_AdvSimd_Arm64_CompareGreaterThanOrEqualScalar
         HW_Flag_SIMDScalar | HW_Flag_SupportsContainment | HW_Flag_CanBenefitFromConstantProp, // NI_AdvSimd_Arm64_CompareGreaterThanScalar
-        HW_Flag_SpecialCodeGen, // NI_AdvSimd_Arm64_CompareLessThan
-        HW_Flag_SpecialCodeGen, // NI_AdvSimd_Arm64_CompareLessThanOrEqual
-        HW_Flag_SIMDScalar | HW_Flag_SpecialCodeGen, // NI_AdvSimd_Arm64_CompareLessThanOrEqualScalar
-        HW_Flag_SIMDScalar | HW_Flag_SpecialCodeGen, // NI_AdvSimd_Arm64_CompareLessThanScalar
+        HW_Flag_SpecialCodeGen | HW_Flag_SupportsContainment | HW_Flag_CanBenefitFromConstantProp, // NI_AdvSimd_Arm64_CompareLessThan
+        HW_Flag_SpecialCodeGen | HW_Flag_SupportsContainment | HW_Flag_CanBenefitFromConstantProp, // NI_AdvSimd_Arm64_CompareLessThanOrEqual
+        HW_Flag_SIMDScalar | HW_Flag_SpecialCodeGen | HW_Flag_SupportsContainment | HW_Flag_CanBenefitFromConstantProp, // NI_AdvSimd_Arm64_CompareLessThanOrEqualScalar
+        HW_Flag_SIMDScalar | HW_Flag_SpecialCodeGen | HW_Flag_SupportsContainment | HW_Flag_CanBenefitFromConstantProp, // NI_AdvSimd_Arm64_CompareLessThanScalar
         HW_Flag_Commutative, // NI_AdvSimd_Arm64_CompareTest
         HW_Flag_Commutative | HW_Flag_SIMDScalar, // NI_AdvSimd_Arm64_CompareTestScalar
         HW_Flag_BaseTypeFromFirstArg, // NI_AdvSimd_Arm64_ConvertToDouble
@@ -4136,6 +3416,29 @@ public partial struct HWIntrinsicInfo
         HW_Flag_BaseTypeFromSecondArg | HW_Flag_NoFloatingPointUsed | HW_Flag_SpecialCodeGen, // NI_Crc32_Arm64_ComputeCrc32C
         HW_Flag_HasRMWSemantics, // NI_Dp_DotProduct
         HW_Flag_HasImmediateOperand | HW_Flag_HasRMWSemantics, // NI_Dp_DotProductBySelectedQuadruplet
+        HW_Flag_Commutative | HW_Flag_SIMDScalar, // NI_Fp16_Add
+        HW_Flag_SIMDScalar, // NI_Fp16_Ceiling
+        HW_Flag_SpecialCodeGen, // NI_Fp16_CompareEqual
+        HW_Flag_SpecialCodeGen, // NI_Fp16_CompareGreaterThan
+        HW_Flag_SpecialCodeGen, // NI_Fp16_CompareGreaterThanOrEqual
+        HW_Flag_SpecialCodeGen, // NI_Fp16_CompareLessThan
+        HW_Flag_SpecialCodeGen, // NI_Fp16_CompareLessThanOrEqual
+        HW_Flag_SpecialCodeGen, // NI_Fp16_CompareNotEqual
+        HW_Flag_SpecialCodeGen, // NI_Fp16_ConvertToHalf
+        HW_Flag_SpecialCodeGen, // NI_Fp16_ConvertToInt32
+        HW_Flag_SpecialCodeGen, // NI_Fp16_ConvertToInt64
+        HW_Flag_SpecialCodeGen, // NI_Fp16_ConvertToUInt32
+        HW_Flag_SpecialCodeGen, // NI_Fp16_ConvertToUInt64
+        HW_Flag_SIMDScalar, // NI_Fp16_Divide
+        HW_Flag_SIMDScalar, // NI_Fp16_Floor
+        HW_Flag_SIMDScalar, // NI_Fp16_FusedMultiplyAdd
+        HW_Flag_Commutative | HW_Flag_SIMDScalar, // NI_Fp16_Multiply
+        HW_Flag_SIMDScalar, // NI_Fp16_ReciprocalEstimate
+        HW_Flag_SIMDScalar, // NI_Fp16_ReciprocalSqrtEstimate
+        HW_Flag_SIMDScalar, // NI_Fp16_RoundToNearest
+        HW_Flag_SIMDScalar, // NI_Fp16_Sqrt
+        HW_Flag_SIMDScalar, // NI_Fp16_Subtract
+        HW_Flag_SIMDScalar, // NI_Fp16_Truncate
         HW_Flag_HasRMWSemantics, // NI_Rdm_MultiplyRoundedDoublingAndAddSaturateHigh
         HW_Flag_HasRMWSemantics, // NI_Rdm_MultiplyRoundedDoublingAndSubtractSaturateHigh
         HW_Flag_HasImmediateOperand | HW_Flag_HasRMWSemantics, // NI_Rdm_MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh
@@ -4154,6 +3457,15 @@ public partial struct HWIntrinsicInfo
         HW_Flag_HasRMWSemantics, // NI_Sha256_HashUpdate2
         HW_Flag_HasRMWSemantics, // NI_Sha256_ScheduleUpdate0
         HW_Flag_HasRMWSemantics, // NI_Sha256_ScheduleUpdate1
+        HW_Flag_SpecialCodeGen, // NI_Sha3_BitwiseClearXor
+        HW_Flag_NoFlag, // NI_Sha3_BitwiseRotateLeftBy1AndXor
+        HW_Flag_SpecialCodeGen, // NI_Sha3_Xor
+        HW_Flag_HasImmediateOperand, // NI_Sha3_XorRotateRight
+        HW_Flag_HasRMWSemantics, // NI_Sm4_Encode
+        HW_Flag_NoFlag, // NI_Sm4_KeyUpdate
+        HW_Flag_SpecialCodeGen, // NI_ArmBase_ConvertToDouble
+        HW_Flag_SpecialCodeGen, // NI_ArmBase_ConvertToHalf
+        HW_Flag_SpecialCodeGen, // NI_ArmBase_ConvertToSingle
 #endif
 #if FEATURE_HW_INTRINSICS
         HW_Flag_Scalable | HW_Flag_EmbeddedMaskedOperation | HW_Flag_LowMaskedOperation, // NI_Sve_Abs
@@ -4203,28 +3515,28 @@ public partial struct HWIntrinsicInfo
         HW_Flag_Scalable | HW_Flag_ExplicitMaskedOperation | HW_Flag_ReturnsPerElementMask | HW_Flag_SpecialCodeGen, // NI_Sve_CreateBreakBeforeMask
         HW_Flag_Scalable | HW_Flag_ExplicitMaskedOperation | HW_Flag_ReturnsPerElementMask | HW_Flag_SpecialCodeGen | HW_Flag_ZeroingMaskedOperation, // NI_Sve_CreateBreakBeforePropagateMask
         HW_Flag_Scalable | HW_Flag_EmbeddedMaskedOperation | HW_Flag_ReturnsPerElementMask | HW_Flag_HasRMWSemantics | HW_Flag_ZeroingMaskedOperation, // NI_Sve_CreateBreakPropagateMask
-        HW_Flag_Scalable | HW_Flag_SpecialImport, // NI_Sve_CreateFalseMaskByte
-        HW_Flag_Scalable | HW_Flag_SpecialImport, // NI_Sve_CreateFalseMaskDouble
-        HW_Flag_Scalable | HW_Flag_SpecialImport, // NI_Sve_CreateFalseMaskInt16
-        HW_Flag_Scalable | HW_Flag_SpecialImport, // NI_Sve_CreateFalseMaskInt32
-        HW_Flag_Scalable | HW_Flag_SpecialImport, // NI_Sve_CreateFalseMaskInt64
-        HW_Flag_Scalable | HW_Flag_SpecialImport, // NI_Sve_CreateFalseMaskSByte
-        HW_Flag_Scalable | HW_Flag_SpecialImport, // NI_Sve_CreateFalseMaskSingle
-        HW_Flag_Scalable | HW_Flag_SpecialImport, // NI_Sve_CreateFalseMaskUInt16
-        HW_Flag_Scalable | HW_Flag_SpecialImport, // NI_Sve_CreateFalseMaskUInt32
-        HW_Flag_Scalable | HW_Flag_SpecialImport, // NI_Sve_CreateFalseMaskUInt64
+        HW_Flag_Scalable | HW_Flag_SpecialImport | HW_Flag_ReturnsPerElementMask, // NI_Sve_CreateFalseMaskByte
+        HW_Flag_Scalable | HW_Flag_SpecialImport | HW_Flag_ReturnsPerElementMask, // NI_Sve_CreateFalseMaskDouble
+        HW_Flag_Scalable | HW_Flag_SpecialImport | HW_Flag_ReturnsPerElementMask, // NI_Sve_CreateFalseMaskInt16
+        HW_Flag_Scalable | HW_Flag_SpecialImport | HW_Flag_ReturnsPerElementMask, // NI_Sve_CreateFalseMaskInt32
+        HW_Flag_Scalable | HW_Flag_SpecialImport | HW_Flag_ReturnsPerElementMask, // NI_Sve_CreateFalseMaskInt64
+        HW_Flag_Scalable | HW_Flag_SpecialImport | HW_Flag_ReturnsPerElementMask, // NI_Sve_CreateFalseMaskSByte
+        HW_Flag_Scalable | HW_Flag_SpecialImport | HW_Flag_ReturnsPerElementMask, // NI_Sve_CreateFalseMaskSingle
+        HW_Flag_Scalable | HW_Flag_SpecialImport | HW_Flag_ReturnsPerElementMask, // NI_Sve_CreateFalseMaskUInt16
+        HW_Flag_Scalable | HW_Flag_SpecialImport | HW_Flag_ReturnsPerElementMask, // NI_Sve_CreateFalseMaskUInt32
+        HW_Flag_Scalable | HW_Flag_SpecialImport | HW_Flag_ReturnsPerElementMask, // NI_Sve_CreateFalseMaskUInt64
         HW_Flag_Scalable | HW_Flag_ExplicitMaskedOperation | HW_Flag_ReturnsPerElementMask | HW_Flag_SpecialCodeGen | HW_Flag_HasRMWSemantics, // NI_Sve_CreateMaskForFirstActiveElement
         HW_Flag_Scalable | HW_Flag_ExplicitMaskedOperation | HW_Flag_ReturnsPerElementMask | HW_Flag_HasRMWSemantics, // NI_Sve_CreateMaskForNextActiveElement
-        HW_Flag_Scalable | HW_Flag_HasImmediateOperand | HW_Flag_SpecialImport, // NI_Sve_CreateTrueMaskByte
-        HW_Flag_Scalable | HW_Flag_HasImmediateOperand | HW_Flag_SpecialImport, // NI_Sve_CreateTrueMaskDouble
-        HW_Flag_Scalable | HW_Flag_HasImmediateOperand | HW_Flag_SpecialImport, // NI_Sve_CreateTrueMaskInt16
-        HW_Flag_Scalable | HW_Flag_HasImmediateOperand | HW_Flag_SpecialImport, // NI_Sve_CreateTrueMaskInt32
-        HW_Flag_Scalable | HW_Flag_HasImmediateOperand | HW_Flag_SpecialImport, // NI_Sve_CreateTrueMaskInt64
-        HW_Flag_Scalable | HW_Flag_HasImmediateOperand | HW_Flag_SpecialImport, // NI_Sve_CreateTrueMaskSByte
-        HW_Flag_Scalable | HW_Flag_HasImmediateOperand | HW_Flag_SpecialImport, // NI_Sve_CreateTrueMaskSingle
-        HW_Flag_Scalable | HW_Flag_HasImmediateOperand | HW_Flag_SpecialImport, // NI_Sve_CreateTrueMaskUInt16
-        HW_Flag_Scalable | HW_Flag_HasImmediateOperand | HW_Flag_SpecialImport, // NI_Sve_CreateTrueMaskUInt32
-        HW_Flag_Scalable | HW_Flag_HasImmediateOperand | HW_Flag_SpecialImport, // NI_Sve_CreateTrueMaskUInt64
+        HW_Flag_Scalable | HW_Flag_HasImmediateOperand | HW_Flag_ReturnsPerElementMask | HW_Flag_SpecialImport, // NI_Sve_CreateTrueMaskByte
+        HW_Flag_Scalable | HW_Flag_HasImmediateOperand | HW_Flag_ReturnsPerElementMask | HW_Flag_SpecialImport, // NI_Sve_CreateTrueMaskDouble
+        HW_Flag_Scalable | HW_Flag_HasImmediateOperand | HW_Flag_ReturnsPerElementMask | HW_Flag_SpecialImport, // NI_Sve_CreateTrueMaskInt16
+        HW_Flag_Scalable | HW_Flag_HasImmediateOperand | HW_Flag_ReturnsPerElementMask | HW_Flag_SpecialImport, // NI_Sve_CreateTrueMaskInt32
+        HW_Flag_Scalable | HW_Flag_HasImmediateOperand | HW_Flag_ReturnsPerElementMask | HW_Flag_SpecialImport, // NI_Sve_CreateTrueMaskInt64
+        HW_Flag_Scalable | HW_Flag_HasImmediateOperand | HW_Flag_ReturnsPerElementMask | HW_Flag_SpecialImport, // NI_Sve_CreateTrueMaskSByte
+        HW_Flag_Scalable | HW_Flag_HasImmediateOperand | HW_Flag_ReturnsPerElementMask | HW_Flag_SpecialImport, // NI_Sve_CreateTrueMaskSingle
+        HW_Flag_Scalable | HW_Flag_HasImmediateOperand | HW_Flag_ReturnsPerElementMask | HW_Flag_SpecialImport, // NI_Sve_CreateTrueMaskUInt16
+        HW_Flag_Scalable | HW_Flag_HasImmediateOperand | HW_Flag_ReturnsPerElementMask | HW_Flag_SpecialImport, // NI_Sve_CreateTrueMaskUInt32
+        HW_Flag_Scalable | HW_Flag_HasImmediateOperand | HW_Flag_ReturnsPerElementMask | HW_Flag_SpecialImport, // NI_Sve_CreateTrueMaskUInt64
         HW_Flag_Scalable | HW_Flag_SpecialCodeGen | HW_Flag_ReturnsPerElementMask, // NI_Sve_CreateWhileLessThanMaskByte
         HW_Flag_Scalable | HW_Flag_SpecialCodeGen | HW_Flag_ReturnsPerElementMask, // NI_Sve_CreateWhileLessThanMaskDouble
         HW_Flag_Scalable | HW_Flag_SpecialCodeGen | HW_Flag_ReturnsPerElementMask, // NI_Sve_CreateWhileLessThanMaskInt16
@@ -4520,6 +3832,16 @@ public partial struct HWIntrinsicInfo
         HW_Flag_Scalable | HW_Flag_SpecialCodeGen | HW_Flag_ReturnsPerElementMask, // NI_Sve2_CreateWhileReadAfterWriteMaskUInt16
         HW_Flag_Scalable | HW_Flag_SpecialCodeGen | HW_Flag_ReturnsPerElementMask, // NI_Sve2_CreateWhileReadAfterWriteMaskUInt32
         HW_Flag_Scalable | HW_Flag_SpecialCodeGen | HW_Flag_ReturnsPerElementMask, // NI_Sve2_CreateWhileReadAfterWriteMaskUInt64
+        HW_Flag_Scalable | HW_Flag_SpecialCodeGen | HW_Flag_ReturnsPerElementMask, // NI_Sve2_CreateWhileWriteAfterReadMaskByte
+        HW_Flag_Scalable | HW_Flag_SpecialCodeGen | HW_Flag_ReturnsPerElementMask, // NI_Sve2_CreateWhileWriteAfterReadMaskDouble
+        HW_Flag_Scalable | HW_Flag_SpecialCodeGen | HW_Flag_ReturnsPerElementMask, // NI_Sve2_CreateWhileWriteAfterReadMaskInt16
+        HW_Flag_Scalable | HW_Flag_SpecialCodeGen | HW_Flag_ReturnsPerElementMask, // NI_Sve2_CreateWhileWriteAfterReadMaskInt32
+        HW_Flag_Scalable | HW_Flag_SpecialCodeGen | HW_Flag_ReturnsPerElementMask, // NI_Sve2_CreateWhileWriteAfterReadMaskInt64
+        HW_Flag_Scalable | HW_Flag_SpecialCodeGen | HW_Flag_ReturnsPerElementMask, // NI_Sve2_CreateWhileWriteAfterReadMaskSByte
+        HW_Flag_Scalable | HW_Flag_SpecialCodeGen | HW_Flag_ReturnsPerElementMask, // NI_Sve2_CreateWhileWriteAfterReadMaskSingle
+        HW_Flag_Scalable | HW_Flag_SpecialCodeGen | HW_Flag_ReturnsPerElementMask, // NI_Sve2_CreateWhileWriteAfterReadMaskUInt16
+        HW_Flag_Scalable | HW_Flag_SpecialCodeGen | HW_Flag_ReturnsPerElementMask, // NI_Sve2_CreateWhileWriteAfterReadMaskUInt32
+        HW_Flag_Scalable | HW_Flag_SpecialCodeGen | HW_Flag_ReturnsPerElementMask, // NI_Sve2_CreateWhileWriteAfterReadMaskUInt64
         HW_Flag_Scalable | HW_Flag_HasRMWSemantics | HW_Flag_SpecialCodeGen | HW_Flag_HasImmediateOperand, // NI_Sve2_DotProductRotateComplex
         HW_Flag_Scalable | HW_Flag_HasRMWSemantics | HW_Flag_SpecialCodeGen | HW_Flag_HasImmediateOperand | HW_Flag_LowVectorOperation | HW_Flag_SpecialImport | HW_Flag_BaseTypeFromSecondArg, // NI_Sve2_DotProductRotateComplexBySelectedIndex
         HW_Flag_Scalable | HW_Flag_EmbeddedMaskedOperation | HW_Flag_HasRMWSemantics | HW_Flag_LowMaskedOperation, // NI_Sve2_FusedAddHalving
@@ -4593,6 +3915,10 @@ public partial struct HWIntrinsicInfo
         HW_Flag_Scalable, // NI_Sve2_PolynomialMultiplyWideningOdd
         HW_Flag_Scalable | HW_Flag_EmbeddedMaskedOperation | HW_Flag_LowMaskedOperation, // NI_Sve2_ReciprocalEstimate
         HW_Flag_Scalable | HW_Flag_EmbeddedMaskedOperation | HW_Flag_LowMaskedOperation, // NI_Sve2_ReciprocalSqrtEstimate
+        HW_Flag_Scalable, // NI_Sve2_SaturatingExtractNarrowingLower
+        HW_Flag_Scalable | HW_Flag_HasRMWSemantics, // NI_Sve2_SaturatingExtractNarrowingUpper
+        HW_Flag_Scalable, // NI_Sve2_SaturatingExtractUnsignedNarrowingLower
+        HW_Flag_Scalable | HW_Flag_HasRMWSemantics, // NI_Sve2_SaturatingExtractUnsignedNarrowingUpper
         HW_Flag_Scalable | HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialCodeGen | HW_Flag_ExplicitMaskedOperation | HW_Flag_LowMaskedOperation, // NI_Sve2_Scatter16BitNarrowingNonTemporal
         HW_Flag_Scalable | HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialCodeGen | HW_Flag_ExplicitMaskedOperation | HW_Flag_LowMaskedOperation, // NI_Sve2_Scatter16BitWithByteOffsetsNarrowingNonTemporal
         HW_Flag_Scalable | HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialCodeGen | HW_Flag_ExplicitMaskedOperation | HW_Flag_LowMaskedOperation, // NI_Sve2_Scatter32BitNarrowingNonTemporal
@@ -4649,6 +3975,9 @@ public partial struct HWIntrinsicInfo
         HW_Flag_Scalable | HW_Flag_HasRMWSemantics, // NI_Sve2_VectorTableLookupExtension
         HW_Flag_Scalable | HW_Flag_SpecialCodeGen | HW_Flag_HasRMWSemantics, // NI_Sve2_Xor
         HW_Flag_Scalable | HW_Flag_HasRMWSemantics | HW_Flag_HasImmediateOperand, // NI_Sve2_XorRotateRight
+        HW_Flag_Scalable | HW_Flag_SpecialCodeGen, // NI_SveSha3_BitwiseRotateLeftBy1AndXor
+        HW_Flag_Scalable | HW_Flag_HasRMWSemantics, // NI_SveSm4_Encode
+        HW_Flag_Scalable, // NI_SveSm4_KeyUpdate
         HW_Flag_Scalable | HW_Flag_SpecialCodeGen | HW_Flag_SpecialImport | HW_Flag_HasRMWSemantics | HW_Flag_ExplicitMaskedOperation | HW_Flag_LowMaskedOperation, // NI_Sve_ConditionalExtractAfterLastActiveElementScalar
         HW_Flag_Scalable | HW_Flag_SpecialCodeGen | HW_Flag_SpecialImport | HW_Flag_HasRMWSemantics | HW_Flag_ExplicitMaskedOperation | HW_Flag_LowMaskedOperation, // NI_Sve_ConditionalExtractLastActiveElementScalar
         HW_Flag_Scalable, // NI_Sve_ConvertMaskToVector
@@ -4667,7 +3996,7 @@ public partial struct HWIntrinsicInfo
         HW_Flag_Scalable | HW_Flag_ReturnsPerElementMask | HW_Flag_EmbeddedMaskedOperation | HW_Flag_SpecialCodeGen, // NI_Sve_BitwiseClear_Predicates
         HW_Flag_Scalable | HW_Flag_ReturnsPerElementMask | HW_Flag_EmbeddedMaskedOperation | HW_Flag_SpecialCodeGen, // NI_Sve_Or_Predicates
         HW_Flag_Scalable | HW_Flag_ReturnsPerElementMask | HW_Flag_EmbeddedMaskedOperation | HW_Flag_SpecialCodeGen, // NI_Sve_Xor_Predicates
-        HW_Flag_Scalable | HW_Flag_ReturnsPerElementMask | HW_Flag_ExplicitMaskedOperation | HW_Flag_SpecialCodeGen, // NI_Sve_ConditionalSelect_Predicates
+        HW_Flag_Scalable | HW_Flag_ReturnsPerElementMask | HW_Flag_ExplicitMaskedOperation | HW_Flag_SupportsContainment, // NI_Sve_ConditionalSelect_Predicates
         HW_Flag_Scalable | HW_Flag_ReturnsPerElementMask, // NI_Sve_ZipHigh_Predicates
         HW_Flag_Scalable | HW_Flag_ReturnsPerElementMask, // NI_Sve_ZipLow_Predicates
         HW_Flag_Scalable | HW_Flag_ReturnsPerElementMask, // NI_Sve_UnzipEven_Predicates
@@ -4676,408 +4005,292 @@ public partial struct HWIntrinsicInfo
         HW_Flag_Scalable | HW_Flag_ReturnsPerElementMask, // NI_Sve_TransposeOdd_Predicates
         HW_Flag_Scalable | HW_Flag_ReturnsPerElementMask, // NI_Sve_ReverseElement_Predicates
 #endif
+#elif TARGET_WASM
+#if FEATURE_HW_INTRINSICS
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_Abs
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_Commutative, // NI_PackedSimd_Add
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_AddPairwiseWidening
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_Commutative, // NI_PackedSimd_AddSaturate
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_AllTrue
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_Commutative, // NI_PackedSimd_And
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_AndNot
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_ReturnsBoolean, // NI_PackedSimd_AnyTrue
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_Commutative, // NI_PackedSimd_AverageRounded
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_Bitmask
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_BitwiseSelect
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_Ceiling
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_Commutative | HW_Flag_ReturnsPerElementMask, // NI_PackedSimd_CompareEqual
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialImport | HW_Flag_ReturnsPerElementMask, // NI_PackedSimd_CompareGreaterThan
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialImport | HW_Flag_ReturnsPerElementMask, // NI_PackedSimd_CompareGreaterThanOrEqual
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialImport | HW_Flag_ReturnsPerElementMask, // NI_PackedSimd_CompareLessThan
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_SpecialImport | HW_Flag_ReturnsPerElementMask, // NI_PackedSimd_CompareLessThanOrEqual
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_Commutative | HW_Flag_ReturnsPerElementMask, // NI_PackedSimd_CompareNotEqual
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_ConvertNarrowingSaturateSigned
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_ConvertNarrowingSaturateUnsigned
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_ConvertToDoubleLower
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_ConvertToInt32Saturate
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_ConvertToSingle
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_ConvertToUInt32Saturate
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_Divide
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_Dot
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_HasImmediateOperand, // NI_PackedSimd_ExtractScalar
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_Floor
+        HW_Flag_BaseTypeFromSecondArg | HW_Flag_HasImmediateOperand, // NI_PackedSimd_LoadScalarAndInsert
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_LoadScalarAndSplatVector128
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_LoadScalarVector128
+        HW_Flag_InvalidNodeId | HW_Flag_SpecialImport, // NI_PackedSimd_LoadVector128
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_LoadWideningVector128
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_Commutative, // NI_PackedSimd_Max
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_Commutative, // NI_PackedSimd_Min
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_Commutative, // NI_PackedSimd_Multiply
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_Commutative, // NI_PackedSimd_MultiplyRoundedSaturateQ15
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_MultiplyWideningLower
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_MultiplyWideningUpper
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_Negate
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_Not
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_Commutative, // NI_PackedSimd_Or
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_PopCount
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_PseudoMax
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_PseudoMin
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_HasImmediateOperand, // NI_PackedSimd_ReplaceScalar
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_RoundToNearest
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_ShiftLeft
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_ShiftRightArithmetic
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_ShiftRightLogical
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_Shuffle
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_SignExtendWideningLower
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_SignExtendWideningUpper
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_Splat
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_Sqrt
+        HW_Flag_InvalidNodeId | HW_Flag_SpecialImport | HW_Flag_BaseTypeFromSecondArg, // NI_PackedSimd_Store
+        HW_Flag_BaseTypeFromSecondArg | HW_Flag_HasImmediateOperand, // NI_PackedSimd_StoreSelectedScalar
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_Subtract
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_SubtractSaturate
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_Swizzle
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_Truncate
+        HW_Flag_BaseTypeFromFirstArg | HW_Flag_Commutative, // NI_PackedSimd_Xor
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_ZeroExtendWideningLower
+        HW_Flag_BaseTypeFromFirstArg, // NI_PackedSimd_ZeroExtendWideningUpper
+        HW_Flag_InvalidNodeId | HW_Flag_NoFloatingPointUsed, // NI_WasmBase_LeadingZeroCount
+        HW_Flag_InvalidNodeId | HW_Flag_NoFloatingPointUsed, // NI_WasmBase_TrailingZeroCount
 #endif
+#else
+#error Unsupported platform
+#endif
+#endif
+
     ];
 
     private static ReadOnlySpan<byte> s_fltCosts => [
+#if FEATURE_HW_INTRINSICS
+        unchecked((byte)(-1)), // NI_Vector_Abs
+        unchecked((byte)(-1)), // NI_Vector_AddSaturate
+        unchecked((byte)(-1)), // NI_Vector_AndNot
+        unchecked((byte)(-1)), // NI_Vector_As
+        unchecked((byte)(-1)), // NI_Vector_AsByte
+        unchecked((byte)(-1)), // NI_Vector_AsDouble
+        unchecked((byte)(-1)), // NI_Vector_AsInt16
+        unchecked((byte)(-1)), // NI_Vector_AsInt32
+        unchecked((byte)(-1)), // NI_Vector_AsInt64
+        unchecked((byte)(-1)), // NI_Vector_AsNInt
+        unchecked((byte)(-1)), // NI_Vector_AsNUInt
+        unchecked((byte)(-1)), // NI_Vector_AsSByte
+        unchecked((byte)(-1)), // NI_Vector_AsSingle
+        unchecked((byte)(-1)), // NI_Vector_AsUInt16
+        unchecked((byte)(-1)), // NI_Vector_AsUInt32
+        unchecked((byte)(-1)), // NI_Vector_AsUInt64
+        unchecked((byte)(-1)), // NI_Vector_AsVector
+        unchecked((byte)(-1)), // NI_Vector_AsVector128
+#if TARGET_XARCH
+        1, // NI_Vector_AsVector128Unsafe
+        1, // NI_Vector_AsVector2
+        unchecked((byte)(-1)), // NI_Vector_AsVector256
+        1, // NI_Vector_AsVector3
+#elif TARGET_ARM64
+        1, // NI_Vector_AsVector128Unsafe
+        1, // NI_Vector_AsVector2
+        1, // NI_Vector_AsVector3
+#else
+        1, // NI_Vector_AsVector128Unsafe
+        1, // NI_Vector_AsVector2
+        1, // NI_Vector_AsVector3
+#endif
+        unchecked((byte)(-1)), // NI_Vector_AsVector4
+#if TARGET_XARCH
+        unchecked((byte)(-1)), // NI_Vector_AsVector512
+#endif
+        unchecked((byte)(-1)), // NI_Vector_Ceiling
+        unchecked((byte)(-1)), // NI_Vector_ConcatLowerLower
+        unchecked((byte)(-1)), // NI_Vector_ConcatLowerUpper
+        unchecked((byte)(-1)), // NI_Vector_ConcatUpperLower
+        unchecked((byte)(-1)), // NI_Vector_ConcatUpperUpper
+#if TARGET_XARCH
+        unchecked((byte)(-1)), // NI_Vector_ConditionalSelect
+#else
+        unchecked((byte)(-1)), // NI_Vector_ConditionalSelect
+#endif
+        unchecked((byte)(-1)), // NI_Vector_ConvertToDouble
+        unchecked((byte)(-1)), // NI_Vector_ConvertToInt32
+        unchecked((byte)(-1)), // NI_Vector_ConvertToInt32Native
+        unchecked((byte)(-1)), // NI_Vector_ConvertToInt64
+        unchecked((byte)(-1)), // NI_Vector_ConvertToInt64Native
+        unchecked((byte)(-1)), // NI_Vector_ConvertToSingle
+        unchecked((byte)(-1)), // NI_Vector_ConvertToUInt32
+        unchecked((byte)(-1)), // NI_Vector_ConvertToUInt32Native
+        unchecked((byte)(-1)), // NI_Vector_ConvertToUInt64
+        unchecked((byte)(-1)), // NI_Vector_ConvertToUInt64Native
+        unchecked((byte)(-1)), // NI_Vector_Create
+        unchecked((byte)(-1)), // NI_Vector_CreateAlternatingSequence
+        unchecked((byte)(-1)), // NI_Vector_CreateGeometricSequence
+#if TARGET_XARCH
+        unchecked((byte)(-1)), // NI_Vector_CreateScalar
+        unchecked((byte)(-1)), // NI_Vector_CreateScalarUnsafe
+#elif TARGET_ARM64
+        unchecked((byte)(-1)), // NI_Vector_CreateScalar
+        unchecked((byte)(-1)), // NI_Vector_CreateScalarUnsafe
+#else
+        unchecked((byte)(-1)), // NI_Vector_CreateScalar
+        unchecked((byte)(-1)), // NI_Vector_CreateScalarUnsafe
+#endif
+        unchecked((byte)(-1)), // NI_Vector_CreateSequence
+        unchecked((byte)(-1)), // NI_Vector_Dot
+        unchecked((byte)(-1)), // NI_Vector_Equals
+        unchecked((byte)(-1)), // NI_Vector_EqualsAny
+        unchecked((byte)(-1)), // NI_Vector_ExtractMostSignificantBits
+        unchecked((byte)(-1)), // NI_Vector_Floor
+        unchecked((byte)(-1)), // NI_Vector_FusedMultiplyAdd
+#if TARGET_XARCH
+        unchecked((byte)(-1)), // NI_Vector_GetElement
+#elif TARGET_ARM64
+        unchecked((byte)(-1)), // NI_Vector_GetElement
+#else
+        unchecked((byte)(-1)), // NI_Vector_GetElement
+#endif
+#if TARGET_XARCH
+        unchecked((byte)(-1)), // NI_Vector_GetLower
+        unchecked((byte)(-1)), // NI_Vector_GetLower128
+        unchecked((byte)(-1)), // NI_Vector_GetUpper
+#elif TARGET_ARM64
+        unchecked((byte)(-1)), // NI_Vector_GetLower
+        unchecked((byte)(-1)), // NI_Vector_GetUpper
+#endif
+        unchecked((byte)(-1)), // NI_Vector_GreaterThan
+        unchecked((byte)(-1)), // NI_Vector_GreaterThanAll
+        unchecked((byte)(-1)), // NI_Vector_GreaterThanAny
+        unchecked((byte)(-1)), // NI_Vector_GreaterThanOrEqual
+        unchecked((byte)(-1)), // NI_Vector_GreaterThanOrEqualAll
+        unchecked((byte)(-1)), // NI_Vector_GreaterThanOrEqualAny
+        unchecked((byte)(-1)), // NI_Vector_IsEvenInteger
+        unchecked((byte)(-1)), // NI_Vector_IsFinite
+        unchecked((byte)(-1)), // NI_Vector_IsInfinity
+        unchecked((byte)(-1)), // NI_Vector_IsInteger
+        unchecked((byte)(-1)), // NI_Vector_IsNaN
+        unchecked((byte)(-1)), // NI_Vector_IsNegative
+        unchecked((byte)(-1)), // NI_Vector_IsNegativeInfinity
+        unchecked((byte)(-1)), // NI_Vector_IsNormal
+        unchecked((byte)(-1)), // NI_Vector_IsOddInteger
+        unchecked((byte)(-1)), // NI_Vector_IsPositive
+        unchecked((byte)(-1)), // NI_Vector_IsPositiveInfinity
+        unchecked((byte)(-1)), // NI_Vector_IsSubnormal
+        unchecked((byte)(-1)), // NI_Vector_IsZero
+        unchecked((byte)(-1)), // NI_Vector_LessThan
+        unchecked((byte)(-1)), // NI_Vector_LessThanAll
+        unchecked((byte)(-1)), // NI_Vector_LessThanAny
+        unchecked((byte)(-1)), // NI_Vector_LessThanOrEqual
+        unchecked((byte)(-1)), // NI_Vector_LessThanOrEqualAll
+        unchecked((byte)(-1)), // NI_Vector_LessThanOrEqualAny
+        unchecked((byte)(-1)), // NI_Vector_LoadAligned
+        unchecked((byte)(-1)), // NI_Vector_LoadAlignedNonTemporal
+        unchecked((byte)(-1)), // NI_Vector_LoadUnsafe
+        unchecked((byte)(-1)), // NI_Vector_Max
+        unchecked((byte)(-1)), // NI_Vector_MaxMagnitude
+        unchecked((byte)(-1)), // NI_Vector_MaxMagnitudeNumber
+        unchecked((byte)(-1)), // NI_Vector_MaxNative
+        unchecked((byte)(-1)), // NI_Vector_MaxNumber
+        unchecked((byte)(-1)), // NI_Vector_Min
+        unchecked((byte)(-1)), // NI_Vector_MinMagnitude
+        unchecked((byte)(-1)), // NI_Vector_MinMagnitudeNumber
+        unchecked((byte)(-1)), // NI_Vector_MinNative
+        unchecked((byte)(-1)), // NI_Vector_MinNumber
+        unchecked((byte)(-1)), // NI_Vector_MultiplyAddEstimate
+        unchecked((byte)(-1)), // NI_Vector_Narrow
+#if TARGET_ARM64
+        unchecked((byte)(-1)), // NI_Vector_NarrowWithSaturation
+#else
+        unchecked((byte)(-1)), // NI_Vector_NarrowWithSaturation
+#endif
+        unchecked((byte)(-1)), // NI_Vector_Reverse
+        unchecked((byte)(-1)), // NI_Vector_Round
+        unchecked((byte)(-1)), // NI_Vector_ShiftLeft
+        unchecked((byte)(-1)), // NI_Vector_Shuffle
+        unchecked((byte)(-1)), // NI_Vector_ShuffleNative
+        unchecked((byte)(-1)), // NI_Vector_ShuffleNativeFallback
+        unchecked((byte)(-1)), // NI_Vector_Sqrt
+        unchecked((byte)(-1)), // NI_Vector_StoreAligned
+        unchecked((byte)(-1)), // NI_Vector_StoreAlignedNonTemporal
+        unchecked((byte)(-1)), // NI_Vector_StoreUnsafe
+        unchecked((byte)(-1)), // NI_Vector_SubtractSaturate
+        unchecked((byte)(-1)), // NI_Vector_Sum
+#if TARGET_XARCH
+        unchecked((byte)(-1)), // NI_Vector_ToScalar
+        unchecked((byte)(-1)), // NI_Vector_ToVector256
+        unchecked((byte)(-1)), // NI_Vector_ToVector256Unsafe
+        unchecked((byte)(-1)), // NI_Vector_ToVector512
+        unchecked((byte)(-1)), // NI_Vector_ToVector512Unsafe
+#elif TARGET_ARM64
+        unchecked((byte)(-1)), // NI_Vector_ToScalar
+        unchecked((byte)(-1)), // NI_Vector_ToVector128
+        unchecked((byte)(-1)), // NI_Vector_ToVector128Unsafe
+#else
+        unchecked((byte)(-1)), // NI_Vector_ToScalar
+#endif
+        unchecked((byte)(-1)), // NI_Vector_Truncate
+        unchecked((byte)(-1)), // NI_Vector_UnzipEven
+        unchecked((byte)(-1)), // NI_Vector_UnzipOdd
+        unchecked((byte)(-1)), // NI_Vector_WidenLower
+        unchecked((byte)(-1)), // NI_Vector_WidenUpper
+        unchecked((byte)(-1)), // NI_Vector_WithElement
+#if TARGET_XARCH || TARGET_ARM64
+        unchecked((byte)(-1)), // NI_Vector_WithLower
+        unchecked((byte)(-1)), // NI_Vector_WithUpper
+#endif
+        unchecked((byte)(-1)), // NI_Vector_ZipLower
+        unchecked((byte)(-1)), // NI_Vector_ZipUpper
+        unchecked((byte)(-1)), // NI_Vector_get_AllBitsSet
+        unchecked((byte)(-1)), // NI_Vector_get_E
+        unchecked((byte)(-1)), // NI_Vector_get_Epsilon
+        unchecked((byte)(-1)), // NI_Vector_get_Indices
+        unchecked((byte)(-1)), // NI_Vector_get_NaN
+        unchecked((byte)(-1)), // NI_Vector_get_NegativeInfinity
+        unchecked((byte)(-1)), // NI_Vector_get_NegativeOne
+        unchecked((byte)(-1)), // NI_Vector_get_NegativeZero
+        unchecked((byte)(-1)), // NI_Vector_get_One
+        unchecked((byte)(-1)), // NI_Vector_get_Pi
+        unchecked((byte)(-1)), // NI_Vector_get_PositiveInfinity
+        unchecked((byte)(-1)), // NI_Vector_get_SignSequence
+        unchecked((byte)(-1)), // NI_Vector_get_Tau
+        unchecked((byte)(-1)), // NI_Vector_get_Zero
+        unchecked((byte)(-1)), // NI_Vector_op_Addition
+        unchecked((byte)(-1)), // NI_Vector_op_BitwiseAnd
+        unchecked((byte)(-1)), // NI_Vector_op_BitwiseOr
+#if TARGET_XARCH
+        unchecked((byte)(-1)), // NI_Vector_op_Division
+#else
+        unchecked((byte)(-1)), // NI_Vector_op_Division
+#endif
+        unchecked((byte)(-1)), // NI_Vector_op_Equality
+        unchecked((byte)(-1)), // NI_Vector_op_ExclusiveOr
+        unchecked((byte)(-1)), // NI_Vector_op_Inequality
+        unchecked((byte)(-1)), // NI_Vector_op_LeftShift
+        unchecked((byte)(-1)), // NI_Vector_op_Multiply
+        unchecked((byte)(-1)), // NI_Vector_op_OnesComplement
+        unchecked((byte)(-1)), // NI_Vector_op_RightShift
+        unchecked((byte)(-1)), // NI_Vector_op_Subtraction
+        unchecked((byte)(-1)), // NI_Vector_op_UnaryNegation
+        unchecked((byte)(-1)), // NI_Vector_op_UnaryPlus
+        unchecked((byte)(-1)), // NI_Vector_op_UnsignedRightShift
 #if TARGET_XARCH
 #if FEATURE_HW_INTRINSICS
-        unchecked((byte)(-1)), // NI_Vector128_Abs
-        unchecked((byte)(-1)), // NI_Vector128_AddSaturate
-        unchecked((byte)(-1)), // NI_Vector128_AndNot
-        unchecked((byte)(-1)), // NI_Vector128_As
-        unchecked((byte)(-1)), // NI_Vector128_AsByte
-        unchecked((byte)(-1)), // NI_Vector128_AsDouble
-        unchecked((byte)(-1)), // NI_Vector128_AsInt16
-        unchecked((byte)(-1)), // NI_Vector128_AsInt32
-        unchecked((byte)(-1)), // NI_Vector128_AsInt64
-        unchecked((byte)(-1)), // NI_Vector128_AsNInt
-        unchecked((byte)(-1)), // NI_Vector128_AsNUInt
-        unchecked((byte)(-1)), // NI_Vector128_AsSByte
-        unchecked((byte)(-1)), // NI_Vector128_AsSingle
-        unchecked((byte)(-1)), // NI_Vector128_AsUInt16
-        unchecked((byte)(-1)), // NI_Vector128_AsUInt32
-        unchecked((byte)(-1)), // NI_Vector128_AsUInt64
-        unchecked((byte)(-1)), // NI_Vector128_AsVector
-        unchecked((byte)(-1)), // NI_Vector128_AsVector128
-        1, // NI_Vector128_AsVector128Unsafe
-        1, // NI_Vector128_AsVector2
-        1, // NI_Vector128_AsVector3
-        unchecked((byte)(-1)), // NI_Vector128_AsVector4
-        unchecked((byte)(-1)), // NI_Vector128_Ceiling
-        unchecked((byte)(-1)), // NI_Vector128_ConditionalSelect
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToDouble
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToInt32
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToInt32Native
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToInt64
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToInt64Native
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToSingle
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToUInt32
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToUInt32Native
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToUInt64
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToUInt64Native
-        unchecked((byte)(-1)), // NI_Vector128_Create
-        unchecked((byte)(-1)), // NI_Vector128_CreateScalar
-        unchecked((byte)(-1)), // NI_Vector128_CreateScalarUnsafe
-        unchecked((byte)(-1)), // NI_Vector128_CreateSequence
-        unchecked((byte)(-1)), // NI_Vector128_Dot
-        unchecked((byte)(-1)), // NI_Vector128_Equals
-        unchecked((byte)(-1)), // NI_Vector128_EqualsAny
-        unchecked((byte)(-1)), // NI_Vector128_ExtractMostSignificantBits
-        unchecked((byte)(-1)), // NI_Vector128_Floor
-        unchecked((byte)(-1)), // NI_Vector128_FusedMultiplyAdd
-        unchecked((byte)(-1)), // NI_Vector128_GetElement
-        unchecked((byte)(-1)), // NI_Vector128_GreaterThan
-        unchecked((byte)(-1)), // NI_Vector128_GreaterThanAll
-        unchecked((byte)(-1)), // NI_Vector128_GreaterThanAny
-        unchecked((byte)(-1)), // NI_Vector128_GreaterThanOrEqual
-        unchecked((byte)(-1)), // NI_Vector128_GreaterThanOrEqualAll
-        unchecked((byte)(-1)), // NI_Vector128_GreaterThanOrEqualAny
-        unchecked((byte)(-1)), // NI_Vector128_IsEvenInteger
-        unchecked((byte)(-1)), // NI_Vector128_IsFinite
-        unchecked((byte)(-1)), // NI_Vector128_IsInfinity
-        unchecked((byte)(-1)), // NI_Vector128_IsInteger
-        unchecked((byte)(-1)), // NI_Vector128_IsNaN
-        unchecked((byte)(-1)), // NI_Vector128_IsNegative
-        unchecked((byte)(-1)), // NI_Vector128_IsNegativeInfinity
-        unchecked((byte)(-1)), // NI_Vector128_IsNormal
-        unchecked((byte)(-1)), // NI_Vector128_IsOddInteger
-        unchecked((byte)(-1)), // NI_Vector128_IsPositive
-        unchecked((byte)(-1)), // NI_Vector128_IsPositiveInfinity
-        unchecked((byte)(-1)), // NI_Vector128_IsSubnormal
-        unchecked((byte)(-1)), // NI_Vector128_IsZero
-        unchecked((byte)(-1)), // NI_Vector128_LessThan
-        unchecked((byte)(-1)), // NI_Vector128_LessThanAll
-        unchecked((byte)(-1)), // NI_Vector128_LessThanAny
-        unchecked((byte)(-1)), // NI_Vector128_LessThanOrEqual
-        unchecked((byte)(-1)), // NI_Vector128_LessThanOrEqualAll
-        unchecked((byte)(-1)), // NI_Vector128_LessThanOrEqualAny
-        unchecked((byte)(-1)), // NI_Vector128_LoadAligned
-        unchecked((byte)(-1)), // NI_Vector128_LoadAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector128_LoadUnsafe
-        unchecked((byte)(-1)), // NI_Vector128_Max
-        unchecked((byte)(-1)), // NI_Vector128_MaxMagnitude
-        unchecked((byte)(-1)), // NI_Vector128_MaxMagnitudeNumber
-        unchecked((byte)(-1)), // NI_Vector128_MaxNative
-        unchecked((byte)(-1)), // NI_Vector128_MaxNumber
-        unchecked((byte)(-1)), // NI_Vector128_Min
-        unchecked((byte)(-1)), // NI_Vector128_MinMagnitude
-        unchecked((byte)(-1)), // NI_Vector128_MinMagnitudeNumber
-        unchecked((byte)(-1)), // NI_Vector128_MinNative
-        unchecked((byte)(-1)), // NI_Vector128_MinNumber
-        unchecked((byte)(-1)), // NI_Vector128_MultiplyAddEstimate
-        unchecked((byte)(-1)), // NI_Vector128_Narrow
-        unchecked((byte)(-1)), // NI_Vector128_NarrowWithSaturation
-        unchecked((byte)(-1)), // NI_Vector128_Round
-        unchecked((byte)(-1)), // NI_Vector128_ShiftLeft
-        unchecked((byte)(-1)), // NI_Vector128_Shuffle
-        unchecked((byte)(-1)), // NI_Vector128_ShuffleNative
-        unchecked((byte)(-1)), // NI_Vector128_ShuffleNativeFallback
-        unchecked((byte)(-1)), // NI_Vector128_Sqrt
-        unchecked((byte)(-1)), // NI_Vector128_StoreAligned
-        unchecked((byte)(-1)), // NI_Vector128_StoreAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector128_StoreUnsafe
-        unchecked((byte)(-1)), // NI_Vector128_SubtractSaturate
-        unchecked((byte)(-1)), // NI_Vector128_Sum
-        unchecked((byte)(-1)), // NI_Vector128_ToScalar
-        unchecked((byte)(-1)), // NI_Vector128_ToVector256
-        unchecked((byte)(-1)), // NI_Vector128_ToVector256Unsafe
-        unchecked((byte)(-1)), // NI_Vector128_ToVector512
-        unchecked((byte)(-1)), // NI_Vector128_Truncate
-        unchecked((byte)(-1)), // NI_Vector128_WidenLower
-        unchecked((byte)(-1)), // NI_Vector128_WidenUpper
-        unchecked((byte)(-1)), // NI_Vector128_WithElement
-        unchecked((byte)(-1)), // NI_Vector128_get_AllBitsSet
-        unchecked((byte)(-1)), // NI_Vector128_get_E
-        unchecked((byte)(-1)), // NI_Vector128_get_Epsilon
-        unchecked((byte)(-1)), // NI_Vector128_get_Indices
-        unchecked((byte)(-1)), // NI_Vector128_get_NaN
-        unchecked((byte)(-1)), // NI_Vector128_get_NegativeInfinity
-        unchecked((byte)(-1)), // NI_Vector128_get_NegativeOne
-        unchecked((byte)(-1)), // NI_Vector128_get_NegativeZero
-        unchecked((byte)(-1)), // NI_Vector128_get_One
-        unchecked((byte)(-1)), // NI_Vector128_get_Pi
-        unchecked((byte)(-1)), // NI_Vector128_get_PositiveInfinity
-        unchecked((byte)(-1)), // NI_Vector128_get_Tau
-        unchecked((byte)(-1)), // NI_Vector128_get_Zero
-        unchecked((byte)(-1)), // NI_Vector128_op_Addition
-        unchecked((byte)(-1)), // NI_Vector128_op_BitwiseAnd
-        unchecked((byte)(-1)), // NI_Vector128_op_BitwiseOr
-        unchecked((byte)(-1)), // NI_Vector128_op_Division
-        unchecked((byte)(-1)), // NI_Vector128_op_Equality
-        unchecked((byte)(-1)), // NI_Vector128_op_ExclusiveOr
-        unchecked((byte)(-1)), // NI_Vector128_op_Inequality
-        unchecked((byte)(-1)), // NI_Vector128_op_LeftShift
-        unchecked((byte)(-1)), // NI_Vector128_op_Multiply
-        unchecked((byte)(-1)), // NI_Vector128_op_OnesComplement
-        unchecked((byte)(-1)), // NI_Vector128_op_RightShift
-        unchecked((byte)(-1)), // NI_Vector128_op_Subtraction
-        unchecked((byte)(-1)), // NI_Vector128_op_UnaryNegation
-        unchecked((byte)(-1)), // NI_Vector128_op_UnaryPlus
-        unchecked((byte)(-1)), // NI_Vector128_op_UnsignedRightShift
-        unchecked((byte)(-1)), // NI_Vector256_Abs
-        unchecked((byte)(-1)), // NI_Vector256_AddSaturate
-        unchecked((byte)(-1)), // NI_Vector256_AndNot
-        unchecked((byte)(-1)), // NI_Vector256_As
-        unchecked((byte)(-1)), // NI_Vector256_AsByte
-        unchecked((byte)(-1)), // NI_Vector256_AsDouble
-        unchecked((byte)(-1)), // NI_Vector256_AsInt16
-        unchecked((byte)(-1)), // NI_Vector256_AsInt32
-        unchecked((byte)(-1)), // NI_Vector256_AsInt64
-        unchecked((byte)(-1)), // NI_Vector256_AsNInt
-        unchecked((byte)(-1)), // NI_Vector256_AsNUInt
-        unchecked((byte)(-1)), // NI_Vector256_AsSByte
-        unchecked((byte)(-1)), // NI_Vector256_AsSingle
-        unchecked((byte)(-1)), // NI_Vector256_AsUInt16
-        unchecked((byte)(-1)), // NI_Vector256_AsUInt32
-        unchecked((byte)(-1)), // NI_Vector256_AsUInt64
-        unchecked((byte)(-1)), // NI_Vector256_AsVector
-        unchecked((byte)(-1)), // NI_Vector256_AsVector256
-        unchecked((byte)(-1)), // NI_Vector256_Ceiling
-        unchecked((byte)(-1)), // NI_Vector256_ConditionalSelect
-        unchecked((byte)(-1)), // NI_Vector256_ConvertToDouble
-        unchecked((byte)(-1)), // NI_Vector256_ConvertToInt32
-        unchecked((byte)(-1)), // NI_Vector256_ConvertToInt32Native
-        unchecked((byte)(-1)), // NI_Vector256_ConvertToInt64
-        unchecked((byte)(-1)), // NI_Vector256_ConvertToInt64Native
-        unchecked((byte)(-1)), // NI_Vector256_ConvertToSingle
-        unchecked((byte)(-1)), // NI_Vector256_ConvertToUInt32
-        unchecked((byte)(-1)), // NI_Vector256_ConvertToUInt32Native
-        unchecked((byte)(-1)), // NI_Vector256_ConvertToUInt64
-        unchecked((byte)(-1)), // NI_Vector256_ConvertToUInt64Native
-        unchecked((byte)(-1)), // NI_Vector256_Create
-        unchecked((byte)(-1)), // NI_Vector256_CreateScalar
-        unchecked((byte)(-1)), // NI_Vector256_CreateScalarUnsafe
-        unchecked((byte)(-1)), // NI_Vector256_CreateSequence
-        unchecked((byte)(-1)), // NI_Vector256_Dot
-        unchecked((byte)(-1)), // NI_Vector256_Equals
-        unchecked((byte)(-1)), // NI_Vector256_EqualsAny
-        unchecked((byte)(-1)), // NI_Vector256_ExtractMostSignificantBits
-        unchecked((byte)(-1)), // NI_Vector256_Floor
-        unchecked((byte)(-1)), // NI_Vector256_FusedMultiplyAdd
-        unchecked((byte)(-1)), // NI_Vector256_GetElement
-        unchecked((byte)(-1)), // NI_Vector256_GetLower
-        unchecked((byte)(-1)), // NI_Vector256_GetUpper
-        unchecked((byte)(-1)), // NI_Vector256_GreaterThan
-        unchecked((byte)(-1)), // NI_Vector256_GreaterThanAll
-        unchecked((byte)(-1)), // NI_Vector256_GreaterThanAny
-        unchecked((byte)(-1)), // NI_Vector256_GreaterThanOrEqual
-        unchecked((byte)(-1)), // NI_Vector256_GreaterThanOrEqualAll
-        unchecked((byte)(-1)), // NI_Vector256_GreaterThanOrEqualAny
-        unchecked((byte)(-1)), // NI_Vector256_IsEvenInteger
-        unchecked((byte)(-1)), // NI_Vector256_IsFinite
-        unchecked((byte)(-1)), // NI_Vector256_IsInfinity
-        unchecked((byte)(-1)), // NI_Vector256_IsInteger
-        unchecked((byte)(-1)), // NI_Vector256_IsNaN
-        unchecked((byte)(-1)), // NI_Vector256_IsNegative
-        unchecked((byte)(-1)), // NI_Vector256_IsNegativeInfinity
-        unchecked((byte)(-1)), // NI_Vector256_IsNormal
-        unchecked((byte)(-1)), // NI_Vector256_IsOddInteger
-        unchecked((byte)(-1)), // NI_Vector256_IsPositive
-        unchecked((byte)(-1)), // NI_Vector256_IsPositiveInfinity
-        unchecked((byte)(-1)), // NI_Vector256_IsSubnormal
-        unchecked((byte)(-1)), // NI_Vector256_IsZero
-        unchecked((byte)(-1)), // NI_Vector256_LessThan
-        unchecked((byte)(-1)), // NI_Vector256_LessThanAll
-        unchecked((byte)(-1)), // NI_Vector256_LessThanAny
-        unchecked((byte)(-1)), // NI_Vector256_LessThanOrEqual
-        unchecked((byte)(-1)), // NI_Vector256_LessThanOrEqualAll
-        unchecked((byte)(-1)), // NI_Vector256_LessThanOrEqualAny
-        unchecked((byte)(-1)), // NI_Vector256_LoadAligned
-        unchecked((byte)(-1)), // NI_Vector256_LoadAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector256_LoadUnsafe
-        unchecked((byte)(-1)), // NI_Vector256_Max
-        unchecked((byte)(-1)), // NI_Vector256_MaxMagnitude
-        unchecked((byte)(-1)), // NI_Vector256_MaxMagnitudeNumber
-        unchecked((byte)(-1)), // NI_Vector256_MaxNative
-        unchecked((byte)(-1)), // NI_Vector256_MaxNumber
-        unchecked((byte)(-1)), // NI_Vector256_Min
-        unchecked((byte)(-1)), // NI_Vector256_MinMagnitude
-        unchecked((byte)(-1)), // NI_Vector256_MinMagnitudeNumber
-        unchecked((byte)(-1)), // NI_Vector256_MinNative
-        unchecked((byte)(-1)), // NI_Vector256_MinNumber
-        unchecked((byte)(-1)), // NI_Vector256_MultiplyAddEstimate
-        unchecked((byte)(-1)), // NI_Vector256_Narrow
-        unchecked((byte)(-1)), // NI_Vector256_NarrowWithSaturation
-        unchecked((byte)(-1)), // NI_Vector256_Round
-        unchecked((byte)(-1)), // NI_Vector256_ShiftLeft
-        unchecked((byte)(-1)), // NI_Vector256_Shuffle
-        unchecked((byte)(-1)), // NI_Vector256_ShuffleNative
-        unchecked((byte)(-1)), // NI_Vector256_ShuffleNativeFallback
-        unchecked((byte)(-1)), // NI_Vector256_Sqrt
-        unchecked((byte)(-1)), // NI_Vector256_StoreAligned
-        unchecked((byte)(-1)), // NI_Vector256_StoreAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector256_StoreUnsafe
-        unchecked((byte)(-1)), // NI_Vector256_SubtractSaturate
-        unchecked((byte)(-1)), // NI_Vector256_Sum
-        unchecked((byte)(-1)), // NI_Vector256_ToScalar
-        unchecked((byte)(-1)), // NI_Vector256_ToVector512
-        unchecked((byte)(-1)), // NI_Vector256_ToVector512Unsafe
-        unchecked((byte)(-1)), // NI_Vector256_Truncate
-        unchecked((byte)(-1)), // NI_Vector256_WidenLower
-        unchecked((byte)(-1)), // NI_Vector256_WidenUpper
-        unchecked((byte)(-1)), // NI_Vector256_WithElement
-        unchecked((byte)(-1)), // NI_Vector256_WithLower
-        unchecked((byte)(-1)), // NI_Vector256_WithUpper
-        unchecked((byte)(-1)), // NI_Vector256_get_AllBitsSet
-        unchecked((byte)(-1)), // NI_Vector256_get_E
-        unchecked((byte)(-1)), // NI_Vector256_get_Epsilon
-        unchecked((byte)(-1)), // NI_Vector256_get_Indices
-        unchecked((byte)(-1)), // NI_Vector256_get_NaN
-        unchecked((byte)(-1)), // NI_Vector256_get_NegativeInfinity
-        unchecked((byte)(-1)), // NI_Vector256_get_NegativeOne
-        unchecked((byte)(-1)), // NI_Vector256_get_NegativeZero
-        unchecked((byte)(-1)), // NI_Vector256_get_One
-        unchecked((byte)(-1)), // NI_Vector256_get_Pi
-        unchecked((byte)(-1)), // NI_Vector256_get_PositiveInfinity
-        unchecked((byte)(-1)), // NI_Vector256_get_Tau
-        unchecked((byte)(-1)), // NI_Vector256_get_Zero
-        unchecked((byte)(-1)), // NI_Vector256_op_Addition
-        unchecked((byte)(-1)), // NI_Vector256_op_BitwiseAnd
-        unchecked((byte)(-1)), // NI_Vector256_op_BitwiseOr
-        unchecked((byte)(-1)), // NI_Vector256_op_Division
-        unchecked((byte)(-1)), // NI_Vector256_op_Equality
-        unchecked((byte)(-1)), // NI_Vector256_op_ExclusiveOr
-        unchecked((byte)(-1)), // NI_Vector256_op_Inequality
-        unchecked((byte)(-1)), // NI_Vector256_op_LeftShift
-        unchecked((byte)(-1)), // NI_Vector256_op_Multiply
-        unchecked((byte)(-1)), // NI_Vector256_op_OnesComplement
-        unchecked((byte)(-1)), // NI_Vector256_op_RightShift
-        unchecked((byte)(-1)), // NI_Vector256_op_Subtraction
-        unchecked((byte)(-1)), // NI_Vector256_op_UnaryNegation
-        unchecked((byte)(-1)), // NI_Vector256_op_UnaryPlus
-        unchecked((byte)(-1)), // NI_Vector256_op_UnsignedRightShift
-        unchecked((byte)(-1)), // NI_Vector512_Abs
-        unchecked((byte)(-1)), // NI_Vector512_AddSaturate
-        unchecked((byte)(-1)), // NI_Vector512_AndNot
-        unchecked((byte)(-1)), // NI_Vector512_As
-        unchecked((byte)(-1)), // NI_Vector512_AsByte
-        unchecked((byte)(-1)), // NI_Vector512_AsDouble
-        unchecked((byte)(-1)), // NI_Vector512_AsInt16
-        unchecked((byte)(-1)), // NI_Vector512_AsInt32
-        unchecked((byte)(-1)), // NI_Vector512_AsInt64
-        unchecked((byte)(-1)), // NI_Vector512_AsNInt
-        unchecked((byte)(-1)), // NI_Vector512_AsNUInt
-        unchecked((byte)(-1)), // NI_Vector512_AsSByte
-        unchecked((byte)(-1)), // NI_Vector512_AsSingle
-        unchecked((byte)(-1)), // NI_Vector512_AsUInt16
-        unchecked((byte)(-1)), // NI_Vector512_AsUInt32
-        unchecked((byte)(-1)), // NI_Vector512_AsUInt64
-        unchecked((byte)(-1)), // NI_Vector512_AsVector
-        unchecked((byte)(-1)), // NI_Vector512_AsVector512
-        unchecked((byte)(-1)), // NI_Vector512_Ceiling
-        unchecked((byte)(-1)), // NI_Vector512_ConditionalSelect
-        unchecked((byte)(-1)), // NI_Vector512_ConvertToDouble
-        unchecked((byte)(-1)), // NI_Vector512_ConvertToInt32
-        unchecked((byte)(-1)), // NI_Vector512_ConvertToInt32Native
-        unchecked((byte)(-1)), // NI_Vector512_ConvertToInt64
-        unchecked((byte)(-1)), // NI_Vector512_ConvertToInt64Native
-        unchecked((byte)(-1)), // NI_Vector512_ConvertToSingle
-        unchecked((byte)(-1)), // NI_Vector512_ConvertToUInt32
-        unchecked((byte)(-1)), // NI_Vector512_ConvertToUInt32Native
-        unchecked((byte)(-1)), // NI_Vector512_ConvertToUInt64
-        unchecked((byte)(-1)), // NI_Vector512_ConvertToUInt64Native
-        unchecked((byte)(-1)), // NI_Vector512_Create
-        unchecked((byte)(-1)), // NI_Vector512_CreateScalar
-        unchecked((byte)(-1)), // NI_Vector512_CreateScalarUnsafe
-        unchecked((byte)(-1)), // NI_Vector512_CreateSequence
-        unchecked((byte)(-1)), // NI_Vector512_Dot
-        unchecked((byte)(-1)), // NI_Vector512_Equals
-        unchecked((byte)(-1)), // NI_Vector512_EqualsAny
-        unchecked((byte)(-1)), // NI_Vector512_ExtractMostSignificantBits
-        unchecked((byte)(-1)), // NI_Vector512_Floor
-        unchecked((byte)(-1)), // NI_Vector512_FusedMultiplyAdd
-        unchecked((byte)(-1)), // NI_Vector512_GetElement
-        unchecked((byte)(-1)), // NI_Vector512_GetLower
-        unchecked((byte)(-1)), // NI_Vector512_GetLower128
-        unchecked((byte)(-1)), // NI_Vector512_GetUpper
-        unchecked((byte)(-1)), // NI_Vector512_GreaterThan
-        unchecked((byte)(-1)), // NI_Vector512_GreaterThanAll
-        unchecked((byte)(-1)), // NI_Vector512_GreaterThanAny
-        unchecked((byte)(-1)), // NI_Vector512_GreaterThanOrEqual
-        unchecked((byte)(-1)), // NI_Vector512_GreaterThanOrEqualAll
-        unchecked((byte)(-1)), // NI_Vector512_GreaterThanOrEqualAny
-        unchecked((byte)(-1)), // NI_Vector512_IsEvenInteger
-        unchecked((byte)(-1)), // NI_Vector512_IsFinite
-        unchecked((byte)(-1)), // NI_Vector512_IsInfinity
-        unchecked((byte)(-1)), // NI_Vector512_IsInteger
-        unchecked((byte)(-1)), // NI_Vector512_IsNaN
-        unchecked((byte)(-1)), // NI_Vector512_IsNegative
-        unchecked((byte)(-1)), // NI_Vector512_IsNegativeInfinity
-        unchecked((byte)(-1)), // NI_Vector512_IsNormal
-        unchecked((byte)(-1)), // NI_Vector512_IsOddInteger
-        unchecked((byte)(-1)), // NI_Vector512_IsPositive
-        unchecked((byte)(-1)), // NI_Vector512_IsPositiveInfinity
-        unchecked((byte)(-1)), // NI_Vector512_IsSubnormal
-        unchecked((byte)(-1)), // NI_Vector512_IsZero
-        unchecked((byte)(-1)), // NI_Vector512_LessThan
-        unchecked((byte)(-1)), // NI_Vector512_LessThanAll
-        unchecked((byte)(-1)), // NI_Vector512_LessThanAny
-        unchecked((byte)(-1)), // NI_Vector512_LessThanOrEqual
-        unchecked((byte)(-1)), // NI_Vector512_LessThanOrEqualAll
-        unchecked((byte)(-1)), // NI_Vector512_LessThanOrEqualAny
-        unchecked((byte)(-1)), // NI_Vector512_LoadAligned
-        unchecked((byte)(-1)), // NI_Vector512_LoadAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector512_LoadUnsafe
-        unchecked((byte)(-1)), // NI_Vector512_Max
-        unchecked((byte)(-1)), // NI_Vector512_MaxMagnitude
-        unchecked((byte)(-1)), // NI_Vector512_MaxMagnitudeNumber
-        unchecked((byte)(-1)), // NI_Vector512_MaxNative
-        unchecked((byte)(-1)), // NI_Vector512_MaxNumber
-        unchecked((byte)(-1)), // NI_Vector512_Min
-        unchecked((byte)(-1)), // NI_Vector512_MinMagnitude
-        unchecked((byte)(-1)), // NI_Vector512_MinMagnitudeNumber
-        unchecked((byte)(-1)), // NI_Vector512_MinNative
-        unchecked((byte)(-1)), // NI_Vector512_MinNumber
-        unchecked((byte)(-1)), // NI_Vector512_MultiplyAddEstimate
-        unchecked((byte)(-1)), // NI_Vector512_Narrow
-        unchecked((byte)(-1)), // NI_Vector512_NarrowWithSaturation
-        unchecked((byte)(-1)), // NI_Vector512_Round
-        unchecked((byte)(-1)), // NI_Vector512_ShiftLeft
-        unchecked((byte)(-1)), // NI_Vector512_Shuffle
-        unchecked((byte)(-1)), // NI_Vector512_ShuffleNative
-        unchecked((byte)(-1)), // NI_Vector512_ShuffleNativeFallback
-        unchecked((byte)(-1)), // NI_Vector512_Sqrt
-        unchecked((byte)(-1)), // NI_Vector512_StoreAligned
-        unchecked((byte)(-1)), // NI_Vector512_StoreAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector512_StoreUnsafe
-        unchecked((byte)(-1)), // NI_Vector512_SubtractSaturate
-        unchecked((byte)(-1)), // NI_Vector512_Sum
-        unchecked((byte)(-1)), // NI_Vector512_ToScalar
-        unchecked((byte)(-1)), // NI_Vector512_Truncate
-        unchecked((byte)(-1)), // NI_Vector512_WidenLower
-        unchecked((byte)(-1)), // NI_Vector512_WidenUpper
-        unchecked((byte)(-1)), // NI_Vector512_WithElement
-        unchecked((byte)(-1)), // NI_Vector512_WithLower
-        unchecked((byte)(-1)), // NI_Vector512_WithUpper
-        unchecked((byte)(-1)), // NI_Vector512_get_AllBitsSet
-        unchecked((byte)(-1)), // NI_Vector512_get_E
-        unchecked((byte)(-1)), // NI_Vector512_get_Epsilon
-        unchecked((byte)(-1)), // NI_Vector512_get_Indices
-        unchecked((byte)(-1)), // NI_Vector512_get_NaN
-        unchecked((byte)(-1)), // NI_Vector512_get_NegativeInfinity
-        unchecked((byte)(-1)), // NI_Vector512_get_NegativeOne
-        unchecked((byte)(-1)), // NI_Vector512_get_NegativeZero
-        unchecked((byte)(-1)), // NI_Vector512_get_One
-        unchecked((byte)(-1)), // NI_Vector512_get_Pi
-        unchecked((byte)(-1)), // NI_Vector512_get_PositiveInfinity
-        unchecked((byte)(-1)), // NI_Vector512_get_Tau
-        unchecked((byte)(-1)), // NI_Vector512_get_Zero
-        unchecked((byte)(-1)), // NI_Vector512_op_Addition
-        unchecked((byte)(-1)), // NI_Vector512_op_BitwiseAnd
-        unchecked((byte)(-1)), // NI_Vector512_op_BitwiseOr
-        unchecked((byte)(-1)), // NI_Vector512_op_Division
-        unchecked((byte)(-1)), // NI_Vector512_op_Equality
-        unchecked((byte)(-1)), // NI_Vector512_op_ExclusiveOr
-        unchecked((byte)(-1)), // NI_Vector512_op_Inequality
-        unchecked((byte)(-1)), // NI_Vector512_op_LeftShift
-        unchecked((byte)(-1)), // NI_Vector512_op_Multiply
-        unchecked((byte)(-1)), // NI_Vector512_op_OnesComplement
-        unchecked((byte)(-1)), // NI_Vector512_op_RightShift
-        unchecked((byte)(-1)), // NI_Vector512_op_Subtraction
-        unchecked((byte)(-1)), // NI_Vector512_op_UnaryNegation
-        unchecked((byte)(-1)), // NI_Vector512_op_UnaryPlus
-        unchecked((byte)(-1)), // NI_Vector512_op_UnsignedRightShift
         unchecked((byte)(-1)), // NI_X86Base_Abs
         4, // NI_X86Base_Add
         unchecked((byte)(-1)), // NI_X86Base_AddSaturate
@@ -5642,6 +4855,32 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_AVX512v3_CompressStore
         unchecked((byte)(-1)), // NI_AVX512v3_Expand
         unchecked((byte)(-1)), // NI_AVX512v3_ExpandLoad
+        unchecked((byte)(-1)), // NI_AVX512v3_MultiplyWideningAndAdd
+        unchecked((byte)(-1)), // NI_AVX512v3_MultiplyWideningAndAddSaturate
+        4, // NI_AVX10v1_AddScalar
+        3, // NI_AVX10v1_CompareScalarOrderedEqual
+        3, // NI_AVX10v1_CompareScalarOrderedGreaterThan
+        3, // NI_AVX10v1_CompareScalarOrderedGreaterThanOrEqual
+        3, // NI_AVX10v1_CompareScalarOrderedLessThan
+        3, // NI_AVX10v1_CompareScalarOrderedLessThanOrEqual
+        3, // NI_AVX10v1_CompareScalarOrderedNotEqual
+        3, // NI_AVX10v1_CompareScalarUnorderedEqual
+        3, // NI_AVX10v1_CompareScalarUnorderedGreaterThan
+        3, // NI_AVX10v1_CompareScalarUnorderedGreaterThanOrEqual
+        3, // NI_AVX10v1_CompareScalarUnorderedLessThan
+        3, // NI_AVX10v1_CompareScalarUnorderedLessThanOrEqual
+        3, // NI_AVX10v1_CompareScalarUnorderedNotEqual
+        4, // NI_AVX10v1_ConvertScalarToVector128Double
+        4, // NI_AVX10v1_ConvertScalarToVector128Half
+        4, // NI_AVX10v1_ConvertScalarToVector128Single
+        unchecked((byte)(-1)), // NI_AVX10v1_DivideScalar
+        4, // NI_AVX10v1_FusedMultiplyAddScalar
+        4, // NI_AVX10v1_MultiplyScalar
+        4, // NI_AVX10v1_ReciprocalScalar
+        4, // NI_AVX10v1_ReciprocalSqrtScalar
+        8, // NI_AVX10v1_RoundScaleScalar
+        unchecked((byte)(-1)), // NI_AVX10v1_SqrtScalar
+        4, // NI_AVX10v1_SubtractScalar
         4, // NI_AVX10v2_ConvertToByteWithSaturationAndZeroExtendToInt32
         4, // NI_AVX10v2_ConvertToByteWithTruncatedSaturationAndZeroExtendToInt32
         7, // NI_AVX10v2_ConvertToInt32WithTruncatedSaturation
@@ -5690,6 +4929,8 @@ public partial struct HWIntrinsicInfo
         3, // NI_X86Base_COMIS
         unchecked((byte)(-1)), // NI_X86Base_PTEST
         3, // NI_X86Base_UCOMIS
+        3, // NI_AVX10v1_VCOMISH
+        3, // NI_AVX10v1_VUCOMISH
         unchecked((byte)(-1)), // NI_AVX_PTEST
         unchecked((byte)(-1)), // NI_AVX2_AndNotVector
         unchecked((byte)(-1)), // NI_AVX2_AndNotScalar
@@ -5736,266 +4977,6 @@ public partial struct HWIntrinsicInfo
 #endif
 #elif TARGET_ARM64
 #if FEATURE_HW_INTRINSICS
-        unchecked((byte)(-1)), // NI_Vector64_Abs
-        unchecked((byte)(-1)), // NI_Vector64_AddSaturate
-        unchecked((byte)(-1)), // NI_Vector64_AndNot
-        unchecked((byte)(-1)), // NI_Vector64_As
-        unchecked((byte)(-1)), // NI_Vector64_AsByte
-        unchecked((byte)(-1)), // NI_Vector64_AsDouble
-        unchecked((byte)(-1)), // NI_Vector64_AsInt16
-        unchecked((byte)(-1)), // NI_Vector64_AsInt32
-        unchecked((byte)(-1)), // NI_Vector64_AsInt64
-        unchecked((byte)(-1)), // NI_Vector64_AsNInt
-        unchecked((byte)(-1)), // NI_Vector64_AsNUInt
-        unchecked((byte)(-1)), // NI_Vector64_AsSByte
-        unchecked((byte)(-1)), // NI_Vector64_AsSingle
-        unchecked((byte)(-1)), // NI_Vector64_AsUInt16
-        unchecked((byte)(-1)), // NI_Vector64_AsUInt32
-        unchecked((byte)(-1)), // NI_Vector64_AsUInt64
-        unchecked((byte)(-1)), // NI_Vector64_Ceiling
-        unchecked((byte)(-1)), // NI_Vector64_ConditionalSelect
-        unchecked((byte)(-1)), // NI_Vector64_ConvertToDouble
-        unchecked((byte)(-1)), // NI_Vector64_ConvertToInt32
-        unchecked((byte)(-1)), // NI_Vector64_ConvertToInt32Native
-        unchecked((byte)(-1)), // NI_Vector64_ConvertToInt64
-        unchecked((byte)(-1)), // NI_Vector64_ConvertToInt64Native
-        unchecked((byte)(-1)), // NI_Vector64_ConvertToSingle
-        unchecked((byte)(-1)), // NI_Vector64_ConvertToUInt32
-        unchecked((byte)(-1)), // NI_Vector64_ConvertToUInt32Native
-        unchecked((byte)(-1)), // NI_Vector64_ConvertToUInt64
-        unchecked((byte)(-1)), // NI_Vector64_ConvertToUInt64Native
-        unchecked((byte)(-1)), // NI_Vector64_Create
-        unchecked((byte)(-1)), // NI_Vector64_CreateScalar
-        unchecked((byte)(-1)), // NI_Vector64_CreateScalarUnsafe
-        unchecked((byte)(-1)), // NI_Vector64_CreateSequence
-        unchecked((byte)(-1)), // NI_Vector64_Dot
-        unchecked((byte)(-1)), // NI_Vector64_Equals
-        unchecked((byte)(-1)), // NI_Vector64_EqualsAny
-        unchecked((byte)(-1)), // NI_Vector64_ExtractMostSignificantBits
-        unchecked((byte)(-1)), // NI_Vector64_Floor
-        unchecked((byte)(-1)), // NI_Vector64_FusedMultiplyAdd
-        unchecked((byte)(-1)), // NI_Vector64_GetElement
-        unchecked((byte)(-1)), // NI_Vector64_GreaterThan
-        unchecked((byte)(-1)), // NI_Vector64_GreaterThanAll
-        unchecked((byte)(-1)), // NI_Vector64_GreaterThanAny
-        unchecked((byte)(-1)), // NI_Vector64_GreaterThanOrEqual
-        unchecked((byte)(-1)), // NI_Vector64_GreaterThanOrEqualAll
-        unchecked((byte)(-1)), // NI_Vector64_GreaterThanOrEqualAny
-        unchecked((byte)(-1)), // NI_Vector64_IsEvenInteger
-        unchecked((byte)(-1)), // NI_Vector64_IsFinite
-        unchecked((byte)(-1)), // NI_Vector64_IsInfinity
-        unchecked((byte)(-1)), // NI_Vector64_IsInteger
-        unchecked((byte)(-1)), // NI_Vector64_IsNaN
-        unchecked((byte)(-1)), // NI_Vector64_IsNegative
-        unchecked((byte)(-1)), // NI_Vector64_IsNegativeInfinity
-        unchecked((byte)(-1)), // NI_Vector64_IsNormal
-        unchecked((byte)(-1)), // NI_Vector64_IsOddInteger
-        unchecked((byte)(-1)), // NI_Vector64_IsPositive
-        unchecked((byte)(-1)), // NI_Vector64_IsPositiveInfinity
-        unchecked((byte)(-1)), // NI_Vector64_IsSubnormal
-        unchecked((byte)(-1)), // NI_Vector64_IsZero
-        unchecked((byte)(-1)), // NI_Vector64_LessThan
-        unchecked((byte)(-1)), // NI_Vector64_LessThanAll
-        unchecked((byte)(-1)), // NI_Vector64_LessThanAny
-        unchecked((byte)(-1)), // NI_Vector64_LessThanOrEqual
-        unchecked((byte)(-1)), // NI_Vector64_LessThanOrEqualAll
-        unchecked((byte)(-1)), // NI_Vector64_LessThanOrEqualAny
-        unchecked((byte)(-1)), // NI_Vector64_LoadAligned
-        unchecked((byte)(-1)), // NI_Vector64_LoadAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector64_LoadUnsafe
-        unchecked((byte)(-1)), // NI_Vector64_Max
-        unchecked((byte)(-1)), // NI_Vector64_MaxMagnitude
-        unchecked((byte)(-1)), // NI_Vector64_MaxMagnitudeNumber
-        unchecked((byte)(-1)), // NI_Vector64_MaxNative
-        unchecked((byte)(-1)), // NI_Vector64_MaxNumber
-        unchecked((byte)(-1)), // NI_Vector64_Min
-        unchecked((byte)(-1)), // NI_Vector64_MinMagnitude
-        unchecked((byte)(-1)), // NI_Vector64_MinMagnitudeNumber
-        unchecked((byte)(-1)), // NI_Vector64_MinNative
-        unchecked((byte)(-1)), // NI_Vector64_MinNumber
-        unchecked((byte)(-1)), // NI_Vector64_MultiplyAddEstimate
-        unchecked((byte)(-1)), // NI_Vector64_Narrow
-        unchecked((byte)(-1)), // NI_Vector64_NarrowWithSaturation
-        unchecked((byte)(-1)), // NI_Vector64_Round
-        unchecked((byte)(-1)), // NI_Vector64_ShiftLeft
-        unchecked((byte)(-1)), // NI_Vector64_Shuffle
-        unchecked((byte)(-1)), // NI_Vector64_ShuffleNative
-        unchecked((byte)(-1)), // NI_Vector64_ShuffleNativeFallback
-        unchecked((byte)(-1)), // NI_Vector64_Sqrt
-        unchecked((byte)(-1)), // NI_Vector64_StoreAligned
-        unchecked((byte)(-1)), // NI_Vector64_StoreAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector64_StoreUnsafe
-        unchecked((byte)(-1)), // NI_Vector64_SubtractSaturate
-        unchecked((byte)(-1)), // NI_Vector64_Sum
-        unchecked((byte)(-1)), // NI_Vector64_ToScalar
-        unchecked((byte)(-1)), // NI_Vector64_ToVector128
-        unchecked((byte)(-1)), // NI_Vector64_ToVector128Unsafe
-        unchecked((byte)(-1)), // NI_Vector64_Truncate
-        unchecked((byte)(-1)), // NI_Vector64_WidenLower
-        unchecked((byte)(-1)), // NI_Vector64_WidenUpper
-        unchecked((byte)(-1)), // NI_Vector64_WithElement
-        unchecked((byte)(-1)), // NI_Vector64_get_AllBitsSet
-        unchecked((byte)(-1)), // NI_Vector64_get_E
-        unchecked((byte)(-1)), // NI_Vector64_get_Epsilon
-        unchecked((byte)(-1)), // NI_Vector64_get_Indices
-        unchecked((byte)(-1)), // NI_Vector64_get_NaN
-        unchecked((byte)(-1)), // NI_Vector64_get_NegativeInfinity
-        unchecked((byte)(-1)), // NI_Vector64_get_NegativeOne
-        unchecked((byte)(-1)), // NI_Vector64_get_NegativeZero
-        unchecked((byte)(-1)), // NI_Vector64_get_One
-        unchecked((byte)(-1)), // NI_Vector64_get_Pi
-        unchecked((byte)(-1)), // NI_Vector64_get_PositiveInfinity
-        unchecked((byte)(-1)), // NI_Vector64_get_Tau
-        unchecked((byte)(-1)), // NI_Vector64_get_Zero
-        unchecked((byte)(-1)), // NI_Vector64_op_Addition
-        unchecked((byte)(-1)), // NI_Vector64_op_BitwiseAnd
-        unchecked((byte)(-1)), // NI_Vector64_op_BitwiseOr
-        unchecked((byte)(-1)), // NI_Vector64_op_Division
-        unchecked((byte)(-1)), // NI_Vector64_op_Equality
-        unchecked((byte)(-1)), // NI_Vector64_op_ExclusiveOr
-        unchecked((byte)(-1)), // NI_Vector64_op_Inequality
-        unchecked((byte)(-1)), // NI_Vector64_op_LeftShift
-        unchecked((byte)(-1)), // NI_Vector64_op_Multiply
-        unchecked((byte)(-1)), // NI_Vector64_op_OnesComplement
-        unchecked((byte)(-1)), // NI_Vector64_op_RightShift
-        unchecked((byte)(-1)), // NI_Vector64_op_Subtraction
-        unchecked((byte)(-1)), // NI_Vector64_op_UnaryNegation
-        unchecked((byte)(-1)), // NI_Vector64_op_UnaryPlus
-        unchecked((byte)(-1)), // NI_Vector64_op_UnsignedRightShift
-        unchecked((byte)(-1)), // NI_Vector128_Abs
-        unchecked((byte)(-1)), // NI_Vector128_AddSaturate
-        unchecked((byte)(-1)), // NI_Vector128_AndNot
-        unchecked((byte)(-1)), // NI_Vector128_As
-        unchecked((byte)(-1)), // NI_Vector128_AsByte
-        unchecked((byte)(-1)), // NI_Vector128_AsDouble
-        unchecked((byte)(-1)), // NI_Vector128_AsInt16
-        unchecked((byte)(-1)), // NI_Vector128_AsInt32
-        unchecked((byte)(-1)), // NI_Vector128_AsInt64
-        unchecked((byte)(-1)), // NI_Vector128_AsNInt
-        unchecked((byte)(-1)), // NI_Vector128_AsNUInt
-        unchecked((byte)(-1)), // NI_Vector128_AsSByte
-        unchecked((byte)(-1)), // NI_Vector128_AsSingle
-        unchecked((byte)(-1)), // NI_Vector128_AsUInt16
-        unchecked((byte)(-1)), // NI_Vector128_AsUInt32
-        unchecked((byte)(-1)), // NI_Vector128_AsUInt64
-        unchecked((byte)(-1)), // NI_Vector128_AsVector
-        unchecked((byte)(-1)), // NI_Vector128_AsVector128
-        unchecked((byte)(-1)), // NI_Vector128_AsVector128Unsafe
-        unchecked((byte)(-1)), // NI_Vector128_AsVector2
-        unchecked((byte)(-1)), // NI_Vector128_AsVector3
-        unchecked((byte)(-1)), // NI_Vector128_AsVector4
-        unchecked((byte)(-1)), // NI_Vector128_Ceiling
-        unchecked((byte)(-1)), // NI_Vector128_ConditionalSelect
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToDouble
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToInt32
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToInt32Native
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToInt64
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToInt64Native
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToSingle
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToUInt32
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToUInt32Native
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToUInt64
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToUInt64Native
-        unchecked((byte)(-1)), // NI_Vector128_Create
-        unchecked((byte)(-1)), // NI_Vector128_CreateScalar
-        unchecked((byte)(-1)), // NI_Vector128_CreateScalarUnsafe
-        unchecked((byte)(-1)), // NI_Vector128_CreateSequence
-        unchecked((byte)(-1)), // NI_Vector128_Dot
-        unchecked((byte)(-1)), // NI_Vector128_Equals
-        unchecked((byte)(-1)), // NI_Vector128_EqualsAny
-        unchecked((byte)(-1)), // NI_Vector128_ExtractMostSignificantBits
-        unchecked((byte)(-1)), // NI_Vector128_Floor
-        unchecked((byte)(-1)), // NI_Vector128_FusedMultiplyAdd
-        unchecked((byte)(-1)), // NI_Vector128_GetElement
-        unchecked((byte)(-1)), // NI_Vector128_GetLower
-        unchecked((byte)(-1)), // NI_Vector128_GetUpper
-        unchecked((byte)(-1)), // NI_Vector128_GreaterThan
-        unchecked((byte)(-1)), // NI_Vector128_GreaterThanAll
-        unchecked((byte)(-1)), // NI_Vector128_GreaterThanAny
-        unchecked((byte)(-1)), // NI_Vector128_GreaterThanOrEqual
-        unchecked((byte)(-1)), // NI_Vector128_GreaterThanOrEqualAll
-        unchecked((byte)(-1)), // NI_Vector128_GreaterThanOrEqualAny
-        unchecked((byte)(-1)), // NI_Vector128_IsEvenInteger
-        unchecked((byte)(-1)), // NI_Vector128_IsFinite
-        unchecked((byte)(-1)), // NI_Vector128_IsInfinity
-        unchecked((byte)(-1)), // NI_Vector128_IsInteger
-        unchecked((byte)(-1)), // NI_Vector128_IsNaN
-        unchecked((byte)(-1)), // NI_Vector128_IsNegative
-        unchecked((byte)(-1)), // NI_Vector128_IsNegativeInfinity
-        unchecked((byte)(-1)), // NI_Vector128_IsNormal
-        unchecked((byte)(-1)), // NI_Vector128_IsOddInteger
-        unchecked((byte)(-1)), // NI_Vector128_IsPositive
-        unchecked((byte)(-1)), // NI_Vector128_IsPositiveInfinity
-        unchecked((byte)(-1)), // NI_Vector128_IsSubnormal
-        unchecked((byte)(-1)), // NI_Vector128_IsZero
-        unchecked((byte)(-1)), // NI_Vector128_LessThan
-        unchecked((byte)(-1)), // NI_Vector128_LessThanAll
-        unchecked((byte)(-1)), // NI_Vector128_LessThanAny
-        unchecked((byte)(-1)), // NI_Vector128_LessThanOrEqual
-        unchecked((byte)(-1)), // NI_Vector128_LessThanOrEqualAll
-        unchecked((byte)(-1)), // NI_Vector128_LessThanOrEqualAny
-        unchecked((byte)(-1)), // NI_Vector128_LoadAligned
-        unchecked((byte)(-1)), // NI_Vector128_LoadAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector128_LoadUnsafe
-        unchecked((byte)(-1)), // NI_Vector128_Max
-        unchecked((byte)(-1)), // NI_Vector128_MaxMagnitude
-        unchecked((byte)(-1)), // NI_Vector128_MaxMagnitudeNumber
-        unchecked((byte)(-1)), // NI_Vector128_MaxNative
-        unchecked((byte)(-1)), // NI_Vector128_MaxNumber
-        unchecked((byte)(-1)), // NI_Vector128_Min
-        unchecked((byte)(-1)), // NI_Vector128_MinMagnitude
-        unchecked((byte)(-1)), // NI_Vector128_MinMagnitudeNumber
-        unchecked((byte)(-1)), // NI_Vector128_MinNative
-        unchecked((byte)(-1)), // NI_Vector128_MinNumber
-        unchecked((byte)(-1)), // NI_Vector128_MultiplyAddEstimate
-        unchecked((byte)(-1)), // NI_Vector128_Narrow
-        unchecked((byte)(-1)), // NI_Vector128_NarrowWithSaturation
-        unchecked((byte)(-1)), // NI_Vector128_Round
-        unchecked((byte)(-1)), // NI_Vector128_ShiftLeft
-        unchecked((byte)(-1)), // NI_Vector128_Shuffle
-        unchecked((byte)(-1)), // NI_Vector128_ShuffleNative
-        unchecked((byte)(-1)), // NI_Vector128_ShuffleNativeFallback
-        unchecked((byte)(-1)), // NI_Vector128_Sqrt
-        unchecked((byte)(-1)), // NI_Vector128_StoreAligned
-        unchecked((byte)(-1)), // NI_Vector128_StoreAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector128_StoreUnsafe
-        unchecked((byte)(-1)), // NI_Vector128_SubtractSaturate
-        unchecked((byte)(-1)), // NI_Vector128_Sum
-        unchecked((byte)(-1)), // NI_Vector128_ToScalar
-        unchecked((byte)(-1)), // NI_Vector128_Truncate
-        unchecked((byte)(-1)), // NI_Vector128_WidenLower
-        unchecked((byte)(-1)), // NI_Vector128_WidenUpper
-        unchecked((byte)(-1)), // NI_Vector128_WithElement
-        unchecked((byte)(-1)), // NI_Vector128_WithLower
-        unchecked((byte)(-1)), // NI_Vector128_WithUpper
-        unchecked((byte)(-1)), // NI_Vector128_get_AllBitsSet
-        unchecked((byte)(-1)), // NI_Vector128_get_E
-        unchecked((byte)(-1)), // NI_Vector128_get_Epsilon
-        unchecked((byte)(-1)), // NI_Vector128_get_Indices
-        unchecked((byte)(-1)), // NI_Vector128_get_NaN
-        unchecked((byte)(-1)), // NI_Vector128_get_NegativeInfinity
-        unchecked((byte)(-1)), // NI_Vector128_get_NegativeOne
-        unchecked((byte)(-1)), // NI_Vector128_get_NegativeZero
-        unchecked((byte)(-1)), // NI_Vector128_get_One
-        unchecked((byte)(-1)), // NI_Vector128_get_Pi
-        unchecked((byte)(-1)), // NI_Vector128_get_PositiveInfinity
-        unchecked((byte)(-1)), // NI_Vector128_get_Tau
-        unchecked((byte)(-1)), // NI_Vector128_get_Zero
-        unchecked((byte)(-1)), // NI_Vector128_op_Addition
-        unchecked((byte)(-1)), // NI_Vector128_op_BitwiseAnd
-        unchecked((byte)(-1)), // NI_Vector128_op_BitwiseOr
-        unchecked((byte)(-1)), // NI_Vector128_op_Division
-        unchecked((byte)(-1)), // NI_Vector128_op_Equality
-        unchecked((byte)(-1)), // NI_Vector128_op_ExclusiveOr
-        unchecked((byte)(-1)), // NI_Vector128_op_Inequality
-        unchecked((byte)(-1)), // NI_Vector128_op_LeftShift
-        unchecked((byte)(-1)), // NI_Vector128_op_Multiply
-        unchecked((byte)(-1)), // NI_Vector128_op_OnesComplement
-        unchecked((byte)(-1)), // NI_Vector128_op_RightShift
-        unchecked((byte)(-1)), // NI_Vector128_op_Subtraction
-        unchecked((byte)(-1)), // NI_Vector128_op_UnaryNegation
-        unchecked((byte)(-1)), // NI_Vector128_op_UnaryPlus
-        unchecked((byte)(-1)), // NI_Vector128_op_UnsignedRightShift
         unchecked((byte)(-1)), // NI_AdvSimd_Abs
         unchecked((byte)(-1)), // NI_AdvSimd_AbsSaturate
         unchecked((byte)(-1)), // NI_AdvSimd_AbsScalar
@@ -6471,6 +5452,29 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_Crc32_Arm64_ComputeCrc32C
         unchecked((byte)(-1)), // NI_Dp_DotProduct
         unchecked((byte)(-1)), // NI_Dp_DotProductBySelectedQuadruplet
+        unchecked((byte)(-1)), // NI_Fp16_Add
+        unchecked((byte)(-1)), // NI_Fp16_Ceiling
+        unchecked((byte)(-1)), // NI_Fp16_CompareEqual
+        unchecked((byte)(-1)), // NI_Fp16_CompareGreaterThan
+        unchecked((byte)(-1)), // NI_Fp16_CompareGreaterThanOrEqual
+        unchecked((byte)(-1)), // NI_Fp16_CompareLessThan
+        unchecked((byte)(-1)), // NI_Fp16_CompareLessThanOrEqual
+        unchecked((byte)(-1)), // NI_Fp16_CompareNotEqual
+        unchecked((byte)(-1)), // NI_Fp16_ConvertToHalf
+        unchecked((byte)(-1)), // NI_Fp16_ConvertToInt32
+        unchecked((byte)(-1)), // NI_Fp16_ConvertToInt64
+        unchecked((byte)(-1)), // NI_Fp16_ConvertToUInt32
+        unchecked((byte)(-1)), // NI_Fp16_ConvertToUInt64
+        unchecked((byte)(-1)), // NI_Fp16_Divide
+        unchecked((byte)(-1)), // NI_Fp16_Floor
+        unchecked((byte)(-1)), // NI_Fp16_FusedMultiplyAdd
+        unchecked((byte)(-1)), // NI_Fp16_Multiply
+        unchecked((byte)(-1)), // NI_Fp16_ReciprocalEstimate
+        unchecked((byte)(-1)), // NI_Fp16_ReciprocalSqrtEstimate
+        unchecked((byte)(-1)), // NI_Fp16_RoundToNearest
+        unchecked((byte)(-1)), // NI_Fp16_Sqrt
+        unchecked((byte)(-1)), // NI_Fp16_Subtract
+        unchecked((byte)(-1)), // NI_Fp16_Truncate
         unchecked((byte)(-1)), // NI_Rdm_MultiplyRoundedDoublingAndAddSaturateHigh
         unchecked((byte)(-1)), // NI_Rdm_MultiplyRoundedDoublingAndSubtractSaturateHigh
         unchecked((byte)(-1)), // NI_Rdm_MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh
@@ -6489,6 +5493,15 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_Sha256_HashUpdate2
         unchecked((byte)(-1)), // NI_Sha256_ScheduleUpdate0
         unchecked((byte)(-1)), // NI_Sha256_ScheduleUpdate1
+        unchecked((byte)(-1)), // NI_Sha3_BitwiseClearXor
+        unchecked((byte)(-1)), // NI_Sha3_BitwiseRotateLeftBy1AndXor
+        unchecked((byte)(-1)), // NI_Sha3_Xor
+        unchecked((byte)(-1)), // NI_Sha3_XorRotateRight
+        unchecked((byte)(-1)), // NI_Sm4_Encode
+        unchecked((byte)(-1)), // NI_Sm4_KeyUpdate
+        unchecked((byte)(-1)), // NI_ArmBase_ConvertToDouble
+        unchecked((byte)(-1)), // NI_ArmBase_ConvertToHalf
+        unchecked((byte)(-1)), // NI_ArmBase_ConvertToSingle
 #endif
 #if FEATURE_HW_INTRINSICS
         unchecked((byte)(-1)), // NI_Sve_Abs
@@ -6855,6 +5868,16 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_Sve2_CreateWhileReadAfterWriteMaskUInt16
         unchecked((byte)(-1)), // NI_Sve2_CreateWhileReadAfterWriteMaskUInt32
         unchecked((byte)(-1)), // NI_Sve2_CreateWhileReadAfterWriteMaskUInt64
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskByte
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskDouble
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskInt16
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskInt32
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskInt64
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskSByte
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskSingle
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskUInt16
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskUInt32
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskUInt64
         unchecked((byte)(-1)), // NI_Sve2_DotProductRotateComplex
         unchecked((byte)(-1)), // NI_Sve2_DotProductRotateComplexBySelectedIndex
         unchecked((byte)(-1)), // NI_Sve2_FusedAddHalving
@@ -6928,6 +5951,10 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_Sve2_PolynomialMultiplyWideningOdd
         unchecked((byte)(-1)), // NI_Sve2_ReciprocalEstimate
         unchecked((byte)(-1)), // NI_Sve2_ReciprocalSqrtEstimate
+        unchecked((byte)(-1)), // NI_Sve2_SaturatingExtractNarrowingLower
+        unchecked((byte)(-1)), // NI_Sve2_SaturatingExtractNarrowingUpper
+        unchecked((byte)(-1)), // NI_Sve2_SaturatingExtractUnsignedNarrowingLower
+        unchecked((byte)(-1)), // NI_Sve2_SaturatingExtractUnsignedNarrowingUpper
         unchecked((byte)(-1)), // NI_Sve2_Scatter16BitNarrowingNonTemporal
         unchecked((byte)(-1)), // NI_Sve2_Scatter16BitWithByteOffsetsNarrowingNonTemporal
         unchecked((byte)(-1)), // NI_Sve2_Scatter32BitNarrowingNonTemporal
@@ -6984,6 +6011,9 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_Sve2_VectorTableLookupExtension
         unchecked((byte)(-1)), // NI_Sve2_Xor
         unchecked((byte)(-1)), // NI_Sve2_XorRotateRight
+        unchecked((byte)(-1)), // NI_SveSha3_BitwiseRotateLeftBy1AndXor
+        unchecked((byte)(-1)), // NI_SveSm4_Encode
+        unchecked((byte)(-1)), // NI_SveSm4_KeyUpdate
         unchecked((byte)(-1)), // NI_Sve_ConditionalExtractAfterLastActiveElementScalar
         unchecked((byte)(-1)), // NI_Sve_ConditionalExtractLastActiveElementScalar
         unchecked((byte)(-1)), // NI_Sve_ConvertMaskToVector
@@ -7011,408 +6041,292 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_Sve_TransposeOdd_Predicates
         unchecked((byte)(-1)), // NI_Sve_ReverseElement_Predicates
 #endif
+#elif TARGET_WASM
+#if FEATURE_HW_INTRINSICS
+        unchecked((byte)(-1)), // NI_PackedSimd_Abs
+        unchecked((byte)(-1)), // NI_PackedSimd_Add
+        unchecked((byte)(-1)), // NI_PackedSimd_AddPairwiseWidening
+        unchecked((byte)(-1)), // NI_PackedSimd_AddSaturate
+        unchecked((byte)(-1)), // NI_PackedSimd_AllTrue
+        unchecked((byte)(-1)), // NI_PackedSimd_And
+        unchecked((byte)(-1)), // NI_PackedSimd_AndNot
+        unchecked((byte)(-1)), // NI_PackedSimd_AnyTrue
+        unchecked((byte)(-1)), // NI_PackedSimd_AverageRounded
+        unchecked((byte)(-1)), // NI_PackedSimd_Bitmask
+        unchecked((byte)(-1)), // NI_PackedSimd_BitwiseSelect
+        unchecked((byte)(-1)), // NI_PackedSimd_Ceiling
+        unchecked((byte)(-1)), // NI_PackedSimd_CompareEqual
+        unchecked((byte)(-1)), // NI_PackedSimd_CompareGreaterThan
+        unchecked((byte)(-1)), // NI_PackedSimd_CompareGreaterThanOrEqual
+        unchecked((byte)(-1)), // NI_PackedSimd_CompareLessThan
+        unchecked((byte)(-1)), // NI_PackedSimd_CompareLessThanOrEqual
+        unchecked((byte)(-1)), // NI_PackedSimd_CompareNotEqual
+        unchecked((byte)(-1)), // NI_PackedSimd_ConvertNarrowingSaturateSigned
+        unchecked((byte)(-1)), // NI_PackedSimd_ConvertNarrowingSaturateUnsigned
+        unchecked((byte)(-1)), // NI_PackedSimd_ConvertToDoubleLower
+        unchecked((byte)(-1)), // NI_PackedSimd_ConvertToInt32Saturate
+        unchecked((byte)(-1)), // NI_PackedSimd_ConvertToSingle
+        unchecked((byte)(-1)), // NI_PackedSimd_ConvertToUInt32Saturate
+        unchecked((byte)(-1)), // NI_PackedSimd_Divide
+        unchecked((byte)(-1)), // NI_PackedSimd_Dot
+        unchecked((byte)(-1)), // NI_PackedSimd_ExtractScalar
+        unchecked((byte)(-1)), // NI_PackedSimd_Floor
+        unchecked((byte)(-1)), // NI_PackedSimd_LoadScalarAndInsert
+        unchecked((byte)(-1)), // NI_PackedSimd_LoadScalarAndSplatVector128
+        unchecked((byte)(-1)), // NI_PackedSimd_LoadScalarVector128
+        unchecked((byte)(-1)), // NI_PackedSimd_LoadVector128
+        unchecked((byte)(-1)), // NI_PackedSimd_LoadWideningVector128
+        unchecked((byte)(-1)), // NI_PackedSimd_Max
+        unchecked((byte)(-1)), // NI_PackedSimd_Min
+        unchecked((byte)(-1)), // NI_PackedSimd_Multiply
+        unchecked((byte)(-1)), // NI_PackedSimd_MultiplyRoundedSaturateQ15
+        unchecked((byte)(-1)), // NI_PackedSimd_MultiplyWideningLower
+        unchecked((byte)(-1)), // NI_PackedSimd_MultiplyWideningUpper
+        unchecked((byte)(-1)), // NI_PackedSimd_Negate
+        unchecked((byte)(-1)), // NI_PackedSimd_Not
+        unchecked((byte)(-1)), // NI_PackedSimd_Or
+        unchecked((byte)(-1)), // NI_PackedSimd_PopCount
+        unchecked((byte)(-1)), // NI_PackedSimd_PseudoMax
+        unchecked((byte)(-1)), // NI_PackedSimd_PseudoMin
+        unchecked((byte)(-1)), // NI_PackedSimd_ReplaceScalar
+        unchecked((byte)(-1)), // NI_PackedSimd_RoundToNearest
+        unchecked((byte)(-1)), // NI_PackedSimd_ShiftLeft
+        unchecked((byte)(-1)), // NI_PackedSimd_ShiftRightArithmetic
+        unchecked((byte)(-1)), // NI_PackedSimd_ShiftRightLogical
+        unchecked((byte)(-1)), // NI_PackedSimd_Shuffle
+        unchecked((byte)(-1)), // NI_PackedSimd_SignExtendWideningLower
+        unchecked((byte)(-1)), // NI_PackedSimd_SignExtendWideningUpper
+        unchecked((byte)(-1)), // NI_PackedSimd_Splat
+        unchecked((byte)(-1)), // NI_PackedSimd_Sqrt
+        unchecked((byte)(-1)), // NI_PackedSimd_Store
+        unchecked((byte)(-1)), // NI_PackedSimd_StoreSelectedScalar
+        unchecked((byte)(-1)), // NI_PackedSimd_Subtract
+        unchecked((byte)(-1)), // NI_PackedSimd_SubtractSaturate
+        unchecked((byte)(-1)), // NI_PackedSimd_Swizzle
+        unchecked((byte)(-1)), // NI_PackedSimd_Truncate
+        unchecked((byte)(-1)), // NI_PackedSimd_Xor
+        unchecked((byte)(-1)), // NI_PackedSimd_ZeroExtendWideningLower
+        unchecked((byte)(-1)), // NI_PackedSimd_ZeroExtendWideningUpper
+        unchecked((byte)(-1)), // NI_WasmBase_LeadingZeroCount
+        unchecked((byte)(-1)), // NI_WasmBase_TrailingZeroCount
 #endif
+#else
+#error Unsupported platform
+#endif
+#endif
+
     ];
 
     private static ReadOnlySpan<instruction> s_instructions => [
+#if FEATURE_HW_INTRINSICS
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_Abs
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_AddSaturate
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_AndNot
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_As
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_AsByte
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_AsDouble
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_AsInt16
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_AsInt32
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_AsInt64
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_AsNInt
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_AsNUInt
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_AsSByte
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_AsSingle
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_AsUInt16
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_AsUInt32
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_AsUInt64
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_AsVector
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_AsVector128
+#if TARGET_XARCH
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_movups, INS_invalid, // NI_Vector_AsVector128Unsafe
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_movsd_simd, INS_invalid, // NI_Vector_AsVector2
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_AsVector256
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_movups, INS_invalid, // NI_Vector_AsVector3
+#elif TARGET_ARM64
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_mov, INS_invalid, // NI_Vector_AsVector128Unsafe
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_AsVector2
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_mov, INS_invalid, // NI_Vector_AsVector3
+#else
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_AsVector128Unsafe
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_AsVector2
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_AsVector3
+#endif
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_AsVector4
+#if TARGET_XARCH
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_AsVector512
+#endif
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_Ceiling
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_ConcatLowerLower
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_ConcatLowerUpper
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_ConcatUpperLower
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_ConcatUpperUpper
+#if TARGET_XARCH
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_ConditionalSelect
+#else
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_ConditionalSelect
+#endif
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_ConvertToDouble
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_ConvertToInt32
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_ConvertToInt32Native
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_ConvertToInt64
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_ConvertToInt64Native
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_ConvertToSingle
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_ConvertToUInt32
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_ConvertToUInt32Native
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_ConvertToUInt64
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_ConvertToUInt64Native
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_Create
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_CreateAlternatingSequence
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_CreateGeometricSequence
+#if TARGET_XARCH
+        INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd64, INS_movd64, INS_movss, INS_movsd_simd, // NI_Vector_CreateScalar
+        INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd64, INS_movd64, INS_movss, INS_movsd_simd, // NI_Vector_CreateScalarUnsafe
+#elif TARGET_ARM64
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_CreateScalar
+        INS_ins, INS_ins, INS_ins, INS_ins, INS_ins, INS_ins, INS_ins, INS_ins, INS_fmov, INS_fmov, // NI_Vector_CreateScalarUnsafe
+#else
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_CreateScalar
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_CreateScalarUnsafe
+#endif
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_CreateSequence
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_Dot
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_Equals
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_EqualsAny
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_ExtractMostSignificantBits
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_Floor
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_FusedMultiplyAdd
+#if TARGET_XARCH
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_extractps, INS_invalid, // NI_Vector_GetElement
+#elif TARGET_ARM64
+        INS_smov, INS_umov, INS_smov, INS_umov, INS_smov, INS_umov, INS_umov, INS_umov, INS_dup, INS_dup, // NI_Vector_GetElement
+#else
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_GetElement
+#endif
+#if TARGET_XARCH
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_movdqu32, INS_movdqu32, INS_movdqu32, INS_movdqu32, INS_movups, INS_movupd, // NI_Vector_GetLower
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_movdqu32, INS_movdqu32, INS_vmovdqu64, INS_vmovdqu64, INS_movups, INS_movupd, // NI_Vector_GetLower128
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_GetUpper
+#elif TARGET_ARM64
+        INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, // NI_Vector_GetLower
+        INS_ext, INS_ext, INS_ext, INS_ext, INS_ext, INS_ext, INS_ext, INS_ext, INS_ext, INS_ext, // NI_Vector_GetUpper
+#endif
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_GreaterThan
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_GreaterThanAll
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_GreaterThanAny
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_GreaterThanOrEqual
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_GreaterThanOrEqualAll
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_GreaterThanOrEqualAny
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_IsEvenInteger
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_IsFinite
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_IsInfinity
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_IsInteger
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_IsNaN
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_IsNegative
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_IsNegativeInfinity
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_IsNormal
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_IsOddInteger
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_IsPositive
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_IsPositiveInfinity
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_IsSubnormal
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_IsZero
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_LessThan
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_LessThanAll
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_LessThanAny
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_LessThanOrEqual
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_LessThanOrEqualAll
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_LessThanOrEqualAny
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_LoadAligned
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_LoadAlignedNonTemporal
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_LoadUnsafe
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_Max
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_MaxMagnitude
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_MaxMagnitudeNumber
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_MaxNative
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_MaxNumber
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_Min
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_MinMagnitude
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_MinMagnitudeNumber
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_MinNative
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_MinNumber
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_MultiplyAddEstimate
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_Narrow
+#if TARGET_ARM64
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_NarrowWithSaturation
+#else
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_NarrowWithSaturation
+#endif
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_Reverse
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_Round
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_ShiftLeft
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_Shuffle
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_ShuffleNative
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_ShuffleNativeFallback
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_Sqrt
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_StoreAligned
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_StoreAlignedNonTemporal
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_StoreUnsafe
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_SubtractSaturate
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_Sum
+#if TARGET_XARCH
+        INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd64, INS_movd64, INS_movss, INS_movsd_simd, // NI_Vector_ToScalar
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_movdqu32, INS_movdqu32, INS_movdqu32, INS_movdqu32, INS_movups, INS_movupd, // NI_Vector_ToVector256
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_movdqu32, INS_movdqu32, INS_movdqu32, INS_movdqu32, INS_movups, INS_movupd, // NI_Vector_ToVector256Unsafe
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_movdqu32, INS_movdqu32, INS_vmovdqu64, INS_vmovdqu64, INS_movups, INS_movupd, // NI_Vector_ToVector512
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_movdqu32, INS_movdqu32, INS_vmovdqu64, INS_vmovdqu64, INS_movups, INS_movupd, // NI_Vector_ToVector512Unsafe
+#elif TARGET_ARM64
+        INS_smov, INS_umov, INS_smov, INS_umov, INS_smov, INS_umov, INS_umov, INS_umov, INS_dup, INS_dup, // NI_Vector_ToScalar
+        INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, // NI_Vector_ToVector128
+        INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, // NI_Vector_ToVector128Unsafe
+#else
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_ToScalar
+#endif
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_Truncate
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_UnzipEven
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_UnzipOdd
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_WidenLower
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_WidenUpper
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_WithElement
+#if TARGET_XARCH || TARGET_ARM64
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_WithLower
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_WithUpper
+#endif
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_ZipLower
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_ZipUpper
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_get_AllBitsSet
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_get_E
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_get_Epsilon
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_get_Indices
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_get_NaN
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_get_NegativeInfinity
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_get_NegativeOne
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_get_NegativeZero
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_get_One
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_get_Pi
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_get_PositiveInfinity
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_get_SignSequence
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_get_Tau
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_get_Zero
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_op_Addition
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_op_BitwiseAnd
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_op_BitwiseOr
+#if TARGET_XARCH
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_op_Division
+#else
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_op_Division
+#endif
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_op_Equality
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_op_ExclusiveOr
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_op_Inequality
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_op_LeftShift
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_op_Multiply
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_op_OnesComplement
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_op_RightShift
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_op_Subtraction
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_op_UnaryNegation
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_op_UnaryPlus
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector_op_UnsignedRightShift
 #if TARGET_XARCH
 #if FEATURE_HW_INTRINSICS
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Abs
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AddSaturate
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AndNot
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_As
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsByte
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsDouble
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsInt16
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsInt32
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsInt64
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsNInt
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsNUInt
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsSByte
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsSingle
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsUInt16
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsUInt32
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsUInt64
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsVector
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsVector128
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_movups, INS_invalid, // NI_Vector128_AsVector128Unsafe
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_movsd_simd, INS_invalid, // NI_Vector128_AsVector2
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_movups, INS_invalid, // NI_Vector128_AsVector3
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsVector4
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Ceiling
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ConditionalSelect
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ConvertToDouble
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ConvertToInt32
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ConvertToInt32Native
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ConvertToInt64
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ConvertToInt64Native
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ConvertToSingle
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ConvertToUInt32
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ConvertToUInt32Native
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ConvertToUInt64
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ConvertToUInt64Native
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Create
-        INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd64, INS_movd64, INS_movss, INS_movsd_simd, // NI_Vector128_CreateScalar
-        INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd64, INS_movd64, INS_movss, INS_movsd_simd, // NI_Vector128_CreateScalarUnsafe
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_CreateSequence
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Dot
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Equals
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_EqualsAny
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ExtractMostSignificantBits
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Floor
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_FusedMultiplyAdd
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_extractps, INS_invalid, // NI_Vector128_GetElement
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_GreaterThan
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_GreaterThanAll
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_GreaterThanAny
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_GreaterThanOrEqual
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_GreaterThanOrEqualAll
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_GreaterThanOrEqualAny
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_IsEvenInteger
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_IsFinite
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_IsInfinity
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_IsInteger
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_IsNaN
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_IsNegative
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_IsNegativeInfinity
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_IsNormal
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_IsOddInteger
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_IsPositive
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_IsPositiveInfinity
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_IsSubnormal
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_IsZero
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_LessThan
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_LessThanAll
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_LessThanAny
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_LessThanOrEqual
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_LessThanOrEqualAll
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_LessThanOrEqualAny
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_LoadAligned
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_LoadAlignedNonTemporal
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_LoadUnsafe
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Max
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_MaxMagnitude
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_MaxMagnitudeNumber
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_MaxNative
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_MaxNumber
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Min
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_MinMagnitude
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_MinMagnitudeNumber
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_MinNative
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_MinNumber
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_MultiplyAddEstimate
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Narrow
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_NarrowWithSaturation
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Round
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ShiftLeft
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Shuffle
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ShuffleNative
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ShuffleNativeFallback
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Sqrt
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_StoreAligned
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_StoreAlignedNonTemporal
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_StoreUnsafe
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_SubtractSaturate
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Sum
-        INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd64, INS_movd64, INS_movss, INS_movsd_simd, // NI_Vector128_ToScalar
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_movdqu32, INS_movdqu32, INS_movdqu32, INS_movdqu32, INS_movups, INS_movupd, // NI_Vector128_ToVector256
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_movdqu32, INS_movdqu32, INS_movdqu32, INS_movdqu32, INS_movups, INS_movupd, // NI_Vector128_ToVector256Unsafe
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_movdqu32, INS_movdqu32, INS_vmovdqu64, INS_vmovdqu64, INS_movups, INS_movupd, // NI_Vector128_ToVector512
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Truncate
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_WidenLower
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_WidenUpper
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_WithElement
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_get_AllBitsSet
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_get_E
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_get_Epsilon
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_get_Indices
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_get_NaN
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_get_NegativeInfinity
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_get_NegativeOne
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_get_NegativeZero
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_get_One
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_get_Pi
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_get_PositiveInfinity
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_get_Tau
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_get_Zero
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_Addition
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_BitwiseAnd
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_BitwiseOr
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_Division
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_Equality
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_ExclusiveOr
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_Inequality
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_LeftShift
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_Multiply
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_OnesComplement
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_RightShift
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_Subtraction
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_UnaryNegation
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_UnaryPlus
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_UnsignedRightShift
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_Abs
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_AddSaturate
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_AndNot
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_As
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_AsByte
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_AsDouble
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_AsInt16
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_AsInt32
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_AsInt64
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_AsNInt
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_AsNUInt
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_AsSByte
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_AsSingle
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_AsUInt16
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_AsUInt32
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_AsUInt64
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_AsVector
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_AsVector256
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_Ceiling
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_ConditionalSelect
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_ConvertToDouble
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_ConvertToInt32
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_ConvertToInt32Native
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_ConvertToInt64
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_ConvertToInt64Native
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_ConvertToSingle
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_ConvertToUInt32
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_ConvertToUInt32Native
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_ConvertToUInt64
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_ConvertToUInt64Native
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_Create
-        INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd64, INS_movd64, INS_movss, INS_movsd_simd, // NI_Vector256_CreateScalar
-        INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd64, INS_movd64, INS_movss, INS_movsd_simd, // NI_Vector256_CreateScalarUnsafe
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_CreateSequence
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_Dot
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_Equals
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_EqualsAny
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_ExtractMostSignificantBits
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_Floor
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_FusedMultiplyAdd
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_GetElement
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_movdqu32, INS_movdqu32, INS_movdqu32, INS_movdqu32, INS_movups, INS_movupd, // NI_Vector256_GetLower
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_GetUpper
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_GreaterThan
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_GreaterThanAll
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_GreaterThanAny
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_GreaterThanOrEqual
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_GreaterThanOrEqualAll
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_GreaterThanOrEqualAny
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_IsEvenInteger
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_IsFinite
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_IsInfinity
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_IsInteger
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_IsNaN
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_IsNegative
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_IsNegativeInfinity
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_IsNormal
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_IsOddInteger
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_IsPositive
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_IsPositiveInfinity
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_IsSubnormal
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_IsZero
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_LessThan
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_LessThanAll
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_LessThanAny
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_LessThanOrEqual
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_LessThanOrEqualAll
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_LessThanOrEqualAny
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_LoadAligned
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_LoadAlignedNonTemporal
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_LoadUnsafe
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_Max
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_MaxMagnitude
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_MaxMagnitudeNumber
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_MaxNative
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_MaxNumber
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_Min
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_MinMagnitude
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_MinMagnitudeNumber
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_MinNative
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_MinNumber
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_MultiplyAddEstimate
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_Narrow
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_NarrowWithSaturation
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_Round
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_ShiftLeft
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_Shuffle
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_ShuffleNative
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_ShuffleNativeFallback
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_Sqrt
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_StoreAligned
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_StoreAlignedNonTemporal
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_StoreUnsafe
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_SubtractSaturate
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_Sum
-        INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd64, INS_movd64, INS_movss, INS_movsd_simd, // NI_Vector256_ToScalar
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_movdqu32, INS_movdqu32, INS_vmovdqu64, INS_vmovdqu64, INS_movups, INS_movupd, // NI_Vector256_ToVector512
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_movdqu32, INS_movdqu32, INS_vmovdqu64, INS_vmovdqu64, INS_movups, INS_movupd, // NI_Vector256_ToVector512Unsafe
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_Truncate
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_WidenLower
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_WidenUpper
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_WithElement
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_WithLower
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_WithUpper
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_get_AllBitsSet
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_get_E
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_get_Epsilon
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_get_Indices
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_get_NaN
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_get_NegativeInfinity
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_get_NegativeOne
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_get_NegativeZero
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_get_One
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_get_Pi
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_get_PositiveInfinity
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_get_Tau
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_get_Zero
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_op_Addition
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_op_BitwiseAnd
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_op_BitwiseOr
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_op_Division
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_op_Equality
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_op_ExclusiveOr
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_op_Inequality
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_op_LeftShift
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_op_Multiply
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_op_OnesComplement
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_op_RightShift
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_op_Subtraction
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_op_UnaryNegation
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_op_UnaryPlus
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector256_op_UnsignedRightShift
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_Abs
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_AddSaturate
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_AndNot
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_As
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_AsByte
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_AsDouble
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_AsInt16
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_AsInt32
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_AsInt64
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_AsNInt
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_AsNUInt
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_AsSByte
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_AsSingle
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_AsUInt16
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_AsUInt32
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_AsUInt64
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_AsVector
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_AsVector512
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_Ceiling
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_ConditionalSelect
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_ConvertToDouble
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_ConvertToInt32
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_ConvertToInt32Native
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_ConvertToInt64
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_ConvertToInt64Native
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_ConvertToSingle
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_ConvertToUInt32
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_ConvertToUInt32Native
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_ConvertToUInt64
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_ConvertToUInt64Native
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_Create
-        INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd64, INS_movd64, INS_movss, INS_movsd_simd, // NI_Vector512_CreateScalar
-        INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd64, INS_movd64, INS_movss, INS_movsd_simd, // NI_Vector512_CreateScalarUnsafe
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_CreateSequence
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_Dot
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_Equals
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_EqualsAny
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_ExtractMostSignificantBits
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_Floor
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_FusedMultiplyAdd
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_GetElement
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_movdqu32, INS_movdqu32, INS_vmovdqu64, INS_vmovdqu64, INS_movups, INS_movupd, // NI_Vector512_GetLower
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_movdqu32, INS_movdqu32, INS_vmovdqu64, INS_vmovdqu64, INS_movups, INS_movupd, // NI_Vector512_GetLower128
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_GetUpper
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_GreaterThan
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_GreaterThanAll
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_GreaterThanAny
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_GreaterThanOrEqual
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_GreaterThanOrEqualAll
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_GreaterThanOrEqualAny
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_IsEvenInteger
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_IsFinite
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_IsInfinity
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_IsInteger
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_IsNaN
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_IsNegative
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_IsNegativeInfinity
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_IsNormal
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_IsOddInteger
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_IsPositive
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_IsPositiveInfinity
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_IsSubnormal
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_IsZero
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_LessThan
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_LessThanAll
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_LessThanAny
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_LessThanOrEqual
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_LessThanOrEqualAll
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_LessThanOrEqualAny
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_LoadAligned
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_LoadAlignedNonTemporal
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_LoadUnsafe
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_Max
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_MaxMagnitude
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_MaxMagnitudeNumber
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_MaxNative
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_MaxNumber
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_Min
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_MinMagnitude
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_MinMagnitudeNumber
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_MinNative
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_MinNumber
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_MultiplyAddEstimate
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_Narrow
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_NarrowWithSaturation
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_Round
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_ShiftLeft
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_Shuffle
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_ShuffleNative
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_ShuffleNativeFallback
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_Sqrt
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_StoreAligned
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_StoreAlignedNonTemporal
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_StoreUnsafe
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_SubtractSaturate
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_Sum
-        INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd32, INS_movd64, INS_movd64, INS_movss, INS_movsd_simd, // NI_Vector512_ToScalar
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_Truncate
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_WidenLower
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_WidenUpper
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_WithElement
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_WithLower
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_WithUpper
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_get_AllBitsSet
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_get_E
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_get_Epsilon
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_get_Indices
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_get_NaN
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_get_NegativeInfinity
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_get_NegativeOne
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_get_NegativeZero
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_get_One
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_get_Pi
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_get_PositiveInfinity
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_get_Tau
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_get_Zero
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_op_Addition
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_op_BitwiseAnd
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_op_BitwiseOr
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_op_Division
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_op_Equality
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_op_ExclusiveOr
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_op_Inequality
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_op_LeftShift
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_op_Multiply
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_op_OnesComplement
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_op_RightShift
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_op_Subtraction
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_op_UnaryNegation
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_op_UnaryPlus
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector512_op_UnsignedRightShift
         INS_pabsb, INS_invalid, INS_pabsw, INS_invalid, INS_pabsd, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_X86Base_Abs
         INS_paddb, INS_paddb, INS_paddw, INS_paddw, INS_paddd, INS_paddd, INS_paddq, INS_paddq, INS_addps, INS_addpd, // NI_X86Base_Add
         INS_paddsb, INS_paddusb, INS_paddsw, INS_paddusw, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_X86Base_AddSaturate
@@ -7977,6 +6891,32 @@ public partial struct HWIntrinsicInfo
         INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX512v3_CompressStore
         INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX512v3_Expand
         INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX512v3_ExpandLoad
+        INS_invalid, INS_vpdpbusd, INS_vpdpwssd, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX512v3_MultiplyWideningAndAdd
+        INS_invalid, INS_vpdpbusds, INS_vpdpwssds, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX512v3_MultiplyWideningAndAddSaturate
+        INS_invalid, INS_invalid, INS_invalid, INS_vaddsh, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX10v1_AddScalar
+        INS_invalid, INS_invalid, INS_invalid, INS_vcomish, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX10v1_CompareScalarOrderedEqual
+        INS_invalid, INS_invalid, INS_invalid, INS_vcomish, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX10v1_CompareScalarOrderedGreaterThan
+        INS_invalid, INS_invalid, INS_invalid, INS_vcomish, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX10v1_CompareScalarOrderedGreaterThanOrEqual
+        INS_invalid, INS_invalid, INS_invalid, INS_vcomish, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX10v1_CompareScalarOrderedLessThan
+        INS_invalid, INS_invalid, INS_invalid, INS_vcomish, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX10v1_CompareScalarOrderedLessThanOrEqual
+        INS_invalid, INS_invalid, INS_invalid, INS_vcomish, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX10v1_CompareScalarOrderedNotEqual
+        INS_invalid, INS_invalid, INS_invalid, INS_vucomish, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX10v1_CompareScalarUnorderedEqual
+        INS_invalid, INS_invalid, INS_invalid, INS_vucomish, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX10v1_CompareScalarUnorderedGreaterThan
+        INS_invalid, INS_invalid, INS_invalid, INS_vucomish, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX10v1_CompareScalarUnorderedGreaterThanOrEqual
+        INS_invalid, INS_invalid, INS_invalid, INS_vucomish, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX10v1_CompareScalarUnorderedLessThan
+        INS_invalid, INS_invalid, INS_invalid, INS_vucomish, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX10v1_CompareScalarUnorderedLessThanOrEqual
+        INS_invalid, INS_invalid, INS_invalid, INS_vucomish, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX10v1_CompareScalarUnorderedNotEqual
+        INS_invalid, INS_invalid, INS_invalid, INS_vcvtsh2sd, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX10v1_ConvertScalarToVector128Double
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_vcvtsi2sh32, INS_vcvtusi2sh32, INS_vcvtsi2sh64, INS_vcvtusi2sh64, INS_vcvtss2sh, INS_vcvtsd2sh, // NI_AVX10v1_ConvertScalarToVector128Half
+        INS_invalid, INS_invalid, INS_invalid, INS_vcvtsh2ss, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX10v1_ConvertScalarToVector128Single
+        INS_invalid, INS_invalid, INS_invalid, INS_vdivsh, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX10v1_DivideScalar
+        INS_invalid, INS_invalid, INS_invalid, INS_vfmadd213sh, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX10v1_FusedMultiplyAddScalar
+        INS_invalid, INS_invalid, INS_invalid, INS_vmulsh, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX10v1_MultiplyScalar
+        INS_invalid, INS_invalid, INS_invalid, INS_vrcpsh, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX10v1_ReciprocalScalar
+        INS_invalid, INS_invalid, INS_invalid, INS_vrsqrtsh, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX10v1_ReciprocalSqrtScalar
+        INS_invalid, INS_invalid, INS_invalid, INS_vrndscalesh, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX10v1_RoundScaleScalar
+        INS_invalid, INS_invalid, INS_invalid, INS_vsqrtsh, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX10v1_SqrtScalar
+        INS_invalid, INS_invalid, INS_invalid, INS_vsubsh, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX10v1_SubtractScalar
         INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_vcvtps2iubs, INS_invalid, // NI_AVX10v2_ConvertToByteWithSaturationAndZeroExtendToInt32
         INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_vcvttps2iubs, INS_invalid, // NI_AVX10v2_ConvertToByteWithTruncatedSaturationAndZeroExtendToInt32
         INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_vcvttss2sis32, INS_vcvttsd2sis32, // NI_AVX10v2_ConvertToInt32WithTruncatedSaturation
@@ -8025,6 +6965,8 @@ public partial struct HWIntrinsicInfo
         INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_comiss, INS_comisd, // NI_X86Base_COMIS
         INS_ptest, INS_ptest, INS_ptest, INS_ptest, INS_ptest, INS_ptest, INS_ptest, INS_ptest, INS_invalid, INS_invalid, // NI_X86Base_PTEST
         INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_ucomiss, INS_ucomisd, // NI_X86Base_UCOMIS
+        INS_invalid, INS_invalid, INS_invalid, INS_vcomish, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX10v1_VCOMISH
+        INS_invalid, INS_invalid, INS_invalid, INS_vucomish, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX10v1_VUCOMISH
         INS_ptest, INS_ptest, INS_ptest, INS_ptest, INS_ptest, INS_ptest, INS_ptest, INS_ptest, INS_vtestps, INS_vtestpd, // NI_AVX_PTEST
         INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_pandnd, INS_pandnd, INS_pandnd, INS_pandnd, INS_invalid, INS_invalid, // NI_AVX2_AndNotVector
         INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_andn, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AVX2_AndNotScalar
@@ -8071,266 +7013,6 @@ public partial struct HWIntrinsicInfo
 #endif
 #elif TARGET_ARM64
 #if FEATURE_HW_INTRINSICS
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_Abs
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_AddSaturate
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_AndNot
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_As
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_AsByte
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_AsDouble
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_AsInt16
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_AsInt32
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_AsInt64
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_AsNInt
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_AsNUInt
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_AsSByte
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_AsSingle
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_AsUInt16
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_AsUInt32
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_AsUInt64
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_Ceiling
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_ConditionalSelect
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_ConvertToDouble
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_ConvertToInt32
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_ConvertToInt32Native
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_ConvertToInt64
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_ConvertToInt64Native
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_ConvertToSingle
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_ConvertToUInt32
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_ConvertToUInt32Native
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_ConvertToUInt64
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_ConvertToUInt64Native
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_Create
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_CreateScalar
-        INS_ins, INS_ins, INS_ins, INS_ins, INS_ins, INS_ins, INS_invalid, INS_invalid, INS_fmov, INS_invalid, // NI_Vector64_CreateScalarUnsafe
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_CreateSequence
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_Dot
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_Equals
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_EqualsAny
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_ExtractMostSignificantBits
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_Floor
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_FusedMultiplyAdd
-        INS_smov, INS_umov, INS_smov, INS_umov, INS_smov, INS_umov, INS_umov, INS_umov, INS_dup, INS_dup, // NI_Vector64_GetElement
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_GreaterThan
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_GreaterThanAll
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_GreaterThanAny
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_GreaterThanOrEqual
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_GreaterThanOrEqualAll
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_GreaterThanOrEqualAny
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_IsEvenInteger
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_IsFinite
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_IsInfinity
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_IsInteger
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_IsNaN
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_IsNegative
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_IsNegativeInfinity
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_IsNormal
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_IsOddInteger
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_IsPositive
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_IsPositiveInfinity
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_IsSubnormal
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_IsZero
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_LessThan
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_LessThanAll
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_LessThanAny
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_LessThanOrEqual
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_LessThanOrEqualAll
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_LessThanOrEqualAny
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_LoadAligned
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_LoadAlignedNonTemporal
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_LoadUnsafe
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_Max
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_MaxMagnitude
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_MaxMagnitudeNumber
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_MaxNative
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_MaxNumber
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_Min
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_MinMagnitude
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_MinMagnitudeNumber
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_MinNative
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_MinNumber
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_MultiplyAddEstimate
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_Narrow
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_NarrowWithSaturation
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_Round
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_ShiftLeft
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_Shuffle
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_ShuffleNative
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_ShuffleNativeFallback
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_Sqrt
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_StoreAligned
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_StoreAlignedNonTemporal
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_StoreUnsafe
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_SubtractSaturate
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_Sum
-        INS_smov, INS_umov, INS_smov, INS_umov, INS_smov, INS_umov, INS_umov, INS_umov, INS_dup, INS_dup, // NI_Vector64_ToScalar
-        INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, // NI_Vector64_ToVector128
-        INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, // NI_Vector64_ToVector128Unsafe
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_Truncate
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_WidenLower
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_WidenUpper
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_WithElement
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_get_AllBitsSet
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_get_E
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_get_Epsilon
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_get_Indices
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_get_NaN
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_get_NegativeInfinity
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_get_NegativeOne
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_get_NegativeZero
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_get_One
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_get_Pi
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_get_PositiveInfinity
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_get_Tau
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_get_Zero
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_op_Addition
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_op_BitwiseAnd
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_op_BitwiseOr
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_op_Division
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_op_Equality
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_op_ExclusiveOr
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_op_Inequality
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_op_LeftShift
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_op_Multiply
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_op_OnesComplement
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_op_RightShift
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_op_Subtraction
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_op_UnaryNegation
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_op_UnaryPlus
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector64_op_UnsignedRightShift
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Abs
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AddSaturate
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AndNot
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_As
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsByte
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsDouble
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsInt16
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsInt32
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsInt64
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsNInt
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsNUInt
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsSByte
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsSingle
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsUInt16
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsUInt32
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsUInt64
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsVector
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsVector128
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_mov, INS_invalid, // NI_Vector128_AsVector128Unsafe
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsVector2
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_mov, INS_invalid, // NI_Vector128_AsVector3
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_AsVector4
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Ceiling
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ConditionalSelect
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ConvertToDouble
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ConvertToInt32
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ConvertToInt32Native
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ConvertToInt64
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ConvertToInt64Native
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ConvertToSingle
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ConvertToUInt32
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ConvertToUInt32Native
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ConvertToUInt64
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ConvertToUInt64Native
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Create
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_CreateScalar
-        INS_ins, INS_ins, INS_ins, INS_ins, INS_ins, INS_ins, INS_ins, INS_ins, INS_fmov, INS_fmov, // NI_Vector128_CreateScalarUnsafe
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_CreateSequence
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Dot
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Equals
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_EqualsAny
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ExtractMostSignificantBits
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Floor
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_FusedMultiplyAdd
-        INS_smov, INS_umov, INS_smov, INS_umov, INS_smov, INS_umov, INS_umov, INS_umov, INS_dup, INS_dup, // NI_Vector128_GetElement
-        INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, INS_mov, // NI_Vector128_GetLower
-        INS_ext, INS_ext, INS_ext, INS_ext, INS_ext, INS_ext, INS_ext, INS_ext, INS_ext, INS_ext, // NI_Vector128_GetUpper
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_GreaterThan
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_GreaterThanAll
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_GreaterThanAny
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_GreaterThanOrEqual
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_GreaterThanOrEqualAll
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_GreaterThanOrEqualAny
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_IsEvenInteger
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_IsFinite
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_IsInfinity
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_IsInteger
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_IsNaN
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_IsNegative
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_IsNegativeInfinity
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_IsNormal
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_IsOddInteger
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_IsPositive
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_IsPositiveInfinity
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_IsSubnormal
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_IsZero
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_LessThan
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_LessThanAll
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_LessThanAny
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_LessThanOrEqual
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_LessThanOrEqualAll
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_LessThanOrEqualAny
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_LoadAligned
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_LoadAlignedNonTemporal
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_LoadUnsafe
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Max
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_MaxMagnitude
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_MaxMagnitudeNumber
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_MaxNative
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_MaxNumber
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Min
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_MinMagnitude
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_MinMagnitudeNumber
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_MinNative
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_MinNumber
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_MultiplyAddEstimate
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Narrow
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_NarrowWithSaturation
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Round
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ShiftLeft
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Shuffle
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ShuffleNative
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_ShuffleNativeFallback
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Sqrt
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_StoreAligned
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_StoreAlignedNonTemporal
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_StoreUnsafe
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_SubtractSaturate
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Sum
-        INS_smov, INS_umov, INS_smov, INS_umov, INS_smov, INS_umov, INS_umov, INS_umov, INS_dup, INS_dup, // NI_Vector128_ToScalar
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_Truncate
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_WidenLower
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_WidenUpper
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_WithElement
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_WithLower
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_WithUpper
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_get_AllBitsSet
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_get_E
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_get_Epsilon
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_get_Indices
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_get_NaN
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_get_NegativeInfinity
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_get_NegativeOne
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_get_NegativeZero
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_get_One
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_get_Pi
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_get_PositiveInfinity
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_get_Tau
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_get_Zero
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_Addition
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_BitwiseAnd
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_BitwiseOr
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_Division
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_Equality
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_ExclusiveOr
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_Inequality
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_LeftShift
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_Multiply
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_OnesComplement
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_RightShift
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_Subtraction
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_UnaryNegation
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_UnaryPlus
-        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Vector128_op_UnsignedRightShift
         INS_abs, INS_invalid, INS_abs, INS_invalid, INS_abs, INS_invalid, INS_invalid, INS_invalid, INS_fabs, INS_invalid, // NI_AdvSimd_Abs
         INS_sqabs, INS_invalid, INS_sqabs, INS_invalid, INS_sqabs, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_AdvSimd_AbsSaturate
         INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_fabs, INS_fabs, // NI_AdvSimd_AbsScalar
@@ -8806,6 +7488,29 @@ public partial struct HWIntrinsicInfo
         INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_crc32cx, INS_invalid, INS_invalid, // NI_Crc32_Arm64_ComputeCrc32C
         INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_sdot, INS_udot, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Dp_DotProduct
         INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_sdot, INS_udot, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Dp_DotProductBySelectedQuadruplet
+        INS_invalid, INS_invalid, INS_invalid, INS_fadd, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Fp16_Add
+        INS_invalid, INS_invalid, INS_invalid, INS_frintp, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Fp16_Ceiling
+        INS_invalid, INS_invalid, INS_invalid, INS_fcmp, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Fp16_CompareEqual
+        INS_invalid, INS_invalid, INS_invalid, INS_fcmp, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Fp16_CompareGreaterThan
+        INS_invalid, INS_invalid, INS_invalid, INS_fcmp, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Fp16_CompareGreaterThanOrEqual
+        INS_invalid, INS_invalid, INS_invalid, INS_fcmp, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Fp16_CompareLessThan
+        INS_invalid, INS_invalid, INS_invalid, INS_fcmp, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Fp16_CompareLessThanOrEqual
+        INS_invalid, INS_invalid, INS_invalid, INS_fcmp, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Fp16_CompareNotEqual
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_scvtf, INS_ucvtf, INS_scvtf, INS_ucvtf, INS_invalid, INS_invalid, // NI_Fp16_ConvertToHalf
+        INS_invalid, INS_invalid, INS_invalid, INS_fcvtzs, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Fp16_ConvertToInt32
+        INS_invalid, INS_invalid, INS_invalid, INS_fcvtzs, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Fp16_ConvertToInt64
+        INS_invalid, INS_invalid, INS_invalid, INS_fcvtzu, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Fp16_ConvertToUInt32
+        INS_invalid, INS_invalid, INS_invalid, INS_fcvtzu, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Fp16_ConvertToUInt64
+        INS_invalid, INS_invalid, INS_invalid, INS_fdiv, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Fp16_Divide
+        INS_invalid, INS_invalid, INS_invalid, INS_frintm, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Fp16_Floor
+        INS_invalid, INS_invalid, INS_invalid, INS_fmadd, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Fp16_FusedMultiplyAdd
+        INS_invalid, INS_invalid, INS_invalid, INS_fmul, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Fp16_Multiply
+        INS_invalid, INS_invalid, INS_invalid, INS_frecpe, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Fp16_ReciprocalEstimate
+        INS_invalid, INS_invalid, INS_invalid, INS_frsqrte, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Fp16_ReciprocalSqrtEstimate
+        INS_invalid, INS_invalid, INS_invalid, INS_frintn, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Fp16_RoundToNearest
+        INS_invalid, INS_invalid, INS_invalid, INS_fsqrt, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Fp16_Sqrt
+        INS_invalid, INS_invalid, INS_invalid, INS_fsub, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Fp16_Subtract
+        INS_invalid, INS_invalid, INS_invalid, INS_frintz, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Fp16_Truncate
         INS_invalid, INS_invalid, INS_sqrdmlah, INS_invalid, INS_sqrdmlah, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Rdm_MultiplyRoundedDoublingAndAddSaturateHigh
         INS_invalid, INS_invalid, INS_sqrdmlsh, INS_invalid, INS_sqrdmlsh, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Rdm_MultiplyRoundedDoublingAndSubtractSaturateHigh
         INS_invalid, INS_invalid, INS_sqrdmlah, INS_invalid, INS_sqrdmlah, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Rdm_MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh
@@ -8824,6 +7529,15 @@ public partial struct HWIntrinsicInfo
         INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_sha256h2, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Sha256_HashUpdate2
         INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_sha256su0, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Sha256_ScheduleUpdate0
         INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_sha256su1, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Sha256_ScheduleUpdate1
+        INS_bcax, INS_bcax, INS_bcax, INS_bcax, INS_bcax, INS_bcax, INS_bcax, INS_bcax, INS_invalid, INS_invalid, // NI_Sha3_BitwiseClearXor
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_rax1, INS_invalid, INS_invalid, // NI_Sha3_BitwiseRotateLeftBy1AndXor
+        INS_eor3, INS_eor3, INS_eor3, INS_eor3, INS_eor3, INS_eor3, INS_eor3, INS_eor3, INS_invalid, INS_invalid, // NI_Sha3_Xor
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_xar, INS_invalid, INS_invalid, // NI_Sha3_XorRotateRight
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_sm4e, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Sm4_Encode
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_sm4ekey, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Sm4_KeyUpdate
+        INS_invalid, INS_invalid, INS_invalid, INS_fcvt, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_ArmBase_ConvertToDouble
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_fcvt, INS_fcvt, // NI_ArmBase_ConvertToHalf
+        INS_invalid, INS_invalid, INS_invalid, INS_fcvt, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_ArmBase_ConvertToSingle
 #endif
 #if FEATURE_HW_INTRINSICS
         INS_sve_abs, INS_invalid, INS_sve_abs, INS_invalid, INS_sve_abs, INS_invalid, INS_sve_abs, INS_invalid, INS_sve_fabs, INS_sve_fabs, // NI_Sve_Abs
@@ -9190,6 +7904,16 @@ public partial struct HWIntrinsicInfo
         INS_invalid, INS_invalid, INS_invalid, INS_sve_whilerw, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Sve2_CreateWhileReadAfterWriteMaskUInt16
         INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_sve_whilerw, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Sve2_CreateWhileReadAfterWriteMaskUInt32
         INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_sve_whilerw, INS_invalid, INS_invalid, // NI_Sve2_CreateWhileReadAfterWriteMaskUInt64
+        INS_invalid, INS_sve_whilewr, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Sve2_CreateWhileWriteAfterReadMaskByte
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_sve_whilewr, // NI_Sve2_CreateWhileWriteAfterReadMaskDouble
+        INS_invalid, INS_invalid, INS_sve_whilewr, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Sve2_CreateWhileWriteAfterReadMaskInt16
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_sve_whilewr, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Sve2_CreateWhileWriteAfterReadMaskInt32
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_sve_whilewr, INS_invalid, INS_invalid, INS_invalid, // NI_Sve2_CreateWhileWriteAfterReadMaskInt64
+        INS_sve_whilewr, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Sve2_CreateWhileWriteAfterReadMaskSByte
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_sve_whilewr, INS_invalid, // NI_Sve2_CreateWhileWriteAfterReadMaskSingle
+        INS_invalid, INS_invalid, INS_invalid, INS_sve_whilewr, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Sve2_CreateWhileWriteAfterReadMaskUInt16
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_sve_whilewr, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Sve2_CreateWhileWriteAfterReadMaskUInt32
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_sve_whilewr, INS_invalid, INS_invalid, // NI_Sve2_CreateWhileWriteAfterReadMaskUInt64
         INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_sve_cdot, INS_invalid, INS_sve_cdot, INS_invalid, INS_invalid, INS_invalid, // NI_Sve2_DotProductRotateComplex
         INS_sve_cdot, INS_invalid, INS_sve_cdot, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Sve2_DotProductRotateComplexBySelectedIndex
         INS_sve_shadd, INS_sve_uhadd, INS_sve_shadd, INS_sve_uhadd, INS_sve_shadd, INS_sve_uhadd, INS_sve_shadd, INS_sve_uhadd, INS_invalid, INS_invalid, // NI_Sve2_FusedAddHalving
@@ -9263,6 +7987,10 @@ public partial struct HWIntrinsicInfo
         INS_invalid, INS_invalid, INS_invalid, INS_sve_pmullt, INS_invalid, INS_invalid, INS_invalid, INS_sve_pmullt, INS_invalid, INS_invalid, // NI_Sve2_PolynomialMultiplyWideningOdd
         INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_sve_urecpe, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Sve2_ReciprocalEstimate
         INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_sve_ursqrte, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Sve2_ReciprocalSqrtEstimate
+        INS_sve_sqxtnb, INS_sve_uqxtnb, INS_sve_sqxtnb, INS_sve_uqxtnb, INS_sve_sqxtnb, INS_sve_uqxtnb, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Sve2_SaturatingExtractNarrowingLower
+        INS_sve_sqxtnt, INS_sve_uqxtnt, INS_sve_sqxtnt, INS_sve_uqxtnt, INS_sve_sqxtnt, INS_sve_uqxtnt, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Sve2_SaturatingExtractNarrowingUpper
+        INS_invalid, INS_sve_sqxtunb, INS_invalid, INS_sve_sqxtunb, INS_invalid, INS_sve_sqxtunb, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Sve2_SaturatingExtractUnsignedNarrowingLower
+        INS_invalid, INS_sve_sqxtunt, INS_invalid, INS_sve_sqxtunt, INS_invalid, INS_sve_sqxtunt, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_Sve2_SaturatingExtractUnsignedNarrowingUpper
         INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_sve_stnt1h, INS_sve_stnt1h, INS_sve_stnt1h, INS_sve_stnt1h, INS_invalid, INS_invalid, // NI_Sve2_Scatter16BitNarrowingNonTemporal
         INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_sve_stnt1h, INS_sve_stnt1h, INS_sve_stnt1h, INS_sve_stnt1h, INS_invalid, INS_invalid, // NI_Sve2_Scatter16BitWithByteOffsetsNarrowingNonTemporal
         INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_sve_stnt1w, INS_sve_stnt1w, INS_invalid, INS_invalid, // NI_Sve2_Scatter32BitNarrowingNonTemporal
@@ -9319,6 +8047,9 @@ public partial struct HWIntrinsicInfo
         INS_sve_tbx, INS_sve_tbx, INS_sve_tbx, INS_sve_tbx, INS_sve_tbx, INS_sve_tbx, INS_sve_tbx, INS_sve_tbx, INS_sve_tbx, INS_sve_tbx, // NI_Sve2_VectorTableLookupExtension
         INS_sve_eor3, INS_sve_eor3, INS_sve_eor3, INS_sve_eor3, INS_sve_eor3, INS_sve_eor3, INS_sve_eor3, INS_sve_eor3, INS_invalid, INS_invalid, // NI_Sve2_Xor
         INS_sve_xar, INS_sve_xar, INS_sve_xar, INS_sve_xar, INS_sve_xar, INS_sve_xar, INS_sve_xar, INS_sve_xar, INS_invalid, INS_invalid, // NI_Sve2_XorRotateRight
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_sve_rax1, INS_sve_rax1, INS_invalid, INS_invalid, // NI_SveSha3_BitwiseRotateLeftBy1AndXor
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_sve_sm4e, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_SveSm4_Encode
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_sve_sm4ekey, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_SveSm4_KeyUpdate
         INS_sve_clasta, INS_sve_clasta, INS_sve_clasta, INS_sve_clasta, INS_sve_clasta, INS_sve_clasta, INS_sve_clasta, INS_sve_clasta, INS_sve_clasta, INS_sve_clasta, // NI_Sve_ConditionalExtractAfterLastActiveElementScalar
         INS_sve_clastb, INS_sve_clastb, INS_sve_clastb, INS_sve_clastb, INS_sve_clastb, INS_sve_clastb, INS_sve_clastb, INS_sve_clastb, INS_sve_clastb, INS_sve_clastb, // NI_Sve_ConditionalExtractLastActiveElementScalar
         INS_sve_mov, INS_sve_mov, INS_sve_mov, INS_sve_mov, INS_sve_mov, INS_sve_mov, INS_sve_mov, INS_sve_mov, INS_sve_mov, INS_sve_mov, // NI_Sve_ConvertMaskToVector
@@ -9346,408 +8077,292 @@ public partial struct HWIntrinsicInfo
         INS_sve_trn2, INS_sve_trn2, INS_sve_trn2, INS_sve_trn2, INS_sve_trn2, INS_sve_trn2, INS_sve_trn2, INS_sve_trn2, INS_sve_trn2, INS_sve_trn2, // NI_Sve_TransposeOdd_Predicates
         INS_sve_rev, INS_sve_rev, INS_sve_rev, INS_sve_rev, INS_sve_rev, INS_sve_rev, INS_sve_rev, INS_sve_rev, INS_sve_rev, INS_sve_rev, // NI_Sve_ReverseElement_Predicates
 #endif
+#elif TARGET_WASM
+#if FEATURE_HW_INTRINSICS
+        INS_i8x16_abs, INS_invalid, INS_i16x8_abs, INS_invalid, INS_i32x4_abs, INS_invalid, INS_i64x2_abs, INS_invalid, INS_f32x4_abs, INS_f64x2_abs, // NI_PackedSimd_Abs
+        INS_i8x16_add, INS_i8x16_add, INS_i16x8_add, INS_i16x8_add, INS_i32x4_add, INS_i32x4_add, INS_i64x2_add, INS_i64x2_add, INS_f32x4_add, INS_f64x2_add, // NI_PackedSimd_Add
+        INS_i16x8_extadd_pairwise_s_i8x16, INS_i16x8_extadd_pairwise_u_i8x16, INS_i32x4_extadd_pairwise_s_i16x8, INS_i32x4_extadd_pairwise_u_i16x8, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_PackedSimd_AddPairwiseWidening
+        INS_i8x16_add_sat_s, INS_i8x16_add_sat_u, INS_i16x8_add_sat_s, INS_i16x8_add_sat_u, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_PackedSimd_AddSaturate
+        INS_i8x16_all_true, INS_i8x16_all_true, INS_i16x8_all_true, INS_i16x8_all_true, INS_i32x4_all_true, INS_i32x4_all_true, INS_i64x2_all_true, INS_i64x2_all_true, INS_invalid, INS_invalid, // NI_PackedSimd_AllTrue
+        INS_v128_and, INS_v128_and, INS_v128_and, INS_v128_and, INS_v128_and, INS_v128_and, INS_v128_and, INS_v128_and, INS_v128_and, INS_v128_and, // NI_PackedSimd_And
+        INS_v128_andnot, INS_v128_andnot, INS_v128_andnot, INS_v128_andnot, INS_v128_andnot, INS_v128_andnot, INS_v128_andnot, INS_v128_andnot, INS_v128_andnot, INS_v128_andnot, // NI_PackedSimd_AndNot
+        INS_v128_any_true, INS_v128_any_true, INS_v128_any_true, INS_v128_any_true, INS_v128_any_true, INS_v128_any_true, INS_v128_any_true, INS_v128_any_true, INS_v128_any_true, INS_v128_any_true, // NI_PackedSimd_AnyTrue
+        INS_invalid, INS_i8x16_avgr_u, INS_invalid, INS_i16x8_avgr_u, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_PackedSimd_AverageRounded
+        INS_i8x16_bitmask, INS_i8x16_bitmask, INS_i16x8_bitmask, INS_i16x8_bitmask, INS_i32x4_bitmask, INS_i32x4_bitmask, INS_i64x2_bitmask, INS_i64x2_bitmask, INS_invalid, INS_invalid, // NI_PackedSimd_Bitmask
+        INS_v128_bitselect, INS_v128_bitselect, INS_v128_bitselect, INS_v128_bitselect, INS_v128_bitselect, INS_v128_bitselect, INS_v128_bitselect, INS_v128_bitselect, INS_v128_bitselect, INS_v128_bitselect, // NI_PackedSimd_BitwiseSelect
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_f32x4_ceil, INS_f64x2_ceil, // NI_PackedSimd_Ceiling
+        INS_i8x16_eq, INS_i8x16_eq, INS_i16x8_eq, INS_i16x8_eq, INS_i32x4_eq, INS_i32x4_eq, INS_i64x2_eq, INS_i64x2_eq, INS_f32x4_eq, INS_f64x2_eq, // NI_PackedSimd_CompareEqual
+        INS_i8x16_gt_s, INS_i8x16_gt_u, INS_i16x8_gt_s, INS_i16x8_gt_u, INS_i32x4_gt_s, INS_i32x4_gt_u, INS_i64x2_gt_s, INS_invalid, INS_f32x4_gt, INS_f64x2_gt, // NI_PackedSimd_CompareGreaterThan
+        INS_i8x16_ge_s, INS_i8x16_ge_u, INS_i16x8_ge_s, INS_i16x8_ge_u, INS_i32x4_ge_s, INS_i32x4_ge_u, INS_i64x2_ge_s, INS_invalid, INS_f32x4_ge, INS_f64x2_ge, // NI_PackedSimd_CompareGreaterThanOrEqual
+        INS_i8x16_lt_s, INS_i8x16_lt_u, INS_i16x8_lt_s, INS_i16x8_lt_u, INS_i32x4_lt_s, INS_i32x4_lt_u, INS_i64x2_lt_s, INS_invalid, INS_f32x4_lt, INS_f64x2_lt, // NI_PackedSimd_CompareLessThan
+        INS_i8x16_le_s, INS_i8x16_le_u, INS_i16x8_le_s, INS_i16x8_le_u, INS_i32x4_le_s, INS_i32x4_le_u, INS_i64x2_le_s, INS_invalid, INS_f32x4_le, INS_f64x2_le, // NI_PackedSimd_CompareLessThanOrEqual
+        INS_i8x16_ne, INS_i8x16_ne, INS_i16x8_ne, INS_i16x8_ne, INS_i32x4_ne, INS_i32x4_ne, INS_i64x2_ne, INS_i64x2_ne, INS_f32x4_ne, INS_f64x2_ne, // NI_PackedSimd_CompareNotEqual
+        INS_invalid, INS_invalid, INS_i8x16_narrow_i16x8_s, INS_invalid, INS_i16x8_narrow_i32x4_s, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_PackedSimd_ConvertNarrowingSaturateSigned
+        INS_invalid, INS_invalid, INS_i8x16_narrow_i16x8_u, INS_invalid, INS_i16x8_narrow_i32x4_u, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_PackedSimd_ConvertNarrowingSaturateUnsigned
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_f64x2_convert_low_s_i32x4, INS_f64x2_convert_low_u_i32x4, INS_invalid, INS_invalid, INS_f64x2_promote_low_f32x4, INS_invalid, // NI_PackedSimd_ConvertToDoubleLower
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_i32x4_trunc_sat_s_f32x4, INS_i32x4_trunc_sat_s_f64x2_zero, // NI_PackedSimd_ConvertToInt32Saturate
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_f32x4_convert_s_i32x4, INS_f32x4_convert_u_i32x4, INS_invalid, INS_invalid, INS_invalid, INS_f32x4_demote_f64x2_zero, // NI_PackedSimd_ConvertToSingle
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_i32x4_trunc_sat_u_f32x4, INS_i32x4_trunc_sat_u_f64x2_zero, // NI_PackedSimd_ConvertToUInt32Saturate
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_f32x4_div, INS_f64x2_div, // NI_PackedSimd_Divide
+        INS_invalid, INS_invalid, INS_i32x4_dot_i16x8_s, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_PackedSimd_Dot
+        INS_i8x16_extract_lane_s, INS_i8x16_extract_lane_u, INS_i16x8_extract_lane_s, INS_i16x8_extract_lane_u, INS_i32x4_extract_lane, INS_i32x4_extract_lane, INS_i64x2_extract_lane, INS_i64x2_extract_lane, INS_f32x4_extract_lane, INS_f64x2_extract_lane, // NI_PackedSimd_ExtractScalar
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_f32x4_floor, INS_f64x2_floor, // NI_PackedSimd_Floor
+        INS_v128_load8_lane, INS_v128_load8_lane, INS_v128_load16_lane, INS_v128_load16_lane, INS_v128_load32_lane, INS_v128_load32_lane, INS_v128_load64_lane, INS_v128_load64_lane, INS_v128_load32_lane, INS_v128_load64_lane, // NI_PackedSimd_LoadScalarAndInsert
+        INS_v128_load8_splat, INS_v128_load8_splat, INS_v128_load16_splat, INS_v128_load16_splat, INS_v128_load32_splat, INS_v128_load32_splat, INS_v128_load64_splat, INS_v128_load64_splat, INS_v128_load32_splat, INS_v128_load64_splat, // NI_PackedSimd_LoadScalarAndSplatVector128
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_v128_load32_zero, INS_v128_load32_zero, INS_v128_load64_zero, INS_v128_load64_zero, INS_v128_load32_zero, INS_v128_load64_zero, // NI_PackedSimd_LoadScalarVector128
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_PackedSimd_LoadVector128
+        INS_v128_load8x8_s, INS_v128_load8x8_u, INS_v128_load16x4_s, INS_v128_load16x4_u, INS_v128_load32x2_s, INS_v128_load32x2_u, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_PackedSimd_LoadWideningVector128
+        INS_i8x16_max_s, INS_i8x16_max_u, INS_i16x8_max_s, INS_i16x8_max_u, INS_i32x4_max_s, INS_i32x4_max_u, INS_invalid, INS_invalid, INS_f32x4_max, INS_f64x2_max, // NI_PackedSimd_Max
+        INS_i8x16_min_s, INS_i8x16_min_u, INS_i16x8_min_s, INS_i16x8_min_u, INS_i32x4_min_s, INS_i32x4_min_u, INS_invalid, INS_invalid, INS_f32x4_min, INS_f64x2_min, // NI_PackedSimd_Min
+        INS_invalid, INS_invalid, INS_i16x8_mul, INS_i16x8_mul, INS_i32x4_mul, INS_i32x4_mul, INS_i64x2_mul, INS_i64x2_mul, INS_f32x4_mul, INS_f64x2_mul, // NI_PackedSimd_Multiply
+        INS_invalid, INS_invalid, INS_i16x8_q15mulr_sat_s, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_PackedSimd_MultiplyRoundedSaturateQ15
+        INS_i16x8_extmul_low_s_i8x16, INS_i16x8_extmul_low_u_i8x16, INS_i32x4_extmul_low_s_i16x8, INS_i32x4_extmul_low_u_i16x8, INS_i64x2_extmul_low_s_i32x4, INS_i64x2_extmul_low_u_i32x4, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_PackedSimd_MultiplyWideningLower
+        INS_i16x8_extmul_high_s_i8x16, INS_i16x8_extmul_high_u_i8x16, INS_i32x4_extmul_high_s_i16x8, INS_i32x4_extmul_high_u_i16x8, INS_i64x2_extmul_high_s_i32x4, INS_i64x2_extmul_high_u_i32x4, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_PackedSimd_MultiplyWideningUpper
+        INS_i8x16_neg, INS_i8x16_neg, INS_i16x8_neg, INS_i16x8_neg, INS_i32x4_neg, INS_i32x4_neg, INS_i64x2_neg, INS_i64x2_neg, INS_f32x4_neg, INS_f64x2_neg, // NI_PackedSimd_Negate
+        INS_v128_not, INS_v128_not, INS_v128_not, INS_v128_not, INS_v128_not, INS_v128_not, INS_v128_not, INS_v128_not, INS_v128_not, INS_v128_not, // NI_PackedSimd_Not
+        INS_v128_or, INS_v128_or, INS_v128_or, INS_v128_or, INS_v128_or, INS_v128_or, INS_v128_or, INS_v128_or, INS_v128_or, INS_v128_or, // NI_PackedSimd_Or
+        INS_invalid, INS_i8x16_popcnt, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_PackedSimd_PopCount
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_f32x4_pmax, INS_f64x2_pmax, // NI_PackedSimd_PseudoMax
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_f32x4_pmin, INS_f64x2_pmin, // NI_PackedSimd_PseudoMin
+        INS_i8x16_replace_lane, INS_i8x16_replace_lane, INS_i16x8_replace_lane, INS_i16x8_replace_lane, INS_i32x4_replace_lane, INS_i32x4_replace_lane, INS_i64x2_replace_lane, INS_i64x2_replace_lane, INS_f32x4_replace_lane, INS_f64x2_replace_lane, // NI_PackedSimd_ReplaceScalar
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_f32x4_nearest, INS_f64x2_nearest, // NI_PackedSimd_RoundToNearest
+        INS_i8x16_shl, INS_i8x16_shl, INS_i16x8_shl, INS_i16x8_shl, INS_i32x4_shl, INS_i32x4_shl, INS_i64x2_shl, INS_i64x2_shl, INS_invalid, INS_invalid, // NI_PackedSimd_ShiftLeft
+        INS_i8x16_shr_s, INS_i8x16_shr_s, INS_i16x8_shr_s, INS_i16x8_shr_s, INS_i32x4_shr_s, INS_i32x4_shr_s, INS_i64x2_shr_s, INS_i64x2_shr_s, INS_invalid, INS_invalid, // NI_PackedSimd_ShiftRightArithmetic
+        INS_i8x16_shr_u, INS_i8x16_shr_u, INS_i16x8_shr_u, INS_i16x8_shr_u, INS_i32x4_shr_u, INS_i32x4_shr_u, INS_i64x2_shr_u, INS_i64x2_shr_u, INS_invalid, INS_invalid, // NI_PackedSimd_ShiftRightLogical
+        INS_i8x16_shuffle, INS_i8x16_shuffle, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_PackedSimd_Shuffle
+        INS_i16x8_extend_low_s_i8x16, INS_i16x8_extend_low_s_i8x16, INS_i32x4_extend_low_s_i16x8, INS_i32x4_extend_low_s_i16x8, INS_i64x2_extend_low_s_i32x4, INS_i64x2_extend_low_s_i32x4, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_PackedSimd_SignExtendWideningLower
+        INS_i16x8_extend_high_s_i8x16, INS_i16x8_extend_high_s_i8x16, INS_i32x4_extend_high_s_i16x8, INS_i32x4_extend_high_s_i16x8, INS_i64x2_extend_high_s_i32x4, INS_i64x2_extend_high_s_i32x4, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_PackedSimd_SignExtendWideningUpper
+        INS_i8x16_splat, INS_i8x16_splat, INS_i16x8_splat, INS_i16x8_splat, INS_i32x4_splat, INS_i32x4_splat, INS_i64x2_splat, INS_i64x2_splat, INS_f32x4_splat, INS_f64x2_splat, // NI_PackedSimd_Splat
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_f32x4_sqrt, INS_f64x2_sqrt, // NI_PackedSimd_Sqrt
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_PackedSimd_Store
+        INS_v128_store8_lane, INS_v128_store8_lane, INS_v128_store16_lane, INS_v128_store16_lane, INS_v128_store32_lane, INS_v128_store32_lane, INS_v128_store64_lane, INS_v128_store64_lane, INS_v128_store32_lane, INS_v128_store64_lane, // NI_PackedSimd_StoreSelectedScalar
+        INS_i8x16_sub, INS_i8x16_sub, INS_i16x8_sub, INS_i16x8_sub, INS_i32x4_sub, INS_i32x4_sub, INS_i64x2_sub, INS_i64x2_sub, INS_f32x4_sub, INS_f64x2_sub, // NI_PackedSimd_Subtract
+        INS_i8x16_sub_sat_s, INS_i8x16_sub_sat_u, INS_i16x8_sub_sat_s, INS_i16x8_sub_sat_u, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_PackedSimd_SubtractSaturate
+        INS_i8x16_swizzle, INS_i8x16_swizzle, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_PackedSimd_Swizzle
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_f32x4_trunc, INS_f64x2_trunc, // NI_PackedSimd_Truncate
+        INS_v128_xor, INS_v128_xor, INS_v128_xor, INS_v128_xor, INS_v128_xor, INS_v128_xor, INS_v128_xor, INS_v128_xor, INS_v128_xor, INS_v128_xor, // NI_PackedSimd_Xor
+        INS_i16x8_extend_low_u_i8x16, INS_i16x8_extend_low_u_i8x16, INS_i32x4_extend_low_u_i16x8, INS_i32x4_extend_low_u_i16x8, INS_i64x2_extend_low_u_i32x4, INS_i64x2_extend_low_u_i32x4, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_PackedSimd_ZeroExtendWideningLower
+        INS_i16x8_extend_high_u_i8x16, INS_i16x8_extend_high_u_i8x16, INS_i32x4_extend_high_u_i16x8, INS_i32x4_extend_high_u_i16x8, INS_i64x2_extend_high_u_i32x4, INS_i64x2_extend_high_u_i32x4, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_PackedSimd_ZeroExtendWideningUpper
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_WasmBase_LeadingZeroCount
+        INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, INS_invalid, // NI_WasmBase_TrailingZeroCount
 #endif
+#else
+#error Unsupported platform
+#endif
+#endif
+
     ];
 
     private static ReadOnlySpan<CORINFO_InstructionSet> s_instructionSets => [
+#if FEATURE_HW_INTRINSICS
+        InstructionSet_Vector, // NI_Vector_Abs
+        InstructionSet_Vector, // NI_Vector_AddSaturate
+        InstructionSet_Vector, // NI_Vector_AndNot
+        InstructionSet_Vector, // NI_Vector_As
+        InstructionSet_Vector, // NI_Vector_AsByte
+        InstructionSet_Vector, // NI_Vector_AsDouble
+        InstructionSet_Vector, // NI_Vector_AsInt16
+        InstructionSet_Vector, // NI_Vector_AsInt32
+        InstructionSet_Vector, // NI_Vector_AsInt64
+        InstructionSet_Vector, // NI_Vector_AsNInt
+        InstructionSet_Vector, // NI_Vector_AsNUInt
+        InstructionSet_Vector, // NI_Vector_AsSByte
+        InstructionSet_Vector, // NI_Vector_AsSingle
+        InstructionSet_Vector, // NI_Vector_AsUInt16
+        InstructionSet_Vector, // NI_Vector_AsUInt32
+        InstructionSet_Vector, // NI_Vector_AsUInt64
+        InstructionSet_Vector, // NI_Vector_AsVector
+        InstructionSet_Vector, // NI_Vector_AsVector128
+#if TARGET_XARCH
+        InstructionSet_Vector, // NI_Vector_AsVector128Unsafe
+        InstructionSet_Vector, // NI_Vector_AsVector2
+        InstructionSet_Vector, // NI_Vector_AsVector256
+        InstructionSet_Vector, // NI_Vector_AsVector3
+#elif TARGET_ARM64
+        InstructionSet_Vector, // NI_Vector_AsVector128Unsafe
+        InstructionSet_Vector, // NI_Vector_AsVector2
+        InstructionSet_Vector, // NI_Vector_AsVector3
+#else
+        InstructionSet_Vector, // NI_Vector_AsVector128Unsafe
+        InstructionSet_Vector, // NI_Vector_AsVector2
+        InstructionSet_Vector, // NI_Vector_AsVector3
+#endif
+        InstructionSet_Vector, // NI_Vector_AsVector4
+#if TARGET_XARCH
+        InstructionSet_Vector, // NI_Vector_AsVector512
+#endif
+        InstructionSet_Vector, // NI_Vector_Ceiling
+        InstructionSet_Vector, // NI_Vector_ConcatLowerLower
+        InstructionSet_Vector, // NI_Vector_ConcatLowerUpper
+        InstructionSet_Vector, // NI_Vector_ConcatUpperLower
+        InstructionSet_Vector, // NI_Vector_ConcatUpperUpper
+#if TARGET_XARCH
+        InstructionSet_Vector, // NI_Vector_ConditionalSelect
+#else
+        InstructionSet_Vector, // NI_Vector_ConditionalSelect
+#endif
+        InstructionSet_Vector, // NI_Vector_ConvertToDouble
+        InstructionSet_Vector, // NI_Vector_ConvertToInt32
+        InstructionSet_Vector, // NI_Vector_ConvertToInt32Native
+        InstructionSet_Vector, // NI_Vector_ConvertToInt64
+        InstructionSet_Vector, // NI_Vector_ConvertToInt64Native
+        InstructionSet_Vector, // NI_Vector_ConvertToSingle
+        InstructionSet_Vector, // NI_Vector_ConvertToUInt32
+        InstructionSet_Vector, // NI_Vector_ConvertToUInt32Native
+        InstructionSet_Vector, // NI_Vector_ConvertToUInt64
+        InstructionSet_Vector, // NI_Vector_ConvertToUInt64Native
+        InstructionSet_Vector, // NI_Vector_Create
+        InstructionSet_Vector, // NI_Vector_CreateAlternatingSequence
+        InstructionSet_Vector, // NI_Vector_CreateGeometricSequence
+#if TARGET_XARCH
+        InstructionSet_Vector, // NI_Vector_CreateScalar
+        InstructionSet_Vector, // NI_Vector_CreateScalarUnsafe
+#elif TARGET_ARM64
+        InstructionSet_Vector, // NI_Vector_CreateScalar
+        InstructionSet_Vector, // NI_Vector_CreateScalarUnsafe
+#else
+        InstructionSet_Vector, // NI_Vector_CreateScalar
+        InstructionSet_Vector, // NI_Vector_CreateScalarUnsafe
+#endif
+        InstructionSet_Vector, // NI_Vector_CreateSequence
+        InstructionSet_Vector, // NI_Vector_Dot
+        InstructionSet_Vector, // NI_Vector_Equals
+        InstructionSet_Vector, // NI_Vector_EqualsAny
+        InstructionSet_Vector, // NI_Vector_ExtractMostSignificantBits
+        InstructionSet_Vector, // NI_Vector_Floor
+        InstructionSet_Vector, // NI_Vector_FusedMultiplyAdd
+#if TARGET_XARCH
+        InstructionSet_Vector, // NI_Vector_GetElement
+#elif TARGET_ARM64
+        InstructionSet_Vector, // NI_Vector_GetElement
+#else
+        InstructionSet_Vector, // NI_Vector_GetElement
+#endif
+#if TARGET_XARCH
+        InstructionSet_Vector, // NI_Vector_GetLower
+        InstructionSet_Vector, // NI_Vector_GetLower128
+        InstructionSet_Vector, // NI_Vector_GetUpper
+#elif TARGET_ARM64
+        InstructionSet_Vector, // NI_Vector_GetLower
+        InstructionSet_Vector, // NI_Vector_GetUpper
+#endif
+        InstructionSet_Vector, // NI_Vector_GreaterThan
+        InstructionSet_Vector, // NI_Vector_GreaterThanAll
+        InstructionSet_Vector, // NI_Vector_GreaterThanAny
+        InstructionSet_Vector, // NI_Vector_GreaterThanOrEqual
+        InstructionSet_Vector, // NI_Vector_GreaterThanOrEqualAll
+        InstructionSet_Vector, // NI_Vector_GreaterThanOrEqualAny
+        InstructionSet_Vector, // NI_Vector_IsEvenInteger
+        InstructionSet_Vector, // NI_Vector_IsFinite
+        InstructionSet_Vector, // NI_Vector_IsInfinity
+        InstructionSet_Vector, // NI_Vector_IsInteger
+        InstructionSet_Vector, // NI_Vector_IsNaN
+        InstructionSet_Vector, // NI_Vector_IsNegative
+        InstructionSet_Vector, // NI_Vector_IsNegativeInfinity
+        InstructionSet_Vector, // NI_Vector_IsNormal
+        InstructionSet_Vector, // NI_Vector_IsOddInteger
+        InstructionSet_Vector, // NI_Vector_IsPositive
+        InstructionSet_Vector, // NI_Vector_IsPositiveInfinity
+        InstructionSet_Vector, // NI_Vector_IsSubnormal
+        InstructionSet_Vector, // NI_Vector_IsZero
+        InstructionSet_Vector, // NI_Vector_LessThan
+        InstructionSet_Vector, // NI_Vector_LessThanAll
+        InstructionSet_Vector, // NI_Vector_LessThanAny
+        InstructionSet_Vector, // NI_Vector_LessThanOrEqual
+        InstructionSet_Vector, // NI_Vector_LessThanOrEqualAll
+        InstructionSet_Vector, // NI_Vector_LessThanOrEqualAny
+        InstructionSet_Vector, // NI_Vector_LoadAligned
+        InstructionSet_Vector, // NI_Vector_LoadAlignedNonTemporal
+        InstructionSet_Vector, // NI_Vector_LoadUnsafe
+        InstructionSet_Vector, // NI_Vector_Max
+        InstructionSet_Vector, // NI_Vector_MaxMagnitude
+        InstructionSet_Vector, // NI_Vector_MaxMagnitudeNumber
+        InstructionSet_Vector, // NI_Vector_MaxNative
+        InstructionSet_Vector, // NI_Vector_MaxNumber
+        InstructionSet_Vector, // NI_Vector_Min
+        InstructionSet_Vector, // NI_Vector_MinMagnitude
+        InstructionSet_Vector, // NI_Vector_MinMagnitudeNumber
+        InstructionSet_Vector, // NI_Vector_MinNative
+        InstructionSet_Vector, // NI_Vector_MinNumber
+        InstructionSet_Vector, // NI_Vector_MultiplyAddEstimate
+        InstructionSet_Vector, // NI_Vector_Narrow
+#if TARGET_ARM64
+        InstructionSet_Vector, // NI_Vector_NarrowWithSaturation
+#else
+        InstructionSet_Vector, // NI_Vector_NarrowWithSaturation
+#endif
+        InstructionSet_Vector, // NI_Vector_Reverse
+        InstructionSet_Vector, // NI_Vector_Round
+        InstructionSet_Vector, // NI_Vector_ShiftLeft
+        InstructionSet_Vector, // NI_Vector_Shuffle
+        InstructionSet_Vector, // NI_Vector_ShuffleNative
+        InstructionSet_Vector, // NI_Vector_ShuffleNativeFallback
+        InstructionSet_Vector, // NI_Vector_Sqrt
+        InstructionSet_Vector, // NI_Vector_StoreAligned
+        InstructionSet_Vector, // NI_Vector_StoreAlignedNonTemporal
+        InstructionSet_Vector, // NI_Vector_StoreUnsafe
+        InstructionSet_Vector, // NI_Vector_SubtractSaturate
+        InstructionSet_Vector, // NI_Vector_Sum
+#if TARGET_XARCH
+        InstructionSet_Vector, // NI_Vector_ToScalar
+        InstructionSet_Vector, // NI_Vector_ToVector256
+        InstructionSet_Vector, // NI_Vector_ToVector256Unsafe
+        InstructionSet_Vector, // NI_Vector_ToVector512
+        InstructionSet_Vector, // NI_Vector_ToVector512Unsafe
+#elif TARGET_ARM64
+        InstructionSet_Vector, // NI_Vector_ToScalar
+        InstructionSet_Vector, // NI_Vector_ToVector128
+        InstructionSet_Vector, // NI_Vector_ToVector128Unsafe
+#else
+        InstructionSet_Vector, // NI_Vector_ToScalar
+#endif
+        InstructionSet_Vector, // NI_Vector_Truncate
+        InstructionSet_Vector, // NI_Vector_UnzipEven
+        InstructionSet_Vector, // NI_Vector_UnzipOdd
+        InstructionSet_Vector, // NI_Vector_WidenLower
+        InstructionSet_Vector, // NI_Vector_WidenUpper
+        InstructionSet_Vector, // NI_Vector_WithElement
+#if TARGET_XARCH || TARGET_ARM64
+        InstructionSet_Vector, // NI_Vector_WithLower
+        InstructionSet_Vector, // NI_Vector_WithUpper
+#endif
+        InstructionSet_Vector, // NI_Vector_ZipLower
+        InstructionSet_Vector, // NI_Vector_ZipUpper
+        InstructionSet_Vector, // NI_Vector_get_AllBitsSet
+        InstructionSet_Vector, // NI_Vector_get_E
+        InstructionSet_Vector, // NI_Vector_get_Epsilon
+        InstructionSet_Vector, // NI_Vector_get_Indices
+        InstructionSet_Vector, // NI_Vector_get_NaN
+        InstructionSet_Vector, // NI_Vector_get_NegativeInfinity
+        InstructionSet_Vector, // NI_Vector_get_NegativeOne
+        InstructionSet_Vector, // NI_Vector_get_NegativeZero
+        InstructionSet_Vector, // NI_Vector_get_One
+        InstructionSet_Vector, // NI_Vector_get_Pi
+        InstructionSet_Vector, // NI_Vector_get_PositiveInfinity
+        InstructionSet_Vector, // NI_Vector_get_SignSequence
+        InstructionSet_Vector, // NI_Vector_get_Tau
+        InstructionSet_Vector, // NI_Vector_get_Zero
+        InstructionSet_Vector, // NI_Vector_op_Addition
+        InstructionSet_Vector, // NI_Vector_op_BitwiseAnd
+        InstructionSet_Vector, // NI_Vector_op_BitwiseOr
+#if TARGET_XARCH
+        InstructionSet_Vector, // NI_Vector_op_Division
+#else
+        InstructionSet_Vector, // NI_Vector_op_Division
+#endif
+        InstructionSet_Vector, // NI_Vector_op_Equality
+        InstructionSet_Vector, // NI_Vector_op_ExclusiveOr
+        InstructionSet_Vector, // NI_Vector_op_Inequality
+        InstructionSet_Vector, // NI_Vector_op_LeftShift
+        InstructionSet_Vector, // NI_Vector_op_Multiply
+        InstructionSet_Vector, // NI_Vector_op_OnesComplement
+        InstructionSet_Vector, // NI_Vector_op_RightShift
+        InstructionSet_Vector, // NI_Vector_op_Subtraction
+        InstructionSet_Vector, // NI_Vector_op_UnaryNegation
+        InstructionSet_Vector, // NI_Vector_op_UnaryPlus
+        InstructionSet_Vector, // NI_Vector_op_UnsignedRightShift
 #if TARGET_XARCH
 #if FEATURE_HW_INTRINSICS
-        InstructionSet_Vector128, // NI_Vector128_Abs
-        InstructionSet_Vector128, // NI_Vector128_AddSaturate
-        InstructionSet_Vector128, // NI_Vector128_AndNot
-        InstructionSet_Vector128, // NI_Vector128_As
-        InstructionSet_Vector128, // NI_Vector128_AsByte
-        InstructionSet_Vector128, // NI_Vector128_AsDouble
-        InstructionSet_Vector128, // NI_Vector128_AsInt16
-        InstructionSet_Vector128, // NI_Vector128_AsInt32
-        InstructionSet_Vector128, // NI_Vector128_AsInt64
-        InstructionSet_Vector128, // NI_Vector128_AsNInt
-        InstructionSet_Vector128, // NI_Vector128_AsNUInt
-        InstructionSet_Vector128, // NI_Vector128_AsSByte
-        InstructionSet_Vector128, // NI_Vector128_AsSingle
-        InstructionSet_Vector128, // NI_Vector128_AsUInt16
-        InstructionSet_Vector128, // NI_Vector128_AsUInt32
-        InstructionSet_Vector128, // NI_Vector128_AsUInt64
-        InstructionSet_Vector128, // NI_Vector128_AsVector
-        InstructionSet_Vector128, // NI_Vector128_AsVector128
-        InstructionSet_Vector128, // NI_Vector128_AsVector128Unsafe
-        InstructionSet_Vector128, // NI_Vector128_AsVector2
-        InstructionSet_Vector128, // NI_Vector128_AsVector3
-        InstructionSet_Vector128, // NI_Vector128_AsVector4
-        InstructionSet_Vector128, // NI_Vector128_Ceiling
-        InstructionSet_Vector128, // NI_Vector128_ConditionalSelect
-        InstructionSet_Vector128, // NI_Vector128_ConvertToDouble
-        InstructionSet_Vector128, // NI_Vector128_ConvertToInt32
-        InstructionSet_Vector128, // NI_Vector128_ConvertToInt32Native
-        InstructionSet_Vector128, // NI_Vector128_ConvertToInt64
-        InstructionSet_Vector128, // NI_Vector128_ConvertToInt64Native
-        InstructionSet_Vector128, // NI_Vector128_ConvertToSingle
-        InstructionSet_Vector128, // NI_Vector128_ConvertToUInt32
-        InstructionSet_Vector128, // NI_Vector128_ConvertToUInt32Native
-        InstructionSet_Vector128, // NI_Vector128_ConvertToUInt64
-        InstructionSet_Vector128, // NI_Vector128_ConvertToUInt64Native
-        InstructionSet_Vector128, // NI_Vector128_Create
-        InstructionSet_Vector128, // NI_Vector128_CreateScalar
-        InstructionSet_Vector128, // NI_Vector128_CreateScalarUnsafe
-        InstructionSet_Vector128, // NI_Vector128_CreateSequence
-        InstructionSet_Vector128, // NI_Vector128_Dot
-        InstructionSet_Vector128, // NI_Vector128_Equals
-        InstructionSet_Vector128, // NI_Vector128_EqualsAny
-        InstructionSet_Vector128, // NI_Vector128_ExtractMostSignificantBits
-        InstructionSet_Vector128, // NI_Vector128_Floor
-        InstructionSet_Vector128, // NI_Vector128_FusedMultiplyAdd
-        InstructionSet_Vector128, // NI_Vector128_GetElement
-        InstructionSet_Vector128, // NI_Vector128_GreaterThan
-        InstructionSet_Vector128, // NI_Vector128_GreaterThanAll
-        InstructionSet_Vector128, // NI_Vector128_GreaterThanAny
-        InstructionSet_Vector128, // NI_Vector128_GreaterThanOrEqual
-        InstructionSet_Vector128, // NI_Vector128_GreaterThanOrEqualAll
-        InstructionSet_Vector128, // NI_Vector128_GreaterThanOrEqualAny
-        InstructionSet_Vector128, // NI_Vector128_IsEvenInteger
-        InstructionSet_Vector128, // NI_Vector128_IsFinite
-        InstructionSet_Vector128, // NI_Vector128_IsInfinity
-        InstructionSet_Vector128, // NI_Vector128_IsInteger
-        InstructionSet_Vector128, // NI_Vector128_IsNaN
-        InstructionSet_Vector128, // NI_Vector128_IsNegative
-        InstructionSet_Vector128, // NI_Vector128_IsNegativeInfinity
-        InstructionSet_Vector128, // NI_Vector128_IsNormal
-        InstructionSet_Vector128, // NI_Vector128_IsOddInteger
-        InstructionSet_Vector128, // NI_Vector128_IsPositive
-        InstructionSet_Vector128, // NI_Vector128_IsPositiveInfinity
-        InstructionSet_Vector128, // NI_Vector128_IsSubnormal
-        InstructionSet_Vector128, // NI_Vector128_IsZero
-        InstructionSet_Vector128, // NI_Vector128_LessThan
-        InstructionSet_Vector128, // NI_Vector128_LessThanAll
-        InstructionSet_Vector128, // NI_Vector128_LessThanAny
-        InstructionSet_Vector128, // NI_Vector128_LessThanOrEqual
-        InstructionSet_Vector128, // NI_Vector128_LessThanOrEqualAll
-        InstructionSet_Vector128, // NI_Vector128_LessThanOrEqualAny
-        InstructionSet_Vector128, // NI_Vector128_LoadAligned
-        InstructionSet_Vector128, // NI_Vector128_LoadAlignedNonTemporal
-        InstructionSet_Vector128, // NI_Vector128_LoadUnsafe
-        InstructionSet_Vector128, // NI_Vector128_Max
-        InstructionSet_Vector128, // NI_Vector128_MaxMagnitude
-        InstructionSet_Vector128, // NI_Vector128_MaxMagnitudeNumber
-        InstructionSet_Vector128, // NI_Vector128_MaxNative
-        InstructionSet_Vector128, // NI_Vector128_MaxNumber
-        InstructionSet_Vector128, // NI_Vector128_Min
-        InstructionSet_Vector128, // NI_Vector128_MinMagnitude
-        InstructionSet_Vector128, // NI_Vector128_MinMagnitudeNumber
-        InstructionSet_Vector128, // NI_Vector128_MinNative
-        InstructionSet_Vector128, // NI_Vector128_MinNumber
-        InstructionSet_Vector128, // NI_Vector128_MultiplyAddEstimate
-        InstructionSet_Vector128, // NI_Vector128_Narrow
-        InstructionSet_Vector128, // NI_Vector128_NarrowWithSaturation
-        InstructionSet_Vector128, // NI_Vector128_Round
-        InstructionSet_Vector128, // NI_Vector128_ShiftLeft
-        InstructionSet_Vector128, // NI_Vector128_Shuffle
-        InstructionSet_Vector128, // NI_Vector128_ShuffleNative
-        InstructionSet_Vector128, // NI_Vector128_ShuffleNativeFallback
-        InstructionSet_Vector128, // NI_Vector128_Sqrt
-        InstructionSet_Vector128, // NI_Vector128_StoreAligned
-        InstructionSet_Vector128, // NI_Vector128_StoreAlignedNonTemporal
-        InstructionSet_Vector128, // NI_Vector128_StoreUnsafe
-        InstructionSet_Vector128, // NI_Vector128_SubtractSaturate
-        InstructionSet_Vector128, // NI_Vector128_Sum
-        InstructionSet_Vector128, // NI_Vector128_ToScalar
-        InstructionSet_Vector128, // NI_Vector128_ToVector256
-        InstructionSet_Vector128, // NI_Vector128_ToVector256Unsafe
-        InstructionSet_Vector128, // NI_Vector128_ToVector512
-        InstructionSet_Vector128, // NI_Vector128_Truncate
-        InstructionSet_Vector128, // NI_Vector128_WidenLower
-        InstructionSet_Vector128, // NI_Vector128_WidenUpper
-        InstructionSet_Vector128, // NI_Vector128_WithElement
-        InstructionSet_Vector128, // NI_Vector128_get_AllBitsSet
-        InstructionSet_Vector128, // NI_Vector128_get_E
-        InstructionSet_Vector128, // NI_Vector128_get_Epsilon
-        InstructionSet_Vector128, // NI_Vector128_get_Indices
-        InstructionSet_Vector128, // NI_Vector128_get_NaN
-        InstructionSet_Vector128, // NI_Vector128_get_NegativeInfinity
-        InstructionSet_Vector128, // NI_Vector128_get_NegativeOne
-        InstructionSet_Vector128, // NI_Vector128_get_NegativeZero
-        InstructionSet_Vector128, // NI_Vector128_get_One
-        InstructionSet_Vector128, // NI_Vector128_get_Pi
-        InstructionSet_Vector128, // NI_Vector128_get_PositiveInfinity
-        InstructionSet_Vector128, // NI_Vector128_get_Tau
-        InstructionSet_Vector128, // NI_Vector128_get_Zero
-        InstructionSet_Vector128, // NI_Vector128_op_Addition
-        InstructionSet_Vector128, // NI_Vector128_op_BitwiseAnd
-        InstructionSet_Vector128, // NI_Vector128_op_BitwiseOr
-        InstructionSet_Vector128, // NI_Vector128_op_Division
-        InstructionSet_Vector128, // NI_Vector128_op_Equality
-        InstructionSet_Vector128, // NI_Vector128_op_ExclusiveOr
-        InstructionSet_Vector128, // NI_Vector128_op_Inequality
-        InstructionSet_Vector128, // NI_Vector128_op_LeftShift
-        InstructionSet_Vector128, // NI_Vector128_op_Multiply
-        InstructionSet_Vector128, // NI_Vector128_op_OnesComplement
-        InstructionSet_Vector128, // NI_Vector128_op_RightShift
-        InstructionSet_Vector128, // NI_Vector128_op_Subtraction
-        InstructionSet_Vector128, // NI_Vector128_op_UnaryNegation
-        InstructionSet_Vector128, // NI_Vector128_op_UnaryPlus
-        InstructionSet_Vector128, // NI_Vector128_op_UnsignedRightShift
-        InstructionSet_Vector256, // NI_Vector256_Abs
-        InstructionSet_Vector256, // NI_Vector256_AddSaturate
-        InstructionSet_Vector256, // NI_Vector256_AndNot
-        InstructionSet_Vector256, // NI_Vector256_As
-        InstructionSet_Vector256, // NI_Vector256_AsByte
-        InstructionSet_Vector256, // NI_Vector256_AsDouble
-        InstructionSet_Vector256, // NI_Vector256_AsInt16
-        InstructionSet_Vector256, // NI_Vector256_AsInt32
-        InstructionSet_Vector256, // NI_Vector256_AsInt64
-        InstructionSet_Vector256, // NI_Vector256_AsNInt
-        InstructionSet_Vector256, // NI_Vector256_AsNUInt
-        InstructionSet_Vector256, // NI_Vector256_AsSByte
-        InstructionSet_Vector256, // NI_Vector256_AsSingle
-        InstructionSet_Vector256, // NI_Vector256_AsUInt16
-        InstructionSet_Vector256, // NI_Vector256_AsUInt32
-        InstructionSet_Vector256, // NI_Vector256_AsUInt64
-        InstructionSet_Vector256, // NI_Vector256_AsVector
-        InstructionSet_Vector256, // NI_Vector256_AsVector256
-        InstructionSet_Vector256, // NI_Vector256_Ceiling
-        InstructionSet_Vector256, // NI_Vector256_ConditionalSelect
-        InstructionSet_Vector256, // NI_Vector256_ConvertToDouble
-        InstructionSet_Vector256, // NI_Vector256_ConvertToInt32
-        InstructionSet_Vector256, // NI_Vector256_ConvertToInt32Native
-        InstructionSet_Vector256, // NI_Vector256_ConvertToInt64
-        InstructionSet_Vector256, // NI_Vector256_ConvertToInt64Native
-        InstructionSet_Vector256, // NI_Vector256_ConvertToSingle
-        InstructionSet_Vector256, // NI_Vector256_ConvertToUInt32
-        InstructionSet_Vector256, // NI_Vector256_ConvertToUInt32Native
-        InstructionSet_Vector256, // NI_Vector256_ConvertToUInt64
-        InstructionSet_Vector256, // NI_Vector256_ConvertToUInt64Native
-        InstructionSet_Vector256, // NI_Vector256_Create
-        InstructionSet_Vector256, // NI_Vector256_CreateScalar
-        InstructionSet_Vector256, // NI_Vector256_CreateScalarUnsafe
-        InstructionSet_Vector256, // NI_Vector256_CreateSequence
-        InstructionSet_Vector256, // NI_Vector256_Dot
-        InstructionSet_Vector256, // NI_Vector256_Equals
-        InstructionSet_Vector256, // NI_Vector256_EqualsAny
-        InstructionSet_Vector256, // NI_Vector256_ExtractMostSignificantBits
-        InstructionSet_Vector256, // NI_Vector256_Floor
-        InstructionSet_Vector256, // NI_Vector256_FusedMultiplyAdd
-        InstructionSet_Vector256, // NI_Vector256_GetElement
-        InstructionSet_Vector256, // NI_Vector256_GetLower
-        InstructionSet_Vector256, // NI_Vector256_GetUpper
-        InstructionSet_Vector256, // NI_Vector256_GreaterThan
-        InstructionSet_Vector256, // NI_Vector256_GreaterThanAll
-        InstructionSet_Vector256, // NI_Vector256_GreaterThanAny
-        InstructionSet_Vector256, // NI_Vector256_GreaterThanOrEqual
-        InstructionSet_Vector256, // NI_Vector256_GreaterThanOrEqualAll
-        InstructionSet_Vector256, // NI_Vector256_GreaterThanOrEqualAny
-        InstructionSet_Vector256, // NI_Vector256_IsEvenInteger
-        InstructionSet_Vector256, // NI_Vector256_IsFinite
-        InstructionSet_Vector256, // NI_Vector256_IsInfinity
-        InstructionSet_Vector256, // NI_Vector256_IsInteger
-        InstructionSet_Vector256, // NI_Vector256_IsNaN
-        InstructionSet_Vector256, // NI_Vector256_IsNegative
-        InstructionSet_Vector256, // NI_Vector256_IsNegativeInfinity
-        InstructionSet_Vector256, // NI_Vector256_IsNormal
-        InstructionSet_Vector256, // NI_Vector256_IsOddInteger
-        InstructionSet_Vector256, // NI_Vector256_IsPositive
-        InstructionSet_Vector256, // NI_Vector256_IsPositiveInfinity
-        InstructionSet_Vector256, // NI_Vector256_IsSubnormal
-        InstructionSet_Vector256, // NI_Vector256_IsZero
-        InstructionSet_Vector256, // NI_Vector256_LessThan
-        InstructionSet_Vector256, // NI_Vector256_LessThanAll
-        InstructionSet_Vector256, // NI_Vector256_LessThanAny
-        InstructionSet_Vector256, // NI_Vector256_LessThanOrEqual
-        InstructionSet_Vector256, // NI_Vector256_LessThanOrEqualAll
-        InstructionSet_Vector256, // NI_Vector256_LessThanOrEqualAny
-        InstructionSet_Vector256, // NI_Vector256_LoadAligned
-        InstructionSet_Vector256, // NI_Vector256_LoadAlignedNonTemporal
-        InstructionSet_Vector256, // NI_Vector256_LoadUnsafe
-        InstructionSet_Vector256, // NI_Vector256_Max
-        InstructionSet_Vector256, // NI_Vector256_MaxMagnitude
-        InstructionSet_Vector256, // NI_Vector256_MaxMagnitudeNumber
-        InstructionSet_Vector256, // NI_Vector256_MaxNative
-        InstructionSet_Vector256, // NI_Vector256_MaxNumber
-        InstructionSet_Vector256, // NI_Vector256_Min
-        InstructionSet_Vector256, // NI_Vector256_MinMagnitude
-        InstructionSet_Vector256, // NI_Vector256_MinMagnitudeNumber
-        InstructionSet_Vector256, // NI_Vector256_MinNative
-        InstructionSet_Vector256, // NI_Vector256_MinNumber
-        InstructionSet_Vector256, // NI_Vector256_MultiplyAddEstimate
-        InstructionSet_Vector256, // NI_Vector256_Narrow
-        InstructionSet_Vector256, // NI_Vector256_NarrowWithSaturation
-        InstructionSet_Vector256, // NI_Vector256_Round
-        InstructionSet_Vector256, // NI_Vector256_ShiftLeft
-        InstructionSet_Vector256, // NI_Vector256_Shuffle
-        InstructionSet_Vector256, // NI_Vector256_ShuffleNative
-        InstructionSet_Vector256, // NI_Vector256_ShuffleNativeFallback
-        InstructionSet_Vector256, // NI_Vector256_Sqrt
-        InstructionSet_Vector256, // NI_Vector256_StoreAligned
-        InstructionSet_Vector256, // NI_Vector256_StoreAlignedNonTemporal
-        InstructionSet_Vector256, // NI_Vector256_StoreUnsafe
-        InstructionSet_Vector256, // NI_Vector256_SubtractSaturate
-        InstructionSet_Vector256, // NI_Vector256_Sum
-        InstructionSet_Vector256, // NI_Vector256_ToScalar
-        InstructionSet_Vector256, // NI_Vector256_ToVector512
-        InstructionSet_Vector256, // NI_Vector256_ToVector512Unsafe
-        InstructionSet_Vector256, // NI_Vector256_Truncate
-        InstructionSet_Vector256, // NI_Vector256_WidenLower
-        InstructionSet_Vector256, // NI_Vector256_WidenUpper
-        InstructionSet_Vector256, // NI_Vector256_WithElement
-        InstructionSet_Vector256, // NI_Vector256_WithLower
-        InstructionSet_Vector256, // NI_Vector256_WithUpper
-        InstructionSet_Vector256, // NI_Vector256_get_AllBitsSet
-        InstructionSet_Vector256, // NI_Vector256_get_E
-        InstructionSet_Vector256, // NI_Vector256_get_Epsilon
-        InstructionSet_Vector256, // NI_Vector256_get_Indices
-        InstructionSet_Vector256, // NI_Vector256_get_NaN
-        InstructionSet_Vector256, // NI_Vector256_get_NegativeInfinity
-        InstructionSet_Vector256, // NI_Vector256_get_NegativeOne
-        InstructionSet_Vector256, // NI_Vector256_get_NegativeZero
-        InstructionSet_Vector256, // NI_Vector256_get_One
-        InstructionSet_Vector256, // NI_Vector256_get_Pi
-        InstructionSet_Vector256, // NI_Vector256_get_PositiveInfinity
-        InstructionSet_Vector256, // NI_Vector256_get_Tau
-        InstructionSet_Vector256, // NI_Vector256_get_Zero
-        InstructionSet_Vector256, // NI_Vector256_op_Addition
-        InstructionSet_Vector256, // NI_Vector256_op_BitwiseAnd
-        InstructionSet_Vector256, // NI_Vector256_op_BitwiseOr
-        InstructionSet_Vector256, // NI_Vector256_op_Division
-        InstructionSet_Vector256, // NI_Vector256_op_Equality
-        InstructionSet_Vector256, // NI_Vector256_op_ExclusiveOr
-        InstructionSet_Vector256, // NI_Vector256_op_Inequality
-        InstructionSet_Vector256, // NI_Vector256_op_LeftShift
-        InstructionSet_Vector256, // NI_Vector256_op_Multiply
-        InstructionSet_Vector256, // NI_Vector256_op_OnesComplement
-        InstructionSet_Vector256, // NI_Vector256_op_RightShift
-        InstructionSet_Vector256, // NI_Vector256_op_Subtraction
-        InstructionSet_Vector256, // NI_Vector256_op_UnaryNegation
-        InstructionSet_Vector256, // NI_Vector256_op_UnaryPlus
-        InstructionSet_Vector256, // NI_Vector256_op_UnsignedRightShift
-        InstructionSet_Vector512, // NI_Vector512_Abs
-        InstructionSet_Vector512, // NI_Vector512_AddSaturate
-        InstructionSet_Vector512, // NI_Vector512_AndNot
-        InstructionSet_Vector512, // NI_Vector512_As
-        InstructionSet_Vector512, // NI_Vector512_AsByte
-        InstructionSet_Vector512, // NI_Vector512_AsDouble
-        InstructionSet_Vector512, // NI_Vector512_AsInt16
-        InstructionSet_Vector512, // NI_Vector512_AsInt32
-        InstructionSet_Vector512, // NI_Vector512_AsInt64
-        InstructionSet_Vector512, // NI_Vector512_AsNInt
-        InstructionSet_Vector512, // NI_Vector512_AsNUInt
-        InstructionSet_Vector512, // NI_Vector512_AsSByte
-        InstructionSet_Vector512, // NI_Vector512_AsSingle
-        InstructionSet_Vector512, // NI_Vector512_AsUInt16
-        InstructionSet_Vector512, // NI_Vector512_AsUInt32
-        InstructionSet_Vector512, // NI_Vector512_AsUInt64
-        InstructionSet_Vector512, // NI_Vector512_AsVector
-        InstructionSet_Vector512, // NI_Vector512_AsVector512
-        InstructionSet_Vector512, // NI_Vector512_Ceiling
-        InstructionSet_Vector512, // NI_Vector512_ConditionalSelect
-        InstructionSet_Vector512, // NI_Vector512_ConvertToDouble
-        InstructionSet_Vector512, // NI_Vector512_ConvertToInt32
-        InstructionSet_Vector512, // NI_Vector512_ConvertToInt32Native
-        InstructionSet_Vector512, // NI_Vector512_ConvertToInt64
-        InstructionSet_Vector512, // NI_Vector512_ConvertToInt64Native
-        InstructionSet_Vector512, // NI_Vector512_ConvertToSingle
-        InstructionSet_Vector512, // NI_Vector512_ConvertToUInt32
-        InstructionSet_Vector512, // NI_Vector512_ConvertToUInt32Native
-        InstructionSet_Vector512, // NI_Vector512_ConvertToUInt64
-        InstructionSet_Vector512, // NI_Vector512_ConvertToUInt64Native
-        InstructionSet_Vector512, // NI_Vector512_Create
-        InstructionSet_Vector512, // NI_Vector512_CreateScalar
-        InstructionSet_Vector512, // NI_Vector512_CreateScalarUnsafe
-        InstructionSet_Vector512, // NI_Vector512_CreateSequence
-        InstructionSet_Vector512, // NI_Vector512_Dot
-        InstructionSet_Vector512, // NI_Vector512_Equals
-        InstructionSet_Vector512, // NI_Vector512_EqualsAny
-        InstructionSet_Vector512, // NI_Vector512_ExtractMostSignificantBits
-        InstructionSet_Vector512, // NI_Vector512_Floor
-        InstructionSet_Vector512, // NI_Vector512_FusedMultiplyAdd
-        InstructionSet_Vector512, // NI_Vector512_GetElement
-        InstructionSet_Vector512, // NI_Vector512_GetLower
-        InstructionSet_Vector512, // NI_Vector512_GetLower128
-        InstructionSet_Vector512, // NI_Vector512_GetUpper
-        InstructionSet_Vector512, // NI_Vector512_GreaterThan
-        InstructionSet_Vector512, // NI_Vector512_GreaterThanAll
-        InstructionSet_Vector512, // NI_Vector512_GreaterThanAny
-        InstructionSet_Vector512, // NI_Vector512_GreaterThanOrEqual
-        InstructionSet_Vector512, // NI_Vector512_GreaterThanOrEqualAll
-        InstructionSet_Vector512, // NI_Vector512_GreaterThanOrEqualAny
-        InstructionSet_Vector512, // NI_Vector512_IsEvenInteger
-        InstructionSet_Vector512, // NI_Vector512_IsFinite
-        InstructionSet_Vector512, // NI_Vector512_IsInfinity
-        InstructionSet_Vector512, // NI_Vector512_IsInteger
-        InstructionSet_Vector512, // NI_Vector512_IsNaN
-        InstructionSet_Vector512, // NI_Vector512_IsNegative
-        InstructionSet_Vector512, // NI_Vector512_IsNegativeInfinity
-        InstructionSet_Vector512, // NI_Vector512_IsNormal
-        InstructionSet_Vector512, // NI_Vector512_IsOddInteger
-        InstructionSet_Vector512, // NI_Vector512_IsPositive
-        InstructionSet_Vector512, // NI_Vector512_IsPositiveInfinity
-        InstructionSet_Vector512, // NI_Vector512_IsSubnormal
-        InstructionSet_Vector512, // NI_Vector512_IsZero
-        InstructionSet_Vector512, // NI_Vector512_LessThan
-        InstructionSet_Vector512, // NI_Vector512_LessThanAll
-        InstructionSet_Vector512, // NI_Vector512_LessThanAny
-        InstructionSet_Vector512, // NI_Vector512_LessThanOrEqual
-        InstructionSet_Vector512, // NI_Vector512_LessThanOrEqualAll
-        InstructionSet_Vector512, // NI_Vector512_LessThanOrEqualAny
-        InstructionSet_Vector512, // NI_Vector512_LoadAligned
-        InstructionSet_Vector512, // NI_Vector512_LoadAlignedNonTemporal
-        InstructionSet_Vector512, // NI_Vector512_LoadUnsafe
-        InstructionSet_Vector512, // NI_Vector512_Max
-        InstructionSet_Vector512, // NI_Vector512_MaxMagnitude
-        InstructionSet_Vector512, // NI_Vector512_MaxMagnitudeNumber
-        InstructionSet_Vector512, // NI_Vector512_MaxNative
-        InstructionSet_Vector512, // NI_Vector512_MaxNumber
-        InstructionSet_Vector512, // NI_Vector512_Min
-        InstructionSet_Vector512, // NI_Vector512_MinMagnitude
-        InstructionSet_Vector512, // NI_Vector512_MinMagnitudeNumber
-        InstructionSet_Vector512, // NI_Vector512_MinNative
-        InstructionSet_Vector512, // NI_Vector512_MinNumber
-        InstructionSet_Vector512, // NI_Vector512_MultiplyAddEstimate
-        InstructionSet_Vector512, // NI_Vector512_Narrow
-        InstructionSet_Vector512, // NI_Vector512_NarrowWithSaturation
-        InstructionSet_Vector512, // NI_Vector512_Round
-        InstructionSet_Vector512, // NI_Vector512_ShiftLeft
-        InstructionSet_Vector512, // NI_Vector512_Shuffle
-        InstructionSet_Vector512, // NI_Vector512_ShuffleNative
-        InstructionSet_Vector512, // NI_Vector512_ShuffleNativeFallback
-        InstructionSet_Vector512, // NI_Vector512_Sqrt
-        InstructionSet_Vector512, // NI_Vector512_StoreAligned
-        InstructionSet_Vector512, // NI_Vector512_StoreAlignedNonTemporal
-        InstructionSet_Vector512, // NI_Vector512_StoreUnsafe
-        InstructionSet_Vector512, // NI_Vector512_SubtractSaturate
-        InstructionSet_Vector512, // NI_Vector512_Sum
-        InstructionSet_Vector512, // NI_Vector512_ToScalar
-        InstructionSet_Vector512, // NI_Vector512_Truncate
-        InstructionSet_Vector512, // NI_Vector512_WidenLower
-        InstructionSet_Vector512, // NI_Vector512_WidenUpper
-        InstructionSet_Vector512, // NI_Vector512_WithElement
-        InstructionSet_Vector512, // NI_Vector512_WithLower
-        InstructionSet_Vector512, // NI_Vector512_WithUpper
-        InstructionSet_Vector512, // NI_Vector512_get_AllBitsSet
-        InstructionSet_Vector512, // NI_Vector512_get_E
-        InstructionSet_Vector512, // NI_Vector512_get_Epsilon
-        InstructionSet_Vector512, // NI_Vector512_get_Indices
-        InstructionSet_Vector512, // NI_Vector512_get_NaN
-        InstructionSet_Vector512, // NI_Vector512_get_NegativeInfinity
-        InstructionSet_Vector512, // NI_Vector512_get_NegativeOne
-        InstructionSet_Vector512, // NI_Vector512_get_NegativeZero
-        InstructionSet_Vector512, // NI_Vector512_get_One
-        InstructionSet_Vector512, // NI_Vector512_get_Pi
-        InstructionSet_Vector512, // NI_Vector512_get_PositiveInfinity
-        InstructionSet_Vector512, // NI_Vector512_get_Tau
-        InstructionSet_Vector512, // NI_Vector512_get_Zero
-        InstructionSet_Vector512, // NI_Vector512_op_Addition
-        InstructionSet_Vector512, // NI_Vector512_op_BitwiseAnd
-        InstructionSet_Vector512, // NI_Vector512_op_BitwiseOr
-        InstructionSet_Vector512, // NI_Vector512_op_Division
-        InstructionSet_Vector512, // NI_Vector512_op_Equality
-        InstructionSet_Vector512, // NI_Vector512_op_ExclusiveOr
-        InstructionSet_Vector512, // NI_Vector512_op_Inequality
-        InstructionSet_Vector512, // NI_Vector512_op_LeftShift
-        InstructionSet_Vector512, // NI_Vector512_op_Multiply
-        InstructionSet_Vector512, // NI_Vector512_op_OnesComplement
-        InstructionSet_Vector512, // NI_Vector512_op_RightShift
-        InstructionSet_Vector512, // NI_Vector512_op_Subtraction
-        InstructionSet_Vector512, // NI_Vector512_op_UnaryNegation
-        InstructionSet_Vector512, // NI_Vector512_op_UnaryPlus
-        InstructionSet_Vector512, // NI_Vector512_op_UnsignedRightShift
         InstructionSet_X86Base, // NI_X86Base_Abs
         InstructionSet_X86Base, // NI_X86Base_Add
         InstructionSet_X86Base, // NI_X86Base_AddSaturate
@@ -10312,6 +8927,32 @@ public partial struct HWIntrinsicInfo
         InstructionSet_AVX512v3, // NI_AVX512v3_CompressStore
         InstructionSet_AVX512v3, // NI_AVX512v3_Expand
         InstructionSet_AVX512v3, // NI_AVX512v3_ExpandLoad
+        InstructionSet_AVX512v3, // NI_AVX512v3_MultiplyWideningAndAdd
+        InstructionSet_AVX512v3, // NI_AVX512v3_MultiplyWideningAndAddSaturate
+        InstructionSet_AVX10v1, // NI_AVX10v1_AddScalar
+        InstructionSet_AVX10v1, // NI_AVX10v1_CompareScalarOrderedEqual
+        InstructionSet_AVX10v1, // NI_AVX10v1_CompareScalarOrderedGreaterThan
+        InstructionSet_AVX10v1, // NI_AVX10v1_CompareScalarOrderedGreaterThanOrEqual
+        InstructionSet_AVX10v1, // NI_AVX10v1_CompareScalarOrderedLessThan
+        InstructionSet_AVX10v1, // NI_AVX10v1_CompareScalarOrderedLessThanOrEqual
+        InstructionSet_AVX10v1, // NI_AVX10v1_CompareScalarOrderedNotEqual
+        InstructionSet_AVX10v1, // NI_AVX10v1_CompareScalarUnorderedEqual
+        InstructionSet_AVX10v1, // NI_AVX10v1_CompareScalarUnorderedGreaterThan
+        InstructionSet_AVX10v1, // NI_AVX10v1_CompareScalarUnorderedGreaterThanOrEqual
+        InstructionSet_AVX10v1, // NI_AVX10v1_CompareScalarUnorderedLessThan
+        InstructionSet_AVX10v1, // NI_AVX10v1_CompareScalarUnorderedLessThanOrEqual
+        InstructionSet_AVX10v1, // NI_AVX10v1_CompareScalarUnorderedNotEqual
+        InstructionSet_AVX10v1, // NI_AVX10v1_ConvertScalarToVector128Double
+        InstructionSet_AVX10v1, // NI_AVX10v1_ConvertScalarToVector128Half
+        InstructionSet_AVX10v1, // NI_AVX10v1_ConvertScalarToVector128Single
+        InstructionSet_AVX10v1, // NI_AVX10v1_DivideScalar
+        InstructionSet_AVX10v1, // NI_AVX10v1_FusedMultiplyAddScalar
+        InstructionSet_AVX10v1, // NI_AVX10v1_MultiplyScalar
+        InstructionSet_AVX10v1, // NI_AVX10v1_ReciprocalScalar
+        InstructionSet_AVX10v1, // NI_AVX10v1_ReciprocalSqrtScalar
+        InstructionSet_AVX10v1, // NI_AVX10v1_RoundScaleScalar
+        InstructionSet_AVX10v1, // NI_AVX10v1_SqrtScalar
+        InstructionSet_AVX10v1, // NI_AVX10v1_SubtractScalar
         InstructionSet_AVX10v2, // NI_AVX10v2_ConvertToByteWithSaturationAndZeroExtendToInt32
         InstructionSet_AVX10v2, // NI_AVX10v2_ConvertToByteWithTruncatedSaturationAndZeroExtendToInt32
         InstructionSet_AVX10v2, // NI_AVX10v2_ConvertToInt32WithTruncatedSaturation
@@ -10360,6 +9001,8 @@ public partial struct HWIntrinsicInfo
         InstructionSet_X86Base, // NI_X86Base_COMIS
         InstructionSet_X86Base, // NI_X86Base_PTEST
         InstructionSet_X86Base, // NI_X86Base_UCOMIS
+        InstructionSet_AVX10v1, // NI_AVX10v1_VCOMISH
+        InstructionSet_AVX10v1, // NI_AVX10v1_VUCOMISH
         InstructionSet_AVX, // NI_AVX_PTEST
         InstructionSet_AVX2, // NI_AVX2_AndNotVector
         InstructionSet_AVX2, // NI_AVX2_AndNotScalar
@@ -10406,266 +9049,6 @@ public partial struct HWIntrinsicInfo
 #endif
 #elif TARGET_ARM64
 #if FEATURE_HW_INTRINSICS
-        InstructionSet_Vector64, // NI_Vector64_Abs
-        InstructionSet_Vector64, // NI_Vector64_AddSaturate
-        InstructionSet_Vector64, // NI_Vector64_AndNot
-        InstructionSet_Vector64, // NI_Vector64_As
-        InstructionSet_Vector64, // NI_Vector64_AsByte
-        InstructionSet_Vector64, // NI_Vector64_AsDouble
-        InstructionSet_Vector64, // NI_Vector64_AsInt16
-        InstructionSet_Vector64, // NI_Vector64_AsInt32
-        InstructionSet_Vector64, // NI_Vector64_AsInt64
-        InstructionSet_Vector64, // NI_Vector64_AsNInt
-        InstructionSet_Vector64, // NI_Vector64_AsNUInt
-        InstructionSet_Vector64, // NI_Vector64_AsSByte
-        InstructionSet_Vector64, // NI_Vector64_AsSingle
-        InstructionSet_Vector64, // NI_Vector64_AsUInt16
-        InstructionSet_Vector64, // NI_Vector64_AsUInt32
-        InstructionSet_Vector64, // NI_Vector64_AsUInt64
-        InstructionSet_Vector64, // NI_Vector64_Ceiling
-        InstructionSet_Vector64, // NI_Vector64_ConditionalSelect
-        InstructionSet_Vector64, // NI_Vector64_ConvertToDouble
-        InstructionSet_Vector64, // NI_Vector64_ConvertToInt32
-        InstructionSet_Vector64, // NI_Vector64_ConvertToInt32Native
-        InstructionSet_Vector64, // NI_Vector64_ConvertToInt64
-        InstructionSet_Vector64, // NI_Vector64_ConvertToInt64Native
-        InstructionSet_Vector64, // NI_Vector64_ConvertToSingle
-        InstructionSet_Vector64, // NI_Vector64_ConvertToUInt32
-        InstructionSet_Vector64, // NI_Vector64_ConvertToUInt32Native
-        InstructionSet_Vector64, // NI_Vector64_ConvertToUInt64
-        InstructionSet_Vector64, // NI_Vector64_ConvertToUInt64Native
-        InstructionSet_Vector64, // NI_Vector64_Create
-        InstructionSet_Vector64, // NI_Vector64_CreateScalar
-        InstructionSet_Vector64, // NI_Vector64_CreateScalarUnsafe
-        InstructionSet_Vector64, // NI_Vector64_CreateSequence
-        InstructionSet_Vector64, // NI_Vector64_Dot
-        InstructionSet_Vector64, // NI_Vector64_Equals
-        InstructionSet_Vector64, // NI_Vector64_EqualsAny
-        InstructionSet_Vector64, // NI_Vector64_ExtractMostSignificantBits
-        InstructionSet_Vector64, // NI_Vector64_Floor
-        InstructionSet_Vector64, // NI_Vector64_FusedMultiplyAdd
-        InstructionSet_Vector64, // NI_Vector64_GetElement
-        InstructionSet_Vector64, // NI_Vector64_GreaterThan
-        InstructionSet_Vector64, // NI_Vector64_GreaterThanAll
-        InstructionSet_Vector64, // NI_Vector64_GreaterThanAny
-        InstructionSet_Vector64, // NI_Vector64_GreaterThanOrEqual
-        InstructionSet_Vector64, // NI_Vector64_GreaterThanOrEqualAll
-        InstructionSet_Vector64, // NI_Vector64_GreaterThanOrEqualAny
-        InstructionSet_Vector64, // NI_Vector64_IsEvenInteger
-        InstructionSet_Vector64, // NI_Vector64_IsFinite
-        InstructionSet_Vector64, // NI_Vector64_IsInfinity
-        InstructionSet_Vector64, // NI_Vector64_IsInteger
-        InstructionSet_Vector64, // NI_Vector64_IsNaN
-        InstructionSet_Vector64, // NI_Vector64_IsNegative
-        InstructionSet_Vector64, // NI_Vector64_IsNegativeInfinity
-        InstructionSet_Vector64, // NI_Vector64_IsNormal
-        InstructionSet_Vector64, // NI_Vector64_IsOddInteger
-        InstructionSet_Vector64, // NI_Vector64_IsPositive
-        InstructionSet_Vector64, // NI_Vector64_IsPositiveInfinity
-        InstructionSet_Vector64, // NI_Vector64_IsSubnormal
-        InstructionSet_Vector64, // NI_Vector64_IsZero
-        InstructionSet_Vector64, // NI_Vector64_LessThan
-        InstructionSet_Vector64, // NI_Vector64_LessThanAll
-        InstructionSet_Vector64, // NI_Vector64_LessThanAny
-        InstructionSet_Vector64, // NI_Vector64_LessThanOrEqual
-        InstructionSet_Vector64, // NI_Vector64_LessThanOrEqualAll
-        InstructionSet_Vector64, // NI_Vector64_LessThanOrEqualAny
-        InstructionSet_Vector64, // NI_Vector64_LoadAligned
-        InstructionSet_Vector64, // NI_Vector64_LoadAlignedNonTemporal
-        InstructionSet_Vector64, // NI_Vector64_LoadUnsafe
-        InstructionSet_Vector64, // NI_Vector64_Max
-        InstructionSet_Vector64, // NI_Vector64_MaxMagnitude
-        InstructionSet_Vector64, // NI_Vector64_MaxMagnitudeNumber
-        InstructionSet_Vector64, // NI_Vector64_MaxNative
-        InstructionSet_Vector64, // NI_Vector64_MaxNumber
-        InstructionSet_Vector64, // NI_Vector64_Min
-        InstructionSet_Vector64, // NI_Vector64_MinMagnitude
-        InstructionSet_Vector64, // NI_Vector64_MinMagnitudeNumber
-        InstructionSet_Vector64, // NI_Vector64_MinNative
-        InstructionSet_Vector64, // NI_Vector64_MinNumber
-        InstructionSet_Vector64, // NI_Vector64_MultiplyAddEstimate
-        InstructionSet_Vector64, // NI_Vector64_Narrow
-        InstructionSet_Vector64, // NI_Vector64_NarrowWithSaturation
-        InstructionSet_Vector64, // NI_Vector64_Round
-        InstructionSet_Vector64, // NI_Vector64_ShiftLeft
-        InstructionSet_Vector64, // NI_Vector64_Shuffle
-        InstructionSet_Vector64, // NI_Vector64_ShuffleNative
-        InstructionSet_Vector64, // NI_Vector64_ShuffleNativeFallback
-        InstructionSet_Vector64, // NI_Vector64_Sqrt
-        InstructionSet_Vector64, // NI_Vector64_StoreAligned
-        InstructionSet_Vector64, // NI_Vector64_StoreAlignedNonTemporal
-        InstructionSet_Vector64, // NI_Vector64_StoreUnsafe
-        InstructionSet_Vector64, // NI_Vector64_SubtractSaturate
-        InstructionSet_Vector64, // NI_Vector64_Sum
-        InstructionSet_Vector64, // NI_Vector64_ToScalar
-        InstructionSet_Vector64, // NI_Vector64_ToVector128
-        InstructionSet_Vector64, // NI_Vector64_ToVector128Unsafe
-        InstructionSet_Vector64, // NI_Vector64_Truncate
-        InstructionSet_Vector64, // NI_Vector64_WidenLower
-        InstructionSet_Vector64, // NI_Vector64_WidenUpper
-        InstructionSet_Vector64, // NI_Vector64_WithElement
-        InstructionSet_Vector64, // NI_Vector64_get_AllBitsSet
-        InstructionSet_Vector64, // NI_Vector64_get_E
-        InstructionSet_Vector64, // NI_Vector64_get_Epsilon
-        InstructionSet_Vector64, // NI_Vector64_get_Indices
-        InstructionSet_Vector64, // NI_Vector64_get_NaN
-        InstructionSet_Vector64, // NI_Vector64_get_NegativeInfinity
-        InstructionSet_Vector64, // NI_Vector64_get_NegativeOne
-        InstructionSet_Vector64, // NI_Vector64_get_NegativeZero
-        InstructionSet_Vector64, // NI_Vector64_get_One
-        InstructionSet_Vector64, // NI_Vector64_get_Pi
-        InstructionSet_Vector64, // NI_Vector64_get_PositiveInfinity
-        InstructionSet_Vector64, // NI_Vector64_get_Tau
-        InstructionSet_Vector64, // NI_Vector64_get_Zero
-        InstructionSet_Vector64, // NI_Vector64_op_Addition
-        InstructionSet_Vector64, // NI_Vector64_op_BitwiseAnd
-        InstructionSet_Vector64, // NI_Vector64_op_BitwiseOr
-        InstructionSet_Vector64, // NI_Vector64_op_Division
-        InstructionSet_Vector64, // NI_Vector64_op_Equality
-        InstructionSet_Vector64, // NI_Vector64_op_ExclusiveOr
-        InstructionSet_Vector64, // NI_Vector64_op_Inequality
-        InstructionSet_Vector64, // NI_Vector64_op_LeftShift
-        InstructionSet_Vector64, // NI_Vector64_op_Multiply
-        InstructionSet_Vector64, // NI_Vector64_op_OnesComplement
-        InstructionSet_Vector64, // NI_Vector64_op_RightShift
-        InstructionSet_Vector64, // NI_Vector64_op_Subtraction
-        InstructionSet_Vector64, // NI_Vector64_op_UnaryNegation
-        InstructionSet_Vector64, // NI_Vector64_op_UnaryPlus
-        InstructionSet_Vector64, // NI_Vector64_op_UnsignedRightShift
-        InstructionSet_Vector128, // NI_Vector128_Abs
-        InstructionSet_Vector128, // NI_Vector128_AddSaturate
-        InstructionSet_Vector128, // NI_Vector128_AndNot
-        InstructionSet_Vector128, // NI_Vector128_As
-        InstructionSet_Vector128, // NI_Vector128_AsByte
-        InstructionSet_Vector128, // NI_Vector128_AsDouble
-        InstructionSet_Vector128, // NI_Vector128_AsInt16
-        InstructionSet_Vector128, // NI_Vector128_AsInt32
-        InstructionSet_Vector128, // NI_Vector128_AsInt64
-        InstructionSet_Vector128, // NI_Vector128_AsNInt
-        InstructionSet_Vector128, // NI_Vector128_AsNUInt
-        InstructionSet_Vector128, // NI_Vector128_AsSByte
-        InstructionSet_Vector128, // NI_Vector128_AsSingle
-        InstructionSet_Vector128, // NI_Vector128_AsUInt16
-        InstructionSet_Vector128, // NI_Vector128_AsUInt32
-        InstructionSet_Vector128, // NI_Vector128_AsUInt64
-        InstructionSet_Vector128, // NI_Vector128_AsVector
-        InstructionSet_Vector128, // NI_Vector128_AsVector128
-        InstructionSet_Vector128, // NI_Vector128_AsVector128Unsafe
-        InstructionSet_Vector128, // NI_Vector128_AsVector2
-        InstructionSet_Vector128, // NI_Vector128_AsVector3
-        InstructionSet_Vector128, // NI_Vector128_AsVector4
-        InstructionSet_Vector128, // NI_Vector128_Ceiling
-        InstructionSet_Vector128, // NI_Vector128_ConditionalSelect
-        InstructionSet_Vector128, // NI_Vector128_ConvertToDouble
-        InstructionSet_Vector128, // NI_Vector128_ConvertToInt32
-        InstructionSet_Vector128, // NI_Vector128_ConvertToInt32Native
-        InstructionSet_Vector128, // NI_Vector128_ConvertToInt64
-        InstructionSet_Vector128, // NI_Vector128_ConvertToInt64Native
-        InstructionSet_Vector128, // NI_Vector128_ConvertToSingle
-        InstructionSet_Vector128, // NI_Vector128_ConvertToUInt32
-        InstructionSet_Vector128, // NI_Vector128_ConvertToUInt32Native
-        InstructionSet_Vector128, // NI_Vector128_ConvertToUInt64
-        InstructionSet_Vector128, // NI_Vector128_ConvertToUInt64Native
-        InstructionSet_Vector128, // NI_Vector128_Create
-        InstructionSet_Vector128, // NI_Vector128_CreateScalar
-        InstructionSet_Vector128, // NI_Vector128_CreateScalarUnsafe
-        InstructionSet_Vector128, // NI_Vector128_CreateSequence
-        InstructionSet_Vector128, // NI_Vector128_Dot
-        InstructionSet_Vector128, // NI_Vector128_Equals
-        InstructionSet_Vector128, // NI_Vector128_EqualsAny
-        InstructionSet_Vector128, // NI_Vector128_ExtractMostSignificantBits
-        InstructionSet_Vector128, // NI_Vector128_Floor
-        InstructionSet_Vector128, // NI_Vector128_FusedMultiplyAdd
-        InstructionSet_Vector128, // NI_Vector128_GetElement
-        InstructionSet_Vector128, // NI_Vector128_GetLower
-        InstructionSet_Vector128, // NI_Vector128_GetUpper
-        InstructionSet_Vector128, // NI_Vector128_GreaterThan
-        InstructionSet_Vector128, // NI_Vector128_GreaterThanAll
-        InstructionSet_Vector128, // NI_Vector128_GreaterThanAny
-        InstructionSet_Vector128, // NI_Vector128_GreaterThanOrEqual
-        InstructionSet_Vector128, // NI_Vector128_GreaterThanOrEqualAll
-        InstructionSet_Vector128, // NI_Vector128_GreaterThanOrEqualAny
-        InstructionSet_Vector128, // NI_Vector128_IsEvenInteger
-        InstructionSet_Vector128, // NI_Vector128_IsFinite
-        InstructionSet_Vector128, // NI_Vector128_IsInfinity
-        InstructionSet_Vector128, // NI_Vector128_IsInteger
-        InstructionSet_Vector128, // NI_Vector128_IsNaN
-        InstructionSet_Vector128, // NI_Vector128_IsNegative
-        InstructionSet_Vector128, // NI_Vector128_IsNegativeInfinity
-        InstructionSet_Vector128, // NI_Vector128_IsNormal
-        InstructionSet_Vector128, // NI_Vector128_IsOddInteger
-        InstructionSet_Vector128, // NI_Vector128_IsPositive
-        InstructionSet_Vector128, // NI_Vector128_IsPositiveInfinity
-        InstructionSet_Vector128, // NI_Vector128_IsSubnormal
-        InstructionSet_Vector128, // NI_Vector128_IsZero
-        InstructionSet_Vector128, // NI_Vector128_LessThan
-        InstructionSet_Vector128, // NI_Vector128_LessThanAll
-        InstructionSet_Vector128, // NI_Vector128_LessThanAny
-        InstructionSet_Vector128, // NI_Vector128_LessThanOrEqual
-        InstructionSet_Vector128, // NI_Vector128_LessThanOrEqualAll
-        InstructionSet_Vector128, // NI_Vector128_LessThanOrEqualAny
-        InstructionSet_Vector128, // NI_Vector128_LoadAligned
-        InstructionSet_Vector128, // NI_Vector128_LoadAlignedNonTemporal
-        InstructionSet_Vector128, // NI_Vector128_LoadUnsafe
-        InstructionSet_Vector128, // NI_Vector128_Max
-        InstructionSet_Vector128, // NI_Vector128_MaxMagnitude
-        InstructionSet_Vector128, // NI_Vector128_MaxMagnitudeNumber
-        InstructionSet_Vector128, // NI_Vector128_MaxNative
-        InstructionSet_Vector128, // NI_Vector128_MaxNumber
-        InstructionSet_Vector128, // NI_Vector128_Min
-        InstructionSet_Vector128, // NI_Vector128_MinMagnitude
-        InstructionSet_Vector128, // NI_Vector128_MinMagnitudeNumber
-        InstructionSet_Vector128, // NI_Vector128_MinNative
-        InstructionSet_Vector128, // NI_Vector128_MinNumber
-        InstructionSet_Vector128, // NI_Vector128_MultiplyAddEstimate
-        InstructionSet_Vector128, // NI_Vector128_Narrow
-        InstructionSet_Vector128, // NI_Vector128_NarrowWithSaturation
-        InstructionSet_Vector128, // NI_Vector128_Round
-        InstructionSet_Vector128, // NI_Vector128_ShiftLeft
-        InstructionSet_Vector128, // NI_Vector128_Shuffle
-        InstructionSet_Vector128, // NI_Vector128_ShuffleNative
-        InstructionSet_Vector128, // NI_Vector128_ShuffleNativeFallback
-        InstructionSet_Vector128, // NI_Vector128_Sqrt
-        InstructionSet_Vector128, // NI_Vector128_StoreAligned
-        InstructionSet_Vector128, // NI_Vector128_StoreAlignedNonTemporal
-        InstructionSet_Vector128, // NI_Vector128_StoreUnsafe
-        InstructionSet_Vector128, // NI_Vector128_SubtractSaturate
-        InstructionSet_Vector128, // NI_Vector128_Sum
-        InstructionSet_Vector128, // NI_Vector128_ToScalar
-        InstructionSet_Vector128, // NI_Vector128_Truncate
-        InstructionSet_Vector128, // NI_Vector128_WidenLower
-        InstructionSet_Vector128, // NI_Vector128_WidenUpper
-        InstructionSet_Vector128, // NI_Vector128_WithElement
-        InstructionSet_Vector128, // NI_Vector128_WithLower
-        InstructionSet_Vector128, // NI_Vector128_WithUpper
-        InstructionSet_Vector128, // NI_Vector128_get_AllBitsSet
-        InstructionSet_Vector128, // NI_Vector128_get_E
-        InstructionSet_Vector128, // NI_Vector128_get_Epsilon
-        InstructionSet_Vector128, // NI_Vector128_get_Indices
-        InstructionSet_Vector128, // NI_Vector128_get_NaN
-        InstructionSet_Vector128, // NI_Vector128_get_NegativeInfinity
-        InstructionSet_Vector128, // NI_Vector128_get_NegativeOne
-        InstructionSet_Vector128, // NI_Vector128_get_NegativeZero
-        InstructionSet_Vector128, // NI_Vector128_get_One
-        InstructionSet_Vector128, // NI_Vector128_get_Pi
-        InstructionSet_Vector128, // NI_Vector128_get_PositiveInfinity
-        InstructionSet_Vector128, // NI_Vector128_get_Tau
-        InstructionSet_Vector128, // NI_Vector128_get_Zero
-        InstructionSet_Vector128, // NI_Vector128_op_Addition
-        InstructionSet_Vector128, // NI_Vector128_op_BitwiseAnd
-        InstructionSet_Vector128, // NI_Vector128_op_BitwiseOr
-        InstructionSet_Vector128, // NI_Vector128_op_Division
-        InstructionSet_Vector128, // NI_Vector128_op_Equality
-        InstructionSet_Vector128, // NI_Vector128_op_ExclusiveOr
-        InstructionSet_Vector128, // NI_Vector128_op_Inequality
-        InstructionSet_Vector128, // NI_Vector128_op_LeftShift
-        InstructionSet_Vector128, // NI_Vector128_op_Multiply
-        InstructionSet_Vector128, // NI_Vector128_op_OnesComplement
-        InstructionSet_Vector128, // NI_Vector128_op_RightShift
-        InstructionSet_Vector128, // NI_Vector128_op_Subtraction
-        InstructionSet_Vector128, // NI_Vector128_op_UnaryNegation
-        InstructionSet_Vector128, // NI_Vector128_op_UnaryPlus
-        InstructionSet_Vector128, // NI_Vector128_op_UnsignedRightShift
         InstructionSet_AdvSimd, // NI_AdvSimd_Abs
         InstructionSet_AdvSimd, // NI_AdvSimd_AbsSaturate
         InstructionSet_AdvSimd, // NI_AdvSimd_AbsScalar
@@ -11141,6 +9524,29 @@ public partial struct HWIntrinsicInfo
         InstructionSet_Crc32_Arm64, // NI_Crc32_Arm64_ComputeCrc32C
         InstructionSet_Dp, // NI_Dp_DotProduct
         InstructionSet_Dp, // NI_Dp_DotProductBySelectedQuadruplet
+        InstructionSet_Fp16, // NI_Fp16_Add
+        InstructionSet_Fp16, // NI_Fp16_Ceiling
+        InstructionSet_Fp16, // NI_Fp16_CompareEqual
+        InstructionSet_Fp16, // NI_Fp16_CompareGreaterThan
+        InstructionSet_Fp16, // NI_Fp16_CompareGreaterThanOrEqual
+        InstructionSet_Fp16, // NI_Fp16_CompareLessThan
+        InstructionSet_Fp16, // NI_Fp16_CompareLessThanOrEqual
+        InstructionSet_Fp16, // NI_Fp16_CompareNotEqual
+        InstructionSet_Fp16, // NI_Fp16_ConvertToHalf
+        InstructionSet_Fp16, // NI_Fp16_ConvertToInt32
+        InstructionSet_Fp16, // NI_Fp16_ConvertToInt64
+        InstructionSet_Fp16, // NI_Fp16_ConvertToUInt32
+        InstructionSet_Fp16, // NI_Fp16_ConvertToUInt64
+        InstructionSet_Fp16, // NI_Fp16_Divide
+        InstructionSet_Fp16, // NI_Fp16_Floor
+        InstructionSet_Fp16, // NI_Fp16_FusedMultiplyAdd
+        InstructionSet_Fp16, // NI_Fp16_Multiply
+        InstructionSet_Fp16, // NI_Fp16_ReciprocalEstimate
+        InstructionSet_Fp16, // NI_Fp16_ReciprocalSqrtEstimate
+        InstructionSet_Fp16, // NI_Fp16_RoundToNearest
+        InstructionSet_Fp16, // NI_Fp16_Sqrt
+        InstructionSet_Fp16, // NI_Fp16_Subtract
+        InstructionSet_Fp16, // NI_Fp16_Truncate
         InstructionSet_Rdm, // NI_Rdm_MultiplyRoundedDoublingAndAddSaturateHigh
         InstructionSet_Rdm, // NI_Rdm_MultiplyRoundedDoublingAndSubtractSaturateHigh
         InstructionSet_Rdm, // NI_Rdm_MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh
@@ -11159,6 +9565,15 @@ public partial struct HWIntrinsicInfo
         InstructionSet_Sha256, // NI_Sha256_HashUpdate2
         InstructionSet_Sha256, // NI_Sha256_ScheduleUpdate0
         InstructionSet_Sha256, // NI_Sha256_ScheduleUpdate1
+        InstructionSet_Sha3, // NI_Sha3_BitwiseClearXor
+        InstructionSet_Sha3, // NI_Sha3_BitwiseRotateLeftBy1AndXor
+        InstructionSet_Sha3, // NI_Sha3_Xor
+        InstructionSet_Sha3, // NI_Sha3_XorRotateRight
+        InstructionSet_Sm4, // NI_Sm4_Encode
+        InstructionSet_Sm4, // NI_Sm4_KeyUpdate
+        InstructionSet_ArmBase, // NI_ArmBase_ConvertToDouble
+        InstructionSet_ArmBase, // NI_ArmBase_ConvertToHalf
+        InstructionSet_ArmBase, // NI_ArmBase_ConvertToSingle
 #endif
 #if FEATURE_HW_INTRINSICS
         InstructionSet_Sve, // NI_Sve_Abs
@@ -11525,6 +9940,16 @@ public partial struct HWIntrinsicInfo
         InstructionSet_Sve2, // NI_Sve2_CreateWhileReadAfterWriteMaskUInt16
         InstructionSet_Sve2, // NI_Sve2_CreateWhileReadAfterWriteMaskUInt32
         InstructionSet_Sve2, // NI_Sve2_CreateWhileReadAfterWriteMaskUInt64
+        InstructionSet_Sve2, // NI_Sve2_CreateWhileWriteAfterReadMaskByte
+        InstructionSet_Sve2, // NI_Sve2_CreateWhileWriteAfterReadMaskDouble
+        InstructionSet_Sve2, // NI_Sve2_CreateWhileWriteAfterReadMaskInt16
+        InstructionSet_Sve2, // NI_Sve2_CreateWhileWriteAfterReadMaskInt32
+        InstructionSet_Sve2, // NI_Sve2_CreateWhileWriteAfterReadMaskInt64
+        InstructionSet_Sve2, // NI_Sve2_CreateWhileWriteAfterReadMaskSByte
+        InstructionSet_Sve2, // NI_Sve2_CreateWhileWriteAfterReadMaskSingle
+        InstructionSet_Sve2, // NI_Sve2_CreateWhileWriteAfterReadMaskUInt16
+        InstructionSet_Sve2, // NI_Sve2_CreateWhileWriteAfterReadMaskUInt32
+        InstructionSet_Sve2, // NI_Sve2_CreateWhileWriteAfterReadMaskUInt64
         InstructionSet_Sve2, // NI_Sve2_DotProductRotateComplex
         InstructionSet_Sve2, // NI_Sve2_DotProductRotateComplexBySelectedIndex
         InstructionSet_Sve2, // NI_Sve2_FusedAddHalving
@@ -11598,6 +10023,10 @@ public partial struct HWIntrinsicInfo
         InstructionSet_Sve2, // NI_Sve2_PolynomialMultiplyWideningOdd
         InstructionSet_Sve2, // NI_Sve2_ReciprocalEstimate
         InstructionSet_Sve2, // NI_Sve2_ReciprocalSqrtEstimate
+        InstructionSet_Sve2, // NI_Sve2_SaturatingExtractNarrowingLower
+        InstructionSet_Sve2, // NI_Sve2_SaturatingExtractNarrowingUpper
+        InstructionSet_Sve2, // NI_Sve2_SaturatingExtractUnsignedNarrowingLower
+        InstructionSet_Sve2, // NI_Sve2_SaturatingExtractUnsignedNarrowingUpper
         InstructionSet_Sve2, // NI_Sve2_Scatter16BitNarrowingNonTemporal
         InstructionSet_Sve2, // NI_Sve2_Scatter16BitWithByteOffsetsNarrowingNonTemporal
         InstructionSet_Sve2, // NI_Sve2_Scatter32BitNarrowingNonTemporal
@@ -11654,6 +10083,9 @@ public partial struct HWIntrinsicInfo
         InstructionSet_Sve2, // NI_Sve2_VectorTableLookupExtension
         InstructionSet_Sve2, // NI_Sve2_Xor
         InstructionSet_Sve2, // NI_Sve2_XorRotateRight
+        InstructionSet_SveSha3, // NI_SveSha3_BitwiseRotateLeftBy1AndXor
+        InstructionSet_SveSm4, // NI_SveSm4_Encode
+        InstructionSet_SveSm4, // NI_SveSm4_KeyUpdate
         InstructionSet_Sve, // NI_Sve_ConditionalExtractAfterLastActiveElementScalar
         InstructionSet_Sve, // NI_Sve_ConditionalExtractLastActiveElementScalar
         InstructionSet_Sve, // NI_Sve_ConvertMaskToVector
@@ -11681,408 +10113,292 @@ public partial struct HWIntrinsicInfo
         InstructionSet_Sve, // NI_Sve_TransposeOdd_Predicates
         InstructionSet_Sve, // NI_Sve_ReverseElement_Predicates
 #endif
+#elif TARGET_WASM
+#if FEATURE_HW_INTRINSICS
+        InstructionSet_PackedSimd, // NI_PackedSimd_Abs
+        InstructionSet_PackedSimd, // NI_PackedSimd_Add
+        InstructionSet_PackedSimd, // NI_PackedSimd_AddPairwiseWidening
+        InstructionSet_PackedSimd, // NI_PackedSimd_AddSaturate
+        InstructionSet_PackedSimd, // NI_PackedSimd_AllTrue
+        InstructionSet_PackedSimd, // NI_PackedSimd_And
+        InstructionSet_PackedSimd, // NI_PackedSimd_AndNot
+        InstructionSet_PackedSimd, // NI_PackedSimd_AnyTrue
+        InstructionSet_PackedSimd, // NI_PackedSimd_AverageRounded
+        InstructionSet_PackedSimd, // NI_PackedSimd_Bitmask
+        InstructionSet_PackedSimd, // NI_PackedSimd_BitwiseSelect
+        InstructionSet_PackedSimd, // NI_PackedSimd_Ceiling
+        InstructionSet_PackedSimd, // NI_PackedSimd_CompareEqual
+        InstructionSet_PackedSimd, // NI_PackedSimd_CompareGreaterThan
+        InstructionSet_PackedSimd, // NI_PackedSimd_CompareGreaterThanOrEqual
+        InstructionSet_PackedSimd, // NI_PackedSimd_CompareLessThan
+        InstructionSet_PackedSimd, // NI_PackedSimd_CompareLessThanOrEqual
+        InstructionSet_PackedSimd, // NI_PackedSimd_CompareNotEqual
+        InstructionSet_PackedSimd, // NI_PackedSimd_ConvertNarrowingSaturateSigned
+        InstructionSet_PackedSimd, // NI_PackedSimd_ConvertNarrowingSaturateUnsigned
+        InstructionSet_PackedSimd, // NI_PackedSimd_ConvertToDoubleLower
+        InstructionSet_PackedSimd, // NI_PackedSimd_ConvertToInt32Saturate
+        InstructionSet_PackedSimd, // NI_PackedSimd_ConvertToSingle
+        InstructionSet_PackedSimd, // NI_PackedSimd_ConvertToUInt32Saturate
+        InstructionSet_PackedSimd, // NI_PackedSimd_Divide
+        InstructionSet_PackedSimd, // NI_PackedSimd_Dot
+        InstructionSet_PackedSimd, // NI_PackedSimd_ExtractScalar
+        InstructionSet_PackedSimd, // NI_PackedSimd_Floor
+        InstructionSet_PackedSimd, // NI_PackedSimd_LoadScalarAndInsert
+        InstructionSet_PackedSimd, // NI_PackedSimd_LoadScalarAndSplatVector128
+        InstructionSet_PackedSimd, // NI_PackedSimd_LoadScalarVector128
+        InstructionSet_PackedSimd, // NI_PackedSimd_LoadVector128
+        InstructionSet_PackedSimd, // NI_PackedSimd_LoadWideningVector128
+        InstructionSet_PackedSimd, // NI_PackedSimd_Max
+        InstructionSet_PackedSimd, // NI_PackedSimd_Min
+        InstructionSet_PackedSimd, // NI_PackedSimd_Multiply
+        InstructionSet_PackedSimd, // NI_PackedSimd_MultiplyRoundedSaturateQ15
+        InstructionSet_PackedSimd, // NI_PackedSimd_MultiplyWideningLower
+        InstructionSet_PackedSimd, // NI_PackedSimd_MultiplyWideningUpper
+        InstructionSet_PackedSimd, // NI_PackedSimd_Negate
+        InstructionSet_PackedSimd, // NI_PackedSimd_Not
+        InstructionSet_PackedSimd, // NI_PackedSimd_Or
+        InstructionSet_PackedSimd, // NI_PackedSimd_PopCount
+        InstructionSet_PackedSimd, // NI_PackedSimd_PseudoMax
+        InstructionSet_PackedSimd, // NI_PackedSimd_PseudoMin
+        InstructionSet_PackedSimd, // NI_PackedSimd_ReplaceScalar
+        InstructionSet_PackedSimd, // NI_PackedSimd_RoundToNearest
+        InstructionSet_PackedSimd, // NI_PackedSimd_ShiftLeft
+        InstructionSet_PackedSimd, // NI_PackedSimd_ShiftRightArithmetic
+        InstructionSet_PackedSimd, // NI_PackedSimd_ShiftRightLogical
+        InstructionSet_PackedSimd, // NI_PackedSimd_Shuffle
+        InstructionSet_PackedSimd, // NI_PackedSimd_SignExtendWideningLower
+        InstructionSet_PackedSimd, // NI_PackedSimd_SignExtendWideningUpper
+        InstructionSet_PackedSimd, // NI_PackedSimd_Splat
+        InstructionSet_PackedSimd, // NI_PackedSimd_Sqrt
+        InstructionSet_PackedSimd, // NI_PackedSimd_Store
+        InstructionSet_PackedSimd, // NI_PackedSimd_StoreSelectedScalar
+        InstructionSet_PackedSimd, // NI_PackedSimd_Subtract
+        InstructionSet_PackedSimd, // NI_PackedSimd_SubtractSaturate
+        InstructionSet_PackedSimd, // NI_PackedSimd_Swizzle
+        InstructionSet_PackedSimd, // NI_PackedSimd_Truncate
+        InstructionSet_PackedSimd, // NI_PackedSimd_Xor
+        InstructionSet_PackedSimd, // NI_PackedSimd_ZeroExtendWideningLower
+        InstructionSet_PackedSimd, // NI_PackedSimd_ZeroExtendWideningUpper
+        InstructionSet_WasmBase, // NI_WasmBase_LeadingZeroCount
+        InstructionSet_WasmBase, // NI_WasmBase_TrailingZeroCount
 #endif
+#else
+#error Unsupported platform
+#endif
+#endif
+
     ];
 
     private static ReadOnlySpan<byte> s_intCosts => [
+#if FEATURE_HW_INTRINSICS
+        unchecked((byte)(-1)), // NI_Vector_Abs
+        unchecked((byte)(-1)), // NI_Vector_AddSaturate
+        unchecked((byte)(-1)), // NI_Vector_AndNot
+        unchecked((byte)(-1)), // NI_Vector_As
+        unchecked((byte)(-1)), // NI_Vector_AsByte
+        unchecked((byte)(-1)), // NI_Vector_AsDouble
+        unchecked((byte)(-1)), // NI_Vector_AsInt16
+        unchecked((byte)(-1)), // NI_Vector_AsInt32
+        unchecked((byte)(-1)), // NI_Vector_AsInt64
+        unchecked((byte)(-1)), // NI_Vector_AsNInt
+        unchecked((byte)(-1)), // NI_Vector_AsNUInt
+        unchecked((byte)(-1)), // NI_Vector_AsSByte
+        unchecked((byte)(-1)), // NI_Vector_AsSingle
+        unchecked((byte)(-1)), // NI_Vector_AsUInt16
+        unchecked((byte)(-1)), // NI_Vector_AsUInt32
+        unchecked((byte)(-1)), // NI_Vector_AsUInt64
+        unchecked((byte)(-1)), // NI_Vector_AsVector
+        unchecked((byte)(-1)), // NI_Vector_AsVector128
+#if TARGET_XARCH
+        unchecked((byte)(-1)), // NI_Vector_AsVector128Unsafe
+        unchecked((byte)(-1)), // NI_Vector_AsVector2
+        unchecked((byte)(-1)), // NI_Vector_AsVector256
+        unchecked((byte)(-1)), // NI_Vector_AsVector3
+#elif TARGET_ARM64
+        unchecked((byte)(-1)), // NI_Vector_AsVector128Unsafe
+        unchecked((byte)(-1)), // NI_Vector_AsVector2
+        unchecked((byte)(-1)), // NI_Vector_AsVector3
+#else
+        unchecked((byte)(-1)), // NI_Vector_AsVector128Unsafe
+        unchecked((byte)(-1)), // NI_Vector_AsVector2
+        unchecked((byte)(-1)), // NI_Vector_AsVector3
+#endif
+        unchecked((byte)(-1)), // NI_Vector_AsVector4
+#if TARGET_XARCH
+        unchecked((byte)(-1)), // NI_Vector_AsVector512
+#endif
+        unchecked((byte)(-1)), // NI_Vector_Ceiling
+        unchecked((byte)(-1)), // NI_Vector_ConcatLowerLower
+        unchecked((byte)(-1)), // NI_Vector_ConcatLowerUpper
+        unchecked((byte)(-1)), // NI_Vector_ConcatUpperLower
+        unchecked((byte)(-1)), // NI_Vector_ConcatUpperUpper
+#if TARGET_XARCH
+        unchecked((byte)(-1)), // NI_Vector_ConditionalSelect
+#else
+        unchecked((byte)(-1)), // NI_Vector_ConditionalSelect
+#endif
+        unchecked((byte)(-1)), // NI_Vector_ConvertToDouble
+        unchecked((byte)(-1)), // NI_Vector_ConvertToInt32
+        unchecked((byte)(-1)), // NI_Vector_ConvertToInt32Native
+        unchecked((byte)(-1)), // NI_Vector_ConvertToInt64
+        unchecked((byte)(-1)), // NI_Vector_ConvertToInt64Native
+        unchecked((byte)(-1)), // NI_Vector_ConvertToSingle
+        unchecked((byte)(-1)), // NI_Vector_ConvertToUInt32
+        unchecked((byte)(-1)), // NI_Vector_ConvertToUInt32Native
+        unchecked((byte)(-1)), // NI_Vector_ConvertToUInt64
+        unchecked((byte)(-1)), // NI_Vector_ConvertToUInt64Native
+        unchecked((byte)(-1)), // NI_Vector_Create
+        unchecked((byte)(-1)), // NI_Vector_CreateAlternatingSequence
+        unchecked((byte)(-1)), // NI_Vector_CreateGeometricSequence
+#if TARGET_XARCH
+        unchecked((byte)(-1)), // NI_Vector_CreateScalar
+        unchecked((byte)(-1)), // NI_Vector_CreateScalarUnsafe
+#elif TARGET_ARM64
+        unchecked((byte)(-1)), // NI_Vector_CreateScalar
+        unchecked((byte)(-1)), // NI_Vector_CreateScalarUnsafe
+#else
+        unchecked((byte)(-1)), // NI_Vector_CreateScalar
+        unchecked((byte)(-1)), // NI_Vector_CreateScalarUnsafe
+#endif
+        unchecked((byte)(-1)), // NI_Vector_CreateSequence
+        unchecked((byte)(-1)), // NI_Vector_Dot
+        unchecked((byte)(-1)), // NI_Vector_Equals
+        unchecked((byte)(-1)), // NI_Vector_EqualsAny
+        unchecked((byte)(-1)), // NI_Vector_ExtractMostSignificantBits
+        unchecked((byte)(-1)), // NI_Vector_Floor
+        unchecked((byte)(-1)), // NI_Vector_FusedMultiplyAdd
+#if TARGET_XARCH
+        unchecked((byte)(-1)), // NI_Vector_GetElement
+#elif TARGET_ARM64
+        unchecked((byte)(-1)), // NI_Vector_GetElement
+#else
+        unchecked((byte)(-1)), // NI_Vector_GetElement
+#endif
+#if TARGET_XARCH
+        unchecked((byte)(-1)), // NI_Vector_GetLower
+        unchecked((byte)(-1)), // NI_Vector_GetLower128
+        unchecked((byte)(-1)), // NI_Vector_GetUpper
+#elif TARGET_ARM64
+        unchecked((byte)(-1)), // NI_Vector_GetLower
+        unchecked((byte)(-1)), // NI_Vector_GetUpper
+#endif
+        unchecked((byte)(-1)), // NI_Vector_GreaterThan
+        unchecked((byte)(-1)), // NI_Vector_GreaterThanAll
+        unchecked((byte)(-1)), // NI_Vector_GreaterThanAny
+        unchecked((byte)(-1)), // NI_Vector_GreaterThanOrEqual
+        unchecked((byte)(-1)), // NI_Vector_GreaterThanOrEqualAll
+        unchecked((byte)(-1)), // NI_Vector_GreaterThanOrEqualAny
+        unchecked((byte)(-1)), // NI_Vector_IsEvenInteger
+        unchecked((byte)(-1)), // NI_Vector_IsFinite
+        unchecked((byte)(-1)), // NI_Vector_IsInfinity
+        unchecked((byte)(-1)), // NI_Vector_IsInteger
+        unchecked((byte)(-1)), // NI_Vector_IsNaN
+        unchecked((byte)(-1)), // NI_Vector_IsNegative
+        unchecked((byte)(-1)), // NI_Vector_IsNegativeInfinity
+        unchecked((byte)(-1)), // NI_Vector_IsNormal
+        unchecked((byte)(-1)), // NI_Vector_IsOddInteger
+        unchecked((byte)(-1)), // NI_Vector_IsPositive
+        unchecked((byte)(-1)), // NI_Vector_IsPositiveInfinity
+        unchecked((byte)(-1)), // NI_Vector_IsSubnormal
+        unchecked((byte)(-1)), // NI_Vector_IsZero
+        unchecked((byte)(-1)), // NI_Vector_LessThan
+        unchecked((byte)(-1)), // NI_Vector_LessThanAll
+        unchecked((byte)(-1)), // NI_Vector_LessThanAny
+        unchecked((byte)(-1)), // NI_Vector_LessThanOrEqual
+        unchecked((byte)(-1)), // NI_Vector_LessThanOrEqualAll
+        unchecked((byte)(-1)), // NI_Vector_LessThanOrEqualAny
+        unchecked((byte)(-1)), // NI_Vector_LoadAligned
+        unchecked((byte)(-1)), // NI_Vector_LoadAlignedNonTemporal
+        unchecked((byte)(-1)), // NI_Vector_LoadUnsafe
+        unchecked((byte)(-1)), // NI_Vector_Max
+        unchecked((byte)(-1)), // NI_Vector_MaxMagnitude
+        unchecked((byte)(-1)), // NI_Vector_MaxMagnitudeNumber
+        unchecked((byte)(-1)), // NI_Vector_MaxNative
+        unchecked((byte)(-1)), // NI_Vector_MaxNumber
+        unchecked((byte)(-1)), // NI_Vector_Min
+        unchecked((byte)(-1)), // NI_Vector_MinMagnitude
+        unchecked((byte)(-1)), // NI_Vector_MinMagnitudeNumber
+        unchecked((byte)(-1)), // NI_Vector_MinNative
+        unchecked((byte)(-1)), // NI_Vector_MinNumber
+        unchecked((byte)(-1)), // NI_Vector_MultiplyAddEstimate
+        unchecked((byte)(-1)), // NI_Vector_Narrow
+#if TARGET_ARM64
+        unchecked((byte)(-1)), // NI_Vector_NarrowWithSaturation
+#else
+        unchecked((byte)(-1)), // NI_Vector_NarrowWithSaturation
+#endif
+        unchecked((byte)(-1)), // NI_Vector_Reverse
+        unchecked((byte)(-1)), // NI_Vector_Round
+        unchecked((byte)(-1)), // NI_Vector_ShiftLeft
+        unchecked((byte)(-1)), // NI_Vector_Shuffle
+        unchecked((byte)(-1)), // NI_Vector_ShuffleNative
+        unchecked((byte)(-1)), // NI_Vector_ShuffleNativeFallback
+        unchecked((byte)(-1)), // NI_Vector_Sqrt
+        unchecked((byte)(-1)), // NI_Vector_StoreAligned
+        unchecked((byte)(-1)), // NI_Vector_StoreAlignedNonTemporal
+        unchecked((byte)(-1)), // NI_Vector_StoreUnsafe
+        unchecked((byte)(-1)), // NI_Vector_SubtractSaturate
+        unchecked((byte)(-1)), // NI_Vector_Sum
+#if TARGET_XARCH
+        unchecked((byte)(-1)), // NI_Vector_ToScalar
+        unchecked((byte)(-1)), // NI_Vector_ToVector256
+        unchecked((byte)(-1)), // NI_Vector_ToVector256Unsafe
+        unchecked((byte)(-1)), // NI_Vector_ToVector512
+        unchecked((byte)(-1)), // NI_Vector_ToVector512Unsafe
+#elif TARGET_ARM64
+        unchecked((byte)(-1)), // NI_Vector_ToScalar
+        unchecked((byte)(-1)), // NI_Vector_ToVector128
+        unchecked((byte)(-1)), // NI_Vector_ToVector128Unsafe
+#else
+        unchecked((byte)(-1)), // NI_Vector_ToScalar
+#endif
+        unchecked((byte)(-1)), // NI_Vector_Truncate
+        unchecked((byte)(-1)), // NI_Vector_UnzipEven
+        unchecked((byte)(-1)), // NI_Vector_UnzipOdd
+        unchecked((byte)(-1)), // NI_Vector_WidenLower
+        unchecked((byte)(-1)), // NI_Vector_WidenUpper
+        unchecked((byte)(-1)), // NI_Vector_WithElement
+#if TARGET_XARCH || TARGET_ARM64
+        unchecked((byte)(-1)), // NI_Vector_WithLower
+        unchecked((byte)(-1)), // NI_Vector_WithUpper
+#endif
+        unchecked((byte)(-1)), // NI_Vector_ZipLower
+        unchecked((byte)(-1)), // NI_Vector_ZipUpper
+        unchecked((byte)(-1)), // NI_Vector_get_AllBitsSet
+        unchecked((byte)(-1)), // NI_Vector_get_E
+        unchecked((byte)(-1)), // NI_Vector_get_Epsilon
+        unchecked((byte)(-1)), // NI_Vector_get_Indices
+        unchecked((byte)(-1)), // NI_Vector_get_NaN
+        unchecked((byte)(-1)), // NI_Vector_get_NegativeInfinity
+        unchecked((byte)(-1)), // NI_Vector_get_NegativeOne
+        unchecked((byte)(-1)), // NI_Vector_get_NegativeZero
+        unchecked((byte)(-1)), // NI_Vector_get_One
+        unchecked((byte)(-1)), // NI_Vector_get_Pi
+        unchecked((byte)(-1)), // NI_Vector_get_PositiveInfinity
+        unchecked((byte)(-1)), // NI_Vector_get_SignSequence
+        unchecked((byte)(-1)), // NI_Vector_get_Tau
+        unchecked((byte)(-1)), // NI_Vector_get_Zero
+        unchecked((byte)(-1)), // NI_Vector_op_Addition
+        unchecked((byte)(-1)), // NI_Vector_op_BitwiseAnd
+        unchecked((byte)(-1)), // NI_Vector_op_BitwiseOr
+#if TARGET_XARCH
+        unchecked((byte)(-1)), // NI_Vector_op_Division
+#else
+        unchecked((byte)(-1)), // NI_Vector_op_Division
+#endif
+        unchecked((byte)(-1)), // NI_Vector_op_Equality
+        unchecked((byte)(-1)), // NI_Vector_op_ExclusiveOr
+        unchecked((byte)(-1)), // NI_Vector_op_Inequality
+        unchecked((byte)(-1)), // NI_Vector_op_LeftShift
+        unchecked((byte)(-1)), // NI_Vector_op_Multiply
+        unchecked((byte)(-1)), // NI_Vector_op_OnesComplement
+        unchecked((byte)(-1)), // NI_Vector_op_RightShift
+        unchecked((byte)(-1)), // NI_Vector_op_Subtraction
+        unchecked((byte)(-1)), // NI_Vector_op_UnaryNegation
+        unchecked((byte)(-1)), // NI_Vector_op_UnaryPlus
+        unchecked((byte)(-1)), // NI_Vector_op_UnsignedRightShift
 #if TARGET_XARCH
 #if FEATURE_HW_INTRINSICS
-        unchecked((byte)(-1)), // NI_Vector128_Abs
-        unchecked((byte)(-1)), // NI_Vector128_AddSaturate
-        unchecked((byte)(-1)), // NI_Vector128_AndNot
-        unchecked((byte)(-1)), // NI_Vector128_As
-        unchecked((byte)(-1)), // NI_Vector128_AsByte
-        unchecked((byte)(-1)), // NI_Vector128_AsDouble
-        unchecked((byte)(-1)), // NI_Vector128_AsInt16
-        unchecked((byte)(-1)), // NI_Vector128_AsInt32
-        unchecked((byte)(-1)), // NI_Vector128_AsInt64
-        unchecked((byte)(-1)), // NI_Vector128_AsNInt
-        unchecked((byte)(-1)), // NI_Vector128_AsNUInt
-        unchecked((byte)(-1)), // NI_Vector128_AsSByte
-        unchecked((byte)(-1)), // NI_Vector128_AsSingle
-        unchecked((byte)(-1)), // NI_Vector128_AsUInt16
-        unchecked((byte)(-1)), // NI_Vector128_AsUInt32
-        unchecked((byte)(-1)), // NI_Vector128_AsUInt64
-        unchecked((byte)(-1)), // NI_Vector128_AsVector
-        unchecked((byte)(-1)), // NI_Vector128_AsVector128
-        unchecked((byte)(-1)), // NI_Vector128_AsVector128Unsafe
-        unchecked((byte)(-1)), // NI_Vector128_AsVector2
-        unchecked((byte)(-1)), // NI_Vector128_AsVector3
-        unchecked((byte)(-1)), // NI_Vector128_AsVector4
-        unchecked((byte)(-1)), // NI_Vector128_Ceiling
-        unchecked((byte)(-1)), // NI_Vector128_ConditionalSelect
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToDouble
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToInt32
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToInt32Native
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToInt64
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToInt64Native
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToSingle
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToUInt32
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToUInt32Native
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToUInt64
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToUInt64Native
-        unchecked((byte)(-1)), // NI_Vector128_Create
-        unchecked((byte)(-1)), // NI_Vector128_CreateScalar
-        unchecked((byte)(-1)), // NI_Vector128_CreateScalarUnsafe
-        unchecked((byte)(-1)), // NI_Vector128_CreateSequence
-        unchecked((byte)(-1)), // NI_Vector128_Dot
-        unchecked((byte)(-1)), // NI_Vector128_Equals
-        unchecked((byte)(-1)), // NI_Vector128_EqualsAny
-        unchecked((byte)(-1)), // NI_Vector128_ExtractMostSignificantBits
-        unchecked((byte)(-1)), // NI_Vector128_Floor
-        unchecked((byte)(-1)), // NI_Vector128_FusedMultiplyAdd
-        unchecked((byte)(-1)), // NI_Vector128_GetElement
-        unchecked((byte)(-1)), // NI_Vector128_GreaterThan
-        unchecked((byte)(-1)), // NI_Vector128_GreaterThanAll
-        unchecked((byte)(-1)), // NI_Vector128_GreaterThanAny
-        unchecked((byte)(-1)), // NI_Vector128_GreaterThanOrEqual
-        unchecked((byte)(-1)), // NI_Vector128_GreaterThanOrEqualAll
-        unchecked((byte)(-1)), // NI_Vector128_GreaterThanOrEqualAny
-        unchecked((byte)(-1)), // NI_Vector128_IsEvenInteger
-        unchecked((byte)(-1)), // NI_Vector128_IsFinite
-        unchecked((byte)(-1)), // NI_Vector128_IsInfinity
-        unchecked((byte)(-1)), // NI_Vector128_IsInteger
-        unchecked((byte)(-1)), // NI_Vector128_IsNaN
-        unchecked((byte)(-1)), // NI_Vector128_IsNegative
-        unchecked((byte)(-1)), // NI_Vector128_IsNegativeInfinity
-        unchecked((byte)(-1)), // NI_Vector128_IsNormal
-        unchecked((byte)(-1)), // NI_Vector128_IsOddInteger
-        unchecked((byte)(-1)), // NI_Vector128_IsPositive
-        unchecked((byte)(-1)), // NI_Vector128_IsPositiveInfinity
-        unchecked((byte)(-1)), // NI_Vector128_IsSubnormal
-        unchecked((byte)(-1)), // NI_Vector128_IsZero
-        unchecked((byte)(-1)), // NI_Vector128_LessThan
-        unchecked((byte)(-1)), // NI_Vector128_LessThanAll
-        unchecked((byte)(-1)), // NI_Vector128_LessThanAny
-        unchecked((byte)(-1)), // NI_Vector128_LessThanOrEqual
-        unchecked((byte)(-1)), // NI_Vector128_LessThanOrEqualAll
-        unchecked((byte)(-1)), // NI_Vector128_LessThanOrEqualAny
-        unchecked((byte)(-1)), // NI_Vector128_LoadAligned
-        unchecked((byte)(-1)), // NI_Vector128_LoadAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector128_LoadUnsafe
-        unchecked((byte)(-1)), // NI_Vector128_Max
-        unchecked((byte)(-1)), // NI_Vector128_MaxMagnitude
-        unchecked((byte)(-1)), // NI_Vector128_MaxMagnitudeNumber
-        unchecked((byte)(-1)), // NI_Vector128_MaxNative
-        unchecked((byte)(-1)), // NI_Vector128_MaxNumber
-        unchecked((byte)(-1)), // NI_Vector128_Min
-        unchecked((byte)(-1)), // NI_Vector128_MinMagnitude
-        unchecked((byte)(-1)), // NI_Vector128_MinMagnitudeNumber
-        unchecked((byte)(-1)), // NI_Vector128_MinNative
-        unchecked((byte)(-1)), // NI_Vector128_MinNumber
-        unchecked((byte)(-1)), // NI_Vector128_MultiplyAddEstimate
-        unchecked((byte)(-1)), // NI_Vector128_Narrow
-        unchecked((byte)(-1)), // NI_Vector128_NarrowWithSaturation
-        unchecked((byte)(-1)), // NI_Vector128_Round
-        unchecked((byte)(-1)), // NI_Vector128_ShiftLeft
-        unchecked((byte)(-1)), // NI_Vector128_Shuffle
-        unchecked((byte)(-1)), // NI_Vector128_ShuffleNative
-        unchecked((byte)(-1)), // NI_Vector128_ShuffleNativeFallback
-        unchecked((byte)(-1)), // NI_Vector128_Sqrt
-        unchecked((byte)(-1)), // NI_Vector128_StoreAligned
-        unchecked((byte)(-1)), // NI_Vector128_StoreAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector128_StoreUnsafe
-        unchecked((byte)(-1)), // NI_Vector128_SubtractSaturate
-        unchecked((byte)(-1)), // NI_Vector128_Sum
-        unchecked((byte)(-1)), // NI_Vector128_ToScalar
-        unchecked((byte)(-1)), // NI_Vector128_ToVector256
-        unchecked((byte)(-1)), // NI_Vector128_ToVector256Unsafe
-        unchecked((byte)(-1)), // NI_Vector128_ToVector512
-        unchecked((byte)(-1)), // NI_Vector128_Truncate
-        unchecked((byte)(-1)), // NI_Vector128_WidenLower
-        unchecked((byte)(-1)), // NI_Vector128_WidenUpper
-        unchecked((byte)(-1)), // NI_Vector128_WithElement
-        unchecked((byte)(-1)), // NI_Vector128_get_AllBitsSet
-        unchecked((byte)(-1)), // NI_Vector128_get_E
-        unchecked((byte)(-1)), // NI_Vector128_get_Epsilon
-        unchecked((byte)(-1)), // NI_Vector128_get_Indices
-        unchecked((byte)(-1)), // NI_Vector128_get_NaN
-        unchecked((byte)(-1)), // NI_Vector128_get_NegativeInfinity
-        unchecked((byte)(-1)), // NI_Vector128_get_NegativeOne
-        unchecked((byte)(-1)), // NI_Vector128_get_NegativeZero
-        unchecked((byte)(-1)), // NI_Vector128_get_One
-        unchecked((byte)(-1)), // NI_Vector128_get_Pi
-        unchecked((byte)(-1)), // NI_Vector128_get_PositiveInfinity
-        unchecked((byte)(-1)), // NI_Vector128_get_Tau
-        unchecked((byte)(-1)), // NI_Vector128_get_Zero
-        unchecked((byte)(-1)), // NI_Vector128_op_Addition
-        unchecked((byte)(-1)), // NI_Vector128_op_BitwiseAnd
-        unchecked((byte)(-1)), // NI_Vector128_op_BitwiseOr
-        unchecked((byte)(-1)), // NI_Vector128_op_Division
-        unchecked((byte)(-1)), // NI_Vector128_op_Equality
-        unchecked((byte)(-1)), // NI_Vector128_op_ExclusiveOr
-        unchecked((byte)(-1)), // NI_Vector128_op_Inequality
-        unchecked((byte)(-1)), // NI_Vector128_op_LeftShift
-        unchecked((byte)(-1)), // NI_Vector128_op_Multiply
-        unchecked((byte)(-1)), // NI_Vector128_op_OnesComplement
-        unchecked((byte)(-1)), // NI_Vector128_op_RightShift
-        unchecked((byte)(-1)), // NI_Vector128_op_Subtraction
-        unchecked((byte)(-1)), // NI_Vector128_op_UnaryNegation
-        unchecked((byte)(-1)), // NI_Vector128_op_UnaryPlus
-        unchecked((byte)(-1)), // NI_Vector128_op_UnsignedRightShift
-        unchecked((byte)(-1)), // NI_Vector256_Abs
-        unchecked((byte)(-1)), // NI_Vector256_AddSaturate
-        unchecked((byte)(-1)), // NI_Vector256_AndNot
-        unchecked((byte)(-1)), // NI_Vector256_As
-        unchecked((byte)(-1)), // NI_Vector256_AsByte
-        unchecked((byte)(-1)), // NI_Vector256_AsDouble
-        unchecked((byte)(-1)), // NI_Vector256_AsInt16
-        unchecked((byte)(-1)), // NI_Vector256_AsInt32
-        unchecked((byte)(-1)), // NI_Vector256_AsInt64
-        unchecked((byte)(-1)), // NI_Vector256_AsNInt
-        unchecked((byte)(-1)), // NI_Vector256_AsNUInt
-        unchecked((byte)(-1)), // NI_Vector256_AsSByte
-        unchecked((byte)(-1)), // NI_Vector256_AsSingle
-        unchecked((byte)(-1)), // NI_Vector256_AsUInt16
-        unchecked((byte)(-1)), // NI_Vector256_AsUInt32
-        unchecked((byte)(-1)), // NI_Vector256_AsUInt64
-        unchecked((byte)(-1)), // NI_Vector256_AsVector
-        unchecked((byte)(-1)), // NI_Vector256_AsVector256
-        unchecked((byte)(-1)), // NI_Vector256_Ceiling
-        unchecked((byte)(-1)), // NI_Vector256_ConditionalSelect
-        unchecked((byte)(-1)), // NI_Vector256_ConvertToDouble
-        unchecked((byte)(-1)), // NI_Vector256_ConvertToInt32
-        unchecked((byte)(-1)), // NI_Vector256_ConvertToInt32Native
-        unchecked((byte)(-1)), // NI_Vector256_ConvertToInt64
-        unchecked((byte)(-1)), // NI_Vector256_ConvertToInt64Native
-        unchecked((byte)(-1)), // NI_Vector256_ConvertToSingle
-        unchecked((byte)(-1)), // NI_Vector256_ConvertToUInt32
-        unchecked((byte)(-1)), // NI_Vector256_ConvertToUInt32Native
-        unchecked((byte)(-1)), // NI_Vector256_ConvertToUInt64
-        unchecked((byte)(-1)), // NI_Vector256_ConvertToUInt64Native
-        unchecked((byte)(-1)), // NI_Vector256_Create
-        unchecked((byte)(-1)), // NI_Vector256_CreateScalar
-        unchecked((byte)(-1)), // NI_Vector256_CreateScalarUnsafe
-        unchecked((byte)(-1)), // NI_Vector256_CreateSequence
-        unchecked((byte)(-1)), // NI_Vector256_Dot
-        unchecked((byte)(-1)), // NI_Vector256_Equals
-        unchecked((byte)(-1)), // NI_Vector256_EqualsAny
-        unchecked((byte)(-1)), // NI_Vector256_ExtractMostSignificantBits
-        unchecked((byte)(-1)), // NI_Vector256_Floor
-        unchecked((byte)(-1)), // NI_Vector256_FusedMultiplyAdd
-        unchecked((byte)(-1)), // NI_Vector256_GetElement
-        unchecked((byte)(-1)), // NI_Vector256_GetLower
-        unchecked((byte)(-1)), // NI_Vector256_GetUpper
-        unchecked((byte)(-1)), // NI_Vector256_GreaterThan
-        unchecked((byte)(-1)), // NI_Vector256_GreaterThanAll
-        unchecked((byte)(-1)), // NI_Vector256_GreaterThanAny
-        unchecked((byte)(-1)), // NI_Vector256_GreaterThanOrEqual
-        unchecked((byte)(-1)), // NI_Vector256_GreaterThanOrEqualAll
-        unchecked((byte)(-1)), // NI_Vector256_GreaterThanOrEqualAny
-        unchecked((byte)(-1)), // NI_Vector256_IsEvenInteger
-        unchecked((byte)(-1)), // NI_Vector256_IsFinite
-        unchecked((byte)(-1)), // NI_Vector256_IsInfinity
-        unchecked((byte)(-1)), // NI_Vector256_IsInteger
-        unchecked((byte)(-1)), // NI_Vector256_IsNaN
-        unchecked((byte)(-1)), // NI_Vector256_IsNegative
-        unchecked((byte)(-1)), // NI_Vector256_IsNegativeInfinity
-        unchecked((byte)(-1)), // NI_Vector256_IsNormal
-        unchecked((byte)(-1)), // NI_Vector256_IsOddInteger
-        unchecked((byte)(-1)), // NI_Vector256_IsPositive
-        unchecked((byte)(-1)), // NI_Vector256_IsPositiveInfinity
-        unchecked((byte)(-1)), // NI_Vector256_IsSubnormal
-        unchecked((byte)(-1)), // NI_Vector256_IsZero
-        unchecked((byte)(-1)), // NI_Vector256_LessThan
-        unchecked((byte)(-1)), // NI_Vector256_LessThanAll
-        unchecked((byte)(-1)), // NI_Vector256_LessThanAny
-        unchecked((byte)(-1)), // NI_Vector256_LessThanOrEqual
-        unchecked((byte)(-1)), // NI_Vector256_LessThanOrEqualAll
-        unchecked((byte)(-1)), // NI_Vector256_LessThanOrEqualAny
-        unchecked((byte)(-1)), // NI_Vector256_LoadAligned
-        unchecked((byte)(-1)), // NI_Vector256_LoadAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector256_LoadUnsafe
-        unchecked((byte)(-1)), // NI_Vector256_Max
-        unchecked((byte)(-1)), // NI_Vector256_MaxMagnitude
-        unchecked((byte)(-1)), // NI_Vector256_MaxMagnitudeNumber
-        unchecked((byte)(-1)), // NI_Vector256_MaxNative
-        unchecked((byte)(-1)), // NI_Vector256_MaxNumber
-        unchecked((byte)(-1)), // NI_Vector256_Min
-        unchecked((byte)(-1)), // NI_Vector256_MinMagnitude
-        unchecked((byte)(-1)), // NI_Vector256_MinMagnitudeNumber
-        unchecked((byte)(-1)), // NI_Vector256_MinNative
-        unchecked((byte)(-1)), // NI_Vector256_MinNumber
-        unchecked((byte)(-1)), // NI_Vector256_MultiplyAddEstimate
-        unchecked((byte)(-1)), // NI_Vector256_Narrow
-        unchecked((byte)(-1)), // NI_Vector256_NarrowWithSaturation
-        unchecked((byte)(-1)), // NI_Vector256_Round
-        unchecked((byte)(-1)), // NI_Vector256_ShiftLeft
-        unchecked((byte)(-1)), // NI_Vector256_Shuffle
-        unchecked((byte)(-1)), // NI_Vector256_ShuffleNative
-        unchecked((byte)(-1)), // NI_Vector256_ShuffleNativeFallback
-        unchecked((byte)(-1)), // NI_Vector256_Sqrt
-        unchecked((byte)(-1)), // NI_Vector256_StoreAligned
-        unchecked((byte)(-1)), // NI_Vector256_StoreAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector256_StoreUnsafe
-        unchecked((byte)(-1)), // NI_Vector256_SubtractSaturate
-        unchecked((byte)(-1)), // NI_Vector256_Sum
-        unchecked((byte)(-1)), // NI_Vector256_ToScalar
-        unchecked((byte)(-1)), // NI_Vector256_ToVector512
-        unchecked((byte)(-1)), // NI_Vector256_ToVector512Unsafe
-        unchecked((byte)(-1)), // NI_Vector256_Truncate
-        unchecked((byte)(-1)), // NI_Vector256_WidenLower
-        unchecked((byte)(-1)), // NI_Vector256_WidenUpper
-        unchecked((byte)(-1)), // NI_Vector256_WithElement
-        unchecked((byte)(-1)), // NI_Vector256_WithLower
-        unchecked((byte)(-1)), // NI_Vector256_WithUpper
-        unchecked((byte)(-1)), // NI_Vector256_get_AllBitsSet
-        unchecked((byte)(-1)), // NI_Vector256_get_E
-        unchecked((byte)(-1)), // NI_Vector256_get_Epsilon
-        unchecked((byte)(-1)), // NI_Vector256_get_Indices
-        unchecked((byte)(-1)), // NI_Vector256_get_NaN
-        unchecked((byte)(-1)), // NI_Vector256_get_NegativeInfinity
-        unchecked((byte)(-1)), // NI_Vector256_get_NegativeOne
-        unchecked((byte)(-1)), // NI_Vector256_get_NegativeZero
-        unchecked((byte)(-1)), // NI_Vector256_get_One
-        unchecked((byte)(-1)), // NI_Vector256_get_Pi
-        unchecked((byte)(-1)), // NI_Vector256_get_PositiveInfinity
-        unchecked((byte)(-1)), // NI_Vector256_get_Tau
-        unchecked((byte)(-1)), // NI_Vector256_get_Zero
-        unchecked((byte)(-1)), // NI_Vector256_op_Addition
-        unchecked((byte)(-1)), // NI_Vector256_op_BitwiseAnd
-        unchecked((byte)(-1)), // NI_Vector256_op_BitwiseOr
-        unchecked((byte)(-1)), // NI_Vector256_op_Division
-        unchecked((byte)(-1)), // NI_Vector256_op_Equality
-        unchecked((byte)(-1)), // NI_Vector256_op_ExclusiveOr
-        unchecked((byte)(-1)), // NI_Vector256_op_Inequality
-        unchecked((byte)(-1)), // NI_Vector256_op_LeftShift
-        unchecked((byte)(-1)), // NI_Vector256_op_Multiply
-        unchecked((byte)(-1)), // NI_Vector256_op_OnesComplement
-        unchecked((byte)(-1)), // NI_Vector256_op_RightShift
-        unchecked((byte)(-1)), // NI_Vector256_op_Subtraction
-        unchecked((byte)(-1)), // NI_Vector256_op_UnaryNegation
-        unchecked((byte)(-1)), // NI_Vector256_op_UnaryPlus
-        unchecked((byte)(-1)), // NI_Vector256_op_UnsignedRightShift
-        unchecked((byte)(-1)), // NI_Vector512_Abs
-        unchecked((byte)(-1)), // NI_Vector512_AddSaturate
-        unchecked((byte)(-1)), // NI_Vector512_AndNot
-        unchecked((byte)(-1)), // NI_Vector512_As
-        unchecked((byte)(-1)), // NI_Vector512_AsByte
-        unchecked((byte)(-1)), // NI_Vector512_AsDouble
-        unchecked((byte)(-1)), // NI_Vector512_AsInt16
-        unchecked((byte)(-1)), // NI_Vector512_AsInt32
-        unchecked((byte)(-1)), // NI_Vector512_AsInt64
-        unchecked((byte)(-1)), // NI_Vector512_AsNInt
-        unchecked((byte)(-1)), // NI_Vector512_AsNUInt
-        unchecked((byte)(-1)), // NI_Vector512_AsSByte
-        unchecked((byte)(-1)), // NI_Vector512_AsSingle
-        unchecked((byte)(-1)), // NI_Vector512_AsUInt16
-        unchecked((byte)(-1)), // NI_Vector512_AsUInt32
-        unchecked((byte)(-1)), // NI_Vector512_AsUInt64
-        unchecked((byte)(-1)), // NI_Vector512_AsVector
-        unchecked((byte)(-1)), // NI_Vector512_AsVector512
-        unchecked((byte)(-1)), // NI_Vector512_Ceiling
-        unchecked((byte)(-1)), // NI_Vector512_ConditionalSelect
-        unchecked((byte)(-1)), // NI_Vector512_ConvertToDouble
-        unchecked((byte)(-1)), // NI_Vector512_ConvertToInt32
-        unchecked((byte)(-1)), // NI_Vector512_ConvertToInt32Native
-        unchecked((byte)(-1)), // NI_Vector512_ConvertToInt64
-        unchecked((byte)(-1)), // NI_Vector512_ConvertToInt64Native
-        unchecked((byte)(-1)), // NI_Vector512_ConvertToSingle
-        unchecked((byte)(-1)), // NI_Vector512_ConvertToUInt32
-        unchecked((byte)(-1)), // NI_Vector512_ConvertToUInt32Native
-        unchecked((byte)(-1)), // NI_Vector512_ConvertToUInt64
-        unchecked((byte)(-1)), // NI_Vector512_ConvertToUInt64Native
-        unchecked((byte)(-1)), // NI_Vector512_Create
-        unchecked((byte)(-1)), // NI_Vector512_CreateScalar
-        unchecked((byte)(-1)), // NI_Vector512_CreateScalarUnsafe
-        unchecked((byte)(-1)), // NI_Vector512_CreateSequence
-        unchecked((byte)(-1)), // NI_Vector512_Dot
-        unchecked((byte)(-1)), // NI_Vector512_Equals
-        unchecked((byte)(-1)), // NI_Vector512_EqualsAny
-        unchecked((byte)(-1)), // NI_Vector512_ExtractMostSignificantBits
-        unchecked((byte)(-1)), // NI_Vector512_Floor
-        unchecked((byte)(-1)), // NI_Vector512_FusedMultiplyAdd
-        unchecked((byte)(-1)), // NI_Vector512_GetElement
-        unchecked((byte)(-1)), // NI_Vector512_GetLower
-        unchecked((byte)(-1)), // NI_Vector512_GetLower128
-        unchecked((byte)(-1)), // NI_Vector512_GetUpper
-        unchecked((byte)(-1)), // NI_Vector512_GreaterThan
-        unchecked((byte)(-1)), // NI_Vector512_GreaterThanAll
-        unchecked((byte)(-1)), // NI_Vector512_GreaterThanAny
-        unchecked((byte)(-1)), // NI_Vector512_GreaterThanOrEqual
-        unchecked((byte)(-1)), // NI_Vector512_GreaterThanOrEqualAll
-        unchecked((byte)(-1)), // NI_Vector512_GreaterThanOrEqualAny
-        unchecked((byte)(-1)), // NI_Vector512_IsEvenInteger
-        unchecked((byte)(-1)), // NI_Vector512_IsFinite
-        unchecked((byte)(-1)), // NI_Vector512_IsInfinity
-        unchecked((byte)(-1)), // NI_Vector512_IsInteger
-        unchecked((byte)(-1)), // NI_Vector512_IsNaN
-        unchecked((byte)(-1)), // NI_Vector512_IsNegative
-        unchecked((byte)(-1)), // NI_Vector512_IsNegativeInfinity
-        unchecked((byte)(-1)), // NI_Vector512_IsNormal
-        unchecked((byte)(-1)), // NI_Vector512_IsOddInteger
-        unchecked((byte)(-1)), // NI_Vector512_IsPositive
-        unchecked((byte)(-1)), // NI_Vector512_IsPositiveInfinity
-        unchecked((byte)(-1)), // NI_Vector512_IsSubnormal
-        unchecked((byte)(-1)), // NI_Vector512_IsZero
-        unchecked((byte)(-1)), // NI_Vector512_LessThan
-        unchecked((byte)(-1)), // NI_Vector512_LessThanAll
-        unchecked((byte)(-1)), // NI_Vector512_LessThanAny
-        unchecked((byte)(-1)), // NI_Vector512_LessThanOrEqual
-        unchecked((byte)(-1)), // NI_Vector512_LessThanOrEqualAll
-        unchecked((byte)(-1)), // NI_Vector512_LessThanOrEqualAny
-        unchecked((byte)(-1)), // NI_Vector512_LoadAligned
-        unchecked((byte)(-1)), // NI_Vector512_LoadAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector512_LoadUnsafe
-        unchecked((byte)(-1)), // NI_Vector512_Max
-        unchecked((byte)(-1)), // NI_Vector512_MaxMagnitude
-        unchecked((byte)(-1)), // NI_Vector512_MaxMagnitudeNumber
-        unchecked((byte)(-1)), // NI_Vector512_MaxNative
-        unchecked((byte)(-1)), // NI_Vector512_MaxNumber
-        unchecked((byte)(-1)), // NI_Vector512_Min
-        unchecked((byte)(-1)), // NI_Vector512_MinMagnitude
-        unchecked((byte)(-1)), // NI_Vector512_MinMagnitudeNumber
-        unchecked((byte)(-1)), // NI_Vector512_MinNative
-        unchecked((byte)(-1)), // NI_Vector512_MinNumber
-        unchecked((byte)(-1)), // NI_Vector512_MultiplyAddEstimate
-        unchecked((byte)(-1)), // NI_Vector512_Narrow
-        unchecked((byte)(-1)), // NI_Vector512_NarrowWithSaturation
-        unchecked((byte)(-1)), // NI_Vector512_Round
-        unchecked((byte)(-1)), // NI_Vector512_ShiftLeft
-        unchecked((byte)(-1)), // NI_Vector512_Shuffle
-        unchecked((byte)(-1)), // NI_Vector512_ShuffleNative
-        unchecked((byte)(-1)), // NI_Vector512_ShuffleNativeFallback
-        unchecked((byte)(-1)), // NI_Vector512_Sqrt
-        unchecked((byte)(-1)), // NI_Vector512_StoreAligned
-        unchecked((byte)(-1)), // NI_Vector512_StoreAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector512_StoreUnsafe
-        unchecked((byte)(-1)), // NI_Vector512_SubtractSaturate
-        unchecked((byte)(-1)), // NI_Vector512_Sum
-        unchecked((byte)(-1)), // NI_Vector512_ToScalar
-        unchecked((byte)(-1)), // NI_Vector512_Truncate
-        unchecked((byte)(-1)), // NI_Vector512_WidenLower
-        unchecked((byte)(-1)), // NI_Vector512_WidenUpper
-        unchecked((byte)(-1)), // NI_Vector512_WithElement
-        unchecked((byte)(-1)), // NI_Vector512_WithLower
-        unchecked((byte)(-1)), // NI_Vector512_WithUpper
-        unchecked((byte)(-1)), // NI_Vector512_get_AllBitsSet
-        unchecked((byte)(-1)), // NI_Vector512_get_E
-        unchecked((byte)(-1)), // NI_Vector512_get_Epsilon
-        unchecked((byte)(-1)), // NI_Vector512_get_Indices
-        unchecked((byte)(-1)), // NI_Vector512_get_NaN
-        unchecked((byte)(-1)), // NI_Vector512_get_NegativeInfinity
-        unchecked((byte)(-1)), // NI_Vector512_get_NegativeOne
-        unchecked((byte)(-1)), // NI_Vector512_get_NegativeZero
-        unchecked((byte)(-1)), // NI_Vector512_get_One
-        unchecked((byte)(-1)), // NI_Vector512_get_Pi
-        unchecked((byte)(-1)), // NI_Vector512_get_PositiveInfinity
-        unchecked((byte)(-1)), // NI_Vector512_get_Tau
-        unchecked((byte)(-1)), // NI_Vector512_get_Zero
-        unchecked((byte)(-1)), // NI_Vector512_op_Addition
-        unchecked((byte)(-1)), // NI_Vector512_op_BitwiseAnd
-        unchecked((byte)(-1)), // NI_Vector512_op_BitwiseOr
-        unchecked((byte)(-1)), // NI_Vector512_op_Division
-        unchecked((byte)(-1)), // NI_Vector512_op_Equality
-        unchecked((byte)(-1)), // NI_Vector512_op_ExclusiveOr
-        unchecked((byte)(-1)), // NI_Vector512_op_Inequality
-        unchecked((byte)(-1)), // NI_Vector512_op_LeftShift
-        unchecked((byte)(-1)), // NI_Vector512_op_Multiply
-        unchecked((byte)(-1)), // NI_Vector512_op_OnesComplement
-        unchecked((byte)(-1)), // NI_Vector512_op_RightShift
-        unchecked((byte)(-1)), // NI_Vector512_op_Subtraction
-        unchecked((byte)(-1)), // NI_Vector512_op_UnaryNegation
-        unchecked((byte)(-1)), // NI_Vector512_op_UnaryPlus
-        unchecked((byte)(-1)), // NI_Vector512_op_UnsignedRightShift
         1, // NI_X86Base_Abs
         1, // NI_X86Base_Add
         1, // NI_X86Base_AddSaturate
@@ -12647,6 +10963,32 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_AVX512v3_CompressStore
         unchecked((byte)(-1)), // NI_AVX512v3_Expand
         unchecked((byte)(-1)), // NI_AVX512v3_ExpandLoad
+        5, // NI_AVX512v3_MultiplyWideningAndAdd
+        5, // NI_AVX512v3_MultiplyWideningAndAddSaturate
+        4, // NI_AVX10v1_AddScalar
+        3, // NI_AVX10v1_CompareScalarOrderedEqual
+        3, // NI_AVX10v1_CompareScalarOrderedGreaterThan
+        3, // NI_AVX10v1_CompareScalarOrderedGreaterThanOrEqual
+        3, // NI_AVX10v1_CompareScalarOrderedLessThan
+        3, // NI_AVX10v1_CompareScalarOrderedLessThanOrEqual
+        3, // NI_AVX10v1_CompareScalarOrderedNotEqual
+        3, // NI_AVX10v1_CompareScalarUnorderedEqual
+        3, // NI_AVX10v1_CompareScalarUnorderedGreaterThan
+        3, // NI_AVX10v1_CompareScalarUnorderedGreaterThanOrEqual
+        3, // NI_AVX10v1_CompareScalarUnorderedLessThan
+        3, // NI_AVX10v1_CompareScalarUnorderedLessThanOrEqual
+        3, // NI_AVX10v1_CompareScalarUnorderedNotEqual
+        5, // NI_AVX10v1_ConvertScalarToVector128Double
+        5, // NI_AVX10v1_ConvertScalarToVector128Half
+        5, // NI_AVX10v1_ConvertScalarToVector128Single
+        unchecked((byte)(-1)), // NI_AVX10v1_DivideScalar
+        4, // NI_AVX10v1_FusedMultiplyAddScalar
+        4, // NI_AVX10v1_MultiplyScalar
+        4, // NI_AVX10v1_ReciprocalScalar
+        4, // NI_AVX10v1_ReciprocalSqrtScalar
+        8, // NI_AVX10v1_RoundScaleScalar
+        unchecked((byte)(-1)), // NI_AVX10v1_SqrtScalar
+        4, // NI_AVX10v1_SubtractScalar
         unchecked((byte)(-1)), // NI_AVX10v2_ConvertToByteWithSaturationAndZeroExtendToInt32
         unchecked((byte)(-1)), // NI_AVX10v2_ConvertToByteWithTruncatedSaturationAndZeroExtendToInt32
         unchecked((byte)(-1)), // NI_AVX10v2_ConvertToInt32WithTruncatedSaturation
@@ -12695,6 +11037,8 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_X86Base_COMIS
         4, // NI_X86Base_PTEST
         unchecked((byte)(-1)), // NI_X86Base_UCOMIS
+        unchecked((byte)(-1)), // NI_AVX10v1_VCOMISH
+        unchecked((byte)(-1)), // NI_AVX10v1_VUCOMISH
         unchecked((byte)(-1)), // NI_AVX_PTEST
         1, // NI_AVX2_AndNotVector
         1, // NI_AVX2_AndNotScalar
@@ -12741,266 +11085,6 @@ public partial struct HWIntrinsicInfo
 #endif
 #elif TARGET_ARM64
 #if FEATURE_HW_INTRINSICS
-        unchecked((byte)(-1)), // NI_Vector64_Abs
-        unchecked((byte)(-1)), // NI_Vector64_AddSaturate
-        unchecked((byte)(-1)), // NI_Vector64_AndNot
-        unchecked((byte)(-1)), // NI_Vector64_As
-        unchecked((byte)(-1)), // NI_Vector64_AsByte
-        unchecked((byte)(-1)), // NI_Vector64_AsDouble
-        unchecked((byte)(-1)), // NI_Vector64_AsInt16
-        unchecked((byte)(-1)), // NI_Vector64_AsInt32
-        unchecked((byte)(-1)), // NI_Vector64_AsInt64
-        unchecked((byte)(-1)), // NI_Vector64_AsNInt
-        unchecked((byte)(-1)), // NI_Vector64_AsNUInt
-        unchecked((byte)(-1)), // NI_Vector64_AsSByte
-        unchecked((byte)(-1)), // NI_Vector64_AsSingle
-        unchecked((byte)(-1)), // NI_Vector64_AsUInt16
-        unchecked((byte)(-1)), // NI_Vector64_AsUInt32
-        unchecked((byte)(-1)), // NI_Vector64_AsUInt64
-        unchecked((byte)(-1)), // NI_Vector64_Ceiling
-        unchecked((byte)(-1)), // NI_Vector64_ConditionalSelect
-        unchecked((byte)(-1)), // NI_Vector64_ConvertToDouble
-        unchecked((byte)(-1)), // NI_Vector64_ConvertToInt32
-        unchecked((byte)(-1)), // NI_Vector64_ConvertToInt32Native
-        unchecked((byte)(-1)), // NI_Vector64_ConvertToInt64
-        unchecked((byte)(-1)), // NI_Vector64_ConvertToInt64Native
-        unchecked((byte)(-1)), // NI_Vector64_ConvertToSingle
-        unchecked((byte)(-1)), // NI_Vector64_ConvertToUInt32
-        unchecked((byte)(-1)), // NI_Vector64_ConvertToUInt32Native
-        unchecked((byte)(-1)), // NI_Vector64_ConvertToUInt64
-        unchecked((byte)(-1)), // NI_Vector64_ConvertToUInt64Native
-        unchecked((byte)(-1)), // NI_Vector64_Create
-        unchecked((byte)(-1)), // NI_Vector64_CreateScalar
-        unchecked((byte)(-1)), // NI_Vector64_CreateScalarUnsafe
-        unchecked((byte)(-1)), // NI_Vector64_CreateSequence
-        unchecked((byte)(-1)), // NI_Vector64_Dot
-        unchecked((byte)(-1)), // NI_Vector64_Equals
-        unchecked((byte)(-1)), // NI_Vector64_EqualsAny
-        unchecked((byte)(-1)), // NI_Vector64_ExtractMostSignificantBits
-        unchecked((byte)(-1)), // NI_Vector64_Floor
-        unchecked((byte)(-1)), // NI_Vector64_FusedMultiplyAdd
-        unchecked((byte)(-1)), // NI_Vector64_GetElement
-        unchecked((byte)(-1)), // NI_Vector64_GreaterThan
-        unchecked((byte)(-1)), // NI_Vector64_GreaterThanAll
-        unchecked((byte)(-1)), // NI_Vector64_GreaterThanAny
-        unchecked((byte)(-1)), // NI_Vector64_GreaterThanOrEqual
-        unchecked((byte)(-1)), // NI_Vector64_GreaterThanOrEqualAll
-        unchecked((byte)(-1)), // NI_Vector64_GreaterThanOrEqualAny
-        unchecked((byte)(-1)), // NI_Vector64_IsEvenInteger
-        unchecked((byte)(-1)), // NI_Vector64_IsFinite
-        unchecked((byte)(-1)), // NI_Vector64_IsInfinity
-        unchecked((byte)(-1)), // NI_Vector64_IsInteger
-        unchecked((byte)(-1)), // NI_Vector64_IsNaN
-        unchecked((byte)(-1)), // NI_Vector64_IsNegative
-        unchecked((byte)(-1)), // NI_Vector64_IsNegativeInfinity
-        unchecked((byte)(-1)), // NI_Vector64_IsNormal
-        unchecked((byte)(-1)), // NI_Vector64_IsOddInteger
-        unchecked((byte)(-1)), // NI_Vector64_IsPositive
-        unchecked((byte)(-1)), // NI_Vector64_IsPositiveInfinity
-        unchecked((byte)(-1)), // NI_Vector64_IsSubnormal
-        unchecked((byte)(-1)), // NI_Vector64_IsZero
-        unchecked((byte)(-1)), // NI_Vector64_LessThan
-        unchecked((byte)(-1)), // NI_Vector64_LessThanAll
-        unchecked((byte)(-1)), // NI_Vector64_LessThanAny
-        unchecked((byte)(-1)), // NI_Vector64_LessThanOrEqual
-        unchecked((byte)(-1)), // NI_Vector64_LessThanOrEqualAll
-        unchecked((byte)(-1)), // NI_Vector64_LessThanOrEqualAny
-        unchecked((byte)(-1)), // NI_Vector64_LoadAligned
-        unchecked((byte)(-1)), // NI_Vector64_LoadAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector64_LoadUnsafe
-        unchecked((byte)(-1)), // NI_Vector64_Max
-        unchecked((byte)(-1)), // NI_Vector64_MaxMagnitude
-        unchecked((byte)(-1)), // NI_Vector64_MaxMagnitudeNumber
-        unchecked((byte)(-1)), // NI_Vector64_MaxNative
-        unchecked((byte)(-1)), // NI_Vector64_MaxNumber
-        unchecked((byte)(-1)), // NI_Vector64_Min
-        unchecked((byte)(-1)), // NI_Vector64_MinMagnitude
-        unchecked((byte)(-1)), // NI_Vector64_MinMagnitudeNumber
-        unchecked((byte)(-1)), // NI_Vector64_MinNative
-        unchecked((byte)(-1)), // NI_Vector64_MinNumber
-        unchecked((byte)(-1)), // NI_Vector64_MultiplyAddEstimate
-        unchecked((byte)(-1)), // NI_Vector64_Narrow
-        unchecked((byte)(-1)), // NI_Vector64_NarrowWithSaturation
-        unchecked((byte)(-1)), // NI_Vector64_Round
-        unchecked((byte)(-1)), // NI_Vector64_ShiftLeft
-        unchecked((byte)(-1)), // NI_Vector64_Shuffle
-        unchecked((byte)(-1)), // NI_Vector64_ShuffleNative
-        unchecked((byte)(-1)), // NI_Vector64_ShuffleNativeFallback
-        unchecked((byte)(-1)), // NI_Vector64_Sqrt
-        unchecked((byte)(-1)), // NI_Vector64_StoreAligned
-        unchecked((byte)(-1)), // NI_Vector64_StoreAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector64_StoreUnsafe
-        unchecked((byte)(-1)), // NI_Vector64_SubtractSaturate
-        unchecked((byte)(-1)), // NI_Vector64_Sum
-        unchecked((byte)(-1)), // NI_Vector64_ToScalar
-        unchecked((byte)(-1)), // NI_Vector64_ToVector128
-        unchecked((byte)(-1)), // NI_Vector64_ToVector128Unsafe
-        unchecked((byte)(-1)), // NI_Vector64_Truncate
-        unchecked((byte)(-1)), // NI_Vector64_WidenLower
-        unchecked((byte)(-1)), // NI_Vector64_WidenUpper
-        unchecked((byte)(-1)), // NI_Vector64_WithElement
-        unchecked((byte)(-1)), // NI_Vector64_get_AllBitsSet
-        unchecked((byte)(-1)), // NI_Vector64_get_E
-        unchecked((byte)(-1)), // NI_Vector64_get_Epsilon
-        unchecked((byte)(-1)), // NI_Vector64_get_Indices
-        unchecked((byte)(-1)), // NI_Vector64_get_NaN
-        unchecked((byte)(-1)), // NI_Vector64_get_NegativeInfinity
-        unchecked((byte)(-1)), // NI_Vector64_get_NegativeOne
-        unchecked((byte)(-1)), // NI_Vector64_get_NegativeZero
-        unchecked((byte)(-1)), // NI_Vector64_get_One
-        unchecked((byte)(-1)), // NI_Vector64_get_Pi
-        unchecked((byte)(-1)), // NI_Vector64_get_PositiveInfinity
-        unchecked((byte)(-1)), // NI_Vector64_get_Tau
-        unchecked((byte)(-1)), // NI_Vector64_get_Zero
-        unchecked((byte)(-1)), // NI_Vector64_op_Addition
-        unchecked((byte)(-1)), // NI_Vector64_op_BitwiseAnd
-        unchecked((byte)(-1)), // NI_Vector64_op_BitwiseOr
-        unchecked((byte)(-1)), // NI_Vector64_op_Division
-        unchecked((byte)(-1)), // NI_Vector64_op_Equality
-        unchecked((byte)(-1)), // NI_Vector64_op_ExclusiveOr
-        unchecked((byte)(-1)), // NI_Vector64_op_Inequality
-        unchecked((byte)(-1)), // NI_Vector64_op_LeftShift
-        unchecked((byte)(-1)), // NI_Vector64_op_Multiply
-        unchecked((byte)(-1)), // NI_Vector64_op_OnesComplement
-        unchecked((byte)(-1)), // NI_Vector64_op_RightShift
-        unchecked((byte)(-1)), // NI_Vector64_op_Subtraction
-        unchecked((byte)(-1)), // NI_Vector64_op_UnaryNegation
-        unchecked((byte)(-1)), // NI_Vector64_op_UnaryPlus
-        unchecked((byte)(-1)), // NI_Vector64_op_UnsignedRightShift
-        unchecked((byte)(-1)), // NI_Vector128_Abs
-        unchecked((byte)(-1)), // NI_Vector128_AddSaturate
-        unchecked((byte)(-1)), // NI_Vector128_AndNot
-        unchecked((byte)(-1)), // NI_Vector128_As
-        unchecked((byte)(-1)), // NI_Vector128_AsByte
-        unchecked((byte)(-1)), // NI_Vector128_AsDouble
-        unchecked((byte)(-1)), // NI_Vector128_AsInt16
-        unchecked((byte)(-1)), // NI_Vector128_AsInt32
-        unchecked((byte)(-1)), // NI_Vector128_AsInt64
-        unchecked((byte)(-1)), // NI_Vector128_AsNInt
-        unchecked((byte)(-1)), // NI_Vector128_AsNUInt
-        unchecked((byte)(-1)), // NI_Vector128_AsSByte
-        unchecked((byte)(-1)), // NI_Vector128_AsSingle
-        unchecked((byte)(-1)), // NI_Vector128_AsUInt16
-        unchecked((byte)(-1)), // NI_Vector128_AsUInt32
-        unchecked((byte)(-1)), // NI_Vector128_AsUInt64
-        unchecked((byte)(-1)), // NI_Vector128_AsVector
-        unchecked((byte)(-1)), // NI_Vector128_AsVector128
-        unchecked((byte)(-1)), // NI_Vector128_AsVector128Unsafe
-        unchecked((byte)(-1)), // NI_Vector128_AsVector2
-        unchecked((byte)(-1)), // NI_Vector128_AsVector3
-        unchecked((byte)(-1)), // NI_Vector128_AsVector4
-        unchecked((byte)(-1)), // NI_Vector128_Ceiling
-        unchecked((byte)(-1)), // NI_Vector128_ConditionalSelect
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToDouble
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToInt32
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToInt32Native
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToInt64
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToInt64Native
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToSingle
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToUInt32
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToUInt32Native
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToUInt64
-        unchecked((byte)(-1)), // NI_Vector128_ConvertToUInt64Native
-        unchecked((byte)(-1)), // NI_Vector128_Create
-        unchecked((byte)(-1)), // NI_Vector128_CreateScalar
-        unchecked((byte)(-1)), // NI_Vector128_CreateScalarUnsafe
-        unchecked((byte)(-1)), // NI_Vector128_CreateSequence
-        unchecked((byte)(-1)), // NI_Vector128_Dot
-        unchecked((byte)(-1)), // NI_Vector128_Equals
-        unchecked((byte)(-1)), // NI_Vector128_EqualsAny
-        unchecked((byte)(-1)), // NI_Vector128_ExtractMostSignificantBits
-        unchecked((byte)(-1)), // NI_Vector128_Floor
-        unchecked((byte)(-1)), // NI_Vector128_FusedMultiplyAdd
-        unchecked((byte)(-1)), // NI_Vector128_GetElement
-        unchecked((byte)(-1)), // NI_Vector128_GetLower
-        unchecked((byte)(-1)), // NI_Vector128_GetUpper
-        unchecked((byte)(-1)), // NI_Vector128_GreaterThan
-        unchecked((byte)(-1)), // NI_Vector128_GreaterThanAll
-        unchecked((byte)(-1)), // NI_Vector128_GreaterThanAny
-        unchecked((byte)(-1)), // NI_Vector128_GreaterThanOrEqual
-        unchecked((byte)(-1)), // NI_Vector128_GreaterThanOrEqualAll
-        unchecked((byte)(-1)), // NI_Vector128_GreaterThanOrEqualAny
-        unchecked((byte)(-1)), // NI_Vector128_IsEvenInteger
-        unchecked((byte)(-1)), // NI_Vector128_IsFinite
-        unchecked((byte)(-1)), // NI_Vector128_IsInfinity
-        unchecked((byte)(-1)), // NI_Vector128_IsInteger
-        unchecked((byte)(-1)), // NI_Vector128_IsNaN
-        unchecked((byte)(-1)), // NI_Vector128_IsNegative
-        unchecked((byte)(-1)), // NI_Vector128_IsNegativeInfinity
-        unchecked((byte)(-1)), // NI_Vector128_IsNormal
-        unchecked((byte)(-1)), // NI_Vector128_IsOddInteger
-        unchecked((byte)(-1)), // NI_Vector128_IsPositive
-        unchecked((byte)(-1)), // NI_Vector128_IsPositiveInfinity
-        unchecked((byte)(-1)), // NI_Vector128_IsSubnormal
-        unchecked((byte)(-1)), // NI_Vector128_IsZero
-        unchecked((byte)(-1)), // NI_Vector128_LessThan
-        unchecked((byte)(-1)), // NI_Vector128_LessThanAll
-        unchecked((byte)(-1)), // NI_Vector128_LessThanAny
-        unchecked((byte)(-1)), // NI_Vector128_LessThanOrEqual
-        unchecked((byte)(-1)), // NI_Vector128_LessThanOrEqualAll
-        unchecked((byte)(-1)), // NI_Vector128_LessThanOrEqualAny
-        unchecked((byte)(-1)), // NI_Vector128_LoadAligned
-        unchecked((byte)(-1)), // NI_Vector128_LoadAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector128_LoadUnsafe
-        unchecked((byte)(-1)), // NI_Vector128_Max
-        unchecked((byte)(-1)), // NI_Vector128_MaxMagnitude
-        unchecked((byte)(-1)), // NI_Vector128_MaxMagnitudeNumber
-        unchecked((byte)(-1)), // NI_Vector128_MaxNative
-        unchecked((byte)(-1)), // NI_Vector128_MaxNumber
-        unchecked((byte)(-1)), // NI_Vector128_Min
-        unchecked((byte)(-1)), // NI_Vector128_MinMagnitude
-        unchecked((byte)(-1)), // NI_Vector128_MinMagnitudeNumber
-        unchecked((byte)(-1)), // NI_Vector128_MinNative
-        unchecked((byte)(-1)), // NI_Vector128_MinNumber
-        unchecked((byte)(-1)), // NI_Vector128_MultiplyAddEstimate
-        unchecked((byte)(-1)), // NI_Vector128_Narrow
-        unchecked((byte)(-1)), // NI_Vector128_NarrowWithSaturation
-        unchecked((byte)(-1)), // NI_Vector128_Round
-        unchecked((byte)(-1)), // NI_Vector128_ShiftLeft
-        unchecked((byte)(-1)), // NI_Vector128_Shuffle
-        unchecked((byte)(-1)), // NI_Vector128_ShuffleNative
-        unchecked((byte)(-1)), // NI_Vector128_ShuffleNativeFallback
-        unchecked((byte)(-1)), // NI_Vector128_Sqrt
-        unchecked((byte)(-1)), // NI_Vector128_StoreAligned
-        unchecked((byte)(-1)), // NI_Vector128_StoreAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector128_StoreUnsafe
-        unchecked((byte)(-1)), // NI_Vector128_SubtractSaturate
-        unchecked((byte)(-1)), // NI_Vector128_Sum
-        unchecked((byte)(-1)), // NI_Vector128_ToScalar
-        unchecked((byte)(-1)), // NI_Vector128_Truncate
-        unchecked((byte)(-1)), // NI_Vector128_WidenLower
-        unchecked((byte)(-1)), // NI_Vector128_WidenUpper
-        unchecked((byte)(-1)), // NI_Vector128_WithElement
-        unchecked((byte)(-1)), // NI_Vector128_WithLower
-        unchecked((byte)(-1)), // NI_Vector128_WithUpper
-        unchecked((byte)(-1)), // NI_Vector128_get_AllBitsSet
-        unchecked((byte)(-1)), // NI_Vector128_get_E
-        unchecked((byte)(-1)), // NI_Vector128_get_Epsilon
-        unchecked((byte)(-1)), // NI_Vector128_get_Indices
-        unchecked((byte)(-1)), // NI_Vector128_get_NaN
-        unchecked((byte)(-1)), // NI_Vector128_get_NegativeInfinity
-        unchecked((byte)(-1)), // NI_Vector128_get_NegativeOne
-        unchecked((byte)(-1)), // NI_Vector128_get_NegativeZero
-        unchecked((byte)(-1)), // NI_Vector128_get_One
-        unchecked((byte)(-1)), // NI_Vector128_get_Pi
-        unchecked((byte)(-1)), // NI_Vector128_get_PositiveInfinity
-        unchecked((byte)(-1)), // NI_Vector128_get_Tau
-        unchecked((byte)(-1)), // NI_Vector128_get_Zero
-        unchecked((byte)(-1)), // NI_Vector128_op_Addition
-        unchecked((byte)(-1)), // NI_Vector128_op_BitwiseAnd
-        unchecked((byte)(-1)), // NI_Vector128_op_BitwiseOr
-        unchecked((byte)(-1)), // NI_Vector128_op_Division
-        unchecked((byte)(-1)), // NI_Vector128_op_Equality
-        unchecked((byte)(-1)), // NI_Vector128_op_ExclusiveOr
-        unchecked((byte)(-1)), // NI_Vector128_op_Inequality
-        unchecked((byte)(-1)), // NI_Vector128_op_LeftShift
-        unchecked((byte)(-1)), // NI_Vector128_op_Multiply
-        unchecked((byte)(-1)), // NI_Vector128_op_OnesComplement
-        unchecked((byte)(-1)), // NI_Vector128_op_RightShift
-        unchecked((byte)(-1)), // NI_Vector128_op_Subtraction
-        unchecked((byte)(-1)), // NI_Vector128_op_UnaryNegation
-        unchecked((byte)(-1)), // NI_Vector128_op_UnaryPlus
-        unchecked((byte)(-1)), // NI_Vector128_op_UnsignedRightShift
         unchecked((byte)(-1)), // NI_AdvSimd_Abs
         unchecked((byte)(-1)), // NI_AdvSimd_AbsSaturate
         unchecked((byte)(-1)), // NI_AdvSimd_AbsScalar
@@ -13476,6 +11560,29 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_Crc32_Arm64_ComputeCrc32C
         unchecked((byte)(-1)), // NI_Dp_DotProduct
         unchecked((byte)(-1)), // NI_Dp_DotProductBySelectedQuadruplet
+        unchecked((byte)(-1)), // NI_Fp16_Add
+        unchecked((byte)(-1)), // NI_Fp16_Ceiling
+        unchecked((byte)(-1)), // NI_Fp16_CompareEqual
+        unchecked((byte)(-1)), // NI_Fp16_CompareGreaterThan
+        unchecked((byte)(-1)), // NI_Fp16_CompareGreaterThanOrEqual
+        unchecked((byte)(-1)), // NI_Fp16_CompareLessThan
+        unchecked((byte)(-1)), // NI_Fp16_CompareLessThanOrEqual
+        unchecked((byte)(-1)), // NI_Fp16_CompareNotEqual
+        unchecked((byte)(-1)), // NI_Fp16_ConvertToHalf
+        unchecked((byte)(-1)), // NI_Fp16_ConvertToInt32
+        unchecked((byte)(-1)), // NI_Fp16_ConvertToInt64
+        unchecked((byte)(-1)), // NI_Fp16_ConvertToUInt32
+        unchecked((byte)(-1)), // NI_Fp16_ConvertToUInt64
+        unchecked((byte)(-1)), // NI_Fp16_Divide
+        unchecked((byte)(-1)), // NI_Fp16_Floor
+        unchecked((byte)(-1)), // NI_Fp16_FusedMultiplyAdd
+        unchecked((byte)(-1)), // NI_Fp16_Multiply
+        unchecked((byte)(-1)), // NI_Fp16_ReciprocalEstimate
+        unchecked((byte)(-1)), // NI_Fp16_ReciprocalSqrtEstimate
+        unchecked((byte)(-1)), // NI_Fp16_RoundToNearest
+        unchecked((byte)(-1)), // NI_Fp16_Sqrt
+        unchecked((byte)(-1)), // NI_Fp16_Subtract
+        unchecked((byte)(-1)), // NI_Fp16_Truncate
         unchecked((byte)(-1)), // NI_Rdm_MultiplyRoundedDoublingAndAddSaturateHigh
         unchecked((byte)(-1)), // NI_Rdm_MultiplyRoundedDoublingAndSubtractSaturateHigh
         unchecked((byte)(-1)), // NI_Rdm_MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh
@@ -13494,6 +11601,15 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_Sha256_HashUpdate2
         unchecked((byte)(-1)), // NI_Sha256_ScheduleUpdate0
         unchecked((byte)(-1)), // NI_Sha256_ScheduleUpdate1
+        unchecked((byte)(-1)), // NI_Sha3_BitwiseClearXor
+        unchecked((byte)(-1)), // NI_Sha3_BitwiseRotateLeftBy1AndXor
+        unchecked((byte)(-1)), // NI_Sha3_Xor
+        unchecked((byte)(-1)), // NI_Sha3_XorRotateRight
+        unchecked((byte)(-1)), // NI_Sm4_Encode
+        unchecked((byte)(-1)), // NI_Sm4_KeyUpdate
+        unchecked((byte)(-1)), // NI_ArmBase_ConvertToDouble
+        unchecked((byte)(-1)), // NI_ArmBase_ConvertToHalf
+        unchecked((byte)(-1)), // NI_ArmBase_ConvertToSingle
 #endif
 #if FEATURE_HW_INTRINSICS
         unchecked((byte)(-1)), // NI_Sve_Abs
@@ -13860,6 +11976,16 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_Sve2_CreateWhileReadAfterWriteMaskUInt16
         unchecked((byte)(-1)), // NI_Sve2_CreateWhileReadAfterWriteMaskUInt32
         unchecked((byte)(-1)), // NI_Sve2_CreateWhileReadAfterWriteMaskUInt64
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskByte
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskDouble
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskInt16
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskInt32
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskInt64
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskSByte
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskSingle
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskUInt16
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskUInt32
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskUInt64
         unchecked((byte)(-1)), // NI_Sve2_DotProductRotateComplex
         unchecked((byte)(-1)), // NI_Sve2_DotProductRotateComplexBySelectedIndex
         unchecked((byte)(-1)), // NI_Sve2_FusedAddHalving
@@ -13933,6 +12059,10 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_Sve2_PolynomialMultiplyWideningOdd
         unchecked((byte)(-1)), // NI_Sve2_ReciprocalEstimate
         unchecked((byte)(-1)), // NI_Sve2_ReciprocalSqrtEstimate
+        unchecked((byte)(-1)), // NI_Sve2_SaturatingExtractNarrowingLower
+        unchecked((byte)(-1)), // NI_Sve2_SaturatingExtractNarrowingUpper
+        unchecked((byte)(-1)), // NI_Sve2_SaturatingExtractUnsignedNarrowingLower
+        unchecked((byte)(-1)), // NI_Sve2_SaturatingExtractUnsignedNarrowingUpper
         unchecked((byte)(-1)), // NI_Sve2_Scatter16BitNarrowingNonTemporal
         unchecked((byte)(-1)), // NI_Sve2_Scatter16BitWithByteOffsetsNarrowingNonTemporal
         unchecked((byte)(-1)), // NI_Sve2_Scatter32BitNarrowingNonTemporal
@@ -13989,6 +12119,9 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_Sve2_VectorTableLookupExtension
         unchecked((byte)(-1)), // NI_Sve2_Xor
         unchecked((byte)(-1)), // NI_Sve2_XorRotateRight
+        unchecked((byte)(-1)), // NI_SveSha3_BitwiseRotateLeftBy1AndXor
+        unchecked((byte)(-1)), // NI_SveSm4_Encode
+        unchecked((byte)(-1)), // NI_SveSm4_KeyUpdate
         unchecked((byte)(-1)), // NI_Sve_ConditionalExtractAfterLastActiveElementScalar
         unchecked((byte)(-1)), // NI_Sve_ConditionalExtractLastActiveElementScalar
         unchecked((byte)(-1)), // NI_Sve_ConvertMaskToVector
@@ -14016,408 +12149,292 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_Sve_TransposeOdd_Predicates
         unchecked((byte)(-1)), // NI_Sve_ReverseElement_Predicates
 #endif
+#elif TARGET_WASM
+#if FEATURE_HW_INTRINSICS
+        unchecked((byte)(-1)), // NI_PackedSimd_Abs
+        unchecked((byte)(-1)), // NI_PackedSimd_Add
+        unchecked((byte)(-1)), // NI_PackedSimd_AddPairwiseWidening
+        unchecked((byte)(-1)), // NI_PackedSimd_AddSaturate
+        unchecked((byte)(-1)), // NI_PackedSimd_AllTrue
+        unchecked((byte)(-1)), // NI_PackedSimd_And
+        unchecked((byte)(-1)), // NI_PackedSimd_AndNot
+        unchecked((byte)(-1)), // NI_PackedSimd_AnyTrue
+        unchecked((byte)(-1)), // NI_PackedSimd_AverageRounded
+        unchecked((byte)(-1)), // NI_PackedSimd_Bitmask
+        unchecked((byte)(-1)), // NI_PackedSimd_BitwiseSelect
+        unchecked((byte)(-1)), // NI_PackedSimd_Ceiling
+        unchecked((byte)(-1)), // NI_PackedSimd_CompareEqual
+        unchecked((byte)(-1)), // NI_PackedSimd_CompareGreaterThan
+        unchecked((byte)(-1)), // NI_PackedSimd_CompareGreaterThanOrEqual
+        unchecked((byte)(-1)), // NI_PackedSimd_CompareLessThan
+        unchecked((byte)(-1)), // NI_PackedSimd_CompareLessThanOrEqual
+        unchecked((byte)(-1)), // NI_PackedSimd_CompareNotEqual
+        unchecked((byte)(-1)), // NI_PackedSimd_ConvertNarrowingSaturateSigned
+        unchecked((byte)(-1)), // NI_PackedSimd_ConvertNarrowingSaturateUnsigned
+        unchecked((byte)(-1)), // NI_PackedSimd_ConvertToDoubleLower
+        unchecked((byte)(-1)), // NI_PackedSimd_ConvertToInt32Saturate
+        unchecked((byte)(-1)), // NI_PackedSimd_ConvertToSingle
+        unchecked((byte)(-1)), // NI_PackedSimd_ConvertToUInt32Saturate
+        unchecked((byte)(-1)), // NI_PackedSimd_Divide
+        unchecked((byte)(-1)), // NI_PackedSimd_Dot
+        unchecked((byte)(-1)), // NI_PackedSimd_ExtractScalar
+        unchecked((byte)(-1)), // NI_PackedSimd_Floor
+        unchecked((byte)(-1)), // NI_PackedSimd_LoadScalarAndInsert
+        unchecked((byte)(-1)), // NI_PackedSimd_LoadScalarAndSplatVector128
+        unchecked((byte)(-1)), // NI_PackedSimd_LoadScalarVector128
+        unchecked((byte)(-1)), // NI_PackedSimd_LoadVector128
+        unchecked((byte)(-1)), // NI_PackedSimd_LoadWideningVector128
+        unchecked((byte)(-1)), // NI_PackedSimd_Max
+        unchecked((byte)(-1)), // NI_PackedSimd_Min
+        unchecked((byte)(-1)), // NI_PackedSimd_Multiply
+        unchecked((byte)(-1)), // NI_PackedSimd_MultiplyRoundedSaturateQ15
+        unchecked((byte)(-1)), // NI_PackedSimd_MultiplyWideningLower
+        unchecked((byte)(-1)), // NI_PackedSimd_MultiplyWideningUpper
+        unchecked((byte)(-1)), // NI_PackedSimd_Negate
+        unchecked((byte)(-1)), // NI_PackedSimd_Not
+        unchecked((byte)(-1)), // NI_PackedSimd_Or
+        unchecked((byte)(-1)), // NI_PackedSimd_PopCount
+        unchecked((byte)(-1)), // NI_PackedSimd_PseudoMax
+        unchecked((byte)(-1)), // NI_PackedSimd_PseudoMin
+        unchecked((byte)(-1)), // NI_PackedSimd_ReplaceScalar
+        unchecked((byte)(-1)), // NI_PackedSimd_RoundToNearest
+        unchecked((byte)(-1)), // NI_PackedSimd_ShiftLeft
+        unchecked((byte)(-1)), // NI_PackedSimd_ShiftRightArithmetic
+        unchecked((byte)(-1)), // NI_PackedSimd_ShiftRightLogical
+        unchecked((byte)(-1)), // NI_PackedSimd_Shuffle
+        unchecked((byte)(-1)), // NI_PackedSimd_SignExtendWideningLower
+        unchecked((byte)(-1)), // NI_PackedSimd_SignExtendWideningUpper
+        unchecked((byte)(-1)), // NI_PackedSimd_Splat
+        unchecked((byte)(-1)), // NI_PackedSimd_Sqrt
+        unchecked((byte)(-1)), // NI_PackedSimd_Store
+        unchecked((byte)(-1)), // NI_PackedSimd_StoreSelectedScalar
+        unchecked((byte)(-1)), // NI_PackedSimd_Subtract
+        unchecked((byte)(-1)), // NI_PackedSimd_SubtractSaturate
+        unchecked((byte)(-1)), // NI_PackedSimd_Swizzle
+        unchecked((byte)(-1)), // NI_PackedSimd_Truncate
+        unchecked((byte)(-1)), // NI_PackedSimd_Xor
+        unchecked((byte)(-1)), // NI_PackedSimd_ZeroExtendWideningLower
+        unchecked((byte)(-1)), // NI_PackedSimd_ZeroExtendWideningUpper
+        unchecked((byte)(-1)), // NI_WasmBase_LeadingZeroCount
+        unchecked((byte)(-1)), // NI_WasmBase_TrailingZeroCount
 #endif
+#else
+#error Unsupported platform
+#endif
+#endif
+
     ];
 
     private static readonly string[] s_names = [
+#if FEATURE_HW_INTRINSICS
+        "Abs", // NI_Vector_Abs
+        "AddSaturate", // NI_Vector_AddSaturate
+        "AndNot", // NI_Vector_AndNot
+        "As", // NI_Vector_As
+        "AsByte", // NI_Vector_AsByte
+        "AsDouble", // NI_Vector_AsDouble
+        "AsInt16", // NI_Vector_AsInt16
+        "AsInt32", // NI_Vector_AsInt32
+        "AsInt64", // NI_Vector_AsInt64
+        "AsNInt", // NI_Vector_AsNInt
+        "AsNUInt", // NI_Vector_AsNUInt
+        "AsSByte", // NI_Vector_AsSByte
+        "AsSingle", // NI_Vector_AsSingle
+        "AsUInt16", // NI_Vector_AsUInt16
+        "AsUInt32", // NI_Vector_AsUInt32
+        "AsUInt64", // NI_Vector_AsUInt64
+        "AsVector", // NI_Vector_AsVector
+        "AsVector128", // NI_Vector_AsVector128
+#if TARGET_XARCH
+        "AsVector128Unsafe", // NI_Vector_AsVector128Unsafe
+        "AsVector2", // NI_Vector_AsVector2
+        "AsVector256", // NI_Vector_AsVector256
+        "AsVector3", // NI_Vector_AsVector3
+#elif TARGET_ARM64
+        "AsVector128Unsafe", // NI_Vector_AsVector128Unsafe
+        "AsVector2", // NI_Vector_AsVector2
+        "AsVector3", // NI_Vector_AsVector3
+#else
+        "AsVector128Unsafe", // NI_Vector_AsVector128Unsafe
+        "AsVector2", // NI_Vector_AsVector2
+        "AsVector3", // NI_Vector_AsVector3
+#endif
+        "AsVector4", // NI_Vector_AsVector4
+#if TARGET_XARCH
+        "AsVector512", // NI_Vector_AsVector512
+#endif
+        "Ceiling", // NI_Vector_Ceiling
+        "ConcatLowerLower", // NI_Vector_ConcatLowerLower
+        "ConcatLowerUpper", // NI_Vector_ConcatLowerUpper
+        "ConcatUpperLower", // NI_Vector_ConcatUpperLower
+        "ConcatUpperUpper", // NI_Vector_ConcatUpperUpper
+#if TARGET_XARCH
+        "ConditionalSelect", // NI_Vector_ConditionalSelect
+#else
+        "ConditionalSelect", // NI_Vector_ConditionalSelect
+#endif
+        "ConvertToDouble", // NI_Vector_ConvertToDouble
+        "ConvertToInt32", // NI_Vector_ConvertToInt32
+        "ConvertToInt32Native", // NI_Vector_ConvertToInt32Native
+        "ConvertToInt64", // NI_Vector_ConvertToInt64
+        "ConvertToInt64Native", // NI_Vector_ConvertToInt64Native
+        "ConvertToSingle", // NI_Vector_ConvertToSingle
+        "ConvertToUInt32", // NI_Vector_ConvertToUInt32
+        "ConvertToUInt32Native", // NI_Vector_ConvertToUInt32Native
+        "ConvertToUInt64", // NI_Vector_ConvertToUInt64
+        "ConvertToUInt64Native", // NI_Vector_ConvertToUInt64Native
+        "Create", // NI_Vector_Create
+        "CreateAlternatingSequence", // NI_Vector_CreateAlternatingSequence
+        "CreateGeometricSequence", // NI_Vector_CreateGeometricSequence
+#if TARGET_XARCH
+        "CreateScalar", // NI_Vector_CreateScalar
+        "CreateScalarUnsafe", // NI_Vector_CreateScalarUnsafe
+#elif TARGET_ARM64
+        "CreateScalar", // NI_Vector_CreateScalar
+        "CreateScalarUnsafe", // NI_Vector_CreateScalarUnsafe
+#else
+        "CreateScalar", // NI_Vector_CreateScalar
+        "CreateScalarUnsafe", // NI_Vector_CreateScalarUnsafe
+#endif
+        "CreateSequence", // NI_Vector_CreateSequence
+        "Dot", // NI_Vector_Dot
+        "Equals", // NI_Vector_Equals
+        "EqualsAny", // NI_Vector_EqualsAny
+        "ExtractMostSignificantBits", // NI_Vector_ExtractMostSignificantBits
+        "Floor", // NI_Vector_Floor
+        "FusedMultiplyAdd", // NI_Vector_FusedMultiplyAdd
+#if TARGET_XARCH
+        "GetElement", // NI_Vector_GetElement
+#elif TARGET_ARM64
+        "GetElement", // NI_Vector_GetElement
+#else
+        "GetElement", // NI_Vector_GetElement
+#endif
+#if TARGET_XARCH
+        "GetLower", // NI_Vector_GetLower
+        "GetLower128", // NI_Vector_GetLower128
+        "GetUpper", // NI_Vector_GetUpper
+#elif TARGET_ARM64
+        "GetLower", // NI_Vector_GetLower
+        "GetUpper", // NI_Vector_GetUpper
+#endif
+        "GreaterThan", // NI_Vector_GreaterThan
+        "GreaterThanAll", // NI_Vector_GreaterThanAll
+        "GreaterThanAny", // NI_Vector_GreaterThanAny
+        "GreaterThanOrEqual", // NI_Vector_GreaterThanOrEqual
+        "GreaterThanOrEqualAll", // NI_Vector_GreaterThanOrEqualAll
+        "GreaterThanOrEqualAny", // NI_Vector_GreaterThanOrEqualAny
+        "IsEvenInteger", // NI_Vector_IsEvenInteger
+        "IsFinite", // NI_Vector_IsFinite
+        "IsInfinity", // NI_Vector_IsInfinity
+        "IsInteger", // NI_Vector_IsInteger
+        "IsNaN", // NI_Vector_IsNaN
+        "IsNegative", // NI_Vector_IsNegative
+        "IsNegativeInfinity", // NI_Vector_IsNegativeInfinity
+        "IsNormal", // NI_Vector_IsNormal
+        "IsOddInteger", // NI_Vector_IsOddInteger
+        "IsPositive", // NI_Vector_IsPositive
+        "IsPositiveInfinity", // NI_Vector_IsPositiveInfinity
+        "IsSubnormal", // NI_Vector_IsSubnormal
+        "IsZero", // NI_Vector_IsZero
+        "LessThan", // NI_Vector_LessThan
+        "LessThanAll", // NI_Vector_LessThanAll
+        "LessThanAny", // NI_Vector_LessThanAny
+        "LessThanOrEqual", // NI_Vector_LessThanOrEqual
+        "LessThanOrEqualAll", // NI_Vector_LessThanOrEqualAll
+        "LessThanOrEqualAny", // NI_Vector_LessThanOrEqualAny
+        "LoadAligned", // NI_Vector_LoadAligned
+        "LoadAlignedNonTemporal", // NI_Vector_LoadAlignedNonTemporal
+        "LoadUnsafe", // NI_Vector_LoadUnsafe
+        "Max", // NI_Vector_Max
+        "MaxMagnitude", // NI_Vector_MaxMagnitude
+        "MaxMagnitudeNumber", // NI_Vector_MaxMagnitudeNumber
+        "MaxNative", // NI_Vector_MaxNative
+        "MaxNumber", // NI_Vector_MaxNumber
+        "Min", // NI_Vector_Min
+        "MinMagnitude", // NI_Vector_MinMagnitude
+        "MinMagnitudeNumber", // NI_Vector_MinMagnitudeNumber
+        "MinNative", // NI_Vector_MinNative
+        "MinNumber", // NI_Vector_MinNumber
+        "MultiplyAddEstimate", // NI_Vector_MultiplyAddEstimate
+        "Narrow", // NI_Vector_Narrow
+#if TARGET_ARM64
+        "NarrowWithSaturation", // NI_Vector_NarrowWithSaturation
+#else
+        "NarrowWithSaturation", // NI_Vector_NarrowWithSaturation
+#endif
+        "Reverse", // NI_Vector_Reverse
+        "Round", // NI_Vector_Round
+        "ShiftLeft", // NI_Vector_ShiftLeft
+        "Shuffle", // NI_Vector_Shuffle
+        "ShuffleNative", // NI_Vector_ShuffleNative
+        "ShuffleNativeFallback", // NI_Vector_ShuffleNativeFallback
+        "Sqrt", // NI_Vector_Sqrt
+        "StoreAligned", // NI_Vector_StoreAligned
+        "StoreAlignedNonTemporal", // NI_Vector_StoreAlignedNonTemporal
+        "StoreUnsafe", // NI_Vector_StoreUnsafe
+        "SubtractSaturate", // NI_Vector_SubtractSaturate
+        "Sum", // NI_Vector_Sum
+#if TARGET_XARCH
+        "ToScalar", // NI_Vector_ToScalar
+        "ToVector256", // NI_Vector_ToVector256
+        "ToVector256Unsafe", // NI_Vector_ToVector256Unsafe
+        "ToVector512", // NI_Vector_ToVector512
+        "ToVector512Unsafe", // NI_Vector_ToVector512Unsafe
+#elif TARGET_ARM64
+        "ToScalar", // NI_Vector_ToScalar
+        "ToVector128", // NI_Vector_ToVector128
+        "ToVector128Unsafe", // NI_Vector_ToVector128Unsafe
+#else
+        "ToScalar", // NI_Vector_ToScalar
+#endif
+        "Truncate", // NI_Vector_Truncate
+        "UnzipEven", // NI_Vector_UnzipEven
+        "UnzipOdd", // NI_Vector_UnzipOdd
+        "WidenLower", // NI_Vector_WidenLower
+        "WidenUpper", // NI_Vector_WidenUpper
+        "WithElement", // NI_Vector_WithElement
+#if TARGET_XARCH || TARGET_ARM64
+        "WithLower", // NI_Vector_WithLower
+        "WithUpper", // NI_Vector_WithUpper
+#endif
+        "ZipLower", // NI_Vector_ZipLower
+        "ZipUpper", // NI_Vector_ZipUpper
+        "get_AllBitsSet", // NI_Vector_get_AllBitsSet
+        "get_E", // NI_Vector_get_E
+        "get_Epsilon", // NI_Vector_get_Epsilon
+        "get_Indices", // NI_Vector_get_Indices
+        "get_NaN", // NI_Vector_get_NaN
+        "get_NegativeInfinity", // NI_Vector_get_NegativeInfinity
+        "get_NegativeOne", // NI_Vector_get_NegativeOne
+        "get_NegativeZero", // NI_Vector_get_NegativeZero
+        "get_One", // NI_Vector_get_One
+        "get_Pi", // NI_Vector_get_Pi
+        "get_PositiveInfinity", // NI_Vector_get_PositiveInfinity
+        "get_SignSequence", // NI_Vector_get_SignSequence
+        "get_Tau", // NI_Vector_get_Tau
+        "get_Zero", // NI_Vector_get_Zero
+        "op_Addition", // NI_Vector_op_Addition
+        "op_BitwiseAnd", // NI_Vector_op_BitwiseAnd
+        "op_BitwiseOr", // NI_Vector_op_BitwiseOr
+#if TARGET_XARCH
+        "op_Division", // NI_Vector_op_Division
+#else
+        "op_Division", // NI_Vector_op_Division
+#endif
+        "op_Equality", // NI_Vector_op_Equality
+        "op_ExclusiveOr", // NI_Vector_op_ExclusiveOr
+        "op_Inequality", // NI_Vector_op_Inequality
+        "op_LeftShift", // NI_Vector_op_LeftShift
+        "op_Multiply", // NI_Vector_op_Multiply
+        "op_OnesComplement", // NI_Vector_op_OnesComplement
+        "op_RightShift", // NI_Vector_op_RightShift
+        "op_Subtraction", // NI_Vector_op_Subtraction
+        "op_UnaryNegation", // NI_Vector_op_UnaryNegation
+        "op_UnaryPlus", // NI_Vector_op_UnaryPlus
+        "op_UnsignedRightShift", // NI_Vector_op_UnsignedRightShift
 #if TARGET_XARCH
 #if FEATURE_HW_INTRINSICS
-        "Abs", // NI_Vector128_Abs
-        "AddSaturate", // NI_Vector128_AddSaturate
-        "AndNot", // NI_Vector128_AndNot
-        "As", // NI_Vector128_As
-        "AsByte", // NI_Vector128_AsByte
-        "AsDouble", // NI_Vector128_AsDouble
-        "AsInt16", // NI_Vector128_AsInt16
-        "AsInt32", // NI_Vector128_AsInt32
-        "AsInt64", // NI_Vector128_AsInt64
-        "AsNInt", // NI_Vector128_AsNInt
-        "AsNUInt", // NI_Vector128_AsNUInt
-        "AsSByte", // NI_Vector128_AsSByte
-        "AsSingle", // NI_Vector128_AsSingle
-        "AsUInt16", // NI_Vector128_AsUInt16
-        "AsUInt32", // NI_Vector128_AsUInt32
-        "AsUInt64", // NI_Vector128_AsUInt64
-        "AsVector", // NI_Vector128_AsVector
-        "AsVector128", // NI_Vector128_AsVector128
-        "AsVector128Unsafe", // NI_Vector128_AsVector128Unsafe
-        "AsVector2", // NI_Vector128_AsVector2
-        "AsVector3", // NI_Vector128_AsVector3
-        "AsVector4", // NI_Vector128_AsVector4
-        "Ceiling", // NI_Vector128_Ceiling
-        "ConditionalSelect", // NI_Vector128_ConditionalSelect
-        "ConvertToDouble", // NI_Vector128_ConvertToDouble
-        "ConvertToInt32", // NI_Vector128_ConvertToInt32
-        "ConvertToInt32Native", // NI_Vector128_ConvertToInt32Native
-        "ConvertToInt64", // NI_Vector128_ConvertToInt64
-        "ConvertToInt64Native", // NI_Vector128_ConvertToInt64Native
-        "ConvertToSingle", // NI_Vector128_ConvertToSingle
-        "ConvertToUInt32", // NI_Vector128_ConvertToUInt32
-        "ConvertToUInt32Native", // NI_Vector128_ConvertToUInt32Native
-        "ConvertToUInt64", // NI_Vector128_ConvertToUInt64
-        "ConvertToUInt64Native", // NI_Vector128_ConvertToUInt64Native
-        "Create", // NI_Vector128_Create
-        "CreateScalar", // NI_Vector128_CreateScalar
-        "CreateScalarUnsafe", // NI_Vector128_CreateScalarUnsafe
-        "CreateSequence", // NI_Vector128_CreateSequence
-        "Dot", // NI_Vector128_Dot
-        "Equals", // NI_Vector128_Equals
-        "EqualsAny", // NI_Vector128_EqualsAny
-        "ExtractMostSignificantBits", // NI_Vector128_ExtractMostSignificantBits
-        "Floor", // NI_Vector128_Floor
-        "FusedMultiplyAdd", // NI_Vector128_FusedMultiplyAdd
-        "GetElement", // NI_Vector128_GetElement
-        "GreaterThan", // NI_Vector128_GreaterThan
-        "GreaterThanAll", // NI_Vector128_GreaterThanAll
-        "GreaterThanAny", // NI_Vector128_GreaterThanAny
-        "GreaterThanOrEqual", // NI_Vector128_GreaterThanOrEqual
-        "GreaterThanOrEqualAll", // NI_Vector128_GreaterThanOrEqualAll
-        "GreaterThanOrEqualAny", // NI_Vector128_GreaterThanOrEqualAny
-        "IsEvenInteger", // NI_Vector128_IsEvenInteger
-        "IsFinite", // NI_Vector128_IsFinite
-        "IsInfinity", // NI_Vector128_IsInfinity
-        "IsInteger", // NI_Vector128_IsInteger
-        "IsNaN", // NI_Vector128_IsNaN
-        "IsNegative", // NI_Vector128_IsNegative
-        "IsNegativeInfinity", // NI_Vector128_IsNegativeInfinity
-        "IsNormal", // NI_Vector128_IsNormal
-        "IsOddInteger", // NI_Vector128_IsOddInteger
-        "IsPositive", // NI_Vector128_IsPositive
-        "IsPositiveInfinity", // NI_Vector128_IsPositiveInfinity
-        "IsSubnormal", // NI_Vector128_IsSubnormal
-        "IsZero", // NI_Vector128_IsZero
-        "LessThan", // NI_Vector128_LessThan
-        "LessThanAll", // NI_Vector128_LessThanAll
-        "LessThanAny", // NI_Vector128_LessThanAny
-        "LessThanOrEqual", // NI_Vector128_LessThanOrEqual
-        "LessThanOrEqualAll", // NI_Vector128_LessThanOrEqualAll
-        "LessThanOrEqualAny", // NI_Vector128_LessThanOrEqualAny
-        "LoadAligned", // NI_Vector128_LoadAligned
-        "LoadAlignedNonTemporal", // NI_Vector128_LoadAlignedNonTemporal
-        "LoadUnsafe", // NI_Vector128_LoadUnsafe
-        "Max", // NI_Vector128_Max
-        "MaxMagnitude", // NI_Vector128_MaxMagnitude
-        "MaxMagnitudeNumber", // NI_Vector128_MaxMagnitudeNumber
-        "MaxNative", // NI_Vector128_MaxNative
-        "MaxNumber", // NI_Vector128_MaxNumber
-        "Min", // NI_Vector128_Min
-        "MinMagnitude", // NI_Vector128_MinMagnitude
-        "MinMagnitudeNumber", // NI_Vector128_MinMagnitudeNumber
-        "MinNative", // NI_Vector128_MinNative
-        "MinNumber", // NI_Vector128_MinNumber
-        "MultiplyAddEstimate", // NI_Vector128_MultiplyAddEstimate
-        "Narrow", // NI_Vector128_Narrow
-        "NarrowWithSaturation", // NI_Vector128_NarrowWithSaturation
-        "Round", // NI_Vector128_Round
-        "ShiftLeft", // NI_Vector128_ShiftLeft
-        "Shuffle", // NI_Vector128_Shuffle
-        "ShuffleNative", // NI_Vector128_ShuffleNative
-        "ShuffleNativeFallback", // NI_Vector128_ShuffleNativeFallback
-        "Sqrt", // NI_Vector128_Sqrt
-        "StoreAligned", // NI_Vector128_StoreAligned
-        "StoreAlignedNonTemporal", // NI_Vector128_StoreAlignedNonTemporal
-        "StoreUnsafe", // NI_Vector128_StoreUnsafe
-        "SubtractSaturate", // NI_Vector128_SubtractSaturate
-        "Sum", // NI_Vector128_Sum
-        "ToScalar", // NI_Vector128_ToScalar
-        "ToVector256", // NI_Vector128_ToVector256
-        "ToVector256Unsafe", // NI_Vector128_ToVector256Unsafe
-        "ToVector512", // NI_Vector128_ToVector512
-        "Truncate", // NI_Vector128_Truncate
-        "WidenLower", // NI_Vector128_WidenLower
-        "WidenUpper", // NI_Vector128_WidenUpper
-        "WithElement", // NI_Vector128_WithElement
-        "get_AllBitsSet", // NI_Vector128_get_AllBitsSet
-        "get_E", // NI_Vector128_get_E
-        "get_Epsilon", // NI_Vector128_get_Epsilon
-        "get_Indices", // NI_Vector128_get_Indices
-        "get_NaN", // NI_Vector128_get_NaN
-        "get_NegativeInfinity", // NI_Vector128_get_NegativeInfinity
-        "get_NegativeOne", // NI_Vector128_get_NegativeOne
-        "get_NegativeZero", // NI_Vector128_get_NegativeZero
-        "get_One", // NI_Vector128_get_One
-        "get_Pi", // NI_Vector128_get_Pi
-        "get_PositiveInfinity", // NI_Vector128_get_PositiveInfinity
-        "get_Tau", // NI_Vector128_get_Tau
-        "get_Zero", // NI_Vector128_get_Zero
-        "op_Addition", // NI_Vector128_op_Addition
-        "op_BitwiseAnd", // NI_Vector128_op_BitwiseAnd
-        "op_BitwiseOr", // NI_Vector128_op_BitwiseOr
-        "op_Division", // NI_Vector128_op_Division
-        "op_Equality", // NI_Vector128_op_Equality
-        "op_ExclusiveOr", // NI_Vector128_op_ExclusiveOr
-        "op_Inequality", // NI_Vector128_op_Inequality
-        "op_LeftShift", // NI_Vector128_op_LeftShift
-        "op_Multiply", // NI_Vector128_op_Multiply
-        "op_OnesComplement", // NI_Vector128_op_OnesComplement
-        "op_RightShift", // NI_Vector128_op_RightShift
-        "op_Subtraction", // NI_Vector128_op_Subtraction
-        "op_UnaryNegation", // NI_Vector128_op_UnaryNegation
-        "op_UnaryPlus", // NI_Vector128_op_UnaryPlus
-        "op_UnsignedRightShift", // NI_Vector128_op_UnsignedRightShift
-        "Abs", // NI_Vector256_Abs
-        "AddSaturate", // NI_Vector256_AddSaturate
-        "AndNot", // NI_Vector256_AndNot
-        "As", // NI_Vector256_As
-        "AsByte", // NI_Vector256_AsByte
-        "AsDouble", // NI_Vector256_AsDouble
-        "AsInt16", // NI_Vector256_AsInt16
-        "AsInt32", // NI_Vector256_AsInt32
-        "AsInt64", // NI_Vector256_AsInt64
-        "AsNInt", // NI_Vector256_AsNInt
-        "AsNUInt", // NI_Vector256_AsNUInt
-        "AsSByte", // NI_Vector256_AsSByte
-        "AsSingle", // NI_Vector256_AsSingle
-        "AsUInt16", // NI_Vector256_AsUInt16
-        "AsUInt32", // NI_Vector256_AsUInt32
-        "AsUInt64", // NI_Vector256_AsUInt64
-        "AsVector", // NI_Vector256_AsVector
-        "AsVector256", // NI_Vector256_AsVector256
-        "Ceiling", // NI_Vector256_Ceiling
-        "ConditionalSelect", // NI_Vector256_ConditionalSelect
-        "ConvertToDouble", // NI_Vector256_ConvertToDouble
-        "ConvertToInt32", // NI_Vector256_ConvertToInt32
-        "ConvertToInt32Native", // NI_Vector256_ConvertToInt32Native
-        "ConvertToInt64", // NI_Vector256_ConvertToInt64
-        "ConvertToInt64Native", // NI_Vector256_ConvertToInt64Native
-        "ConvertToSingle", // NI_Vector256_ConvertToSingle
-        "ConvertToUInt32", // NI_Vector256_ConvertToUInt32
-        "ConvertToUInt32Native", // NI_Vector256_ConvertToUInt32Native
-        "ConvertToUInt64", // NI_Vector256_ConvertToUInt64
-        "ConvertToUInt64Native", // NI_Vector256_ConvertToUInt64Native
-        "Create", // NI_Vector256_Create
-        "CreateScalar", // NI_Vector256_CreateScalar
-        "CreateScalarUnsafe", // NI_Vector256_CreateScalarUnsafe
-        "CreateSequence", // NI_Vector256_CreateSequence
-        "Dot", // NI_Vector256_Dot
-        "Equals", // NI_Vector256_Equals
-        "EqualsAny", // NI_Vector256_EqualsAny
-        "ExtractMostSignificantBits", // NI_Vector256_ExtractMostSignificantBits
-        "Floor", // NI_Vector256_Floor
-        "FusedMultiplyAdd", // NI_Vector256_FusedMultiplyAdd
-        "GetElement", // NI_Vector256_GetElement
-        "GetLower", // NI_Vector256_GetLower
-        "GetUpper", // NI_Vector256_GetUpper
-        "GreaterThan", // NI_Vector256_GreaterThan
-        "GreaterThanAll", // NI_Vector256_GreaterThanAll
-        "GreaterThanAny", // NI_Vector256_GreaterThanAny
-        "GreaterThanOrEqual", // NI_Vector256_GreaterThanOrEqual
-        "GreaterThanOrEqualAll", // NI_Vector256_GreaterThanOrEqualAll
-        "GreaterThanOrEqualAny", // NI_Vector256_GreaterThanOrEqualAny
-        "IsEvenInteger", // NI_Vector256_IsEvenInteger
-        "IsFinite", // NI_Vector256_IsFinite
-        "IsInfinity", // NI_Vector256_IsInfinity
-        "IsInteger", // NI_Vector256_IsInteger
-        "IsNaN", // NI_Vector256_IsNaN
-        "IsNegative", // NI_Vector256_IsNegative
-        "IsNegativeInfinity", // NI_Vector256_IsNegativeInfinity
-        "IsNormal", // NI_Vector256_IsNormal
-        "IsOddInteger", // NI_Vector256_IsOddInteger
-        "IsPositive", // NI_Vector256_IsPositive
-        "IsPositiveInfinity", // NI_Vector256_IsPositiveInfinity
-        "IsSubnormal", // NI_Vector256_IsSubnormal
-        "IsZero", // NI_Vector256_IsZero
-        "LessThan", // NI_Vector256_LessThan
-        "LessThanAll", // NI_Vector256_LessThanAll
-        "LessThanAny", // NI_Vector256_LessThanAny
-        "LessThanOrEqual", // NI_Vector256_LessThanOrEqual
-        "LessThanOrEqualAll", // NI_Vector256_LessThanOrEqualAll
-        "LessThanOrEqualAny", // NI_Vector256_LessThanOrEqualAny
-        "LoadAligned", // NI_Vector256_LoadAligned
-        "LoadAlignedNonTemporal", // NI_Vector256_LoadAlignedNonTemporal
-        "LoadUnsafe", // NI_Vector256_LoadUnsafe
-        "Max", // NI_Vector256_Max
-        "MaxMagnitude", // NI_Vector256_MaxMagnitude
-        "MaxMagnitudeNumber", // NI_Vector256_MaxMagnitudeNumber
-        "MaxNative", // NI_Vector256_MaxNative
-        "MaxNumber", // NI_Vector256_MaxNumber
-        "Min", // NI_Vector256_Min
-        "MinMagnitude", // NI_Vector256_MinMagnitude
-        "MinMagnitudeNumber", // NI_Vector256_MinMagnitudeNumber
-        "MinNative", // NI_Vector256_MinNative
-        "MinNumber", // NI_Vector256_MinNumber
-        "MultiplyAddEstimate", // NI_Vector256_MultiplyAddEstimate
-        "Narrow", // NI_Vector256_Narrow
-        "NarrowWithSaturation", // NI_Vector256_NarrowWithSaturation
-        "Round", // NI_Vector256_Round
-        "ShiftLeft", // NI_Vector256_ShiftLeft
-        "Shuffle", // NI_Vector256_Shuffle
-        "ShuffleNative", // NI_Vector256_ShuffleNative
-        "ShuffleNativeFallback", // NI_Vector256_ShuffleNativeFallback
-        "Sqrt", // NI_Vector256_Sqrt
-        "StoreAligned", // NI_Vector256_StoreAligned
-        "StoreAlignedNonTemporal", // NI_Vector256_StoreAlignedNonTemporal
-        "StoreUnsafe", // NI_Vector256_StoreUnsafe
-        "SubtractSaturate", // NI_Vector256_SubtractSaturate
-        "Sum", // NI_Vector256_Sum
-        "ToScalar", // NI_Vector256_ToScalar
-        "ToVector512", // NI_Vector256_ToVector512
-        "ToVector512Unsafe", // NI_Vector256_ToVector512Unsafe
-        "Truncate", // NI_Vector256_Truncate
-        "WidenLower", // NI_Vector256_WidenLower
-        "WidenUpper", // NI_Vector256_WidenUpper
-        "WithElement", // NI_Vector256_WithElement
-        "WithLower", // NI_Vector256_WithLower
-        "WithUpper", // NI_Vector256_WithUpper
-        "get_AllBitsSet", // NI_Vector256_get_AllBitsSet
-        "get_E", // NI_Vector256_get_E
-        "get_Epsilon", // NI_Vector256_get_Epsilon
-        "get_Indices", // NI_Vector256_get_Indices
-        "get_NaN", // NI_Vector256_get_NaN
-        "get_NegativeInfinity", // NI_Vector256_get_NegativeInfinity
-        "get_NegativeOne", // NI_Vector256_get_NegativeOne
-        "get_NegativeZero", // NI_Vector256_get_NegativeZero
-        "get_One", // NI_Vector256_get_One
-        "get_Pi", // NI_Vector256_get_Pi
-        "get_PositiveInfinity", // NI_Vector256_get_PositiveInfinity
-        "get_Tau", // NI_Vector256_get_Tau
-        "get_Zero", // NI_Vector256_get_Zero
-        "op_Addition", // NI_Vector256_op_Addition
-        "op_BitwiseAnd", // NI_Vector256_op_BitwiseAnd
-        "op_BitwiseOr", // NI_Vector256_op_BitwiseOr
-        "op_Division", // NI_Vector256_op_Division
-        "op_Equality", // NI_Vector256_op_Equality
-        "op_ExclusiveOr", // NI_Vector256_op_ExclusiveOr
-        "op_Inequality", // NI_Vector256_op_Inequality
-        "op_LeftShift", // NI_Vector256_op_LeftShift
-        "op_Multiply", // NI_Vector256_op_Multiply
-        "op_OnesComplement", // NI_Vector256_op_OnesComplement
-        "op_RightShift", // NI_Vector256_op_RightShift
-        "op_Subtraction", // NI_Vector256_op_Subtraction
-        "op_UnaryNegation", // NI_Vector256_op_UnaryNegation
-        "op_UnaryPlus", // NI_Vector256_op_UnaryPlus
-        "op_UnsignedRightShift", // NI_Vector256_op_UnsignedRightShift
-        "Abs", // NI_Vector512_Abs
-        "AddSaturate", // NI_Vector512_AddSaturate
-        "AndNot", // NI_Vector512_AndNot
-        "As", // NI_Vector512_As
-        "AsByte", // NI_Vector512_AsByte
-        "AsDouble", // NI_Vector512_AsDouble
-        "AsInt16", // NI_Vector512_AsInt16
-        "AsInt32", // NI_Vector512_AsInt32
-        "AsInt64", // NI_Vector512_AsInt64
-        "AsNInt", // NI_Vector512_AsNInt
-        "AsNUInt", // NI_Vector512_AsNUInt
-        "AsSByte", // NI_Vector512_AsSByte
-        "AsSingle", // NI_Vector512_AsSingle
-        "AsUInt16", // NI_Vector512_AsUInt16
-        "AsUInt32", // NI_Vector512_AsUInt32
-        "AsUInt64", // NI_Vector512_AsUInt64
-        "AsVector", // NI_Vector512_AsVector
-        "AsVector512", // NI_Vector512_AsVector512
-        "Ceiling", // NI_Vector512_Ceiling
-        "ConditionalSelect", // NI_Vector512_ConditionalSelect
-        "ConvertToDouble", // NI_Vector512_ConvertToDouble
-        "ConvertToInt32", // NI_Vector512_ConvertToInt32
-        "ConvertToInt32Native", // NI_Vector512_ConvertToInt32Native
-        "ConvertToInt64", // NI_Vector512_ConvertToInt64
-        "ConvertToInt64Native", // NI_Vector512_ConvertToInt64Native
-        "ConvertToSingle", // NI_Vector512_ConvertToSingle
-        "ConvertToUInt32", // NI_Vector512_ConvertToUInt32
-        "ConvertToUInt32Native", // NI_Vector512_ConvertToUInt32Native
-        "ConvertToUInt64", // NI_Vector512_ConvertToUInt64
-        "ConvertToUInt64Native", // NI_Vector512_ConvertToUInt64Native
-        "Create", // NI_Vector512_Create
-        "CreateScalar", // NI_Vector512_CreateScalar
-        "CreateScalarUnsafe", // NI_Vector512_CreateScalarUnsafe
-        "CreateSequence", // NI_Vector512_CreateSequence
-        "Dot", // NI_Vector512_Dot
-        "Equals", // NI_Vector512_Equals
-        "EqualsAny", // NI_Vector512_EqualsAny
-        "ExtractMostSignificantBits", // NI_Vector512_ExtractMostSignificantBits
-        "Floor", // NI_Vector512_Floor
-        "FusedMultiplyAdd", // NI_Vector512_FusedMultiplyAdd
-        "GetElement", // NI_Vector512_GetElement
-        "GetLower", // NI_Vector512_GetLower
-        "GetLower128", // NI_Vector512_GetLower128
-        "GetUpper", // NI_Vector512_GetUpper
-        "GreaterThan", // NI_Vector512_GreaterThan
-        "GreaterThanAll", // NI_Vector512_GreaterThanAll
-        "GreaterThanAny", // NI_Vector512_GreaterThanAny
-        "GreaterThanOrEqual", // NI_Vector512_GreaterThanOrEqual
-        "GreaterThanOrEqualAll", // NI_Vector512_GreaterThanOrEqualAll
-        "GreaterThanOrEqualAny", // NI_Vector512_GreaterThanOrEqualAny
-        "IsEvenInteger", // NI_Vector512_IsEvenInteger
-        "IsFinite", // NI_Vector512_IsFinite
-        "IsInfinity", // NI_Vector512_IsInfinity
-        "IsInteger", // NI_Vector512_IsInteger
-        "IsNaN", // NI_Vector512_IsNaN
-        "IsNegative", // NI_Vector512_IsNegative
-        "IsNegativeInfinity", // NI_Vector512_IsNegativeInfinity
-        "IsNormal", // NI_Vector512_IsNormal
-        "IsOddInteger", // NI_Vector512_IsOddInteger
-        "IsPositive", // NI_Vector512_IsPositive
-        "IsPositiveInfinity", // NI_Vector512_IsPositiveInfinity
-        "IsSubnormal", // NI_Vector512_IsSubnormal
-        "IsZero", // NI_Vector512_IsZero
-        "LessThan", // NI_Vector512_LessThan
-        "LessThanAll", // NI_Vector512_LessThanAll
-        "LessThanAny", // NI_Vector512_LessThanAny
-        "LessThanOrEqual", // NI_Vector512_LessThanOrEqual
-        "LessThanOrEqualAll", // NI_Vector512_LessThanOrEqualAll
-        "LessThanOrEqualAny", // NI_Vector512_LessThanOrEqualAny
-        "LoadAligned", // NI_Vector512_LoadAligned
-        "LoadAlignedNonTemporal", // NI_Vector512_LoadAlignedNonTemporal
-        "LoadUnsafe", // NI_Vector512_LoadUnsafe
-        "Max", // NI_Vector512_Max
-        "MaxMagnitude", // NI_Vector512_MaxMagnitude
-        "MaxMagnitudeNumber", // NI_Vector512_MaxMagnitudeNumber
-        "MaxNative", // NI_Vector512_MaxNative
-        "MaxNumber", // NI_Vector512_MaxNumber
-        "Min", // NI_Vector512_Min
-        "MinMagnitude", // NI_Vector512_MinMagnitude
-        "MinMagnitudeNumber", // NI_Vector512_MinMagnitudeNumber
-        "MinNative", // NI_Vector512_MinNative
-        "MinNumber", // NI_Vector512_MinNumber
-        "MultiplyAddEstimate", // NI_Vector512_MultiplyAddEstimate
-        "Narrow", // NI_Vector512_Narrow
-        "NarrowWithSaturation", // NI_Vector512_NarrowWithSaturation
-        "Round", // NI_Vector512_Round
-        "ShiftLeft", // NI_Vector512_ShiftLeft
-        "Shuffle", // NI_Vector512_Shuffle
-        "ShuffleNative", // NI_Vector512_ShuffleNative
-        "ShuffleNativeFallback", // NI_Vector512_ShuffleNativeFallback
-        "Sqrt", // NI_Vector512_Sqrt
-        "StoreAligned", // NI_Vector512_StoreAligned
-        "StoreAlignedNonTemporal", // NI_Vector512_StoreAlignedNonTemporal
-        "StoreUnsafe", // NI_Vector512_StoreUnsafe
-        "SubtractSaturate", // NI_Vector512_SubtractSaturate
-        "Sum", // NI_Vector512_Sum
-        "ToScalar", // NI_Vector512_ToScalar
-        "Truncate", // NI_Vector512_Truncate
-        "WidenLower", // NI_Vector512_WidenLower
-        "WidenUpper", // NI_Vector512_WidenUpper
-        "WithElement", // NI_Vector512_WithElement
-        "WithLower", // NI_Vector512_WithLower
-        "WithUpper", // NI_Vector512_WithUpper
-        "get_AllBitsSet", // NI_Vector512_get_AllBitsSet
-        "get_E", // NI_Vector512_get_E
-        "get_Epsilon", // NI_Vector512_get_Epsilon
-        "get_Indices", // NI_Vector512_get_Indices
-        "get_NaN", // NI_Vector512_get_NaN
-        "get_NegativeInfinity", // NI_Vector512_get_NegativeInfinity
-        "get_NegativeOne", // NI_Vector512_get_NegativeOne
-        "get_NegativeZero", // NI_Vector512_get_NegativeZero
-        "get_One", // NI_Vector512_get_One
-        "get_Pi", // NI_Vector512_get_Pi
-        "get_PositiveInfinity", // NI_Vector512_get_PositiveInfinity
-        "get_Tau", // NI_Vector512_get_Tau
-        "get_Zero", // NI_Vector512_get_Zero
-        "op_Addition", // NI_Vector512_op_Addition
-        "op_BitwiseAnd", // NI_Vector512_op_BitwiseAnd
-        "op_BitwiseOr", // NI_Vector512_op_BitwiseOr
-        "op_Division", // NI_Vector512_op_Division
-        "op_Equality", // NI_Vector512_op_Equality
-        "op_ExclusiveOr", // NI_Vector512_op_ExclusiveOr
-        "op_Inequality", // NI_Vector512_op_Inequality
-        "op_LeftShift", // NI_Vector512_op_LeftShift
-        "op_Multiply", // NI_Vector512_op_Multiply
-        "op_OnesComplement", // NI_Vector512_op_OnesComplement
-        "op_RightShift", // NI_Vector512_op_RightShift
-        "op_Subtraction", // NI_Vector512_op_Subtraction
-        "op_UnaryNegation", // NI_Vector512_op_UnaryNegation
-        "op_UnaryPlus", // NI_Vector512_op_UnaryPlus
-        "op_UnsignedRightShift", // NI_Vector512_op_UnsignedRightShift
         "Abs", // NI_X86Base_Abs
         "Add", // NI_X86Base_Add
         "AddSaturate", // NI_X86Base_AddSaturate
@@ -14982,6 +12999,32 @@ public partial struct HWIntrinsicInfo
         "CompressStore", // NI_AVX512v3_CompressStore
         "Expand", // NI_AVX512v3_Expand
         "ExpandLoad", // NI_AVX512v3_ExpandLoad
+        "MultiplyWideningAndAdd", // NI_AVX512v3_MultiplyWideningAndAdd
+        "MultiplyWideningAndAddSaturate", // NI_AVX512v3_MultiplyWideningAndAddSaturate
+        "AddScalar", // NI_AVX10v1_AddScalar
+        "CompareScalarOrderedEqual", // NI_AVX10v1_CompareScalarOrderedEqual
+        "CompareScalarOrderedGreaterThan", // NI_AVX10v1_CompareScalarOrderedGreaterThan
+        "CompareScalarOrderedGreaterThanOrEqual", // NI_AVX10v1_CompareScalarOrderedGreaterThanOrEqual
+        "CompareScalarOrderedLessThan", // NI_AVX10v1_CompareScalarOrderedLessThan
+        "CompareScalarOrderedLessThanOrEqual", // NI_AVX10v1_CompareScalarOrderedLessThanOrEqual
+        "CompareScalarOrderedNotEqual", // NI_AVX10v1_CompareScalarOrderedNotEqual
+        "CompareScalarUnorderedEqual", // NI_AVX10v1_CompareScalarUnorderedEqual
+        "CompareScalarUnorderedGreaterThan", // NI_AVX10v1_CompareScalarUnorderedGreaterThan
+        "CompareScalarUnorderedGreaterThanOrEqual", // NI_AVX10v1_CompareScalarUnorderedGreaterThanOrEqual
+        "CompareScalarUnorderedLessThan", // NI_AVX10v1_CompareScalarUnorderedLessThan
+        "CompareScalarUnorderedLessThanOrEqual", // NI_AVX10v1_CompareScalarUnorderedLessThanOrEqual
+        "CompareScalarUnorderedNotEqual", // NI_AVX10v1_CompareScalarUnorderedNotEqual
+        "ConvertScalarToVector128Double", // NI_AVX10v1_ConvertScalarToVector128Double
+        "ConvertScalarToVector128Half", // NI_AVX10v1_ConvertScalarToVector128Half
+        "ConvertScalarToVector128Single", // NI_AVX10v1_ConvertScalarToVector128Single
+        "DivideScalar", // NI_AVX10v1_DivideScalar
+        "FusedMultiplyAddScalar", // NI_AVX10v1_FusedMultiplyAddScalar
+        "MultiplyScalar", // NI_AVX10v1_MultiplyScalar
+        "ReciprocalScalar", // NI_AVX10v1_ReciprocalScalar
+        "ReciprocalSqrtScalar", // NI_AVX10v1_ReciprocalSqrtScalar
+        "RoundScaleScalar", // NI_AVX10v1_RoundScaleScalar
+        "SqrtScalar", // NI_AVX10v1_SqrtScalar
+        "SubtractScalar", // NI_AVX10v1_SubtractScalar
         "ConvertToByteWithSaturationAndZeroExtendToInt32", // NI_AVX10v2_ConvertToByteWithSaturationAndZeroExtendToInt32
         "ConvertToByteWithTruncatedSaturationAndZeroExtendToInt32", // NI_AVX10v2_ConvertToByteWithTruncatedSaturationAndZeroExtendToInt32
         "ConvertToInt32WithTruncatedSaturation", // NI_AVX10v2_ConvertToInt32WithTruncatedSaturation
@@ -15030,6 +13073,8 @@ public partial struct HWIntrinsicInfo
         "COMIS", // NI_X86Base_COMIS
         "PTEST", // NI_X86Base_PTEST
         "UCOMIS", // NI_X86Base_UCOMIS
+        "VCOMISH", // NI_AVX10v1_VCOMISH
+        "VUCOMISH", // NI_AVX10v1_VUCOMISH
         "PTEST", // NI_AVX_PTEST
         "AndNotVector", // NI_AVX2_AndNotVector
         "AndNotScalar", // NI_AVX2_AndNotScalar
@@ -15076,266 +13121,6 @@ public partial struct HWIntrinsicInfo
 #endif
 #elif TARGET_ARM64
 #if FEATURE_HW_INTRINSICS
-        "Abs", // NI_Vector64_Abs
-        "AddSaturate", // NI_Vector64_AddSaturate
-        "AndNot", // NI_Vector64_AndNot
-        "As", // NI_Vector64_As
-        "AsByte", // NI_Vector64_AsByte
-        "AsDouble", // NI_Vector64_AsDouble
-        "AsInt16", // NI_Vector64_AsInt16
-        "AsInt32", // NI_Vector64_AsInt32
-        "AsInt64", // NI_Vector64_AsInt64
-        "AsNInt", // NI_Vector64_AsNInt
-        "AsNUInt", // NI_Vector64_AsNUInt
-        "AsSByte", // NI_Vector64_AsSByte
-        "AsSingle", // NI_Vector64_AsSingle
-        "AsUInt16", // NI_Vector64_AsUInt16
-        "AsUInt32", // NI_Vector64_AsUInt32
-        "AsUInt64", // NI_Vector64_AsUInt64
-        "Ceiling", // NI_Vector64_Ceiling
-        "ConditionalSelect", // NI_Vector64_ConditionalSelect
-        "ConvertToDouble", // NI_Vector64_ConvertToDouble
-        "ConvertToInt32", // NI_Vector64_ConvertToInt32
-        "ConvertToInt32Native", // NI_Vector64_ConvertToInt32Native
-        "ConvertToInt64", // NI_Vector64_ConvertToInt64
-        "ConvertToInt64Native", // NI_Vector64_ConvertToInt64Native
-        "ConvertToSingle", // NI_Vector64_ConvertToSingle
-        "ConvertToUInt32", // NI_Vector64_ConvertToUInt32
-        "ConvertToUInt32Native", // NI_Vector64_ConvertToUInt32Native
-        "ConvertToUInt64", // NI_Vector64_ConvertToUInt64
-        "ConvertToUInt64Native", // NI_Vector64_ConvertToUInt64Native
-        "Create", // NI_Vector64_Create
-        "CreateScalar", // NI_Vector64_CreateScalar
-        "CreateScalarUnsafe", // NI_Vector64_CreateScalarUnsafe
-        "CreateSequence", // NI_Vector64_CreateSequence
-        "Dot", // NI_Vector64_Dot
-        "Equals", // NI_Vector64_Equals
-        "EqualsAny", // NI_Vector64_EqualsAny
-        "ExtractMostSignificantBits", // NI_Vector64_ExtractMostSignificantBits
-        "Floor", // NI_Vector64_Floor
-        "FusedMultiplyAdd", // NI_Vector64_FusedMultiplyAdd
-        "GetElement", // NI_Vector64_GetElement
-        "GreaterThan", // NI_Vector64_GreaterThan
-        "GreaterThanAll", // NI_Vector64_GreaterThanAll
-        "GreaterThanAny", // NI_Vector64_GreaterThanAny
-        "GreaterThanOrEqual", // NI_Vector64_GreaterThanOrEqual
-        "GreaterThanOrEqualAll", // NI_Vector64_GreaterThanOrEqualAll
-        "GreaterThanOrEqualAny", // NI_Vector64_GreaterThanOrEqualAny
-        "IsEvenInteger", // NI_Vector64_IsEvenInteger
-        "IsFinite", // NI_Vector64_IsFinite
-        "IsInfinity", // NI_Vector64_IsInfinity
-        "IsInteger", // NI_Vector64_IsInteger
-        "IsNaN", // NI_Vector64_IsNaN
-        "IsNegative", // NI_Vector64_IsNegative
-        "IsNegativeInfinity", // NI_Vector64_IsNegativeInfinity
-        "IsNormal", // NI_Vector64_IsNormal
-        "IsOddInteger", // NI_Vector64_IsOddInteger
-        "IsPositive", // NI_Vector64_IsPositive
-        "IsPositiveInfinity", // NI_Vector64_IsPositiveInfinity
-        "IsSubnormal", // NI_Vector64_IsSubnormal
-        "IsZero", // NI_Vector64_IsZero
-        "LessThan", // NI_Vector64_LessThan
-        "LessThanAll", // NI_Vector64_LessThanAll
-        "LessThanAny", // NI_Vector64_LessThanAny
-        "LessThanOrEqual", // NI_Vector64_LessThanOrEqual
-        "LessThanOrEqualAll", // NI_Vector64_LessThanOrEqualAll
-        "LessThanOrEqualAny", // NI_Vector64_LessThanOrEqualAny
-        "LoadAligned", // NI_Vector64_LoadAligned
-        "LoadAlignedNonTemporal", // NI_Vector64_LoadAlignedNonTemporal
-        "LoadUnsafe", // NI_Vector64_LoadUnsafe
-        "Max", // NI_Vector64_Max
-        "MaxMagnitude", // NI_Vector64_MaxMagnitude
-        "MaxMagnitudeNumber", // NI_Vector64_MaxMagnitudeNumber
-        "MaxNative", // NI_Vector64_MaxNative
-        "MaxNumber", // NI_Vector64_MaxNumber
-        "Min", // NI_Vector64_Min
-        "MinMagnitude", // NI_Vector64_MinMagnitude
-        "MinMagnitudeNumber", // NI_Vector64_MinMagnitudeNumber
-        "MinNative", // NI_Vector64_MinNative
-        "MinNumber", // NI_Vector64_MinNumber
-        "MultiplyAddEstimate", // NI_Vector64_MultiplyAddEstimate
-        "Narrow", // NI_Vector64_Narrow
-        "NarrowWithSaturation", // NI_Vector64_NarrowWithSaturation
-        "Round", // NI_Vector64_Round
-        "ShiftLeft", // NI_Vector64_ShiftLeft
-        "Shuffle", // NI_Vector64_Shuffle
-        "ShuffleNative", // NI_Vector64_ShuffleNative
-        "ShuffleNativeFallback", // NI_Vector64_ShuffleNativeFallback
-        "Sqrt", // NI_Vector64_Sqrt
-        "StoreAligned", // NI_Vector64_StoreAligned
-        "StoreAlignedNonTemporal", // NI_Vector64_StoreAlignedNonTemporal
-        "StoreUnsafe", // NI_Vector64_StoreUnsafe
-        "SubtractSaturate", // NI_Vector64_SubtractSaturate
-        "Sum", // NI_Vector64_Sum
-        "ToScalar", // NI_Vector64_ToScalar
-        "ToVector128", // NI_Vector64_ToVector128
-        "ToVector128Unsafe", // NI_Vector64_ToVector128Unsafe
-        "Truncate", // NI_Vector64_Truncate
-        "WidenLower", // NI_Vector64_WidenLower
-        "WidenUpper", // NI_Vector64_WidenUpper
-        "WithElement", // NI_Vector64_WithElement
-        "get_AllBitsSet", // NI_Vector64_get_AllBitsSet
-        "get_E", // NI_Vector64_get_E
-        "get_Epsilon", // NI_Vector64_get_Epsilon
-        "get_Indices", // NI_Vector64_get_Indices
-        "get_NaN", // NI_Vector64_get_NaN
-        "get_NegativeInfinity", // NI_Vector64_get_NegativeInfinity
-        "get_NegativeOne", // NI_Vector64_get_NegativeOne
-        "get_NegativeZero", // NI_Vector64_get_NegativeZero
-        "get_One", // NI_Vector64_get_One
-        "get_Pi", // NI_Vector64_get_Pi
-        "get_PositiveInfinity", // NI_Vector64_get_PositiveInfinity
-        "get_Tau", // NI_Vector64_get_Tau
-        "get_Zero", // NI_Vector64_get_Zero
-        "op_Addition", // NI_Vector64_op_Addition
-        "op_BitwiseAnd", // NI_Vector64_op_BitwiseAnd
-        "op_BitwiseOr", // NI_Vector64_op_BitwiseOr
-        "op_Division", // NI_Vector64_op_Division
-        "op_Equality", // NI_Vector64_op_Equality
-        "op_ExclusiveOr", // NI_Vector64_op_ExclusiveOr
-        "op_Inequality", // NI_Vector64_op_Inequality
-        "op_LeftShift", // NI_Vector64_op_LeftShift
-        "op_Multiply", // NI_Vector64_op_Multiply
-        "op_OnesComplement", // NI_Vector64_op_OnesComplement
-        "op_RightShift", // NI_Vector64_op_RightShift
-        "op_Subtraction", // NI_Vector64_op_Subtraction
-        "op_UnaryNegation", // NI_Vector64_op_UnaryNegation
-        "op_UnaryPlus", // NI_Vector64_op_UnaryPlus
-        "op_UnsignedRightShift", // NI_Vector64_op_UnsignedRightShift
-        "Abs", // NI_Vector128_Abs
-        "AddSaturate", // NI_Vector128_AddSaturate
-        "AndNot", // NI_Vector128_AndNot
-        "As", // NI_Vector128_As
-        "AsByte", // NI_Vector128_AsByte
-        "AsDouble", // NI_Vector128_AsDouble
-        "AsInt16", // NI_Vector128_AsInt16
-        "AsInt32", // NI_Vector128_AsInt32
-        "AsInt64", // NI_Vector128_AsInt64
-        "AsNInt", // NI_Vector128_AsNInt
-        "AsNUInt", // NI_Vector128_AsNUInt
-        "AsSByte", // NI_Vector128_AsSByte
-        "AsSingle", // NI_Vector128_AsSingle
-        "AsUInt16", // NI_Vector128_AsUInt16
-        "AsUInt32", // NI_Vector128_AsUInt32
-        "AsUInt64", // NI_Vector128_AsUInt64
-        "AsVector", // NI_Vector128_AsVector
-        "AsVector128", // NI_Vector128_AsVector128
-        "AsVector128Unsafe", // NI_Vector128_AsVector128Unsafe
-        "AsVector2", // NI_Vector128_AsVector2
-        "AsVector3", // NI_Vector128_AsVector3
-        "AsVector4", // NI_Vector128_AsVector4
-        "Ceiling", // NI_Vector128_Ceiling
-        "ConditionalSelect", // NI_Vector128_ConditionalSelect
-        "ConvertToDouble", // NI_Vector128_ConvertToDouble
-        "ConvertToInt32", // NI_Vector128_ConvertToInt32
-        "ConvertToInt32Native", // NI_Vector128_ConvertToInt32Native
-        "ConvertToInt64", // NI_Vector128_ConvertToInt64
-        "ConvertToInt64Native", // NI_Vector128_ConvertToInt64Native
-        "ConvertToSingle", // NI_Vector128_ConvertToSingle
-        "ConvertToUInt32", // NI_Vector128_ConvertToUInt32
-        "ConvertToUInt32Native", // NI_Vector128_ConvertToUInt32Native
-        "ConvertToUInt64", // NI_Vector128_ConvertToUInt64
-        "ConvertToUInt64Native", // NI_Vector128_ConvertToUInt64Native
-        "Create", // NI_Vector128_Create
-        "CreateScalar", // NI_Vector128_CreateScalar
-        "CreateScalarUnsafe", // NI_Vector128_CreateScalarUnsafe
-        "CreateSequence", // NI_Vector128_CreateSequence
-        "Dot", // NI_Vector128_Dot
-        "Equals", // NI_Vector128_Equals
-        "EqualsAny", // NI_Vector128_EqualsAny
-        "ExtractMostSignificantBits", // NI_Vector128_ExtractMostSignificantBits
-        "Floor", // NI_Vector128_Floor
-        "FusedMultiplyAdd", // NI_Vector128_FusedMultiplyAdd
-        "GetElement", // NI_Vector128_GetElement
-        "GetLower", // NI_Vector128_GetLower
-        "GetUpper", // NI_Vector128_GetUpper
-        "GreaterThan", // NI_Vector128_GreaterThan
-        "GreaterThanAll", // NI_Vector128_GreaterThanAll
-        "GreaterThanAny", // NI_Vector128_GreaterThanAny
-        "GreaterThanOrEqual", // NI_Vector128_GreaterThanOrEqual
-        "GreaterThanOrEqualAll", // NI_Vector128_GreaterThanOrEqualAll
-        "GreaterThanOrEqualAny", // NI_Vector128_GreaterThanOrEqualAny
-        "IsEvenInteger", // NI_Vector128_IsEvenInteger
-        "IsFinite", // NI_Vector128_IsFinite
-        "IsInfinity", // NI_Vector128_IsInfinity
-        "IsInteger", // NI_Vector128_IsInteger
-        "IsNaN", // NI_Vector128_IsNaN
-        "IsNegative", // NI_Vector128_IsNegative
-        "IsNegativeInfinity", // NI_Vector128_IsNegativeInfinity
-        "IsNormal", // NI_Vector128_IsNormal
-        "IsOddInteger", // NI_Vector128_IsOddInteger
-        "IsPositive", // NI_Vector128_IsPositive
-        "IsPositiveInfinity", // NI_Vector128_IsPositiveInfinity
-        "IsSubnormal", // NI_Vector128_IsSubnormal
-        "IsZero", // NI_Vector128_IsZero
-        "LessThan", // NI_Vector128_LessThan
-        "LessThanAll", // NI_Vector128_LessThanAll
-        "LessThanAny", // NI_Vector128_LessThanAny
-        "LessThanOrEqual", // NI_Vector128_LessThanOrEqual
-        "LessThanOrEqualAll", // NI_Vector128_LessThanOrEqualAll
-        "LessThanOrEqualAny", // NI_Vector128_LessThanOrEqualAny
-        "LoadAligned", // NI_Vector128_LoadAligned
-        "LoadAlignedNonTemporal", // NI_Vector128_LoadAlignedNonTemporal
-        "LoadUnsafe", // NI_Vector128_LoadUnsafe
-        "Max", // NI_Vector128_Max
-        "MaxMagnitude", // NI_Vector128_MaxMagnitude
-        "MaxMagnitudeNumber", // NI_Vector128_MaxMagnitudeNumber
-        "MaxNative", // NI_Vector128_MaxNative
-        "MaxNumber", // NI_Vector128_MaxNumber
-        "Min", // NI_Vector128_Min
-        "MinMagnitude", // NI_Vector128_MinMagnitude
-        "MinMagnitudeNumber", // NI_Vector128_MinMagnitudeNumber
-        "MinNative", // NI_Vector128_MinNative
-        "MinNumber", // NI_Vector128_MinNumber
-        "MultiplyAddEstimate", // NI_Vector128_MultiplyAddEstimate
-        "Narrow", // NI_Vector128_Narrow
-        "NarrowWithSaturation", // NI_Vector128_NarrowWithSaturation
-        "Round", // NI_Vector128_Round
-        "ShiftLeft", // NI_Vector128_ShiftLeft
-        "Shuffle", // NI_Vector128_Shuffle
-        "ShuffleNative", // NI_Vector128_ShuffleNative
-        "ShuffleNativeFallback", // NI_Vector128_ShuffleNativeFallback
-        "Sqrt", // NI_Vector128_Sqrt
-        "StoreAligned", // NI_Vector128_StoreAligned
-        "StoreAlignedNonTemporal", // NI_Vector128_StoreAlignedNonTemporal
-        "StoreUnsafe", // NI_Vector128_StoreUnsafe
-        "SubtractSaturate", // NI_Vector128_SubtractSaturate
-        "Sum", // NI_Vector128_Sum
-        "ToScalar", // NI_Vector128_ToScalar
-        "Truncate", // NI_Vector128_Truncate
-        "WidenLower", // NI_Vector128_WidenLower
-        "WidenUpper", // NI_Vector128_WidenUpper
-        "WithElement", // NI_Vector128_WithElement
-        "WithLower", // NI_Vector128_WithLower
-        "WithUpper", // NI_Vector128_WithUpper
-        "get_AllBitsSet", // NI_Vector128_get_AllBitsSet
-        "get_E", // NI_Vector128_get_E
-        "get_Epsilon", // NI_Vector128_get_Epsilon
-        "get_Indices", // NI_Vector128_get_Indices
-        "get_NaN", // NI_Vector128_get_NaN
-        "get_NegativeInfinity", // NI_Vector128_get_NegativeInfinity
-        "get_NegativeOne", // NI_Vector128_get_NegativeOne
-        "get_NegativeZero", // NI_Vector128_get_NegativeZero
-        "get_One", // NI_Vector128_get_One
-        "get_Pi", // NI_Vector128_get_Pi
-        "get_PositiveInfinity", // NI_Vector128_get_PositiveInfinity
-        "get_Tau", // NI_Vector128_get_Tau
-        "get_Zero", // NI_Vector128_get_Zero
-        "op_Addition", // NI_Vector128_op_Addition
-        "op_BitwiseAnd", // NI_Vector128_op_BitwiseAnd
-        "op_BitwiseOr", // NI_Vector128_op_BitwiseOr
-        "op_Division", // NI_Vector128_op_Division
-        "op_Equality", // NI_Vector128_op_Equality
-        "op_ExclusiveOr", // NI_Vector128_op_ExclusiveOr
-        "op_Inequality", // NI_Vector128_op_Inequality
-        "op_LeftShift", // NI_Vector128_op_LeftShift
-        "op_Multiply", // NI_Vector128_op_Multiply
-        "op_OnesComplement", // NI_Vector128_op_OnesComplement
-        "op_RightShift", // NI_Vector128_op_RightShift
-        "op_Subtraction", // NI_Vector128_op_Subtraction
-        "op_UnaryNegation", // NI_Vector128_op_UnaryNegation
-        "op_UnaryPlus", // NI_Vector128_op_UnaryPlus
-        "op_UnsignedRightShift", // NI_Vector128_op_UnsignedRightShift
         "Abs", // NI_AdvSimd_Abs
         "AbsSaturate", // NI_AdvSimd_AbsSaturate
         "AbsScalar", // NI_AdvSimd_AbsScalar
@@ -15811,6 +13596,29 @@ public partial struct HWIntrinsicInfo
         "ComputeCrc32C", // NI_Crc32_Arm64_ComputeCrc32C
         "DotProduct", // NI_Dp_DotProduct
         "DotProductBySelectedQuadruplet", // NI_Dp_DotProductBySelectedQuadruplet
+        "Add", // NI_Fp16_Add
+        "Ceiling", // NI_Fp16_Ceiling
+        "CompareEqual", // NI_Fp16_CompareEqual
+        "CompareGreaterThan", // NI_Fp16_CompareGreaterThan
+        "CompareGreaterThanOrEqual", // NI_Fp16_CompareGreaterThanOrEqual
+        "CompareLessThan", // NI_Fp16_CompareLessThan
+        "CompareLessThanOrEqual", // NI_Fp16_CompareLessThanOrEqual
+        "CompareNotEqual", // NI_Fp16_CompareNotEqual
+        "ConvertToHalf", // NI_Fp16_ConvertToHalf
+        "ConvertToInt32", // NI_Fp16_ConvertToInt32
+        "ConvertToInt64", // NI_Fp16_ConvertToInt64
+        "ConvertToUInt32", // NI_Fp16_ConvertToUInt32
+        "ConvertToUInt64", // NI_Fp16_ConvertToUInt64
+        "Divide", // NI_Fp16_Divide
+        "Floor", // NI_Fp16_Floor
+        "FusedMultiplyAdd", // NI_Fp16_FusedMultiplyAdd
+        "Multiply", // NI_Fp16_Multiply
+        "ReciprocalEstimate", // NI_Fp16_ReciprocalEstimate
+        "ReciprocalSqrtEstimate", // NI_Fp16_ReciprocalSqrtEstimate
+        "RoundToNearest", // NI_Fp16_RoundToNearest
+        "Sqrt", // NI_Fp16_Sqrt
+        "Subtract", // NI_Fp16_Subtract
+        "Truncate", // NI_Fp16_Truncate
         "MultiplyRoundedDoublingAndAddSaturateHigh", // NI_Rdm_MultiplyRoundedDoublingAndAddSaturateHigh
         "MultiplyRoundedDoublingAndSubtractSaturateHigh", // NI_Rdm_MultiplyRoundedDoublingAndSubtractSaturateHigh
         "MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh", // NI_Rdm_MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh
@@ -15829,6 +13637,15 @@ public partial struct HWIntrinsicInfo
         "HashUpdate2", // NI_Sha256_HashUpdate2
         "ScheduleUpdate0", // NI_Sha256_ScheduleUpdate0
         "ScheduleUpdate1", // NI_Sha256_ScheduleUpdate1
+        "BitwiseClearXor", // NI_Sha3_BitwiseClearXor
+        "BitwiseRotateLeftBy1AndXor", // NI_Sha3_BitwiseRotateLeftBy1AndXor
+        "Xor", // NI_Sha3_Xor
+        "XorRotateRight", // NI_Sha3_XorRotateRight
+        "Encode", // NI_Sm4_Encode
+        "KeyUpdate", // NI_Sm4_KeyUpdate
+        "ConvertToDouble", // NI_ArmBase_ConvertToDouble
+        "ConvertToHalf", // NI_ArmBase_ConvertToHalf
+        "ConvertToSingle", // NI_ArmBase_ConvertToSingle
 #endif
 #if FEATURE_HW_INTRINSICS
         "Abs", // NI_Sve_Abs
@@ -16195,6 +14012,16 @@ public partial struct HWIntrinsicInfo
         "CreateWhileReadAfterWriteMaskUInt16", // NI_Sve2_CreateWhileReadAfterWriteMaskUInt16
         "CreateWhileReadAfterWriteMaskUInt32", // NI_Sve2_CreateWhileReadAfterWriteMaskUInt32
         "CreateWhileReadAfterWriteMaskUInt64", // NI_Sve2_CreateWhileReadAfterWriteMaskUInt64
+        "CreateWhileWriteAfterReadMaskByte", // NI_Sve2_CreateWhileWriteAfterReadMaskByte
+        "CreateWhileWriteAfterReadMaskDouble", // NI_Sve2_CreateWhileWriteAfterReadMaskDouble
+        "CreateWhileWriteAfterReadMaskInt16", // NI_Sve2_CreateWhileWriteAfterReadMaskInt16
+        "CreateWhileWriteAfterReadMaskInt32", // NI_Sve2_CreateWhileWriteAfterReadMaskInt32
+        "CreateWhileWriteAfterReadMaskInt64", // NI_Sve2_CreateWhileWriteAfterReadMaskInt64
+        "CreateWhileWriteAfterReadMaskSByte", // NI_Sve2_CreateWhileWriteAfterReadMaskSByte
+        "CreateWhileWriteAfterReadMaskSingle", // NI_Sve2_CreateWhileWriteAfterReadMaskSingle
+        "CreateWhileWriteAfterReadMaskUInt16", // NI_Sve2_CreateWhileWriteAfterReadMaskUInt16
+        "CreateWhileWriteAfterReadMaskUInt32", // NI_Sve2_CreateWhileWriteAfterReadMaskUInt32
+        "CreateWhileWriteAfterReadMaskUInt64", // NI_Sve2_CreateWhileWriteAfterReadMaskUInt64
         "DotProductRotateComplex", // NI_Sve2_DotProductRotateComplex
         "DotProductRotateComplexBySelectedIndex", // NI_Sve2_DotProductRotateComplexBySelectedIndex
         "FusedAddHalving", // NI_Sve2_FusedAddHalving
@@ -16268,6 +14095,10 @@ public partial struct HWIntrinsicInfo
         "PolynomialMultiplyWideningOdd", // NI_Sve2_PolynomialMultiplyWideningOdd
         "ReciprocalEstimate", // NI_Sve2_ReciprocalEstimate
         "ReciprocalSqrtEstimate", // NI_Sve2_ReciprocalSqrtEstimate
+        "SaturatingExtractNarrowingLower", // NI_Sve2_SaturatingExtractNarrowingLower
+        "SaturatingExtractNarrowingUpper", // NI_Sve2_SaturatingExtractNarrowingUpper
+        "SaturatingExtractUnsignedNarrowingLower", // NI_Sve2_SaturatingExtractUnsignedNarrowingLower
+        "SaturatingExtractUnsignedNarrowingUpper", // NI_Sve2_SaturatingExtractUnsignedNarrowingUpper
         "Scatter16BitNarrowingNonTemporal", // NI_Sve2_Scatter16BitNarrowingNonTemporal
         "Scatter16BitWithByteOffsetsNarrowingNonTemporal", // NI_Sve2_Scatter16BitWithByteOffsetsNarrowingNonTemporal
         "Scatter32BitNarrowingNonTemporal", // NI_Sve2_Scatter32BitNarrowingNonTemporal
@@ -16324,6 +14155,9 @@ public partial struct HWIntrinsicInfo
         "VectorTableLookupExtension", // NI_Sve2_VectorTableLookupExtension
         "Xor", // NI_Sve2_Xor
         "XorRotateRight", // NI_Sve2_XorRotateRight
+        "BitwiseRotateLeftBy1AndXor", // NI_SveSha3_BitwiseRotateLeftBy1AndXor
+        "Encode", // NI_SveSm4_Encode
+        "KeyUpdate", // NI_SveSm4_KeyUpdate
         "ConditionalExtractAfterLastActiveElementScalar", // NI_Sve_ConditionalExtractAfterLastActiveElementScalar
         "ConditionalExtractLastActiveElementScalar", // NI_Sve_ConditionalExtractLastActiveElementScalar
         "ConvertMaskToVector", // NI_Sve_ConvertMaskToVector
@@ -16351,408 +14185,292 @@ public partial struct HWIntrinsicInfo
         "TransposeOdd_Predicates", // NI_Sve_TransposeOdd_Predicates
         "ReverseElement_Predicates", // NI_Sve_ReverseElement_Predicates
 #endif
+#elif TARGET_WASM
+#if FEATURE_HW_INTRINSICS
+        "Abs", // NI_PackedSimd_Abs
+        "Add", // NI_PackedSimd_Add
+        "AddPairwiseWidening", // NI_PackedSimd_AddPairwiseWidening
+        "AddSaturate", // NI_PackedSimd_AddSaturate
+        "AllTrue", // NI_PackedSimd_AllTrue
+        "And", // NI_PackedSimd_And
+        "AndNot", // NI_PackedSimd_AndNot
+        "AnyTrue", // NI_PackedSimd_AnyTrue
+        "AverageRounded", // NI_PackedSimd_AverageRounded
+        "Bitmask", // NI_PackedSimd_Bitmask
+        "BitwiseSelect", // NI_PackedSimd_BitwiseSelect
+        "Ceiling", // NI_PackedSimd_Ceiling
+        "CompareEqual", // NI_PackedSimd_CompareEqual
+        "CompareGreaterThan", // NI_PackedSimd_CompareGreaterThan
+        "CompareGreaterThanOrEqual", // NI_PackedSimd_CompareGreaterThanOrEqual
+        "CompareLessThan", // NI_PackedSimd_CompareLessThan
+        "CompareLessThanOrEqual", // NI_PackedSimd_CompareLessThanOrEqual
+        "CompareNotEqual", // NI_PackedSimd_CompareNotEqual
+        "ConvertNarrowingSaturateSigned", // NI_PackedSimd_ConvertNarrowingSaturateSigned
+        "ConvertNarrowingSaturateUnsigned", // NI_PackedSimd_ConvertNarrowingSaturateUnsigned
+        "ConvertToDoubleLower", // NI_PackedSimd_ConvertToDoubleLower
+        "ConvertToInt32Saturate", // NI_PackedSimd_ConvertToInt32Saturate
+        "ConvertToSingle", // NI_PackedSimd_ConvertToSingle
+        "ConvertToUInt32Saturate", // NI_PackedSimd_ConvertToUInt32Saturate
+        "Divide", // NI_PackedSimd_Divide
+        "Dot", // NI_PackedSimd_Dot
+        "ExtractScalar", // NI_PackedSimd_ExtractScalar
+        "Floor", // NI_PackedSimd_Floor
+        "LoadScalarAndInsert", // NI_PackedSimd_LoadScalarAndInsert
+        "LoadScalarAndSplatVector128", // NI_PackedSimd_LoadScalarAndSplatVector128
+        "LoadScalarVector128", // NI_PackedSimd_LoadScalarVector128
+        "LoadVector128", // NI_PackedSimd_LoadVector128
+        "LoadWideningVector128", // NI_PackedSimd_LoadWideningVector128
+        "Max", // NI_PackedSimd_Max
+        "Min", // NI_PackedSimd_Min
+        "Multiply", // NI_PackedSimd_Multiply
+        "MultiplyRoundedSaturateQ15", // NI_PackedSimd_MultiplyRoundedSaturateQ15
+        "MultiplyWideningLower", // NI_PackedSimd_MultiplyWideningLower
+        "MultiplyWideningUpper", // NI_PackedSimd_MultiplyWideningUpper
+        "Negate", // NI_PackedSimd_Negate
+        "Not", // NI_PackedSimd_Not
+        "Or", // NI_PackedSimd_Or
+        "PopCount", // NI_PackedSimd_PopCount
+        "PseudoMax", // NI_PackedSimd_PseudoMax
+        "PseudoMin", // NI_PackedSimd_PseudoMin
+        "ReplaceScalar", // NI_PackedSimd_ReplaceScalar
+        "RoundToNearest", // NI_PackedSimd_RoundToNearest
+        "ShiftLeft", // NI_PackedSimd_ShiftLeft
+        "ShiftRightArithmetic", // NI_PackedSimd_ShiftRightArithmetic
+        "ShiftRightLogical", // NI_PackedSimd_ShiftRightLogical
+        "Shuffle", // NI_PackedSimd_Shuffle
+        "SignExtendWideningLower", // NI_PackedSimd_SignExtendWideningLower
+        "SignExtendWideningUpper", // NI_PackedSimd_SignExtendWideningUpper
+        "Splat", // NI_PackedSimd_Splat
+        "Sqrt", // NI_PackedSimd_Sqrt
+        "Store", // NI_PackedSimd_Store
+        "StoreSelectedScalar", // NI_PackedSimd_StoreSelectedScalar
+        "Subtract", // NI_PackedSimd_Subtract
+        "SubtractSaturate", // NI_PackedSimd_SubtractSaturate
+        "Swizzle", // NI_PackedSimd_Swizzle
+        "Truncate", // NI_PackedSimd_Truncate
+        "Xor", // NI_PackedSimd_Xor
+        "ZeroExtendWideningLower", // NI_PackedSimd_ZeroExtendWideningLower
+        "ZeroExtendWideningUpper", // NI_PackedSimd_ZeroExtendWideningUpper
+        "LeadingZeroCount", // NI_WasmBase_LeadingZeroCount
+        "TrailingZeroCount", // NI_WasmBase_TrailingZeroCount
 #endif
+#else
+#error Unsupported platform
+#endif
+#endif
+
     ];
 
     private static ReadOnlySpan<byte> s_numArgs => [
+#if FEATURE_HW_INTRINSICS
+        1, // NI_Vector_Abs
+        2, // NI_Vector_AddSaturate
+        2, // NI_Vector_AndNot
+        1, // NI_Vector_As
+        1, // NI_Vector_AsByte
+        1, // NI_Vector_AsDouble
+        1, // NI_Vector_AsInt16
+        1, // NI_Vector_AsInt32
+        1, // NI_Vector_AsInt64
+        1, // NI_Vector_AsNInt
+        1, // NI_Vector_AsNUInt
+        1, // NI_Vector_AsSByte
+        1, // NI_Vector_AsSingle
+        1, // NI_Vector_AsUInt16
+        1, // NI_Vector_AsUInt32
+        1, // NI_Vector_AsUInt64
+        1, // NI_Vector_AsVector
+        1, // NI_Vector_AsVector128
+#if TARGET_XARCH
+        1, // NI_Vector_AsVector128Unsafe
+        1, // NI_Vector_AsVector2
+        1, // NI_Vector_AsVector256
+        1, // NI_Vector_AsVector3
+#elif TARGET_ARM64
+        1, // NI_Vector_AsVector128Unsafe
+        1, // NI_Vector_AsVector2
+        1, // NI_Vector_AsVector3
+#else
+        1, // NI_Vector_AsVector128Unsafe
+        1, // NI_Vector_AsVector2
+        1, // NI_Vector_AsVector3
+#endif
+        1, // NI_Vector_AsVector4
+#if TARGET_XARCH
+        1, // NI_Vector_AsVector512
+#endif
+        1, // NI_Vector_Ceiling
+        2, // NI_Vector_ConcatLowerLower
+        2, // NI_Vector_ConcatLowerUpper
+        2, // NI_Vector_ConcatUpperLower
+        2, // NI_Vector_ConcatUpperUpper
+#if TARGET_XARCH
+        3, // NI_Vector_ConditionalSelect
+#else
+        3, // NI_Vector_ConditionalSelect
+#endif
+        1, // NI_Vector_ConvertToDouble
+        1, // NI_Vector_ConvertToInt32
+        1, // NI_Vector_ConvertToInt32Native
+        1, // NI_Vector_ConvertToInt64
+        1, // NI_Vector_ConvertToInt64Native
+        1, // NI_Vector_ConvertToSingle
+        1, // NI_Vector_ConvertToUInt32
+        1, // NI_Vector_ConvertToUInt32Native
+        1, // NI_Vector_ConvertToUInt64
+        1, // NI_Vector_ConvertToUInt64Native
+        unchecked((byte)(-1)), // NI_Vector_Create
+        2, // NI_Vector_CreateAlternatingSequence
+        2, // NI_Vector_CreateGeometricSequence
+#if TARGET_XARCH
+        1, // NI_Vector_CreateScalar
+        1, // NI_Vector_CreateScalarUnsafe
+#elif TARGET_ARM64
+        1, // NI_Vector_CreateScalar
+        1, // NI_Vector_CreateScalarUnsafe
+#else
+        1, // NI_Vector_CreateScalar
+        1, // NI_Vector_CreateScalarUnsafe
+#endif
+        2, // NI_Vector_CreateSequence
+        2, // NI_Vector_Dot
+        2, // NI_Vector_Equals
+        2, // NI_Vector_EqualsAny
+        1, // NI_Vector_ExtractMostSignificantBits
+        1, // NI_Vector_Floor
+        3, // NI_Vector_FusedMultiplyAdd
+#if TARGET_XARCH
+        2, // NI_Vector_GetElement
+#elif TARGET_ARM64
+        2, // NI_Vector_GetElement
+#else
+        2, // NI_Vector_GetElement
+#endif
+#if TARGET_XARCH
+        1, // NI_Vector_GetLower
+        1, // NI_Vector_GetLower128
+        1, // NI_Vector_GetUpper
+#elif TARGET_ARM64
+        1, // NI_Vector_GetLower
+        1, // NI_Vector_GetUpper
+#endif
+        2, // NI_Vector_GreaterThan
+        2, // NI_Vector_GreaterThanAll
+        2, // NI_Vector_GreaterThanAny
+        2, // NI_Vector_GreaterThanOrEqual
+        2, // NI_Vector_GreaterThanOrEqualAll
+        2, // NI_Vector_GreaterThanOrEqualAny
+        1, // NI_Vector_IsEvenInteger
+        1, // NI_Vector_IsFinite
+        1, // NI_Vector_IsInfinity
+        1, // NI_Vector_IsInteger
+        1, // NI_Vector_IsNaN
+        1, // NI_Vector_IsNegative
+        1, // NI_Vector_IsNegativeInfinity
+        1, // NI_Vector_IsNormal
+        1, // NI_Vector_IsOddInteger
+        1, // NI_Vector_IsPositive
+        1, // NI_Vector_IsPositiveInfinity
+        1, // NI_Vector_IsSubnormal
+        1, // NI_Vector_IsZero
+        2, // NI_Vector_LessThan
+        2, // NI_Vector_LessThanAll
+        2, // NI_Vector_LessThanAny
+        2, // NI_Vector_LessThanOrEqual
+        2, // NI_Vector_LessThanOrEqualAll
+        2, // NI_Vector_LessThanOrEqualAny
+        1, // NI_Vector_LoadAligned
+        1, // NI_Vector_LoadAlignedNonTemporal
+        unchecked((byte)(-1)), // NI_Vector_LoadUnsafe
+        2, // NI_Vector_Max
+        2, // NI_Vector_MaxMagnitude
+        2, // NI_Vector_MaxMagnitudeNumber
+        2, // NI_Vector_MaxNative
+        2, // NI_Vector_MaxNumber
+        2, // NI_Vector_Min
+        2, // NI_Vector_MinMagnitude
+        2, // NI_Vector_MinMagnitudeNumber
+        2, // NI_Vector_MinNative
+        2, // NI_Vector_MinNumber
+        3, // NI_Vector_MultiplyAddEstimate
+        2, // NI_Vector_Narrow
+#if TARGET_ARM64
+        2, // NI_Vector_NarrowWithSaturation
+#else
+        2, // NI_Vector_NarrowWithSaturation
+#endif
+        1, // NI_Vector_Reverse
+        unchecked((byte)(-1)), // NI_Vector_Round
+        2, // NI_Vector_ShiftLeft
+        unchecked((byte)(-1)), // NI_Vector_Shuffle
+        2, // NI_Vector_ShuffleNative
+        2, // NI_Vector_ShuffleNativeFallback
+        1, // NI_Vector_Sqrt
+        2, // NI_Vector_StoreAligned
+        2, // NI_Vector_StoreAlignedNonTemporal
+        unchecked((byte)(-1)), // NI_Vector_StoreUnsafe
+        2, // NI_Vector_SubtractSaturate
+        1, // NI_Vector_Sum
+#if TARGET_XARCH
+        1, // NI_Vector_ToScalar
+        1, // NI_Vector_ToVector256
+        1, // NI_Vector_ToVector256Unsafe
+        1, // NI_Vector_ToVector512
+        1, // NI_Vector_ToVector512Unsafe
+#elif TARGET_ARM64
+        1, // NI_Vector_ToScalar
+        1, // NI_Vector_ToVector128
+        1, // NI_Vector_ToVector128Unsafe
+#else
+        1, // NI_Vector_ToScalar
+#endif
+        1, // NI_Vector_Truncate
+        2, // NI_Vector_UnzipEven
+        2, // NI_Vector_UnzipOdd
+        1, // NI_Vector_WidenLower
+        1, // NI_Vector_WidenUpper
+        3, // NI_Vector_WithElement
+#if TARGET_XARCH || TARGET_ARM64
+        2, // NI_Vector_WithLower
+        2, // NI_Vector_WithUpper
+#endif
+        2, // NI_Vector_ZipLower
+        2, // NI_Vector_ZipUpper
+        0, // NI_Vector_get_AllBitsSet
+        0, // NI_Vector_get_E
+        0, // NI_Vector_get_Epsilon
+        0, // NI_Vector_get_Indices
+        0, // NI_Vector_get_NaN
+        0, // NI_Vector_get_NegativeInfinity
+        0, // NI_Vector_get_NegativeOne
+        0, // NI_Vector_get_NegativeZero
+        0, // NI_Vector_get_One
+        0, // NI_Vector_get_Pi
+        0, // NI_Vector_get_PositiveInfinity
+        0, // NI_Vector_get_SignSequence
+        0, // NI_Vector_get_Tau
+        0, // NI_Vector_get_Zero
+        2, // NI_Vector_op_Addition
+        2, // NI_Vector_op_BitwiseAnd
+        2, // NI_Vector_op_BitwiseOr
+#if TARGET_XARCH
+        2, // NI_Vector_op_Division
+#else
+        2, // NI_Vector_op_Division
+#endif
+        2, // NI_Vector_op_Equality
+        2, // NI_Vector_op_ExclusiveOr
+        2, // NI_Vector_op_Inequality
+        2, // NI_Vector_op_LeftShift
+        2, // NI_Vector_op_Multiply
+        1, // NI_Vector_op_OnesComplement
+        2, // NI_Vector_op_RightShift
+        2, // NI_Vector_op_Subtraction
+        1, // NI_Vector_op_UnaryNegation
+        1, // NI_Vector_op_UnaryPlus
+        2, // NI_Vector_op_UnsignedRightShift
 #if TARGET_XARCH
 #if FEATURE_HW_INTRINSICS
-        1, // NI_Vector128_Abs
-        2, // NI_Vector128_AddSaturate
-        2, // NI_Vector128_AndNot
-        1, // NI_Vector128_As
-        1, // NI_Vector128_AsByte
-        1, // NI_Vector128_AsDouble
-        1, // NI_Vector128_AsInt16
-        1, // NI_Vector128_AsInt32
-        1, // NI_Vector128_AsInt64
-        1, // NI_Vector128_AsNInt
-        1, // NI_Vector128_AsNUInt
-        1, // NI_Vector128_AsSByte
-        1, // NI_Vector128_AsSingle
-        1, // NI_Vector128_AsUInt16
-        1, // NI_Vector128_AsUInt32
-        1, // NI_Vector128_AsUInt64
-        1, // NI_Vector128_AsVector
-        1, // NI_Vector128_AsVector128
-        1, // NI_Vector128_AsVector128Unsafe
-        1, // NI_Vector128_AsVector2
-        1, // NI_Vector128_AsVector3
-        1, // NI_Vector128_AsVector4
-        1, // NI_Vector128_Ceiling
-        3, // NI_Vector128_ConditionalSelect
-        1, // NI_Vector128_ConvertToDouble
-        1, // NI_Vector128_ConvertToInt32
-        1, // NI_Vector128_ConvertToInt32Native
-        1, // NI_Vector128_ConvertToInt64
-        1, // NI_Vector128_ConvertToInt64Native
-        1, // NI_Vector128_ConvertToSingle
-        1, // NI_Vector128_ConvertToUInt32
-        1, // NI_Vector128_ConvertToUInt32Native
-        1, // NI_Vector128_ConvertToUInt64
-        1, // NI_Vector128_ConvertToUInt64Native
-        unchecked((byte)(-1)), // NI_Vector128_Create
-        1, // NI_Vector128_CreateScalar
-        1, // NI_Vector128_CreateScalarUnsafe
-        2, // NI_Vector128_CreateSequence
-        2, // NI_Vector128_Dot
-        2, // NI_Vector128_Equals
-        2, // NI_Vector128_EqualsAny
-        1, // NI_Vector128_ExtractMostSignificantBits
-        1, // NI_Vector128_Floor
-        3, // NI_Vector128_FusedMultiplyAdd
-        2, // NI_Vector128_GetElement
-        2, // NI_Vector128_GreaterThan
-        2, // NI_Vector128_GreaterThanAll
-        2, // NI_Vector128_GreaterThanAny
-        2, // NI_Vector128_GreaterThanOrEqual
-        2, // NI_Vector128_GreaterThanOrEqualAll
-        2, // NI_Vector128_GreaterThanOrEqualAny
-        1, // NI_Vector128_IsEvenInteger
-        1, // NI_Vector128_IsFinite
-        1, // NI_Vector128_IsInfinity
-        1, // NI_Vector128_IsInteger
-        1, // NI_Vector128_IsNaN
-        1, // NI_Vector128_IsNegative
-        1, // NI_Vector128_IsNegativeInfinity
-        1, // NI_Vector128_IsNormal
-        1, // NI_Vector128_IsOddInteger
-        1, // NI_Vector128_IsPositive
-        1, // NI_Vector128_IsPositiveInfinity
-        1, // NI_Vector128_IsSubnormal
-        1, // NI_Vector128_IsZero
-        2, // NI_Vector128_LessThan
-        2, // NI_Vector128_LessThanAll
-        2, // NI_Vector128_LessThanAny
-        2, // NI_Vector128_LessThanOrEqual
-        2, // NI_Vector128_LessThanOrEqualAll
-        2, // NI_Vector128_LessThanOrEqualAny
-        1, // NI_Vector128_LoadAligned
-        1, // NI_Vector128_LoadAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector128_LoadUnsafe
-        2, // NI_Vector128_Max
-        2, // NI_Vector128_MaxMagnitude
-        2, // NI_Vector128_MaxMagnitudeNumber
-        2, // NI_Vector128_MaxNative
-        2, // NI_Vector128_MaxNumber
-        2, // NI_Vector128_Min
-        2, // NI_Vector128_MinMagnitude
-        2, // NI_Vector128_MinMagnitudeNumber
-        2, // NI_Vector128_MinNative
-        2, // NI_Vector128_MinNumber
-        3, // NI_Vector128_MultiplyAddEstimate
-        2, // NI_Vector128_Narrow
-        2, // NI_Vector128_NarrowWithSaturation
-        unchecked((byte)(-1)), // NI_Vector128_Round
-        2, // NI_Vector128_ShiftLeft
-        unchecked((byte)(-1)), // NI_Vector128_Shuffle
-        2, // NI_Vector128_ShuffleNative
-        2, // NI_Vector128_ShuffleNativeFallback
-        1, // NI_Vector128_Sqrt
-        2, // NI_Vector128_StoreAligned
-        2, // NI_Vector128_StoreAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector128_StoreUnsafe
-        2, // NI_Vector128_SubtractSaturate
-        1, // NI_Vector128_Sum
-        1, // NI_Vector128_ToScalar
-        1, // NI_Vector128_ToVector256
-        1, // NI_Vector128_ToVector256Unsafe
-        1, // NI_Vector128_ToVector512
-        1, // NI_Vector128_Truncate
-        1, // NI_Vector128_WidenLower
-        1, // NI_Vector128_WidenUpper
-        3, // NI_Vector128_WithElement
-        0, // NI_Vector128_get_AllBitsSet
-        0, // NI_Vector128_get_E
-        0, // NI_Vector128_get_Epsilon
-        0, // NI_Vector128_get_Indices
-        0, // NI_Vector128_get_NaN
-        0, // NI_Vector128_get_NegativeInfinity
-        0, // NI_Vector128_get_NegativeOne
-        0, // NI_Vector128_get_NegativeZero
-        0, // NI_Vector128_get_One
-        0, // NI_Vector128_get_Pi
-        0, // NI_Vector128_get_PositiveInfinity
-        0, // NI_Vector128_get_Tau
-        0, // NI_Vector128_get_Zero
-        2, // NI_Vector128_op_Addition
-        2, // NI_Vector128_op_BitwiseAnd
-        2, // NI_Vector128_op_BitwiseOr
-        2, // NI_Vector128_op_Division
-        2, // NI_Vector128_op_Equality
-        2, // NI_Vector128_op_ExclusiveOr
-        2, // NI_Vector128_op_Inequality
-        2, // NI_Vector128_op_LeftShift
-        2, // NI_Vector128_op_Multiply
-        1, // NI_Vector128_op_OnesComplement
-        2, // NI_Vector128_op_RightShift
-        2, // NI_Vector128_op_Subtraction
-        1, // NI_Vector128_op_UnaryNegation
-        1, // NI_Vector128_op_UnaryPlus
-        2, // NI_Vector128_op_UnsignedRightShift
-        1, // NI_Vector256_Abs
-        2, // NI_Vector256_AddSaturate
-        2, // NI_Vector256_AndNot
-        1, // NI_Vector256_As
-        1, // NI_Vector256_AsByte
-        1, // NI_Vector256_AsDouble
-        1, // NI_Vector256_AsInt16
-        1, // NI_Vector256_AsInt32
-        1, // NI_Vector256_AsInt64
-        1, // NI_Vector256_AsNInt
-        1, // NI_Vector256_AsNUInt
-        1, // NI_Vector256_AsSByte
-        1, // NI_Vector256_AsSingle
-        1, // NI_Vector256_AsUInt16
-        1, // NI_Vector256_AsUInt32
-        1, // NI_Vector256_AsUInt64
-        1, // NI_Vector256_AsVector
-        1, // NI_Vector256_AsVector256
-        1, // NI_Vector256_Ceiling
-        3, // NI_Vector256_ConditionalSelect
-        1, // NI_Vector256_ConvertToDouble
-        1, // NI_Vector256_ConvertToInt32
-        1, // NI_Vector256_ConvertToInt32Native
-        1, // NI_Vector256_ConvertToInt64
-        1, // NI_Vector256_ConvertToInt64Native
-        1, // NI_Vector256_ConvertToSingle
-        1, // NI_Vector256_ConvertToUInt32
-        1, // NI_Vector256_ConvertToUInt32Native
-        1, // NI_Vector256_ConvertToUInt64
-        1, // NI_Vector256_ConvertToUInt64Native
-        unchecked((byte)(-1)), // NI_Vector256_Create
-        1, // NI_Vector256_CreateScalar
-        1, // NI_Vector256_CreateScalarUnsafe
-        2, // NI_Vector256_CreateSequence
-        2, // NI_Vector256_Dot
-        2, // NI_Vector256_Equals
-        2, // NI_Vector256_EqualsAny
-        1, // NI_Vector256_ExtractMostSignificantBits
-        1, // NI_Vector256_Floor
-        3, // NI_Vector256_FusedMultiplyAdd
-        2, // NI_Vector256_GetElement
-        1, // NI_Vector256_GetLower
-        1, // NI_Vector256_GetUpper
-        2, // NI_Vector256_GreaterThan
-        2, // NI_Vector256_GreaterThanAll
-        2, // NI_Vector256_GreaterThanAny
-        2, // NI_Vector256_GreaterThanOrEqual
-        2, // NI_Vector256_GreaterThanOrEqualAll
-        2, // NI_Vector256_GreaterThanOrEqualAny
-        1, // NI_Vector256_IsEvenInteger
-        1, // NI_Vector256_IsFinite
-        1, // NI_Vector256_IsInfinity
-        1, // NI_Vector256_IsInteger
-        1, // NI_Vector256_IsNaN
-        1, // NI_Vector256_IsNegative
-        1, // NI_Vector256_IsNegativeInfinity
-        1, // NI_Vector256_IsNormal
-        1, // NI_Vector256_IsOddInteger
-        1, // NI_Vector256_IsPositive
-        1, // NI_Vector256_IsPositiveInfinity
-        1, // NI_Vector256_IsSubnormal
-        1, // NI_Vector256_IsZero
-        2, // NI_Vector256_LessThan
-        2, // NI_Vector256_LessThanAll
-        2, // NI_Vector256_LessThanAny
-        2, // NI_Vector256_LessThanOrEqual
-        2, // NI_Vector256_LessThanOrEqualAll
-        2, // NI_Vector256_LessThanOrEqualAny
-        1, // NI_Vector256_LoadAligned
-        1, // NI_Vector256_LoadAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector256_LoadUnsafe
-        2, // NI_Vector256_Max
-        2, // NI_Vector256_MaxMagnitude
-        2, // NI_Vector256_MaxMagnitudeNumber
-        2, // NI_Vector256_MaxNative
-        2, // NI_Vector256_MaxNumber
-        2, // NI_Vector256_Min
-        2, // NI_Vector256_MinMagnitude
-        2, // NI_Vector256_MinMagnitudeNumber
-        2, // NI_Vector256_MinNative
-        2, // NI_Vector256_MinNumber
-        3, // NI_Vector256_MultiplyAddEstimate
-        2, // NI_Vector256_Narrow
-        2, // NI_Vector256_NarrowWithSaturation
-        unchecked((byte)(-1)), // NI_Vector256_Round
-        2, // NI_Vector256_ShiftLeft
-        unchecked((byte)(-1)), // NI_Vector256_Shuffle
-        2, // NI_Vector256_ShuffleNative
-        2, // NI_Vector256_ShuffleNativeFallback
-        1, // NI_Vector256_Sqrt
-        2, // NI_Vector256_StoreAligned
-        2, // NI_Vector256_StoreAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector256_StoreUnsafe
-        2, // NI_Vector256_SubtractSaturate
-        1, // NI_Vector256_Sum
-        1, // NI_Vector256_ToScalar
-        1, // NI_Vector256_ToVector512
-        1, // NI_Vector256_ToVector512Unsafe
-        1, // NI_Vector256_Truncate
-        1, // NI_Vector256_WidenLower
-        1, // NI_Vector256_WidenUpper
-        3, // NI_Vector256_WithElement
-        2, // NI_Vector256_WithLower
-        2, // NI_Vector256_WithUpper
-        0, // NI_Vector256_get_AllBitsSet
-        0, // NI_Vector256_get_E
-        0, // NI_Vector256_get_Epsilon
-        0, // NI_Vector256_get_Indices
-        0, // NI_Vector256_get_NaN
-        0, // NI_Vector256_get_NegativeInfinity
-        0, // NI_Vector256_get_NegativeOne
-        0, // NI_Vector256_get_NegativeZero
-        0, // NI_Vector256_get_One
-        0, // NI_Vector256_get_Pi
-        0, // NI_Vector256_get_PositiveInfinity
-        0, // NI_Vector256_get_Tau
-        0, // NI_Vector256_get_Zero
-        2, // NI_Vector256_op_Addition
-        2, // NI_Vector256_op_BitwiseAnd
-        2, // NI_Vector256_op_BitwiseOr
-        2, // NI_Vector256_op_Division
-        2, // NI_Vector256_op_Equality
-        2, // NI_Vector256_op_ExclusiveOr
-        2, // NI_Vector256_op_Inequality
-        2, // NI_Vector256_op_LeftShift
-        2, // NI_Vector256_op_Multiply
-        1, // NI_Vector256_op_OnesComplement
-        2, // NI_Vector256_op_RightShift
-        2, // NI_Vector256_op_Subtraction
-        1, // NI_Vector256_op_UnaryNegation
-        1, // NI_Vector256_op_UnaryPlus
-        2, // NI_Vector256_op_UnsignedRightShift
-        1, // NI_Vector512_Abs
-        2, // NI_Vector512_AddSaturate
-        2, // NI_Vector512_AndNot
-        1, // NI_Vector512_As
-        1, // NI_Vector512_AsByte
-        1, // NI_Vector512_AsDouble
-        1, // NI_Vector512_AsInt16
-        1, // NI_Vector512_AsInt32
-        1, // NI_Vector512_AsInt64
-        1, // NI_Vector512_AsNInt
-        1, // NI_Vector512_AsNUInt
-        1, // NI_Vector512_AsSByte
-        1, // NI_Vector512_AsSingle
-        1, // NI_Vector512_AsUInt16
-        1, // NI_Vector512_AsUInt32
-        1, // NI_Vector512_AsUInt64
-        1, // NI_Vector512_AsVector
-        1, // NI_Vector512_AsVector512
-        1, // NI_Vector512_Ceiling
-        3, // NI_Vector512_ConditionalSelect
-        1, // NI_Vector512_ConvertToDouble
-        1, // NI_Vector512_ConvertToInt32
-        1, // NI_Vector512_ConvertToInt32Native
-        1, // NI_Vector512_ConvertToInt64
-        1, // NI_Vector512_ConvertToInt64Native
-        1, // NI_Vector512_ConvertToSingle
-        1, // NI_Vector512_ConvertToUInt32
-        1, // NI_Vector512_ConvertToUInt32Native
-        1, // NI_Vector512_ConvertToUInt64
-        1, // NI_Vector512_ConvertToUInt64Native
-        unchecked((byte)(-1)), // NI_Vector512_Create
-        1, // NI_Vector512_CreateScalar
-        1, // NI_Vector512_CreateScalarUnsafe
-        2, // NI_Vector512_CreateSequence
-        2, // NI_Vector512_Dot
-        2, // NI_Vector512_Equals
-        2, // NI_Vector512_EqualsAny
-        1, // NI_Vector512_ExtractMostSignificantBits
-        1, // NI_Vector512_Floor
-        3, // NI_Vector512_FusedMultiplyAdd
-        2, // NI_Vector512_GetElement
-        1, // NI_Vector512_GetLower
-        1, // NI_Vector512_GetLower128
-        1, // NI_Vector512_GetUpper
-        2, // NI_Vector512_GreaterThan
-        2, // NI_Vector512_GreaterThanAll
-        2, // NI_Vector512_GreaterThanAny
-        2, // NI_Vector512_GreaterThanOrEqual
-        2, // NI_Vector512_GreaterThanOrEqualAll
-        2, // NI_Vector512_GreaterThanOrEqualAny
-        1, // NI_Vector512_IsEvenInteger
-        1, // NI_Vector512_IsFinite
-        1, // NI_Vector512_IsInfinity
-        1, // NI_Vector512_IsInteger
-        1, // NI_Vector512_IsNaN
-        1, // NI_Vector512_IsNegative
-        1, // NI_Vector512_IsNegativeInfinity
-        1, // NI_Vector512_IsNormal
-        1, // NI_Vector512_IsOddInteger
-        1, // NI_Vector512_IsPositive
-        1, // NI_Vector512_IsPositiveInfinity
-        1, // NI_Vector512_IsSubnormal
-        1, // NI_Vector512_IsZero
-        2, // NI_Vector512_LessThan
-        2, // NI_Vector512_LessThanAll
-        2, // NI_Vector512_LessThanAny
-        2, // NI_Vector512_LessThanOrEqual
-        2, // NI_Vector512_LessThanOrEqualAll
-        2, // NI_Vector512_LessThanOrEqualAny
-        1, // NI_Vector512_LoadAligned
-        1, // NI_Vector512_LoadAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector512_LoadUnsafe
-        2, // NI_Vector512_Max
-        2, // NI_Vector512_MaxMagnitude
-        2, // NI_Vector512_MaxMagnitudeNumber
-        2, // NI_Vector512_MaxNative
-        2, // NI_Vector512_MaxNumber
-        2, // NI_Vector512_Min
-        2, // NI_Vector512_MinMagnitude
-        2, // NI_Vector512_MinMagnitudeNumber
-        2, // NI_Vector512_MinNative
-        2, // NI_Vector512_MinNumber
-        3, // NI_Vector512_MultiplyAddEstimate
-        2, // NI_Vector512_Narrow
-        2, // NI_Vector512_NarrowWithSaturation
-        unchecked((byte)(-1)), // NI_Vector512_Round
-        2, // NI_Vector512_ShiftLeft
-        unchecked((byte)(-1)), // NI_Vector512_Shuffle
-        2, // NI_Vector512_ShuffleNative
-        2, // NI_Vector512_ShuffleNativeFallback
-        1, // NI_Vector512_Sqrt
-        2, // NI_Vector512_StoreAligned
-        2, // NI_Vector512_StoreAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector512_StoreUnsafe
-        2, // NI_Vector512_SubtractSaturate
-        1, // NI_Vector512_Sum
-        1, // NI_Vector512_ToScalar
-        1, // NI_Vector512_Truncate
-        1, // NI_Vector512_WidenLower
-        1, // NI_Vector512_WidenUpper
-        3, // NI_Vector512_WithElement
-        2, // NI_Vector512_WithLower
-        2, // NI_Vector512_WithUpper
-        0, // NI_Vector512_get_AllBitsSet
-        0, // NI_Vector512_get_E
-        0, // NI_Vector512_get_Epsilon
-        0, // NI_Vector512_get_Indices
-        0, // NI_Vector512_get_NaN
-        0, // NI_Vector512_get_NegativeInfinity
-        0, // NI_Vector512_get_NegativeOne
-        0, // NI_Vector512_get_NegativeZero
-        0, // NI_Vector512_get_One
-        0, // NI_Vector512_get_Pi
-        0, // NI_Vector512_get_PositiveInfinity
-        0, // NI_Vector512_get_Tau
-        0, // NI_Vector512_get_Zero
-        2, // NI_Vector512_op_Addition
-        2, // NI_Vector512_op_BitwiseAnd
-        2, // NI_Vector512_op_BitwiseOr
-        2, // NI_Vector512_op_Division
-        2, // NI_Vector512_op_Equality
-        2, // NI_Vector512_op_ExclusiveOr
-        2, // NI_Vector512_op_Inequality
-        2, // NI_Vector512_op_LeftShift
-        2, // NI_Vector512_op_Multiply
-        1, // NI_Vector512_op_OnesComplement
-        2, // NI_Vector512_op_RightShift
-        2, // NI_Vector512_op_Subtraction
-        1, // NI_Vector512_op_UnaryNegation
-        1, // NI_Vector512_op_UnaryPlus
-        2, // NI_Vector512_op_UnsignedRightShift
         1, // NI_X86Base_Abs
         2, // NI_X86Base_Add
         2, // NI_X86Base_AddSaturate
@@ -17317,6 +15035,32 @@ public partial struct HWIntrinsicInfo
         3, // NI_AVX512v3_CompressStore
         3, // NI_AVX512v3_Expand
         3, // NI_AVX512v3_ExpandLoad
+        3, // NI_AVX512v3_MultiplyWideningAndAdd
+        3, // NI_AVX512v3_MultiplyWideningAndAddSaturate
+        unchecked((byte)(-1)), // NI_AVX10v1_AddScalar
+        2, // NI_AVX10v1_CompareScalarOrderedEqual
+        2, // NI_AVX10v1_CompareScalarOrderedGreaterThan
+        2, // NI_AVX10v1_CompareScalarOrderedGreaterThanOrEqual
+        2, // NI_AVX10v1_CompareScalarOrderedLessThan
+        2, // NI_AVX10v1_CompareScalarOrderedLessThanOrEqual
+        2, // NI_AVX10v1_CompareScalarOrderedNotEqual
+        2, // NI_AVX10v1_CompareScalarUnorderedEqual
+        2, // NI_AVX10v1_CompareScalarUnorderedGreaterThan
+        2, // NI_AVX10v1_CompareScalarUnorderedGreaterThanOrEqual
+        2, // NI_AVX10v1_CompareScalarUnorderedLessThan
+        2, // NI_AVX10v1_CompareScalarUnorderedLessThanOrEqual
+        2, // NI_AVX10v1_CompareScalarUnorderedNotEqual
+        unchecked((byte)(-1)), // NI_AVX10v1_ConvertScalarToVector128Double
+        unchecked((byte)(-1)), // NI_AVX10v1_ConvertScalarToVector128Half
+        unchecked((byte)(-1)), // NI_AVX10v1_ConvertScalarToVector128Single
+        unchecked((byte)(-1)), // NI_AVX10v1_DivideScalar
+        3, // NI_AVX10v1_FusedMultiplyAddScalar
+        unchecked((byte)(-1)), // NI_AVX10v1_MultiplyScalar
+        2, // NI_AVX10v1_ReciprocalScalar
+        2, // NI_AVX10v1_ReciprocalSqrtScalar
+        3, // NI_AVX10v1_RoundScaleScalar
+        2, // NI_AVX10v1_SqrtScalar
+        unchecked((byte)(-1)), // NI_AVX10v1_SubtractScalar
         unchecked((byte)(-1)), // NI_AVX10v2_ConvertToByteWithSaturationAndZeroExtendToInt32
         1, // NI_AVX10v2_ConvertToByteWithTruncatedSaturationAndZeroExtendToInt32
         1, // NI_AVX10v2_ConvertToInt32WithTruncatedSaturation
@@ -17365,6 +15109,8 @@ public partial struct HWIntrinsicInfo
         2, // NI_X86Base_COMIS
         2, // NI_X86Base_PTEST
         2, // NI_X86Base_UCOMIS
+        2, // NI_AVX10v1_VCOMISH
+        2, // NI_AVX10v1_VUCOMISH
         2, // NI_AVX_PTEST
         2, // NI_AVX2_AndNotVector
         2, // NI_AVX2_AndNotScalar
@@ -17411,266 +15157,6 @@ public partial struct HWIntrinsicInfo
 #endif
 #elif TARGET_ARM64
 #if FEATURE_HW_INTRINSICS
-        1, // NI_Vector64_Abs
-        2, // NI_Vector64_AddSaturate
-        2, // NI_Vector64_AndNot
-        1, // NI_Vector64_As
-        1, // NI_Vector64_AsByte
-        1, // NI_Vector64_AsDouble
-        1, // NI_Vector64_AsInt16
-        1, // NI_Vector64_AsInt32
-        1, // NI_Vector64_AsInt64
-        1, // NI_Vector64_AsNInt
-        1, // NI_Vector64_AsNUInt
-        1, // NI_Vector64_AsSByte
-        1, // NI_Vector64_AsSingle
-        1, // NI_Vector64_AsUInt16
-        1, // NI_Vector64_AsUInt32
-        1, // NI_Vector64_AsUInt64
-        1, // NI_Vector64_Ceiling
-        3, // NI_Vector64_ConditionalSelect
-        1, // NI_Vector64_ConvertToDouble
-        1, // NI_Vector64_ConvertToInt32
-        1, // NI_Vector64_ConvertToInt32Native
-        1, // NI_Vector64_ConvertToInt64
-        1, // NI_Vector64_ConvertToInt64Native
-        1, // NI_Vector64_ConvertToSingle
-        1, // NI_Vector64_ConvertToUInt32
-        1, // NI_Vector64_ConvertToUInt32Native
-        1, // NI_Vector64_ConvertToUInt64
-        1, // NI_Vector64_ConvertToUInt64Native
-        unchecked((byte)(-1)), // NI_Vector64_Create
-        unchecked((byte)(-1)), // NI_Vector64_CreateScalar
-        1, // NI_Vector64_CreateScalarUnsafe
-        2, // NI_Vector64_CreateSequence
-        2, // NI_Vector64_Dot
-        2, // NI_Vector64_Equals
-        2, // NI_Vector64_EqualsAny
-        1, // NI_Vector64_ExtractMostSignificantBits
-        1, // NI_Vector64_Floor
-        3, // NI_Vector64_FusedMultiplyAdd
-        2, // NI_Vector64_GetElement
-        2, // NI_Vector64_GreaterThan
-        2, // NI_Vector64_GreaterThanAll
-        2, // NI_Vector64_GreaterThanAny
-        2, // NI_Vector64_GreaterThanOrEqual
-        2, // NI_Vector64_GreaterThanOrEqualAll
-        2, // NI_Vector64_GreaterThanOrEqualAny
-        1, // NI_Vector64_IsEvenInteger
-        1, // NI_Vector64_IsFinite
-        1, // NI_Vector64_IsInfinity
-        1, // NI_Vector64_IsInteger
-        1, // NI_Vector64_IsNaN
-        1, // NI_Vector64_IsNegative
-        1, // NI_Vector64_IsNegativeInfinity
-        1, // NI_Vector64_IsNormal
-        1, // NI_Vector64_IsOddInteger
-        1, // NI_Vector64_IsPositive
-        1, // NI_Vector64_IsPositiveInfinity
-        1, // NI_Vector64_IsSubnormal
-        1, // NI_Vector64_IsZero
-        2, // NI_Vector64_LessThan
-        2, // NI_Vector64_LessThanAll
-        2, // NI_Vector64_LessThanAny
-        2, // NI_Vector64_LessThanOrEqual
-        2, // NI_Vector64_LessThanOrEqualAll
-        2, // NI_Vector64_LessThanOrEqualAny
-        1, // NI_Vector64_LoadAligned
-        1, // NI_Vector64_LoadAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector64_LoadUnsafe
-        2, // NI_Vector64_Max
-        2, // NI_Vector64_MaxMagnitude
-        2, // NI_Vector64_MaxMagnitudeNumber
-        2, // NI_Vector64_MaxNative
-        2, // NI_Vector64_MaxNumber
-        2, // NI_Vector64_Min
-        2, // NI_Vector64_MinMagnitude
-        2, // NI_Vector64_MinMagnitudeNumber
-        2, // NI_Vector64_MinNative
-        2, // NI_Vector64_MinNumber
-        3, // NI_Vector64_MultiplyAddEstimate
-        2, // NI_Vector64_Narrow
-        2, // NI_Vector64_NarrowWithSaturation
-        unchecked((byte)(-1)), // NI_Vector64_Round
-        2, // NI_Vector64_ShiftLeft
-        unchecked((byte)(-1)), // NI_Vector64_Shuffle
-        2, // NI_Vector64_ShuffleNative
-        2, // NI_Vector64_ShuffleNativeFallback
-        1, // NI_Vector64_Sqrt
-        2, // NI_Vector64_StoreAligned
-        2, // NI_Vector64_StoreAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector64_StoreUnsafe
-        2, // NI_Vector64_SubtractSaturate
-        1, // NI_Vector64_Sum
-        1, // NI_Vector64_ToScalar
-        1, // NI_Vector64_ToVector128
-        1, // NI_Vector64_ToVector128Unsafe
-        1, // NI_Vector64_Truncate
-        1, // NI_Vector64_WidenLower
-        1, // NI_Vector64_WidenUpper
-        3, // NI_Vector64_WithElement
-        0, // NI_Vector64_get_AllBitsSet
-        0, // NI_Vector64_get_E
-        0, // NI_Vector64_get_Epsilon
-        0, // NI_Vector64_get_Indices
-        0, // NI_Vector64_get_NaN
-        0, // NI_Vector64_get_NegativeInfinity
-        0, // NI_Vector64_get_NegativeOne
-        0, // NI_Vector64_get_NegativeZero
-        0, // NI_Vector64_get_One
-        0, // NI_Vector64_get_Pi
-        0, // NI_Vector64_get_PositiveInfinity
-        0, // NI_Vector64_get_Tau
-        0, // NI_Vector64_get_Zero
-        2, // NI_Vector64_op_Addition
-        2, // NI_Vector64_op_BitwiseAnd
-        2, // NI_Vector64_op_BitwiseOr
-        2, // NI_Vector64_op_Division
-        2, // NI_Vector64_op_Equality
-        2, // NI_Vector64_op_ExclusiveOr
-        2, // NI_Vector64_op_Inequality
-        2, // NI_Vector64_op_LeftShift
-        2, // NI_Vector64_op_Multiply
-        1, // NI_Vector64_op_OnesComplement
-        2, // NI_Vector64_op_RightShift
-        2, // NI_Vector64_op_Subtraction
-        1, // NI_Vector64_op_UnaryNegation
-        1, // NI_Vector64_op_UnaryPlus
-        2, // NI_Vector64_op_UnsignedRightShift
-        1, // NI_Vector128_Abs
-        2, // NI_Vector128_AddSaturate
-        2, // NI_Vector128_AndNot
-        1, // NI_Vector128_As
-        1, // NI_Vector128_AsByte
-        1, // NI_Vector128_AsDouble
-        1, // NI_Vector128_AsInt16
-        1, // NI_Vector128_AsInt32
-        1, // NI_Vector128_AsInt64
-        1, // NI_Vector128_AsNInt
-        1, // NI_Vector128_AsNUInt
-        1, // NI_Vector128_AsSByte
-        1, // NI_Vector128_AsSingle
-        1, // NI_Vector128_AsUInt16
-        1, // NI_Vector128_AsUInt32
-        1, // NI_Vector128_AsUInt64
-        1, // NI_Vector128_AsVector
-        1, // NI_Vector128_AsVector128
-        1, // NI_Vector128_AsVector128Unsafe
-        1, // NI_Vector128_AsVector2
-        1, // NI_Vector128_AsVector3
-        1, // NI_Vector128_AsVector4
-        1, // NI_Vector128_Ceiling
-        3, // NI_Vector128_ConditionalSelect
-        1, // NI_Vector128_ConvertToDouble
-        1, // NI_Vector128_ConvertToInt32
-        1, // NI_Vector128_ConvertToInt32Native
-        1, // NI_Vector128_ConvertToInt64
-        1, // NI_Vector128_ConvertToInt64Native
-        1, // NI_Vector128_ConvertToSingle
-        1, // NI_Vector128_ConvertToUInt32
-        1, // NI_Vector128_ConvertToUInt32Native
-        1, // NI_Vector128_ConvertToUInt64
-        1, // NI_Vector128_ConvertToUInt64Native
-        unchecked((byte)(-1)), // NI_Vector128_Create
-        unchecked((byte)(-1)), // NI_Vector128_CreateScalar
-        1, // NI_Vector128_CreateScalarUnsafe
-        2, // NI_Vector128_CreateSequence
-        2, // NI_Vector128_Dot
-        2, // NI_Vector128_Equals
-        2, // NI_Vector128_EqualsAny
-        1, // NI_Vector128_ExtractMostSignificantBits
-        1, // NI_Vector128_Floor
-        3, // NI_Vector128_FusedMultiplyAdd
-        2, // NI_Vector128_GetElement
-        1, // NI_Vector128_GetLower
-        1, // NI_Vector128_GetUpper
-        2, // NI_Vector128_GreaterThan
-        2, // NI_Vector128_GreaterThanAll
-        2, // NI_Vector128_GreaterThanAny
-        2, // NI_Vector128_GreaterThanOrEqual
-        2, // NI_Vector128_GreaterThanOrEqualAll
-        2, // NI_Vector128_GreaterThanOrEqualAny
-        1, // NI_Vector128_IsEvenInteger
-        1, // NI_Vector128_IsFinite
-        1, // NI_Vector128_IsInfinity
-        1, // NI_Vector128_IsInteger
-        1, // NI_Vector128_IsNaN
-        1, // NI_Vector128_IsNegative
-        1, // NI_Vector128_IsNegativeInfinity
-        1, // NI_Vector128_IsNormal
-        1, // NI_Vector128_IsOddInteger
-        1, // NI_Vector128_IsPositive
-        1, // NI_Vector128_IsPositiveInfinity
-        1, // NI_Vector128_IsSubnormal
-        1, // NI_Vector128_IsZero
-        2, // NI_Vector128_LessThan
-        2, // NI_Vector128_LessThanAll
-        2, // NI_Vector128_LessThanAny
-        2, // NI_Vector128_LessThanOrEqual
-        2, // NI_Vector128_LessThanOrEqualAll
-        2, // NI_Vector128_LessThanOrEqualAny
-        1, // NI_Vector128_LoadAligned
-        1, // NI_Vector128_LoadAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector128_LoadUnsafe
-        2, // NI_Vector128_Max
-        2, // NI_Vector128_MaxMagnitude
-        2, // NI_Vector128_MaxMagnitudeNumber
-        2, // NI_Vector128_MaxNative
-        2, // NI_Vector128_MaxNumber
-        2, // NI_Vector128_Min
-        2, // NI_Vector128_MinMagnitude
-        2, // NI_Vector128_MinMagnitudeNumber
-        2, // NI_Vector128_MinNative
-        2, // NI_Vector128_MinNumber
-        3, // NI_Vector128_MultiplyAddEstimate
-        2, // NI_Vector128_Narrow
-        2, // NI_Vector128_NarrowWithSaturation
-        unchecked((byte)(-1)), // NI_Vector128_Round
-        2, // NI_Vector128_ShiftLeft
-        unchecked((byte)(-1)), // NI_Vector128_Shuffle
-        2, // NI_Vector128_ShuffleNative
-        2, // NI_Vector128_ShuffleNativeFallback
-        1, // NI_Vector128_Sqrt
-        2, // NI_Vector128_StoreAligned
-        2, // NI_Vector128_StoreAlignedNonTemporal
-        unchecked((byte)(-1)), // NI_Vector128_StoreUnsafe
-        2, // NI_Vector128_SubtractSaturate
-        1, // NI_Vector128_Sum
-        1, // NI_Vector128_ToScalar
-        1, // NI_Vector128_Truncate
-        1, // NI_Vector128_WidenLower
-        1, // NI_Vector128_WidenUpper
-        3, // NI_Vector128_WithElement
-        2, // NI_Vector128_WithLower
-        2, // NI_Vector128_WithUpper
-        0, // NI_Vector128_get_AllBitsSet
-        0, // NI_Vector128_get_E
-        0, // NI_Vector128_get_Epsilon
-        0, // NI_Vector128_get_Indices
-        0, // NI_Vector128_get_NaN
-        0, // NI_Vector128_get_NegativeInfinity
-        0, // NI_Vector128_get_NegativeOne
-        0, // NI_Vector128_get_NegativeZero
-        0, // NI_Vector128_get_One
-        0, // NI_Vector128_get_Pi
-        0, // NI_Vector128_get_PositiveInfinity
-        0, // NI_Vector128_get_Tau
-        0, // NI_Vector128_get_Zero
-        2, // NI_Vector128_op_Addition
-        2, // NI_Vector128_op_BitwiseAnd
-        2, // NI_Vector128_op_BitwiseOr
-        2, // NI_Vector128_op_Division
-        2, // NI_Vector128_op_Equality
-        2, // NI_Vector128_op_ExclusiveOr
-        2, // NI_Vector128_op_Inequality
-        2, // NI_Vector128_op_LeftShift
-        2, // NI_Vector128_op_Multiply
-        1, // NI_Vector128_op_OnesComplement
-        2, // NI_Vector128_op_RightShift
-        2, // NI_Vector128_op_Subtraction
-        1, // NI_Vector128_op_UnaryNegation
-        1, // NI_Vector128_op_UnaryPlus
-        2, // NI_Vector128_op_UnsignedRightShift
         1, // NI_AdvSimd_Abs
         1, // NI_AdvSimd_AbsSaturate
         1, // NI_AdvSimd_AbsScalar
@@ -18146,6 +15632,29 @@ public partial struct HWIntrinsicInfo
         2, // NI_Crc32_Arm64_ComputeCrc32C
         3, // NI_Dp_DotProduct
         4, // NI_Dp_DotProductBySelectedQuadruplet
+        2, // NI_Fp16_Add
+        1, // NI_Fp16_Ceiling
+        2, // NI_Fp16_CompareEqual
+        2, // NI_Fp16_CompareGreaterThan
+        2, // NI_Fp16_CompareGreaterThanOrEqual
+        2, // NI_Fp16_CompareLessThan
+        2, // NI_Fp16_CompareLessThanOrEqual
+        2, // NI_Fp16_CompareNotEqual
+        1, // NI_Fp16_ConvertToHalf
+        1, // NI_Fp16_ConvertToInt32
+        1, // NI_Fp16_ConvertToInt64
+        1, // NI_Fp16_ConvertToUInt32
+        1, // NI_Fp16_ConvertToUInt64
+        2, // NI_Fp16_Divide
+        1, // NI_Fp16_Floor
+        3, // NI_Fp16_FusedMultiplyAdd
+        2, // NI_Fp16_Multiply
+        1, // NI_Fp16_ReciprocalEstimate
+        1, // NI_Fp16_ReciprocalSqrtEstimate
+        1, // NI_Fp16_RoundToNearest
+        1, // NI_Fp16_Sqrt
+        2, // NI_Fp16_Subtract
+        1, // NI_Fp16_Truncate
         3, // NI_Rdm_MultiplyRoundedDoublingAndAddSaturateHigh
         3, // NI_Rdm_MultiplyRoundedDoublingAndSubtractSaturateHigh
         4, // NI_Rdm_MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh
@@ -18164,6 +15673,15 @@ public partial struct HWIntrinsicInfo
         3, // NI_Sha256_HashUpdate2
         2, // NI_Sha256_ScheduleUpdate0
         3, // NI_Sha256_ScheduleUpdate1
+        3, // NI_Sha3_BitwiseClearXor
+        2, // NI_Sha3_BitwiseRotateLeftBy1AndXor
+        3, // NI_Sha3_Xor
+        3, // NI_Sha3_XorRotateRight
+        2, // NI_Sm4_Encode
+        2, // NI_Sm4_KeyUpdate
+        1, // NI_ArmBase_ConvertToDouble
+        1, // NI_ArmBase_ConvertToHalf
+        1, // NI_ArmBase_ConvertToSingle
 #endif
 #if FEATURE_HW_INTRINSICS
         unchecked((byte)(-1)), // NI_Sve_Abs
@@ -18530,6 +16048,16 @@ public partial struct HWIntrinsicInfo
         2, // NI_Sve2_CreateWhileReadAfterWriteMaskUInt16
         2, // NI_Sve2_CreateWhileReadAfterWriteMaskUInt32
         2, // NI_Sve2_CreateWhileReadAfterWriteMaskUInt64
+        2, // NI_Sve2_CreateWhileWriteAfterReadMaskByte
+        2, // NI_Sve2_CreateWhileWriteAfterReadMaskDouble
+        2, // NI_Sve2_CreateWhileWriteAfterReadMaskInt16
+        2, // NI_Sve2_CreateWhileWriteAfterReadMaskInt32
+        2, // NI_Sve2_CreateWhileWriteAfterReadMaskInt64
+        2, // NI_Sve2_CreateWhileWriteAfterReadMaskSByte
+        2, // NI_Sve2_CreateWhileWriteAfterReadMaskSingle
+        2, // NI_Sve2_CreateWhileWriteAfterReadMaskUInt16
+        2, // NI_Sve2_CreateWhileWriteAfterReadMaskUInt32
+        2, // NI_Sve2_CreateWhileWriteAfterReadMaskUInt64
         4, // NI_Sve2_DotProductRotateComplex
         5, // NI_Sve2_DotProductRotateComplexBySelectedIndex
         unchecked((byte)(-1)), // NI_Sve2_FusedAddHalving
@@ -18603,6 +16131,10 @@ public partial struct HWIntrinsicInfo
         2, // NI_Sve2_PolynomialMultiplyWideningOdd
         unchecked((byte)(-1)), // NI_Sve2_ReciprocalEstimate
         unchecked((byte)(-1)), // NI_Sve2_ReciprocalSqrtEstimate
+        1, // NI_Sve2_SaturatingExtractNarrowingLower
+        2, // NI_Sve2_SaturatingExtractNarrowingUpper
+        1, // NI_Sve2_SaturatingExtractUnsignedNarrowingLower
+        2, // NI_Sve2_SaturatingExtractUnsignedNarrowingUpper
         unchecked((byte)(-1)), // NI_Sve2_Scatter16BitNarrowingNonTemporal
         unchecked((byte)(-1)), // NI_Sve2_Scatter16BitWithByteOffsetsNarrowingNonTemporal
         unchecked((byte)(-1)), // NI_Sve2_Scatter32BitNarrowingNonTemporal
@@ -18659,6 +16191,9 @@ public partial struct HWIntrinsicInfo
         3, // NI_Sve2_VectorTableLookupExtension
         3, // NI_Sve2_Xor
         3, // NI_Sve2_XorRotateRight
+        2, // NI_SveSha3_BitwiseRotateLeftBy1AndXor
+        2, // NI_SveSm4_Encode
+        2, // NI_SveSm4_KeyUpdate
         3, // NI_Sve_ConditionalExtractAfterLastActiveElementScalar
         3, // NI_Sve_ConditionalExtractLastActiveElementScalar
         1, // NI_Sve_ConvertMaskToVector
@@ -18686,408 +16221,292 @@ public partial struct HWIntrinsicInfo
         2, // NI_Sve_TransposeOdd_Predicates
         1, // NI_Sve_ReverseElement_Predicates
 #endif
+#elif TARGET_WASM
+#if FEATURE_HW_INTRINSICS
+        1, // NI_PackedSimd_Abs
+        2, // NI_PackedSimd_Add
+        1, // NI_PackedSimd_AddPairwiseWidening
+        2, // NI_PackedSimd_AddSaturate
+        1, // NI_PackedSimd_AllTrue
+        2, // NI_PackedSimd_And
+        2, // NI_PackedSimd_AndNot
+        1, // NI_PackedSimd_AnyTrue
+        2, // NI_PackedSimd_AverageRounded
+        1, // NI_PackedSimd_Bitmask
+        3, // NI_PackedSimd_BitwiseSelect
+        1, // NI_PackedSimd_Ceiling
+        2, // NI_PackedSimd_CompareEqual
+        2, // NI_PackedSimd_CompareGreaterThan
+        2, // NI_PackedSimd_CompareGreaterThanOrEqual
+        2, // NI_PackedSimd_CompareLessThan
+        2, // NI_PackedSimd_CompareLessThanOrEqual
+        2, // NI_PackedSimd_CompareNotEqual
+        2, // NI_PackedSimd_ConvertNarrowingSaturateSigned
+        2, // NI_PackedSimd_ConvertNarrowingSaturateUnsigned
+        1, // NI_PackedSimd_ConvertToDoubleLower
+        1, // NI_PackedSimd_ConvertToInt32Saturate
+        1, // NI_PackedSimd_ConvertToSingle
+        1, // NI_PackedSimd_ConvertToUInt32Saturate
+        2, // NI_PackedSimd_Divide
+        2, // NI_PackedSimd_Dot
+        2, // NI_PackedSimd_ExtractScalar
+        1, // NI_PackedSimd_Floor
+        3, // NI_PackedSimd_LoadScalarAndInsert
+        1, // NI_PackedSimd_LoadScalarAndSplatVector128
+        1, // NI_PackedSimd_LoadScalarVector128
+        1, // NI_PackedSimd_LoadVector128
+        1, // NI_PackedSimd_LoadWideningVector128
+        2, // NI_PackedSimd_Max
+        2, // NI_PackedSimd_Min
+        2, // NI_PackedSimd_Multiply
+        2, // NI_PackedSimd_MultiplyRoundedSaturateQ15
+        2, // NI_PackedSimd_MultiplyWideningLower
+        2, // NI_PackedSimd_MultiplyWideningUpper
+        1, // NI_PackedSimd_Negate
+        1, // NI_PackedSimd_Not
+        2, // NI_PackedSimd_Or
+        1, // NI_PackedSimd_PopCount
+        2, // NI_PackedSimd_PseudoMax
+        2, // NI_PackedSimd_PseudoMin
+        3, // NI_PackedSimd_ReplaceScalar
+        1, // NI_PackedSimd_RoundToNearest
+        2, // NI_PackedSimd_ShiftLeft
+        2, // NI_PackedSimd_ShiftRightArithmetic
+        2, // NI_PackedSimd_ShiftRightLogical
+        3, // NI_PackedSimd_Shuffle
+        1, // NI_PackedSimd_SignExtendWideningLower
+        1, // NI_PackedSimd_SignExtendWideningUpper
+        1, // NI_PackedSimd_Splat
+        1, // NI_PackedSimd_Sqrt
+        2, // NI_PackedSimd_Store
+        3, // NI_PackedSimd_StoreSelectedScalar
+        2, // NI_PackedSimd_Subtract
+        2, // NI_PackedSimd_SubtractSaturate
+        2, // NI_PackedSimd_Swizzle
+        1, // NI_PackedSimd_Truncate
+        2, // NI_PackedSimd_Xor
+        1, // NI_PackedSimd_ZeroExtendWideningLower
+        1, // NI_PackedSimd_ZeroExtendWideningUpper
+        1, // NI_WasmBase_LeadingZeroCount
+        1, // NI_WasmBase_TrailingZeroCount
 #endif
+#else
+#error Unsupported platform
+#endif
+#endif
+
     ];
 
     private static ReadOnlySpan<byte> s_simdSizes => [
+#if FEATURE_HW_INTRINSICS
+        unchecked((byte)(-1)), // NI_Vector_Abs
+        unchecked((byte)(-1)), // NI_Vector_AddSaturate
+        unchecked((byte)(-1)), // NI_Vector_AndNot
+        unchecked((byte)(-1)), // NI_Vector_As
+        unchecked((byte)(-1)), // NI_Vector_AsByte
+        unchecked((byte)(-1)), // NI_Vector_AsDouble
+        unchecked((byte)(-1)), // NI_Vector_AsInt16
+        unchecked((byte)(-1)), // NI_Vector_AsInt32
+        unchecked((byte)(-1)), // NI_Vector_AsInt64
+        unchecked((byte)(-1)), // NI_Vector_AsNInt
+        unchecked((byte)(-1)), // NI_Vector_AsNUInt
+        unchecked((byte)(-1)), // NI_Vector_AsSByte
+        unchecked((byte)(-1)), // NI_Vector_AsSingle
+        unchecked((byte)(-1)), // NI_Vector_AsUInt16
+        unchecked((byte)(-1)), // NI_Vector_AsUInt32
+        unchecked((byte)(-1)), // NI_Vector_AsUInt64
+        unchecked((byte)(-1)), // NI_Vector_AsVector
+        unchecked((byte)(-1)), // NI_Vector_AsVector128
+#if TARGET_XARCH
+        unchecked((byte)(-1)), // NI_Vector_AsVector128Unsafe
+        unchecked((byte)(-1)), // NI_Vector_AsVector2
+        unchecked((byte)(-1)), // NI_Vector_AsVector256
+        unchecked((byte)(-1)), // NI_Vector_AsVector3
+#elif TARGET_ARM64
+        unchecked((byte)(-1)), // NI_Vector_AsVector128Unsafe
+        unchecked((byte)(-1)), // NI_Vector_AsVector2
+        unchecked((byte)(-1)), // NI_Vector_AsVector3
+#else
+        unchecked((byte)(-1)), // NI_Vector_AsVector128Unsafe
+        unchecked((byte)(-1)), // NI_Vector_AsVector2
+        unchecked((byte)(-1)), // NI_Vector_AsVector3
+#endif
+        unchecked((byte)(-1)), // NI_Vector_AsVector4
+#if TARGET_XARCH
+        unchecked((byte)(-1)), // NI_Vector_AsVector512
+#endif
+        unchecked((byte)(-1)), // NI_Vector_Ceiling
+        unchecked((byte)(-1)), // NI_Vector_ConcatLowerLower
+        unchecked((byte)(-1)), // NI_Vector_ConcatLowerUpper
+        unchecked((byte)(-1)), // NI_Vector_ConcatUpperLower
+        unchecked((byte)(-1)), // NI_Vector_ConcatUpperUpper
+#if TARGET_XARCH
+        unchecked((byte)(-1)), // NI_Vector_ConditionalSelect
+#else
+        unchecked((byte)(-1)), // NI_Vector_ConditionalSelect
+#endif
+        unchecked((byte)(-1)), // NI_Vector_ConvertToDouble
+        unchecked((byte)(-1)), // NI_Vector_ConvertToInt32
+        unchecked((byte)(-1)), // NI_Vector_ConvertToInt32Native
+        unchecked((byte)(-1)), // NI_Vector_ConvertToInt64
+        unchecked((byte)(-1)), // NI_Vector_ConvertToInt64Native
+        unchecked((byte)(-1)), // NI_Vector_ConvertToSingle
+        unchecked((byte)(-1)), // NI_Vector_ConvertToUInt32
+        unchecked((byte)(-1)), // NI_Vector_ConvertToUInt32Native
+        unchecked((byte)(-1)), // NI_Vector_ConvertToUInt64
+        unchecked((byte)(-1)), // NI_Vector_ConvertToUInt64Native
+        unchecked((byte)(-1)), // NI_Vector_Create
+        unchecked((byte)(-1)), // NI_Vector_CreateAlternatingSequence
+        unchecked((byte)(-1)), // NI_Vector_CreateGeometricSequence
+#if TARGET_XARCH
+        unchecked((byte)(-1)), // NI_Vector_CreateScalar
+        unchecked((byte)(-1)), // NI_Vector_CreateScalarUnsafe
+#elif TARGET_ARM64
+        unchecked((byte)(-1)), // NI_Vector_CreateScalar
+        unchecked((byte)(-1)), // NI_Vector_CreateScalarUnsafe
+#else
+        unchecked((byte)(-1)), // NI_Vector_CreateScalar
+        unchecked((byte)(-1)), // NI_Vector_CreateScalarUnsafe
+#endif
+        unchecked((byte)(-1)), // NI_Vector_CreateSequence
+        unchecked((byte)(-1)), // NI_Vector_Dot
+        unchecked((byte)(-1)), // NI_Vector_Equals
+        unchecked((byte)(-1)), // NI_Vector_EqualsAny
+        unchecked((byte)(-1)), // NI_Vector_ExtractMostSignificantBits
+        unchecked((byte)(-1)), // NI_Vector_Floor
+        unchecked((byte)(-1)), // NI_Vector_FusedMultiplyAdd
+#if TARGET_XARCH
+        unchecked((byte)(-1)), // NI_Vector_GetElement
+#elif TARGET_ARM64
+        unchecked((byte)(-1)), // NI_Vector_GetElement
+#else
+        unchecked((byte)(-1)), // NI_Vector_GetElement
+#endif
+#if TARGET_XARCH
+        unchecked((byte)(-1)), // NI_Vector_GetLower
+        unchecked((byte)(-1)), // NI_Vector_GetLower128
+        unchecked((byte)(-1)), // NI_Vector_GetUpper
+#elif TARGET_ARM64
+        unchecked((byte)(-1)), // NI_Vector_GetLower
+        unchecked((byte)(-1)), // NI_Vector_GetUpper
+#endif
+        unchecked((byte)(-1)), // NI_Vector_GreaterThan
+        unchecked((byte)(-1)), // NI_Vector_GreaterThanAll
+        unchecked((byte)(-1)), // NI_Vector_GreaterThanAny
+        unchecked((byte)(-1)), // NI_Vector_GreaterThanOrEqual
+        unchecked((byte)(-1)), // NI_Vector_GreaterThanOrEqualAll
+        unchecked((byte)(-1)), // NI_Vector_GreaterThanOrEqualAny
+        unchecked((byte)(-1)), // NI_Vector_IsEvenInteger
+        unchecked((byte)(-1)), // NI_Vector_IsFinite
+        unchecked((byte)(-1)), // NI_Vector_IsInfinity
+        unchecked((byte)(-1)), // NI_Vector_IsInteger
+        unchecked((byte)(-1)), // NI_Vector_IsNaN
+        unchecked((byte)(-1)), // NI_Vector_IsNegative
+        unchecked((byte)(-1)), // NI_Vector_IsNegativeInfinity
+        unchecked((byte)(-1)), // NI_Vector_IsNormal
+        unchecked((byte)(-1)), // NI_Vector_IsOddInteger
+        unchecked((byte)(-1)), // NI_Vector_IsPositive
+        unchecked((byte)(-1)), // NI_Vector_IsPositiveInfinity
+        unchecked((byte)(-1)), // NI_Vector_IsSubnormal
+        unchecked((byte)(-1)), // NI_Vector_IsZero
+        unchecked((byte)(-1)), // NI_Vector_LessThan
+        unchecked((byte)(-1)), // NI_Vector_LessThanAll
+        unchecked((byte)(-1)), // NI_Vector_LessThanAny
+        unchecked((byte)(-1)), // NI_Vector_LessThanOrEqual
+        unchecked((byte)(-1)), // NI_Vector_LessThanOrEqualAll
+        unchecked((byte)(-1)), // NI_Vector_LessThanOrEqualAny
+        unchecked((byte)(-1)), // NI_Vector_LoadAligned
+        unchecked((byte)(-1)), // NI_Vector_LoadAlignedNonTemporal
+        unchecked((byte)(-1)), // NI_Vector_LoadUnsafe
+        unchecked((byte)(-1)), // NI_Vector_Max
+        unchecked((byte)(-1)), // NI_Vector_MaxMagnitude
+        unchecked((byte)(-1)), // NI_Vector_MaxMagnitudeNumber
+        unchecked((byte)(-1)), // NI_Vector_MaxNative
+        unchecked((byte)(-1)), // NI_Vector_MaxNumber
+        unchecked((byte)(-1)), // NI_Vector_Min
+        unchecked((byte)(-1)), // NI_Vector_MinMagnitude
+        unchecked((byte)(-1)), // NI_Vector_MinMagnitudeNumber
+        unchecked((byte)(-1)), // NI_Vector_MinNative
+        unchecked((byte)(-1)), // NI_Vector_MinNumber
+        unchecked((byte)(-1)), // NI_Vector_MultiplyAddEstimate
+        unchecked((byte)(-1)), // NI_Vector_Narrow
+#if TARGET_ARM64
+        unchecked((byte)(-1)), // NI_Vector_NarrowWithSaturation
+#else
+        unchecked((byte)(-1)), // NI_Vector_NarrowWithSaturation
+#endif
+        unchecked((byte)(-1)), // NI_Vector_Reverse
+        unchecked((byte)(-1)), // NI_Vector_Round
+        unchecked((byte)(-1)), // NI_Vector_ShiftLeft
+        unchecked((byte)(-1)), // NI_Vector_Shuffle
+        unchecked((byte)(-1)), // NI_Vector_ShuffleNative
+        unchecked((byte)(-1)), // NI_Vector_ShuffleNativeFallback
+        unchecked((byte)(-1)), // NI_Vector_Sqrt
+        unchecked((byte)(-1)), // NI_Vector_StoreAligned
+        unchecked((byte)(-1)), // NI_Vector_StoreAlignedNonTemporal
+        unchecked((byte)(-1)), // NI_Vector_StoreUnsafe
+        unchecked((byte)(-1)), // NI_Vector_SubtractSaturate
+        unchecked((byte)(-1)), // NI_Vector_Sum
+#if TARGET_XARCH
+        unchecked((byte)(-1)), // NI_Vector_ToScalar
+        unchecked((byte)(-1)), // NI_Vector_ToVector256
+        unchecked((byte)(-1)), // NI_Vector_ToVector256Unsafe
+        unchecked((byte)(-1)), // NI_Vector_ToVector512
+        unchecked((byte)(-1)), // NI_Vector_ToVector512Unsafe
+#elif TARGET_ARM64
+        unchecked((byte)(-1)), // NI_Vector_ToScalar
+        unchecked((byte)(-1)), // NI_Vector_ToVector128
+        unchecked((byte)(-1)), // NI_Vector_ToVector128Unsafe
+#else
+        unchecked((byte)(-1)), // NI_Vector_ToScalar
+#endif
+        unchecked((byte)(-1)), // NI_Vector_Truncate
+        unchecked((byte)(-1)), // NI_Vector_UnzipEven
+        unchecked((byte)(-1)), // NI_Vector_UnzipOdd
+        unchecked((byte)(-1)), // NI_Vector_WidenLower
+        unchecked((byte)(-1)), // NI_Vector_WidenUpper
+        unchecked((byte)(-1)), // NI_Vector_WithElement
+#if TARGET_XARCH || TARGET_ARM64
+        unchecked((byte)(-1)), // NI_Vector_WithLower
+        unchecked((byte)(-1)), // NI_Vector_WithUpper
+#endif
+        unchecked((byte)(-1)), // NI_Vector_ZipLower
+        unchecked((byte)(-1)), // NI_Vector_ZipUpper
+        unchecked((byte)(-1)), // NI_Vector_get_AllBitsSet
+        unchecked((byte)(-1)), // NI_Vector_get_E
+        unchecked((byte)(-1)), // NI_Vector_get_Epsilon
+        unchecked((byte)(-1)), // NI_Vector_get_Indices
+        unchecked((byte)(-1)), // NI_Vector_get_NaN
+        unchecked((byte)(-1)), // NI_Vector_get_NegativeInfinity
+        unchecked((byte)(-1)), // NI_Vector_get_NegativeOne
+        unchecked((byte)(-1)), // NI_Vector_get_NegativeZero
+        unchecked((byte)(-1)), // NI_Vector_get_One
+        unchecked((byte)(-1)), // NI_Vector_get_Pi
+        unchecked((byte)(-1)), // NI_Vector_get_PositiveInfinity
+        unchecked((byte)(-1)), // NI_Vector_get_SignSequence
+        unchecked((byte)(-1)), // NI_Vector_get_Tau
+        unchecked((byte)(-1)), // NI_Vector_get_Zero
+        unchecked((byte)(-1)), // NI_Vector_op_Addition
+        unchecked((byte)(-1)), // NI_Vector_op_BitwiseAnd
+        unchecked((byte)(-1)), // NI_Vector_op_BitwiseOr
+#if TARGET_XARCH
+        unchecked((byte)(-1)), // NI_Vector_op_Division
+#else
+        unchecked((byte)(-1)), // NI_Vector_op_Division
+#endif
+        unchecked((byte)(-1)), // NI_Vector_op_Equality
+        unchecked((byte)(-1)), // NI_Vector_op_ExclusiveOr
+        unchecked((byte)(-1)), // NI_Vector_op_Inequality
+        unchecked((byte)(-1)), // NI_Vector_op_LeftShift
+        unchecked((byte)(-1)), // NI_Vector_op_Multiply
+        unchecked((byte)(-1)), // NI_Vector_op_OnesComplement
+        unchecked((byte)(-1)), // NI_Vector_op_RightShift
+        unchecked((byte)(-1)), // NI_Vector_op_Subtraction
+        unchecked((byte)(-1)), // NI_Vector_op_UnaryNegation
+        unchecked((byte)(-1)), // NI_Vector_op_UnaryPlus
+        unchecked((byte)(-1)), // NI_Vector_op_UnsignedRightShift
 #if TARGET_XARCH
 #if FEATURE_HW_INTRINSICS
-        16, // NI_Vector128_Abs
-        16, // NI_Vector128_AddSaturate
-        16, // NI_Vector128_AndNot
-        16, // NI_Vector128_As
-        16, // NI_Vector128_AsByte
-        16, // NI_Vector128_AsDouble
-        16, // NI_Vector128_AsInt16
-        16, // NI_Vector128_AsInt32
-        16, // NI_Vector128_AsInt64
-        16, // NI_Vector128_AsNInt
-        16, // NI_Vector128_AsNUInt
-        16, // NI_Vector128_AsSByte
-        16, // NI_Vector128_AsSingle
-        16, // NI_Vector128_AsUInt16
-        16, // NI_Vector128_AsUInt32
-        16, // NI_Vector128_AsUInt64
-        16, // NI_Vector128_AsVector
-        unchecked((byte)(-1)), // NI_Vector128_AsVector128
-        unchecked((byte)(-1)), // NI_Vector128_AsVector128Unsafe
-        16, // NI_Vector128_AsVector2
-        16, // NI_Vector128_AsVector3
-        16, // NI_Vector128_AsVector4
-        16, // NI_Vector128_Ceiling
-        16, // NI_Vector128_ConditionalSelect
-        16, // NI_Vector128_ConvertToDouble
-        16, // NI_Vector128_ConvertToInt32
-        16, // NI_Vector128_ConvertToInt32Native
-        16, // NI_Vector128_ConvertToInt64
-        16, // NI_Vector128_ConvertToInt64Native
-        16, // NI_Vector128_ConvertToSingle
-        16, // NI_Vector128_ConvertToUInt32
-        16, // NI_Vector128_ConvertToUInt32Native
-        16, // NI_Vector128_ConvertToUInt64
-        16, // NI_Vector128_ConvertToUInt64Native
-        16, // NI_Vector128_Create
-        16, // NI_Vector128_CreateScalar
-        16, // NI_Vector128_CreateScalarUnsafe
-        16, // NI_Vector128_CreateSequence
-        16, // NI_Vector128_Dot
-        16, // NI_Vector128_Equals
-        16, // NI_Vector128_EqualsAny
-        16, // NI_Vector128_ExtractMostSignificantBits
-        16, // NI_Vector128_Floor
-        16, // NI_Vector128_FusedMultiplyAdd
-        16, // NI_Vector128_GetElement
-        16, // NI_Vector128_GreaterThan
-        16, // NI_Vector128_GreaterThanAll
-        16, // NI_Vector128_GreaterThanAny
-        16, // NI_Vector128_GreaterThanOrEqual
-        16, // NI_Vector128_GreaterThanOrEqualAll
-        16, // NI_Vector128_GreaterThanOrEqualAny
-        16, // NI_Vector128_IsEvenInteger
-        16, // NI_Vector128_IsFinite
-        16, // NI_Vector128_IsInfinity
-        16, // NI_Vector128_IsInteger
-        16, // NI_Vector128_IsNaN
-        16, // NI_Vector128_IsNegative
-        16, // NI_Vector128_IsNegativeInfinity
-        16, // NI_Vector128_IsNormal
-        16, // NI_Vector128_IsOddInteger
-        16, // NI_Vector128_IsPositive
-        16, // NI_Vector128_IsPositiveInfinity
-        16, // NI_Vector128_IsSubnormal
-        16, // NI_Vector128_IsZero
-        16, // NI_Vector128_LessThan
-        16, // NI_Vector128_LessThanAll
-        16, // NI_Vector128_LessThanAny
-        16, // NI_Vector128_LessThanOrEqual
-        16, // NI_Vector128_LessThanOrEqualAll
-        16, // NI_Vector128_LessThanOrEqualAny
-        16, // NI_Vector128_LoadAligned
-        16, // NI_Vector128_LoadAlignedNonTemporal
-        16, // NI_Vector128_LoadUnsafe
-        16, // NI_Vector128_Max
-        16, // NI_Vector128_MaxMagnitude
-        16, // NI_Vector128_MaxMagnitudeNumber
-        16, // NI_Vector128_MaxNative
-        16, // NI_Vector128_MaxNumber
-        16, // NI_Vector128_Min
-        16, // NI_Vector128_MinMagnitude
-        16, // NI_Vector128_MinMagnitudeNumber
-        16, // NI_Vector128_MinNative
-        16, // NI_Vector128_MinNumber
-        16, // NI_Vector128_MultiplyAddEstimate
-        16, // NI_Vector128_Narrow
-        16, // NI_Vector128_NarrowWithSaturation
-        16, // NI_Vector128_Round
-        16, // NI_Vector128_ShiftLeft
-        16, // NI_Vector128_Shuffle
-        16, // NI_Vector128_ShuffleNative
-        16, // NI_Vector128_ShuffleNativeFallback
-        16, // NI_Vector128_Sqrt
-        16, // NI_Vector128_StoreAligned
-        16, // NI_Vector128_StoreAlignedNonTemporal
-        16, // NI_Vector128_StoreUnsafe
-        16, // NI_Vector128_SubtractSaturate
-        16, // NI_Vector128_Sum
-        16, // NI_Vector128_ToScalar
-        16, // NI_Vector128_ToVector256
-        16, // NI_Vector128_ToVector256Unsafe
-        16, // NI_Vector128_ToVector512
-        16, // NI_Vector128_Truncate
-        16, // NI_Vector128_WidenLower
-        16, // NI_Vector128_WidenUpper
-        16, // NI_Vector128_WithElement
-        16, // NI_Vector128_get_AllBitsSet
-        16, // NI_Vector128_get_E
-        16, // NI_Vector128_get_Epsilon
-        16, // NI_Vector128_get_Indices
-        16, // NI_Vector128_get_NaN
-        16, // NI_Vector128_get_NegativeInfinity
-        16, // NI_Vector128_get_NegativeOne
-        16, // NI_Vector128_get_NegativeZero
-        16, // NI_Vector128_get_One
-        16, // NI_Vector128_get_Pi
-        16, // NI_Vector128_get_PositiveInfinity
-        16, // NI_Vector128_get_Tau
-        16, // NI_Vector128_get_Zero
-        16, // NI_Vector128_op_Addition
-        16, // NI_Vector128_op_BitwiseAnd
-        16, // NI_Vector128_op_BitwiseOr
-        16, // NI_Vector128_op_Division
-        16, // NI_Vector128_op_Equality
-        16, // NI_Vector128_op_ExclusiveOr
-        16, // NI_Vector128_op_Inequality
-        16, // NI_Vector128_op_LeftShift
-        16, // NI_Vector128_op_Multiply
-        16, // NI_Vector128_op_OnesComplement
-        16, // NI_Vector128_op_RightShift
-        16, // NI_Vector128_op_Subtraction
-        16, // NI_Vector128_op_UnaryNegation
-        16, // NI_Vector128_op_UnaryPlus
-        16, // NI_Vector128_op_UnsignedRightShift
-        32, // NI_Vector256_Abs
-        32, // NI_Vector256_AddSaturate
-        32, // NI_Vector256_AndNot
-        32, // NI_Vector256_As
-        32, // NI_Vector256_AsByte
-        32, // NI_Vector256_AsDouble
-        32, // NI_Vector256_AsInt16
-        32, // NI_Vector256_AsInt32
-        32, // NI_Vector256_AsInt64
-        32, // NI_Vector256_AsNInt
-        32, // NI_Vector256_AsNUInt
-        32, // NI_Vector256_AsSByte
-        32, // NI_Vector256_AsSingle
-        32, // NI_Vector256_AsUInt16
-        32, // NI_Vector256_AsUInt32
-        32, // NI_Vector256_AsUInt64
-        32, // NI_Vector256_AsVector
-        32, // NI_Vector256_AsVector256
-        32, // NI_Vector256_Ceiling
-        32, // NI_Vector256_ConditionalSelect
-        32, // NI_Vector256_ConvertToDouble
-        32, // NI_Vector256_ConvertToInt32
-        32, // NI_Vector256_ConvertToInt32Native
-        32, // NI_Vector256_ConvertToInt64
-        32, // NI_Vector256_ConvertToInt64Native
-        32, // NI_Vector256_ConvertToSingle
-        32, // NI_Vector256_ConvertToUInt32
-        32, // NI_Vector256_ConvertToUInt32Native
-        32, // NI_Vector256_ConvertToUInt64
-        32, // NI_Vector256_ConvertToUInt64Native
-        32, // NI_Vector256_Create
-        32, // NI_Vector256_CreateScalar
-        32, // NI_Vector256_CreateScalarUnsafe
-        32, // NI_Vector256_CreateSequence
-        32, // NI_Vector256_Dot
-        32, // NI_Vector256_Equals
-        32, // NI_Vector256_EqualsAny
-        32, // NI_Vector256_ExtractMostSignificantBits
-        32, // NI_Vector256_Floor
-        32, // NI_Vector256_FusedMultiplyAdd
-        32, // NI_Vector256_GetElement
-        32, // NI_Vector256_GetLower
-        32, // NI_Vector256_GetUpper
-        32, // NI_Vector256_GreaterThan
-        32, // NI_Vector256_GreaterThanAll
-        32, // NI_Vector256_GreaterThanAny
-        32, // NI_Vector256_GreaterThanOrEqual
-        32, // NI_Vector256_GreaterThanOrEqualAll
-        32, // NI_Vector256_GreaterThanOrEqualAny
-        32, // NI_Vector256_IsEvenInteger
-        32, // NI_Vector256_IsFinite
-        32, // NI_Vector256_IsInfinity
-        32, // NI_Vector256_IsInteger
-        32, // NI_Vector256_IsNaN
-        32, // NI_Vector256_IsNegative
-        32, // NI_Vector256_IsNegativeInfinity
-        32, // NI_Vector256_IsNormal
-        32, // NI_Vector256_IsOddInteger
-        32, // NI_Vector256_IsPositive
-        32, // NI_Vector256_IsPositiveInfinity
-        32, // NI_Vector256_IsSubnormal
-        32, // NI_Vector256_IsZero
-        32, // NI_Vector256_LessThan
-        32, // NI_Vector256_LessThanAll
-        32, // NI_Vector256_LessThanAny
-        32, // NI_Vector256_LessThanOrEqual
-        32, // NI_Vector256_LessThanOrEqualAll
-        32, // NI_Vector256_LessThanOrEqualAny
-        32, // NI_Vector256_LoadAligned
-        32, // NI_Vector256_LoadAlignedNonTemporal
-        32, // NI_Vector256_LoadUnsafe
-        32, // NI_Vector256_Max
-        32, // NI_Vector256_MaxMagnitude
-        32, // NI_Vector256_MaxMagnitudeNumber
-        32, // NI_Vector256_MaxNative
-        32, // NI_Vector256_MaxNumber
-        32, // NI_Vector256_Min
-        32, // NI_Vector256_MinMagnitude
-        32, // NI_Vector256_MinMagnitudeNumber
-        32, // NI_Vector256_MinNative
-        32, // NI_Vector256_MinNumber
-        32, // NI_Vector256_MultiplyAddEstimate
-        32, // NI_Vector256_Narrow
-        32, // NI_Vector256_NarrowWithSaturation
-        32, // NI_Vector256_Round
-        32, // NI_Vector256_ShiftLeft
-        32, // NI_Vector256_Shuffle
-        32, // NI_Vector256_ShuffleNative
-        32, // NI_Vector256_ShuffleNativeFallback
-        32, // NI_Vector256_Sqrt
-        32, // NI_Vector256_StoreAligned
-        32, // NI_Vector256_StoreAlignedNonTemporal
-        32, // NI_Vector256_StoreUnsafe
-        32, // NI_Vector256_SubtractSaturate
-        32, // NI_Vector256_Sum
-        32, // NI_Vector256_ToScalar
-        32, // NI_Vector256_ToVector512
-        32, // NI_Vector256_ToVector512Unsafe
-        32, // NI_Vector256_Truncate
-        32, // NI_Vector256_WidenLower
-        32, // NI_Vector256_WidenUpper
-        32, // NI_Vector256_WithElement
-        32, // NI_Vector256_WithLower
-        32, // NI_Vector256_WithUpper
-        32, // NI_Vector256_get_AllBitsSet
-        32, // NI_Vector256_get_E
-        32, // NI_Vector256_get_Epsilon
-        32, // NI_Vector256_get_Indices
-        32, // NI_Vector256_get_NaN
-        32, // NI_Vector256_get_NegativeInfinity
-        32, // NI_Vector256_get_NegativeOne
-        32, // NI_Vector256_get_NegativeZero
-        32, // NI_Vector256_get_One
-        32, // NI_Vector256_get_Pi
-        32, // NI_Vector256_get_PositiveInfinity
-        32, // NI_Vector256_get_Tau
-        32, // NI_Vector256_get_Zero
-        32, // NI_Vector256_op_Addition
-        32, // NI_Vector256_op_BitwiseAnd
-        32, // NI_Vector256_op_BitwiseOr
-        32, // NI_Vector256_op_Division
-        32, // NI_Vector256_op_Equality
-        32, // NI_Vector256_op_ExclusiveOr
-        32, // NI_Vector256_op_Inequality
-        32, // NI_Vector256_op_LeftShift
-        32, // NI_Vector256_op_Multiply
-        32, // NI_Vector256_op_OnesComplement
-        32, // NI_Vector256_op_RightShift
-        32, // NI_Vector256_op_Subtraction
-        32, // NI_Vector256_op_UnaryNegation
-        32, // NI_Vector256_op_UnaryPlus
-        32, // NI_Vector256_op_UnsignedRightShift
-        64, // NI_Vector512_Abs
-        64, // NI_Vector512_AddSaturate
-        64, // NI_Vector512_AndNot
-        64, // NI_Vector512_As
-        64, // NI_Vector512_AsByte
-        64, // NI_Vector512_AsDouble
-        64, // NI_Vector512_AsInt16
-        64, // NI_Vector512_AsInt32
-        64, // NI_Vector512_AsInt64
-        64, // NI_Vector512_AsNInt
-        64, // NI_Vector512_AsNUInt
-        64, // NI_Vector512_AsSByte
-        64, // NI_Vector512_AsSingle
-        64, // NI_Vector512_AsUInt16
-        64, // NI_Vector512_AsUInt32
-        64, // NI_Vector512_AsUInt64
-        64, // NI_Vector512_AsVector
-        64, // NI_Vector512_AsVector512
-        64, // NI_Vector512_Ceiling
-        64, // NI_Vector512_ConditionalSelect
-        64, // NI_Vector512_ConvertToDouble
-        64, // NI_Vector512_ConvertToInt32
-        64, // NI_Vector512_ConvertToInt32Native
-        64, // NI_Vector512_ConvertToInt64
-        64, // NI_Vector512_ConvertToInt64Native
-        64, // NI_Vector512_ConvertToSingle
-        64, // NI_Vector512_ConvertToUInt32
-        64, // NI_Vector512_ConvertToUInt32Native
-        64, // NI_Vector512_ConvertToUInt64
-        64, // NI_Vector512_ConvertToUInt64Native
-        64, // NI_Vector512_Create
-        64, // NI_Vector512_CreateScalar
-        64, // NI_Vector512_CreateScalarUnsafe
-        64, // NI_Vector512_CreateSequence
-        64, // NI_Vector512_Dot
-        64, // NI_Vector512_Equals
-        64, // NI_Vector512_EqualsAny
-        64, // NI_Vector512_ExtractMostSignificantBits
-        64, // NI_Vector512_Floor
-        64, // NI_Vector512_FusedMultiplyAdd
-        64, // NI_Vector512_GetElement
-        64, // NI_Vector512_GetLower
-        64, // NI_Vector512_GetLower128
-        64, // NI_Vector512_GetUpper
-        64, // NI_Vector512_GreaterThan
-        64, // NI_Vector512_GreaterThanAll
-        64, // NI_Vector512_GreaterThanAny
-        64, // NI_Vector512_GreaterThanOrEqual
-        64, // NI_Vector512_GreaterThanOrEqualAll
-        64, // NI_Vector512_GreaterThanOrEqualAny
-        64, // NI_Vector512_IsEvenInteger
-        64, // NI_Vector512_IsFinite
-        64, // NI_Vector512_IsInfinity
-        64, // NI_Vector512_IsInteger
-        64, // NI_Vector512_IsNaN
-        64, // NI_Vector512_IsNegative
-        64, // NI_Vector512_IsNegativeInfinity
-        64, // NI_Vector512_IsNormal
-        64, // NI_Vector512_IsOddInteger
-        64, // NI_Vector512_IsPositive
-        64, // NI_Vector512_IsPositiveInfinity
-        64, // NI_Vector512_IsSubnormal
-        64, // NI_Vector512_IsZero
-        64, // NI_Vector512_LessThan
-        64, // NI_Vector512_LessThanAll
-        64, // NI_Vector512_LessThanAny
-        64, // NI_Vector512_LessThanOrEqual
-        64, // NI_Vector512_LessThanOrEqualAll
-        64, // NI_Vector512_LessThanOrEqualAny
-        64, // NI_Vector512_LoadAligned
-        64, // NI_Vector512_LoadAlignedNonTemporal
-        64, // NI_Vector512_LoadUnsafe
-        64, // NI_Vector512_Max
-        64, // NI_Vector512_MaxMagnitude
-        64, // NI_Vector512_MaxMagnitudeNumber
-        64, // NI_Vector512_MaxNative
-        64, // NI_Vector512_MaxNumber
-        64, // NI_Vector512_Min
-        64, // NI_Vector512_MinMagnitude
-        64, // NI_Vector512_MinMagnitudeNumber
-        64, // NI_Vector512_MinNative
-        64, // NI_Vector512_MinNumber
-        64, // NI_Vector512_MultiplyAddEstimate
-        64, // NI_Vector512_Narrow
-        64, // NI_Vector512_NarrowWithSaturation
-        64, // NI_Vector512_Round
-        64, // NI_Vector512_ShiftLeft
-        64, // NI_Vector512_Shuffle
-        64, // NI_Vector512_ShuffleNative
-        64, // NI_Vector512_ShuffleNativeFallback
-        64, // NI_Vector512_Sqrt
-        64, // NI_Vector512_StoreAligned
-        64, // NI_Vector512_StoreAlignedNonTemporal
-        64, // NI_Vector512_StoreUnsafe
-        64, // NI_Vector512_SubtractSaturate
-        64, // NI_Vector512_Sum
-        64, // NI_Vector512_ToScalar
-        64, // NI_Vector512_Truncate
-        64, // NI_Vector512_WidenLower
-        64, // NI_Vector512_WidenUpper
-        64, // NI_Vector512_WithElement
-        64, // NI_Vector512_WithLower
-        64, // NI_Vector512_WithUpper
-        64, // NI_Vector512_get_AllBitsSet
-        64, // NI_Vector512_get_E
-        64, // NI_Vector512_get_Epsilon
-        64, // NI_Vector512_get_Indices
-        64, // NI_Vector512_get_NaN
-        64, // NI_Vector512_get_NegativeInfinity
-        64, // NI_Vector512_get_NegativeOne
-        64, // NI_Vector512_get_NegativeZero
-        64, // NI_Vector512_get_One
-        64, // NI_Vector512_get_Pi
-        64, // NI_Vector512_get_PositiveInfinity
-        64, // NI_Vector512_get_Tau
-        64, // NI_Vector512_get_Zero
-        64, // NI_Vector512_op_Addition
-        64, // NI_Vector512_op_BitwiseAnd
-        64, // NI_Vector512_op_BitwiseOr
-        64, // NI_Vector512_op_Division
-        64, // NI_Vector512_op_Equality
-        64, // NI_Vector512_op_ExclusiveOr
-        64, // NI_Vector512_op_Inequality
-        64, // NI_Vector512_op_LeftShift
-        64, // NI_Vector512_op_Multiply
-        64, // NI_Vector512_op_OnesComplement
-        64, // NI_Vector512_op_RightShift
-        64, // NI_Vector512_op_Subtraction
-        64, // NI_Vector512_op_UnaryNegation
-        64, // NI_Vector512_op_UnaryPlus
-        64, // NI_Vector512_op_UnsignedRightShift
         16, // NI_X86Base_Abs
         16, // NI_X86Base_Add
         16, // NI_X86Base_AddSaturate
@@ -19652,6 +17071,32 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_AVX512v3_CompressStore
         unchecked((byte)(-1)), // NI_AVX512v3_Expand
         unchecked((byte)(-1)), // NI_AVX512v3_ExpandLoad
+        64, // NI_AVX512v3_MultiplyWideningAndAdd
+        64, // NI_AVX512v3_MultiplyWideningAndAddSaturate
+        16, // NI_AVX10v1_AddScalar
+        16, // NI_AVX10v1_CompareScalarOrderedEqual
+        16, // NI_AVX10v1_CompareScalarOrderedGreaterThan
+        16, // NI_AVX10v1_CompareScalarOrderedGreaterThanOrEqual
+        16, // NI_AVX10v1_CompareScalarOrderedLessThan
+        16, // NI_AVX10v1_CompareScalarOrderedLessThanOrEqual
+        16, // NI_AVX10v1_CompareScalarOrderedNotEqual
+        16, // NI_AVX10v1_CompareScalarUnorderedEqual
+        16, // NI_AVX10v1_CompareScalarUnorderedGreaterThan
+        16, // NI_AVX10v1_CompareScalarUnorderedGreaterThanOrEqual
+        16, // NI_AVX10v1_CompareScalarUnorderedLessThan
+        16, // NI_AVX10v1_CompareScalarUnorderedLessThanOrEqual
+        16, // NI_AVX10v1_CompareScalarUnorderedNotEqual
+        16, // NI_AVX10v1_ConvertScalarToVector128Double
+        16, // NI_AVX10v1_ConvertScalarToVector128Half
+        16, // NI_AVX10v1_ConvertScalarToVector128Single
+        16, // NI_AVX10v1_DivideScalar
+        16, // NI_AVX10v1_FusedMultiplyAddScalar
+        16, // NI_AVX10v1_MultiplyScalar
+        16, // NI_AVX10v1_ReciprocalScalar
+        16, // NI_AVX10v1_ReciprocalSqrtScalar
+        16, // NI_AVX10v1_RoundScaleScalar
+        16, // NI_AVX10v1_SqrtScalar
+        16, // NI_AVX10v1_SubtractScalar
         unchecked((byte)(-1)), // NI_AVX10v2_ConvertToByteWithSaturationAndZeroExtendToInt32
         unchecked((byte)(-1)), // NI_AVX10v2_ConvertToByteWithTruncatedSaturationAndZeroExtendToInt32
         16, // NI_AVX10v2_ConvertToInt32WithTruncatedSaturation
@@ -19700,6 +17145,8 @@ public partial struct HWIntrinsicInfo
         16, // NI_X86Base_COMIS
         16, // NI_X86Base_PTEST
         16, // NI_X86Base_UCOMIS
+        16, // NI_AVX10v1_VCOMISH
+        16, // NI_AVX10v1_VUCOMISH
         unchecked((byte)(-1)), // NI_AVX_PTEST
         32, // NI_AVX2_AndNotVector
         0, // NI_AVX2_AndNotScalar
@@ -19746,266 +17193,6 @@ public partial struct HWIntrinsicInfo
 #endif
 #elif TARGET_ARM64
 #if FEATURE_HW_INTRINSICS
-        8, // NI_Vector64_Abs
-        8, // NI_Vector64_AddSaturate
-        8, // NI_Vector64_AndNot
-        8, // NI_Vector64_As
-        8, // NI_Vector64_AsByte
-        8, // NI_Vector64_AsDouble
-        8, // NI_Vector64_AsInt16
-        8, // NI_Vector64_AsInt32
-        8, // NI_Vector64_AsInt64
-        8, // NI_Vector64_AsNInt
-        8, // NI_Vector64_AsNUInt
-        8, // NI_Vector64_AsSByte
-        8, // NI_Vector64_AsSingle
-        8, // NI_Vector64_AsUInt16
-        8, // NI_Vector64_AsUInt32
-        8, // NI_Vector64_AsUInt64
-        8, // NI_Vector64_Ceiling
-        8, // NI_Vector64_ConditionalSelect
-        8, // NI_Vector64_ConvertToDouble
-        8, // NI_Vector64_ConvertToInt32
-        8, // NI_Vector64_ConvertToInt32Native
-        8, // NI_Vector64_ConvertToInt64
-        8, // NI_Vector64_ConvertToInt64Native
-        8, // NI_Vector64_ConvertToSingle
-        8, // NI_Vector64_ConvertToUInt32
-        8, // NI_Vector64_ConvertToUInt32Native
-        8, // NI_Vector64_ConvertToUInt64
-        8, // NI_Vector64_ConvertToUInt64Native
-        8, // NI_Vector64_Create
-        8, // NI_Vector64_CreateScalar
-        8, // NI_Vector64_CreateScalarUnsafe
-        8, // NI_Vector64_CreateSequence
-        8, // NI_Vector64_Dot
-        8, // NI_Vector64_Equals
-        8, // NI_Vector64_EqualsAny
-        8, // NI_Vector64_ExtractMostSignificantBits
-        8, // NI_Vector64_Floor
-        8, // NI_Vector64_FusedMultiplyAdd
-        8, // NI_Vector64_GetElement
-        8, // NI_Vector64_GreaterThan
-        8, // NI_Vector64_GreaterThanAll
-        8, // NI_Vector64_GreaterThanAny
-        8, // NI_Vector64_GreaterThanOrEqual
-        8, // NI_Vector64_GreaterThanOrEqualAll
-        8, // NI_Vector64_GreaterThanOrEqualAny
-        8, // NI_Vector64_IsEvenInteger
-        8, // NI_Vector64_IsFinite
-        8, // NI_Vector64_IsInfinity
-        8, // NI_Vector64_IsInteger
-        8, // NI_Vector64_IsNaN
-        8, // NI_Vector64_IsNegative
-        8, // NI_Vector64_IsNegativeInfinity
-        8, // NI_Vector64_IsNormal
-        8, // NI_Vector64_IsOddInteger
-        8, // NI_Vector64_IsPositive
-        8, // NI_Vector64_IsPositiveInfinity
-        8, // NI_Vector64_IsSubnormal
-        8, // NI_Vector64_IsZero
-        8, // NI_Vector64_LessThan
-        8, // NI_Vector64_LessThanAll
-        8, // NI_Vector64_LessThanAny
-        8, // NI_Vector64_LessThanOrEqual
-        8, // NI_Vector64_LessThanOrEqualAll
-        8, // NI_Vector64_LessThanOrEqualAny
-        8, // NI_Vector64_LoadAligned
-        8, // NI_Vector64_LoadAlignedNonTemporal
-        8, // NI_Vector64_LoadUnsafe
-        8, // NI_Vector64_Max
-        8, // NI_Vector64_MaxMagnitude
-        8, // NI_Vector64_MaxMagnitudeNumber
-        8, // NI_Vector64_MaxNative
-        8, // NI_Vector64_MaxNumber
-        8, // NI_Vector64_Min
-        8, // NI_Vector64_MinMagnitude
-        8, // NI_Vector64_MinMagnitudeNumber
-        8, // NI_Vector64_MinNative
-        8, // NI_Vector64_MinNumber
-        8, // NI_Vector64_MultiplyAddEstimate
-        8, // NI_Vector64_Narrow
-        8, // NI_Vector64_NarrowWithSaturation
-        8, // NI_Vector64_Round
-        8, // NI_Vector64_ShiftLeft
-        8, // NI_Vector64_Shuffle
-        8, // NI_Vector64_ShuffleNative
-        8, // NI_Vector64_ShuffleNativeFallback
-        8, // NI_Vector64_Sqrt
-        8, // NI_Vector64_StoreAligned
-        8, // NI_Vector64_StoreAlignedNonTemporal
-        8, // NI_Vector64_StoreUnsafe
-        8, // NI_Vector64_SubtractSaturate
-        8, // NI_Vector64_Sum
-        8, // NI_Vector64_ToScalar
-        8, // NI_Vector64_ToVector128
-        8, // NI_Vector64_ToVector128Unsafe
-        8, // NI_Vector64_Truncate
-        8, // NI_Vector64_WidenLower
-        8, // NI_Vector64_WidenUpper
-        8, // NI_Vector64_WithElement
-        8, // NI_Vector64_get_AllBitsSet
-        8, // NI_Vector64_get_E
-        8, // NI_Vector64_get_Epsilon
-        8, // NI_Vector64_get_Indices
-        8, // NI_Vector64_get_NaN
-        8, // NI_Vector64_get_NegativeInfinity
-        8, // NI_Vector64_get_NegativeOne
-        8, // NI_Vector64_get_NegativeZero
-        8, // NI_Vector64_get_One
-        8, // NI_Vector64_get_Pi
-        8, // NI_Vector64_get_PositiveInfinity
-        8, // NI_Vector64_get_Tau
-        8, // NI_Vector64_get_Zero
-        8, // NI_Vector64_op_Addition
-        8, // NI_Vector64_op_BitwiseAnd
-        8, // NI_Vector64_op_BitwiseOr
-        8, // NI_Vector64_op_Division
-        8, // NI_Vector64_op_Equality
-        8, // NI_Vector64_op_ExclusiveOr
-        8, // NI_Vector64_op_Inequality
-        8, // NI_Vector64_op_LeftShift
-        8, // NI_Vector64_op_Multiply
-        8, // NI_Vector64_op_OnesComplement
-        8, // NI_Vector64_op_RightShift
-        8, // NI_Vector64_op_Subtraction
-        8, // NI_Vector64_op_UnaryNegation
-        8, // NI_Vector64_op_UnaryPlus
-        8, // NI_Vector64_op_UnsignedRightShift
-        16, // NI_Vector128_Abs
-        16, // NI_Vector128_AddSaturate
-        16, // NI_Vector128_AndNot
-        16, // NI_Vector128_As
-        16, // NI_Vector128_AsByte
-        16, // NI_Vector128_AsDouble
-        16, // NI_Vector128_AsInt16
-        16, // NI_Vector128_AsInt32
-        16, // NI_Vector128_AsInt64
-        16, // NI_Vector128_AsNInt
-        16, // NI_Vector128_AsNUInt
-        16, // NI_Vector128_AsSByte
-        16, // NI_Vector128_AsSingle
-        16, // NI_Vector128_AsUInt16
-        16, // NI_Vector128_AsUInt32
-        16, // NI_Vector128_AsUInt64
-        16, // NI_Vector128_AsVector
-        unchecked((byte)(-1)), // NI_Vector128_AsVector128
-        unchecked((byte)(-1)), // NI_Vector128_AsVector128Unsafe
-        16, // NI_Vector128_AsVector2
-        16, // NI_Vector128_AsVector3
-        16, // NI_Vector128_AsVector4
-        16, // NI_Vector128_Ceiling
-        16, // NI_Vector128_ConditionalSelect
-        16, // NI_Vector128_ConvertToDouble
-        16, // NI_Vector128_ConvertToInt32
-        16, // NI_Vector128_ConvertToInt32Native
-        16, // NI_Vector128_ConvertToInt64
-        16, // NI_Vector128_ConvertToInt64Native
-        16, // NI_Vector128_ConvertToSingle
-        16, // NI_Vector128_ConvertToUInt32
-        16, // NI_Vector128_ConvertToUInt32Native
-        16, // NI_Vector128_ConvertToUInt64
-        16, // NI_Vector128_ConvertToUInt64Native
-        16, // NI_Vector128_Create
-        16, // NI_Vector128_CreateScalar
-        16, // NI_Vector128_CreateScalarUnsafe
-        16, // NI_Vector128_CreateSequence
-        16, // NI_Vector128_Dot
-        16, // NI_Vector128_Equals
-        16, // NI_Vector128_EqualsAny
-        16, // NI_Vector128_ExtractMostSignificantBits
-        16, // NI_Vector128_Floor
-        16, // NI_Vector128_FusedMultiplyAdd
-        16, // NI_Vector128_GetElement
-        16, // NI_Vector128_GetLower
-        16, // NI_Vector128_GetUpper
-        16, // NI_Vector128_GreaterThan
-        16, // NI_Vector128_GreaterThanAll
-        16, // NI_Vector128_GreaterThanAny
-        16, // NI_Vector128_GreaterThanOrEqual
-        16, // NI_Vector128_GreaterThanOrEqualAll
-        16, // NI_Vector128_GreaterThanOrEqualAny
-        16, // NI_Vector128_IsEvenInteger
-        16, // NI_Vector128_IsFinite
-        16, // NI_Vector128_IsInfinity
-        16, // NI_Vector128_IsInteger
-        16, // NI_Vector128_IsNaN
-        16, // NI_Vector128_IsNegative
-        16, // NI_Vector128_IsNegativeInfinity
-        16, // NI_Vector128_IsNormal
-        16, // NI_Vector128_IsOddInteger
-        16, // NI_Vector128_IsPositive
-        16, // NI_Vector128_IsPositiveInfinity
-        16, // NI_Vector128_IsSubnormal
-        16, // NI_Vector128_IsZero
-        16, // NI_Vector128_LessThan
-        16, // NI_Vector128_LessThanAll
-        16, // NI_Vector128_LessThanAny
-        16, // NI_Vector128_LessThanOrEqual
-        16, // NI_Vector128_LessThanOrEqualAll
-        16, // NI_Vector128_LessThanOrEqualAny
-        16, // NI_Vector128_LoadAligned
-        16, // NI_Vector128_LoadAlignedNonTemporal
-        16, // NI_Vector128_LoadUnsafe
-        16, // NI_Vector128_Max
-        16, // NI_Vector128_MaxMagnitude
-        16, // NI_Vector128_MaxMagnitudeNumber
-        16, // NI_Vector128_MaxNative
-        16, // NI_Vector128_MaxNumber
-        16, // NI_Vector128_Min
-        16, // NI_Vector128_MinMagnitude
-        16, // NI_Vector128_MinMagnitudeNumber
-        16, // NI_Vector128_MinNative
-        16, // NI_Vector128_MinNumber
-        16, // NI_Vector128_MultiplyAddEstimate
-        16, // NI_Vector128_Narrow
-        16, // NI_Vector128_NarrowWithSaturation
-        16, // NI_Vector128_Round
-        16, // NI_Vector128_ShiftLeft
-        16, // NI_Vector128_Shuffle
-        16, // NI_Vector128_ShuffleNative
-        16, // NI_Vector128_ShuffleNativeFallback
-        16, // NI_Vector128_Sqrt
-        16, // NI_Vector128_StoreAligned
-        16, // NI_Vector128_StoreAlignedNonTemporal
-        16, // NI_Vector128_StoreUnsafe
-        16, // NI_Vector128_SubtractSaturate
-        16, // NI_Vector128_Sum
-        16, // NI_Vector128_ToScalar
-        16, // NI_Vector128_Truncate
-        16, // NI_Vector128_WidenLower
-        16, // NI_Vector128_WidenUpper
-        16, // NI_Vector128_WithElement
-        16, // NI_Vector128_WithLower
-        16, // NI_Vector128_WithUpper
-        16, // NI_Vector128_get_AllBitsSet
-        16, // NI_Vector128_get_E
-        16, // NI_Vector128_get_Epsilon
-        16, // NI_Vector128_get_Indices
-        16, // NI_Vector128_get_NaN
-        16, // NI_Vector128_get_NegativeInfinity
-        16, // NI_Vector128_get_NegativeOne
-        16, // NI_Vector128_get_NegativeZero
-        16, // NI_Vector128_get_One
-        16, // NI_Vector128_get_Pi
-        16, // NI_Vector128_get_PositiveInfinity
-        16, // NI_Vector128_get_Tau
-        16, // NI_Vector128_get_Zero
-        16, // NI_Vector128_op_Addition
-        16, // NI_Vector128_op_BitwiseAnd
-        16, // NI_Vector128_op_BitwiseOr
-        16, // NI_Vector128_op_Division
-        16, // NI_Vector128_op_Equality
-        16, // NI_Vector128_op_ExclusiveOr
-        16, // NI_Vector128_op_Inequality
-        16, // NI_Vector128_op_LeftShift
-        16, // NI_Vector128_op_Multiply
-        16, // NI_Vector128_op_OnesComplement
-        16, // NI_Vector128_op_RightShift
-        16, // NI_Vector128_op_Subtraction
-        16, // NI_Vector128_op_UnaryNegation
-        16, // NI_Vector128_op_UnaryPlus
-        16, // NI_Vector128_op_UnsignedRightShift
         unchecked((byte)(-1)), // NI_AdvSimd_Abs
         unchecked((byte)(-1)), // NI_AdvSimd_AbsSaturate
         8, // NI_AdvSimd_AbsScalar
@@ -20481,6 +17668,29 @@ public partial struct HWIntrinsicInfo
         0, // NI_Crc32_Arm64_ComputeCrc32C
         unchecked((byte)(-1)), // NI_Dp_DotProduct
         unchecked((byte)(-1)), // NI_Dp_DotProductBySelectedQuadruplet
+        16, // NI_Fp16_Add
+        16, // NI_Fp16_Ceiling
+        16, // NI_Fp16_CompareEqual
+        16, // NI_Fp16_CompareGreaterThan
+        16, // NI_Fp16_CompareGreaterThanOrEqual
+        16, // NI_Fp16_CompareLessThan
+        16, // NI_Fp16_CompareLessThanOrEqual
+        16, // NI_Fp16_CompareNotEqual
+        16, // NI_Fp16_ConvertToHalf
+        16, // NI_Fp16_ConvertToInt32
+        16, // NI_Fp16_ConvertToInt64
+        16, // NI_Fp16_ConvertToUInt32
+        16, // NI_Fp16_ConvertToUInt64
+        16, // NI_Fp16_Divide
+        16, // NI_Fp16_Floor
+        16, // NI_Fp16_FusedMultiplyAdd
+        16, // NI_Fp16_Multiply
+        16, // NI_Fp16_ReciprocalEstimate
+        16, // NI_Fp16_ReciprocalSqrtEstimate
+        16, // NI_Fp16_RoundToNearest
+        16, // NI_Fp16_Sqrt
+        16, // NI_Fp16_Subtract
+        16, // NI_Fp16_Truncate
         unchecked((byte)(-1)), // NI_Rdm_MultiplyRoundedDoublingAndAddSaturateHigh
         unchecked((byte)(-1)), // NI_Rdm_MultiplyRoundedDoublingAndSubtractSaturateHigh
         unchecked((byte)(-1)), // NI_Rdm_MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh
@@ -20499,6 +17709,15 @@ public partial struct HWIntrinsicInfo
         16, // NI_Sha256_HashUpdate2
         16, // NI_Sha256_ScheduleUpdate0
         16, // NI_Sha256_ScheduleUpdate1
+        16, // NI_Sha3_BitwiseClearXor
+        16, // NI_Sha3_BitwiseRotateLeftBy1AndXor
+        16, // NI_Sha3_Xor
+        16, // NI_Sha3_XorRotateRight
+        16, // NI_Sm4_Encode
+        16, // NI_Sm4_KeyUpdate
+        16, // NI_ArmBase_ConvertToDouble
+        16, // NI_ArmBase_ConvertToHalf
+        16, // NI_ArmBase_ConvertToSingle
 #endif
 #if FEATURE_HW_INTRINSICS
         unchecked((byte)(-1)), // NI_Sve_Abs
@@ -20865,6 +18084,16 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_Sve2_CreateWhileReadAfterWriteMaskUInt16
         unchecked((byte)(-1)), // NI_Sve2_CreateWhileReadAfterWriteMaskUInt32
         unchecked((byte)(-1)), // NI_Sve2_CreateWhileReadAfterWriteMaskUInt64
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskByte
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskDouble
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskInt16
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskInt32
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskInt64
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskSByte
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskSingle
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskUInt16
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskUInt32
+        unchecked((byte)(-1)), // NI_Sve2_CreateWhileWriteAfterReadMaskUInt64
         unchecked((byte)(-1)), // NI_Sve2_DotProductRotateComplex
         unchecked((byte)(-1)), // NI_Sve2_DotProductRotateComplexBySelectedIndex
         unchecked((byte)(-1)), // NI_Sve2_FusedAddHalving
@@ -20938,6 +18167,10 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_Sve2_PolynomialMultiplyWideningOdd
         unchecked((byte)(-1)), // NI_Sve2_ReciprocalEstimate
         unchecked((byte)(-1)), // NI_Sve2_ReciprocalSqrtEstimate
+        unchecked((byte)(-1)), // NI_Sve2_SaturatingExtractNarrowingLower
+        unchecked((byte)(-1)), // NI_Sve2_SaturatingExtractNarrowingUpper
+        unchecked((byte)(-1)), // NI_Sve2_SaturatingExtractUnsignedNarrowingLower
+        unchecked((byte)(-1)), // NI_Sve2_SaturatingExtractUnsignedNarrowingUpper
         unchecked((byte)(-1)), // NI_Sve2_Scatter16BitNarrowingNonTemporal
         unchecked((byte)(-1)), // NI_Sve2_Scatter16BitWithByteOffsetsNarrowingNonTemporal
         unchecked((byte)(-1)), // NI_Sve2_Scatter32BitNarrowingNonTemporal
@@ -20994,6 +18227,9 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_Sve2_VectorTableLookupExtension
         unchecked((byte)(-1)), // NI_Sve2_Xor
         unchecked((byte)(-1)), // NI_Sve2_XorRotateRight
+        unchecked((byte)(-1)), // NI_SveSha3_BitwiseRotateLeftBy1AndXor
+        unchecked((byte)(-1)), // NI_SveSm4_Encode
+        unchecked((byte)(-1)), // NI_SveSm4_KeyUpdate
         0, // NI_Sve_ConditionalExtractAfterLastActiveElementScalar
         0, // NI_Sve_ConditionalExtractLastActiveElementScalar
         unchecked((byte)(-1)), // NI_Sve_ConvertMaskToVector
@@ -21021,6 +18257,79 @@ public partial struct HWIntrinsicInfo
         unchecked((byte)(-1)), // NI_Sve_TransposeOdd_Predicates
         unchecked((byte)(-1)), // NI_Sve_ReverseElement_Predicates
 #endif
+#elif TARGET_WASM
+#if FEATURE_HW_INTRINSICS
+        16, // NI_PackedSimd_Abs
+        16, // NI_PackedSimd_Add
+        16, // NI_PackedSimd_AddPairwiseWidening
+        16, // NI_PackedSimd_AddSaturate
+        16, // NI_PackedSimd_AllTrue
+        16, // NI_PackedSimd_And
+        16, // NI_PackedSimd_AndNot
+        16, // NI_PackedSimd_AnyTrue
+        16, // NI_PackedSimd_AverageRounded
+        16, // NI_PackedSimd_Bitmask
+        16, // NI_PackedSimd_BitwiseSelect
+        16, // NI_PackedSimd_Ceiling
+        16, // NI_PackedSimd_CompareEqual
+        16, // NI_PackedSimd_CompareGreaterThan
+        16, // NI_PackedSimd_CompareGreaterThanOrEqual
+        16, // NI_PackedSimd_CompareLessThan
+        16, // NI_PackedSimd_CompareLessThanOrEqual
+        16, // NI_PackedSimd_CompareNotEqual
+        16, // NI_PackedSimd_ConvertNarrowingSaturateSigned
+        16, // NI_PackedSimd_ConvertNarrowingSaturateUnsigned
+        16, // NI_PackedSimd_ConvertToDoubleLower
+        16, // NI_PackedSimd_ConvertToInt32Saturate
+        16, // NI_PackedSimd_ConvertToSingle
+        16, // NI_PackedSimd_ConvertToUInt32Saturate
+        16, // NI_PackedSimd_Divide
+        16, // NI_PackedSimd_Dot
+        16, // NI_PackedSimd_ExtractScalar
+        16, // NI_PackedSimd_Floor
+        16, // NI_PackedSimd_LoadScalarAndInsert
+        16, // NI_PackedSimd_LoadScalarAndSplatVector128
+        16, // NI_PackedSimd_LoadScalarVector128
+        16, // NI_PackedSimd_LoadVector128
+        16, // NI_PackedSimd_LoadWideningVector128
+        16, // NI_PackedSimd_Max
+        16, // NI_PackedSimd_Min
+        16, // NI_PackedSimd_Multiply
+        16, // NI_PackedSimd_MultiplyRoundedSaturateQ15
+        16, // NI_PackedSimd_MultiplyWideningLower
+        16, // NI_PackedSimd_MultiplyWideningUpper
+        16, // NI_PackedSimd_Negate
+        16, // NI_PackedSimd_Not
+        16, // NI_PackedSimd_Or
+        16, // NI_PackedSimd_PopCount
+        16, // NI_PackedSimd_PseudoMax
+        16, // NI_PackedSimd_PseudoMin
+        16, // NI_PackedSimd_ReplaceScalar
+        16, // NI_PackedSimd_RoundToNearest
+        16, // NI_PackedSimd_ShiftLeft
+        16, // NI_PackedSimd_ShiftRightArithmetic
+        16, // NI_PackedSimd_ShiftRightLogical
+        16, // NI_PackedSimd_Shuffle
+        16, // NI_PackedSimd_SignExtendWideningLower
+        16, // NI_PackedSimd_SignExtendWideningUpper
+        16, // NI_PackedSimd_Splat
+        16, // NI_PackedSimd_Sqrt
+        16, // NI_PackedSimd_Store
+        16, // NI_PackedSimd_StoreSelectedScalar
+        16, // NI_PackedSimd_Subtract
+        16, // NI_PackedSimd_SubtractSaturate
+        16, // NI_PackedSimd_Swizzle
+        16, // NI_PackedSimd_Truncate
+        16, // NI_PackedSimd_Xor
+        16, // NI_PackedSimd_ZeroExtendWideningLower
+        16, // NI_PackedSimd_ZeroExtendWideningUpper
+        0, // NI_WasmBase_LeadingZeroCount
+        0, // NI_WasmBase_TrailingZeroCount
 #endif
+#else
+#error Unsupported platform
+#endif
+#endif
+
     ];
 }

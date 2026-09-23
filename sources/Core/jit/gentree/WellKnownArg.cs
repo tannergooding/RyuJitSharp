@@ -32,5 +32,6 @@ public enum WellKnownArg : byte
     AsyncSynchronizationContext,
     WasmShadowStackPointer,
     WasmPortableEntryPoint,
+    SecretStubParam,
     COUNT,
 }

@@ -29,7 +29,7 @@ public static partial class InlineObservationExtensions
         "noinline per IL/cached result", // CALLEE_IS_NOINLINE
         "is synchronized", // CALLEE_IS_SYNCHRONIZED
         "noinline per VM", // CALLEE_IS_VM_NOINLINE
-        "no return opcode", // CALLEE_LACKS_RETURN
+        "no return expression", // CALLSITE_LACKS_RETURN
         "ldfld needs helper", // CALLEE_LDFLD_NEEDS_HELPER
         "localloc size too large", // CALLEE_LOCALLOC_TOO_LARGE
         "rejected by log replay", // CALLEE_LOG_REPLAY_REJECT
@@ -43,6 +43,7 @@ public static partial class InlineObservationExtensions
         "too many arguments", // CALLEE_TOO_MANY_ARGUMENTS
         "too many locals", // CALLEE_TOO_MANY_LOCALS
         "has await", // CALLEE_AWAIT
+        "has await inside try region", // CALLEE_AWAIT_IN_TRY
         "has async suspend", // CALLEE_ASYNC_SUSPEND
         "ldsfld of value class", // CALLEE_LDFLD_STATIC_VALUECLASS
         "too many basic blocks", // CALLEE_TOO_MANY_BASIC_BLOCKS
@@ -80,6 +81,7 @@ public static partial class InlineObservationExtensions
         "profitable inline", // CALLEE_IS_PROFITABLE_INLINE
         "size decreasing inline", // CALLEE_IS_SIZE_DECREASING_INLINE
         "callee class marked as Intrinsic", // CALLEE_IS_INTRINSIC_TYPE
+        "is an async call", // CALLEE_IS_ASYNC
         "accepted by log replay", // CALLEE_LOG_REPLAY_ACCEPT
         "thin wrapper around a call", // CALLEE_LOOKS_LIKE_WRAPPER
         "maxstack", // CALLEE_MAXSTACK
@@ -102,6 +104,8 @@ public static partial class InlineObservationExtensions
         "argument can't bash to int", // CALLSITE_ARG_NO_BASH_TO_INT
         "argument can't bash to ref", // CALLSITE_ARG_NO_BASH_TO_REF
         "argument types incompatible", // CALLSITE_ARG_TYPES_INCOMPATIBLE
+        "has await, root method is not async", // CALLSITE_AWAIT_IN_NON_ASYNC_ROOT
+        "within try region, has await", // CALLSITE_AWAIT_IN_TRY_REGION
         "can't class init", // CALLSITE_CANT_CLASS_INIT
         "compilation error", // CALLSITE_COMPILATION_ERROR
         "failed to compile", // CALLSITE_COMPILATION_FAILURE
@@ -141,6 +145,7 @@ public static partial class InlineObservationExtensions
         "arg is more concrete than in sig.", // CALLSITE_ARG_EXACT_CLS_SIG_IS_NOT
         "arg is a constant", // CALLSITE_ARG_CONST
         "arg is boxed at call site", // CALLSITE_ARG_BOXED
+        "async inlining stress index", // CALLSITE_ASYNC_STRESS_INDEX
         "foldable intrinsic", // CALLSITE_FOLDABLE_INTRINSIC
         "foldable binary expression", // CALLSITE_FOLDABLE_EXPR
         "foldable unary expression", // CALLSITE_FOLDABLE_EXPR_UN
@@ -187,7 +192,7 @@ public static partial class InlineObservationExtensions
         InlineImpact.FATAL, // CALLEE_IS_NOINLINE
         InlineImpact.FATAL, // CALLEE_IS_SYNCHRONIZED
         InlineImpact.FATAL, // CALLEE_IS_VM_NOINLINE
-        InlineImpact.FATAL, // CALLEE_LACKS_RETURN
+        InlineImpact.FATAL, // CALLSITE_LACKS_RETURN
         InlineImpact.FATAL, // CALLEE_LDFLD_NEEDS_HELPER
         InlineImpact.FATAL, // CALLEE_LOCALLOC_TOO_LARGE
         InlineImpact.FATAL, // CALLEE_LOG_REPLAY_REJECT
@@ -201,6 +206,7 @@ public static partial class InlineObservationExtensions
         InlineImpact.FATAL, // CALLEE_TOO_MANY_ARGUMENTS
         InlineImpact.FATAL, // CALLEE_TOO_MANY_LOCALS
         InlineImpact.FATAL, // CALLEE_AWAIT
+        InlineImpact.FATAL, // CALLEE_AWAIT_IN_TRY
         InlineImpact.FATAL, // CALLEE_ASYNC_SUSPEND
         InlineImpact.PERFORMANCE, // CALLEE_LDFLD_STATIC_VALUECLASS
         InlineImpact.PERFORMANCE, // CALLEE_TOO_MANY_BASIC_BLOCKS
@@ -238,6 +244,7 @@ public static partial class InlineObservationExtensions
         InlineImpact.INFORMATION, // CALLEE_IS_PROFITABLE_INLINE
         InlineImpact.INFORMATION, // CALLEE_IS_SIZE_DECREASING_INLINE
         InlineImpact.INFORMATION, // CALLEE_IS_INTRINSIC_TYPE
+        InlineImpact.INFORMATION, // CALLEE_IS_ASYNC
         InlineImpact.INFORMATION, // CALLEE_LOG_REPLAY_ACCEPT
         InlineImpact.INFORMATION, // CALLEE_LOOKS_LIKE_WRAPPER
         InlineImpact.INFORMATION, // CALLEE_MAXSTACK
@@ -260,6 +267,8 @@ public static partial class InlineObservationExtensions
         InlineImpact.FATAL, // CALLSITE_ARG_NO_BASH_TO_INT
         InlineImpact.FATAL, // CALLSITE_ARG_NO_BASH_TO_REF
         InlineImpact.FATAL, // CALLSITE_ARG_TYPES_INCOMPATIBLE
+        InlineImpact.FATAL, // CALLSITE_AWAIT_IN_NON_ASYNC_ROOT
+        InlineImpact.FATAL, // CALLSITE_AWAIT_IN_TRY_REGION
         InlineImpact.FATAL, // CALLSITE_CANT_CLASS_INIT
         InlineImpact.FATAL, // CALLSITE_COMPILATION_ERROR
         InlineImpact.FATAL, // CALLSITE_COMPILATION_FAILURE
@@ -299,6 +308,7 @@ public static partial class InlineObservationExtensions
         InlineImpact.INFORMATION, // CALLSITE_ARG_EXACT_CLS_SIG_IS_NOT
         InlineImpact.INFORMATION, // CALLSITE_ARG_CONST
         InlineImpact.INFORMATION, // CALLSITE_ARG_BOXED
+        InlineImpact.INFORMATION, // CALLSITE_ASYNC_STRESS_INDEX
         InlineImpact.INFORMATION, // CALLSITE_FOLDABLE_INTRINSIC
         InlineImpact.INFORMATION, // CALLSITE_FOLDABLE_EXPR
         InlineImpact.INFORMATION, // CALLSITE_FOLDABLE_EXPR_UN
@@ -345,7 +355,7 @@ public static partial class InlineObservationExtensions
         InlineTarget.CALLEE, // CALLEE_IS_NOINLINE
         InlineTarget.CALLEE, // CALLEE_IS_SYNCHRONIZED
         InlineTarget.CALLEE, // CALLEE_IS_VM_NOINLINE
-        InlineTarget.CALLEE, // CALLEE_LACKS_RETURN
+        InlineTarget.CALLSITE, // CALLSITE_LACKS_RETURN
         InlineTarget.CALLEE, // CALLEE_LDFLD_NEEDS_HELPER
         InlineTarget.CALLEE, // CALLEE_LOCALLOC_TOO_LARGE
         InlineTarget.CALLEE, // CALLEE_LOG_REPLAY_REJECT
@@ -359,6 +369,7 @@ public static partial class InlineObservationExtensions
         InlineTarget.CALLEE, // CALLEE_TOO_MANY_ARGUMENTS
         InlineTarget.CALLEE, // CALLEE_TOO_MANY_LOCALS
         InlineTarget.CALLEE, // CALLEE_AWAIT
+        InlineTarget.CALLEE, // CALLEE_AWAIT_IN_TRY
         InlineTarget.CALLEE, // CALLEE_ASYNC_SUSPEND
         InlineTarget.CALLEE, // CALLEE_LDFLD_STATIC_VALUECLASS
         InlineTarget.CALLEE, // CALLEE_TOO_MANY_BASIC_BLOCKS
@@ -396,6 +407,7 @@ public static partial class InlineObservationExtensions
         InlineTarget.CALLEE, // CALLEE_IS_PROFITABLE_INLINE
         InlineTarget.CALLEE, // CALLEE_IS_SIZE_DECREASING_INLINE
         InlineTarget.CALLEE, // CALLEE_IS_INTRINSIC_TYPE
+        InlineTarget.CALLEE, // CALLEE_IS_ASYNC
         InlineTarget.CALLEE, // CALLEE_LOG_REPLAY_ACCEPT
         InlineTarget.CALLEE, // CALLEE_LOOKS_LIKE_WRAPPER
         InlineTarget.CALLEE, // CALLEE_MAXSTACK
@@ -418,6 +430,8 @@ public static partial class InlineObservationExtensions
         InlineTarget.CALLSITE, // CALLSITE_ARG_NO_BASH_TO_INT
         InlineTarget.CALLSITE, // CALLSITE_ARG_NO_BASH_TO_REF
         InlineTarget.CALLSITE, // CALLSITE_ARG_TYPES_INCOMPATIBLE
+        InlineTarget.CALLSITE, // CALLSITE_AWAIT_IN_NON_ASYNC_ROOT
+        InlineTarget.CALLSITE, // CALLSITE_AWAIT_IN_TRY_REGION
         InlineTarget.CALLSITE, // CALLSITE_CANT_CLASS_INIT
         InlineTarget.CALLSITE, // CALLSITE_COMPILATION_ERROR
         InlineTarget.CALLSITE, // CALLSITE_COMPILATION_FAILURE
@@ -457,6 +471,7 @@ public static partial class InlineObservationExtensions
         InlineTarget.CALLSITE, // CALLSITE_ARG_EXACT_CLS_SIG_IS_NOT
         InlineTarget.CALLSITE, // CALLSITE_ARG_CONST
         InlineTarget.CALLSITE, // CALLSITE_ARG_BOXED
+        InlineTarget.CALLSITE, // CALLSITE_ASYNC_STRESS_INDEX
         InlineTarget.CALLSITE, // CALLSITE_FOLDABLE_INTRINSIC
         InlineTarget.CALLSITE, // CALLSITE_FOLDABLE_EXPR
         InlineTarget.CALLSITE, // CALLSITE_FOLDABLE_EXPR_UN

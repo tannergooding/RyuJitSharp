@@ -21,7 +21,6 @@ public partial class GenTree
         HKF_INVARIANT, // GTF_ICON_CONST_PTR
         0, // GTF_ICON_GLOBAL_PTR
         HKF_INVARIANT, // GTF_ICON_VARG_HDL
-        0, // GTF_ICON_PINVKI_HDL
         HKF_INVARIANT, // GTF_ICON_TOKEN_HDL
         HKF_INVARIANT, // GTF_ICON_TLS_HDL
         0, // GTF_ICON_FTN_ADDR
@@ -48,7 +47,7 @@ public partial class GenTree
     }
     public GenTreeVal AsVal()
     {
-        assert(_oper is GT_JMP or GT_RECORD_ASYNC_RESUME or GT_ASYNC_RESUME_INFO);
+        assert(_oper is GT_JMP or GT_RECORD_ASYNC_RESUME or GT_ASYNC_RESUME_INFO or GT_CONTINUATION_MEMBER_OFFSET);
         assert(this is GenTreeVal);
         return Unsafe.As<GenTreeVal>(this);
     }
@@ -280,6 +279,12 @@ public partial class GenTree
         assert(_oper is GT_SELECT or GT_SELECT_INC or GT_SELECT_INV or GT_SELECT_NEG);
         assert(this is GenTreeConditional);
         return Unsafe.As<GenTreeConditional>(this);
+    }
+    public GenTreeBfm AsBfm()
+    {
+        assert(_oper is GT_BFX);
+        assert(this is GenTreeBfm);
+        return Unsafe.As<GenTreeBfm>(this);
     }
 #else
     public GenTreeConditional AsConditional()

@@ -259,18 +259,6 @@ public partial class Compiler
             return;
         }
 
-        // CT_INDIRECT calls may use the cookie, bail if so...
-        //
-        // If transforming these provides a benefit, we could save this off in the same way
-        // we save the stub address below.
-        if ((call._callType is CT_INDIRECT) && (call._callCookie.addr is not null))
-        {
-#if DEBUG
-            JITDUMP($"NOT Marking call [{call.TreeId:D6}] as guarded devirtualization candidate -- CT_INDIRECT with cookie\n");
-#endif
-            return;
-        }
-
 #if DEBUG
         // See if disabled by range
 
@@ -304,25 +292,21 @@ public partial class Compiler
             likelihood = likelihood,
             exactContextHandle = contextHandle,
             originalMethodHandle = originalMethodHandle,
-            guardedMethodInstParamLookup = instParamLookup,
-            guardedMethodResolvedToken = resolvedToken,
-            guardedMethodUnboxedResolvedToken = unboxedResolvedToken,
+            clsAttr = classAttr,
+            methAttr = methodAttr,
+            preexistingSpillTemp = BAD_VAR_NUM,
+            ilOffset = BAD_IL_OFFSET,
         };
 
-        // If the guarded class is a value class, look for an unboxed entry point.
-        //
-        if ((classAttr & CORINFO_FLG_VALUECLASS) is not 0)
+        if (!Unsafe.IsNullRef(in instParamLookup))
         {
-            JITDUMP("    ... class is a value class, looking for unboxed entry\n");
+            inlineCandidateInfo.guardedMethodInstParamLookup = instParamLookup;
+        }
 
-            var requiresInstMethodTableArg = false;
-            var unboxedEntryMethodHandle = info.compCompHnd->getUnboxedEntry(methodHandle, &requiresInstMethodTableArg);
-
-            if (unboxedEntryMethodHandle is not null)
-            {
-                JITDUMP("    ... updating GDV candidate with unboxed entry info\n");
-                inlineCandidateInfo.guardedMethodUnboxedEntryHandle = unboxedEntryMethodHandle;
-            }
+        if (!Unsafe.IsNullRef(in resolvedToken))
+        {
+            inlineCandidateInfo.guardedMethodResolvedToken = resolvedToken;
+            inlineCandidateInfo.guardedMethodUnboxedResolvedToken = unboxedResolvedToken;
         }
 
         call.AddGdvCandidateInfo(this, inlineCandidateInfo);
@@ -8501,20 +8485,38 @@ public partial class Compiler
                         //
                         if ((JitConfig.EnableExtraSuperPmiQueries is not 0) && !eeIsSharedInst(resolvedToken.hClass))
                         {
-                            void* pEmbedClsHnd;
-                            info.compCompHnd->embedClassHandle(resolvedToken.hClass, &pEmbedClsHnd);
+                            // Keep the traps independent: an out-of-bubble embedding failure must not suppress later queries.
+                            var extraQueryClass = resolvedToken.hClass;
+                            eeRunExtraSuperPmiQueries(() => {
+                                void* pEmbedClsHnd;
+                                info.compCompHnd->embedClassHandle(extraQueryClass, &pEmbedClsHnd);
+                            });
 
                             var elemClsHnd = NO_CLASS_HANDLE;
-                            var elemCorType = info.compCompHnd->getChildType(resolvedToken.hClass, &elemClsHnd);
+                            var elemClsHndPtr = &elemClsHnd;
+                            var elemCorType = CORINFO_TYPE_UNDEF;
+                            eeRunExtraSuperPmiQueries(() => elemCorType = info.compCompHnd->getChildType(extraQueryClass, elemClsHndPtr));
 
-                            var elemType = elemCorType.VarType;
-
-                            if (elemType is  TYP_STRUCT)
+                            // Do not convert an undefined result to var_types after a trapped query.
+                            if ((elemCorType == CORINFO_TYPE_VALUECLASS) && (elemClsHnd != NO_CLASS_HANDLE))
                             {
+                                // Layout creation is JIT work, not a trapped EE query, and may set this flag.
+                                var savedFloatingPointUsed = compFloatingPointUsed;
                                 typGetObjLayout(elemClsHnd);
-                                info.compCompHnd->isValueClass(elemClsHnd);
+                                compFloatingPointUsed = savedFloatingPointUsed;
+
+                                var queriedClass = elemClsHnd;
+                                eeRunExtraSuperPmiQueries(() => info.compCompHnd->isValueClass(queriedClass));
                             }
-                            compGetHelperFtn(CORINFO_HELP_MEMZERO);
+
+                            eeRunExtraSuperPmiQueries(() => {
+                                // compGetHelperFtn also asserts, which must not be absorbed by this trap.
+                                if (info.compMatchedVM)
+                                {
+                                    CORINFO_CONST_LOOKUP lookup;
+                                    info.compCompHnd->getHelperFtn(CORINFO_HELP_MEMZERO, &lookup);
+                                }
+                            });
                         }
 #endif
                     }
@@ -8780,19 +8782,31 @@ public partial class Compiler
                     op1 = gtNewBinaryNode(GT_ADD, TYP_BYREF, op1, gtNewIconNode(TYP_I_IMPL, OFFSETOF__CORINFO_TypedReference__type));
                     op1 = gtNewIndir(TYP_BYREF, op1, indirFlags);
 
-                    // Convert native TypeHandle to RuntimeTypeHandle.
-                    var call = gtNewHelperCallNode(TYP_STRUCT, CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL, op1);
+                    var handleTemp = lvaGrabTemp(true, "spill result of REFANYTYPE for null check");
+                    impStoreToTemp(handleTemp, op1, CHECK_SPILL_ALL);
 
+                    // Convert non-null native TypeHandle to RuntimeTypeHandle.
                     var classHandle = impTypeHandleClass;
-
-                    // The handle struct is returned in register
+                    var call = gtNewHelperCallNode(TYP_STRUCT, CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE, gtNewLclVarNode(TYP_BYREF, handleTemp));
                     call._returnType = RuntimeHandleUnderlyingType;
                     call.RetClsHnd = classHandle;
 #if FEATURE_MULTIREG_RET
                     call.InitializeStructReturnType(this, classHandle, call.UnmanagedCallConv);
 #endif
 
-                    impPushOnStack(call, new typeInfo(TYP_STRUCT));
+                    var resultTmp = lvaGrabTemp(true, "result of REFANYTYPE");
+                    lvaSetStruct(resultTmp, classHandle, unsafeValueClsCheck: false);
+
+                    var storeResult = gtNewStoreLclVarNode(resultTmp, call);
+                    var storeDefault = gtNewStoreLclVarNode(resultTmp, gtNewIconNode(TYP_INT, 0));
+                    var cond = gtNewBinaryNode(GT_NE, TYP_INT, gtNewLclVarNode(TYP_BYREF, handleTemp), gtNewZeroConNode(TYP_BYREF));
+                    var qmark = gtNewQmarkNode(TYP_VOID, cond, gtNewColonNode(TYP_VOID, storeResult, storeDefault));
+
+                    // Physical promotion cannot decompose struct stores inside QMARK arms.
+                    optMethodFlags |= OMF_HAS_EARLY_QMARKS;
+                    qmark.IsEarlyExpandableQmark = true;
+                    impAppendTree(qmark, CHECK_SPILL_ALL, impCurStmtDI);
+                    impPushOnStack(gtNewLclVarNode(TYP_STRUCT, resultTmp), new typeInfo(TYP_STRUCT));
                     break;
                 }
 
@@ -13499,9 +13513,9 @@ public partial class Compiler
         {
             var gdvCandidate = call.GetGdvCandidateInfo(candidateIndex);
 
-            if (gdvCandidate.guardedMethodUnboxedEntryHandle is not null)
+            if (gdvCandidate.guardedMethodUnboxedResolvedToken.hMethod is not null)
             {
-                fncHandle = gdvCandidate.guardedMethodUnboxedEntryHandle;
+                fncHandle = gdvCandidate.guardedMethodUnboxedResolvedToken.hMethod;
             }
             else
             {
@@ -14451,6 +14465,7 @@ public partial class Compiler
         // will collect the needed information here and at the same time notify the
         // EE that the signature types need to be loaded.
         var sigArg = sigInfo.args;
+        var hasSecretStubArgument = false;
 
         for (var i = 0; i < sigInfo.numArgs; i++)
         {
@@ -14459,10 +14474,26 @@ public partial class Compiler
             fixed (CORINFO_SIG_INFO* pSigInfo = &sigInfo)
             fixed (CORINFO_CLASS_HANDLE* pClassHandle = &parameter.ClassHandle)
             {
-                parameter.CorType = strip(info.compCompHnd->getArgType(pSigInfo, sigArg, pClassHandle));
+                parameter.CorType = info.compCompHnd->getArgType(pSigInfo, sigArg, pClassHandle);
             }
 
-            if (parameter.CorType is not CORINFO_TYPE_CLASS and not CORINFO_TYPE_BYREF and not CORINFO_TYPE_PTR)
+            var corType = strip(parameter.CorType);
+            if ((parameter.CorType & CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT) is not 0)
+            {
+                if (corType is not CORINFO_TYPE_NATIVEINT)
+                {
+                    BADCODE("SecretStubArgument modifier must be applied to a native int parameter");
+                }
+
+                if (hasSecretStubArgument)
+                {
+                    BADCODE("Duplicate SecretStubArgument modifier");
+                }
+
+                hasSecretStubArgument = true;
+            }
+
+            if (corType is not CORINFO_TYPE_CLASS and not CORINFO_TYPE_BYREF and not CORINFO_TYPE_PTR)
             {
                 CORINFO_CLASS_HANDLE argRealClass;
 
@@ -14504,7 +14535,7 @@ public partial class Compiler
 
             var parameter = parameters[i - 1];
 
-            var jitSigType = parameter.CorType.VarType;
+            var jitSigType = strip(parameter.CorType).VarType;
             var classHnd = parameter.ClassHandle;
 
             if (!impCheckImplicitArgumentCoercion(jitSigType, argNode.Type))
@@ -14565,8 +14596,18 @@ public partial class Compiler
                 }
             }
 
+            if ((parameter.CorType & CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT) is not 0)
+            {
+                if (arg.WellKnownArg is not WellKnownArg.None)
+                {
+                    BADCODE("SecretStubArgument modifier conflicts with another special argument");
+                }
+
+                arg = arg.WithWellKnownArg(WellKnownArg.SecretStubParam);
+            }
+
             _ = call.Args.PushFront(arg);
-            call.Flags |= (argNode.Flags & GTF_GLOB_EFFECT);
+            call.Flags |= (argNode.Flags & GTF_ALL_EFFECT);
         }
     }
 
@@ -16378,16 +16419,17 @@ public partial class Compiler
 #if DEBUG
         if ((JitConfig.EnableExtraSuperPmiQueries is not 0) && (call._callType is CT_USER_FUNC))
         {
-            // Query the async variants (twice, to get both directions)
-            var method = call._callMethHnd;
-
-            bool variantIsThunk;
-            method = info.compCompHnd->getAsyncOtherVariant(method, &variantIsThunk);
-
-            if (method != NO_METHOD_HANDLE)
-            {
+            eeRunExtraSuperPmiQueries(() => {
+                // Query the async variants (twice, to get both directions)
+                var method = call._callMethHnd;
+                bool variantIsThunk;
                 method = info.compCompHnd->getAsyncOtherVariant(method, &variantIsThunk);
-            }
+
+                if (method != NO_METHOD_HANDLE)
+                {
+                    method = info.compCompHnd->getAsyncOtherVariant(method, &variantIsThunk);
+                }
+            });
         }
 #endif
     }
@@ -17986,77 +18028,121 @@ public partial class Compiler
             {
                 JITDUMP("Have a direct call to boxed entry point. Trying to optimize to call an unboxed entry point\n");
 
-                // Note for some shared methods the unboxed entry point requires an extra parameter.
-                var requiresInstMethodTableArg = false;
-                var unboxedEntryMethod = info.compCompHnd->getUnboxedEntry(derivedMethod, &requiresInstMethodTableArg);
+                var unboxedEntryMethod = Unsafe.IsNullRef(in dcInfo.unboxedResolvedToken)
+                    ? null
+                    : dcInfo.unboxedResolvedToken.hMethod;
 
                 if (unboxedEntryMethod is not null)
                 {
-                    // Rewrite the call to target the unboxed entry on the box payload. Keep the heap box,
-                    // since the callee may return an interior managed pointer into it; object stack allocation
-                    // can later promote the box to the stack when escape analysis proves the receiver does not
-                    // escape.
+                    CORINFO_SIG_INFO unboxedEntrySig;
+                    info.compCompHnd->getMethodSig(unboxedEntryMethod, &unboxedEntrySig);
 
-                    if (requiresInstMethodTableArg)
+                    var canUseUnboxedEntry = true;
+                    var madeLocalCopy = false;
+                    GenTree? boxTypeHandle = null;
+                    var needsClassTypeArg = unboxedEntrySig.hasTypeArg()
+                        && ((unchecked((nint)dcInfo.tokenLookupContext) & (nint)CORINFO_CONTEXTFLAGS_MASK) == (nint)CORINFO_CONTEXTFLAGS_CLASS);
+
+                    // A non-escaping unboxed receiver can use a local copy instead of allocating a box.
+                    if (thisObj is GenTreeBox box && box.IsBoxedValue
+                        && !info.compCompHnd->canValueClassInstancePointerEscape(unboxedEntryMethod))
                     {
-                        // Get the method table from the boxed object.
-                        //
-                        // TODO-CallArgs-REVIEW: Use thisObj here? Differs by gtEffectiveVal.
-                        var clonedThisArg = gtClone(thisArg.EarlyNode);
-
-                        if (clonedThisArg is null)
+                        var haveTypeArg = true;
+                        if (needsClassTypeArg)
                         {
-                            JITDUMP("unboxed entry needs MT arg, but `this` was too complex to clone. Deferring update.\n");
+                            boxTypeHandle = gtTryRemoveBoxUpstreamEffects(box, BR_DONT_REMOVE_WANT_TYPE_HANDLE);
+                            haveTypeArg = boxTypeHandle is not null;
+                        }
+
+                        var localCopyThis = haveTypeArg ? gtTryRemoveBoxUpstreamEffects(box, BR_MAKE_LOCAL_COPY) : null;
+                        if (localCopyThis is not null)
+                        {
+                            JITDUMP("Success! invoking unboxed entry point on local copy\n");
+                            assert(localCopyThis.IsLclVarAddr);
+                            assert(thisObj == thisArg.EarlyNode);
+                            thisArg.EarlyNode = localCopyThis;
+
+                            lvaGetDesc(localCopyThis.AsLclFld().LclNum).lvHasLdAddrOp = true;
+                            madeLocalCopy = true;
+
+#if FEATURE_TAILCALL_OPT
+                            if (call.IsImplicitTailCall)
+                            {
+                                JITDUMP("Clearing the implicit tail call flag\n");
+                                call._callMoreFlags &= ~GTF_CALL_M_IMPLICIT_TAILCALL;
+                            }
+#endif
+                        }
+                    }
+
+                    if (unboxedEntrySig.hasTypeArg())
+                    {
+                        if ((unchecked((nint)dcInfo.tokenLookupContext) & (nint)CORINFO_CONTEXTFLAGS_MASK) == (nint)CORINFO_CONTEXTFLAGS_METHOD)
+                        {
+                            var exactMethodHandle = (CORINFO_METHOD_HANDLE)(unchecked((nint)dcInfo.tokenLookupContext) & ~(nint)CORINFO_CONTEXTFLAGS_MASK);
+                            instParam = getLookupTree(dcInfo.instParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle);
+                            JITDUMP("revising call to invoke unboxed entry with additional method desc arg\n");
+                        }
+                        else if (madeLocalCopy)
+                        {
+                            assert(needsClassTypeArg && boxTypeHandle is not null);
+                            instParam = boxTypeHandle;
+                            JITDUMP("revising call to invoke unboxed entry with additional method table arg from box\n");
                         }
                         else
                         {
-                            JITDUMP("revising call to invoke unboxed entry with additional method table arg\n");
+                            assert(needsClassTypeArg);
 
-                            instParam = gtNewMethodTableLookup(clonedThisArg);
-
-                            // Update the 'this' pointer to refer to the box payload
-
-                            var payloadOffset = gtNewIconNode(TYP_I_IMPL, TARGET_POINTER_SIZE);
-                            var boxPayload = gtNewBinaryNode(GT_ADD, TYP_BYREF, thisArg.EarlyNode, payloadOffset);
-
-                            assert(thisObj == thisArg.EarlyNode);
-
-                            thisArg.EarlyNode = boxPayload;
-                            call._callMethHnd = unboxedEntryMethod;
-
-#if DEBUG
-                            call._callDebugFlags |= GTF_CALL_MD_UNBOXED;
-#endif
-
-                            // Method attributes will differ because unboxed entry point is shared
-
-                            var unboxedMethodAttribs = info.compCompHnd->getMethodAttribs(unboxedEntryMethod);
-                            JITDUMP($"Updating method attribs from 0x{derivedMethodAttribs:x8} to 0x{unboxedMethodAttribs:x8}\n");
-
-                            derivedMethod = unboxedEntryMethod;
-                            derivedResolvedToken = dcInfo.unboxedResolvedToken;
-                            derivedMethodAttribs = unboxedMethodAttribs;
-
-                            Metrics.DevirtualizedCallUnboxedEntry++;
+                            // TODO-CallArgs-REVIEW: Use thisObj here? Differs by gtEffectiveVal.
+                            var clonedThisArg = gtClone(thisArg.EarlyNode);
+                            if (clonedThisArg is null)
+                            {
+                                JITDUMP("unboxed entry needs MT arg, but `this` was too complex to clone. Deferring update.\n");
+                                canUseUnboxedEntry = false;
+                            }
+                            else
+                            {
+                                instParam = gtNewMethodTableLookup(clonedThisArg);
+                                assert(thisObj == thisArg.EarlyNode);
+                                JITDUMP("revising call to invoke unboxed entry with additional method table arg\n");
+                            }
                         }
                     }
                     else
                     {
                         JITDUMP("revising call to invoke unboxed entry\n");
+                    }
 
-                        var payloadOffset = gtNewIconNode(TYP_I_IMPL, TARGET_POINTER_SIZE);
-                        var boxPayload = gtNewBinaryNode(GT_ADD, TYP_BYREF, thisArg.EarlyNode, payloadOffset);
+                    if (canUseUnboxedEntry)
+                    {
+                        if (!madeLocalCopy)
+                        {
+                            // The callee may return an interior pointer to the box; keep it on the heap.
+                            var payloadOffset = gtNewIconNode(TYP_I_IMPL, TARGET_POINTER_SIZE);
+                            var boxPayload = gtNewBinaryNode(GT_ADD, TYP_BYREF, thisArg.EarlyNode, payloadOffset);
+                            thisArg.EarlyNode = boxPayload;
+                        }
 
-                        thisArg.EarlyNode = boxPayload;
                         call._callMethHnd = unboxedEntryMethod;
 
 #if DEBUG
                         call._callDebugFlags |= GTF_CALL_MD_UNBOXED;
 #endif
 
+                        if (unboxedEntrySig.hasTypeArg())
+                        {
+                            var unboxedMethodAttribs = info.compCompHnd->getMethodAttribs(unboxedEntryMethod);
+                            JITDUMP($"Updating method attribs from 0x{derivedMethodAttribs:x8} to 0x{unboxedMethodAttribs:x8}\n");
+                            derivedMethodAttribs = unboxedMethodAttribs;
+                        }
+
                         derivedMethod = unboxedEntryMethod;
                         derivedResolvedToken = dcInfo.unboxedResolvedToken;
 
+                        if (madeLocalCopy)
+                        {
+                            Metrics.DevirtualizedCallRemovedBox++;
+                        }
                         Metrics.DevirtualizedCallUnboxedEntry++;
                     }
                 }
@@ -19700,7 +19786,8 @@ public partial class Compiler
                 var methodHandle = unchecked((CORINFO_METHOD_HANDLE)(likelyMethod.handle));
 
                 var lookup = new CORINFO_CONST_LOOKUP();
-                info.compCompHnd->getFunctionFixedEntryPoint(methodHandle, false, &lookup);
+                var lookupPtr = &lookup;
+                eeRunExtraSuperPmiQueries(() => info.compCompHnd->getFunctionFixedEntryPoint(methodHandle, false, lookupPtr));
 
                 var methName = eeGetMethodFullName(methodHandle);
 

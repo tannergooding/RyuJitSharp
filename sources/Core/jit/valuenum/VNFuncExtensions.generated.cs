@@ -27,6 +27,7 @@ public static partial class VNFuncExtensions
         ValueNumStore.GetOpAttribsForGenTree(GT_GCPOLL, commute: false, illegalAsVNFunc: false, GT_GCPOLL.Kind), // VNF_GCPOLL
         ValueNumStore.GetOpAttribsForGenTree(GT_ASYNC_RESUME_INFO, commute: false, illegalAsVNFunc: false, GT_ASYNC_RESUME_INFO.Kind), // VNF_ASYNC_RESUME_INFO
         ValueNumStore.GetOpAttribsForGenTree(GT_FTN_ENTRY, commute: false, illegalAsVNFunc: false, GT_FTN_ENTRY.Kind), // VNF_FTN_ENTRY
+        ValueNumStore.GetOpAttribsForGenTree(GT_CONTINUATION_MEMBER_OFFSET, commute: false, illegalAsVNFunc: false, GT_CONTINUATION_MEMBER_OFFSET.Kind), // VNF_CONTINUATION_MEMBER_OFFSET
         ValueNumStore.GetOpAttribsForGenTree(GT_CNS_INT, commute: false, illegalAsVNFunc: false, GT_CNS_INT.Kind), // VNF_CNS_INT
         ValueNumStore.GetOpAttribsForGenTree(GT_CNS_LNG, commute: false, illegalAsVNFunc: false, GT_CNS_LNG.Kind), // VNF_CNS_LNG
         ValueNumStore.GetOpAttribsForGenTree(GT_CNS_DBL, commute: false, illegalAsVNFunc: false, GT_CNS_DBL.Kind), // VNF_CNS_DBL
@@ -129,6 +130,7 @@ public static partial class VNFuncExtensions
         ValueNumStore.GetOpAttribsForGenTree(GT_XOR_NOT, commute: false, illegalAsVNFunc: false, GT_XOR_NOT.Kind), // VNF_XOR_NOT
 #if TARGET_ARM64
         ValueNumStore.GetOpAttribsForGenTree(GT_BFIZ, commute: false, illegalAsVNFunc: false, GT_BFIZ.Kind), // VNF_BFIZ
+        ValueNumStore.GetOpAttribsForGenTree(GT_BFX, commute: false, illegalAsVNFunc: false, GT_BFX.Kind), // VNF_BFX
 #endif
         ValueNumStore.GetOpAttribsForGenTree(GT_CMP, commute: false, illegalAsVNFunc: false, GT_CMP.Kind), // VNF_CMP
         ValueNumStore.GetOpAttribsForGenTree(GT_TEST, commute: false, illegalAsVNFunc: false, GT_TEST.Kind), // VNF_TEST
@@ -160,6 +162,8 @@ public static partial class VNFuncExtensions
         ValueNumStore.GetOpAttribsForGenTree(GT_SH3ADD_UW, commute: false, illegalAsVNFunc: false, GT_SH3ADD_UW.Kind), // VNF_SH3ADD_UW
         ValueNumStore.GetOpAttribsForGenTree(GT_ADD_UW, commute: false, illegalAsVNFunc: false, GT_ADD_UW.Kind), // VNF_ADD_UW
         ValueNumStore.GetOpAttribsForGenTree(GT_SLLI_UW, commute: false, illegalAsVNFunc: false, GT_SLLI_UW.Kind), // VNF_SLLI_UW
+#endif
+#if TARGET_RISCV64 || TARGET_XARCH
         ValueNumStore.GetOpAttribsForGenTree(GT_BIT_SET, commute: false, illegalAsVNFunc: false, GT_BIT_SET.Kind), // VNF_BIT_SET
         ValueNumStore.GetOpAttribsForGenTree(GT_BIT_CLEAR, commute: false, illegalAsVNFunc: false, GT_BIT_CLEAR.Kind), // VNF_BIT_CLEAR
         ValueNumStore.GetOpAttribsForGenTree(GT_BIT_INVERT, commute: false, illegalAsVNFunc: false, GT_BIT_INVERT.Kind), // VNF_BIT_INVERT
@@ -185,6 +189,9 @@ public static partial class VNFuncExtensions
         ValueNumStore.GetOpAttribsForGenTree(GT_JMPTABLE, commute: false, illegalAsVNFunc: false, GT_JMPTABLE.Kind), // VNF_JMPTABLE
         ValueNumStore.GetOpAttribsForGenTree(GT_SWITCH_TABLE, commute: false, illegalAsVNFunc: false, GT_SWITCH_TABLE.Kind), // VNF_SWITCH_TABLE
         ValueNumStore.GetOpAttribsForGenTree(GT_PHYSREG, commute: false, illegalAsVNFunc: false, GT_PHYSREG.Kind), // VNF_PHYSREG
+#if TARGET_WASM
+        ValueNumStore.GetOpAttribsForGenTree(GT_FRAME_SIZE, commute: false, illegalAsVNFunc: false, GT_FRAME_SIZE.Kind), // VNF_FRAME_SIZE
+#endif
         ValueNumStore.GetOpAttribsForGenTree(GT_RETURNTRAP, commute: false, illegalAsVNFunc: false, GT_RETURNTRAP.Kind), // VNF_RETURNTRAP
         ValueNumStore.GetOpAttribsForGenTree(GT_PUTARG_REG, commute: false, illegalAsVNFunc: false, GT_PUTARG_REG.Kind), // VNF_PUTARG_REG
         ValueNumStore.GetOpAttribsForGenTree(GT_PUTARG_STK, commute: false, illegalAsVNFunc: false, GT_PUTARG_STK.Kind), // VNF_PUTARG_STK
@@ -201,7 +208,7 @@ public static partial class VNFuncExtensions
         ValueNumStore.GetOpAttribsForFunc(arity: 2, commute: false, knownNonNull: false), // VNF_BitCast
         ValueNumStore.GetOpAttribsForFunc(arity: 1, commute: false, knownNonNull: false), // VNF_ZeroObj
         ValueNumStore.GetOpAttribsForFunc(arity: 2, commute: false, knownNonNull: true), // VNF_PtrToLoc
-        ValueNumStore.GetOpAttribsForFunc(arity: 4, commute: false, knownNonNull: false), // VNF_PtrToArrElem
+        ValueNumStore.GetOpAttribsForFunc(arity: 4, commute: false, knownNonNull: true), // VNF_PtrToArrElem
         ValueNumStore.GetOpAttribsForFunc(arity: 3, commute: false, knownNonNull: true), // VNF_PtrToStatic
         ValueNumStore.GetOpAttribsForFunc(arity: 2, commute: false, knownNonNull: false), // VNF_MDArrLength
         ValueNumStore.GetOpAttribsForFunc(arity: 2, commute: false, knownNonNull: false), // VNF_MDArrLowerBound
@@ -276,7 +283,10 @@ public static partial class VNFuncExtensions
         ValueNumStore.GetOpAttribsForFunc(arity: 1, commute: false, knownNonNull: false), // VNF_LeadingZeroCount
         ValueNumStore.GetOpAttribsForFunc(arity: 1, commute: false, knownNonNull: false), // VNF_TrailingZeroCount
         ValueNumStore.GetOpAttribsForFunc(arity: 1, commute: false, knownNonNull: false), // VNF_PopCount
-        ValueNumStore.GetOpAttribsForFunc(arity: 0, commute: false, knownNonNull: false), // VNF_ManagedThreadId
+        ValueNumStore.GetOpAttribsForFunc(arity: 1, commute: false, knownNonNull: false), // VNF_SaturateToInt8
+        ValueNumStore.GetOpAttribsForFunc(arity: 1, commute: false, knownNonNull: false), // VNF_SaturateToInt16
+        ValueNumStore.GetOpAttribsForFunc(arity: 1, commute: false, knownNonNull: false), // VNF_SaturateToUInt8
+        ValueNumStore.GetOpAttribsForFunc(arity: 1, commute: false, knownNonNull: false), // VNF_SaturateToUInt16
         ValueNumStore.GetOpAttribsForFunc(arity: 1, commute: false, knownNonNull: true), // VNF_ObjGetType
         ValueNumStore.GetOpAttribsForFunc(arity: 1, commute: false, knownNonNull: true), // VNF_GetGcstaticBase
         ValueNumStore.GetOpAttribsForFunc(arity: 1, commute: false, knownNonNull: true), // VNF_GetNongcstaticBase
@@ -340,404 +350,217 @@ public static partial class VNFuncExtensions
 #if FEATURE_SIMD
         ValueNumStore.GetOpAttribsForFunc(arity: 2, commute: false, knownNonNull: false), // VNF_SimdType
 #endif
+#if FEATURE_HW_INTRINSICS
+        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_INTRINSIC_START
+#if FEATURE_HW_INTRINSICS
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_Abs
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AddSaturate
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AndNot
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_As
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AsByte
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AsDouble
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AsInt16
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AsInt32
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AsInt64
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AsNInt
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AsNUInt
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AsSByte
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AsSingle
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AsUInt16
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AsUInt32
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AsUInt64
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AsVector
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AsVector128
+#if TARGET_XARCH
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AsVector128Unsafe
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AsVector2
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AsVector256
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AsVector3
+#elif TARGET_ARM64
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AsVector128Unsafe
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AsVector2
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AsVector3
+#else
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AsVector128Unsafe
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AsVector2
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AsVector3
+#endif
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AsVector4
+#if TARGET_XARCH
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_AsVector512
+#endif
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_Ceiling
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ConcatLowerLower
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ConcatLowerUpper
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ConcatUpperLower
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ConcatUpperUpper
+#if TARGET_XARCH
+        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ConditionalSelect
+#else
+        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ConditionalSelect
+#endif
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ConvertToDouble
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ConvertToInt32
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ConvertToInt32Native
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ConvertToInt64
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ConvertToInt64Native
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ConvertToSingle
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ConvertToUInt32
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ConvertToUInt32Native
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ConvertToUInt64
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ConvertToUInt64Native
+        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector_Create
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_CreateAlternatingSequence
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_CreateGeometricSequence
+#if TARGET_XARCH
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_CreateScalar
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_CreateScalarUnsafe
+#elif TARGET_ARM64
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_CreateScalar
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_CreateScalarUnsafe
+#else
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_CreateScalar
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_CreateScalarUnsafe
+#endif
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_CreateSequence
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_Dot
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_Equals
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_EqualsAny
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ExtractMostSignificantBits
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_Floor
+        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_FusedMultiplyAdd
+#if TARGET_XARCH
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_GetElement
+#elif TARGET_ARM64
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_GetElement
+#else
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_GetElement
+#endif
+#if TARGET_XARCH
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_GetLower
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_GetLower128
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_GetUpper
+#elif TARGET_ARM64
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_GetLower
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_GetUpper
+#endif
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_GreaterThan
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_GreaterThanAll
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_GreaterThanAny
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_GreaterThanOrEqual
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_GreaterThanOrEqualAll
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_GreaterThanOrEqualAny
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_IsEvenInteger
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_IsFinite
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_IsInfinity
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_IsInteger
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_IsNaN
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_IsNegative
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_IsNegativeInfinity
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_IsNormal
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_IsOddInteger
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_IsPositive
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_IsPositiveInfinity
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_IsSubnormal
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_IsZero
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_LessThan
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_LessThanAll
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_LessThanAny
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_LessThanOrEqual
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_LessThanOrEqualAll
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_LessThanOrEqualAny
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_LoadAligned
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_LoadAlignedNonTemporal
+        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector_LoadUnsafe
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_Max
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_MaxMagnitude
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_MaxMagnitudeNumber
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_MaxNative
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_MaxNumber
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_Min
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_MinMagnitude
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_MinMagnitudeNumber
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_MinNative
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_MinNumber
+        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_MultiplyAddEstimate
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_Narrow
+#if TARGET_ARM64
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_NarrowWithSaturation
+#else
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_NarrowWithSaturation
+#endif
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_Reverse
+        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector_Round
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ShiftLeft
+        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector_Shuffle
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ShuffleNative
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ShuffleNativeFallback
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_Sqrt
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_StoreAligned
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_StoreAlignedNonTemporal
+        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector_StoreUnsafe
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_SubtractSaturate
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_Sum
+#if TARGET_XARCH
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ToScalar
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ToVector256
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ToVector256Unsafe
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ToVector512
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ToVector512Unsafe
+#elif TARGET_ARM64
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ToScalar
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ToVector128
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ToVector128Unsafe
+#else
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ToScalar
+#endif
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_Truncate
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_UnzipEven
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_UnzipOdd
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_WidenLower
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_WidenUpper
+        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_WithElement
+#if TARGET_XARCH || TARGET_ARM64
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_WithLower
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_WithUpper
+#endif
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ZipLower
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_ZipUpper
+        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_get_AllBitsSet
+        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_get_E
+        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_get_Epsilon
+        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_get_Indices
+        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_get_NaN
+        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_get_NegativeInfinity
+        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_get_NegativeOne
+        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_get_NegativeZero
+        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_get_One
+        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_get_Pi
+        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_get_PositiveInfinity
+        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_get_SignSequence
+        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_get_Tau
+        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_get_Zero
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_op_Addition
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_op_BitwiseAnd
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_op_BitwiseOr
+#if TARGET_XARCH
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_op_Division
+#else
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_op_Division
+#endif
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_Vector_op_Equality
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_op_ExclusiveOr
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_Vector_op_Inequality
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_op_LeftShift
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_op_Multiply
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_op_OnesComplement
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_op_RightShift
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_op_Subtraction
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_op_UnaryNegation
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_op_UnaryPlus
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector_op_UnsignedRightShift
 #if TARGET_XARCH
 #if FEATURE_HW_INTRINSICS
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Abs
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AddSaturate
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AndNot
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_As
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsByte
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsDouble
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsInt16
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsInt32
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsInt64
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsNInt
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsNUInt
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsSByte
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsSingle
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsUInt16
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsUInt32
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsUInt64
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsVector
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsVector128
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsVector128Unsafe
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsVector2
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsVector3
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsVector4
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Ceiling
-        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ConditionalSelect
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ConvertToDouble
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ConvertToInt32
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ConvertToInt32Native
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ConvertToInt64
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ConvertToInt64Native
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ConvertToSingle
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ConvertToUInt32
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ConvertToUInt32Native
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ConvertToUInt64
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ConvertToUInt64Native
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Create
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_CreateScalar
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_CreateScalarUnsafe
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_CreateSequence
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Dot
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Equals
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_EqualsAny
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ExtractMostSignificantBits
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Floor
-        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_FusedMultiplyAdd
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_GetElement
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_GreaterThan
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_GreaterThanAll
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_GreaterThanAny
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_GreaterThanOrEqual
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_GreaterThanOrEqualAll
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_GreaterThanOrEqualAny
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_IsEvenInteger
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_IsFinite
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_IsInfinity
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_IsInteger
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_IsNaN
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_IsNegative
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_IsNegativeInfinity
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_IsNormal
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_IsOddInteger
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_IsPositive
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_IsPositiveInfinity
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_IsSubnormal
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_IsZero
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_LessThan
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_LessThanAll
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_LessThanAny
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_LessThanOrEqual
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_LessThanOrEqualAll
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_LessThanOrEqualAny
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_LoadAligned
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_LoadAlignedNonTemporal
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_LoadUnsafe
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Max
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_MaxMagnitude
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_MaxMagnitudeNumber
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_MaxNative
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_MaxNumber
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Min
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_MinMagnitude
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_MinMagnitudeNumber
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_MinNative
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_MinNumber
-        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_MultiplyAddEstimate
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Narrow
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_NarrowWithSaturation
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Round
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ShiftLeft
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Shuffle
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ShuffleNative
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ShuffleNativeFallback
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Sqrt
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_StoreAligned
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_StoreAlignedNonTemporal
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_StoreUnsafe
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_SubtractSaturate
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Sum
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ToScalar
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ToVector256
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ToVector256Unsafe
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ToVector512
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Truncate
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_WidenLower
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_WidenUpper
-        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_WithElement
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_get_AllBitsSet
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_get_E
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_get_Epsilon
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_get_Indices
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_get_NaN
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_get_NegativeInfinity
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_get_NegativeOne
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_get_NegativeZero
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_get_One
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_get_Pi
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_get_PositiveInfinity
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_get_Tau
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_get_Zero
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_op_Addition
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_op_BitwiseAnd
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_op_BitwiseOr
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_op_Division
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_Vector128_op_Equality
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_op_ExclusiveOr
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_Vector128_op_Inequality
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_op_LeftShift
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_op_Multiply
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_op_OnesComplement
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_op_RightShift
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_op_Subtraction
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_op_UnaryNegation
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_op_UnaryPlus
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_op_UnsignedRightShift
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_Abs
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_AddSaturate
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_AndNot
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_As
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_AsByte
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_AsDouble
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_AsInt16
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_AsInt32
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_AsInt64
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_AsNInt
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_AsNUInt
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_AsSByte
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_AsSingle
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_AsUInt16
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_AsUInt32
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_AsUInt64
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_AsVector
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_AsVector256
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_Ceiling
-        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_ConditionalSelect
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_ConvertToDouble
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_ConvertToInt32
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_ConvertToInt32Native
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_ConvertToInt64
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_ConvertToInt64Native
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_ConvertToSingle
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_ConvertToUInt32
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_ConvertToUInt32Native
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_ConvertToUInt64
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_ConvertToUInt64Native
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_Create
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_CreateScalar
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_CreateScalarUnsafe
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_CreateSequence
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_Dot
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_Equals
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_EqualsAny
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_ExtractMostSignificantBits
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_Floor
-        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_FusedMultiplyAdd
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_GetElement
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_GetLower
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_GetUpper
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_GreaterThan
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_GreaterThanAll
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_GreaterThanAny
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_GreaterThanOrEqual
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_GreaterThanOrEqualAll
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_GreaterThanOrEqualAny
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_IsEvenInteger
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_IsFinite
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_IsInfinity
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_IsInteger
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_IsNaN
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_IsNegative
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_IsNegativeInfinity
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_IsNormal
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_IsOddInteger
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_IsPositive
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_IsPositiveInfinity
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_IsSubnormal
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_IsZero
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_LessThan
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_LessThanAll
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_LessThanAny
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_LessThanOrEqual
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_LessThanOrEqualAll
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_LessThanOrEqualAny
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_LoadAligned
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_LoadAlignedNonTemporal
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_LoadUnsafe
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_Max
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_MaxMagnitude
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_MaxMagnitudeNumber
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_MaxNative
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_MaxNumber
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_Min
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_MinMagnitude
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_MinMagnitudeNumber
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_MinNative
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_MinNumber
-        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_MultiplyAddEstimate
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_Narrow
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_NarrowWithSaturation
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_Round
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_ShiftLeft
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_Shuffle
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_ShuffleNative
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_ShuffleNativeFallback
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_Sqrt
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_StoreAligned
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_StoreAlignedNonTemporal
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_StoreUnsafe
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_SubtractSaturate
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_Sum
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_ToScalar
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_ToVector512
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_ToVector512Unsafe
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_Truncate
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_WidenLower
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_WidenUpper
-        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_WithElement
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_WithLower
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_WithUpper
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_get_AllBitsSet
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_get_E
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_get_Epsilon
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_get_Indices
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_get_NaN
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_get_NegativeInfinity
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_get_NegativeOne
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_get_NegativeZero
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_get_One
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_get_Pi
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_get_PositiveInfinity
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_get_Tau
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_get_Zero
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_op_Addition
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_op_BitwiseAnd
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_op_BitwiseOr
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_op_Division
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_Vector256_op_Equality
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_op_ExclusiveOr
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_Vector256_op_Inequality
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_op_LeftShift
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_op_Multiply
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_op_OnesComplement
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_op_RightShift
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_op_Subtraction
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_op_UnaryNegation
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_op_UnaryPlus
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector256_op_UnsignedRightShift
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_Abs
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_AddSaturate
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_AndNot
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_As
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_AsByte
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_AsDouble
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_AsInt16
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_AsInt32
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_AsInt64
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_AsNInt
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_AsNUInt
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_AsSByte
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_AsSingle
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_AsUInt16
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_AsUInt32
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_AsUInt64
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_AsVector
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_AsVector512
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_Ceiling
-        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_ConditionalSelect
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_ConvertToDouble
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_ConvertToInt32
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_ConvertToInt32Native
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_ConvertToInt64
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_ConvertToInt64Native
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_ConvertToSingle
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_ConvertToUInt32
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_ConvertToUInt32Native
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_ConvertToUInt64
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_ConvertToUInt64Native
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_Create
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_CreateScalar
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_CreateScalarUnsafe
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_CreateSequence
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_Dot
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_Equals
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_EqualsAny
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_ExtractMostSignificantBits
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_Floor
-        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_FusedMultiplyAdd
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_GetElement
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_GetLower
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_GetLower128
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_GetUpper
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_GreaterThan
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_GreaterThanAll
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_GreaterThanAny
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_GreaterThanOrEqual
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_GreaterThanOrEqualAll
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_GreaterThanOrEqualAny
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_IsEvenInteger
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_IsFinite
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_IsInfinity
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_IsInteger
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_IsNaN
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_IsNegative
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_IsNegativeInfinity
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_IsNormal
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_IsOddInteger
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_IsPositive
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_IsPositiveInfinity
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_IsSubnormal
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_IsZero
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_LessThan
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_LessThanAll
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_LessThanAny
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_LessThanOrEqual
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_LessThanOrEqualAll
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_LessThanOrEqualAny
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_LoadAligned
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_LoadAlignedNonTemporal
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_LoadUnsafe
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_Max
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_MaxMagnitude
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_MaxMagnitudeNumber
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_MaxNative
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_MaxNumber
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_Min
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_MinMagnitude
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_MinMagnitudeNumber
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_MinNative
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_MinNumber
-        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_MultiplyAddEstimate
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_Narrow
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_NarrowWithSaturation
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_Round
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_ShiftLeft
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_Shuffle
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_ShuffleNative
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_ShuffleNativeFallback
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_Sqrt
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_StoreAligned
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_StoreAlignedNonTemporal
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_StoreUnsafe
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_SubtractSaturate
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_Sum
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_ToScalar
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_Truncate
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_WidenLower
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_WidenUpper
-        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_WithElement
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_WithLower
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_WithUpper
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_get_AllBitsSet
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_get_E
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_get_Epsilon
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_get_Indices
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_get_NaN
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_get_NegativeInfinity
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_get_NegativeOne
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_get_NegativeZero
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_get_One
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_get_Pi
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_get_PositiveInfinity
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_get_Tau
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_get_Zero
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_op_Addition
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_op_BitwiseAnd
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_op_BitwiseOr
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_op_Division
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_Vector512_op_Equality
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_op_ExclusiveOr
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_Vector512_op_Inequality
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_op_LeftShift
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_op_Multiply
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_op_OnesComplement
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_op_RightShift
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_op_Subtraction
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_op_UnaryNegation
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_op_UnaryPlus
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector512_op_UnsignedRightShift
         ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_X86Base_Abs
         ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_X86Base_Add
         ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_X86Base_AddSaturate
@@ -1302,6 +1125,32 @@ public static partial class VNFuncExtensions
         ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX512v3_CompressStore
         ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX512v3_Expand
         ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX512v3_ExpandLoad
+        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX512v3_MultiplyWideningAndAdd
+        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX512v3_MultiplyWideningAndAddSaturate
+        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v1_AddScalar
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v1_CompareScalarOrderedEqual
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v1_CompareScalarOrderedGreaterThan
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v1_CompareScalarOrderedGreaterThanOrEqual
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v1_CompareScalarOrderedLessThan
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v1_CompareScalarOrderedLessThanOrEqual
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v1_CompareScalarOrderedNotEqual
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v1_CompareScalarUnorderedEqual
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v1_CompareScalarUnorderedGreaterThan
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v1_CompareScalarUnorderedGreaterThanOrEqual
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v1_CompareScalarUnorderedLessThan
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v1_CompareScalarUnorderedLessThanOrEqual
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v1_CompareScalarUnorderedNotEqual
+        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v1_ConvertScalarToVector128Double
+        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v1_ConvertScalarToVector128Half
+        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v1_ConvertScalarToVector128Single
+        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v1_DivideScalar
+        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v1_FusedMultiplyAddScalar
+        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v1_MultiplyScalar
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v1_ReciprocalScalar
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v1_ReciprocalSqrtScalar
+        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v1_RoundScaleScalar
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v1_SqrtScalar
+        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v1_SubtractScalar
         ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v2_ConvertToByteWithSaturationAndZeroExtendToInt32
         ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v2_ConvertToByteWithTruncatedSaturationAndZeroExtendToInt32
         ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v2_ConvertToInt32WithTruncatedSaturation
@@ -1350,6 +1199,8 @@ public static partial class VNFuncExtensions
         ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_X86Base_COMIS
         ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_X86Base_PTEST
         ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_X86Base_UCOMIS
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v1_VCOMISH
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX10v1_VUCOMISH
         ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX_PTEST
         ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX2_AndNotVector
         ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_AVX2_AndNotScalar
@@ -1396,266 +1247,6 @@ public static partial class VNFuncExtensions
 #endif
 #elif TARGET_ARM64
 #if FEATURE_HW_INTRINSICS
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_Abs
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_AddSaturate
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_AndNot
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_As
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_AsByte
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_AsDouble
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_AsInt16
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_AsInt32
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_AsInt64
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_AsNInt
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_AsNUInt
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_AsSByte
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_AsSingle
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_AsUInt16
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_AsUInt32
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_AsUInt64
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_Ceiling
-        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_ConditionalSelect
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_ConvertToDouble
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_ConvertToInt32
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_ConvertToInt32Native
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_ConvertToInt64
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_ConvertToInt64Native
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_ConvertToSingle
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_ConvertToUInt32
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_ConvertToUInt32Native
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_ConvertToUInt64
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_ConvertToUInt64Native
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_Create
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_CreateScalar
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_CreateScalarUnsafe
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_CreateSequence
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_Dot
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_Equals
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_EqualsAny
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_ExtractMostSignificantBits
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_Floor
-        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_FusedMultiplyAdd
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_GetElement
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_GreaterThan
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_GreaterThanAll
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_GreaterThanAny
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_GreaterThanOrEqual
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_GreaterThanOrEqualAll
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_GreaterThanOrEqualAny
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_IsEvenInteger
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_IsFinite
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_IsInfinity
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_IsInteger
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_IsNaN
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_IsNegative
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_IsNegativeInfinity
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_IsNormal
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_IsOddInteger
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_IsPositive
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_IsPositiveInfinity
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_IsSubnormal
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_IsZero
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_LessThan
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_LessThanAll
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_LessThanAny
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_LessThanOrEqual
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_LessThanOrEqualAll
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_LessThanOrEqualAny
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_LoadAligned
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_LoadAlignedNonTemporal
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_LoadUnsafe
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_Max
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_MaxMagnitude
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_MaxMagnitudeNumber
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_MaxNative
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_MaxNumber
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_Min
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_MinMagnitude
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_MinMagnitudeNumber
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_MinNative
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_MinNumber
-        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_MultiplyAddEstimate
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_Narrow
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_NarrowWithSaturation
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_Round
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_ShiftLeft
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_Shuffle
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_ShuffleNative
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_ShuffleNativeFallback
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_Sqrt
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_StoreAligned
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_StoreAlignedNonTemporal
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_StoreUnsafe
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_SubtractSaturate
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_Sum
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_ToScalar
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_ToVector128
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_ToVector128Unsafe
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_Truncate
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_WidenLower
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_WidenUpper
-        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_WithElement
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_get_AllBitsSet
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_get_E
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_get_Epsilon
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_get_Indices
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_get_NaN
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_get_NegativeInfinity
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_get_NegativeOne
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_get_NegativeZero
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_get_One
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_get_Pi
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_get_PositiveInfinity
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_get_Tau
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_get_Zero
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_op_Addition
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_Vector64_op_BitwiseAnd
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_Vector64_op_BitwiseOr
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_op_Division
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_Vector64_op_Equality
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_op_ExclusiveOr
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_Vector64_op_Inequality
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_op_LeftShift
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_op_Multiply
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_op_OnesComplement
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_op_RightShift
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_op_Subtraction
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_op_UnaryNegation
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_op_UnaryPlus
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector64_op_UnsignedRightShift
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Abs
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AddSaturate
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AndNot
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_As
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsByte
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsDouble
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsInt16
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsInt32
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsInt64
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsNInt
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsNUInt
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsSByte
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsSingle
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsUInt16
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsUInt32
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsUInt64
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsVector
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsVector128
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsVector128Unsafe
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsVector2
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsVector3
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_AsVector4
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Ceiling
-        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ConditionalSelect
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ConvertToDouble
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ConvertToInt32
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ConvertToInt32Native
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ConvertToInt64
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ConvertToInt64Native
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ConvertToSingle
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ConvertToUInt32
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ConvertToUInt32Native
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ConvertToUInt64
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ConvertToUInt64Native
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Create
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_CreateScalar
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_CreateScalarUnsafe
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_CreateSequence
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Dot
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Equals
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_EqualsAny
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ExtractMostSignificantBits
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Floor
-        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_FusedMultiplyAdd
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_GetElement
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_GetLower
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_GetUpper
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_GreaterThan
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_GreaterThanAll
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_GreaterThanAny
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_GreaterThanOrEqual
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_GreaterThanOrEqualAll
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_GreaterThanOrEqualAny
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_IsEvenInteger
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_IsFinite
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_IsInfinity
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_IsInteger
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_IsNaN
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_IsNegative
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_IsNegativeInfinity
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_IsNormal
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_IsOddInteger
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_IsPositive
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_IsPositiveInfinity
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_IsSubnormal
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_IsZero
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_LessThan
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_LessThanAll
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_LessThanAny
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_LessThanOrEqual
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_LessThanOrEqualAll
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_LessThanOrEqualAny
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_LoadAligned
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_LoadAlignedNonTemporal
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_LoadUnsafe
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Max
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_MaxMagnitude
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_MaxMagnitudeNumber
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_MaxNative
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_MaxNumber
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Min
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_MinMagnitude
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_MinMagnitudeNumber
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_MinNative
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_MinNumber
-        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_MultiplyAddEstimate
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Narrow
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_NarrowWithSaturation
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Round
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ShiftLeft
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Shuffle
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ShuffleNative
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ShuffleNativeFallback
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Sqrt
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_StoreAligned
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_StoreAlignedNonTemporal
-        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_StoreUnsafe
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_SubtractSaturate
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Sum
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_ToScalar
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_Truncate
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_WidenLower
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_WidenUpper
-        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_WithElement
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_WithLower
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_WithUpper
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_get_AllBitsSet
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_get_E
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_get_Epsilon
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_get_Indices
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_get_NaN
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_get_NegativeInfinity
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_get_NegativeOne
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_get_NegativeZero
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_get_One
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_get_Pi
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_get_PositiveInfinity
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_get_Tau
-        ValueNumStore.GetOpAttribsForFunc(arity: 0 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_get_Zero
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_op_Addition
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_Vector128_op_BitwiseAnd
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_Vector128_op_BitwiseOr
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_op_Division
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_Vector128_op_Equality
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_op_ExclusiveOr
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_Vector128_op_Inequality
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_op_LeftShift
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_op_Multiply
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_op_OnesComplement
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_op_RightShift
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_op_Subtraction
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_op_UnaryNegation
-        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_op_UnaryPlus
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Vector128_op_UnsignedRightShift
         ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_AdvSimd_Abs
         ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_AdvSimd_AbsSaturate
         ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_AdvSimd_AbsScalar
@@ -1938,8 +1529,8 @@ public static partial class VNFuncExtensions
         ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_AdvSimd_Arm64_AbsoluteCompareLessThanOrEqual
         ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_AdvSimd_Arm64_AbsoluteCompareLessThanOrEqualScalar
         ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_AdvSimd_Arm64_AbsoluteCompareLessThanScalar
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_AdvSimd_Arm64_AbsoluteDifference
-        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_AdvSimd_Arm64_AbsoluteDifferenceScalar
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_AdvSimd_Arm64_AbsoluteDifference
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_AdvSimd_Arm64_AbsoluteDifferenceScalar
         ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_AdvSimd_Arm64_Add
         ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_AdvSimd_Arm64_AddAcross
         ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_AdvSimd_Arm64_AddAcrossWidening
@@ -2131,6 +1722,29 @@ public static partial class VNFuncExtensions
         ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Crc32_Arm64_ComputeCrc32C
         ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Dp_DotProduct
         ValueNumStore.GetOpAttribsForFunc(arity: 4 + 1, commute: false, knownNonNull: false), // VNF_HWI_Dp_DotProductBySelectedQuadruplet
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_Fp16_Add
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Fp16_Ceiling
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Fp16_CompareEqual
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Fp16_CompareGreaterThan
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Fp16_CompareGreaterThanOrEqual
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Fp16_CompareLessThan
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Fp16_CompareLessThanOrEqual
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Fp16_CompareNotEqual
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Fp16_ConvertToHalf
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Fp16_ConvertToInt32
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Fp16_ConvertToInt64
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Fp16_ConvertToUInt32
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Fp16_ConvertToUInt64
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Fp16_Divide
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Fp16_Floor
+        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Fp16_FusedMultiplyAdd
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_Fp16_Multiply
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Fp16_ReciprocalEstimate
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Fp16_ReciprocalSqrtEstimate
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Fp16_RoundToNearest
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Fp16_Sqrt
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Fp16_Subtract
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Fp16_Truncate
         ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Rdm_MultiplyRoundedDoublingAndAddSaturateHigh
         ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Rdm_MultiplyRoundedDoublingAndSubtractSaturateHigh
         ValueNumStore.GetOpAttribsForFunc(arity: 4 + 1, commute: false, knownNonNull: false), // VNF_HWI_Rdm_MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh
@@ -2149,6 +1763,15 @@ public static partial class VNFuncExtensions
         ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sha256_HashUpdate2
         ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sha256_ScheduleUpdate0
         ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sha256_ScheduleUpdate1
+        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sha3_BitwiseClearXor
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sha3_BitwiseRotateLeftBy1AndXor
+        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sha3_Xor
+        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sha3_XorRotateRight
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sm4_Encode
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sm4_KeyUpdate
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_ArmBase_ConvertToDouble
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_ArmBase_ConvertToHalf
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_ArmBase_ConvertToSingle
 #endif
 #if FEATURE_HW_INTRINSICS
         ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Sve_Abs
@@ -2515,6 +2138,16 @@ public static partial class VNFuncExtensions
         ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_CreateWhileReadAfterWriteMaskUInt16
         ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_CreateWhileReadAfterWriteMaskUInt32
         ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_CreateWhileReadAfterWriteMaskUInt64
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_CreateWhileWriteAfterReadMaskByte
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_CreateWhileWriteAfterReadMaskDouble
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_CreateWhileWriteAfterReadMaskInt16
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_CreateWhileWriteAfterReadMaskInt32
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_CreateWhileWriteAfterReadMaskInt64
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_CreateWhileWriteAfterReadMaskSByte
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_CreateWhileWriteAfterReadMaskSingle
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_CreateWhileWriteAfterReadMaskUInt16
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_CreateWhileWriteAfterReadMaskUInt32
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_CreateWhileWriteAfterReadMaskUInt64
         ValueNumStore.GetOpAttribsForFunc(arity: 4 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_DotProductRotateComplex
         ValueNumStore.GetOpAttribsForFunc(arity: 5 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_DotProductRotateComplexBySelectedIndex
         ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_FusedAddHalving
@@ -2588,6 +2221,10 @@ public static partial class VNFuncExtensions
         ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_PolynomialMultiplyWideningOdd
         ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_ReciprocalEstimate
         ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_ReciprocalSqrtEstimate
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_SaturatingExtractNarrowingLower
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_SaturatingExtractNarrowingUpper
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_SaturatingExtractUnsignedNarrowingLower
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_SaturatingExtractUnsignedNarrowingUpper
         ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_Scatter16BitNarrowingNonTemporal
         ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_Scatter16BitWithByteOffsetsNarrowingNonTemporal
         ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_Scatter32BitNarrowingNonTemporal
@@ -2644,6 +2281,9 @@ public static partial class VNFuncExtensions
         ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_VectorTableLookupExtension
         ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_Xor
         ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve2_XorRotateRight
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_SveSha3_BitwiseRotateLeftBy1AndXor
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_SveSm4_Encode
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_SveSm4_KeyUpdate
         ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve_ConditionalExtractAfterLastActiveElementScalar
         ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve_ConditionalExtractLastActiveElementScalar
         ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve_ConvertMaskToVector
@@ -2671,16 +2311,86 @@ public static partial class VNFuncExtensions
         ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve_TransposeOdd_Predicates
         ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_Sve_ReverseElement_Predicates
 #endif
-#elif TARGET_ARM
-#elif TARGET_LOONGARCH64
-#elif TARGET_RISCV64
+#elif TARGET_WASM
+#if FEATURE_HW_INTRINSICS
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_Abs
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_PackedSimd_Add
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_AddPairwiseWidening
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_PackedSimd_AddSaturate
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_AllTrue
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_PackedSimd_And
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_AndNot
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_AnyTrue
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_PackedSimd_AverageRounded
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_Bitmask
+        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_BitwiseSelect
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_Ceiling
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_PackedSimd_CompareEqual
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_CompareGreaterThan
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_CompareGreaterThanOrEqual
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_CompareLessThan
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_CompareLessThanOrEqual
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_PackedSimd_CompareNotEqual
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_ConvertNarrowingSaturateSigned
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_ConvertNarrowingSaturateUnsigned
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_ConvertToDoubleLower
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_ConvertToInt32Saturate
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_ConvertToSingle
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_ConvertToUInt32Saturate
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_Divide
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_Dot
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_ExtractScalar
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_Floor
+        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_LoadScalarAndInsert
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_LoadScalarAndSplatVector128
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_LoadScalarVector128
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_LoadVector128
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_LoadWideningVector128
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_PackedSimd_Max
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_PackedSimd_Min
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_PackedSimd_Multiply
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_PackedSimd_MultiplyRoundedSaturateQ15
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_MultiplyWideningLower
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_MultiplyWideningUpper
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_Negate
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_Not
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_PackedSimd_Or
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_PopCount
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_PseudoMax
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_PseudoMin
+        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_ReplaceScalar
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_RoundToNearest
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_ShiftLeft
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_ShiftRightArithmetic
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_ShiftRightLogical
+        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_Shuffle
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_SignExtendWideningLower
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_SignExtendWideningUpper
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_Splat
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_Sqrt
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_Store
+        ValueNumStore.GetOpAttribsForFunc(arity: 3 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_StoreSelectedScalar
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_Subtract
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_SubtractSaturate
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_Swizzle
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_Truncate
+        ValueNumStore.GetOpAttribsForFunc(arity: 2 + 1, commute: true, knownNonNull: false), // VNF_HWI_PackedSimd_Xor
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_ZeroExtendWideningLower
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_PackedSimd_ZeroExtendWideningUpper
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_WasmBase_LeadingZeroCount
+        ValueNumStore.GetOpAttribsForFunc(arity: 1 + 1, commute: false, knownNonNull: false), // VNF_HWI_WasmBase_TrailingZeroCount
+#endif
+#else
+#error Unsupported platform
+#endif
+#endif
+        ValueNumStore.GetOpAttribsForFunc(arity: -1, commute: false, knownNonNull: false), // VNF_HWI_INTRINSIC_END
+#endif
+#if TARGET_RISCV64
         ValueNumStore.GetOpAttribsForFunc(arity: 2, commute: true, knownNonNull: false), // VNF_MinInt
         ValueNumStore.GetOpAttribsForFunc(arity: 2, commute: true, knownNonNull: false), // VNF_MaxInt
         ValueNumStore.GetOpAttribsForFunc(arity: 2, commute: true, knownNonNull: false), // VNF_MinInt_UN
         ValueNumStore.GetOpAttribsForFunc(arity: 2, commute: true, knownNonNull: false), // VNF_MaxInt_UN
-#elif TARGET_WASM
-#else
-#error Unsupported platform
 #endif
     ];
 }

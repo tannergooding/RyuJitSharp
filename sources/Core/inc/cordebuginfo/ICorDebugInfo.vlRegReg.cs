@@ -7,8 +7,8 @@ namespace RyuJitSharp;
 
 public partial struct ICorDebugInfo
 {
-    // VLT_REG_REG -- TYP_LONG with both uint32_ts enregistred
-    // eg. RBM_EAXEDX
+    // VLT_REG_REG -- value lives in two integer or floating-point registers.
+    // vlrrReg1 holds the low part, vlrrReg2 the high part.
     public struct vlRegReg
     {
         public RegNum vlrrReg1;

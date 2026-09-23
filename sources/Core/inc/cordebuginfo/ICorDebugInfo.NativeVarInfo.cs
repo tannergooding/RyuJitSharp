@@ -9,11 +9,13 @@ public partial struct ICorDebugInfo
 {
     public struct NativeVarInfo
     {
-        public int startOffset;
+        public uint startOffset;
 
-        public int endOffset;
+        public uint endOffset;
 
-        public int varNumber;
+        public uint callReturnValueILOffset;
+
+        public uint varNumber;
 
         public VarLoc loc;
     }

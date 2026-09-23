@@ -17,4 +17,7 @@ public enum CorInfoTypeWithMod
 
     /// <summary>Can be applied to VALUECLASS to indicate 'needs helper to copy'</summary>
     CORINFO_TYPE_MOD_COPY_WITH_HELPER = 0x80,
+
+    /// <summary>Can be applied to NATIVEINT to indicate the secret stub argument.</summary>
+    CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT = 0x100,
 }

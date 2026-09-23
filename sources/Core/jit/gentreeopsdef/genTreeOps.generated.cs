@@ -26,6 +26,7 @@ public enum genTreeOps : byte
     GT_GCPOLL,
     GT_ASYNC_RESUME_INFO,
     GT_FTN_ENTRY,
+    GT_CONTINUATION_MEMBER_OFFSET,
     GT_CNS_INT,
     GT_CNS_LNG,
     GT_CNS_DBL,
@@ -128,6 +129,7 @@ public enum genTreeOps : byte
     GT_XOR_NOT,
 #if TARGET_ARM64
     GT_BFIZ,
+    GT_BFX,
 #endif
     GT_CMP,
     GT_TEST,
@@ -159,6 +161,8 @@ public enum genTreeOps : byte
     GT_SH3ADD_UW,
     GT_ADD_UW,
     GT_SLLI_UW,
+#endif
+#if TARGET_RISCV64 || TARGET_XARCH
     GT_BIT_SET,
     GT_BIT_CLEAR,
     GT_BIT_INVERT,
@@ -184,6 +188,9 @@ public enum genTreeOps : byte
     GT_JMPTABLE,
     GT_SWITCH_TABLE,
     GT_PHYSREG,
+#if TARGET_WASM
+    GT_FRAME_SIZE,
+#endif
     GT_RETURNTRAP,
     GT_PUTARG_REG,
     GT_PUTARG_STK,

@@ -64,6 +64,15 @@ public enum HWIntrinsicCategory : byte
     // Special intrinsics
     // - have to be addressed specially
     HW_Category_Special
+#elif TARGET_WASM
+    HW_Category_SIMD,
+    HW_Category_IMM,
+    // Wasm has no scalar intrinsic category, but keeps it for table consistency.
+    HW_Category_Scalar,
+    HW_Category_MemoryLoad,
+    HW_Category_MemoryStore,
+    HW_Category_Helper,
+    HW_Category_Special
 #else
 #error Unsupported platform
 #endif

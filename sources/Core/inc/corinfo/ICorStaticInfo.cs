@@ -21,6 +21,8 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
     public bool isIntrinsic(CORINFO_METHOD_HANDLE ftn) => lpVtbl->isIntrinsic((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), ftn);
 
+    public bool canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn) => lpVtbl->canValueClassInstancePointerEscape((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), ftn);
+
     public bool notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn) => lpVtbl->notifyMethodInfoUsage((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), ftn);
 
     public CorInfoFlag getMethodAttribs(CORINFO_METHOD_HANDLE ftn) => lpVtbl->getMethodAttribs((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), ftn);
@@ -52,10 +54,6 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
     public void getMethodVTableOffset(CORINFO_METHOD_HANDLE method, int* offsetOfIndirection, int* offsetAfterIndirection, bool* isRelative) => lpVtbl->getMethodVTableOffset((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), method, offsetOfIndirection, offsetAfterIndirection, isRelative);
 
     public bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO* info) => lpVtbl->resolveVirtualMethod((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), info);
-
-    public CORINFO_METHOD_HANDLE getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg) => lpVtbl->getUnboxedEntry((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), ftn, requiresInstMethodTableArg);
-
-    public CORINFO_METHOD_HANDLE getInstantiatedEntry(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_HANDLE* methodArg, CORINFO_CLASS_HANDLE* classArg) => lpVtbl->getInstantiatedEntry((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), ftn, methodArg, classArg);
 
     public CORINFO_METHOD_HANDLE getAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk) => lpVtbl->getAsyncOtherVariant((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), ftn, variantIsThunk);
 
@@ -287,6 +285,10 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
     public void getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut) => lpVtbl->getAsyncInfo((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), pAsyncInfoOut);
 
+    public CORINFO_METHOD_HANDLE getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg) => lpVtbl->getAwaitReturnCall((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), callerHandle, contextHandle, instArg);
+
+    public CORINFO_METHOD_HANDLE getAwaitAwaiterInContinuationCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isUnsafe, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg) => lpVtbl->getAwaitAwaiterInContinuationCall((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), callerHandle, pResolvedToken, isUnsafe, contextHandle, instArg);
+
     //
     // Diagnostic methods
     //
@@ -307,6 +309,10 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
     public CorInfoWasmType getWasmLowering(CORINFO_CLASS_HANDLE structHnd) => lpVtbl->getWasmLowering((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), structHnd);
 
+    public uint getAddressAlignment(void* address) => lpVtbl->getAddressAlignment((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), address);
+
+    public void getWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut) => lpVtbl->getWasmWellKnownGlobals((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), pWellKnownGlobalsOut);
+
     public interface Interface
     {
         //
@@ -315,6 +321,8 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
         // Quick check whether the method is a jit intrinsic. Returns the same value as getMethodAttribs(ftn) & CORINFO_FLG_INTRINSIC, except faster.
         bool isIntrinsic(CORINFO_METHOD_HANDLE ftn);
+
+        bool canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn);
 
         // Notify EE about intent to rely on given MethodInfo in the current method
         // EE returns false if we're not allowed to do so and the methodinfo may change.
@@ -424,13 +432,6 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         //
         // Returns false if devirtualization is not possible.
         bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO* info);
-
-        // Get the unboxed entry point for a method, if possible.
-        CORINFO_METHOD_HANDLE getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
-
-        // Get the wrapped entry point for an instantiating stub, if possible.
-        // Sets methodArg for method instantiations, classArg for class instantiations.
-        CORINFO_METHOD_HANDLE getInstantiatedEntry(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_HANDLE* methodArg, CORINFO_CLASS_HANDLE* classArg);
 
         // Get the other variant of an async method, if possible.
         // If this is a method with async calling convention: returns the corresponding task-returning method.
@@ -1083,6 +1084,10 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
         void getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut);
 
+        CORINFO_METHOD_HANDLE getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg);
+
+        CORINFO_METHOD_HANDLE getAwaitAwaiterInContinuationCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isUnsafe, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg);
+
         //
         // Diagnostic methods
         //
@@ -1123,6 +1128,10 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         // Returns the primitive type for passing/returning a Wasm struct by value,
         // or CORINFO_WASM_TYPE_VOID if passing/returning must be by reference.
         CorInfoWasmType getWasmLowering(CORINFO_CLASS_HANDLE structHnd);
+
+        uint getAddressAlignment(void* address);
+
+        void getWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut);
     }
 
     public struct Vtbl<TSelf>
@@ -1133,6 +1142,8 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         //
 
         public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, bool> isIntrinsic;
+
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, bool> canValueClassInstancePointerEscape;
 
         public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, bool> notifyMethodInfoUsage;
 
@@ -1165,10 +1176,6 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, int*, int*, bool*, void> getMethodVTableOffset;
 
         public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_DEVIRTUALIZATION_INFO*, bool> resolveVirtualMethod;
-
-        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, bool*, CORINFO_METHOD_HANDLE> getUnboxedEntry;
-
-        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE*, CORINFO_CLASS_HANDLE*, CORINFO_METHOD_HANDLE> getInstantiatedEntry;
 
         public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, bool*, CORINFO_METHOD_HANDLE> getAsyncOtherVariant;
 
@@ -1400,6 +1407,10 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_ASYNC_INFO*, void> getAsyncInfo;
 
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, CORINFO_CONTEXT_HANDLE*, CORINFO_LOOKUP*, CORINFO_METHOD_HANDLE> getAwaitReturnCall;
+
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, CORINFO_RESOLVED_TOKEN*, bool, CORINFO_CONTEXT_HANDLE*, CORINFO_LOOKUP*, CORINFO_METHOD_HANDLE> getAwaitAwaiterInContinuationCall;
+
         //
         // Diagnostic methods
         //
@@ -1419,5 +1430,9 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CORINFO_FPSTRUCT_LOWERING*, void> getFpStructLowering;
 
         public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CLASS_HANDLE, CorInfoWasmType> getWasmLowering;
+
+        public delegate* unmanaged[MemberFunction]<TSelf*, void*, uint> getAddressAlignment;
+
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_WASM_WELLKNOWN_GLOBALS*, void> getWasmWellKnownGlobals;
     }
 }

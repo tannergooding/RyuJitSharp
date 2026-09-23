@@ -149,5 +149,8 @@ public partial struct CORJIT_FLAGS
 
         /// <summary>The JIT should use helpers for interface dispatch instead of virtual stub dispatch</summary>
         CORJIT_FLAG_USE_DISPATCH_HELPERS = 31,
+
+        /// <summary>The JIT should emit diagnostic helpers that verify GC mode transitions are legal.</summary>
+        CORJIT_FLAG_VERIFY_GC_MODE_TRANSITIONS = 32,
     }
 }

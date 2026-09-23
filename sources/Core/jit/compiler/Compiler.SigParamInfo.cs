@@ -9,7 +9,7 @@ public partial class Compiler
 {
     public struct SigParamInfo
     {
-        public CorInfoType CorType;
+        public CorInfoTypeWithMod CorType;
 
         public unsafe CORINFO_CLASS_HANDLE ClassHandle;
     }

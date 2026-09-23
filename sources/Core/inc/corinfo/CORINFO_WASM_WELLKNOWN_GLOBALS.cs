@@ -5,12 +5,10 @@
 
 namespace RyuJitSharp;
 
-public partial struct ICorDebugInfo
+public unsafe struct CORINFO_WASM_WELLKNOWN_GLOBALS
 {
-    // VLT_MEMORY
-    public struct vlMemory
-    {
-        /// <summary>Pointer to the in-process location of the value.</summary>
-        public unsafe void* rpValue;
-    }
+    public CORINFO_WASM_GLOBAL_SYMBOL_HANDLE stackPointer;
+    public CORINFO_WASM_GLOBAL_SYMBOL_HANDLE imageBase;
+    public CORINFO_WASM_GLOBAL_SYMBOL_HANDLE tableBase;
+    public CORINFO_WASM_GLOBAL_SYMBOL_HANDLE asyncContinuation;
 }

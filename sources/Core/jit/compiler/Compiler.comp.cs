@@ -314,6 +314,8 @@ public partial class Compiler
 
     public unsafe bool compIsAsync => opts.jitFlags->IsSet(JitFlags.JIT_FLAG_ASYNC);
 
+    public unsafe bool compIsAsyncVersion => (info.compMethodInfo->options & CORINFO_ASYNC_VERSION) != 0;
+
     /// <summary>Returns true if the compiler instance is created for inlining.</summary>
     [MemberNotNullWhen(true, nameof(impInlineInfo), nameof(compInlineResult))]
     [MemberNotNullWhen(false, nameof(codeGen), nameof(_inlineStrategy))]
@@ -597,7 +599,7 @@ public partial class Compiler
                 var tmpJitFuncInfoFilename = Encoding.UTF8.GetString(tmpJitFuncInfoFilenameUtf8);
 
                 assert(compJitFuncInfoFile is null);
-                compJitFuncInfoFile = new StreamWriter(tmpJitFuncInfoFilename, append: true);
+                compJitFuncInfoFile = new JitTextWriter(tmpJitFuncInfoFilename, append: true);
             }
         }
 #endif
@@ -690,6 +692,11 @@ public partial class Compiler
                 instructionSetFlags.AddInstructionSet(InstructionSet_Crc32);
             }
 
+            if (JitConfig.EnableArm64Cssc != 0)
+            {
+                instructionSetFlags.AddInstructionSet(InstructionSet_Cssc);
+            }
+
             if (JitConfig.EnableArm64Dp != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_Dp);
@@ -698,6 +705,11 @@ public partial class Compiler
             if (JitConfig.EnableArm64Rdm != 0)
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_Rdm);
+            }
+
+            if (JitConfig.EnableArm64Fp16 != 0)
+            {
+                instructionSetFlags.AddInstructionSet(InstructionSet_Fp16);
             }
 
             if (JitConfig.EnableArm64Sha1 != 0)
@@ -873,6 +885,11 @@ public partial class Compiler
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_Zbb);
             }
+
+            if (JitConfig.EnableRiscV64Zicond != 0)
+            {
+                instructionSetFlags.AddInstructionSet(InstructionSet_Zicond);
+            }
 #endif
 
             // These calls are important and explicitly ordered to ensure that the flags are correct in
@@ -906,32 +923,34 @@ public partial class Compiler
 #if DEBUG
         if (JitConfig.EnableExtraSuperPmiQueries != 0)
         {
-            // Get the assembly name, to aid finding any particular SuperPMI method context function
-            _ = eeGetClassAssemblyName(info.compClassHnd);
+            eeRunExtraSuperPmiQueries(() => {
+                // Get the assembly name, to aid finding any particular SuperPMI method context function
+                _ = eeGetClassAssemblyName(info.compClassHnd);
 
-            // Fetch class names for the method's generic parameters.
-            CORINFO_SIG_INFO sig;
-            info.compCompHnd->getMethodSig(info.compMethodHnd, &sig, null);
+                // Fetch class names for the method's generic parameters.
+                CORINFO_SIG_INFO sig;
+                info.compCompHnd->getMethodSig(info.compMethodHnd, &sig, null);
 
-            var classInst = sig.sigInst.classInstCount;
+                var classInst = sig.sigInst.classInstCount;
 
-            if (classInst > 0)
-            {
-                for (var i = 0; i < classInst; i++)
+                if (classInst > 0)
                 {
-                    _ = eeGetClassName(sig.sigInst.classInst[i]);
+                    for (var i = 0; i < classInst; i++)
+                    {
+                        _ = eeGetClassName(sig.sigInst.classInst[i]);
+                    }
                 }
-            }
 
-            var methodInst = sig.sigInst.methInstCount;
+                var methodInst = sig.sigInst.methInstCount;
 
-            if (methodInst > 0)
-            {
-                for (var i = 0; i < methodInst; i++)
+                if (methodInst > 0)
                 {
-                    _ = eeGetClassName(sig.sigInst.methInst[i]);
+                    for (var i = 0; i < methodInst; i++)
+                    {
+                        _ = eeGetClassName(sig.sigInst.methInst[i]);
+                    }
                 }
-            }
+            });
         }
 #endif
 
@@ -1774,7 +1793,7 @@ public partial class Compiler
         }
 
         var altJitConfig = !pfAltJit.isEmpty();
-        var verboseDump = true;
+        var verboseDump = false;
 
         if (!altJitConfig || opts.altJit)
         {
@@ -2132,7 +2151,7 @@ public partial class Compiler
         {
             jitprintf($"****** START compiling {info.compFullName} (MethodHash={info.compMethodHash():x8})\n");
             jitprintf($"Generating code for {Target.TgtPlatformName} {Target.TgtCpuName}\n");
-            jitprintf(""); // in our logic this causes a flush
+            jitstdout().Flush();
         }
 
         if (JitConfig.JitBreak.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
@@ -2384,6 +2403,11 @@ public partial class Compiler
 
         opts.compScopeInfo = opts.compDbgInfo;
 
+#if TARGET_WASM
+        // Wasm virtual registers cannot be represented by ICorDebugInfo.
+        opts.compScopeInfo = false;
+#endif
+
 #if LATE_DISASM
         codeGen.Disassembler.disOpenForLateDisAsm(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig);
 #endif
@@ -2535,6 +2559,11 @@ public partial class Compiler
             if (compIsAsync)
             {
                 jitprintf("OPTIONS: compilation is an async state machine\n");
+            }
+
+            if (compIsAsyncVersion)
+            {
+                jitprintf("OPTIONS: compilation is for an async version of a synchronous method; IL belongs to synchronous method\n");
             }
         }
 #endif
@@ -3053,6 +3082,7 @@ public partial class Compiler
         activePhaseChecks |= PhaseChecks.CHECK_EH | PhaseChecks.CHECK_LOOPS | PhaseChecks.CHECK_UNIQUE | PhaseChecks.CHECK_LINKED_LOCALS;
 
         // Import: convert the instrs in each basic block to a tree based intermediate representation
+        activePhaseChecks |= PhaseChecks.CHECK_IR | PhaseChecks.CHECK_IR_RELAXED;
         DoPhase(this, PHASE_IMPORTATION, fgImport);
 
         // If this is a failed inline attempt, we're done.
@@ -3176,9 +3206,6 @@ public partial class Compiler
             // Tail merge
             DoPhase(this, PHASE_HEAD_TAIL_MERGE, () => fgHeadTailMerge(true));
 
-            // Merge common throw blocks
-            DoPhase(this, PHASE_MERGE_THROWS, fgTailMergeThrows);
-
             // Run an early flow graph simplification pass
             DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, fgUpdateFlowGraphPhase);
         }
@@ -3213,6 +3240,9 @@ public partial class Compiler
         // Promote struct locals based on primitive access patterns
         DoPhase(this, PHASE_PHYSICAL_PROMOTION, PhysicalPromotion);
 
+        // Unpin pinned locals whose value is provably non-movable.
+        DoPhase(this, PHASE_UNPIN_LOCALS, fgUnpinNonMovableLocals);
+
         // Expose candidates for implicit byref last-use copy elision.
         DoPhase(this, PHASE_IMPBYREF_COPY_OMISSION, fgMarkImplicitByRefCopyOmissionCandidates);
 
@@ -3221,6 +3251,9 @@ public partial class Compiler
 
         // Apply the type update to implicit byref parameters; also choose (based on address-exposed
         // analysis) which implicit byref promotions to keep (requires copy to initialize) or discard.
+#if DEBUG
+        fgImplicitByRefLclFldsStale = true;
+#endif
         DoPhase(this, PHASE_MORPH_IMPBYREF, fgRetypeImplicitByRefArgs);
 
 #if DEBUG
@@ -3230,8 +3263,14 @@ public partial class Compiler
 #endif
 
         // Morph the trees in all the blocks of the method
+#if DEBUG
+        fgImplicitByRefLclFldsStale = false;
+#endif
         var preMorphBBCount = fgBBcount;
         DoPhase(this, PHASE_MORPH_GLOBAL, fgMorphBlocks);
+
+        // Global morph restores the strict IR flag invariants.
+        activePhaseChecks &= ~PhaseChecks.CHECK_IR_RELAXED;
 
         DoPhase(this, PHASE_POST_MORPH, () => {
             // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
@@ -3296,10 +3335,6 @@ public partial class Compiler
             // Compute dominators and exceptional entry blocks
             DoPhase(this, PHASE_COMPUTE_DOMINATORS, fgComputeDominators);
         }
-
-#if DEBUG
-        fgDebugCheckLinks();
-#endif
 
         // Decide the kind of code we want to generate. Done here, after the second
         // round of empty-EH removal above, so that EH eliminated post-morph doesn't
@@ -3535,6 +3570,9 @@ public partial class Compiler
         // Remove empty try regions (try/catch/fault)
         DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT_3, fgRemoveEmptyTryCatchOrTryFault);
 
+        // Remove unreachable try regions.
+        DoPhase(this, PHASE_REMOVE_UNREACHABLE_TRY, fgRemoveUnreachableTry);
+
         // Create funclets from the EH handlers.
         DoPhase(this, PHASE_CREATE_FUNCLETS, fgCreateFunclets);
 
@@ -3592,6 +3630,8 @@ public partial class Compiler
         }
 #endif
 
+        activePhaseChecks |= PhaseChecks.CHECK_LIR_UNUSED_VALUES;
+
         // rationalize trees
         var rat = new Rationalizer(this);
         rat.Run(); // PHASE_RATIONALIZE
@@ -3617,6 +3657,9 @@ public partial class Compiler
         // Clean up unreachable blocks.
         DoPhase(this, PHASE_DFS_BLOCKS_WASM, fgDfsBlocksAndRemove);
 
+        // Repair any multiple-entry try regions back to single entry.
+        DoPhase(this, PHASE_WASM_REPAIR_TRY_ENTRIES, fgWasmRepairTryEntries);
+
         // Transform any strongly connected components into reducible flow.
         DoPhase(this, PHASE_WASM_TRANSFORM_SCCS, fgWasmTransformSccs);
 #endif
@@ -3640,6 +3683,9 @@ public partial class Compiler
 #if TARGET_WASM
         // Determine if a Virtual IP is needed and add code as needed to keep the Virtual IP updated.
         DoPhase(this, PHASE_WASM_VIRTUAL_IP, fgWasmVirtualIP);
+
+        // Spill live refs and byrefs at calls into pinned stack slots.
+        DoPhase(this, PHASE_WASM_SPILL_REFS, fgWasmSpillRefs);
 #endif
 
         FinalizeEH();
@@ -3648,6 +3694,8 @@ public partial class Compiler
         lvaTrackedFixed = true;
 
         // Now that lowering is completed we can proceed to perform register allocation
+        activePhaseChecks &= ~PhaseChecks.CHECK_LIR_UNUSED_VALUES;
+
         DoPhase(this, PHASE_LINEAR_SCAN, _regAlloc.DoRegisterAllocation);
 
         // Copied from rpPredictRegUse()
@@ -4100,6 +4148,10 @@ public partial class Compiler
 
         // Add virtual vector ISAs. These are both supported as part of the required baseline.
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+#elif TARGET_WASM
+        instructionSetFlags.AddInstructionSet(InstructionSet_WasmBase);
+        instructionSetFlags.AddInstructionSet(InstructionSet_PackedSimd);
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
 #endif
 

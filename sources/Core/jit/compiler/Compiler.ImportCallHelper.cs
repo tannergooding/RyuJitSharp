@@ -772,11 +772,6 @@ public partial class Compiler
 
                 call._callMoreFlags |= GTF_CALL_M_DELEGATE_INV;
 
-                if (callInfo.wrapperDelegateInvoke)
-                {
-                    call._callMoreFlags |= GTF_CALL_M_WRAPPER_DELEGATE_INV;
-                }
-
                 if (opcode is CEE_CALLVIRT)
                 {
                     assert((mflags & CORINFO_FLG_FINAL) is not 0);
@@ -885,25 +880,6 @@ public partial class Compiler
                 compiler.impPopArgsForUnmanagedCall(call, sigInfo, ref swiftErrorNode);
                 return Done(compiler, call);
             }
-            else if ((opcode is CEE_CALLI) && ((sigInfo.callConv & CORINFO_CALLCONV_MASK) is not CORINFO_CALLCONV_DEFAULT and not CORINFO_CALLCONV_VARARG))
-            {
-                void* cookie, pCookie;
-
-                fixed (CORINFO_SIG_INFO* pSigInfo = &sigInfo)
-                {
-                    cookie = compiler.info.compCompHnd->GetCookieForPInvokeCalliSig(pSigInfo, &pCookie);
-                }
-
-                var cookieLookup = compiler.eeConvertToLookup(cookie, pCookie);
-                call._callCookie = cookieLookup;
-
-                if (canTailCall)
-                {
-                    canTailCall = false;
-                    canTailCallFailReasonUtf8 = "PInvoke calli"u8;
-                }
-            }
-
             if (sigInfo.isAsyncCall())
             {
                 compiler.impSetupAsyncCall(call, opcode, prefixFlags, debugInfo);
@@ -1363,20 +1339,20 @@ public partial class Compiler
 #if TARGET_XARCH
                     // We can't guarantee that all overloads for the xplat intrinsics can be
                     // handled by the AltJit, so limit only the platform specific intrinsics
-                    assert((LAST_NI_Vector512 + 1) == FIRST_NI_X86Base);
+                    assert((LAST_NI_Vector + 1) == FIRST_NI_X86Base);
 
-                    if (ni < LAST_NI_Vector512)
+                    if (ni <= LAST_NI_Vector)
 #elif TARGET_ARM64
                     // We can't guarantee that all overloads for the xplat intrinsics can be
                     // handled by the AltJit, so limit only the platform specific intrinsics
-                    assert((LAST_NI_Vector128 + 1) == FIRST_NI_AdvSimd);
+                    assert((LAST_NI_Vector + 1) == FIRST_NI_AdvSimd);
 
-                    if (ni < LAST_NI_Vector128)
+                    if (ni <= LAST_NI_Vector)
 #else
 #error Unsupported platform
 #endif
                     {
-                        // Several of the NI_Vector64/128/256 APIs do not have
+                        // Several of the cross-platform vector APIs do not have
                         // all overloads as intrinsic today so they will assert
                         return null;
                     }
@@ -2150,22 +2126,13 @@ public partial class Compiler
                                 op1 = compiler.impPopStack().val;
 
                                 // Replace helper with a more specialized helper that returns RuntimeType
-                                if (typeHandleHelper == CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE)
-                                {
-                                    typeHandleHelper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE;
-                                }
-                                else
-                                {
-                                    assert(typeHandleHelper == CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL);
-                                    typeHandleHelper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL;
-                                }
+                                assert(typeHandleHelper == CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE);
                                 assert(call.Args.CountArgs() is 1);
 
                                 var arg = call.Args.GetArgByIndex(0);
                                 assert(arg is not null);
 
-                                op1 = compiler.gtNewHelperCallNode(TYP_REF, typeHandleHelper, arg.EarlyNode);
-                                op1.Type = TYP_REF;
+                                op1 = compiler.gtNewHelperCallNode(TYP_REF, CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, arg.EarlyNode);
 
                                 retNode = op1;
                                 break;

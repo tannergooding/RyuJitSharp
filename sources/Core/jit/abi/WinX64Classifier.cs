@@ -27,6 +27,12 @@ public ref struct WinX64Classifier
     /// <returns>Classification information for the parameter.</returns>
     public AbiPassingInformation Classify(Compiler comp, var_types type, ClassLayout? structLayout, WellKnownArg wellKnownParam)
     {
+        if (wellKnownParam is WellKnownArg.SecretStubParam)
+        {
+            return AbiPassingInformation.FromSegment(comp, false,
+                AbiPassingSegment.InRegister(REG_SECRET_STUB_PARAM, 0, TARGET_POINTER_SIZE));
+        }
+
         // On windows-x64 ABI all parameters take exactly 1 stack slot (structs
         // that do not fit are passed implicitly by reference). Passing a parameter
         // in an int register also consumes the corresponding float register and
