@@ -46,6 +46,15 @@ is prior art, not proof that other replacement contexts already work. Do not
 reinterpret incompatible CLR layouts or introduce a mutable-payload redesign
 merely to emulate native bashing (B064).
 
+Scalar constant folding now uses replacement constructors that copy base
+metadata and the logical tree ID without allocating another ID. Operation-specific
+flags are cleared using the native node mask. The source must be unthreaded;
+existing importer and placeholder-walker uses consume the returned replacement.
+This does not implement LIR relinking or repair arbitrary cached aliases.
+Overflow folding retains the native global-morph gate, and value-numbered
+constant/overflow folding explicitly reports the missing VN implementation
+rather than silently retaining stale value numbers (B082/B083).
+
 The existing `CheckedOps.Try*` arithmetic APIs return success (the inverse of
 native `CheckedOps::*Overflows`) and expose the wrapped result through an out
 parameter. Addition/subtraction use sign-bit checks or unsigned ordering;

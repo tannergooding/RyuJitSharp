@@ -1,5 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+using System;
 using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
@@ -38,6 +39,11 @@ internal static class PortingCorpus
             return 6;
         }
 
+        if (FoldConstants() != 27)
+        {
+            return 7;
+        }
+
         return 0;
     }
 
@@ -67,6 +73,13 @@ internal static class PortingCorpus
     {
         delegate* managed<int, int, int> target = &Add;
         return target(value, value + 1);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static long FoldConstants()
+    {
+        // BitConverter keeps these constants in IL until the JIT imports the intrinsics.
+        return ((long)BitConverter.Int32BitsToSingle(0x40F00000) + (int)BitConverter.Int64BitsToDouble(0x4004000000000000)) * 3;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

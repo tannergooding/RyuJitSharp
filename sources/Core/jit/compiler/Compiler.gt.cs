@@ -4,9 +4,11 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
@@ -1620,12 +1622,13 @@ public partial class Compiler
                 else if (double.IsNaN(dcon))
                 {
                     var bits = BitConverter.DoubleToInt64Bits(dcon);
-                    jitprintf($" {dcon:G17}(0x{bits:x16})\n");
+                    jitprintf($" {formatFloatWithTrailingZeros(dcon, 17)}(0x{bits:x16})\n");
                 }
                 else
                 {
-                    jitprintf($" {dcon:G17}");
+                    jitprintf($" {formatFloatWithTrailingZeros(dcon, 17)}");
                 }
+
                 break;
             }
 
@@ -3658,8 +3661,1045 @@ public partial class Compiler
 
     public GenTree gtFoldExpr(GenTree tree)
     {
-        // TODO: Port gtFoldExpr
+        assert(!optValnumCSE_phase);
+
+        if (!opts.Tier0OptimizationEnabled || tree.Oper.IsLeaf)
+        {
+            return tree;
+        }
+
+        if (tree.Oper.IsUnary)
+        {
+            return gtFoldExprUnary(tree.AsUnOp());
+        }
+
+        if (tree.Oper.IsBinary)
+        {
+            var op = tree.AsOp();
+
+            if ((op.Op1 is not null) && (op.Op2 is not null) && !tree.Oper.IsAtomic &&
+                op.Op1.Oper.IsConst && op.Op2.Oper.IsConst)
+            {
+                return gtFoldExprBinaryConst(op);
+            }
+        }
+
+        // TODO: Port nonconstant binary, conditional and hardware-intrinsic folding.
         return tree;
+    }
+
+    public GenTree gtFoldExprConst(GenTree tree)
+    {
+        assert(!optValnumCSE_phase);
+
+        if (!opts.Tier0OptimizationEnabled)
+        {
+            return tree;
+        }
+
+        if (tree.Oper.IsUnary)
+        {
+            return gtFoldExprUnaryConst(tree.AsUnOp());
+        }
+
+        assert(tree.Oper.IsBinary);
+        return gtFoldExprBinaryConst(tree.AsOp());
+    }
+
+    public GenTree gtFoldExprUnary(GenTreeUnOp tree)
+    {
+        assert(tree.Oper.IsUnary && !optValnumCSE_phase && opts.Tier0OptimizationEnabled);
+        var op1 = tree.Op1;
+
+        if ((op1 is null) || (tree.Oper is GT_RETFILT or GT_RETURN or GT_IND))
+        {
+            return tree;
+        }
+
+        if (op1.Oper.IsConst)
+        {
+            return gtFoldExprUnaryConst(tree);
+        }
+
+        if ((tree.Oper is GT_NOT or GT_NEG) && (op1.Oper == tree.Oper))
+        {
+            JITDUMP(tree.Oper is GT_NOT ? "Folding ~(~a) => a\n" : "Folding -(-a) => a\n");
+            return op1.AsUnOp().Op1;
+        }
+
+        return tree;
+    }
+
+    public GenTree gtFoldExprUnaryConst(GenTreeUnOp tree)
+    {
+        assert(tree.Oper.IsUnary && !optValnumCSE_phase && opts.Tier0OptimizationEnabled);
+
+        if ((tree.Oper is GT_ALLOCOBJ or GT_RUNTIMELOOKUP) || tree.Oper.IsStore)
+        {
+            return tree;
+        }
+
+        var op1 = tree.Op1;
+        assert(op1.Oper.IsConst);
+        return op1.Type switch {
+            TYP_INT => gtFoldExprUnaryConstInt(tree, op1.AsIntCon()),
+            TYP_LONG => gtFoldExprUnaryConstLng(tree, op1.AsIntConCommon()),
+            TYP_FLOAT or TYP_DOUBLE => gtFoldExprUnaryConstDbl(tree, op1.AsDblCon()),
+            _ => tree,
+        };
+    }
+
+    public GenTree gtFoldExprUnaryConstInt(GenTreeUnOp tree, GenTreeIntCon intCon)
+    {
+        assert(tree.Oper.IsUnary && !optValnumCSE_phase && opts.Tier0OptimizationEnabled);
+        assert(intCon == tree.Op1);
+
+        if (!intCon.ImmedValCanBeFolded(this, tree.Oper))
+        {
+            return tree;
+        }
+
+        var value = unchecked((int)intCon.IconValue);
+
+        switch (tree.Oper)
+        {
+            case GT_NOT:
+            {
+                value = ~value;
+                break;
+            }
+
+            case GT_NEG:
+            {
+                value = unchecked(-value);
+                break;
+            }
+
+            case GT_BSWAP:
+            {
+                value = BinaryPrimitives.ReverseEndianness(value);
+                break;
+            }
+
+            case GT_BSWAP16:
+            {
+                value = BinaryPrimitives.ReverseEndianness(unchecked((ushort)value));
+                break;
+            }
+
+            case GT_CAST:
+            {
+                var castType = tree.AsCast().CastType;
+                assert(castType.ActualType == tree.Type);
+
+                if (tree.HasOverflowCheck && CheckedOps.CastFromIntOverflows(value, castType, tree.IsUnsigned))
+                {
+                    return gtFoldExprForOverflow(tree);
+                }
+
+                switch (castType)
+                {
+                    case TYP_BYTE:
+                    {
+                        value = unchecked((sbyte)value);
+                        break;
+                    }
+
+                    case TYP_UBYTE:
+                    {
+                        value = unchecked((byte)value);
+                        break;
+                    }
+
+                    case TYP_SHORT:
+                    {
+                        value = unchecked((short)value);
+                        break;
+                    }
+
+                    case TYP_USHORT:
+                    {
+                        value = unchecked((ushort)value);
+                        break;
+                    }
+
+                    case TYP_INT:
+                    case TYP_UINT:
+                    {
+                        break;
+                    }
+
+                    case TYP_LONG:
+                    case TYP_ULONG:
+                    {
+                        return gtBashTreeToConstLng(tree, tree.IsUnsigned ? unchecked((uint)value) : (long)value);
+                    }
+
+                    case TYP_FLOAT:
+                    {
+                        return gtBashTreeToConstDbl(tree, tree.IsUnsigned ? (float)unchecked((uint)value) : (float)value);
+                    }
+
+                    case TYP_DOUBLE:
+                    {
+                        return gtBashTreeToConstDbl(tree, tree.IsUnsigned ? (double)unchecked((uint)value) : value);
+                    }
+
+                    default:
+                    {
+                        throw new InvalidOperationException("Invalid integral constant cast destination.");
+                    }
+                }
+
+                break;
+            }
+
+            default:
+            {
+                return tree;
+            }
+        }
+
+        return gtBashTreeToConstInt(tree, value);
+    }
+
+    public GenTree gtFoldExprUnaryConstLng(GenTreeUnOp tree, GenTreeIntConCommon intCon)
+    {
+        assert(tree.Oper.IsUnary && !optValnumCSE_phase && opts.Tier0OptimizationEnabled);
+        assert(intCon == tree.Op1);
+
+        if (!intCon.ImmedValCanBeFolded(this, tree.Oper))
+        {
+            return tree;
+        }
+
+        var value = intCon.LngValue;
+
+        switch (tree.Oper)
+        {
+            case GT_NOT:
+            {
+                value = ~value;
+                break;
+            }
+
+            case GT_NEG:
+            {
+                value = unchecked(-value);
+                break;
+            }
+
+            case GT_BSWAP:
+            {
+                value = BinaryPrimitives.ReverseEndianness(value);
+                break;
+            }
+
+            case GT_CAST:
+            {
+                var castType = tree.AsCast().CastType;
+                assert(castType.ActualType == tree.Type);
+
+                if (tree.HasOverflowCheck && CheckedOps.CastFromLongOverflows(value, castType, tree.IsUnsigned))
+                {
+                    return gtFoldExprForOverflow(tree);
+                }
+
+                switch (castType)
+                {
+                    case TYP_BYTE:
+                    {
+                        value = unchecked((sbyte)value);
+                        break;
+                    }
+
+                    case TYP_UBYTE:
+                    {
+                        value = unchecked((byte)value);
+                        break;
+                    }
+
+                    case TYP_SHORT:
+                    {
+                        value = unchecked((short)value);
+                        break;
+                    }
+
+                    case TYP_USHORT:
+                    {
+                        value = unchecked((ushort)value);
+                        break;
+                    }
+
+                    case TYP_INT:
+                    {
+                        value = unchecked((int)value);
+                        break;
+                    }
+
+                    case TYP_UINT:
+                    {
+                        value = unchecked((uint)value);
+                        break;
+                    }
+
+                    case TYP_LONG:
+                    case TYP_ULONG:
+                    {
+                        return gtBashTreeToConstLng(tree, value);
+                    }
+
+                    case TYP_FLOAT:
+                    {
+                        return gtBashTreeToConstDbl(tree, tree.IsUnsigned ? (float)unchecked((ulong)value) : (float)value);
+                    }
+
+                    case TYP_DOUBLE:
+                    {
+                        return gtBashTreeToConstDbl(tree, tree.IsUnsigned ? (double)unchecked((ulong)value) : (double)value);
+                    }
+
+                    default:
+                    {
+                        throw new InvalidOperationException("Invalid long constant cast destination.");
+                    }
+                }
+
+                return gtBashTreeToConstInt(tree, unchecked((int)value));
+            }
+
+            default:
+            {
+                return tree;
+            }
+        }
+
+        return gtBashTreeToConstLng(tree, value);
+    }
+
+    public GenTree gtFoldExprUnaryConstDbl(GenTreeUnOp tree, GenTreeDblCon dblCon)
+    {
+        assert(tree.Oper.IsUnary && !optValnumCSE_phase && opts.Tier0OptimizationEnabled);
+        assert(dblCon == tree.Op1);
+        var value = dblCon.DconVal;
+
+        switch (tree.Oper)
+        {
+            case GT_NEG:
+            {
+                value = -value;
+                break;
+            }
+
+            case GT_CAST:
+            {
+                var castType = tree.AsCast().CastType;
+                assert(castType.ActualType == tree.Type);
+
+                // Keep overflowing floating casts for codegen, including unchecked casts.
+                if (dblCon.Type is TYP_DOUBLE
+                    ? CheckedOps.CastFromDoubleOverflows(value, castType)
+                    : CheckedOps.CastFromFloatOverflows((float)value, castType))
+                {
+                    return tree;
+                }
+
+                switch (castType)
+                {
+                    case TYP_BYTE:
+                    {
+                        return gtBashTreeToConstInt(tree, unchecked((sbyte)value));
+                    }
+
+                    case TYP_UBYTE:
+                    {
+                        return gtBashTreeToConstInt(tree, unchecked((byte)value));
+                    }
+
+                    case TYP_SHORT:
+                    {
+                        return gtBashTreeToConstInt(tree, unchecked((short)value));
+                    }
+
+                    case TYP_USHORT:
+                    {
+                        return gtBashTreeToConstInt(tree, unchecked((ushort)value));
+                    }
+
+                    case TYP_INT:
+                    {
+                        return gtBashTreeToConstInt(tree, unchecked((int)value));
+                    }
+
+                    case TYP_UINT:
+                    {
+                        return gtBashTreeToConstInt(tree, unchecked((int)(uint)value));
+                    }
+
+                    case TYP_LONG:
+                    {
+                        return gtBashTreeToConstLng(tree, unchecked((long)value));
+                    }
+
+                    case TYP_ULONG:
+                    {
+                        return gtBashTreeToConstLng(tree, unchecked((long)(ulong)value));
+                    }
+
+                    case TYP_FLOAT:
+                    {
+                        return gtBashTreeToConstDbl(tree, (float)value);
+                    }
+
+                    case TYP_DOUBLE:
+                    {
+                        return gtBashTreeToConstDbl(tree, dblCon.Type is TYP_FLOAT ? (float)value : value);
+                    }
+
+                    default:
+                    {
+                        throw new InvalidOperationException("Invalid floating constant cast destination.");
+                    }
+                }
+            }
+
+            default:
+            {
+                return tree;
+            }
+        }
+
+        return gtBashTreeToConstDbl(tree, value);
+    }
+
+    public GenTree gtFoldExprBinaryConst(GenTreeOp tree)
+    {
+        assert(tree.Oper.IsBinary && !optValnumCSE_phase && opts.Tier0OptimizationEnabled);
+
+        if (tree.Oper.IsStore)
+        {
+            return tree;
+        }
+
+        var op1 = tree.Op1;
+        var op2 = tree.Op2;
+        assert(op1.Oper.IsConst && op2.Oper.IsConst);
+
+        if (tree.Oper is GT_COMMA)
+        {
+            return op2;
+        }
+
+        if (tree.Oper is GT_BOUNDS_CHECK)
+        {
+            var index = op1.AsIntCon().IconValue;
+            var length = op2.AsIntCon().IconValue;
+
+            if ((0 <= index) && (index < length))
+            {
+                JITDUMP("\nFolding an in-range bounds check:\n");
+                DISPTREE(tree);
+                tree.BashToNOP();
+                JITDUMP("Bashed to NOP:\n");
+                DISPTREE(tree);
+            }
+
+            return tree;
+        }
+
+        var switchType = varTypeIsGC(op2.Type) && !varTypeIsGC(op1.Type) ? op2.Type : op1.Type;
+
+        switch (switchType)
+        {
+            case TYP_REF:
+            {
+                if ((op1.Oper is GT_CNS_STR) || (op2.Oper is GT_CNS_STR))
+                {
+                    if (op2.IsIntegralConst(0))
+                    {
+                        if (tree.Oper is GT_EQ)
+                        {
+                            return gtBashTreeToConstInt(tree, 0);
+                        }
+
+                        if ((tree.Oper is GT_NE) || ((tree.Oper is GT_GT) && tree.IsUnsigned))
+                        {
+                            return gtBashTreeToConstInt(tree, 1);
+                        }
+                    }
+
+                    return tree;
+                }
+
+                goto case TYP_BYREF;
+            }
+
+            case TYP_BYREF:
+            {
+                var value1 = op1.AsIntConCommon().IconValue;
+                var value2 = op2.AsIntConCommon().IconValue;
+
+                if (tree.Oper is GT_EQ)
+                {
+                    return gtBashTreeToConstInt(tree, value1 == value2 ? 1 : 0);
+                }
+
+                if (tree.Oper is GT_NE)
+                {
+                    return gtBashTreeToConstInt(tree, value1 != value2 ? 1 : 0);
+                }
+
+                if (tree.Oper is GT_ADD)
+                {
+                    noway_assert(tree.Type is not TYP_REF);
+
+                    if (((op1.Type is TYP_REF) && (value1 == 0)) || ((op2.Type is TYP_REF) && (value2 == 0)))
+                    {
+                        JITDUMP("\nFolding operator with constant nodes into a constant:\n");
+                        DISPTREE(tree);
+                        var result = new GenTreeIntCon(TYP_BYREF, 0, null, tree);
+                        fgUpdateConstTreeValueNumber(result);
+                        JITDUMP("\nFolded to null byref:\n");
+                        DISPTREE(result);
+                        result.Flags &= ~GTF_ALL_EFFECT;
+
+                        return result;
+                    }
+                }
+
+                return tree;
+            }
+
+            case TYP_INT:
+            {
+                return gtFoldExprBinaryConstInt(tree, op1.AsIntCon(), op2.AsIntCon());
+            }
+
+            case TYP_LONG:
+            {
+                return gtFoldExprBinaryConstLng(tree, op1.AsIntConCommon(), op2.AsIntConCommon());
+            }
+
+            case TYP_FLOAT:
+            case TYP_DOUBLE:
+            {
+                return gtFoldExprBinaryConstDbl(tree, op1.AsDblCon(), op2.AsDblCon());
+            }
+
+            default:
+            {
+                return tree;
+            }
+        }
+    }
+
+    public GenTree gtFoldExprBinaryConstInt(GenTreeOp tree, GenTreeIntCon intCon1, GenTreeIntCon intCon2)
+    {
+        assert(tree.Oper.IsBinary && !optValnumCSE_phase && opts.Tier0OptimizationEnabled);
+        assert((intCon1 == tree.Op1) && (intCon2 == tree.Op2));
+        assert((tree.Type is TYP_INT) || varTypeIsGC(tree.Type));
+        assert(!varTypeIsGC(intCon1.Type) && !varTypeIsGC(intCon2.Type));
+        var oper = tree.Oper;
+
+        if (!intCon1.ImmedValCanBeFolded(this, oper) || !intCon2.ImmedValCanBeFolded(this, oper))
+        {
+            return tree;
+        }
+
+        var value1 = unchecked((int)intCon1.IconValue);
+        var value2 = unchecked((int)intCon2.IconValue);
+        FieldSeq? fields = null;
+
+        switch (oper)
+        {
+            case GT_EQ:
+            {
+                value1 = value1 == value2 ? 1 : 0;
+                break;
+            }
+
+            case GT_NE:
+            {
+                value1 = value1 != value2 ? 1 : 0;
+                break;
+            }
+
+            case GT_LT:
+            {
+                value1 = (tree.IsUnsigned ? unchecked((uint)value1) < unchecked((uint)value2) : value1 < value2) ? 1 : 0;
+                break;
+            }
+
+            case GT_LE:
+            {
+                value1 = (tree.IsUnsigned ? unchecked((uint)value1) <= unchecked((uint)value2) : value1 <= value2) ? 1 : 0;
+                break;
+            }
+
+            case GT_GE:
+            {
+                value1 = (tree.IsUnsigned ? unchecked((uint)value1) >= unchecked((uint)value2) : value1 >= value2) ? 1 : 0;
+                break;
+            }
+
+            case GT_GT:
+            {
+                value1 = (tree.IsUnsigned ? unchecked((uint)value1) > unchecked((uint)value2) : value1 > value2) ? 1 : 0;
+                break;
+            }
+
+            case GT_ADD:
+            {
+                if (tree.HasOverflowCheck && !(tree.IsUnsigned ? CheckedOps.TryAddUns(value1, value2, out _) : CheckedOps.TryAdd(value1, value2, out _)))
+                {
+                    return gtFoldExprForOverflow(tree);
+                }
+
+                value1 = unchecked(value1 + value2);
+                fields = FieldSeqStore.Append(intCon1.FieldSeq, intCon2.FieldSeq);
+                break;
+            }
+
+            case GT_SUB:
+            {
+                if (tree.HasOverflowCheck && !(tree.IsUnsigned ? CheckedOps.TrySubUns(value1, value2, out _) : CheckedOps.TrySub(value1, value2, out _)))
+                {
+                    return gtFoldExprForOverflow(tree);
+                }
+
+                value1 = unchecked(value1 - value2);
+                break;
+            }
+
+            case GT_MUL:
+            {
+                if (tree.HasOverflowCheck && !(tree.IsUnsigned ? CheckedOps.TryMulUns(value1, value2, out _) : CheckedOps.TryMul(value1, value2, out _)))
+                {
+                    return gtFoldExprForOverflow(tree);
+                }
+
+                value1 = unchecked(value1 * value2);
+                break;
+            }
+
+            case GT_OR:
+            {
+                value1 |= value2;
+                break;
+            }
+
+            case GT_XOR:
+            {
+                value1 ^= value2;
+                break;
+            }
+
+            case GT_AND:
+            {
+                value1 &= value2;
+                break;
+            }
+
+            case GT_LSH:
+            {
+                value1 <<= value2;
+                break;
+            }
+
+            case GT_RSH:
+            {
+                value1 >>= value2;
+                break;
+            }
+
+            case GT_RSZ:
+            {
+                value1 >>>= value2;
+                break;
+            }
+
+            case GT_ROL:
+            {
+                value1 = unchecked((int)BitOperations.RotateLeft((uint)value1, value2));
+                break;
+            }
+
+            case GT_ROR:
+            {
+                value1 = unchecked((int)BitOperations.RotateRight((uint)value1, value2));
+                break;
+            }
+
+            case GT_DIV:
+            case GT_MOD:
+            case GT_UDIV:
+            case GT_UMOD:
+            {
+                // Preserve the native guard even for unsigned division/remainder.
+                if ((value2 == 0) || ((value2 == -1) && (value1 == int.MinValue)))
+                {
+                    return tree;
+                }
+
+                value1 = oper switch {
+                    GT_DIV => value1 / value2,
+                    GT_MOD => value1 % value2,
+                    GT_UDIV => unchecked((int)((uint)value1 / (uint)value2)),
+                    _ => unchecked((int)((uint)value1 % (uint)value2)),
+                };
+                break;
+            }
+
+            default:
+            {
+                return tree;
+            }
+        }
+
+        return gtBashTreeToConstInt(tree, value1, fields);
+    }
+
+    public GenTree gtFoldExprBinaryConstLng(GenTreeOp tree, GenTreeIntConCommon intCon1, GenTreeIntConCommon intCon2)
+    {
+        assert(tree.Oper.IsBinary && !optValnumCSE_phase && opts.Tier0OptimizationEnabled);
+        assert((intCon1 == tree.Op1) && (intCon2 == tree.Op2));
+        assert(!varTypeIsGC(intCon1.Type) && !varTypeIsGC(intCon2.Type));
+        var oper = tree.Oper;
+
+        if (!intCon1.ImmedValCanBeFolded(this, oper) || !intCon2.ImmedValCanBeFolded(this, oper))
+        {
+            return tree;
+        }
+
+        var value1 = intCon1.LngValue;
+        var value2 = intCon2.IntegralValue;
+        FieldSeq? fields = null;
+
+        switch (oper)
+        {
+            case GT_EQ:
+            {
+                return gtBashTreeToConstInt(tree, value1 == value2 ? 1 : 0);
+            }
+
+            case GT_NE:
+            {
+                return gtBashTreeToConstInt(tree, value1 != value2 ? 1 : 0);
+            }
+
+            case GT_LT:
+            {
+                return gtBashTreeToConstInt(tree, (tree.IsUnsigned ? unchecked((ulong)value1) < unchecked((ulong)value2) : value1 < value2) ? 1 : 0);
+            }
+
+            case GT_LE:
+            {
+                return gtBashTreeToConstInt(tree, (tree.IsUnsigned ? unchecked((ulong)value1) <= unchecked((ulong)value2) : value1 <= value2) ? 1 : 0);
+            }
+
+            case GT_GE:
+            {
+                return gtBashTreeToConstInt(tree, (tree.IsUnsigned ? unchecked((ulong)value1) >= unchecked((ulong)value2) : value1 >= value2) ? 1 : 0);
+            }
+
+            case GT_GT:
+            {
+                return gtBashTreeToConstInt(tree, (tree.IsUnsigned ? unchecked((ulong)value1) > unchecked((ulong)value2) : value1 > value2) ? 1 : 0);
+            }
+
+            case GT_ADD:
+                if (tree.HasOverflowCheck && !(tree.IsUnsigned ? CheckedOps.TryAddUns(value1, value2, out _) : CheckedOps.TryAdd(value1, value2, out _)))
+                {
+                    return gtFoldExprForOverflow(tree);
+                }
+                value1 = unchecked(value1 + value2);
+#if TARGET_64BIT
+                fields = FieldSeqStore.Append(intCon1.AsIntCon().FieldSeq, intCon2.AsIntCon().FieldSeq);
+#endif
+                break;
+
+            case GT_SUB:
+            {
+                if (tree.HasOverflowCheck && !(tree.IsUnsigned ? CheckedOps.TrySubUns(value1, value2, out _) : CheckedOps.TrySub(value1, value2, out _)))
+                {
+                    return gtFoldExprForOverflow(tree);
+                }
+
+                value1 = unchecked(value1 - value2);
+                break;
+            }
+
+            case GT_MUL:
+            {
+                if (tree.HasOverflowCheck && !(tree.IsUnsigned ? CheckedOps.TryMulUns(value1, value2, out _) : CheckedOps.TryMul(value1, value2, out _)))
+                {
+                    return gtFoldExprForOverflow(tree);
+                }
+
+                value1 = unchecked(value1 * value2);
+                break;
+            }
+
+            case GT_OR:
+            {
+                value1 |= value2;
+                break;
+            }
+
+            case GT_XOR:
+            {
+                value1 ^= value2;
+                break;
+            }
+
+            case GT_AND:
+            {
+                value1 &= value2;
+                break;
+            }
+
+            case GT_LSH:
+            {
+                value1 <<= unchecked((int)value2);
+                break;
+            }
+
+            case GT_RSH:
+            {
+                value1 >>= unchecked((int)value2);
+                break;
+            }
+
+            case GT_RSZ:
+            {
+                value1 >>>= unchecked((int)value2);
+                break;
+            }
+
+            case GT_ROL:
+            {
+                value1 = unchecked((long)BitOperations.RotateLeft((ulong)value1, (int)value2));
+                break;
+            }
+
+            case GT_ROR:
+            {
+                value1 = unchecked((long)BitOperations.RotateRight((ulong)value1, (int)value2));
+                break;
+            }
+
+            case GT_DIV:
+            case GT_MOD:
+            case GT_UDIV:
+            case GT_UMOD:
+            {
+                if ((value2 == 0) || ((value2 == -1) && (value1 == long.MinValue)))
+                {
+                    return tree;
+                }
+
+                value1 = oper switch {
+                    GT_DIV => value1 / value2,
+                    GT_MOD => value1 % value2,
+                    GT_UDIV => unchecked((long)((ulong)value1 / (ulong)value2)),
+                    _ => unchecked((long)((ulong)value1 % (ulong)value2)),
+                };
+                break;
+            }
+
+            default:
+            {
+                return tree;
+            }
+        }
+
+        return gtBashTreeToConstLng(tree, value1, fields);
+    }
+
+    public GenTree gtFoldExprBinaryConstDbl(GenTreeOp tree, GenTreeDblCon dblCon1, GenTreeDblCon dblCon2)
+    {
+        assert(tree.Oper.IsBinary && !optValnumCSE_phase && opts.Tier0OptimizationEnabled);
+        assert((dblCon1 == tree.Op1) && (dblCon2 == tree.Op2));
+        var value1 = dblCon1.DconVal;
+        var value2 = dblCon2.DconVal;
+
+        if (tree.Type is TYP_FLOAT)
+        {
+            value1 = (float)value1;
+            value2 = (float)value2;
+        }
+
+        assert(!tree.HasOverflowCheckEx);
+
+        if (double.IsNaN(value1) || double.IsNaN(value2))
+        {
+            JITDUMP("Double operator(s) is NaN\n");
+
+            if (tree.Oper.IsCompare)
+            {
+                return gtBashTreeToConstInt(tree, (tree.Flags & GTF_RELOP_NAN_UN) != 0 ? 1 : 0);
+            }
+        }
+
+        switch (tree.Oper)
+        {
+            case GT_EQ:
+            {
+                return gtBashTreeToConstInt(tree, value1 == value2 ? 1 : 0);
+            }
+
+            case GT_NE:
+            {
+                return gtBashTreeToConstInt(tree, value1 != value2 ? 1 : 0);
+            }
+
+            case GT_LT:
+            {
+                return gtBashTreeToConstInt(tree, value1 < value2 ? 1 : 0);
+            }
+
+            case GT_LE:
+            {
+                return gtBashTreeToConstInt(tree, value1 <= value2 ? 1 : 0);
+            }
+
+            case GT_GE:
+            {
+                return gtBashTreeToConstInt(tree, value1 >= value2 ? 1 : 0);
+            }
+
+            case GT_GT:
+            {
+                return gtBashTreeToConstInt(tree, value1 > value2 ? 1 : 0);
+            }
+
+            case GT_ADD:
+            {
+                value1 += value2;
+                break;
+            }
+
+            case GT_SUB:
+            {
+                value1 -= value2;
+                break;
+            }
+
+            case GT_MUL:
+            {
+                value1 *= value2;
+                break;
+            }
+
+            case GT_DIV:
+            {
+                // Preserve runtime evaluation of platform-dependent division by zero.
+                if (value2 == 0)
+                {
+                    return tree;
+                }
+
+                value1 /= value2;
+                break;
+            }
+
+            default:
+            {
+                return tree;
+            }
+        }
+
+        return gtBashTreeToConstDbl(tree, value1);
+    }
+
+    /// <remarks>Unlike native bashing, callers must consume the returned node and update its owner.</remarks>
+    public GenTree gtBashTreeToConstInt(GenTree tree, int value, FieldSeq? fields = null)
+    {
+        JITDUMP("\nFolding operator with constant nodes into a constant:\n");
+        DISPTREE(tree);
+        var result = new GenTreeIntCon(TYP_INT, value, fields, tree);
+        fgUpdateConstTreeValueNumber(result);
+        JITDUMP("Bashed to constant:\n");
+        DISPTREE(result);
+        result.Flags &= ~GTF_ALL_EFFECT;
+
+        return result;
+    }
+
+    public GenTree gtBashTreeToConstLng(GenTree tree, long value, FieldSeq? fields = null)
+    {
+#if !TARGET_64BIT
+        if (fields is not null)
+        {
+            assert(false, "Field sequences on CNS_LNG nodes!?");
+            return tree;
+        }
+
+#endif
+        JITDUMP("\nFolding operator with constant nodes into a constant:\n");
+        DISPTREE(tree);
+#if TARGET_64BIT
+        GenTree result = new GenTreeIntCon(TYP_LONG, (nint)value, fields, tree);
+#else
+        GenTree result = new GenTreeLngCon(value, tree);
+#endif
+        fgUpdateConstTreeValueNumber(result);
+        JITDUMP("Bashed to constant:\n");
+        DISPTREE(result);
+        result.Flags &= ~GTF_ALL_EFFECT;
+
+        return result;
+    }
+
+    public GenTree gtBashTreeToConstDbl(GenTree tree, double value)
+    {
+        JITDUMP("\nFolding operator with constant nodes into a constant:\n");
+        DISPTREE(tree);
+
+        if (tree.Type is TYP_FLOAT)
+        {
+            value = (float)value;
+        }
+
+        var result = new GenTreeDblCon(tree.Type, value, tree);
+        fgUpdateConstTreeValueNumber(result);
+        JITDUMP("Bashed to constant:\n");
+        DISPTREE(result);
+        result.Flags &= ~GTF_ALL_EFFECT;
+
+        return result;
+    }
+
+    public GenTree gtFoldExprForOverflow(GenTree tree)
+    {
+        assert(tree.HasOverflowCheck && (tree.Oper is GT_CAST or GT_ADD or GT_SUB or GT_MUL));
+
+        if (!fgGlobalMorph)
+        {
+            // Preserve the native gate: post-morph argument caches are not updated here.
+            return tree;
+        }
+
+        JITDUMP("\nFolding binary operator with constant nodes into a comma throw:\n");
+        DISPTREE(tree);
+
+        if (vnStore is not null)
+        {
+            throw new NotImplementedException("Overflow folding with value numbering is not yet ported.");
+        }
+
+        var op1 = gtNewHelperCallNode(TYP_VOID, CORINFO_HELP_OVERFLOW);
+        var op2 = gtNewZeroConNode(tree.Type.ActualType);
+
+        return gtNewBinaryNode(GT_COMMA, tree.Type, op1, op2);
+    }
+
+    public void fgUpdateConstTreeValueNumber(GenTree tree)
+    {
+        if (vnStore is not null)
+        {
+            throw new NotImplementedException("Constant value numbering is not yet ported.");
+        }
     }
 
     /// <summary>Fold special intrinsic calls before argument morphing.</summary>

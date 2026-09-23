@@ -34,6 +34,13 @@ public sealed class GenTreeIntCon : GenTreeIntConCommon
         _fieldSeq = fields;
     }
 
+    internal GenTreeIntCon(var_types type, nint value, FieldSeq? fields, GenTree source)
+        : base(GT_CNS_INT, type, source)
+    {
+        _value.Icon = value;
+        _fieldSeq = fields;
+    }
+
     public nint CompileTimeHandle
     {
         get

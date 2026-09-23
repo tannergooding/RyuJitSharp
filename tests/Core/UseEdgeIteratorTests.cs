@@ -153,10 +153,6 @@ internal static unsafe class UseEdgeIteratorTests
         WithCompiler(compiler => {
             compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }];
             compiler.lvaCount = 1;
-            JitFlags flags = default;
-            flags.Set(JitFlags.JIT_FLAG_MIN_OPT);
-            compiler.opts.jitFlags = &flags;
-            compiler.opts.SetMinOpts(true);
             compiler.fgNodeThreading = threading;
             var local = compiler.gtNewLclvNode(TYP_INT, 0);
             var constant = compiler.gtNewIconNode(TYP_INT, 1);
@@ -184,7 +180,7 @@ internal static unsafe class UseEdgeIteratorTests
                     Assert.That(root.Next, Is.Null);
                 }
             }
-        });
+        }, minOpts: true);
     }
 
     [TestCase(false)]
@@ -945,13 +941,22 @@ internal static unsafe class UseEdgeIteratorTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lateHead")]
     private static extern ref CallArg? LateHead(ref CallArgs args);
 
-    private static void WithCompiler(Action<Compiler> action)
+    private static void WithCompiler(Action<Compiler> action, bool minOpts = false)
     {
 #if DEBUG
         using var jitTls = new JitTls(null);
 #endif
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitFlags flags = default;
+
+        if (minOpts)
+        {
+            flags.Set(JitFlags.JIT_FLAG_MIN_OPT);
+        }
+
+        compiler.opts.jitFlags = &flags;
+        compiler.opts.SetMinOpts(minOpts);
         JitTls.Compiler = compiler;
 
         try

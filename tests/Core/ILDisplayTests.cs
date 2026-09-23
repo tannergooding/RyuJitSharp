@@ -12,6 +12,19 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class ILDisplayTests
 {
+    [TestCase(7.5, 17, "7.5000000000000000")]
+    [TestCase(2.5, 17, "2.5000000000000000")]
+    [TestCase(0.0, 17, "0.0000000000000000")]
+    [TestCase(1.0e17, 17, "1.0000000000000000e+17")]
+    [TestCase(1.0e16, 17, "10000000000000000.")]
+    [TestCase(0.0001, 17, "0.00010000000000000000")]
+    [TestCase(1.0e-5, 17, "1.0000000000000001e-05")]
+    [TestCase(7.5, 9, "7.50000000")]
+    public static void GeneralFloatingFormatRetainsNativeSignificantZeroes(double value, int precision, string expected)
+    {
+        Assert.That(Globals.formatFloatWithTrailingZeros(value, precision), Is.EqualTo(expected));
+    }
+
     [TestCase(-128, "FFFFFFFFFFFFFF80")]
     [TestCase(-2, "FFFFFFFFFFFFFFFE")]
     [TestCase(-1, "FFFFFFFFFFFFFFFF")]

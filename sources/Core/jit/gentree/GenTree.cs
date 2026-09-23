@@ -100,6 +100,35 @@ public partial class GenTree
 #endif
     }
 
+    /// <summary>Preserve an unthreaded node's metadata and logical identity when replacing its CLR representation.</summary>
+    protected GenTree(genTreeOps oper, var_types type, GenTree source)
+    {
+        assert((source._prev is null) && (source._next is null));
+#if DEBUG
+        assert(oper.StructType == GetType());
+#endif
+        _oper = oper;
+        _type = type;
+        _cseNum = source._cseNum;
+        _lirFlags = source._lirFlags;
+        _assertionInfo = source._assertionInfo;
+        _costEx = source._costEx;
+        _costSz = source._costSz;
+        _regNum = source._regNum;
+        _flags = source._flags & GTF_NODE_MASK;
+        _vnPair = source._vnPair;
+#if DEBUG
+        _operSave = source._operSave;
+        _costsInitialized = source._costsInitialized;
+        _regTag = source._regTag;
+        _debugFlags = source._debugFlags;
+        _morphCount = source._morphCount;
+        _treeId = source._treeId;
+        _seqNum = source._seqNum;
+        _useNum = source._useNum;
+#endif
+    }
+
     public AssertionInfo AssertionInfo
     {
         get

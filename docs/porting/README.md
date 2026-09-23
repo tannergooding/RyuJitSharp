@@ -222,9 +222,11 @@ differences in the comparison tooling.
 
 Build `sources\PortingCorpus\PortingCorpus.csproj` in Release. Its output is
 `artifacts\bin\sources\PortingCorpus\Release\net11.0\PortingCorpus.dll`.
-It checks seven entry points covering arithmetic, branches, locals,
-direct and managed indirect calls, and an inline candidate. It is a standalone fixture, not a compiler
-coverage claim.
+It checks eight entry points covering arithmetic, branches, locals, direct and
+managed indirect calls, an inline candidate, and scalar constant folding.
+`FoldConstants` uses `BitConverter` intrinsics to keep constants in IL until JIT
+import, exercising casts and arithmetic without Roslyn folding them first.
+It is a standalone fixture, not a compiler coverage claim.
 
 Use `scripts\porting\Invoke-PortingCorpus.ps1` with `-CoreRoot`, `-Corpus`,
 `-OutputDirectory`, and the exact `-NativeCommit`. Capture the native run first.

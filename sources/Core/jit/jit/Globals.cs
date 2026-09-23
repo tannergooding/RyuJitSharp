@@ -668,6 +668,38 @@ public partial class Globals
         return sign + "nan";
     }
 
+    internal static string formatFloatWithTrailingZeros(double value, int precision)
+    {
+        var text = formatFloat(value, "g" + precision.ToString(CultureInfo.InvariantCulture));
+
+        if (!double.IsFinite(value))
+        {
+            return text;
+        }
+
+        // C's %#.*g retains the decimal point and all significant trailing zeroes.
+        var exponent = text.IndexOf('e', StringComparison.Ordinal);
+        var end = exponent < 0 ? text.Length : exponent;
+        var digits = 0;
+        var hasPoint = false;
+
+        for (var i = 0; i < end; i++)
+        {
+            var c = text[i];
+            hasPoint |= c == '.';
+
+            if (char.IsAsciiDigit(c) && ((c != '0') || (digits != 0)))
+            {
+                digits++;
+            }
+        }
+
+        digits = Math.Max(digits, 1);
+        var padding = (hasPoint ? "" : ".") + new string('0', precision - digits);
+
+        return text.Insert(end, padding);
+    }
+
     [Conditional("DEBUG")]
     public static void LABELEDDISPTREERANGE(string label, LIR.Range range, GenTree tree)
     {

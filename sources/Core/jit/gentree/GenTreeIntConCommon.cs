@@ -19,6 +19,12 @@ public abstract class GenTreeIntConCommon : GenTree
         assert(oper.IsIntegralConst);
     }
 
+    protected GenTreeIntConCommon(genTreeOps oper, var_types type, GenTree source)
+        : base(oper, type, source)
+    {
+        assert(oper.IsIntegralConst);
+    }
+
 #if TARGET_64BIT
     public bool FitsInI32 => Globals.FitsInI32(_value.Icon);
 #else

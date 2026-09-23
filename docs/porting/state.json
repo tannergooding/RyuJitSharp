@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Finish the restored, uncommitted scalar-folding batch before further porting: validate its intrinsic-recognition diagnostics and floating formatting, recapture the eight-method corpus including FoldConstants, then retire only completed native helpers and commit the batch. Follow the C# layout guidance in AGENTS.md and README.md; process-ported code has received a separate layout-only cleanup. Constant replacement preserves base metadata and logical IDs without allocating a new logical ID, but currently supports unthreaded tree form only. Nonconstant, conditional, hardware-intrinsic and value-numbered folding remain incomplete; cached argument references and LIR ownership still need adaptation (B064). Do not emulate native cross-kind bashing or redesign the hierarchy. Both native trees use the target revision; read the intact oracle.",
+    "nextAction": "Continue the nonconstant binary, conditional and hardware-intrinsic folding closure before activating fgInline (B054). Scalar unary/binary constant folding and identity-preserving unthreaded replacement are implemented (B082); the eight-method NativeAOT corpus now has four exactly matching import prefixes, including six folds in FoldConstants. Value-numbered folding remains explicit NYI (B083); post-morph cached argument references and LIR ownership still need adaptation (B064). Keep the incomplete dispatcher, overflow/VN bodies and shared native bashing templates in the residual tree. Follow the visual-grouping guidance in AGENTS.md and README.md rather than applying blank-line rules mechanically. Both native trees use the target revision; read the intact oracle.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -30,15 +30,15 @@
         "functionalWipIncluded": false,
         "nativeAotRecaptured": false
       },
-      "debugBuild": "passed-after-net11-managed-parsing",
-      "releaseBuild": "passed-after-net11-managed-parsing",
+      "debugBuild": "passed-after-scalar-folding",
+      "releaseBuild": "passed-after-scalar-folding",
       "testSourcesPresent": true,
       "writerRegressionCases": 16,
       "writerRegressionConfigurations": ["Debug", "Release"],
-      "targetFocusedTestsDebug": 973,
-      "targetFocusedTestsRelease": 795,
+      "targetFocusedTestsDebug": 1046,
+      "targetFocusedTestsRelease": 860,
       "targetFocusedTestsSkipped": 0,
-      "fullSuiteSourceCommit": "78fdb3088b6ff0cb7d01e9060cf8da233a3c3e04",
+      "fullSuiteSourceCommit": "f187aff24764b05e821ff938bf2ce7de253c9ddd",
       "callIntrinsicSpotChecks": {
         "debugPassed": 81,
         "releasePassed": 81,
@@ -346,9 +346,29 @@
         "nativeAotRecaptured": false,
         "arithmeticFoldingActivated": false
       },
-      "nativeAotPublish": "passed-after-net11-managed-parsing",
+      "scalarFoldingMilestone": {
+        "managedSourceCommit": "f187aff24764b05e821ff938bf2ce7de253c9ddd",
+        "scalarCasesPerConfiguration": 47,
+        "initialRegressionCases": 44,
+        "originalStubFailures": 39,
+        "floatingFormatCasesDebug": 8,
+        "fullSuiteDebugPassed": 1046,
+        "fullSuiteReleasePassed": 860,
+        "skipped": 0,
+        "nativeCompilationHeaders": 8,
+        "managedCompilationHeaders": 8,
+        "nativeAotRecaptured": true,
+        "equalImportPrefixes": ["Add", "Branch", "Locals", "FoldConstants"],
+        "foldConstantsFoldCount": 6,
+        "firstDifferences": "unchanged-inline-candidate-diagnostics-and-processing",
+        "fullPhaseParityEstablished": false,
+        "comparison": "artifacts\\scalar-folding-final-comparison.json",
+        "debugTests": "artifacts\\scalar-folding-final-debug.trx",
+        "releaseTests": "artifacts\\scalar-folding-final-release.trx"
+      },
+      "nativeAotPublish": "passed-after-scalar-folding",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
-      "phaseDumpParity": "three-of-seven-import-prefixes-equal-remaining-inline-candidate-differences",
+      "phaseDumpParity": "four-of-eight-import-prefixes-equal-remaining-inline-candidate-differences",
       "codegenParity": "not-available"
     }
   },
@@ -373,12 +393,12 @@
     "commit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "nativeConfiguration": "windows.x64.Checked",
     "librariesConfiguration": "Release",
-    "nativeCompilationHeaders": 7,
-    "durableCorpusNativeCompilationHeaders": 7,
+    "nativeCompilationHeaders": 8,
+    "durableCorpusNativeCompilationHeaders": 8,
     "oldNativeHostPreservedAndExecuted": true,
-    "managedCapture": "seven-selected-methods-loaded-with-target-abi",
+    "managedCapture": "eight-selected-methods-loaded-with-target-abi",
     "managedGuid": "cb2fa75d-449d-4ee0-93ef-57011daefb8c",
-    "latestManagedBinarySha256": "CB3E5EC82E7FF1A31A80C33DBD8DC82C244FC9E903A186DCC536693B7D02DF1A",
+    "latestManagedBinarySha256": "A383625158599066F956500F7F0C9979ACAE7287D91761D4D203C6C35202B51F",
     "wrongGuidCaptureRejected": true,
     "nativeLayoutMeasurements": "matched-raw-managed-sizeof-and-debug-variable-offsets",
     "latestPrefixDifference": "inline-candidate-diagnostics-and-processing",
@@ -399,13 +419,13 @@
       "The managed calli corpus case reaches imported CALL ind IR; it does not establish unmanaged calli conversion, NativeAOT fat-pointer execution, or codegen parity.",
       "Instrumented value-profile collection and constrained boxing order are source-reconciled but remain unexercised by the current corpus.",
       "The importer/intrinsic batches pass localized managed checks and a subsequent NativeAOT/native-host corpus capture. That corpus does not exercise Half expansion, helper-to-user conversion, generic Memmove, multidimensional stores, span spilling, runtime async expansions or non-x64 paths; no execution/codegen evidence is claimed for them. The new custom-awaiter-in-continuation optimization and its main-call hook remain unported; continuation-member descriptors and registration now exist, but layout and lowering remain unported.",
-      "Inline placeholder and candidate-diagnostic support has focused coverage for effects, node identity, nested substitution, block flags, byref retyping, constant branches and prior failures. Expression folding remains stubbed; successful EE-backed late devirtualization, multi-register struct repair and full inlining are not established.",
+      "Inline placeholder and candidate-diagnostic support has focused coverage for effects, node identity, nested substitution, block flags, byref retyping, constant branches and prior failures. Scalar constant folding is active, but nonconstant, conditional and HWI folding remain incomplete; successful EE-backed late devirtualization, multi-register struct repair and full inlining are not established.",
       "Inline argument/prelude/epilogue integration has focused coverage for live-edge substitution, pseudo-argument classification, struct-load faults, initialization, GC-local cleanup and null-check ordering. EE-backed cctor insertion and full inline-phase execution remain unexercised.",
       "Recursive-inline guards preserve exact-context rejection, depth-observation ordering, the implementation depth bound, and the 64-type generic-loading threshold in controlled EE tests. Implicit-byref demotion cleanup covers retained/undone/no promotion; global morph and end-to-end generic inlining remain unverified.",
       "Async inline-frame return helpers preserve cold resumption branches, caller context loads, frame-depth slot sharing, resumed-indicator propagation through retained fault handlers, and symbolic-offset cloning/dumps in focused IR/EE cases, including invocation through inline block splicing. Successful helper inlining, continuation layout and async lowering remain unverified.",
       "Inline invocation rollback and failed-call cleanup have controlled EE coverage. Managed exception trapping and synthetic native SEH unwinding pass a Windows-x64 NativeAOT probe, but real EE-thrown failures and successful nested inline compilation remain unexercised. fgInline stays disabled pending expression folding and its remaining closure.",
-      "The folding-support milestone republishes and loads the committed JIT in the native host. Its corpus does not exercise the new structural-comparison, HWI or checked-cast helpers; those have focused managed coverage. Constant folding and the full inliner remain gated on B064.",
-      "The seven-method corpus contains no EH or pinned-local cases and establishes neither phase nor codegen parity."
+      "Tree-form scalar folding preserves logical IDs and has exact native import-prefix coverage for six folds. Replacement requires unthreaded source nodes; value numbering, cached post-morph argument aliases and LIR replacement remain unsupported. The full inliner remains disabled.",
+      "The eight-method corpus contains no EH or pinned-local cases and establishes neither phase nor codegen parity."
     ]
   },
   "localRecovery": {
@@ -517,6 +537,15 @@
       "commit": "e4ecb705b108396139265b53b9cf7a896c59e7ba",
       "indexCommit": "319e5d991aa37928bb9f5411481a0dfd7d6a6cec",
       "ref": "refs/porting/snapshots/native-ledger-call-folding"
+    },
+    "scalarFoldingManagedSource": {
+      "commit": "f187aff24764b05e821ff938bf2ce7de253c9ddd",
+      "ref": "refs/porting/snapshots/scalar-folding-final-capture-source"
+    },
+    "scalarFoldingNativeResidual": {
+      "commit": "c1511108ceae20e30d0519c424a617a8b3c9ad47",
+      "indexCommit": "0e8cd2071da5eb23d19dd41146cad216b771bf89",
+      "ref": "refs/porting/snapshots/native-ledger-scalar-folding"
     }
   },
   "sourceMap": [

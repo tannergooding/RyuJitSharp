@@ -12,6 +12,7 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using Microsoft.VisualBasic;
 using unsafe MetadataNamePointerArray = byte**;
 
@@ -21323,16 +21324,62 @@ public partial class Compiler
         enclosingClassNamePointers[1] = null;
         var methodNamePointer = info.compCompHnd->getMethodNameFromMetadata(method, &classNamePointer, &namespaceNamePointer, enclosingClassNamePointers, 2);
 
-        if (isNullPointer(namespaceNamePointer) || isNullPointer(classNamePointer) || isNullPointer(methodNamePointer))
+        JITDUMP("Named Intrinsic ");
+
+        if (!isNullPointer(namespaceNamePointer))
         {
-            return info.compCompHnd->getArrayIntrinsicID(method) switch {
-                CorInfoArrayIntrinsic.GET => NI_Array_Get,
-                CorInfoArrayIntrinsic.SET => NI_Array_Set,
-                CorInfoArrayIntrinsic.ADDRESS => NI_Array_Address,
-                _ => NI_Illegal,
-            };
+            JITDUMP($"{Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(namespaceNamePointer))}.");
         }
 
+        for (var i = 1; i >= 0; i--)
+        {
+            if (enclosingClassNamePointers[i] is not null)
+            {
+                JITDUMP($"{Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(enclosingClassNamePointers[i]))}.");
+            }
+        }
+
+        if (!isNullPointer(classNamePointer))
+        {
+            JITDUMP($"{Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(classNamePointer))}.");
+        }
+
+        if (methodNamePointer is not null)
+        {
+            JITDUMP($"{Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(methodNamePointer))}");
+        }
+
+        if (isNullPointer(namespaceNamePointer) || isNullPointer(classNamePointer) || isNullPointer(methodNamePointer))
+        {
+            switch (info.compCompHnd->getArrayIntrinsicID(method))
+            {
+                case CorInfoArrayIntrinsic.GET:
+                {
+                    JITDUMP("ARRAY_FUNC_GET: Recognized\n");
+                    return NI_Array_Get;
+                }
+
+                case CorInfoArrayIntrinsic.SET:
+                {
+                    JITDUMP("ARRAY_FUNC_SET: Recognized\n");
+                    return NI_Array_Set;
+                }
+
+                case CorInfoArrayIntrinsic.ADDRESS:
+                {
+                    JITDUMP("ARRAY_FUNC_ADDRESS: Recognized\n");
+                    return NI_Array_Address;
+                }
+
+                default:
+                {
+                    JITDUMP(": Not recognized, not enough metadata\n");
+                    return NI_Illegal;
+                }
+            }
+        }
+
+        JITDUMP(": ");
         var namespaceName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(namespaceNamePointer);
         var className = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(classNamePointer);
         var methodName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(methodNamePointer);
@@ -22127,6 +22174,25 @@ public partial class Compiler
 
         assert((result is not NI_IsSupported_True) && (result is not NI_IsSupported_False) &&
                (result is not NI_IsSupported_Dynamic) && (result is not NI_Throw_PlatformNotSupportedException));
+
+        if (result is NI_Illegal)
+        {
+            JITDUMP("Not recognized\n");
+        }
+        else if (result is NI_System_Numerics_Intrinsic or NI_System_Runtime_Intrinsics_Intrinsic or NI_System_Runtime_Intrinsics_PlatformIntrinsic)
+        {
+            JITDUMP("Not recognized - inlining boost\n");
+        }
+#if DEBUG && FEATURE_HW_INTRINSICS
+        else if ((result > NI_HW_INTRINSIC_START) && (result < NI_HW_INTRINSIC_END))
+        {
+            JITDUMP($"Recognized hardware intrinsic: {HWIntrinsicInfo.lookupName(result)} ({(uint)result})\n");
+        }
+#endif
+        else
+        {
+            JITDUMP("Recognized\n");
+        }
 
         return result;
     }
