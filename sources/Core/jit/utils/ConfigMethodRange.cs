@@ -14,13 +14,13 @@ namespace RyuJitSharp;
 /// <remarks>
 ///   <para>This can be used for binary search and/or specifying an explicit method set.</para>
 ///   <para>Note method hash codes are not necessarily unique. For instance many IL stubs may have the same hash.</para>
-///   <para>If range string is null or just whitespace, range includes all methods.</para>
-///   <para>Parses values as decimal numbers.</para>
+///   <para>If the range string is null or empty, the range includes all methods.</para>
+///   <para>Parses values as hexadecimal numbers.</para>
 ///   <list type="bullet">
 ///     <item>99998888 12345678-23456789 : a range of methods plus a single method</item>
 ///     <item>         12345678-23456789 : a range of methods</item>
 ///     <item>                  12345678 : a single method</item>
-///     <item> [string with just spaces] : all methods</item>
+///     <item> [empty string] : all methods</item>
 ///   </list>
 /// </remarks>
 public partial struct ConfigMethodRange
@@ -50,6 +50,7 @@ public partial struct ConfigMethodRange
     public readonly bool Contains(int hash)
     {
         assert(_ranges is not null);
+        var unsignedHash = unchecked((uint)hash);
 
         if (_rangeCount == 0)
         {
@@ -59,7 +60,7 @@ public partial struct ConfigMethodRange
 
         foreach (var range in _ranges.AsSpan(0, _rangeCount))
         {
-            if ((range.Low <= hash) && (hash <= range.High))
+            if ((range.Low <= unsignedHash) && (unsignedHash <= range.High))
             {
                 return true;
             }
@@ -134,8 +135,6 @@ public partial struct ConfigMethodRange
         // Allocate some persistent memory
         var ranges = new Range[capacity];
         var rangeCount = 0;
-        var badChar = 0;
-
         var totalIndex = 0;
         var setHighPart = false;
 
@@ -143,31 +142,31 @@ public partial struct ConfigMethodRange
         {
             var nextIndex = rangeStr.IndexOfAnyExcept((byte)(' '), (byte)(','));
 
-            if (nextIndex >= 0)
+            if (nextIndex < 0)
             {
-                rangeStr = rangeStr[nextIndex..];
-                totalIndex += nextIndex;
+                nextIndex = rangeStr.Length;
             }
+            rangeStr = rangeStr[nextIndex..];
+            totalIndex += nextIndex;
 
             var value = 0;
-            var currentChar = (char)(rangeStr[0]);
 
-            while (char.IsAsciiHexDigit(currentChar))
+            while (!rangeStr.IsEmpty && char.IsAsciiHexDigit((char)rangeStr[0]))
             {
+                var currentChar = (char)rangeStr[0];
                 var digit = (currentChar is >= '0' and <= '9') ? (currentChar - '0') : ((currentChar | 0x20) - 'a' + 10);
-                var newValue = (value * 16) + digit;
-
-                if ((badChar == 0) && (newValue <= value))
-                {
-                    // Check for overflow
-                    badChar = totalIndex + 1;
-                }
-                value = newValue;
+                var newValue = unchecked((value * 16) + digit);
 
                 rangeStr = rangeStr[1..];
                 totalIndex++;
 
-                currentChar = (char)(rangeStr[0]);
+                // The pinned native parser only updates an existing error (utils.cpp, InitRanges).
+                // Preserve that diagnostic quirk rather than correcting it only in the port.
+                if ((_badChar != 0) && (newValue <= value))
+                {
+                    _badChar = totalIndex + 1;
+                }
+                value = newValue;
             }
 
             ref var range = ref ranges[rangeCount];
@@ -179,9 +178,9 @@ public partial struct ConfigMethodRange
                 range.High = unchecked((uint)(value));
 
                 // Sanity check that range is proper
-                if ((badChar == 0) && (range.High < range.Low))
+                if ((_badChar != 0) && (range.High < range.Low))
                 {
-                    badChar = totalIndex + 1;
+                    _badChar = totalIndex + 1;
                 }
 
                 rangeCount++;
@@ -194,14 +193,15 @@ public partial struct ConfigMethodRange
 
             nextIndex = rangeStr.IndexOfAnyExcept((byte)(' '));
 
-            if (nextIndex >= 0)
+            if (nextIndex < 0)
             {
-                rangeStr = rangeStr[nextIndex..];
-                totalIndex += nextIndex;
+                nextIndex = rangeStr.Length;
             }
+            rangeStr = rangeStr[nextIndex..];
+            totalIndex += nextIndex;
 
             // Was that the low part of a low-high pair?
-            if (rangeStr[0] == '-')
+            if (!rangeStr.IsEmpty && (rangeStr[0] == '-'))
             {
                 // Yep, skip the dash and set high part next time around.
                 rangeStr = rangeStr[1..];
@@ -218,9 +218,9 @@ public partial struct ConfigMethodRange
 
         // If we didn't parse the full range string, note index of the the
         // first bad char.
-        if ((badChar == 0) && (rangeStr.Length != 0))
+        if ((_badChar != 0) && (rangeStr.Length != 0))
         {
-            badChar = totalIndex + 1;
+            _badChar = totalIndex + 1;
         }
 
         // Finish off any remaining open range
@@ -233,7 +233,6 @@ public partial struct ConfigMethodRange
         assert(rangeCount <= ranges.Length);
         _rangeCount = rangeCount;
         _ranges = ranges;
-        _badChar = badChar;
     }
 }
 #endif

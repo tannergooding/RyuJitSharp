@@ -5177,7 +5177,34 @@ public partial class Compiler
 
 #if DEBUG
     private static ConfigMethodRange s_jitEnablePatchpointRange;
+    private static ConfigMethodRange s_jitOptimizeAwaitRange;
 #endif
+
+    /// <summary>Check whether an await's root-method, inline-ordinal and IL-offset hash is selected.</summary>
+    public unsafe bool impCheckOptimizeAwait(IL_OFFSET awaitOffset)
+    {
+#if DEBUG
+        s_jitOptimizeAwaitRange.EnsureInit(JitConfig.JitOptimizeAwaitRange);
+        var hash = unchecked((uint)impInlineRoot.info.compMethodHash());
+        var ordinal = 0;
+        if (compIsForInlining)
+        {
+            assert(compInlineContext is not null);
+            ordinal = compInlineContext.Ordinal;
+        }
+        hash = unchecked(((hash << 5) + hash) ^ (uint)ordinal);
+        hash = unchecked(((hash << 5) + hash) ^ (uint)awaitOffset);
+
+        if ((JitConfig.JitAwaitHashBreak != -1) && (hash == unchecked((uint)JitConfig.JitAwaitHashBreak)))
+        {
+            assert(false, "JitAwaitHashBreak reached");
+        }
+
+        return s_jitOptimizeAwaitRange.Contains(unchecked((int)hash));
+#else
+        return true;
+#endif
+    }
 
     public unsafe void impImportBlockCode(BasicBlock block)
     {
@@ -7702,7 +7729,7 @@ public partial class Compiler
 
                         if (codeAddrAfterMatch is not null)
                         {
-                            JITDUMP($"Recognized await{(configVal is 0 ? " (with ConfigureAwait(false))" : "")}\n");
+                            JITDUMP($"\nRecognized await{(configVal is 0 ? " (with ConfigureAwait(false))" : "")}\n");
 
                             isAwait = true;
                             prefixFlags |= PREFIX_IS_TASK_AWAIT;
@@ -7720,7 +7747,7 @@ public partial class Compiler
                     {
                         impResolveToken(codeAddr, out resolvedToken, CORINFO_TOKENKIND_Await);
 
-                        if (resolvedToken.hMethod is null)
+                        if ((resolvedToken.hMethod is null) || !impCheckOptimizeAwait(awaitOffset))
                         {
                             // This can happen in cases when the Task-returning method is not a runtime Async
                             // function. For example "T M1<T>(T arg) => arg" when called with a Task argument.
@@ -7730,7 +7757,7 @@ public partial class Compiler
                             prefixFlags &= ~(PREFIX_IS_TASK_AWAIT | PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT);
                             isAwait = false;
 
-                            JITDUMP("No async variant provided by VM, treating as regular call that is awaited\n");
+                            JITDUMP("\nNo async variant provided by VM, treating as regular call that is awaited\n");
                         }
                     }
                     else
@@ -7746,27 +7773,6 @@ public partial class Compiler
                     }
 
                     eeGetCallInfo(resolvedToken, ((prefixFlags & PREFIX_CONSTRAINED) is not 0) ? ref constrainedResolvedToken : ref Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), flags, out var callInfo);
-
-                    if (isAwait && (callInfo.kind is CORINFO_CALL))
-                    {
-                        assert(callInfo.sig.isAsyncCall());
-
-                        bool isSyncCallThunk;
-                        info.compCompHnd->getAsyncOtherVariant(callInfo.hMethod, &isSyncCallThunk);
-
-                        if (!isSyncCallThunk)
-                        {
-                            // The async variant that we got is a thunk. Switch
-                            // back to the non-async task-returning call. There
-                            // is no reason to go through the thunk.
-                            impResolveToken(codeAddr, out resolvedToken, CORINFO_TOKENKIND_Method);
-                            prefixFlags &= ~(PREFIX_IS_TASK_AWAIT | PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT);
-                            isAwait = false;
-
-                            JITDUMP("Async variant provided by VM is a thunk, switching direct call to synchronous task-returning method\n");
-                            eeGetCallInfo(resolvedToken, ((prefixFlags & PREFIX_CONSTRAINED) is not 0) ? ref constrainedResolvedToken : ref Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), flags, out callInfo);
-                        }
-                    }
 
                     if (isAwait)
                     {
