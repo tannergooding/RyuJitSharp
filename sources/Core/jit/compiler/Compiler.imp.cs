@@ -19,6 +19,526 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+
+    /// <summary>setup inline information for inlinee args and locals </summary>
+    /// <param name="inlineInfo">inline info for the inline candidate</param>
+    public unsafe void impInlineInitVars(InlineInfo inlineInfo)
+    {
+        // This method primarily adds caller-supplied info to the inlArgInfo
+        // and sets up the lclVarInfo table.
+        //
+        // For args, the inlArgInfo records properties of the actual argument
+        // including the tree node that produces the arg value. This node is
+        // usually the tree node present at the call, but may also differ in
+        // various ways:
+        // - when the call arg is a GT_RET_EXPR, we search back through the ret
+        //   expr chain for the actual node. Note this will either be the original
+        //   call (which will be a failed inline by this point), or the return
+        //   expression from some set of inlines.
+        // - when argument type casting is needed the necessary casts are added
+        //   around the argument node.
+        // - if an argument can be simplified by folding then the node here is the
+        //   folded value.
+        //
+        // The method may make observations that lead to marking this candidate as
+        // a failed inline. If this happens the initialization is abandoned immediately
+        // to try and reduce the jit time cost for a failed inline.
+
+        assert(!compIsForInlining);
+
+        var call = inlineInfo.iciCall;
+        assert(call is not null);
+
+        ref var methInfo = ref inlineInfo.inlineCandidateInfo.methInfo;
+        var clsAttr = inlineInfo.inlineCandidateInfo.clsAttr;
+        var inlArgInfo = (Span<InlArgInfo>)(inlineInfo.inlArgInfo);
+        var lclVarInfo = (Span<InlLclVarInfo>)(inlineInfo.lclVarInfo);
+        var inlineResult = inlineInfo.inlineResult;
+
+        // init the argument struct
+        inlArgInfo.Clear();
+        foreach (ref var argInfo in inlArgInfo)
+        {
+            argInfo.argTmpNum = BAD_VAR_NUM;
+        }
+
+        inlineInfo.argCnt = methInfo.args.totalILArgs();
+        var ilArgCnt = 0;
+        foreach (var arg in call.Args.Args)
+        {
+            ref var argInfo = ref Unsafe.NullRef<InlArgInfo>();
+
+            if (arg.IsUserArg)
+            {
+                assert(ilArgCnt < inlineInfo.argCnt);
+                argInfo = ref inlArgInfo[ilArgCnt++];
+            }
+            else if (arg.WellKnownArg is WellKnownArg.InstParam)
+            {
+                inlineInfo.inlInstParamArgInfo = new InlArgInfo[1];
+                argInfo = ref inlineInfo.inlInstParamArgInfo[0];
+            }
+            else
+            {
+                continue;
+            }
+
+            assert((arg is not null) && (arg.EarlyNode is not null));
+
+            arg.EarlyNode = gtFoldExpr(arg.EarlyNode);
+            impInlineRecordArgInfo(inlineInfo, arg, ref argInfo, inlineResult);
+
+            if (inlineResult.IsFailure)
+            {
+                return;
+            }
+        }
+
+        assert(ilArgCnt == inlineInfo.argCnt);
+
+#if FEATURE_SIMD
+        var foundSimdType = inlineInfo.hasSimdTypeArgLocalOrReturn;
+#endif
+
+        // We have typeless opcodes, get type information from the signature
+        var thisArg = call.Args.ThisArg;
+
+        if (thisArg is not null)
+        {
+            var isValueClassThis = ((clsAttr & CORINFO_FLG_VALUECLASS) is not 0);
+            var sigType = isValueClassThis ? TYP_BYREF : TYP_REF;
+            var sigThisClass = inlineInfo.inlineCandidateInfo.clsHandle;
+
+            ref var lclVarEntry = ref lclVarInfo[0];
+            lclVarEntry.lclTypeInfo = sigType;
+            lclVarEntry.lclTypeHandle = isValueClassThis ? NO_CLASS_HANDLE : sigThisClass;
+            lclVarEntry.lclHasLdlocaOp = false;
+
+#if FEATURE_SIMD
+            // We always want to check isSIMDClass, since we want to set foundSIMDType (to increase
+            // the inlining multiplier) for anything in that assembly.
+            // But we only need to normalize it if it is a TYP_STRUCT
+            // (which we need to do even if we have already set foundSIMDType).
+            if (!foundSimdType && isValueClassThis && IsSimdOrHwSimdClass(sigThisClass))
+            {
+                foundSimdType = true;
+            }
+#endif
+
+            var thisArgNode = thisArg.EarlyNode;
+            assert(thisArgNode is not null);
+
+            // "this" is managed
+            // -or-
+            // "this" is unmgd but the method's class doesnt care
+            assert(varTypeIsGC(thisArgNode.Type) || ((thisArgNode.Type is TYP_I_IMPL) && isValueClassThis));
+
+            if (thisArgNode.Type.ActualType != sigType.ActualType)
+            {
+                if (sigType is TYP_REF)
+                {
+                    //* The argument cannot be bashed into a ref (see bug 750871)
+                    inlineResult.NoteFatal(InlineObservation.CALLSITE_ARG_NO_BASH_TO_REF);
+                    return;
+                }
+
+                // This can only happen with byrefs <-> ints/shorts
+
+                assert(sigType is TYP_BYREF);
+                assert((thisArgNode.Type.ActualType is TYP_I_IMPL) || (thisArgNode.Type is TYP_BYREF));
+            }
+        }
+
+        // Init the types of the arguments and make sure the types
+        // from the trees match the types in the signature
+
+        CORINFO_ARG_LIST_HANDLE argLst;
+        argLst = methInfo.args.args;
+
+        // TODO-ARGS: We can presumably just use type info stored in CallArgs
+        // instead of reiterating the signature.
+        for (var i = (thisArg is not null) ? 1 : 0; i < ilArgCnt; i++, argLst = info.compCompHnd->getArgNext(argLst))
+        {
+            CORINFO_CLASS_HANDLE argSigClass;
+            CorInfoType argSigJitType;
+
+            fixed (CORINFO_SIG_INFO* pSigInfo = &methInfo.args)
+            {
+                argSigJitType = strip(info.compCompHnd->getArgType(pSigInfo, argLst, &argSigClass));
+            }
+            var sigType = TypeHandleToVarType(argSigJitType, argSigClass);
+
+#if FEATURE_SIMD
+            // If this is a SIMD class (i.e. in the SIMD assembly), then we will consider that we've
+            // found a SIMD type, even if this may not be a type we recognize (the assumption is that
+            // it is likely to use a SIMD type, and therefore we want to increase the inlining multiplier).
+            if (!foundSimdType && varTypeIsStruct(sigType) && IsSimdOrHwSimdClass(argSigClass))
+            {
+                foundSimdType = true;
+            }
+#endif
+
+            ref var lclVarEntry = ref lclVarInfo[i];
+            lclVarEntry.lclHasLdlocaOp = false;
+            lclVarEntry.lclTypeInfo = sigType;
+
+            if (sigType == TYP_REF)
+            {
+                fixed (CORINFO_SIG_INFO* pSigInfo = &methInfo.args)
+                {
+                    lclVarEntry.lclTypeHandle = eeGetArgClass(pSigInfo, argLst);
+                }
+            }
+            else if (varTypeIsStruct(sigType))
+            {
+                lclVarEntry.lclTypeHandle = argSigClass;
+            }
+
+            // Does the tree type match the signature type?
+
+            ref var argInfo = ref inlArgInfo[i];
+            var inlArgNode = argInfo.arg.Node;
+            assert(inlArgNode is not null);
+
+            if (sigType == inlArgNode.Type)
+            {
+                continue;
+            }
+
+            assert(impCheckImplicitArgumentCoercion(sigType, inlArgNode.Type));
+            assert(!varTypeIsStruct(inlArgNode.Type) && !varTypeIsStruct(sigType));
+
+            // In valid IL, this can only happen for short integer types or byrefs <-> [native] ints,
+            // but in bad IL cases with caller-callee signature mismatches we can see other types.
+            // Intentionally reject cases with mismatches so the jit is more flexible when
+            // encountering bad IL.
+
+            var isPlausibleTypeMatch = (sigType.ActualType == inlArgNode.Type.ActualType) ||
+                                       (genActualTypeIsIntOrI(sigType) && (inlArgNode.Type is TYP_BYREF)) ||
+                                       ((sigType is TYP_BYREF) && genActualTypeIsIntOrI(inlArgNode.Type));
+
+            if (!isPlausibleTypeMatch)
+            {
+                inlineResult.NoteFatal(InlineObservation.CALLSITE_ARG_TYPES_INCOMPATIBLE);
+                return;
+            }
+
+            // The same size but different type of the arguments.
+            ref var inlArgNodeRef = ref argInfo.arg.EarlyNodeRef;
+
+            // Is it a narrowing or widening cast?
+            // Widening casts are ok since the value computed is already
+            // normalized to an int (on the IL stack)
+            if (inlArgNode.Type.Size >= sigType.Size)
+            {
+                if ((sigType is not TYP_BYREF) && (inlArgNode.Type is TYP_BYREF))
+                {
+                    assert(varTypeIsIntOrI(sigType));
+
+                    // If possible bash the BYREF to an int
+                    if (inlArgNode.Oper is GT_LCL_ADDR)
+                    {
+                        inlArgNode.Type = TYP_I_IMPL;
+                    }
+                    else
+                    {
+                        // Arguments 'int <- byref' cannot be changed
+                        inlineResult.NoteFatal(InlineObservation.CALLSITE_ARG_NO_BASH_TO_INT);
+                        return;
+                    }
+                }
+                else if (sigType.Size < TARGET_POINTER_SIZE)
+                {
+                    // Narrowing cast.
+                    if (inlArgNode.Oper is GT_LCL_VAR)
+                    {
+                        var lclNum = inlArgNode.AsLclVarCommon().LclNum;
+                        ref var lvaDesc = ref lvaGetDesc(lclNum);
+
+                        if (!lvaDesc.lvNormalizeOnLoad && (sigType == lvaDesc.Type))
+                        {
+                            // We don't need to insert a cast here as the variable
+                            // was assigned a normalized value of the right type.
+                            continue;
+                        }
+                    }
+
+                    inlArgNode = gtNewCastNode(TYP_INT, inlArgNode, false, sigType);
+                    inlArgInfo[i].argIsLclVar = false;
+
+                    // Try to fold the node in case we have constant arguments.
+                    if (inlArgInfo[i].argIsInvariant)
+                    {
+                        inlArgNode = gtFoldExpr(inlArgNode);
+                    }
+                    inlArgNodeRef = inlArgNode;
+                }
+#if TARGET_64BIT
+                else if (inlArgNode.Type.ActualType.Size < sigType.Size)
+                {
+                    // This should only happen for int -> native int widening
+                    inlArgNode = gtNewCastNode(sigType.ActualType, inlArgNode, false, sigType);
+
+                    inlArgInfo[i].argIsLclVar = false;
+
+                    // Try to fold the node in case we have constant arguments.
+                    if (inlArgInfo[i].argIsInvariant)
+                    {
+                        inlArgNode = gtFoldExpr(inlArgNode);
+                    }
+                    inlArgNodeRef = inlArgNode;
+                }
+#endif
+            }
+        }
+
+        // Init the types of the local variables
+        var localsSig = methInfo.locals.args;
+
+        for (var i = 0; i < methInfo.locals.numArgs; i++)
+        {
+            CORINFO_CLASS_HANDLE sigClass;
+            CorInfoTypeWithMod sigJitTypeWithMod;
+
+            fixed (CORINFO_SIG_INFO* pSigInfo = &methInfo.locals)
+            {
+                sigJitTypeWithMod = info.compCompHnd->getArgType(pSigInfo, localsSig, &sigClass);
+            }
+
+            var type = TypeHandleToVarType(strip(sigJitTypeWithMod), sigClass, out var layout);
+            var isPinned = (sigJitTypeWithMod & ~CORINFO_TYPE_MASK) is not 0;
+
+            ref var lclVarEntry = ref lclVarInfo[i + ilArgCnt];
+            lclVarEntry.lclHasLdlocaOp = false;
+            lclVarEntry.lclTypeInfo = type;
+
+            if (type == TYP_REF)
+            {
+                fixed (CORINFO_SIG_INFO* pSigInfo = &methInfo.locals)
+                {
+                    lclVarEntry.lclTypeHandle = eeGetArgClass(pSigInfo, localsSig);
+                }
+            }
+            else if (varTypeIsStruct(type))
+            {
+                lclVarEntry.lclTypeHandle = sigClass;
+            }
+
+            if (varTypeIsGC(type))
+            {
+                if (isPinned)
+                {
+                    JITDUMP($"Inlinee local #{i:D2} is pinned\n");
+                    lclVarEntry.lclIsPinned = true;
+
+                    // Pinned locals may cause inlines to fail.
+                    inlineResult.Note(InlineObservation.CALLEE_HAS_PINNED_LOCALS);
+
+                    if (inlineResult.IsFailure)
+                    {
+                        return;
+                    }
+                }
+
+                inlineInfo.numberOfGcRefLocals++;
+            }
+            else if (isPinned)
+            {
+                JITDUMP($"Ignoring pin on inlinee local #{i:D2} -- not a GC type\n");
+            }
+
+            // If this local is a struct type with GC fields, inform the inliner.
+            // It may choose to bail out on the inline.
+
+            if (type is TYP_STRUCT)
+            {
+                assert(layout is not null);
+
+                if (layout.HasGCPtr)
+                {
+                    inlineResult.Note(InlineObservation.CALLEE_HAS_GC_STRUCT);
+
+                    if (inlineResult.IsFailure)
+                    {
+                        return;
+                    }
+
+                    var block = inlineInfo.iciBlock;
+                    assert(block is not null);
+
+                    // Do further notification in the case where the call site is rare; some policies do
+                    // not track the relative hotness of call sites for "always" inline cases.
+                    if (block.isRunRarely)
+                    {
+                        inlineResult.Note(InlineObservation.CALLSITE_RARE_GC_STRUCT);
+
+                        if (inlineResult.IsFailure)
+                        {
+                            return;
+                        }
+                    }
+                }
+            }
+
+#if FEATURE_SIMD
+            if (!foundSimdType && varTypeIsStruct(type) && IsSimdOrHwSimdClass(sigClass))
+            {
+                foundSimdType = true;
+            }
+#endif
+
+            localsSig = info.compCompHnd->getArgNext(localsSig);
+        }
+
+#if FEATURE_SIMD
+        if (!foundSimdType && (call.RetClsHnd is not null) && IsSimdOrHwSimdClass(call.RetClsHnd))
+        {
+            foundSimdType = true;
+        }
+        inlineInfo.hasSimdTypeArgLocalOrReturn = foundSimdType;
+#endif
+    }
+
+    /// <summary>record information about an inline candidate argument</summary>
+    /// <param name="pInlineInfo">inline info for the inline candidate</param>
+    /// <param name="arg">the caller argument</param>
+    /// <param name="argInfo">Structure to record information into</param>
+    /// <param name="inlineResult">result of ongoing inline evaluation</param>
+    /// <remarks>Checks for various inline blocking conditions and makes notes in the inline info arg table about the properties of the actual. These properties are used later by impInlineFetchArg to determine how best to pass the argument into the inlinee.</remarks>
+    public unsafe void impInlineRecordArgInfo(InlineInfo pInlineInfo, CallArg arg, ref InlArgInfo argInfo, InlineResult inlineResult)
+    {
+        argInfo.arg = arg;
+
+        var curArgVal = arg.Node;
+        assert(curArgVal is not null);
+
+        assert(curArgVal.Oper is not GT_RET_EXPR);
+
+        if (impIsAddressInLocal(curArgVal, out var lclVarTree))
+        {
+            ref var varDsc = ref lvaGetDesc(lclVarTree.LclNum);
+
+            if (varTypeIsStruct(varDsc.Type))
+            {
+                argInfo.argIsByRefToStructLocal = true;
+
+#if FEATURE_SIMD
+                if (varTypeIsSimd(varDsc.Type))
+                {
+                    pInlineInfo.hasSimdTypeArgLocalOrReturn = true;
+                }
+#endif
+            }
+
+            // Spilling code relies on correct aliasability annotations.
+            assert(varDsc.lvHasLdAddrOp || varDsc.IsAddressExposed);
+        }
+
+        if ((curArgVal.Flags & GTF_ALL_EFFECT) is not 0)
+        {
+            argInfo.argHasGlobRef = (curArgVal.Flags & GTF_GLOB_REF) is not 0;
+            argInfo.argHasSideEff = (curArgVal.Flags & (GTF_ALL_EFFECT & ~GTF_GLOB_REF)) is not 0;
+        }
+
+        if (curArgVal.Oper is GT_LCL_VAR)
+        {
+            argInfo.argIsLclVar = true;
+        }
+
+        argInfo.argIsThis = (arg.WellKnownArg is WellKnownArg.ThisPointer);
+
+        if (impIsInvariant(curArgVal))
+        {
+            argInfo.argIsInvariant = true;
+
+            if (argInfo.argIsThis && (curArgVal.Oper is GT_CNS_INT) && (curArgVal.AsIntCon().IconVal is 0))
+            {
+                // Abort inlining at this call site
+                inlineResult.NoteFatal(InlineObservation.CALLSITE_ARG_HAS_NULL_THIS);
+                return;
+            }
+        }
+        else if (gtIsTypeof(curArgVal))
+        {
+            argInfo.argIsInvariant = true;
+            argInfo.argHasSideEff = false;
+        }
+
+        argInfo.argIsExact = (gtGetClassHandle(curArgVal, out var isExact, out var isNonNull) != NO_CLASS_HANDLE) && isExact;
+
+        // If the arg is a local that is address-taken, we can't safely
+        // directly substitute it into the inlinee.
+        //
+        // Previously we'd accomplish this by setting "argHasLdargaOp" but
+        // that has a stronger meaning: that the arg value can change in
+        // the method body. Using that flag prevents type propagation,
+        // which is safe in this case.
+        //
+        // Instead mark the arg as having a caller local ref.
+        if (!argInfo.argIsInvariant && gtHasLocalsWithAddrOp(curArgVal))
+        {
+            argInfo.argHasCallerLocalRef = true;
+        }
+
+#if DEBUG
+        if (verbose)
+        {
+            if (arg.WellKnownArg is not WellKnownArg.None)
+            {
+                jitprintf($"{arg.WellKnownArg}:");
+            }
+            else
+            {
+                assert(pInlineInfo.iciCall is not null);
+                jitprintf($"IL argument #{pInlineInfo.iciCall.Args.GetUserIndex(arg)}:");
+            }
+
+            if (argInfo.argIsLclVar)
+            {
+                jitprintf(" is a local var");
+            }
+
+            if (argInfo.argIsInvariant)
+            {
+                jitprintf(" is a constant or invariant");
+            }
+
+            if (argInfo.argHasGlobRef)
+            {
+                jitprintf(" has global refs");
+            }
+
+            if (argInfo.argHasCallerLocalRef)
+            {
+                jitprintf(" has caller local ref");
+            }
+
+            if (argInfo.argHasSideEff)
+            {
+                jitprintf(" has side effects");
+            }
+
+            if (argInfo.argHasLdargaOp)
+            {
+                jitprintf(" has ldarga effect");
+            }
+
+            if (argInfo.argHasStargOp)
+            {
+                jitprintf(" has starg effect");
+            }
+
+            if (argInfo.argIsByRefToStructLocal)
+            {
+                jitprintf(" is byref to a struct local");
+            }
+
+            jitprintf("\n");
+            gtDispTree(curArgVal);
+            jitprintf("\n");
+        }
+#endif
+    }
     /// <summary>Only present for inlinees</summary>
     public InlineInfo? impInlineInfo;
 
