@@ -21,6 +21,8 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AnalysisLevel>latest-all</AnalysisLevel>
+    <!-- .NET 11 applies AnalysisLevel to style rules too; retain the existing style-rule selection. -->
+    <AnalysisModeStyle>Default</AnalysisModeStyle>
     <BaseIntermediateOutputPath>$(BaseArtifactsPath)obj/$(BaseArtifactsPathSuffix)/</BaseIntermediateOutputPath>
     <DebugType>embedded</DebugType>
     <EnableDefaultNoneItems>false</EnableDefaultNoneItems>

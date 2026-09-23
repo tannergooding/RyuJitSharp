@@ -5,20 +5,21 @@
 
 #if DEBUG
 using System;
-using System.Runtime.CompilerServices;
+using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace RyuJitSharp;
 
-public unsafe partial struct ConfigDoubleArray
+public struct ConfigDoubleArray
 {
     private double[]? _values;
 
-    public void EnsureInit(byte* str)
+    public unsafe void EnsureInit(byte* str)
     {
         if (_values is null)
         {
-            Init(str);
+            Init(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(str));
         }
     }
 
@@ -46,70 +47,57 @@ public unsafe partial struct ConfigDoubleArray
         }
     }
 
-    private void Init(byte* str)
+    private void Init(ReadOnlySpan<byte> str)
     {
-        if (!OperatingSystem.IsWindows())
+        double[] values = [];
+        for (var pass = 0; pass < 2; pass++)
         {
-            throw new PlatformNotSupportedException("ConfigDoubleArray requires a port of the host CRT's strtod.");
-        }
-
-        // Use the host CRT to retain strtod's syntax, rounding and NaN encodings.
-        // B075: reset errno and require progress instead of hanging or accepting
-        // partially initialized data. Do not leak errno changes to the native host.
-        var error = GetErrno();
-        var previousError = *error;
-        try
-        {
-            double[] values = [];
-            for (var pass = 0; pass < 2; pass++)
+            var remaining = str;
+            var length = 0;
+            while (!remaining.IsEmpty)
             {
-                var p = str;
-                var length = 0;
-                while ((p is not null) && (*p != 0))
+                var c = remaining[0];
+                if ((c == ',') || (c == ' ') || ((c >= '\t') && (c <= '\r')))
                 {
-                    if ((*p == ',') || (*p == ' ') || ((*p >= '\t') && (*p <= '\r')))
-                    {
-                        p++;
-                        continue;
-                    }
-
-                    byte* next;
-                    *error = 0;
-                    var value = Strtod(p, &next);
-                    if ((next == p) || (*error != 0))
-                    {
-                        throw new FormatException("Invalid or out-of-range floating-point JIT configuration value.");
-                    }
-
-                    if (pass != 0)
-                    {
-                        values[length] = value;
-                    }
-                    length++;
-                    p = next;
+                    remaining = remaining[1..];
+                    continue;
                 }
 
-                if (pass == 0)
+                var value = ParseValue(remaining, out var consumed);
+                if (pass != 0)
                 {
-                    values = new double[length];
+                    values[length] = value;
                 }
+                length++;
+                remaining = remaining[consumed..];
             }
-            _values = values;
+
+            if (pass == 0)
+            {
+                values = new double[length];
+            }
         }
-        finally
-        {
-            *error = previousError;
-        }
+        _values = values;
     }
 
-    [LibraryImport("ucrtbase.dll", EntryPoint = "strtod")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    private static partial double Strtod(byte* str, byte** end);
+    private static double ParseValue(ReadOnlySpan<byte> text, out int consumed)
+    {
+        var unsigned = text[0] is (byte)'+' or (byte)'-' ? text[1..] : text;
+        var isHex = (unsigned.Length >= 2) && (unsigned[0] == '0') && (unsigned[1] is (byte)'x' or (byte)'X');
+        var style = isHex ? NumberStyles.HexFloat : NumberStyles.Float;
+        if (double.TryParsePartial(text, style, CultureInfo.InvariantCulture, out var value, out consumed))
+        {
+            return value;
+        }
 
-    [LibraryImport("ucrtbase.dll", EntryPoint = "_errno")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    private static partial int* GetErrno();
+        // The CRT also accepts "inf"; .NET's invariant symbol is "Infinity".
+        if ((unsigned.Length >= 3) && Ascii.EqualsIgnoreCase(unsigned[..3], "inf"u8))
+        {
+            consumed = text.Length - unsigned.Length + 3;
+            return text[0] == '-' ? double.NegativeInfinity : double.PositiveInfinity;
+        }
+
+        throw new FormatException("Invalid floating-point JIT configuration value.");
+    }
 }
 #endif

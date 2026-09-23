@@ -28,7 +28,7 @@ public sealed class CheckLclVarSemanticsHelper
         _compiler = compiler;
         _range = range;
         _unusedDefs = unusedDefs;
-        _unusedLclVarReads = new Dictionary<int, Dictionary<GenTree, GenTree>>(capacity: 16);
+        _unusedLclVarReads = [with(capacity: 16)];
         _lclVarReadsMapsCache = [];
     }
 

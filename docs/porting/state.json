@@ -11,23 +11,23 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Upgrade to the installed .NET 11 RC1 SDK and replace ConfigDoubleArray's provisional CRT interop with managed TryParsePartial and hexadecimal-float support, as directed by the user. Then continue whole-node replacement for folding and its caller/owner/alias/LIR contracts (B064); do not emulate native cross-kind bashing or redesign the hierarchy. Profile incorporation and DFS phase preparation are implemented (B079/B080), and a seven-method native/managed recapture has three exactly matching import prefixes. Remaining first differences concern inline-candidate processing, not the old BBOPT diagnostic. B073's MakeFull defect does not affect discovery. Both native trees use the target revision; read the intact oracle.",
+    "nextAction": "Continue whole-node replacement for folding and its caller/owner/alias/LIR contracts (B064); do not emulate native cross-kind bashing or redesign the hierarchy. The .NET 11 RC1 migration and managed TryParsePartial/hexadecimal configuration parsing are complete. Profile incorporation and DFS phase preparation are implemented (B079/B080), and the .NET 11 seven-method native/managed recapture preserves three exactly matching import prefixes. Remaining first differences concern inline-candidate processing, not the old BBOPT diagnostic. B073's MakeFull defect does not affect discovery. Both native trees use the target revision; read the intact oracle.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
     "nativeOracleCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
-      "sdk": "10.0.401",
-      "debugBuild": "passed-after-profile-incorporation-and-dfs-phases",
-      "releaseBuild": "passed-after-profile-incorporation-and-dfs-phases",
+      "sdk": "11.0.100-rc.1.26425.128",
+      "debugBuild": "passed-after-net11-managed-parsing",
+      "releaseBuild": "passed-after-net11-managed-parsing",
       "testSourcesPresent": true,
       "writerRegressionCases": 16,
       "writerRegressionConfigurations": ["Debug", "Release"],
-      "targetFocusedTestsDebug": 969,
+      "targetFocusedTestsDebug": 973,
       "targetFocusedTestsRelease": 795,
       "targetFocusedTestsSkipped": 0,
-      "fullSuiteSourceCommit": "29d375c3b1d77d1f230c13b32bf4061cb3690338",
+      "fullSuiteSourceCommit": "78fdb3088b6ff0cb7d01e9060cf8da233a3c3e04",
       "callIntrinsicSpotChecks": {
         "debugPassed": 81,
         "releasePassed": 81,
@@ -310,7 +310,23 @@
         "firstDifferences": "inline-candidate-diagnostics-and-processing",
         "fullPhaseParityEstablished": false
       },
-      "nativeAotPublish": "passed-at-profile-incorporation-milestone",
+      "net11ManagedParsingMilestone": {
+        "managedSourceCommit": "78fdb3088b6ff0cb7d01e9060cf8da233a3c3e04",
+        "parserCasesDebug": 28,
+        "fullSuiteDebugPassed": 973,
+        "fullSuiteReleasePassed": 795,
+        "skipped": 0,
+        "nativeCompilationHeaders": 7,
+        "managedCompilationHeaders": 7,
+        "nativeAotRecaptured": true,
+        "equalImportPrefixes": ["Add", "Branch", "Locals"],
+        "firstDifferences": "unchanged-inline-candidate-diagnostics-and-processing",
+        "fullPhaseParityEstablished": false,
+        "comparison": "artifacts\\net11-comparison.json",
+        "debugTests": "artifacts\\net11-full-debug.trx",
+        "releaseTests": "artifacts\\net11-full-release.trx"
+      },
+      "nativeAotPublish": "passed-after-net11-managed-parsing",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "three-of-seven-import-prefixes-equal-remaining-inline-candidate-differences",
       "codegenParity": "not-available"
@@ -342,10 +358,10 @@
     "oldNativeHostPreservedAndExecuted": true,
     "managedCapture": "seven-selected-methods-loaded-with-target-abi",
     "managedGuid": "cb2fa75d-449d-4ee0-93ef-57011daefb8c",
-    "latestManagedBinarySha256": "13F0B2339C08993BD0EFFFBDC19051944483A7DD0C49BE986B643BD79DA9B06F",
+    "latestManagedBinarySha256": "CB3E5EC82E7FF1A31A80C33DBD8DC82C244FC9E903A186DCC536693B7D02DF1A",
     "wrongGuidCaptureRejected": true,
     "nativeLayoutMeasurements": "matched-raw-managed-sizeof-and-debug-variable-offsets",
-    "latestPrefixDifference": "missing-BBOPT-profile-diagnostic",
+    "latestPrefixDifference": "inline-candidate-diagnostics-and-processing",
     "knownExecutionLimits": [
       "Local threading is not built by the existing fgLocalMorph stub; do not exercise unpinning on pinned locals until that prerequisite is ported.",
       "Corrected DFS/tree/EH support passes six focused graph cases in Debug/Release; runtime EH parity remains unestablished.",
@@ -464,6 +480,10 @@
     "profilePhaseManagedSource": {
       "commit": "29d375c3b1d77d1f230c13b32bf4061cb3690338",
       "ref": "refs/porting/snapshots/2026-09-23-profile-phase-source"
+    },
+    "net11ManagedParsingSource": {
+      "commit": "78fdb3088b6ff0cb7d01e9060cf8da233a3c3e04",
+      "ref": "refs/porting/snapshots/net11-managed-parsing-source"
     }
   },
   "sourceMap": [

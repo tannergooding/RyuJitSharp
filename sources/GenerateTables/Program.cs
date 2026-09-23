@@ -2607,7 +2607,7 @@ public static partial class VNFuncExtensions
         {
             var trimmedLine = line.Trim();
 
-            if (string.IsNullOrEmpty(trimmedLine) || trimmedLine.StartsWith(';'))
+            if (string.IsNullOrEmpty(trimmedLine) || trimmedLine.StartsWith(';', StringComparison.Ordinal))
             {
                 continue;
             }
@@ -2688,14 +2688,14 @@ public static partial class VNFuncExtensions
 
                 if (!instructionSetsByArchitecture.TryGetValue(targetArch, out var instructionSets))
                 {
-                    instructionSets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    instructionSets = [with(StringComparer.OrdinalIgnoreCase)];
                     instructionSetsByArchitecture[targetArch] = instructionSets;
                 }
                 _ = instructionSets.Add(name);
 
                 if (!addedInsSet.TryGetValue(targetArch, out var addedInsSetForTargetArch))
                 {
-                    addedInsSetForTargetArch = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    addedInsSetForTargetArch = [with(StringComparer.OrdinalIgnoreCase)];
                     addedInsSet[targetArch] = addedInsSetForTargetArch;
                 }
 

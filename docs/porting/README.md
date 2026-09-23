@@ -200,7 +200,7 @@ differences in the comparison tooling.
 ### Small deterministic corpus
 
 Build `sources\PortingCorpus\PortingCorpus.csproj` in Release. Its output is
-`artifacts\bin\sources\PortingCorpus\Release\net10.0\PortingCorpus.dll`.
+`artifacts\bin\sources\PortingCorpus\Release\net11.0\PortingCorpus.dll`.
 It checks seven entry points covering arithmetic, branches, locals,
 direct and managed indirect calls, and an inline candidate. It is a standalone fixture, not a compiler
 coverage claim.
@@ -227,6 +227,11 @@ post-import phase dump and must not be reported as full phase or pipeline parity
 
 ## Build and generated code
 
+Use the .NET 11 RC1 SDK selected by `global.json`; managed partial/hexadecimal
+double parsing requires .NET 11. Both build wrappers use that file when
+bootstrapping an architecture-specific SDK. The installed SDK and the pinned
+native oracle remain independent toolchains.
+
 From this repository's root, the baseline commands are:
 
 ```powershell
@@ -240,6 +245,19 @@ Restore when assets are absent or dependencies changed. Existing wrappers in
 smallest relevant test selection once tests exist, and verify a nonzero count.
 Focused output tests do not establish compiler coverage. NativeAOT publish and
 native loading are separate gates from these managed builds.
+
+`AnalysisModeStyle=Default` preserves the prior style-rule selection: .NET 11
+otherwise also applies `AnalysisLevel=latest-all` to style diagnostics. Explicit
+`.editorconfig` rules, build-time style enforcement, all quality analyzers and
+warnings-as-errors remain enabled.
+
+For Windows NativeAOT publication, initialize the matching Visual C++ environment
+and run `dotnet publish sources\Core\RyuJitSharp.csproj -c Debug -r win-x64
+--no-restore -p:Platform=AnyCPU -p:NativeLib=Shared
+-p:IlcUseEnvironmentalTools=true -o artifacts\<output>` in that same process.
+The environmental-tools setting uses the initialized linker rather than SDK
+rediscovery; keep the Visual Studio Installer directory containing `vswhere.exe`
+on that process's `PATH`.
 
 `sources\GenerateTables\Program.cs` reads `Inputs` and writes `Outputs` relative
 to its working directory, deleting an existing `Outputs` subtree first. Run it

@@ -125,7 +125,7 @@ try {
     $DotNetInstallDirectory = Join-Path -Path $ArtifactsDir -ChildPath "dotnet"
     Create-Directory -Path $DotNetInstallDirectory
 
-    & $DotNetInstallScript -Channel 10.0 -Version latest -InstallDir $DotNetInstallDirectory -Architecture $architecture
+    & $DotNetInstallScript -JSonFile (Join-Path $RepoRoot "global.json") -InstallDir $DotNetInstallDirectory -Architecture $architecture
 
     $env:PATH="$DotNetInstallDirectory;$env:PATH"
   }

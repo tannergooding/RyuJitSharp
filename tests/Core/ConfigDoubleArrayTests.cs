@@ -2,8 +2,8 @@
 
 #if DEBUG
 using System;
+using System.Globalization;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Text;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
@@ -16,12 +16,15 @@ internal static unsafe class ConfigDoubleArrayTests
     [TestCase("1,2\t3", new double[] { 1, 2, 3 })]
     [TestCase("1-2+.5", new double[] { 1, -2, 0.5 })]
     [TestCase("0x1.8p+1,0X1p-2", new double[] { 3, 0.25 })]
+    [TestCase("-0x1.8p+1+0X1p-2", new double[] { -3, 0.25 })]
+    [TestCase("0x1p-1074,5e-324", new double[] { double.Epsilon, double.Epsilon })]
+    [TestCase("1e999,1e-999", new double[] { double.PositiveInfinity, 0 })]
     [TestCase(",, \t1, \r\n2, \v\f", new double[] { 1, 2 })]
     [TestCase("1.7976931348623157e308,2.2250738585072014e-308", new double[] { double.MaxValue, 2.2250738585072014e-308 })]
     [TestCase(null, new double[0])]
     [TestCase("", new double[0])]
     [TestCase(" ,\t", new double[0])]
-    public static void ParsesNativeNumbersAndSeparators(string? text, double[] expected)
+    public static void ParsesNumbersAndSeparators(string? text, double[] expected)
     {
         var array = Parse(text);
         Assert.That(array.GetLength(), Is.EqualTo(expected.Length));
@@ -33,9 +36,6 @@ internal static unsafe class ConfigDoubleArrayTests
     [TestCase("-0", 0x8000000000000000UL)]
     [TestCase("inf", 0x7FF0000000000000UL)]
     [TestCase("-INFINITY", 0xFFF0000000000000UL)]
-    [TestCase("nan", 0x7FFFFFFFFFFFFFFFUL)]
-    [TestCase("nan(ind)", 0xFFF8000000000000UL)]
-    [TestCase("nan(snan)", 0x7FF0000000000001UL)]
     public static void PreservesNativeSpecialValueBits(string text, ulong expected)
     {
         Assert.That(BitConverter.DoubleToUInt64Bits(Parse(text).GetData()[0]), Is.EqualTo(expected));
@@ -44,42 +44,42 @@ internal static unsafe class ConfigDoubleArrayTests
     [TestCase("invalid")]
     [TestCase("1,invalid")]
     [TestCase("1e")]
-    [TestCase("1e999")]
-    [TestCase("1e-999")]
+    [TestCase("0x1")]
+    [TestCase("0x1p")]
+    [TestCase("nan(ind)")]
+    [TestCase("nan(snan)")]
     public static void InvalidValuesFailExplicitly(string text)
     {
         _ = Assert.Throws<FormatException>(() => _ = Parse(text));
     }
 
-    [TestCase("1,2", false)]
-    [TestCase("1e999", true)]
-    public static void ParsingIsIndependentOfStaleErrnoAndRestoresIt(string text, bool invalid)
+    [TestCase("nan")]
+    [TestCase("+NaN")]
+    [TestCase("-NaN")]
+    public static void ParsesNaNWithoutPreservingCrtPayloads(string text)
     {
-        var error = GetErrno(default);
-        var original = *error;
+        Assert.That(double.IsNaN(Parse(text).GetData()[0]), Is.True);
+    }
+
+    [Test]
+    public static void ParsingUsesInvariantCulture()
+    {
+        var previous = CultureInfo.CurrentCulture;
         try
         {
-            *error = 34;
-            if (invalid)
-            {
-                _ = Assert.Throws<FormatException>(() => _ = Parse(text));
-            }
-            else
-            {
-                _ = Parse(text);
-            }
-            var restored = *error;
-            Assert.That(restored, Is.EqualTo(34));
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("fr-FR");
+            double[] expected = [1.25, 0.75];
+            Assert.That(Parse("1.25,0x1.8p-1").GetData().ToArray(), Is.EqualTo(expected));
         }
         finally
         {
-            *error = original;
+            CultureInfo.CurrentCulture = previous;
         }
     }
 
     [TestCase(null, "<uninitialized config double array>\n")]
     [TestCase("", "<empty config double array>\n")]
-    [TestCase("-0,1.25,inf,nan", "-0.000000 ,1.250000 ,inf ,nan ")]
+    [TestCase("-0,1.25,inf", "-0.000000 ,1.250000 ,inf ")]
     public static void DumpPreservesNativeLayout(string? text, string expected)
     {
         using var tls = new JitTls(null);
@@ -112,8 +112,5 @@ internal static unsafe class ConfigDoubleArrayTests
             return array;
         }
     }
-
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "GetErrno")]
-    private static extern int* GetErrno(ConfigDoubleArray unused);
 }
 #endif
