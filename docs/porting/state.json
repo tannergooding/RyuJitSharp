@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Continue ProfileSynthesis's input/block weights, Gauss-Seidel solver and Run orchestration, then full fgIncorporateProfileData (B067). The constructor, all likelihood policies and cyclic gains are implemented (B076), along with natural loops (B072), EH predecessors (B071), profile checks and throw propagation (B074). ConfigDoubleArray remains absent; B075 records upstream parser defects requiring a deliberate syntax/failure contract, not a silent managed parsing substitution. Block counts, spanning traversal (B068) and sparse edge reconstruction (B069) are implemented. Do not activate partial profile incorporation or insert the BBOPT diagnostic alone. B073's MakeFull defect does not affect discovery. B064 still gates constant bashing; folding/global-morph bookkeeping remain before enabling the full inliner. Both native trees use the target revision; read the intact oracle.",
+    "nextAction": "Complete ProfileSynthesis's input-weight assignment and Run orchestration, then full fgIncorporateProfileData (B067). Direct and Gauss-Seidel block-weight solving are implemented (B077), as are the constructor, likelihood policies/cyclic gains (B076), natural loops (B072), EH predecessors (B071), profile checks and throw propagation (B074). ConfigDoubleArray remains absent; B075's malformed/empty configuration handling requires an explicit compatibility decision before porting its use in input-weight assignment. Do not activate partial profile incorporation or insert the BBOPT diagnostic alone. B073's MakeFull defect does not affect discovery. B064 still gates constant bashing; folding/global-morph bookkeeping remain before enabling the full inliner. Both native trees use the target revision; read the intact oracle.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -19,8 +19,8 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "10.0.401",
-      "debugBuild": "passed-after-synthesis-likelihoods",
-      "releaseBuild": "passed-after-synthesis-likelihoods",
+      "debugBuild": "passed-after-profile-block-weight-solver",
+      "releaseBuild": "passed-after-profile-block-weight-solver",
       "testSourcesPresent": true,
       "writerRegressionCases": 16,
       "writerRegressionConfigurations": ["Debug", "Release"],
@@ -245,6 +245,14 @@
         "nativeAotRecaptured": false,
         "profilePhaseActivated": false
       },
+      "profileSolverSpotChecks": {
+        "newCasesPerConfiguration": 15,
+        "combinedSynthesisAndLoopDebugPassed": 88,
+        "combinedSynthesisAndLoopReleasePassed": 72,
+        "skipped": 0,
+        "nativeAotRecaptured": false,
+        "profilePhaseActivated": false
+      },
       "savedWipSupportMilestone": {
         "managedSourceCommit": "24b9352dc6f293228d58cb24871280827f936ab7",
         "nativeCompilationHeaders": 7,
@@ -412,6 +420,11 @@
       "commit": "9f1378ec1245f195e92c6f2460a4348133475f9a",
       "indexCommit": "a435efc3d752da8b053806d46e45a48d835a7a1a",
       "ref": "refs/porting/snapshots/2026-09-23-native-ledger-profile-likelihoods"
+    },
+    "profileSolverNativeResidual": {
+      "commit": "60ebb0bce591ac132bac136ac9f507d905a1a949",
+      "indexCommit": "e494c059cafc114b20fefb92dd134bc6cc0775e5",
+      "ref": "refs/porting/snapshots/2026-09-23-native-ledger-profile-solver"
     }
   },
   "sourceMap": [

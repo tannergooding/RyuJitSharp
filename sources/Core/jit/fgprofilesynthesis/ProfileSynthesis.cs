@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
 
@@ -17,6 +18,8 @@ public sealed class ProfileSynthesis
     private const weight_t loopBackLikelihood = 0.9;
     private const weight_t loopExitLikelihood = 0.9;
     private const weight_t throwLikelihood = 0;
+    private const int maxSolverIterations = 50;
+    private const weight_t maxCount = 1e12;
 
     private readonly Compiler _comp;
     private readonly FlowGraphDfsTree _dfsTree;
@@ -30,6 +33,8 @@ public sealed class ProfileSynthesis
     private readonly int _improperLoopHeaders;
     private int _cappedCyclicProbabilities;
     private bool _hasInfiniteLoop;
+    private bool _approximate;
+    private bool _overflow;
 
     private ProfileSynthesis(Compiler compiler)
     {
@@ -643,5 +648,257 @@ public sealed class ProfileSynthesis
                 JITDUMP("Exit weight comparable or above 1.0, leaving as is\n");
             }
         }
+    }
+
+    private void ComputeBlockWeights()
+    {
+        JITDUMP("Computing block weights\n");
+        var useSolver = true;
+#if DEBUG
+        useSolver = JitConfig.JitSynthesisUseSolver > 0;
+#endif
+        if (useSolver)
+        {
+            GaussSeidelSolver();
+            return;
+        }
+        for (var i = _dfsTree.PostOrderCount; i != 0; i--)
+        {
+            ComputeBlockWeight(_dfsTree.GetPostOrder(i - 1));
+        }
+        _approximate = (_cappedCyclicProbabilities != 0) || (_improperLoopHeaders > 0);
+    }
+
+    private void ComputeBlockWeight(BasicBlock block)
+    {
+        var loop = _loops.GetLoopByHeader(block);
+        var newWeight = block.bbWeight;
+        var kind = "";
+        if (loop is not null)
+        {
+            foreach (var edge in loop.EntryEdges)
+            {
+                if (BasicBlock.sameHndRegion(block, edge.SourceBlock))
+                {
+                    newWeight += edge.LikelyWeight;
+                }
+            }
+            newWeight *= _cyclicProbabilities[loop.Index];
+            kind = " (loop head)";
+        }
+        else
+        {
+            foreach (var edge in block.PredEdges)
+            {
+                if (BasicBlock.sameHndRegion(block, edge.SourceBlock))
+                {
+                    newWeight += edge.LikelyWeight;
+                }
+            }
+        }
+        block.setBBProfileWeight(newWeight);
+        JITDUMP($"cbw{kind}: {FMT_BB(block.bbNum)} :: {FMT_WT(block.bbWeight)}\n");
+
+        if (_comp.bbIsTryBeg(block))
+        {
+            ref var handler = ref _comp.ehGetBlockTryDsc(block);
+            if (handler.HasFinallyHandler)
+            {
+                var finallyEntry = handler.ebdHndBeg;
+                finallyEntry.setBBProfileWeight(newWeight);
+                kind = " (finally)";
+                JITDUMP($"cbw{kind}: {FMT_BB(finallyEntry.bbNum)} :: {FMT_WT(finallyEntry.bbWeight)}\n");
+            }
+        }
+    }
+
+    private void GaussSeidelSolver()
+    {
+        var countVector = new weight_t[_comp.fgBBNumMax + 1];
+        var converged = false;
+        weight_t relResidual = 0;
+        weight_t oldRelResidual = 0;
+        weight_t eigenvalue = 0;
+        const weight_t stopRelResidual = 0.001;
+        var dfs = _loops.DfsTree;
+        var checkEntryExitWeight = true;
+        var showDetails = false;
+        var callFinalliesCreated = _comp.fgImportDone;
+        JITDUMP($"Synthesis solver: flow graph has {_improperLoopHeaders} improper loop headers\n");
+
+        // Natural-loop gains eliminate their cycles. Irreducible flow needs bounded iteration.
+        var iterationLimit = _improperLoopHeaders > 0 ? maxSolverIterations : 1;
+        var i = 0;
+        for (; i < iterationLimit; i++)
+        {
+            BasicBlock? residualBlock = null;
+            BasicBlock? relResidualBlock = null;
+            weight_t residual = 0;
+            relResidual = 0;
+            weight_t entryWeight = 0;
+            weight_t exitWeight = 0;
+
+            for (var j = _dfsTree.PostOrderCount; j != 0; j--)
+            {
+                var block = dfs.GetPostOrder(j - 1);
+                weight_t newWeight = 0;
+                checkEntryExitWeight &= !block.hasTryIndex;
+                if (block == _entryBlock)
+                {
+                    newWeight = block.bbWeight;
+                    entryWeight = newWeight;
+                }
+                else
+                {
+                    ref var handler = ref _comp.ehGetBlockHndDsc(block);
+                    if (!Unsafe.IsNullRef(in handler))
+                    {
+                        if (handler.HasFilter && (block == handler.ebdFilter))
+                        {
+                            newWeight = block.bbWeight;
+                        }
+                        else if (block == handler.ebdHndBeg)
+                        {
+                            newWeight = block.bbWeight;
+                            if (!callFinalliesCreated && handler.HasFinallyHandler)
+                            {
+                                newWeight += countVector[handler.ebdTryBeg.bbNum];
+                            }
+                        }
+                    }
+                }
+
+                if (block.bbPreds is not null)
+                {
+                    var loop = _loops.GetLoopByHeader(block);
+                    if ((loop is not null) && !loop.ContainsImproperHeader)
+                    {
+                        foreach (var edge in loop.EntryEdges)
+                        {
+                            newWeight += edge.Likelihood * countVector[edge.SourceBlock.bbNum];
+                        }
+                        newWeight *= _cyclicProbabilities[loop.Index];
+                    }
+                    else
+                    {
+                        if ((loop is not null) && showDetails)
+                        {
+                            JITDUMP($" .. not using Cp for {FMT_BB(block.bbNum)}; loop contains improper header\n");
+                        }
+                        FlowEdge? selfEdge = null;
+                        foreach (var edge in block.PredEdges)
+                        {
+                            var predBlock = edge.SourceBlock;
+                            if (predBlock == block)
+                            {
+                                assert(selfEdge is null);
+                                selfEdge = edge;
+                                continue;
+                            }
+                            newWeight += edge.Likelihood * countVector[predBlock.bbNum];
+                        }
+                        if (selfEdge is not null)
+                        {
+                            var selfLikelihood = selfEdge.Likelihood;
+                            if (selfLikelihood > cappedLikelihood)
+                            {
+                                _cappedCyclicProbabilities++;
+                                selfLikelihood = cappedLikelihood;
+                            }
+                            newWeight /= 1.0 - selfLikelihood;
+                        }
+                    }
+                }
+
+                // Successive over-relaxation can produce negative counts near an eigenvalue of one.
+                // Native therefore uses ordinary Gauss-Seidel with monotonically increasing counts.
+                var oldWeight = countVector[block.bbNum];
+                var change = newWeight - oldWeight;
+                assert(change >= 0);
+                var isExit = false;
+                if (checkEntryExitWeight)
+                {
+                    if (block.Kind is BBJ_RETURN)
+                    {
+                        exitWeight += newWeight;
+                        isExit = true;
+                    }
+                    else if ((block.Kind is BBJ_THROW) && !block.hasTryIndex)
+                    {
+                        exitWeight += newWeight;
+                        isExit = true;
+                    }
+                }
+                if (showDetails)
+                {
+                    JITDUMP($"iteration {i}: {FMT_BB(block.bbNum)} :: old {FMT_WT(oldWeight)} new {FMT_WT(newWeight)} change {FMT_WT(change)}{(isExit ? " [exit]" : "")}\n");
+                }
+                countVector[block.bbNum] = newWeight;
+                var blockRelResidual = change / (oldWeight < 1e-12 ? 1e-12 : oldWeight);
+                if ((relResidualBlock is null) || (blockRelResidual > relResidual))
+                {
+                    relResidual = blockRelResidual;
+                    relResidualBlock = block;
+                }
+                if ((residualBlock is null) || (change > residual))
+                {
+                    residual = change;
+                    residualBlock = block;
+                }
+                if (newWeight >= maxCount)
+                {
+                    JITDUMP($"count overflow in {FMT_BB(block.bbNum)}: {FMT_WT(newWeight)}\n");
+                    _overflow = true;
+                }
+            }
+
+            if (_improperLoopHeaders == 0)
+            {
+                converged = !_comp.fgImportDone || Compiler.fgProfileWeightsConsistent(entryWeight, exitWeight);
+                break;
+            }
+            if (checkEntryExitWeight)
+            {
+                var entryExitResidual = weight_t.Abs(entryWeight - exitWeight);
+                JITDUMP($"Entry weight {FMT_WT(entryWeight)} exit weight {FMT_WT(exitWeight)} residual {FMT_WT(entryExitResidual)}\n");
+                var entryExitRelResidual = entryExitResidual / entryWeight;
+                assert(entryExitRelResidual >= 0);
+                if (entryExitRelResidual > relResidual)
+                {
+                    relResidual = entryExitRelResidual;
+                    relResidualBlock = _entryBlock;
+                }
+            }
+            assert(residualBlock is not null);
+            assert(relResidualBlock is not null);
+            JITDUMP($"iteration {i}: max residual is at {FMT_BB(residualBlock.bbNum)} : {FMT_WT(residual)}\n");
+            JITDUMP($"iteration {i}: max rel residual is at {FMT_BB(relResidualBlock.bbNum)} : {FMT_WT(relResidual)}\n");
+            if (relResidual < stopRelResidual)
+            {
+                converged = true;
+                break;
+            }
+            if (_overflow)
+            {
+                break;
+            }
+            if ((i > 3) && (oldRelResidual > 0))
+            {
+                eigenvalue = relResidual / oldRelResidual;
+                JITDUMP($" eigenvalue {FMT_WT(eigenvalue)}");
+            }
+            JITDUMP("\n");
+            oldRelResidual = relResidual;
+        }
+
+        JITDUMP($"{(converged ? "converged" : "failed to converge")} at iteration {i} rel residual {FMT_WT(relResidual)} eigenvalue {FMT_WT(eigenvalue)}\n");
+        for (var j = _dfsTree.PostOrderCount; j != 0; j--)
+        {
+            var block = dfs.GetPostOrder(j - 1);
+            var count = countVector[block.bbNum];
+            // std::max keeps its first operand when comparison fails, including for NaN.
+            block.setBBProfileWeight(0.0 < count ? count : 0.0);
+        }
+        _approximate = !converged || (_cappedCyclicProbabilities > 0);
     }
 }

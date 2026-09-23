@@ -92,6 +92,11 @@ first eligible conditional exit in loop order, not all exits (B076). Compiler
 DFS construction is accessible to the synthesis class in place of native
 friend-class access.
 
+The profile solver's zero-initialized count vector is a managed array indexed by
+block number. EH descriptors use the existing nullable-byref convention. Its
+`std::max` comparisons retain native operand selection, including NaN and signed
+zero, rather than adopting managed `Max` semantics (B077).
+
 Managed error-trap callbacks capture exceptions before leaving their
 `UnmanagedCallersOnly` shim. An owned `GCHandle` keeps the action and captured
 exception alive until the native trap returns. The regular trap reports

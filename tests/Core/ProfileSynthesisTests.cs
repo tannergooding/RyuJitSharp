@@ -274,6 +274,210 @@ internal static unsafe class ProfileSynthesisTests
         });
     }
 
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void BlockWeightPassesPreserveAcyclicAndLoopFlow(bool loop, bool solver)
+    {
+        WithCompiler(compiler => {
+            BasicBlock[] blocks;
+            double[] expected;
+            if (loop)
+            {
+                blocks = Blocks(compiler, BBJ_ALWAYS, BBJ_COND, BBJ_ALWAYS, BBJ_RETURN, BBJ_RETURN);
+                blocks[0].SetKindAndTargetEdge(BBJ_ALWAYS, Edge(blocks[0], blocks[1], 1));
+                blocks[1].SetCond(Edge(blocks[1], blocks[2], 0.9), Edge(blocks[1], blocks[3], 0.1));
+                blocks[2].SetKindAndTargetEdge(BBJ_ALWAYS, Edge(blocks[2], blocks[1], 1));
+                expected = [100, 1000, 900, 100, 0];
+            }
+            else
+            {
+                blocks = Blocks(compiler, BBJ_COND, BBJ_ALWAYS, BBJ_ALWAYS, BBJ_RETURN, BBJ_RETURN);
+                blocks[0].SetCond(Edge(blocks[0], blocks[1], 0.3), Edge(blocks[0], blocks[2], 0.7));
+                blocks[1].SetKindAndTargetEdge(BBJ_ALWAYS, Edge(blocks[1], blocks[3], 1));
+                blocks[2].SetKindAndTargetEdge(BBJ_ALWAYS, Edge(blocks[2], blocks[3], 1));
+                expected = [100, 30, 70, 100, 0];
+            }
+            var synthesis = CreateSynthesis(compiler);
+            ComputeCyclicProbabilities(synthesis);
+            SetInputWeights(blocks, 100);
+#if DEBUG
+            SolverConfig(ref JitConfig) = solver ? 1 : 0;
+            var output = Capture(compiler, () => ComputeBlockWeights(synthesis));
+            Assert.That(output.Contains("Synthesis solver:", StringComparison.Ordinal), Is.EqualTo(solver));
+#else
+            ComputeBlockWeights(synthesis);
+#endif
+            for (var i = 0; i < blocks.Length; i++)
+            {
+                Assert.That(blocks[i].bbWeight, Is.EqualTo(expected[i]).Within(1e-10));
+            }
+            Assert.That(Approximate(synthesis), Is.False);
+            Assert.That(Overflow(synthesis), Is.False);
+        });
+    }
+
+    [TestCase(0.8, false)]
+    [TestCase(0.999, true)]
+    [TestCase(1.0, true)]
+    public static void IrreducibleFlowConvergesOrStopsAtFiftyIterations(double backLikelihood, bool approximate)
+    {
+        WithCompiler(compiler => {
+            var blocks = Irreducible(compiler, backLikelihood, selfEdge: false);
+            var synthesis = CreateSynthesis(compiler);
+            ComputeCyclicProbabilities(synthesis);
+            Assert.That(CyclicProbabilities(synthesis), Is.Empty);
+            SetInputWeights(blocks, 100);
+            GaussSeidelSolver(synthesis);
+            Assert.That(Approximate(synthesis), Is.EqualTo(approximate));
+            Assert.That(Overflow(synthesis), Is.False);
+            if (approximate)
+            {
+                var expected = backLikelihood == 1 ? 5000 : 100 * (1 - Math.Pow(backLikelihood, 50)) / (1 - backLikelihood);
+                Assert.That(blocks[2].bbWeight, Is.EqualTo(expected).Within(1e-8));
+                Assert.That(blocks[1].bbWeight, Is.EqualTo(expected - 50).Within(1e-8));
+            }
+            else
+            {
+                Assert.That(blocks[1].bbWeight, Is.EqualTo(450).Within(0.5));
+                Assert.That(blocks[2].bbWeight, Is.EqualTo(500).Within(0.5));
+                Assert.That(blocks[3].bbWeight, Is.EqualTo(100).Within(0.1));
+            }
+        });
+    }
+
+    [Test]
+    public static void IrreducibleSelfEdgesUseTheirLocalGain()
+    {
+        WithCompiler(compiler => {
+            var blocks = Irreducible(compiler, 0.8, selfEdge: true);
+            var synthesis = CreateSynthesis(compiler);
+            ComputeCyclicProbabilities(synthesis);
+            Assert.That(CyclicProbabilities(synthesis), Is.Empty);
+            SetInputWeights(blocks, 100);
+            GaussSeidelSolver(synthesis);
+            Assert.That(Approximate(synthesis), Is.False);
+            Assert.That(blocks[1].bbWeight, Is.EqualTo(900).Within(1));
+            Assert.That(blocks[2].bbWeight, Is.EqualTo(500).Within(0.5));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void SolverOverflowPreservesNativeSinglePassAndIterativePolicy(bool irreducible)
+    {
+        WithCompiler(compiler => {
+            var blocks = irreducible ? Irreducible(compiler, 0.8, selfEdge: false) : Blocks(compiler, BBJ_ALWAYS, BBJ_RETURN);
+            if (!irreducible)
+            {
+                blocks[0].SetKindAndTargetEdge(BBJ_ALWAYS, Edge(blocks[0], blocks[1], 1));
+            }
+            var synthesis = CreateSynthesis(compiler);
+            ComputeCyclicProbabilities(synthesis);
+            SetInputWeights(blocks, 1e12);
+            GaussSeidelSolver(synthesis);
+            Assert.That(Overflow(synthesis), Is.True);
+            Assert.That(Approximate(synthesis), Is.EqualTo(irreducible));
+            Assert.That(blocks[irreducible ? 2 : 1].bbWeight, Is.EqualTo(1e12));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void SinglePassChecksEntryExitBalanceOnlyAfterImport(bool imported)
+    {
+        WithCompiler(compiler => {
+            var blocks = Blocks(compiler, BBJ_COND, BBJ_RETURN, BBJ_RETURN);
+            blocks[0].SetCond(Edge(blocks[0], blocks[1], 0.3), Edge(blocks[0], blocks[2], 0.3));
+            compiler.fgImportDone = imported;
+            var synthesis = CreateSynthesis(compiler);
+            SetInputWeights(blocks, 100);
+            GaussSeidelSolver(synthesis);
+            Assert.That(Approximate(synthesis), Is.EqualTo(imported));
+            Assert.That(blocks[1].bbWeight + blocks[2].bbWeight, Is.EqualTo(60));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void FinallyWeightsUseImplicitTryFlowBeforeImport(bool imported)
+    {
+        WithCompiler(compiler => {
+            var blocks = Blocks(compiler, BBJ_ALWAYS, BBJ_RETURN, BBJ_EHFINALLYRET);
+            blocks[0].SetKindAndTargetEdge(BBJ_ALWAYS, Edge(blocks[0], blocks[1], 1));
+            blocks[0].TryIndex = 0;
+            blocks[2].HndIndex = 0;
+            compiler.compHndBBtab = [new() {
+                ebdHandlerType = EHHandlerType.EH_HANDLER_FINALLY,
+                ebdTryBeg = blocks[0], ebdTryLast = blocks[0], ebdHndBeg = blocks[2], ebdHndLast = blocks[2],
+                ebdEnclosingTryIndex = EHblkDsc.NO_ENCLOSING_INDEX, ebdEnclosingHndIndex = EHblkDsc.NO_ENCLOSING_INDEX,
+            }];
+            compiler.compHndBBtabCount = 1;
+            compiler.fgImportDone = imported;
+            var synthesis = CreateSynthesis(compiler);
+            SetInputWeights(blocks, 100);
+            blocks[2].setBBProfileWeight(0.00001);
+            GaussSeidelSolver(synthesis);
+            Assert.That(blocks[2].bbWeight, Is.EqualTo(imported ? 0.00001 : 100.00001));
+        });
+    }
+
+    [Test]
+    public static void DirectBlockWeightsSeedFinallyWithoutCountingCrossHandlerFlowTwice()
+    {
+        WithCompiler(compiler => {
+            var blocks = Blocks(compiler, BBJ_CALLFINALLY, BBJ_EHFINALLYRET);
+            blocks[0].SetKindAndTargetEdge(BBJ_CALLFINALLY, Edge(blocks[0], blocks[1], 1));
+            blocks[0].SetFlags(BasicBlockFlags.BBF_RETLESS_CALL);
+            blocks[0].TryIndex = 0;
+            blocks[1].HndIndex = 0;
+            compiler.compHndBBtab = [new() {
+                ebdHandlerType = EHHandlerType.EH_HANDLER_FINALLY,
+                ebdTryBeg = blocks[0], ebdTryLast = blocks[0], ebdHndBeg = blocks[1], ebdHndLast = blocks[1],
+                ebdEnclosingTryIndex = EHblkDsc.NO_ENCLOSING_INDEX, ebdEnclosingHndIndex = EHblkDsc.NO_ENCLOSING_INDEX,
+            }];
+            compiler.compHndBBtabCount = 1;
+            var synthesis = CreateSynthesis(compiler);
+            SetInputWeights(blocks, 100);
+            ComputeBlockWeight(synthesis, blocks[0]);
+            Assert.That(blocks[1].bbWeight, Is.EqualTo(100));
+            ComputeBlockWeight(synthesis, blocks[1]);
+            Assert.That(blocks[1].bbWeight, Is.EqualTo(100));
+        });
+    }
+
+    private static BasicBlock[] Irreducible(Compiler compiler, double backLikelihood, bool selfEdge)
+    {
+        var blocks = Blocks(compiler, BBJ_COND, selfEdge ? BBJ_SWITCH : BBJ_ALWAYS, BBJ_COND, BBJ_RETURN);
+        // Conditional successors visit the false edge first; fix RPO for the analytic iteration counts.
+        blocks[0].SetCond(Edge(blocks[0], blocks[2], 0.5), Edge(blocks[0], blocks[1], 0.5));
+        if (selfEdge)
+        {
+            blocks[1].SwitchTargets = new BBswtDesc(
+                [Edge(blocks[1], blocks[1], 0.5), Edge(blocks[1], blocks[2], 0.5)], [0, 1], true);
+        }
+        else
+        {
+            blocks[1].SetKindAndTargetEdge(BBJ_ALWAYS, Edge(blocks[1], blocks[2], 1));
+        }
+        blocks[2].SetCond(Edge(blocks[2], blocks[1], backLikelihood), Edge(blocks[2], blocks[3], 1 - backLikelihood));
+        compiler._dfsTree = compiler.fgComputeDfs();
+        compiler._loops = FlowGraphNaturalLoops.Find(compiler._dfsTree);
+        Assert.That(compiler._dfsTree.GetPostOrder(compiler._dfsTree.PostOrderCount - 2), Is.SameAs(blocks[1]));
+
+        return blocks;
+    }
+
+    private static void SetInputWeights(BasicBlock[] blocks, double entryWeight)
+    {
+        foreach (var block in blocks)
+        {
+            block.setBBProfileWeight(0);
+        }
+        blocks[0].setBBProfileWeight(entryWeight);
+    }
+
 #if DEBUG
     [Test]
     public static void IncomingChecksSeparateMissingLikelihoodFromWeightBalance()
@@ -402,6 +606,9 @@ internal static unsafe class ProfileSynthesisTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitProfileChecks")]
     private static extern ref int ProfileCheckConfig(ref JitConfigValues config);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitSynthesisUseSolver")]
+    private static extern ref int SolverConfig(ref JitConfigValues config);
+
     private static string Capture(Compiler compiler, Action action)
     {
         using var stream = new MemoryStream();
@@ -460,6 +667,21 @@ internal static unsafe class ProfileSynthesisTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_hasInfiniteLoop")]
     private static extern ref bool HasInfiniteLoop(ProfileSynthesis synthesis);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ComputeBlockWeights")]
+    private static extern void ComputeBlockWeights(ProfileSynthesis synthesis);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ComputeBlockWeight")]
+    private static extern void ComputeBlockWeight(ProfileSynthesis synthesis, BasicBlock block);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "GaussSeidelSolver")]
+    private static extern void GaussSeidelSolver(ProfileSynthesis synthesis);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_approximate")]
+    private static extern ref bool Approximate(ProfileSynthesis synthesis);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_overflow")]
+    private static extern ref bool Overflow(ProfileSynthesis synthesis);
 
     private static FlowEdge Edge(BasicBlock source, BasicBlock target, double likelihood)
     {
