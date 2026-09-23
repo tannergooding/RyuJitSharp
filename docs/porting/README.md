@@ -56,6 +56,13 @@ NaNs and signed zero, and error propagation. Managed objects must not invalidate
 native pointer lifetimes or JIT/EE layout and calling-convention contracts.
 Review collection substitutions for ordering and equality changes.
 
+Native cross-kind node bashing is intentionally replaced by whole-node
+replacement in C#. Update callers, owning uses, cached aliases and LIR links
+as required; do not treat unchanged physical object identity as a porting goal.
+Preserve semantic relationships and dump-visible IDs/order. This approved
+representation policy, with existing inline-argument prior art, is covered by
+D002/B064; it does not require an IR type-hierarchy redesign.
+
 Keep useful upstream comments and recognizable symbol names. Use existing C#
 helpers and conventions rather than copying native machinery unnecessarily.
 Do not change algorithmic choices merely because a different implementation

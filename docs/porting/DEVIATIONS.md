@@ -35,6 +35,17 @@ C# helpers may replace native structure where appropriate. Examples include
 collection ordering, integer semantics, ownership, and native interop contracts.
 Larger algorithmic or architectural changes require separate approval.
 
+Whole-node replacement instead of native cross-kind node bashing is an explicitly
+approved safety and idiomatic-C# deviation. Keep the managed type hierarchy;
+adapt callers to accept replacement nodes and update all owning uses, cached
+references and, where applicable, LIR links. Native physical address identity
+is not itself a requirement. Preserve the operation's semantic relationships,
+evaluation order, metadata and dump-visible logical IDs without introducing
+spurious ID-allocation changes. Existing unthreaded inline-argument replacement
+is prior art, not proof that other replacement contexts already work. Do not
+reinterpret incompatible CLR layouts or introduce a mutable-payload redesign
+merely to emulate native bashing (B064).
+
 The existing `CheckedOps.Try*` arithmetic APIs return success (the inverse of
 native `CheckedOps::*Overflows`) and expose the wrapped result through an out
 parameter. Addition/subtraction use sign-bit checks or unsigned ordering;
