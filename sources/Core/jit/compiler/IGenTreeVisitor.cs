@@ -71,7 +71,8 @@ public interface IGenTreeVisitor<TSelf>
 
                 if (TSelf.UseExecutionOrder && node.IsReverseOp)
                 {
-                    (op1Use, op2Use) = (op2Use, op1Use);
+                    op1Use = ref op.Op2Ref;
+                    op2Use = ref op.Op1Ref;
                 }
 
                 if (op1Use is not null)

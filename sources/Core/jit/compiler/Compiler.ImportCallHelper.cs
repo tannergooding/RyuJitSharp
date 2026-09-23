@@ -2625,62 +2625,294 @@ public partial class Compiler
 
                         if (retType == TYP_STRUCT)
                         {
+                            // Converting some arithmetic type -> Half.
                             assert(compiler.IsSystemHalfClass(retClsHnd));
                             assert(varTypeIsArithmetic(op1Type));
 
-                            switch (op1Type)
-                            {
-                                case TYP_FLOAT:
-                                {
 #if TARGET_XARCH
-                                    if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                                    {
-                                        var op1 = compiler.impPopStack().val;
-                                        op1 = compiler.gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, TYP_FLOAT, 16);
-
-                                        retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_AVX2_ConvertToVector128Half, TYP_FLOAT, 16, op1, compiler.gtNewIconNode(TYP_INT, 0));
-                                        retNode = compiler.impSimdToScalarHalf(retNode, retClsHnd);
-                                    }
+                            if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                            {
+                                var supported = op1Type is TYP_FLOAT or TYP_DOUBLE or TYP_INT or TYP_UINT;
+#if TARGET_AMD64
+                                supported |= op1Type is TYP_LONG or TYP_ULONG;
 #endif
-                                    break;
-                                }
-
-                                default:
+                                if (supported)
                                 {
-                                    unreached();
+                                    var op1 = compiler.impPopStack().val;
+                                    var zeroVec = compiler.gtNewZeroConNode(TYP_SIMD16);
+
+                                    // Integer conversions read a general-purpose register; only floating-point
+                                    // sources need to be moved into a vector.
+                                    if (varTypeIsFloating(op1Type))
+                                    {
+                                        op1 = compiler.gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, op1Type, 16);
+                                    }
+
+                                    retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_AVX10v1_ConvertScalarToVector128Half, op1Type, 16, zeroVec, op1);
+                                    retNode = compiler.impSimdToScalarHalf(retNode, retClsHnd);
                                     break;
                                 }
                             }
+
+                            if ((op1Type is TYP_FLOAT) && compiler.compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                            {
+                                var op1 = compiler.impPopStack().val;
+                                op1 = compiler.gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, TYP_FLOAT, 16);
+                                retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_AVX2_ConvertToVector128Half, TYP_FLOAT, 16, op1, compiler.gtNewIconNode(TYP_INT, 0));
+                                retNode = compiler.impSimdToScalarHalf(retNode, retClsHnd);
+                            }
+#elif TARGET_ARM64
+                            // Floating-point FCVT is part of the Armv8.0 baseline. Integer -> Half
+                            // conversions require FEAT_FP16 and read a general-purpose register.
+                            if (varTypeIsFloating(op1Type))
+                            {
+                                var op1 = compiler.impPopStack().val;
+                                op1 = compiler.gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, op1Type, 16);
+                                retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_ArmBase_ConvertToHalf, op1Type, 16, op1);
+                                retNode = compiler.impSimdToScalarHalf(retNode, retClsHnd);
+                            }
+                            else if (compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16))
+                            {
+                                var op1 = compiler.impPopStack().val;
+                                retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_Fp16_ConvertToHalf, op1Type, 16, op1);
+                                retNode = compiler.impSimdToScalarHalf(retNode, retClsHnd);
+                            }
+#endif
                         }
                         else
                         {
+                            // Converting Half -> some arithmetic type.
                             assert(varTypeIsArithmetic(retType));
                             assert((op1Type is TYP_STRUCT) && compiler.IsSystemHalfClass(op1ClsHnd));
 
-                            switch (retType)
-                            {
-                                case TYP_FLOAT:
-                                {
 #if TARGET_XARCH
-                                    if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                                    {
-                                        var op1 = compiler.impPopStack().val;
-                                        op1 = compiler.impSimdCreateScalarHalf(op1);
-
-                                        retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_AVX2_ConvertToVector128Single, TYP_USHORT, 16, op1);
-                                        retNode = compiler.gtNewSimdToScalarNode(TYP_FLOAT, retNode, TYP_FLOAT, 16);
-                                    }
-#endif
-                                    break;
-                                }
-
-                                default:
-                                {
-                                    unreached();
-                                    break;
-                                }
+                            // Half -> integer deliberately uses the IL fallback: vcvttsh2si/vcvttsh2usi
+                            // produce integer-indefinite for NaN/overflow, rather than .NET saturation.
+                            // Accelerating Half -> float still lets lowering fix up the subsequent GT_CAST.
+                            if (varTypeIsFloating(retType) && compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                            {
+                                var opId = retType is TYP_FLOAT ? NI_AVX10v1_ConvertScalarToVector128Single : NI_AVX10v1_ConvertScalarToVector128Double;
+                                var op1 = compiler.impSimdCreateScalarHalf(compiler.impPopStack().val);
+                                var zeroVec = compiler.gtNewZeroConNode(TYP_SIMD16);
+                                retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, opId, TYP_USHORT, 16, zeroVec, op1);
+                                retNode = compiler.gtNewSimdToScalarNode(retType, retNode, retType, 16);
+                                break;
                             }
+
+                            if ((retType is TYP_FLOAT) && compiler.compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                            {
+                                var op1 = compiler.impSimdCreateScalarHalf(compiler.impPopStack().val);
+                                retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_AVX2_ConvertToVector128Single, TYP_USHORT, 16, op1);
+                                retNode = compiler.gtNewSimdToScalarNode(TYP_FLOAT, retNode, TYP_FLOAT, 16);
+                            }
+#elif TARGET_ARM64
+                            // FCVTZS/FCVTZU saturate and map NaN to zero, matching .NET.
+                            var opId = retType switch {
+                                TYP_FLOAT => NI_ArmBase_ConvertToSingle,
+                                TYP_DOUBLE => NI_ArmBase_ConvertToDouble,
+                                TYP_INT => NI_Fp16_ConvertToInt32,
+                                TYP_UINT => NI_Fp16_ConvertToUInt32,
+                                TYP_LONG => NI_Fp16_ConvertToInt64,
+                                TYP_ULONG => NI_Fp16_ConvertToUInt64,
+                                _ => NI_Illegal,
+                            };
+                            var isFp16 = retType is TYP_INT or TYP_UINT or TYP_LONG or TYP_ULONG;
+                            if ((opId is not NI_Illegal) && (!isFp16 || compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16)))
+                            {
+                                var op1 = compiler.impSimdCreateScalarHalf(compiler.impPopStack().val);
+                                // Scalar conversions produce their result directly in the target register.
+                                retNode = compiler.gtNewSimdHWIntrinsicNode(retType.ActualType, opId, TYP_USHORT, 16, op1);
+                            }
+#endif
                         }
+                        break;
+                    }
+
+                    case NI_System_Half_op_Addition:
+                    case NI_System_Half_op_Subtraction:
+                    case NI_System_Half_op_Multiply:
+                    case NI_System_Half_op_Division:
+                    {
+#if TARGET_XARCH || TARGET_ARM64
+#if TARGET_XARCH
+                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+#else
+                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16))
+#endif
+                        {
+                            var opId = compiler.lookupHalfIntrinsic(ni);
+                            assert(opId is not NI_Illegal);
+                            var op2 = compiler.impSimdCreateScalarHalf(compiler.impPopStack().val);
+                            var op1 = compiler.impSimdCreateScalarHalf(compiler.impPopStack().val);
+                            retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, opId, TYP_USHORT, 16, op1, op2);
+                            retNode = compiler.impSimdToScalarHalf(retNode, sigInfo.retTypeSigClass);
+                        }
+#endif
+                        break;
+                    }
+
+                    case NI_System_Half_Sqrt:
+                    case NI_System_Half_ReciprocalEstimate:
+                    case NI_System_Half_ReciprocalSqrtEstimate:
+                    {
+#if TARGET_XARCH || TARGET_ARM64
+#if TARGET_XARCH
+                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+#else
+                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16))
+#endif
+                        {
+                            var opId = compiler.lookupHalfIntrinsic(ni);
+                            assert(opId is not NI_Illegal);
+                            var op1 = compiler.impPopStack().val;
+#if TARGET_XARCH
+                            // Lane 0 comes from the second operand; the unused upper bits can be zero.
+                            var op2 = compiler.gtNewZeroConNode(TYP_SIMD16);
+                            op1 = compiler.impSimdCreateScalarHalf(op1);
+                            retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, opId, TYP_USHORT, 16, op2, op1);
+#else
+                            op1 = compiler.impSimdCreateScalarHalf(op1);
+                            retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, opId, TYP_USHORT, 16, op1);
+#endif
+                            retNode = compiler.impSimdToScalarHalf(retNode, sigInfo.retTypeSigClass);
+                        }
+#endif
+                        break;
+                    }
+
+                    case NI_System_Half_FusedMultiplyAdd:
+                    {
+#if TARGET_XARCH || TARGET_ARM64
+#if TARGET_XARCH
+                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+#else
+                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16))
+#endif
+                        {
+                            var op3 = compiler.impSimdCreateScalarHalf(compiler.impPopStack().val);
+                            var op2 = compiler.impSimdCreateScalarHalf(compiler.impPopStack().val);
+                            var op1 = compiler.impSimdCreateScalarHalf(compiler.impPopStack().val);
+#if TARGET_XARCH
+                            retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_AVX10v1_FusedMultiplyAddScalar, TYP_USHORT, 16, op1, op2, op3);
+#else
+                            retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_Fp16_FusedMultiplyAdd, TYP_USHORT, 16, op1, op2, op3);
+#endif
+                            retNode = compiler.impSimdToScalarHalf(retNode, sigInfo.retTypeSigClass);
+                        }
+#endif
+                        break;
+                    }
+
+                    case NI_System_Half_Round:
+                    case NI_System_Half_Ceiling:
+                    case NI_System_Half_Floor:
+                    case NI_System_Half_Truncate:
+                    {
+#if TARGET_XARCH || TARGET_ARM64
+                        // Only the single-argument overloads are optimized.
+#if TARGET_XARCH
+                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1) && (sigInfo.numArgs is 1))
+#else
+                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16) && (sigInfo.numArgs is 1))
+#endif
+                        {
+                            var op1 = compiler.impPopStack().val;
+#if TARGET_XARCH
+                            var roundingMode = lookupHalfRoundingMode(ni);
+                            var op2 = compiler.gtNewZeroConNode(TYP_SIMD16);
+                            op1 = compiler.impSimdCreateScalarHalf(op1);
+                            retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_AVX10v1_RoundScaleScalar, TYP_USHORT, 16, op2, op1, compiler.gtNewIconNode(TYP_INT, roundingMode));
+#else
+                            var opId = compiler.lookupHalfIntrinsic(ni);
+                            assert(opId is not NI_Illegal);
+                            op1 = compiler.impSimdCreateScalarHalf(op1);
+                            retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, opId, TYP_USHORT, 16, op1);
+#endif
+                            retNode = compiler.impSimdToScalarHalf(retNode, sigInfo.retTypeSigClass);
+                        }
+#endif
+                        break;
+                    }
+
+                    case NI_System_Half_op_GreaterThan:
+                    case NI_System_Half_op_GreaterThanOrEqual:
+                    case NI_System_Half_op_LessThan:
+                    case NI_System_Half_op_LessThanOrEqual:
+                    case NI_System_Half_op_Equality:
+                    case NI_System_Half_op_Inequality:
+                    {
+#if TARGET_XARCH || TARGET_ARM64
+#if TARGET_XARCH
+                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+#else
+                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16))
+#endif
+                        {
+                            var opId = compiler.lookupHalfIntrinsic(ni);
+                            assert(opId is not NI_Illegal);
+                            var op2 = compiler.impSimdCreateScalarHalf(compiler.impPopStack().val);
+                            var op1 = compiler.impSimdCreateScalarHalf(compiler.impPopStack().val);
+                            retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_INT, opId, TYP_USHORT, 16, op1, op2);
+                        }
+#endif
+                        break;
+                    }
+
+                    case NI_System_Half_op_Increment:
+                    case NI_System_Half_op_Decrement:
+                    {
+#if TARGET_XARCH || TARGET_ARM64
+#if TARGET_XARCH
+                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+#else
+                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16))
+#endif
+                        {
+                            var opId = compiler.lookupHalfIntrinsic(ni);
+                            assert(opId is not NI_Illegal);
+                            var op1 = compiler.impPopStack().val;
+                            // Half 1.0 is 0x3C00; materialize the bits without a runtime conversion.
+                            var oneVec = compiler.gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, compiler.gtNewIconNode(TYP_INT, 0x3C00), TYP_USHORT, 16);
+                            op1 = compiler.impSimdCreateScalarHalf(op1);
+                            retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, opId, TYP_USHORT, 16, op1, oneVec);
+                            retNode = compiler.impSimdToScalarHalf(retNode, sigInfo.retTypeSigClass);
+                        }
+#endif
+                        break;
+                    }
+
+                    case NI_System_Half_get_MinValue:
+                    case NI_System_Half_get_MaxValue:
+                    case NI_System_Half_get_Epsilon:
+                    case NI_System_Half_get_NaN:
+                    case NI_System_Half_get_PositiveInfinity:
+                    case NI_System_Half_get_NegativeInfinity:
+                    case NI_System_Half_get_One:
+                    case NI_System_Half_get_Zero:
+                    {
+#if TARGET_XARCH || TARGET_ARM64
+                        var halfBits = ni switch {
+                            NI_System_Half_get_MinValue => 0xFBFF, // -65504
+                            NI_System_Half_get_MaxValue => 0x7BFF, // 65504
+                            NI_System_Half_get_Epsilon => 0x0001, // Smallest positive subnormal
+                            NI_System_Half_get_NaN => 0xFE00, // Negative NaN
+                            NI_System_Half_get_PositiveInfinity => 0x7C00,
+                            NI_System_Half_get_NegativeInfinity => 0xFC00,
+                            NI_System_Half_get_One => 0x3C00,
+                            NI_System_Half_get_Zero => 0x0000,
+                            _ => throw new System.Diagnostics.UnreachableException(),
+                        };
+#if TARGET_XARCH
+                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+#else
+                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16))
+#endif
+                        {
+                            // The signature carries the Half class even for generic constrained calls.
+                            retNode = compiler.gtNewSimdCreateScalarNode(TYP_SIMD16, compiler.gtNewIconNode(TYP_INT, halfBits), TYP_USHORT, 16);
+                            retNode = compiler.impSimdToScalarHalf(retNode, sigInfo.retTypeSigClass);
+                        }
+#endif
                         break;
                     }
 

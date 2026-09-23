@@ -12,6 +12,55 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class UseEdgeIteratorTests
 {
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void RecursiveExecutionOrderPreservesOperandSlots(bool reverse, bool replace)
+    {
+        WithCompiler(compiler => {
+            GenTree first = compiler.gtNewIconNode(TYP_INT, 1);
+            GenTree second = compiler.gtNewIconNode(TYP_INT, 2);
+            GenTree replacement = compiler.gtNewIconNode(TYP_INT, 3);
+            GenTree tree = new GenTreeOp(GT_SUB, TYP_INT, first, second) { IsReverseOp = reverse };
+            var visitor = new ReplacingVisitor(replace ? second : null, replacement);
+            _ = visitor.WalkTree(ref tree);
+            GenTree[] expected = reverse ? [second, first] : [first, second];
+            Assert.Multiple(() => {
+                Assert.That(visitor.Seen, Is.EqualTo(expected));
+                Assert.That(tree.AsOp().Op1, Is.SameAs(first));
+                Assert.That(tree.AsOp().Op2, Is.SameAs(replace ? replacement : second));
+            });
+        });
+    }
+
+    private struct ReplacingVisitor(GenTree? target, GenTree replacement) : IGenTreeVisitor<ReplacingVisitor>
+    {
+        private readonly Stack<GenTree> _ancestors = [];
+        public readonly List<GenTree> Seen = [];
+        public static bool DoPreOrder => true;
+        public static bool UseExecutionOrder => true;
+
+        public readonly Compiler.fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
+        {
+            if (user is not null)
+            {
+                Seen.Add(use);
+                if (use == target)
+                {
+                    use = replacement;
+                }
+            }
+            return Compiler.fgWalkResult.WALK_CONTINUE;
+        }
+
+        public readonly Compiler.fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user)
+            => Compiler.fgWalkResult.WALK_CONTINUE;
+
+        public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user = null)
+            => IGenTreeVisitor<ReplacingVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+    }
+
     [TestCase("leaf")]
     [TestCase("bashed")]
     [TestCase("unary")]

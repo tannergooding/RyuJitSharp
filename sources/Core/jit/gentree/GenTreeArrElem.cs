@@ -10,6 +10,8 @@ namespace RyuJitSharp;
 /// <summary>Bounds checked address (byref) of a general array element, for multidimensional arrays, or 1-d arrays with non-zero lower bounds.</summary>
 public sealed class GenTreeArrElem : GenTree
 {
+    public const int MaxRank = 3;
+
     private GenTree _arrObj;
     private GenTree[] _arrInds;
     private readonly int _arrElemSize;

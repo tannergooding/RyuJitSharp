@@ -1028,6 +1028,13 @@ public partial class Compiler
 
         var rank = (intrinsicName is NI_Array_Set) ? (sigInfo.numArgs - 1) : sigInfo.numArgs;
 
+        // Match GT_ARR_MAX_RANK even though managed operand storage can represent larger ranks.
+        if (rank > GenTreeArrElem.MaxRank)
+        {
+            JITDUMP($"impArrayAccessIntrinsic: rejecting array intrinsic because rank ({rank}) > GT_ARR_MAX_RANK ({GenTreeArrElem.MaxRank})\n");
+            return null;
+        }
+
         // The rank 1 case is special because it has to handle two array formats. We will simply not do that case.
         if (rank <= 1)
         {
@@ -1069,10 +1076,10 @@ public partial class Compiler
                 _ = info.compCompHnd->getChildType(localSig.retTypeClass, &actualElemClsHnd);
             }
 
-            // if it's not final, we can't do the optimization
-            if ((info.compCompHnd->getClassAttribs(actualElemClsHnd) & CORINFO_FLG_FINAL) is 0)
+            // Sealed array and variant types may still be covariant; require an exact type.
+            if (!info.compCompHnd->isExactType(actualElemClsHnd))
             {
-                JITDUMP($"impArrayAccessIntrinsic: rejecting array intrinsic because actualElemClsHnd ({FMT_PTR(actualElemClsHnd)}) is not final\n");
+                JITDUMP($"impArrayAccessIntrinsic: rejecting array intrinsic because actualElemClsHnd ({FMT_PTR(actualElemClsHnd)}) is not exact\n");
                 return null;
             }
         }
@@ -1089,12 +1096,10 @@ public partial class Compiler
 
         if (intrinsicName is NI_Array_Set)
         {
-            // Stores of structs require more work, and there are more gets than sets.
-            // TODO-CQ: support SET (`a[i,j,k] = s`) for struct element arrays.
-            if (varTypeIsStruct(elemType))
+            // The array checks in the store's address must happen after the value is evaluated.
+            if ((impStackTop().val.Flags & GTF_SIDE_EFFECT) is not 0)
             {
-                JITDUMP("impArrayAccessIntrinsic: rejecting SET array intrinsic because elemType is TYP_STRUCT (implementation limitation)\n");
-                return null;
+                impSpillSideEffects(false, CHECK_SPILL_ALL, "Strict ordering of exceptions for MD Array store");
             }
 
             val = impPopStack().val;
@@ -1129,10 +1134,18 @@ public partial class Compiler
         {
             case NI_Array_Set:
             {
-                assert(!varTypeIsStruct(elemType));
                 assert(val is not null);
 
-                arrElem = gtNewStoreIndNode(elemType, arrElem, val);
+                if (varTypeIsStruct(elemType))
+                {
+                    assert(elemLayout is not null);
+                    arrElem = gtNewStoreValueNode(arrElem, val, elemLayout);
+                    arrElem = impStoreStruct(arrElem, CHECK_SPILL_ALL);
+                }
+                else
+                {
+                    arrElem = gtNewStoreIndNode(elemType, arrElem, val);
+                }
                 break;
             }
 
@@ -4071,6 +4084,36 @@ public partial class Compiler
                 break;
             }
 
+            case NI_System_Activator_CreateInstance_T:
+            {
+                CORINFO_SIG_INFO sig;
+                info.compCompHnd->getMethodSig(methodHnd, &sig);
+                assert(sig.sigInst.methInstCount is 1);
+                assert(sig.sigInst.classInstCount is 0);
+                assert(sig.sigInst.methInst[0] is not null);
+
+                var instParam = call.Args.FindWellKnownArg(WellKnownArg.InstParam);
+                if (instParam is not null)
+                {
+                    assert(instParam.Next is null);
+                    var hMethod = gtGetHelperArgMethodHandle(instParam.Node);
+                    if (hMethod != NO_METHOD_HANDLE)
+                    {
+                        result = getMethodInstantiationArgument(hMethod, 0);
+                    }
+                }
+
+                if (result != NO_CLASS_HANDLE)
+                {
+                    JITDUMP($"Special intrinsic: return type is {eeGetClassName(result)}\n");
+                }
+                else
+                {
+                    JITDUMP("Special intrinsic: return type undetermined or inexact, so deferring opt\n");
+                }
+                break;
+            }
+
             default:
             {
                 JITDUMP("This special intrinsic not handled, sorry...\n");
@@ -6169,7 +6212,11 @@ public partial class Compiler
                         BADCODE("Stack must be empty after CEE_JMPs");
                     }
 
-                    impResolveToken(codeAddr, out var resolvedToken, CORINFO_TOKENKIND_Method);
+                    impResolveToken(codeAddr, out var resolvedToken, compIsAsyncVersion ? CORINFO_TOKENKIND_Await : CORINFO_TOKENKIND_Method);
+                    if (compIsAsyncVersion && (resolvedToken.hMethod == NO_METHOD_HANDLE))
+                    {
+                        BADCODE("Incompatible target for CEE_JMP in async version");
+                    }
 
                     JITDUMP($" {resolvedToken.token:X8}");
 
@@ -8799,9 +8846,10 @@ public partial class Compiler
 
                         op1 = gtNewUnaryNode(GT_LCLHEAP, TYP_I_IMPL, op2);
 
-                        // We do not model stack overflow from localloc as an exception side effect.
+                        // Stack overflow is not modeled as an exception side effect, but allocation
+                        // must stay behind the dominating check that typically bounds its size.
                         // Obviously, we don't want locallocs to be CSE'd.
-                        op1.Flags |= GTF_DONT_CSE;
+                        op1.Flags |= GTF_DONT_CSE | GTF_CALL | GTF_GLOB_REF;
 
                         // Request stack security for this method.
                         NeedsGSSecurityCookie = true;
@@ -10434,6 +10482,10 @@ public partial class Compiler
 
             var type = op1.Type.ActualType;
             var op = compiler.gtNewBinaryNode(oper, type, op1, op2);
+            if (op.RequiresCallFlag(compiler))
+            {
+                op.Flags |= GTF_CALL;
+            }
 
             // Fold result, if possible.
             compiler.impPushOnStack(compiler.gtFoldExpr(op), new typeInfo());
@@ -15168,9 +15220,17 @@ public partial class Compiler
 
                 if (varTypeIsSmall(tgtType))
                 {
-                    res = gtNewCastNode(retType, op1, fromUnsigned: false, retType);
-                    res = gtFoldExpr(res);
-                    res = gtNewCastNode(TYP_INT, res, fromUnsigned: false, tgtType);
+                    if (intrinsic is NI_PRIMITIVE_ConvertToInteger)
+                    {
+                        // Saturate directly to the small integral type, rather than truncating a wider result.
+                        res = gtNewCastNode(retType, op1, fromUnsigned: false, tgtType);
+                    }
+                    else
+                    {
+                        res = gtNewCastNode(retType, op1, fromUnsigned: false, retType);
+                        res = gtFoldExpr(res);
+                        res = gtNewCastNode(TYP_INT, res, fromUnsigned: false, tgtType);
+                    }
                 }
                 else
                 {
@@ -15361,15 +15421,13 @@ public partial class Compiler
 
                 if (op1.Oper.IsIntegralConst)
                 {
-                    // Pop the value from the stack
-                    _ = impPopStack();
-
                     if (varTypeIsLong(baseType))
                     {
                         var cns = op1.AsIntConCommon().LngValue;
 
                         if (varTypeIsUnsigned(baseJitType.PreciseVarType) || (cns >= 0))
                         {
+                            _ = impPopStack();
                             result = gtNewLconNode(BitOperations.Log2(unchecked((ulong)(cns))));
                         }
                     }
@@ -15379,6 +15437,7 @@ public partial class Compiler
 
                         if (varTypeIsUnsigned(baseJitType.PreciseVarType) || (cns >= 0))
                         {
+                            _ = impPopStack();
                             result = gtNewIconNode(baseType, BitOperations.Log2(unchecked((uint)(cns))));
                         }
                     }
@@ -15396,7 +15455,7 @@ public partial class Compiler
                 }
 #endif
 
-#if FEATURE_HW_INTRINSICS
+#if FEATURE_HW_INTRINSICS && !TARGET_WASM
                 _ = impPopStack();
 
                 var op1Dup = null as GenTree;
@@ -15481,6 +15540,7 @@ public partial class Compiler
                     var fallback = new GenTreeIntrinsic(retType, op1Dup, intrinsic, method) {
                         EntryPoint = entryPoint,
                     };
+                    fallback.Flags |= GTF_CALL;
                     var cond = gtNewBinaryNode(GT_LT, TYP_INT, op1, gtNewZeroConNode(isLong ? TYP_LONG : TYP_INT));
                     var colon = gtNewColonNode(retType, fallback, result);
                     var qmark = gtNewQmarkNode(retType, cond, colon);
@@ -15591,7 +15651,6 @@ public partial class Compiler
                         result = gtNewIconNode(baseType, int.TrailingZeroCount(cns));
                     }
 
-                    baseType = retType;
                     break;
                 }
 
@@ -17126,7 +17185,7 @@ public partial class Compiler
     {
         assert(i <= stackState.esStackDepth);
 
-        var spillFlags = spillGlobEffects ? GTF_GLOB_EFFECT : GTF_SIDE_EFFECT;
+        var spillFlags = spillGlobEffects ? GTF_ALL_EFFECT : (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
         var tree = stackState.esStack[i].val;
 
         if (((tree.Flags & spillFlags) is not 0) || (spillGlobEffects && !impIsAddressInLocal(tree) && gtHasLocalsWithAddrOp(tree)))
@@ -18381,6 +18440,24 @@ public partial class Compiler
             impStoreToTemp(boxedArgNameTmp, valueName, CHECK_SPILL_ALL);
 
             _ = gtTryRemoveBoxUpstreamEffects(value.AsBox(), BR_REMOVE_AND_NARROW);
+            return gtNewNothingNode();
+        }
+        else if (value.Oper.IsCall && value.AsCall().IsHelperCall(CORINFO_HELP_BOX))
+        {
+            // Tier0 can box non-nullable values with a helper instead of GT_BOX.
+            var classArg = value.AsCall().Args.GetUserArgByIndex(0);
+            var addressArg = value.AsCall().Args.GetUserArgByIndex(1);
+            assert(classArg is not null && addressArg is not null);
+            if ((classArg.Node.Flags & GTF_SIDE_EFFECT) is not 0)
+            {
+                return call;
+            }
+
+            // Preserve address evaluation before the argument name, without allocating the box.
+            var boxedAddrTmp = lvaGrabTemp(shortLifetime: true, "boxedAddr spilled");
+            var boxedArgNameTmp = lvaGrabTemp(shortLifetime: true, "boxedArg spilled");
+            impStoreToTemp(boxedAddrTmp, addressArg.Node, CHECK_SPILL_ALL);
+            impStoreToTemp(boxedArgNameTmp, valueName, CHECK_SPILL_ALL);
             return gtNewNothingNode();
         }
         else
@@ -20104,8 +20181,9 @@ public partial class Compiler
         // Currently, if a math intrinsic is not implemented by target-specific
         // instructions, it will be implemented by a System.Math call. In the
         // future, if we turn to implementing some of them with helper calls,
-        // this predicate needs to be revisited.
-        return !IsTargetIntrinsic(intrinsicName);
+        // this predicate needs to be revisited. IsKnownConstant is instead folded
+        // during importation or morph.
+        return (intrinsicName is not NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant) && !IsTargetIntrinsic(intrinsicName);
     }
 
     public bool IsMathIntrinsic(NamedIntrinsic intrinsicName)
@@ -20231,6 +20309,10 @@ public partial class Compiler
             case NI_System_Math_MultiplyAddEstimate:
             case NI_System_Math_ReciprocalEstimate:
             case NI_System_Math_ReciprocalSqrtEstimate:
+            case NI_PRIMITIVE_SaturateToInt8:
+            case NI_PRIMITIVE_SaturateToInt16:
+            case NI_PRIMITIVE_SaturateToUInt8:
+            case NI_PRIMITIVE_SaturateToUInt16:
             {
                 return true;
             }
@@ -20246,6 +20328,10 @@ public partial class Compiler
             case NI_System_Math_MultiplyAddEstimate:
             case NI_System_Math_ReciprocalEstimate:
             case NI_System_Math_ReciprocalSqrtEstimate:
+            case NI_PRIMITIVE_SaturateToInt8:
+            case NI_PRIMITIVE_SaturateToInt16:
+            case NI_PRIMITIVE_SaturateToUInt8:
+            case NI_PRIMITIVE_SaturateToUInt16:
             {
                 return true;
             }
@@ -20269,6 +20355,12 @@ public partial class Compiler
 
             case NI_System_Math_MultiplyAddEstimate:
             case NI_System_Math_ReciprocalEstimate:
+            case NI_System_Math_MaxNative:
+            case NI_System_Math_MinNative:
+            case NI_PRIMITIVE_SaturateToInt8:
+            case NI_PRIMITIVE_SaturateToInt16:
+            case NI_PRIMITIVE_SaturateToUInt8:
+            case NI_PRIMITIVE_SaturateToUInt16:
             {
                 return true;
             }
@@ -21230,6 +21322,89 @@ public partial class Compiler
         }
         return NI_Illegal;
     }
+
+#if FEATURE_HW_INTRINSICS && (TARGET_XARCH || TARGET_ARM64)
+    private NamedIntrinsic lookupHalfIntrinsic(NamedIntrinsic intrinsic)
+    {
+#if TARGET_XARCH
+        assert(compOpportunisticallyDependsOn(InstructionSet_AVX10v1));
+
+        // Unordered compares use quiet NaN predicates, matching float/double lowering.
+        return intrinsic switch {
+            NI_System_Half_op_Addition or NI_System_Half_op_Increment => NI_AVX10v1_AddScalar,
+            NI_System_Half_op_Subtraction or NI_System_Half_op_Decrement => NI_AVX10v1_SubtractScalar,
+            NI_System_Half_op_Multiply => NI_AVX10v1_MultiplyScalar,
+            NI_System_Half_op_Division => NI_AVX10v1_DivideScalar,
+            NI_System_Half_Sqrt => NI_AVX10v1_SqrtScalar,
+            NI_System_Half_ReciprocalEstimate => NI_AVX10v1_ReciprocalScalar,
+            NI_System_Half_ReciprocalSqrtEstimate => NI_AVX10v1_ReciprocalSqrtScalar,
+            NI_System_Half_FusedMultiplyAdd => NI_AVX10v1_FusedMultiplyAddScalar,
+            NI_System_Half_op_GreaterThan => NI_AVX10v1_CompareScalarUnorderedGreaterThan,
+            NI_System_Half_op_GreaterThanOrEqual => NI_AVX10v1_CompareScalarUnorderedGreaterThanOrEqual,
+            NI_System_Half_op_LessThan => NI_AVX10v1_CompareScalarUnorderedLessThan,
+            NI_System_Half_op_LessThanOrEqual => NI_AVX10v1_CompareScalarUnorderedLessThanOrEqual,
+            NI_System_Half_op_Equality => NI_AVX10v1_CompareScalarUnorderedEqual,
+            NI_System_Half_op_Inequality => NI_AVX10v1_CompareScalarUnorderedNotEqual,
+            NI_System_Half_Round or NI_System_Half_Ceiling or NI_System_Half_Floor or NI_System_Half_Truncate => NI_AVX10v1_RoundScaleScalar,
+            _ => NI_Illegal,
+        };
+#else
+        assert(compOpportunisticallyDependsOn(InstructionSet_Fp16));
+
+        return intrinsic switch {
+            NI_System_Half_op_Addition or NI_System_Half_op_Increment => NI_Fp16_Add,
+            NI_System_Half_op_Subtraction or NI_System_Half_op_Decrement => NI_Fp16_Subtract,
+            NI_System_Half_op_Multiply => NI_Fp16_Multiply,
+            NI_System_Half_op_Division => NI_Fp16_Divide,
+            NI_System_Half_Sqrt => NI_Fp16_Sqrt,
+            NI_System_Half_ReciprocalEstimate => NI_Fp16_ReciprocalEstimate,
+            NI_System_Half_ReciprocalSqrtEstimate => NI_Fp16_ReciprocalSqrtEstimate,
+            NI_System_Half_FusedMultiplyAdd => NI_Fp16_FusedMultiplyAdd,
+            NI_System_Half_op_GreaterThan => NI_Fp16_CompareGreaterThan,
+            NI_System_Half_op_GreaterThanOrEqual => NI_Fp16_CompareGreaterThanOrEqual,
+            NI_System_Half_op_LessThan => NI_Fp16_CompareLessThan,
+            NI_System_Half_op_LessThanOrEqual => NI_Fp16_CompareLessThanOrEqual,
+            NI_System_Half_op_Equality => NI_Fp16_CompareEqual,
+            NI_System_Half_op_Inequality => NI_Fp16_CompareNotEqual,
+            NI_System_Half_Round => NI_Fp16_RoundToNearest,
+            NI_System_Half_Ceiling => NI_Fp16_Ceiling,
+            NI_System_Half_Floor => NI_Fp16_Floor,
+            NI_System_Half_Truncate => NI_Fp16_Truncate,
+            _ => NI_Illegal,
+        };
+#endif
+    }
+#endif
+
+#if FEATURE_HW_INTRINSICS && TARGET_XARCH
+    private static int lookupHalfRoundingMode(NamedIntrinsic intrinsic)
+    {
+        switch (intrinsic)
+        {
+            case NI_System_Half_Round:
+            {
+                return (int)FloatRoundingMode.ToNearestInteger;
+            }
+            case NI_System_Half_Ceiling:
+            {
+                return (int)FloatRoundingMode.ToPositiveInfinity;
+            }
+            case NI_System_Half_Floor:
+            {
+                return (int)FloatRoundingMode.ToNegativeInfinity;
+            }
+            case NI_System_Half_Truncate:
+            {
+                return (int)FloatRoundingMode.ToZero;
+            }
+            default:
+            {
+                noway_assert(false);
+                return -1;
+            }
+        }
+    }
+#endif
 
     private static NamedIntrinsic lookupPrimitiveFloatNamedIntrinsic(ReadOnlySpan<byte> methodName)
     {

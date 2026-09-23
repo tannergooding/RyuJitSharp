@@ -11,6 +11,50 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ImporterCallTests
 {
+    [TestCase(CorInfoType.CORINFO_TYPE_INT)]
+    [TestCase(CorInfoType.CORINFO_TYPE_LONG)]
+    public static void NegativeLog2LeavesItsArgumentForTheManagedFallback(CorInfoType type)
+    {
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.Base.Base.getArgType = &GetPrimitiveArgumentType;
+        ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+#if DEBUG
+        using var jitTls = new JitTls(&jitInfo);
+#endif
+        var previous = JitTls.Compiler;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        compiler.info = new Compiler.Info { compCompHnd = &jitInfo, compMaxStack = 1 };
+        compiler.compCurBB = new BasicBlock(null, null);
+        compiler.stackState.esStack = new StackEntry[1];
+        JitTls.Compiler = compiler;
+        try
+        {
+            GenTree value = type == CorInfoType.CORINFO_TYPE_LONG
+                ? compiler.gtNewLconNode(-1)
+                : compiler.gtNewIconNode(var_types.TYP_INT, -1);
+            compiler.impPushOnStack(value, new typeInfo(value.Type));
+            var signature = new CORINFO_SIG_INFO { numArgs = 1, retType = type };
+            var result = compiler.impPrimitiveNamedIntrinsic(NamedIntrinsic.NI_PRIMITIVE_Log2, null, null, signature, default, false);
+            Assert.Multiple(() => {
+                Assert.That(result, Is.Null);
+                Assert.That(compiler.impStackHeight, Is.EqualTo(1));
+                Assert.That(compiler.impStackTop().val, Is.SameAs(value));
+            });
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CorInfoTypeWithMod GetPrimitiveArgumentType(ICorJitInfo* self, CORINFO_SIG_INFO* signature,
+        CORINFO_ARG_LIST_STRUCT_* argument, CORINFO_CLASS_STRUCT_** type)
+    {
+        *type = null;
+        return (CorInfoTypeWithMod)signature->retType;
+    }
+
     [TestCase(var_types.TYP_INT, genTreeOps.GT_ROL)]
     [TestCase(var_types.TYP_INT, genTreeOps.GT_ROR)]
     [TestCase(var_types.TYP_LONG, genTreeOps.GT_ROL)]
