@@ -40,6 +40,7 @@ internal static unsafe class ConfigMethodRangeTests
     {
         using var jitTls = new JitTls(null);
         var bytes = text is null ? null : Encoding.ASCII.GetBytes(text + '\0');
+
         fixed (byte* pointer = bytes)
         {
             ConfigMethodRange range = default;
@@ -61,6 +62,7 @@ internal static unsafe class ConfigMethodRangeTests
     public static void CapacityTruncationRetainsNativeSelection(int capacity, bool containsSecond)
     {
         using var jitTls = new JitTls(null);
+
         fixed (byte* pointer = "1,2"u8)
         {
             ConfigMethodRange range = default;
@@ -85,6 +87,7 @@ internal static unsafe class ConfigMethodRangeTests
         var ordinalField = typeof(InlineContext).GetField("_ordinal", BindingFlags.Instance | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("Missing inline ordinal.");
         ordinalField.SetValue(compiler.compInlineContext, ordinal);
+
         if (inlining)
         {
             compiler.opts.compFlags = Globals.CLFLG_INLINING;
@@ -100,9 +103,11 @@ internal static unsafe class ConfigMethodRangeTests
         var rangeField = typeof(Compiler).GetField("s_jitOptimizeAwaitRange", BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("Missing await range.");
         var oldRange = rangeField.GetValue(null);
+
         try
         {
             var bytes = Encoding.ASCII.GetBytes($"{expectedHash:x8}\0");
+
             fixed (byte* pointer = bytes)
             {
                 ConfigMethodRange range = default;

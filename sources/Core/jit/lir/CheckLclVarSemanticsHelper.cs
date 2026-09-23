@@ -96,6 +96,7 @@ public sealed class CheckLclVarSemanticsHelper
                                 {
                                     prefix = "       ";
                                 }
+
                                 _compiler.gtDispLIRNode(rangeNode, prefix);
                             }
 
@@ -106,6 +107,7 @@ public sealed class CheckLclVarSemanticsHelper
                 }
             }
         }
+
         return true;
     }
 
@@ -143,8 +145,10 @@ public sealed class CheckLclVarSemanticsHelper
             {
                 reads = [];
             }
+
             _unusedLclVarReads[defInfo.LclNum] = reads;
         }
+
         reads[defInfo.Node] = defInfo.Node;
     }
 

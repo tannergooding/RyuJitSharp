@@ -211,11 +211,15 @@ public sealed class InlineContext
             {
                 if (offs == BAD_IL_OFFSET)
                 {
-                    jitprintf($"{new string(' ', indent)}[{FMT_INL_CTX(_ordinal)} IL=???? TR={_treeId:D6} {calleeToken:X8}] [{inlineResult}{inlineTarget}: {inlineReason}{guarded}{devirtualized}{unboxed}{asyncness}] {calleeName}\n");
+                    jitprintf($"{new string(
+' ',
+ indent)}[{FMT_INL_CTX(_ordinal)} IL=???? TR={_treeId:D6} {calleeToken:X8}] [{inlineResult}{inlineTarget}: {inlineReason}{guarded}{devirtualized}{unboxed}{asyncness}] {calleeName}\n");
                 }
                 else
                 {
-                    jitprintf($"{new string(' ', indent)}[{FMT_INL_CTX(_ordinal)} IL={offs:D4} TR={_treeId:D6} {calleeToken:X8}] [{inlineResult}{inlineTarget}: {inlineReason}{guarded}{devirtualized}{unboxed}{asyncness}] {calleeName}\n");
+                    jitprintf($"{new string(
+' ',
+ indent)}[{FMT_INL_CTX(_ordinal)} IL={offs:D4} TR={_treeId:D6} {calleeToken:X8}] [{inlineResult}{inlineTarget}: {inlineReason}{guarded}{devirtualized}{unboxed}{asyncness}] {calleeName}\n");
                 }
             }
             else
@@ -249,14 +253,14 @@ public sealed class InlineContext
         var inlineResult = info.inlineResult;
 
         assert(inlineResult.Observation.IsValid);
-        _observation    = inlineResult.Observation;
+        _observation = inlineResult.Observation;
         _importedILSize = inlineResult.ImportedILSize;
         _flags |= Flags.Success;
 
-    #if DEBUG
-        _policy           = inlineResult.Policy;
+#if DEBUG
+        _policy = inlineResult.Policy;
         _codeSizeEstimate = _policy.CodeSizeEstimate();
-    #endif
+#endif
 
         _ordinal = _inlineStrategy.InlineCount + 1;
         _inlineStrategy.NoteOutcome(this);

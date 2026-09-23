@@ -48,12 +48,14 @@ internal static unsafe class AsyncContextTests
             var call = NewAsyncCall(compiler);
             var userArg = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(var_types.TYP_INT, 42)));
             GenTree root = call;
+
             if (nested)
             {
                 var outer = compiler.gtNewCallNode(var_types.TYP_INT, gtCallTypes.CT_USER_FUNC, null);
                 _ = outer.Args.PushBack(NewCallArg.CreateForPrimitive(call));
                 root = outer;
             }
+
             var block = new BasicBlock(null, null);
             compiler.fgInsertStmtAtEnd(block, compiler.gtNewStmt(root));
             compiler.fgInsertStmtAtEnd(block, compiler.gtNewStmt(compiler.gtNewIconNode(var_types.TYP_INT, 7)));
@@ -82,16 +84,19 @@ internal static unsafe class AsyncContextTests
             EnableAsyncInlining(true);
             var inliningCall = NewAsyncCall(compiler);
             List<ContinuationContextHandling> outerHandling = [];
+
             for (var i = 1; i < enclosingFrames; i++)
             {
                 outerHandling.Add(ContinuationContextHandling.ContinueOnThreadPool);
             }
+
             inliningCall.GetAsyncInfo().ContinuationContextHandling = ContinuationContextHandling.ContinueOnCapturedContext;
             inliningCall.GetAsyncInfo().InlineFrameContextHandling = outerHandling;
             _ = inliningCall.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(var_types.TYP_INT, 1)));
             _ = inliningCall.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclAddrNode(var_types.TYP_BYREF, 3, 0))
                 .WithWellKnownArg(WellKnownArg.AsyncResumedDef));
             var originals = new List<CallArg>();
+
             for (var frame = 0; frame < enclosingFrames; frame++)
             {
                 var local = (frame + 1) * 3;
@@ -102,6 +107,7 @@ internal static unsafe class AsyncContextTests
                 originals.Add(inliningCall.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclvNode(var_types.TYP_REF, local + 2))
                     .WithWellKnownArg(WellKnownArg.AsyncSynchronizationContext)));
             }
+
             SetInlineContext(compiler, inliningCall);
             var call = NewAsyncCall(compiler);
             var userArg = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(var_types.TYP_INT, 9)));
@@ -114,13 +120,16 @@ internal static unsafe class AsyncContextTests
             AssertOwnContexts(args);
             Assert.That(args.Count, Is.EqualTo(5 + originals.Count));
             Assert.That(args[^1], Is.SameAs(userArg));
+
             for (var i = 0; i < originals.Count; i++)
             {
                 Assert.That(args[i + 4].WellKnownArg, Is.EqualTo(originals[i].WellKnownArg));
                 Assert.That(args[i + 4].Node, Is.Not.SameAs(originals[i].Node));
                 Assert.That(args[i + 4].Node.AsLclVar().LclNum, Is.EqualTo(originals[i].Node.AsLclVar().LclNum));
             }
+
             var handling = call.GetAsyncInfo().InlineFrameContextHandling;
+
             if (enclosingFrames == 0)
             {
                 Assert.That(handling, Is.Null);
@@ -133,6 +142,7 @@ internal static unsafe class AsyncContextTests
                 Assert.That(actualHandling[0], Is.EqualTo(ContinuationContextHandling.ContinueOnCapturedContext));
                 Assert.That(actualHandling.GetRange(1, actualHandling.Count - 1), Is.EqualTo(outerHandling));
             }
+
             Assert.That(outerHandling.Count, Is.EqualTo(Math.Max(0, enclosingFrames - 1)));
             Assert.That(compiler.compAsyncBodyMaySuspend, Is.True);
         });
@@ -148,11 +158,13 @@ internal static unsafe class AsyncContextTests
             SetInlineContext(compiler, NewAsyncCall(compiler));
             var call = NewAsyncCall(compiler);
             CallArg? context = null;
+
             if (existing)
             {
                 context = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclvNode(var_types.TYP_INT, 3))
                     .WithWellKnownArg(WellKnownArg.AsyncResumedUse));
             }
+
             var block = new BasicBlock(null, null);
             compiler.fgInsertStmtAtEnd(block, compiler.gtNewStmt(call));
 
@@ -185,11 +197,13 @@ internal static unsafe class AsyncContextTests
         WellKnownArg[] kinds = [WellKnownArg.AsyncResumedDef, WellKnownArg.AsyncResumedUse,
             WellKnownArg.AsyncExecutionContext, WellKnownArg.AsyncSynchronizationContext];
         int[] locals = [0, 0, 1, 2];
+
         for (var i = 0; i < kinds.Length; i++)
         {
             Assert.That(args[i].WellKnownArg, Is.EqualTo(kinds[i]));
             Assert.That(args[i].Node.AsLclVarCommon().LclNum, Is.EqualTo(locals[i]));
         }
+
         Assert.That(args[0].Node.Type, Is.EqualTo(var_types.TYP_BYREF));
         Assert.That(args[1].Node.Type, Is.EqualTo(var_types.TYP_INT));
     }
@@ -198,16 +212,19 @@ internal static unsafe class AsyncContextTests
     {
         var call = compiler.gtNewCallNode(var_types.TYP_INT, gtCallTypes.CT_USER_FUNC, null);
         call.SetIsAsync(default);
+
         return call;
     }
 
     private static List<CallArg> GetArgs(GenTreeCall call)
     {
         var result = new List<CallArg>();
+
         foreach (var arg in call.Args.Args)
         {
             result.Add(arg);
         }
+
         return result;
     }
 
@@ -252,11 +269,14 @@ internal static unsafe class AsyncContextTests
         compiler.lvaResumedIndicator = 0;
         compiler.lvaAsyncExecutionContextVar = 1;
         compiler.lvaAsyncSynchronizationContextVar = 2;
+
         for (var i = 0; i < compiler.lvaCount; i++)
         {
             compiler.lvaTable[i].Type = i % 3 == 0 ? Globals.TYP_I_IMPL : var_types.TYP_REF;
         }
+
         JitTls.Compiler = compiler;
+
         try
         {
             action(compiler);

@@ -57,6 +57,7 @@ public partial class Compiler
 
         // init the argument struct
         inlArgInfo.Clear();
+
         foreach (ref var argInfo in inlArgInfo)
         {
             argInfo.argTmpNum = BAD_VAR_NUM;
@@ -64,6 +65,7 @@ public partial class Compiler
 
         inlineInfo.argCnt = methInfo.args.totalILArgs();
         var ilArgCnt = 0;
+
         foreach (var arg in call.Args.Args)
         {
             ref var argInfo = ref Unsafe.NullRef<InlArgInfo>();
@@ -139,6 +141,7 @@ public partial class Compiler
                 {
                     //* The argument cannot be bashed into a ref (see bug 750871)
                     inlineResult.NoteFatal(InlineObservation.CALLSITE_ARG_NO_BASH_TO_REF);
+
                     return;
                 }
 
@@ -166,6 +169,7 @@ public partial class Compiler
             {
                 argSigJitType = strip(info.compCompHnd->getArgType(pSigInfo, argLst, &argSigClass));
             }
+
             var sigType = TypeHandleToVarType(argSigJitType, argSigClass);
 
 #if FEATURE_SIMD
@@ -220,6 +224,7 @@ public partial class Compiler
             if (!isPlausibleTypeMatch)
             {
                 inlineResult.NoteFatal(InlineObservation.CALLSITE_ARG_TYPES_INCOMPATIBLE);
+
                 return;
             }
 
@@ -244,6 +249,7 @@ public partial class Compiler
                     {
                         // Arguments 'int <- byref' cannot be changed
                         inlineResult.NoteFatal(InlineObservation.CALLSITE_ARG_NO_BASH_TO_INT);
+
                         return;
                     }
                 }
@@ -271,6 +277,7 @@ public partial class Compiler
                     {
                         inlArgNode = gtFoldExpr(inlArgNode);
                     }
+
                     inlArgNodeRef = inlArgNode;
                 }
 #if TARGET_64BIT
@@ -286,6 +293,7 @@ public partial class Compiler
                     {
                         inlArgNode = gtFoldExpr(inlArgNode);
                     }
+
                     inlArgNodeRef = inlArgNode;
                 }
 #endif
@@ -395,6 +403,7 @@ public partial class Compiler
         {
             foundSimdType = true;
         }
+
         inlineInfo.hasSimdTypeArgLocalOrReturn = foundSimdType;
 #endif
     }
@@ -455,6 +464,7 @@ public partial class Compiler
             {
                 // Abort inlining at this call site
                 inlineResult.NoteFatal(InlineObservation.CALLSITE_ARG_HAS_NULL_THIS);
+
                 return;
             }
         }
@@ -539,6 +549,7 @@ public partial class Compiler
         }
 #endif
     }
+
     /// <summary>Only present for inlinees</summary>
     public InlineInfo? impInlineInfo;
 
@@ -628,6 +639,7 @@ public partial class Compiler
                 enumeratorGdvLocalMap = [];
                 impInlineRoot.impEnumeratorGdvLocalMap = enumeratorGdvLocalMap;
             }
+
             return enumeratorGdvLocalMap;
         }
     }
@@ -643,6 +655,7 @@ public partial class Compiler
                 enumeratorLikelyTypeMap = [];
                 impInlineRoot.impEnumeratorLikelyTypeMap = enumeratorLikelyTypeMap;
             }
+
             return enumeratorLikelyTypeMap;
         }
     }
@@ -658,6 +671,7 @@ public partial class Compiler
             {
                 result = impInlineInfo.InlineRoot;
             }
+
             return result;
         }
     }
@@ -671,6 +685,7 @@ public partial class Compiler
         {
             var objectClass = info.compCompHnd->getBuiltinClass(CLASSID_SYSTEM_OBJECT);
             assert(objectClass is not null);
+
             return objectClass;
         }
     }
@@ -681,6 +696,7 @@ public partial class Compiler
         {
             var refAnyClass = info.compCompHnd->getBuiltinClass(CLASSID_TYPED_BYREF);
             assert(refAnyClass is not null);
+
             return refAnyClass;
         }
     }
@@ -691,6 +707,7 @@ public partial class Compiler
         {
             var argIteratorClass = info.compCompHnd->getBuiltinClass(CLASSID_ARGUMENT_HANDLE);
             assert(argIteratorClass is not null);
+
             return argIteratorClass;
         }
     }
@@ -703,6 +720,7 @@ public partial class Compiler
         {
             var stringClass = info.compCompHnd->getBuiltinClass(CLASSID_STRING);
             assert(stringClass is not null);
+
             return stringClass;
         }
     }
@@ -713,6 +731,7 @@ public partial class Compiler
         {
             var typeHandleClass = info.compCompHnd->getBuiltinClass(CLASSID_TYPE_HANDLE);
             assert(typeHandleClass is not null);
+
             return typeHandleClass;
         }
     }
@@ -753,7 +772,18 @@ public partial class Compiler
     ///   <para>Call sites in rare or unoptimized code, and calls that require cookies are not marked as candidates.</para>
     ///   <para>As part of marking the candidate, the code spills GT_RET_EXPRs anywhere in any child tree, because and we need to clone all these trees when we clone the call as part of guarded devirtualization, and these IR nodes can't be cloned.</para>
     /// </remarks>
-    public unsafe void addGuardedDevirtualizationCandidate(GenTreeCall call, CORINFO_METHOD_HANDLE methodHandle, CORINFO_CLASS_HANDLE classHandle, CORINFO_CONTEXT_HANDLE contextHandle, CorInfoFlag methodAttr, CorInfoFlag classAttr, int likelihood, in CORINFO_LOOKUP instParamLookup, CORINFO_METHOD_HANDLE originalMethodHandle, in CORINFO_RESOLVED_TOKEN resolvedToken, in CORINFO_RESOLVED_TOKEN unboxedResolvedToken)
+    public unsafe void addGuardedDevirtualizationCandidate(
+GenTreeCall call,
+ CORINFO_METHOD_HANDLE methodHandle,
+ CORINFO_CLASS_HANDLE classHandle,
+ CORINFO_CONTEXT_HANDLE contextHandle,
+ CorInfoFlag methodAttr,
+ CorInfoFlag classAttr,
+ int likelihood,
+ in CORINFO_LOOKUP instParamLookup,
+ CORINFO_METHOD_HANDLE originalMethodHandle,
+ in CORINFO_RESOLVED_TOKEN resolvedToken,
+ in CORINFO_RESOLVED_TOKEN unboxedResolvedToken)
     {
         // This transformation only makes sense for delegate and virtual calls
         assert(call.IsDelegateInvoke || call.IsVirtual);
@@ -767,6 +797,7 @@ public partial class Compiler
         {
 #if DEBUG
             JITDUMP($"NOT Marking call [{call.TreeId:D6}] as guarded devirtualization candidate -- disabled by jit config\n");
+
 #endif
             return;
         }
@@ -776,6 +807,7 @@ public partial class Compiler
         {
 #if DEBUG
             JITDUMP($"NOT Marking call [{call.TreeId:D6}] as guarded devirtualization candidate -- rare / dbg / minopts\n");
+
 #endif
             return;
         }
@@ -789,6 +821,7 @@ public partial class Compiler
         if (!s_jitGuardedDevirtualizationRange.Contains(impInlineRoot.info.compMethodHash()))
         {
             JITDUMP($"NOT Marking call [{call.TreeId:D6}] as guarded devirtualization candidate -- excluded by JitGuardedDevirtualizationRange");
+
             return;
         }
 #endif
@@ -879,6 +912,7 @@ public partial class Compiler
                     continue;
                 }
             }
+
             break;
         }
 
@@ -893,7 +927,13 @@ public partial class Compiler
     /// <param name="baseClass">class that introduced the target method</param>
     /// <param name="contextHandle">context handle for the call</param>
     /// <remarks>Consults with VM to see if there's a likely class at runtime, if so, adds a candidate for guarded devirtualization.</remarks>
-    public unsafe void considerGuardedDevirtualization(GenTreeCall call, IL_OFFSET ilOffset, bool isInterface, CORINFO_METHOD_HANDLE baseMethod, CORINFO_CLASS_HANDLE baseClass, ref CORINFO_CONTEXT_HANDLE contextHandle)
+    public unsafe void considerGuardedDevirtualization(
+GenTreeCall call,
+ IL_OFFSET ilOffset,
+ bool isInterface,
+ CORINFO_METHOD_HANDLE baseMethod,
+ CORINFO_CLASS_HANDLE baseClass,
+ ref CORINFO_CONTEXT_HANDLE contextHandle)
     {
         JITDUMP($"Considering guarded devirtualization at IL offset {ilOffset} (0x{ilOffset:x})\n");
 
@@ -1008,7 +1048,18 @@ public partial class Compiler
                         likelyHood += 100 - likelyHood * numExactClasses;
                     }
 
-                    addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactContext, exactMethodAttrs, clsAttrs, likelyHood, dvInfo.instParamLookup, baseMethod, dvInfo.resolvedTokenDevirtualizedMethod, dvInfo.resolvedTokenDevirtualizedUnboxedMethod);
+                    addGuardedDevirtualizationCandidate(
+call,
+ exactMethod,
+ exactCls,
+ exactContext,
+ exactMethodAttrs,
+ clsAttrs,
+ likelyHood,
+ dvInfo.instParamLookup,
+ baseMethod,
+ dvInfo.resolvedTokenDevirtualizedMethod,
+ dvInfo.resolvedTokenDevirtualizedUnboxedMethod);
                 }
 
                 if (call.InlineCandidatesCount == numExactClasses)
@@ -1025,6 +1076,7 @@ public partial class Compiler
         if (!hasPgoData)
         {
             JITDUMP("Not guessing; no PGO and no exact classes\n");
+
             return;
         }
 
@@ -1145,11 +1197,25 @@ public partial class Compiler
             }
 
 #if DEBUG
-            JITDUMP($"{(isInterface ? "interface" : call.IsDelegateInvoke ? "delegate" : "virtual")} call would invoke method {eeGetMethodFullName(likelyMethod, includeReturnType: true, includeThisSpecifier: true)}\n");
+            JITDUMP($"{(isInterface ? "interface" : call.IsDelegateInvoke ? "delegate" : "virtual")} call would invoke method {eeGetMethodFullName(
+likelyMethod,
+ includeReturnType: true,
+ includeThisSpecifier: true)}\n");
 #endif
 
             // Add this as a potential candidate.
-            addGuardedDevirtualizationCandidate(call, likelyMethod, likelyClass, likelyContext, likelyMethodAttribs, likelyClassAttribs, likelihood, instParamLookup, baseMethod, resolvedToken, unboxedResolvedToken);
+            addGuardedDevirtualizationCandidate(
+call,
+ likelyMethod,
+ likelyClass,
+ likelyContext,
+ likelyMethodAttribs,
+ likelyClassAttribs,
+ likelihood,
+ instParamLookup,
+ baseMethod,
+ resolvedToken,
+ unboxedResolvedToken);
         }
     }
 
@@ -1235,6 +1301,7 @@ public partial class Compiler
 
             var ctxTree = gtNewLclvNode(TYP_I_IMPL, impInlineRoot.info.compTypeCtxtArg);
             ctxTree.Flags |= GTF_VAR_CONTEXT;
+
             return ctxTree;
         }
     }
@@ -1272,6 +1339,7 @@ public partial class Compiler
             {
                 assert((indir.Flags & GTF_GLOB_REF) is not 0);
             }
+
             addr.Flags |= GTF_FLD_DEREFERENCED;
         }
     }
@@ -1292,6 +1360,7 @@ public partial class Compiler
             impLastStmt.NextStmt = stmt;
             stmt.PrevStmt = impLastStmt;
         }
+
         impLastStmt = stmt;
     }
 
@@ -1469,6 +1538,7 @@ public partial class Compiler
         {
             return;
         }
+
         var stack = stackState.esStack.AsSpan(0, chkLevel);
 
         var tree = stmt.RootNode;
@@ -1525,6 +1595,7 @@ public partial class Compiler
 
         // Append the statement to the current block's stmt list
         impAppendStmt(stmt, chkLevel, checkConsumedDebugInfo);
+
         return stmt;
     }
 
@@ -1543,6 +1614,7 @@ public partial class Compiler
         if (compCodeOpt == SMALL_CODE)
         {
             JITDUMP("impArrayAccessIntrinsic: rejecting array intrinsic due to SMALL_CODE\n");
+
             return null;
         }
 
@@ -1552,6 +1624,7 @@ public partial class Compiler
         if (rank > GenTreeArrElem.MaxRank)
         {
             JITDUMP($"impArrayAccessIntrinsic: rejecting array intrinsic because rank ({rank}) > GT_ARR_MAX_RANK ({GenTreeArrElem.MaxRank})\n");
+
             return null;
         }
 
@@ -1559,6 +1632,7 @@ public partial class Compiler
         if (rank <= 1)
         {
             JITDUMP($"impArrayAccessIntrinsic: rejecting array intrinsic because rank ({rank}) <= 1\n");
+
             return null;
         }
 
@@ -1586,6 +1660,7 @@ public partial class Compiler
                 {
                     argList = info.compCompHnd->getArgNext(argList);
                 }
+
                 actualElemClsHnd = eeGetArgClass(&localSig, argList);
             }
             else
@@ -1600,6 +1675,7 @@ public partial class Compiler
             if (!info.compCompHnd->isExactType(actualElemClsHnd))
             {
                 JITDUMP($"impArrayAccessIntrinsic: rejecting array intrinsic because actualElemClsHnd ({FMT_PTR(actualElemClsHnd)}) is not exact\n");
+
                 return null;
             }
         }
@@ -1666,6 +1742,7 @@ public partial class Compiler
                 {
                     arrElem = gtNewStoreIndNode(elemType, arrElem, val);
                 }
+
                 break;
             }
 
@@ -1680,6 +1757,7 @@ public partial class Compiler
                 {
                     arrElem = gtNewIndir(elemType, arrElem);
                 }
+
                 break;
             }
 
@@ -1688,6 +1766,7 @@ public partial class Compiler
                 break;
             }
         }
+
         return arrElem;
     }
 
@@ -1721,6 +1800,7 @@ public partial class Compiler
             assert(iciBlock is not null);
             result = iciBlock.HasFlag(BBF_BACKWARD_JUMP);
         }
+
         return result || block.HasFlag(BBF_BACKWARD_JUMP);
     }
 
@@ -1807,6 +1887,7 @@ public partial class Compiler
 
         // If inlining, verify conditions for the call site block too.
         assert(impInlineInfo.iciBlock is not null);
+
         return impInlineRoot.impCanPInvokeInlineCallSite(impInlineInfo.iciBlock);
     }
 
@@ -1824,6 +1905,7 @@ public partial class Compiler
         {
             return false;
         }
+
         return true;
     }
 
@@ -1998,7 +2080,15 @@ public partial class Compiler
     /// <param name="inlineCandidateInfo">information needed later for inlining</param>
     /// <param name="inlineResult">result of ongoing inline evaluation</param>
     /// <remarks>Will update inlineResult with observations and possible failure status (if method cannot be inlined)</remarks>
-    public unsafe void impCheckCanInline(GenTreeCall call, byte candidateIndex, CORINFO_METHOD_HANDLE fncHandle, CorInfoFlag methAttr, CORINFO_CONTEXT_HANDLE exactContextHnd, InlineContext inlinersContext, out InlineCandidateInfo? inlineCandidateInfo, InlineResult inlineResult)
+    public unsafe void impCheckCanInline(
+GenTreeCall call,
+ byte candidateIndex,
+ CORINFO_METHOD_HANDLE fncHandle,
+ CorInfoFlag methAttr,
+ CORINFO_CONTEXT_HANDLE exactContextHnd,
+ InlineContext inlinersContext,
+ out InlineCandidateInfo? inlineCandidateInfo,
+ InlineResult inlineResult)
     {
         // Either EE or JIT might throw exceptions below.
         // If that happens, just don't inline the method.
@@ -2013,6 +2103,7 @@ public partial class Compiler
             if (JitConfig.JitNoInline is not 0)
             {
                 inlineResult.NoteFatal(InlineObservation.CALLEE_IS_JIT_NOINLINE);
+
                 return;
             }
 
@@ -2034,9 +2125,11 @@ public partial class Compiler
             // Fetch method info. This may fail, if the method doesn't have IL.
 
             CORINFO_METHOD_INFO methInfo;
+
             if (!compCompHnd->getMethodInfo(fncHandle, &methInfo, exactContextHnd))
             {
                 inlineResult.NoteFatal(InlineObservation.CALLEE_NO_METHOD_INFO);
+
                 return;
             }
 
@@ -2053,6 +2146,7 @@ public partial class Compiler
             if (inlineResult.IsFailure)
             {
                 assert(inlineResult.IsNever);
+
                 return;
             }
 
@@ -2063,6 +2157,7 @@ public partial class Compiler
             if ((initClassResult & CORINFO_INITCLASS_DONT_INLINE) is not 0)
             {
                 inlineResult.NoteFatal(InlineObservation.CALLSITE_CANT_CLASS_INIT);
+
                 return;
             }
 
@@ -2084,6 +2179,7 @@ public partial class Compiler
             {
                 // The VM already self-reported this failure, so mark it specially so the JIT doesn't also try reporting it.
                 inlineResult.SetVMFailure();
+
                 return;
             }
 
@@ -2198,6 +2294,7 @@ public partial class Compiler
         {
             return;
         }
+
         optNativeCallCount++;
 
         if (methHnd is null)
@@ -2386,6 +2483,7 @@ public partial class Compiler
             if (!opts.compInlineMethodsWithEH)
             {
                 inlineResult.NoteFatal(InlineObservation.CALLEE_HAS_EH);
+
                 return;
             }
         }
@@ -2393,6 +2491,7 @@ public partial class Compiler
         if ((methInfo->ILCode is null) || (codeSize == 0))
         {
             inlineResult.NoteFatal(InlineObservation.CALLEE_HAS_NO_BODY);
+
             return;
         }
 
@@ -2401,6 +2500,7 @@ public partial class Compiler
         if (methInfo->args.isVarArg())
         {
             inlineResult.NoteFatal(InlineObservation.CALLEE_HAS_MANAGED_VARARGS);
+
             return;
         }
 
@@ -2413,6 +2513,7 @@ public partial class Compiler
         if (methInfo->locals.numArgs > MAX_INL_LCLS)
         {
             inlineResult.NoteFatal(InlineObservation.CALLEE_TOO_MANY_LOCALS);
+
             return;
         }
 
@@ -2425,6 +2526,7 @@ public partial class Compiler
         if (methInfo->args.numArgs > MAX_INL_ARGS)
         {
             inlineResult.NoteFatal(InlineObservation.CALLEE_TOO_MANY_ARGUMENTS);
+
             return;
         }
 
@@ -2481,6 +2583,7 @@ public partial class Compiler
             if (possibleClone is not null)
             {
                 clone = possibleClone;
+
                 return tree;
             }
         }
@@ -2578,11 +2681,13 @@ public partial class Compiler
             impMarkInlineCandidate(call, null, callInfo, compInlineContext);
 
             var helperMap = impInlineRoot._helperToManagedMap ??= [];
+
 #if DEBUG
             if (helperMap.TryGetValue(helperCallHnd, out var existingValue))
             {
                 assert(existingValue == managedCallHnd);
             }
+
 #endif
             helperMap[helperCallHnd] = managedCallHnd;
 
@@ -2609,10 +2714,12 @@ public partial class Compiler
         {
             sourceTypes |= ICorDebugInfo.CALL_INSTRUCTION;
         }
+
         if (stackState.esStackDepth <= 0)
         {
             sourceTypes |= ICorDebugInfo.STACK_EMPTY;
         }
+
         return new DebugInfo(compInlineContext, new ILLocation(offs, sourceTypes));
     }
 
@@ -2624,6 +2731,7 @@ public partial class Compiler
     {
         ref var lvaDsc = ref lvaTable[lclNum];
         var lclTyp = lvaDsc.lvNormalizeOnLoad ? lvaDsc.Type : lvaDsc.Type.ActualType;
+
         return gtNewLclvNode(lclTyp, lclNum, offset);
     }
 
@@ -2765,7 +2873,16 @@ public partial class Compiler
     /// <param name="isLateDevirtualization">if devirtualization is happening after importation</param>
     /// <param name="isExplicitTailCall">true if we plan on using an explicit tail call</param>
     /// <param name="ilOffset">IL offset of the call</param>
-    public unsafe void impDevirtualizeCall(GenTreeCall call, in CORINFO_RESOLVED_TOKEN resolvedToken, ref CORINFO_METHOD_HANDLE method, ref CorInfoFlag methodFlags, ref CORINFO_CONTEXT_HANDLE contextHandle, out CORINFO_CONTEXT_HANDLE exactContextHandle, bool isLateDevirtualization, bool isExplicitTailCall, IL_OFFSET ilOffset = BAD_IL_OFFSET)
+    public unsafe void impDevirtualizeCall(
+GenTreeCall call,
+ in CORINFO_RESOLVED_TOKEN resolvedToken,
+ ref CORINFO_METHOD_HANDLE method,
+ ref CorInfoFlag methodFlags,
+ ref CORINFO_CONTEXT_HANDLE contextHandle,
+ out CORINFO_CONTEXT_HANDLE exactContextHandle,
+ bool isLateDevirtualization,
+ bool isExplicitTailCall,
+ IL_OFFSET ilOffset = BAD_IL_OFFSET)
     {
         // Notes:
         //     Virtual calls in IL will always "invoke" the base class method.
@@ -2807,6 +2924,7 @@ public partial class Compiler
         if (JitConfig.JitEnableDevirtualization is 0)
         {
             exactContextHandle = null;
+
             return;
         }
 
@@ -2860,6 +2978,7 @@ public partial class Compiler
             assert(IsAot);
 
             JITDUMP("\nimpDevirtualizeCall: [R2R] base method not virtual, sorry\n");
+
             return;
         }
 
@@ -2888,10 +3007,12 @@ public partial class Compiler
             {
                 // Don't try guarded devirtualiztion when we're doing late devirtualization.
                 JITDUMP("No guarded devirt during late devirtualization\n");
+
                 return;
             }
 
             considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, baseClass, ref contextHandle);
+
             return;
         }
 
@@ -2931,10 +3052,12 @@ public partial class Compiler
             {
                 // Don't try guarded devirtualiztion when we're doing late devirtualization.
                 JITDUMP("No guarded devirt during late devirtualization\n");
+
                 return;
             }
 
             considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, baseClass, ref contextHandle);
+
             return;
         }
 
@@ -3008,6 +3131,7 @@ public partial class Compiler
                 {
                     exactContextHandle = null;
                     JITDUMP("Array interface devirt: array type is inexact, sorry.\n");
+
                     return;
                 }
             }
@@ -3059,10 +3183,12 @@ public partial class Compiler
             {
                 // Don't try guarded devirtualiztion if we're doing late devirtualization.
                 JITDUMP("No guarded devirt during late devirtualization\n");
+
                 return;
             }
 
             considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, objClass, ref contextHandle);
+
             return;
         }
 
@@ -3199,6 +3325,7 @@ public partial class Compiler
                 if (userArg.Node.Oper.IsConst)
                 {
                     JITDUMP("Profiled arg is already a constant - bail out.\n");
+
                     return call;
                 }
 
@@ -3224,6 +3351,7 @@ public partial class Compiler
                         argClone = cloned;
                     }
                 }
+
                 assert(argClone is not null);
 
                 var fallbackCall = gtCloneExpr(call);
@@ -3237,10 +3365,11 @@ public partial class Compiler
 
                 JITDUMP("\n\nResulting tree:\n");
                 DISPTREE(qmark);
-    
+
                 return qmark;
             }
         }
+
         return call;
     }
 
@@ -3341,6 +3470,7 @@ public partial class Compiler
 
                     swapOp1AndOp3 = true;
                 }
+
 #endif
                 break;
             }
@@ -3360,12 +3490,14 @@ public partial class Compiler
                     simdType = TYP_SIMD16;
                     intrinsicId = NI_X86Base_ReciprocalScalar;
                 }
+
 #elif TARGET_ARM64
                 if (compExactlyDependsOn(InstructionSet_AdvSimd_Arm64))
                 {
                     simdType = TYP_SIMD8;
                     intrinsicId = NI_AdvSimd_Arm64_ReciprocalEstimateScalar;
                 }
+
 #endif
                 break;
             }
@@ -3385,12 +3517,14 @@ public partial class Compiler
                     simdType = TYP_SIMD16;
                     intrinsicId = NI_X86Base_ReciprocalSqrtScalar;
                 }
+
 #elif TARGET_ARM64
                 if (compExactlyDependsOn(InstructionSet_AdvSimd_Arm64))
                 {
                     simdType = TYP_SIMD8;
                     intrinsicId = NI_AdvSimd_Arm64_ReciprocalSquareRootEstimateScalar;
                 }
+
 #endif
                 break;
             }
@@ -3486,7 +3620,7 @@ public partial class Compiler
         assert(!swapOp1AndOp3);
 #endif
 
-            callType = callType.ActualType;
+        callType = callType.ActualType;
 
         switch (intrinsicName)
         {
@@ -3496,6 +3630,7 @@ public partial class Compiler
                 assert(op3 is not null);
 
                 var mulNode = gtNewBinaryNode(GT_MUL, callType, op1, op2);
+
                 return gtNewBinaryNode(GT_ADD, callType, mulNode, op3);
             }
 
@@ -3508,12 +3643,14 @@ public partial class Compiler
 
                     op1 = new GenTreeIntrinsic(callType, op1, NI_System_Math_Sqrt, methodHandle: null);
                 }
+
                 return gtNewBinaryNode(GT_DIV, callType, gtNewDconNode(callType, 1.0), op1);
             }
 
             default:
             {
                 unreached();
+
                 return null;
             }
         }
@@ -3534,6 +3671,7 @@ public partial class Compiler
         {
             impStmtList = null;
         }
+
         return stmt;
     }
 
@@ -3554,7 +3692,14 @@ public partial class Compiler
     /// <param name="dataOffset">Offset for data</param>
     /// <param name="cmpMode">Ordinal or OrdinalIgnoreCase mode (works only for ASCII cns)</param>
     /// <returns>A pointer to the newly created SWAR/SIMD node or nullptr if unrolling is not possible, not profitable or constant data contains non-ASCII char(s) in 'ignoreCase' mode</returns>
-    public GenTree? impExpandHalfConstEquals(GenTreeLclVarCommon data, GenTree lengthFld, bool checkForNull, StringComparisonKind kind, Span<char> cnsData, int dataOffset, StringComparison cmpMode)
+    public GenTree? impExpandHalfConstEquals(
+GenTreeLclVarCommon data,
+ GenTree lengthFld,
+ bool checkForNull,
+ StringComparisonKind kind,
+ Span<char> cnsData,
+ int dataOffset,
+ StringComparison cmpMode)
     {
         // In a general case it will look like this:
         //   bool equals = obj != null && obj.Length == len && (SWAR or SIMD)
@@ -3565,6 +3710,7 @@ public partial class Compiler
         {
             // Not profitable to expand
             JITDUMP("impExpandHalfConstEquals: block is cold - not profitable to expand.\n");
+
             return null;
         }
 
@@ -3601,9 +3747,11 @@ public partial class Compiler
             if (indirCmp is null)
             {
                 JITDUMP("unable to compose indirCmp\n");
+
                 return null;
             }
-            assert(indirCmp.Type is TYP_INT or  TYP_UBYTE);
+
+            assert(indirCmp.Type is TYP_INT or TYP_UBYTE);
 
             if (kind is StringComparisonKind.EndsWith)
             {
@@ -3642,6 +3790,7 @@ public partial class Compiler
             // no nullcheck, just "obj.Length == len && (SWAR or SIMD)"
             rootQmark = lenCheckNode;
         }
+
         return rootQmark;
     }
 
@@ -3756,6 +3905,7 @@ public partial class Compiler
             // Move to the next chunk.
             byteLenRemaining -= readType.Size;
         }
+
         assert(result is not null);
 
         // Compare the result against zero, e.g. (chunk1 ^ cns1) | (chunk2 ^ cns2) == 0
@@ -3774,8 +3924,10 @@ public partial class Compiler
             {
                 // E.g. a comparison of SIMD ops returning TYP_INT;
                 assert(varTypeIsSimd(op2.Type));
+
                 return compiler.gtNewSimdCmpOpAllNode(oper, type, op1, op2, TYP_U_IMPL, op1.Type.Size);
             }
+
 #endif
             return compiler.gtNewBinaryNode(oper, type, op1, op2);
         }
@@ -3820,6 +3972,7 @@ public partial class Compiler
                     if (predCount == -1)
                     {
                         predCount = 0;
+
                         foreach (var predBlock in finallyBegBlock.PredBlocks)
                         {
                             // We only care about preds that are callfinallies.
@@ -3827,6 +3980,7 @@ public partial class Compiler
                             {
                                 continue;
                             }
+
                             predCount++;
                         }
                     }
@@ -3888,6 +4042,7 @@ public partial class Compiler
                         // and jumpEhf->succs remains the default, null.
                         jumpEhf = new BBJumpTable();
                     }
+
                     finallyBlock.EhfTargets = jumpEhf;
                 }
 
@@ -3932,6 +4087,7 @@ public partial class Compiler
         {
             return call;
         }
+
         call._retClsHnd = retClsHnd;
 
         // Recognize SIMD types as we do for LCL_VARs,
@@ -3969,6 +4125,7 @@ public partial class Compiler
                 // never introduce copies due to this.
                 var tmpNum = lvaGrabTemp(shortLifetime: true, "Retbuf for unmanaged call");
                 impStoreToTemp(tmpNum, call, CHECK_SPILL_ALL);
+
                 return gtNewLclvNode(lvaGetDesc(tmpNum).Type, tmpNum);
             }
 
@@ -4247,6 +4404,7 @@ public partial class Compiler
         }
 
         assert(actualType is TYP_BYREF or TYP_DOUBLE or TYP_FLOAT or TYP_LONG or TYP_INT);
+
         return actualType;
     }
 
@@ -4277,6 +4435,7 @@ public partial class Compiler
                 return retNode;
             }
         }
+
         return null;
     }
 
@@ -4320,6 +4479,7 @@ public partial class Compiler
                 if (instParam is null)
                 {
                     assert(compDonotInline);
+
                     return null;
                 }
             }
@@ -4334,6 +4494,7 @@ public partial class Compiler
             if (compIsForInlining && ((clsFlags & CORINFO_FLG_ARRAY) is not 0))
             {
                 compInlineResult.NoteFatal(InlineObservation.CALLEE_IS_ARRAY_METHOD);
+
                 return null;
             }
 
@@ -4369,6 +4530,7 @@ public partial class Compiler
                 if (instParam is null)
                 {
                     assert(compDonotInline);
+
                     return null;
                 }
             }
@@ -4401,6 +4563,7 @@ public partial class Compiler
                 }
 
                 indirFlags = val.Flags & GTF_IND_COPYABLE_FLAGS;
+
                 return val.AsIndir().Addr;
             }
 
@@ -4408,6 +4571,7 @@ public partial class Compiler
             case GT_STORE_LCL_VAR:
             {
                 val.Flags |= GTF_VAR_MOREUSES;
+
                 return gtNewLclVarAddrNode(TYP_BYREF, val.AsLclVar().LclNum);
             }
 
@@ -4416,6 +4580,7 @@ public partial class Compiler
             {
                 var lclFld = val.AsLclFld();
                 val.Flags |= GTF_VAR_MOREUSES;
+
                 return gtNewLclAddrNode(TYP_BYREF, lclFld.LclNum, lclFld.LclOffs);
             }
 
@@ -4423,6 +4588,7 @@ public partial class Compiler
             {
                 var op = val.AsOp();
                 _ = impAppendTree(op.Op1, curLevel, impCurStmtDI);
+
                 return impGetNodeAddr(op.Op2, curLevel, allowedMustPreserveIndirFlags, out indirFlags);
             }
 
@@ -4482,6 +4648,7 @@ public partial class Compiler
 
             codeAddr += opcode.Size;
         }
+
         return CEE_ILLEGAL;
     }
 
@@ -4563,6 +4730,7 @@ public partial class Compiler
                 {
                     JITDUMP($"Special intrinsic for type {eeGetClassName(typeHnd)}: return type undetermined, so deferring opt\n");
                 }
+
                 break;
             }
 
@@ -4579,6 +4747,7 @@ public partial class Compiler
                 assert(typeHnd is not null);
 
                 var instParam = call.Args.FindWellKnownArg(WellKnownArg.InstParam);
+
                 if (instParam is not null)
                 {
                     assert(instParam.Next is null);
@@ -4601,6 +4770,7 @@ public partial class Compiler
                 {
                     JITDUMP($"Special intrinsic for type {eeGetClassName(typeHnd)}: return type undetermined, so deferring opt\n");
                 }
+
                 break;
             }
 
@@ -4613,10 +4783,12 @@ public partial class Compiler
                 assert(sig.sigInst.methInst[0] is not null);
 
                 var instParam = call.Args.FindWellKnownArg(WellKnownArg.InstParam);
+
                 if (instParam is not null)
                 {
                     assert(instParam.Next is null);
                     var hMethod = gtGetHelperArgMethodHandle(instParam.Node);
+
                     if (hMethod != NO_METHOD_HANDLE)
                     {
                         result = getMethodInstantiationArgument(hMethod, 0);
@@ -4631,6 +4803,7 @@ public partial class Compiler
                 {
                     JITDUMP("Special intrinsic: return type undetermined or inexact, so deferring opt\n");
                 }
+
                 break;
             }
 
@@ -4724,7 +4897,7 @@ public partial class Compiler
 
         if ((argCall is not null) && argCall.IsSpecialIntrinsic())
         {
-            var  ni = lookupNamedIntrinsic(argCall._callMethHnd);
+            var ni = lookupNamedIntrinsic(argCall._callMethHnd);
 
             if ((ni == NI_System_MemoryExtensions_AsSpan) || (ni == NI_System_String_op_Implicit))
             {
@@ -4741,6 +4914,7 @@ public partial class Compiler
                 }
             }
         }
+
         return null;
     }
 
@@ -4772,7 +4946,13 @@ public partial class Compiler
     /// <param name="entryPoint">The entry point information required for R2R scenarios</param>
     /// <param name="mustExpand">true if the intrinsic must return a GenTree*; otherwise, false</param>
     /// <returns>The GT_HWINTRINSIC node, or nullptr if not a supported intrinsic</returns>
-    public unsafe GenTree? impHWIntrinsic(NamedIntrinsic intrinsic, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, in CORINFO_SIG_INFO sig, in CORINFO_CONST_LOOKUP entryPoint, bool mustExpand)
+    public unsafe GenTree? impHWIntrinsic(
+NamedIntrinsic intrinsic,
+ CORINFO_CLASS_HANDLE clsHnd,
+ CORINFO_METHOD_HANDLE method,
+ in CORINFO_SIG_INFO sig,
+ in CORINFO_CONST_LOOKUP entryPoint,
+ bool mustExpand)
     {
         // TODO: Port impHWIntrinsic
         return null;
@@ -4786,6 +4966,7 @@ public partial class Compiler
     public unsafe bool impILConsumesAddr(byte* codeAddr, byte* codeEndp)
     {
         var opcode = impGetNonPrefixOpcode(codeAddr, codeEndp);
+
         return opcode is CEE_LDFLD;
     }
 
@@ -4841,6 +5022,7 @@ public partial class Compiler
         {
             tree = gtNewCastNode(dstTyp, tree, fromUnsigned: false, dstTyp);
         }
+
         return tree;
     }
 
@@ -5129,6 +5311,7 @@ public partial class Compiler
                 // and have run across a type we can't describe.
 
                 assert(compDonotInline);
+
                 return;
             }
 
@@ -5279,6 +5462,7 @@ public partial class Compiler
                 {
                     exprToBox = gtNewCastNode(dstTyp.ActualType, exprToBox, fromUnsigned: false, dstTyp);
                 }
+
                 op1 = gtNewStoreIndNode(dstTyp, op1, exprToBox, GTF_IND_NONFAULTING);
             }
 
@@ -5316,6 +5500,7 @@ public partial class Compiler
             {
                 // We must be backing out of an inline.
                 assert(compDonotInline);
+
                 return;
             }
 
@@ -5420,6 +5605,7 @@ public partial class Compiler
         JITDUMP($" inlined BOX({eeGetClassName(nullableCls)}) as QMARK allocating box and copying fields:\n");
         DISPTREE(qmark);
         JITDUMP("\n");
+
         return true;
     }
 
@@ -5443,6 +5629,7 @@ public partial class Compiler
             {
                 impImportBlockPending(succBlock);
             }
+
             return;
         }
 
@@ -5472,6 +5659,7 @@ public partial class Compiler
         {
             return;
         }
+
         markImport = false;
 
         // If the stack is non-empty, we might have to spill its contents
@@ -5552,6 +5740,7 @@ public partial class Compiler
                             break;
                         }
                     }
+
                     break;
                 }
 
@@ -5790,11 +5979,13 @@ public partial class Compiler
         s_jitOptimizeAwaitRange.EnsureInit(JitConfig.JitOptimizeAwaitRange);
         var hash = unchecked((uint)impInlineRoot.info.compMethodHash());
         var ordinal = 0;
+
         if (compIsForInlining)
         {
             assert(compInlineContext is not null);
             ordinal = compInlineContext.Ordinal;
         }
+
         hash = unchecked(((hash << 5) + hash) ^ (uint)ordinal);
         hash = unchecked(((hash << 5) + hash) ^ (uint)awaitOffset);
 
@@ -6238,6 +6429,7 @@ public partial class Compiler
                     {
                         impSpillStackEnsure(spillLeaves: true);
                     }
+
                     impCurStmtOffsSet(opcodeOffs);
                 }
 
@@ -6277,6 +6469,7 @@ public partial class Compiler
                         {
                             BADCODE("Alignment unaligned. must be 1, 2, or 4");
                         }
+
                         impValidateMemoryAccessOpcode(codeAddr, codeEndp, volatilePrefix: false);
 
                         opcode = (OPCODE)(codeAddr[0]);
@@ -6579,6 +6772,7 @@ public partial class Compiler
                     {
                         return;
                     }
+
                     break;
                 }
 
@@ -6590,6 +6784,7 @@ public partial class Compiler
                     {
                         return;
                     }
+
                     break;
                 }
 
@@ -6625,6 +6820,7 @@ public partial class Compiler
                     {
                         NO_WAY("Shouldn't have exception handlers in the inlinee!");
                         compInlineResult.NoteFatal(InlineObservation.CALLEE_HAS_ENDFINALLY);
+
                         return;
                     }
 
@@ -6651,6 +6847,7 @@ public partial class Compiler
                     {
                         NO_WAY("Shouldn't have exception handlers in the inlinee!");
                         compInlineResult.NoteFatal(InlineObservation.CALLEE_HAS_ENDFILTER);
+
                         return;
                     }
 
@@ -6687,6 +6884,7 @@ public partial class Compiler
                     {
                         BADCODE("stack must be 1 on end of filter");
                     }
+
                     Append(this, op1);
                     break;
                 }
@@ -6700,6 +6898,7 @@ public partial class Compiler
                     {
                         return;
                     }
+
                     break;
                 }
 
@@ -6733,6 +6932,7 @@ public partial class Compiler
                     }
 
                     impResolveToken(codeAddr, out var resolvedToken, compIsAsyncVersion ? CORINFO_TOKENKIND_Await : CORINFO_TOKENKIND_Method);
+
                     if (compIsAsyncVersion && (resolvedToken.hMethod == NO_METHOD_HANDLE))
                     {
                         BADCODE("Incompatible target for CEE_JMP in async version");
@@ -6788,6 +6988,7 @@ public partial class Compiler
                         {
                             return;
                         }
+
                         break;
                     }
 
@@ -6797,6 +6998,7 @@ public partial class Compiler
                     if (type is null)
                     {
                         assert(compDonotInline);
+
                         return;
                     }
 
@@ -6808,6 +7010,7 @@ public partial class Compiler
                         {
                             return;
                         }
+
                         break;
                     }
 
@@ -6840,6 +7043,7 @@ public partial class Compiler
                     {
                         return;
                     }
+
                     break;
                 }
 
@@ -6849,6 +7053,7 @@ public partial class Compiler
                     {
                         return;
                     }
+
                     break;
                 }
 
@@ -6858,6 +7063,7 @@ public partial class Compiler
                     {
                         return;
                     }
+
                     break;
                 }
 
@@ -6867,6 +7073,7 @@ public partial class Compiler
                     {
                         return;
                     }
+
                     break;
                 }
 
@@ -6876,6 +7083,7 @@ public partial class Compiler
                     {
                         return;
                     }
+
                     break;
                 }
 
@@ -6885,6 +7093,7 @@ public partial class Compiler
                     {
                         return;
                     }
+
                     break;
                 }
 
@@ -6894,14 +7103,17 @@ public partial class Compiler
                     {
                         return;
                     }
+
                     break;
                 }
+
                 case CEE_LDELEM_REF:
                 {
                     if (!TryArrLd(this, TYP_REF, new typeInfo(), ldelemClsHnd: null, isLdelema: false))
                     {
                         return;
                     }
+
                     break;
                 }
 
@@ -6911,14 +7123,17 @@ public partial class Compiler
                     {
                         return;
                     }
+
                     break;
                 }
+
                 case CEE_LDELEM_R8:
                 {
                     if (!TryArrLd(this, TYP_DOUBLE, new typeInfo(), ldelemClsHnd: null, isLdelema: false))
                     {
                         return;
                     }
+
                     break;
                 }
 
@@ -6928,6 +7143,7 @@ public partial class Compiler
                     {
                         return;
                     }
+
                     break;
                 }
 
@@ -6937,6 +7153,7 @@ public partial class Compiler
                     {
                         return;
                     }
+
                     break;
                 }
 
@@ -6957,6 +7174,7 @@ public partial class Compiler
                         ArrSt(this, lclTyp, stelemClsHnd);
                         break;
                     }
+
                     goto case CEE_STELEM_REF;
                 }
 
@@ -7465,6 +7683,7 @@ public partial class Compiler
                     ConvOvf(this, TYP_SHORT);
                     break;
                 }
+
                 case CEE_CONV_OVF_I:
                 {
                     ConvOvf(this, TYP_I_IMPL);
@@ -7816,6 +8035,7 @@ public partial class Compiler
                     {
                         op1 = impCloneExpr(op1, out op2, CHECK_SPILL_ALL, "DUP instruction");
                     }
+
                     assert(((op1.Flags & GTF_GLOB_EFFECT) is 0) && ((op2.Flags & GTF_GLOB_EFFECT) is 0));
 
                     impPushOnStack(op1, tiRetVal);
@@ -7901,6 +8121,7 @@ public partial class Compiler
                     Ldind(this, TYP_REF, prefixFlags);
                     break;
                 }
+
                 case CEE_LDIND_I:
                 {
                     Ldind(this, TYP_I_IMPL, prefixFlags);
@@ -7937,7 +8158,11 @@ public partial class Compiler
                     impResolveToken(codeAddr, out var resolvedToken, CORINFO_TOKENKIND_Method);
 
                     JITDUMP($" {resolvedToken.token:X8}");
-                    eeGetCallInfo(resolvedToken, ((prefixFlags & PREFIX_CONSTRAINED) is not 0) ? ref constrainedResolvedToken : ref Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_LDFTN, out var callInfo);
+                    eeGetCallInfo(
+resolvedToken,
+ ((prefixFlags & PREFIX_CONSTRAINED) is not 0) ? ref constrainedResolvedToken : ref Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(),
+ CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_LDFTN,
+ out var callInfo);
 
                     // This check really only applies to intrinsic Array.Address methods
                     if ((callInfo.sig.callConv & CORINFO_CALLCONV_PARAMTYPE) is not 0)
@@ -7952,6 +8177,7 @@ public partial class Compiler
                     {
                         return;
                     }
+
                     break;
                 }
 
@@ -7960,7 +8186,11 @@ public partial class Compiler
                     impResolveToken(codeAddr, out var resolvedToken, CORINFO_TOKENKIND_Method);
 
                     JITDUMP($" {resolvedToken.token:X8}");
-                    eeGetCallInfo(resolvedToken, in Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_LDFTN | CORINFO_CALLINFO_CALLVIRT, out var callInfo);
+                    eeGetCallInfo(
+resolvedToken,
+ in Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(),
+ CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_LDFTN | CORINFO_CALLINFO_CALLVIRT,
+ out var callInfo);
 
                     // This check really only applies to intrinsic Array.Address methods
                     if ((callInfo.sig.callConv & CORINFO_CALLCONV_PARAMTYPE) is not 0)
@@ -7976,6 +8206,7 @@ public partial class Compiler
                         if (((mflags & (CORINFO_FLG_FINAL | CORINFO_FLG_STATIC)) is not 0) || ((mflags & CORINFO_FLG_VIRTUAL) is 0))
                         {
                             compInlineResult.NoteFatal(InlineObservation.CALLSITE_LDVIRTFN_ON_NON_VIRTUAL);
+
                             return;
                         }
                     }
@@ -8000,6 +8231,7 @@ public partial class Compiler
                             {
                                 return;
                             }
+
                             break;
                         }
                     }
@@ -8015,6 +8247,7 @@ public partial class Compiler
                         {
                             return;
                         }
+
                         break;
                     }
 
@@ -8116,6 +8349,7 @@ public partial class Compiler
                         {
                             // Fail fast if lvaGrabTemp fails with CALLSITE_TOO_MANY_LOCALS.
                             assert(compInlineResult.Observation == InlineObservation.CALLSITE_TOO_MANY_LOCALS);
+
                             return;
                         }
 
@@ -8287,6 +8521,7 @@ public partial class Compiler
                     {
                         return;
                     }
+
                     break;
                 }
 
@@ -8316,6 +8551,7 @@ public partial class Compiler
                     {
                         return;
                     }
+
                     break;
                 }
 
@@ -8395,7 +8631,11 @@ public partial class Compiler
                         flags |= CORINFO_CALLINFO_CALLVIRT;
                     }
 
-                    eeGetCallInfo(resolvedToken, ((prefixFlags & PREFIX_CONSTRAINED) is not 0) ? ref constrainedResolvedToken : ref Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), flags, out var callInfo);
+                    eeGetCallInfo(
+resolvedToken,
+ ((prefixFlags & PREFIX_CONSTRAINED) is not 0) ? ref constrainedResolvedToken : ref Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(),
+ flags,
+ out var callInfo);
 
                     if (isAwait)
                     {
@@ -8422,6 +8662,7 @@ public partial class Compiler
                     {
                         return;
                     }
+
                     break;
                 }
 
@@ -8469,12 +8710,14 @@ public partial class Compiler
                             case CORINFO_FIELD_STATIC_TLS:
                             {
                                 compInlineResult.NoteFatal(InlineObservation.CALLEE_LDFLD_NEEDS_HELPER);
+
                                 return;
                             }
 
                             case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
                             {
                                 compInlineResult.NoteFatal(InlineObservation.CALLSITE_LDFLD_NEEDS_HELPER);
+
                                 return;
                             }
 
@@ -8525,6 +8768,7 @@ public partial class Compiler
                             obj = gtUnusedValNode(obj);
                             impAppendTree(obj, CHECK_SPILL_ALL, impCurStmtDI);
                         }
+
                         obj = null;
                     }
 
@@ -8570,10 +8814,15 @@ public partial class Compiler
                                 op1.AsFieldAddr().MayOverlap = true;
                             }
 
-                            if (!isLoadAddress && compIsForInlining && impInlineIsGuaranteedThisDerefBeforeAnySideEffects(additionalTree: null, in Unsafe.NullRef<CallArgs>(), obj, impInlineInfo.inlArgInfo))
+                            if (!isLoadAddress && compIsForInlining && impInlineIsGuaranteedThisDerefBeforeAnySideEffects(
+additionalTree: null,
+ in Unsafe.NullRef<CallArgs>(),
+ obj,
+ impInlineInfo.inlArgInfo))
                             {
                                 impInlineInfo.thisDereferencedFirst = true;
                             }
+
                             break;
                         }
 
@@ -8621,6 +8870,7 @@ public partial class Compiler
                                     break;
                                 }
                             }
+
                             goto case CORINFO_FIELD_STATIC_RVA_ADDRESS;
                         }
 
@@ -8694,6 +8944,7 @@ public partial class Compiler
                             {
                                 op1 = gtNewIndir(lclTyp, op1, indirFlags);
                             }
+
                             impAnnotateFieldIndir(op1.AsIndir());
                         }
 
@@ -8713,6 +8964,7 @@ public partial class Compiler
                             }
                         }
                     }
+
                     impPushOnStack(op1, tiRetVal);
                     break;
                 }
@@ -8747,6 +8999,7 @@ public partial class Compiler
                             case CORINFO_FIELD_STATIC_TLS:
                             {
                                 compInlineResult.NoteFatal(InlineObservation.CALLEE_STFLD_NEEDS_HELPER);
+
                                 return;
                             }
 
@@ -8755,6 +9008,7 @@ public partial class Compiler
                             {
                                 // We may be able to inline the field accessors in specific instantiations of generic methods
                                 compInlineResult.NoteFatal(InlineObservation.CALLSITE_STFLD_NEEDS_HELPER);
+
                                 return;
                             }
 
@@ -8808,6 +9062,7 @@ public partial class Compiler
                             {
                                 impSpillStackEntry(stackState.esStackDepth - 1, BAD_VAR_NUM, assertOnRecursion: false, "non-reorderable data to stfld");
                             }
+
                             break;
                         }
 
@@ -8840,6 +9095,7 @@ public partial class Compiler
                                 // an async call. This avoids keeping the byref live across an await.
                                 impSpillSideEffects(spillGlobEffects: true, CHECK_SPILL_ALL, "byref address with async call in value");
                             }
+
                             break;
                         }
 
@@ -8878,6 +9134,7 @@ public partial class Compiler
                             obj = gtUnusedValNode(obj);
                             impAppendTree(obj, CHECK_SPILL_ALL, impCurStmtDI);
                         }
+
                         obj = null;
                     }
 
@@ -8949,6 +9206,7 @@ public partial class Compiler
                             {
                                 impInlineInfo.thisDereferencedFirst = true;
                             }
+
                             break;
                         }
 
@@ -9024,6 +9282,7 @@ public partial class Compiler
                     {
                         op2 = gtNewCastNode(lclTyp, op2, fromUnsigned: false, lclTyp);
                     }
+
 #endif
                     // Allow a downcast of op2 from TYP_I_IMPL into a 32-bit Int for x86 JIT compatibility.
                     // Allow an upcast of op2 from a 32-bit Int into TYP_I_IMPL for x86 JIT compatibility.
@@ -9065,12 +9324,14 @@ public partial class Compiler
                     {
                         op1 = gtNewStoreIndNode(lclTyp, op1, op2, indirFlags);
                     }
+
                     impAnnotateFieldIndir(op1.AsIndir());
 
                     if (varTypeIsStruct(op1.Type))
                     {
                         op1 = impStoreStruct(op1, CHECK_SPILL_ALL);
                     }
+
                     Append(this, op1, CHECK_SPILL_ALL);
                     break;
                 }
@@ -9109,6 +9370,7 @@ public partial class Compiler
                     op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL);
 
                     var isFrozenAllocator = false;
+
                     // If we're jitting a static constructor and detect the following code pattern:
                     //
                     //  newarr
@@ -9361,6 +9623,7 @@ public partial class Compiler
                             var obs = op2.Oper.IsIntegralConst ? InlineObservation.CALLEE_LOCALLOC_TOO_LARGE
                                                                : InlineObservation.CALLSITE_LOCALLOC_SIZE_UNKNOWN;
                             compInlineResult.NoteFatal(obs);
+
                             return;
                         }
 
@@ -9476,6 +9739,7 @@ public partial class Compiler
                         assert(op1 is not null);
                         impPushOnStack(op1, new typeInfo());
                     }
+
                     break;
                 }
 
@@ -9611,6 +9875,7 @@ public partial class Compiler
                     if (op2 is null)
                     {
                         assert(compDonotInline);
+
                         return;
                     }
 
@@ -9698,6 +9963,7 @@ public partial class Compiler
                                         // We don't need a nullcheck if this is e.g. a preinitialized value
                                         impPushOnStack(boxPayloadAddress, new typeInfo());
                                     }
+
                                     break;
                                 }
 
@@ -9741,6 +10007,7 @@ public partial class Compiler
                         {
                             return;
                         }
+
                         // The byref is formed below; the enclosing conditional discards the helper result.
                         op1 = gtUnusedValNode(gtNewHelperCallNode(HelperUnboxDiscardedRetType, helper, op2, op1));
 
@@ -9831,6 +10098,7 @@ public partial class Compiler
                             impPushOnStack(op1, makeTypeInfo(resolvedToken.hClass));
                         }
                     }
+
                     break;
                 }
 
@@ -9892,6 +10160,7 @@ public partial class Compiler
                             return;
                         }
                     }
+
                     break;
                 }
 
@@ -9942,6 +10211,7 @@ public partial class Compiler
                     {
                         return;
                     }
+
                     break;
                 }
 
@@ -10001,6 +10271,7 @@ public partial class Compiler
                         op1 = gtNewStoreValueNode(op1, op2, layout);
                         Append(this, op1, CHECK_SPILL_ALL);
                     }
+
                     break;
                 }
 
@@ -10009,6 +10280,7 @@ public partial class Compiler
                 {
                     var indirFlags = impPrefixFlagsToIndirFlags(prefixFlags);
                     var isVolatile = (indirFlags & GTF_IND_VOLATILE) is not 0;
+
 #if !TARGET_X86
                     if (isVolatile && !impStackTop(0).val.Oper.IsCnsIntOrI)
                     {
@@ -10035,6 +10307,7 @@ public partial class Compiler
                             {
                                 impAppendTree(gtUnusedValNode(op2), CHECK_SPILL_ALL, impCurStmtDI);
                             }
+
                             break;
                         }
 
@@ -10051,6 +10324,7 @@ public partial class Compiler
                         {
                             op2 = gtNewLoadValueNode(op2, layout, indirFlags);
                         }
+
                         op1 = gtNewStoreValueNode(op1, op2, layout, indirFlags);
                     }
                     else
@@ -10091,6 +10365,7 @@ public partial class Compiler
                             op1 = call;
                         }
                     }
+
                     Append(this, op1, CHECK_SPILL_ALL);
                     break;
                 }
@@ -10122,6 +10397,7 @@ public partial class Compiler
 
                         Append(this, op1, CHECK_SPILL_ALL);
                     }
+
                     break;
                 }
 
@@ -10158,6 +10434,7 @@ public partial class Compiler
 
                         Append(this, op1, CHECK_SPILL_ALL);
                     }
+
                     break;
                 }
 
@@ -10246,6 +10523,7 @@ public partial class Compiler
                         Append(this, op1, CHECK_SPILL_ALL);
                         break;
                     }
+
                     break;
                 }
 
@@ -10268,6 +10546,7 @@ public partial class Compiler
                     if (compIsForInlining)
                     {
                         compInlineResult.NoteFatal(InlineObservation.CALLEE_COMPILATION_ERROR);
+
                         return;
                     }
 
@@ -10356,6 +10635,7 @@ public partial class Compiler
             {
                 op1 = compiler.impStoreStruct(op1, CHECK_SPILL_ALL);
             }
+
             Append(compiler, op1, CHECK_SPILL_ALL);
         }
 
@@ -10429,7 +10709,10 @@ public partial class Compiler
             }
 #endif
 
-            compiler.assertImp((op1Type.ActualType == op2Type.ActualType) || (varTypeIsI(op1Type) && varTypeIsI(op2Type)) || (varTypeIsFloating(op1Type) && varTypeIsFloating(op2Type)), op1, op2);
+            compiler.assertImp(
+(op1Type.ActualType == op2Type.ActualType) || (varTypeIsI(op1Type) && varTypeIsI(op2Type)) || (varTypeIsFloating(op1Type) && varTypeIsFloating(op2Type)),
+ op1,
+ op2);
 
             if (compiler.opts.OptimizationEnabled)
             {
@@ -10478,6 +10761,7 @@ public partial class Compiler
                     {
                         compiler.impNoteLastILoffs();
                     }
+
 #endif
                     return;
                 }
@@ -10504,6 +10788,7 @@ public partial class Compiler
             {
                 op.Flags |= GTF_RELOP_NAN_UN;
             }
+
             CondJump(compiler, block, op);
         }
 
@@ -10559,6 +10844,7 @@ public partial class Compiler
                     op1 = compiler.gtUnusedValNode(op1);
                     Append(compiler, op1, CHECK_SPILL_ALL);
                 }
+
                 return;
             }
 
@@ -10571,6 +10857,7 @@ public partial class Compiler
             {
                 compiler.impSpillStackEnsure(spillLeaves: true);
             }
+
             Append(compiler, op, CHECK_SPILL_ALL);
         }
 
@@ -10629,6 +10916,7 @@ public partial class Compiler
                     {
                         // Toss the cast, it's a waste of time
                         compiler.impPushOnStack(op1, new typeInfo());
+
                         return;
                     }
                     else if (ival == mask)
@@ -10708,6 +10996,7 @@ public partial class Compiler
             {
                 compiler.impEvalSideEffects();
             }
+
             assert(stackState.esStackDepth is 0);
 
             Append(compiler, op1);
@@ -10784,6 +11073,7 @@ public partial class Compiler
 
                 {
                     compiler.impPushOnStack(op1, new typeInfo());
+
                     return;
                 }
             }
@@ -10804,6 +11094,7 @@ public partial class Compiler
                 {
                     op.IsUnsigned = true;
                 }
+
                 op.Flags |= (GTF_EXCEPT | GTF_OVERFLOW);
             }
 
@@ -10975,6 +11266,7 @@ public partial class Compiler
                 {
                     op1 = compiler.impStoreStruct(op1, CHECK_SPILL_ALL);
                 }
+
                 Append(compiler, op1, CHECK_SPILL_ALL);
             }
         }
@@ -11002,6 +11294,7 @@ public partial class Compiler
 
             var type = op1.Type.ActualType;
             var op = compiler.gtNewBinaryNode(oper, type, op1, op2);
+
             if (op.RequiresCallFlag(compiler))
             {
                 op.Flags |= GTF_CALL;
@@ -11112,6 +11405,7 @@ public partial class Compiler
             if (compiler.compIsForInlining && op1.IsIntegralConst(0))
             {
                 compiler.compInlineResult.NoteFatal(InlineObservation.CALLEE_HAS_NULL_FOR_LDELEM);
+
                 return false;
             }
 
@@ -11130,6 +11424,7 @@ public partial class Compiler
             }
 
             compiler.impPushOnStack(op1, tiRetVal);
+
             return true;
         }
 
@@ -11192,10 +11487,16 @@ public partial class Compiler
                 // Push the result back on the stack
                 compiler.impPushOnStack(op1, new typeInfo());
             }
+
             return true;
         }
 
-        static bool TryDoLdftn(Compiler compiler, int prefixFlags, in CORINFO_RESOLVED_TOKEN resolvedToken, in CORINFO_RESOLVED_TOKEN constrainedResolvedToken, in CORINFO_CALL_INFO callInfo)
+        static bool TryDoLdftn(
+Compiler compiler,
+ int prefixFlags,
+ in CORINFO_RESOLVED_TOKEN resolvedToken,
+ in CORINFO_RESOLVED_TOKEN constrainedResolvedToken,
+ in CORINFO_CALL_INFO callInfo)
         {
             var op1 = compiler.impMethodPointer(callInfo);
 
@@ -11212,6 +11513,7 @@ public partial class Compiler
             heapToken._token.hMethod = callInfo.hMethod;
 
             compiler.impPushOnStack(op1, new typeInfo(heapToken));
+
             return true;
         }
 
@@ -11236,6 +11538,7 @@ public partial class Compiler
                 if (op1.Oper is not GT_LCL_VAR)
                 {
                     compiler.compInlineResult.NoteFatal(InlineObservation.CALLSITE_LDARGA_NOT_LOCAL_VAR);
+
                     return false;
                 }
 
@@ -11255,6 +11558,7 @@ public partial class Compiler
 
                 AdrVar(compiler, lclNum);
             }
+
             return true;
         }
 
@@ -11263,6 +11567,7 @@ public partial class Compiler
             if (compiler.compIsForInlining && !compiler.opts.compInlineMethodsWithEH)
             {
                 compiler.compInlineResult.NoteFatal(InlineObservation.CALLEE_HAS_LEAVE);
+
                 return false;
             }
 
@@ -11272,6 +11577,7 @@ public partial class Compiler
             {
                 compiler.impResetLeaveBlock(block, jmpAddr);
             }
+
             assert(jmpAddr == block.Target.bbCodeOffs);
 
             compiler.impImportLeave(block);
@@ -11286,6 +11592,7 @@ public partial class Compiler
             {
                 BADCODE("Bad IL");
             }
+
             VarStValid(compiler, block, lclTyp, lclNum, clsHnd, isLocal);
         }
 
@@ -11301,6 +11608,7 @@ public partial class Compiler
             {
                 lclTyp = lclTyp.ActualType;
             }
+
             PopValue(compiler, block, lclTyp, lclNum, isLocal);
         }
     }
@@ -11509,6 +11817,7 @@ public partial class Compiler
         }
 
         impPushOnStack(node, expSe.seTypeInfo);
+
         return node.Type;
     }
 #endif
@@ -11560,6 +11869,7 @@ public partial class Compiler
             if (exactTypeDesc is null)
             {
                 assert(compIsForInlining);
+
                 return null;
             }
 
@@ -11568,6 +11878,7 @@ public partial class Compiler
             if (exactMethodDesc is null)
             {
                 assert(compIsForInlining);
+
                 return null;
             }
 
@@ -11585,6 +11896,7 @@ public partial class Compiler
             //
             call._callMoreFlags |= GTF_CALL_M_LDVIRTFTN_INTERFACE;
         }
+
         return call;
     }
 
@@ -12054,7 +12366,12 @@ public partial class Compiler
         impPushOnStack(node, new typeInfo(resolvedToken.hClass));
     }
 
-    public GenTree impImportStaticFieldAddress(in CORINFO_RESOLVED_TOKEN resolvedToken, CORINFO_ACCESS_FLAGS access, in CORINFO_FIELD_INFO fieldInfo, var_types lclTyp, ref GenTreeFlags indirFlags)
+    public GenTree impImportStaticFieldAddress(
+in CORINFO_RESOLVED_TOKEN resolvedToken,
+ CORINFO_ACCESS_FLAGS access,
+ in CORINFO_FIELD_INFO fieldInfo,
+ var_types lclTyp,
+ ref GenTreeFlags indirFlags)
     {
         return impImportStaticFieldAddress(resolvedToken, access, fieldInfo, lclTyp, ref indirFlags, out _);
     }
@@ -12068,7 +12385,13 @@ public partial class Compiler
     /// <param name="isHoistable">hether any type initialization side effects of the returned tree can be hoisted to occur earlier</param>
     /// <returns>Tree representing the field's address.</returns>
     /// <remarks>Ordinary static fields never overlap. RVA statics, however, can overlap (if they're mapped to the same ".data" declaration). That said, such mappings only appear to be possible with ILASM, and in ILASM-produced (ILONLY) images, RVA statics are always read-only (using "stsfld" on them is UB). In mixed-mode assemblies, RVA statics can be mutable, but the only current producer of such images, the C++/CLI compiler, does not appear to support mapping different fields to the same address. So we will say that "mutable overlapping RVA statics" are UB as well.</remarks>
-    public unsafe GenTree impImportStaticFieldAddress(in CORINFO_RESOLVED_TOKEN resolvedToken, CORINFO_ACCESS_FLAGS access, in CORINFO_FIELD_INFO fieldInfo, var_types lclTyp, ref GenTreeFlags indirFlags, out bool isHoistable)
+    public unsafe GenTree impImportStaticFieldAddress(
+in CORINFO_RESOLVED_TOKEN resolvedToken,
+ CORINFO_ACCESS_FLAGS access,
+ in CORINFO_FIELD_INFO fieldInfo,
+ var_types lclTyp,
+ ref GenTreeFlags indirFlags,
+ out bool isHoistable)
     {
         // For statics that are not "boxed", the initial address tree will contain the field sequence.
         // For those that are, we will attach it later, when adding the indirection for the box, since
@@ -12343,10 +12666,12 @@ public partial class Compiler
                 {
                     additionalIndirFlags |= GTF_IND_INITCLASS;
                 }
+
                 if (isStaticReadOnlyInitedRef)
                 {
                     additionalIndirFlags |= (GTF_IND_INVARIANT | GTF_IND_NONNULL);
                 }
+
                 break;
             }
         }
@@ -12360,6 +12685,7 @@ public partial class Compiler
         }
 
         indirFlags |= additionalIndirFlags;
+
         return op1;
     }
 
@@ -12395,6 +12721,7 @@ public partial class Compiler
                 {
                     JITDUMP("... success! The value is:\n");
                     DISPTREE(cnsValue);
+
                     return cnsValue;
                 }
             }
@@ -12417,6 +12744,7 @@ public partial class Compiler
                 {
                     // Limit to simd_t bytes for better throughput
                     JITDUMP($"struct is larger than {LargeStructBufferSize} bytes - bail out.");
+
                     return null;
                 }
 
@@ -12456,6 +12784,7 @@ public partial class Compiler
                         {
                             var vecCon = gtNewVconNode(simdType);
                             Unsafe.CopyBlockUnaligned(ref vecCon.SimdVal.u8[0], in largeStructBuffer[0], (uint)(totalSize));
+
                             return vecCon;
                         }
                     }
@@ -12466,6 +12795,7 @@ public partial class Compiler
                         // Value is not all zeroes - bail out.
                         // Although, We might eventually support that too.
                         JITDUMP("value is not all zeros - bail out.");
+
                         return null;
                     }
 
@@ -12474,10 +12804,12 @@ public partial class Compiler
                     lvaSetStruct(largeStructTempNum, fieldClsHnd, unsafeValueClsCheck: false);
 
                     impStoreToTemp(largeStructTempNum, gtNewIconNode(TYP_INT, 0), CHECK_SPILL_NONE);
+
                     return gtNewLclVarNode(TYP_UNDEF, largeStructTempNum);
                 }
 
                 JITDUMP("getStaticFieldContent returned false - bail out.");
+
                 return null;
             }
 
@@ -12493,6 +12825,7 @@ public partial class Compiler
             if (!varTypeIsIntegral(fieldVarType))
             {
                 JITDUMP("struct has non-primitive fields - bail out.");
+
                 return null;
             }
 
@@ -12502,6 +12835,7 @@ public partial class Compiler
             {
                 // The field is expected to be of the exact size as the struct with 0 offset
                 JITDUMP("struct has complex layout - bail out.");
+
                 return null;
             }
 
@@ -12523,8 +12857,10 @@ public partial class Compiler
             impAppendTree(fieldStoreTree, CHECK_SPILL_NONE, impCurStmtDI);
 
             JITDUMP($"Folding 'static readonly {eeGetClassName(fieldClsHnd)}' field to a STORE_LCL_FLD(CNS) node\n");
+
             return impCreateLocalNode(structTempNum, (0));
         }
+
         return null;
     }
 
@@ -12550,8 +12886,10 @@ public partial class Compiler
         {
             // Caller also has no async contexts handling
             assert((resumedDefArg is null) && (execArg is null) && (syncArg is null));
+
             return;
         }
+
         assert((resumedDefArg is not null) && (execArg is not null) && (syncArg is not null));
 
         // Take the values from the inlining call so suspension restores and captures
@@ -12577,9 +12915,11 @@ public partial class Compiler
         // Outer frames must retain their order: suspension hands off through the
         // same chain of frame transitions as the inlining call.
         var skippedFirst = false;
+
         foreach (var arg in inlCall.Args.Args)
         {
             var kind = arg.WellKnownArg;
+
             if (kind is not (WellKnownArg.AsyncResumedUse or WellKnownArg.AsyncExecutionContext or WellKnownArg.AsyncSynchronizationContext))
             {
                 continue;
@@ -12677,6 +13017,7 @@ public partial class Compiler
             impCurStmtOffsSet(blockOffs);
             index++;
         }
+
         return index;
     }
 
@@ -12697,6 +13038,7 @@ public partial class Compiler
         if (node is null)
         {
             assert(compDonotInline);
+
             return null;
         }
 
@@ -12709,6 +13051,7 @@ public partial class Compiler
             // Call the shared non gc static helper, as its the fastest
             node = fgGetSharedCCtor(resolvedToken.hClass);
         }
+
         return node;
     }
 
@@ -12997,6 +13340,7 @@ public partial class Compiler
                 {
                     return null;
                 }
+
                 argIndex++;
             }
 
@@ -13417,7 +13761,11 @@ public partial class Compiler
     ///   <para>If we haven't hit a branch or a side effect, and we are dereferencing from 'this' to access a field or make GTF_CALL_NULLCHECK call, then we can avoid a separate null pointer check.</para>
     ///   <para>The importer stack and current statement list are searched for side effects. Trees that have been popped of the stack but haven't been appended to the statement list and have to be checked for side effects may be provided via additionalTree and additionalCallArgs.</para>
     /// </remarks>
-    public bool impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTree? additionalTree, in CallArgs additionalCallArgs, GenTree dereferencedAddress, ReadOnlySpan<InlArgInfo> inlArgInfo)
+    public bool impInlineIsGuaranteedThisDerefBeforeAnySideEffects(
+GenTree? additionalTree,
+ in CallArgs additionalCallArgs,
+ GenTree dereferencedAddress,
+ ReadOnlySpan<InlArgInfo> inlArgInfo)
     {
         assert(compIsForInlining);
         assert(opts.OptEnabled(CLFLG_INLINING));
@@ -13480,6 +13828,7 @@ public partial class Compiler
                 return false;
             }
         }
+
         return true;
     }
 
@@ -13491,6 +13840,7 @@ public partial class Compiler
     public bool impInlineIsThis(GenTree tree, ReadOnlySpan<InlArgInfo> inlArgInfo)
     {
         assert(compIsForInlining);
+
         return (tree.Oper is GT_LCL_VAR) && (tree.AsLclVarCommon().LclNum == inlArgInfo[0].argTmpNum);
     }
 
@@ -13546,6 +13896,7 @@ public partial class Compiler
             // No expansion needed, just call the helper
             var call = gtNewHelperCallNode(TYP_VOID, CORINFO_HELP_UNBOX_NULLABLE, resultAddr, nullableClsNode, obj);
             _ = impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
+
             return gtNewLclvNode(TYP_STRUCT, resultTmp);
         }
 
@@ -13599,6 +13950,7 @@ public partial class Compiler
 
         // Spill the root QMARK and return the result local
         _ = impAppendTree(nullCheckQmark, CHECK_SPILL_ALL, impCurStmtDI);
+
         return gtNewLclvNode(TYP_STRUCT, resultTmp);
     }
 
@@ -13686,6 +14038,7 @@ public partial class Compiler
                     break;
                 }
             }
+
             _ = callArgs.PushFront(NewCallArg.CreateForPrimitive(currentArg));
         }
 
@@ -13733,17 +14086,20 @@ public partial class Compiler
             {
                 break;
             }
+
             tree = fieldAddr.FldObj;
         }
 
         if (tree.Oper is GT_LCL_ADDR)
         {
             lclVarTree = tree.AsLclFld();
+
             return true;
         }
         else
         {
             lclVarTree = null;
+
             return false;
         }
     }
@@ -13870,6 +14226,7 @@ public partial class Compiler
     public bool impIsInvariant(GenTree tree)
     {
         var oper = tree.Oper;
+
         return oper.IsConst || impIsAddressInLocal(tree) || (oper is GT_FTN_ADDR);
     }
 
@@ -13928,6 +14285,7 @@ public partial class Compiler
         {
             return false;
         }
+
         return (OPCODE)(codeAddrOfNextOpcode[0]) == CEE_RET;
     }
 
@@ -14012,6 +14370,7 @@ public partial class Compiler
             if (ilArgNum >= info.compArgsCount)
             {
                 compInlineResult.NoteFatal(InlineObservation.CALLEE_BAD_ARGUMENT_NUMBER);
+
                 return;
             }
 
@@ -14036,6 +14395,7 @@ public partial class Compiler
             {
                 lclNum = lvaArg0Var;
             }
+
             impLoadVar(lclNum, offset);
         }
     }
@@ -14052,6 +14412,7 @@ public partial class Compiler
             if ((ilLclNum < 0) || (ilLclNum >= info.compMethodInfo->locals.numArgs))
             {
                 compInlineResult.NoteFatal(InlineObservation.CALLEE_BAD_LOCAL_NUMBER);
+
                 return;
             }
 
@@ -14064,6 +14425,7 @@ public partial class Compiler
             {
                 BADCODE("Bad IL");
             }
+
             lclNum = info.compArgsCount + ilLclNum;
         }
 
@@ -14173,6 +14535,7 @@ public partial class Compiler
         if (!opts.OptEnabled(CLFLG_INLINING))
         {
             assert(!compIsForInlining);
+
             return;
         }
 
@@ -14189,10 +14552,12 @@ public partial class Compiler
             {
                 var gdvCandidate = call.GetGdvCandidateInfo(candidateId);
                 var callee = gdvCandidate.guardedMethodUnboxedResolvedToken.hMethod;
+
                 if (callee is null)
                 {
                     callee = gdvCandidate.guardedMethodHandle;
                 }
+
                 var inlineResult = new InlineResult(this, call, stmt: null, "impMarkInlineCandidate for GDV", doNotReport: false, callee: callee);
 
                 // Do the actual evaluation
@@ -14215,6 +14580,7 @@ public partial class Compiler
                     assert(!call.GetGdvCandidateInfo(candidateId).isInlineable);
                     assert(call.GetGdvCandidateInfo(candidateId).guardedClassHandle != NO_CLASS_HANDLE);
                 }
+
                 candidateId++;
             }
 
@@ -14246,7 +14612,13 @@ public partial class Compiler
     ///   <para>If callNode is an inline candidate, this method sets the flag GTF_CALL_INLINE_CANDIDATE, and ensures that helper methods have filled in the associated InlineCandidateInfo.</para>
     ///   <para>If callNode is not an inline candidate, and the reason is method may be marked as "noinline" to short-circuit any future assessments of calls to this method.</para>
     /// </remarks>
-    public unsafe void impMarkInlineCandidateHelper(GenTreeCall call, byte candidateIndex, CORINFO_CONTEXT_HANDLE exactContextHnd, in CORINFO_CALL_INFO callInfo, InlineContext inlinersContext, InlineResult inlineResult)
+    public unsafe void impMarkInlineCandidateHelper(
+GenTreeCall call,
+ byte candidateIndex,
+ CORINFO_CONTEXT_HANDLE exactContextHnd,
+ in CORINFO_CALL_INFO callInfo,
+ InlineContext inlinersContext,
+ InlineResult inlineResult)
     {
         assert(compCurBB is not null);
 
@@ -14262,6 +14634,7 @@ public partial class Compiler
         if (opts.compDbgCode)
         {
             inlineResult.NoteFatal(InlineObservation.CALLER_DEBUG_CODEGEN);
+
             return;
         }
 
@@ -14269,6 +14642,7 @@ public partial class Compiler
         if (inlineStrategy.IsInliningDisabled())
         {
             inlineResult.NoteFatal(InlineObservation.CALLER_IS_JIT_NOINLINE);
+
             return;
         }
 
@@ -14276,6 +14650,7 @@ public partial class Compiler
         if (info.compHasNextCallRetAddr)
         {
             inlineResult.NoteFatal(InlineObservation.CALLER_USES_NEXT_CALL_RET_ADDR);
+
             return;
         }
 
@@ -14284,6 +14659,7 @@ public partial class Compiler
         if (call.IsTailPrefixedCall)
         {
             inlineResult.NoteFatal(InlineObservation.CALLSITE_EXPLICIT_TAIL_PREFIX);
+
             return;
         }
 
@@ -14292,6 +14668,7 @@ public partial class Compiler
         if (call.IsDelegateInvoke && !call.IsGuardedDevirtualizationCandidate)
         {
             inlineResult.NoteFatal(InlineObservation.CALLEE_HAS_NO_BODY);
+
             return;
         }
 
@@ -14302,6 +14679,7 @@ public partial class Compiler
         if (gtIsRecursiveCall(call) && call.IsImplicitTailCall)
         {
             inlineResult.NoteFatal(InlineObservation.CALLSITE_IMPLICIT_REC_TAIL_CALL);
+
             return;
         }
 
@@ -14309,6 +14687,7 @@ public partial class Compiler
         {
             // Allow guarded devirt calls to be treated as inline candidates, but reject all other virtual calls.
             inlineResult.NoteFatal(InlineObservation.CALLSITE_IS_NOT_DIRECT);
+
             return;
         }
 
@@ -14318,6 +14697,7 @@ public partial class Compiler
             assert(!call.IsGuardedDevirtualizationCandidate);
 
             inlineResult.NoteFatal(InlineObservation.CALLSITE_IS_CALL_TO_HELPER);
+
             return;
         }
 
@@ -14328,6 +14708,7 @@ public partial class Compiler
             if (!call.IsGuardedDevirtualizationCandidate)
             {
                 inlineResult.NoteFatal(InlineObservation.CALLSITE_IS_NOT_DIRECT_MANAGED);
+
                 return;
             }
             else
@@ -14342,6 +14723,7 @@ public partial class Compiler
         if (call.UnmanagedCallConv != CorInfoCallConvExtension.Managed)
         {
             inlineResult.NoteFatal(InlineObservation.CALLEE_HAS_UNMANAGED_CALLCONV);
+
             return;
         }
 
@@ -14364,6 +14746,7 @@ public partial class Compiler
             {
                 fncHandle = gdvCandidate.guardedMethodHandle;
             }
+
             exactContextHnd = gdvCandidate.exactContextHandle;
 
             methAttr = info.compCompHnd->getMethodAttribs(fncHandle);
@@ -14410,6 +14793,7 @@ public partial class Compiler
 #endif
 
                 inlineResult.NoteFatal(InlineObservation.CALLSITE_IS_WITHIN_CATCH);
+
                 return;
             }
 
@@ -14423,6 +14807,7 @@ public partial class Compiler
 #endif
 
                 inlineResult.NoteFatal(InlineObservation.CALLSITE_IS_WITHIN_FILTER);
+
                 return;
             }
         }
@@ -14432,6 +14817,7 @@ public partial class Compiler
         if ((methAttr & CORINFO_FLG_DONT_INLINE) is not 0)
         {
             inlineResult.NoteFatal(InlineObservation.CALLEE_IS_NOINLINE);
+
             return;
         }
 
@@ -14440,6 +14826,7 @@ public partial class Compiler
         if ((methAttr & CORINFO_FLG_SYNCH) is not 0)
         {
             inlineResult.NoteFatal(InlineObservation.CALLEE_IS_SYNCHRONIZED);
+
             return;
         }
 
@@ -14450,6 +14837,7 @@ public partial class Compiler
             if (!impCanPInvokeInlineCallSite(compCurBB))
             {
                 inlineResult.NoteFatal(InlineObservation.CALLSITE_PINVOKE_EH);
+
                 return;
             }
         }
@@ -14470,6 +14858,7 @@ public partial class Compiler
             {
                 // We cannot inline methods with EH into filter clauses, even if marked as aggressive inline
                 inlineResult.NoteFatal(InlineObservation.CALLSITE_IS_WITHIN_FILTER);
+
                 return;
             }
 
@@ -14477,6 +14866,7 @@ public partial class Compiler
             {
                 // Do not inline pinvoke stubs with EH.
                 inlineResult.NoteFatal(InlineObservation.CALLEE_HAS_EH);
+
                 return;
             }
         }
@@ -14545,8 +14935,10 @@ public partial class Compiler
                 if (nextOpcode == CEE_CGT_UN)
                 {
                     consumed = 3;
+
                     return true;
                 }
+
                 return false;
             }
 
@@ -14565,6 +14957,7 @@ public partial class Compiler
     {
         lclNum = BAD_VAR_NUM;
         var code = codeAddr;
+
         if (code >= codeEndp)
         {
             return false;
@@ -14572,6 +14965,7 @@ public partial class Compiler
 
         int matchedLclNum;
         var opcode = (OPCODE)(*code++);
+
         if (opcode is >= CEE_STLOC_0 and <= CEE_STLOC_3)
         {
             matchedLclNum = opcode - CEE_STLOC_0;
@@ -14593,6 +14987,7 @@ public partial class Compiler
             }
 
             var wideOpcode = (OPCODE)(256 + *code++);
+
             if ((wideOpcode is not CEE_STLOC) || (code + 1 >= codeEndp))
             {
                 return false;
@@ -14612,6 +15007,7 @@ public partial class Compiler
         }
 
         opcode = (OPCODE)(*code++);
+
         if (opcode is CEE_LDLOCA_S)
         {
             if ((code >= codeEndp) || (*code != matchedLclNum))
@@ -14629,6 +15025,7 @@ public partial class Compiler
             }
 
             var wideOpcode = (OPCODE)(256 + *code++);
+
             if ((wideOpcode is not CEE_LDLOCA) || (code + 1 >= codeEndp))
             {
                 return false;
@@ -14638,6 +15035,7 @@ public partial class Compiler
             {
                 return false;
             }
+
             code += 2;
         }
         else
@@ -14647,6 +15045,7 @@ public partial class Compiler
 
         lclNum = matchedLclNum;
         codeAddr = code;
+
         return true;
     }
 
@@ -14663,24 +15062,28 @@ public partial class Compiler
         if ((nextOpcode < codeEndp) && (*nextOpcode == (byte)CEE_RET))
         {
             numBytesMatched = 1;
+
             return true;
         }
 
         if ((nextOpcode < codeEndp) && (*nextOpcode == (byte)CEE_NEWOBJ))
         {
             nextOpcode++;
+
             if ((nextOpcode + sizeof(int) >= codeEndp) || (nextOpcode[sizeof(int)] != (byte)CEE_RET))
             {
                 return false;
             }
 
             impResolveToken(nextOpcode, out var ctorToken, CORINFO_TOKENKIND_NewObj);
+
             if (!eeIsIntrinsic(ctorToken.hMethod))
             {
                 return false;
             }
 
             var ni = lookupNamedIntrinsic(ctorToken.hMethod);
+
             if (ni is not NI_System_Threading_Tasks_ValueTask__ctor and not NI_System_Threading_Tasks_ValueTask_1__ctor)
             {
                 return false;
@@ -14688,6 +15091,7 @@ public partial class Compiler
 
             CORINFO_SIG_INFO sig;
             info.compCompHnd->getMethodSig(ctorToken.hMethod, &sig);
+
             if (sig.numArgs != 1)
             {
                 return false;
@@ -14697,6 +15101,7 @@ public partial class Compiler
             {
                 assert((sig.sigInst.classInstCount == 1) && (sig.sigInst.methInstCount == 0));
                 var paramClass = info.compCompHnd->getArgClass(&sig, sig.args);
+
                 if (paramClass == sig.sigInst.classInst[0])
                 {
                     // ValueTask<T>(T) is folded by impFoldAwaitedTopOfStack, not a tail await.
@@ -14707,6 +15112,7 @@ public partial class Compiler
             nextOpcode += sizeof(int) + 1;
             JITDUMP("Matched \"return new ValueTask(TaskReturn())\"\n");
             numBytesMatched = (int)(nextOpcode - codeAddr);
+
             return true;
         }
 
@@ -14718,18 +15124,21 @@ public partial class Compiler
             }
 
             nextOpcode++;
+
             if ((nextOpcode + sizeof(int) >= codeEndp) || (nextOpcode[sizeof(int)] != (byte)CEE_RET))
             {
                 return false;
             }
 
             impResolveToken(nextOpcode, out var callToken, CORINFO_TOKENKIND_Method);
+
             if (!eeIsIntrinsic(callToken.hMethod))
             {
                 return false;
             }
 
             var ni = lookupNamedIntrinsic(callToken.hMethod);
+
             if (ni is not NI_System_Threading_Tasks_ValueTask_AsTask and not NI_System_Threading_Tasks_ValueTask_1_AsTask)
             {
                 return false;
@@ -14739,6 +15148,7 @@ public partial class Compiler
             JITDUMP("Matched \"return ValueTaskReturn().AsTask()\"\n");
             prefixFlags |= PREFIX_IS_ADAPTED_FROM_VALUETASK;
             numBytesMatched = (int)(nextOpcode - codeAddr);
+
             return true;
         }
 
@@ -14848,10 +15258,18 @@ public partial class Compiler
                 return nextOpcode + 1;
             }
         }
+
         return null;
     }
 
-    public unsafe GenTree? impMathIntrinsic(CORINFO_METHOD_HANDLE method, in CORINFO_SIG_INFO sigInfo, in CORINFO_CONST_LOOKUP entryPoint, var_types callType, NamedIntrinsic intrinsicName, bool tailCall, out bool isSpecial)
+    public unsafe GenTree? impMathIntrinsic(
+CORINFO_METHOD_HANDLE method,
+ in CORINFO_SIG_INFO sigInfo,
+ in CORINFO_CONST_LOOKUP entryPoint,
+ var_types callType,
+ NamedIntrinsic intrinsicName,
+ bool tailCall,
+ out bool isSpecial)
     {
         assert(callType is not TYP_STRUCT);
         assert(IsMathIntrinsic(intrinsicName));
@@ -14896,6 +15314,7 @@ public partial class Compiler
             switch (sigInfo.numArgs)
             {
                 case 1:
+                {
                     assert(eeGetArgType(arg, sigInfo) == callType);
 
                     op1 = impPopStack().val;
@@ -14904,8 +15323,10 @@ public partial class Compiler
                         EntryPoint = entryPoint,
                     };
                     break;
+                }
 
                 case 2:
+                {
                     assert(eeGetArgType(arg, sigInfo) == callType);
 #if DEBUG
                     arg = info.compCompHnd->getArgNext(arg);
@@ -14922,6 +15343,7 @@ public partial class Compiler
                         EntryPoint = entryPoint,
                     };
                     break;
+                }
 
                 default:
                 {
@@ -14935,6 +15357,7 @@ public partial class Compiler
                 op1.Flags |= GTF_CALL;
             }
         }
+
         return op1;
     }
 
@@ -15074,6 +15497,7 @@ public partial class Compiler
                         structVal = blockNode;
                     }
                 }
+
                 break;
             }
 
@@ -15133,6 +15557,7 @@ public partial class Compiler
                 {
                     _ = impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
                 }
+
                 return gtNewNull();
             }
 
@@ -15153,6 +15578,7 @@ public partial class Compiler
             {
                 // Cast will succeed, result is simply op1.
                 JITDUMP("Cast will succeed, optimizing to simply return input\n");
+
                 return op1;
             }
             else if (castResult == TypeCompareState.MustNot)
@@ -15186,6 +15612,7 @@ public partial class Compiler
                     {
                         _ = impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
                     }
+
                     return gtNewNull();
                 }
                 else if (isExact)
@@ -15206,6 +15633,7 @@ public partial class Compiler
         {
             JITDUMP("\nCan't optimize since fromClass is unknown\n");
         }
+
         return null;
     }
 
@@ -15226,7 +15654,7 @@ public partial class Compiler
     {
         var spilled = false;
 
-        for (var  lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+        for (var lclNum = 0; lclNum < info.compArgsCount; lclNum++)
         {
             if (!lvaIsImplicitByRefLocal(lclNum))
             {
@@ -15241,6 +15669,7 @@ public partial class Compiler
                 {
                     _ = impSpillStackEntry(level, BAD_VAR_NUM, assertOnRecursion: true, "Stress poisoning byrefs before return");
                 }
+
                 spilled = true;
             }
 
@@ -15383,6 +15812,7 @@ public partial class Compiler
 
             assert(thisPtr.Type is TYP_I_IMPL or TYP_BYREF);
         }
+
         impRetypeUnmanagedCallArgs(call);
     }
 
@@ -15420,6 +15850,7 @@ public partial class Compiler
             }
 
             var corType = strip(parameter.CorType);
+
             if ((parameter.CorType & CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT) is not 0)
             {
                 if (corType is not CORINFO_TYPE_NATIVEINT)
@@ -15573,6 +16004,7 @@ public partial class Compiler
         {
             BADCODE("stack underflow");
         }
+
         return stackState.esStack[--stackState.esStackDepth];
     }
 
@@ -15584,6 +16016,7 @@ public partial class Compiler
         {
             BADCODE("stack underflow");
         }
+
         stackState.esStackDepth -= n;
     }
 
@@ -15600,6 +16033,7 @@ public partial class Compiler
         {
             indirFlags |= GTF_IND_UNALIGNED;
         }
+
         return indirFlags;
     }
 
@@ -15611,7 +16045,13 @@ public partial class Compiler
     /// <param name="entryPoint">The entry point information required for R2R scenarios</param>
     /// <param name="mustExpand">true if the intrinsic must return a GenTree*; otherwise, false</param>
     /// <returns>IR tree to use in place of the call, or null if the jit should treat the intrinsic call like a normal call.</returns>
-    public unsafe GenTree? impPrimitiveNamedIntrinsic(NamedIntrinsic intrinsic, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, in CORINFO_SIG_INFO sigInfo, in CORINFO_CONST_LOOKUP entryPoint, bool mustExpand)
+    public unsafe GenTree? impPrimitiveNamedIntrinsic(
+NamedIntrinsic intrinsic,
+ CORINFO_CLASS_HANDLE clsHnd,
+ CORINFO_METHOD_HANDLE method,
+ in CORINFO_SIG_INFO sigInfo,
+ in CORINFO_CONST_LOOKUP entryPoint,
+ bool mustExpand)
     {
         assert(sigInfo.sigInst.classInstCount is 0);
 
@@ -15620,6 +16060,7 @@ public partial class Compiler
         if (!varTypeIsArithmetic(retType))
         {
             assert((intrinsic is NI_PRIMITIVE_ConvertToInteger) || (intrinsic is NI_PRIMITIVE_ConvertToIntegerNative));
+
             return null;
         }
 
@@ -15635,6 +16076,7 @@ public partial class Compiler
         {
             baseJitType = strip(info.compCompHnd->getArgType(pSigInfo, args, &op1ClsHnd));
         }
+
         var baseType = baseJitType.VarType;
 
         var result = null as GenTree;
@@ -15647,6 +16089,7 @@ public partial class Compiler
                 {
                     return null;
                 }
+
                 goto case NI_PRIMITIVE_ConvertToInteger;
             }
 
@@ -15735,6 +16178,7 @@ public partial class Compiler
                         {
                             res = gtNewCastNode(TYP_INT, res, fromUnsigned: false, tgtType);
                         }
+
                         return res;
                     }
                 }
@@ -15760,6 +16204,7 @@ public partial class Compiler
                 {
                     res = gtNewCastNode(retType, op1, fromUnsigned: false, tgtType);
                 }
+
                 return gtFoldExpr(res);
             }
 
@@ -15777,6 +16222,7 @@ public partial class Compiler
                 {
                     baseJitType = strip(info.compCompHnd->getArgType(pSigInfo, args, &op2ClsHnd));
                 }
+
                 baseType = baseJitType.VarType;
 
 #if !TARGET_64BIT
@@ -15851,6 +16297,7 @@ public partial class Compiler
                         var cns = (int)(op1.AsIntConCommon().IconValue);
                         result = gtNewIconNode(baseType, int.LeadingZeroCount(cns));
                     }
+
                     break;
                 }
 
@@ -15965,6 +16412,7 @@ public partial class Compiler
                             result = gtNewIconNode(baseType, BitOperations.Log2(unchecked((uint)(cns))));
                         }
                     }
+
                     break;
                 }
 
@@ -16003,13 +16451,13 @@ public partial class Compiler
                 if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
                 {
                     hwintrinsic = varTypeIsLong(baseType) ? NI_AVX2_X64_LeadingZeroCount : NI_AVX2_LeadingZeroCount;
-                    result      = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1);
+                    result = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1);
                 }
                 else
                 {
                     hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_BitScanReverse : NI_X86Base_BitScanReverse;
-                    result      = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1);
-                    isLzcnt     = false;
+                    result = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1);
+                    isLzcnt = false;
                 }
 #elif TARGET_ARM64
                 hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
@@ -16076,6 +16524,7 @@ public partial class Compiler
                     impStoreToTemp(tmp, qmark, CHECK_SPILL_NONE);
                     result = gtNewLclvNode(retType, tmp);
                 }
+
 #endif
                 break;
             }
@@ -16102,6 +16551,7 @@ public partial class Compiler
                         var cns = (int)(op1.AsIntConCommon().IconValue);
                         result = gtNewIconNode(baseType, int.PopCount(cns));
                     }
+
                     break;
                 }
 
@@ -16270,6 +16720,7 @@ public partial class Compiler
             assert(!varTypeIsSmall(retType) && !varTypeIsSmall(baseType));
             result = gtFoldExpr(gtNewCastNode(retType, result, /* uint */ true, retType));
         }
+
         return result;
     }
 
@@ -16299,6 +16750,7 @@ public partial class Compiler
                     impPushOnStack(tree, new typeInfo(clsHnd));
 
                     assert(hndBlk.Next is not null);
+
                     return hndBlk.Next;
                 }
             }
@@ -16363,6 +16815,7 @@ public partial class Compiler
         }
 
         impPushOnStack(arg, new typeInfo(clsHnd));
+
         return hndBlk;
     }
 
@@ -16731,6 +17184,7 @@ public partial class Compiler
         if (((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) == 0) && compIsAsyncVersion)
         {
             JITDUMP("\nWrapping return value in await\n");
+
             if (!impWrapTopOfStackInAwait())
             {
                 return false;
@@ -16783,6 +17237,7 @@ public partial class Compiler
                     JITDUMP("CALLSITE_COMPILATION_ERROR: inlinee's stack is not empty.");
 
                     compInlineResult.NoteFatal(InlineObservation.CALLSITE_COMPILATION_ERROR);
+
                     return false;
                 }
 
@@ -16819,6 +17274,7 @@ public partial class Compiler
                     {
                         JITDUMP($"Return type mismatch: have {returnType.Name}, needed {originalCallType.Name}\n");
                         compInlineResult.NoteFatal(InlineObservation.CALLSITE_RETURN_TYPE_MISMATCH);
+
                         return false;
                     }
                 }
@@ -16937,6 +17393,7 @@ public partial class Compiler
                         var tmpOp2 = gtNewLclvNode(lclRetType, lvaInlineeReturnSpillTemp);
 
                         op2 = tmpOp2;
+
 #if DEBUG
                         if (inlRetExpr.SubstExpr is not null)
                         {
@@ -17142,9 +17599,11 @@ public partial class Compiler
 
         var asyncContArg = NewCallArg.CreateForPrimitive(gtNewNull()).WithWellKnownArg(WellKnownArg.AsyncContinuation);
         NewCallArg instArg = default;
+
         if (awaitSig.hasTypeArg())
         {
             var instArgTree = impLookupToTree(instArgLookup, GTF_ICON_METHOD_HDL, awaitMethod);
+
             if (instArgTree is null)
             {
                 return false;
@@ -17157,6 +17616,7 @@ public partial class Compiler
         if (Target.TgtArgOrder == Target.ARG_ORDER_R2L)
         {
             _ = awaitCall.Args.PushFront(asyncContArg);
+
             if (awaitSig.hasTypeArg())
             {
                 _ = awaitCall.Args.PushFront(instArg);
@@ -17165,6 +17625,7 @@ public partial class Compiler
         else
         {
             _ = awaitCall.Args.PushBack(asyncContArg);
+
             if (awaitSig.hasTypeArg())
             {
                 _ = awaitCall.Args.PushBack(instArg);
@@ -17178,6 +17639,7 @@ public partial class Compiler
         impMarkInlineCandidate(awaitCall, contextHandle, callInfo, compInlineContext);
 
         GenTree toPush = awaitCall;
+
         if (varTypeIsStruct(callRetType))
         {
             toPush = impFixupCallStructReturn(awaitCall, awaitSig.retTypeClass);
@@ -17185,6 +17647,7 @@ public partial class Compiler
 
         AsyncCallInfo asyncInfo = default;
         GenTreeCall? inliningCall = null;
+
         if (compIsForInlining)
         {
             assert(impInlineInfo is not null);
@@ -17227,6 +17690,7 @@ public partial class Compiler
             if (callRetType == TYP_VOID)
             {
                 assert(info.compRetType == TYP_VOID);
+
                 return true;
             }
 
@@ -17258,6 +17722,7 @@ public partial class Compiler
         }
 
         var value = impStackTop().val;
+
         if (!value.Oper.IsScalarLocal)
         {
             return false;
@@ -17265,21 +17730,25 @@ public partial class Compiler
 
         var valueLcl = value.AsLclVarCommon();
         var lastStmt = impLastStmt;
+
         if (lastStmt is null)
         {
             return false;
         }
 
         var lastTree = lastStmt.RootNode;
+
         if (lastTree.Oper == GT_STORE_LCL_VAR)
         {
             var storeLcl = lastTree.AsLclVarCommon();
+
             if ((storeLcl.LclNum != valueLcl.LclNum) || !storeLcl.Data.IsIntegralConst(0))
             {
                 return false;
             }
 
             _ = impPopStack();
+
             if (info.compRetType == TYP_VOID)
             {
                 lastTree.BashToNOP();
@@ -17300,12 +17769,14 @@ public partial class Compiler
             }
 
             JITDUMP("Optimized \"return new ValueTask()\" to return default\n");
+
             return true;
         }
         else if (lastTree.Oper.IsCall && lastTree.AsCall().IsSpecialIntrinsic(this, NI_System_Threading_Tasks_ValueTask_1__ctor))
         {
             var thisArg = lastTree.AsCall().Args.ThisArg;
             assert(thisArg is not null);
+
             if ((thisArg.Node.Oper != GT_LCL_ADDR) || (thisArg.Node.AsLclVarCommon().LclNum != valueLcl.LclNum))
             {
                 return false;
@@ -17313,6 +17784,7 @@ public partial class Compiler
 
             CORINFO_SIG_INFO sig;
             info.compCompHnd->getMethodSig(lastTree.AsCall()._callMethHnd, &sig);
+
             if (sig.numArgs != 1)
             {
                 return false;
@@ -17320,6 +17792,7 @@ public partial class Compiler
 
             assert((sig.sigInst.classInstCount == 1) && (sig.sigInst.methInstCount == 0));
             var paramClass = info.compCompHnd->getArgClass(&sig, sig.args);
+
             if (paramClass != sig.sigInst.classInst[0])
             {
                 return false;
@@ -17328,6 +17801,7 @@ public partial class Compiler
             var valueArg = lastTree.AsCall().Args.GetUserArgByIndex(1);
             assert(valueArg is not null);
             value = valueArg.Node;
+
             if (varTypeIsSmall(valueArg.SignatureType) && fgCastNeeded(value, valueArg.SignatureType))
             {
                 value = gtNewCastNode(TYP_INT, value, fromUnsigned: false, valueArg.SignatureType);
@@ -17339,6 +17813,7 @@ public partial class Compiler
             DISPTREE(value);
 
             lastTree.BashToNOP();
+
             return true;
         }
 
@@ -17434,7 +17909,10 @@ public partial class Compiler
         // No null test required
         assert(!runtimeLookup.testForNull);
 
-        return (runtimeLookup.indirections is not 0) ? gtNewIndir(TYP_I_IMPL, slotPtrTree, ctxTreeIsInvariant ? (GTF_IND_NONFAULTING | GTF_IND_INVARIANT) : GTF_EMPTY) : slotPtrTree;
+        return (runtimeLookup.indirections is not 0) ? gtNewIndir(
+TYP_I_IMPL,
+ slotPtrTree,
+ ctxTreeIsInvariant ? (GTF_IND_NONFAULTING | GTF_IND_INVARIANT) : GTF_EMPTY) : slotPtrTree;
     }
 
     public void impSaveStackState(out SavedStack savePtr, bool copy)
@@ -17493,8 +17971,10 @@ public partial class Compiler
             case NI_System_Runtime_CompilerServices_AsyncHelpers_UnsafeAwaitAwaiter:
             case NI_System_Runtime_CompilerServices_AsyncHelpers_Suspend:
             case NI_System_Runtime_CompilerServices_AsyncHelpers_TransparentSuspend:
+            {
                 asyncInfo.AlwaysSuspends = true;
                 break;
+            }
         }
 
         if (compIsForInlining)
@@ -17505,6 +17985,7 @@ public partial class Compiler
             if ((prefixFlags & PREFIX_IS_ADAPTED_FROM_VALUETASK) != 0)
             {
                 compInlineResult.NoteFatal(InlineObservation.CALLEE_AWAIT);
+
                 return;
             }
 
@@ -17513,6 +17994,7 @@ public partial class Compiler
                 if (!generalAsyncInliningEnabled())
                 {
                     compInlineResult.NoteFatal(InlineObservation.CALLEE_AWAIT);
+
                     return;
                 }
 
@@ -17520,6 +18002,7 @@ public partial class Compiler
                 {
                     JITDUMP("Cannot inline an await into a non-async root method\n");
                     compInlineResult.NoteFatal(InlineObservation.CALLSITE_AWAIT_IN_NON_ASYNC_ROOT);
+
                     return;
                 }
 
@@ -17527,17 +18010,21 @@ public partial class Compiler
                 // Context-restore try/faults introduced by the JIT are not user EH.
                 var callSiteBlock = impInlineInfo.iciBlock;
                 assert(callSiteBlock is not null);
+
                 if (impInlineInfo.InlinerCompiler.ehIsInsideNonAsyncContextRestoreRegion(callSiteBlock))
                 {
                     compInlineResult.NoteFatal(InlineObservation.CALLSITE_AWAIT_IN_TRY_REGION);
+
                     return;
                 }
 
                 if ((compCurBB is not null) && (compCurBB.hasTryIndex || compCurBB.hasHndIndex))
                 {
                     compInlineResult.NoteFatal(InlineObservation.CALLEE_AWAIT_IN_TRY);
+
                     return;
                 }
+
 #if DEBUG
                 JITDUMP($"Call [{call.TreeId:D6}] is an await in an inlinee that may suspend\n");
 #endif
@@ -17642,6 +18129,7 @@ public partial class Compiler
         }
 
         op1 = gtNewLclFldNode(TYP_USHORT, op1Tmp, lclOffs: 0);
+
         return gtNewSimdCreateScalarNode(TYP_SIMD16, op1, TYP_USHORT, 16);
     }
 
@@ -17660,6 +18148,7 @@ public partial class Compiler
         op1 = gtNewStoreLclFldNode(TYP_USHORT, resTmp, offset: 0, op1);
 
         _ = impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
+
         return gtNewLclvNode(TYP_STRUCT, resTmp);
     }
 
@@ -17793,6 +18282,7 @@ public partial class Compiler
             {
                 continue;
             }
+
             _ = impSpillStackEntry(level, BAD_VAR_NUM, assertOnRecursion: false, "impSpillStackEnsure");
         }
     }
@@ -17820,6 +18310,7 @@ public partial class Compiler
             tnum = lvaGrabTemp(shortLifetime: true, reason);
             isNewTemp = true;
         }
+
         ref var lvaDsc = ref lvaGetDesc(tnum);
 
         // Assign the spilled entry to the temp
@@ -17867,7 +18358,12 @@ public partial class Compiler
         return true;
     }
 
-    public unsafe GenTree? impSRCSUnsafeIntrinsic(NamedIntrinsic intrinsic, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, in CORINFO_SIG_INFO sig, in CORINFO_RESOLVED_TOKEN resolvedToken)
+    public unsafe GenTree? impSRCSUnsafeIntrinsic(
+NamedIntrinsic intrinsic,
+ CORINFO_CLASS_HANDLE clsHnd,
+ CORINFO_METHOD_HANDLE method,
+ in CORINFO_SIG_INFO sig,
+ in CORINFO_RESOLVED_TOKEN resolvedToken)
     {
         // NextCallRetAddr requires a CALL, so return null.
         if (info.compHasNextCallRetAddr)
@@ -17908,6 +18404,7 @@ public partial class Compiler
                 }
 
                 var type = impGetByRefResultType(GT_ADD, fUnsigned: false, ref op1, ref op2);
+
                 return gtNewBinaryNode(GT_ADD, type, op1, op2);
             }
 
@@ -17927,6 +18424,7 @@ public partial class Compiler
                 impBashVarAddrsToI(op2);
 
                 var type = impGetByRefResultType(GT_ADD, fUnsigned: false, ref op1, ref op2);
+
                 return gtNewBinaryNode(GT_ADD, type, op1, op2);
             }
 
@@ -17943,6 +18441,7 @@ public partial class Compiler
                 var op1 = impPopStack().val;
 
                 var tmp = gtNewBinaryNode(GT_EQ, TYP_INT, op1, op2);
+
                 return gtFoldExpr(tmp);
             }
 
@@ -17968,6 +18467,7 @@ public partial class Compiler
                     if ((oldClass != NO_CLASS_HANDLE) && ((oldClass == inst) || !info.compCompHnd->isMoreSpecificType(oldClass, inst)))
                     {
                         JITDUMP($"Unsafe.As: Keep using old '{eeGetClassName(oldClass)}' type\n");
+
                         return op;
                     }
 
@@ -17978,6 +18478,7 @@ public partial class Compiler
 
                     // NOTE: we still can't say for sure that it is the exact type of the argument
                     lvaSetClass(localNum, inst, isExact: false);
+
                     return gtNewLclvNode(TYP_REF, localNum);
                 }
 
@@ -18084,6 +18585,7 @@ public partial class Compiler
                         {
                             op1 = gtNewCastNode(TYP_INT, op1, false, toType);
                         }
+
                         return op1;
                     }
                 }
@@ -18100,12 +18602,14 @@ public partial class Compiler
                         if (fromType is TYP_DOUBLE)
                         {
                             var f64Cns = op1.AsDblCon().DconVal;
+
                             return gtNewLconNode(BitConverter.DoubleToInt64Bits(f64Cns));
                         }
                         else
                         {
                             assert(fromType is TYP_FLOAT);
                             var f32Cns = (float)op1.AsDblCon().DconVal;
+
                             return gtNewIconNode(TYP_INT, BitConverter.SingleToInt32Bits(f32Cns));
                         }
                     }
@@ -18113,6 +18617,7 @@ public partial class Compiler
                     {
                         // TODO-CQ: We should support this on 32-bit via decomposition
                         toType = varTypeToSigned(toType);
+
                         return gtNewBitCastNode(toType, op1);
                     }
                 }
@@ -18123,6 +18628,7 @@ public partial class Compiler
                         if (toType is TYP_DOUBLE)
                         {
                             var i64Cns = op1.AsIntConCommon().LngValue;
+
                             return gtNewDconNode(TYP_DOUBLE, BitConverter.Int64BitsToDouble(i64Cns));
                         }
                         else
@@ -18130,6 +18636,7 @@ public partial class Compiler
                             assert(toType is TYP_FLOAT);
 
                             var i32Cns = (int)(op1.AsIntConCommon().IconValue);
+
                             return gtNewDconNode(TYP_FLOAT, BitConverter.Int32BitsToSingle(i32Cns));
                         }
                     }
@@ -18165,6 +18672,7 @@ public partial class Compiler
                 {
                     indirFlags |= GTF_IND_UNALIGNED;
                 }
+
                 return gtNewLoadValueNode(toType, addr, toLayout, indirFlags);
             }
 
@@ -18205,6 +18713,7 @@ public partial class Compiler
                 var dest = impPopStack().val;
 
                 var value = gtNewLoadValueNode(type, source, layout);
+
                 return gtNewStoreValueNode(type, dest, value, layout);
             }
 
@@ -18276,6 +18785,7 @@ public partial class Compiler
 
                 var tmp = gtNewBinaryNode(GT_GT, TYP_INT, op1, op2);
                 tmp.IsUnsigned = true;
+
                 return gtFoldExpr(tmp);
             }
 
@@ -18295,6 +18805,7 @@ public partial class Compiler
 
                 var tmp = gtNewBinaryNode(GT_GE, TYP_INT, op1, op2);
                 tmp.IsUnsigned = true;
+
                 return gtFoldExpr(tmp);
             }
 
@@ -18312,6 +18823,7 @@ public partial class Compiler
 
                 var tmp = gtNewBinaryNode(GT_LT, TYP_INT, op1, op2);
                 tmp.IsUnsigned = true;
+
                 return gtFoldExpr(tmp);
             }
 
@@ -18331,6 +18843,7 @@ public partial class Compiler
 
                 var tmp = gtNewBinaryNode(GT_LE, TYP_INT, op1, op2);
                 tmp.IsUnsigned = true;
+
                 return gtFoldExpr(tmp);
             }
 
@@ -18348,6 +18861,7 @@ public partial class Compiler
                 var cns = gtNewIconNode(TYP_BYREF, 0);
 
                 var tmp = gtNewBinaryNode(GT_EQ, TYP_INT, op1, cns);
+
                 return gtFoldExpr(tmp);
             }
 
@@ -18387,6 +18901,7 @@ public partial class Compiler
                 // ret
 
                 var classSize = info.compCompHnd->getClassSize(sig.sigInst.methInst[0]);
+
                 return gtNewIconNode(TYP_INT, classSize);
             }
 
@@ -18437,6 +18952,7 @@ public partial class Compiler
                 }
 
                 var type = impGetByRefResultType(GT_SUB, fUnsigned: false, ref op1, ref op2);
+
                 return gtNewBinaryNode(GT_SUB, type, op1, op2);
             }
 
@@ -18456,6 +18972,7 @@ public partial class Compiler
                 impBashVarAddrsToI(op2);
 
                 var type = impGetByRefResultType(GT_SUB, fUnsigned: false, ref op1, ref op2);
+
                 return gtNewBinaryNode(GT_SUB, type, op1, op2);
             }
 
@@ -18494,12 +19011,14 @@ public partial class Compiler
                 {
                     store = impStoreStruct(store, CHECK_SPILL_ALL);
                 }
+
                 return store;
             }
 
             default:
             {
                 unreached();
+
                 return null;
             }
         }
@@ -18511,6 +19030,7 @@ public partial class Compiler
         {
             BADCODE("stack underflow");
         }
+
         return ref stackState.esStack[stackState.esStackDepth - n - 1];
     }
 
@@ -18535,6 +19055,7 @@ public partial class Compiler
         ret.CanCse = false;
 
         assert(IsMultiRegReturnedType(hClass, callConv) || op.IsMultiRegNode);
+
         return ret;
     }
 
@@ -18719,6 +19240,7 @@ public partial class Compiler
                     retExpr.Type = TYP_VOID;
                     var tmpType = lvaGetDesc(lclNum).Type;
                     dataRef = gtNewCommaNode(tmpType, retExpr, gtNewLclvNode(tmpType, lclNum));
+
                     return impStoreStruct(store, ref afterStmt, CHECK_SPILL_ALL, di, block);
                 }
 
@@ -18774,6 +19296,7 @@ public partial class Compiler
                 {
                     impAppendTree(sideEffectAddressStore, curLevel, usedDI);
                 }
+
                 impAppendTree(comma.Op1, curLevel, usedDI);
             }
             else
@@ -18790,12 +19313,14 @@ public partial class Compiler
                 {
                     comma = gtNewCommaNode(comma.Type, sideEffectAddressStore, comma);
                 }
+
                 return comma;
             }
 
             // Evaluate the second thing using recursion.
             dataRef = comma.Op2;
             gtUpdateNodeSideEffects(store);
+
             return impStoreStruct(store, ref afterStmt, curLevel, usedDI, block);
         }
 
@@ -18803,6 +19328,7 @@ public partial class Compiler
         {
             lvaGetDesc(store.AsLclVar().LclNum).IsMultiRegDest = true;
         }
+
         return store;
     }
 
@@ -18818,6 +19344,7 @@ public partial class Compiler
         var type = value.Type;
         var layout = (type == TYP_STRUCT) ? value.GetLayout(this) : null;
         var store = gtNewStoreValueNode(type, destAddr, value, layout, indirFlags);
+
         return impStoreStruct(store, curLevel);
     }
 
@@ -18862,7 +19389,14 @@ public partial class Compiler
     /// <param name="calleeCallConv">calling convention of the callee</param>
     /// <returns>True if the tailcall types are compatible.</returns>
     /// <remarks>Note that here we don't check compatibility in IL Verifier sense, but on the lines of return types getting returned in the same return register.</remarks>
-    public unsafe bool impTailCallRetTypeCompatible(bool allowWidening, var_types callerRetType, CORINFO_CLASS_HANDLE callerRetTypeClass, CorInfoCallConvExtension callerCallConv, var_types calleeRetType, CORINFO_CLASS_HANDLE calleeRetTypeClass, CorInfoCallConvExtension calleeCallConv)
+    public unsafe bool impTailCallRetTypeCompatible(
+bool allowWidening,
+ var_types callerRetType,
+ CORINFO_CLASS_HANDLE callerRetTypeClass,
+ CorInfoCallConvExtension callerCallConv,
+ var_types calleeRetType,
+ CORINFO_CLASS_HANDLE calleeRetTypeClass,
+ CorInfoCallConvExtension calleeCallConv)
     {
         // Early out if the types are the same.
         if (callerRetType == calleeRetType)
@@ -18964,6 +19498,7 @@ public partial class Compiler
             impStoreToTemp(boxedArgNameTmp, valueName, CHECK_SPILL_ALL);
 
             _ = gtTryRemoveBoxUpstreamEffects(value.AsBox(), BR_REMOVE_AND_NARROW);
+
             return gtNewNothingNode();
         }
         else if (value.Oper.IsCall && value.AsCall().IsHelperCall(CORINFO_HELP_BOX))
@@ -18972,6 +19507,7 @@ public partial class Compiler
             var classArg = value.AsCall().Args.GetUserArgByIndex(0);
             var addressArg = value.AsCall().Args.GetUserArgByIndex(1);
             assert(classArg is not null && addressArg is not null);
+
             if ((classArg.Node.Flags & GTF_SIDE_EFFECT) is not 0)
             {
                 return call;
@@ -18982,6 +19518,7 @@ public partial class Compiler
             var boxedArgNameTmp = lvaGrabTemp(shortLifetime: true, "boxedArg spilled");
             impStoreToTemp(boxedAddrTmp, addressArg.Node, CHECK_SPILL_ALL);
             impStoreToTemp(boxedArgNameTmp, valueName, CHECK_SPILL_ALL);
+
             return gtNewNothingNode();
         }
         else
@@ -19067,6 +19604,7 @@ public partial class Compiler
         {
             info.compCompHnd->embedGenericHandle(pResolvedToken, importParent, info.compMethodHnd, &embedInfo);
         }
+
         runtimeLookup = embedInfo.lookup.lookupKind.needsRuntimeLookup;
 
         if (mustRestoreHandle && !embedInfo.lookup.lookupKind.needsRuntimeLookup)
@@ -19107,6 +19645,7 @@ public partial class Compiler
         {
             result = gtNewRuntimeLookup(result, embedInfo.compileTimeHandle, embedInfo.handleType);
         }
+
         return result;
     }
 
@@ -19118,7 +19657,14 @@ public partial class Compiler
     /// <param name="block">block that will contain the transformed call</param>
     /// <param name="contextHandle">context handle for the transformed call</param>
     /// <param name="baseMethod"></param>
-    public unsafe void impTransformDevirtualizedCall(GenTreeCall call, ref CORINFO_METHOD_HANDLE method, ref CorInfoFlag methodFlags, in DevirtualizedCallInfo dcInfo, BasicBlock block, out CORINFO_CONTEXT_HANDLE contextHandle, CORINFO_METHOD_HANDLE baseMethod)
+    public unsafe void impTransformDevirtualizedCall(
+GenTreeCall call,
+ ref CORINFO_METHOD_HANDLE method,
+ ref CorInfoFlag methodFlags,
+ in DevirtualizedCallInfo dcInfo,
+ BasicBlock block,
+ out CORINFO_CONTEXT_HANDLE contextHandle,
+ CORINFO_METHOD_HANDLE baseMethod)
     {
         var derivedMethod = method;
         var derivedMethodAttribs = methodFlags;
@@ -19286,6 +19832,7 @@ public partial class Compiler
                         && !info.compCompHnd->canValueClassInstancePointerEscape(unboxedEntryMethod))
                     {
                         var haveTypeArg = true;
+
                         if (needsClassTypeArg)
                         {
                             boxTypeHandle = gtTryRemoveBoxUpstreamEffects(box, BR_DONT_REMOVE_WANT_TYPE_HANDLE);
@@ -19293,6 +19840,7 @@ public partial class Compiler
                         }
 
                         var localCopyThis = haveTypeArg ? gtTryRemoveBoxUpstreamEffects(box, BR_MAKE_LOCAL_COPY) : null;
+
                         if (localCopyThis is not null)
                         {
                             JITDUMP("Success! invoking unboxed entry point on local copy\n");
@@ -19333,6 +19881,7 @@ public partial class Compiler
 
                             // TODO-CallArgs-REVIEW: Use thisObj here? Differs by gtEffectiveVal.
                             var clonedThisArg = gtClone(thisArg.EarlyNode);
+
                             if (clonedThisArg is null)
                             {
                                 JITDUMP("unboxed entry needs MT arg, but `this` was too complex to clone. Deferring update.\n");
@@ -19381,6 +19930,7 @@ public partial class Compiler
                         {
                             Metrics.DevirtualizedCallRemovedBox++;
                         }
+
                         Metrics.DevirtualizedCallUnboxedEntry++;
                     }
                 }
@@ -19483,6 +20033,7 @@ public partial class Compiler
                 assert((obj.Type.ActualType is TYP_I_IMPL) || (obj.Type is TYP_BYREF));
 
                 var constraintTyp = info.compCompHnd->asCorInfoType(constrainedResolvedToken.hClass);
+
                 return gtNewLoadValueNode(constraintTyp.VarType, obj, layout: null);
             }
 
@@ -19525,6 +20076,7 @@ public partial class Compiler
                 }
 
                 obj = impPopStack().val;
+
                 return obj;
             }
 
@@ -19570,6 +20122,7 @@ public partial class Compiler
 
             return retNode;
         }
+
         return null;
     }
 
@@ -19757,6 +20310,7 @@ public partial class Compiler
         else
         {
             assert(predOrSucc == SpillCliqueSucc);
+
             return impInlineRoot.impSpillCliqueSuccMembers.ExpandAndGet(blk.bbInd);
         }
     }
@@ -19921,6 +20475,7 @@ public partial class Compiler
                 assert(argUse is not null);
                 argUse = argUse.Next;
             }
+
             sigArg = info.compCompHnd->getArgNext(sigArg);
         }
 
@@ -19934,10 +20489,12 @@ public partial class Compiler
         if ((info.compClassAttr & CORINFO_FLG_VALUECLASS) != 0)
         {
             assert(structPromotionHelper is not null);
+
             if (structPromotionHelper.CanPromoteStructType(info.compClassHnd))
             {
                 inlineResult.Note(InlineObservation.CALLEE_CLASS_PROMOTABLE);
             }
+
             inlineResult.Note(InlineObservation.CALLEE_CLASS_VALUETYPE);
         }
 
@@ -20144,6 +20701,7 @@ public partial class Compiler
         {
             // This optimization spawns several temps so make sure we have a room
             JITDUMP("impUtf16SpanComparison: Method has too many locals - bail out.\n");
+
             return null;
         }
 
@@ -20248,9 +20806,11 @@ public partial class Compiler
                 // We were unable to get the literal (e.g. dynamic context)
                 return null;
             }
+
             if (cnsLength > (GetUnrollThreshold(MemcmpU16) / 2))
             {
                 JITDUMP("UTF16 data is too long to unroll - bail out.\n");
+
                 return null;
             }
 
@@ -20275,6 +20835,7 @@ public partial class Compiler
             {
                 _ = info.compCompHnd->getArgType(pSigInfo, sigInfo.args, &spanCls);
             }
+
             lvaSetStruct(spanLclNum, spanCls, unsafeValueClsCheck: false);
         }
 
@@ -20317,6 +20878,7 @@ public partial class Compiler
                 retExpr.InlineCandidate = gtNewNothingNode();
             }
         }
+
         return unrolled;
     }
 
@@ -20356,6 +20918,7 @@ public partial class Compiler
         if (lvaHaveManyLocals(0.75f))
         {
             JITDUMP("impUtf16StringComparison: Method has too many locals - bail out.\n");
+
             return null;
         }
 
@@ -20410,6 +20973,7 @@ public partial class Compiler
                 // StartsWith and EndsWith are not commutative
                 return null;
             }
+
             cnsStr = op1.AsStrCon();
             varStr = op2;
         }
@@ -20458,8 +21022,10 @@ public partial class Compiler
             if (cnsLength > (GetUnrollThreshold(MemcmpU16) / 2))
             {
                 JITDUMP("UTF16 data is too long to unroll - bail out.\n");
+
                 return null;
             }
+
             JITDUMP("Trying to unroll String.Equals|StartsWith|EndsWith(op1, \"cns\")...\n");
         }
 
@@ -20506,12 +21072,14 @@ public partial class Compiler
             JITDUMP("\n... Successfully unrolled to:\n");
             DISPTREE(unrolled);
         }
+
         return unrolled;
     }
 
     public static bool impValidSpilledStackEntry(GenTree tree)
     {
         var oper = tree.Oper;
+
         return (oper is GT_LCL_VAR) || oper.IsConst;
     }
 
@@ -20576,6 +21144,7 @@ public partial class Compiler
         if (!sameRetTypes)
         {
             JITDUMP("Incompatible method GDV: Return types do not match - bail out.\n");
+
             return false;
         }
 
@@ -20592,6 +21161,7 @@ public partial class Compiler
             if ((callRetKind != gdvRetKind) || !ClassLayout.AreCompatible(typGetObjLayout(callSig.retTypeClass), typGetObjLayout(sigInfo.retTypeClass)))
             {
                 JITDUMP("Incompatible method GDV: Return struct types do not match - bail out.\n");
+
                 return false;
             }
         }
@@ -20602,12 +21172,14 @@ public partial class Compiler
             {
                 continue;
             }
+
             numArgs++;
 
             if (numArgs > numParams)
             {
 #if DEBUG
                 JITDUMP($"Incompatible method GDV: call [{call.TreeId:D6}] has more arguments than signature (sig has {numParams} parameters)\n");
+
 #endif
                 return false;
             }
@@ -20640,6 +21212,7 @@ public partial class Compiler
                     return false;
                 }
             }
+
             sigParam = info.compCompHnd->getArgNext(sigParam);
         }
 
@@ -20651,6 +21224,7 @@ public partial class Compiler
 
             return false;
         }
+
         return true;
     }
 
@@ -20673,12 +21247,14 @@ public partial class Compiler
             _ = impPopStack();
             var rotateValue = impPopStack().val;
             var rotateAmount = gtNewBinaryNode(GT_AND, op2.Type.ActualType, op2, gtNewIconNode(op2.Type.ActualType, rotateMask));
+
             return gtNewBinaryNode(rotateOper, baseType, rotateValue, rotateAmount);
         }
 
         _ = impPopStack();
         var op1 = impPopStack().val;
         var amount = unchecked((int)op2.AsIntConCommon().IconValue) & rotateMask;
+
         if (amount is 0)
         {
             return op1;
@@ -20689,14 +21265,17 @@ public partial class Compiler
             if (varTypeIsLong(baseType))
             {
                 var value = op1.AsIntConCommon().LngValue;
+
                 return gtNewLconNode(rotateOper is GT_ROL ? long.RotateLeft(value, amount) : long.RotateRight(value, amount));
             }
 
             var intValue = unchecked((int)op1.AsIntConCommon().IconValue);
+
             return gtNewIconNode(baseType, rotateOper is GT_ROL ? int.RotateLeft(intValue, amount) : int.RotateRight(intValue, amount));
         }
 
         op2.AsIntConCommon().IconValue = amount;
+
         return gtFoldExpr(gtNewBinaryNode(rotateOper, baseType, op1, op2));
     }
 
@@ -20758,12 +21337,14 @@ public partial class Compiler
             case NI_System_Math_Truncate:
             {
                 assert((intrinsicName > NI_SYSTEM_MATH_START) && (intrinsicName < NI_SYSTEM_MATH_END));
+
                 return true;
             }
 
             default:
             {
                 assert((intrinsicName < NI_SYSTEM_MATH_START) || (intrinsicName > NI_SYSTEM_MATH_END));
+
                 return false;
             }
         }
@@ -20908,7 +21489,9 @@ public partial class Compiler
 #endif
 
             default:
+            {
                 return false;
+            }
         }
     }
 
@@ -20923,8 +21506,7 @@ public partial class Compiler
 
         if (isNullPointer(namespaceNamePointer) || isNullPointer(classNamePointer) || isNullPointer(methodNamePointer))
         {
-            return info.compCompHnd->getArrayIntrinsicID(method) switch
-            {
+            return info.compCompHnd->getArrayIntrinsicID(method) switch {
                 CorInfoArrayIntrinsic.GET => NI_Array_Get,
                 CorInfoArrayIntrinsic.SET => NI_Array_Set,
                 CorInfoArrayIntrinsic.ADDRESS => NI_Array_Address,
@@ -21248,265 +21830,267 @@ public partial class Compiler
                 }
                 else
 #endif
-                if (NameEquals(namespaceName, "Collections.Generic"u8))
-                {
-                    if (NameEquals(className, "Comparer`1"u8) && NameEquals(methodName, "get_Default"u8))
+                    if (NameEquals(namespaceName, "Collections.Generic"u8))
                     {
-                        result = NI_System_Collections_Generic_Comparer_get_Default;
-                    }
-                    else if (NameEquals(className, "EqualityComparer`1"u8) && NameEquals(methodName, "get_Default"u8))
-                    {
-                        result = NI_System_Collections_Generic_EqualityComparer_get_Default;
-                    }
-                    else if (NameEquals(className, "IEnumerable`1"u8) && NameEquals(methodName, "GetEnumerator"u8))
-                    {
-                        result = NI_System_Collections_Generic_IEnumerable_GetEnumerator;
-                    }
-                }
-                else if (NameEquals(namespaceName, "Numerics"u8))
-                {
-                    if (NameEquals(className, "BitOperations"u8))
-                    {
-                        result = lookupPrimitiveIntNamedIntrinsic(methodName);
-                    }
-                    else
-                    {
-#if FEATURE_HW_INTRINSICS
-                        var isVectorT = NameEquals(className, "Vector`1"u8);
-                        var isVector = NameEquals(className, "Vector"u8);
-
-                        if (isVectorT || isVector)
+                        if (NameEquals(className, "Comparer`1"u8) && NameEquals(methodName, "get_Default"u8))
                         {
-                            var lookupMethodName = methodName;
-
-                            var vectorInterfacePrefixUtf8 = "System.Runtime.Intrinsics.ISimdVector<System.Numerics.Vector"u8;
-
-                            if (NameStartsWith(methodName, vectorInterfacePrefixUtf8))
-                            {
-                                var interfaceSuffix = methodName[vectorInterfacePrefixUtf8.Length..];
-                                if (NameStartsWith(interfaceSuffix, "<T>,T>."u8))
-                                {
-                                    lookupMethodName = interfaceSuffix[7..];
-                                }
-                            }
-
-                            if (NameStartsWith(lookupMethodName, "As"u8) && (lookupMethodName.Length > 2))
-                            {
-                                var vectorConversion = lookupMethodName[2..];
-                                var converted = false;
-
-                                if (NameStartsWith(vectorConversion, "Vector"u8))
-                                {
-                                    var conversionType = vectorConversion[6..];
-                                    if (NameEquals(conversionType, "Byte"u8))
-                                    {
-                                        lookupMethodName = "AsByte"u8;
-                                        converted = true;
-                                    }
-                                    else if (NameEquals(conversionType, "Double"u8))
-                                    {
-                                        lookupMethodName = "AsDouble"u8;
-                                        converted = true;
-                                    }
-                                    else if (NameEquals(conversionType, "Int16"u8))
-                                    {
-                                        lookupMethodName = "AsInt16"u8;
-                                        converted = true;
-                                    }
-                                    else if (NameEquals(conversionType, "Int32"u8))
-                                    {
-                                        lookupMethodName = "AsInt32"u8;
-                                        converted = true;
-                                    }
-                                    else if (NameEquals(conversionType, "Int64"u8))
-                                    {
-                                        lookupMethodName = "AsInt64"u8;
-                                        converted = true;
-                                    }
-                                    else if (NameEquals(conversionType, "NInt"u8))
-                                    {
-                                        lookupMethodName = "AsNInt"u8;
-                                        converted = true;
-                                    }
-                                    else if (NameEquals(conversionType, "NUInt"u8))
-                                    {
-                                        lookupMethodName = "AsNUInt"u8;
-                                        converted = true;
-                                    }
-                                    else if (NameEquals(conversionType, "SByte"u8))
-                                    {
-                                        lookupMethodName = "AsSByte"u8;
-                                        converted = true;
-                                    }
-                                    else if (NameEquals(conversionType, "Single"u8))
-                                    {
-                                        lookupMethodName = "AsSingle"u8;
-                                        converted = true;
-                                    }
-                                    else if (NameEquals(conversionType, "UInt16"u8))
-                                    {
-                                        lookupMethodName = "AsUInt16"u8;
-                                        converted = true;
-                                    }
-                                    else if (NameEquals(conversionType, "UInt32"u8))
-                                    {
-                                        lookupMethodName = "AsUInt32"u8;
-                                        converted = true;
-                                    }
-                                    else if (NameEquals(conversionType, "UInt64"u8))
-                                    {
-                                        lookupMethodName = "AsUInt64"u8;
-                                        converted = true;
-                                    }
-                                }
-
-                                if (!converted)
-                                {
-                                    lookupMethodName = default;
-                                }
-                            }
-                            else if (NameEquals(lookupMethodName, "SquareRoot"u8))
-                            {
-                                lookupMethodName = "Sqrt"u8;
-                            }
-
-                            if (!lookupMethodName.IsEmpty)
-                            {
-                                CORINFO_SIG_INFO sig;
-                                info.compCompHnd->getMethodSig(method, &sig);
-                                result = HWIntrinsicInfo.LookupId(&sig, InstructionSet_Vector, lookupMethodName);
-                            }
+                            result = NI_System_Collections_Generic_Comparer_get_Default;
                         }
+                        else if (NameEquals(className, "EqualityComparer`1"u8) && NameEquals(methodName, "get_Default"u8))
+                        {
+                            result = NI_System_Collections_Generic_EqualityComparer_get_Default;
+                        }
+                        else if (NameEquals(className, "IEnumerable`1"u8) && NameEquals(methodName, "GetEnumerator"u8))
+                        {
+                            result = NI_System_Collections_Generic_IEnumerable_GetEnumerator;
+                        }
+                    }
+                    else if (NameEquals(namespaceName, "Numerics"u8))
+                    {
+                        if (NameEquals(className, "BitOperations"u8))
+                        {
+                            result = lookupPrimitiveIntNamedIntrinsic(methodName);
+                        }
+                        else
+                        {
+#if FEATURE_HW_INTRINSICS
+                            var isVectorT = NameEquals(className, "Vector`1"u8);
+                            var isVector = NameEquals(className, "Vector"u8);
+
+                            if (isVectorT || isVector)
+                            {
+                                var lookupMethodName = methodName;
+
+                                var vectorInterfacePrefixUtf8 = "System.Runtime.Intrinsics.ISimdVector<System.Numerics.Vector"u8;
+
+                                if (NameStartsWith(methodName, vectorInterfacePrefixUtf8))
+                                {
+                                    var interfaceSuffix = methodName[vectorInterfacePrefixUtf8.Length..];
+
+                                    if (NameStartsWith(interfaceSuffix, "<T>,T>."u8))
+                                    {
+                                        lookupMethodName = interfaceSuffix[7..];
+                                    }
+                                }
+
+                                if (NameStartsWith(lookupMethodName, "As"u8) && (lookupMethodName.Length > 2))
+                                {
+                                    var vectorConversion = lookupMethodName[2..];
+                                    var converted = false;
+
+                                    if (NameStartsWith(vectorConversion, "Vector"u8))
+                                    {
+                                        var conversionType = vectorConversion[6..];
+
+                                        if (NameEquals(conversionType, "Byte"u8))
+                                        {
+                                            lookupMethodName = "AsByte"u8;
+                                            converted = true;
+                                        }
+                                        else if (NameEquals(conversionType, "Double"u8))
+                                        {
+                                            lookupMethodName = "AsDouble"u8;
+                                            converted = true;
+                                        }
+                                        else if (NameEquals(conversionType, "Int16"u8))
+                                        {
+                                            lookupMethodName = "AsInt16"u8;
+                                            converted = true;
+                                        }
+                                        else if (NameEquals(conversionType, "Int32"u8))
+                                        {
+                                            lookupMethodName = "AsInt32"u8;
+                                            converted = true;
+                                        }
+                                        else if (NameEquals(conversionType, "Int64"u8))
+                                        {
+                                            lookupMethodName = "AsInt64"u8;
+                                            converted = true;
+                                        }
+                                        else if (NameEquals(conversionType, "NInt"u8))
+                                        {
+                                            lookupMethodName = "AsNInt"u8;
+                                            converted = true;
+                                        }
+                                        else if (NameEquals(conversionType, "NUInt"u8))
+                                        {
+                                            lookupMethodName = "AsNUInt"u8;
+                                            converted = true;
+                                        }
+                                        else if (NameEquals(conversionType, "SByte"u8))
+                                        {
+                                            lookupMethodName = "AsSByte"u8;
+                                            converted = true;
+                                        }
+                                        else if (NameEquals(conversionType, "Single"u8))
+                                        {
+                                            lookupMethodName = "AsSingle"u8;
+                                            converted = true;
+                                        }
+                                        else if (NameEquals(conversionType, "UInt16"u8))
+                                        {
+                                            lookupMethodName = "AsUInt16"u8;
+                                            converted = true;
+                                        }
+                                        else if (NameEquals(conversionType, "UInt32"u8))
+                                        {
+                                            lookupMethodName = "AsUInt32"u8;
+                                            converted = true;
+                                        }
+                                        else if (NameEquals(conversionType, "UInt64"u8))
+                                        {
+                                            lookupMethodName = "AsUInt64"u8;
+                                            converted = true;
+                                        }
+                                    }
+
+                                    if (!converted)
+                                    {
+                                        lookupMethodName = default;
+                                    }
+                                }
+                                else if (NameEquals(lookupMethodName, "SquareRoot"u8))
+                                {
+                                    lookupMethodName = "Sqrt"u8;
+                                }
+
+                                if (!lookupMethodName.IsEmpty)
+                                {
+                                    CORINFO_SIG_INFO sig;
+                                    info.compCompHnd->getMethodSig(method, &sig);
+                                    result = HWIntrinsicInfo.LookupId(&sig, InstructionSet_Vector, lookupMethodName);
+                                }
+                            }
 #endif
 
-                        if (result is NI_Illegal)
-                        {
-                            if (NameEquals(methodName, "get_IsSupported"u8))
+                            if (result is NI_Illegal)
                             {
-                                assert(NameEquals(className, "Vector`1"u8));
-                                result = NI_IsSupported_Type;
-                            }
-                            else if (NameEquals(methodName, "get_IsHardwareAccelerated"u8))
-                            {
-                                result = NI_IsHardwareAccelerated;
-                            }
-                            else if (NameEquals(methodName, "get_Count"u8))
-                            {
-                                assert(NameEquals(className, "Vector`1"u8));
-                                result = NI_Vector_GetCount;
-                            }
-                            else
-                            {
-                                result = NI_System_Numerics_Intrinsic;
+                                if (NameEquals(methodName, "get_IsSupported"u8))
+                                {
+                                    assert(NameEquals(className, "Vector`1"u8));
+                                    result = NI_IsSupported_Type;
+                                }
+                                else if (NameEquals(methodName, "get_IsHardwareAccelerated"u8))
+                                {
+                                    result = NI_IsHardwareAccelerated;
+                                }
+                                else if (NameEquals(methodName, "get_Count"u8))
+                                {
+                                    assert(NameEquals(className, "Vector`1"u8));
+                                    result = NI_Vector_GetCount;
+                                }
+                                else
+                                {
+                                    result = NI_System_Numerics_Intrinsic;
+                                }
                             }
                         }
                     }
-                }
-                else if (NameStartsWith(namespaceName, "Runtime."u8))
-                {
-                    namespaceName = namespaceName[8..];
+                    else if (NameStartsWith(namespaceName, "Runtime."u8))
+                    {
+                        namespaceName = namespaceName[8..];
 
-                    if (NameEquals(namespaceName, "CompilerServices"u8))
-                    {
-                        if (NameEquals(className, "RuntimeHelpers"u8))
+                        if (NameEquals(namespaceName, "CompilerServices"u8))
                         {
-                            if (NameEquals(methodName, "CreateSpan"u8))
+                            if (NameEquals(className, "RuntimeHelpers"u8))
                             {
-                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan;
+                                if (NameEquals(methodName, "CreateSpan"u8))
+                                {
+                                    result = NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan;
+                                }
+                                else if (NameEquals(methodName, "InitializeArray"u8))
+                                {
+                                    result = NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray;
+                                }
+                                else if (NameEquals(methodName, "IsKnownConstant"u8))
+                                {
+                                    result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant;
+                                }
+                                else if (NameEquals(methodName, "IsRuntimeAsync"u8))
+                                {
+                                    result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync;
+                                }
+                                else if (NameEquals(methodName, "WriteBarrier"u8))
+                                {
+                                    result = NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier;
+                                }
+                                else if (NameEquals(methodName, "IsReferenceOrContainsReferences"u8))
+                                {
+                                    result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences;
+                                }
+                                else if (NameEquals(methodName, "GetMethodTable"u8))
+                                {
+                                    result = NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable;
+                                }
+                                else if (NameEquals(methodName, "SetNextCallGenericContext"u8))
+                                {
+                                    result = NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext;
+                                }
+                                else if (NameEquals(methodName, "SetNextCallAsyncContinuation"u8))
+                                {
+                                    result = NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation;
+                                }
                             }
-                            else if (NameEquals(methodName, "InitializeArray"u8))
+                            else if (NameEquals(className, "AsyncHelpers"u8))
                             {
-                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray;
+                                if (NameEquals(methodName, "AsyncSuspend"u8))
+                                {
+                                    result = NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend;
+                                }
+                                else if (NameEquals(methodName, "Await"u8))
+                                {
+                                    result = NI_System_Runtime_CompilerServices_AsyncHelpers_Await;
+                                }
+                                else if (NameEquals(methodName, "AsyncCallContinuation"u8))
+                                {
+                                    result = NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation;
+                                }
+                                else if (NameEquals(methodName, "TailAwait"u8))
+                                {
+                                    result = NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait;
+                                }
+                                else if (NameEquals(methodName, "AwaitAwaiter"u8))
+                                {
+                                    result = NI_System_Runtime_CompilerServices_AsyncHelpers_AwaitAwaiter;
+                                }
+                                else if (NameEquals(methodName, "UnsafeAwaitAwaiter"u8))
+                                {
+                                    result = NI_System_Runtime_CompilerServices_AsyncHelpers_UnsafeAwaitAwaiter;
+                                }
+                                else if (NameEquals(methodName, "Suspend"u8))
+                                {
+                                    result = NI_System_Runtime_CompilerServices_AsyncHelpers_Suspend;
+                                }
+                                else if (NameEquals(methodName, "TransparentSuspend"u8))
+                                {
+                                    result = NI_System_Runtime_CompilerServices_AsyncHelpers_TransparentSuspend;
+                                }
                             }
-                            else if (NameEquals(methodName, "IsKnownConstant"u8))
+                            else if (NameEquals(className, "StaticsHelpers"u8) && NameEquals(methodName, "VolatileReadAsByref"u8))
                             {
-                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant;
+                                result = NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref;
                             }
-                            else if (NameEquals(methodName, "IsRuntimeAsync"u8))
+                            else if (NameEquals(className, "Unsafe"u8))
                             {
-                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync;
-                            }
-                            else if (NameEquals(methodName, "WriteBarrier"u8))
-                            {
-                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier;
-                            }
-                            else if (NameEquals(methodName, "IsReferenceOrContainsReferences"u8))
-                            {
-                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences;
-                            }
-                            else if (NameEquals(methodName, "GetMethodTable"u8))
-                            {
-                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable;
-                            }
-                            else if (NameEquals(methodName, "SetNextCallGenericContext"u8))
-                            {
-                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext;
-                            }
-                            else if (NameEquals(methodName, "SetNextCallAsyncContinuation"u8))
-                            {
-                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation;
+                                result = lookupUnsafeNamedIntrinsic(methodName);
                             }
                         }
-                        else if (NameEquals(className, "AsyncHelpers"u8))
+                        else if (NameEquals(namespaceName, "InteropServices"u8))
                         {
-                            if (NameEquals(methodName, "AsyncSuspend"u8))
+                            if (NameEquals(className, "MemoryMarshal"u8) && NameEquals(methodName, "GetArrayDataReference"u8))
                             {
-                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend;
-                            }
-                            else if (NameEquals(methodName, "Await"u8))
-                            {
-                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_Await;
-                            }
-                            else if (NameEquals(methodName, "AsyncCallContinuation"u8))
-                            {
-                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation;
-                            }
-                            else if (NameEquals(methodName, "TailAwait"u8))
-                            {
-                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait;
-                            }
-                            else if (NameEquals(methodName, "AwaitAwaiter"u8))
-                            {
-                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_AwaitAwaiter;
-                            }
-                            else if (NameEquals(methodName, "UnsafeAwaitAwaiter"u8))
-                            {
-                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_UnsafeAwaitAwaiter;
-                            }
-                            else if (NameEquals(methodName, "Suspend"u8))
-                            {
-                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_Suspend;
-                            }
-                            else if (NameEquals(methodName, "TransparentSuspend"u8))
-                            {
-                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_TransparentSuspend;
+                                result = NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference;
                             }
                         }
-                        else if (NameEquals(className, "StaticsHelpers"u8) && NameEquals(methodName, "VolatileReadAsByref"u8))
+                        else if (NameStartsWith(namespaceName, "Intrinsics"u8))
                         {
-                            result = NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref;
-                        }
-                        else if (NameEquals(className, "Unsafe"u8))
-                        {
-                            result = lookupUnsafeNamedIntrinsic(methodName);
-                        }
-                    }
-                    else if (NameEquals(namespaceName, "InteropServices"u8))
-                    {
-                        if (NameEquals(className, "MemoryMarshal"u8) && NameEquals(methodName, "GetArrayDataReference"u8))
-                        {
-                            result = NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference;
-                        }
-                    }
-                    else if (NameStartsWith(namespaceName, "Intrinsics"u8))
-                    {
-                        namespaceName = namespaceName[10..];
-                        var isXplatIntrinsic = namespaceName.IsEmpty;
+                            namespaceName = namespaceName[10..];
+                            var isXplatIntrinsic = namespaceName.IsEmpty;
 
 #if FEATURE_HW_INTRINSICS
-                        ReadOnlySpan<byte> platformNamespaceName;
+                            ReadOnlySpan<byte> platformNamespaceName;
 #if TARGET_XARCH
-                        platformNamespaceName = ".X86"u8;
+                            platformNamespaceName = ".X86"u8;
 #elif TARGET_ARM64
                         platformNamespaceName = ".Arm"u8;
 #elif TARGET_WASM
@@ -21515,202 +22099,205 @@ public partial class Compiler
 #error Unsupported hardware intrinsic platform
 #endif
 
-                        var interfacePrefix = "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector"u8;
-                        if (NameStartsWith(methodName, interfacePrefix))
-                        {
-                            var suffix = methodName[interfacePrefix.Length..];
-                            if (NameStartsWith(suffix, "64<T>,T>."u8))
-                            {
-                                methodName = suffix[9..];
-                            }
-                            else if (NameStartsWith(suffix, "128<T>,T>."u8) || NameStartsWith(suffix, "256<T>,T>."u8) || NameStartsWith(suffix, "512<T>,T>."u8))
-                            {
-                                methodName = suffix[10..];
-                            }
-                        }
+                            var interfacePrefix = "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector"u8;
 
-                        if (isXplatIntrinsic || NameEquals(namespaceName, platformNamespaceName))
-                        {
-                            CORINFO_SIG_INFO sig;
-                            info.compCompHnd->getMethodSig(method, &sig);
-                            var outerEnclosingClassName = enclosingClassNamePointers[1] is not null
-                                ? MemoryMarshal.CreateReadOnlySpanFromNullTerminated(enclosingClassNamePointers[1])
-                                : default;
-                            var isa = lookupIsa(className, enclosingClassName, outerEnclosingClassName);
-                            if (isa is not InstructionSet_ILLEGAL)
+                            if (NameStartsWith(methodName, interfacePrefix))
                             {
-                                result = HWIntrinsicInfo.LookupId(&sig, isa, methodName);
+                                var suffix = methodName[interfacePrefix.Length..];
+
+                                if (NameStartsWith(suffix, "64<T>,T>."u8))
+                                {
+                                    methodName = suffix[9..];
+                                }
+                                else if (NameStartsWith(suffix, "128<T>,T>."u8) || NameStartsWith(suffix, "256<T>,T>."u8) || NameStartsWith(suffix, "512<T>,T>."u8))
+                                {
+                                    methodName = suffix[10..];
+                                }
                             }
-                        }
+
+                            if (isXplatIntrinsic || NameEquals(namespaceName, platformNamespaceName))
+                            {
+                                CORINFO_SIG_INFO sig;
+                                info.compCompHnd->getMethodSig(method, &sig);
+                                var outerEnclosingClassName = enclosingClassNamePointers[1] is not null
+                                    ? MemoryMarshal.CreateReadOnlySpanFromNullTerminated(enclosingClassNamePointers[1])
+                                    : default;
+                                var isa = lookupIsa(className, enclosingClassName, outerEnclosingClassName);
+
+                                if (isa is not InstructionSet_ILLEGAL)
+                                {
+                                    result = HWIntrinsicInfo.LookupId(&sig, isa, methodName);
+                                }
+                            }
 #endif
 
-                        if (result is NI_Illegal)
-                        {
-                            if (NameEquals(methodName, "get_IsSupported"u8))
+                            if (result is NI_Illegal)
                             {
-                                if (NameStartsWith(className, "Vector"u8))
+                                if (NameEquals(methodName, "get_IsSupported"u8))
+                                {
+                                    if (NameStartsWith(className, "Vector"u8))
+                                    {
+                                        assert(NameEquals(className, "Vector64`1"u8) || NameEquals(className, "Vector128`1"u8) ||
+                                               NameEquals(className, "Vector256`1"u8) || NameEquals(className, "Vector512`1"u8));
+                                        result = NI_IsSupported_Type;
+                                    }
+                                    else
+                                    {
+                                        result = NI_IsSupported;
+                                    }
+                                }
+                                else if (NameEquals(methodName, "get_IsHardwareAccelerated"u8))
+                                {
+                                    result = NI_IsHardwareAccelerated;
+                                }
+                                else if (NameEquals(methodName, "get_Count"u8))
                                 {
                                     assert(NameEquals(className, "Vector64`1"u8) || NameEquals(className, "Vector128`1"u8) ||
                                            NameEquals(className, "Vector256`1"u8) || NameEquals(className, "Vector512`1"u8));
-                                    result = NI_IsSupported_Type;
+                                    result = NI_Vector_GetCount;
+                                }
+                                else if (!isXplatIntrinsic)
+                                {
+                                    result = NI_System_Runtime_Intrinsics_PlatformIntrinsic;
                                 }
                                 else
                                 {
-                                    result = NI_IsSupported;
+                                    result = NI_System_Runtime_Intrinsics_Intrinsic;
                                 }
                             }
-                            else if (NameEquals(methodName, "get_IsHardwareAccelerated"u8))
+                        }
+                    }
+                    else if (NameEquals(namespaceName, "StubHelpers"u8) && NameEquals(className, "StubHelpers"u8))
+                    {
+                        if (NameEquals(methodName, "GetStubContext"u8))
+                        {
+                            result = NI_System_StubHelpers_GetStubContext;
+                        }
+                        else if (NameEquals(methodName, "NextCallReturnAddress"u8))
+                        {
+                            result = NI_System_StubHelpers_NextCallReturnAddress;
+                        }
+                    }
+                    else if (NameEquals(namespaceName, "Text"u8) && NameEquals(className, "UTF8EncodingSealed"u8) &&
+                             NameEquals(methodName, "ReadUtf8"u8))
+                    {
+                        assert(NameEquals(enclosingClassName, "UTF8Encoding"u8));
+                        result = NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8;
+                    }
+                    else if (NameEquals(namespaceName, "Threading"u8))
+                    {
+                        if (NameEquals(className, "Interlocked"u8))
+                        {
+                            if (NameEquals(methodName, "And"u8))
                             {
-                                result = NI_IsHardwareAccelerated;
+                                result = NI_System_Threading_Interlocked_And;
                             }
-                            else if (NameEquals(methodName, "get_Count"u8))
+                            else if (NameEquals(methodName, "Or"u8))
                             {
-                                assert(NameEquals(className, "Vector64`1"u8) || NameEquals(className, "Vector128`1"u8) ||
-                                       NameEquals(className, "Vector256`1"u8) || NameEquals(className, "Vector512`1"u8));
-                                result = NI_Vector_GetCount;
+                                result = NI_System_Threading_Interlocked_Or;
                             }
-                            else if (!isXplatIntrinsic)
+                            else if (NameEquals(methodName, "CompareExchange"u8))
                             {
-                                result = NI_System_Runtime_Intrinsics_PlatformIntrinsic;
+                                result = NI_System_Threading_Interlocked_CompareExchange;
                             }
-                            else
+                            else if (NameEquals(methodName, "Exchange"u8))
                             {
-                                result = NI_System_Runtime_Intrinsics_Intrinsic;
+                                result = NI_System_Threading_Interlocked_Exchange;
+                            }
+                            else if (NameEquals(methodName, "ExchangeAdd"u8))
+                            {
+                                result = NI_System_Threading_Interlocked_ExchangeAdd;
+                            }
+                            else if (NameEquals(methodName, "MemoryBarrier"u8))
+                            {
+                                result = NI_System_Threading_Interlocked_MemoryBarrier;
+                            }
+                        }
+                        else if (NameEquals(className, "Thread"u8))
+                        {
+                            if (NameEquals(methodName, "get_CurrentThread"u8))
+                            {
+                                result = NI_System_Threading_Thread_get_CurrentThread;
+                            }
+                            else if (NameEquals(methodName, "get_ManagedThreadId"u8))
+                            {
+                                result = NI_System_Threading_Thread_get_ManagedThreadId;
+                            }
+                            else if (NameEquals(methodName, "FastPollGC"u8))
+                            {
+                                result = NI_System_Threading_Thread_FastPollGC;
+                            }
+                        }
+                        else if (NameEquals(className, "Volatile"u8))
+                        {
+                            if (NameEquals(methodName, "Read"u8))
+                            {
+                                result = NI_System_Threading_Volatile_Read;
+                            }
+                            else if (NameEquals(methodName, "Write"u8))
+                            {
+                                result = NI_System_Threading_Volatile_Write;
+                            }
+                            else if (NameEquals(methodName, "ReadBarrier"u8))
+                            {
+                                result = NI_System_Threading_Volatile_ReadBarrier;
+                            }
+                            else if (NameEquals(methodName, "WriteBarrier"u8))
+                            {
+                                result = NI_System_Threading_Volatile_WriteBarrier;
                             }
                         }
                     }
-                }
-                else if (NameEquals(namespaceName, "StubHelpers"u8) && NameEquals(className, "StubHelpers"u8))
-                {
-                    if (NameEquals(methodName, "GetStubContext"u8))
+                    else if (NameEquals(namespaceName, "Threading.Tasks"u8))
                     {
-                        result = NI_System_StubHelpers_GetStubContext;
-                    }
-                    else if (NameEquals(methodName, "NextCallReturnAddress"u8))
-                    {
-                        result = NI_System_StubHelpers_NextCallReturnAddress;
-                    }
-                }
-                else if (NameEquals(namespaceName, "Text"u8) && NameEquals(className, "UTF8EncodingSealed"u8) &&
-                         NameEquals(methodName, "ReadUtf8"u8))
-                {
-                    assert(NameEquals(enclosingClassName, "UTF8Encoding"u8));
-                    result = NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8;
-                }
-                else if (NameEquals(namespaceName, "Threading"u8))
-                {
-                    if (NameEquals(className, "Interlocked"u8))
-                    {
-                        if (NameEquals(methodName, "And"u8))
+                        if (NameEquals(methodName, "ConfigureAwait"u8) &&
+                            (NameEquals(className, "Task`1"u8) || NameEquals(className, "Task"u8) ||
+                             NameEquals(className, "ValueTask`1"u8) || NameEquals(className, "ValueTask"u8)))
                         {
-                            result = NI_System_Threading_Interlocked_And;
+                            result = NI_System_Threading_Tasks_Task_ConfigureAwait;
                         }
-                        else if (NameEquals(methodName, "Or"u8))
+                        else if (NameEquals(className, "Task"u8))
                         {
-                            result = NI_System_Threading_Interlocked_Or;
+                            if (NameEquals(methodName, "FromResult"u8))
+                            {
+                                result = NI_System_Threading_Tasks_Task_FromResult;
+                            }
+                            else if (NameEquals(methodName, "get_CompletedTask"u8))
+                            {
+                                result = NI_System_Threading_Tasks_Task_get_CompletedTask;
+                            }
                         }
-                        else if (NameEquals(methodName, "CompareExchange"u8))
+                        else if (NameEquals(className, "ValueTask"u8))
                         {
-                            result = NI_System_Threading_Interlocked_CompareExchange;
+                            if (NameEquals(methodName, "FromResult"u8))
+                            {
+                                result = NI_System_Threading_Tasks_ValueTask_FromResult;
+                            }
+                            else if (NameEquals(methodName, "get_CompletedTask"u8))
+                            {
+                                result = NI_System_Threading_Tasks_ValueTask_get_CompletedTask;
+                            }
+                            else if (NameEquals(methodName, ".ctor"u8))
+                            {
+                                result = NI_System_Threading_Tasks_ValueTask__ctor;
+                            }
+                            else if (NameEquals(methodName, "AsTask"u8))
+                            {
+                                result = NI_System_Threading_Tasks_ValueTask_AsTask;
+                            }
                         }
-                        else if (NameEquals(methodName, "Exchange"u8))
+                        else if (NameEquals(className, "ValueTask`1"u8))
                         {
-                            result = NI_System_Threading_Interlocked_Exchange;
-                        }
-                        else if (NameEquals(methodName, "ExchangeAdd"u8))
-                        {
-                            result = NI_System_Threading_Interlocked_ExchangeAdd;
-                        }
-                        else if (NameEquals(methodName, "MemoryBarrier"u8))
-                        {
-                            result = NI_System_Threading_Interlocked_MemoryBarrier;
-                        }
-                    }
-                    else if (NameEquals(className, "Thread"u8))
-                    {
-                        if (NameEquals(methodName, "get_CurrentThread"u8))
-                        {
-                            result = NI_System_Threading_Thread_get_CurrentThread;
-                        }
-                        else if (NameEquals(methodName, "get_ManagedThreadId"u8))
-                        {
-                            result = NI_System_Threading_Thread_get_ManagedThreadId;
-                        }
-                        else if (NameEquals(methodName, "FastPollGC"u8))
-                        {
-                            result = NI_System_Threading_Thread_FastPollGC;
+                            if (NameEquals(methodName, ".ctor"u8))
+                            {
+                                result = NI_System_Threading_Tasks_ValueTask_1__ctor;
+                            }
+                            else if (NameEquals(methodName, "AsTask"u8))
+                            {
+                                result = NI_System_Threading_Tasks_ValueTask_1_AsTask;
+                            }
                         }
                     }
-                    else if (NameEquals(className, "Volatile"u8))
-                    {
-                        if (NameEquals(methodName, "Read"u8))
-                        {
-                            result = NI_System_Threading_Volatile_Read;
-                        }
-                        else if (NameEquals(methodName, "Write"u8))
-                        {
-                            result = NI_System_Threading_Volatile_Write;
-                        }
-                        else if (NameEquals(methodName, "ReadBarrier"u8))
-                        {
-                            result = NI_System_Threading_Volatile_ReadBarrier;
-                        }
-                        else if (NameEquals(methodName, "WriteBarrier"u8))
-                        {
-                            result = NI_System_Threading_Volatile_WriteBarrier;
-                        }
-                    }
-                }
-                else if (NameEquals(namespaceName, "Threading.Tasks"u8))
-                {
-                    if (NameEquals(methodName, "ConfigureAwait"u8) &&
-                        (NameEquals(className, "Task`1"u8) || NameEquals(className, "Task"u8) ||
-                         NameEquals(className, "ValueTask`1"u8) || NameEquals(className, "ValueTask"u8)))
-                    {
-                        result = NI_System_Threading_Tasks_Task_ConfigureAwait;
-                    }
-                    else if (NameEquals(className, "Task"u8))
-                    {
-                        if (NameEquals(methodName, "FromResult"u8))
-                        {
-                            result = NI_System_Threading_Tasks_Task_FromResult;
-                        }
-                        else if (NameEquals(methodName, "get_CompletedTask"u8))
-                        {
-                            result = NI_System_Threading_Tasks_Task_get_CompletedTask;
-                        }
-                    }
-                    else if (NameEquals(className, "ValueTask"u8))
-                    {
-                        if (NameEquals(methodName, "FromResult"u8))
-                        {
-                            result = NI_System_Threading_Tasks_ValueTask_FromResult;
-                        }
-                        else if (NameEquals(methodName, "get_CompletedTask"u8))
-                        {
-                            result = NI_System_Threading_Tasks_ValueTask_get_CompletedTask;
-                        }
-                        else if (NameEquals(methodName, ".ctor"u8))
-                        {
-                            result = NI_System_Threading_Tasks_ValueTask__ctor;
-                        }
-                        else if (NameEquals(methodName, "AsTask"u8))
-                        {
-                            result = NI_System_Threading_Tasks_ValueTask_AsTask;
-                        }
-                    }
-                    else if (NameEquals(className, "ValueTask`1"u8))
-                    {
-                        if (NameEquals(methodName, ".ctor"u8))
-                        {
-                            result = NI_System_Threading_Tasks_ValueTask_1__ctor;
-                        }
-                        else if (NameEquals(methodName, "AsTask"u8))
-                        {
-                            result = NI_System_Threading_Tasks_ValueTask_1_AsTask;
-                        }
-                    }
-                }
             }
         }
         else if (NameEquals(namespaceName, "Internal.Runtime"u8) && NameEquals(className, "MethodTable"u8) &&
@@ -21721,6 +22308,7 @@ public partial class Compiler
 
         assert((result is not NI_IsSupported_True) && (result is not NI_IsSupported_False) &&
                (result is not NI_IsSupported_Dynamic) && (result is not NI_Throw_PlatformNotSupportedException));
+
         return result;
     }
 
@@ -21736,114 +22324,142 @@ public partial class Compiler
         {
             return NI_SRCS_UNSAFE_Add;
         }
+
         if (NameEquals(methodName, "AddByteOffset"u8))
         {
             return NI_SRCS_UNSAFE_AddByteOffset;
         }
+
         if (NameEquals(methodName, "AreSame"u8))
         {
             return NI_SRCS_UNSAFE_AreSame;
         }
+
         if (NameEquals(methodName, "As"u8))
         {
             return NI_SRCS_UNSAFE_As;
         }
+
         if (NameEquals(methodName, "AsPointer"u8))
         {
             return NI_SRCS_UNSAFE_AsPointer;
         }
+
         if (NameEquals(methodName, "AsRef"u8))
         {
             return NI_SRCS_UNSAFE_AsRef;
         }
+
         if (NameEquals(methodName, "BitCast"u8))
         {
             return NI_SRCS_UNSAFE_BitCast;
         }
+
         if (NameEquals(methodName, "ByteOffset"u8))
         {
             return NI_SRCS_UNSAFE_ByteOffset;
         }
+
         if (NameEquals(methodName, "Copy"u8))
         {
             return NI_SRCS_UNSAFE_Copy;
         }
+
         if (NameEquals(methodName, "CopyBlock"u8))
         {
             return NI_SRCS_UNSAFE_CopyBlock;
         }
+
         if (NameEquals(methodName, "CopyBlockUnaligned"u8))
         {
             return NI_SRCS_UNSAFE_CopyBlockUnaligned;
         }
+
         if (NameEquals(methodName, "InitBlock"u8))
         {
             return NI_SRCS_UNSAFE_InitBlock;
         }
+
         if (NameEquals(methodName, "InitBlockUnaligned"u8))
         {
             return NI_SRCS_UNSAFE_InitBlockUnaligned;
         }
+
         if (NameEquals(methodName, "IsAddressGreaterThan"u8))
         {
             return NI_SRCS_UNSAFE_IsAddressGreaterThan;
         }
+
         if (NameEquals(methodName, "IsAddressGreaterThanOrEqualTo"u8))
         {
             return NI_SRCS_UNSAFE_IsAddressGreaterThanOrEqualTo;
         }
+
         if (NameEquals(methodName, "IsAddressLessThan"u8))
         {
             return NI_SRCS_UNSAFE_IsAddressLessThan;
         }
+
         if (NameEquals(methodName, "IsAddressLessThanOrEqualTo"u8))
         {
             return NI_SRCS_UNSAFE_IsAddressLessThanOrEqualTo;
         }
+
         if (NameEquals(methodName, "IsNullRef"u8))
         {
             return NI_SRCS_UNSAFE_IsNullRef;
         }
+
         if (NameEquals(methodName, "NullRef"u8))
         {
             return NI_SRCS_UNSAFE_NullRef;
         }
+
         if (NameEquals(methodName, "Read"u8))
         {
             return NI_SRCS_UNSAFE_Read;
         }
+
         if (NameEquals(methodName, "ReadUnaligned"u8))
         {
             return NI_SRCS_UNSAFE_ReadUnaligned;
         }
+
         if (NameEquals(methodName, "SizeOf"u8))
         {
             return NI_SRCS_UNSAFE_SizeOf;
         }
+
         if (NameEquals(methodName, "SkipInit"u8))
         {
             return NI_SRCS_UNSAFE_SkipInit;
         }
+
         if (NameEquals(methodName, "Subtract"u8))
         {
             return NI_SRCS_UNSAFE_Subtract;
         }
+
         if (NameEquals(methodName, "SubtractByteOffset"u8))
         {
             return NI_SRCS_UNSAFE_SubtractByteOffset;
         }
+
         if (NameEquals(methodName, "Unbox"u8))
         {
             return NI_SRCS_UNSAFE_Unbox;
         }
+
         if (NameEquals(methodName, "Write"u8))
         {
             return NI_SRCS_UNSAFE_Write;
         }
+
         if (NameEquals(methodName, "WriteUnaligned"u8))
         {
             return NI_SRCS_UNSAFE_WriteUnaligned;
         }
+
         return NI_Illegal;
     }
 
@@ -21909,21 +22525,26 @@ public partial class Compiler
             {
                 return (int)FloatRoundingMode.ToNearestInteger;
             }
+
             case NI_System_Half_Ceiling:
             {
                 return (int)FloatRoundingMode.ToPositiveInfinity;
             }
+
             case NI_System_Half_Floor:
             {
                 return (int)FloatRoundingMode.ToNegativeInfinity;
             }
+
             case NI_System_Half_Truncate:
             {
                 return (int)FloatRoundingMode.ToZero;
             }
+
             default:
             {
                 noway_assert(false);
+
                 return -1;
             }
         }
@@ -21936,174 +22557,217 @@ public partial class Compiler
         {
             return NI_System_Math_Abs;
         }
+
         if (NameEquals(methodName, "Acos"u8))
         {
             return NI_System_Math_Acos;
         }
+
         if (NameEquals(methodName, "Acosh"u8))
         {
             return NI_System_Math_Acosh;
         }
+
         if (NameEquals(methodName, "Asin"u8))
         {
             return NI_System_Math_Asin;
         }
+
         if (NameEquals(methodName, "Asinh"u8))
         {
             return NI_System_Math_Asinh;
         }
+
         if (NameEquals(methodName, "Atan"u8))
         {
             return NI_System_Math_Atan;
         }
+
         if (NameEquals(methodName, "Atanh"u8))
         {
             return NI_System_Math_Atanh;
         }
+
         if (NameEquals(methodName, "Atan2"u8))
         {
             return NI_System_Math_Atan2;
         }
+
         if (NameEquals(methodName, "Cbrt"u8))
         {
             return NI_System_Math_Cbrt;
         }
+
         if (NameEquals(methodName, "Ceiling"u8))
         {
             return NI_System_Math_Ceiling;
         }
+
         if (NameEquals(methodName, "ConvertToInteger"u8))
         {
             return NI_PRIMITIVE_ConvertToInteger;
         }
+
         if (NameEquals(methodName, "ConvertToIntegerNative"u8))
         {
             return NI_PRIMITIVE_ConvertToIntegerNative;
         }
+
         if (NameEquals(methodName, "Cos"u8))
         {
             return NI_System_Math_Cos;
         }
+
         if (NameEquals(methodName, "Cosh"u8))
         {
             return NI_System_Math_Cosh;
         }
+
         if (NameEquals(methodName, "Exp"u8))
         {
             return NI_System_Math_Exp;
         }
+
         if (NameEquals(methodName, "Floor"u8))
         {
             return NI_System_Math_Floor;
         }
+
         if (NameEquals(methodName, "FusedMultiplyAdd"u8))
         {
             return NI_System_Math_FusedMultiplyAdd;
         }
+
         if (NameEquals(methodName, "ILogB"u8))
         {
             return NI_System_Math_ILogB;
         }
+
         if (NameEquals(methodName, "Log"u8))
         {
             return NI_System_Math_Log;
         }
+
         if (NameEquals(methodName, "Log2"u8))
         {
             return NI_System_Math_Log2;
         }
+
         if (NameEquals(methodName, "Log10"u8))
         {
             return NI_System_Math_Log10;
         }
+
         if (NameEquals(methodName, "Max"u8))
         {
             return NI_System_Math_Max;
         }
+
         if (NameEquals(methodName, "MaxMagnitude"u8))
         {
             return NI_System_Math_MaxMagnitude;
         }
+
         if (NameEquals(methodName, "MaxMagnitudeNumber"u8))
         {
             return NI_System_Math_MaxMagnitudeNumber;
         }
+
         if (NameEquals(methodName, "MaxNative"u8))
         {
             return NI_System_Math_MaxNative;
         }
+
         if (NameEquals(methodName, "MaxNumber"u8))
         {
             return NI_System_Math_MaxNumber;
         }
+
         if (NameEquals(methodName, "Min"u8))
         {
             return NI_System_Math_Min;
         }
+
         if (NameEquals(methodName, "MinMagnitude"u8))
         {
             return NI_System_Math_MinMagnitude;
         }
+
         if (NameEquals(methodName, "MinMagnitudeNumber"u8))
         {
             return NI_System_Math_MinMagnitudeNumber;
         }
+
         if (NameEquals(methodName, "MinNative"u8))
         {
             return NI_System_Math_MinNative;
         }
+
         if (NameEquals(methodName, "MinNumber"u8))
         {
             return NI_System_Math_MinNumber;
         }
+
         if (NameEquals(methodName, "MultiplyAddEstimate"u8))
         {
             return NI_System_Math_MultiplyAddEstimate;
         }
+
         if (NameEquals(methodName, "Pow"u8))
         {
             return NI_System_Math_Pow;
         }
+
         if (NameEquals(methodName, "ReciprocalEstimate"u8))
         {
             return NI_System_Math_ReciprocalEstimate;
         }
+
         if (NameEquals(methodName, "ReciprocalSqrtEstimate"u8))
         {
             return NI_System_Math_ReciprocalSqrtEstimate;
         }
+
         if (NameEquals(methodName, "Round"u8))
         {
             return NI_System_Math_Round;
         }
+
         if (NameEquals(methodName, "Sin"u8))
         {
             return NI_System_Math_Sin;
         }
+
         if (NameEquals(methodName, "Sinh"u8))
         {
             return NI_System_Math_Sinh;
         }
+
         if (NameEquals(methodName, "Sqrt"u8))
         {
             return NI_System_Math_Sqrt;
         }
+
         if (NameEquals(methodName, "Tan"u8))
         {
             return NI_System_Math_Tan;
         }
+
         if (NameEquals(methodName, "Tanh"u8))
         {
             return NI_System_Math_Tanh;
         }
+
         if (NameEquals(methodName, "Truncate"u8))
         {
             return NI_System_Math_Truncate;
         }
+
         if (NameEquals(methodName, "op_Explicit"u8))
         {
             return NI_System_Half_op_Explicit;
         }
+
         return NI_Illegal;
     }
 
@@ -22113,118 +22777,147 @@ public partial class Compiler
         {
             return NI_System_Half_op_Addition;
         }
+
         if (NameEquals(methodName, "op_Subtraction"u8))
         {
             return NI_System_Half_op_Subtraction;
         }
+
         if (NameEquals(methodName, "op_Multiply"u8))
         {
             return NI_System_Half_op_Multiply;
         }
+
         if (NameEquals(methodName, "op_Division"u8))
         {
             return NI_System_Half_op_Division;
         }
+
         if (NameEquals(methodName, "op_Equality"u8))
         {
             return NI_System_Half_op_Equality;
         }
+
         if (NameEquals(methodName, "op_Inequality"u8))
         {
             return NI_System_Half_op_Inequality;
         }
+
         if (NameEquals(methodName, "op_GreaterThan"u8))
         {
             return NI_System_Half_op_GreaterThan;
         }
+
         if (NameEquals(methodName, "op_GreaterThanOrEqual"u8))
         {
             return NI_System_Half_op_GreaterThanOrEqual;
         }
+
         if (NameEquals(methodName, "op_LessThan"u8))
         {
             return NI_System_Half_op_LessThan;
         }
+
         if (NameEquals(methodName, "op_LessThanOrEqual"u8))
         {
             return NI_System_Half_op_LessThanOrEqual;
         }
+
         if (NameEquals(methodName, "op_Explicit"u8))
         {
             return NI_System_Half_op_Explicit;
         }
+
         if (NameEquals(methodName, "Sqrt"u8))
         {
             return NI_System_Half_Sqrt;
         }
+
         if (NameEquals(methodName, "ReciprocalEstimate"u8))
         {
             return NI_System_Half_ReciprocalEstimate;
         }
+
         if (NameEquals(methodName, "ReciprocalSqrtEstimate"u8))
         {
             return NI_System_Half_ReciprocalSqrtEstimate;
         }
+
         if (NameEquals(methodName, "FusedMultiplyAdd"u8))
         {
             return NI_System_Half_FusedMultiplyAdd;
         }
+
         if (NameEquals(methodName, "Round"u8))
         {
             return NI_System_Half_Round;
         }
+
         if (NameEquals(methodName, "Ceiling"u8))
         {
             return NI_System_Half_Ceiling;
         }
+
         if (NameEquals(methodName, "Floor"u8))
         {
             return NI_System_Half_Floor;
         }
+
         if (NameEquals(methodName, "Truncate"u8))
         {
             return NI_System_Half_Truncate;
         }
+
         if (NameEquals(methodName, "op_Increment"u8))
         {
             return NI_System_Half_op_Increment;
         }
+
         if (NameEquals(methodName, "op_Decrement"u8))
         {
             return NI_System_Half_op_Decrement;
         }
+
         if (NameEquals(methodName, "get_MinValue"u8))
         {
             return NI_System_Half_get_MinValue;
         }
+
         if (NameEquals(methodName, "get_MaxValue"u8))
         {
             return NI_System_Half_get_MaxValue;
         }
+
         if (NameEquals(methodName, "get_Epsilon"u8))
         {
             return NI_System_Half_get_Epsilon;
         }
+
         if (NameEquals(methodName, "get_NaN"u8))
         {
             return NI_System_Half_get_NaN;
         }
+
         if (NameEquals(methodName, "get_PositiveInfinity"u8))
         {
             return NI_System_Half_get_PositiveInfinity;
         }
+
         if (NameEquals(methodName, "get_NegativeInfinity"u8))
         {
             return NI_System_Half_get_NegativeInfinity;
         }
+
         if (NameEquals(methodName, "get_One"u8))
         {
             return NI_System_Half_get_One;
         }
+
         if (NameEquals(methodName, "get_Zero"u8))
         {
             return NI_System_Half_get_Zero;
         }
+
         return NI_Illegal;
     }
 
@@ -22234,30 +22927,37 @@ public partial class Compiler
         {
             return NI_PRIMITIVE_Crc32C;
         }
+
         if (NameEquals(methodName, "LeadingZeroCount"u8))
         {
             return NI_PRIMITIVE_LeadingZeroCount;
         }
+
         if (NameEquals(methodName, "Log2"u8))
         {
             return NI_PRIMITIVE_Log2;
         }
+
         if (NameEquals(methodName, "PopCount"u8))
         {
             return NI_PRIMITIVE_PopCount;
         }
+
         if (NameEquals(methodName, "RotateLeft"u8))
         {
             return NI_PRIMITIVE_RotateLeft;
         }
+
         if (NameEquals(methodName, "RotateRight"u8))
         {
             return NI_PRIMITIVE_RotateRight;
         }
+
         if (NameEquals(methodName, "TrailingZeroCount"u8))
         {
             return NI_PRIMITIVE_TrailingZeroCount;
         }
+
         return NI_Illegal;
     }
 
@@ -22390,6 +23090,7 @@ public partial class Compiler
                 else if (isSupportedProperty)
                 {
                     assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+
                     return NI_IsSupported_Dynamic;
                 }
             }
@@ -22443,6 +23144,7 @@ public partial class Compiler
     private bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa)
     {
         _ = compExactlyDependsOn(isa);
+
         return opts.compSupportsISA.HasInstructionSet(isa);
     }
 
@@ -22463,24 +23165,29 @@ public partial class Compiler
             {
                 return InstructionSet_Vector128;
             }
+
 #if TARGET_XARCH
             case 32:
             {
                 return InstructionSet_Vector256;
             }
+
             case 64:
             {
                 return InstructionSet_Vector512;
             }
+
 #elif TARGET_ARM64
             case SIZE_UNKNOWN:
             {
                 return InstructionSet_VectorT;
             }
+
 #endif
             default:
             {
                 unreached();
+
                 return InstructionSet_ILLEGAL;
             }
         }
@@ -22634,70 +23341,87 @@ public partial class Compiler
         {
             return InstructionSet_AdvSimd;
         }
+
         if (NameEquals(className, "Aes"u8))
         {
             return InstructionSet_Aes;
         }
+
         if (NameEquals(className, "ArmBase"u8))
         {
             return InstructionSet_ArmBase;
         }
+
         if (NameEquals(className, "Crc32"u8))
         {
             return InstructionSet_Crc32;
         }
+
         if (NameEquals(className, "Dp"u8))
         {
             return InstructionSet_Dp;
         }
+
         if (NameEquals(className, "Rdm"u8))
         {
             return InstructionSet_Rdm;
         }
+
         if (NameEquals(className, "Sha1"u8))
         {
             return InstructionSet_Sha1;
         }
+
         if (NameEquals(className, "Sha256"u8))
         {
             return InstructionSet_Sha256;
         }
+
         if (NameEquals(className, "Sve2"u8))
         {
             return InstructionSet_Sve2;
         }
+
         if (NameEquals(className, "Sve"u8))
         {
             return InstructionSet_Sve;
         }
+
         if (NameEquals(className, "Sha3"u8))
         {
             return InstructionSet_Sha3;
         }
+
         if (NameEquals(className, "Sm4"u8))
         {
             return InstructionSet_Sm4;
         }
+
         if (NameEquals(className, "SveAes"u8))
         {
             return InstructionSet_SveAes;
         }
+
         if (NameEquals(className, "SveSha3"u8))
         {
             return InstructionSet_SveSha3;
         }
+
         if (NameEquals(className, "SveSm4"u8))
         {
             return InstructionSet_SveSm4;
         }
+
         if (NameEquals(className, "Vector"u8) || NameEquals(className, "Vector`1"u8))
         {
             return InstructionSet_VectorT;
         }
+
         if (NameEquals(className, "Vector64"u8) || NameEquals(className, "Vector64`1"u8))
         {
             return InstructionSet_Vector64;
         }
+
         if (NameEquals(className, "Vector128"u8) || NameEquals(className, "Vector128`1"u8))
         {
             return InstructionSet_Vector128;
@@ -22723,8 +23447,7 @@ public partial class Compiler
 #if TARGET_XARCH
     private static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
     {
-        return isa switch
-        {
+        return isa switch {
             InstructionSet_X86Base => InstructionSet_X86Base_X64,
             InstructionSet_AVX => InstructionSet_AVX_X64,
             InstructionSet_AVX2 => InstructionSet_AVX2_X64,
@@ -22749,8 +23472,7 @@ public partial class Compiler
 
     private static CORINFO_InstructionSet V256VersionOfIsa(CORINFO_InstructionSet isa)
     {
-        return isa switch
-        {
+        return isa switch {
             InstructionSet_AES => InstructionSet_AES_V256,
             InstructionSet_GFNI => InstructionSet_GFNI_V256,
             _ => InstructionSet_NONE,
@@ -22759,8 +23481,7 @@ public partial class Compiler
 
     private static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
     {
-        return isa switch
-        {
+        return isa switch {
             InstructionSet_AVX10v1 => InstructionSet_AVX10v1,
             InstructionSet_AVX10v1_X64 => InstructionSet_AVX10v1_X64,
             InstructionSet_AVX10v2 => InstructionSet_AVX10v2,
@@ -22775,8 +23496,7 @@ public partial class Compiler
 
     private static CORINFO_InstructionSet VLVersionOfIsa(CORINFO_InstructionSet isa)
     {
-        return isa switch
-        {
+        return isa switch {
             InstructionSet_AVX512 or InstructionSet_AVX512v2 or InstructionSet_AVX512v3 or InstructionSet_AVX10v1 => isa,
             _ => InstructionSet_NONE,
         };

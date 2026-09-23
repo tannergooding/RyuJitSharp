@@ -30,18 +30,22 @@ internal static unsafe class InlineVariableTests
             info.inlineCandidateInfo.methInfo.args.numArgs = 2;
             var first = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, 1)));
             CallArg? context = null;
+
             if (pseudoArguments)
             {
                 ReadOnlySpan<WellKnownArg> kinds = [
                     WellKnownArg.AsyncContinuation, WellKnownArg.AsyncResumedUse,
                     WellKnownArg.AsyncResumedDef, WellKnownArg.AsyncAwaiter, WellKnownArg.RetBuffer
                 ];
+
                 foreach (var kind in kinds)
                 {
                     _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_I_IMPL, 0)).WithWellKnownArg(kind));
                 }
+
                 context = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_I_IMPL, 8)).WithWellKnownArg(WellKnownArg.InstParam));
             }
+
             var second = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewDconNode(TYP_DOUBLE, 2)));
             info.inlArgInfo[0].argHasSideEff = true;
             info.lclVarInfo[0].lclHasLdlocaOp = true;
@@ -61,10 +65,12 @@ internal static unsafe class InlineVariableTests
                 Assert.That(s_queries, Is.EqualTo(new nuint[] { 1, 2 }));
                 Assert.That(s_nextCalls, Is.EqualTo(2));
             });
+
             foreach (ref var argInfo in (Span<InlArgInfo>)info.inlArgInfo)
             {
                 Assert.That(argInfo.argTmpNum, Is.EqualTo(BAD_VAR_NUM));
             }
+
             Assert.That(info.inlInstParamArgInfo?[0].arg, Is.SameAs(context));
         });
     }
@@ -86,6 +92,7 @@ internal static unsafe class InlineVariableTests
             Assert.That(info.inlArgInfo[0].argIsThis, Is.True);
             Assert.That(info.inlineResult.IsFailure, Is.EqualTo(nullThis));
             Assert.That(s_queries, Is.Empty);
+
             if (nullThis)
             {
                 Assert.That(info.inlineResult.Observation, Is.EqualTo(InlineObservation.CALLSITE_ARG_HAS_NULL_THIS));
@@ -199,6 +206,7 @@ internal static unsafe class InlineVariableTests
         s_types = [];
         s_queries.Clear();
         s_nextCalls = 0;
+
         try
         {
             var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
@@ -206,8 +214,10 @@ internal static unsafe class InlineVariableTests
             result.NoteBool(InlineObservation.CALLEE_IS_FORCE_INLINE, false);
             result.NoteInt(InlineObservation.CALLEE_IL_CODE_SIZE, 1);
             var info = new InlineInfo {
-                iciCall = call, iciBlock = new BasicBlock(null, null),
-                inlineCandidateInfo = new InlineCandidateInfo(), inlineResult = result,
+                iciCall = call,
+                iciBlock = new BasicBlock(null, null),
+                inlineCandidateInfo = new InlineCandidateInfo(),
+                inlineResult = result,
             };
             info.inlineCandidateInfo.methInfo.args.args = (CORINFO_ARG_LIST_STRUCT_*)1;
             action(compiler, info, call);
@@ -225,6 +235,7 @@ internal static unsafe class InlineVariableTests
         var index = (nuint)argument;
         s_queries.Add(index);
         *type = null;
+
         return index > 0 && index <= (nuint)s_types.Length ? s_types[(int)index - 1] : (CorInfoTypeWithMod)CORINFO_TYPE_INT;
     }
 
@@ -232,6 +243,7 @@ internal static unsafe class InlineVariableTests
     private static CORINFO_ARG_LIST_STRUCT_* GetNextArgument(ICorJitInfo* self, CORINFO_ARG_LIST_STRUCT_* argument)
     {
         s_nextCalls++;
+
         return (CORINFO_ARG_LIST_STRUCT_*)((nuint)argument + 1);
     }
 

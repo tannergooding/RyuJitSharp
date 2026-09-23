@@ -42,6 +42,7 @@ public partial struct EHClauses
             }
 
             _current = ref current;
+
             return !Unsafe.AreSame(in current, in _end);
         }
 

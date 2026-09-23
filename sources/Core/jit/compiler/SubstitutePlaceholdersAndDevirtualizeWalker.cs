@@ -59,6 +59,7 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
         if (tree is null)
         {
             assert((parent is not null) && (parent.Oper is GT_NOP));
+
             return;
         }
 
@@ -94,7 +95,15 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
                 var contextInput = context;
                 context = null;
 
-                _compiler.impDevirtualizeCall(call, Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), ref method, ref methodFlags, ref contextInput, out context, isLateDevirtualization, explicitTailCall);
+                _compiler.impDevirtualizeCall(
+call,
+ Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(),
+ ref method,
+ ref methodFlags,
+ ref contextInput,
+ out context,
+ isLateDevirtualization,
+ explicitTailCall);
 
                 if (!call.IsDevirtualizationCandidate(_compiler))
                 {
@@ -150,6 +159,7 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
                         DISPTREE(call);
                     }
                 }
+
                 _madeChanges = true;
             }
         }
@@ -328,6 +338,7 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
     public Compiler.fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user)
     {
         LateDevirtualization(ref use, user);
+
         if ((use is not null) && (user is not null))
         {
             user.Flags |= use.Flags & GTF_ALL_EFFECT;
@@ -521,6 +532,7 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
         _firstNewStmt = null;
 
         _ = WalkTree(ref _curStmt.RootNodeRef, null);
+
         return (_firstNewStmt is null) ? _curStmt : _firstNewStmt;
     }
 

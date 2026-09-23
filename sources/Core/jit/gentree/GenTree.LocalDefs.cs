@@ -12,12 +12,15 @@ public partial class GenTree
         where TVisitor : struct, ILocalDefVisitor
     {
         var fieldLclNum = compiler.lvaGetFieldLocal(varDsc, unchecked((uint)offset));
+
         if (fieldLclNum != BAD_VAR_NUM)
         {
             ref var fieldVarDsc = ref compiler.lvaGetDesc(fieldLclNum);
+
             if (fieldVarDsc.lvValueSize == storeSize)
             {
                 var index = fieldLclNum - varDsc.lvFieldLclStart;
+
                 return visitor.Visit(new PromotedRangeLocalDef(def, fieldLclNum, index, true, 0, storeSize, 0, storeSize));
             }
         }
@@ -26,6 +29,7 @@ public partial class GenTree
         {
             fieldLclNum = varDsc.lvFieldLclStart + index;
             ref var fieldVarDsc = ref compiler.lvaGetDesc(fieldLclNum);
+
             if (!compiler.gtStoreMayDefineField(fieldVarDsc, offset, storeSize, out var fieldStoreOffset, out var fieldStoreSize))
             {
                 continue;
@@ -33,6 +37,7 @@ public partial class GenTree
 
             var isEntire = (fieldStoreOffset == 0) && (fieldStoreSize == fieldVarDsc.lvValueSize);
             var valueOffset = nint.Max(fieldVarDsc.lvFldOffset, offset) - offset;
+
             if (visitor.Visit(new PromotedRangeLocalDef(def, fieldLclNum, index, isEntire,
                 fieldStoreOffset, fieldStoreSize, valueOffset, storeSize)) == VisitResult.Abort)
             {
@@ -49,6 +54,7 @@ public partial class GenTree
         {
             return true;
         }
+
         if (Oper is GT_STORE_LCL_FLD)
         {
             return !def.AsLclFld().IsPartial(compiler);
@@ -56,6 +62,7 @@ public partial class GenTree
 
         assert(Oper is GT_CALL);
         var call = AsCall();
+
         if (def == compiler.gtCallGetDefinedAsyncResumedLclAddr(call))
         {
             return compiler.lvaLclExactSize(def.LclNum) == TARGET_POINTER_SIZE;
@@ -72,6 +79,7 @@ public partial class GenTree
     {
         assert(Oper is GT_STORE_LCL_VAR);
         ref var varDsc = ref compiler.lvaGetDesc(def.LclNum);
+
         if (!varDsc.lvPromoted)
         {
             return visitor.Visit(new StoreLclVarDef(def));
@@ -80,6 +88,7 @@ public partial class GenTree
         for (var index = 0; index < varDsc.lvFieldCnt; index++)
         {
             var fieldLclNum = varDsc.lvFieldLclStart + index;
+
             if (visitor.Visit(new PromotedStoreLclVarDef(def, fieldLclNum, index)) == VisitResult.Abort)
             {
                 return VisitResult.Abort;
@@ -94,6 +103,7 @@ public partial class GenTree
     {
         assert(Oper is GT_CALL);
         ref var varDsc = ref compiler.lvaGetDesc(def.LclNum);
+
         if (!varDsc.lvPromoted)
         {
             return visitor.Visit(new CallLocalDef(def, isEntire, offset, size));
@@ -111,10 +121,12 @@ public partial class GenTree
         {
             return VisitLocalDef(compiler, AsLclVarCommon(), ref visitor);
         }
+
         if (Oper is GT_STORE_LCL_FLD)
         {
             var fld = AsLclFld();
             ref var varDsc = ref compiler.lvaGetDesc(fld.LclNum);
+
             if (!varDsc.lvPromoted)
             {
                 return visitor.Visit(new StoreLclFldDef(fld));
@@ -122,13 +134,16 @@ public partial class GenTree
 
             return VisitPromotedRangeLocalDefs(compiler, fld, varDsc, fld.LclOffs, fld.ValueSize, ref visitor);
         }
+
         if (Oper is GT_CALL)
         {
             var call = AsCall();
             var asyncResumedLclAddr = compiler.gtCallGetDefinedAsyncResumedLclAddr(call);
+
             if (asyncResumedLclAddr is not null)
             {
                 var isEntire = compiler.lvaLclExactSize(asyncResumedLclAddr.LclNum) == TARGET_POINTER_SIZE;
+
                 if (VisitLocalDef(compiler, asyncResumedLclAddr, isEntire, asyncResumedLclAddr.LclOffs,
                     new ValueSize(TARGET_POINTER_SIZE), ref visitor) == VisitResult.Abort)
                 {
@@ -137,10 +152,12 @@ public partial class GenTree
             }
 
             var retBufLclAddr = compiler.gtCallGetDefinedRetBufLclAddr(call);
+
             if (retBufLclAddr is not null)
             {
                 var storeSize = new ValueSize(compiler.typGetObjLayout(call.RetClsHnd).Size);
                 var isEntire = compiler.IsEntireAccess(retBufLclAddr.LclNum, retBufLclAddr.LclOffs, storeSize);
+
                 return VisitLocalDef(compiler, retBufLclAddr, isEntire, retBufLclAddr.LclOffs, storeSize, ref visitor);
             }
         }

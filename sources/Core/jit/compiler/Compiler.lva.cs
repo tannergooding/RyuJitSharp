@@ -13,6 +13,7 @@ public partial class Compiler
     public ValueSize lvaLclValueSize(int varNum)
     {
         assert((uint)varNum < (uint)lvaCount);
+
         return lvaGetDesc(varNum).lvValueSize;
     }
 
@@ -28,6 +29,7 @@ public partial class Compiler
         {
             noway_assert(lvaTable[i].lvIsStructField);
             noway_assert(lvaTable[i].lvParentLcl == lvaGetLclNum(varDsc));
+
             if (lvaTable[i].lvFldOffset == fldOffset)
             {
                 return i;
@@ -2441,8 +2443,10 @@ public partial class Compiler
 #if FEATURE_SIMD
 #if TARGET_ARM64
         var maxSize = compOpportunisticallyDependsOn(InstructionSet_VectorT) ? MAX_SVE_REGSIZE_BYTES : FP_REGSIZE_BYTES;
+
 #else
         var maxSize = GetMaxVectorByteLength();
+
 #endif
         return (structSize >= GetMinVectorByteLength()) && (structSize <= maxSize);
 #else

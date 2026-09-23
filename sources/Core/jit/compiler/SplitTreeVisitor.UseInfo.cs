@@ -19,6 +19,7 @@ public partial struct SplitTreeVisitor
             }
 
             var index = 0;
+
             foreach (ref var operand in user.UseEdges)
             {
                 if (index++ == operandIndex)

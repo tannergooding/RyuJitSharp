@@ -99,6 +99,7 @@ internal static unsafe class TreeComparisonTests
             GenTree Make(int variant)
             {
                 var local = compiler.gtNewLclvNode(TYP_REF, 0);
+
                 return kind switch {
                     0 => new GenTreeLclFld(GT_LCL_FLD, TYP_INT, 0, (ushort)(variant * 4)),
                     1 => new GenTreeArrLen(TYP_INT, local, 8 + variant),
@@ -126,11 +127,13 @@ internal static unsafe class TreeComparisonTests
             var right = new GenTreeVecCon(type);
             left.SimdVal.u64[0] = right.SimdVal.u64[0] = 0x7FF8000000000001;
             Assert.That(GenTree.Compare(left, right), Is.True);
+
             if (type.Size < 64)
             {
                 right.SimdVal.AsSpan<byte>()[type.Size] = 0x80;
                 Assert.That(GenTree.Compare(left, right), Is.True);
             }
+
             right.SimdVal.AsSpan<byte>()[type.Size - 1] ^= 0x80;
             Assert.That(GenTree.Compare(left, right), Is.False);
         });
@@ -165,48 +168,80 @@ internal static unsafe class TreeComparisonTests
             {
                 var call = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, null);
                 argument = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, 1)));
+
                 return call;
             }
 
             var left = MakeCall(out _);
             var right = MakeCall(out var rightArgument);
             Assert.That(GenTree.Compare(left, right), Is.True);
+
             switch (difference)
             {
                 case 0:
+                {
                     right._callMethHnd = (CORINFO_METHOD_STRUCT_*)1;
                     break;
+                }
+
                 case 1:
+                {
                     right.Flags |= GTF_CALL_NULLCHECK;
                     break;
+                }
+
                 case 2:
+                {
                     right._returnType = TYP_UINT;
                     break;
+                }
+
                 case 3:
+                {
                     right.Args.IsVarArgs = true;
                     break;
+                }
+
                 case 4:
+                {
                     right.ControlExpr = compiler.gtNewIconNode(TYP_INT, 1);
                     break;
+                }
+
                 case 5:
+                {
                     rightArgument.EarlyNode = compiler.gtNewIconNode(TYP_INT, 2);
                     break;
+                }
+
                 case 6:
+                {
                     rightArgument.LateNode = compiler.gtNewIconNode(TYP_INT, 1);
                     break;
+                }
+
                 case 7:
+                {
                     _ = right.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, 2)));
                     break;
+                }
+
                 case 8:
+                {
                     right.Args = default;
                     _ = right.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, 1), TYP_BYTE));
                     break;
+                }
+
                 case 9:
+                {
                     left._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_ASYNC;
                     right._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_ASYNC;
                     right.GetAsyncInfo().IsTailAwait = true;
                     break;
+                }
             }
+
             Assert.That(GenTree.Compare(left, right), Is.False);
             Assert.That(GenTree.Compare(right, left), Is.False);
         });
@@ -243,30 +278,47 @@ internal static unsafe class TreeComparisonTests
             {
                 var intrinsic = new GenTreeHWIntrinsic(TYP_SIMD16, NamedIntrinsic.NI_X86Base_Add, TYP_INT, 16,
                     new GenTreeLclVar(TYP_SIMD16, 0), new GenTreeLclVar(TYP_SIMD16, 1));
+
                 return intrinsic;
             }
 
             var left = MakeIntrinsic();
             var right = MakeIntrinsic();
             Assert.That(GenTree.Compare(left, right), Is.True);
+
             switch (difference)
             {
                 case 0:
+                {
                     right.SetHWIntrinsicId(NamedIntrinsic.NI_X86Base_Subtract);
                     break;
+                }
+
                 case 1:
+                {
                     right.SimdBaseType = TYP_FLOAT;
                     break;
+                }
+
                 case 2:
+                {
                     right.SimdSize = 12;
                     break;
+                }
+
                 case 3:
+                {
                     right.AuxiliaryType = TYP_FLOAT;
                     break;
+                }
+
                 case 4:
+                {
                     right.SetOp(2, new GenTreeLclVar(TYP_SIMD16, 2));
                     break;
+                }
             }
+
             Assert.That(GenTree.Compare(left, right, true), Is.False);
         });
     }
@@ -279,6 +331,7 @@ internal static unsafe class TreeComparisonTests
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitTls.Compiler = compiler;
+
         try
         {
             action(compiler);

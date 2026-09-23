@@ -47,10 +47,12 @@ public partial class Globals
     public static FlowEdge? ShuffleHelper(uint hash, FlowEdge? res)
     {
         var head = res;
+
         for (FlowEdge? prev = null; res is not null; prev = res, res = res.NextPredEdge)
         {
             var blockNum = unchecked((uint)res.SourceBlock.bbNum);
             var blkHash = hash ^ (blockNum << 16) ^ blockNum;
+
             if ((((blkHash % 1879) & 1) != 0) && (prev is not null))
             {
                 assert(head is not null);
@@ -69,14 +71,17 @@ public partial class Globals
     public static uint SsaStressHashHelper()
     {
         var hash = unchecked((uint)JitConfig.JitSsaStress);
+
         if (hash == 0)
         {
             return hash;
         }
+
         if (hash == 1)
         {
             var compiler = JitTls.Compiler;
             assert(compiler is not null);
+
             return unchecked((uint)compiler.info.compMethodHash());
         }
 

@@ -72,6 +72,7 @@ internal static class ExtendedDefaultPolicyTests
         SetField(typeof(BasicBlock), block, "_stmtList", first);
         var previous = first;
         var candidates = new InlineCandidateInfo[count];
+
         for (var i = 0; i < count; i++)
         {
             var call = new GenTreeCall(var_types.TYP_INT);
@@ -83,6 +84,7 @@ internal static class ExtendedDefaultPolicyTests
             stmt.PrevStmt = previous;
             previous = stmt;
         }
+
         first.PrevStmt = previous;
         compiler.fgAsyncStressPrepare(1);
 
@@ -92,15 +94,18 @@ internal static class ExtendedDefaultPolicyTests
             _ => [2, 0, 1],
         };
         var expectedStream = new CLRRandom(1);
+
         for (var i = count - 1; i > 0; i--)
         {
             _ = expectedStream.Next(i + 1);
         }
+
         Assert.Multiple(() => {
             for (var i = 0; i < count; i++)
             {
                 Assert.That(candidates[i].asyncStressIndex, Is.EqualTo(expected[i]));
             }
+
             Assert.That(excludedInfo.asyncStressIndex, Is.EqualTo(-1));
             Assert.That(random.NextDouble(), Is.EqualTo(expectedStream.NextDouble()));
         });
@@ -156,10 +161,12 @@ internal static class ExtendedDefaultPolicyTests
         var policy = new ProbePolicy(CreateCompiler());
         policy.NoteBool(InlineObservation.CALLEE_IS_FORCE_INLINE, true);
         policy.NoteInt(InlineObservation.CALLEE_IL_CODE_SIZE, size);
+
         for (var i = 0; i < branches; i++)
         {
             policy.NoteBool(InlineObservation.CALLSITE_FOLDABLE_BRANCH, true);
         }
+
         for (var i = 0; i < switches; i++)
         {
             policy.NoteBool(InlineObservation.CALLSITE_FOLDABLE_SWITCH, true);
@@ -311,6 +318,7 @@ internal static class ExtendedDefaultPolicyTests
         policy.DetermineProfitability(default);
 
         Assert.That(policy.Observation, Is.EqualTo(expected));
+
         if (isAsync && isPrejitRoot)
         {
             Assert.That(policy.BudgetCheck(), Is.False);
@@ -357,10 +365,12 @@ internal static class ExtendedDefaultPolicyTests
         policy.DetermineProfitability(default);
 
         var expectedStream = new CLRRandom(1);
+
         if (depth <= 2)
         {
             _ = expectedStream.NextDouble();
         }
+
         Assert.Multiple(() => {
             Assert.That(policy.Observation, Is.EqualTo(accepted
                 ? InlineObservation.CALLSITE_RANDOM_ACCEPT : InlineObservation.CALLSITE_RANDOM_REJECT));
@@ -380,6 +390,7 @@ internal static class ExtendedDefaultPolicyTests
         using var stream = new MemoryStream();
         using var writer = new StreamWriter(stream, leaveOpen: true);
         var previousCulture = CultureInfo.CurrentCulture;
+
         try
         {
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("fr-FR");
@@ -390,6 +401,7 @@ internal static class ExtendedDefaultPolicyTests
         {
             CultureInfo.CurrentCulture = previousCulture;
         }
+
         stream.Position = 0;
         using var reader = new StreamReader(stream);
         Assert.That(reader.ReadToEnd(), Is.EqualTo(
@@ -447,6 +459,7 @@ internal static class ExtendedDefaultPolicyTests
         result.ImportedILSize = 20;
         Assert.That(result.ReasonString, Is.EqualTo(observation.String));
         Assert.That(result.ResultString, Is.EqualTo(result.Policy.Decision.String));
+
         if (success)
         {
             context.SetSucceeded(new InlineInfo { inlineResult = result });
@@ -455,6 +468,7 @@ internal static class ExtendedDefaultPolicyTests
         {
             context.SetFailed(result);
         }
+
         Assert.That(context.IsSuccess, Is.EqualTo(success));
         Assert.That(context.Observation, Is.EqualTo(observation));
         Assert.That(context.ImportedILSize, Is.EqualTo(20));
@@ -519,10 +533,12 @@ internal static class ExtendedDefaultPolicyTests
     {
         var compiler = CreateCompiler();
         JitFlags flags = default;
+
         if (asyncCaller)
         {
             flags.Set(JitFlags.JIT_FLAG_ASYNC);
         }
+
         compiler.opts.jitFlags = &flags;
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.Base.getMethodDefFromMethod = &GetMethodToken;
@@ -541,6 +557,7 @@ internal static class ExtendedDefaultPolicyTests
         using var stream = new MemoryStream();
         using var writer = new JitTextWriter(stream, leaveOpen: true);
         var previous = Globals.s_jitstdout;
+
         try
         {
             Globals.s_jitstdout = writer;
@@ -551,6 +568,7 @@ internal static class ExtendedDefaultPolicyTests
         {
             Globals.s_jitstdout = previous;
         }
+
         var asyncness = asyncCaller ? (asyncCall ? " ASYNC" : " SYNC") : "";
         var reason = InlineObservation.CALLEE_IS_NOINLINE.String;
         var expected = verbose
@@ -574,6 +592,7 @@ internal static class ExtendedDefaultPolicyTests
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.lvaTable = [];
+
         return compiler;
     }
 

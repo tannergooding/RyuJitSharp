@@ -36,6 +36,7 @@ public struct FindNonInlineCandidateVisitor : IGenTreeVisitor<FindNonInlineCandi
         {
             _compiler.fgNoteNonInlineCandidate(_stmt, tree.AsCall());
         }
+
         return Compiler.fgWalkResult.WALK_CONTINUE;
     }
 

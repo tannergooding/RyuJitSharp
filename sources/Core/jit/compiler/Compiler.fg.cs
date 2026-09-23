@@ -48,13 +48,15 @@ public partial class Compiler
 
         if (inlineResult.IsFailure)
         {
-    #if DEBUG
+#if DEBUG
             if (verbose)
             {
                 jitprintf("Recursive or deep inline recursion detected. Will not expand this INLINECANDIDATE \n");
             }
+
 #endif
             createdContext = null;
+
             return;
         }
 
@@ -95,7 +97,9 @@ public partial class Compiler
                 inlineInfo.inlineContext = inlineStrategy.NewContext(parentContext, stmt, inlineInfo.iciCall);
                 inlineInfo.tokenLookupContextHandle = inlineInfo.inlineCandidateInfo.exactContextHandle;
 
-                JITLOG(LL_INFO100000, $"INLINER: inlineInfo.tokenLookupContextHandle for {eeGetMethodFullName(fncHandle)} set to 0x{FMT_DSP_PTR(inlineInfo.tokenLookupContextHandle)}:\n");
+                JITLOG(
+LL_INFO100000,
+ $"INLINER: inlineInfo.tokenLookupContextHandle for {eeGetMethodFullName(fncHandle)} set to 0x{FMT_DSP_PTR(inlineInfo.tokenLookupContextHandle)}:\n");
 
                 var compileFlagsForInlinee = *opts.jitFlags;
 
@@ -111,7 +115,7 @@ public partial class Compiler
                     compileFlagsForInlinee.Clear(JitFlags.JIT_FLAG_ASYNC);
                 }
 
-    #if DEBUG
+#if DEBUG
                 if (verbose)
                 {
                     jitprintf($"\nInvoking compiler for the inlinee method {eeGetMethodFullName(fncHandle)} :\n");
@@ -141,12 +145,12 @@ public partial class Compiler
 
         if (!success)
         {
-    #if DEBUG
+#if DEBUG
             if (verbose)
             {
                 jitprintf($"\nInlining failed due to an exception during invoking the compiler for the inlinee method {eeGetMethodFullName(fncHandle)}.\n");
             }
-    #endif
+#endif
 
             // If we haven't yet determined why this inline fails, use
             // a catch-all something bad happened observation.
@@ -163,12 +167,12 @@ public partial class Compiler
             return;
         }
 
-    #if DEBUG
+#if DEBUG
         if (false && verbose)
         {
             jitprintf($"\nDone invoking compiler for the inlinee method {eeGetMethodFullName(fncHandle)}\n");
         }
-    #endif
+#endif
 
         // If there is non-NULL return, but we haven't set the substExpr,
         // That means we haven't imported any BB that contains CEE_RET opcode.
@@ -190,6 +194,7 @@ public partial class Compiler
 #endif
 
                 inlineResult.NoteFatal(InlineObservation.CALLSITE_LACKS_RETURN);
+
                 return;
             }
         }
@@ -207,21 +212,22 @@ public partial class Compiler
             assert(InlineeCompiler is not null);
             InlineeCompiler.fgAsyncStressPrepare(inlineDepth + 1);
         }
+
 #endif
         fgInsertInlineeBlocks(inlineInfo);
 
-    #if DEBUG
+#if DEBUG
 
         if (verbose)
         {
             jitprintf($"Successfully inlined {eeGetMethodFullName(fncHandle)} ({inlineCandidateInfo.methInfo.ILCodeSize} IL bytes) (depth {inlineDepth}) [{inlineResult.ReasonString}]\n");
             jitprintf("--------------------------------------------------------------------------------------------\n");
         }
-    #endif
+#endif
 
-    #if DEBUG
+#if DEBUG
         impInlinedCodeSize += inlineCandidateInfo.methInfo.ILCodeSize;
-    #endif
+#endif
 
         // We inlined...
         inlineResult.NoteSuccess();
@@ -246,13 +252,14 @@ public partial class Compiler
         assert(_inlineStrategy is not null);
 
         // Fail if we're inlining and we've reached the acceptance limit.
-        var limit   = JitConfig.JitInlineLimit;
+        var limit = JitConfig.JitInlineLimit;
         var current = _inlineStrategy.InlineCount;
 
         if ((limit >= 0) && (current >= limit))
         {
             result.NoteFatal(InlineObservation.CALLSITE_OVER_INLINE_LIMIT);
             createdContext = null;
+
             return;
         }
 #endif
@@ -296,7 +303,7 @@ public partial class Compiler
             // Calling inlinee's compiler to inline the method.
             //
 
-            var startVars     = lvaCount;
+            var startVars = lvaCount;
             var startBBNumMax = fgBBNumMax;
 
 #if DEBUG
@@ -793,6 +800,7 @@ public partial class Compiler
             {
                 fgDispBasicBlocks(InlineeCompiler.fgFirstBB, InlineeCompiler.fgLastBB, dumpTrees: true);
             }
+
 #endif
             fgInlineAppendAsyncFrameStatements(inlineInfo, bottomBlock);
         }
@@ -1020,6 +1028,7 @@ public partial class Compiler
         if (!InlineeCompiler.compAsyncBodyMaySuspend)
         {
             JITDUMP("Inlinee cannot suspend; no async frame transition IR needed\n");
+
             return;
         }
 
@@ -1030,11 +1039,13 @@ public partial class Compiler
         if (resumedDefArg is null)
         {
             JITDUMP("Inlining call does no context handling; no async frame transition IR needed\n");
+
             return;
         }
 
         var resumedCallerAddr = resumedDefArg.Node;
         var numCallerSets = 0;
+
         foreach (var arg in call.Args.Args)
         {
             if (arg.WellKnownArg is WellKnownArg.AsyncResumedUse)
@@ -1133,6 +1144,7 @@ public partial class Compiler
             if (IsDisallowedRecursiveInline(inlineContext, inlineInfo))
             {
                 inlineResult.NoteFatal(InlineObservation.CALLSITE_IS_RECURSIVE);
+
                 return depth;
             }
 
@@ -1143,6 +1155,7 @@ public partial class Compiler
         }
 
         inlineResult.NoteInt(InlineObservation.CALLSITE_DEPTH, depth);
+
         return depth;
     }
 
@@ -1153,6 +1166,7 @@ public partial class Compiler
             (ancestor.RuntimeContext == inlineInfo.inlineCandidateInfo.exactContextHandle))
         {
             JITDUMP("Call site is trivially recursive\n");
+
             return true;
         }
 
@@ -1162,6 +1176,7 @@ public partial class Compiler
             ContextComplexityExceeds(inlineInfo.inlineCandidateInfo.exactContextHandle, 64))
         {
             JITDUMP("Call site is recursive with a complex generic context\n");
+
             return true;
         }
 
@@ -1257,6 +1272,7 @@ public partial class Compiler
         {
             // No ref locals, nothing to do.
             JITDUMP("fgInlineAppendStatements: no gc ref inline locals.\n");
+
             return;
         }
 
@@ -1266,6 +1282,7 @@ public partial class Compiler
         if (iciCall.IsImplicitTailCall)
         {
             JITDUMP("fgInlineAppendStatements: implicit tail call; skipping nulling.\n");
+
             return;
         }
 
@@ -1339,6 +1356,7 @@ public partial class Compiler
             {
                 fgInsertStmtAfter(block, stmtAfter, nullStmt);
             }
+
             stmtAfter = nullStmt;
 
 #if DEBUG
@@ -1523,6 +1541,7 @@ public partial class Compiler
                 }
             }
         }
+
         return afterStmt;
     }
 
@@ -1568,6 +1587,7 @@ public partial class Compiler
 
                 fgReplaceInlineArgument(argSingleUseNode, argNode);
                 argInfo.argBashTmpNode = argNode;
+
                 return;
             }
             else
@@ -1711,6 +1731,7 @@ public partial class Compiler
         // Managed nodes cannot change CLR subtype like native ReplaceWith. Rewrite live edges
         // before splicing the inlinee, including a return expression kept outside its statements.
         var visitor = new ReplaceInlineArgumentVisitor(target, replacement);
+
         foreach (var block in InlineeCompiler.Blocks)
         {
             foreach (var stmt in block.Statements)
@@ -1721,6 +1742,7 @@ public partial class Compiler
 
         assert(InlineeCompiler.impInlineInfo is not null);
         var retExpr = InlineeCompiler.impInlineInfo.inlineCandidateInfo.retExpr;
+
         if ((retExpr is not null) && (retExpr.SubstExpr is GenTree substExpr))
         {
             _ = visitor.WalkTree(ref substExpr, null);
@@ -1752,6 +1774,7 @@ public partial class Compiler
                 ref var currentEntry = ref CollectionsMarshal.AsSpan(stack)[^1];
                 var currentBlock = currentEntry.Block;
                 var succ = currentEntry.NextSuccessor;
+
                 if (succ is not null)
                 {
                     if (succ.HasFlag(BBF_GC_SAFE_POINT) || BitVecOps.IsMember(traits, finished, succ.bbNum))
@@ -1766,17 +1789,21 @@ public partial class Compiler
                         {
                             jitprintf("Found a cycle that does not go through a GC safe point:\n");
                             jitprintf(FMT_BB(succ.bbNum));
+
                             for (var i = stack.Count - 1; i >= 0; i--)
                             {
                                 var entryBlock = stack[i].Block;
                                 jitprintf($" <- {FMT_BB(entryBlock.bbNum)}");
+
                                 if (entryBlock == succ)
                                 {
                                     break;
                                 }
                             }
+
                             jitprintf("\n");
                         }
+
 #endif
                         return true;
                     }
@@ -1807,12 +1834,14 @@ public partial class Compiler
 
         // Recover the reason left behind when this call was rejected.
         var priorObservation = call._inlineObservation;
+
         if (priorObservation.IsValid)
         {
             currentObservation = priorObservation;
         }
 
         inlineResult.NotePriorFailure(currentObservation);
+
         if (call._callType is CT_USER_FUNC)
         {
             assert(_inlineStrategy is not null);
@@ -1866,6 +1895,7 @@ public partial class Compiler
 
             stmt.NextStmt = lastStmt;
             lastStmt.PrevStmt = stmt;
+
             if (firstStmt == lastStmt)
             {
                 block.FirstStmt = stmt;
@@ -1887,6 +1917,7 @@ public partial class Compiler
     public Statement fgNewStmtFromTree(GenTree tree, BasicBlock? block = null, in DebugInfo di = default)
     {
         var stmt = gtNewStmt(tree, di);
+
         if (fgNodeThreading is NodeThreading.AllTrees)
         {
             gtSetStmtInfo(stmt);
@@ -2176,6 +2207,7 @@ public partial class Compiler
                 assert(opts.compFlags == CLFLG_MINOPT);
                 assert(!opts.IsMinOptsSet);
             }
+
             return result;
         }
     }
@@ -2226,8 +2258,10 @@ public partial class Compiler
                     if (fgFirstBB is not null)
                     {
                         var sufficientSamples = 1000.0;
+
                         return fgFirstBB.bbWeight > sufficientSamples;
                     }
+
                     return true;
                 }
 
@@ -2256,6 +2290,7 @@ public partial class Compiler
         get
         {
             assert(Debugger.IsAttached || compIsForInlining);
+
             return lvaInlineeReturnSpillTemp != BAD_VAR_NUM;
         }
     }
@@ -2274,6 +2309,7 @@ public partial class Compiler
         if (!inTry && !inHnd)
         {
             dsg = AcdKeyDesignator.KD_NONE;
+
             return 0;
         }
 
@@ -2283,6 +2319,7 @@ public partial class Compiler
         {
             // The most enclosing region is a try body, use it
             dsg = AcdKeyDesignator.KD_TRY;
+
             return tryIndex;
         }
 
@@ -2293,10 +2330,12 @@ public partial class Compiler
         if (ehGetDsc((ushort)(hndIndex - 1)).InFilterRegionBBRange(blk))
         {
             dsg = AcdKeyDesignator.KD_FLT;
+
             return hndIndex | AddCodeDscKey.AcdFilterFlag;
         }
 
         dsg = AcdKeyDesignator.KD_HND;
+
         return hndIndex | AddCodeDscKey.AcdHandlerFlag;
     }
 
@@ -2321,6 +2360,7 @@ public partial class Compiler
             // RetBuf is known to be on the stack
             result = false;
         }
+
         return result;
     }
 
@@ -2356,6 +2396,7 @@ public partial class Compiler
             case GT_BOX:
             {
                 var box = addr.AsBox();
+
                 return !box.IsBoxedValue;
             }
 
@@ -2413,6 +2454,7 @@ public partial class Compiler
                         }
                     }
                 }
+
                 break;
             }
 
@@ -2429,6 +2471,7 @@ public partial class Compiler
             case GT_CALL:
             {
                 var call = addr.AsCall();
+
                 return !call.IsHelperCall() || !call.HelperNum.NonNullReturn;
             }
 
@@ -2714,6 +2757,7 @@ public partial class Compiler
                     {
                         BADCODE($"Return from a protected block. Before offset {blk.bbCodeOffsEnd:X4}");
                     }
+
                     break;
                 }
 
@@ -2760,6 +2804,7 @@ public partial class Compiler
                     {
                         BADCODE("endfinally / endfault / endfilter in nested try block");
                     }
+
                     break;
                 }
 
@@ -2788,6 +2833,7 @@ public partial class Compiler
                     {
                         fgControlFlowPermitted(blk, bTarget);
                     }
+
                     break;
                 }
 
@@ -2906,6 +2952,7 @@ public partial class Compiler
             // Convert to [0..compHndBBtabCount] form.
             nestedRegionIndex = (nestedRegionIndex == EHblkDsc.NO_ENCLOSING_INDEX) ? (ushort)(0) : (ushort)(nestedRegionIndex + 1);
         }
+
         return insertOK;
     }
 
@@ -2981,6 +3028,7 @@ public partial class Compiler
             {
                 break;
             }
+
             curr = curr.NextStmt;
         }
         while (curr is not null);
@@ -3347,10 +3395,12 @@ public partial class Compiler
         else if ((checks & PhaseChecks.CHECK_PROFILE) != 0)
         {
             var profileChecks = ProfileChecks.CHECK_LIKELY | ProfileChecks.RAISE_ASSERT;
+
             if ((checks & PhaseChecks.CHECK_PROFILE_FLAGS) != 0)
             {
                 profileChecks |= ProfileChecks.CHECK_FLAGS;
             }
+
             _ = fgDebugCheckProfileWeights(profileChecks);
         }
         else if ((checks & PhaseChecks.CHECK_LIKELIHOODS) != 0)
@@ -3372,11 +3422,14 @@ public partial class Compiler
         if (!verifyLikelyWeights && !verifyHasLikelihood)
         {
             JITDUMP("[profile weight checks disabled]\n");
+
             return true;
         }
+
         if (fgPgoDeferredInconsistency)
         {
             JITDUMP("[deferred prior check failed -- skipping this check]\n");
+
             return false;
         }
 
@@ -3399,6 +3452,7 @@ public partial class Compiler
                 {
                     unflaggedBlocks++;
                 }
+
                 if (!checkAllBlocks)
                 {
                     unprofiledBlocks++;
@@ -3412,12 +3466,14 @@ public partial class Compiler
             var blockWeight = block.bbWeight;
             var verifyIncoming = true;
             var verifyOutgoing = true;
+
             if (block == fgFirstBB)
             {
                 entryWeight += blockWeight;
                 entryProfiled = !opts.IsOSR;
                 verifyIncoming = false;
             }
+
             if (block.Kind is BBJ_RETURN)
             {
                 exitWeight += blockWeight;
@@ -3435,6 +3491,7 @@ public partial class Compiler
                     exitWeight += blockWeight;
                     exitProfiled = true;
                 }
+
                 verifyOutgoing = false;
             }
 
@@ -3443,20 +3500,25 @@ public partial class Compiler
             {
                 verifyIncoming = false;
             }
+
             if (block.hasEHBoundaryOut)
             {
                 verifyOutgoing = false;
             }
+
             var incomingConsistent = true;
             var outgoingConsistent = true;
+
             if (verifyIncoming)
             {
                 incomingConsistent = fgDebugCheckIncomingProfileData(block, checks);
             }
+
             if (verifyOutgoing)
             {
                 outgoingConsistent = fgDebugCheckOutgoingProfileData(block, checks);
             }
+
             if (!incomingConsistent || !outgoingConsistent)
             {
                 problemBlocks++;
@@ -3466,6 +3528,7 @@ public partial class Compiler
         if (verifyLikelyWeights && entryProfiled && exitProfiled && !hasTry)
         {
             assert(fgFirstBB is not null);
+
             if (fgFirstBB.bbRefs > 1)
             {
                 JITDUMP($"  Method entry {FMT_BB(fgFirstBB.bbNum)} is loop head, can't check entry/exit balance\n");
@@ -3499,6 +3562,7 @@ public partial class Compiler
         else
         {
             JITDUMP($"Profile is NOT self-consistent, found {problemBlocks} problems ({profiledBlocks} profiled blocks, {unprofiledBlocks} unprofiled)\n");
+
             if (assertOnFailure && !dump)
             {
                 var wasVerbose = verbose;
@@ -3508,6 +3572,7 @@ public partial class Compiler
                 assert(false, "Inconsistent profile data");
             }
         }
+
         if ((unflaggedBlocks > 0) && !dump)
         {
             JITDUMP($"{unflaggedBlocks} blocks are missing BBF_PROF_WEIGHT flag.\n");
@@ -3521,14 +3586,17 @@ public partial class Compiler
     {
         var verifyLikelyWeights = (checks & ProfileChecks.CHECK_LIKELY) != 0;
         var verifyHasLikelihood = (checks & ProfileChecks.CHECK_HASLIKELIHOOD) != 0;
+
         if (!verifyLikelyWeights && !verifyHasLikelihood)
         {
             return true;
         }
+
         var blockWeight = block.bbWeight;
         weight_t incomingLikelyWeight = 0;
         var missingLikelyWeight = 0;
         var foundPreds = false;
+
         foreach (var predEdge in block.PredEdges)
         {
             if (predEdge.hasLikelihood)
@@ -3540,9 +3608,12 @@ public partial class Compiler
                 JITDUMP($"Missing likelihood on {fgFormatProfileEdgeAddress(predEdge)} {FMT_BB(predEdge.SourceBlock.bbNum)}->{FMT_BB(block.bbNum)}\n");
                 missingLikelyWeight++;
             }
+
             foundPreds = true;
         }
+
         var likelyWeightsValid = true;
+
         if (foundPreds)
         {
             if (verifyLikelyWeights && !fgProfileWeightsConsistentOrSmall(blockWeight, incomingLikelyWeight))
@@ -3550,6 +3621,7 @@ public partial class Compiler
                 JITDUMP($"  {FMT_BB(block.bbNum)} - block weight {FMT_WT(blockWeight)} inconsistent with incoming likely weight {FMT_WT(incomingLikelyWeight)}\n");
                 likelyWeightsValid = false;
             }
+
             if (verifyHasLikelihood && (missingLikelyWeight > 0))
             {
                 JITDUMP($"  {FMT_BB(block.bbNum)} -- {missingLikelyWeight} incoming edges are missing likely weights\n");
@@ -3564,16 +3636,20 @@ public partial class Compiler
     {
         var verifyHasLikelihood = (checks & ProfileChecks.CHECK_HASLIKELIHOOD) != 0;
         var verifyLikelihoodSum = (checks & ProfileChecks.CHECK_LIKELIHOODSUM) != 0;
+
         if (!verifyHasLikelihood && !verifyLikelihoodSum)
         {
             return true;
         }
+
         var likelyWeightsValid = true;
         var numSuccs = block.NumSucc;
+
         if ((numSuccs > 0) && (block.Kind is not BBJ_EHFAULTRET and not BBJ_EHFILTERRET))
         {
             weight_t outgoingLikelihood = 0;
             var missingLikelihood = 0;
+
             foreach (var succEdge in block.Succs.Edges)
             {
                 if (succEdge.hasLikelihood)
@@ -3586,14 +3662,17 @@ public partial class Compiler
                     missingLikelihood++;
                 }
             }
+
             if (verifyHasLikelihood && (missingLikelihood > 0))
             {
                 JITDUMP($"  {FMT_BB(block.bbNum)} - missing likelihood on {missingLikelihood} successor edges\n");
                 likelyWeightsValid = false;
             }
+
             if (verifyLikelihoodSum && !fgProfileWeightsConsistent(outgoingLikelihood, 1.0))
             {
                 JITDUMP($"  {FMT_BB(block.bbNum)} - outgoing likelihood {FMT_WT(outgoingLikelihood)} should be 1.0\n");
+
                 if (block == fgOSREntryBB)
                 {
                     JITDUMP("   ignoring this as block is the OSR entry\n");
@@ -3601,6 +3680,7 @@ public partial class Compiler
                 else
                 {
                     likelyWeightsValid = false;
+
                     if (verbose)
                     {
                         foreach (var succEdge in block.Succs.Edges)
@@ -3668,7 +3748,7 @@ public partial class Compiler
             if (block.hasProfileWeight)
             {
                 var thisIbcWidth = CountDigits(block.bbWeight);
-                ibcColWidth      = int.Max(ibcColWidth, thisIbcWidth);
+                ibcColWidth = int.Max(ibcColWidth, thisIbcWidth);
             }
 
             fgBBOrder.Add(block);
@@ -3714,9 +3794,39 @@ public partial class Compiler
         var blockTargetFieldWidth = 3 + 2 + maxBlockNumWidth + edgeLikelihoodsWidth + 1 + 2 + maxBlockNumWidth + edgeLikelihoodsWidth + 1 + 8; // kind: "(xxxxxx)"
 
         jitprintf("\n");
-        jitprintf($"------{new string('-', int.Max(padWidth, 12))}-------------------------------------{new string('-', int.Max(ibcColWidth, 12))}--------------------------{new string('-', int.Max(blockTargetFieldWidth, 46))}--------------------------\n");
-        jitprintf($"BBnum {new string(' ', padWidth)}BBid ref try hnd {(fgPredsComputed ? "preds      " : "           ")}     weight  {new string(' ', (ibcColWidth > 0) ? ibcColWidth - 3 : 0)}{((ibcColWidth > 0) ? "IBC" : "")} [IL range]   [jump]{new string(' ', blockTargetFieldWidth - 8)} [EH region]        [flags]\n");
-        jitprintf($"------{new string('-', int.Max(padWidth, 12))}-------------------------------------{new string('-', int.Max(ibcColWidth, 12))}--------------------------{new string('-', int.Max(blockTargetFieldWidth, 46))}--------------------------\n");
+        jitprintf($"------{new string(
+'-',
+ int.Max(
+padWidth,
+ 12))}-------------------------------------{new string(
+'-',
+ int.Max(
+ibcColWidth,
+ 12))}--------------------------{new string(
+'-',
+ int.Max(
+blockTargetFieldWidth,
+ 46))}--------------------------\n");
+        jitprintf($"BBnum {new string(
+' ',
+ padWidth)}BBid ref try hnd {(fgPredsComputed ? "preds      " : "           ")}     weight  {new string(
+' ',
+ (ibcColWidth > 0) ? ibcColWidth - 3 : 0)}{((ibcColWidth > 0) ? "IBC" : "")} [IL range]   [jump]{new string(
+' ',
+ blockTargetFieldWidth - 8)} [EH region]        [flags]\n");
+        jitprintf($"------{new string(
+'-',
+ int.Max(
+padWidth,
+ 12))}-------------------------------------{new string(
+'-',
+ int.Max(
+ibcColWidth,
+ 12))}--------------------------{new string(
+'-',
+ int.Max(
+blockTargetFieldWidth,
+ 46))}--------------------------\n");
 
         for (var blockIndex = 0; blockIndex < fgBBOrder.Count; blockIndex++)
         {
@@ -3742,12 +3852,36 @@ public partial class Compiler
 
             if (inDefaultOrder && block.IsFirstColdBlock(this))
             {
-                jitprintf($"~~~~~~{new string('~', int.Max(padWidth, 12))}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{new string('~', int.Max(ibcColWidth, 12))}~~~~~~~~~~~~~~~~~~~~~~~~~~{new string('~', int.Max(blockTargetFieldWidth, 46))}~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+                jitprintf($"~~~~~~{new string(
+'~',
+ int.Max(
+padWidth,
+ 12))}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{new string(
+'~',
+ int.Max(
+ibcColWidth,
+ 12))}~~~~~~~~~~~~~~~~~~~~~~~~~~{new string(
+'~',
+ int.Max(
+blockTargetFieldWidth,
+ 46))}~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
             }
 
             if (inDefaultOrder && (block == fgFirstFuncletBB))
             {
-                jitprintf($"++++++{new string('+', int.Max(padWidth, 12))}+++++++++++++++++++++++++++++++++++++{new string('+', int.Max(ibcColWidth, 12))}++++++++++++++++++++++++++{new string('+', int.Max(blockTargetFieldWidth, 46))}++++++++++++++++++++++++++ funclets follow\n");
+                jitprintf($"++++++{new string(
+'+',
+ int.Max(
+padWidth,
+ 12))}+++++++++++++++++++++++++++++++++++++{new string(
+'+',
+ int.Max(
+ibcColWidth,
+ 12))}++++++++++++++++++++++++++{new string(
+'+',
+ int.Max(
+blockTargetFieldWidth,
+ 46))}++++++++++++++++++++++++++ funclets follow\n");
             }
 
             fgTableDispBasicBlock(block, nextBlock, printEdgeLikelihoods, blockTargetFieldWidth, ibcColWidth);
@@ -3758,7 +3892,19 @@ public partial class Compiler
             }
         }
 
-        jitprintf($"------{new string('-', int.Max(padWidth, 12))}-------------------------------------{new string('-', int.Max(ibcColWidth, 12))}--------------------------{new string('-', int.Max(blockTargetFieldWidth, 46))}--------------------------\n");
+        jitprintf($"------{new string(
+'-',
+ int.Max(
+padWidth,
+ 12))}-------------------------------------{new string(
+'-',
+ int.Max(
+ibcColWidth,
+ 12))}--------------------------{new string(
+'-',
+ int.Max(
+blockTargetFieldWidth,
+ 46))}--------------------------\n");
 
         if (dumpTrees)
         {
@@ -3766,6 +3912,7 @@ public partial class Compiler
             {
                 fgDumpBlock(block);
             }
+
             jitprintf("\n-------------------------------------------------------------------------------------------------------------------\n");
         }
     }
@@ -3777,6 +3924,7 @@ public partial class Compiler
         if (compHndBBtabCount == 0)
         {
             jitprintf(" is empty\n");
+
             return;
         }
 
@@ -3803,7 +3951,7 @@ public partial class Compiler
         if (!block.IsLIR)
         {
             foreach (var stmt in block.Statements)
-        {
+            {
                 fgDumpStmtTree(block, stmt);
             }
         }
@@ -3850,6 +3998,7 @@ public partial class Compiler
                     jitprintf($"{sep}m:{arg.SsaNum}");
                     sep = ", ";
                 }
+
                 jitprintf(")\n");
             }
 
@@ -3945,6 +4094,7 @@ public partial class Compiler
                 {
                     jitprintf($"EH#{ehGetIndex(HBtab)}: New first block of try: {FMT_BB(bPrev.bbNum)}\n");
                 }
+
 #endif
                 HBtab.ebdTryBeg = bPrev;
                 bPrev.SetFlags(BBF_DONT_REMOVE);
@@ -3977,11 +4127,13 @@ public partial class Compiler
                     assert(bFilterLast is not null);
                     assert(bFilterLast.Kind is BBJ_EHFILTERRET);
                     assert(bFilterLast.Target == block);
+
 #if DEBUG
                     if (verbose)
                     {
                         jitprintf($"EH#{ehGetIndex(HBtab)}: Updating target for filter ret block: {FMT_BB(bFilterLast.bbNum)} => {FMT_BB(bPrev.bbNum)}\n");
                     }
+
 #endif
                     // Change the target for bFilterLast from the old first 'block' to the new first 'bPrev'
                     fgRedirectEdge(ref bFilterLast.TargetEdgeRef, bPrev);
@@ -4091,6 +4243,7 @@ public partial class Compiler
                     {
                         JITDUMP($"Inlinee EH clause {XTnum} is a catch; we can't inline these (yet)\n");
                         compInlineResult.NoteFatal(InlineObservation.CALLEE_HAS_EH);
+
                         return;
                     }
                 }
@@ -4106,6 +4259,7 @@ public partial class Compiler
                 {
                     BADCODE("try offset is > codesize");
                 }
+
                 jumpTarget[clause.TryOffset] = true;
 
                 var tryEnd = clause.TryOffset + clause.TryLength;
@@ -4114,12 +4268,14 @@ public partial class Compiler
                 {
                     BADCODE("try end is > codesize");
                 }
+
                 jumpTarget[tryEnd] = true;
 
                 if (clause.HandlerOffset > info.compILCodeSize)
                 {
                     BADCODE("handler offset > codesize");
                 }
+
                 jumpTarget[clause.HandlerOffset] = true;
 
                 var handlerEnd = clause.HandlerOffset + clause.HandlerLength;
@@ -4128,6 +4284,7 @@ public partial class Compiler
                 {
                     BADCODE("handler end > codesize");
                 }
+
                 jumpTarget[handlerEnd] = true;
 
                 if ((clause.Flags & CORINFO_EH_CLAUSE_FILTER) != 0)
@@ -4136,6 +4293,7 @@ public partial class Compiler
                     {
                         BADCODE("filter offset > codesize");
                     }
+
                     jumpTarget[clause.FilterOffset] = true;
                 }
             }
@@ -4243,6 +4401,7 @@ public partial class Compiler
                             lvaSetClass(lvaInlineeReturnSpillTemp, retClassHnd);
                         }
                     }
+
                     lvaInlineeReturnSpillTempFreshlyCreated = true;
                 }
             }
@@ -4360,6 +4519,7 @@ public partial class Compiler
                     if (block is null)
                     {
                         BADCODE($"Missing endfilter for filter at offset {filtBB.bbCodeOffs:X4}");
+
                         return;
                     }
 
@@ -4619,7 +4779,7 @@ public partial class Compiler
 
         JITDUMP($"fgFindInsertPoint(regionIndex={regionIndex}, putInTryRegion={dspBool(putInTryRegion)}, startBlk={FMT_BB(startBlk.bbNum)}, endBlk={FMT_BB((endBlk is null) ? 0 : endBlk.bbNum)}, nearBlk={FMT_BB((nearBlk is null) ? 0 : nearBlk.bbNum)}, jumpBlk={FMT_BB((jumpBlk is null) ? 0 : jumpBlk.bbNum)}, runRarely={dspBool(runRarely)})\n");
 
-        var  insertingIntoFilter = false;
+        var insertingIntoFilter = false;
 
         if (!putInTryRegion)
         {
@@ -5030,6 +5190,7 @@ public partial class Compiler
                                 lvaTable[varNum].lvHasILStoreOp = true;
                             }
                         }
+
                         break;
                     }
 
@@ -5093,6 +5254,7 @@ public partial class Compiler
                             // do with a an IL stack overflow if the JIT is expecting it.
                             info.compMaxStack = int.Max(info.compMaxStack, info.compILargsCount);
                         }
+
                         break;
                     }
 #endif
@@ -5105,6 +5267,7 @@ public partial class Compiler
                         {
                             noway_assert(codeAddr < (codeEndp - sz));
                         }
+
                         break;
                     }
 
@@ -5260,6 +5423,7 @@ public partial class Compiler
                                 info.compMaxStack = int.Max(info.compMaxStack, info.compILargsCount);
                                 break;
                             }
+
 #endif
                             // If we are inlining, we need to fail for a CEE_JMP opcode, just like the list of other opcodes (for all platforms).
                             goto case CEE_MKREFANY;
@@ -5300,6 +5464,7 @@ public partial class Compiler
                                 // If the method has a call followed by a ret, assume that it is a wrapper method.
                                 compInlineResult.Note(InlineObservation.CALLEE_LOOKS_LIKE_WRAPPER);
                             }
+
                             break;
                         }
 
@@ -5343,6 +5508,7 @@ public partial class Compiler
                             {
                                 compInlineResult.Note(InlineObservation.CALLEE_BACKWARD_JUMP);
                             }
+
                             break;
                         }
 
@@ -5355,6 +5521,7 @@ public partial class Compiler
                             {
                                 return;
                             }
+
                             break;
                         }
 
@@ -5379,8 +5546,10 @@ public partial class Compiler
                             if (compIsForInlining)
                             {
                                 assert(compInlineResult.IsFailure);
+
                                 return;
                             }
+
                             break;
                         }
 
@@ -5393,6 +5562,7 @@ public partial class Compiler
                             {
                                 return;
                             }
+
                             break;
                         }
 
@@ -5446,6 +5616,7 @@ public partial class Compiler
                                     // E.g. brtrue is basically "if (X == 0)"
                                     compInlineResult.Note(InlineObservation.CALLEE_ARG_FEEDS_CONSTANT_TEST);
                                 }
+
                                 fgStack.PushUnknown();
                                 break;
                             }
@@ -5504,6 +5675,7 @@ public partial class Compiler
                                 {
                                     fgStack.PushUnknown();
                                 }
+
                                 break;
                             }
 
@@ -5592,6 +5764,7 @@ public partial class Compiler
                                 {
                                     fgStack.PushUnknown();
                                 }
+
                                 break;
                             }
 
@@ -5626,6 +5799,7 @@ public partial class Compiler
                                 {
                                     fgStack.PushUnknown();
                                 }
+
                                 break;
                             }
 
@@ -5645,6 +5819,7 @@ public partial class Compiler
                                         compInlineResult.Note(InlineObservation.CALLEE_UNBOX_ARG);
                                     }
                                 }
+
                                 fgStack.PushUnknown();
                                 break;
                             }
@@ -5667,6 +5842,7 @@ public partial class Compiler
                                 {
                                     fgStack.PushUnknown();
                                 }
+
                                 break;
                             }
 
@@ -5677,6 +5853,7 @@ public partial class Compiler
                                     // toSkip > 0 means we most likely will hit a pattern (e.g. box+isinst+brtrue) that will be folded into a const
                                     codeAddr += toSkip;
                                 }
+
                                 fgStack.PushUnknown();
                                 break;
                             }
@@ -5711,6 +5888,7 @@ public partial class Compiler
                                 {
                                     fgStack.PushUnknown();
                                 }
+
                                 break;
                             }
 
@@ -5728,6 +5906,7 @@ public partial class Compiler
                                 {
                                     fgStack.PushUnknown();
                                 }
+
                                 break;
                             }
 
@@ -5742,6 +5921,7 @@ public partial class Compiler
                                 {
                                     fgStack.PushUnknown();
                                 }
+
                                 break;
                             }
 
@@ -5781,6 +5961,7 @@ public partial class Compiler
                                             returnsArray = (retClassAttribs & CORINFO_FLG_ARRAY) != 0;
                                         }
                                     }
+
                                     isReturnsArrayKnown = true;
                                 }
 
@@ -5850,6 +6031,7 @@ public partial class Compiler
                         {
                             prefixFlags &= ~PREFIX_TAILCALL_EXPLICIT;
                         }
+
                         break;
                     }
 
@@ -5865,6 +6047,7 @@ public partial class Compiler
                         {
                             BADCODE("constrained. has to be followed by callvirt, call or ldftn");
                         }
+
                         break;
                     }
 
@@ -5881,9 +6064,11 @@ public partial class Compiler
                             if (compIsForInlining)
                             {
                                 assert(compInlineResult.IsFailure);
+
                                 return;
                             }
                         }
+
                         goto default;
                     }
 
@@ -5893,6 +6078,7 @@ public partial class Compiler
                         {
                             fgStack.PushConstant();
                         }
+
                         break;
                     }
 
@@ -5907,6 +6093,7 @@ public partial class Compiler
                         {
                             BADCODE("readonly. has to be followed by ldelema or call");
                         }
+
                         break;
                     }
 
@@ -5933,6 +6120,7 @@ public partial class Compiler
                 var obs = typeIsNormed ? InlineObservation.CALLEE_OPCODE_NORMED : InlineObservation.CALLEE_OPCODE;
                 compInlineResult.NoteInt(obs, (int)(opcode));
             }
+
             prevOpcode = opcode;
         }
 
@@ -5995,6 +6183,7 @@ public partial class Compiler
                         assert(impInlineRoot._inlineStrategy is not null);
                         impInlineRoot._inlineStrategy.NoteUnprofitable();
                         JITDUMP("\n\nInline expansion aborted, inline not profitable\n");
+
                         return;
                     }
                     else
@@ -6171,6 +6360,7 @@ public partial class Compiler
                             // constant in the inlinee itself then we don't need to inline it for unrolling.
                             compInlineResult.Note(InlineObservation.CALLSITE_UNROLLABLE_MEMOP);
                         }
+
                         break;
                     }
 
@@ -6181,6 +6371,7 @@ public partial class Compiler
                         {
                             compInlineResult.Note(InlineObservation.CALLEE_ARG_FEEDS_RANGE_CHECK);
                         }
+
                         break;
                     }
 
@@ -6251,6 +6442,7 @@ public partial class Compiler
                         {
                             foldableIntrinsic = true;
                         }
+
                         break;
                     }
 
@@ -6269,6 +6461,7 @@ public partial class Compiler
                             foldableIntrinsic = true;
                             fgStack.PushConstant();
                         }
+
                         break;
                     }
 
@@ -6339,6 +6532,7 @@ public partial class Compiler
                             {
                                 fgStack.Push(arg0);
                             }
+
                             foldableIntrinsic = true;
                         }
                         else if (isArg0Const && isArg1Const)
@@ -6361,6 +6555,7 @@ public partial class Compiler
                             fgStack.Push(arg0);
                             stackAlreadyCorrect = true;
                         }
+
                         break;
                     }
 
@@ -6568,6 +6763,7 @@ public partial class Compiler
                 {
                     compInlineResult.Note(InlineObservation.CALLEE_ARG_FEEDS_RANGE_CHECK);
                 }
+
                 compInlineResult.Note(InlineObservation.CALLEE_ARG_FEEDS_TEST);
             }
             else if (isOp2Arg)
@@ -6576,6 +6772,7 @@ public partial class Compiler
                 {
                     compInlineResult.Note(InlineObservation.CALLEE_ARG_FEEDS_RANGE_CHECK);
                 }
+
                 compInlineResult.Note(InlineObservation.CALLEE_ARG_FEEDS_TEST);
             }
 
@@ -6677,6 +6874,7 @@ public partial class Compiler
                 {
                     break;
                 }
+
                 lastXTnum++;
             }
         }
@@ -6694,8 +6892,10 @@ public partial class Compiler
             {
                 return false;
             }
+
             XTnum++;
         }
+
         return true;
     }
 
@@ -6712,6 +6912,7 @@ public partial class Compiler
         if (!kind.needsRuntimeLookup)
         {
             var pointer = info.compCompHnd->getRuntimeTypePointer(info.compClassHnd);
+
             if (pointer != NO_OBJECT_HANDLE)
             {
                 tree = gtNewIconEmbObjHndNode(pointer);
@@ -6762,6 +6963,7 @@ public partial class Compiler
         }
 
         noway_assert(tree is not null);
+
         return tree;
     }
 
@@ -6782,6 +6984,7 @@ public partial class Compiler
             assert(firstILBB is not null);
             assert(firstILBB != fgFirstBB);
         }
+
         return firstILBB;
     }
 
@@ -6798,6 +7001,7 @@ public partial class Compiler
                 return pred;
             }
         }
+
         return null;
     }
 
@@ -6818,6 +7022,7 @@ public partial class Compiler
         }
 
         pred = null;
+
         return ref Unsafe.NullRef<FlowEdge?>();
     }
 
@@ -6963,6 +7168,7 @@ public partial class Compiler
             // Keep class handle attached to the helper call since it's difficult to restore it.
             result._initClsHnd = cls;
         }
+
         result.Flags |= callFlags;
 
         // If we're importing the special EqualityComparer<T>.Default or Comparer<T>.Default
@@ -6982,6 +7188,7 @@ public partial class Compiler
                 result._callMoreFlags |= GTF_CALL_M_HELPER_SPECIAL_DCE;
             }
         }
+
         return result;
     }
 
@@ -6998,6 +7205,7 @@ public partial class Compiler
         {
             dscBBs[i++] = block;
         }
+
         noway_assert(i == fgBBcount);
     }
 
@@ -7046,6 +7254,7 @@ public partial class Compiler
         {
             newBlk.Next = insertAfterBlk.Next;
         }
+
         insertAfterBlk.Next = newBlk;
     }
 
@@ -7060,6 +7269,7 @@ public partial class Compiler
         var load = tempInfo.Load;
 
         treeRef = gtNewCommaNode(treeRef.Type, store, load);
+
         return gtCloneLclVar(load);
     }
 
@@ -7124,6 +7334,7 @@ public partial class Compiler
         }
 
         noway_assert((block.FirstStmt is null) || ((block.FirstStmt.PrevStmt is Statement last) && (last.NextStmt is null)));
+
         return stmtLast;
     }
 
@@ -7214,6 +7425,7 @@ public partial class Compiler
         if (fgFirstFuncletBB is not null)
         {
             assert(fgFirstFuncletBB.Prev is not null);
+
             return fgFirstFuncletBB.Prev;
         }
 
@@ -7307,6 +7519,7 @@ public partial class Compiler
                     {
                         BADCODE("Fall thru the end of a method");
                     }
+
                     break;
                 }
 
@@ -7332,6 +7545,7 @@ public partial class Compiler
                     {
                         fgMarkBackwardJump(curBBdesc.Target, curBBdesc);
                     }
+
                     break;
                 }
 
@@ -7378,12 +7592,14 @@ public partial class Compiler
                         if (newEdge.DupCount is 1)
                         {
                             succs[numUnique++] = newEdge;
+
                             if (jumpDest.bbNum <= curBBdesc.bbNum)
                             {
                                 fgMarkBackwardJump(jumpDest, curBBdesc);
                             }
                         }
                     }
+
                     switchTargets.SetSuccCount(numUnique);
 
                     // Default case of CEE_SWITCH (next block), is at end of cases[]
@@ -7462,6 +7678,7 @@ public partial class Compiler
                 if ((lo == hi) && (lo == (fgBBcount - 1)))
                 {
                     noway_assert(addr == dsc.bbCodeOffsEnd);
+
                     return null; // NULL means the end of method
                 }
 
@@ -7477,11 +7694,13 @@ public partial class Compiler
 
             return dsc;
         }
+
 #if DEBUG
         jitprintf($"ERROR: Couldn't find basic block at offset {addr:X4}\n");
 #endif
 
         NO_WAY("fgLookupBB failed.");
+
         return null;
     }
 
@@ -7635,6 +7854,7 @@ public partial class Compiler
                             opts.compProcedureSplitting = false;
                             JITDUMP("Turning off procedure splitting for this method, as it might need switch tables; implementation limitation.\n");
                         }
+
                         break;
                     }
 
@@ -7661,6 +7881,7 @@ public partial class Compiler
                             compInlineResult.NoteFatal(InlineObservation.CALLEE_EXPLICIT_TAIL_PREFIX);
                             retBlocks++;
                             fgReturnCount = retBlocks;
+
                             return;
                         }
 
@@ -7680,6 +7901,7 @@ public partial class Compiler
                         {
                             BADCODE($"jump target between prefix and an opcode at offset {(IL_OFFSET)(codeAddr - codeBegp):X4}");
                         }
+
                         break;
                     }
 
@@ -7858,6 +8080,7 @@ public partial class Compiler
                 if (!makeBlock && foundScope)
                 {
                     makeBlock = true;
+
 #if DEBUG
                     if (verbose)
                     {
@@ -7923,6 +8146,7 @@ public partial class Compiler
                 fgFirstBB = curBBdesc;
                 assert(fgFirstBB.IsFirst);
             }
+
             fgLastBB = curBBdesc;
 
 #if DEBUG
@@ -7935,6 +8159,7 @@ public partial class Compiler
             // Remember where the next BB will start
             curBBoffs = nxtBBoffs;
         }
+
         noway_assert(codeAddr == codeEndp);
 
         // Finally link up the targets of the blocks together
@@ -7956,6 +8181,7 @@ public partial class Compiler
         {
             return gtCloneExpr(treeRef);
         }
+
         return fgInsertCommaFormTemp(ref treeRef);
     }
 
@@ -7965,6 +8191,7 @@ public partial class Compiler
     public TempInfo fgMakeTemp(GenTree value)
     {
         var lclNum = lvaGrabTemp(shortLifetime: true, "fgMakeTemp is creating a new local variable");
+
         return new TempInfo {
             Store = gtNewTempStore(lclNum, value),
             Load = gtNewLclvNode(value.Type.ActualType, lclNum),
@@ -8166,7 +8393,14 @@ public partial class Compiler
     /// <param name="runRarely">'true' if the new block is run rarely.</param>
     /// <param name="insertAtEnd">'true' if the block should be inserted at the end of the region. Note: this is currently only implemented when inserting into the main function (not into any EH region).</param>
     /// <returns>The new block.</returns>
-    public BasicBlock fgNewBBinRegion(BBKinds jumpKind, ushort tryIndex, ushort hndIndex, BasicBlock? nearBlk, bool putInFilter = false, bool runRarely = false, bool insertAtEnd = false)
+    public BasicBlock fgNewBBinRegion(
+BBKinds jumpKind,
+ ushort tryIndex,
+ ushort hndIndex,
+ BasicBlock? nearBlk,
+ bool putInFilter = false,
+ bool runRarely = false,
+ bool insertAtEnd = false)
     {
         // If 'putInFilter' it true, then the block is inserted in the filter region given by 'hndIndex'. In this case, tryIndex
         // must be a less nested EH region (that is, tryIndex > hndIndex).
@@ -8591,6 +8825,7 @@ public partial class Compiler
             // No EH? Nothing to do.
 #if DEBUG
             fgNormalizeEHDone = true;
+
 #endif
             return;
         }
@@ -8734,6 +8969,7 @@ public partial class Compiler
 #endif
             }
         }
+
         return modified;
     }
 
@@ -8765,6 +9001,7 @@ public partial class Compiler
                 var mutualProtectIndex = XTnum;
 
                 ref var ehOuter = ref eh;
+
                 do
                 {
                     var ehOuterTryIndex = ehOuter.ebdEnclosingTryIndex;
@@ -8928,6 +9165,7 @@ public partial class Compiler
                             //               |------------------  BB05
 
                             interestingPreds.Clear();
+
                             foreach (var predBlock in insertBeforeBlk.PredBlocks)
                             {
                                 if ((predBlock == newTryStart) || BasicBlock.sameTryRegion(insertBeforeBlk, predBlock))
@@ -8994,6 +9232,7 @@ public partial class Compiler
                 while (ehOuter.ebdEnclosingTryIndex is not EHblkDsc.NO_ENCLOSING_INDEX);
             }
         }
+
         return modified;
     }
 
@@ -9276,6 +9515,7 @@ public partial class Compiler
                             {
                                 newLast.TryIndex = nextTryIndex;
                             }
+
                             newLast.HndIndex = ehOuterIndex;
                         }
 
@@ -9425,6 +9665,7 @@ public partial class Compiler
                 }
             }
         }
+
         return modified;
     }
 
@@ -9670,6 +9911,7 @@ public partial class Compiler
         {
             JITDUMP("not optimized, no target method\n");
         }
+
         return call;
     }
 
@@ -9694,6 +9936,7 @@ public partial class Compiler
         {
             fgRemoveEhfSuccessor(leavePredEdge);
         }
+
         assert(block.bbRefs is 0);
         assert(block.bbPreds is null);
 
@@ -9720,6 +9963,7 @@ public partial class Compiler
         {
             return fgProfileWeightsEqual(weight1, weight2);
         }
+
         var relativeDiff = (weight2 - weight1) / weight2;
 
         return fgProfileWeightsEqual(relativeDiff, BB_ZERO_WEIGHT);
@@ -9735,7 +9979,7 @@ public partial class Compiler
             return;
         }
 
-        var block    = edgeRef.SourceBlock;
+        var block = edgeRef.SourceBlock;
         var dupCount = edgeRef.DupCount;
         _ = fgRemoveAllRefPreds(edgeRef.DestinationBlock, block);
 
@@ -9947,6 +10191,7 @@ public partial class Compiler
                     {
                         fgRemoveConditionalJump(bPrev);
                     }
+
                     break;
                 }
 
@@ -9960,6 +10205,7 @@ public partial class Compiler
         }
 
         assert(bNext is not null);
+
         return bNext;
     }
 
@@ -9985,6 +10231,7 @@ public partial class Compiler
             if (succs[i] == succEdge)
             {
                 fgRemoveEhfSuccFromTable(block, i);
+
                 return;
             }
         }
@@ -10140,6 +10387,7 @@ public partial class Compiler
                     assert(block.Kind is BBJ_ALWAYS);
                     assert(block.Target == newTarget);
                 }
+
                 break;
             }
 
@@ -10258,6 +10506,7 @@ public partial class Compiler
         }
 
         var ehPreds = GetBlockToEHPreds();
+
         if (ehPreds.TryGetValue(blk, out var res))
         {
             return res;
@@ -10265,6 +10514,7 @@ public partial class Compiler
 
         res = blk.bbPreds;
         var tryIndex = blk.HndIndex;
+
         // Funclets can split a try's layout range, so examine all blocks.
         // Callfinally tails cannot transfer control to a handler.
         foreach (var bb in Blocks)
@@ -10276,11 +10526,13 @@ public partial class Compiler
         }
 
         ref var ehblk = ref ehGetDsc(tryIndex);
+
         if (ehblk.HasFinallyOrFaultHandler && (ehblk.ebdHndBeg == blk))
         {
             for (var enclosing = ehblk.ebdEnclosingTryIndex; enclosing != EHblkDsc.NO_ENCLOSING_INDEX;)
             {
                 ref var enclosingDsc = ref ehGetDsc(enclosing);
+
                 if (enclosingDsc.HasFilter)
                 {
                     for (var filterBlk = enclosingDsc.ebdFilter; filterBlk != enclosingDsc.ebdHndBeg; filterBlk = filterBlk.Next)
@@ -10291,16 +10543,19 @@ public partial class Compiler
                             succ => succ == blk ? BasicBlockVisit.Abort : BasicBlockVisit.Continue) is BasicBlockVisit.Abort);
                     }
                 }
+
                 enclosing = enclosingDsc.ebdEnclosingTryIndex;
             }
         }
 
 #if DEBUG
         var hash = SsaStressHashHelper();
+
         if (hash != 0)
         {
             res = ShuffleHelper(hash, res);
         }
+
 #endif
         ehPreds[blk] = res;
 
@@ -10323,9 +10578,11 @@ public partial class Compiler
             pending.Push((entry, fgGetAllSuccessors(entry, useProfile), 0));
             entry.bbPreorderNum = preOrderIndex++;
             entry.bbPostorderNum = -1;
+
             while (pending.Count > 0)
             {
                 var (block, successors, next) = pending.Pop();
+
                 if (next == successors.Count)
                 {
                     block.bbPostorderNum = postOrderIndex;
@@ -10336,6 +10593,7 @@ public partial class Compiler
 
                 pending.Push((block, successors, next + 1));
                 var successor = successors[next];
+
                 if (BitVecOps.TryAddElemD(traits, visited, successor.bbNum))
                 {
                     pending.Push((successor, fgGetAllSuccessors(successor, useProfile), 0));
@@ -10358,6 +10616,7 @@ public partial class Compiler
         if (fgEntryBB is not null)
         {
             assert(opts.IsOSR);
+
             if (!BitVecOps.IsMember(traits, visited, fgEntryBB.bbNum))
             {
                 VisitEntry(fgEntryBB);
@@ -10371,12 +10630,14 @@ public partial class Compiler
         }
 
         assert(preOrderIndex == postOrderIndex);
+
         return new FlowGraphDfsTree(this, postOrder, preOrderIndex, hasCycle, useProfile);
     }
 
     private List<BasicBlock> fgGetAllSuccessors(BasicBlock block, bool useProfile = false)
     {
         var successors = new List<BasicBlock>();
+
         if (useProfile && (block.Kind is BBJ_COND) && (block.TrueEdge != block.FalseEdge) &&
             (block.TrueEdge.Likelihood < block.FalseEdge.Likelihood))
         {
@@ -10397,6 +10658,7 @@ public partial class Compiler
         }
 
         var hasPotentialEHSuccs = block.hasTryIndex;
+
         if (!hasPotentialEHSuccs && block.hasHndIndex)
         {
             hasPotentialEHSuccs = ehGetDsc(block.HndIndex).InFilterRegionBBRange(block);
@@ -10408,6 +10670,7 @@ public partial class Compiler
         }
 
         ref var eh = ref ehGetBlockExnFlowDsc(block);
+
         while (!Unsafe.IsNullRef(in eh))
         {
             if (eh.HasFilter)
@@ -10430,6 +10693,7 @@ public partial class Compiler
 
         _ = block.VisitEHEnclosedHandlerSecondPassSuccs(this, successor => {
             successors.Add(successor);
+
             return BasicBlockVisit.Continue;
         });
 
@@ -10509,6 +10773,7 @@ public partial class Compiler
         }
 
         var relativeDelta = delta / weight2;
+
         return fgProfileWeightsEqual(relativeDelta, BB_ZERO_WEIGHT);
     }
 
@@ -10591,6 +10856,7 @@ public partial class Compiler
                 else
                 {
                     noway_assert((sideEffectList.Flags & GTF_SIDE_EFFECT) != 0);
+
 #if DEBUG
                     if (verbose)
                     {
@@ -10655,6 +10921,7 @@ public partial class Compiler
             var handler = hnd.ebdHndBeg;
             stack.Push(handler);
             BitVecOps.AddElemD(traits, marked, handler.bbID);
+
             if (hnd.HasFilter)
             {
                 var filter = hnd.ebdFilter;
@@ -10687,6 +10954,7 @@ public partial class Compiler
                         stack.Push(target);
                         BitVecOps.AddElemD(traits, marked, target.bbID);
                     }
+
                     break;
                 }
 
@@ -10696,6 +10964,7 @@ public partial class Compiler
                     {
                         break;
                     }
+
                     goto case BBJ_RETURN;
                 }
 
@@ -10713,9 +10982,11 @@ public partial class Compiler
                 {
                     _ = ehGetMostNestedRegionIndex(block, out var isInTry);
                     ref var hnd = ref ehGetBlockHndDsc(block);
+
                     if (isInTry || (hnd.ebdHandlerType is EH_HANDLER_CATCH))
                     {
                         var target = block.Target;
+
                         if (target is null)
                         {
                             JITDUMP($"No jump dest for {FMT_BB(block.bbNum)}, suspect bad code\n");
@@ -10743,15 +11014,18 @@ public partial class Compiler
                         assert(BitVecOps.IsMember(traits, marked, target.bbID));
                         visitor.VisitNonTreeEdge(block, target, SpanningTreeVisitor.EdgeKind.Pseudo);
                     }
+
                     break;
                 }
 
                 default:
                 {
                     var numSucc = block.NumSucc;
+
                     if (numSucc == 1)
                     {
                         var target = block.Succs.Edges[0].DestinationBlock;
+
                         if (BitVecOps.IsMember(traits, marked, target.bbID))
                         {
                             // Probes cannot go in a callfinally pair's tail.
@@ -10770,6 +11044,7 @@ public partial class Compiler
                     {
                         scratch.Clear();
                         BitVecOps.ClearD(traits, processed);
+
                         foreach (var succ in block.Succs)
                         {
                             scratch.Add(succ);
@@ -10780,6 +11055,7 @@ public partial class Compiler
                         for (var i = 0; i < numSucc; i++)
                         {
                             var target = scratch[^(i + 1)];
+
                             if (BitVecOps.IsMember(traits, processed, i) ||
                                 block.isRunRarely || !target.isRunRarely)
                             {
@@ -10787,6 +11063,7 @@ public partial class Compiler
                             }
 
                             BitVecOps.AddElemD(traits, processed, i);
+
                             if (BitVecOps.IsMember(traits, marked, target.bbID))
                             {
                                 visitor.VisitNonTreeEdge(block, target, target.CountOfInEdges > 1
@@ -10804,12 +11081,14 @@ public partial class Compiler
                         for (var i = 0; i < numSucc; i++)
                         {
                             var target = scratch[^(i + 1)];
+
                             if (BitVecOps.IsMember(traits, processed, i) || (target.CountOfInEdges != 1))
                             {
                                 continue;
                             }
 
                             BitVecOps.AddElemD(traits, processed, i);
+
                             if (BitVecOps.IsMember(traits, marked, target.bbID))
                             {
                                 visitor.VisitNonTreeEdge(block, target, SpanningTreeVisitor.EdgeKind.DominatesTarget);
@@ -10825,12 +11104,14 @@ public partial class Compiler
                         for (var i = 0; i < numSucc; i++)
                         {
                             var target = scratch[^(i + 1)];
+
                             if (BitVecOps.IsMember(traits, processed, i))
                             {
                                 continue;
                             }
 
                             BitVecOps.AddElemD(traits, processed, i);
+
                             if (BitVecOps.IsMember(traits, marked, target.bbID))
                             {
                                 visitor.VisitNonTreeEdge(block, target, SpanningTreeVisitor.EdgeKind.CriticalEdge);
@@ -10845,6 +11126,7 @@ public partial class Compiler
 
                         assert(numSucc == BitVecOps.Count(traits, processed));
                     }
+
                     break;
                 }
             }
@@ -10876,12 +11158,14 @@ public partial class Compiler
 
         // Backedges into the entry block are not input flow from the caller.
         weight_t firstBlockPredWeight = 0;
+
         foreach (var firstBlockPred in fgFirstBB.PredEdges)
         {
             firstBlockPredWeight += firstBlockPred.LikelyWeight;
         }
 
         var calleeWeight = fgFirstBB.bbWeight;
+
         if (calleeWeight <= firstBlockPredWeight)
         {
             calleeWeight = fgHaveProfileWeights ? 1.0 : BB_UNITY_WEIGHT;
@@ -10901,12 +11185,14 @@ public partial class Compiler
 
         var callSiteBlock = impInlineInfo.iciBlock;
         assert(callSiteBlock is not null);
+
         if (!callSiteBlock.hasProfileWeight)
         {
             JITDUMP("   ... call site not profiled, will use non-pgo weight to scale\n");
         }
 
         var callSiteWeight = callSiteBlock.bbWeight;
+
         if (callSiteWeight == BB_ZERO_WEIGHT)
         {
             JITDUMP("   ... zero call site count; scale will be 0.0\n");
@@ -10927,6 +11213,7 @@ public partial class Compiler
     {
 #if DEBUG
         var hashSeed = fgStressBBProf();
+
         if (hashSeed != 0)
         {
             var hash = unchecked(((uint)info.compMethodHash() * hashSeed) ^ ((uint)offset * 1027));
@@ -10952,6 +11239,7 @@ public partial class Compiler
             }
 
             weightWB = weight;
+
             return true;
         }
 #endif
@@ -10971,17 +11259,20 @@ public partial class Compiler
             if (fgPgoSchema[i].InstrumentationKind is ICorJitInfo.PgoInstrumentationKind.BasicBlockIntCount)
             {
                 weightWB = *(uint*)(fgPgoData + fgPgoSchema[i].Offset);
+
                 return true;
             }
 
             if (fgPgoSchema[i].InstrumentationKind is ICorJitInfo.PgoInstrumentationKind.BasicBlockLongCount)
             {
                 weightWB = *(ulong*)(fgPgoData + fgPgoSchema[i].Offset);
+
                 return true;
             }
         }
 
         weightWB = 0;
+
         return true;
     }
 
@@ -10993,13 +11284,17 @@ public partial class Compiler
             _ = fgIncorporateBlockCounts();
             ProfileSynthesis.Run(this, ProfileSynthesisOption.RepairLikelihoods);
             fgApplyProfileScale();
+
             return PhaseStatus.MODIFIED_EVERYTHING;
         }
+
         if (!opts.OptimizationEnabled)
         {
             JITDUMP("not optimizing, so not incorporating any profile data\n");
+
             return PhaseStatus.MODIFIED_NOTHING;
         }
+
 #if DEBUG
         if (JitConfig.JitSynthesizeCounts > 0)
         {
@@ -11008,16 +11303,20 @@ public partial class Compiler
                 JITDUMP("Synthesizing profile data\n");
                 ProfileSynthesis.Run(this, ProfileSynthesisOption.AssignLikelihoods);
                 fgApplyProfileScale();
+
                 return PhaseStatus.MODIFIED_EVERYTHING;
             }
         }
+
         if (opts.jitFlags->IsSet(JitFlags.JIT_FLAG_BBINSTR) && (JitConfig.JitPropagateSynthesizedCountsToProfileData > 0))
         {
             JITDUMP("Synthesizing profile data and writing it out as the actual profile data\n");
             ProfileSynthesis.Run(this, ProfileSynthesisOption.AssignLikelihoods);
             fgApplyProfileScale();
+
             return PhaseStatus.MODIFIED_EVERYTHING;
         }
+
 #endif
         if (!fgHaveProfileData)
         {
@@ -11029,41 +11328,61 @@ public partial class Compiler
             {
                 JITDUMP("BBOPT not set\n");
             }
+
             if (fgPgoDynamic)
             {
                 JITDUMP("Dynamic PGO active, synthesizing profile data\n");
                 ProfileSynthesis.Run(this, ProfileSynthesisOption.AssignLikelihoods);
             }
+
             fgApplyProfileScale();
+
             return compIsForInlining ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
         }
 
         JITDUMP($"Have {compPgoSourceName}: {fgPgoSchemaCount} schema records (schema at {FMT_PTR((void*)dspPtr(fgPgoSchema))}, data at {FMT_PTR((void*)dspPtr(fgPgoData))})\n");
         fgNumProfileRuns = 0;
         uint otherRecords = 0;
+
         for (var i = 0; i < fgPgoSchemaCount; i++)
         {
             switch (fgPgoSchema[i].InstrumentationKind)
             {
                 case ICorJitInfo.PgoInstrumentationKind.NumRuns:
+                {
                     fgNumProfileRuns = unchecked(fgNumProfileRuns + fgPgoSchema[i].Other);
                     break;
+                }
+
                 case ICorJitInfo.PgoInstrumentationKind.BasicBlockIntCount:
                 case ICorJitInfo.PgoInstrumentationKind.BasicBlockLongCount:
+                {
                     fgPgoBlockCounts++;
                     break;
+                }
+
                 case ICorJitInfo.PgoInstrumentationKind.EdgeIntCount:
                 case ICorJitInfo.PgoInstrumentationKind.EdgeLongCount:
+                {
                     fgPgoEdgeCounts++;
                     break;
+                }
+
                 case ICorJitInfo.PgoInstrumentationKind.GetLikelyClass:
+                {
                     fgPgoClassProfiles++;
                     break;
+                }
+
                 case ICorJitInfo.PgoInstrumentationKind.GetLikelyMethod:
+                {
                     fgPgoMethodProfiles++;
                     break;
+                }
+
                 case ICorJitInfo.PgoInstrumentationKind.HandleHistogramIntCount:
                 case ICorJitInfo.PgoInstrumentationKind.HandleHistogramLongCount:
+                {
                     if (i + 1 < fgPgoSchemaCount)
                     {
                         if (fgPgoSchema[i + 1].InstrumentationKind is ICorJitInfo.PgoInstrumentationKind.HandleHistogramTypes)
@@ -11072,6 +11391,7 @@ public partial class Compiler
                             i++;
                             break;
                         }
+
                         if (fgPgoSchema[i + 1].InstrumentationKind is ICorJitInfo.PgoInstrumentationKind.HandleHistogramMethods)
                         {
                             fgPgoMethodProfiles++;
@@ -11079,22 +11399,30 @@ public partial class Compiler
                             break;
                         }
                     }
+
                     goto default;
+                }
+
                 default:
+                {
                     JITDUMP($"Unknown PGO record type 0x{unchecked((uint)fgPgoSchema[i].InstrumentationKind):x} in schema entry {i} (offset 0x{fgPgoSchema[i].ILOffset:x} count 0x{fgPgoSchema[i].Count:x} other 0x{fgPgoSchema[i].Other:x})\n");
                     otherRecords++;
                     break;
+                }
             }
         }
+
         if (fgNumProfileRuns == 0)
         {
             fgNumProfileRuns = 1;
         }
+
         JITDUMP($"Profile summary: {fgNumProfileRuns} runs, {fgPgoBlockCounts} block probes, {fgPgoEdgeCounts} edge probes, {fgPgoClassProfiles} class profiles, {fgPgoMethodProfiles} method profiles, {otherRecords} other records\n");
 
         var haveBlockCounts = fgPgoBlockCounts > 0;
         var haveEdgeCounts = fgPgoEdgeCounts > 0;
         fgPgoHaveWeights = haveBlockCounts || haveEdgeCounts;
+
         if (fgPgoHaveWeights)
         {
             // Prefer edge counts when both forms are present.
@@ -11106,6 +11434,7 @@ public partial class Compiler
             {
                 _ = fgIncorporateBlockCounts();
             }
+
             if (fgPgoHaveWeights)
             {
                 JITDUMP("\nRepairing profile...\n");
@@ -11117,12 +11446,14 @@ public partial class Compiler
                 ProfileSynthesis.Run(this, ProfileSynthesisOption.ResetAndSynthesize);
             }
         }
+
 #if DEBUG
         if (JitConfig.JitSynthesizeCounts == 3)
         {
             JITDUMP("Synthesizing profile data and blending it with the actual profile data\n");
             ProfileSynthesis.Run(this, ProfileSynthesisOption.BlendLikelihoods);
         }
+
 #endif
         fgApplyProfileScale();
 
@@ -11146,6 +11477,7 @@ public partial class Compiler
         foreach (var block in Blocks)
         {
             weight_t profileWeight = 0;
+
             if (fgGetProfileWeightForBasicBlock(block.bbCodeOffs, ref profileWeight))
             {
                 block.setBBProfileWeight(profileWeight);
@@ -11252,6 +11584,7 @@ public partial class Compiler
         {
             // It's the 1st entry, assign new head of list.
             fgReturnBlocks = fgReturnBlocks.Next;
+
             return;
         }
 
@@ -11291,6 +11624,7 @@ public partial class Compiler
         }
 
         var firstStmt = block.FirstStmt;
+
         if (firstStmt == stmt) // Is it the first statement in the list?
         {
             if (firstStmt.NextStmt is null)
@@ -11784,7 +12118,17 @@ public partial class Compiler
                 case BBJ_COND:
                 {
                     printedBlockWidth = 3 + 1 + 9; // "-> " + comma + kind
-                    jitprintf($"-> {DspBlockNum(block.bbTrueEdge, printEdgeLikelihoods, terseNext, nextBlock, ref printedBlockWidth)},{DspBlockNum(block.bbFalseEdge, printEdgeLikelihoods, terseNext, nextBlock, ref printedBlockWidth)}");
+                    jitprintf($"-> {DspBlockNum(
+block.bbTrueEdge,
+ printEdgeLikelihoods,
+ terseNext,
+ nextBlock,
+ ref printedBlockWidth)},{DspBlockNum(
+block.bbFalseEdge,
+ printEdgeLikelihoods,
+ terseNext,
+ nextBlock,
+ ref printedBlockWidth)}");
                     jitprintf($"{new string(' ', blockTargetFieldWidth - printedBlockWidth)} ( cond )");
                     break;
                 }
@@ -11828,6 +12172,7 @@ public partial class Compiler
                     printedBlockWidth = 2 + 9; // kind
 
                     var ehfDesc = block.EhfTargets;
+
                     if (ehfDesc is null)
                     {
                         jitprintf(" ????");
@@ -11906,6 +12251,7 @@ public partial class Compiler
                         jitprintf($"{((i == 0) ? ' ' : ',')}{DspBlockNum(jumpTab[i], printEdgeLikelihoods, terseNext, nextBlock, ref printedBlockWidth)}");
 
                         var isDefault = jumpSwt.HasDefaultCase && (i == (jumpTab.Length - 1));
+
                         if (isDefault)
                         {
                             jitprintf("[def]");
@@ -11913,6 +12259,7 @@ public partial class Compiler
                         }
 
                         var isDominant = jumpSwt.HasDominantCase && (i == jumpSwt.DominantCase);
+
                         if (isDominant)
                         {
                             jitprintf("[dom]");
@@ -12122,6 +12469,7 @@ public partial class Compiler
             }
 
             printedBlockWidth += stringBuilder.Length;
+
             return stringBuilder.ToString();
         }
     }
@@ -12292,6 +12640,7 @@ public partial class Compiler
 
         // Now the entry is there, but not filled in
         compHndBBtabCount = (ushort)(newCount);
+
         return XTnum + count - 1;
     }
 
@@ -12383,6 +12732,7 @@ public partial class Compiler
             {
                 fgRemoveStmt(block, stmt);
             }
+
             noway_assert(block.FirstStmt is null);
         }
 
@@ -12444,6 +12794,7 @@ public partial class Compiler
         }
 
         fgCreateNewInitBB();
+
         return PhaseStatus.MODIFIED_EVERYTHING;
     }
 
@@ -12510,6 +12861,7 @@ public partial class Compiler
                 gtSetStmtInfo(stmt);
             }
         }
+
         return PhaseStatus.MODIFIED_EVERYTHING;
     }
 
@@ -12579,6 +12931,7 @@ public partial class Compiler
         }
 
         fgImportDone = true;
+
         return PhaseStatus.MODIFIED_EVERYTHING;
     }
 
@@ -12588,6 +12941,7 @@ public partial class Compiler
         assert(compAsyncInliningStress());
 
         List<InlineCandidateInfo> candidates = [];
+
         foreach (var block in Blocks)
         {
             foreach (var stmt in block.Statements)
@@ -12598,6 +12952,7 @@ public partial class Compiler
                 if (expr.Oper is GT_CALL)
                 {
                     var call = expr.AsCall();
+
                     if (call.IsAsync && call.IsInlineCandidate && !call.IsGuardedDevirtualizationCandidate)
                     {
                         var candidateInfo = call.SingleInlineCandidateInfo;
@@ -12679,34 +13034,41 @@ public partial class Compiler
         assert(fgPredsComputed);
 
         var enabled = true;
+
 #if DEBUG
         enabled = JitConfig.JitEnableRemoveUnreachableTry == 1;
+
 #endif
         if (!enabled)
         {
             JITDUMP("Unreachable try removal disabled by config.\n");
+
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
         if (compHndBBtabCount == 0)
         {
             JITDUMP("No EH in this method; nothing to do.\n");
+
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
         if (opts.MinOpts)
         {
             JITDUMP("Method compiled with MinOpts; skipping.\n");
+
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
         if (opts.compDbgCode)
         {
             JITDUMP("Method compiled with debug codegen; skipping.\n");
+
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
         var ownsDfs = false;
+
         if (_dfsTree is null)
         {
             _dfsTree = fgComputeDfs();
@@ -12768,10 +13130,12 @@ public partial class Compiler
         if (!foundDead)
         {
             JITDUMP("No unreachable EH regions found.\n");
+
             if (ownsDfs)
             {
                 fgInvalidateDfsTree();
             }
+
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
@@ -12787,6 +13151,7 @@ public partial class Compiler
             ref var hBtab = ref ehGetDsc((ushort)xtnum);
             var encT = hBtab.ebdEnclosingTryIndex;
             var encH = hBtab.ebdEnclosingHndIndex;
+
             if (((encT != EHblkDsc.NO_ENCLOSING_INDEX) && BitVecOps.IsMember(traits, markedDead, encT))
                 || ((encH != EHblkDsc.NO_ENCLOSING_INDEX) && BitVecOps.IsMember(traits, markedDead, encH)))
             {
@@ -12797,6 +13162,7 @@ public partial class Compiler
 
         // Unprotect all blocks in dead regions and remove artificial entry references.
         var removedCount = 0;
+
         for (var xtnum = 0; xtnum < compHndBBtabCount; xtnum++)
         {
             if (!BitVecOps.IsMember(traits, markedDead, xtnum))
@@ -12805,9 +13171,11 @@ public partial class Compiler
             }
 
             ref var hBtab = ref ehGetDsc((ushort)xtnum);
+
             foreach (var block in new BasicBlockSimpleList(hBtab.ebdTryBeg))
             {
                 block.RemoveFlags(BBF_DONT_REMOVE);
+
                 if (block == hBtab.ebdTryLast)
                 {
                     break;
@@ -12817,6 +13185,7 @@ public partial class Compiler
             foreach (var block in new BasicBlockSimpleList(hBtab.ebdHndBeg))
             {
                 block.RemoveFlags(BBF_DONT_REMOVE);
+
                 if (block == hBtab.ebdHndLast)
                 {
                     break;
@@ -12828,6 +13197,7 @@ public partial class Compiler
                 foreach (var block in new BasicBlockSimpleList(hBtab.ebdFilter))
                 {
                     block.RemoveFlags(BBF_DONT_REMOVE);
+
                     if (block == hBtab.BBFilterLast)
                     {
                         break;
@@ -12880,12 +13250,14 @@ public partial class Compiler
         fgRemoveBlocksOutsideDfsTree();
 
         fgInvalidateDfsTree();
+
         if (!ownsDfs)
         {
             _dfsTree = fgComputeDfs();
         }
 
         JITDUMP($"\nfgRemoveUnreachableTry removed {removedCount} unreachable EH region(s)\n");
+
         return PhaseStatus.MODIFIED_EVERYTHING;
     }
 
@@ -12904,6 +13276,7 @@ public partial class Compiler
         foreach (var add in new List<AddCodeDsc>(map.Values))
         {
             JITDUMP("Considering ");
+
 #if DEBUG
             if (verbose)
             {
@@ -12923,10 +13296,12 @@ public partial class Compiler
                 assert(removed);
 #if DEBUG
                 JITDUMP($"ACD{add.acdNum} was in EH#{xtnum} filter region: removing\n");
+
                 if (verbose)
                 {
                     add.Dump();
                 }
+
 #endif
                 continue;
             }
@@ -12940,6 +13315,7 @@ public partial class Compiler
             }
 
             var rekey = false;
+
             if (inThisHnd)
             {
                 add.acdHndIndex = eh.ebdEnclosingHndIndex == EHblkDsc.NO_ENCLOSING_INDEX
@@ -12960,10 +13336,12 @@ public partial class Compiler
             {
 #if DEBUG
                 JITDUMP($"ACD{add.acdNum} non-enclosing region updated; key remains the same\n");
+
                 if (verbose)
                 {
                     add.Dump();
                 }
+
 #endif
                 continue;
             }
@@ -12972,10 +13350,12 @@ public partial class Compiler
             var oldKeyRemoved = map.Remove(oldKey);
             assert(oldKeyRemoved);
             var newKey = new AddCodeDscKey(add);
+
             if (map.TryGetValue(newKey, out var existing))
             {
 #if DEBUG
                 JITDUMP($"ACD{add.acdNum} merged into ACD{existing.acdNum}\n");
+
                 if (verbose)
                 {
                     existing.Dump();
@@ -12986,10 +13366,12 @@ public partial class Compiler
             {
 #if DEBUG
                 JITDUMP($"ACD{add.acdNum} updated with new key\n");
+
                 if (verbose)
                 {
                     add.Dump();
                 }
+
 #endif
                 map[newKey] = add;
             }
@@ -13004,9 +13386,11 @@ public partial class Compiler
         JITDUMP($"\nRemoving EH#{xtnum}\n");
 
         compHndBBtabCount--;
+
         if (compHndBBtabCount != 0)
         {
             ref var removed = ref compHndBBtab[xtnum];
+
             for (var i = 0; i < compHndBBtabCount; i++)
             {
                 if (i == xtnum)
@@ -13015,6 +13399,7 @@ public partial class Compiler
                 }
 
                 ref var clause = ref compHndBBtab[i];
+
                 if ((clause.ebdEnclosingTryIndex != EHblkDsc.NO_ENCLOSING_INDEX)
                     && (clause.ebdEnclosingTryIndex >= xtnum))
                 {
@@ -13095,6 +13480,7 @@ public partial class Compiler
             JITDUMP("Updating ACD entries after EH removal\n");
             var map = fgAddCodeDscMap;
             var modified = new Stack<AddCodeDsc>();
+
             foreach (var add in new List<AddCodeDsc>(map.Values))
             {
                 var oldKey = new AddCodeDscKey(add);
@@ -13102,6 +13488,7 @@ public partial class Compiler
                 assert((add.acdHndIndex == 0) || (add.acdHndIndex - 1 != xtnum));
 
                 var isModified = false;
+
                 if (add.acdTryIndex > xtnum)
                 {
                     add.acdTryIndex--;
@@ -13127,10 +13514,12 @@ public partial class Compiler
             {
                 var add = modified.Pop();
                 var key = new AddCodeDscKey(add);
+
                 if (map.TryGetValue(key, out var existing))
                 {
 #if DEBUG
                     JITDUMP($"ACD{add.acdNum} merged into ACD{existing.acdNum}\n");
+
                     if (verbose)
                     {
                         existing.Dump();
@@ -13141,10 +13530,12 @@ public partial class Compiler
                 {
 #if DEBUG
                     JITDUMP($"ACD{add.acdNum} updated\n");
+
                     if (verbose)
                     {
                         add.Dump();
                     }
+
 #endif
                     map[key] = add;
                 }
@@ -13158,6 +13549,7 @@ public partial class Compiler
     {
         var dfsTree = _dfsTree;
         assert(dfsTree is not null);
+
         if (dfsTree.PostOrderCount == fgBBcount)
         {
             return false;
@@ -13167,6 +13559,7 @@ public partial class Compiler
         if (verbose)
         {
             jitprintf($"{fgBBcount - dfsTree.PostOrderCount}/{fgBBcount} blocks are unreachable and will be removed:\n");
+
             foreach (var block in Blocks)
             {
                 if (!dfsTree.Contains(block))
@@ -13182,11 +13575,11 @@ public partial class Compiler
         while (true)
         {
             var anyCallFinallyPairs = false;
-            _ = fgRemoveUnreachableBlocks(block =>
-            {
+            _ = fgRemoveUnreachableBlocks(block => {
                 if (!dfsTree.Contains(block))
                 {
                     anyCallFinallyPairs |= block.isBBCallFinallyPair;
+
                     return true;
                 }
 
@@ -13206,6 +13599,7 @@ public partial class Compiler
         if (verbose && (dfsTree.PostOrderCount != fgBBcount))
         {
             jitprintf($"{fgBBcount - dfsTree.PostOrderCount} unreachable blocks were not removed:\n");
+
             foreach (var block in Blocks)
             {
                 if (!dfsTree.Contains(block))
@@ -13340,6 +13734,7 @@ public partial class Compiler
     protected uint fgStressBBProf()
     {
         var result = unchecked((uint)JitConfig.JitStressBBProf);
+
         if ((result == 0) && compStressCompile(STRESS_BB_PROFILE, 15))
         {
             result = 1;
@@ -13560,12 +13955,14 @@ public partial class Compiler
                                 for (var i = 0; i < dstDsc.lvFieldCnt; i++)
                                 {
                                     var dstFieldLclNum = dstDsc.lvFieldLclStart + i;
+
                                     if (!BitVecOps.IsMember(traits, hasNoGcValue, dstFieldLclNum))
                                     {
                                         continue;
                                     }
 
                                     var isNoGc = false;
+
                                     if (srcEligible)
                                     {
                                         ref var dstFld = ref lvaGetDesc(dstFieldLclNum);
@@ -13605,6 +14002,7 @@ public partial class Compiler
                             }
 
                             var isNoGcValue = value.IsNotGcDef();
+
                             if (!isNoGcValue && (value.Oper is GT_LCL_VAR))
                             {
                                 isNoGcValue = BitVecOps.IsMember(traits, hasNoGcValue, value.AsLclVar().LclNum);
@@ -13635,6 +14033,7 @@ public partial class Compiler
                                 for (var i = 0; i < dstDsc.lvFieldCnt; i++)
                                 {
                                     var dstFieldLclNum = dstDsc.lvFieldLclStart + i;
+
                                     if (BitVecOps.IsMember(traits, hasNoGcValue, dstFieldLclNum))
                                     {
                                         BitVecOps.RemoveElemD(traits, hasNoGcValue, dstFieldLclNum);
@@ -13649,9 +14048,11 @@ public partial class Compiler
         }
 
         var unpinned = 0;
+
         for (var lclNum = 0; lclNum < lvaCount; lclNum++)
         {
             ref var varDsc = ref lvaGetDesc(lclNum);
+
             if (varDsc.lvPinned && BitVecOps.IsMember(traits, hasNoGcValue, lclNum))
             {
                 varDsc.lvPinned = false;
@@ -13661,6 +14062,7 @@ public partial class Compiler
         }
 
         JITDUMP($"fgUnpinNonMovableLocals: {unpinned} local{(unpinned == 1 ? "" : "s")} unpinned after {iterations} iteration{(iterations == 1 ? "" : "s")}\n");
+
         return PhaseStatus.MODIFIED_NOTHING;
     }
 
@@ -13680,10 +14082,12 @@ public partial class Compiler
     public void fgInsertStmtAtBeg(BasicBlock block, Statement stmt)
     {
         var firstStmt = block.FirstStmt;
+
         if (stmt.IsPhiDefnStmt)
         {
             block.FirstStmt = stmt;
             stmt.NextStmt = firstStmt;
+
             if (firstStmt is not null)
             {
                 var lastStmt = firstStmt.PrevStmt;
@@ -13699,6 +14103,7 @@ public partial class Compiler
         else
         {
             var insertBeforeStmt = block.GetFirstNonPhiDefOrCatchArgStore();
+
             if (insertBeforeStmt is not null)
             {
                 fgInsertStmtBefore(block, insertBeforeStmt, stmt);
@@ -13753,6 +14158,7 @@ public partial class Compiler
         foreach (var stmt in block.Statements)
         {
             var di = stmt.DebugInfo.GetRoot();
+
             if (di.IsValid)
             {
                 return di.Location.Offset;
@@ -13811,6 +14217,7 @@ public partial class Compiler
         else
         {
             var successors = curr.Succs;
+
             foreach (var succEdge in successors.Edges)
             {
                 assert(succEdge.SourceBlock != newBlock);

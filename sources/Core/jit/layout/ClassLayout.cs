@@ -508,6 +508,7 @@ public sealed class ClassLayout
 
             builder.RemovePadding(new SegmentList.Segment(start, segmentEnd));
         }
+
         return compiler.typGetCustomLayout(builder);
     }
 

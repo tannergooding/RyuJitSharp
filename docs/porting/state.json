@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Continue whole-node constant replacement for arithmetic folding and its caller/owner/alias/LIR contracts (B064); do not emulate native cross-kind bashing or redesign the hierarchy. Special-intrinsic call folding is implemented (B081), and its importer caller already consumes returned replacements. Constant replacement must preserve base metadata and logical tree IDs without consuming additional native-visible IDs; cached argument-table references and LIR ownership still need adaptation. The .NET 11 RC1 migration and managed partial/hexadecimal parsing are complete. The latest seven-method recapture preserves three exactly matching import prefixes; remaining first differences concern inline-candidate processing. Both native trees use the target revision; read the intact oracle.",
+    "nextAction": "Finish the restored, uncommitted scalar-folding batch before further porting: validate its intrinsic-recognition diagnostics and floating formatting, recapture the eight-method corpus including FoldConstants, then retire only completed native helpers and commit the batch. Follow the C# layout guidance in AGENTS.md and README.md; process-ported code has received a separate layout-only cleanup. Constant replacement preserves base metadata and logical IDs without allocating a new logical ID, but currently supports unthreaded tree form only. Nonconstant, conditional, hardware-intrinsic and value-numbered folding remain incomplete; cached argument references and LIR ownership still need adaptation (B064). Do not emulate native cross-kind bashing or redesign the hierarchy. Both native trees use the target revision; read the intact oracle.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -19,6 +19,17 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "csharpLayoutCleanup": {
+        "scopeBaseline": "16baaa76261ee07b239908d8ff50fddefca74d0f",
+        "throughCommit": "d9c42fd",
+        "sourceSnapshot": "482656f031aa4846ccdba0200cd20982a78da7ec",
+        "debugPassed": 991,
+        "releasePassed": 813,
+        "skipped": 0,
+        "sourceCheck": "Canonical tokens, comments, directives and literals preserved across nine preprocessor configurations, allowing only switch-section scope blocks.",
+        "functionalWipIncluded": false,
+        "nativeAotRecaptured": false
+      },
       "debugBuild": "passed-after-net11-managed-parsing",
       "releaseBuild": "passed-after-net11-managed-parsing",
       "testSourcesPresent": true,
@@ -398,6 +409,14 @@
     ]
   },
   "localRecovery": {
+    "scalarFoldingBeforeLayoutCleanup": {
+      "commit": "7aebd76569b1a96d141746b6f5edb96caa694fdf",
+      "ref": "refs/porting/snapshots/scalar-folding-before-style-cleanup"
+    },
+    "csharpLayoutCleanupSource": {
+      "commit": "482656f031aa4846ccdba0200cd20982a78da7ec",
+      "ref": "refs/porting/snapshots/csharp-layout-source"
+    },
     "csharpWip": {
       "commit": "5074a81a6799ea9321fb2431ad7835ebadf4ac4b",
       "ref": "refs/porting/snapshots/2026-09-22-csharp-wip"

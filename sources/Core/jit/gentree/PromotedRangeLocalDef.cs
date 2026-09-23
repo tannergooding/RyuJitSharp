@@ -29,11 +29,18 @@ public readonly struct PromotedRangeLocalDef : ILocalDef
     }
 
     public GenTreeLclVarCommon DefNode { get; }
+
     public int LclNum { get; }
+
     public int MultiDefIndex => _index;
+
     public bool IsEntire(Compiler compiler) => _isEntire;
+
     public nint GetOffset(Compiler compiler) => _offset;
+
     public ValueSize GetSize(Compiler compiler) => _size;
+
     public nint GetValueOffset(Compiler compiler) => _valueOffset;
+
     public ValueSize GetStoreSize(Compiler compiler) => _storeSize;
 }

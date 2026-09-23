@@ -27,6 +27,7 @@ internal static unsafe class ImporterCallTests
         compiler.compCurBB = new BasicBlock(null, null);
         compiler.stackState.esStack = new StackEntry[1];
         JitTls.Compiler = compiler;
+
         try
         {
             GenTree value = type == CorInfoType.CORINFO_TYPE_LONG
@@ -52,6 +53,7 @@ internal static unsafe class ImporterCallTests
         CORINFO_ARG_LIST_STRUCT_* argument, CORINFO_CLASS_STRUCT_** type)
     {
         *type = null;
+
         return (CorInfoTypeWithMod)signature->retType;
     }
 
@@ -70,6 +72,7 @@ internal static unsafe class ImporterCallTests
         compiler.info.compMaxStack = 2;
         compiler.stackState.esStack = new StackEntry[2];
         JitTls.Compiler = compiler;
+
         try
         {
             GenTree value = type == var_types.TYP_LONG
@@ -120,6 +123,7 @@ internal static unsafe class ImporterCallTests
         compiler.opts.jitFlags = &flags;
         compiler.info = new Compiler.Info { compCompHnd = &jitInfo };
         JitTls.Compiler = compiler;
+
         try
         {
             var stateValue = new InstantiationHandle { Value = 0x40, Indirect = indirect };
@@ -217,11 +221,14 @@ internal static unsafe class ImporterCallTests
                 _callMethHnd = (CORINFO_METHOD_STRUCT_*)1,
                 RetClsHnd = (CORINFO_CLASS_STRUCT_*)2,
             };
+
             if (returnBuffer)
             {
                 call._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_RETBUFFARG;
             }
+
             GenTree value = call;
+
             if (placeholder)
             {
                 call.SingleInlineCandidateInfo = new InlineCandidateInfo();
@@ -237,6 +244,7 @@ internal static unsafe class ImporterCallTests
                 Assert.That(call.Type, Is.EqualTo(returnBuffer ? var_types.TYP_VOID : var_types.TYP_STRUCT));
                 Assert.That(compiler.lvaCount, Is.EqualTo(returnBuffer ? 1 : 0));
             });
+
             if (returnBuffer)
             {
                 var argument = call.Args.RetBufferArg ?? throw new InvalidOperationException("Missing return buffer argument.");
@@ -351,19 +359,23 @@ internal static unsafe class ImporterCallTests
         {
             var ranks = stackalloc int[] { firstRank, secondRank };
             var firstTemp = Globals.BAD_VAR_NUM;
+
             for (var invocation = 0; invocation < 2; invocation++)
             {
                 var rank = ranks[invocation];
                 compiler.stackState.esStack = new StackEntry[rank];
                 compiler.stackState.esStackDepth = rank;
+
                 for (var i = 0; i < rank; i++)
                 {
                     compiler.stackState.esStack[i].val = compiler.gtNewIconNode(var_types.TYP_INT, i + 1);
                 }
+
                 var token = new CORINFO_RESOLVED_TOKEN { hClass = (CORINFO_CLASS_STRUCT_*)(ranks + invocation) };
                 CORINFO_CALL_INFO callInfo = default;
                 callInfo.sig.numArgs = (ushort)rank;
                 compiler.impImportNewObjArray(token, callInfo);
+
                 if (invocation == 0)
                 {
                     firstTemp = compiler.lvaNewObjArrayArgs;
@@ -469,6 +481,7 @@ internal static unsafe class ImporterCallTests
     {
         handle->Embedded++;
         *indirection = handle->Indirect ? &handle->Value : null;
+
         return handle->Indirect ? null : (void*)handle->Value;
     }
 
@@ -494,6 +507,7 @@ internal static unsafe class ImporterCallTests
     private static CorInfoHelpFunc GetNewHelper(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type, bool* sideEffects)
     {
         *sideEffects = false;
+
         return CorInfoHelpFunc.CORINFO_HELP_NEWSFAST;
     }
 
@@ -507,10 +521,12 @@ internal static unsafe class ImporterCallTests
     private static TypeCompareState IsEnum(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type, CORINFO_CLASS_STRUCT_** underlyingType)
     {
         ((BoxClass*)type)->EnumQueries++;
+
         if (underlyingType is not null)
         {
             *underlyingType = null;
         }
+
         return ((BoxClass*)type)->EnumState;
     }
 
@@ -530,10 +546,12 @@ internal static unsafe class ImporterCallTests
         *required = name.Length + 1;
         var written = (int)Math.Min(Math.Max(length - 1, 0), name.Length);
         name[..written].CopyTo(new Span<byte>(buffer, written));
+
         if (length > 0)
         {
             buffer[written] = 0;
         }
+
         return written;
     }
 
@@ -541,6 +559,7 @@ internal static unsafe class ImporterCallTests
     private static byte RunWithErrorTrap(ICorJitInfo* self, delegate* unmanaged[Cdecl]<void*, void> callback, void* state)
     {
         callback(state);
+
         return 1;
     }
 

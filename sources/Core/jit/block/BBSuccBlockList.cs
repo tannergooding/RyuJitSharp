@@ -94,6 +94,7 @@ public readonly ref partial struct BBSuccBlockList
             {
                 return ((ReadOnlySpan<FlowEdge>)_succsInline)[.._succCount];
             }
+
             return _succs;
         }
     }

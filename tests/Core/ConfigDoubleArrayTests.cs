@@ -65,6 +65,7 @@ internal static unsafe class ConfigDoubleArrayTests
     public static void ParsingUsesInvariantCulture()
     {
         var previous = CultureInfo.CurrentCulture;
+
         try
         {
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("fr-FR");
@@ -87,6 +88,7 @@ internal static unsafe class ConfigDoubleArrayTests
         using var stream = new MemoryStream();
         using var writer = new JitTextWriter(stream, leaveOpen: true);
         var previous = s_jitstdout;
+
         try
         {
             s_jitstdout = writer;
@@ -97,6 +99,7 @@ internal static unsafe class ConfigDoubleArrayTests
         {
             s_jitstdout = previous;
         }
+
         Assert.That(Encoding.UTF8.GetString(stream.ToArray()),
             Is.EqualTo(expected.Replace("\n", Environment.NewLine, StringComparison.Ordinal)));
     }
@@ -104,6 +107,7 @@ internal static unsafe class ConfigDoubleArrayTests
     private static ConfigDoubleArray Parse(string? text)
     {
         var bytes = text is null ? null : Encoding.UTF8.GetBytes(text + '\0');
+
         fixed (byte* p = bytes)
         {
             ConfigDoubleArray array = default;

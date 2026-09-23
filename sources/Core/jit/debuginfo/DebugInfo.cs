@@ -48,6 +48,7 @@ public readonly struct DebugInfo
     public DebugInfo GetRoot()
     {
         var result = this;
+
         while (result.GetParent(out var parent))
         {
             result = parent;

@@ -236,6 +236,7 @@ public partial class Compiler
             {
                 // SIMD and mask locals have specialized IR or no accessible fields.
                 JITDUMP($"  struct promotion of V{lclNum:D2} is disabled because it is a SIMD or MASK type\n");
+
                 return false;
             }
 
@@ -243,6 +244,7 @@ public partial class Compiler
             {
                 // Treat user-defined vector wrappers as vectors rather than promoting their fields.
                 JITDUMP($"  struct promotion of V{lclNum:D2} is disabled because IsBitcastToSimd()\n");
+
                 return false;
             }
 
@@ -708,18 +710,21 @@ public partial class Compiler
             if (primNode.size != node.size)
             {
                 JITDUMP("Promotion blocked: struct contains struct field with one field, but that field is not the same size as its parent.\n");
+
                 return TYP_UNDEF;
             }
 
             if (primNode.size > TARGET_POINTER_SIZE)
             {
                 JITDUMP("Promotion blocked: struct contains struct field with one field, but that field has invalid size.\n");
+
                 return TYP_UNDEF;
             }
 
             if ((primNode.size != TARGET_POINTER_SIZE) && ((node.offset % primNode.size) != 0))
             {
                 JITDUMP($"Promotion blocked: struct contains struct field with one field, but the outer struct offset {node.offset} is not a multiple of the inner field size {primNode.size}.\n");
+
                 return TYP_UNDEF;
             }
 

@@ -67,6 +67,7 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
     private static BlockInfo BlockToInfo(BasicBlock block)
     {
         assert(block.bbSparseCountInfo is not null);
+
         return block.bbSparseCountInfo;
     }
 
@@ -95,10 +96,12 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
     public override void VisitTreeEdge(BasicBlock source, BasicBlock target)
     {
         var key = new EdgeKey(source, target);
+
         if (_edgeKeyToEdgeMap.ContainsKey(key))
         {
             JITDUMP($"Did not expect tree edge {FMT_BB(source.bbNum)} -> {FMT_BB(target.bbNum)} to be present in the schema (key {key.SourceKey:x8}, {key.TargetKey:x8})\n");
             Mismatch();
+
             return;
         }
 
@@ -119,6 +122,7 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
     public override void VisitNonTreeEdge(BasicBlock source, BasicBlock target, EdgeKind kind)
     {
         var sourceInfo = BlockToInfo(source);
+
         if (!_edgeKeyToEdgeMap.TryGetValue(new EdgeKey(source, target), out var edge))
         {
             // Absent non-tree edges carry zero flow.
@@ -142,6 +146,7 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
 #if DEBUG
         uint nReturns = 0;
         uint nZeroReturns = 0;
+
 #endif
         foreach (var block in _compiler.Blocks)
         {
@@ -151,6 +156,7 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
             SetBlockInfo(block, new BlockInfo());
             _blocks++;
             _unknownBlocks++;
+
 #if DEBUG
             if (block.Kind is BBJ_RETURN)
             {
@@ -162,6 +168,7 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
         for (var iSchema = 0; iSchema < _compiler.fgPgoSchemaCount; iSchema++)
         {
             ref var schemaEntry = ref _compiler.fgPgoSchema[iSchema];
+
             if (schemaEntry.InstrumentationKind is not (ICorJitInfo.PgoInstrumentationKind.EdgeIntCount or ICorJitInfo.PgoInstrumentationKind.EdgeLongCount))
             {
                 continue;
@@ -171,10 +178,12 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
             {
                 JITDUMP($"Could not find source block for schema entry {iSchema} (IL offset/key {schemaEntry.ILOffset:x8})\n");
             }
+
             if (!_keyToBlockMap.TryGetValue(schemaEntry.Other, out var targetBlock))
             {
                 JITDUMP($"Could not find target block for schema entry {iSchema} (IL offset/key {schemaEntry.ILOffset:x8})\n");
             }
+
             if ((sourceBlock is null) || (targetBlock is null))
             {
                 Mismatch();
@@ -184,6 +193,7 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
             var profileCount = schemaEntry.InstrumentationKind is ICorJitInfo.PgoInstrumentationKind.EdgeIntCount
                 ? *(uint*)(_compiler.fgPgoData + schemaEntry.Offset)
                 : *(ulong*)(_compiler.fgPgoData + schemaEntry.Offset);
+
 #if DEBUG
             if ((JitConfig.JitRandomEdgeCounts != 0) && (nReturns > 0))
             {
@@ -197,6 +207,7 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
                 if ((rval <= 0.5) && (!isReturn || (nZeroReturns < (nReturns - 1))))
                 {
                     profileCount = 0;
+
                     if (isReturn)
                     {
                         nZeroReturns++;
@@ -219,6 +230,7 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
                     profileCount = (ulong)random.Next(100001, 1000001);
                 }
             }
+
 #endif
             var weight = (weight_t)profileCount;
             _allWeightsZero &= profileCount == 0;
@@ -236,6 +248,7 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
         if (_badcode || _mismatch || _allWeightsZero)
         {
             JITDUMP($"... not solving because of the {(_badcode ? "badcode" : _allWeightsZero ? "zero counts" : "mismatch")}\n");
+
             return;
         }
 
@@ -244,6 +257,7 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
             assert(_compiler.fgOSREntryBB is not null);
             assert(_compiler.fgFirstBB is not null);
             var key = new EdgeKey(_compiler.fgOSREntryBB, _compiler.fgFirstBB);
+
             if (!_edgeKeyToEdgeMap.TryGetValue(key, out var edge))
             {
                 // Account for original-method invocations that transferred at the patchpoint.
@@ -272,40 +286,48 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
             for (var block = _compiler.fgLastBB; block is not null; block = block.Prev)
             {
                 var info = BlockToInfo(block);
+
                 if (!info.WeightKnown)
                 {
                     JITDUMP($"{FMT_BB(block.bbNum)}: {info.IncomingUnknown} incoming unknown, {info.OutgoingUnknown} outgoing unknown\n");
                     var weight = BB_ZERO_WEIGHT;
                     var weightKnown = false;
+
                     if (info.IncomingUnknown == 0)
                     {
                         JITDUMP($"{FMT_BB(block.bbNum)}: all incoming edge weights known, summing...\n");
+
                         for (var edge = info.IncomingEdges; edge is not null; edge = edge.NextIncomingEdge)
                         {
                             if (!edge.WeightKnown)
                             {
                                 JITDUMP($"... odd, expected {FMT_BB(edge.SourceBlock.bbNum)} -> {FMT_BB(edge.TargetBlock.bbNum)} to have known weight\n");
                             }
+
                             assert(edge.WeightKnown);
                             JITDUMP($"  {FMT_BB(edge.SourceBlock.bbNum)} -> {FMT_BB(edge.TargetBlock.bbNum)} has weight {FMT_WT(edge.Weight)}\n");
                             weight += edge.Weight;
                         }
+
                         JITDUMP($"{FMT_BB(block.bbNum)}: all incoming edge weights known, sum is {FMT_WT(weight)}\n");
                         weightKnown = true;
                     }
                     else if (info.OutgoingUnknown == 0)
                     {
                         JITDUMP($"{FMT_BB(block.bbNum)}: all outgoing edge weights known, summing...\n");
+
                         for (var edge = info.OutgoingEdges; edge is not null; edge = edge.NextOutgoingEdge)
                         {
                             if (!edge.WeightKnown)
                             {
                                 JITDUMP($"... odd, expected {FMT_BB(edge.SourceBlock.bbNum)} -> {FMT_BB(edge.TargetBlock.bbNum)} to have known weight\n");
                             }
+
                             assert(edge.WeightKnown);
                             JITDUMP($"  {FMT_BB(edge.SourceBlock.bbNum)} -> {FMT_BB(edge.TargetBlock.bbNum)} has weight {FMT_WT(edge.Weight)}\n");
                             weight += edge.Weight;
                         }
+
                         JITDUMP($"{FMT_BB(block.bbNum)}: all outgoing edge weights known, sum is {FMT_WT(weight)}\n");
                         weightKnown = true;
                     }
@@ -328,6 +350,7 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
                 {
                     var weight = BB_ZERO_WEIGHT;
                     Edge? resolvedEdge = null;
+
                     for (var edge = info.IncomingEdges; edge is not null; edge = edge.NextIncomingEdge)
                     {
                         if (edge.WeightKnown)
@@ -340,9 +363,11 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
                             resolvedEdge = edge;
                         }
                     }
+
                     assert(resolvedEdge is not null);
                     weight = info.Weight - weight;
                     JITDUMP($"{FMT_BB(resolvedEdge.SourceBlock.bbNum)} -> {FMT_BB(resolvedEdge.TargetBlock.bbNum)}: target block weight and all other incoming edge weights known, so weight is {FMT_WT(weight)}\n");
+
                     if (weight < 0)
                     {
                         // Scalable or racing counters can yield inconsistent counts.
@@ -350,6 +375,7 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
                         weight = info.Weight * ProfileSynthesis.epsilon;
                         JITDUMP($" .... weight was negative, setting it to {FMT_WT(weight)}\n");
                     }
+
                     resolvedEdge.Weight = weight;
                     resolvedEdge.WeightKnown = true;
                     assert(BlockToInfo(resolvedEdge.SourceBlock).OutgoingUnknown > 0);
@@ -363,6 +389,7 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
                 {
                     var weight = BB_ZERO_WEIGHT;
                     Edge? resolvedEdge = null;
+
                     for (var edge = info.OutgoingEdges; edge is not null; edge = edge.NextOutgoingEdge)
                     {
                         if (edge.WeightKnown)
@@ -375,15 +402,18 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
                             resolvedEdge = edge;
                         }
                     }
+
                     assert(resolvedEdge is not null);
                     weight = info.Weight - weight;
                     JITDUMP($"{FMT_BB(resolvedEdge.SourceBlock.bbNum)} -> {FMT_BB(resolvedEdge.TargetBlock.bbNum)}: source block weight and all other outgoing edge weights known, so weight is {FMT_WT(weight)}\n");
+
                     if (weight < 0)
                     {
                         NegativeCount();
                         weight = info.Weight * ProfileSynthesis.epsilon;
                         JITDUMP($" .... weight was negative, setting it to {FMT_WT(weight)}\n");
                     }
+
                     resolvedEdge.Weight = weight;
                     resolvedEdge.WeightKnown = true;
                     info.OutgoingUnknown--;
@@ -399,11 +429,13 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
         {
             JITDUMP($"\nSolver: failed to converge in {nPasses} passes, {_unknownBlocks} blocks and {_unknownEdges} edges remain unsolved\n");
             FailedToConverge();
+
             return;
         }
 
         JITDUMP($"\nSolver: converged in {nPasses} passes\n");
         assert(_compiler.fgFirstBB is not null);
+
         if (BlockToInfo(_compiler.fgFirstBB).Weight == BB_ZERO_WEIGHT)
         {
             assert(!_allWeightsZero);
@@ -415,6 +447,7 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
     public void Propagate()
     {
         assert(!_failedToConverge);
+
         if (_badcode || _mismatch || _failedToConverge || _allWeightsZero)
         {
             _compiler.fgPgoHaveWeights = false;
@@ -423,6 +456,7 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
                 : _failedToConverge ? "PGO data available, but solver did not converge"
                 : "PGO data available, profile data was all zero";
             JITDUMP($"... discarding profile count data: {_compiler.fgPgoFailReason}\n");
+
             return;
         }
 
@@ -432,6 +466,7 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
             assert(info.WeightKnown);
             block.setBBProfileWeight(info.Weight);
             var nSucc = block.NumSucc;
+
             if (nSucc == 0)
             {
                 continue;
@@ -445,6 +480,7 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
             {
                 PropagateEdges(block, info, nSucc);
             }
+
             MarkInterestingBlocks(block, info);
         }
     }
@@ -454,6 +490,7 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
         Edge? pseudoEdge = null;
         uint nEdges = 0;
         var successorWeight = BB_ZERO_WEIGHT;
+
         for (var edge = info.OutgoingEdges; edge is not null; edge = edge.NextOutgoingEdge)
         {
             if (edge.IsPseudoEdge)
@@ -462,6 +499,7 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
                 pseudoEdge = edge;
                 continue;
             }
+
             successorWeight += edge.Weight;
             nEdges++;
         }
@@ -477,32 +515,40 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
         {
             JITDUMP($"\nPropagate: OSR entry block {(nEdges != nSucc ? "has inaccurate flow model" : "has zero weight")}, setting outgoing likelihoods heuristically\n");
             var equalLikelihood = 1.0 / nSucc;
+
             foreach (var succEdge in block.Succs.Edges)
             {
                 JITDUMP($"Setting likelihood of {FMT_BB(block.bbNum)} -> {FMT_BB(succEdge.DestinationBlock.bbNum)} to {FMT_WT(equalLikelihood)} (heur)\n");
                 succEdge.Likelihood = equalLikelihood;
             }
+
             if ((info.Weight == BB_ZERO_WEIGHT) || (successorWeight == BB_ZERO_WEIGHT))
             {
                 EntryWeightZero();
             }
+
             return;
         }
 
         assert(nEdges == nSucc);
         JITDUMP($"Normalizing OSR successor likelihoods with factor 1/{FMT_WT(successorWeight)}\n");
+
         for (var edge = info.OutgoingEdges; edge is not null; edge = edge.NextOutgoingEdge)
         {
             assert(block == edge.SourceBlock);
+
             if (edge == pseudoEdge)
             {
                 continue;
             }
+
             assert(!edge.IsPseudoEdge);
             var flowEdge = _compiler.fgGetPredForBlock(edge.TargetBlock, block);
             assert(flowEdge is not null);
+
 #if DEBUG
             assert(flowEdge.hasLikelihood);
+
 #endif
             if (nEdges == 1)
             {
@@ -510,6 +556,7 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
                 flowEdge.Likelihood = 1.0;
                 break;
             }
+
             var likelihood = edge.Weight / successorWeight;
             JITDUMP($"Setting likelihood of {FMT_BB(block.bbNum)} -> {FMT_BB(edge.TargetBlock.bbNum)} to {FMT_WT(likelihood)} (pgo)\n");
             flowEdge.Likelihood = likelihood;
@@ -521,14 +568,17 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
         Edge? pseudoEdge = null;
         uint nEdges = 0;
         var successorWeight = BB_ZERO_WEIGHT;
+
         for (var edge = info.OutgoingEdges; edge is not null; edge = edge.NextOutgoingEdge)
         {
             assert(pseudoEdge is null);
+
             if (edge.IsPseudoEdge)
             {
                 pseudoEdge = edge;
                 continue;
             }
+
             successorWeight += edge.Weight;
             nEdges++;
         }
@@ -539,6 +589,7 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
             assert(block == pseudoEdge.SourceBlock);
             assert(block.HasInitializedTarget);
             assert(block.TargetEdge.Likelihood == 1.0);
+
             return;
         }
 
@@ -547,21 +598,25 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
         {
             JITDUMP($"{FMT_BB(block.bbNum)} {(nEdges != nSucc ? "has inaccurate flow model" : "has zero weight")} , setting outgoing likelihoods heuristically\n");
             var equalLikelihood = 1.0 / nSucc;
+
             foreach (var succEdge in block.Succs.Edges)
             {
                 JITDUMP($"Setting likelihood of {FMT_BB(block.bbNum)} -> {FMT_BB(succEdge.DestinationBlock.bbNum)} to {FMT_WT(equalLikelihood)} (heur)\n");
                 succEdge.Likelihood = equalLikelihood;
             }
+
             return;
         }
 
         assert(nEdges == nSucc);
         JITDUMP($"Normalizing successor likelihoods with factor 1/{FMT_WT(successorWeight)}\n");
+
         for (var edge = info.OutgoingEdges; edge is not null; edge = edge.NextOutgoingEdge)
         {
             assert(block == edge.SourceBlock);
             var flowEdge = _compiler.fgGetPredForBlock(edge.TargetBlock, block);
             assert(flowEdge is not null);
+
             if (nEdges == 1)
             {
                 assert(nSucc == 1);
@@ -569,6 +624,7 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
                 flowEdge.Likelihood = 1.0;
                 break;
             }
+
             var likelihood = edge.Weight / successorWeight;
             JITDUMP($"Setting likelihood of {FMT_BB(block.bbNum)} -> {FMT_BB(edge.TargetBlock.bbNum)} to {FMT_WT(likelihood)} (pgo)\n");
             flowEdge.Likelihood = likelihood;
@@ -590,21 +646,26 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
         // an extra branch and code size, hence the 55% minimum dominant fraction.
         const weight_t sufficientSamples = 30.0;
         const weight_t sufficientFraction = 0.55;
+
         if (info.Weight < sufficientSamples)
         {
             JITDUMP($"Switch in {FMT_BB(block.bbNum)} was hit {FMT_WT(info.Weight)} < {FMT_WT(sufficientSamples)} times, NOT checking for dominant edge\n");
+
             return;
         }
 
         JITDUMP($"Switch in {FMT_BB(block.bbNum)} was hit {FMT_WT(info.Weight)} >= {FMT_WT(sufficientSamples)} times, checking for dominant edge\n");
         Edge? dominantEdge = null;
+
         for (var edge = info.OutgoingEdges; edge is not null; edge = edge.NextOutgoingEdge)
         {
             if (!edge.WeightKnown)
             {
                 JITDUMP("Found edge with unknown weight.\n");
+
                 return;
             }
+
             if ((dominantEdge is null) || (edge.Weight > dominantEdge.Weight))
             {
                 dominantEdge = edge;
@@ -613,22 +674,27 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
 
         assert(dominantEdge is not null);
         var fraction = dominantEdge.Weight / info.Weight;
+
         if (fraction > 1.0)
         {
             fraction = 1.0;
         }
+
         if (fraction < sufficientFraction)
         {
             JITDUMP($"Maximum edge likelihood is {FMT_WT(fraction)} < {FMT_WT(sufficientFraction)}; not sufficient to trigger peeling)\n");
+
             return;
         }
 
         var jumpTab = block.SwitchTargets.Cases;
         var caseCount = jumpTab.Length;
         var dominantCase = caseCount;
+
         for (var i = 0; i < caseCount; i++)
         {
             var jumpTarget = jumpTab[i].DestinationBlock;
+
             if (jumpTarget == dominantEdge.TargetBlock)
             {
                 if (dominantCase != caseCount)
@@ -637,16 +703,20 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
                     dominantCase = caseCount;
                     break;
                 }
+
                 dominantCase = i;
             }
         }
+
         if (dominantCase == caseCount)
         {
             return;
         }
+
         if (block.SwitchTargets.HasDefaultCase && (dominantCase == caseCount - 1))
         {
             JITDUMP($"Default case {dominantCase} uniquely leads to target {FMT_BB(dominantEdge.TargetBlock.bbNum)} of dominant edge, so will be peeled already\n");
+
             return;
         }
 

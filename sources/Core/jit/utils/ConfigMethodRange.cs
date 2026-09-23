@@ -65,6 +65,7 @@ public partial struct ConfigMethodRange
                 return true;
             }
         }
+
         return false;
     }
 
@@ -146,6 +147,7 @@ public partial struct ConfigMethodRange
             {
                 nextIndex = rangeStr.Length;
             }
+
             rangeStr = rangeStr[nextIndex..];
             totalIndex += nextIndex;
 
@@ -166,6 +168,7 @@ public partial struct ConfigMethodRange
                 {
                     _badChar = totalIndex + 1;
                 }
+
                 value = newValue;
             }
 
@@ -197,6 +200,7 @@ public partial struct ConfigMethodRange
             {
                 nextIndex = rangeStr.Length;
             }
+
             rangeStr = rangeStr[nextIndex..];
             totalIndex += nextIndex;
 

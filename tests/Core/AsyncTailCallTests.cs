@@ -102,6 +102,7 @@ internal static unsafe class AsyncTailCallTests
             compiler.opts.SetMinOpts(false);
             var method = (CORINFO_METHOD_STRUCT_*)7;
             var call = compiler.gtNewCallNode(var_types.TYP_INT, gtCallTypes.CT_USER_FUNC, method);
+
             if (virtualCall)
             {
                 call.Flags |= GenTreeFlags.GTF_CALL_VIRT_VTABLE;
@@ -112,11 +113,13 @@ internal static unsafe class AsyncTailCallTests
 
             var queried = !adapted && compatible && optimize;
             Assert.That(state.Queries, Is.EqualTo(queried ? 1 : 0));
+
             if (queried)
             {
                 Assert.That(state.ExactCallee, Is.EqualTo(virtualCall ? (nint)0 : (nint)method));
                 Assert.That(state.ExplicitPrefix, Is.False);
             }
+
             Assert.That(ownContexts, Is.False);
             Assert.That(call.IsAsync, Is.True);
             Assert.That(call.GetAsyncInfo().IsTailAwait, Is.EqualTo(expected));
@@ -151,6 +154,7 @@ internal static unsafe class AsyncTailCallTests
     {
         WithCompiler(compiler => {
             var block = new BasicBlock(null, null);
+
             if (hasTry)
             {
                 block.TryIndex = 0;
@@ -159,16 +163,19 @@ internal static unsafe class AsyncTailCallTests
             {
                 block.HndIndex = 0;
             }
+
             compiler.compHndBBtab = [
                 new EHblkDsc { ebdID = 10, ebdEnclosingTryIndex = 1 },
                 new EHblkDsc { ebdID = 20, ebdEnclosingTryIndex = EHblkDsc.NO_ENCLOSING_INDEX },
             ];
             compiler.compHndBBtabCount = 2;
             HashSet<ushort> restoreIDs = [10];
+
             if (outerIsRestore)
             {
                 _ = restoreIDs.Add(20);
             }
+
             SetField(typeof(Compiler), compiler, "_asyncContextRestoreEHIDs", restoreIDs);
 
             Assert.That(compiler.ehIsInsideNonAsyncContextRestoreRegion(block), Is.EqualTo(expected));
@@ -271,6 +278,7 @@ internal static unsafe class AsyncTailCallTests
             ? (byte*)Unsafe.AsPointer(in MemoryMarshal.GetReference("ValueTask`1"u8))
             : (byte*)Unsafe.AsPointer(in MemoryMarshal.GetReference("ValueTask"u8));
         *namespaceName = (byte*)Unsafe.AsPointer(in MemoryMarshal.GetReference("System.Threading.Tasks"u8));
+
         return state->AsTask
             ? (byte*)Unsafe.AsPointer(in MemoryMarshal.GetReference("AsTask"u8))
             : (byte*)Unsafe.AsPointer(in MemoryMarshal.GetReference(".ctor"u8));
@@ -291,6 +299,7 @@ internal static unsafe class AsyncTailCallTests
     private static CORINFO_CLASS_STRUCT_* GetPatternArgumentClass(ICorJitInfo* jitInfo, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* arg)
     {
         var state = (PatternState*)arg;
+
         return state->ValueConstructor ? state->GenericType : (CORINFO_CLASS_STRUCT_*)18;
     }
 
@@ -302,6 +311,7 @@ internal static unsafe class AsyncTailCallTests
         state->Queries++;
         state->ExactCallee = (nint)exactCallee;
         state->ExplicitPrefix = explicitPrefix != 0;
+
         return state->Allowed ? (byte)1 : (byte)0;
     }
 
@@ -327,6 +337,7 @@ internal static unsafe class AsyncTailCallTests
         compiler.opts.SetMinOpts(false);
         compiler.info = new Compiler.Info { compMethodInfo = &methodInfo };
         JitTls.Compiler = compiler;
+
         try
         {
             action(compiler);

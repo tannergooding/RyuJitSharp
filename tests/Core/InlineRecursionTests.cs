@@ -28,6 +28,7 @@ internal static unsafe class InlineRecursionTests
         WithCompiler(compiler => {
             var strategy = compiler._inlineStrategy ?? throw new InvalidOperationException("Missing inline strategy.");
             InlineContext? context = null;
+
             for (var level = depth; level > 0; level--)
             {
                 context = new InlineContext(strategy) {
@@ -36,6 +37,7 @@ internal static unsafe class InlineRecursionTests
                     _runtimeContext = (CORINFO_CONTEXT_STRUCT_*)0x1000,
                 };
             }
+
             var call = new GenTreeCall(var_types.TYP_VOID) { _callType = gtCallTypes.CT_USER_FUNC };
             var result = new InlineResult(compiler, call, null, "recursion probe", doNotReport: true);
             var info = new InlineInfo {
@@ -53,6 +55,7 @@ internal static unsafe class InlineRecursionTests
             var depthField = typeof(DefaultPolicy).GetField("_callsiteDepth", BindingFlags.Instance | BindingFlags.NonPublic)
                 ?? throw new InvalidOperationException("Missing policy depth.");
             Assert.That(depthField.GetValue(result.Policy), Is.EqualTo(recursiveAt > 0 ? 0 : expectedDepth));
+
             if (recursiveAt > 0)
             {
                 Assert.That(result.Observation, Is.EqualTo(InlineObservation.CALLSITE_IS_RECURSIVE));
@@ -99,10 +102,12 @@ internal static unsafe class InlineRecursionTests
     {
         WithCompiler(compiler => {
             var arguments = stackalloc CORINFO_CLASS_STRUCT_*[65];
+
             for (var i = 0; i < 65; i++)
             {
                 arguments[i] = (CORINFO_CLASS_STRUCT_*)0x2000;
             }
+
             arguments[0] = (CORINFO_CLASS_STRUCT_*)0x1000;
             s_typeDepth = nestedDepth;
             s_signature.sigInst.classInstCount = classCount;
@@ -113,6 +118,7 @@ internal static unsafe class InlineRecursionTests
 
             Assert.That(compiler.ContextComplexityExceeds(context, 64), Is.EqualTo(expected));
             Assert.That(s_signatureMethod, Is.EqualTo((nuint)0x8000));
+
             if (classCount + methodCount > 64)
             {
                 Assert.That(s_typeQueries, Is.Zero);
@@ -159,6 +165,7 @@ internal static unsafe class InlineRecursionTests
         s_signatureMethod = 0;
         JitTls.Compiler = compiler;
         Globals.JitConfig = new JitConfigValues();
+
         try
         {
             action(compiler);
@@ -175,6 +182,7 @@ internal static unsafe class InlineRecursionTests
     private static byte HaveSameMethodDefinition(ICorJitInfo* self, CORINFO_METHOD_STRUCT_* first, CORINFO_METHOD_STRUCT_* second)
     {
         s_definitionQueries++;
+
         return s_sameDefinition ? (byte)1 : (byte)0;
     }
 
@@ -182,6 +190,7 @@ internal static unsafe class InlineRecursionTests
     private static CORINFO_CLASS_STRUCT_* GetTypeInstantiationArgument(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type, int index)
     {
         s_typeQueries++;
+
         return (index == 0) && ((nuint)type >= 0x1000) && ((nuint)type < (nuint)(0x1000 + (8 * s_typeDepth)))
             ? (CORINFO_CLASS_STRUCT_*)((nuint)type + 8) : null;
     }

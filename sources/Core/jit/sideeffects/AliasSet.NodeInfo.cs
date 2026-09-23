@@ -128,6 +128,7 @@ public partial struct AliasSet
                 {
                     // This is neither a memory nor a local var access.
                     _flags = ALIAS_NONE;
+
                     return;
                 }
 
@@ -179,6 +180,7 @@ public partial struct AliasSet
             get
             {
                 assert(Debugger.IsAttached || IsLclVarRead || IsLclVarWrite);
+
                 return _lclNum;
             }
         }
@@ -189,6 +191,7 @@ public partial struct AliasSet
             get
             {
                 assert(Debugger.IsAttached || IsLclVarRead || IsLclVarWrite);
+
                 return _lclOffs;
             }
         }
@@ -220,8 +223,10 @@ public partial struct AliasSet
                     {
                         return varDsc.IsLiveInOutOfHandler;
                     }
+
                     return _compiler.compHndBBtabCount > 0;
                 }
+
                 return false;
             }
         }

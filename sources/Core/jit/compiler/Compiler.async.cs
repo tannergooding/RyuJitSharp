@@ -14,6 +14,7 @@ public partial class Compiler
     public int GetContinuationMemberIndex(in ContinuationMember member)
     {
         var root = impInlineRoot;
+
         if (root._asyncContinuationMembers is null)
         {
             root._asyncContinuationMembers = [];
@@ -30,6 +31,7 @@ public partial class Compiler
         }
 
         root._asyncContinuationMembers.Add(member);
+
         return root._asyncContinuationMembers.Count - 1;
     }
 
@@ -37,6 +39,7 @@ public partial class Compiler
     public bool TryGetContinuationMemberIndex(in ContinuationMember member, out int index)
     {
         var members = impInlineRoot._asyncContinuationMembers;
+
         if (members is not null)
         {
             for (var i = 0; i < members.Count; i++)
@@ -44,12 +47,14 @@ public partial class Compiler
                 if (ContinuationMember.AreCompatible(member, members[i]))
                 {
                     index = i;
+
                     return true;
                 }
             }
         }
 
         index = 0;
+
         return false;
     }
 
@@ -60,6 +65,7 @@ public partial class Compiler
         var members = impInlineRoot._asyncContinuationMembers;
         assert(members is not null);
         assert((uint)index < (uint)members.Count);
+
         return members[index];
     }
 
@@ -93,6 +99,7 @@ public partial class Compiler
         threadDsc.lvOnlyUsedOnSynchronousPath = true;
         execCtxDsc.lvOnlyUsedOnSynchronousPath = true;
         syncCtxDsc.lvOnlyUsedOnSynchronousPath = true;
+
         if (opts.IsOSR)
         {
             resumedDsc.lvIsOSRLocal = true;
@@ -110,6 +117,7 @@ public partial class Compiler
 
         var XTnew = compHndBBtabCount;
         var newEntryIndex = fgTryAddEHTableEntries(XTnew);
+
         if (newEntryIndex < 0)
         {
             IMPL_LIMITATION("too many exception clauses");
@@ -147,6 +155,7 @@ public partial class Compiler
         for (var tmpBB = tryBegBB.Next; tmpBB != faultBB; tmpBB = tmpBB.Next)
         {
             assert(tmpBB is not null);
+
             if (!tmpBB.hasTryIndex)
             {
                 tmpBB.TryIndex = XTnew;
@@ -156,6 +165,7 @@ public partial class Compiler
         for (var XTnum = 0; XTnum < XTnew; XTnum++)
         {
             ref var HBtab = ref compHndBBtab[XTnum];
+
             if (HBtab.ebdEnclosingTryIndex == EHblkDsc.NO_ENCLOSING_INDEX)
             {
                 HBtab.ebdEnclosingTryIndex = XTnew;
@@ -195,6 +205,7 @@ public partial class Compiler
             assert(containingBlock is not null);
             var inALoop = containingBlock.HasFlag(BBF_BACKWARD_JUMP);
             var isReturn = containingBlock.Kind is BBJ_RETURN;
+
             if ((inALoop && !isReturn) || !root.info.compInitMem)
             {
                 var storeIndicator = gtNewStoreLclVarNode(lvaResumedIndicator, gtNewIconNode(TYP_I_IMPL, 0));
@@ -218,15 +229,18 @@ public partial class Compiler
 
         BasicBlock? newReturnBB = null;
         var mergedReturnLcl = BAD_VAR_NUM;
+
         foreach (var block in Blocks)
         {
             AddContextArgsToAsyncCalls(block);
+
             if ((block.Kind is not BBJ_RETURN) || (block == newReturnBB))
             {
                 continue;
             }
 
             JITDUMP($"Merging BBJ_RETURN block {FMT_BB(block.bbNum)}\n");
+
             if (newReturnBB is null)
             {
                 newReturnBB = CreateReturnBB(out mergedReturnLcl);
@@ -238,6 +252,7 @@ public partial class Compiler
             {
                 var retStmt = block.LastStmt;
                 assert((retStmt is not null) && (retStmt.RootNode.Oper is GT_RETURN));
+
                 if (mergedReturnLcl != BAD_VAR_NUM)
                 {
                     var retVal = retStmt.RootNode.AsUnOp().Op1;
@@ -248,6 +263,7 @@ public partial class Compiler
                     JITDUMP("Inserted store to common return local\n");
                     DISPSTMT(storeStmt);
                 }
+
                 retStmt.RootNode.BashToNOP();
             }
 
@@ -290,16 +306,20 @@ public partial class Compiler
         DISPSTMT(restoreStmt);
 
         mergedReturnLcl = BAD_VAR_NUM;
+
         if (!compIsForInlining)
         {
             GenTree ret;
+
             if (compMethodHasRetVal)
             {
                 mergedReturnLcl = lvaGrabTemp(false, "Async merged return local");
                 var retLclType = compMethodReturnsRetBufAddr ? TYP_BYREF : info.compRetType.ActualType;
+
                 if (varTypeIsStruct(retLclType))
                 {
                     lvaSetStruct(mergedReturnLcl, info.compMethodInfo->args.retTypeClass, false);
+
                     if (compMethodReturnsMultiRegRetType)
                     {
                         lvaGetDesc(mergedReturnLcl).lvIsMultiRegRet = true;
@@ -331,6 +351,7 @@ public partial class Compiler
     public void AddContextArgsToAsyncCalls(BasicBlock block)
     {
         var visitor = new AddAsyncContextArgsVisitor(this);
+
         foreach (var statement in block.Statements)
         {
             _ = visitor.WalkTree(ref statement.RootNodeRef, null);
@@ -353,6 +374,7 @@ public partial class Compiler
         public readonly fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
         {
             var tree = use;
+
             if ((tree.Flags & GTF_CALL) == 0)
             {
                 return WALK_SKIP_SUBTREES;
@@ -369,6 +391,7 @@ public partial class Compiler
             if (call.Args.FindWellKnownArg(WellKnownArg.AsyncResumedUse) is not null)
             {
                 assert(_compiler.compIsForInlining);
+
                 return WALK_CONTINUE;
             }
 
@@ -408,9 +431,11 @@ public partial class Compiler
             var inlCall = _compiler.impInlineInfo.iciCall;
             assert(inlCall is not null);
             var numCopied = 0;
+
             foreach (var arg in inlCall.Args.Args)
             {
                 var kind = arg.WellKnownArg;
+
                 if (kind is not (WellKnownArg.AsyncResumedUse or WellKnownArg.AsyncExecutionContext or WellKnownArg.AsyncSynchronizationContext))
                 {
                     continue;
@@ -420,17 +445,20 @@ public partial class Compiler
                 insertAfter = call.Args.InsertAfter(insertAfter, newArg);
                 numCopied++;
             }
+
             assert((numCopied % 3) == 0);
 
             if (numCopied == 0)
             {
 #if DEBUG
                 JITDUMP($"Inlining call [{inlCall.TreeId:D6}] has no context args; inlinee has no enclosing async frame\n");
+
 #endif
                 return WALK_CONTINUE;
             }
 
             List<ContinuationContextHandling> handling = [inlCall.GetAsyncInfo().ContinuationContextHandling];
+
             if (inlCall.GetAsyncInfo().InlineFrameContextHandling is List<ContinuationContextHandling> outerHandling)
             {
                 foreach (var outer in outerHandling)
@@ -438,10 +466,13 @@ public partial class Compiler
                     handling.Add(outer);
                 }
             }
+
             call.GetAsyncInfo().InlineFrameContextHandling = handling;
             assert(handling.Count == (numCopied / 3));
+
 #if DEBUG
             JITDUMP($"Extended async call [{call.TreeId:D6}] to {(numCopied / 3) + 1} frames in chain\n");
+
 #endif
             return WALK_CONTINUE;
         }

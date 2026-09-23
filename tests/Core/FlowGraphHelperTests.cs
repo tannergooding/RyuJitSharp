@@ -29,9 +29,11 @@ internal static unsafe class FlowGraphHelperTests
         try
         {
             BasicBlock? last = null;
+
             for (var i = 0; i < blockCount; i++)
             {
                 var block = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+
                 if (last is null)
                 {
                     compiler.fgFirstBB = block;
@@ -40,6 +42,7 @@ internal static unsafe class FlowGraphHelperTests
                 {
                     last.Next = block;
                 }
+
                 last = block;
 
                 for (var j = 0; j < statementsPerBlock; j++)
@@ -48,6 +51,7 @@ internal static unsafe class FlowGraphHelperTests
                     compiler.fgInsertStmtAtEnd(block, statement);
                 }
             }
+
             compiler.fgLastBB = last;
 
             Assert.That(compiler.fgMeasureIR(), Is.EqualTo(blockCount * statementsPerBlock));
@@ -83,6 +87,7 @@ internal static unsafe class FlowGraphHelperTests
             GenTree address = isReturnBuffer
                 ? compiler.gtNewLclVarNode(var_types.TYP_BYREF, 0)
                 : compiler.gtNewLclVarAddrNode(var_types.TYP_BYREF, 0);
+
             if (offset != 0)
             {
                 address = compiler.gtNewBinaryNode(genTreeOps.GT_ADD, var_types.TYP_BYREF,
@@ -110,10 +115,12 @@ internal static unsafe class FlowGraphHelperTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags jitFlags = default;
         compiler.opts.jitFlags = &jitFlags;
+
         if (isAsync)
         {
             jitFlags.Set(JitFlags.JIT_FLAG_ASYNC);
         }
+
         JitTls.Compiler = compiler;
 
         try

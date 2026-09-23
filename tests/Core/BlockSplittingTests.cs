@@ -45,6 +45,7 @@ internal static unsafe class BlockSplittingTests
             compiler.fgLastBB = secondTarget;
 
             BBJumpTable? descriptor = null;
+
             if (source.HasTarget)
             {
                 source.SetKindAndTargetEdge(kind, compiler.fgAddRefPred(firstTarget, source));
@@ -55,6 +56,7 @@ internal static unsafe class BlockSplittingTests
                 var second = compiler.fgAddRefPred(secondTarget, source);
                 first.Likelihood = 0.25;
                 second.Likelihood = 0.75;
+
                 if (kind is BBJ_COND)
                 {
                     source.SetCond(first, second);
@@ -92,6 +94,7 @@ internal static unsafe class BlockSplittingTests
             var split = atBeginning ? compiler.fgSplitBlockAtBeginning(source) : compiler.fgSplitBlockAtEnd(source);
             var removed = BBF_KEEP_BBJ_ALWAYS | BBF_OSR_PATCHPOINT | BBF_BACKWARD_JUMP_TARGET | BBF_LOOP_ALIGN;
             var sourceRemoved = BBF_HAS_JMP | BBF_RETLESS_CALL;
+
             if (atBeginning)
             {
                 sourceRemoved |= BBF_GC_SAFE_POINT;
@@ -197,6 +200,7 @@ internal static unsafe class BlockSplittingTests
             var last = compiler.gtNewIconNode(TYP_INT, 2);
             Statement? firstStmt = null;
             Statement? lastStmt = null;
+
             if (lir)
             {
                 first.Next = last;
@@ -211,6 +215,7 @@ internal static unsafe class BlockSplittingTests
                 compiler.fgInsertStmtAtEnd(source, firstStmt);
                 compiler.fgInsertStmtAtEnd(source, lastStmt);
             }
+
             source.bbCodeOffs = 10;
             source.bbCodeOffsEnd = 20;
             source.SetFlags(BBF_GC_SAFE_POINT);
@@ -232,6 +237,7 @@ internal static unsafe class BlockSplittingTests
                 Assert.That(emptyBlock.FirstLIRNode, Is.Null);
                 Assert.That(emptyBlock.LastLIRNode, Is.Null);
             });
+
             if (lir)
             {
                 Assert.Multiple(() => {
@@ -247,6 +253,7 @@ internal static unsafe class BlockSplittingTests
                 {
                     throw new InvalidOperationException("Statement fixture was not initialized.");
                 }
+
                 Assert.Multiple(() => {
                     Assert.That(codeBlock.FirstStmt, Is.SameAs(firstStmt));
                     Assert.That(firstStmt.NextStmt, Is.SameAs(lastStmt));
@@ -337,6 +344,7 @@ internal static unsafe class BlockSplittingTests
             var clauses = start == 0 ? new EHClauses(compiler) : new EHClauses(compiler, (ushort)start);
             var iterator = clauses.GetEnumerator();
             var marker = NewBlock(compiler, BBJ_RETURN);
+
             for (var pass = 0; pass < 2; pass++)
             {
                 for (var i = start; i < count; i++)
@@ -346,6 +354,7 @@ internal static unsafe class BlockSplittingTests
                     iterator.Current.ebdTryBeg = marker;
                     Assert.That(compiler.compHndBBtab[i].ebdTryBeg, Is.SameAs(marker));
                 }
+
                 Assert.That(iterator.MoveNext(), Is.False);
                 Assert.That(iterator.MoveNext(), Is.False);
                 iterator.Reset();
@@ -365,18 +374,22 @@ internal static unsafe class BlockSplittingTests
             block.bbCodeOffs = 2;
             block.bbCodeOffsEnd = 20;
             Statement? splitAfter = null;
+
             if (scenario != 3)
             {
                 splitAfter = compiler.gtNewStmt(compiler.gtNewIconNode(TYP_INT, 1));
                 compiler.fgInsertStmtAtEnd(block, splitAfter);
             }
+
             Statement? suffix = null;
             Statement? last = null;
+
             if (scenario is 1 or 2)
             {
                 suffix = compiler.gtNewStmt(compiler.gtNewIconNode(TYP_INT, 2));
                 compiler.fgInsertStmtAtEnd(block, suffix);
                 last = suffix;
+
                 if (scenario == 2)
                 {
                     var strategy = (InlineStrategy)RuntimeHelpers.GetUninitializedObject(typeof(InlineStrategy));
@@ -415,6 +428,7 @@ internal static unsafe class BlockSplittingTests
     {
         var block = BasicBlock.New(compiler, kind);
         block.bbRefs = 0;
+
         return block;
     }
 
@@ -433,6 +447,7 @@ internal static unsafe class BlockSplittingTests
 #endif
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
+
         try
         {
             action(compiler);

@@ -42,6 +42,7 @@ public partial class Globals
             fastNode1 = fastNode2.Next;
             fastNode2 = fastNode1?.Next;
         }
+
         // If we get here, the list had no circularities, so either fastNode1 or fastNode2 must be nullptr.
         assert((fastNode1 is null) || (fastNode2 is null));
 

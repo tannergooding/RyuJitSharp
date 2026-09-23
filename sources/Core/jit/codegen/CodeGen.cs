@@ -391,6 +391,7 @@ public sealed class CodeGen : ICodeGen
 
         rv1 = addr.Op1;
         cns = addr.Op2.AsIntCon().IconValue;
+
         return true;
 #else
         // The following indirections are valid address modes on x86/x64:

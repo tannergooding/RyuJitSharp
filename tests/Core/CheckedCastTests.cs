@@ -68,6 +68,7 @@ internal static class CheckedCastTests
             double.Epsilon, -double.Epsilon, double.MaxValue, double.MinValue,
             double.NaN, double.PositiveInfinity, double.NegativeInfinity,
         ];
+
         foreach (var value in doubles)
         {
             var expected = !double.IsFinite(value) || Overflows(new BigInteger(value), min, max);
@@ -83,6 +84,7 @@ internal static class CheckedCastTests
             float.Epsilon, -float.Epsilon, float.MaxValue, float.MinValue,
             float.NaN, float.PositiveInfinity, float.NegativeInfinity,
         ];
+
         foreach (var value in floats)
         {
             var expected = !float.IsFinite(value) || Overflows(new BigInteger(value), min, max);
@@ -95,6 +97,7 @@ internal static class CheckedCastTests
     public static void FloatingDestinationsNeverOverflow(var_types type)
     {
         long[] integers = [long.MinValue, int.MinValue, -1, 0, 1, int.MaxValue, long.MaxValue];
+
         foreach (var value in integers)
         {
             Assert.That(CheckedOps.CastFromIntOverflows(unchecked((int)value), type, false), Is.False);
@@ -104,6 +107,7 @@ internal static class CheckedCastTests
         }
 
         double[] values = [double.MinValue, -0.0, 0.0, double.MaxValue, double.NaN, double.NegativeInfinity, double.PositiveInfinity];
+
         foreach (var value in values)
         {
             Assert.That(CheckedOps.CastFromFloatOverflows((float)value, type), Is.False);

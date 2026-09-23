@@ -80,10 +80,12 @@ internal static unsafe class AsyncContextSaveTests
             Assert.That(copy.Oper, Is.EqualTo(GT_CONTINUATION_MEMBER_OFFSET));
             Assert.That(copy.AsVal().Val1, Is.EqualTo((nint)0));
             var edgeCount = 0;
+
             foreach (ref var edge in copy.UseEdges)
             {
                 edgeCount++;
             }
+
             Assert.That(edgeCount, Is.Zero);
             Assert.That(offset.Op2.IsIntegralConst(SIZEOF__CORINFO_Object), Is.True);
             Assert.That(compiler.GetContinuationMember(0).Type, Is.EqualTo(member.Type));
@@ -110,6 +112,7 @@ internal static unsafe class AsyncContextSaveTests
             using var stream = new MemoryStream();
             using var writer = new JitTextWriter(stream, leaveOpen: true);
             var previousWriter = Globals.s_jitstdout;
+
             try
             {
                 Globals.s_jitstdout = writer;
@@ -121,6 +124,7 @@ internal static unsafe class AsyncContextSaveTests
             {
                 Globals.s_jitstdout = previousWriter;
             }
+
             Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo($" index=0 {expected}"));
         });
     }
@@ -136,10 +140,12 @@ internal static unsafe class AsyncContextSaveTests
             Assert.That(call.IsAsync, Is.True);
             Assert.That(call.GetAsyncInfo().ContinuationContextHandling, Is.EqualTo(ContinuationContextHandling.None));
             var kinds = new List<WellKnownArg>();
+
             foreach (var arg in call.Args.Args)
             {
                 kinds.Add(arg.WellKnownArg);
             }
+
             WellKnownArg[] expected = Target.TgtArgOrder == Target.ARG_ORDER_R2L
                 ? [WellKnownArg.AsyncContinuation, WellKnownArg.None] : [WellKnownArg.None, WellKnownArg.AsyncContinuation];
             Assert.That(kinds, Is.EqualTo(expected));
@@ -162,6 +168,7 @@ internal static unsafe class AsyncContextSaveTests
                 ?? throw new InvalidOperationException("Missing async inlining setting.");
             configField.SetValue(config, 1);
             Globals.JitConfig = (JitConfigValues)config;
+
             try
             {
                 compiler.lvaTable = [
@@ -183,6 +190,7 @@ internal static unsafe class AsyncContextSaveTests
                 compiler.fgReturnCount = 1;
                 var originalReturn = AddReturn(compiler, join, TYP_VOID, 0);
                 BasicBlock? handler = null;
+
                 if (faultHandler)
                 {
                     handler = NewBlock(compiler, BBJ_EHFAULTRET, 10);
@@ -197,12 +205,15 @@ internal static unsafe class AsyncContextSaveTests
                     }];
                     compiler.compHndBBtabCount = 1;
                 }
+
                 var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
                 _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclVarAddrNode(TYP_BYREF, 0)).WithWellKnownArg(WellKnownArg.AsyncResumedDef));
+
                 for (var i = 0; i < depth; i++)
                 {
                     _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclvNode(TYP_I_IMPL, 0)).WithWellKnownArg(WellKnownArg.AsyncResumedUse));
                 }
+
                 var info = new InlineInfo { iciCall = call, iciStmt = compiler.gtNewStmt(call) };
 
                 if (spliceBlocks)
@@ -264,6 +275,7 @@ internal static unsafe class AsyncContextSaveTests
                 Assert.That(restoreCall.IsAsync, Is.True);
                 Assert.That(restoreCall.GetAsyncInfo().ContinuationContextHandling, Is.EqualTo(ContinuationContextHandling.None));
                 var memberIndex = 0;
+
                 foreach (var arg in restoreCall.Args.Args)
                 {
                     if (arg.IsUserArg)
@@ -276,15 +288,18 @@ internal static unsafe class AsyncContextSaveTests
                         Assert.That(arg.WellKnownArg, Is.EqualTo(WellKnownArg.AsyncContinuation));
                     }
                 }
+
                 Assert.That(memberIndex, Is.EqualTo(3));
                 var callerResumed = restoreStatements[1].RootNode.AsLclVar();
                 Assert.That(callerResumed.LclNum, Is.Zero);
                 Assert.That(callerResumed.Data.IsIntegralConst(1), Is.True);
                 Assert.That(compiler.GetContinuationMemberCount(), Is.EqualTo(3));
+
                 for (var i = 0; i < 3; i++)
                 {
                     Assert.That(compiler.GetContinuationMember(i).InlineDepth, Is.EqualTo(depth));
                 }
+
                 if (handler is not null)
                 {
                     var propagate = Statements(handler)[0].RootNode.AsLclVar();
@@ -317,6 +332,7 @@ internal static unsafe class AsyncContextSaveTests
                 ?? throw new InvalidOperationException("Missing async inlining setting.");
             configField.SetValue(config, reason == "disabled" ? 0 : 1);
             Globals.JitConfig = (JitConfigValues)config;
+
             try
             {
                 var inlinee = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -328,11 +344,13 @@ internal static unsafe class AsyncContextSaveTests
                 compiler.fgLastBB = join;
                 var originalReturn = AddReturn(compiler, join, TYP_VOID, 0);
                 var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+
                 if (reason != "no-caller")
                 {
                     _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclVarAddrNode(TYP_BYREF, 0)).WithWellKnownArg(WellKnownArg.AsyncResumedDef));
                     _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclvNode(TYP_I_IMPL, 0)).WithWellKnownArg(WellKnownArg.AsyncResumedUse));
                 }
+
                 var info = new InlineInfo { iciCall = call, iciStmt = compiler.gtNewStmt(call) };
                 compiler.fgInlineAppendAsyncFrameStatements(info, join);
                 Assert.That(join.Kind, Is.EqualTo(BBJ_RETURN));
@@ -361,10 +379,12 @@ internal static unsafe class AsyncContextSaveTests
             compiler.info.compRetType = returnType == TYP_BYREF ? TYP_STRUCT : returnType;
             compiler.info.compRetBuffArg = returnType == TYP_BYREF ? 0 : BAD_VAR_NUM;
             compiler.info.compInitMem = initMem;
+
             if (osr)
             {
                 compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_OSR);
             }
+
             var entry = NewBlock(compiler, BBJ_COND, 0);
             var left = NewBlock(compiler, BBJ_RETURN, 10);
             var right = NewBlock(compiler, BBJ_RETURN, 20);
@@ -379,10 +399,12 @@ internal static unsafe class AsyncContextSaveTests
             entry.FalseEdge.Likelihood = 0.7;
             left.setBBProfileWeight(3);
             right.setBBProfileWeight(7);
+
             if (loop)
             {
                 entry.SetFlags(BBF_BACKWARD_JUMP);
             }
+
             var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, (CORINFO_METHOD_STRUCT_*)3);
             call.SetIsAsync(default);
             compiler.fgInsertStmtAtEnd(entry, compiler.gtNewStmt(call));
@@ -435,6 +457,7 @@ internal static unsafe class AsyncContextSaveTests
             var initialize = !osr && (loop || !initMem);
             var entryStatements = Statements(entry);
             Assert.That(entryStatements.Count, Is.EqualTo(osr ? 0 : initialize ? 2 : 1));
+
             if (!osr)
             {
                 var capture = entryStatements[^1].RootNode.AsCall();
@@ -442,6 +465,7 @@ internal static unsafe class AsyncContextSaveTests
                 Assert.That(ArgumentLocals(capture), Is.EqualTo([
                     compiler.lvaAsyncThreadObjectVar, compiler.lvaAsyncExecutionContextVar, compiler.lvaAsyncSynchronizationContextVar
                 ]));
+
                 if (initialize)
                 {
                     var store = entryStatements[0].RootNode.AsLclVar();
@@ -461,13 +485,16 @@ internal static unsafe class AsyncContextSaveTests
                 Assert.That(compiler.lvaTable[local].Type, Is.EqualTo(local == compiler.lvaResumedIndicator ? TYP_I_IMPL : TYP_REF));
                 Assert.That(compiler.lvaTable[local].lvHasLdAddrOp, Is.EqualTo(!osr || local == compiler.lvaResumedIndicator));
             }
+
             AssertRestore(compiler, Statements(fault)[0].RootNode.AsCall());
             AssertRestore(compiler, Statements(merged)[0].RootNode.AsCall());
             var args = new List<WellKnownArg>();
+
             foreach (var arg in call.Args.Args)
             {
                 args.Add(arg.WellKnownArg);
             }
+
             Assert.That(args, Is.EqualTo([
                 WellKnownArg.AsyncResumedDef, WellKnownArg.AsyncResumedUse,
                 WellKnownArg.AsyncExecutionContext, WellKnownArg.AsyncSynchronizationContext
@@ -475,6 +502,7 @@ internal static unsafe class AsyncContextSaveTests
             var finalReturn = Statements(merged)[^1].RootNode.AsUnOp();
             Assert.That(finalReturn.Oper, Is.EqualTo(GT_RETURN));
             Assert.That(finalReturn.Type, Is.EqualTo(returnType));
+
             if (returnType != TYP_VOID)
             {
                 var local = finalReturn.Op1.AsLclVar().LclNum;
@@ -494,6 +522,7 @@ internal static unsafe class AsyncContextSaveTests
             {
                 compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_OSR);
             }
+
             var entry = NewBlock(compiler, BBJ_ALWAYS, 0);
             entry.SetKindAndTargetEdge(BBJ_ALWAYS, compiler.fgAddRefPred(entry, entry));
             compiler.fgFirstBB = entry;
@@ -567,23 +596,28 @@ internal static unsafe class AsyncContextSaveTests
             compiler.fgInsertStmtAtBeg(block, phi);
             compiler.fgInsertStmtAtEnd(block, catchStore);
             var body = compiler.gtNewStmt(compiler.gtNewIconNode(TYP_INT, 1));
+
             if (hasBody)
             {
                 compiler.fgInsertStmtAtEnd(block, body);
             }
+
             var inserted = compiler.gtNewStmt(insertPhi
                 ? compiler.gtNewStoreLclVarNode(0, new GenTreePhi(TYP_BYREF))
                 : compiler.gtNewIconNode(TYP_INT, 2));
 
             compiler.fgInsertStmtAtBeg(block, inserted);
             var expected = insertPhi ? new List<Statement> { inserted, phi, catchStore } : [phi, catchStore, inserted];
+
             if (hasBody)
             {
                 expected.Add(body);
             }
+
             Assert.That(Statements(block), Is.EqualTo(expected));
             Assert.That(block.FirstStmt?.PrevStmt, Is.SameAs(expected[^1]));
             Assert.That(expected[^1].NextStmt, Is.Null);
+
             for (var i = 1; i < expected.Count; i++)
             {
                 Assert.That(expected[i].PrevStmt, Is.SameAs(expected[i - 1]));
@@ -597,6 +631,7 @@ internal static unsafe class AsyncContextSaveTests
             ? compiler.gtNewLclVarNode(TYP_BYREF, 0) : compiler.gtNewIconNode(type, value);
         var stmt = compiler.gtNewStmt(new GenTreeUnOp(GT_RETURN, type, operand));
         compiler.fgInsertStmtAtEnd(block, stmt);
+
         return stmt;
     }
 
@@ -614,20 +649,24 @@ internal static unsafe class AsyncContextSaveTests
     private static List<int> ArgumentLocals(GenTreeCall call)
     {
         var result = new List<int>();
+
         foreach (var arg in call.Args.Args)
         {
             result.Add(arg.Node.AsLclVarCommon().LclNum);
         }
+
         return result;
     }
 
     private static List<Statement> Statements(BasicBlock block)
     {
         var result = new List<Statement>();
+
         foreach (var stmt in block.Statements)
         {
             result.Add(stmt);
         }
+
         return result;
     }
 
@@ -636,6 +675,7 @@ internal static unsafe class AsyncContextSaveTests
         var block = BasicBlock.New(compiler, kind);
         block.bbCodeOffs = offset;
         block.bbCodeOffsEnd = offset + 10;
+
         return block;
     }
 
@@ -653,6 +693,7 @@ internal static unsafe class AsyncContextSaveTests
     private static CorInfoFlag GetMethodFlags(ICorJitInfo* jitInfo, CORINFO_METHOD_STRUCT_* method)
     {
         s_methodQueries++;
+
         return CorInfoFlag.CORINFO_FLG_STATIC;
     }
 
@@ -686,6 +727,7 @@ internal static unsafe class AsyncContextSaveTests
         JitTls.Compiler = compiler;
         s_metadataQueries = 0;
         s_methodQueries = 0;
+
         try
         {
             action(compiler);

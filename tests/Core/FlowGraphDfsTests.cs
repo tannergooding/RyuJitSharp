@@ -25,6 +25,7 @@ internal static unsafe class FlowGraphDfsTests
 #endif
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
+
         try
         {
             var entry = BasicBlock.New(compiler, BBJ_ALWAYS);
@@ -36,6 +37,7 @@ internal static unsafe class FlowGraphDfsTests
             compiler.fgLastBB = exit;
             entry.SetKindAndTargetEdge(BBJ_ALWAYS, new FlowEdge(entry, loop, null));
             loop.SetKindAndTargetEdge(BBJ_ALWAYS, new FlowEdge(loop, shape == "acyclic" ? exit : loop, null));
+
             if (shape == "safe-cycle")
             {
                 loop.SetFlags(BasicBlockFlags.BBF_GC_SAFE_POINT);
@@ -70,6 +72,7 @@ internal static unsafe class FlowGraphDfsTests
 #endif
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
+
         try
         {
             var block = BasicBlock.New(compiler, count == 3 ? BBJ_SWITCH : BBJ_EHFINALLYRET);
@@ -80,6 +83,7 @@ internal static unsafe class FlowGraphDfsTests
             var firstEdge = new FlowEdge(block, first, null);
             var secondEdge = new FlowEdge(block, second, null);
             BasicBlock[] expected = [];
+
             if (count == 1)
             {
                 block.SetCond(firstEdge, firstEdge);
@@ -99,16 +103,19 @@ internal static unsafe class FlowGraphDfsTests
 
             var enumerator = new GCSafePointSuccessorEnumerator(compiler, block);
             Assert.That(enumerator.Block, Is.SameAs(block));
+
             foreach (var successor in expected)
             {
                 Assert.That(enumerator.NextSuccessor, Is.SameAs(successor));
             }
+
             Assert.That(enumerator.NextSuccessor, Is.Null);
             Assert.That(enumerator.NextSuccessor, Is.Null);
             var visited = 0;
             var result = block.VisitRegularSuccs(compiler, successor => {
                 Assert.That(successor, Is.SameAs(expected[0]));
                 visited++;
+
                 return BasicBlockVisit.Abort;
             });
             Assert.That(visited, Is.EqualTo(count == 0 ? 0 : 1));
@@ -134,6 +141,7 @@ internal static unsafe class FlowGraphDfsTests
 #endif
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
+
         try
         {
             compiler.compJmpOpUsed = kind == "jmp";
@@ -147,6 +155,7 @@ internal static unsafe class FlowGraphDfsTests
                     (kind == "helper" ? GenTreeCallFlags.GTF_CALL_M_TAILCALL_VIA_JIT_HELPER : 0),
             };
             var terminal = kind == "jmp" ? new GenTreeVal(genTreeOps.GT_JMP, var_types.TYP_VOID, 0) : (GenTree)call;
+
             if (lir)
             {
                 block.SetFlags(BasicBlockFlags.BBF_IS_LIR);
@@ -183,6 +192,7 @@ internal static unsafe class FlowGraphDfsTests
 #endif
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
+
         try
         {
             var entry = BasicBlock.New(compiler, BBJ_COND);
@@ -236,6 +246,7 @@ internal static unsafe class FlowGraphDfsTests
 #endif
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
+
         try
         {
             var entry = BasicBlock.New(compiler, BBJ_ALWAYS);
@@ -280,6 +291,7 @@ internal static unsafe class FlowGraphDfsTests
 #endif
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
+
         try
         {
             var tryBlock = BasicBlock.New(compiler, BBJ_RETURN);
@@ -335,6 +347,7 @@ internal static unsafe class FlowGraphDfsTests
 #endif
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
+
         try
         {
             var entry = BasicBlock.New(compiler, BBJ_RETURN);
@@ -387,6 +400,7 @@ internal static unsafe class FlowGraphDfsTests
 #endif
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
+
         try
         {
             ReadOnlySpan<byte> il = [
@@ -397,6 +411,7 @@ internal static unsafe class FlowGraphDfsTests
                 0x2A
             ];
             compiler.info.compILCodeSize = il.Length;
+
             fixed (byte* code = il)
             {
                 compiler.info.compCode = code;
@@ -426,6 +441,7 @@ internal static unsafe class FlowGraphDfsTests
 #endif
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
+
         try
         {
             var entry = BasicBlock.New(compiler, BBJ_RETURN);
@@ -472,6 +488,7 @@ internal static unsafe class FlowGraphDfsTests
 #endif
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
+
         try
         {
             compiler.compHndBBtab = [
@@ -537,8 +554,10 @@ internal static unsafe class FlowGraphDfsTests
         // Normal construction queries the EE; these checks exercise only initialized graph state.
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compHndBBtab = [];
+
 #if DEBUG
         compiler.fgSafeBasicBlockCreation = true;
+
 #endif
         return compiler;
     }
@@ -552,6 +571,7 @@ internal static unsafe class FlowGraphDfsTests
     {
         var method = typeof(Compiler).GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException($"{name} was not found.");
+
         return method.Invoke(compiler, args);
     }
 }

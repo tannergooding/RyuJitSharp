@@ -22,10 +22,12 @@ internal static unsafe class InlineArgumentTests
                 compiler.gtNewLclvNode(TYP_BYREF, 0));
             var layout = new ClassLayout(8);
             var value = compiler.gtNewBlkIndir(address, layout);
+
             if (nonFaulting)
             {
                 value.Flags |= GenTreeFlags.GTF_IND_NONFAULTING;
             }
+
             var argInfo = new InlArgInfo {
                 arg = new CallArg(NewCallArg.CreateForStruct(value, TYP_STRUCT, layout)),
                 argHasSideEff = true,
@@ -64,20 +66,24 @@ internal static unsafe class InlineArgumentTests
                 argHasLdargaOp = shape == "address",
                 argHasStargOp = shape == "starg",
             };
+
             if (shape == "more-uses")
             {
                 target.Flags |= GenTreeFlags.GTF_VAR_MOREUSES;
             }
+
             var hasStatementUse = shape is not "return" and not "unused";
             var hasReturnUse = shape is "return" or "shared";
             var body = new GenTreeUnOp(GT_NEG, TYP_INT, target);
             var inlineeBlock = new BasicBlock(null, null);
             inlinee.fgFirstBB = inlineeBlock;
             inlinee.fgLastBB = inlineeBlock;
+
             if (hasStatementUse)
             {
                 compiler.fgInsertStmtAtEnd(inlineeBlock, new Statement(shape == "root" ? target : body, 2));
             }
+
             var call = info.iciCall ?? throw new InvalidOperationException("Missing call.");
             var retExpr = new GenTreeRetExpr(TYP_INT, call) { SubstExpr = hasReturnUse ? target : null };
             info.inlineCandidateInfo.retExpr = retExpr;
@@ -88,6 +94,7 @@ internal static unsafe class InlineArgumentTests
 
             var needsTemp = shape is "more-uses" or "address" or "starg";
             Assert.That(added is not null, Is.EqualTo(needsTemp));
+
             if (needsTemp)
             {
                 Assert.That(after.RootNode.Oper, Is.EqualTo(GT_STORE_LCL_VAR));
@@ -98,11 +105,13 @@ internal static unsafe class InlineArgumentTests
                 Assert.That(after, Is.SameAs(info.iciStmt));
                 Assert.That(argInfo.argBashTmpNode, Is.SameAs(value));
             }
+
             if (hasStatementUse)
             {
                 var stmt = inlineeBlock.FirstStmt ?? throw new InvalidOperationException("Missing inlinee statement.");
                 Assert.That(shape == "root" ? stmt.RootNode : body.Op1, Is.SameAs(needsTemp ? target : value));
             }
+
             if (hasReturnUse)
             {
                 Assert.That(retExpr.SubstExpr, Is.SameAs(value));
@@ -128,6 +137,7 @@ internal static unsafe class InlineArgumentTests
             var last = compiler.fgInlinePrependStatements(info);
             var setup = info.iciStmt?.NextStmt ?? throw new InvalidOperationException("Missing argument setup.");
             Assert.That(setup.RootNode.Oper, Is.EqualTo(GT_STORE_LCL_VAR));
+
             if (alreadyDereferenced)
             {
                 Assert.That(last, Is.SameAs(setup));
@@ -138,6 +148,7 @@ internal static unsafe class InlineArgumentTests
                 Assert.That(last.RootNode.Oper, Is.EqualTo(GT_NULLCHECK));
                 Assert.That(last.RootNode.AsUnOp().Op1.IsIntegralConst(0), Is.True);
             }
+
             Assert.That(last.NextStmt, Is.Null);
         });
     }
@@ -162,12 +173,14 @@ internal static unsafe class InlineArgumentTests
             var last = compiler.fgInlinePrependStatements(info);
             var current = info.iciStmt;
             ReadOnlySpan<int> argumentOrder = [0, 2, 1];
+
             foreach (var local in argumentOrder)
             {
                 current = current?.NextStmt ?? throw new InvalidOperationException("Missing argument setup.");
                 Assert.That(current.RootNode.Oper, Is.EqualTo(GT_STORE_LCL_VAR));
                 Assert.That(current.RootNode.AsLclVarCommon().LclNum, Is.EqualTo(local));
             }
+
             Assert.That(current, Is.SameAs(last));
             Assert.That(last.NextStmt, Is.Null);
         });
@@ -186,11 +199,14 @@ internal static unsafe class InlineArgumentTests
             info.lclVarInfo[0].lclTypeInfo = TYP_INT;
             info.lclTmpNum[0] = 3;
             var block = info.iciBlock ?? throw new InvalidOperationException("Missing caller block.");
+
             if (inLoop)
             {
                 block.SetFlags(BasicBlockFlags.BBF_BACKWARD_JUMP);
             }
+
             var last = compiler.fgInlinePrependStatements(info);
+
             if (inLoop || !callerInitializes)
             {
                 Assert.That(last.RootNode.Oper, Is.EqualTo(GT_STORE_LCL_VAR));
@@ -221,16 +237,20 @@ internal static unsafe class InlineArgumentTests
             compiler.lvaTable[0].Type = TYP_REF;
             compiler.lvaTable[2].Type = TYP_BYREF;
             var call = info.iciCall ?? throw new InvalidOperationException("Missing call.");
+
             if (implicitTail)
             {
                 call._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_IMPLICIT_TAILCALL;
             }
+
             var block = info.iciBlock ?? throw new InvalidOperationException("Missing caller block.");
             compiler.fgInlineAppendStatements(info, block, info.iciStmt);
             var current = info.iciStmt;
+
             if (!implicitTail)
             {
                 ReadOnlySpan<int> gcLocals = unusedRef ? [2] : [0, 2];
+
                 foreach (var local in gcLocals)
                 {
                     current = current?.NextStmt ?? throw new InvalidOperationException("Missing GC-local cleanup.");
@@ -238,6 +258,7 @@ internal static unsafe class InlineArgumentTests
                     Assert.That(current.RootNode.AsLclVarCommon().Data.IsIntegralConst(0), Is.True);
                 }
             }
+
             Assert.That(current?.NextStmt, Is.Null);
         });
     }
@@ -263,6 +284,7 @@ internal static unsafe class InlineArgumentTests
             temp.lvFieldLclStart = 3;
             temp.lvFieldCnt = 2;
             temp.SetAddressExposed(true, default);
+
             for (var i = 3; i < 5; i++)
             {
                 compiler.lvaTable[i].lvParentLcl = 0;
@@ -278,9 +300,11 @@ internal static unsafe class InlineArgumentTests
             Assert.That(compiler.lvaTable[1].lvFieldLclStart, Is.EqualTo(7));
             Assert.That(temp.IsAddressExposed, Is.EqualTo(promotionState != 2));
             Assert.That(temp.lvPromoted, Is.True);
+
 #if DEBUG
             Assert.That(temp.lvUnusedStruct, Is.EqualTo(promotionState == 2));
             Assert.That(temp.lvUndoneStructPromotion, Is.EqualTo(promotionState == 2));
+
 #endif
             for (var i = 3; i < 5; i++)
             {
@@ -304,16 +328,19 @@ internal static unsafe class InlineArgumentTests
         compiler.InlineeCompiler = inlinee;
         compiler.lvaTable = new LclVarDsc[8];
         compiler.lvaCount = compiler.lvaTable.Length;
+
         for (var i = 0; i < compiler.lvaCount; i++)
         {
             compiler.lvaTable[i].Type = TYP_INT;
         }
+
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(false);
         CORINFO_METHOD_INFO methodInfo = default;
         inlinee.info.compMethodInfo = &methodInfo;
         JitTls.Compiler = compiler;
+
         try
         {
             var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);

@@ -38,6 +38,7 @@ internal static unsafe class ErrorTrapTests
             void Callback()
             {
                 invoked = true;
+
                 if (failure is not null)
                 {
                     ThrowFromManagedCallback(failure);
@@ -54,6 +55,7 @@ internal static unsafe class ErrorTrapTests
             {
                 Assert.That(Invoke(), Is.EqualTo(kind == 0));
             }
+
             Assert.That(invoked, Is.True);
         });
     }
@@ -101,6 +103,7 @@ internal static unsafe class ErrorTrapTests
         }
 
         callback(state);
+
         return 1;
     }
 }

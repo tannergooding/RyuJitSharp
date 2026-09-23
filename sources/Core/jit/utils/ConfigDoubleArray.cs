@@ -32,12 +32,14 @@ public struct ConfigDoubleArray
         if (_values is null)
         {
             jitprintf("<uninitialized config double array>\n");
+
             return;
         }
 
         if (_values.Length == 0)
         {
             jitprintf("<empty config double array>\n");
+
             return;
         }
 
@@ -50,13 +52,16 @@ public struct ConfigDoubleArray
     private void Init(ReadOnlySpan<byte> str)
     {
         double[] values = [];
+
         for (var pass = 0; pass < 2; pass++)
         {
             var remaining = str;
             var length = 0;
+
             while (!remaining.IsEmpty)
             {
                 var c = remaining[0];
+
                 if ((c == ',') || (c == ' ') || ((c >= '\t') && (c <= '\r')))
                 {
                     remaining = remaining[1..];
@@ -64,10 +69,12 @@ public struct ConfigDoubleArray
                 }
 
                 var value = ParseValue(remaining, out var consumed);
+
                 if (pass != 0)
                 {
                     values[length] = value;
                 }
+
                 length++;
                 remaining = remaining[consumed..];
             }
@@ -77,6 +84,7 @@ public struct ConfigDoubleArray
                 values = new double[length];
             }
         }
+
         _values = values;
     }
 
@@ -85,6 +93,7 @@ public struct ConfigDoubleArray
         var unsigned = text[0] is (byte)'+' or (byte)'-' ? text[1..] : text;
         var isHex = (unsigned.Length >= 2) && (unsigned[0] == '0') && (unsigned[1] is (byte)'x' or (byte)'X');
         var style = isHex ? NumberStyles.HexFloat : NumberStyles.Float;
+
         if (double.TryParsePartial(text, style, CultureInfo.InvariantCulture, out var value, out consumed))
         {
             return value;
@@ -94,6 +103,7 @@ public struct ConfigDoubleArray
         if ((unsigned.Length >= 3) && Ascii.EqualsIgnoreCase(unsigned[..3], "inf"u8))
         {
             consumed = text.Length - unsigned.Length + 3;
+
             return text[0] == '-' ? double.NegativeInfinity : double.PositiveInfinity;
         }
 

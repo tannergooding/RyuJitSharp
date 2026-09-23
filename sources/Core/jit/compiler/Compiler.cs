@@ -2131,6 +2131,7 @@ public partial class Compiler
         {
             return offset is 0;
         }
+
 #endif
         if ((lclNum >= 32768) && (offset >= 256))
         {
@@ -2616,6 +2617,7 @@ public partial class Compiler
                             {
                                 return TYP_UNDEF;
                             }
+
                             break;
                         }
 
@@ -2624,6 +2626,7 @@ public partial class Compiler
                             return TYP_UNDEF;
                         }
                     }
+
                     break;
                 }
 
@@ -2751,6 +2754,7 @@ public partial class Compiler
 #endif
             UsesSimdTypes = true;
         }
+
         return simdBaseType;
     }
 
@@ -2883,6 +2887,7 @@ public partial class Compiler
             threshold = maxRegSize * 2;
 #endif
         }
+
         return threshold;
     }
 

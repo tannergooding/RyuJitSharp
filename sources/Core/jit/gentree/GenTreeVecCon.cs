@@ -58,19 +58,27 @@ public sealed class GenTreeVecCon : GenTree
             case TYP_SIMD32:
             case TYP_SIMD64:
 #endif
+            {
                 // Compare active bytes, including NaN payloads and signed zero, but not SIMD12 padding.
                 return left._simdVal.AsSpan<byte>()[..left.Type.Size].SequenceEqual(right._simdVal.AsSpan<byte>()[..right.Type.Size]);
+            }
 
 #if TARGET_ARM64
             case TYP_SIMD:
+            {
                 NYI("ARM64 scalable vector constant comparison");
                 fatal(CORJIT_IMPLLIMITATION);
+
                 return false;
+            }
 #endif
 
             default:
+            {
                 unreached();
+
                 return false;
+            }
         }
     }
 
@@ -342,6 +350,7 @@ public sealed class GenTreeVecCon : GenTree
         for (var i = 0; i < elementCount; i++)
         {
             var element = GetElementFloating(simdBaseType, i);
+
             if ((element == 0.0) && double.IsNegative(element))
             {
                 return true;
@@ -359,6 +368,7 @@ public sealed class GenTreeVecCon : GenTree
         for (var i = 0; i < elementCount; i++)
         {
             var element = GetElementFloating(simdBaseType, i);
+
             if ((element == 0.0) && !double.IsNegative(element))
             {
                 return true;
@@ -383,11 +393,13 @@ public sealed class GenTreeVecCon : GenTree
                 for (var i = 0; i < elementCount; i++)
                 {
                     var element = GetElementFloating(simdBaseType, i);
+
                     if ((element == 0.0) && (double.IsNegative(element) == isNegativeZero))
                     {
                         result.u32[i] = uint.MaxValue;
                     }
                 }
+
                 break;
             }
 
@@ -396,11 +408,13 @@ public sealed class GenTreeVecCon : GenTree
                 for (var i = 0; i < elementCount; i++)
                 {
                     var element = GetElementFloating(simdBaseType, i);
+
                     if ((element == 0.0) && (double.IsNegative(element) == isNegativeZero))
                     {
                         result.u64[i] = ulong.MaxValue;
                     }
                 }
+
                 break;
             }
 

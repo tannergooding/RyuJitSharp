@@ -23,6 +23,7 @@ public sealed class GenTreeHWIntrinsic : GenTreeJitIntrinsic
 #if DEBUG
             var numArgs = HWIntrinsicInfo.lookupNumArgs(_hwIntrinsicId);
             assert((numArgs < 0) || (numArgs == Operands.Length));
+
 #endif
             return _hwIntrinsicId;
         }
@@ -84,21 +85,27 @@ public sealed class GenTreeHWIntrinsic : GenTreeJitIntrinsic
                 case NI_X86Base_MemoryFence:
                 case NI_X86Base_StoreFence:
                 case NI_X86Serialize_Serialize:
+                {
                     Flags |= GTF_ASG | GTF_GLOB_REF;
                     break;
+                }
 
                 case NI_X86Base_Pause:
                 case NI_X86Base_Prefetch0:
                 case NI_X86Base_Prefetch1:
                 case NI_X86Base_Prefetch2:
                 case NI_X86Base_PrefetchNonTemporal:
+                {
                     Flags |= GTF_CALL | GTF_GLOB_REF;
                     break;
+                }
 
                 case NI_Vector_op_Division:
+                {
                     assert(SimdSize is 16 or 32);
                     Flags |= GTF_EXCEPT;
                     break;
+                }
 #endif
 
 #if TARGET_ARM64
@@ -122,13 +129,17 @@ public sealed class GenTreeHWIntrinsic : GenTreeJitIntrinsic
                 case NI_Sve_GetFfrUInt32:
                 case NI_Sve_GetFfrUInt64:
                 case NI_Sve_SetFfr:
+                {
                     Flags |= GTF_CALL | GTF_GLOB_REF;
                     break;
+                }
 #endif
 
                 default:
+                {
                     assert(false, "Unexpected hwintrinsic side-effect");
                     break;
+                }
             }
         }
     }
@@ -146,6 +157,7 @@ public sealed class GenTreeHWIntrinsic : GenTreeJitIntrinsic
         _hwIntrinsicId = intrinsicId;
 #if TARGET_XARCH
         var simdBaseType = SimdBaseType;
+
         if (HWIntrinsicInfo.NeedsNormalizeSmallTypeToInt(intrinsicId) && varTypeIsSmall(simdBaseType))
         {
             SimdBaseType = varTypeIsUnsigned(simdBaseType) ? TYP_UINT : TYP_INT;

@@ -53,10 +53,12 @@ internal static unsafe class ProfileCountTests
             Assert.That(first.bbWeight, Is.EqualTo(haveWeights ? uint.MaxValue : 5.0));
             Assert.That(second.bbWeight, Is.EqualTo(haveWeights ? (double)ulong.MaxValue : 6.0));
             Assert.That(third.bbWeight, Is.EqualTo(haveWeights ? 0.0 : 7.0));
+
             foreach (var block in compiler.Blocks)
             {
                 Assert.That(block.hasProfileWeight, Is.EqualTo(haveWeights));
             }
+
             Assert.That(third.isRunRarely, Is.EqualTo(haveWeights));
         });
     }
@@ -89,11 +91,13 @@ internal static unsafe class ProfileCountTests
             entry.Next = loop;
             loop.Next = exit;
             entry.bbPreds = new FlowEdge(loop, entry, null) { Likelihood = 0.5 };
+
             if (haveWeights)
             {
                 entry.SetFlags(BBF_PROF_WEIGHT);
                 callSite.SetFlags(BBF_PROF_WEIGHT);
             }
+
             compiler.fgFirstBB = entry;
             compiler.fgLastBB = exit;
             compiler.impInlineInfo = new InlineInfo { iciBlock = callSite };
@@ -110,6 +114,7 @@ internal static unsafe class ProfileCountTests
             Assert.That(exit.hasProfileWeight, Is.False);
             Assert.That(compiler.fgPgoConsistent, Is.EqualTo(!inconsistent));
             Assert.That(compiler.Metrics.ProfileInconsistentInlineeScale, Is.EqualTo(inconsistent ? 1 : 0));
+
             if (inconsistent)
             {
                 compiler.fgApplyProfileScale();
@@ -128,10 +133,12 @@ internal static unsafe class ProfileCountTests
             var blocks = CreateLinearGraph(compiler);
             compiler.opts.SetMinOpts(false);
             compiler.fgPgoDynamic = dynamicPgo;
+
             if (inlinee)
             {
                 compiler.impInlineInfo = new InlineInfo { iciBlock = new BasicBlock(null, null) { bbWeight = 25 } };
             }
+
             var status = IncorporateProfile(compiler);
             Assert.That(status, Is.EqualTo(inlinee ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING));
             Assert.That(compiler.fgPgoHaveWeights, Is.EqualTo(dynamicPgo));
@@ -190,7 +197,9 @@ internal static unsafe class ProfileCountTests
             compiler.opts.SetMinOpts(false);
             var data = mismatched ? 40ul : 0ul;
             PgoInstrumentationSchema schema = new() {
-                ILOffset = mismatched ? 99 : 10, Other = 0, InstrumentationKind = PgoInstrumentationKind.EdgeLongCount,
+                ILOffset = mismatched ? 99 : 10,
+                Other = 0,
+                InstrumentationKind = PgoInstrumentationKind.EdgeLongCount,
             };
             compiler.fgPgoSchema = &schema;
             compiler.fgPgoSchemaCount = 1;
@@ -276,10 +285,12 @@ internal static unsafe class ProfileCountTests
             _ = CreateLinearGraph(compiler);
             compiler.opts.SetMinOpts(false);
             compiler.fgPgoQueryResult = unchecked((int)0x80004001);
+
             if (bbopt)
             {
                 compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_BBOPT);
             }
+
             var output = Capture(compiler, () => _ = IncorporateProfile(compiler));
             var expected = bbopt ? "BBOPT set, but no profile data available (hr=80004001)" : "BBOPT not set";
             Assert.That(output, Is.EqualTo(expected + Environment.NewLine));
@@ -300,16 +311,19 @@ internal static unsafe class ProfileCountTests
             compiler.opts.SetMinOpts(false);
             SynthesisMode(ref JitConfig) = mode;
             PgoInstrumentationSchema schema = new() { InstrumentationKind = PgoInstrumentationKind.GetLikelyClass };
+
             if (hasSchema)
             {
                 compiler.fgPgoSchema = &schema;
                 compiler.fgPgoSchemaCount = 1;
             }
+
             if (propagate)
             {
                 PropagateSynthesis(ref JitConfig) = 1;
                 compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_BBINSTR);
             }
+
             _ = IncorporateProfile(compiler);
             Assert.That(compiler.Metrics.ProfileSynthesizedBlendedOrRepaired, Is.EqualTo(expectedRuns));
         });
@@ -339,6 +353,7 @@ internal static unsafe class ProfileCountTests
         using var writer = new JitTextWriter(stream, leaveOpen: true);
         var previous = s_jitstdout;
         var verbose = compiler.verbose;
+
         try
         {
             s_jitstdout = writer;
@@ -365,16 +380,19 @@ internal static unsafe class ProfileCountTests
             StressSeed(ref config) = seed;
             JitConfig = config;
             var methodHash = unchecked((uint)compiler.info.compMethodHash());
+
             for (var offset = -1; offset < 128; offset++)
             {
                 var hash = unchecked((uint)(((ulong)methodHash * (uint)seed) ^ ((ulong)(uint)offset * 1027)));
                 var expected = (hash % 3) == 0 ? 0.0
                     : (hash % 11) == 0 ? (double)(hash % 23) * (hash % 29) * (hash % 31)
                     : (double)(hash % 17) * (hash % 19);
+
                 if (offset == 0 && expected == 0)
                 {
                     expected = 1 + (hash % 5);
                 }
+
                 double weight = -1;
                 Assert.That(compiler.fgGetProfileWeightForBasicBlock(offset, ref weight), Is.True);
                 Assert.That(weight, Is.EqualTo(expected), $"Offset: {offset}");
@@ -404,6 +422,7 @@ internal static unsafe class ProfileCountTests
         compiler.info.compFullName = "ProfileCountTests";
 #endif
         JitTls.Compiler = compiler;
+
         try
         {
             action(compiler);

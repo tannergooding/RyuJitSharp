@@ -2948,8 +2948,10 @@ public partial class Compiler
             {
                 jitprintf($"\n\n*** JitStress: {s_compStressModeNames[(int)stressArea]} ***\n\n");
             }
+
             compActiveStressModes[(int)(stressArea)] = 1;
         }
+
         return doStress;
     }
 
@@ -2961,6 +2963,7 @@ public partial class Compiler
         if (result == 0)
         {
             result = unchecked((uint)HashString(s_compStressModeNames[(int)area]));
+
             if (result == 0)
             {
                 result = 1;
@@ -2992,12 +2995,14 @@ public partial class Compiler
         }
 
         var namesAllow = JitConfig.JitStressModeNamesAllow;
+
         if ((namesAllow is not null) && !StressModeNamesContain(namesAllow, stressModeName))
         {
             return false;
         }
 
         var names = JitConfig.JitStressModeNames;
+
         if (names is not null)
         {
             if (StressModeNamesContain(names, stressModeName))

@@ -2470,6 +2470,7 @@ public static partial class var_typesExtensions
                 });
 
                 _ = builder.Append(hwiBuilder);
+
                 return;
             }
 
@@ -2543,6 +2544,7 @@ public enum VNFunc
                 });
 
                 _ = builder.Append(hwiBuilder);
+
                 return;
             }
 
@@ -2691,6 +2693,7 @@ public static partial class VNFuncExtensions
                     instructionSets = [with(StringComparer.OrdinalIgnoreCase)];
                     instructionSetsByArchitecture[targetArch] = instructionSets;
                 }
+
                 _ = instructionSets.Add(name);
 
                 if (!addedInsSet.TryGetValue(targetArch, out var addedInsSetForTargetArch))
@@ -2757,6 +2760,7 @@ public static partial class VNFuncExtensions
                 {
                     _ = insSetFlagsBuilder.AppendLine();
                 }
+
                 _ = insSetFlagsBuilder.AppendLine(CultureInfo.InvariantCulture, $$"""
         if (HasInstructionSet(InstructionSet_{{name}}))
         {
@@ -2802,6 +2806,7 @@ public static partial class VNFuncExtensions
                 {
                     _ = ensureValidBuilder.AppendLine();
                 }
+
                 _ = ensureValidBuilder.AppendLine(CultureInfo.InvariantCulture, $$"""
             if (resultFlags.HasInstructionSet(InstructionSet_{{name}}) && !resultFlags.HasInstructionSet(InstructionSet_{{dependency}}))
             {
@@ -2950,6 +2955,7 @@ public partial class Globals
                 previousTargetArch = targetArch;
                 appended = true;
             }
+
             return appended;
         }
 

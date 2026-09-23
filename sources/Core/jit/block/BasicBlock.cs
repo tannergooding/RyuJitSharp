@@ -491,6 +491,7 @@ public sealed partial class BasicBlock : LIR.Range
 
         var lastStmt = LastStmt;
         assert(lastStmt is not null);
+
         return lastStmt.RootNode;
     }
 
@@ -500,6 +501,7 @@ public sealed partial class BasicBlock : LIR.Range
         {
             var lastNode = GetLastNode();
             assert(lastNode is not null);
+
             return lastNode.Oper is GT_JMP;
         }
 
@@ -527,9 +529,11 @@ public sealed partial class BasicBlock : LIR.Range
             {
                 var lastNode = GetLastNode();
                 assert(lastNode is not null);
+
                 if (lastNode.Oper is GT_CALL)
                 {
                     var call = lastNode.AsCall();
+
                     if (tailCallsConvertibleToLoopOnly)
                     {
                         result = call.IsTailCallConvertibleToLoop;
@@ -571,17 +575,20 @@ public sealed partial class BasicBlock : LIR.Range
 
         var thisHndIndex = HndIndex;
         ref var enclosing = ref comp.ehGetDsc(thisHndIndex);
+
         if (!enclosing.InFilterRegionBBRange(this))
         {
             return BasicBlockVisit.Continue;
         }
 
         assert(enclosing.HasFilter);
+
         // Enclosed regions are contiguous immediately before the enclosing region.
         for (var index = thisHndIndex - 1; index >= 0; index--)
         {
             var enclosingIndex = comp.ehGetEnclosingRegionIndex((ushort)index, out var inTry);
             var isEnclosed = false;
+
             while (enclosingIndex != EHblkDsc.NO_ENCLOSING_INDEX)
             {
                 if (enclosingIndex == thisHndIndex)
@@ -589,6 +596,7 @@ public sealed partial class BasicBlock : LIR.Range
                     isEnclosed = true;
                     break;
                 }
+
                 enclosingIndex = comp.ehGetEnclosingRegionIndex(enclosingIndex, out inTry);
             }
 
@@ -600,6 +608,7 @@ public sealed partial class BasicBlock : LIR.Range
             if (inTry)
             {
                 ref var enclosed = ref comp.ehGetDsc((ushort)index);
+
                 if (enclosed.HasFinallyOrFaultHandler && (func(enclosed.ebdHndBeg) is BasicBlockVisit.Abort))
                 {
                     return BasicBlockVisit.Abort;
@@ -627,8 +636,10 @@ public sealed partial class BasicBlock : LIR.Range
                         }
                     }
                 }
+
                 return BasicBlockVisit.Continue;
             }
+
             case BBJ_CALLFINALLY:
             case BBJ_CALLFINALLYRET:
             case BBJ_EHCATCHRET:
@@ -638,18 +649,22 @@ public sealed partial class BasicBlock : LIR.Range
             {
                 return func(Target);
             }
+
             case BBJ_COND:
             {
                 if (func(FalseTarget) is BasicBlockVisit.Abort)
                 {
                     return BasicBlockVisit.Abort;
                 }
+
                 if ((TrueEdge != FalseEdge) && (func(TrueTarget) is BasicBlockVisit.Abort))
                 {
                     return BasicBlockVisit.Abort;
                 }
+
                 return BasicBlockVisit.Continue;
             }
+
             case BBJ_SWITCH:
             {
                 foreach (var edge in bbSwtTargets.Succs)
@@ -659,17 +674,21 @@ public sealed partial class BasicBlock : LIR.Range
                         return BasicBlockVisit.Abort;
                     }
                 }
+
                 return BasicBlockVisit.Continue;
             }
+
             case BBJ_THROW:
             case BBJ_RETURN:
             case BBJ_EHFAULTRET:
             {
                 return BasicBlockVisit.Continue;
             }
+
             default:
             {
                 unreached();
+
                 return default;
             }
         }
@@ -1647,6 +1666,7 @@ public sealed partial class BasicBlock : LIR.Range
                 break;
             }
         }
+
         assert(Kind == from.Kind);
     }
 
@@ -1803,6 +1823,7 @@ public sealed partial class BasicBlock : LIR.Range
                 {
                     jitprintf(" ");
                 }
+
                 jitprintf(displayString);
                 first = false;
             }

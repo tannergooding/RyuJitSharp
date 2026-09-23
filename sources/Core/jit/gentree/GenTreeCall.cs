@@ -29,6 +29,7 @@ public sealed class GenTreeCall : GenTree
     public ref AsyncCallInfo GetAsyncInfo()
     {
         assert(IsAsync);
+
         return ref _asyncInfo;
     }
 
@@ -244,24 +245,29 @@ public sealed class GenTreeCall : GenTree
 
         const GenTreeFlags callNodeFlags =
             GTF_CALL_UNMANAGED | GTF_CALL_VIRT_KIND_MASK | GTF_CALL_NULLCHECK | GTF_CALL_POP_ARGS | GTF_TLS_GET_ADDR;
+
         if (((c1.Flags & callNodeFlags) != (c2.Flags & callNodeFlags)) ||
             (c1._callMoreFlags != c2._callMoreFlags) ||
             (c1.Type != c2.Type) || (c1._callType != c2._callType) || (c1._returnType != c2._returnType))
         {
             return false;
         }
+
         if (varTypeIsStruct(c1._returnType) && (c1._retClsHnd != c2._retClsHnd))
         {
             return false;
         }
+
         if ((c1.Args.IsVarArgs != c2.Args.IsVarArgs) || (c1.UnmanagedCallConv != c2.UnmanagedCallConv))
         {
             return false;
         }
+
         if (c1.IsAsync)
         {
             ref var i1 = ref c1.GetAsyncInfo();
             ref var i2 = ref c2.GetAsyncInfo();
+
             if ((i1.ContinuationContextHandling != i2.ContinuationContextHandling) ||
                 (i1.IsValueTaskAsTask != i2.IsValueTaskAsTask) || (i1.IsTailAwait != i2.IsTailAwait))
             {
@@ -275,10 +281,12 @@ public sealed class GenTreeCall : GenTree
             {
                 return false;
             }
+
             if (c1.IsVirtualStub && (c1.StubCallStubAddr != c2.StubCallStubAddr))
             {
                 return false;
             }
+
 #if FEATURE_READYTORUN
             if ((c1._entryPoint.accessType != c2._entryPoint.accessType) || (c1._entryPoint.addr != c2._entryPoint.addr))
             {
@@ -288,10 +296,12 @@ public sealed class GenTreeCall : GenTree
             if (c1.IsHelperCall())
             {
                 var helper = c1.HelperNum;
+
                 if (Compiler.IsStaticHelperEligibleForExpansion(c1) && (c1._initClsHnd != c2._initClsHnd))
                 {
                     return false;
                 }
+
                 if (helper.IsAllocator &&
                     (c1._compileTimeHelperArgumentHandle != c2._compileTimeHelperArgumentHandle))
                 {
@@ -302,14 +312,17 @@ public sealed class GenTreeCall : GenTree
 
         var args1 = c1.Args.Args.GetEnumerator();
         var args2 = c2.Args.Args.GetEnumerator();
+
         while (args1.MoveNext())
         {
             if (!args2.MoveNext())
             {
                 return false;
             }
+
             var arg1 = args1.Current;
             var arg2 = args2.Current;
+
             if ((arg1.SignatureType != arg2.SignatureType) ||
                 (arg1.SignatureClassHandle != arg2.SignatureClassHandle) ||
                 (arg1.WellKnownArg != arg2.WellKnownArg) ||
@@ -318,6 +331,7 @@ public sealed class GenTreeCall : GenTree
                 return false;
             }
         }
+
         if (args2.MoveNext())
         {
             return false;
@@ -386,6 +400,7 @@ public sealed class GenTreeCall : GenTree
     public ExceptionSetFlags CallExceptions()
     {
         var helper = HelperNum;
+
         if (helper == CORINFO_HELP_UNDEF)
         {
             return ExceptionSetFlags.UnknownException;
@@ -711,9 +726,12 @@ public sealed class GenTreeCall : GenTree
         {
             // In this case we should access it through gtInlineCandidateInfoList
             assert(_inlineCandidateInfoList is not null);
+
             return _inlineCandidateInfoList[index];
         }
+
         assert(_inlineCandidateInfo is not null);
+
         return _inlineCandidateInfo;
     }
 

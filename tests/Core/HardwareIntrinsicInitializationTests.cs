@@ -29,12 +29,14 @@ internal static unsafe class HardwareIntrinsicInitializationTests
     {
         WithCompiler(_ => {
             var operands = new GenTree[argCount];
+
             for (var index = 0; index < operands.Length; index++)
             {
                 var address = (id is NI_X86Base_LoadAlignedVector128 or NI_X86Base_StoreAligned or
                     NI_X86Base_Prefetch0 or NI_X86Base_Prefetch1 or NI_X86Base_Prefetch2 or NI_X86Base_PrefetchNonTemporal) && index == 0;
                 operands[index] = new GenTreeLclVar(address ? TYP_BYREF : TYP_SIMD16, index);
             }
+
             var vectorResult = id is NI_X86Base_Add or NI_X86Base_LoadAlignedVector128 or NI_Vector_op_Division;
             var vectorSize = (vectorResult || id is NI_X86Base_StoreAligned) ? (byte)16 : (byte)0;
             var intrinsic = new GenTreeHWIntrinsic(vectorResult ? TYP_SIMD16 : TYP_VOID, id, TYP_INT, vectorSize, operands);
@@ -99,6 +101,7 @@ internal static unsafe class HardwareIntrinsicInitializationTests
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitTls.Compiler = compiler;
+
         try
         {
             action(compiler);

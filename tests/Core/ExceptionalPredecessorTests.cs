@@ -55,6 +55,7 @@ internal static unsafe class ExceptionalPredecessorTests
             Assert.That(head?.NextPredEdge?.NextPredEdge, Is.SameAs(regular));
             Assert.That(target.bbPreds, Is.SameAs(regular));
             Assert.That(compiler.BlockPredsWithEH(target), Is.SameAs(head));
+
             if (filter)
             {
                 Assert.That(Sources(compiler.BlockPredsWithEH(blocks[4])), Is.EqualTo([blocks[2], blocks[0]]));
@@ -125,6 +126,7 @@ internal static unsafe class ExceptionalPredecessorTests
             var visited = new List<BasicBlock>();
             var result = blocks[4].VisitEHEnclosedHandlerSecondPassSuccs(compiler, block => {
                 visited.Add(block);
+
                 return abort ? BasicBlockVisit.Abort : BasicBlockVisit.Continue;
             });
             Assert.That(result, Is.EqualTo(abort ? BasicBlockVisit.Abort : BasicBlockVisit.Continue));
@@ -168,27 +170,33 @@ internal static unsafe class ExceptionalPredecessorTests
             var blocks = CreateBlocks(compiler, BBJ_RETURN);
             var edges = new List<FlowEdge>();
             FlowEdge? head = null;
+
             for (var i = count - 1; i >= 0; i--)
             {
                 var source = new BasicBlock(null, null) { bbNum = unchecked((i * 1879) ^ (i << 29)) };
                 head = new FlowEdge(source, blocks[0], head);
                 edges.Insert(0, head);
             }
+
             for (var i = 1; i < edges.Count; i++)
             {
                 var number = unchecked((uint)edges[i].SourceBlock.bbNum);
                 var value = hash ^ ((number * 65536ul) & uint.MaxValue) ^ number;
+
                 if (((value % 1879) & 1) != 0)
                 {
                     (edges[0], edges[i]) = (edges[i], edges[0]);
                 }
             }
+
             head = ShuffleHelper(hash, head);
+
             foreach (var edge in edges)
             {
                 Assert.That(head, Is.SameAs(edge));
                 head = edge.NextPredEdge;
             }
+
             Assert.That(head, Is.Null);
         });
     }
@@ -204,6 +212,7 @@ internal static unsafe class ExceptionalPredecessorTests
     {
         var result = new List<BasicBlock>();
         var visited = new HashSet<FlowEdge>();
+
         while (edge is not null)
         {
             Assert.That(visited.Add(edge), Is.True, "Predecessor list must not contain a cycle.");
@@ -215,24 +224,33 @@ internal static unsafe class ExceptionalPredecessorTests
     }
 
     private static EHblkDsc Clause(EHHandlerType kind, BasicBlock tryBlock, BasicBlock handler, BasicBlock last) => new() {
-        ebdHandlerType = kind, ebdTryBeg = tryBlock, ebdTryLast = tryBlock, ebdHndBeg = handler, ebdHndLast = last,
-        ebdEnclosingTryIndex = EHblkDsc.NO_ENCLOSING_INDEX, ebdEnclosingHndIndex = EHblkDsc.NO_ENCLOSING_INDEX,
+        ebdHandlerType = kind,
+        ebdTryBeg = tryBlock,
+        ebdTryLast = tryBlock,
+        ebdHndBeg = handler,
+        ebdHndLast = last,
+        ebdEnclosingTryIndex = EHblkDsc.NO_ENCLOSING_INDEX,
+        ebdEnclosingHndIndex = EHblkDsc.NO_ENCLOSING_INDEX,
     };
 
     private static BasicBlock[] CreateBlocks(Compiler compiler, params BBKinds[] kinds)
     {
         var blocks = new BasicBlock[kinds.Length];
+
         for (var i = 0; i < blocks.Length; i++)
         {
             blocks[i] = BasicBlock.New(compiler, kinds[i]);
+
             if (i > 0)
             {
                 blocks[i - 1].Next = blocks[i];
                 blocks[i].Prev = blocks[i - 1];
             }
         }
+
         compiler.fgFirstBB = blocks[0];
         compiler.fgLastBB = blocks[^1];
+
         return blocks;
     }
 
@@ -252,6 +270,7 @@ internal static unsafe class ExceptionalPredecessorTests
         compiler.info.compFullName = nameof(ExceptionalPredecessorTests);
 #endif
         JitTls.Compiler = compiler;
+
         try
         {
             action(compiler);

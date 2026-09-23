@@ -26,6 +26,7 @@ internal static unsafe class CallFoldingTests
             {
                 call._callMoreFlags &= ~GTF_CALL_M_SPECIAL_INTRINSIC;
             }
+
             Assert.That(compiler.gtFoldExprCall(call), Is.SameAs(call));
             Assert.That(((MethodMetadata*)call._callMethHnd)->Lookups, Is.Zero);
         }, minOpts);
@@ -155,6 +156,7 @@ internal static unsafe class CallFoldingTests
             compiler.opts.jitFlags = &flags;
             compiler.opts.SetMinOpts(minOpts);
             JitTls.Compiler = compiler;
+
             try
             {
                 var call = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, (CORINFO_METHOD_STRUCT_*)&metadata);

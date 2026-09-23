@@ -21,8 +21,11 @@ public sealed class FlowGraphNaturalLoops
     }
 
     public FlowGraphDfsTree DfsTree => _dfsTree;
+
     public int NumLoops => _loops.Count;
+
     public int ImproperLoopHeaders => _improperLoopHeaders;
+
     public bool IsForWasm => _dfsTree.IsForWasm;
 
     public FlowGraphNaturalLoop GetLoopByIndex(int index) => _loops[index];
@@ -36,15 +39,18 @@ public sealed class FlowGraphNaturalLoops
 
         var min = 0;
         var max = NumLoops;
+
         while (min < max)
         {
             var mid = min + ((max - min) / 2);
             var loop = _loops[mid];
             var header = loop.Header;
+
             if (header == block)
             {
                 return loop;
             }
+
             if (header.bbPostorderNum < block.bbPostorderNum)
             {
                 max = mid;
@@ -108,27 +114,34 @@ public sealed class FlowGraphNaturalLoops
 #if DEBUG
         JITDUMP("Identifying loops in DFS tree with following reverse post order:\n");
         JITDUMP("RPO -> BB [pre, post]\n");
+
         for (var i = dfsTree.PostOrderCount; i != 0; i--)
         {
             var block = dfsTree.GetPostOrder(i - 1);
             JITDUMP($"{dfsTree.PostOrderCount - i:D2} -> {FMT_BB(block.bbNum)}[{block.bbPreorderNum}, {block.bbPostorderNum}]\n");
         }
+
 #endif
         var loops = new FlowGraphNaturalLoops(dfsTree);
+
         if (!dfsTree.HasCycle)
         {
             JITDUMP("Flow graph has no cycles; skipping identification of natural loops\n");
+
             return loops;
         }
 
         var worklist = new Stack<BasicBlock>();
+
         for (var i = dfsTree.PostOrderCount; i != 0; i--)
         {
             var header = dfsTree.GetPostOrder(i - 1);
             FlowGraphNaturalLoop? loop = null;
+
             foreach (var predEdge in header.PredEdges)
             {
                 var predBlock = predEdge.SourceBlock;
+
                 if (dfsTree.Contains(predBlock) && dfsTree.IsAncestor(header, predBlock))
                 {
                     if (loop is null)
@@ -136,10 +149,12 @@ public sealed class FlowGraphNaturalLoops
                         loop = new FlowGraphNaturalLoop(dfsTree, header);
                         JITDUMP("\n");
                     }
+
                     JITDUMP($"{FMT_BB(predBlock.bbNum)} -> {FMT_BB(header.bbNum)} is a backedge\n");
                     loop._backEdges.Add(predEdge);
                 }
             }
+
             if (loop is null)
             {
                 continue;
@@ -149,9 +164,11 @@ public sealed class FlowGraphNaturalLoops
             loop._blocksSize = header.bbPostorderNum + 1;
             var loopTraits = loop.LoopBlockTraits();
             loop._blocks = BitVecOps.MakeEmpty(loopTraits);
+
             if (!loops.FindNaturalLoopBlocks(loop, worklist) || !IsLoopCanonicalizable(loop))
             {
                 loops._improperLoopHeaders++;
+
                 foreach (var otherLoop in loops.InPostOrder())
                 {
                     if (otherLoop.ContainsBlock(header))
@@ -160,6 +177,7 @@ public sealed class FlowGraphNaturalLoops
                         otherLoop._containsImproperHeader = true;
                     }
                 }
+
                 continue;
             }
 
@@ -173,14 +191,17 @@ public sealed class FlowGraphNaturalLoops
                         JITDUMP($"{FMT_BB(loopBlock.bbNum)} -> {FMT_BB(succBlock.bbNum)} is an exit edge\n");
                         loop._exitEdges.Add(exitEdge);
                     }
+
                     return BasicBlockVisit.Continue;
                 });
+
                 return BasicBlockVisit.Continue;
             });
 
             foreach (var predEdge in header.PredEdges)
             {
                 var predBlock = predEdge.SourceBlock;
+
                 if (dfsTree.Contains(predBlock) && !dfsTree.IsAncestor(header, predBlock))
                 {
                     JITDUMP($"{FMT_BB(predBlock.bbNum)} -> {FMT_BB(header.bbNum)} is an entry edge\n");
@@ -198,15 +219,18 @@ public sealed class FlowGraphNaturalLoops
                     break;
                 }
             }
+
 #if DEBUG
             foreach (var otherLoop in loops.InPostOrder())
             {
                 var containsHeader = otherLoop.ContainsBlock(header);
                 _ = loop.VisitLoopBlocks(loopBlock => {
                     assert(otherLoop.ContainsBlock(loopBlock) == containsHeader);
+
                     return BasicBlockVisit.Continue;
                 });
             }
+
 #endif
             loop._index = loops._loops.Count;
             loops._loops.Add(loop);
@@ -222,19 +246,23 @@ public sealed class FlowGraphNaturalLoops
                 parent._child = loop;
             }
         }
+
 #if DEBUG
         if (loops.NumLoops > 0)
         {
             JITDUMP($"\nFound {loops.NumLoops} loops\n");
         }
+
         if (loops._improperLoopHeaders > 0)
         {
             JITDUMP($"Rejected {loops._improperLoopHeaders} loop headers\n");
         }
+
         if (comp.verbose)
         {
             Dump(loops);
         }
+
 #endif
         return loops;
     }
@@ -246,13 +274,16 @@ public sealed class FlowGraphNaturalLoops
         var traits = loop.LoopBlockTraits();
         BitVecOps.AddElemD(traits, loop._blocks, 0);
         worklist.Clear();
+
         foreach (var backEdge in loop.BackEdges)
         {
             var source = backEdge.SourceBlock;
+
             if (source == loop.Header)
             {
                 continue;
             }
+
             assert(!BitVecOps.IsMember(traits, loop._blocks, loop.LoopBlockBitVecIndex(source)));
             worklist.Push(source);
             BitVecOps.AddElemD(traits, loop._blocks, loop.LoopBlockBitVecIndex(source));
@@ -261,33 +292,41 @@ public sealed class FlowGraphNaturalLoops
         while (worklist.Count > 0)
         {
             var loopBlock = worklist.Pop();
+
             if (IsForWasm && loopBlock.isBBCallFinallyPairTail)
             {
                 var callfinally = loopBlock.Prev;
                 assert(callfinally is not null);
+
                 if (BitVecOps.TryAddElemD(traits, loop._blocks, loop.LoopBlockBitVecIndex(callfinally)))
                 {
                     worklist.Push(callfinally);
                 }
+
                 continue;
             }
 
             for (var predEdge = comp.BlockPredsWithEH(loopBlock); predEdge is not null; predEdge = predEdge.NextPredEdge)
             {
                 var pred = predEdge.SourceBlock;
+
                 if (!dfsTree.Contains(pred))
                 {
                     continue;
                 }
+
                 if (IsForWasm && (pred.Kind is BBJ_EHFINALLYRET or BBJ_EHFAULTRET or BBJ_EHFILTERRET or BBJ_EHCATCHRET))
                 {
                     continue;
                 }
+
                 if (!dfsTree.IsAncestor(loop.Header, pred))
                 {
                     JITDUMP($"Loop is not natural; witness {FMT_BB(pred.bbNum)} -> {FMT_BB(loopBlock.bbNum)}\n");
+
                     return false;
                 }
+
                 if (BitVecOps.TryAddElemD(traits, loop._blocks, loop.LoopBlockBitVecIndex(pred)))
                 {
                     worklist.Push(pred);
@@ -301,10 +340,12 @@ public sealed class FlowGraphNaturalLoops
     private static bool IsLoopCanonicalizable(FlowGraphNaturalLoop loop)
     {
         var comp = loop.DfsTree.GetCompiler();
+
         if (!comp.bbIsHandlerBeg(loop.Header))
         {
             return true;
         }
+
         foreach (var backEdge in loop.BackEdges)
         {
             if (backEdge.SourceBlock.Kind is BBJ_CALLFINALLY)
@@ -321,6 +362,7 @@ public sealed class FlowGraphNaturalLoops
     public static void Dump(FlowGraphNaturalLoops? loops)
     {
         jitprintf("\n***************  Natural loop graph\n");
+
         if (loops is null)
         {
             jitprintf("loops is nullptr\n");
@@ -336,6 +378,7 @@ public sealed class FlowGraphNaturalLoops
                 FlowGraphNaturalLoop.Dump(loop);
             }
         }
+
         jitprintf("\n");
     }
 #endif

@@ -40,6 +40,7 @@ public partial class Compiler
             }
 
             GenTree? expectedPrevTree = null;
+
             if (tree.Oper.IsLeaf)
             {
                 if (tree.Oper is GT_CATCH_ARG)
@@ -68,11 +69,13 @@ public partial class Compiler
                         expectedPrevTree = tree.AsOp().Op2.AsColon().ThenNode;
                         break;
                     }
+
                     case GT_COLON:
                     {
                         expectedPrevTree = tree.AsColon().ElseNode;
                         break;
                     }
+
                     default:
                     {
                         expectedPrevTree = (tree.AsOp().Op2 is null) || tree.IsReverseOp ? tree.AsOp().Op1 : tree.AsOp().Op2;
@@ -98,6 +101,7 @@ public partial class Compiler
         if (compIsForInlining && compInlineResult.IsFailure)
         {
             JITDUMP("... failed inline attempt, no checking needed\n");
+
             return;
         }
 
@@ -109,12 +113,14 @@ public partial class Compiler
         fgDebugCheckBlockLinks();
 
         var reachedFirstFunclet = false;
+
         if (fgFuncletsCreated && (fgFirstFuncletBB is not null))
         {
             assert(bbIsFuncletBeg(fgFirstFuncletBB));
         }
 
         var curTraversalStamp = Interlocked.Increment(ref bbTraverseLabel);
+
         foreach (var block in Blocks)
         {
             block.bbTraversalStamp = curTraversalStamp;
@@ -209,6 +215,7 @@ public partial class Compiler
                         {
                             blockRefs++;
                         }
+
                         if (HBtab.HasFilter && (HBtab.ebdFilter == block))
                         {
                             blockRefs++;
@@ -334,18 +341,21 @@ public partial class Compiler
             if (block.Kind is BBJ_SWITCH)
             {
                 var targets = block.SwitchTargets;
+
                 if (targets.HasDominantCase)
                 {
                     assert(block.hasProfileWeight);
                 }
 
                 var succBlocks = new HashSet<int>();
+
                 foreach (var caseEdge in targets.Cases)
                 {
                     _ = succBlocks.Add(caseEdge.DestinationBlock.bbNum);
                 }
 
                 assert(targets.Succs.Length == succBlocks.Count);
+
                 foreach (var succBlock in block.SwitchSuccs)
                 {
                     assert(succBlocks.Contains(succBlock.bbNum));
@@ -358,6 +368,7 @@ public partial class Compiler
     {
         assert(fgFuncletsCreated);
         ref var ehDsc = ref ehGetBlockHndDsc(block);
+
         return !Unsafe.IsNullRef(in ehDsc) &&
                ((block == ehDsc.ebdHndBeg) || (ehDsc.HasFilter && (block == ehDsc.ebdFilter)));
     }
@@ -379,6 +390,7 @@ public partial class Compiler
         assert(ehGetDsc(finallyIndex).HasFinallyHandler);
 
         var callFinallyIndex = ehGetCallFinallyRegionIndex(finallyIndex, out var inTryRegion);
+
         if (callFinallyIndex == EHblkDsc.NO_ENCLOSING_INDEX)
         {
             return !blockCallFinally.hasTryIndex && !blockCallFinally.hasHndIndex;
@@ -413,10 +425,12 @@ public partial class Compiler
             if (!_compiler.fgPredsComputed)
             {
                 assert(block.bbPreds is null);
+
                 return 0;
             }
 
             var blockRefs = 0;
+
             foreach (var pred in block.PredEdges)
             {
                 blockRefs += pred.DupCount;
@@ -424,12 +438,14 @@ public partial class Compiler
                 assert(blockPred.bbTraversalStamp == curTraversalStamp);
 
                 ref var ehTryDsc = ref _compiler.ehGetBlockTryDsc(block);
+
                 if (!Unsafe.IsNullRef(in ehTryDsc))
                 {
                     assert(CheckEhTryDsc(block, blockPred, ehTryDsc));
                 }
 
                 ref var ehHndDsc = ref _compiler.ehGetBlockHndDsc(block);
+
                 if (!Unsafe.IsNullRef(in ehHndDsc))
                 {
                     assert(CheckEhHndDsc(block, blockPred, ehHndDsc));
@@ -440,6 +456,7 @@ public partial class Compiler
             }
 
             assert(block.checkPredListOrder());
+
             return blockRefs;
         }
 
@@ -462,6 +479,7 @@ public partial class Compiler
 
             var prevBlock = block.Prev;
             assert(prevBlock is not null);
+
             if (prevBlock.Kind is BBJ_CALLFINALLY && block.Kind is BBJ_CALLFINALLYRET && blockPred.Kind is BBJ_EHFINALLYRET)
             {
                 return true;
@@ -486,6 +504,7 @@ public partial class Compiler
 
             JITDUMP($"Jump into the middle of try region: {FMT_BB(blockPred.bbNum)} branches to {FMT_BB(block.bbNum)}\n");
             assert(false, "Jump into middle of try region");
+
             return false;
         }
 
@@ -517,6 +536,7 @@ public partial class Compiler
 
                 var blockInFilter = ehHndlDsc.InFilterRegionBBRange(block);
                 var blockPredInFilter = ehHndlDsc.InFilterRegionBBRange(blockPred);
+
                 if (blockInFilter == blockPredInFilter)
                 {
                     return true;
@@ -524,11 +544,13 @@ public partial class Compiler
 
                 JITDUMP($"Jump between filter and filter handler regions: {FMT_BB(blockPred.bbNum)} branches to {FMT_BB(block.bbNum)}\n");
                 assert(false, "Jump between filter and filter handler regions");
+
                 return false;
             }
 
             JITDUMP($"Jump into the middle of handler region: {FMT_BB(blockPred.bbNum)} branches to {FMT_BB(block.bbNum)}\n");
             assert(false, "Jump into the middle of handler region");
+
             return false;
         }
 
@@ -537,34 +559,47 @@ public partial class Compiler
             switch (blockPred.Kind)
             {
                 case BBJ_COND:
+                {
                     assert((blockPred.FalseTarget == block) || (blockPred.TrueTarget == block));
+
                     return true;
+                }
 
                 case BBJ_ALWAYS:
                 case BBJ_CALLFINALLY:
                 case BBJ_CALLFINALLYRET:
                 case BBJ_EHCATCHRET:
                 case BBJ_EHFILTERRET:
+                {
                     if (blockPred.Target != block)
                     {
                         var targetNum = blockPred.HasInitializedTarget ? blockPred.Target.bbNum : 0;
                         JITDUMP($"{FMT_BB(blockPred.bbNum)} -> {FMT_BB(block.bbNum)} from pred links does not match {FMT_BB(blockPred.bbNum)} -> {FMT_BB(targetNum)} from succ links\n");
                         assert(false, "Invalid block preds");
                     }
+
                     assert(blockPred.TargetEdge.Likelihood == 1.0);
+
                     return true;
+                }
 
                 case BBJ_EHFINALLYRET:
+                {
                     assert(CheckEHFinallyRet(blockPred, block));
+
                     return true;
+                }
 
                 case BBJ_EHFAULTRET:
                 case BBJ_THROW:
                 case BBJ_RETURN:
+                {
                     assert(false, "EHFAULTRET, THROW, and RETURN block cannot be in the predecessor list!");
                     break;
+                }
 
                 case BBJ_SWITCH:
+                {
                     foreach (var bTarget in blockPred.SwitchSuccs)
                     {
                         if (block == bTarget)
@@ -572,21 +607,29 @@ public partial class Compiler
                             return true;
                         }
                     }
+
                     assert(false, "SWITCH in the predecessor list with no jump label to BLOCK!");
                     break;
+                }
 
                 case BBJ_LEAVE:
+                {
                     if (!_compiler.compPostImportationCleanupDone)
                     {
                         return true;
                     }
+
                     assert(false, "Unexpected BBJ_LEAVE predecessor");
                     break;
+                }
 
                 default:
+                {
                     assert(false, "Unexpected bbKind");
                     break;
+                }
             }
+
             return false;
         }
 
@@ -595,6 +638,7 @@ public partial class Compiler
             var found = false;
             var ehfTargets = blockPred.EhfTargets;
             assert(ehfTargets is not null);
+
             foreach (var succ in ehfTargets.Succs)
             {
                 if (block == succ.DestinationBlock)
@@ -603,6 +647,7 @@ public partial class Compiler
                     found = true;
                 }
             }
+
             assert(found, "BBJ_EHFINALLYRET successor not found");
 
             var hndIndex = blockPred.HndIndex;
@@ -611,6 +656,7 @@ public partial class Compiler
             _compiler.ehGetCallFinallyBlockRange(hndIndex, out var firstBlock, out var lastBlock);
 
             found = false;
+
             foreach (var bcall in new BasicBlockRangeList(firstBlock, lastBlock))
             {
                 if ((bcall.Kind is BBJ_CALLFINALLY) && (bcall.Target == finBeg) && (bcall.Next == block))
@@ -640,6 +686,7 @@ public partial class Compiler
                 if (!_compiler.fgTrysContiguous())
                 {
                     JITDUMP("Tolerating, since try regions are not contiguous\n");
+
                     return true;
                 }
 

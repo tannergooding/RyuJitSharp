@@ -33,6 +33,7 @@ public struct DebugCheckInlineCandidatesVisitor : IGenTreeVisitor<DebugCheckInli
         {
             assert(tree.Oper is not GT_RET_EXPR);
         }
+
         return Compiler.fgWalkResult.WALK_CONTINUE;
     }
 

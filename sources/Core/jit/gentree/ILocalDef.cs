@@ -8,12 +8,19 @@ namespace RyuJitSharp;
 public interface ILocalDef
 {
     GenTreeLclVarCommon DefNode { get; }
+
     int LclNum { get; }
+
     int MultiDefIndex { get; }
+
     bool IsEntire(Compiler compiler);
+
     nint GetOffset(Compiler compiler);
+
     ValueSize GetSize(Compiler compiler);
+
     nint GetValueOffset(Compiler compiler);
+
     ValueSize GetStoreSize(Compiler compiler);
 }
 

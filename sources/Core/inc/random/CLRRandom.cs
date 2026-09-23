@@ -54,10 +54,12 @@ public sealed partial class CLRRandom : Random
             var ii = (21 * i) % 55;
             SeedArray[ii] = mk;
             mk = unchecked(mj - mk);
+
             if (mk < 0)
             {
                 mk = unchecked(mk + MBIG);
             }
+
             mj = SeedArray[ii];
         }
 
@@ -66,6 +68,7 @@ public sealed partial class CLRRandom : Random
             for (var i = 1; i < 56; i++)
             {
                 SeedArray[i] = unchecked(SeedArray[i] - SeedArray[1 + ((i + 30) % 55)]);
+
                 if (SeedArray[i] < 0)
                 {
                     SeedArray[i] = unchecked(SeedArray[i] + MBIG);
@@ -96,6 +99,7 @@ public sealed partial class CLRRandom : Random
         {
             locINext = 1;
         }
+
         if (++locINextp >= 56)
         {
             locINextp = 1;
@@ -107,6 +111,7 @@ public sealed partial class CLRRandom : Random
         {
             retVal--;
         }
+
         if (retVal < 0)
         {
             retVal = unchecked(retVal + MBIG);

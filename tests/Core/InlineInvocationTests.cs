@@ -30,19 +30,30 @@ internal static unsafe class InlineInvocationTests
             switch (reason)
             {
                 case "locals":
+                {
                     compiler.lvaCount = 512;
                     break;
+                }
+
                 case "virtual":
+                {
                     call.Flags |= GTF_CALL_VIRT_VTABLE;
                     break;
+                }
+
                 case "tail":
+                {
                     call._callMethHnd = compiler.info.compMethodHnd;
                     call._callMoreFlags |= GTF_CALL_M_IMPLICIT_TAILCALL;
                     break;
+                }
+
                 case "continuation":
+                {
                     call.SetIsAsync(new AsyncCallInfo());
                     compiler.info.compUsesAsyncContinuation = true;
                     break;
+                }
             }
 
             compiler.fgMorphCallInlineHelper(call, result, out var context);
@@ -60,6 +71,7 @@ internal static unsafe class InlineInvocationTests
     {
         WithCompiler((compiler, call, result) => {
             s_executeCallback = nullReceiver;
+
             if (nullReceiver)
             {
                 var candidate = call.SingleInlineCandidateInfo ?? throw new InvalidOperationException();
@@ -79,6 +91,7 @@ internal static unsafe class InlineInvocationTests
                 Assert.That(compiler.lvaTable[0].Type, Is.EqualTo(TYP_INT));
                 Assert.That(compiler.fgBBNumMax, Is.EqualTo(7));
             });
+
             if (!nullReceiver)
             {
                 for (var i = 1; i < 4; i++)
@@ -103,6 +116,7 @@ internal static unsafe class InlineInvocationTests
             call.IsNoReturn = true;
             var placeholder = new GenTreeRetExpr(TYP_INT, call);
             candidate.retExpr = placeholder;
+
             if (guardedOnly)
             {
                 call.IsGuardedDevirtualizationCandidate = true;
@@ -126,6 +140,7 @@ internal static unsafe class InlineInvocationTests
                 Assert.That(call.WasInlineCandidate, Is.EqualTo(!guardedOnly));
                 var failedContext = candidate.inlinersContext?.Child;
                 Assert.That(failedContext is not null, Is.EqualTo(!guardedOnly));
+
                 if (failedContext is not null)
                 {
                     Assert.That(failedContext.IsSuccess, Is.False);
@@ -172,6 +187,7 @@ internal static unsafe class InlineInvocationTests
         JitTls.Compiler = compiler;
         s_executeCallback = false;
         s_traps = 0;
+
         try
         {
             var parent = new InlineContext(strategy) { _callee = (CORINFO_METHOD_STRUCT_*)0x100 };
@@ -213,9 +229,11 @@ internal static unsafe class InlineInvocationTests
     private static byte RunWithErrorTrap(ICorJitInfo* self, delegate* unmanaged[Cdecl]<void*, void> callback, void* state)
     {
         s_traps++;
+
         if (s_executeCallback)
         {
             callback(state);
+
             return 1;
         }
 
@@ -223,6 +241,7 @@ internal static unsafe class InlineInvocationTests
         {
             compiler.fgBBNumMax = 99;
             compiler.lvaCount = 4;
+
             for (var i = 1; i < 4; i++)
             {
                 compiler.lvaTable[i].Type = TYP_REF;

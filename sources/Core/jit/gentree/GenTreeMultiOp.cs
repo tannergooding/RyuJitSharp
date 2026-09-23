@@ -39,6 +39,7 @@ public abstract class GenTreeMultiOp : GenTree
         {
             return false;
         }
+
         for (var i = 0; i < op1._operands.Length; i++)
         {
             if (!Compare(op1._operands[i], op2._operands[i]))

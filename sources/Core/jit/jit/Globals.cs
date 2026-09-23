@@ -938,6 +938,7 @@ public partial class Globals
 
                                 assert(likelyEntry.likelihood <= 100);
                             }
+
                             return numberOfClasses;
                         }
                     }
@@ -980,6 +981,7 @@ public partial class Globals
         {
             return 0;
         }
+
         likelyValues.Clear();
 
         if (schemas.IsEmpty)
@@ -1060,6 +1062,7 @@ public partial class Globals
                 }
             }
         }
+
         return 0;
     }
 
@@ -1070,6 +1073,7 @@ public partial class Globals
         {
             return 0;
         }
+
         return getLikelyValues(new Span<LikelyValueRecord>(pLikelyValues, maxLikelyValues), new ReadOnlySpan<ICorJitInfo.PgoInstrumentationSchema>(schema, countSchemaItems), pInstrumentationData, ilOffset);
     }
 

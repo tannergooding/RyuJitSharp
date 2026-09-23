@@ -8,11 +8,18 @@ namespace RyuJitSharp;
 public readonly struct StoreLclVarDef(GenTreeLclVarCommon def) : ILocalDef
 {
     public GenTreeLclVarCommon DefNode => def;
+
     public int LclNum => def.LclNum;
+
     public int MultiDefIndex => BAD_VAR_NUM;
+
     public bool IsEntire(Compiler compiler) => true;
+
     public nint GetOffset(Compiler compiler) => 0;
+
     public ValueSize GetSize(Compiler compiler) => GetStoreSize(compiler);
+
     public nint GetValueOffset(Compiler compiler) => 0;
+
     public ValueSize GetStoreSize(Compiler compiler) => compiler.lvaLclValueSize(LclNum);
 }

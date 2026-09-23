@@ -30,6 +30,7 @@ public sealed class FlowGraphDfsTree
     public BasicBlock GetPostOrder(int index)
     {
         assert((uint)index < (uint)_postOrderCount);
+
         return _postOrder[index];
     }
 
@@ -46,6 +47,7 @@ public sealed class FlowGraphDfsTree
     {
         jitprintf($"DFS tree. {(HasCycle ? "Has cycle" : "No cycle")}.\n");
         jitprintf("PO RPO -> BB [pre, post]\n");
+
         for (var i = 0; i < _postOrderCount; i++)
         {
             var rpoNum = _postOrderCount - i - 1;
@@ -61,6 +63,7 @@ public sealed class FlowGraphDfsTree
     public bool IsAncestor(BasicBlock ancestor, BasicBlock descendant)
     {
         assert(Contains(ancestor) && Contains(descendant));
+
         return (ancestor.bbPreorderNum <= descendant.bbPreorderNum) &&
                (descendant.bbPostorderNum <= ancestor.bbPostorderNum);
     }

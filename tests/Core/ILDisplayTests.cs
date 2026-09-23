@@ -86,6 +86,7 @@ internal static class ILDisplayTests
         try
         {
             Globals.s_jitstdout = writer;
+
             fixed (byte* code = instruction)
             {
                 Assert.That(Globals.dumpSingleInstr(code, 0), Is.EqualTo(instruction.Length));

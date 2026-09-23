@@ -39,8 +39,10 @@ public partial class Compiler
             {
                 info.compCompHnd->getWasmWellKnownGlobals(pWellKnownGlobals);
             }
+
             wasmWellKnownGlobalsInitialized = true;
         }
+
         return ref wasmWellKnownGlobals;
     }
 #endif
@@ -214,8 +216,10 @@ public partial class Compiler
             {
                 info.compCompHnd->getAsyncInfo(pAsyncInfo);
             }
+
             asyncInfoInitialized = true;
         }
+
         return ref asyncInfo;
     }
 
@@ -1002,6 +1006,7 @@ public partial class Compiler
             // CEEInfo::runWithErrorTrap rethrows terminal HRESULTs (utilcode/ex.cpp, Exception::IsTerminal).
             // The SPMI-only trap does not absorb ordinary JIT/managed exceptions.
             const int COR_E_THREADABORTED = unchecked((int)0x80131530);
+
             if (spmiOnly || failure.HResult == COR_E_THREADABORTED)
             {
                 ExceptionDispatchInfo.Throw(failure);
@@ -1016,6 +1021,7 @@ public partial class Compiler
         static void NativeShim(void* parameter)
         {
             var callback = GCHandle<ErrorTrapCallback>.FromIntPtr((nint)parameter).Target;
+
             try
             {
                 callback.Function();

@@ -77,6 +77,23 @@ compilation through the established failure mechanism. `Globals.NYI` can return
 under some configurations; calling it alone does not prove the path cannot
 fall through. Do not globally change that policy as an incidental porting edit.
 
+### C# layout
+
+Preserve recognizable algorithms without copying native layout or compressing
+the translation. Follow the surrounding C# conventions: multiline control-flow
+bodies, braced switch sections, and one executable statement per line. Separate
+switch sections and distinct steps with a blank line. Leave a blank line before
+an `if`, `switch`, loop, or other control-flow statement when it follows another
+statement, after a completed control-flow block, and before a final return.
+Do not insert blank lines between an opening brace and its first statement or
+between an `if` and its `else`. Keep related declarations and operations together,
+and wrap long calls and expressions at meaningful boundaries.
+
+`.editorconfig` governs mechanical formatting, but cannot identify logical
+groups or choose useful line breaks. Its preservation of single-line blocks
+is not a reason to compress newly ported control flow. Review these aspects
+explicitly before committing, including tests and supporting code.
+
 ## Sparse tracking, not a second copy of the source
 
 Use the native residual tree as the remaining-work view. Most source locations

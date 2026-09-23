@@ -26,18 +26,22 @@ internal static unsafe class ProfileSpanningTreeTests
             SetTarget(blocks[1], blocks[3]);
             SetTarget(blocks[2], blocks[3]);
             blocks[3].bbRefs = 2;
+
             if (shape == "critical")
             {
                 blocks[2].bbRefs = 2;
             }
+
             if (shape is "rare" or "rare-source")
             {
                 blocks[1].bbWeight = 0;
             }
+
             if (shape == "rare-source")
             {
                 blocks[0].bbWeight = 0;
             }
+
             AssertTrace(compiler, expected);
         });
     }
@@ -51,13 +55,16 @@ internal static unsafe class ProfileSpanningTreeTests
             Array.Fill(kinds, BBJ_ALWAYS);
             kinds[^1] = BBJ_RETURN;
             var blocks = CreateBlocks(compiler, kinds);
+
             for (var i = 0; i < blocks.Length - 1; i++)
             {
                 SetTarget(blocks[i], blocks[i + 1]);
             }
+
             var visitor = new RecordingVisitor();
             compiler.WalkSpanningTree(visitor);
             Assert.That(visitor.Events.Count, Is.EqualTo(2 * blocks.Length));
+
             for (var i = 0; i < blocks.Length; i++)
             {
                 Assert.That(visitor.Events[2 * i], Is.EqualTo($"B{i + 1}"));
@@ -121,10 +128,12 @@ internal static unsafe class ProfileSpanningTreeTests
                 new() { ebdHandlerType = EH_HANDLER_FINALLY, ebdHndBeg = blocks[3], ebdHndLast = blocks[3] },
             ];
             compiler.compHndBBtabCount = 1;
+
             if (retless)
             {
                 blocks[0].SetFlags(BBF_RETLESS_CALL);
             }
+
             AssertTrace(compiler, expected);
         });
     }
@@ -172,17 +181,21 @@ internal static unsafe class ProfileSpanningTreeTests
     private static BasicBlock[] CreateBlocks(Compiler compiler, params BBKinds[] kinds)
     {
         var blocks = new BasicBlock[kinds.Length];
+
         for (var i = 0; i < blocks.Length; i++)
         {
             blocks[i] = BasicBlock.New(compiler, kinds[i]);
+
             if (i > 0)
             {
                 blocks[i - 1].Next = blocks[i];
                 blocks[i].Prev = blocks[i - 1];
             }
         }
+
         compiler.fgFirstBB = blocks[0];
         compiler.fgLastBB = blocks[^1];
+
         return blocks;
     }
 
@@ -226,6 +239,7 @@ internal static unsafe class ProfileSpanningTreeTests
         compiler.fgSafeBasicBlockCreation = true;
 #endif
         JitTls.Compiler = compiler;
+
         try
         {
             action(compiler);

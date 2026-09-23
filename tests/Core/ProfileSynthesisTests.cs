@@ -91,6 +91,7 @@ internal static unsafe class ProfileSynthesisTests
         WithCompiler(compiler => {
             var blocks = Blocks(compiler, BBJ_COND, trueKind, falseKind, BBJ_RETURN);
             blocks[0].SetCond(Edge(blocks[0], blocks[1], 0.5), Edge(blocks[0], blocks[2], 0.5));
+
             for (var i = 1; i <= 2; i++)
             {
                 if (blocks[i].Kind is BBJ_ALWAYS)
@@ -98,6 +99,7 @@ internal static unsafe class ProfileSynthesisTests
                     blocks[i].SetKindAndTargetEdge(BBJ_ALWAYS, Edge(blocks[i], blocks[3], 1));
                 }
             }
+
             AssignLikelihoods(CreateSynthesis(compiler));
             Assert.That(blocks[0].TrueEdge.Likelihood, Is.EqualTo(expected).Within(1e-15));
             Assert.That(blocks[0].FalseEdge.Likelihood, Is.EqualTo(1 - expected).Within(1e-15));
@@ -135,6 +137,7 @@ internal static unsafe class ProfileSynthesisTests
             blocks[0].SetCond(Edge(blocks[0], blocks[1], first), Edge(blocks[0], blocks[2], second));
             blocks[0].bbWeight = weight;
             var synthesis = CreateSynthesis(compiler);
+
             if (blend)
             {
                 BlendLikelihoods(synthesis);
@@ -143,6 +146,7 @@ internal static unsafe class ProfileSynthesisTests
             {
                 RepairLikelihoods(synthesis);
             }
+
             Assert.That(blocks[0].TrueEdge.Likelihood, Is.EqualTo(expected).Within(1e-15));
             Assert.That(blocks[0].TrueEdge.Likelihood + blocks[0].FalseEdge.Likelihood, Is.EqualTo(1).Within(1e-15));
             Assert.That(blocks[0].TrueEdge.isHeuristicBased, Is.False);
@@ -175,11 +179,14 @@ internal static unsafe class ProfileSynthesisTests
             const double sum = 1;
 #endif
             RandomizeLikelihoods(synthesis);
+
             for (var i = 0; i < edges.Length; i++)
             {
                 Assert.That(edges[i].Likelihood, Is.EqualTo(expected[i] / sum));
             }
+
             ClearLikelihoods(synthesis);
+
             foreach (var edge in edges)
             {
                 Assert.That(edge.isHeuristicBased, Is.False);
@@ -189,6 +196,7 @@ internal static unsafe class ProfileSynthesisTests
                 Assert.That(edge.Likelihood, Is.Zero);
 #endif
             }
+
             AssignLikelihoods(synthesis);
             Assert.That(edges[0].Likelihood, Is.EqualTo(0.5));
         });
@@ -209,10 +217,12 @@ internal static unsafe class ProfileSynthesisTests
             Assert.That(blocks[2].TrueEdge.Likelihood, Is.EqualTo(0.9));
             ComputeCyclicProbabilities(synthesis);
             Assert.That(CyclicProbabilities(synthesis).Length, Is.EqualTo(2));
+
             foreach (var gain in CyclicProbabilities(synthesis))
             {
                 Assert.That(gain, Is.EqualTo(10).Within(1e-12));
             }
+
             Assert.That(blocks[2].bbWeight, Is.EqualTo(9).Within(1e-12));
             Assert.That(CappedCyclicProbabilities(synthesis), Is.Zero);
             Assert.That(HasInfiniteLoop(synthesis), Is.False);
@@ -283,6 +293,7 @@ internal static unsafe class ProfileSynthesisTests
         WithCompiler(compiler => {
             BasicBlock[] blocks;
             double[] expected;
+
             if (loop)
             {
                 blocks = Blocks(compiler, BBJ_ALWAYS, BBJ_COND, BBJ_ALWAYS, BBJ_RETURN, BBJ_RETURN);
@@ -299,6 +310,7 @@ internal static unsafe class ProfileSynthesisTests
                 blocks[2].SetKindAndTargetEdge(BBJ_ALWAYS, Edge(blocks[2], blocks[3], 1));
                 expected = [100, 30, 70, 100, 0];
             }
+
             var synthesis = CreateSynthesis(compiler);
             ComputeCyclicProbabilities(synthesis);
             SetInputWeights(blocks, 100);
@@ -306,13 +318,16 @@ internal static unsafe class ProfileSynthesisTests
             SolverConfig(ref JitConfig) = solver ? 1 : 0;
             var output = Capture(compiler, () => ComputeBlockWeights(synthesis));
             Assert.That(output.Contains("Synthesis solver:", StringComparison.Ordinal), Is.EqualTo(solver));
+
 #else
             ComputeBlockWeights(synthesis);
+
 #endif
             for (var i = 0; i < blocks.Length; i++)
             {
                 Assert.That(blocks[i].bbWeight, Is.EqualTo(expected[i]).Within(1e-10));
             }
+
             Assert.That(Approximate(synthesis), Is.False);
             Assert.That(Overflow(synthesis), Is.False);
         });
@@ -332,6 +347,7 @@ internal static unsafe class ProfileSynthesisTests
             GaussSeidelSolver(synthesis);
             Assert.That(Approximate(synthesis), Is.EqualTo(approximate));
             Assert.That(Overflow(synthesis), Is.False);
+
             if (approximate)
             {
                 var expected = backLikelihood == 1 ? 5000 : 100 * (1 - Math.Pow(backLikelihood, 50)) / (1 - backLikelihood);
@@ -369,10 +385,12 @@ internal static unsafe class ProfileSynthesisTests
     {
         WithCompiler(compiler => {
             var blocks = irreducible ? Irreducible(compiler, 0.8, selfEdge: false) : Blocks(compiler, BBJ_ALWAYS, BBJ_RETURN);
+
             if (!irreducible)
             {
                 blocks[0].SetKindAndTargetEdge(BBJ_ALWAYS, Edge(blocks[0], blocks[1], 1));
             }
+
             var synthesis = CreateSynthesis(compiler);
             ComputeCyclicProbabilities(synthesis);
             SetInputWeights(blocks, 1e12);
@@ -456,10 +474,12 @@ internal static unsafe class ProfileSynthesisTests
         WithCompiler(compiler => {
             var blocks = Blocks(compiler, BBJ_ALWAYS, BBJ_RETURN, BBJ_RETURN);
             blocks[0].SetKindAndTargetEdge(BBJ_ALWAYS, Edge(blocks[0], blocks[1], 1));
+
             foreach (var block in blocks)
             {
                 block.setBBProfileWeight(42);
             }
+
             AssignInputWeights(CreateSynthesis(compiler), input);
             Assert.That(blocks[0].bbWeight, Is.EqualTo(expected));
             Assert.That(blocks[1].bbWeight, Is.Zero);
@@ -496,10 +516,12 @@ internal static unsafe class ProfileSynthesisTests
                 ebdEnclosingTryIndex = EHblkDsc.NO_ENCLOSING_INDEX, ebdEnclosingHndIndex = EHblkDsc.NO_ENCLOSING_INDEX,
             }];
             compiler.compHndBBtabCount = 1;
+
             if (inlinee)
             {
                 compiler.impInlineInfo = new InlineInfo();
             }
+
             AssignInputWeights(CreateSynthesis(compiler), 100);
             Assert.That(blocks[2].bbWeight, Is.EqualTo(reachable && !inlinee ? 0.00001 : 0));
             Assert.That(blocks[3].bbWeight, Is.EqualTo(reachable && !inlinee ? 0.00001 : 0));
@@ -541,10 +563,12 @@ internal static unsafe class ProfileSynthesisTests
         WithCompiler(compiler => {
             _ = Blocks(compiler, BBJ_RETURN);
             compiler.info.compFlags = cctor ? FLG_CCTOR : 0;
+
             if (size)
             {
                 compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_SIZE_OPT);
             }
+
             compiler.opts.callInstrCount = calls;
             ProfileSynthesis.Run(compiler, ProfileSynthesisOption.AssignLikelihoods);
             Assert.That(compiler.fgPgoSingleEdge, Is.EqualTo(expected));
@@ -560,10 +584,12 @@ internal static unsafe class ProfileSynthesisTests
             blocks[0].SetCond(Edge(blocks[0], blocks[0], 0.75), Edge(blocks[0], blocks[1], 0.25));
             blocks[0].setBBProfileWeight(200);
             compiler.fgCalledCount = 77;
+
             if (inlinee)
             {
                 compiler.impInlineInfo = new InlineInfo();
             }
+
             ProfileSynthesis.Run(compiler, ProfileSynthesisOption.RetainLikelihoods);
             Assert.That(blocks[0].bbWeight, Is.EqualTo(200));
             Assert.That(blocks[1].bbWeight, Is.EqualTo(50));
@@ -599,6 +625,7 @@ internal static unsafe class ProfileSynthesisTests
         var blocks = Blocks(compiler, BBJ_COND, selfEdge ? BBJ_SWITCH : BBJ_ALWAYS, BBJ_COND, BBJ_RETURN);
         // Conditional successors visit the false edge first; fix RPO for the analytic iteration counts.
         blocks[0].SetCond(Edge(blocks[0], blocks[2], 0.5), Edge(blocks[0], blocks[1], 0.5));
+
         if (selfEdge)
         {
             blocks[1].SwitchTargets = new BBswtDesc(
@@ -608,6 +635,7 @@ internal static unsafe class ProfileSynthesisTests
         {
             blocks[1].SetKindAndTargetEdge(BBJ_ALWAYS, Edge(blocks[1], blocks[2], 1));
         }
+
         blocks[2].SetCond(Edge(blocks[2], blocks[1], backLikelihood), Edge(blocks[2], blocks[3], 1 - backLikelihood));
         compiler._dfsTree = compiler.fgComputeDfs();
         compiler._loops = FlowGraphNaturalLoops.Find(compiler._dfsTree);
@@ -622,6 +650,7 @@ internal static unsafe class ProfileSynthesisTests
         {
             block.setBBProfileWeight(0);
         }
+
         blocks[0].setBBProfileWeight(entryWeight);
     }
 
@@ -644,11 +673,13 @@ internal static unsafe class ProfileSynthesisTests
             }];
             compiler.compHndBBtabCount = 1;
             var bytes = Encoding.UTF8.GetBytes(setting + '\0');
+
             fixed (byte* p = bytes)
             {
                 ExceptionWeightConfig(ref JitConfig) = p;
                 AssignInputWeights(CreateSynthesis(compiler), 100);
             }
+
             Assert.That(blocks[1].bbWeight, Is.EqualTo(expected));
         });
     }
@@ -660,6 +691,7 @@ internal static unsafe class ProfileSynthesisTests
         WithCompiler(compiler => {
             _ = Blocks(compiler, BBJ_RETURN);
             var bytes = Encoding.UTF8.GetBytes(setting + '\0');
+
             fixed (byte* p = bytes)
             {
                 ExceptionWeightConfig(ref JitConfig) = p;
@@ -740,18 +772,28 @@ internal static unsafe class ProfileSynthesisTests
             blocks[1].setBBProfileWeight(5);
             blocks[2].setBBProfileWeight(50);
             Assert.That(compiler.fgDebugCheckProfileWeights(ProfileChecks.CHECK_LIKELY), Is.False);
+
             switch (entryKind)
             {
                 case 0:
+                {
                     blocks[2].CatchType = bbCatchType.BBCT_FILTER_HANDLER;
                     break;
+                }
+
                 case 1:
+                {
                     compiler.fgOSREntryBB = blocks[2];
                     break;
+                }
+
                 case 2:
+                {
                     compiler.fgEntryBB = blocks[2];
                     break;
+                }
             }
+
             Assert.That(compiler.fgDebugCheckProfileWeights(ProfileChecks.CHECK_LIKELY), Is.True);
         });
     }
@@ -824,6 +866,7 @@ internal static unsafe class ProfileSynthesisTests
         using var writer = new JitTextWriter(stream, leaveOpen: true);
         var previous = s_jitstdout;
         var previousVerbose = compiler.verbose;
+
         try
         {
             s_jitstdout = writer;
@@ -917,16 +960,19 @@ internal static unsafe class ProfileSynthesisTests
     private static BasicBlock[] Blocks(Compiler compiler, params BBKinds[] kinds)
     {
         var blocks = new BasicBlock[kinds.Length];
+
         for (var i = 0; i < blocks.Length; i++)
         {
             blocks[i] = BasicBlock.New(compiler, kinds[i]);
             blocks[i].bbRefs = i == 0 ? 1 : 0;
+
             if (i > 0)
             {
                 blocks[i - 1].Next = blocks[i];
                 blocks[i].Prev = blocks[i - 1];
             }
         }
+
         compiler.fgFirstBB = blocks[0];
         compiler.fgLastBB = blocks[^1];
 
@@ -951,6 +997,7 @@ internal static unsafe class ProfileSynthesisTests
         compiler.info.compFullName = nameof(ProfileSynthesisTests);
 #endif
         JitTls.Compiler = compiler;
+
         try
         {
             action(compiler);

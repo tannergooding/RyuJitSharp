@@ -39,18 +39,21 @@ public partial class Compiler
             {
                 return WALK_ABORT;
             }
+
             return WALK_CONTINUE;
         }
 
         public readonly GenTree.VisitResult Visit<TDef>(TDef def) where TDef : struct, ILocalDef
         {
             var lclNum = def.LclNum;
+
             if (lclNum == _lclNum)
             {
                 return GenTree.VisitResult.Abort;
             }
 
             ref var lclDsc = ref _compiler.lvaGetDesc(_lclNum);
+
             if (lclDsc.lvPromoted && (lclNum >= lclDsc.lvFieldLclStart) && (lclNum < lclDsc.lvFieldLclStart + lclDsc.lvFieldCnt))
             {
                 return GenTree.VisitResult.Abort;

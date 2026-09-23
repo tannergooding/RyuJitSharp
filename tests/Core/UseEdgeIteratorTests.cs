@@ -43,6 +43,7 @@ internal static unsafe class UseEdgeIteratorTests
             Assert.That(walker.PostOrderVisit(ref use, parent), Is.EqualTo(Compiler.fgWalkResult.WALK_CONTINUE));
             Assert.That(walker.MadeChanges, Is.True);
             Assert.That(compiler.compCurBB.HasFlag(BasicBlockFlags.BBF_HAS_NEWARR), Is.True);
+
             if (unused)
             {
                 Assert.That(use, Is.SameAs(placeholder));
@@ -161,6 +162,7 @@ internal static unsafe class UseEdgeIteratorTests
             var constant = compiler.gtNewIconNode(TYP_INT, 1);
             var root = new GenTreeOp(GT_ADD, TYP_INT, local, constant);
             var stmt = compiler.fgNewStmtFromTree(root, threading == NodeThreading.AllTrees ? new BasicBlock(null, null) : null);
+
             if (threading == NodeThreading.None)
             {
                 Assert.That(stmt.TreeListBegin, Is.Null);
@@ -169,6 +171,7 @@ internal static unsafe class UseEdgeIteratorTests
             {
                 Assert.That(stmt.TreeListBegin, Is.SameAs(local));
                 Assert.That(local.Prev, Is.Null);
+
                 if (threading == NodeThreading.AllLocals)
                 {
                     Assert.That(stmt.TreeListEnd, Is.SameAs(local));
@@ -203,12 +206,15 @@ internal static unsafe class UseEdgeIteratorTests
     {
         private readonly Stack<GenTree> _ancestors = [];
         public int Count;
+
         public static bool DoPreOrder => true;
+
         public static bool DoLclVarsOnly => true;
 
         public Compiler.fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
         {
             Count++;
+
             return Compiler.fgWalkResult.WALK_ABORT;
         }
 
@@ -240,44 +246,62 @@ internal static unsafe class UseEdgeIteratorTests
             GenTreeOp? owner;
             var firstOperand = false;
             GenTree[] spilled;
+
             switch (shape)
             {
                 case "reversed":
+                {
                     owner = new GenTreeOp(GT_ADD, TYP_INT, split, before) { IsReverseOp = true };
                     root = owner;
                     firstOperand = true;
                     spilled = [before];
                     break;
+                }
+
                 case "ancestor":
+                {
                     owner = new GenTreeOp(GT_ADD, TYP_INT, split, one);
                     root = new GenTreeOp(GT_ADD, TYP_INT, before, owner);
                     firstOperand = true;
                     spilled = [before];
                     break;
+                }
+
                 case "operands":
+                {
                     split = new GenTreeOp(GT_ADD, TYP_INT, before, second);
                     owner = new GenTreeOp(GT_ADD, TYP_INT, one, split);
                     root = owner;
                     spilled = [before, second];
                     break;
+                }
+
                 case "root":
+                {
                     split = new GenTreeOp(GT_ADD, TYP_INT, before, second);
                     root = split;
                     owner = null;
                     spilled = [before, second];
                     break;
+                }
+
                 case "none":
                 case "shared":
+                {
                     owner = new GenTreeOp(GT_ADD, TYP_INT, split, shape == "shared" ? split : before);
                     root = owner;
                     firstOperand = true;
                     spilled = [];
                     break;
+                }
+
                 default:
+                {
                     owner = new GenTreeOp(GT_ADD, TYP_INT, before, split);
                     root = owner;
                     spilled = [before];
                     break;
+                }
             }
 
             var stmt = new Statement(root, 1);
@@ -288,24 +312,28 @@ internal static unsafe class UseEdgeIteratorTests
             Assert.That(changed, Is.EqualTo(spilled.Length != 0));
             Assert.That(compiler.lvaCount, Is.EqualTo(spilled.Length));
             var current = first;
+
             for (var i = 0; i < spilled.Length; i++)
             {
                 if (current is null)
                 {
                     throw new InvalidOperationException("Missing spill statement.");
                 }
+
                 Assert.That(current.RootNode.Oper, Is.EqualTo(GT_STORE_LCL_VAR));
                 Assert.That(current.RootNode.AsLclVarCommon().Data, Is.SameAs(spilled[i]));
                 Assert.That(current.RootNode.AsLclVarCommon().LclNum, Is.EqualTo(i));
                 Assert.That(compiler.lvaTable[i].lvSingleDef, Is.True);
                 current = current.NextStmt;
             }
+
             Assert.That(current, Is.SameAs(spilled.Length == 0 ? null : stmt));
             Assert.That(block.FirstStmt, Is.SameAs(first ?? stmt));
 
             var replacement = compiler.gtNewIconNode(TYP_INT, 3);
             use = replacement;
             Assert.That(owner is null ? stmt.RootNode : firstOperand ? owner.Op1 : owner.Op2, Is.SameAs(replacement));
+
             if (shape == "shared")
             {
                 Assert.That(root.AsOp().Op2, Is.SameAs(split));
@@ -326,14 +354,17 @@ internal static unsafe class UseEdgeIteratorTests
             Assert.That(left.Intersects(right), Is.False);
             left.Add(compiler, 1);
             right.Add(compiler, 2);
+
             if (expandLeft)
             {
                 left.Add(compiler, 1);
             }
+
             if (expandRight)
             {
                 right.Add(compiler, 3);
             }
+
             Assert.That(left.IsEmpty, Is.EqualTo(!expandLeft));
             Assert.That(left.Contains(1), Is.True);
             Assert.That(left.Contains(2), Is.False);
@@ -368,10 +399,12 @@ internal static unsafe class UseEdgeIteratorTests
             GenTree read = contained
                 ? new GenTreeIndir(GT_IND, TYP_INT, compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0))
                 : compiler.gtNewLclvNode(TYP_INT, 0);
+
             if (contained)
             {
                 read.Flags |= GenTreeFlags.GTF_CONTAINED;
             }
+
             var user = new GenTreeOp(GT_ADD, TYP_INT, read, zero);
             var reads = new AliasSet();
             reads.AddNode(compiler, user);
@@ -379,10 +412,12 @@ internal static unsafe class UseEdgeIteratorTests
             Assert.That(writes.WritesLocal(1), Is.False);
             Assert.That(writes.InterferesWith(reads), Is.True);
             Assert.That(reads.InterferesWith(writes), Is.True);
+
             if (!contained)
             {
                 Assert.That(writes.InterferesWith(new AliasSet.NodeInfo(compiler, user)), Is.True);
             }
+
             writes.Clear();
             Assert.That(writes.WritesAnyLocation, Is.False);
             Assert.That(writes.InterferesWith(reads), Is.False);
@@ -420,6 +455,7 @@ internal static unsafe class UseEdgeIteratorTests
             Assert.That(visitor.Locals, Is.EqualTo(expected));
             Assert.That(result, Is.EqualTo(abort ? GenTree.VisitResult.Abort : GenTree.VisitResult.Continue));
             Assert.That(store.HasAnyLocalDefs(compiler), Is.True);
+
             foreach (var entry in visitor.Definitions)
             {
                 Assert.That(entry.Node, Is.SameAs(store));
@@ -434,6 +470,7 @@ internal static unsafe class UseEdgeIteratorTests
             for (var local = 0; local < compiler.lvaCount; local++)
             {
                 var affects = local == 0 ? expected.Length != 0 : Array.IndexOf(expected, local) >= 0;
+
                 if (!abort)
                 {
                     Assert.That(compiler.gtTreeHasLocalStore(store, local), Is.EqualTo(affects), $"V{local}");
@@ -452,6 +489,7 @@ internal static unsafe class UseEdgeIteratorTests
         WithCompiler(compiler => {
             var field = new LclVarDsc { Type = TYP_INT, lvIsStructField = true };
             Assert.That(compiler.gtStoreMayDefineField(field, offset, new ValueSize(size), out var actualOffset, out var actualSize), Is.EqualTo(overlaps));
+
             if (overlaps)
             {
                 Assert.That(actualOffset, Is.EqualTo((nint)relative));
@@ -529,17 +567,20 @@ internal static unsafe class UseEdgeIteratorTests
             var read = compiler.gtNewLclvNode(TYP_INT, 2);
             var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
             call.SetIsAsync(default);
+
             if (retBuffer)
             {
                 call._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_RETBUFFARG_LCLOPT;
                 _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(ret).WithWellKnownArg(WellKnownArg.RetBuffer));
             }
+
             _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(resumed).WithWellKnownArg(WellKnownArg.AsyncResumedDef));
             _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(read));
 
             List<GenTree> definitions = [];
             var result = call.VisitPhysicalLocalDefNodes(compiler, node => {
                 definitions.Add(node);
+
                 return abort ? GenTree.VisitResult.Abort : GenTree.VisitResult.Continue;
             });
             GenTree[] expectedDefinitions = retBuffer && !abort ? [resumed, ret] : [resumed];
@@ -551,11 +592,13 @@ internal static unsafe class UseEdgeIteratorTests
             sequencer.Sequence(statement);
             GenTree[] expectedLocals = retBuffer ? [read, resumed, ret] : [read, resumed];
             List<GenTree> locals = [];
+
             for (var node = statement.TreeListBegin; node is not null; node = node.Next)
             {
                 Assert.That(locals.Count, Is.LessThan(expectedLocals.Length));
                 locals.Add(node);
             }
+
             Assert.That(locals, Is.EqualTo(expectedLocals));
             Assert.That(statement.TreeListEnd, Is.SameAs(expectedLocals[^1]));
             Assert.That(call.Next, Is.Null);
@@ -612,7 +655,9 @@ internal static unsafe class UseEdgeIteratorTests
     {
         private readonly Stack<GenTree> _ancestors = [];
         public readonly List<GenTree> Seen = [];
+
         public static bool DoPreOrder => true;
+
         public static bool UseExecutionOrder => true;
 
         public readonly Compiler.fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
@@ -620,11 +665,13 @@ internal static unsafe class UseEdgeIteratorTests
             if (user is not null)
             {
                 Seen.Add(use);
+
                 if (use == target)
                 {
                     use = replacement;
                 }
             }
+
             return Compiler.fgWalkResult.WALK_CONTINUE;
         }
 
@@ -667,42 +714,62 @@ internal static unsafe class UseEdgeIteratorTests
             switch (shape)
             {
                 case "leaf":
+                {
                     tree = first;
                     expected = [];
                     break;
+                }
+
                 case "bashed":
+                {
                     tree = new GenTreeOp(GT_ADD, TYP_INT, first, second);
                     tree.BashToNOP();
                     expected = [];
                     break;
+                }
+
                 case "unary":
+                {
                     tree = new GenTreeUnOp(GT_NEG, TYP_INT, first);
                     expected = [first];
                     break;
+                }
+
                 case "void-return":
+                {
                     tree = new GenTreeUnOp(GT_RETURN, TYP_VOID, null);
                     expected = [];
                     break;
+                }
+
                 case "binary":
                 case "reverse-binary":
+                {
                     tree = new GenTreeOp(GT_ADD, TYP_INT, first, second) {
                         IsReverseOp = shape == "reverse-binary",
                     };
                     expected = tree.IsReverseOp ? [second, first] : [first, second];
                     break;
+                }
+
                 case "lea-base":
                 case "lea-index":
                 case "reverse-lea-base":
                 case "reverse-lea-index":
+                {
                     var indexOnly = shape.EndsWith("index", StringComparison.Ordinal);
                     tree = new GenTreeAddrMode(TYP_BYREF, indexOnly ? null : first, indexOnly ? first : null, indexOnly ? (byte)2 : (byte)0, 0) {
                         IsReverseOp = shape.StartsWith("reverse", StringComparison.Ordinal),
                     };
                     expected = [first];
                     break;
+                }
+
                 case "phi-empty":
                 case "phi":
+                {
                     var phi = new GenTreePhi(TYP_INT);
+
                     if (shape == "phi")
                     {
                         var predecessor = new BasicBlock(null, null);
@@ -715,11 +782,16 @@ internal static unsafe class UseEdgeIteratorTests
                     {
                         expected = [];
                     }
+
                     tree = phi;
                     break;
+                }
+
                 case "field-empty":
                 case "fields":
+                {
                     var fields = new GenTreeFieldList();
+
                     if (shape == "fields")
                     {
                         fields.AddField(compiler, first, 0, TYP_INT);
@@ -730,23 +802,36 @@ internal static unsafe class UseEdgeIteratorTests
                     {
                         expected = [];
                     }
+
                     tree = fields;
                     break;
+                }
+
                 case "cmpxchg":
+                {
                     tree = new GenTreeCmpXchg(TYP_INT, first, second, third);
                     expected = [first, second, third];
                     break;
+                }
+
                 case "select":
+                {
                     tree = new GenTreeConditional(GT_SELECT, TYP_INT, first, second, third);
                     expected = [first, second, third];
                     break;
+                }
+
                 case "array":
+                {
                     tree = new GenTreeArrElem(TYP_BYREF, first, 4, [second, third]);
                     expected = [first, second, third];
                     break;
+                }
+
                 case "intrinsic-empty":
                 case "intrinsic":
                 case "reverse-intrinsic":
+                {
                     GenTree[] operands = shape switch {
                         "intrinsic-empty" => [],
                         "intrinsic" => [first, second, third],
@@ -757,8 +842,12 @@ internal static unsafe class UseEdgeIteratorTests
                     };
                     expected = tree.IsReverseOp ? [second, first] : operands;
                     break;
+                }
+
                 default:
+                {
                     throw new ArgumentOutOfRangeException(nameof(shape));
+                }
             }
 
             AssertEdges(tree, expected);
@@ -781,6 +870,7 @@ internal static unsafe class UseEdgeIteratorTests
             var second = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, 2)));
             var third = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, 3)));
             var expected = new List<GenTree>();
+
             if (early)
             {
                 expected.Add(first.Node);
@@ -791,6 +881,7 @@ internal static unsafe class UseEdgeIteratorTests
                 first.EarlyNodeRef = null;
                 third.EarlyNodeRef = null;
             }
+
             second.EarlyNodeRef = null;
 
             if (late)
@@ -820,6 +911,7 @@ internal static unsafe class UseEdgeIteratorTests
     {
         var iterator = new GenTreeUseEdgesList(tree).GetEnumerator();
         var replacements = new GenTree[expected.Length];
+
         for (var i = 0; i < expected.Length; i++)
         {
             Assert.That(iterator.MoveNext(), Is.True, $"Missing edge {i}");
@@ -829,21 +921,26 @@ internal static unsafe class UseEdgeIteratorTests
                 : new GenTreeLclVar(expected[i].Type, 10 + i);
             iterator.Current = replacements[i];
         }
+
         Assert.That(iterator.MoveNext(), Is.False);
         Assert.That(iterator.MoveNext(), Is.False);
 
         iterator.Reset();
+
         if (expected.Length > 0)
         {
             Assert.That(iterator.MoveNext(), Is.True);
             Assert.That(iterator.Current, Is.SameAs(replacements[0]));
         }
+
         iterator.Reset();
+
         for (var i = 0; i < replacements.Length; i++)
         {
             Assert.That(iterator.MoveNext(), Is.True, $"Missing reset edge {i}");
             Assert.That(iterator.Current, Is.SameAs(replacements[i]));
         }
+
         Assert.That(iterator.MoveNext(), Is.False);
     }
 
@@ -858,6 +955,7 @@ internal static unsafe class UseEdgeIteratorTests
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitTls.Compiler = compiler;
+
         try
         {
             action(compiler);

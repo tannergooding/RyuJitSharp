@@ -32,18 +32,29 @@ public sealed class FlowGraphNaturalLoop
     }
 
     public BasicBlock Header => _header;
+
     public FlowGraphDfsTree DfsTree => _dfsTree;
+
     public FlowGraphNaturalLoop? Parent => _parent;
+
     public FlowGraphNaturalLoop? Child => _child;
+
     public FlowGraphNaturalLoop? Sibling => _sibling;
+
     public int Index => _index;
+
     public bool ContainsImproperHeader => _containsImproperHeader;
+
     public ReadOnlySpan<FlowEdge> BackEdges => CollectionsMarshal.AsSpan(_backEdges);
+
     public ReadOnlySpan<FlowEdge> EntryEdges => CollectionsMarshal.AsSpan(_entryEdges);
+
     public ReadOnlySpan<FlowEdge> ExitEdges => CollectionsMarshal.AsSpan(_exitEdges);
 
     public FlowEdge BackEdge(int index) => _backEdges[index];
+
     public FlowEdge EntryEdge(int index) => _entryEdges[index];
+
     public FlowEdge ExitEdge(int index) => _exitEdges[index];
 
     public BasicBlock? GetPreheader()
@@ -52,6 +63,7 @@ public sealed class FlowGraphNaturalLoop
         {
             return null;
         }
+
         var preheader = _entryEdges[0].SourceBlock;
 
         return preheader.Kind is BBJ_ALWAYS ? preheader : null;
@@ -66,6 +78,7 @@ public sealed class FlowGraphNaturalLoop
     public int GetDepth()
     {
         var depth = 0;
+
         for (var ancestor = Parent; ancestor is not null; ancestor = ancestor.Parent)
         {
             depth++;
@@ -112,6 +125,7 @@ public sealed class FlowGraphNaturalLoop
         var result = BitVecOps.VisitBits(LoopBlockTraits(), _blocks, index => {
             var poIndex = _header.bbPostorderNum - index;
             assert((uint)poIndex < (uint)_dfsTree.PostOrderCount);
+
             return func(_dfsTree.GetPostOrder(poIndex)) is BasicBlockVisit.Continue;
         });
 
@@ -123,6 +137,7 @@ public sealed class FlowGraphNaturalLoop
         var result = BitVecOps.VisitBitsReverse(LoopBlockTraits(), _blocks, index => {
             var poIndex = _header.bbPostorderNum - index;
             assert((uint)poIndex < (uint)_dfsTree.PostOrderCount);
+
             return func(_dfsTree.GetPostOrder(poIndex)) is BasicBlockVisit.Continue;
         });
 
@@ -136,10 +151,12 @@ public sealed class FlowGraphNaturalLoop
         var comp = _dfsTree.GetCompiler();
         var traits = _dfsTree.PostOrderTraits();
         var visited = BitVecOps.MakeEmpty(traits);
+
         foreach (var edge in _exitEdges)
         {
             var exit = edge.DestinationBlock;
             assert(_dfsTree.Contains(exit) && !ContainsBlock(exit));
+
             if (!comp.bbIsHandlerBeg(exit) && BitVecOps.TryAddElemD(traits, visited, exit.bbPostorderNum) &&
                 (func(exit) is BasicBlockVisit.Abort))
             {
@@ -154,6 +171,7 @@ public sealed class FlowGraphNaturalLoop
     {
         var top = _dfsTree.GetCompiler().fgFirstBB;
         assert(top is not null);
+
         while (!ContainsBlock(top))
         {
             top = top.Next;
@@ -167,6 +185,7 @@ public sealed class FlowGraphNaturalLoop
     {
         var bottom = _dfsTree.GetCompiler().fgLastBB;
         assert(bottom is not null);
+
         while (!ContainsBlock(bottom))
         {
             bottom = bottom.Prev;
@@ -182,16 +201,20 @@ public sealed class FlowGraphNaturalLoop
         if (loop is null)
         {
             jitprintf("loop is nullptr");
+
             return;
         }
 
         jitprintf($"L{loop.Index:D2} header: {FMT_BB(loop.Header.bbNum)}");
+
         if (loop.Parent is FlowGraphNaturalLoop parent)
         {
             jitprintf($" parent: L{parent.Index:D2}");
         }
+
         var numBlocks = loop.NumLoopBlocks();
         jitprintf($"\n  Members ({numBlocks}): ");
+
         if (numBlocks == 0)
         {
             jitprintf("NONE?");
@@ -207,6 +230,7 @@ public sealed class FlowGraphNaturalLoop
             var lexicalEnd = lexicalBottom.Next;
             var numLexicalBlocks = 0;
             var lexicallyDense = true;
+
             for (var block = lexicalTop; (block is not null) && (block != lexicalEnd); block = block.Next)
             {
                 if (!loop.ContainsBlock(block))
@@ -220,6 +244,7 @@ public sealed class FlowGraphNaturalLoop
             }
 
             var lexicalRangeContainsAllLoopBlocks = numBlocks == numLexicalBlocks;
+
             if (lexicallyDense && lexicalRangeContainsAllLoopBlocks)
             {
                 jitprintf($"[{FMT_BB(lexicalTop.bbNum)}..{FMT_BB(lexicalBottom.bbNum)}]");
@@ -235,10 +260,12 @@ public sealed class FlowGraphNaturalLoop
                     {
                         return;
                     }
+
                     if (!first)
                     {
                         jitprintf(";");
                     }
+
                     if (firstInRange == lastInRange)
                     {
                         jitprintf(FMT_BB(firstInRange.bbNum));
@@ -248,6 +275,7 @@ public sealed class FlowGraphNaturalLoop
                         assert(lastInRange is not null);
                         jitprintf($"[{FMT_BB(firstInRange.bbNum)}..{FMT_BB(lastInRange.bbNum)}]");
                     }
+
                     firstInRange = lastInRange = null;
                     first = false;
                 }
@@ -255,6 +283,7 @@ public sealed class FlowGraphNaturalLoop
                 for (var block = lexicalTop; block != lexicalEnd; block = block.Next)
                 {
                     assert(block is not null);
+
                     if (!loop.ContainsBlock(block))
                     {
                         PrintRange();
@@ -265,6 +294,7 @@ public sealed class FlowGraphNaturalLoop
                         lastInRange = block;
                     }
                 }
+
                 PrintRange();
             }
             else
@@ -273,6 +303,7 @@ public sealed class FlowGraphNaturalLoop
                 _ = loop.VisitLoopBlocksReversePostOrder(block => {
                     jitprintf($"{(first ? "" : ";")}{FMT_BB(block.bbNum)}");
                     first = false;
+
                     return BasicBlockVisit.Continue;
                 });
                 jitprintf($"\n  Lexical top: {FMT_BB(lexicalTop.bbNum)}");
@@ -281,6 +312,7 @@ public sealed class FlowGraphNaturalLoop
         }
 
         jitprintf("\n  Entry: ");
+
         if (loop._entryEdges.Count == 0)
         {
             jitprintf("NONE");
@@ -288,13 +320,16 @@ public sealed class FlowGraphNaturalLoop
         else
         {
             var first = true;
+
             foreach (var edge in loop._entryEdges)
             {
                 jitprintf($"{(first ? "" : "; ")}{FMT_BB(edge.SourceBlock.bbNum)} -> {FMT_BB(loop.Header.bbNum)}");
                 first = false;
             }
         }
+
         jitprintf("\n  Exit: ");
+
         if (loop._exitEdges.Count == 0)
         {
             jitprintf("NONE");
@@ -302,13 +337,16 @@ public sealed class FlowGraphNaturalLoop
         else
         {
             var first = true;
+
             foreach (var edge in loop._exitEdges)
             {
                 jitprintf($"{(first ? "" : "; ")}{FMT_BB(edge.SourceBlock.bbNum)} -> {FMT_BB(edge.DestinationBlock.bbNum)}");
                 first = false;
             }
         }
+
         jitprintf("\n  Back: ");
+
         if (loop._backEdges.Count == 0)
         {
             jitprintf("NONE");
@@ -316,12 +354,14 @@ public sealed class FlowGraphNaturalLoop
         else
         {
             var first = true;
+
             foreach (var edge in loop._backEdges)
             {
                 jitprintf($"{(first ? "" : "; ")}{FMT_BB(edge.SourceBlock.bbNum)} -> {FMT_BB(loop.Header.bbNum)}");
                 first = false;
             }
         }
+
         jitprintf("\n");
     }
 #endif

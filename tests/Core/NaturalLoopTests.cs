@@ -49,10 +49,12 @@ internal static unsafe class NaturalLoopTests
             var back = count == 1 ? Connect(header, header) : Connect(blocks[count], header);
             var exit = Connect(header, blocks[^1]);
             header.SetCond(count == 1 ? back : Connect(header, blocks[2]), exit);
+
             for (var i = 2; i < count; i++)
             {
                 _ = Jump(blocks[i], blocks[i + 1]);
             }
+
             if (count > 1)
             {
                 if (secondExit)
@@ -64,6 +66,7 @@ internal static unsafe class NaturalLoopTests
                     blocks[count].SetKindAndTargetEdge(BBJ_ALWAYS, back);
                 }
             }
+
             var loops = Find(compiler);
             Assert.That(loops.NumLoops, Is.EqualTo(1));
             var loop = loops.GetLoopByIndex(0);
@@ -88,6 +91,7 @@ internal static unsafe class NaturalLoopTests
             var visited = new List<BasicBlock>();
             Assert.That(loop.VisitLoopBlocksReversePostOrder(block => {
                 visited.Add(block);
+
                 return BasicBlockVisit.Continue;
             }), Is.EqualTo(BasicBlockVisit.Continue));
             Assert.That(visited, Is.EqualTo(blocks[1..^1]));
@@ -95,12 +99,14 @@ internal static unsafe class NaturalLoopTests
             var postOrder = new List<BasicBlock>();
             _ = loop.VisitLoopBlocksPostOrder(block => {
                 postOrder.Add(block);
+
                 return BasicBlockVisit.Continue;
             });
             Assert.That(postOrder, Is.EqualTo(visited));
             var exitVisits = new List<BasicBlock>();
             _ = loop.VisitRegularExitBlocks(block => {
                 exitVisits.Add(block);
+
                 return BasicBlockVisit.Continue;
             });
             Assert.That(exitVisits, Is.EqualTo([blocks[^1]]));
@@ -137,6 +143,7 @@ internal static unsafe class NaturalLoopTests
             Assert.That(first.ContainsLoop(outer), Is.False);
             Assert.That(loops.InReversePostOrder().ToArray(), Is.EqualTo([outer, first, second]));
             Assert.That(loops.InPostOrder(), Is.EqualTo([second, first, outer]));
+
             for (var i = 0; i < loops.NumLoops; i++)
             {
                 var loop = loops.GetLoopByIndex(i);
@@ -152,6 +159,7 @@ internal static unsafe class NaturalLoopTests
     {
         WithCompiler(compiler => {
             BasicBlock[] blocks;
+
             if (enclosingLoop)
             {
                 blocks = Blocks(compiler, BBJ_ALWAYS, BBJ_COND, BBJ_COND, BBJ_ALWAYS, BBJ_COND, BBJ_RETURN);
@@ -168,9 +176,11 @@ internal static unsafe class NaturalLoopTests
                 _ = Jump(blocks[1], blocks[2]);
                 _ = Jump(blocks[2], blocks[1]);
             }
+
             var loops = Find(compiler);
             Assert.That(loops.ImproperLoopHeaders, Is.EqualTo(1));
             Assert.That(loops.NumLoops, Is.EqualTo(enclosingLoop ? 1 : 0));
+
             if (enclosingLoop)
             {
                 Assert.That(loops.GetLoopByIndex(0).ContainsImproperHeader, Is.True);
@@ -237,10 +247,12 @@ internal static unsafe class NaturalLoopTests
             var traits = new BitVecTraits(compiler, 2 * width);
             var bits = BitVecOps.MakeEmpty(traits);
             int[] setBits = [0, 1, width - 1, width, width + 1, (2 * width) - 1];
+
             foreach (var index in setBits)
             {
                 BitVecOps.AddElemD(traits, bits, index);
             }
+
             var visited = new List<int>();
             bool Visit(int index)
             {
@@ -249,7 +261,9 @@ internal static unsafe class NaturalLoopTests
                     Array.Clear(bits);
                     BitVecOps.AddElemD(traits, bits, reverse ? 3 : width + 3);
                 }
+
                 visited.Add(index);
+
                 return !abort;
             }
             var result = reverse ? BitVecOps.VisitBitsReverse(traits, bits, Visit) : BitVecOps.VisitBits(traits, bits, Visit);
@@ -276,6 +290,7 @@ internal static unsafe class NaturalLoopTests
             using var stream = new MemoryStream();
             using var writer = new JitTextWriter(stream, leaveOpen: true);
             var previous = s_jitstdout;
+
             try
             {
                 s_jitstdout = writer;
@@ -286,6 +301,7 @@ internal static unsafe class NaturalLoopTests
             {
                 s_jitstdout = previous;
             }
+
             var expected = "\n***************  Natural loop graph\nL00 header: BB02\n  Members (2): " +
                 (gap ? "BB02;BB04" : "[BB02..BB03]") +
                 $"\n  Entry: BB01 -> BB02\n  Exit: BB02 -> BB{blocks.Length:D2}\n  Back: BB{blocks.Length - 1:D2} -> BB02\n\n";
@@ -303,18 +319,22 @@ internal static unsafe class NaturalLoopTests
     private static BasicBlock[] Blocks(Compiler compiler, params BBKinds[] kinds)
     {
         var blocks = new BasicBlock[kinds.Length];
+
         for (var i = 0; i < blocks.Length; i++)
         {
             blocks[i] = BasicBlock.New(compiler, kinds[i]);
             blocks[i].bbRefs = i == 0 ? 1 : 0;
+
             if (i > 0)
             {
                 blocks[i - 1].Next = blocks[i];
                 blocks[i].Prev = blocks[i - 1];
             }
         }
+
         compiler.fgFirstBB = blocks[0];
         compiler.fgLastBB = blocks[^1];
+
         return blocks;
     }
 
@@ -323,6 +343,7 @@ internal static unsafe class NaturalLoopTests
         var edge = new FlowEdge(source, target, target.bbPreds) { Likelihood = 0.5 };
         target.bbPreds = edge;
         target.bbRefs++;
+
         return edge;
     }
 
@@ -331,6 +352,7 @@ internal static unsafe class NaturalLoopTests
         var edge = Connect(source, target);
         edge.Likelihood = 1;
         source.SetKindAndTargetEdge(BBJ_ALWAYS, edge);
+
         return edge;
     }
 
@@ -352,6 +374,7 @@ internal static unsafe class NaturalLoopTests
         compiler.info.compFullName = nameof(NaturalLoopTests);
 #endif
         JitTls.Compiler = compiler;
+
         try
         {
             action(compiler);

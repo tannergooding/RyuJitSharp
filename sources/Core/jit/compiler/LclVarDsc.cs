@@ -1196,8 +1196,7 @@ public partial struct LclVarDsc
         _flags |= Flags.IsVectorPerElementMask;
     }
 
-    private static int GetVectorPerElementMaskElemSizeLog2(var_types simdBaseType) => simdBaseType switch
-    {
+    private static int GetVectorPerElementMaskElemSizeLog2(var_types simdBaseType) => simdBaseType switch {
         TYP_BYTE or TYP_UBYTE => 0,
         TYP_SHORT or TYP_USHORT => 1,
         TYP_INT or TYP_UINT or TYP_FLOAT => 2,

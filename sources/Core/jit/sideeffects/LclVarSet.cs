@@ -37,10 +37,12 @@ public struct LclVarSet
         {
             return false;
         }
+
         if (_locals is null)
         {
             return other._locals is null ? _lclNum == other._lclNum : other._locals.Contains(_lclNum);
         }
+
         if (other._locals is null)
         {
             return _locals.Contains(other._lclNum);

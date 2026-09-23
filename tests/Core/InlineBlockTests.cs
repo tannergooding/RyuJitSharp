@@ -27,12 +27,15 @@ internal static unsafe class InlineBlockTests
             body.SetFlags(BBF_GC_SAFE_POINT);
             var first = inlinee.gtNewStmt(inlinee.gtNewIconNode(TYP_INT, 1));
             var last = inlinee.gtNewStmt(inlinee.gtNewIconNode(TYP_INT, 2));
+
             if (!empty)
             {
                 inlinee.fgInsertStmtAtEnd(body, first);
                 inlinee.fgInsertStmtAtEnd(body, last);
             }
+
             var after = compiler.gtNewStmt(compiler.gtNewIconNode(TYP_INT, 3));
+
             if (suffix)
             {
                 compiler.fgInsertStmtAtEnd(top, after);
@@ -52,6 +55,7 @@ internal static unsafe class InlineBlockTests
                 Assert.That(info.inlineContext.Ordinal, Is.EqualTo(1));
                 Assert.That(compiler._inlineStrategy?.InlineCount, Is.EqualTo(1));
             });
+
             if (!empty)
             {
                 Assert.That(first.PrevStmt, Is.SameAs(call));
@@ -59,6 +63,7 @@ internal static unsafe class InlineBlockTests
                 Assert.That(last.PrevStmt, Is.SameAs(first));
                 Assert.That(last.NextStmt, Is.SameAs(suffix ? after : null));
             }
+
             if (suffix)
             {
                 Assert.That(after.PrevStmt, Is.SameAs(empty ? call : last));
@@ -80,11 +85,13 @@ internal static unsafe class InlineBlockTests
             top.bbWeight = 10;
             var first = NewBlock(inlinee, noReturn ? BBJ_THROW : BBJ_ALWAYS);
             var last = first;
+
             if (!noReturn)
             {
                 last = NewBlock(inlinee, BBJ_RETURN);
                 first.SetKindAndTargetEdge(BBJ_ALWAYS, inlinee.fgAddRefPred(last, first));
             }
+
             inlinee.fgReturnCount = noReturn ? 0 : 1;
 
             compiler.fgInsertInlineeBlocks(info);
@@ -116,6 +123,7 @@ internal static unsafe class InlineBlockTests
                 Assert.That(compiler.fgPgoConsistent, Is.EqualTo(!noReturn));
                 Assert.That(compiler.Metrics.ProfileInconsistentNoReturnInlinee, Is.EqualTo(noReturn ? 1 : 0));
             });
+
             if (!noReturn)
             {
                 Assert.That(last.Kind, Is.EqualTo(BBJ_ALWAYS));
@@ -193,8 +201,11 @@ internal static unsafe class InlineBlockTests
             compiler.compHndBBtab = new EHblkDsc[spareCapacity ? 4 : 1];
             compiler.compHndBBtabCount = 1;
             compiler.compHndBBtab[0] = new EHblkDsc {
-                ebdID = 11, ebdTryBeg = rootTry, ebdTryLast = rootTry,
-                ebdHndBeg = rootHandler, ebdHndLast = rootHandler,
+                ebdID = 11,
+                ebdTryBeg = rootTry,
+                ebdTryLast = rootTry,
+                ebdHndBeg = rootHandler,
+                ebdHndLast = rootHandler,
                 ebdHandlerType = EHHandlerType.EH_HANDLER_FAULT,
                 ebdEnclosingTryIndex = EHblkDsc.NO_ENCLOSING_INDEX,
                 ebdEnclosingHndIndex = EHblkDsc.NO_ENCLOSING_INDEX,
@@ -243,6 +254,7 @@ internal static unsafe class InlineBlockTests
     {
         var block = BasicBlock.New(compiler, kind);
         block.bbRefs = compiler.fgFirstBB is null ? 1 : 0;
+
         if (compiler.fgLastBB is BasicBlock last)
         {
             last.Next = block;
@@ -251,7 +263,9 @@ internal static unsafe class InlineBlockTests
         {
             compiler.fgFirstBB = block;
         }
+
         compiler.fgLastBB = block;
+
         return block;
     }
 
@@ -283,6 +297,7 @@ internal static unsafe class InlineBlockTests
         compiler.fgSafeFlowEdgeCreation = inlinee.fgSafeFlowEdgeCreation = true;
 #endif
         JitTls.Compiler = compiler;
+
         try
         {
             var root = new InlineContext(strategy) { _ilSize = 6 };

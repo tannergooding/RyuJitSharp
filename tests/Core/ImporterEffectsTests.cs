@@ -97,10 +97,12 @@ internal static unsafe class ImporterEffectsTests
             compiler.stackState.esStack = [new() { val = read }];
             compiler.stackState.esStackDepth = 1;
             var effect = new GenTree(genTreeOps.GT_CATCH_ARG, var_types.TYP_REF) { Flags = GenTreeFlags.GTF_ORDER_SIDEEFF };
+
             if (localStore)
             {
                 effect = compiler.gtNewStoreLclVarNode(0, effect);
             }
+
             var statement = new Statement(effect, 1);
 
             compiler.impAppendStmt(statement, Compiler.CHECK_SPILL_ALL);
@@ -146,6 +148,7 @@ internal static unsafe class ImporterEffectsTests
         WithCompiler(compiler => {
             var callSite = new BasicBlock(null, null);
             var handler = new BasicBlock(null, null);
+
             if (region == 1)
             {
                 callSite.TryIndex = 0;
@@ -171,21 +174,33 @@ internal static unsafe class ImporterEffectsTests
                 compiler.gtNewIconNode(var_types.TYP_INT, 0));
             GenTree? additionalTree = null;
             CallArgs args = default;
+
             switch (location)
             {
                 case "tree":
+                {
                     additionalTree = store;
                     break;
+                }
+
                 case "args":
+                {
                     _ = args.PushBack(NewCallArg.CreateForPrimitive(store));
                     break;
+                }
+
                 case "statement":
+                {
                     compiler.impAppendStmt(new Statement(store, 1));
                     break;
+                }
+
                 case "stack":
+                {
                     compiler.stackState.esStack = [new() { val = store }];
                     compiler.stackState.esStackDepth = 1;
                     break;
+                }
             }
 
             InlArgInfo[] arguments = [new() { argTmpNum = 0 }];
@@ -210,6 +225,7 @@ internal static unsafe class ImporterEffectsTests
         compiler.stackState.esStack = [];
         compiler.compCurBB = new BasicBlock(null, null);
         JitTls.Compiler = compiler;
+
         try
         {
             action(compiler);

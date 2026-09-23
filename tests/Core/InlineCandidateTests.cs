@@ -60,22 +60,26 @@ internal static unsafe class InlineCandidateTests
                 _callType = gtCallTypes.CT_USER_FUNC,
                 _callMethHnd = (CORINFO_METHOD_STRUCT_*)100,
             };
+
             if (tailCall)
             {
                 call._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_IMPLICIT_TAILCALL;
             }
 
             var expectedCallees = new nuint[candidateCount];
+
             for (var i = 0; i < candidateCount; i++)
             {
                 var candidate = new InlineCandidateInfo {
                     guardedClassHandle = classBased ? (CORINFO_CLASS_STRUCT_*)1 : null,
                     guardedMethodHandle = (CORINFO_METHOD_STRUCT_*)(200 + i),
                 };
+
                 if (unboxed)
                 {
                     candidate.guardedMethodUnboxedResolvedToken.hMethod = (CORINFO_METHOD_STRUCT_*)(300 + i);
                 }
+
                 call.AddGdvCandidateInfo(compiler, candidate);
                 expectedCallees[i] = (nuint)((unboxed ? 300 : 200) + i);
             }

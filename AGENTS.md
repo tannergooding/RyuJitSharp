@@ -15,6 +15,13 @@ checkpoint, and load only the relevant sections of the
 - Preserve upstream algorithms, phase ordering, diagnostics, numeric semantics,
   and JIT/EE contracts. Idiomatic C# does not authorize different generated code
   or dumps. Ask before substantial redesigns or new observable deviations.
+- Follow the existing C# layout, not compressed native or generated-looking
+  translation. Use multiline control-flow bodies and braced switch sections,
+  one executable statement per line, and blank lines between distinct steps,
+  before control-flow statements, after completed control-flow blocks, and
+  before a final return. Keep related declarations and operations together.
+  Respect `.editorconfig`, but also review logical grouping and wrap long
+  expressions at meaningful boundaries; formatter compliance is not sufficient.
 - Use the intact, pinned `runtime-oracle` for source and behavior comparisons.
   The residual `runtime-port` tree identifies remaining work; deleted native code
   is not evidence of parity. Obtain their local paths from the session setup,

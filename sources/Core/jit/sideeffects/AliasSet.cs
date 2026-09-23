@@ -24,6 +24,7 @@ public partial struct AliasSet
             if (operand.Oper.IsLocalRead)
             {
                 var lclNum = operand.AsLclVarCommon().LclNum;
+
                 if (compiler.lvaTable[lclNum].IsAddressExposed)
                 {
                     _readsAddressableLocation = true;
@@ -31,6 +32,7 @@ public partial struct AliasSet
 
                 _lclVarReads.Add(compiler, lclNum);
             }
+
             if (operand.IsContained)
             {
                 AddNode(compiler, operand);
@@ -38,18 +40,22 @@ public partial struct AliasSet
         }
 
         var nodeInfo = new NodeInfo(compiler, node);
+
         if (nodeInfo.ReadsAddressableLocation)
         {
             _readsAddressableLocation = true;
         }
+
         if (nodeInfo.WritesAddressableLocation)
         {
             _writesAddressableLocation = true;
         }
+
         if (nodeInfo.IsLclVarRead)
         {
             _lclVarReads.Add(compiler, nodeInfo.LclNum);
         }
+
         if (nodeInfo.IsLclVarWrite)
         {
             var visitor = new LocalWriteVisitor(compiler, _lclVarWrites);
@@ -60,6 +66,7 @@ public partial struct AliasSet
             {
                 _lclVarWrites.Add(compiler, nodeInfo.LclNum);
                 ref var dsc = ref compiler.lvaGetDesc(nodeInfo.LclNum);
+
                 if (dsc.lvIsStructField)
                 {
                     _lclVarWrites.Add(compiler, dsc.lvParentLcl);
@@ -86,6 +93,7 @@ public partial struct AliasSet
             var lclNum = def.LclNum;
             Writes.Add(compiler, lclNum);
             ref var dsc = ref compiler.lvaGetDesc(lclNum);
+
             if (dsc.lvIsStructField)
             {
                 Writes.Add(compiler, dsc.lvParentLcl);
@@ -101,11 +109,13 @@ public partial struct AliasSet
         {
             return true;
         }
+
         if ((_readsAddressableLocation && other._writesAddressableLocation) ||
             (_writesAddressableLocation && other._readsAddressableLocation))
         {
             return true;
         }
+
         if (_lclVarWrites.Intersects(other._lclVarReads) || _lclVarWrites.Intersects(other._lclVarWrites))
         {
             return true;
@@ -119,15 +129,18 @@ public partial struct AliasSet
         if (_writesAddressableLocation || !_lclVarWrites.IsEmpty)
         {
             var compiler = other.Compiler;
+
             foreach (var operand in other.Node.Operands)
             {
                 if (operand.Oper.IsLocalRead)
                 {
                     var lclNum = operand.AsLclVarCommon().LclNum;
+
                     if (compiler.lvaTable[lclNum].IsAddressExposed && _writesAddressableLocation)
                     {
                         return true;
                     }
+
                     if (_lclVarWrites.Contains(lclNum))
                     {
                         return true;
@@ -140,11 +153,13 @@ public partial struct AliasSet
         {
             return true;
         }
+
         if ((_readsAddressableLocation && other.WritesAddressableLocation) ||
             (_writesAddressableLocation && other.ReadsAddressableLocation))
         {
             return true;
         }
+
         if ((other.IsLclVarRead || other.IsLclVarWrite) && _lclVarWrites.Contains(other.LclNum))
         {
             return true;

@@ -105,12 +105,14 @@ internal static class CheckedOpsTests
             {
                 var exactLeft = BigInteger.CreateChecked(left);
                 var exactRight = BigInteger.CreateChecked(right);
+
                 if (unsigned)
                 {
                     if (exactLeft.Sign < 0)
                     {
                         exactLeft += modulus;
                     }
+
                     if (exactRight.Sign < 0)
                     {
                         exactRight += modulus;

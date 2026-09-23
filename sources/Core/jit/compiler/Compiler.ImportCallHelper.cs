@@ -217,17 +217,20 @@ public partial class Compiler
                 {
                     JITDUMP("\nHave extra IL stack entry after tail await\n");
                     var value = compiler.impPopStack().val;
+
                     if ((value.Flags & GTF_SIDE_EFFECT) != 0)
                     {
                         if (varTypeIsStruct(value.Type))
                         {
                             value = compiler.impNormStructVal(value, CHECK_SPILL_ALL);
                         }
+
                         _ = compiler.impAppendTree(compiler.gtUnusedValNode(value), CHECK_SPILL_ALL, compiler.impCurStmtDI);
                     }
                 }
 
                 prefixFlags &= ~PREFIX_TAILCALL;
+
                 return compiler.impReturnInstruction(prefixFlags, ref opcode);
             }
 
@@ -307,6 +310,7 @@ public partial class Compiler
             if (opcode is CEE_CALLI)
             {
                 bool wasConverted;
+
                 fixed (CORINFO_RESOLVED_TOKEN* pResolvedToken = &resolvedToken)
                 {
                     wasConverted = compiler.info.compCompHnd->convertPInvokeCalliToCall(pResolvedToken, !compiler.impCanPInvokeInlineCallSite(compiler.compCurBB));
@@ -323,6 +327,7 @@ public partial class Compiler
                         callInfo = ref calliInfo,
                         opcodeOffs = opcodeOffs,
                     };
+
                     return importCallHelper.Import(compiler);
                 }
 
@@ -689,6 +694,7 @@ public partial class Compiler
                         if (sigInfo.hasTypeArg())
                         {
                             GenTree? wasmInstParam;
+
                             if (compiler.lvaNextCallGenericContext is not BAD_VAR_NUM)
                             {
                                 wasmInstParam = compiler.gtNewLclVarNode(TYP_UNDEF, compiler.lvaNextCallGenericContext);
@@ -698,9 +704,11 @@ public partial class Compiler
                             {
                                 wasmInstParam = compiler.impGetInstParamArg(resolvedToken, callInfo, exactContextHnd,
                                     exactContextNeedsRuntimeLookup, clsFlags, isReadonlyCall);
+
                                 if (wasmInstParam is null)
                                 {
                                     assert(compiler.compDonotInline);
+
                                     return TYP_UNDEF;
                                 }
                             }
@@ -918,6 +926,7 @@ public partial class Compiler
                 compiler.impPopArgsForUnmanagedCall(call, sigInfo, ref swiftErrorNode);
                 return Done(compiler, call);
             }
+
             if (sigInfo.isAsyncCall())
             {
                 compiler.impSetupAsyncCall(call, methHnd, opcode, prefixFlags, ni, debugInfo, out asyncCallUsesOwnContexts);
@@ -990,9 +999,11 @@ public partial class Compiler
 
                     instParam = compiler.impGetInstParamArg(resolvedToken, callInfo, exactContextHnd,
                         exactContextNeedsRuntimeLookup, clsFlags, isReadonlyCall);
+
                     if (instParam is null)
                     {
                         assert(compiler.compDonotInline);
+
                         return TYP_UNDEF;
                     }
                 }
@@ -1434,6 +1445,7 @@ public partial class Compiler
             {
                 // Preserve the identity used by impSetupAsyncCall for always-suspending helpers.
                 intrinsicName = ni;
+
                 return null;
             }
             else if (ni is NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait)
@@ -1449,6 +1461,7 @@ public partial class Compiler
             else if (ni is NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync)
             {
                 JITDUMP($"\nExpanding RuntimeHelpers.IsRuntimeAsync to {(compiler.compIsAsync ? "true" : "false")} early\n");
+
                 return compiler.compIsAsync ? compiler.gtNewTrue() : compiler.gtNewFalse();
             }
 
@@ -2118,6 +2131,7 @@ public partial class Compiler
                                 }
                             }
                         }
+
                         break;
                     }
 
@@ -2333,6 +2347,7 @@ public partial class Compiler
                                     {
                                         retNode = compiler.gtNewFalse();
                                     }
+
                                     break;
                                 }
 
@@ -2364,6 +2379,7 @@ public partial class Compiler
                                 _ = compiler.impPopStack();
                             }
                         }
+
                         break;
                     }
 
@@ -2417,6 +2433,7 @@ public partial class Compiler
                                 }
                             }
                         }
+
                         break;
                     }
 
@@ -2633,8 +2650,10 @@ public partial class Compiler
                             if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
                             {
                                 var supported = op1Type is TYP_FLOAT or TYP_DOUBLE or TYP_INT or TYP_UINT;
+
 #if TARGET_AMD64
                                 supported |= op1Type is TYP_LONG or TYP_ULONG;
+
 #endif
                                 if (supported)
                                 {
@@ -2717,6 +2736,7 @@ public partial class Compiler
                                 _ => NI_Illegal,
                             };
                             var isFp16 = retType is TYP_INT or TYP_UINT or TYP_LONG or TYP_ULONG;
+
                             if ((opId is not NI_Illegal) && (!isFp16 || compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16)))
                             {
                                 var op1 = compiler.impSimdCreateScalarHalf(compiler.impPopStack().val);
@@ -2725,6 +2745,7 @@ public partial class Compiler
                             }
 #endif
                         }
+
                         break;
                     }
 
@@ -2747,6 +2768,7 @@ public partial class Compiler
                             retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, opId, TYP_USHORT, 16, op1, op2);
                             retNode = compiler.impSimdToScalarHalf(retNode, sigInfo.retTypeSigClass);
                         }
+
 #endif
                         break;
                     }
@@ -2776,6 +2798,7 @@ public partial class Compiler
 #endif
                             retNode = compiler.impSimdToScalarHalf(retNode, sigInfo.retTypeSigClass);
                         }
+
 #endif
                         break;
                     }
@@ -2799,6 +2822,7 @@ public partial class Compiler
 #endif
                             retNode = compiler.impSimdToScalarHalf(retNode, sigInfo.retTypeSigClass);
                         }
+
 #endif
                         break;
                     }
@@ -2821,7 +2845,16 @@ public partial class Compiler
                             var roundingMode = lookupHalfRoundingMode(ni);
                             var op2 = compiler.gtNewZeroConNode(TYP_SIMD16);
                             op1 = compiler.impSimdCreateScalarHalf(op1);
-                            retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_AVX10v1_RoundScaleScalar, TYP_USHORT, 16, op2, op1, compiler.gtNewIconNode(TYP_INT, roundingMode));
+                            retNode = compiler.gtNewSimdHWIntrinsicNode(
+TYP_SIMD16,
+ NI_AVX10v1_RoundScaleScalar,
+ TYP_USHORT,
+ 16,
+ op2,
+ op1,
+ compiler.gtNewIconNode(
+TYP_INT,
+ roundingMode));
 #else
                             var opId = compiler.lookupHalfIntrinsic(ni);
                             assert(opId is not NI_Illegal);
@@ -2830,6 +2863,7 @@ public partial class Compiler
 #endif
                             retNode = compiler.impSimdToScalarHalf(retNode, sigInfo.retTypeSigClass);
                         }
+
 #endif
                         break;
                     }
@@ -2854,6 +2888,7 @@ public partial class Compiler
                             var op1 = compiler.impSimdCreateScalarHalf(compiler.impPopStack().val);
                             retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_INT, opId, TYP_USHORT, 16, op1, op2);
                         }
+
 #endif
                         break;
                     }
@@ -2877,6 +2912,7 @@ public partial class Compiler
                             retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, opId, TYP_USHORT, 16, op1, oneVec);
                             retNode = compiler.impSimdToScalarHalf(retNode, sigInfo.retTypeSigClass);
                         }
+
 #endif
                         break;
                     }
@@ -2902,6 +2938,7 @@ public partial class Compiler
                             NI_System_Half_get_Zero => 0x0000,
                             _ => throw new System.Diagnostics.UnreachableException(),
                         };
+
 #if TARGET_XARCH
                         if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
 #else
@@ -2912,6 +2949,7 @@ public partial class Compiler
                             retNode = compiler.gtNewSimdCreateScalarNode(TYP_SIMD16, compiler.gtNewIconNode(TYP_INT, halfBits), TYP_USHORT, 16);
                             retNode = compiler.impSimdToScalarHalf(retNode, sigInfo.retTypeSigClass);
                         }
+
 #endif
                         break;
                     }
@@ -3162,6 +3200,7 @@ public partial class Compiler
                                     assert(compiler.compDonotInline);
                                     return null;
                                 }
+
                                 var runtimeType = compiler.gtNewHelperCallNode(TYP_REF, CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, typeHandleOp);
                                 var sideEffects = compiler.fgAddrCouldBeNull(op1) ? compiler.gtNewNullCheck(op1) : op1;
                                 retNode = compiler.gtWrapWithSideEffects(runtimeType, sideEffects, GTF_ALL_EFFECT);
@@ -3385,12 +3424,14 @@ public partial class Compiler
                         }
 
                         var primitiveType = compiler.info.compCompHnd->getTypeForPrimitiveValueClass(sigInfo.sigInst.methInst[0]);
+
                         if (primitiveType is CORINFO_TYPE_UNDEF)
                         {
                             break;
                         }
 
                         var elementType = primitiveType.VarType;
+
                         if (!varTypeIsArithmetic(elementType))
                         {
                             break;
@@ -3398,6 +3439,7 @@ public partial class Compiler
 
                         var memmoveHnd = NO_METHOD_HANDLE;
                         compiler.info.compCompHnd->getHelperFtn(CORINFO_HELP_MEMCPY, null, &memmoveHnd);
+
                         if (memmoveHnd == NO_METHOD_HANDLE)
                         {
                             break;
@@ -3410,6 +3452,7 @@ public partial class Compiler
                         var source = compiler.impPopStack().val;
                         var destination = compiler.impPopStack().val;
                         var elementSize = elementType.Size;
+
                         if (elementSize is not 1)
                         {
                             length = compiler.gtFoldExpr(compiler.gtNewBinaryNode(GT_MUL, TYP_I_IMPL, length, compiler.gtNewIconNode(TYP_I_IMPL, elementSize)));
@@ -3605,6 +3648,7 @@ public partial class Compiler
                     case NI_System_Threading_Tasks_ValueTask_FromResult:
                     {
                         assert(sigInfo.sigInst.methInstCount is 1);
+
                         if ((sigInfo.callConv & CORINFO_CALLCONV_ASYNCCALL) is 0)
                         {
                             break;
@@ -3612,6 +3656,7 @@ public partial class Compiler
 
                         var type = compiler.TypeHandleToVarType(sigInfo.sigInst.methInst[0], out _);
                         var value = compiler.impPopStack().val;
+
                         if (varTypeIsStruct(value.Type))
                         {
                             value = compiler.impNormStructVal(value, CHECK_SPILL_ALL);
@@ -3626,6 +3671,7 @@ public partial class Compiler
                         {
                             value = compiler.gtNewCastNode(TYP_INT, value, false, type);
                         }
+
                         retNode = value;
                         break;
                     }
@@ -3637,6 +3683,7 @@ public partial class Compiler
                         {
                             retNode = compiler.gtNewNothingNode();
                         }
+
                         break;
                     }
 
@@ -3923,8 +3970,10 @@ public partial class Compiler
                         compiler.impPushOnStack(compiler.gtNewLclvNode(TYP_REF, newObjThis.AsLclVarCommon().LclNum), new typeInfo(clsHnd));
                     }
                 }
+
                 return callRetTyp;
             }
+
             return Done(compiler, call);
         }
 
@@ -4229,6 +4278,7 @@ public partial class Compiler
             {
                 var call = result.AsCall();
                 var intrinsic = compiler.lookupNamedIntrinsic(call._callMethHnd);
+
                 if (intrinsic is NI_System_SpanHelpers_Memmove or NI_System_SpanHelpers_SequenceEqual)
                 {
                     assert(!call.IsGuardedDevirtualizationCandidate);
@@ -4260,6 +4310,7 @@ public partial class Compiler
                     {
                         result = compiler.impDuplicateWithProfiledArg(result.AsCall(), opcodeOffs);
                     }
+
                     compiler.impAppendTree(result, CHECK_SPILL_ALL, compiler.impCurStmtDI);
                 }
                 else
@@ -4268,6 +4319,7 @@ public partial class Compiler
                     {
                         result = compiler.impThrowIfNull(result.AsCall());
                     }
+
                     compiler.impAppendTree(result, CHECK_SPILL_ALL, compiler.impCurStmtDI);
                 }
             }

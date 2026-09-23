@@ -65,10 +65,12 @@ public partial struct SplitTreeVisitor : IGenTreeVisitor<SplitTreeVisitor>
             var userIsReturned = false;
             // Split all siblings and ancestor siblings.
             int i;
+
             for (i = 0; i < _useStack.Count - 1; i++)
             {
                 var useInf = _useStack[i];
                 ref var currentUse = ref useInf.GetUse(_splitStmt);
+
                 if (Unsafe.AreSame(ref currentUse, ref use))
                 {
                     break;
@@ -101,6 +103,7 @@ public partial struct SplitTreeVisitor : IGenTreeVisitor<SplitTreeVisitor>
             }
 
             _splitNodeUse = splitUse;
+
             return Compiler.fgWalkResult.WALK_ABORT;
         }
 
@@ -108,6 +111,7 @@ public partial struct SplitTreeVisitor : IGenTreeVisitor<SplitTreeVisitor>
         {
             _useStack.RemoveAt(_useStack.Count - 1);
         }
+
         return Compiler.fgWalkResult.WALK_CONTINUE;
     }
 
@@ -118,13 +122,16 @@ public partial struct SplitTreeVisitor : IGenTreeVisitor<SplitTreeVisitor>
         if (user is not null)
         {
             var index = 0;
+
             foreach (ref var operand in user.UseEdges)
             {
                 if (Unsafe.AreSame(ref operand, ref use))
                 {
                     _useStack.Add(new UseInfo(user, index));
+
                     return Compiler.fgWalkResult.WALK_CONTINUE;
                 }
+
                 index++;
             }
 
@@ -132,6 +139,7 @@ public partial struct SplitTreeVisitor : IGenTreeVisitor<SplitTreeVisitor>
         }
 
         _useStack.Add(new UseInfo(null, -1));
+
         return Compiler.fgWalkResult.WALK_CONTINUE;
     }
 
@@ -152,6 +160,7 @@ public partial struct SplitTreeVisitor : IGenTreeVisitor<SplitTreeVisitor>
                 return true;
             }
         }
+
         return false;
     }
 
@@ -188,6 +197,7 @@ public partial struct SplitTreeVisitor : IGenTreeVisitor<SplitTreeVisitor>
                 }
             }
         }
+
         return true;
     }
 
@@ -235,6 +245,7 @@ public partial struct SplitTreeVisitor : IGenTreeVisitor<SplitTreeVisitor>
         {
             assert(use.Oper is GT_CAST);
             SplitOutUse(ref use.AsCast().Op1Ref, use, userIsReturned: false);
+
             return;
         }
 #endif
@@ -250,6 +261,7 @@ public partial struct SplitTreeVisitor : IGenTreeVisitor<SplitTreeVisitor>
             SplitOutUse(ref use, user, userIsReturned);
 
             _madeChanges = true;
+
             return;
         }
 
@@ -259,6 +271,7 @@ public partial struct SplitTreeVisitor : IGenTreeVisitor<SplitTreeVisitor>
             {
                 SplitOutUse(ref operandUse, use, userIsReturned: false);
             }
+
             return;
         }
 

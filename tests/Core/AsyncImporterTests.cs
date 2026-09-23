@@ -23,6 +23,7 @@ internal static unsafe class AsyncImporterTests
             compiler.info.compCompHnd = &jitInfo;
             var stateValue = new AwaitReturnState();
             var state = &stateValue;
+
             if (readyToRun)
             {
                 compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_AOT);
@@ -31,6 +32,7 @@ internal static unsafe class AsyncImporterTests
             var call = compiler.gtNewUserCallNode(var_types.TYP_INT, (CORINFO_METHOD_STRUCT_*)state);
 
             Assert.That(state->EntryPointQueries, Is.EqualTo(readyToRun ? 1 : 0));
+
             if (readyToRun)
             {
                 Assert.That(call._entryPoint.accessType, Is.EqualTo(InfoAccessType.IAT_PVALUE));
@@ -66,16 +68,19 @@ internal static unsafe class AsyncImporterTests
 
             Assert.That(lockObject.Type, Is.EqualTo(var_types.TYP_REF));
             Assert.That(compiler.lvaGenericsContextInUse, Is.EqualTo(lookupKind >= 2));
+
             if (lookupKind == 0)
             {
                 Assert.That(lockObject.AsIntCon().IconValue, Is.EqualTo((nint)0x5678));
                 Assert.That(lockObject.AsIntCon().IsIconHandle(Globals.GTF_ICON_OBJ_HDL), Is.True);
+
                 return;
             }
 
             Assert.That(lockObject.AsCall().HelperNum, Is.EqualTo(CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE));
             var classHandle = lockObject.AsCall().Args.GetUserArgByIndex(0)?.Node
                 ?? throw new InvalidOperationException("Missing monitor class.");
+
             if (lookupKind == 1)
             {
                 Assert.That(classHandle.AsIntCon().IconValue, Is.EqualTo((nint)state));
@@ -89,6 +94,7 @@ internal static unsafe class AsyncImporterTests
                     classHandle = classHandle.AsCall().Args.GetUserArgByIndex(0)?.Node
                         ?? throw new InvalidOperationException("Missing method context.");
                 }
+
                 Assert.That(classHandle.AsLclVar().LclNum, Is.Zero);
                 Assert.That((classHandle.Flags & GenTreeFlags.GTF_VAR_CONTEXT) != 0, Is.True);
             }
@@ -102,6 +108,7 @@ internal static unsafe class AsyncImporterTests
         WithCompiler(compiler => {
             GenTree node;
             var child = compiler.gtNewIconNode(var_types.TYP_INT, 1);
+
             if (callNode)
             {
                 var call = compiler.gtNewCallNode(var_types.TYP_INT, gtCallTypes.CT_USER_FUNC, (CORINFO_METHOD_STRUCT_*)1);
@@ -112,6 +119,7 @@ internal static unsafe class AsyncImporterTests
             {
                 node = compiler.gtNewUnaryNode(genTreeOps.GT_NEG, var_types.TYP_INT, child);
             }
+
             node.Flags |= GenTreeFlags.GTF_DONT_CSE | GenTreeFlags.GTF_REVERSE_OPS;
             node._vnPair.SetBoth(42);
             node.Next = child;
@@ -195,22 +203,28 @@ internal static unsafe class AsyncImporterTests
                 Assert.That(call.Args.FindWellKnownArg(WellKnownArg.AsyncContinuation)?.Node.IsIntegralConst(0), Is.True);
                 Assert.That(call.Args.FindWellKnownArg(WellKnownArg.InstParam) is not null, Is.EqualTo(generic));
             });
+
             if (generic)
             {
                 var instParam = call.Args.FindWellKnownArg(WellKnownArg.InstParam)
                     ?? throw new InvalidOperationException("Missing instantiation argument.");
                 Assert.That(instParam.Node.AsIntCon().IconValue, Is.EqualTo((nint)0x1234));
             }
+
             List<WellKnownArg> argumentKinds = [];
+
             foreach (var argument in call.Args.Args)
             {
                 argumentKinds.Add(argument.WellKnownArg);
             }
+
             List<WellKnownArg> expectedKinds = [WellKnownArg.AsyncContinuation];
+
             if (generic)
             {
                 expectedKinds.Insert(0, WellKnownArg.InstParam);
             }
+
             if (Target.TgtArgOrder == Target.ARG_ORDER_R2L)
             {
                 expectedKinds.Add(WellKnownArg.None);
@@ -220,6 +234,7 @@ internal static unsafe class AsyncImporterTests
                 expectedKinds.Reverse();
                 expectedKinds.Insert(0, WellKnownArg.None);
             }
+
             Assert.That(argumentKinds, Is.EqualTo(expectedKinds));
         });
     }
@@ -257,6 +272,7 @@ internal static unsafe class AsyncImporterTests
                 Assert.That(store.TreeId, Is.EqualTo(treeId));
 #endif
             });
+
             if (returnType != var_types.TYP_VOID)
             {
                 var result = compiler.impStackTop().val;
@@ -304,6 +320,7 @@ internal static unsafe class AsyncImporterTests
     {
         var bytes = new byte[pattern.Length + 1];
         pattern.CopyTo(bytes, 0);
+
         fixed (byte* start = bytes)
         {
             for (var length = 0; length <= bytes.Length; length++)
@@ -320,6 +337,7 @@ internal static unsafe class AsyncImporterTests
         const int configuredAwaitLength = 1 + (2 * (1 + sizeof(int)));
         var awaitBytes = new byte[sizeof(int) + pattern.Length + configuredAwaitLength];
         pattern.CopyTo(awaitBytes, sizeof(int));
+
         fixed (byte* start = awaitBytes)
         {
             var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -363,6 +381,7 @@ internal static unsafe class AsyncImporterTests
             AddArgument(WellKnownArg.AsyncResumedUse, compiler.gtNewLclvNode(var_types.TYP_INT, 0));
             AddArgument(WellKnownArg.AsyncExecutionContext, compiler.gtNewLclvNode(var_types.TYP_REF, 1));
             AddArgument(WellKnownArg.AsyncSynchronizationContext, compiler.gtNewLclvNode(var_types.TYP_REF, 2));
+
             for (var frame = 1; frame <= outerFrames; frame++)
             {
                 handling.Add(ContinuationContextHandling.ContinueOnThreadPool);
@@ -370,6 +389,7 @@ internal static unsafe class AsyncImporterTests
                 AddArgument(WellKnownArg.AsyncExecutionContext, compiler.gtNewLclvNode(var_types.TYP_REF, (frame * 3) + 1));
                 AddArgument(WellKnownArg.AsyncSynchronizationContext, compiler.gtNewLclvNode(var_types.TYP_REF, (frame * 3) + 2));
             }
+
             inherited[0].Node.Flags |= GenTreeFlags.GTF_ORDER_SIDEEFF;
             inherited[^1].Node.Flags |= GenTreeFlags.GTF_GLOB_REF;
 
@@ -386,10 +406,12 @@ internal static unsafe class AsyncImporterTests
             compiler.impInheritAsyncContextsFromInliner(call);
 
             List<CallArg> arguments = [];
+
             foreach (var argument in call.Args.Args)
             {
                 arguments.Add(argument);
             }
+
             Assert.Multiple(() => {
                 Assert.That(arguments.Count, Is.EqualTo(inherited.Count + 1));
                 Assert.That((call.Flags & GenTreeFlags.GTF_ORDER_SIDEEFF) != 0, Is.True);
@@ -398,6 +420,7 @@ internal static unsafe class AsyncImporterTests
             });
             Assert.That(arguments[4], Is.SameAs(userArgument));
             arguments.RemoveAt(4);
+
             for (var index = 0; index < inherited.Count; index++)
             {
                 Assert.Multiple(() => {
@@ -427,6 +450,7 @@ internal static unsafe class AsyncImporterTests
                 inliningCall.SetIsAsync(default);
                 compiler.impInlineInfo = new InlineInfo { iciCall = inliningCall };
             }
+
             var call = new GenTreeCall(var_types.TYP_VOID);
             call.SetIsAsync(default);
             var argument = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewNull()));
@@ -497,6 +521,7 @@ internal static unsafe class AsyncImporterTests
     private static CORINFO_CLASS_STRUCT_* EmbedMonitorClass(ICorJitInfo* jitInfo, CORINFO_CLASS_STRUCT_* cls, void** indirection)
     {
         *indirection = null;
+
         return cls;
     }
 
@@ -509,6 +534,7 @@ internal static unsafe class AsyncImporterTests
         *lookup = default;
         lookup->constLookup.accessType = InfoAccessType.IAT_VALUE;
         lookup->constLookup.handle = (CORINFO_GENERIC_STRUCT_*)0x1234;
+
         return caller;
     }
 
@@ -520,10 +546,12 @@ internal static unsafe class AsyncImporterTests
         *sig = default;
         sig->retType = state->ReturnsVoid ? CorInfoType.CORINFO_TYPE_VOID : CorInfoType.CORINFO_TYPE_INT;
         sig->callConv = CorInfoCallConv.CORINFO_CALLCONV_ASYNCCALL;
+
         if (state->Generic)
         {
             sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE;
         }
+
         sig->numArgs = 1;
     }
 
@@ -532,6 +560,7 @@ internal static unsafe class AsyncImporterTests
         ICorJitInfo* jitInfo, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* arg, CORINFO_CLASS_STRUCT_** type)
     {
         *type = null;
+
         return (CorInfoTypeWithMod)CorInfoType.CORINFO_TYPE_CLASS;
     }
 
@@ -553,11 +582,14 @@ internal static unsafe class AsyncImporterTests
         compiler.info = new Compiler.Info();
         compiler.lvaTable = new LclVarDsc[9];
         compiler.lvaCount = compiler.lvaTable.Length;
+
         for (var index = 0; index < compiler.lvaCount; index++)
         {
             compiler.lvaTable[index].Type = index % 3 == 0 ? var_types.TYP_INT : var_types.TYP_REF;
         }
+
         JitTls.Compiler = compiler;
+
         try
         {
             action(compiler);

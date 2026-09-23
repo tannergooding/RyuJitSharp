@@ -8,11 +8,18 @@ namespace RyuJitSharp;
 public readonly struct CallLocalDef(GenTreeLclVarCommon def, bool isEntire, nint offset, ValueSize size) : ILocalDef
 {
     public GenTreeLclVarCommon DefNode => def;
+
     public int LclNum => def.LclNum;
+
     public int MultiDefIndex => BAD_VAR_NUM;
+
     public bool IsEntire(Compiler compiler) => isEntire;
+
     public nint GetOffset(Compiler compiler) => offset;
+
     public ValueSize GetSize(Compiler compiler) => size;
+
     public nint GetValueOffset(Compiler compiler) => 0;
+
     public ValueSize GetStoreSize(Compiler compiler) => size;
 }

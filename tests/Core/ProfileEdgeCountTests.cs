@@ -22,21 +22,25 @@ internal static unsafe class ProfileEdgeCountTests
         WithCompiler(compiler => {
             var blocks = CreateBlocks(compiler, BBJ_ALWAYS, BBJ_RETURN);
             blocks[0].SetKindAndTargetEdge(BBJ_ALWAYS, Connect(blocks[0], blocks[1]));
+
             if (internalReturn)
             {
                 blocks[1].SetFlags(BBF_INTERNAL);
             }
+
             var key = internalReturn ? int.MinValue | blocks[1].bbNum : 10;
             Assert.That(EfficientEdgeCountBlockToKey(blocks[1]), Is.EqualTo(key));
             var count = wide ? ulong.MaxValue : uint.MaxValue;
             WithProfile(compiler, [new(key, 0, count, wide)], () => {
                 Assert.That(compiler.fgIncorporateEdgeCounts(), Is.True);
                 Assert.That(compiler.fgPgoHaveWeights, Is.True);
+
                 foreach (var block in blocks)
                 {
                     Assert.That(block.bbWeight, Is.EqualTo((double)count));
                     Assert.That(block.hasProfileWeight, Is.True);
                 }
+
                 Assert.That(blocks[0].TargetEdge.Likelihood, Is.EqualTo(1));
             });
         });
@@ -89,10 +93,12 @@ internal static unsafe class ProfileEdgeCountTests
                 Connect(blocks[0], blocks[3], 1.0 / 3),
             ];
             var cases = duplicate ? [successors[0], successors[0], successors[1], successors[2]] : successors;
+
             if (duplicate)
             {
                 blocks[1].bbRefs++;
             }
+
             var descriptor = new BBswtDesc(successors, new int[cases.Length], hasDefault);
             cases.CopyTo(descriptor.Cases);
             blocks[0].SwitchTargets = descriptor;
@@ -101,6 +107,7 @@ internal static unsafe class ProfileEdgeCountTests
                 Assert.That(blocks[0].bbWeight, Is.EqualTo((double)(firstCount + secondCount + thirdCount)));
                 Assert.That(descriptor.HasDominantCase, Is.EqualTo(expectedCase >= 0));
                 Assert.That(descriptor.HasDefaultCase, Is.EqualTo(hasDefault));
+
                 if (expectedCase >= 0)
                 {
                     Assert.That(descriptor.DominantCase, Is.EqualTo(expectedCase));
@@ -130,16 +137,19 @@ internal static unsafe class ProfileEdgeCountTests
                 var reconstructor = new EfficientEdgeCountReconstructor(compiler);
                 reconstructor.Prepare();
                 compiler.WalkSpanningTree(reconstructor);
+
                 if (failure == "badcode")
                 {
                     reconstructor.Badcode();
                 }
+
                 reconstructor.Solve();
                 reconstructor.Propagate();
                 Assert.That(compiler.fgPgoHaveWeights, Is.False);
                 Assert.That(compiler.fgPgoFailReason, Is.EqualTo(expectedReason));
                 // IsGood requests repair only for negative counts or a zero entry, not discarded data.
                 Assert.That(reconstructor.IsGood, Is.True);
+
                 foreach (var block in blocks)
                 {
                     Assert.That(block.hasProfileWeight, Is.False);
@@ -177,6 +187,7 @@ internal static unsafe class ProfileEdgeCountTests
             {
                 compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_OSR);
             }
+
             var blocks = entryIsSelfLoop
                 ? CreateBlocks(compiler, BBJ_COND, BBJ_RETURN)
                 : CreateBlocks(compiler, BBJ_ALWAYS, BBJ_COND, BBJ_ALWAYS, BBJ_RETURN);
@@ -187,11 +198,13 @@ internal static unsafe class ProfileEdgeCountTests
             var leave = Connect(header, exit, 0.5);
             header.SetCond(loop, leave);
             compiler.fgOSREntryBB = header;
+
             if (!entryIsSelfLoop)
             {
                 blocks[0].SetKindAndTargetEdge(BBJ_ALWAYS, Connect(blocks[0], header));
                 body.SetKindAndTargetEdge(BBJ_ALWAYS, Connect(body, header));
             }
+
             WithProfile(compiler, [new(body.bbCodeOffs, header.bbCodeOffs, 90), new(exit.bbCodeOffs, 0, returnCount)], () => {
                 var pseudoWeight = osr && !entryIsSelfLoop ? 1 : 0;
                 Assert.That(compiler.fgIncorporateEdgeCounts(), Is.EqualTo(osr || returnCount > 0));
@@ -200,6 +213,7 @@ internal static unsafe class ProfileEdgeCountTests
                 Assert.That(exit.bbWeight, Is.EqualTo((double)returnCount));
                 Assert.That(loop.Likelihood, Is.EqualTo(90.0 / (90.0 + returnCount)));
                 Assert.That(leave.Likelihood, Is.EqualTo(returnCount / (90.0 + returnCount)));
+
                 if (!entryIsSelfLoop)
                 {
                     Assert.That(blocks[0].bbWeight, Is.EqualTo((double)returnCount + pseudoWeight));
@@ -254,15 +268,19 @@ internal static unsafe class ProfileEdgeCountTests
         var counts = new ulong[probes.Length];
         var schema = new PgoInstrumentationSchema[probes.Length + 1];
         schema[0] = new() { ILOffset = 999, Other = 999, InstrumentationKind = PgoInstrumentationKind.NumRuns };
+
         for (var i = 0; i < probes.Length; i++)
         {
             var probe = probes[i];
             counts[i] = probe.Count;
             schema[i + 1] = new() {
-                ILOffset = probe.Source, Other = probe.Target, Offset = i * sizeof(ulong),
+                ILOffset = probe.Source,
+                Other = probe.Target,
+                Offset = i * sizeof(ulong),
                 InstrumentationKind = probe.Wide ? PgoInstrumentationKind.EdgeLongCount : PgoInstrumentationKind.EdgeIntCount,
             };
         }
+
         fixed (ulong* data = counts)
         fixed (PgoInstrumentationSchema* entries = schema)
         {
@@ -277,19 +295,23 @@ internal static unsafe class ProfileEdgeCountTests
     private static BasicBlock[] CreateBlocks(Compiler compiler, params BBKinds[] kinds)
     {
         var blocks = new BasicBlock[kinds.Length];
+
         for (var i = 0; i < blocks.Length; i++)
         {
             blocks[i] = BasicBlock.New(compiler, kinds[i]);
             blocks[i].bbCodeOffs = i * 10;
             blocks[i].bbRefs = i == 0 ? 1 : 0;
+
             if (i > 0)
             {
                 blocks[i - 1].Next = blocks[i];
                 blocks[i].Prev = blocks[i - 1];
             }
         }
+
         compiler.fgFirstBB = blocks[0];
         compiler.fgLastBB = blocks[^1];
+
         return blocks;
     }
 
@@ -298,6 +320,7 @@ internal static unsafe class ProfileEdgeCountTests
         var edge = new FlowEdge(source, target, target.bbPreds) { Likelihood = likelihood };
         target.bbPreds = edge;
         target.bbRefs++;
+
         return edge;
     }
 
@@ -319,6 +342,7 @@ internal static unsafe class ProfileEdgeCountTests
         compiler.info.compFullName = nameof(ProfileEdgeCountTests);
 #endif
         JitTls.Compiler = compiler;
+
         try
         {
             action(compiler);

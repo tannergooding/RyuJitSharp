@@ -72,92 +72,178 @@ public class ExtendedDefaultPolicy : DefaultPolicy
             switch (observation)
             {
                 case InlineObservation.CALLEE_RETURNS_STRUCT:
+                {
                     _returnsStructByValue = value;
                     break;
+                }
+
                 case InlineObservation.CALLEE_CLASS_VALUETYPE:
+                {
                     _isFromValueClass = value;
                     break;
+                }
+
                 case InlineObservation.CALLSITE_NONGENERIC_CALLS_GENERIC:
+                {
                     _nonGenericCallsGeneric = value;
                     break;
+                }
+
                 case InlineObservation.CALLEE_BINARY_EXRP_WITH_CNS:
+                {
                     _binaryExprWithCns++;
                     break;
+                }
+
                 case InlineObservation.CALLEE_ARG_STRUCT:
+                {
                     _argIsStructByValue++;
                     break;
+                }
+
                 case InlineObservation.CALLEE_ARG_STRUCT_FIELD_ACCESS:
+                {
                     _fldAccessOverArgStruct++;
                     break;
+                }
+
                 case InlineObservation.CALLEE_ARG_FEEDS_CAST:
+                {
                     _argCasted++;
                     break;
+                }
+
                 case InlineObservation.CALLEE_FOLDABLE_BOX:
+                {
                     _foldableBox++;
                     break;
+                }
+
                 case InlineObservation.CALLEE_INTRINSIC:
+                {
                     _intrinsic++;
                     break;
+                }
+
                 case InlineObservation.CALLEE_BACKWARD_JUMP:
+                {
                     _backwardJump++;
                     break;
+                }
+
                 case InlineObservation.CALLEE_THROW_BLOCK:
+                {
                     _throwBlock++;
                     break;
+                }
+
                 case InlineObservation.CALLSITE_ARG_EXACT_CLS:
+                {
                     _argIsExactCls++;
                     break;
+                }
+
                 case InlineObservation.CALLSITE_ARG_BOXED:
+                {
                     _argIsBoxedAtCallsite++;
                     break;
+                }
+
                 case InlineObservation.CALLSITE_ARG_CONST:
+                {
                     _argIsConst++;
                     break;
+                }
+
                 case InlineObservation.CALLSITE_ARG_EXACT_CLS_SIG_IS_NOT:
+                {
                     _argIsExactClsSigIsNot++;
                     break;
+                }
+
                 case InlineObservation.CALLSITE_FOLDABLE_INTRINSIC:
+                {
                     _foldableIntrinsic++;
                     break;
+                }
+
                 case InlineObservation.CALLSITE_FOLDABLE_EXPR:
+                {
                     _foldableExpr++;
                     break;
+                }
+
                 case InlineObservation.CALLSITE_FOLDABLE_EXPR_UN:
+                {
                     _foldableExprUn++;
                     break;
+                }
+
                 case InlineObservation.CALLSITE_FOLDABLE_BRANCH:
+                {
                     _foldableBranch++;
                     break;
+                }
+
                 case InlineObservation.CALLSITE_FOLDABLE_SWITCH:
+                {
                     _foldableSwitch++;
                     break;
+                }
+
                 case InlineObservation.CALLSITE_UNROLLABLE_MEMOP:
+                {
                     _unrollableMemop++;
                     break;
+                }
+
                 case InlineObservation.CALLEE_HAS_SWITCH:
+                {
                     _switch++;
                     break;
+                }
+
                 case InlineObservation.CALLSITE_DIV_BY_CNS:
+                {
                     _divByCns++;
                     break;
+                }
+
                 case InlineObservation.CALLSITE_HAS_PROFILE_WEIGHTS:
+                {
                     _hasProfileWeights = value;
                     break;
+                }
+
                 case InlineObservation.CALLSITE_IN_NORETURN_REGION:
+                {
                     _isCallsiteInNoReturnRegion = value;
                     break;
+                }
+
                 case InlineObservation.CALLEE_UNBOX_ARG:
+                {
                     _argUnbox++;
                     break;
+                }
+
                 case InlineObservation.CALLSITE_UNBOX_EXACT_ARG:
+                {
                     _argUnboxExact++;
                     break;
+                }
+
                 case InlineObservation.CALLEE_MAY_RETURN_SMALL_ARRAY:
+                {
                     _mayReturnSmallArray = true;
                     break;
+                }
+
                 default:
+                {
                     base.NoteBool(observation, value);
                     break;
+                }
             }
         }
     }
@@ -204,6 +290,7 @@ public class ExtendedDefaultPolicy : DefaultPolicy
                     }
 
                     uint alwaysInlineSize = InlineStrategy.ALWAYS_INLINE_SIZE;
+
                     if (InsideThrowBlock)
                     {
                         // Only small callees (normally at most 8 IL bytes) in throw blocks.
@@ -229,8 +316,10 @@ public class ExtendedDefaultPolicy : DefaultPolicy
                         JITDUMP($"Callee IL size {(uint)_codeSize} exceeds maxCodeSize {maxCodeSize}\n");
                         SetNever(InlineObservation.CALLEE_TOO_MUCH_IL);
                     }
+
                     break;
                 }
+
                 case InlineObservation.CALLEE_NUMBER_OF_BASIC_BLOCKS:
                 {
                     if (!IsForceInline && IsNoReturn && (value == 1))
@@ -240,11 +329,13 @@ public class ExtendedDefaultPolicy : DefaultPolicy
                     else if (!IsForceInline && !_hasProfileWeights && !ConstArgFeedsIsKnownConst && !ArgFeedsIsKnownConst)
                     {
                         var bbLimit = (uint)JitConfig.JitExtDefaultPolicyMaxBB;
+
                         if (_isPrejitRoot)
                         {
                             // Prejit roots cannot recognize argument-specific foldable branches.
                             bbLimit += 5 + (_switch * 10);
                         }
+
                         bbLimit += _foldableBranch + (_foldableSwitch * 10) + (_unrollableMemop * 2);
 
                         if ((uint)value > bbLimit)
@@ -253,11 +344,15 @@ public class ExtendedDefaultPolicy : DefaultPolicy
                             SetNever(InlineObservation.CALLEE_TOO_MANY_BASIC_BLOCKS);
                         }
                     }
+
                     break;
                 }
+
                 default:
+                {
                     base.NoteInt(observation, value);
                     break;
+                }
             }
         }
     }
@@ -448,29 +543,46 @@ public class ExtendedDefaultPolicy : DefaultPolicy
             switch (_callsiteFrequency)
             {
                 case InlineCallsiteFrequency.RARE:
+                {
                     // Rarity replaces the multiplier rather than adding to it.
                     multiplier = 1.3;
                     JITDUMP($"\nInline candidate callsite is rare.  Multiplier limited to {FormatGeneral(multiplier)}.");
                     break;
+                }
+
                 case InlineCallsiteFrequency.BORING:
+                {
                     multiplier += 1.3;
                     JITDUMP($"\nInline candidate callsite is boring.  Multiplier increased to {FormatGeneral(multiplier)}.");
                     break;
+                }
+
                 case InlineCallsiteFrequency.WARM:
+                {
                     multiplier += 2.0;
                     JITDUMP($"\nInline candidate callsite is warm.  Multiplier increased to {FormatGeneral(multiplier)}.");
                     break;
+                }
+
                 case InlineCallsiteFrequency.LOOP:
+                {
                     multiplier += 3.0;
                     JITDUMP($"\nInline candidate callsite is in a loop.  Multiplier increased to {FormatGeneral(multiplier)}.");
                     break;
+                }
+
                 case InlineCallsiteFrequency.HOT:
+                {
                     multiplier += 3.0;
                     JITDUMP($"\nInline candidate callsite is hot.  Multiplier increased to {FormatGeneral(multiplier)}.");
                     break;
+                }
+
                 default:
+                {
                     assert(false, "Unexpected callsite frequency");
                     break;
+                }
             }
 
             if (_unrollableMemop > 0)
@@ -527,6 +639,7 @@ public class ExtendedDefaultPolicy : DefaultPolicy
                     // Intrinsic types such as Span<T> and Vector<T> rely on inlining for code quality.
                     profileBoost = 1.0;
                 }
+
                 multiplier *= profileBoost;
                 JITDUMP($"\nCallsite has profile data: {FormatGeneral(_profileFrequency)}.  Multiplier limited to {FormatGeneral(multiplier)}.");
             }
@@ -555,6 +668,7 @@ public class ExtendedDefaultPolicy : DefaultPolicy
 
 #if DEBUG
             var additionalMultiplier = JitConfig.JitInlineAdditionalMultiplier;
+
             if (additionalMultiplier != 0)
             {
                 multiplier += additionalMultiplier;
