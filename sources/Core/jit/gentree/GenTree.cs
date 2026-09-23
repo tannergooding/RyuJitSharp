@@ -2172,9 +2172,9 @@ public partial class GenTree
             return true;
         }
 
-        if (comp.vnStore is not null)
+        if ((comp.vnStore is not null) && comp.vnStore.IsVNNeverNegative(_vnPair.Conservative))
         {
-            throw new NotImplementedException("Value-number non-negativity analysis is not yet ported.");
+            return true;
         }
 
         return false;

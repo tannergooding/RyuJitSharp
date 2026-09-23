@@ -72,9 +72,9 @@ report overflow, including narrowing to infinity (B066).
 `IntegralRange` is a readonly value type with ordered enum bounds and managed
 value equality. Its native signed-domain interpretation is unchanged, including
 unsigned cast inputs whose bit patterns appear negative before widening.
-Tree-based non-negativity inference is active; queries that still require
-`ValueNumStore.IsVNNeverNegative` fail explicitly until that prerequisite exists
-(B083/B086), rather than silently skipping the native VN query.
+Tree-based non-negativity inference and the conservative-VN fallback are active.
+The VN predicate follows native phi traversal and intrinsic rules (B086/B091);
+this does not activate the broader value-numbering phase.
 
 Assertion descriptors use immutable managed objects with value-type operands;
 reversal creates a new descriptor. Vector constants own a copied byte array
@@ -84,7 +84,7 @@ field-sequence exclusion. Dependency vectors and complementary indices use
 managed collections without changing index or traversal order (B087).
 Insertion and complementary creation now cover both local and global assertions,
 including underlying `VN + constant` dependencies. The non-negativity-dependent
-factories and generation remain unported (B090). ARM64 scalable-vector assertion constants
+factories are also implemented; generation remains unported (B090/B091). ARM64 scalable-vector assertion constants
 explicitly report NYI, matching the existing scalable-vector representation gap.
 
 VN chunks use typed managed arrays and preserve native reserved IDs, 64-value
@@ -96,6 +96,11 @@ access uses generic numeric conversion rather than reinterpretation; Debug check
 require compatible storage size and floating/integral categories. SIMD12 storage
 is exactly 12 bytes. ARM64 scalable/mask storage remains explicitly NYI; scalar
 storage support does not imply VN folding or phase activation (B090).
+
+Phi definitions own copied SSA-number arrays and expose readonly memory.
+Reaching-VN traversal uses a managed stack and membership set, preserving native
+push/pop order, conservative SSA lookup, duplicate suppression, cycles and early
+abort. Memory phis are not traversed, matching native behavior (B091).
 
 Profile weight lookup uses a managed `ref` output: native leaves the pointed-to
 value unchanged when no profile weights are available, so an unconditional

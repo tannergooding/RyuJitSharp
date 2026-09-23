@@ -20,6 +20,113 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class AssertionTests
 {
     [Test]
+    public static void PhiQueriesOwnArgumentsAndTraverseConservativeValuesInNativeOrder()
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = new LclVarDsc[2];
+            ref var definitions = ref compiler.lvaTable[0].lvPerSsaData;
+            var first = definitions.AllocSsaNum();
+            var second = definitions.AllocSsaNum();
+            var third = definitions.AllocSsaNum();
+            var fourth = definitions.AllocSsaNum();
+            var store = new ValueNumStore(compiler);
+            var seven = store.VNForIntCon(7);
+            var eleven = store.VNForIntCon(11);
+            var negative = store.VNForIntCon(-1);
+            int[] arguments = [first, second, first];
+            var phi = store.VNForPhiDef(TYP_INT, 0, fourth, arguments);
+            var nested = store.VNForPhiDef(TYP_INT, 0, second, [third, fourth]);
+            arguments[0] = fourth;
+            definitions.GetSsaDef(first)._vnPair = new(negative, seven);
+            definitions.GetSsaDef(second)._vnPair.SetBoth(nested);
+            definitions.GetSsaDef(third)._vnPair.SetBoth(eleven);
+            definitions.GetSsaDef(fourth)._vnPair.SetBoth(phi);
+            var visited = new System.Collections.Generic.List<int>();
+            Assert.That(store.VNVisitReachingVNs(phi, vn => {
+                visited.Add(vn);
+                return ValueNumStore.VNVisit.Continue;
+            }), Is.EqualTo(ValueNumStore.VNVisit.Continue));
+            int[] expected = [eleven, seven];
+            Assert.That(visited, Is.EqualTo(expected));
+            Assert.That(store.IsVNNeverNegative(phi), Is.True);
+            definitions.GetSsaDef(third)._vnPair.Conservative = negative;
+            Assert.That(store.IsVNNeverNegative(phi), Is.False);
+            VNPhiDef view = default;
+            Assert.That(store.GetPhiDef(phi, ref view), Is.True);
+            Assert.That(store.GetPhiDef(seven, ref view), Is.False);
+            Assert.That(view.SsaArgs.Span[0], Is.EqualTo(first));
+            definitions.Reset();
+            Assert.That(definitions.AllocSsaNum(), Is.EqualTo(first));
+            Assert.That(definitions.Count, Is.EqualTo(1));
+        });
+    }
+
+    [Test]
+    public static void NonnegativeVNsSupplySignedComparisonAndCheckedBoundFacts()
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var unknown = store.VNForExpr(null, TYP_INT);
+            var zero = store.VNForIntCon(0);
+            var length = store.VNForFuncNoFolding(TYP_INT, VNFunc.VNF_MDArrLength,
+                store.VNForExpr(null, TYP_REF), zero);
+            var comparison = store.VNForFuncNoFolding(TYP_INT, VNFunc.VNF_LT, unknown, zero);
+            Assert.That(store.IsVNNeverNegative(ValueNumStore.NoVN), Is.False);
+            Assert.That(store.IsVNNeverNegative(store.VNForLongCon(long.MinValue)), Is.False);
+            Assert.That(store.IsVNNeverNegative(store.VNForLongCon(long.MaxValue)), Is.True);
+            Assert.That(store.IsVNNeverNegative(store.VNForFloatCon(1)), Is.False);
+            Assert.That(store.IsVNNeverNegative(unknown), Is.False);
+            Assert.That(store.IsVNNeverNegative(length), Is.True);
+            Assert.That(store.IsVNNeverNegative(comparison), Is.True);
+            var bounds = AssertionDsc.CreateCompareCheckedBound(compiler, VNFunc.VNF_LT, unknown, length, -5);
+            Assert.That(bounds.Op2.IsVNNeverNegative, Is.True);
+            Assert.That(bounds.Op2.Cns, Is.EqualTo(-5));
+            Assert.That(AssertionDsc.CreateRelopVN(compiler, VNFunc.VNF_LT, unknown, comparison).Op2.IsVNNeverNegative, Is.True);
+            Assert.That(AssertionDsc.CreateRelopVN(compiler, VNFunc.VNF_LT, length, unknown).Op2.IsVNNeverNegative, Is.False);
+        }, local: false);
+    }
+
+    [TestCase(16, TYP_UBYTE, true)]
+    [TestCase(32, TYP_UBYTE, false)]
+    [TestCase(64, TYP_INT, true)]
+    [TestCase(64, TYP_SHORT, false)]
+    public static void IntrinsicNonnegativityRetainsNativeElementCountThreshold(int size, var_types baseType, bool expected)
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            var simdType = store.VNForFuncNoFolding(TYP_REF, VNFunc.VNF_SimdType,
+                store.VNForIntCon(size), store.VNForIntCon((int)baseType));
+            var vector = store.VNForExpr(null, TYP_SIMD16);
+            var mask = store.VNForFuncNoFolding(TYP_INT, VNFunc.VNF_HWI_Vector_ExtractMostSignificantBits, vector, simdType);
+            Assert.That(store.IsVNNeverNegative(mask), Is.EqualTo(expected));
+        });
+    }
+
+    [TestCase(31, VNFunc.VNF_HWI_AVX2_LeadingZeroCount, TYP_INT)]
+    [TestCase(63, VNFunc.VNF_HWI_AVX2_X64_LeadingZeroCount, TYP_LONG)]
+    public static void Log2ValueNumbersRecognizeNativePattern(int xorBy, VNFunc lzcnt, var_types type)
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            var variable = store.VNForExpr(null, type);
+            var one = type == TYP_INT ? store.VNForIntCon(1) : store.VNForLongCon(1);
+            var operand = store.VNForFuncNoFolding(type, VNFunc.VNF_OR, variable, one);
+            var simdType = store.VNForFuncNoFolding(TYP_REF, VNFunc.VNF_SimdType,
+                store.VNForIntCon(0), store.VNForIntCon((int)type));
+            var count = store.VNForFuncNoFolding(type, lzcnt, operand, simdType);
+            var constant = type == TYP_INT ? store.VNForIntCon(xorBy) : store.VNForLongCon(xorBy);
+            var log2 = store.VNForFuncNoFolding(type, VNFunc.VNF_XOR, count, constant);
+            var upperBound = -1;
+            Assert.That(store.IsVNLog2(log2, ref upperBound), Is.True);
+            Assert.That(upperBound, Is.EqualTo(xorBy));
+            Assert.That(store.IsVNNeverNegative(log2), Is.True);
+            Assert.That(store.IsVNLog2(variable, ref upperBound), Is.False);
+            Assert.That(upperBound, Is.EqualTo(xorBy));
+        });
+    }
+
+    [Test]
     public static void ValueNumberChunksRetainReservedIdsAndAllocationOrder()
     {
         WithCompiler(compiler => {

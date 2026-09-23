@@ -12,25 +12,25 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Implement the VN storage/query slice required to complete assertion insertion: native chunk numbering, scalar constants and handles, function views and non-folding binary interning, integral-constant recognition, and assertion duplicate/dependency registration. Include the missing block-to-loop map because VNForExpr must preserve loop provenance; reuse existing loop discovery rather than omit that path.",
+      "scope": "Complete VN non-negativity and the two remaining descriptor factories: reaching-VN phi traversal, scalar extraction, intrinsic decoding, array-length/log2 recognition and tree-query wiring. Include default SSA-array allocation because phi traversal consumes actual SSA definitions.",
       "doneWhen": [
-        "VN allocation and lookup preserve reserved identifiers, 64-value chunks, constant bit identity and function argument ownership.",
-        "optAddAssertion and complementary creation work for both local and global assertions, including VN-plus-constant dependency registration.",
+        "Non-negativity handles conservative SSA phi inputs, cycles and all native intrinsic cases without local-only or non-phi fallbacks.",
+        "CreateCompareCheckedBound, CreateRelopVN and GenTree.IsNeverNegative consume the complete VN predicate.",
         "The selected Debug/Release checks pass and complete functions are committed with their native retirement and checkpoint."
       ],
       "validation": [
-        "One focused VN storage/insertion selection in Debug and Release, including the existing assertion and integral-range checks affected by constructor changes.",
-        "Check chunk rollover/reserved IDs, floating bit identity and insertion dependency registration; no per-helper matrices or before/after replay.",
+        "One combined assertion/integral-range selection in Debug and Release.",
+        "Add focused reaching-VN cycle/order, intrinsic threshold and conservative-tree cases to existing fixtures; no per-helper matrices or before/after replay.",
         "No full suite or NativeAOT recapture unless a concrete failure or newly reachable compiler phase requires it."
       ],
       "deferred": [
-        "VN folding/evaluation, phi traversal, map selection, non-negativity reasoning and the value-numbering phase.",
+        "General VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
         "Assertion generation and fgMorphTreeDone completion.",
         "Remaining integer/comparison/conditional/HWI folding and fgInline activation.",
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "VN storage and complete local/global assertion insertion are implemented (B090). Continue through the remaining VN non-negativity query closure, including phi traversal and intrinsic decoding, then finish the dependent descriptor factories. Replace checkpoint.activeBatch with that explicit boundary before editing. General VN evaluation, assertion generation, fgMorphTreeDone and optional fgInline activation remain pending; do not substitute SetMorphed or local-only behavior. Preserve the five established import-prefix matches without recapturing an unchanged frontier.",
+    "nextAction": "VN storage, complete local/global insertion and VN non-negativity-dependent descriptor factories are implemented (B090/B091). Continue toward assertion generation and fgMorphTreeDone through the remaining bounded VN query/prerequisite closure; replace checkpoint.activeBatch before editing. General VN evaluation and optional fgInline activation remain pending; do not substitute SetMorphed or local-only generation. Preserve the five established import-prefix matches without recapturing an unchanged frontier.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -462,6 +462,19 @@
         "debugTests": "artifacts\\vn-storage-debug.trx",
         "releaseTests": "artifacts\\vn-storage-release.trx"
       },
+      "vnNonNegativity": {
+        "managedSourceCommit": "f5f14abc5f10a7c974ae6cb7ee56768a5ac771c6",
+        "debugPassed": 87,
+        "releasePassed": 85,
+        "skipped": 0,
+        "newCases": 8,
+        "nativeDefinitionsRetired": 15,
+        "nativeRepresentationTypesRetired": 2,
+        "nativeAotRecaptured": false,
+        "phaseActivated": false,
+        "debugTests": "artifacts\\vn-nonnegative-debug.trx",
+        "releaseTests": "artifacts\\vn-nonnegative-release.trx"
+      },
       "nativeAotPublish": "passed-after-integral-ranges",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "five-of-nine-import-prefixes-equal-remaining-inline-candidate-differences",
@@ -689,6 +702,15 @@
       "commit": "78f94c2785cdef468089e938eb7dda35a10937cc",
       "indexCommit": "5588f433b8c19bbee450f8e1c03a55a054f08553",
       "ref": "refs/porting/snapshots/native-ledger-vn-storage"
+    },
+    "vnNonnegativeManagedSource": {
+      "commit": "f5f14abc5f10a7c974ae6cb7ee56768a5ac771c6",
+      "ref": "refs/porting/snapshots/vn-nonnegative-source"
+    },
+    "vnNonnegativeNativeResidual": {
+      "commit": "1cb0e829e3549834e1b6706bf8a764af89e081bc",
+      "indexCommit": "792863df6cd01f68c656a2c7d1440f1c0a9a80e5",
+      "ref": "refs/porting/snapshots/native-ledger-vn-nonnegative"
     }
   },
   "sourceMap": [

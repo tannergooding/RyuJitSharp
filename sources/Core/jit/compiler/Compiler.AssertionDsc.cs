@@ -556,5 +556,24 @@ public partial class Compiler
             return new(FromVNFunc(relop), new(comp, optOp1Kind.O1K_VN, op1VN),
                 new(comp, optOp2Kind.O2K_CONST_INT, cnsVN, iconVal: constant));
         }
+
+        public static AssertionDsc CreateCompareCheckedBound(Compiler comp, VNFunc relop, ValueNum op1VN,
+            ValueNum checkedBndVN, int cns, bool isVNNeverNegative = false)
+        {
+            assert((op1VN != ValueNumStore.NoVN) && (checkedBndVN != ValueNumStore.NoVN));
+            assert(comp.vnStore is not null);
+            return new(FromVNFunc(relop), new(comp, optOp1Kind.O1K_VN, op1VN),
+                new(comp, optOp2Kind.O2K_VN_ADD_CNS, checkedBndVN, iconVal: cns,
+                    isVNNeverNegative: isVNNeverNegative || comp.vnStore.IsVNNeverNegative(checkedBndVN)));
+        }
+
+        public static AssertionDsc CreateRelopVN(Compiler comp, VNFunc relop, ValueNum op1VN, ValueNum op2VN)
+        {
+            assert(!comp.optLocalAssertionProp);
+            assert((op1VN != ValueNumStore.NoVN) && (op2VN != ValueNumStore.NoVN) && (op1VN != op2VN));
+            assert(comp.vnStore is not null);
+            return new(FromVNFunc(relop), new(comp, optOp1Kind.O1K_VN, op1VN),
+                new(comp, optOp2Kind.O2K_VN_ADD_CNS, op2VN, isVNNeverNegative: comp.vnStore.IsVNNeverNegative(op2VN)));
+        }
     }
 }

@@ -288,12 +288,16 @@ internal static unsafe class IntegralRangeTests
     }
 
     [Test]
-    public static void ValueNumberAnalysisFailsExplicitlyWhenRequired()
+    public static void ValueNumberAnalysisUsesConservativeFactsWhenRequired()
     {
         WithCompiler(compiler => {
             compiler.vnStore = new ValueNumStore(compiler);
             var unknown = compiler.gtNewUnaryNode(GT_NEG, TYP_INT, compiler.gtNewLclvNode(TYP_INT, 0));
-            _ = Assert.Throws<NotImplementedException>(() => unknown.IsNeverNegative(compiler));
+            Assert.That(unknown.IsNeverNegative(compiler), Is.False);
+            unknown._vnPair = new(compiler.vnStore.VNForIntCon(1), compiler.vnStore.VNForIntCon(-1));
+            Assert.That(unknown.IsNeverNegative(compiler), Is.False);
+            unknown._vnPair.Conservative = compiler.vnStore.VNForIntCon(0);
+            Assert.That(unknown.IsNeverNegative(compiler), Is.True);
             Assert.That(compiler.gtNewIconNode(TYP_INT, -1).IsNeverNegative(compiler), Is.False);
             Assert.That(compiler.gtNewIconNode(TYP_INT, 1).IsNeverNegative(compiler), Is.True);
         });

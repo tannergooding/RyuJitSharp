@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
@@ -13,7 +14,7 @@ public struct SsaDefArray<T>
     /// <summary>Get the minimum valid SSA number.</summary>
     private const int MinSsaNum = SsaConfig.FIRST_SSA_NUM;
 
-    private T[] _array;
+    private T[]? _array;
     private int _count;
 
     /// <summary>Get the number of SSA definitions in the array.</summary>
@@ -21,7 +22,7 @@ public struct SsaDefArray<T>
 
     public int AllocSsaNum()
     {
-        if (_count == _array.Length)
+        if ((_array is null) || (_count == _array.Length))
         {
             GrowArray();
         }
@@ -48,6 +49,7 @@ public struct SsaDefArray<T>
     public readonly ref T GetSsaDefByIndex(int index)
     {
         assert((index >= 0) && (index < _count));
+        assert(_array is not null);
         return ref _array[index];
     }
 
@@ -56,6 +58,7 @@ public struct SsaDefArray<T>
     /// <returns></returns>
     public readonly int GetSsaNum(in T ssaDef)
     {
+        assert(_array is not null);
         assert(Unsafe.IsAddressGreaterThanOrEqualTo(in ssaDef, in _array[0]) && Unsafe.IsAddressLessThanOrEqualTo(in ssaDef, ref _array[_count - 1]));
         var ssaNum = MinSsaNum + (int)(Unsafe.ByteOffset(in _array[0], in ssaDef) / Unsafe.SizeOf<T>());
 
@@ -74,11 +77,12 @@ public struct SsaDefArray<T>
         _count = 0;
     }
 
+    [MemberNotNull(nameof(_array))]
     private void GrowArray()
     {
         var oldArray = _array;
 
-        var oldSize = oldArray.Length;
+        var oldSize = oldArray?.Length ?? 0;
         var newSize = int.Max(2, oldSize * 2);
 
         var newArray = new T[newSize];
