@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Continue whole-node replacement for folding and its caller/owner/alias/LIR contracts (B064); do not emulate native cross-kind bashing or redesign the hierarchy. The .NET 11 RC1 migration and managed TryParsePartial/hexadecimal configuration parsing are complete. Profile incorporation and DFS phase preparation are implemented (B079/B080), and the .NET 11 seven-method native/managed recapture preserves three exactly matching import prefixes. Remaining first differences concern inline-candidate processing, not the old BBOPT diagnostic. B073's MakeFull defect does not affect discovery. Both native trees use the target revision; read the intact oracle.",
+    "nextAction": "Continue whole-node constant replacement for arithmetic folding and its caller/owner/alias/LIR contracts (B064); do not emulate native cross-kind bashing or redesign the hierarchy. Special-intrinsic call folding is implemented (B081), and its importer caller already consumes returned replacements. Constant replacement must preserve base metadata and logical tree IDs without consuming additional native-visible IDs; cached argument-table references and LIR ownership still need adaptation. The .NET 11 RC1 migration and managed partial/hexadecimal parsing are complete. The latest seven-method recapture preserves three exactly matching import prefixes; remaining first differences concern inline-candidate processing. Both native trees use the target revision; read the intact oracle.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -326,6 +326,15 @@
         "debugTests": "artifacts\\net11-full-debug.trx",
         "releaseTests": "artifacts\\net11-full-release.trx"
       },
+      "specialCallFoldingSpotChecks": {
+        "newCasesPerConfiguration": 18,
+        "originalStubFailures": 15,
+        "combinedDebugPassed": 90,
+        "combinedReleasePassed": 90,
+        "skipped": 0,
+        "nativeAotRecaptured": false,
+        "arithmeticFoldingActivated": false
+      },
       "nativeAotPublish": "passed-after-net11-managed-parsing",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "three-of-seven-import-prefixes-equal-remaining-inline-candidate-differences",
@@ -484,6 +493,11 @@
     "net11ManagedParsingSource": {
       "commit": "78fdb3088b6ff0cb7d01e9060cf8da233a3c3e04",
       "ref": "refs/porting/snapshots/net11-managed-parsing-source"
+    },
+    "specialCallFoldingNativeResidual": {
+      "commit": "e4ecb705b108396139265b53b9cf7a896c59e7ba",
+      "indexCommit": "319e5d991aa37928bb9f5411481a0dfd7d6a6cec",
+      "ref": "refs/porting/snapshots/native-ledger-call-folding"
     }
   },
   "sourceMap": [

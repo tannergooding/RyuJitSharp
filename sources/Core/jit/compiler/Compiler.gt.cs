@@ -3659,10 +3659,98 @@ public partial class Compiler
         return tree;
     }
 
-    public GenTree gtFoldExprCall(GenTreeCall tree)
+    /// <summary>Fold special intrinsic calls before argument morphing.</summary>
+    /// <returns>The original call, or a replacement tree if folding succeeds.</returns>
+    public unsafe GenTree gtFoldExprCall(GenTreeCall call)
     {
-        // TODO: Port gtFoldExprCall
-        return tree;
+        // Discarding the call also discards argument setup, which may have arbitrary side effects.
+        assert(!call.Args.AreArgsComplete);
+
+        if (!call.IsSpecialIntrinsic() || opts.OptimizationDisabled)
+        {
+            return call;
+        }
+
+        var ni = lookupNamedIntrinsic(call._callMethHnd);
+
+        switch (ni)
+        {
+            case NI_System_Enum_HasFlag:
+            {
+                var thisArg = call.Args.GetUserArgByIndex(0);
+                var flagArg = call.Args.GetUserArgByIndex(1);
+                assert((thisArg is not null) && (flagArg is not null));
+                var result = gtOptimizeEnumHasFlag(thisArg.Node, flagArg.Node);
+
+                if (result is not null)
+                {
+                    return result;
+                }
+                break;
+            }
+
+            case NI_System_Enum_Equals:
+            {
+                assert(call.Args.CountUserArgs() == 2);
+                var arg0 = call.Args.GetUserArgByIndex(0);
+                var arg1 = call.Args.GetUserArgByIndex(1);
+                assert((arg0 is not null) && (arg1 is not null));
+
+                var cls0 = gtGetClassHandle(arg0.Node, out var isArg0Exact, out _);
+                var cls1 = gtGetClassHandle(arg1.Node, out var isArg1Exact, out _);
+
+                if ((cls0 != cls1) || (cls0 == NO_CLASS_HANDLE) || !isArg0Exact || !isArg1Exact)
+                {
+                    break;
+                }
+
+                assert(info.compCompHnd->isEnum(cls1, null) == TypeCompareState.Must);
+
+                var corTyp = info.compCompHnd->getTypeForPrimitiveValueClass(cls1);
+                if (corTyp == CORINFO_TYPE_UNDEF)
+                {
+                    break;
+                }
+
+                var typ = corTyp.VarType;
+                if (!varTypeIsIntegral(typ))
+                {
+                    // Non-integral enums can exist in IL.
+                    break;
+                }
+
+                var offset = gtNewIconNode(TYP_I_IMPL, TARGET_POINTER_SIZE);
+                var addr0 = gtNewBinaryNode(GT_ADD, TYP_BYREF, arg0.Node, offset);
+                var addr1 = gtNewBinaryNode(GT_ADD, TYP_BYREF, arg1.Node, gtCloneExpr(offset));
+                var cmpNode = gtNewBinaryNode(GT_EQ, TYP_INT, gtNewIndir(typ, addr0), gtNewIndir(typ, addr1));
+                JITDUMP("Optimized Enum.Equals call to comparison of underlying values:\n");
+                DISPTREE(cmpNode);
+                JITDUMP("\n");
+
+                return gtFoldExpr(cmpNode);
+            }
+
+            case NI_System_Type_op_Equality:
+            case NI_System_Type_op_Inequality:
+            {
+                noway_assert(call.Type is TYP_INT);
+                var arg0 = call.Args.GetUserArgByIndex(0);
+                var arg1 = call.Args.GetUserArgByIndex(1);
+                assert((arg0 is not null) && (arg1 is not null));
+                var result = gtFoldTypeEqualityCall(ni == NI_System_Type_op_Equality, arg0.Node, arg1.Node);
+
+                if (result is not null)
+                {
+                    return result;
+                }
+                break;
+            }
+
+            default:
+                break;
+        }
+
+        return call;
     }
 
     /// <summary>see if a type comparison can be further simplified</summary>
