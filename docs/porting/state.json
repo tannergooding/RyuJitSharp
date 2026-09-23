@@ -19,8 +19,8 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "10.0.401",
-      "debugBuild": "passed-at-upstream-reconciliation-milestone",
-      "releaseBuild": "passed-at-upstream-reconciliation-milestone",
+      "debugBuild": "passed-at-saved-wip-support-milestone",
+      "releaseBuild": "passed-at-saved-wip-support-milestone",
       "testSourcesPresent": true,
       "writerRegressionCases": 16,
       "writerRegressionConfigurations": ["Debug", "Release"],
@@ -86,7 +86,15 @@
         "savedBehaviorFailures": 7,
         "nativeAotRecaptured": false
       },
-      "nativeAotPublish": "passed-at-upstream-reconciliation-milestone",
+      "savedWipSupportMilestone": {
+        "managedSourceCommit": "24b9352dc6f293228d58cb24871280827f936ab7",
+        "nativeCompilationHeaders": 7,
+        "managedCompilationHeaders": 7,
+        "nativeAotRecaptured": true,
+        "firstDifference": "missing-BBOPT-profile-diagnostic",
+        "fullPhaseParityEstablished": false
+      },
+      "nativeAotPublish": "passed-at-saved-wip-support-milestone",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "seven-method-corpus-captured-with-known-differences",
       "codegenParity": "not-available"
@@ -118,7 +126,7 @@
     "oldNativeHostPreservedAndExecuted": true,
     "managedCapture": "seven-selected-methods-loaded-with-target-abi",
     "managedGuid": "cb2fa75d-449d-4ee0-93ef-57011daefb8c",
-    "latestManagedBinarySha256": "1F5E704F7FA9A5A7C95AB876656F3D62BACCBF626F5908CC0CB9AAF46D4AAD49",
+    "latestManagedBinarySha256": "839D033B86E93D6584D1A7D98D7738E3553EE59A1A1EFE467FE21B1625718171",
     "wrongGuidCaptureRejected": true,
     "nativeLayoutMeasurements": "matched-raw-managed-sizeof-and-debug-variable-offsets",
     "latestPrefixDifference": "missing-BBOPT-profile-diagnostic",
@@ -156,6 +164,11 @@
       "commit": "2e4a033be1187b539d80d6e53882c1bc045aa3cf",
       "indexCommit": "47d2bfd2ee3f7ed11585565ae85614f9dc6bb63f",
       "ref": "refs/porting/snapshots/2026-09-23-native-ledger-target"
+    },
+    "savedWipSupportNativeResidual": {
+      "commit": "a261eaa800bc5eed44c5ae650de1a0fc028e99bd",
+      "indexCommit": "421e3e5ac0968df79125b022aed90df09b46d8b9",
+      "ref": "refs/porting/snapshots/2026-09-23-native-ledger-wip-support"
     }
   },
   "sourceMap": [
