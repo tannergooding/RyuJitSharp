@@ -24,6 +24,33 @@ public partial class Compiler
 
     public bool ehTableFinalized;
 
+    /// <summary>Check whether an EH clause restores an async frame's contexts.</summary>
+    public bool ehIsAsyncContextRestore(ushort ehID)
+    {
+        var root = impInlineRoot;
+        return (root._asyncContextRestoreEHIDs is not null) && root._asyncContextRestoreEHIDs.Contains(ehID);
+    }
+
+    /// <summary>Check try nesting, excluding context-restore clauses introduced by SaveAsyncContexts.</summary>
+    /// <remarks>Handler nesting is not considered: suspension points are hoisted out of handlers.</remarks>
+    public bool ehIsInsideNonAsyncContextRestoreRegion(BasicBlock block)
+    {
+        if (!block.hasTryIndex)
+        {
+            return false;
+        }
+
+        for (var index = block.TryIndex; index != EHblkDsc.NO_ENCLOSING_INDEX; index = ehGetDsc(index).ebdEnclosingTryIndex)
+        {
+            if (!ehIsAsyncContextRestore(ehGetDsc(index).ebdID))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>Give two blocks, return the inner-most enclosing try region that contains both of them.</summary>
     /// <param name="bbOne"></param>
     /// <param name="bbTwo"></param>

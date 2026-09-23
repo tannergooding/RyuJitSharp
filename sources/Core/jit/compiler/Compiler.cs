@@ -71,6 +71,8 @@ public partial class Compiler
 
     public ushort asyncContextRestoreEHID = ushort.MaxValue;
 
+    private HashSet<ushort>? _asyncContextRestoreEHIDs;
+
     public int lvaResumedIndicator = BAD_VAR_NUM;
 
     public bool compAsyncBodyMaySuspend;

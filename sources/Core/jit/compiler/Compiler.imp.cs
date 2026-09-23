@@ -7719,24 +7719,39 @@ public partial class Compiler
                     var codeAddrAfterMatch = (byte*)(null);
                     var awaitOffset = BAD_IL_OFFSET;
 
-#if DEBUG
-                    if (compIsAsync && (JitConfig.JitOptimizeAwait is not 0))
-#else
-                    if (compIsAsync)
-#endif
+                    if (compIsAsyncVersion)
                     {
-                        codeAddrAfterMatch = impMatchTaskAwaitPattern(codeAddr, codeEndp, out var configVal, out awaitOffset);
-
-                        if (codeAddrAfterMatch is not null)
+                        if (((info.compFlags & CORINFO_FLG_SYNCH) == 0) &&
+                            impMatchAsyncVersionTailCall(codeAddr + sz, codeEndp, ref prefixFlags, out var numBytesMatched))
                         {
-                            JITDUMP($"\nRecognized await{(configVal is 0 ? " (with ConfigureAwait(false))" : "")}\n");
-
+                            JITDUMP("\nRecognized tail-call in async version\n");
                             isAwait = true;
-                            prefixFlags |= PREFIX_IS_TASK_AWAIT;
+                            awaitOffset = (IL_OFFSET)(codeAddr - 1 - info.compCode);
+                            prefixFlags |= PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT;
+                            // The loop still consumes the call token after this case.
+                            codeAddrAfterMatch = codeAddr + numBytesMatched;
+                        }
+                    }
+                    else
+                    {
+#if DEBUG
+                        if (compIsAsync && (JitConfig.JitOptimizeAwait is not 0))
+#else
+                        if (compIsAsync)
+#endif
+                        {
+                            codeAddrAfterMatch = impMatchTaskAwaitPattern(codeAddr, codeEndp, out var configVal, out awaitOffset);
 
-                            if (configVal is not 0)
+                            if (codeAddrAfterMatch is not null)
                             {
-                                prefixFlags |= PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT;
+                                JITDUMP($"\nRecognized await{(configVal is 0 ? " (with ConfigureAwait(false))" : "")}\n");
+                                isAwait = true;
+                                prefixFlags |= PREFIX_IS_TASK_AWAIT;
+
+                                if (configVal is not 0)
+                                {
+                                    prefixFlags |= PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT;
+                                }
                             }
                         }
                     }
@@ -7754,7 +7769,8 @@ public partial class Compiler
                             // It can also happen generally if the VM does not think using the async entry point
                             // is worth it. Treat these as a regular call that is Awaited.
                             impResolveToken(codeAddr, out resolvedToken, CORINFO_TOKENKIND_Method);
-                            prefixFlags &= ~(PREFIX_IS_TASK_AWAIT | PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT);
+                            prefixFlags &= ~(PREFIX_IS_TASK_AWAIT | PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT |
+                                PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT);
                             isAwait = false;
 
                             JITDUMP("\nNo async variant provided by VM, treating as regular call that is awaited\n");
@@ -12972,8 +12988,9 @@ public partial class Compiler
 
     /// <summary>Insert async arguments for a call the EE asked to be performed via ldvirtftn.</summary>
     /// <param name="call">The call</param>
+    /// <param name="usesOwnContexts">Whether the inlinee supplies its own frame's contexts.</param>
     /// <remarks>Should be called before the 'this' arg is inserted, but after other IL args have been inserted.</remarks>
-    public void impInsertAsyncArgsForLdvirtftnCall(GenTreeCall call)
+    public void impInsertAsyncArgsForLdvirtftnCall(GenTreeCall call, bool usesOwnContexts)
     {
         assert(call.IsAsync);
 
@@ -12988,7 +13005,10 @@ public partial class Compiler
             _ = call.Args.PushBack(arg);
         }
 
-        impInheritAsyncContextsFromInliner(call);
+        if (!usesOwnContexts)
+        {
+            impInheritAsyncContextsFromInliner(call);
+        }
     }
 
     public unsafe void impInsertHelperCall(in CORINFO_HELPER_DESC helperInfo)
@@ -13214,7 +13234,8 @@ public partial class Compiler
         }
 #endif
 
-        if (!impIsTailCallILPattern(false, opcode, codeAddrOfNextOpcode, codeEnd, isRecursive))
+        if (!impIsTailCallILPattern(false, opcode, codeAddrOfNextOpcode, codeEnd, isRecursive) &&
+            ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) == 0))
         {
             // must be call+ret or call+pop+ret
             return false;
@@ -14011,6 +14032,101 @@ public partial class Compiler
         lclNum = matchedLclNum;
         codeAddr = code;
         return true;
+    }
+
+    /// <summary>Match an async-version return immediately following a call.</summary>
+    /// <param name="codeAddr">IL after the call's token</param>
+    /// <param name="codeEndp">End of IL code stream</param>
+    /// <param name="prefixFlags">Updated to record ValueTask-to-Task adaptation</param>
+    /// <param name="numBytesMatched">Number of matched bytes, or zero on failure</param>
+    public unsafe bool impMatchAsyncVersionTailCall(byte* codeAddr, byte* codeEndp, ref int prefixFlags, out int numBytesMatched)
+    {
+        numBytesMatched = 0;
+        var nextOpcode = codeAddr;
+
+        if ((nextOpcode < codeEndp) && (*nextOpcode == (byte)CEE_RET))
+        {
+            numBytesMatched = 1;
+            return true;
+        }
+
+        if ((nextOpcode < codeEndp) && (*nextOpcode == (byte)CEE_NEWOBJ))
+        {
+            nextOpcode++;
+            if ((nextOpcode + sizeof(int) >= codeEndp) || (nextOpcode[sizeof(int)] != (byte)CEE_RET))
+            {
+                return false;
+            }
+
+            impResolveToken(nextOpcode, out var ctorToken, CORINFO_TOKENKIND_NewObj);
+            if (!eeIsIntrinsic(ctorToken.hMethod))
+            {
+                return false;
+            }
+
+            var ni = lookupNamedIntrinsic(ctorToken.hMethod);
+            if (ni is not NI_System_Threading_Tasks_ValueTask__ctor and not NI_System_Threading_Tasks_ValueTask_1__ctor)
+            {
+                return false;
+            }
+
+            CORINFO_SIG_INFO sig;
+            info.compCompHnd->getMethodSig(ctorToken.hMethod, &sig);
+            if (sig.numArgs != 1)
+            {
+                return false;
+            }
+
+            if (info.compRetType != TYP_VOID)
+            {
+                assert((sig.sigInst.classInstCount == 1) && (sig.sigInst.methInstCount == 0));
+                var paramClass = info.compCompHnd->getArgClass(&sig, sig.args);
+                if (paramClass == sig.sigInst.classInst[0])
+                {
+                    // ValueTask<T>(T) is folded by impFoldAwaitedTopOfStack, not a tail await.
+                    return false;
+                }
+            }
+
+            nextOpcode += sizeof(int) + 1;
+            JITDUMP("Matched \"return new ValueTask(TaskReturn())\"\n");
+            numBytesMatched = (int)(nextOpcode - codeAddr);
+            return true;
+        }
+
+        if (impMatchStlocLdloca(ref nextOpcode, codeEndp, out _))
+        {
+            if ((nextOpcode >= codeEndp) || (*nextOpcode != (byte)CEE_CALL))
+            {
+                return false;
+            }
+
+            nextOpcode++;
+            if ((nextOpcode + sizeof(int) >= codeEndp) || (nextOpcode[sizeof(int)] != (byte)CEE_RET))
+            {
+                return false;
+            }
+
+            impResolveToken(nextOpcode, out var callToken, CORINFO_TOKENKIND_Method);
+            if (!eeIsIntrinsic(callToken.hMethod))
+            {
+                return false;
+            }
+
+            var ni = lookupNamedIntrinsic(callToken.hMethod);
+            if (ni is not NI_System_Threading_Tasks_ValueTask_AsTask and not NI_System_Threading_Tasks_ValueTask_1_AsTask)
+            {
+                return false;
+            }
+
+            nextOpcode += sizeof(int) + 1;
+            JITDUMP("Matched \"return ValueTaskReturn().AsTask()\"\n");
+            prefixFlags |= PREFIX_IS_ADAPTED_FROM_VALUETASK;
+            numBytesMatched = (int)(nextOpcode - codeAddr);
+            return true;
+        }
+
+        return false;
     }
 
     /// <summary>Check if a method call starts an a task await pattern that can be optimized for runtime async</summary>
@@ -16827,38 +16943,100 @@ public partial class Compiler
 
     /// <summary>Register a call as being async and set up context handling information depending on the IL.</summary>
     /// <param name="call">The call</param>
+    /// <param name="methHnd">The method being called</param>
     /// <param name="opcode">The IL opcode for the call</param>
     /// <param name="prefixFlags">Flags containing context handling information from IL</param>
+    /// <param name="ni">The resolved named intrinsic</param>
     /// <param name="callDI">Debug info for the async call</param>
-    public unsafe void impSetupAsyncCall(GenTreeCall call, OPCODE opcode, int prefixFlags, in DebugInfo callDI)
+    /// <param name="usesOwnContexts">Whether the inlinee supplies contexts instead of inheriting its caller's.</param>
+    public unsafe void impSetupAsyncCall(GenTreeCall call, CORINFO_METHOD_HANDLE methHnd, OPCODE opcode,
+        int prefixFlags, NamedIntrinsic ni, in DebugInfo callDI, out bool usesOwnContexts)
     {
         AsyncCallInfo asyncInfo = default;
+        usesOwnContexts = false;
+
+        switch (ni)
+        {
+            case NI_System_Runtime_CompilerServices_AsyncHelpers_AwaitAwaiter:
+            case NI_System_Runtime_CompilerServices_AsyncHelpers_UnsafeAwaitAwaiter:
+            case NI_System_Runtime_CompilerServices_AsyncHelpers_Suspend:
+            case NI_System_Runtime_CompilerServices_AsyncHelpers_TransparentSuspend:
+                asyncInfo.AlwaysSuspends = true;
+                break;
+        }
 
         if (compIsForInlining)
         {
-            if (!_nextAwaitIsTail)
+            assert(impInlineInfo is not null);
+            var inheritsCallerContexts = _nextAwaitIsTail || compIsAsyncVersion;
+
+            if ((prefixFlags & PREFIX_IS_ADAPTED_FROM_VALUETASK) != 0)
             {
                 compInlineResult.NoteFatal(InlineObservation.CALLEE_AWAIT);
                 return;
             }
 
-            var inlCall = impInlineInfo.iciCall;
-            assert(inlCall is not null);
+            if (!inheritsCallerContexts)
+            {
+                if (!generalAsyncInliningEnabled())
+                {
+                    compInlineResult.NoteFatal(InlineObservation.CALLEE_AWAIT);
+                    return;
+                }
 
+                if (!impInlineRoot.compIsAsync)
+                {
+                    JITDUMP("Cannot inline an await into a non-async root method\n");
+                    compInlineResult.NoteFatal(InlineObservation.CALLSITE_AWAIT_IN_NON_ASYNC_ROOT);
+                    return;
+                }
+
+                // User EH can skip the inlined frame's post-return context handling.
+                // Context-restore try/faults introduced by the JIT are not user EH.
+                var callSiteBlock = impInlineInfo.iciBlock;
+                assert(callSiteBlock is not null);
+                if (impInlineInfo.InlinerCompiler.ehIsInsideNonAsyncContextRestoreRegion(callSiteBlock))
+                {
+                    compInlineResult.NoteFatal(InlineObservation.CALLSITE_AWAIT_IN_TRY_REGION);
+                    return;
+                }
+
+                if ((compCurBB is not null) && (compCurBB.hasTryIndex || compCurBB.hasHndIndex))
+                {
+                    compInlineResult.NoteFatal(InlineObservation.CALLEE_AWAIT_IN_TRY);
+                    return;
+                }
 #if DEBUG
-            JITDUMP($"Call [{inlCall.TreeId:D6}] is to call with a tail async call [{call.TreeId:D6}]\n");
+                JITDUMP($"Call [{call.TreeId:D6}] is an await in an inlinee that may suspend\n");
 #endif
+                usesOwnContexts = true;
+            }
+            else
+            {
+                assert(!compIsAsyncVersion || ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0));
+                var inlCall = impInlineInfo.iciCall;
+                assert(inlCall is not null);
+#if DEBUG
+                JITDUMP($"Call [{inlCall.TreeId:D6}] is to function with a tail async call [{call.TreeId:D6}]\n");
+#endif
+                assert(inlCall.IsAsync);
+                asyncInfo.ContinuationContextHandling = inlCall.GetAsyncInfo().ContinuationContextHandling;
+                assert((prefixFlags & PREFIX_IS_TASK_AWAIT) == 0);
+                asyncInfo.IsTailAwait = inlCall.GetAsyncInfo().IsTailAwait &&
+                    (_nextAwaitIsTail || (call._returnType == info.compRetType));
+                _nextAwaitIsTail = false;
+            }
+        }
+        else
+        {
+            asyncInfo.IsValueTaskAsTask = (prefixFlags & PREFIX_IS_ADAPTED_FROM_VALUETASK) != 0;
 
-            assert(inlCall.IsAsync);
-            var inlAsyncInfo = inlCall.GetAsyncInfo();
-
-            asyncInfo.ContinuationContextHandling = inlAsyncInfo.ContinuationContextHandling;
-
-            // Validate that below code won't override the handling
-            assert((prefixFlags & PREFIX_IS_TASK_AWAIT) is 0);
-            _nextAwaitIsTail = false;
-
-            asyncInfo.IsTailAwait = inlAsyncInfo.IsTailAwait;
+            if (opts.Tier0OptimizationEnabled && ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0) &&
+                (call._returnType == info.compRetType) && !asyncInfo.IsValueTaskAsTask)
+            {
+                var exactCalleeHnd = ((call._callType != CT_USER_FUNC) || call.IsVirtual) ? null : methHnd;
+                asyncInfo.IsTailAwait = info.compCompHnd->canTailCall(info.compMethodHnd, methHnd, exactCalleeHnd, false);
+            }
         }
 
         var newSourceTypes = ICorDebugInfo.ASYNC;

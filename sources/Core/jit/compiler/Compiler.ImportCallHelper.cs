@@ -211,6 +211,26 @@ public partial class Compiler
                 return false;
             }
 
+            if ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0)
+            {
+                if ((compiler.info.compRetType == TYP_VOID) && (compiler.stackState.esStackDepth > 0))
+                {
+                    JITDUMP("\nHave extra IL stack entry after tail await\n");
+                    var value = compiler.impPopStack().val;
+                    if ((value.Flags & GTF_SIDE_EFFECT) != 0)
+                    {
+                        if (varTypeIsStruct(value.Type))
+                        {
+                            value = compiler.impNormStructVal(value, CHECK_SPILL_ALL);
+                        }
+                        _ = compiler.impAppendTree(compiler.gtUnusedValNode(value), CHECK_SPILL_ALL, compiler.impCurStmtDI);
+                    }
+                }
+
+                prefixFlags &= ~PREFIX_TAILCALL;
+                return compiler.impReturnInstruction(prefixFlags, ref opcode);
+            }
+
             if (explicitTailCall || newBBcreatedForTailcallStress)
             {
                 // If newBBcreatedForTailcallStress is true, we have created a new BB after the "call" instruction in fgMakeBasicBlocks(). So we need to jump to RET regardless.
@@ -254,7 +274,6 @@ public partial class Compiler
             // to see any imperative security.
             // Reverse P/Invokes need a call to CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT
             // at the end, so tailcalls should be disabled.
-            // Async methods need to restore contexts, so tailcalls should be disabled.
             if ((compiler.info.compFlags & CORINFO_FLG_SYNCH) is not 0)
             {
                 canTailCall = false;
@@ -264,11 +283,6 @@ public partial class Compiler
             {
                 canTailCall = false;
                 canTailCallFailReasonUtf8 = "Caller is Reverse P/Invoke"u8;
-            }
-            else if (compiler.compIsAsync)
-            {
-                canTailCall = false;
-                canTailCallFailReasonUtf8 = "Caller is async method"u8;
             }
 #if !FEATURE_FIXED_OUT_ARGS
             else if (compiler.info.compIsVarArgs)
@@ -281,6 +295,8 @@ public partial class Compiler
             var varArgsCookie = null as GenTree;
             var instParam = null as GenTree;
             var asyncContinuation = null as GenTree;
+            var asyncCallUsesOwnContexts = false;
+            var ni = NI_Illegal;
 
             // Swift calls that might throw use a SwiftError* arg that requires additional IR to handle,
             // so if we're importing a Swift call, look for this type in the signature
@@ -330,8 +346,6 @@ public partial class Compiler
             }
             else
             {
-                var ni = NI_Illegal;
-
                 // Passing CORINFO_CALLINFO_ALLOWINSTPARAM indicates that this JIT is prepared to
                 // supply the instantiation parameters necessary to make direct calls to underlying
                 // shared generic code, rather than calling through instantiating stubs.  If the
@@ -605,7 +619,7 @@ public partial class Compiler
 
                         if (sigInfo.isAsyncCall())
                         {
-                            compiler.impSetupAsyncCall(indCall, opcode, prefixFlags, debugInfo);
+                            compiler.impSetupAsyncCall(indCall, methHnd, opcode, prefixFlags, ni, debugInfo, out asyncCallUsesOwnContexts);
 
                             if (compiler.compDonotInline)
                             {
@@ -622,7 +636,7 @@ public partial class Compiler
 
                         if (indCall.IsAsync)
                         {
-                            compiler.impInsertAsyncArgsForLdvirtftnCall(indCall);
+                            compiler.impInsertAsyncArgsForLdvirtftnCall(indCall, asyncCallUsesOwnContexts);
                         }
 
                         var thisPtr = compiler.impPopStack().val;
@@ -906,7 +920,7 @@ public partial class Compiler
             }
             if (sigInfo.isAsyncCall())
             {
-                compiler.impSetupAsyncCall(call, opcode, prefixFlags, debugInfo);
+                compiler.impSetupAsyncCall(call, methHnd, opcode, prefixFlags, ni, debugInfo, out asyncCallUsesOwnContexts);
 
                 if (compiler.compDonotInline)
                 {
@@ -1061,7 +1075,7 @@ public partial class Compiler
                 }
             }
 
-            if (asyncContinuation is not null)
+            if ((asyncContinuation is not null) && !asyncCallUsesOwnContexts)
             {
                 compiler.impInheritAsyncContextsFromInliner(call);
             }
@@ -3562,6 +3576,13 @@ public partial class Compiler
                 if (isExplicitTailCall && (compiler.stackState.esStackDepth is not 0))
                 {
                     BADCODE("Stack should be empty after tailcall");
+                }
+
+                // A tail await forwards the continuation without restoring this frame's contexts.
+                if (canTailCall && compiler.compIsAsync && (!call.IsAsync || !call.GetAsyncInfo().IsTailAwait))
+                {
+                    canTailCall = false;
+                    canTailCallFailReasonUtf8 = "Caller is async method and call is not a tail await"u8;
                 }
 
                 // For opportunistic tailcalls we allow implicit widening, i.e. tailcalls from int32 -> int16, since the
