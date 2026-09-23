@@ -18,6 +18,436 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    /// <summary>Invoke the compiler for an inlinee method and integrate the result into the current compilation.</summary>
+    /// <param name="call">the call node for the inlinee</param>
+    /// <param name="inlineResult">inline result tracking object</param>
+    /// <param name="createdContext">the inline context created for the inlinee</param>
+    public unsafe void fgInvokeInlineeCompiler(GenTreeCall call, InlineResult inlineResult, out InlineContext? createdContext)
+    {
+        noway_assert(call.IsInlineCandidate);
+        noway_assert(opts.OptEnabled(CLFLG_INLINING));
+
+        // This is the InlineInfo struct representing a method to be inlined.
+        var fncHandle = call._callMethHnd;
+
+        var inlineInfo = new InlineInfo {
+            fncHandle = fncHandle,
+            iciCall = call,
+            iciStmt = fgMorphStmt,
+            iciBlock = compCurBB,
+            inlineResult = inlineResult,
+        };
+
+        var inlineCandidateInfo = call.SingleInlineCandidateInfo;
+        noway_assert(inlineCandidateInfo is not null);
+
+        // Store the link to inlineCandidateInfo into inlineInfo
+        inlineInfo.inlineCandidateInfo = inlineCandidateInfo;
+
+        var inlineDepth = fgCheckInlineDepthAndRecursion(inlineInfo);
+
+        if (inlineResult.IsFailure)
+        {
+    #if DEBUG
+            if (verbose)
+            {
+                jitprintf("Recursive or deep inline recursion detected. Will not expand this INLINECANDIDATE \n");
+            }
+#endif
+            createdContext = null;
+            return;
+        }
+
+        var success = eeRunFunctorWithErrorTrap(() => {
+            // Init the local var info of the inlinee
+            impInlineInitVars(inlineInfo);
+
+            if (inlineInfo.inlineResult.IsCandidate)
+            {
+                // Clear the temp table
+                ((Span<int>)(inlineInfo.lclTmpNum)).Fill(-1);
+
+                // Prepare the call to jitNativeCode
+                inlineInfo.InlinerCompiler = this;
+
+                if (impInlineInfo is null)
+                {
+                    inlineInfo.InlineRoot = this;
+                }
+                else
+                {
+                    inlineInfo.InlineRoot = impInlineInfo.InlineRoot;
+                }
+
+                // The inline context is part of debug info and must be created
+                // before we start creating statements; we lazily create it as
+                // late as possible, which is here.
+
+                var inlineStrategy = inlineInfo.InlineRoot._inlineStrategy;
+                assert(inlineStrategy is not null);
+
+                var parentContext = inlineInfo.inlineCandidateInfo.inlinersContext;
+                assert(parentContext is not null);
+
+                var stmt = inlineInfo.iciStmt;
+                assert(stmt is not null);
+
+                inlineInfo.inlineContext = inlineStrategy.NewContext(parentContext, stmt, inlineInfo.iciCall);
+                inlineInfo.tokenLookupContextHandle = inlineInfo.inlineCandidateInfo.exactContextHandle;
+
+                JITLOG(LL_INFO100000, $"INLINER: inlineInfo.tokenLookupContextHandle for {eeGetMethodFullName(fncHandle)} set to 0x{FMT_DSP_PTR(inlineInfo.tokenLookupContextHandle)}:\n");
+
+                var compileFlagsForInlinee = *opts.jitFlags;
+
+                // The following flags are lost when inlining.
+                // (This is checked in Compiler::compInitOptions().)
+                compileFlagsForInlinee.Clear(JitFlags.JIT_FLAG_PROF_ENTERLEAVE);
+                compileFlagsForInlinee.Clear(JitFlags.JIT_FLAG_DEBUG_EnC);
+                compileFlagsForInlinee.Clear(JitFlags.JIT_FLAG_REVERSE_PINVOKE);
+                compileFlagsForInlinee.Clear(JitFlags.JIT_FLAG_TRACK_TRANSITIONS);
+
+                if (!call.IsAsync)
+                {
+                    compileFlagsForInlinee.Clear(JitFlags.JIT_FLAG_ASYNC);
+                }
+
+    #if DEBUG
+                if (verbose)
+                {
+                    jitprintf($"\nInvoking compiler for the inlinee method {eeGetMethodFullName(fncHandle)} :\n");
+                }
+#endif
+
+                CorJitResult result;
+
+                fixed (CORINFO_METHOD_INFO* pMethodInfo = &inlineCandidateInfo.methInfo)
+                {
+                    result = jitNativeCode(fncHandle, inlineCandidateInfo.methInfo.scope, info.compCompHnd, pMethodInfo, out _, out _, &compileFlagsForInlinee, inlineInfo);
+                }
+
+                if (result != CORJIT_OK)
+                {
+                    // If we haven't yet determined why this inline fails, use
+                    // a catch-all something bad happened observation.
+                    var innerInlineResult = inlineInfo.inlineResult;
+
+                    if (!innerInlineResult.IsFailure)
+                    {
+                        innerInlineResult.NoteFatal(InlineObservation.CALLSITE_COMPILATION_FAILURE);
+                    }
+                }
+            }
+        });
+
+        if (!success)
+        {
+    #if DEBUG
+            if (verbose)
+            {
+                jitprintf($"\nInlining failed due to an exception during invoking the compiler for the inlinee method {eeGetMethodFullName(fncHandle)}.\n");
+            }
+    #endif
+
+            // If we haven't yet determined why this inline fails, use
+            // a catch-all something bad happened observation.
+            if (!inlineResult.IsFailure)
+            {
+                inlineResult.NoteFatal(InlineObservation.CALLSITE_COMPILATION_ERROR);
+            }
+        }
+
+        createdContext = inlineInfo.inlineContext;
+
+        if (inlineResult.IsFailure)
+        {
+            return;
+        }
+
+    #if DEBUG
+        if (false && verbose)
+        {
+            jitprintf($"\nDone invoking compiler for the inlinee method {eeGetMethodFullName(fncHandle)}\n");
+        }
+    #endif
+
+        // If there is non-NULL return, but we haven't set the substExpr,
+        // That means we haven't imported any BB that contains CEE_RET opcode.
+        // (This could happen for example for a BBJ_THROW block fall through a BBJ_RETURN block which
+        // causes the BBJ_RETURN block not to be imported at all.)
+        // Fail the inlining attempt
+        if (inlineCandidateInfo.methInfo.args.retType is not CORINFO_TYPE_VOID)
+        {
+            var retExpr = inlineCandidateInfo.retExpr;
+            assert(retExpr is not null);
+
+            if (retExpr.SubstExpr is null)
+            {
+#if DEBUG
+                if (verbose)
+                {
+                    jitprintf($"\nInlining failed because pInlineInfo->retExpr is not set in the inlinee method {eeGetMethodFullName(fncHandle)}.\n");
+                }
+#endif
+
+                inlineResult.NoteFatal(InlineObservation.CALLSITE_LACKS_RETURN);
+                return;
+            }
+        }
+
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // The inlining attempt cannot be failed starting from this point.
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        // We've successfully obtained the list of inlinee's basic blocks.
+        // Let's insert it to inliner's basic block list.
+#if DEBUG
+        // The inlinee's candidate group is complete only once this inline can no longer fail.
+        if (compAsyncInliningStress())
+        {
+            assert(InlineeCompiler is not null);
+            InlineeCompiler.fgAsyncStressPrepare(inlineDepth + 1);
+        }
+#endif
+        fgInsertInlineeBlocks(inlineInfo);
+
+    #if DEBUG
+
+        if (verbose)
+        {
+            jitprintf($"Successfully inlined {eeGetMethodFullName(fncHandle)} ({inlineCandidateInfo.methInfo.ILCodeSize} IL bytes) (depth {inlineDepth}) [{inlineResult.ReasonString}]\n");
+            jitprintf("--------------------------------------------------------------------------------------------\n");
+        }
+    #endif
+
+    #if DEBUG
+        impInlinedCodeSize += inlineCandidateInfo.methInfo.ILCodeSize;
+    #endif
+
+        // We inlined...
+        inlineResult.NoteSuccess();
+    }
+
+    /// <summary>Helper to attempt to inline a call</summary>
+    /// <param name="call">call expression to inline, inline candidate</param>
+    /// <param name="result">result to set to success or failure</param>
+    /// <param name="createdContext">The context that was created if the inline attempt got to the inliner.</param>
+    /// <remarks>
+    ///   <para>Attempts to inline the call.</para>
+    ///   <para>If successful, callee's IR is inserted in place of the call, and is marked with an InlineContext.</para>
+    ///   <para>If unsuccessful, the transformations done in anticipation of a possible inline are undone, and the candidate flag on the call is cleared.</para>
+    ///   <para>If a context was created because we got to the importer then it is output by this function. If the inline succeeded, this context will already be marked as successful. If it failed and a context is returned, then it will not have been marked as success or failed.</para>
+    /// </remarks>
+    public void fgMorphCallInlineHelper(GenTreeCall call, InlineResult result, out InlineContext? createdContext)
+    {
+        // Don't expect any surprises here.
+        assert(result.IsCandidate);
+
+#if DEBUG
+        assert(_inlineStrategy is not null);
+
+        // Fail if we're inlining and we've reached the acceptance limit.
+        var limit   = JitConfig.JitInlineLimit;
+        var current = _inlineStrategy.InlineCount;
+
+        if ((limit >= 0) && (current >= limit))
+        {
+            result.NoteFatal(InlineObservation.CALLSITE_OVER_INLINE_LIMIT);
+            createdContext = null;
+            return;
+        }
+#endif
+
+        if (lvaHaveManyLocals(0.9f))
+        {
+            // For now, attributing this to call site, though it's really
+            // more of a budget issue (lvaCount currently includes all
+            // caller and prospective callee locals). We still might be
+            // able to inline other callees into this caller, or inline
+            // this callee in other callers.
+            result.NoteFatal(InlineObservation.CALLSITE_TOO_MANY_LOCALS);
+            createdContext = null;
+        }
+        else if (call.IsVirtual)
+        {
+            result.NoteFatal(InlineObservation.CALLSITE_IS_VIRTUAL);
+            createdContext = null;
+        }
+        else if (gtIsRecursiveCall(call) && call.IsImplicitTailCall)
+        {
+            // Re-check this because guarded devirtualization may allow these through.
+            result.NoteFatal(InlineObservation.CALLSITE_IMPLICIT_REC_TAIL_CALL);
+            createdContext = null;
+        }
+        else if (call.IsAsync && info.compUsesAsyncContinuation)
+        {
+            // Currently not supported. Could provide a nice perf benefit for
+            // Task -> runtime async thunks if we supported it.
+            result.NoteFatal(InlineObservation.CALLER_ASYNC_USED_CONTINUATION);
+            createdContext = null;
+        }
+        else
+        {
+            // impMarkInlineCandidate() is expected not to mark tail prefixed calls
+            // and recursive tail calls as inline candidates.
+            noway_assert(!call.IsTailPrefixedCall);
+            noway_assert(!call.IsImplicitTailCall || !gtIsRecursiveCall(call));
+
+            //
+            // Calling inlinee's compiler to inline the method.
+            //
+
+            var startVars     = lvaCount;
+            var startBBNumMax = fgBBNumMax;
+
+#if DEBUG
+            if (verbose)
+            {
+                assert(fgMorphStmt is not null);
+
+                jitprintf("Expanding INLINE_CANDIDATE in statement ");
+                printStmtId(fgMorphStmt);
+                assert(compCurBB is not null);
+                jitprintf($" in {FMT_BB(compCurBB.bbNum)}:\n");
+                gtDispStmt(fgMorphStmt);
+
+                if (call.IsImplicitTailCall)
+                {
+                    jitprintf("Note: candidate is implicit tail call\n");
+                }
+            }
+#endif
+
+            var inlineStrategy = impInlineRoot._inlineStrategy;
+            assert(inlineStrategy is not null);
+            inlineStrategy.NoteAttempt(result);
+
+            // Invoke the compiler to inline the call.
+            fgInvokeInlineeCompiler(call, result, out createdContext);
+
+            if (result.IsFailure)
+            {
+                // Undo some changes made during the inlining attempt.
+
+                for (var i = startVars; i < lvaCount; i++)
+                {
+                    lvaGetDesc(i) = new LclVarDsc();
+                }
+
+                // Reset local var count and max bb num
+                lvaCount = startVars;
+                fgBBNumMax = startBBNumMax;
+
+#if DEBUG
+                foreach (var block in Blocks)
+                {
+                    assert(block.bbNum <= fgBBNumMax);
+                }
+#endif
+            }
+        }
+    }
+
+    /// <summary>attempt to inline a call</summary>
+    /// <param name="call">call expression to inline, inline candidate</param>
+    /// <param name="inlineResult">result tracking and reporting</param>
+    /// <remarks>
+    ///   <para>Attempts to inline the call.</para>
+    ///   <para>If successful, callee's IR is inserted in place of the call, and is marked with an InlineContext.</para>
+    ///   <para>If unsuccessful, the transformations done in anticipation of a possible inline are undone, and the candidate flag on the call is cleared.</para>
+    /// </remarks>
+    public void fgMorphCallInline(GenTreeCall call, InlineResult inlineResult)
+    {
+        var inliningFailed = false;
+        var inlCandInfo = call.SingleInlineCandidateInfo;
+
+        // Is this call an inline candidate?
+        if (call.IsInlineCandidate)
+        {
+            // Attempt the inline
+            fgMorphCallInlineHelper(call, inlineResult, out var createdContext);
+
+            // We should have made up our minds one way or another....
+            assert(inlineResult.IsDecided);
+
+            // If we failed to inline, we have a bit of work to do to cleanup
+            if (inlineResult.IsFailure)
+            {
+                if (createdContext is not null)
+                {
+                    // We created a context before we got to the failure, so mark
+                    // it as failed in the tree.
+                    createdContext.SetFailed(inlineResult);
+                }
+                else
+                {
+#if DEBUG
+                    // In debug we always put all inline attempts into the inline tree.
+
+                    var info = call.SingleInlineCandidateInfo;
+                    assert(info is not null);
+
+                    assert(_inlineStrategy is not null);
+                    assert(info.inlinersContext is not null);
+                    assert(fgMorphStmt is not null);
+
+                    var ctx = _inlineStrategy.NewContext(info.inlinersContext, fgMorphStmt, call);
+                    ctx.SetFailed(inlineResult);
+#endif
+                }
+
+                inliningFailed = true;
+
+                // Clear the Inline Candidate flag so we can ensure later we tried inlining all candidates.
+                call.Flags &= ~GTF_CALL_INLINE_CANDIDATE;
+
+#if DEBUG
+                // In debug, remember that this was an inline candidate.
+                call.WasInlineCandidate = true;
+#endif
+            }
+        }
+        else
+        {
+            // This wasn't an inline candidate. So it must be a GDV candidate.
+            assert(call.IsGuardedDevirtualizationCandidate);
+
+            // We already know we can't inline this call, so don't even bother to try.
+            inliningFailed = true;
+        }
+
+        // If we failed to inline (or didn't even try), do some cleanup.
+        if (inliningFailed)
+        {
+            if (call._returnType is not TYP_VOID)
+            {
+                assert(fgMorphStmt is not null);
+#if DEBUG
+                JITDUMP($"Inlining [{call.TreeId:D6}] failed, so bashing {FMT_STMT(fgMorphStmt.Id)} to NOP\n");
+#endif
+
+                // Detach the GT_CALL tree from the original statement by
+                // hanging a "nothing" node to it. Later the "nothing" node will be removed
+                // and the original GT_CALL tree will be picked up by the GT_RET_EXPR node.
+                assert(inlCandInfo is not null);
+
+                var retExpr = inlCandInfo.retExpr;
+                assert(retExpr is not null);
+
+                retExpr.SubstExpr = call;
+                retExpr.SubstBB = compCurBB;
+
+                noway_assert(fgMorphStmt.RootNode == call);
+                fgMorphStmt.RootNode = gtNewNothingNode();
+            }
+
+            // Inlinee compiler may have determined call does not return; if so, update this compiler's state.
+            if (call.IsNoReturn)
+            {
+                setMethodHasNoReturnCalls();
+            }
+        }
+    }
+
     /// <summary>incorporate statements for an inline into the root method.</summary>
     /// <param name="inlineInfo">info for the inline</param>
     /// <remarks>
