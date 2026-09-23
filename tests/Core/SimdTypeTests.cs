@@ -24,7 +24,7 @@ internal static unsafe class SimdTypeTests
     [TestCase("", 0)]
     public static void NumericsNamesUseManagedStringBoundaries(string name, int expectedSize)
     {
-        var (size, usesSimd) = Classify(name, expectedSize, matchedVM: true);
+        var (size, usesSimd, _, _) = Classify(name, expectedSize, matchedVM: true);
         Assert.Multiple(() => {
             Assert.That(size, Is.EqualTo(expectedSize));
             Assert.That(usesSimd, Is.EqualTo(expectedSize != 0));
@@ -36,14 +36,28 @@ internal static unsafe class SimdTypeTests
     [TestCase(64, 0)]
     public static void CrossTargetVectorSizeMustMatchVM(int vmSize, int expectedSize)
     {
-        var (size, usesSimd) = Classify("Vector`1", vmSize, matchedVM: false);
+        var (size, usesSimd, _, _) = Classify("Vector`1", vmSize, matchedVM: false);
         Assert.Multiple(() => {
             Assert.That(size, Is.EqualTo(expectedSize));
             Assert.That(usesSimd, Is.EqualTo(expectedSize != 0));
         });
     }
 
-    private static (int Size, bool UsesSimd) Classify(string name, int vmSize, bool matchedVM)
+    [TestCase("Vector2", 8, var_types.TYP_SIMD8, var_types.TYP_FLOAT)]
+    [TestCase("Vector3", 12, var_types.TYP_SIMD12, var_types.TYP_FLOAT)]
+    [TestCase("Vector4", 16, var_types.TYP_SIMD16, var_types.TYP_FLOAT)]
+    [TestCase("Vector`1", 16, var_types.TYP_SIMD16, var_types.TYP_FLOAT)]
+    [TestCase("Vector5", 16, var_types.TYP_STRUCT, var_types.TYP_UNDEF)]
+    public static void NormalizationPreservesSimdBaseType(string name, int size, var_types expectedType, var_types expectedBaseType)
+    {
+        var (_, _, type, baseType) = Classify(name, size, matchedVM: true, normalize: true);
+        Assert.Multiple(() => {
+            Assert.That(type, Is.EqualTo(expectedType));
+            Assert.That(baseType, Is.EqualTo(expectedBaseType));
+        });
+    }
+
+    private static (int Size, bool UsesSimd, var_types Type, var_types BaseType) Classify(string name, int vmSize, bool matchedVM, bool normalize = false)
     {
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         // Native bool is one byte; reverse P/Invoke signatures require blittable types.
@@ -51,6 +65,7 @@ internal static unsafe class SimdTypeTests
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_STRUCT_*, byte>)&IsIntrinsicType;
         vtable.Base.Base.getClassNameFromMetadata = &GetClassName;
         vtable.Base.Base.getClassSize = &GetClassSize;
+        vtable.Base.Base.getClassAttribs = &GetClassAttribs;
         vtable.Base.Base.getTypeInstantiationArgument = &GetTypeArgument;
         vtable.Base.Base.getTypeForPrimitiveNumericClass = &GetNumericType;
         vtable.Base.notifyInstructionSetUsage = (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, bool>)
@@ -75,7 +90,9 @@ internal static unsafe class SimdTypeTests
             {
                 var info = new ClassInfo { Name = className, Namespace = namespaceName, Size = vmSize };
                 var size = compiler.GetSimdTypeSizeInBytes((CORINFO_CLASS_STRUCT_*)&info);
-                return (size, compiler._usesSimdTypes);
+                var baseType = var_types.TYP_UNDEF;
+                var type = normalize ? compiler.impNormStructType((CORINFO_CLASS_STRUCT_*)&info, out baseType) : var_types.TYP_UNDEF;
+                return (size, compiler._usesSimdTypes, type, baseType);
             }
         }
         finally
@@ -104,6 +121,10 @@ internal static unsafe class SimdTypeTests
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int GetClassSize(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => ((ClassInfo*)type)->Size;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CorInfoFlag GetClassAttribs(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type)
+        => CorInfoFlag.CORINFO_FLG_VALUECLASS | CorInfoFlag.CORINFO_FLG_INTRINSIC_TYPE;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static CORINFO_CLASS_STRUCT_* GetTypeArgument(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type, int index) => type;

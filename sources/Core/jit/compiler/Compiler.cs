@@ -42,6 +42,10 @@ public partial class Compiler
 
     private const int PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT = 0x00000100;
 
+    private const int PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT = 0x00000200;
+
+    private const int PREFIX_IS_ADAPTED_FROM_VALUETASK = 0x00000400;
+
 #if DEBUG
     public bool verbose;
 
@@ -66,6 +70,12 @@ public partial class Compiler
     public BlockToFlowEdgeMap? _blockToEHPreds;
 
     public ushort asyncContextRestoreEHID = ushort.MaxValue;
+
+    public int lvaResumedIndicator = BAD_VAR_NUM;
+
+    public bool compAsyncBodyMaySuspend;
+
+    public static bool generalAsyncInliningEnabled() => JitConfig.JitAsyncInlining != 0;
 
     public BasicBlockLocalPairSet? _insertedSsaLocalsLiveIn;
 
@@ -1341,7 +1351,7 @@ public partial class Compiler
         {
             return XMM_REGSIZE_BYTES;
         }
-#elif TARGET_ARM64
+#elif TARGET_ARM64 || TARGET_WASM
         return FP_REGSIZE_BYTES;
 #else
         unreached();
@@ -2308,7 +2318,7 @@ public partial class Compiler
             size = 0;
         }
         return size;
-#elif TARGET_ARM64
+#elif TARGET_ARM64 || TARGET_WASM
         assert(GetMaxVectorByteLength() is FP_REGSIZE_BYTES);
         return (size >= FP_REGSIZE_BYTES) ? FP_REGSIZE_BYTES : 0;
 #else
@@ -2868,7 +2878,11 @@ public partial class Compiler
 
         if (type is ProfiledMemcmp or ProfiledMemmove)
         {
+#if TARGET_ARM64
+            threshold = maxRegSize * (type is ProfiledMemmove ? 4 : 2);
+#else
             threshold = maxRegSize * 2;
+#endif
         }
         return threshold;
     }

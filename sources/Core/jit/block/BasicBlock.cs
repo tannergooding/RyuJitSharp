@@ -853,6 +853,25 @@ public sealed partial class BasicBlock : LIR.Range
         return (bbFlags & flag) != 0;
     }
 
+    /// <summary>Whether control could flow from this block to an EH successor.</summary>
+    public bool HasPotentialEHSuccs(Compiler comp)
+    {
+        if (hasTryIndex)
+        {
+            return true;
+        }
+
+        ref var hndDesc = ref comp.ehGetBlockHndDsc(this);
+
+        if (Unsafe.IsNullRef(in hndDesc))
+        {
+            return false;
+        }
+
+        // Throwing in a filter continues the search, running enclosed finally/fault handlers.
+        return hndDesc.InFilterRegionBBRange(this);
+    }
+
     public bool JumpsToNext => Target == _next;
 
     /// <summary>gives the number of successors, and GetSucc() returns a given numbered successor.</summary>

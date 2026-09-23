@@ -9,6 +9,8 @@ namespace RyuJitSharp;
 
 public partial struct LclVarDsc
 {
+    private const int VectorPerElementMaskElemSizeLog2Shift = 52;
+
     private Flags _flags;
 
     /// <summary>weighted reference count</summary>
@@ -749,6 +751,20 @@ public partial struct LclVarDsc
         }
     }
 
+    /// <summary>The local is read only before its async frame resumes.</summary>
+    public bool lvOnlyUsedOnSynchronousPath
+    {
+        readonly get
+        {
+            return (_flags & Flags.OnlyUsedOnSynchronousPath) != 0;
+        }
+
+        set
+        {
+            _flags = (_flags & ~Flags.OnlyUsedOnSynchronousPath) | (value ? Flags.OnlyUsedOnSynchronousPath : Flags.None);
+        }
+    }
+
     /// <summary>The local is a Span&lt;T&gt;</summary>
     private bool lvIsSpan
     {
@@ -1157,6 +1173,37 @@ public partial struct LclVarDsc
     public readonly bool IsBitcastToSimd() => lvIsBitcastToSimd;
 #else
     public readonly bool IsBitcastToSimd() => false;
+#endif
+
+#if FEATURE_HW_INTRINSICS
+    public readonly bool IsVectorPerElementMask(var_types simdBaseType)
+    {
+        return (_flags & Flags.IsVectorPerElementMask) != 0 &&
+               GetVectorPerElementMaskElemSizeLog2(simdBaseType) <= (int)((long)(_flags & Flags.VectorPerElementMaskElemSizeLog2Mask) >> VectorPerElementMaskElemSizeLog2Shift);
+    }
+
+    public void SetIsVectorPerElementMask(var_types simdBaseType)
+    {
+        var elemSizeLog2 = GetVectorPerElementMaskElemSizeLog2(simdBaseType);
+        var storedSizeLog2 = (int)((long)(_flags & Flags.VectorPerElementMaskElemSizeLog2Mask) >> VectorPerElementMaskElemSizeLog2Shift);
+
+        if (((_flags & Flags.IsVectorPerElementMask) == 0) || (elemSizeLog2 > storedSizeLog2))
+        {
+            _flags = (_flags & ~Flags.VectorPerElementMaskElemSizeLog2Mask) |
+                     (Flags)((long)elemSizeLog2 << VectorPerElementMaskElemSizeLog2Shift);
+        }
+
+        _flags |= Flags.IsVectorPerElementMask;
+    }
+
+    private static int GetVectorPerElementMaskElemSizeLog2(var_types simdBaseType) => simdBaseType switch
+    {
+        TYP_BYTE or TYP_UBYTE => 0,
+        TYP_SHORT or TYP_USHORT => 1,
+        TYP_INT or TYP_UINT or TYP_FLOAT => 2,
+        TYP_LONG or TYP_ULONG or TYP_DOUBLE => 3,
+        _ => throw new UnreachableException(),
+    };
 #endif
 
     public bool IsSpan

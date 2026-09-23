@@ -742,6 +742,11 @@ public partial class Compiler
             if (fieldAddr.IsInstance && (fieldAddr.FldObj.Oper is GT_LCL_ADDR))
             {
                 indir.Flags &= ~GTF_GLOB_REF;
+
+                if (indir.Oper.IsStore)
+                {
+                    indir.Flags |= indir.Data.Flags & GTF_GLOB_REF;
+                }
             }
             else
             {
@@ -790,7 +795,7 @@ public partial class Compiler
             //
             var expr = stmt.RootNode;
             var oper = expr.Oper;
-            var flags = expr.Flags & GTF_GLOB_EFFECT;
+            var flags = expr.Flags & GTF_ALL_EFFECT;
 
             // Stores to unaliased locals require special handling. Here, we look for trees that
             // can modify them and spill the references. In doing so, we make two assumptions:
@@ -843,7 +848,7 @@ public partial class Compiler
                 {
                     // For stores, limit the checking to what the value could modify/interfere with.
                     var value = expr.AsLclVarCommon().Data;
-                    flags = value.Flags & GTF_GLOB_EFFECT;
+                    flags = value.Flags & GTF_ALL_EFFECT;
 
                     // We don't mark indirections off of "aliased" locals with GLOB_REF, but they must still be
                     // considered as such in the interference checking.
@@ -856,7 +861,8 @@ public partial class Compiler
 
             if (flags is not 0)
             {
-                impSpillSideEffects((flags & (GTF_ASG | GTF_CALL)) is not 0, chkLevel, "impAppendStmt");
+                // Ordering side effects must not move ahead of global reads.
+                impSpillSideEffects((flags & (GTF_ASG | GTF_CALL | GTF_ORDER_SIDEEFF)) is not 0, chkLevel, "impAppendStmt");
             }
             else
             {
@@ -12648,7 +12654,16 @@ public partial class Compiler
             return false;
         }
 
-        if ((additionalTree is not null) && GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(additionalTree.Flags))
+        // Stores to caller locals are observable by try and filter regions protecting the call site.
+        assert(impInlineInfo.iciBlock is not null);
+        var localStoresAreVisible = impInlineInfo.iciBlock.HasPotentialEHSuccs(impInlineRoot);
+
+        bool hasVisibleSideEffects(GenTreeFlags flags)
+        {
+            return GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(flags) || (localStoresAreVisible && ((flags & GTF_ASG) is not 0));
+        }
+
+        if ((additionalTree is not null) && hasVisibleSideEffects(additionalTree.Flags))
         {
             return false;
         }
@@ -12657,7 +12672,7 @@ public partial class Compiler
         {
             foreach (var arg in additionalCallArgs.Args)
             {
-                if (GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(arg.EarlyNode.Flags))
+                if (hasVisibleSideEffects(arg.EarlyNode.Flags))
                 {
                     return false;
                 }
@@ -12668,7 +12683,7 @@ public partial class Compiler
         {
             var expr = stmt.RootNode;
 
-            if (GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(expr.Flags))
+            if (hasVisibleSideEffects(expr.Flags))
             {
                 return false;
             }
@@ -12680,7 +12695,7 @@ public partial class Compiler
         {
             var stackTreeFlags = esStack[level].val.Flags;
 
-            if (GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(stackTreeFlags))
+            if (hasVisibleSideEffects(stackTreeFlags))
             {
                 return false;
             }
@@ -18884,40 +18899,32 @@ public partial class Compiler
     /// <remarks>
     ///   <para>This may also modify the compFloatingPointUsed flag if the type is a simd type.</para>
     ///   <para>Normalizing the type involves examining the struct type to determine if it should be modified to one that is handled specially by the JIT, possibly being a candidate for full enregistration, e.g. TYP_SIMD16.</para>
-    ///   <para>If the size of the struct is already known call <see cref="structSizeMightRepresentSimdType" /> to determine if this api needs to be called.</para>
+    ///   <para>Call <see cref="structMightRepresentSimdType" /> to determine if this api needs to be called.</para>
     /// </remarks>
     public unsafe var_types impNormStructType(CORINFO_CLASS_HANDLE structHnd, out var_types simdBaseJitType)
     {
         assert(structHnd != NO_CLASS_HANDLE);
         var structType = TYP_STRUCT;
+        simdBaseJitType = TYP_UNDEF;
 
 #if FEATURE_SIMD
-        var structFlags = info.compCompHnd->getClassAttribs(structHnd);
-
-        // Don't bother if the struct contains GC references of byrefs, it can't be a simd type.
-        if ((structFlags & (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_BYREF_LIKE)) == 0)
+        if (structMightRepresentSimdType(structHnd))
         {
-            var originalSize = info.compCompHnd->getClassSize(structHnd);
+            var simdBaseType = getBaseTypeAndSizeOfSimdType(structHnd, out var sizeBytes);
 
-            if (structSizeMightRepresentSimdType(originalSize))
+            if (simdBaseType != TYP_UNDEF)
             {
-                var simdBaseType = getBaseTypeAndSizeOfSimdType(structHnd, out var sizeBytes);
+                assert((sizeBytes == info.compCompHnd->getClassSize(structHnd)) || (sizeBytes is SIZE_UNKNOWN));
+                structType = GetSimdTypeForSize(sizeBytes);
 
-                if (simdBaseType != TYP_UNDEF)
-                {
-                    assert((sizeBytes == originalSize) || (sizeBytes is SIZE_UNKNOWN));
-                    structType = GetSimdTypeForSize(sizeBytes);
+                simdBaseJitType = simdBaseType;
 
-                    simdBaseJitType = simdBaseType;
-
-                    // Also indicate that we use floating point registers.
-                    compFloatingPointUsed = true;
-                }
+                // Also indicate that we use floating point registers.
+                compFloatingPointUsed = true;
             }
         }
 #endif
 
-        simdBaseJitType = TYP_UNDEF;
         return structType;
     }
 

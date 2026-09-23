@@ -56,6 +56,9 @@ public partial struct LclVarDsc
         IsSpan = 1L << 43,
         AllDefsAreNoGc = 1L << 44,
         StackAllocatedObject = 1L << 45,
+        OnlyUsedOnSynchronousPath = 1L << 47,
+        IsVectorPerElementMask = 1L << 51,
+        VectorPerElementMaskElemSizeLog2Mask = 3L << 52,
 
 #if TARGET_64BIT
         QuirkToLong = 1L << 46,

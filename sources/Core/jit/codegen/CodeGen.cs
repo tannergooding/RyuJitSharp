@@ -206,7 +206,9 @@ public sealed class CodeGen : ICodeGen
     {
         get
         {
+#if !TARGET_X86 && !TARGET_ARM
             assert(Debugger.IsAttached || (_compiler.compCalleeRegsPushed >= 0));
+#endif
             var totalFrameSize = (_compiler.compCalleeRegsPushed * REGSIZE_BYTES) + _compiler.compLclFrameSize;
 
 #if TARGET_ARM64
@@ -378,10 +380,18 @@ public sealed class CodeGen : ICodeGen
         cns = 0;
 
 #if TARGET_WASM
-        // TODO-WASM: Prove whether a given addressing mode obeys the Wasm rules.
-        // See https://github.com/dotnet/runtime/pull/122897#issuecomment-3721304477 for more details.
+        // A GC base and non-negative constant prove the addition cannot wrap (see
+        // Lowering::GetFoldableAddrMode). Relocatable constants must retain their relocation.
+        if ((addr.Oper is not GT_ADD) || addr.HasOverflowCheck || !varTypeIsGC(addr.Op1.Type) ||
+            !addr.Op2.Oper.IsCnsIntOrI || addr.Op2.AsIntCon().ImmedValNeedsReloc(_compiler) ||
+            (addr.Op2.AsIntCon().IconValue < 0))
+        {
+            return false;
+        }
 
-        return false;
+        rv1 = addr.Op1;
+        cns = addr.Op2.AsIntCon().IconValue;
+        return true;
 #else
         // The following indirections are valid address modes on x86/x64:
         // 
