@@ -85,6 +85,13 @@ address; it is never dereferenced or retained for later use. These failure
 messages have pointer-format coverage, not native-address parity, and introduce
 no dump-comparison normalization.
 
+Synthesis likelihood snapshots use ordered managed lists and cyclic gains use
+a managed array indexed by natural-loop index. Reversal preserves unique-edge
+order; seeded random draws retain the native sequence. Capping adjusts only the
+first eligible conditional exit in loop order, not all exits (B076). Compiler
+DFS construction is accessible to the synthesis class in place of native
+friend-class access.
+
 Managed error-trap callbacks capture exceptions before leaving their
 `UnmanagedCallersOnly` shim. An owned `GCHandle` keeps the action and captured
 exception alive until the native trap returns. The regular trap reports

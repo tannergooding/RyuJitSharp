@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Continue ProfileSynthesis's likelihood assignment/repair/blending and cyclic/solver passes, then full fgIncorporateProfileData (B067). Its natural-loop (B072), EH predecessor (B071), profile consistency-checking and throw-path (B074) prerequisites are implemented. ConfigDoubleArray remains absent; B075 records upstream parser defects to account for without silently changing the accepted syntax/failure contract. Block counts, spanning traversal (B068) and sparse edge reconstruction (B069) are implemented. Do not activate partial profile incorporation or insert the BBOPT diagnostic alone. B073's unrelated MakeFull defect does not affect discovery. B064 still gates constant bashing; folding and global-morph assertion bookkeeping remain before enabling the full inliner and resuming rationalization. Both native trees use the target revision; use the intact oracle, not residual bodies.",
+    "nextAction": "Continue ProfileSynthesis's input/block weights, Gauss-Seidel solver and Run orchestration, then full fgIncorporateProfileData (B067). The constructor, all likelihood policies and cyclic gains are implemented (B076), along with natural loops (B072), EH predecessors (B071), profile checks and throw propagation (B074). ConfigDoubleArray remains absent; B075 records upstream parser defects requiring a deliberate syntax/failure contract, not a silent managed parsing substitution. Block counts, spanning traversal (B068) and sparse edge reconstruction (B069) are implemented. Do not activate partial profile incorporation or insert the BBOPT diagnostic alone. B073's MakeFull defect does not affect discovery. B064 still gates constant bashing; folding/global-morph bookkeeping remain before enabling the full inliner. Both native trees use the target revision; read the intact oracle.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -19,15 +19,15 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "10.0.401",
-      "debugBuild": "passed-after-profile-consistency-checks",
-      "releaseBuild": "passed-after-profile-consistency-checks",
+      "debugBuild": "passed-after-synthesis-likelihoods",
+      "releaseBuild": "passed-after-synthesis-likelihoods",
       "testSourcesPresent": true,
       "writerRegressionCases": 16,
       "writerRegressionConfigurations": ["Debug", "Release"],
-      "targetFocusedTestsDebug": 769,
-      "targetFocusedTestsRelease": 667,
+      "targetFocusedTestsDebug": 837,
+      "targetFocusedTestsRelease": 708,
       "targetFocusedTestsSkipped": 0,
-      "fullSuiteSourceCommit": "2a6c154755749dd7c916d9660c0722dd204b5991",
+      "fullSuiteSourceCommit": "d6a8aef3a42de1832adbc430b35d2d2094cfe4ce",
       "callIntrinsicSpotChecks": {
         "debugPassed": 81,
         "releasePassed": 81,
@@ -237,6 +237,14 @@
         "nativeAotRecaptured": false,
         "profilePhaseActivated": false
       },
+      "synthesisLikelihoodSpotChecks": {
+        "newCasesPerConfiguration": 26,
+        "combinedSynthesisAndLoopDebugPassed": 73,
+        "combinedSynthesisAndLoopReleasePassed": 57,
+        "skipped": 0,
+        "nativeAotRecaptured": false,
+        "profilePhaseActivated": false
+      },
       "savedWipSupportMilestone": {
         "managedSourceCommit": "24b9352dc6f293228d58cb24871280827f936ab7",
         "nativeCompilationHeaders": 7,
@@ -399,6 +407,11 @@
       "commit": "f1dd781f712a8d50f4d55472cf9c3cbff55ad5a5",
       "indexCommit": "762c71c49844aff6b8ef8cbc11f783c01f5c7101",
       "ref": "refs/porting/snapshots/2026-09-23-native-ledger-profile-checks"
+    },
+    "profileLikelihoodNativeResidual": {
+      "commit": "9f1378ec1245f195e92c6f2460a4348133475f9a",
+      "indexCommit": "a435efc3d752da8b053806d46e45a48d835a7a1a",
+      "ref": "refs/porting/snapshots/2026-09-23-native-ledger-profile-likelihoods"
     }
   },
   "sourceMap": [

@@ -3,12 +3,54 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Collections.Generic;
+
 namespace RyuJitSharp;
 
 public sealed class ProfileSynthesis
 {
     public const weight_t epsilon = 0.001;
+    private const weight_t initialBlendFactor = 0.05;
+    private const weight_t cappedLikelihood = 0.999;
+    private const weight_t returnLikelihood = 0.2;
+    private const weight_t ilNextLikelihood = 0.52;
+    private const weight_t loopBackLikelihood = 0.9;
+    private const weight_t loopExitLikelihood = 0.9;
     private const weight_t throwLikelihood = 0;
+
+    private readonly Compiler _comp;
+    private readonly FlowGraphDfsTree _dfsTree;
+    private readonly FlowGraphNaturalLoops _loops;
+    private readonly BasicBlock _entryBlock;
+    private readonly weight_t[] _cyclicProbabilities;
+    private weight_t _blendFactor = initialBlendFactor;
+    private weight_t _loopExitLikelihood = loopExitLikelihood;
+    private weight_t _loopBackLikelihood = loopBackLikelihood;
+    private weight_t _returnLikelihood = returnLikelihood;
+    private readonly int _improperLoopHeaders;
+    private int _cappedCyclicProbabilities;
+    private bool _hasInfiniteLoop;
+
+    private ProfileSynthesis(Compiler compiler)
+    {
+        _comp = compiler;
+        // Synthesis runs both before and after method-entry canonicalization.
+        var entryBlock = compiler.opts.IsOSR && (compiler.fgEntryBB is not null) ? compiler.fgEntryBB : compiler.fgFirstBB;
+        assert(entryBlock is not null);
+        _entryBlock = entryBlock;
+        var dfsTree = compiler._dfsTree;
+        var loops = compiler._loops;
+        if (dfsTree is null)
+        {
+            dfsTree = compiler.fgComputeDfs();
+            loops = FlowGraphNaturalLoops.Find(dfsTree);
+        }
+        assert(loops is not null);
+        _dfsTree = dfsTree;
+        _loops = loops;
+        _improperLoopHeaders = loops.ImproperLoopHeaders;
+        _cyclicProbabilities = new weight_t[loops.NumLoops];
+    }
 
     public static PhaseStatus AdjustThrowEdgeLikelihoods(Compiler compiler)
     {
@@ -91,5 +133,515 @@ public sealed class ProfileSynthesis
         }
 
         return modified ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
+    }
+
+    private void AssignLikelihoods()
+    {
+        JITDUMP("Assigning edge likelihoods based on heuristics\n");
+        foreach (var block in _comp.Blocks)
+        {
+            switch (block.Kind)
+            {
+                case BBJ_THROW:
+                case BBJ_RETURN:
+                case BBJ_EHFINALLYRET:
+                case BBJ_EHFAULTRET:
+                {
+                    break;
+                }
+                case BBJ_CALLFINALLY:
+                case BBJ_ALWAYS:
+                case BBJ_CALLFINALLYRET:
+                case BBJ_LEAVE:
+                case BBJ_EHCATCHRET:
+                case BBJ_EHFILTERRET:
+                {
+                    AssignLikelihoodJump(block);
+                    break;
+                }
+                case BBJ_COND:
+                {
+                    block.TrueEdge.isHeuristicBased = true;
+                    block.FalseEdge.isHeuristicBased = true;
+                    AssignLikelihoodCond(block);
+                    break;
+                }
+                case BBJ_SWITCH:
+                {
+                    AssignLikelihoodSwitch(block);
+                    break;
+                }
+                default:
+                {
+                    unreached();
+                    break;
+                }
+            }
+        }
+    }
+
+    private void AssignLikelihoodJump(BasicBlock block)
+    {
+        block.TargetEdge.Likelihood = 1.0;
+    }
+
+    private void AssignLikelihoodCond(BasicBlock block)
+    {
+        var trueEdge = block.TrueEdge;
+        var falseEdge = block.FalseEdge;
+        if (trueEdge == falseEdge)
+        {
+            assert(trueEdge.DupCount == 2);
+            trueEdge.Likelihood = 1.0;
+            return;
+        }
+
+        var trueTarget = trueEdge.DestinationBlock;
+        var falseTarget = falseEdge.DestinationBlock;
+        var isTrueThrow = trueTarget.Kind is BBJ_THROW;
+        var isFalseThrow = falseTarget.Kind is BBJ_THROW;
+        if (isTrueThrow != isFalseThrow)
+        {
+            if (isTrueThrow)
+            {
+                trueEdge.Likelihood = throwLikelihood;
+                falseEdge.Likelihood = 1.0 - throwLikelihood;
+            }
+            else
+            {
+                trueEdge.Likelihood = 1.0 - throwLikelihood;
+                falseEdge.Likelihood = throwLikelihood;
+            }
+            return;
+        }
+
+        var isTrueEdgeBackEdge = _loops.IsLoopBackEdge(trueEdge);
+        var isFalseEdgeBackEdge = _loops.IsLoopBackEdge(falseEdge);
+        if (isTrueEdgeBackEdge != isFalseEdgeBackEdge)
+        {
+            if (isTrueEdgeBackEdge)
+            {
+                JITDUMP($"{FMT_BB(block.bbNum)}->{FMT_BB(trueTarget.bbNum)} is loop back edge\n");
+                trueEdge.Likelihood = _loopBackLikelihood;
+                falseEdge.Likelihood = 1.0 - _loopBackLikelihood;
+            }
+            else
+            {
+                JITDUMP($"{FMT_BB(block.bbNum)}->{FMT_BB(falseTarget.bbNum)} is loop back edge\n");
+                trueEdge.Likelihood = 1.0 - _loopBackLikelihood;
+                falseEdge.Likelihood = _loopBackLikelihood;
+            }
+            return;
+        }
+
+        // Prefer staying in the loop; native does not distribute this bias across exits.
+        var isTrueEdgeExitEdge = _loops.IsLoopExitEdge(trueEdge);
+        var isFalseEdgeExitEdge = _loops.IsLoopExitEdge(falseEdge);
+        if (isTrueEdgeExitEdge != isFalseEdgeExitEdge)
+        {
+            if (isTrueEdgeExitEdge)
+            {
+                JITDUMP($"{FMT_BB(block.bbNum)}->{FMT_BB(trueTarget.bbNum)} is loop exit edge\n");
+                trueEdge.Likelihood = 1.0 - _loopExitLikelihood;
+                falseEdge.Likelihood = _loopExitLikelihood;
+            }
+            else
+            {
+                JITDUMP($"{FMT_BB(block.bbNum)}->{FMT_BB(falseTarget.bbNum)} is loop exit edge\n");
+                trueEdge.Likelihood = _loopExitLikelihood;
+                falseEdge.Likelihood = 1.0 - _loopExitLikelihood;
+            }
+            return;
+        }
+
+        var isJumpReturn = trueTarget.Kind is BBJ_RETURN;
+        var isNextReturn = falseTarget.Kind is BBJ_RETURN;
+        if (isJumpReturn != isNextReturn)
+        {
+            if (isJumpReturn)
+            {
+                trueEdge.Likelihood = _returnLikelihood;
+                falseEdge.Likelihood = 1.0 - _returnLikelihood;
+            }
+            else
+            {
+                trueEdge.Likelihood = 1.0 - _returnLikelihood;
+                falseEdge.Likelihood = _returnLikelihood;
+            }
+            return;
+        }
+
+        trueEdge.Likelihood = 1.0 - ilNextLikelihood;
+        falseEdge.Likelihood = ilNextLikelihood;
+    }
+
+    private void AssignLikelihoodSwitch(BasicBlock block)
+    {
+        var count = block.SwitchTargets.Cases.Length;
+        assert(count != 0);
+        var probability = count != 0 ? 1 / (weight_t)count : 0;
+        foreach (var edge in block.Succs.Edges)
+        {
+            edge.Likelihood = probability * edge.DupCount;
+        }
+    }
+
+    private weight_t SumOutgoingLikelihoods(BasicBlock block, List<weight_t>? likelihoods = null)
+    {
+        weight_t sum = 0;
+        likelihoods?.Clear();
+        foreach (var edge in block.Succs.Edges)
+        {
+            var likelihood = edge.Likelihood;
+            likelihoods?.Add(likelihood);
+            sum += likelihood;
+        }
+
+        return sum;
+    }
+
+    private void RepairLikelihoods()
+    {
+        JITDUMP("Repairing inconsistent or missing edge likelihoods\n");
+        foreach (var block in _comp.Blocks)
+        {
+            switch (block.Kind)
+            {
+                case BBJ_THROW:
+                case BBJ_RETURN:
+                case BBJ_EHFINALLYRET:
+                case BBJ_EHFAULTRET:
+                {
+                    break;
+                }
+                case BBJ_CALLFINALLY:
+                case BBJ_ALWAYS:
+                case BBJ_CALLFINALLYRET:
+                case BBJ_LEAVE:
+                case BBJ_EHCATCHRET:
+                case BBJ_EHFILTERRET:
+                {
+                    AssignLikelihoodJump(block);
+                    break;
+                }
+                case BBJ_COND:
+                case BBJ_SWITCH:
+                {
+                    var sum = SumOutgoingLikelihoods(block);
+                    var consistent = Compiler.fgProfileWeightsEqual(sum, 1.0, epsilon);
+                    var zero = Compiler.fgProfileWeightsEqual(block.bbWeight, 0.0, epsilon);
+                    if (consistent && !zero)
+                    {
+                        break;
+                    }
+                    JITDUMP($"Repairing likelihoods in {FMT_BB(block.bbNum)}");
+                    if (!consistent)
+                    {
+                        JITDUMP($"; existing likelihood sum: {FMT_WT(sum)}");
+                    }
+                    if (zero)
+                    {
+                        JITDUMP("; zero weight block");
+                    }
+                    JITDUMP("\n");
+                    if (block.Kind is BBJ_COND)
+                    {
+                        AssignLikelihoodCond(block);
+                    }
+                    else
+                    {
+                        AssignLikelihoodSwitch(block);
+                    }
+                    break;
+                }
+                default:
+                {
+                    unreached();
+                    break;
+                }
+            }
+        }
+    }
+
+    private void BlendLikelihoods()
+    {
+        JITDUMP("Blending existing likelihoods with heuristics\n");
+        var likelihoods = new List<weight_t>();
+        foreach (var block in _comp.Blocks)
+        {
+            switch (block.Kind)
+            {
+                case BBJ_THROW:
+                case BBJ_RETURN:
+                case BBJ_EHFINALLYRET:
+                case BBJ_EHFAULTRET:
+                {
+                    break;
+                }
+                case BBJ_CALLFINALLY:
+                case BBJ_ALWAYS:
+                case BBJ_CALLFINALLYRET:
+                case BBJ_LEAVE:
+                case BBJ_EHCATCHRET:
+                case BBJ_EHFILTERRET:
+                {
+                    AssignLikelihoodJump(block);
+                    break;
+                }
+                case BBJ_COND:
+                case BBJ_SWITCH:
+                {
+                    var sum = SumOutgoingLikelihoods(block, likelihoods);
+                    var unlikely = Compiler.fgProfileWeightsEqual(sum, 0.0, epsilon);
+                    var zero = Compiler.fgProfileWeightsEqual(block.bbWeight, 0.0, epsilon);
+                    if (block.Kind is BBJ_COND)
+                    {
+                        AssignLikelihoodCond(block);
+                    }
+                    else
+                    {
+                        AssignLikelihoodSwitch(block);
+                    }
+                    if (unlikely || zero)
+                    {
+                        JITDUMP($"{(unlikely ? "Existing likelihood" : "Block weight")} in {FMT_BB(block.bbNum)} was zero, using synthesized likelihoods\n");
+                        break;
+                    }
+                    if (!Compiler.fgProfileWeightsEqual(sum, 1.0, epsilon))
+                    {
+                        var scale = 1.0 / sum;
+                        JITDUMP($"Scaling old likelihoods in {FMT_BB(block.bbNum)} by {FMT_WT(scale)}\n");
+                        for (var i = 0; i < likelihoods.Count; i++)
+                        {
+                            likelihoods[i] *= scale;
+                        }
+                    }
+
+                    JITDUMP($"Blending likelihoods in {FMT_BB(block.bbNum)} with blend factor {FMT_WT(_blendFactor)} \n");
+                    var index = 0;
+                    foreach (var edge in block.Succs.Edges)
+                    {
+                        var newLikelihood = edge.Likelihood;
+                        var oldLikelihood = likelihoods[index++];
+                        edge.Likelihood = ((1.0 - _blendFactor) * oldLikelihood) + (_blendFactor * newLikelihood);
+                        JITDUMP($"{FMT_BB(block.bbNum)} -> {FMT_BB(edge.DestinationBlock.bbNum)} was {FMT_WT(oldLikelihood)} now {FMT_WT(edge.Likelihood)}\n");
+                    }
+                    break;
+                }
+                default:
+                {
+                    unreached();
+                    break;
+                }
+            }
+        }
+    }
+
+    private void ClearLikelihoods()
+    {
+        foreach (var block in _comp.Blocks)
+        {
+            foreach (var edge in block.Succs.Edges)
+            {
+                edge.clearLikelihood();
+            }
+        }
+    }
+
+    private void ReverseLikelihoods()
+    {
+#if DEBUG
+        JITDUMP("Reversing likelihoods\n");
+        var likelihoods = new List<weight_t>();
+        foreach (var block in _comp.Blocks)
+        {
+            _ = SumOutgoingLikelihoods(block, likelihoods);
+            if (likelihoods.Count < 2)
+            {
+                continue;
+            }
+            likelihoods.Reverse();
+            var index = 0;
+            foreach (var edge in block.Succs.Edges)
+            {
+                edge.Likelihood = likelihoods[index++];
+            }
+        }
+#endif
+    }
+
+    private void RandomizeLikelihoods()
+    {
+#if DEBUG
+        JITDUMP("Randomizing likelihoods\n");
+        var likelihoods = new List<weight_t>();
+        var random = new CLRRandom(_comp.info.compMethodHash());
+        foreach (var block in _comp.Blocks)
+        {
+            var count = block.NumSucc;
+            likelihoods.Clear();
+            weight_t sum = 0;
+            for (var i = 0; i < count; i++)
+            {
+                var likelihood = random.NextDouble();
+                likelihoods.Add(likelihood);
+                sum += likelihood;
+            }
+            var index = 0;
+            foreach (var edge in block.Succs.Edges)
+            {
+                edge.Likelihood = likelihoods[index++] / sum;
+            }
+        }
+#endif
+    }
+
+    private void ComputeCyclicProbabilities()
+    {
+        foreach (var loop in _loops.InPostOrder())
+        {
+            ComputeCyclicProbabilities(loop);
+        }
+    }
+
+    private void ComputeCyclicProbabilities(FlowGraphNaturalLoop loop)
+    {
+        var hasExit = false;
+        var hasLikelyExit = false;
+        foreach (var exitEdge in loop.ExitEdges)
+        {
+            hasExit = true;
+            if (exitEdge.Likelihood > 0)
+            {
+                hasLikelyExit = true;
+                break;
+            }
+        }
+        if (!hasLikelyExit)
+        {
+            JITDUMP($"Loop headed by {FMT_BB(loop.Header.bbNum)} has {(hasExit ? "no likely" : "no")} exit edges (is infinite)\n");
+            _hasInfiniteLoop = true;
+        }
+        _ = loop.VisitLoopBlocks(static block => {
+            block.bbWeight = 0.0;
+            return BasicBlockVisit.Continue;
+        });
+
+        // Inner-loop gains are already known, so one RPO pass suffices for a natural loop.
+        _ = loop.VisitLoopBlocksReversePostOrder(block => {
+            if (block == loop.Header)
+            {
+                JITDUMP($"ccp: {FMT_BB(block.bbNum)} :: 1.0 (header)\n");
+                block.bbWeight = 1.0;
+            }
+            else
+            {
+                var nestedLoop = _loops.GetLoopByHeader(block);
+                if (nestedLoop is not null)
+                {
+                    assert(_cyclicProbabilities[nestedLoop.Index] != 0);
+                    var newWeight = 0.0;
+                    foreach (var edge in nestedLoop.EntryEdges)
+                    {
+                        newWeight += edge.LikelyWeight;
+                    }
+                    newWeight *= _cyclicProbabilities[nestedLoop.Index];
+                    block.bbWeight = newWeight;
+                    JITDUMP($"ccp: {FMT_BB(block.bbNum)} :: {FMT_WT(newWeight)} (nested header)\n");
+                }
+                else
+                {
+                    var newWeight = 0.0;
+                    foreach (var edge in block.PredEdges)
+                    {
+                        // Unreachable predecessors may flow into a reachable loop.
+                        if (loop.ContainsBlock(edge.SourceBlock))
+                        {
+                            newWeight += edge.LikelyWeight;
+                        }
+                    }
+                    block.bbWeight = newWeight;
+                    JITDUMP($"ccp: {FMT_BB(block.bbNum)} :: {FMT_WT(newWeight)}\n");
+                }
+            }
+            return BasicBlockVisit.Continue;
+        });
+
+        weight_t cyclicWeight = 0;
+        var capped = false;
+        foreach (var edge in loop.BackEdges)
+        {
+            JITDUMP($"ccp backedge {FMT_BB(edge.SourceBlock.bbNum)} ({FMT_WT(edge.SourceBlock.bbWeight)}) -> {FMT_BB(loop.Header.bbNum)} likelihood {FMT_WT(edge.Likelihood)}\n");
+            cyclicWeight += edge.LikelyWeight;
+        }
+        if (cyclicWeight > cappedLikelihood)
+        {
+            JITDUMP($"Cyclic weight {FMT_WT(cyclicWeight)} > {FMT_WT(cappedLikelihood)}(cap) -- will reduce to cap\n");
+            capped = true;
+            cyclicWeight = cappedLikelihood;
+            _cappedCyclicProbabilities++;
+        }
+        // Despite the native name, this is the expected iteration count, not a probability.
+        var cyclicProbability = 1.0 / (1.0 - cyclicWeight);
+        JITDUMP($"For loop at {FMT_BB(loop.Header.bbNum)} cyclic weight is {FMT_WT(cyclicWeight)} cyclic probability is {FMT_WT(cyclicProbability)}{(capped ? " [capped]" : "")}{(loop.ContainsImproperHeader ? " [likely underestimated, (loop contains improper loop)]" : "")}\n");
+        _cyclicProbabilities[loop.Index] = cyclicProbability;
+
+        if (capped && (loop.ExitEdges.Length > 0))
+        {
+            weight_t cappedExitWeight = 0;
+            foreach (var exitEdge in loop.ExitEdges)
+            {
+                var exitBlock = exitEdge.SourceBlock;
+                var exitBlockWeight = exitBlock.bbWeight * cyclicProbability;
+                var exitWeight = exitEdge.Likelihood * exitBlockWeight;
+                cappedExitWeight += exitWeight;
+                JITDUMP($"Exit from {FMT_BB(exitBlock.bbNum)} has weight {FMT_WT(exitWeight)}\n");
+            }
+            JITDUMP($"Total exit weight {FMT_WT(cappedExitWeight)}\n");
+            if ((cappedExitWeight + epsilon) < 1.0)
+            {
+                var missingExitWeight = 1.0 - cappedExitWeight;
+                JITDUMP($"Loop exit flow deficit from capping is {FMT_WT(missingExitWeight)}\n");
+                var adjustedExit = false;
+                // Match native's first eligible conditional exit, rather than spreading the deficit.
+                foreach (var exitEdge in loop.ExitEdges)
+                {
+                    var exitBlock = exitEdge.SourceBlock;
+                    var exitBlockWeight = exitBlock.bbWeight * cyclicProbability;
+                    var currentExitWeight = exitEdge.Likelihood * exitBlockWeight;
+                    if ((exitBlock.Kind is BBJ_COND) && (exitBlockWeight > (missingExitWeight + currentExitWeight)))
+                    {
+                        JITDUMP($"Will adjust likelihood of the exit edge from loop exit block {FMT_BB(exitBlock.bbNum)} to reflect capping; current likelihood is {FMT_WT(exitEdge.Likelihood)}\n");
+                        var trueEdge = exitBlock.TrueEdge;
+                        var falseEdge = exitBlock.FalseEdge;
+                        var exitLikelihood = (missingExitWeight + currentExitWeight) / exitBlockWeight;
+                        var continueLikelihood = 1.0 - exitLikelihood;
+                        assert(exitLikelihood > exitEdge.Likelihood);
+                        if (trueEdge == exitEdge)
+                        {
+                            trueEdge.Likelihood = exitLikelihood;
+                            falseEdge.Likelihood = continueLikelihood;
+                        }
+                        else
+                        {
+                            assert(falseEdge == exitEdge);
+                            trueEdge.Likelihood = continueLikelihood;
+                            falseEdge.Likelihood = exitLikelihood;
+                        }
+                        adjustedExit = true;
+                        JITDUMP($"New likelihood is  {FMT_WT(exitEdge.Likelihood)}\n");
+                        break;
+                    }
+                }
+                if (!adjustedExit)
+                {
+                    JITDUMP("Unable to find suitable exit to carry off capped flow\n");
+                }
+            }
+            else
+            {
+                JITDUMP("Exit weight comparable or above 1.0, leaving as is\n");
+            }
+        }
     }
 }

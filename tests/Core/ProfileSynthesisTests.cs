@@ -79,6 +79,201 @@ internal static unsafe class ProfileSynthesisTests
         Assert.That(Compiler.fgProfileWeightsConsistent(first, second), Is.EqualTo(expected));
     }
 
+    [TestCase(BBJ_THROW, BBJ_ALWAYS, 0.0)]
+    [TestCase(BBJ_ALWAYS, BBJ_THROW, 1.0)]
+    [TestCase(BBJ_RETURN, BBJ_ALWAYS, 0.2)]
+    [TestCase(BBJ_ALWAYS, BBJ_RETURN, 0.8)]
+    [TestCase(BBJ_ALWAYS, BBJ_ALWAYS, 0.48)]
+    [TestCase(BBJ_RETURN, BBJ_RETURN, 0.48)]
+    [TestCase(BBJ_THROW, BBJ_THROW, 0.48)]
+    public static void ConditionalHeuristicsPreservePriorityAndMarkers(BBKinds trueKind, BBKinds falseKind, double expected)
+    {
+        WithCompiler(compiler => {
+            var blocks = Blocks(compiler, BBJ_COND, trueKind, falseKind, BBJ_RETURN);
+            blocks[0].SetCond(Edge(blocks[0], blocks[1], 0.5), Edge(blocks[0], blocks[2], 0.5));
+            for (var i = 1; i <= 2; i++)
+            {
+                if (blocks[i].Kind is BBJ_ALWAYS)
+                {
+                    blocks[i].SetKindAndTargetEdge(BBJ_ALWAYS, Edge(blocks[i], blocks[3], 1));
+                }
+            }
+            AssignLikelihoods(CreateSynthesis(compiler));
+            Assert.That(blocks[0].TrueEdge.Likelihood, Is.EqualTo(expected).Within(1e-15));
+            Assert.That(blocks[0].FalseEdge.Likelihood, Is.EqualTo(1 - expected).Within(1e-15));
+            Assert.That(blocks[0].TrueEdge.isHeuristicBased, Is.True);
+            Assert.That(blocks[0].FalseEdge.isHeuristicBased, Is.True);
+        });
+    }
+
+    [Test]
+    public static void DegenerateConditionUsesItsSingleSharedEdge()
+    {
+        WithCompiler(compiler => {
+            var blocks = Blocks(compiler, BBJ_COND, BBJ_RETURN);
+            var edge = Edge(blocks[0], blocks[1], 0.4);
+            edge.incrementDupCount();
+            blocks[0].SetCond(edge, edge);
+            AssignLikelihoods(CreateSynthesis(compiler));
+            Assert.That(edge.Likelihood, Is.EqualTo(1));
+            Assert.That(edge.isHeuristicBased, Is.True);
+        });
+    }
+
+    [TestCase(false, 10, 0.2, 0.8, 0.2)]
+    [TestCase(false, 0, 0.2, 0.8, 0.48)]
+    [TestCase(false, 10, 0.2, 0.3, 0.48)]
+    [TestCase(true, 10, 0.2, 0.8, 0.214)]
+    [TestCase(true, 10, 0.2, 0.3, 0.404)]
+    [TestCase(true, 0, 0.2, 0.8, 0.48)]
+    [TestCase(true, 10, 0.0, 0.0, 0.48)]
+    [TestCase(true, 10, 0.0002, 0.0003, 0.48)]
+    public static void RepairAndBlendRespectExistingFlow(bool blend, double weight, double first, double second, double expected)
+    {
+        WithCompiler(compiler => {
+            var blocks = Blocks(compiler, BBJ_COND, BBJ_RETURN, BBJ_RETURN);
+            blocks[0].SetCond(Edge(blocks[0], blocks[1], first), Edge(blocks[0], blocks[2], second));
+            blocks[0].bbWeight = weight;
+            var synthesis = CreateSynthesis(compiler);
+            if (blend)
+            {
+                BlendLikelihoods(synthesis);
+            }
+            else
+            {
+                RepairLikelihoods(synthesis);
+            }
+            Assert.That(blocks[0].TrueEdge.Likelihood, Is.EqualTo(expected).Within(1e-15));
+            Assert.That(blocks[0].TrueEdge.Likelihood + blocks[0].FalseEdge.Likelihood, Is.EqualTo(1).Within(1e-15));
+            Assert.That(blocks[0].TrueEdge.isHeuristicBased, Is.False);
+        });
+    }
+
+    [Test]
+    public static void SwitchPoliciesVisitUniqueEdgesAndClearAllLikelihoodState()
+    {
+        WithCompiler(compiler => {
+            var blocks = Blocks(compiler, BBJ_SWITCH, BBJ_RETURN, BBJ_RETURN, BBJ_RETURN);
+            FlowEdge[] edges = [Edge(blocks[0], blocks[1], 0.2), Edge(blocks[0], blocks[2], 0.3), Edge(blocks[0], blocks[3], 0.5)];
+            edges[0].incrementDupCount();
+            edges[0].isHeuristicBased = true;
+            blocks[0].SwitchTargets = new BBswtDesc(edges, [0, 1, 0, 2], true);
+            var synthesis = CreateSynthesis(compiler);
+            AssignLikelihoods(synthesis);
+            Assert.That(edges[0].Likelihood, Is.EqualTo(0.5));
+            Assert.That(edges[1].Likelihood, Is.EqualTo(0.25));
+            Assert.That(edges[2].Likelihood, Is.EqualTo(0.25));
+            ReverseLikelihoods(synthesis);
+#if DEBUG
+            Assert.That(edges[0].Likelihood, Is.EqualTo(0.25));
+            Assert.That(edges[2].Likelihood, Is.EqualTo(0.5));
+            var random = new CLRRandom(compiler.info.compMethodHash());
+            double[] expected = [random.NextDouble(), random.NextDouble(), random.NextDouble()];
+            var sum = expected[0] + expected[1] + expected[2];
+#else
+            double[] expected = [0.5, 0.25, 0.25];
+            const double sum = 1;
+#endif
+            RandomizeLikelihoods(synthesis);
+            for (var i = 0; i < edges.Length; i++)
+            {
+                Assert.That(edges[i].Likelihood, Is.EqualTo(expected[i] / sum));
+            }
+            ClearLikelihoods(synthesis);
+            foreach (var edge in edges)
+            {
+                Assert.That(edge.isHeuristicBased, Is.False);
+#if DEBUG
+                Assert.That(edge.hasLikelihood, Is.False);
+#else
+                Assert.That(edge.Likelihood, Is.Zero);
+#endif
+            }
+            AssignLikelihoods(synthesis);
+            Assert.That(edges[0].Likelihood, Is.EqualTo(0.5));
+        });
+    }
+
+    [Test]
+    public static void NestedLoopGainsAreComputedInsideOut()
+    {
+        WithCompiler(compiler => {
+            var blocks = Blocks(compiler, BBJ_ALWAYS, BBJ_COND, BBJ_COND, BBJ_ALWAYS, BBJ_RETURN);
+            blocks[0].SetKindAndTargetEdge(BBJ_ALWAYS, Edge(blocks[0], blocks[1], 1));
+            blocks[1].SetCond(Edge(blocks[1], blocks[2], 0.5), Edge(blocks[1], blocks[4], 0.5));
+            blocks[2].SetCond(Edge(blocks[2], blocks[2], 0.5), Edge(blocks[2], blocks[3], 0.5));
+            blocks[3].SetKindAndTargetEdge(BBJ_ALWAYS, Edge(blocks[3], blocks[1], 1));
+            var synthesis = CreateSynthesis(compiler);
+            AssignLikelihoods(synthesis);
+            Assert.That(blocks[1].TrueEdge.Likelihood, Is.EqualTo(0.9));
+            Assert.That(blocks[2].TrueEdge.Likelihood, Is.EqualTo(0.9));
+            ComputeCyclicProbabilities(synthesis);
+            Assert.That(CyclicProbabilities(synthesis).Length, Is.EqualTo(2));
+            foreach (var gain in CyclicProbabilities(synthesis))
+            {
+                Assert.That(gain, Is.EqualTo(10).Within(1e-12));
+            }
+            Assert.That(blocks[2].bbWeight, Is.EqualTo(9).Within(1e-12));
+            Assert.That(CappedCyclicProbabilities(synthesis), Is.Zero);
+            Assert.That(HasInfiniteLoop(synthesis), Is.False);
+        });
+    }
+
+    [TestCase(0.5, false)]
+    [TestCase(0.999, false)]
+    [TestCase(0.9999, false)]
+    [TestCase(0.9999, true)]
+    [TestCase(1.0, false)]
+    [TestCase(1.0, true)]
+    public static void CappedLoopGainRepairsConditionalExits(double backLikelihood, bool exitOnTrue)
+    {
+        WithCompiler(compiler => {
+            var blocks = Blocks(compiler, BBJ_COND, BBJ_RETURN);
+            var back = Edge(blocks[0], blocks[0], backLikelihood);
+            var exit = Edge(blocks[0], blocks[1], 1 - backLikelihood);
+            blocks[0].SetCond(exitOnTrue ? exit : back, exitOnTrue ? back : exit);
+            var synthesis = CreateSynthesis(compiler);
+            ComputeCyclicProbabilities(synthesis);
+            var capped = backLikelihood > 0.999;
+            Assert.That(CyclicProbabilities(synthesis)[0], Is.EqualTo(1 / (1 - Math.Min(backLikelihood, 0.999))));
+            Assert.That(CappedCyclicProbabilities(synthesis), Is.EqualTo(capped ? 1 : 0));
+            Assert.That(back.Likelihood, Is.EqualTo(Math.Min(backLikelihood, 0.999)).Within(1e-15));
+            Assert.That(exit.Likelihood, Is.EqualTo(1 - Math.Min(backLikelihood, 0.999)).Within(1e-15));
+            Assert.That(HasInfiniteLoop(synthesis), Is.EqualTo(backLikelihood == 1));
+        });
+    }
+
+    [Test]
+    public static void CappingAdjustsOnlyTheFirstEligibleExitInLoopOrder()
+    {
+        WithCompiler(compiler => {
+            var blocks = Blocks(compiler, BBJ_COND, BBJ_COND, BBJ_RETURN);
+            var firstExit = Edge(blocks[0], blocks[2], 0.0001);
+            var secondExit = Edge(blocks[1], blocks[2], 0.0001);
+            blocks[0].SetCond(Edge(blocks[0], blocks[1], 0.9999), firstExit);
+            blocks[1].SetCond(Edge(blocks[1], blocks[0], 0.9999), secondExit);
+            var synthesis = CreateSynthesis(compiler);
+            ComputeCyclicProbabilities(synthesis);
+            Assert.That(CappedCyclicProbabilities(synthesis), Is.EqualTo(1));
+            Assert.That(firstExit.Likelihood, Is.EqualTo(0.00090001).Within(1e-15));
+            Assert.That(secondExit.Likelihood, Is.EqualTo(0.0001));
+        });
+    }
+
+    [Test]
+    public static void InfiniteLoopWithoutAnExitRetainsItsBackedge()
+    {
+        WithCompiler(compiler => {
+            var block = Blocks(compiler, BBJ_ALWAYS)[0];
+            block.SetKindAndTargetEdge(BBJ_ALWAYS, Edge(block, block, 1));
+            var synthesis = CreateSynthesis(compiler);
+            ComputeCyclicProbabilities(synthesis);
+            Assert.That(CyclicProbabilities(synthesis)[0], Is.EqualTo(1 / (1 - 0.999)));
+            Assert.That(block.TargetEdge.Likelihood, Is.EqualTo(1));
+            Assert.That(HasInfiniteLoop(synthesis), Is.True);
+        });
+    }
+
 #if DEBUG
     [Test]
     public static void IncomingChecksSeparateMissingLikelihoodFromWeightBalance()
@@ -232,6 +427,39 @@ internal static unsafe class ProfileSynthesisTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgComputeDfs")]
     private static extern FlowGraphDfsTree ComputeDfs(Compiler compiler, bool useProfile);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+    private static extern ProfileSynthesis CreateSynthesis(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "AssignLikelihoods")]
+    private static extern void AssignLikelihoods(ProfileSynthesis synthesis);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "RepairLikelihoods")]
+    private static extern void RepairLikelihoods(ProfileSynthesis synthesis);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "BlendLikelihoods")]
+    private static extern void BlendLikelihoods(ProfileSynthesis synthesis);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ClearLikelihoods")]
+    private static extern void ClearLikelihoods(ProfileSynthesis synthesis);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ReverseLikelihoods")]
+    private static extern void ReverseLikelihoods(ProfileSynthesis synthesis);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "RandomizeLikelihoods")]
+    private static extern void RandomizeLikelihoods(ProfileSynthesis synthesis);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ComputeCyclicProbabilities")]
+    private static extern void ComputeCyclicProbabilities(ProfileSynthesis synthesis);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_cyclicProbabilities")]
+    private static extern ref double[] CyclicProbabilities(ProfileSynthesis synthesis);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_cappedCyclicProbabilities")]
+    private static extern ref int CappedCyclicProbabilities(ProfileSynthesis synthesis);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_hasInfiniteLoop")]
+    private static extern ref bool HasInfiniteLoop(ProfileSynthesis synthesis);
 
     private static FlowEdge Edge(BasicBlock source, BasicBlock target, double likelihood)
     {

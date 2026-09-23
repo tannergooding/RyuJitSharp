@@ -183,6 +183,15 @@ public sealed class FlowEdge
         _dupCount -= dupCount;
     }
 
+    public void clearLikelihood()
+    {
+        _likelihood = 0;
+        _heuristicBasedLikelihood = false;
+#if DEBUG
+        _likelihoodSet = false;
+#endif
+    }
+
     public void incrementDupCount(int dupCount = 1)
     {
         _dupCount += dupCount;

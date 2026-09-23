@@ -10307,7 +10307,7 @@ public partial class Compiler
         return res;
     }
 
-    private FlowGraphDfsTree fgComputeDfs(bool useProfile = false)
+    public FlowGraphDfsTree fgComputeDfs(bool useProfile = false)
     {
         var postOrder = new BasicBlock[fgBBcount];
         var hasCycle = false;
