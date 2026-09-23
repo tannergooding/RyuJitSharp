@@ -11,7 +11,26 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Port AssertionDsc and local-assertion table/generation support, then fgKillDependentAssertions, fgAssertionGen and fgMorphTreeDone before completing identical-operand comparisons, conditional folding and integer-special folding (B054). IntegralRange is complete and tree-based non-negativity is active (B086); do not replace morph completion with SetMorphed alone. Scalar folding (B082) and floating constant-operand folding (B084) retain five exactly matching import prefixes in the nine-method NativeAOT corpus. HWI folding, nullable boxing and colon-condition cleanup remain unported. Value-numbered folding and non-negativity queries remain explicit NYI where VN facts are required (B083); post-morph cached references and LIR ownership need adaptation (B064). Keep incomplete native bodies in the residual tree; fgInline remains disabled. Follow the visual-grouping guidance in AGENTS.md and README.md. Both native trees use the target revision; read the intact oracle.",
+    "activeBatch": {
+      "scope": "Advance the saved-WIP morph prerequisites with assertion descriptors, independent table/dependency/complement/diagnostic support, and the full-bit-vector defect B073. This support batch is validated and ready for its logical commit; assertion generation and morph activation are not part of it.",
+      "doneWhen": [
+        "Complete assertion representation and independent table helpers preserve the pinned native contracts, including value-copy behavior and owned vector payloads.",
+        "The selected checks pass and the complete units, related documentation and native-ledger updates form a logical commit.",
+        "Functions blocked by the missing VN expression store remain explicit WIP with their native bodies retained; no assertion or morph phase is activated prematurely."
+      ],
+      "validation": [
+        "Run the combined AssertionTests and BitVecTests selection in Debug and Release; these commands also build the affected projects.",
+        "Keep focused coverage for descriptor ownership/bit identity, table dependencies and diagnostics, and the concrete B073 word-boundary defect. The B073 before-fix run has already been performed; do not repeat it.",
+        "Do not run a full suite or recapture NativeAOT for this support-only batch unless a concrete failure or newly reachable compiler path warrants expanding validation."
+      ],
+      "deferred": [
+        "VN expression storage and VN-dependent assertion factories/insertion.",
+        "Assertion generation, dependent-assertion invalidation and fgMorphTreeDone completion.",
+        "Remaining integer/comparison/conditional/HWI folding and fgInline activation.",
+        "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
+      ]
+    },
+    "nextAction": "Commit the validated assertion representation/table-support batch B087, then continue with local assertion invalidation and queries as a bounded morph prerequisite batch. Assertion insertion and generation require the missing VN expression store; do not replace them with local-only implementations or silently expand into all VN support. fgAssertionGen and fgMorphTreeDone remain unported; do not substitute SetMorphed alone. Then resume required morph/folding closure (B054), keeping optional fgInline activation behind its actual prerequisites. Preserve the five established import-prefix matches without recapturing an unchanged frontier. Keep incomplete native bodies in the residual tree and follow checkpoint.activeBatch for scope and validation.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -406,6 +425,19 @@
         "debugTests": "artifacts\\integral-range-full-debug.trx",
         "releaseTests": "artifacts\\integral-range-full-release.trx"
       },
+      "assertionSupport": {
+        "managedSourceCommit": "3d996fae579019354299d3e80c4eb5e5c0596dbc",
+        "debugPassed": 28,
+        "releasePassed": 27,
+        "skipped": 0,
+        "originalFullBitVectorFailures": 12,
+        "vectorPayloadCasesExecutedPerConfiguration": 5,
+        "nativeDefinitionsRetired": 16,
+        "nativeAotRecaptured": false,
+        "phaseActivated": false,
+        "debugTests": "artifacts\\assertion-model-debug.trx",
+        "releaseTests": "artifacts\\assertion-model-release.trx"
+      },
       "nativeAotPublish": "passed-after-integral-ranges",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "five-of-nine-import-prefixes-equal-remaining-inline-candidate-differences",
@@ -606,6 +638,15 @@
       "commit": "ea58e615c7f95346143d4cf2945bf6de173a1d0a",
       "indexCommit": "d25aa5ca8082f2d4fbc531dee7bc5490790b9cba",
       "ref": "refs/porting/snapshots/native-ledger-integral-range"
+    },
+    "assertionSupportManagedSource": {
+      "commit": "3d996fae579019354299d3e80c4eb5e5c0596dbc",
+      "ref": "refs/porting/snapshots/assertion-support-source"
+    },
+    "assertionSupportNativeResidual": {
+      "commit": "8afe04c2553c68a1c0ebf049cb40dab07cfeb60e",
+      "indexCommit": "6a6dbddfe846bc34f4e91250a3f064ef34f06a0a",
+      "ref": "refs/porting/snapshots/native-ledger-assertion-support"
     }
   },
   "sourceMap": [
@@ -655,6 +696,12 @@
       "area": "assertion-ranges",
       "native": ["src\\coreclr\\jit\\assertionprop.cpp", "src\\coreclr\\jit\\compiler.h"],
       "csharp": ["sources\\Core\\jit\\compiler\\IntegralRange.cs", "sources\\Core\\jit\\compiler\\SymbolicIntegerValue.cs"],
+      "reconciledCommit": null
+    },
+    {
+      "area": "assertion-representation-and-tables",
+      "native": ["src\\coreclr\\jit\\assertionprop.cpp", "src\\coreclr\\jit\\compiler.h", "src\\coreclr\\jit\\compiler.hpp", "src\\coreclr\\jit\\valuenum.h"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.AssertionDsc.cs", "sources\\Core\\jit\\compiler\\Compiler.ap.cs", "sources\\Core\\jit\\compiler\\Compiler.opt.cs", "sources\\Core\\jit\\valuenum\\ValueNumStore.cs"],
       "reconciledCommit": null
     },
     {

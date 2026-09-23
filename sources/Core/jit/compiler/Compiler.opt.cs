@@ -111,13 +111,13 @@ public partial class Compiler
     protected GenTree? optAssertionPropCurrentTree;
 #endif
 
-    protected unsafe AssertionIndex* optComplementaryAssertionMap;
+    protected AssertionIndex[] optComplementaryAssertionMap = [];
 
     /// <summary>table that holds dependent assertions (assertions using the value of a local var) for each local var</summary>
     protected List<ASSERT_TP>? optAssertionDep;
 
     /// <summary>table that holds info about assertions</summary>
-    protected AssertionDsc? optAssertionTabPrivate;
+    protected AssertionDsc[] optAssertionTabPrivate = [];
 
     protected VNSet? optAssertionVNsMap;
 

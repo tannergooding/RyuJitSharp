@@ -76,6 +76,16 @@ Tree-based non-negativity inference is active; queries that still require
 `ValueNumStore.IsVNNeverNegative` fail explicitly until that prerequisite exists
 (B083/B086), rather than silently skipping the native VN query.
 
+Assertion descriptors use immutable managed objects with value-type operands;
+reversal creates a new descriptor. Vector constants own a copied byte array
+containing only the active payload, instead of native inline/arena storage.
+Equality preserves signed-zero and NaN bit patterns, handle flags, and native
+field-sequence exclusion. Dependency vectors and complementary indices use
+managed collections without changing index or traversal order (B087).
+VN-dependent factories and insertion remain unported, not local-only
+implementations presented as complete. ARM64 scalable-vector assertion constants
+explicitly report NYI, matching the existing scalable-vector representation gap.
+
 Profile weight lookup uses a managed `ref` output: native leaves the pointed-to
 value unchanged when no profile weights are available, so an unconditional
 `out` initialization would change that contract (B067).

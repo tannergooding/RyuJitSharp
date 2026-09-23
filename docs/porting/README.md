@@ -43,6 +43,11 @@ required minopts phases before optional optimizations. Reuse the prepared native
 build and `Core_Root`, with small AltJIT programs at meaningful boundaries.
 Intermediate checks should be localized and fast; deeper investigation is driven
 by actual failures or mismatches, not a mandatory cycle for every helper.
+Before editing or resuming, follow the plan's
+[active batch contract](PLAN.md#active-batch-contract): persist scope, completion
+condition, selected validation, and deferred work in `checkpoint.activeBatch`.
+Use that boundary to decide what to investigate and test, rather than restarting
+a helper-by-helper validation cycle after each commit or context refresh.
 
 Port a whole native function and its required support, rather than a fragment
 selected to get one test running. Preserve all Windows-x64 behavior in that

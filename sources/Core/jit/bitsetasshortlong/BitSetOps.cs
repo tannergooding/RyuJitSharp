@@ -23,11 +23,15 @@ public struct BitSetOps<TEnv, TBitSetTraits>
     private static nint[] MakeFullArrayBits(TEnv env)
     {
         var res = GC.AllocateUninitializedArray<nint>(TBitSetTraits.GetArrSize(env));
-        res.AsSpan().Fill(nint.MaxValue);
+        res.AsSpan().Fill(-1);
 
         // Start with all ones, shift in zeros in the last elem.
-        var lastElemBits = ((res.Length - 1) % (Unsafe.SizeOf<nint>() * 8)) + 1;
-        res[^1] = nint.MaxValue >>> ((Unsafe.SizeOf<nint>() * 8) - lastElemBits);
+        if (res.Length != 0)
+        {
+            var lastElemBits = ((TBitSetTraits.GetSize(env) - 1) % (Unsafe.SizeOf<nint>() * 8)) + 1;
+            res[^1] = (nint)(-1) >>> ((Unsafe.SizeOf<nint>() * 8) - lastElemBits);
+        }
+
         return res;
     }
 

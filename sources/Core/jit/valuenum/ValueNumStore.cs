@@ -12,6 +12,9 @@ public sealed partial class ValueNumStore
     /// <summary>We will reserve "negative one" to represent "not a value number", for maps that might start uninitialized.</summary>
     public const ValueNum NoVN = -1;
 
+    // Chunk zero reserves SRC_Null, SRC_Void and SRC_EmptyExcSet in this order.
+    public static ValueNum VNForNull() => 0;
+
     private const int VNFOA_IllegalGenTreeOpShift = 0;
     private const int VNFOA_CommutativeShift = 1;
     private const int VNFOA_ArityShift = 2;

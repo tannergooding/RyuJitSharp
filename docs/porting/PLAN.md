@@ -34,6 +34,41 @@ belong at concrete bugs or mismatches, not automatically at every helper.
 Use dumps and eventual disassembly to preserve fidelity without mistaking native
 fallback or stub phases for managed code generation.
 
+### Active batch contract
+
+Before editing, record four fields in `checkpoint.activeBatch` in
+[state.json](state.json), and use them when resuming work:
+
+- **Scope:** the capability or bounded dependency closure being ported, and the
+  larger milestone it serves. A helper alone is not the default batch boundary.
+- **Done when:** the concrete completion condition, including the logical commit.
+  Commit complete, validated units; keep incomplete Windows-x64 functions as WIP
+  and retain their native bodies. Do not add stubs to satisfy the boundary.
+- **Validation:** select the smallest checks that establish this batch's outcome
+  before writing tests. Default to a batch build and relevant existing checks.
+  Add focused coverage for concrete defects or non-obvious managed adaptations,
+  not a fixture for every translated helper.
+- **Deferred:** explicitly name adjacent work that is not needed for this batch.
+  Keep the original milestone visible when following prerequisites.
+
+Read the relevant native contracts and managed APIs together before translating;
+avoid discovering routine API differences through repeated build attempts.
+Validation is not an automatic per-helper cycle: before/after replays, exhaustive
+edge-case matrices, full suites, and NativeAOT captures need a specific reason.
+Recapture native comparisons when the reachable path or observed output can
+change, not merely because more support code exists.
+
+Expand investigation only for a named failure, dump mismatch, unresolved
+ownership/ABI contract, or numeric-semantic risk. Record that reason in the
+active batch before expanding its validation. Fix and rerun failed checks as
+needed; this is a scope constraint, not permission to leave failures unresolved.
+If a prerequisite starts requiring another substantial subsystem, new tooling,
+or extensive fixtures, reassess the boundary rather than silently expanding it.
+
+After committing a batch, select the next batch and continue. A logical commit
+is a checkpoint, not a reason to stop; stop at a substantial milestone, an
+explicit user pause, or a decision requiring approval.
+
 ## 0. Preserve and establish the starting point
 
 Completed setup: the isolated C# branch starts from `fgImport`, its latest WIP
