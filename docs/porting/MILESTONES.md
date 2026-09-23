@@ -12,6 +12,26 @@ continue. A milestone does not require a conversational stop. Pause for an
 explicit user request, an unresolved decision requiring approval, a publication
 conflict, or a blocker that cannot be safely resolved.
 
+## 2026-09-23: General assertion creation and branch facts
+
+**Commit:** `f56d1b4`.
+
+**Result:** Complete local/global assertion creation and JTRUE generation,
+including scalar/vector constants, copy normalization, exact/subtype facts and
+edge polarity. CSE comma-wrapped stores preserve the underlying value query.
+Corrected unsigned null-check offset comparison so negative offsets cannot
+establish invalid non-null facts. Four complete native definitions retired.
+
+**Evidence:** 101 Debug / 99 Release selected cases passed, zero skipped.
+Coverage includes small-local stores versus comparisons, copy gates,
+integral-only SIMD equality, exact-type edges and negative-offset rejection.
+
+**Frontier:** Node-wide assertion generation and morph completion are still
+unported. No new phase or code-generation parity is claimed.
+
+**Next:** VN zero/vector constants and complete unary-expression support needed
+by `optAssertionGen`, followed by the morph completion path.
+
 ## 2026-09-23: Scalar folding through VN-backed assertion support
 
 **Commits:** `d6aae98` through `302c229` (eight implementation commits).
