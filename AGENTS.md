@@ -35,6 +35,10 @@ checkpoint, and load only the relevant sections of the
 - Update the relevant checkpoint, mapping, deviation, and evidence when finishing
   a batch. Keep raw dumps, large inventories, and local recovery paths outside
   maintained documentation; record how to reproduce them.
+- Commit each completed, validated dependency-coherent batch with its related
+  tests and documentation before starting the next batch. Recovery snapshots
+  supplement regular commits; they do not replace them. Leave incomplete work
+  uncommitted, and keep unrelated changes out of the batch.
 - Continue approved work without asking about routine translation details. Ask
   before expanding scope, accepting output differences, changing ABI/ownership
   contracts, or making substantial design changes. Do not push or open a PR

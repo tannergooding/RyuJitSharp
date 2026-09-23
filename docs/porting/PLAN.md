@@ -119,7 +119,8 @@ support. Never infer non-Windows behavior from a Windows run.
 
 **Exit per batch:** complete intended functions, explicit deferrals, scoped
 regression/parity evidence, residual-source update, and a small continuation
-checkpoint naming the next dependency.
+checkpoint naming the next dependency, committed together as one logical batch.
+Do not start the next batch with completed work still waiting for a commit.
 
 ## 5. Restructure after establishing the clean port
 

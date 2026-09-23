@@ -105,6 +105,13 @@ Load this contract and the small current checkpoint, then look up the relevant
 symbols and source-map entry. Read complete functions and necessary dependencies,
 not entire `Compiler` partials. Keep one active, dependency-coherent batch.
 
+Finish each completed, validated batch with a logical commit before starting
+the next batch. Include the related implementation, focused coverage, and
+checkpoint/deviation updates together; do not accumulate unrelated work into
+a later catch-all commit. Keep incomplete work uncommitted. Recovery snapshots
+remain useful for artifacts and saved WIP, but supplement rather than replace
+regular commits. Local commits do not authorize pushing or opening a PR.
+
 For upstream synchronization, obtain the changed-file/commit inventory first.
 Classify each affected ported area, generator input, JIT/EE interface, and relevant
 native dependency. Save classifications and unresolved symbols once, rather than
