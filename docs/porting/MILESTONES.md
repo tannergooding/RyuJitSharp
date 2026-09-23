@@ -12,6 +12,25 @@ continue. A milestone does not require a conversational stop. Pause for an
 explicit user request, an unresolved decision requiring approval, a publication
 conflict, or a blocker that cannot be safely resolved.
 
+## 2026-09-23: Unary VN expressions
+
+**Commit:** `75e9074`.
+
+**Result:** Complete unary function interning/folding, known array lengths,
+canonical field-sequence identity and ordered exception-value composition.
+Field sequences use managed identity tokens rather than movable addresses;
+their diagnostics retain native symbolic formatting. Eighteen complete native
+definitions retired.
+
+**Evidence:** 136 Debug / 133 Release selected cases passed, zero skipped.
+Coverage includes wraparound, signed zero, NaN payloads, EE calls and caching,
+allocation length bounds, identity after compacting GC and exception unions.
+
+**Frontier:** No new compiler phase is activated. Multi-argument VN evaluation
+and the general VN dumper remain incomplete.
+
+**Next:** Complete node-wide assertion generation and morph completion.
+
 ## 2026-09-23: Fixed-width VN constants
 
 **Commit:** `c068366`.
