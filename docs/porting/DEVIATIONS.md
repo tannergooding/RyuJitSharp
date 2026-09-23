@@ -61,6 +61,13 @@ without boxing descriptors or allocating a callback per definition. Descriptor
 queries remain lazy; promoted-field order, offsets, SSA indices, and early abort
 match `compiler.hpp`.
 
+`LclVarSet` keeps the native empty/single/set transition, including expansion on
+a second insertion of the same local and retaining expanded storage after clear.
+Its expanded membership storage uses `HashSet<int>` instead of `hashBv`; only
+membership, intersection, and emptiness are observable through this API, not
+iteration order. The separate general-purpose `hashBv` port remains incomplete.
+Pinned upstream quirks B049/B052 are preserved rather than silently corrected.
+
 ### D003: Deferred non-Windows-x64-only paths
 
 **Status:** accepted scoped deferral; not a successful execution/parity result.

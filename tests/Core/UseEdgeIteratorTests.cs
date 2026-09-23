@@ -12,6 +12,82 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class UseEdgeIteratorTests
 {
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void LocalSetsPreserveMembershipAcrossRepresentationsAndReuse(bool expandLeft, bool expandRight)
+    {
+        WithCompiler(compiler => {
+            var left = new LclVarSet();
+            var right = new LclVarSet();
+            Assert.That(left.IsEmpty, Is.True);
+            Assert.That(left.Intersects(right), Is.False);
+            left.Add(compiler, 1);
+            right.Add(compiler, 2);
+            if (expandLeft)
+            {
+                left.Add(compiler, 1);
+            }
+            if (expandRight)
+            {
+                right.Add(compiler, 3);
+            }
+            Assert.That(left.IsEmpty, Is.EqualTo(!expandLeft));
+            Assert.That(left.Contains(1), Is.True);
+            Assert.That(left.Contains(2), Is.False);
+            Assert.That(left.Intersects(right), Is.False);
+            Assert.That(right.Intersects(left), Is.False);
+            right.Add(compiler, 1);
+            Assert.That(left.Intersects(right), Is.True);
+            Assert.That(right.Intersects(left), Is.True);
+            left.Clear();
+            Assert.That(left.IsEmpty, Is.True);
+            Assert.That(left.Contains(1), Is.False);
+            Assert.That(left.Intersects(right), Is.False);
+            left.Add(compiler, 4);
+            Assert.That(left.Contains(4), Is.True);
+            Assert.That(left.Contains(1), Is.False);
+            Assert.That(left.Intersects(right), Is.False);
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void AliasSetsTrackOperandReadsAndContainedIndirections(bool contained)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }, new LclVarDsc { Type = TYP_INT }];
+            compiler.lvaCount = 2;
+            var zero = compiler.gtNewIconNode(TYP_INT, 0);
+            var store = new GenTreeLclVar(TYP_INT, 0, zero);
+            var writes = new AliasSet();
+            writes.AddNode(compiler, store);
+            writes.AddNode(compiler, store);
+            GenTree read = contained
+                ? new GenTreeIndir(GT_IND, TYP_INT, compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0))
+                : compiler.gtNewLclvNode(TYP_INT, 0);
+            if (contained)
+            {
+                read.Flags |= GenTreeFlags.GTF_CONTAINED;
+            }
+            var user = new GenTreeOp(GT_ADD, TYP_INT, read, zero);
+            var reads = new AliasSet();
+            reads.AddNode(compiler, user);
+            Assert.That(writes.WritesLocal(0), Is.True);
+            Assert.That(writes.WritesLocal(1), Is.False);
+            Assert.That(writes.InterferesWith(reads), Is.True);
+            Assert.That(reads.InterferesWith(writes), Is.True);
+            if (!contained)
+            {
+                Assert.That(writes.InterferesWith(new AliasSet.NodeInfo(compiler, user)), Is.True);
+            }
+            writes.Clear();
+            Assert.That(writes.WritesAnyLocation, Is.False);
+            Assert.That(writes.InterferesWith(reads), Is.False);
+        });
+    }
+
     [TestCase(-1, false, new[] { 1, 2 })]
     [TestCase(-1, true, new[] { 1 })]
     [TestCase(0, false, new[] { 1 })]
@@ -32,6 +108,12 @@ internal static unsafe class UseEdgeIteratorTests
                 ? new GenTreeLclVar(TYP_STRUCT, 0, new GenTree(GT_NOP, TYP_STRUCT))
                 : new GenTreeLclFld(TYP_INT, 0, (ushort)offset, compiler.gtNewIconNode(TYP_INT, 0), null);
             store.Flags |= GenTreeFlags.GTF_ASG;
+            var aliases = new AliasSet();
+            aliases.AddNode(compiler, store);
+            Assert.That(aliases.WritesLocal(0), Is.True);
+            Assert.That(aliases.WritesLocal(1), Is.EqualTo(offset is < 4 or 8));
+            Assert.That(aliases.WritesLocal(2), Is.EqualTo(offset is -1 or >= 2));
+            Assert.That(aliases.WritesLocal(3), Is.False);
             var visitor = new DefinitionVisitor(compiler, abort);
             var result = store.VisitLogicalLocalDefs(compiler, ref visitor);
             Assert.That(visitor.Locals, Is.EqualTo(expected));
