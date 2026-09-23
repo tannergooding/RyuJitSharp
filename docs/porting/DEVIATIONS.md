@@ -58,6 +58,13 @@ Profile spanning traversal uses `Stack<BasicBlock>` for pending blocks and a
 matching native `ArrayStack::Top(i)`; callbacks must not change later successor
 selection through mutations of the live successor list (B068).
 
+Sparse edge reconstruction stores managed edge/block-info objects, with a typed
+`BasicBlock.bbSparseCountInfo` reference instead of a `void*`. The two dictionaries
+are lookup-only: key equality, native duplicate-key assertions and Release
+replacement, and the edge-key hash are retained; iteration order is not observed. Incoming/outgoing
+model edges remain prepended linked lists, preserving summation and solver order
+independently of dictionary storage (B069).
+
 Managed error-trap callbacks capture exceptions before leaving their
 `UnmanagedCallersOnly` shim. An owned `GCHandle` keeps the action and captured
 exception alive until the native trap returns. The regular trap reports

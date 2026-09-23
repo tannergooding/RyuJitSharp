@@ -5,13 +5,12 @@
 
 namespace RyuJitSharp;
 
-public sealed class ProfileSynthesis
+public partial class Globals
 {
-    public const weight_t epsilon = 0.001;
-
-    public static PhaseStatus AdjustThrowEdgeLikelihoods(Compiler compiler)
+    public static int EfficientEdgeCountBlockToKey(BasicBlock block)
     {
-        // TODO: Port ProfileSynthesis.AdjustThrowEdgeLikelihoods
-        return PhaseStatus.MODIFIED_NOTHING;
+        // EH normalization can add internal blocks without IL offsets. Their block
+        // numbers occupy a separate key space selected by the high bit.
+        return block.HasFlag(BBF_INTERNAL) ? block.bbNum | int.MinValue : block.bbCodeOffs;
     }
 }

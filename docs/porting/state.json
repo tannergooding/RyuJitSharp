@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Continue profile incorporation prerequisites (B067), next EfficientEdgeCountReconstructor and its block-key helper. Block-count lookup, inline scaling, unsigned stress seeds and complete profile spanning traversal (B068) are implemented. Edge reconstruction and ProfileSynthesis remain before activating fgIncorporateProfileData; do not insert the missing BBOPT diagnostic alone. B064 still gates constant bashing: replacement must cover aliases/LIR ownership or a stable-identity mutable-payload redesign needs separate approval. Folding and global-morph assertion bookkeeping remain before enabling the full inliner and resuming rationalization. Both native trees use the target revision.",
+    "nextAction": "Continue profile incorporation prerequisites (B067), next ProfileSynthesis and its DFS/natural-loop dependencies. Block counts, inline scaling, unsigned stress seeds, spanning traversal (B068) and complete sparse edge reconstruction (B069) are implemented. Switch default metadata is corrected (B070). ProfileSynthesis still gates activating fgIncorporateProfileData; do not insert the missing BBOPT diagnostic alone. B064 still gates constant bashing: replacement must cover aliases/LIR ownership or a stable-identity mutable-payload redesign needs separate approval. Folding and global-morph assertion bookkeeping remain before enabling the full inliner and resuming rationalization. Both native trees use the target revision; read the intact oracle, not residual bodies, as source of truth.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -19,13 +19,13 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "10.0.401",
-      "debugBuild": "passed-after-profile-spanning-support",
-      "releaseBuild": "passed-after-profile-spanning-support",
+      "debugBuild": "passed-after-profile-edge-reconstruction",
+      "releaseBuild": "passed-after-profile-edge-reconstruction",
       "testSourcesPresent": true,
       "writerRegressionCases": 16,
       "writerRegressionConfigurations": ["Debug", "Release"],
-      "targetFocusedTestsDebug": 713,
-      "targetFocusedTestsRelease": 617,
+      "targetFocusedTestsDebug": 769,
+      "targetFocusedTestsRelease": 667,
       "targetFocusedTestsSkipped": 0,
       "callIntrinsicSpotChecks": {
         "debugPassed": 81,
@@ -200,6 +200,15 @@
         "nativeAotRecaptured": false,
         "profilePhaseActivated": false
       },
+      "profileEdgeSpotChecks": {
+        "debugPassed": 26,
+        "releasePassed": 23,
+        "originalSwitchDefaultFailures": 6,
+        "skipped": 0,
+        "nativeAotRecaptured": false,
+        "profilePhaseActivated": false,
+        "source": "pinned-oracle-including-current-OSR-incomplete-flow-fallback"
+      },
       "savedWipSupportMilestone": {
         "managedSourceCommit": "24b9352dc6f293228d58cb24871280827f936ab7",
         "nativeCompilationHeaders": 7,
@@ -342,6 +351,11 @@
       "commit": "50ead8bb56313fe20d49505c947baf7513fe51b3",
       "indexCommit": "ef62ec1d37898cd961025705842483c97eb9aec1",
       "ref": "refs/porting/snapshots/2026-09-23-native-ledger-profile-spanning"
+    },
+    "profileEdgeNativeResidual": {
+      "commit": "2f189cabe85bfab5871cef7fa1f26bd4fc86f801",
+      "indexCommit": "2b98f7a234ac220e624ccc16b926cf0b9bdf8f71",
+      "ref": "refs/porting/snapshots/2026-09-23-native-ledger-profile-edges"
     }
   },
   "sourceMap": [

@@ -10653,6 +10653,18 @@ public partial class Compiler
         return true;
     }
 
+    public bool fgIncorporateEdgeCounts()
+    {
+        JITDUMP("\nReconstructing block counts from sparse edge instrumentation\n");
+        var reconstructor = new EfficientEdgeCountReconstructor(this);
+        reconstructor.Prepare();
+        WalkSpanningTree(reconstructor);
+        reconstructor.Solve();
+        reconstructor.Propagate();
+
+        return reconstructor.IsGood;
+    }
+
     public bool fgIncorporateBlockCounts()
     {
         foreach (var block in Blocks)

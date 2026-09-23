@@ -219,7 +219,7 @@ public sealed partial class BasicBlock : LIR.Range
     public unsafe void* bbSparseProbeList;
 
     /// <summary>Used early on by fgIncorporateEdgeCounts</summary>
-    public unsafe void* bbSparseCountInfo;
+    public EfficientEdgeCountReconstructor.BlockInfo? bbSparseCountInfo;
 
     /// <summary>the block's  preorder number in the graph [0...postOrderCount)</summary>
     public int bbPreorderNum;

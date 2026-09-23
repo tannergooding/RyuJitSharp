@@ -46,6 +46,7 @@ public sealed class BBswtDesc : BBJumpTable
 
         _cases = new FlowEdge[caseCount];
         _caseOffsets = caseOffsets;
+        bbsHasDefault = hasDefault;
     }
 
     internal BBswtDesc(FlowEdge[] succs, int[] caseOffsets, bool hasDefault, int dominantCase)
