@@ -18,6 +18,13 @@ public sealed class GenTreeHWIntrinsic : GenTreeJitIntrinsic
 
     public NamedIntrinsic HWIntrinsicId => _hwIntrinsicId;
 
+    public static bool Equals(GenTreeHWIntrinsic op1, GenTreeHWIntrinsic op2)
+    {
+        return (op1.Type == op2.Type) && (op1.HWIntrinsicId == op2.HWIntrinsicId) &&
+               (op1.SimdBaseType == op2.SimdBaseType) && (op1.SimdSize == op2.SimdSize) &&
+               (op1.AuxiliaryType == op2.AuxiliaryType) && OperandsAreEqual(op1, op2);
+    }
+
 #if FEATURE_HW_INTRINSICS
     public bool IsCreate => _hwIntrinsicId is NI_Vector_Create;
 #endif

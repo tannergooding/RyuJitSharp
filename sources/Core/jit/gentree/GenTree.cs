@@ -952,10 +952,323 @@ public partial class GenTree
         }
     }
 
-    public static bool Compare(GenTree op1, GenTree op2, bool swapOk = false)
+    public static unsafe bool Compare(GenTree? op1, GenTree? op2, bool swapOk = false)
     {
-        // TODO: Port GenTree.Compare
-        return false;
+    AGAIN:
+        if (op1 is null)
+        {
+            return op2 is null;
+        }
+        if (op2 is null)
+        {
+            return false;
+        }
+        if (op1 == op2)
+        {
+            return true;
+        }
+
+        var oper = op1.Oper;
+        if ((oper != op2.Oper) || (op1.Type != op2.Type) ||
+            (op1.HasOverflowCheckEx != op2.HasOverflowCheckEx) ||
+            ((op1.Flags & GTF_UNSIGNED) != (op2.Flags & GTF_UNSIGNED)))
+        {
+            return false;
+        }
+        if (oper is GT_MOD or GT_UMOD or GT_DIV or GT_UDIV)
+        {
+            const GenTreeFlags flags = GTF_DIV_MOD_NO_BY_ZERO | GTF_DIV_MOD_NO_OVERFLOW;
+            if ((op1.Flags & flags) != (op2.Flags & flags))
+            {
+                return false;
+            }
+        }
+
+        if (oper.IsConst)
+        {
+            return oper switch {
+                GT_CNS_INT => op1.AsIntCon().IconValue == op2.AsIntCon().IconValue,
+                GT_CNS_LNG => op1.AsLngCon().LconValue == op2.AsLngCon().LconValue,
+                GT_CNS_DBL => op1.AsDblCon().IsBitwiseEqual(op2.AsDblCon()),
+                GT_CNS_STR => (op1.AsStrCon().SconCpx == op2.AsStrCon().SconCpx) &&
+                              (op1.AsStrCon().ScpHnd == op2.AsStrCon().ScpHnd),
+#if FEATURE_SIMD
+                GT_CNS_VEC => GenTreeVecCon.Equals(op1.AsVecCon(), op2.AsVecCon()),
+#endif
+#if FEATURE_MASKED_HW_INTRINSICS
+                GT_CNS_MSK => GenTreeMskCon.Equals(op1.AsMskCon(), op2.AsMskCon()),
+#endif
+                _ => false,
+            };
+        }
+
+        if (oper.IsLeaf)
+        {
+            switch (oper)
+            {
+                case GT_LCL_FLD:
+                    if (op1.AsLclFld().Layout != op2.AsLclFld().Layout)
+                    {
+                        return false;
+                    }
+                    goto case GT_LCL_ADDR;
+
+                case GT_LCL_ADDR:
+                    if (op1.AsLclFld().LclOffs != op2.AsLclFld().LclOffs)
+                    {
+                        return false;
+                    }
+                    goto case GT_LCL_VAR;
+
+                case GT_LCL_VAR:
+                    return op1.AsLclVarCommon().LclNum == op2.AsLclVarCommon().LclNum;
+
+                case GT_ASYNC_RESUME_INFO:
+                case GT_CONTINUATION_MEMBER_OFFSET:
+                    return op1.AsVal().Val1 == op2.AsVal().Val1;
+
+                case GT_NOP:
+                case GT_LABEL:
+                case GT_FTN_ENTRY:
+                case GT_SWIFT_ERROR:
+                case GT_GCPOLL:
+                case GT_WASM_THROW_REF:
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
+        if (oper.IsUnary)
+        {
+            if (oper is GT_IND)
+            {
+                // Struct indirections need contextual layout information.
+                if ((op1.Type is TYP_STRUCT) || ((op1.Flags & GTF_IND_FLAGS) != (op2.Flags & GTF_IND_FLAGS)))
+                {
+                    return false;
+                }
+            }
+
+            if (oper.IsExOp)
+            {
+                switch (oper)
+                {
+                    case GT_STORE_LCL_FLD:
+                        if ((op1.AsLclFld().LclOffs != op2.AsLclFld().LclOffs) ||
+                            (op1.AsLclFld().Layout != op2.AsLclFld().Layout))
+                        {
+                            return false;
+                        }
+                        goto case GT_STORE_LCL_VAR;
+
+                    case GT_STORE_LCL_VAR:
+                        if (op1.AsLclVarCommon().LclNum != op2.AsLclVarCommon().LclNum)
+                        {
+                            return false;
+                        }
+                        break;
+
+                    case GT_ARR_LENGTH:
+                        if (op1.AsArrLen().ArrLenOffset != op2.AsArrLen().ArrLenOffset)
+                        {
+                            return false;
+                        }
+                        break;
+
+                    case GT_MDARR_LENGTH:
+                    case GT_MDARR_LOWER_BOUND:
+                        if ((op1.AsMDArr().Dim != op2.AsMDArr().Dim) || (op1.AsMDArr().Rank != op2.AsMDArr().Rank))
+                        {
+                            return false;
+                        }
+                        break;
+
+                    case GT_CAST:
+                        if (op1.AsCast().CastType != op2.AsCast().CastType)
+                        {
+                            return false;
+                        }
+                        break;
+
+                    case GT_BLK:
+                        if ((op1.AsBlk().Layout != op2.AsBlk().Layout) ||
+                            ((op1.Flags & GTF_IND_FLAGS) != (op2.Flags & GTF_IND_FLAGS)))
+                        {
+                            return false;
+                        }
+                        break;
+
+                    case GT_FIELD_ADDR:
+                        if (op1.AsFieldAddr().FldHnd != op2.AsFieldAddr().FldHnd)
+                        {
+                            return false;
+                        }
+                        break;
+
+                    case GT_ARR_ADDR:
+                        if ((op1.AsArrAddr().ElemType != op2.AsArrAddr().ElemType) ||
+                            (op1.AsArrAddr().ElemClassHandle != op2.AsArrAddr().ElemClassHandle) ||
+                            (op1.AsArrAddr().FirstElemOffset != op2.AsArrAddr().FirstElemOffset))
+                        {
+                            return false;
+                        }
+                        break;
+
+                    case GT_BOX:
+                    case GT_RUNTIMELOOKUP:
+                        break;
+
+                    default:
+                        assert(false, "unexpected unary ExOp operator");
+                        break;
+                }
+            }
+
+            // Native comparison does not propagate swapOK through unary nodes.
+            return Compare(op1.AsUnOp().Op1, op2.AsUnOp().Op1);
+        }
+
+        if (oper.IsBinary)
+        {
+            if (oper.IsExOp)
+            {
+                switch (oper)
+                {
+                    case GT_STORE_BLK:
+                        if (op1.AsBlk().Layout != op2.AsBlk().Layout)
+                        {
+                            return false;
+                        }
+                        goto case GT_STOREIND;
+
+                    case GT_STOREIND:
+                        if ((op1.Flags & GTF_IND_FLAGS) != (op2.Flags & GTF_IND_FLAGS))
+                        {
+                            return false;
+                        }
+                        break;
+
+                    case GT_INTRINSIC:
+                        if (op1.AsIntrinsic().IntrinsicName != op2.AsIntrinsic().IntrinsicName)
+                        {
+                            return false;
+                        }
+                        break;
+
+                    case GT_LEA:
+                        if ((op1.AsAddrMode().Scale != op2.AsAddrMode().Scale) ||
+                            (op1.AsAddrMode().Offset != op2.AsAddrMode().Offset))
+                        {
+                            return false;
+                        }
+                        break;
+
+                    case GT_BOUNDS_CHECK:
+                        if (op1.AsBoundsChk().ThrowKind != op2.AsBoundsChk().ThrowKind)
+                        {
+                            return false;
+                        }
+                        break;
+
+                    case GT_INDEX_ADDR:
+                        const GenTreeFlags flags = GTF_INX_RNGCHK | GTF_INX_ADDR_NONNULL;
+                        if ((op1.AsIndexAddr().ElemSize != op2.AsIndexAddr().ElemSize) ||
+                            (op1.AsIndexAddr().ElemType != op2.AsIndexAddr().ElemType) ||
+                            (op1.AsIndexAddr().StructElemClass != op2.AsIndexAddr().StructElemClass) ||
+                            (op1.AsIndexAddr().LenOffset != op2.AsIndexAddr().LenOffset) ||
+                            (op1.AsIndexAddr().ElemOffset != op2.AsIndexAddr().ElemOffset) ||
+                            ((op1.Flags & flags) != (op2.Flags & flags)))
+                        {
+                            return false;
+                        }
+                        break;
+
+                    case GT_QMARK:
+                        break;
+
+                    default:
+                        assert(false, "unexpected binary ExOp operator");
+                        break;
+                }
+            }
+
+            var first = op1.AsOp();
+            var second = op2.AsOp();
+            if (first.Op2 is not null)
+            {
+                if (!Compare(first.Op1, second.Op1, swapOk))
+                {
+                    if (swapOk && oper.IsCommutative &&
+                        (((first.Op1.Flags | first.Op2.Flags | second.Op1.Flags | second.Op2.Flags) & GTF_ALL_EFFECT) == 0) &&
+                        Compare(first.Op1, second.Op2, swapOk))
+                    {
+                        op1 = first.Op2;
+                        op2 = second.Op1;
+                        goto AGAIN;
+                    }
+
+                    return false;
+                }
+
+                op1 = first.Op2;
+                op2 = second.Op2;
+            }
+            else
+            {
+                op1 = first.Op1;
+                op2 = second.Op1;
+            }
+            goto AGAIN;
+        }
+
+        switch (oper)
+        {
+            case GT_CALL:
+                return GenTreeCall.Equals(op1.AsCall(), op2.AsCall());
+
+#if FEATURE_HW_INTRINSICS
+            case GT_HWINTRINSIC:
+                return GenTreeHWIntrinsic.Equals(op1.AsHWIntrinsic(), op2.AsHWIntrinsic());
+#endif
+
+            case GT_ARR_ELEM:
+                var arr1 = op1.AsArrElem();
+                var arr2 = op2.AsArrElem();
+                if ((arr1.ArrRank != arr2.ArrRank) || (arr1.ArrElemSize != arr2.ArrElemSize))
+                {
+                    return false;
+                }
+                for (var dim = 0; dim < arr1.ArrRank; dim++)
+                {
+                    if (!Compare(arr1.ArrInds[dim], arr2.ArrInds[dim]))
+                    {
+                        return false;
+                    }
+                }
+                op1 = arr1.ArrObj;
+                op2 = arr2.ArrObj;
+                goto AGAIN;
+
+            case GT_PHI:
+                return GenTreePhi.Equals(op1.AsPhi(), op2.AsPhi());
+
+            case GT_FIELD_LIST:
+                return GenTreeFieldList.Equals(op1.AsFieldList(), op2.AsFieldList());
+
+            case GT_CMPXCHG:
+                return Compare(op1.AsCmpXchg().Addr, op2.AsCmpXchg().Addr) &&
+                       Compare(op1.AsCmpXchg().Data, op2.AsCmpXchg().Data) &&
+                       Compare(op1.AsCmpXchg().Comparand, op2.AsCmpXchg().Comparand);
+
+            case GT_SELECT:
+                return GenTreeConditional.Equals(op1.AsConditional(), op2.AsConditional());
+
+            default:
+                assert(false, "unexpected operator");
+                return false;
+        }
     }
 
     public static void InitNodeSize()

@@ -18,6 +18,11 @@ public sealed class GenTreeConditional : GenTreeOp
 
     public GenTree Cond => _cond;
 
+    public static bool Equals(GenTreeConditional op1, GenTreeConditional op2)
+    {
+        return Compare(op1._cond, op2._cond) && Compare(op1.Op1, op2.Op1) && Compare(op1.Op2, op2.Op2);
+    }
+
 #nullable disable
     public ref GenTree CondRef => ref _cond;
 #nullable restore

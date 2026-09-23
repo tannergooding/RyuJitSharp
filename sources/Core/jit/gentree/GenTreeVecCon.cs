@@ -42,6 +42,38 @@ public sealed class GenTreeVecCon : GenTree
 
     public ref simd_t SimdVal => ref _simdVal;
 
+    public static bool Equals(GenTreeVecCon left, GenTreeVecCon right)
+    {
+        if (left.Type != right.Type)
+        {
+            return false;
+        }
+
+        switch (left.Type)
+        {
+            case TYP_SIMD8:
+            case TYP_SIMD12:
+            case TYP_SIMD16:
+#if TARGET_XARCH
+            case TYP_SIMD32:
+            case TYP_SIMD64:
+#endif
+                // Compare active bytes, including NaN payloads and signed zero, but not SIMD12 padding.
+                return left._simdVal.AsSpan<byte>()[..left.Type.Size].SequenceEqual(right._simdVal.AsSpan<byte>()[..right.Type.Size]);
+
+#if TARGET_ARM64
+            case TYP_SIMD:
+                NYI("ARM64 scalable vector constant comparison");
+                fatal(CORJIT_IMPLLIMITATION);
+                return false;
+#endif
+
+            default:
+                unreached();
+                return false;
+        }
+    }
+
     public static int ElementCount(int simdSize, var_types simdBaseType)
     {
         return simdSize / simdBaseType.Size;

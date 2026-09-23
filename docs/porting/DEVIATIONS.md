@@ -129,6 +129,14 @@ currently supports only Windows, using the native performance-counter, OS-thread
 and process inputs. It explicitly throws on other hosts. Explicitly seeded
 initialization is portable; no unseeded cross-host sequence equivalence is claimed.
 
+`GenTreeVecCon.Equals` defers `TARGET_ARM64`'s `TYP_SIMD` scalable storage.
+`GenTreeMskCon.Equals` likewise defers the scalable-mask branch selected by
+`TARGET_ARM64 && DEBUG` and `JitUseScalableVectorT`. Both report NYI and then
+call the nonreturning `fatal(CORJIT_IMPLLIMITATION)` path, even if NYI reporting
+itself returns. Fixed-width comparisons are implemented; the native vector/mask
+equality bodies remain in the residual tree as the scalable-storage reference.
+Windows-x64 comparisons are covered; ARM64 builds/execution remain unverified.
+
 ## Implementation notes and parity findings
 
 ### R001: Temporary serialization for debugging

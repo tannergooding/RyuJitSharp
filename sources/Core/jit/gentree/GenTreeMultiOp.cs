@@ -33,6 +33,23 @@ public abstract class GenTreeMultiOp : GenTree
 
     public new Span<GenTree> Operands => _operands;
 
+    public static bool OperandsAreEqual(GenTreeMultiOp op1, GenTreeMultiOp op2)
+    {
+        if (op1._operands.Length != op2._operands.Length)
+        {
+            return false;
+        }
+        for (var i = 0; i < op1._operands.Length; i++)
+        {
+            if (!Compare(op1._operands[i], op2._operands[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public GenTree GetOp(int index) => _operands[index - 1];
 
 #nullable disable

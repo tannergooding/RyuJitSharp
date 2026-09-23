@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Continue protected C# WIP integration. Inline invocation/call-morph support now joins block splicing, statement splitting, inline argument/local initialization, recursion guards and async frame returns. Managed error recovery and JIT/EE boolean results are corrected (B061/B062), including a NativeAOT/native SEH boundary probe. Finish expression folding (B054) and the remaining fgInline closure before activating that phase, then continue rationalization. Both native trees use the target revision; synchronization uses raw upstream deltas, preserving prior deletions and unported new APIs. After WIP integration, prioritize required minopts phases toward code generation. The first PGO dump gap remains pending.",
+    "nextAction": "Continue protected C# WIP integration. Inline invocation, block splicing, argument/local initialization and async frame returns are integrated; managed error recovery and JIT/EE boolean results are corrected (B061/B062). Structural tree/call and fixed-width vector/mask comparison now supports the folding closure. Port constant, special, conditional and call folding (B054), including HWI initialization/classification prerequisites (B063), before activating the remaining fgInline closure; then continue rationalization. Both native trees use the target revision. After WIP integration, prioritize required minopts phases toward code generation. The first PGO dump gap remains pending.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -19,13 +19,13 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "10.0.401",
-      "debugBuild": "passed-after-error-recovery-and-boolean-abi-corrections",
-      "releaseBuild": "passed-after-error-recovery-and-boolean-abi-corrections",
+      "debugBuild": "passed-after-structural-tree-comparison",
+      "releaseBuild": "passed-after-structural-tree-comparison",
       "testSourcesPresent": true,
       "writerRegressionCases": 16,
       "writerRegressionConfigurations": ["Debug", "Release"],
-      "targetFocusedTestsDebug": 598,
-      "targetFocusedTestsRelease": 502,
+      "targetFocusedTestsDebug": 640,
+      "targetFocusedTestsRelease": 544,
       "targetFocusedTestsSkipped": 0,
       "callIntrinsicSpotChecks": {
         "debugPassed": 81,
@@ -150,6 +150,16 @@
         "skipped": 0,
         "nativeAotProbe": "passed-managed-recovery-spmi-propagation-native-seh-recovery-and-subsequent-gc-call",
         "actualEEExceptionRecoveryExercised": false,
+        "fullPhaseParityEstablished": false
+      },
+      "structuralComparisonSpotChecks": {
+        "debugPassed": 42,
+        "releasePassed": 42,
+        "originalStubFailures": 39,
+        "skipped": 0,
+        "nativeAotRecaptured": false,
+        "hwiConstructionExercised": false,
+        "arm64ScalableConstantComparisons": "explicit-nyi",
         "fullPhaseParityEstablished": false
       },
       "savedWipSupportMilestone": {

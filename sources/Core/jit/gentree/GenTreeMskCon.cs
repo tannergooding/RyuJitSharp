@@ -22,6 +22,19 @@ public sealed class GenTreeMskCon : GenTree
 
     public bool IsZero => _simdMaskVal.IsZero;
 
+    public static bool Equals(GenTreeMskCon left, GenTreeMskCon right)
+    {
+#if TARGET_ARM64 && DEBUG
+        if (JitConfig.JitUseScalableVectorT != 0)
+        {
+            NYI("ARM64 scalable mask constant comparison");
+            fatal(CORJIT_IMPLLIMITATION);
+        }
+#endif
+
+        return left._simdMaskVal == right._simdMaskVal;
+    }
+
     /// <summary>Is the given node a true mask</summary>
     /// <param name="simdBaseType">the base type of the mask</param>
     /// <returns>Returns true if the node is a true mask for the given simdBaseType.</returns>
