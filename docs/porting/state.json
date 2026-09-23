@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "syncing-upstream",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Continue SaveAsyncContexts and its block-split, return-block, EE metadata, and context-argument visitor dependencies. The use-edge iterator is reconciled (B040); the separate recursive visitor still has an execution-order defect (B045). Async-version tail matching, prefix production/cleanup, async-aware tailcall eligibility, full async call setup, and owns-context gates are ported. Custom awaiter optimization and broader async lowering remain unported. Saved inlining/local-morph/LIR/rationalization/alias-set boundaries are classified, not restored. Broader SIMD importer and backend closures remain unported; the first dump gap still requires real PGO incorporation.",
+    "nextAction": "Continue SaveAsyncContexts and its block-split, predecessor-transfer, and return-block dependencies. AddContextArgsToAsyncCalls and cached EE async metadata access are ported, but the phase still does not invoke them. The use-edge iterator is reconciled (B040); the separate recursive visitor still has an execution-order defect (B045), outside the context visitor's default-order path. Async-version tail matching, prefix cleanup, tailcall eligibility, call setup, and owns-context gates are ported. Custom awaiter optimization and broader async lowering remain unported. Saved inlining/local-morph/LIR/rationalization/alias-set boundaries are classified, not restored. Broader SIMD importer and backend closures remain unported; the first dump gap still requires real PGO incorporation.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -24,10 +24,10 @@
       "testSourcesPresent": true,
       "writerRegressionCases": 16,
       "writerRegressionConfigurations": ["Debug", "Release"],
-      "targetFocusedTestsDebug": 348,
-      "targetFocusedTestsRelease": 264,
+      "targetFocusedTestsDebug": 358,
+      "targetFocusedTestsRelease": 274,
       "targetFocusedTestsSkipped": 0,
-      "nativeAotPublish": "passed-through-target-use-edge-synchronization-checkpoint",
+      "nativeAotPublish": "passed-through-target-async-context-helper-checkpoint",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "seven-method-corpus-captured-with-known-differences",
       "codegenParity": "not-available"
@@ -59,7 +59,7 @@
     "oldNativeHostPreservedAndExecuted": true,
     "managedCapture": "seven-selected-methods-loaded-with-target-abi",
     "managedGuid": "cb2fa75d-449d-4ee0-93ef-57011daefb8c",
-    "latestManagedBinarySha256": "42218711D2FC56E5D44746CC5E5746EA31B65B62ECE37CE3BC9408F44DE85953",
+    "latestManagedBinarySha256": "21082E95C4822E4A23CEF8D1A0D525845AA20AC957510FFEF2CB9EAC4BA5B3B7",
     "wrongGuidCaptureRejected": true,
     "nativeLayoutMeasurements": "matched-raw-managed-sizeof-and-debug-variable-offsets",
     "latestPrefixDifference": "missing-BBOPT-profile-diagnostic",
@@ -72,7 +72,7 @@
       "Importer ordering and EH visibility have focused IR coverage, not runtime EH parity. SIMD normalization preserves its output base type in controlled EE metadata cases, not generated SIMD execution.",
       "Generic virtual lookup handle kinds and array dimension local reuse have controlled EE/IR coverage, not NativeAOT-generated call or multidimensional-array execution parity.",
       "Shared instantiation construction preserves direct/indirect method/class handles and readonly-array behavior in controlled EE cases. Its Wasm ldvirtftn integration remains unvalidated on that target.",
-      "Inherited async context chains preserve argument order, effects, and metadata identity in focused IR cases; SaveAsyncContexts and general async expansion/lowering remain unported.",
+      "Owned and inherited async context chains preserve argument order and frame metadata in focused IR cases. Cached EE async metadata is checked across repeated and per-compiler queries, including GC during the pinned call. SaveAsyncContexts and general async expansion/lowering remain unported.",
       "Async-version void/scalar return wrapping, hidden arguments, default ValueTask folding, static monitor lookup and ReadyToRun entrypoints have controlled IR/EE coverage. Struct/constructor folding, inline return wrapping and synchronized async-return execution remain unexercised; this does not establish async codegen parity.",
       "Async-version tail patterns, EE tailcall consent, async metadata, protected-region recognition, and own-versus-inherited inline contexts have focused coverage. SaveAsyncContexts does not yet produce the generated EH IDs or saved-context arguments; prefix integration, covariant return cleanup, and runtime tail-await execution remain unexercised by the corpus.",
       "Conditional Wasm address-mode recognition passed isolated managed probes; declaration and ARM64 threshold synchronization does not establish non-x64 target support.",
@@ -107,7 +107,7 @@
     {
       "area": "async-contexts",
       "native": ["src\\coreclr\\jit\\async.cpp"],
-      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.cs", "sources\\Core\\jit\\compiler\\Compiler.eh.cs"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.cs", "sources\\Core\\jit\\compiler\\Compiler.eh.cs", "sources\\Core\\jit\\compiler\\Compiler.async.cs"],
       "reconciledCommit": null
     },
     {
@@ -143,7 +143,7 @@
     },
     {
       "area": "jit-ee-abi",
-      "native": ["src\\coreclr\\inc\\corinfo.h", "src\\coreclr\\inc\\corjit.h", "src\\coreclr\\inc\\corjithost.h", "src\\coreclr\\inc\\corjitflags.h", "src\\coreclr\\inc\\jiteeversionguid.h", "src\\coreclr\\jit\\ee_il_dll.cpp", "src\\coreclr\\jit\\eeinterface.cpp"],
+      "native": ["src\\coreclr\\inc\\corinfo.h", "src\\coreclr\\inc\\corjit.h", "src\\coreclr\\inc\\corjithost.h", "src\\coreclr\\inc\\corjitflags.h", "src\\coreclr\\inc\\jiteeversionguid.h", "src\\coreclr\\jit\\ee_il_dll.cpp", "src\\coreclr\\jit\\ee_il_dll.hpp", "src\\coreclr\\jit\\eeinterface.cpp"],
       "csharp": ["sources\\Core\\inc\\corinfo", "sources\\Core\\inc\\corjit", "sources\\Core\\inc\\corjithost", "sources\\Core\\inc\\corjitflags", "sources\\Core\\inc\\jiteeversionguid", "sources\\Core\\jit\\ee_il_dll", "sources\\Core\\jit\\compiler\\Compiler.ee.cs"],
       "reconciledCommit": null
     }

@@ -204,6 +204,19 @@ public partial class Compiler
         return ref eeInfo;
     }
 
+    public unsafe ref CORINFO_ASYNC_INFO eeGetAsyncInfo()
+    {
+        if (!asyncInfoInitialized)
+        {
+            fixed (CORINFO_ASYNC_INFO* pAsyncInfo = &asyncInfo)
+            {
+                info.compCompHnd->getAsyncInfo(pAsyncInfo);
+            }
+            asyncInfoInitialized = true;
+        }
+        return ref asyncInfo;
+    }
+
     public unsafe void eeGetFieldInfo(in CORINFO_RESOLVED_TOKEN resolvedToken, CORINFO_ACCESS_FLAGS flags, out CORINFO_FIELD_INFO result)
     {
         fixed (CORINFO_RESOLVED_TOKEN* pResolvedToken = &resolvedToken)
