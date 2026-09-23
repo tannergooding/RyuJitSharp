@@ -4,6 +4,8 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using static RyuJitSharp.ICorDebugInfo;
 
@@ -251,6 +253,27 @@ public partial class Globals
 #endif
 
         return sep;
+    }
+
+    public static bool FitsIn<T>(var_types type, T value)
+        where T : IBinaryInteger<T>
+    {
+        assert((typeof(T) == typeof(int)) || (typeof(T) == typeof(long)) ||
+               (typeof(T) == typeof(nint)) || (typeof(T) == typeof(nuint)) ||
+               (typeof(T) == typeof(uint)) || (typeof(T) == typeof(ulong)));
+
+        // Saturating the destination bounds to T intersects the two types' ranges.
+        return type switch {
+            TYP_BYTE => (value >= T.CreateSaturating(sbyte.MinValue)) && (value <= T.CreateSaturating(sbyte.MaxValue)),
+            TYP_UBYTE => (value >= T.Zero) && (value <= T.CreateSaturating(byte.MaxValue)),
+            TYP_SHORT => (value >= T.CreateSaturating(short.MinValue)) && (value <= T.CreateSaturating(short.MaxValue)),
+            TYP_USHORT => (value >= T.Zero) && (value <= T.CreateSaturating(ushort.MaxValue)),
+            TYP_INT => (value >= T.CreateSaturating(int.MinValue)) && (value <= T.CreateSaturating(int.MaxValue)),
+            TYP_UINT => (value >= T.Zero) && (value <= T.CreateSaturating(uint.MaxValue)),
+            TYP_LONG => (value >= T.CreateSaturating(long.MinValue)) && (value <= T.CreateSaturating(long.MaxValue)),
+            TYP_ULONG => (value >= T.Zero) && (value <= T.CreateSaturating(ulong.MaxValue)),
+            _ => throw new UnreachableException(),
+        };
     }
 
     public static bool FitsInI8(long value) => unchecked((sbyte)(value)) == value;

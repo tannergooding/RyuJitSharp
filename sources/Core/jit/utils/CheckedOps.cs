@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
@@ -11,6 +12,50 @@ namespace RyuJitSharp;
 
 public static class CheckedOps
 {
+    public static bool CastFromIntOverflows(int fromValue, var_types toType, bool fromUnsigned) => toType switch {
+        TYP_BYTE or TYP_UBYTE or TYP_SHORT or TYP_USHORT or TYP_INT or TYP_UINT or TYP_LONG or TYP_ULONG =>
+            fromUnsigned ? !FitsIn(toType, unchecked((uint)(fromValue))) : !FitsIn(toType, fromValue),
+        TYP_FLOAT or TYP_DOUBLE => false,
+        _ => throw new UnreachableException(),
+    };
+
+    public static bool CastFromLongOverflows(long fromValue, var_types toType, bool fromUnsigned) => toType switch {
+        TYP_BYTE or TYP_UBYTE or TYP_SHORT or TYP_USHORT or TYP_INT or TYP_UINT or TYP_LONG or TYP_ULONG =>
+            fromUnsigned ? !FitsIn(toType, unchecked((ulong)(fromValue))) : !FitsIn(toType, fromValue),
+        TYP_FLOAT or TYP_DOUBLE => false,
+        _ => throw new UnreachableException(),
+    };
+
+    // Checked casts truncate toward zero: the exact valid interval is (MIN - 1, MAX + 1).
+    // When MIN - 1 is not representable, use the inclusive MIN bound instead. This occurs
+    // for float -> int/long and double -> long. Negating the conjunction also rejects NaNs.
+    // See the floating-point cast boundary derivation in native jit/utils.cpp (CheckedOps).
+    public static bool CastFromFloatOverflows(float fromValue, var_types toType) => toType switch {
+        TYP_BYTE => !(-129.0f < fromValue && fromValue < 128.0f),
+        TYP_UBYTE => !(-1.0f < fromValue && fromValue < 256.0f),
+        TYP_SHORT => !(-32769.0f < fromValue && fromValue < 32768.0f),
+        TYP_USHORT => !(-1.0f < fromValue && fromValue < 65536.0f),
+        TYP_INT => !(-2147483648.0f <= fromValue && fromValue < 2147483648.0f),
+        TYP_UINT => !(-1.0 < fromValue && fromValue < 4294967296.0f),
+        TYP_LONG => !(-9223372036854775808.0 <= fromValue && fromValue < 9223372036854775808.0f),
+        TYP_ULONG => !(-1.0f < fromValue && fromValue < 18446744073709551616.0f),
+        TYP_FLOAT or TYP_DOUBLE => false,
+        _ => throw new UnreachableException(),
+    };
+
+    public static bool CastFromDoubleOverflows(double fromValue, var_types toType) => toType switch {
+        TYP_BYTE => !(-129.0 < fromValue && fromValue < 128.0),
+        TYP_UBYTE => !(-1.0 < fromValue && fromValue < 256.0),
+        TYP_SHORT => !(-32769.0 < fromValue && fromValue < 32768.0),
+        TYP_USHORT => !(-1.0 < fromValue && fromValue < 65536.0),
+        TYP_INT => !(-2147483649.0 < fromValue && fromValue < 2147483648.0),
+        TYP_UINT => !(-1.0 < fromValue && fromValue < 4294967296.0),
+        TYP_LONG => !(-9223372036854775808.0 <= fromValue && fromValue < 9223372036854775808.0),
+        TYP_ULONG => !(-1.0 < fromValue && fromValue < 18446744073709551616.0),
+        TYP_FLOAT or TYP_DOUBLE => false,
+        _ => throw new UnreachableException(),
+    };
+
     public static bool TryAdd<T>(T left, T right, out T result)
         where T : IBinaryInteger<T>, ISignedNumber<T>
     {

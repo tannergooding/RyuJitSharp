@@ -43,6 +43,12 @@ half. These implement the native `ClrSafeInt` overflow decisions without using
 exceptions for expected overflow. Callers must invert success when asking
 whether an operation overflows (B065).
 
+`FitsIn(var_types, T)` intersects the destination range with the supported source
+integer type using generic-math saturated bounds, avoiding signed/unsigned
+comparison promotion. The cast-overflow predicates retain native overflow
+polarity and floating-point bounds; casts to floating-point destinations never
+report overflow, including narrowing to infinity (B066).
+
 Managed error-trap callbacks capture exceptions before leaving their
 `UnmanagedCallersOnly` shim. An owned `GCHandle` keeps the action and captured
 exception alive until the native trap returns. The regular trap reports

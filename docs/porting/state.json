@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Keep cross-kind constant bashing gated on B064: native lowering explicitly retains the original node and LIR users, so updating importer return slots alone is insufficient. No broad IR redesign is authorized while the user is unavailable. Continue independent folding prerequisites, next CheckedOps cast overflow predicates. Arithmetic success/overflow contracts are corrected (B065); structural comparison and HWI initialization/classification are verified. After the representation decision, complete folding (B054), global-morph assertion bookkeeping and the remaining fgInline closure; then resume rationalization. Both native trees use the target revision. The first PGO dump gap remains pending.",
+    "nextAction": "Capture and publish the accumulated folding-support milestone, then return to the B064 representation decision. Native lowering retains the original node and LIR users, so updating importer return slots alone is insufficient; no broad IR redesign is authorized. Structural comparison, HWI initialization/classification, checked arithmetic and cast predicates are verified. Constant folding remains gated on B064; global-morph assertion bookkeeping is another remaining dependency before enabling the full inliner and resuming rationalization. Both native trees use the target revision. The first PGO dump gap remains pending.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -19,13 +19,13 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "10.0.401",
-      "debugBuild": "passed-after-checked-arithmetic-correction",
-      "releaseBuild": "passed-after-checked-arithmetic-correction",
+      "debugBuild": "passed-after-checked-cast-support",
+      "releaseBuild": "passed-after-checked-cast-support",
       "testSourcesPresent": true,
       "writerRegressionCases": 16,
       "writerRegressionConfigurations": ["Debug", "Release"],
-      "targetFocusedTestsDebug": 661,
-      "targetFocusedTestsRelease": 565,
+      "targetFocusedTestsDebug": 713,
+      "targetFocusedTestsRelease": 617,
       "targetFocusedTestsSkipped": 0,
       "callIntrinsicSpotChecks": {
         "debugPassed": 81,
@@ -178,6 +178,13 @@
         "skipped": 0,
         "nativeAotRecaptured": false
       },
+      "checkedCastSpotChecks": {
+        "debugPassed": 22,
+        "releasePassed": 22,
+        "skipped": 0,
+        "nativeAotRecaptured": false,
+        "fullPhaseParityEstablished": false
+      },
       "savedWipSupportMilestone": {
         "managedSourceCommit": "24b9352dc6f293228d58cb24871280827f936ab7",
         "nativeCompilationHeaders": 7,
@@ -296,6 +303,11 @@
       "commit": "bfe10dd92e5a2f0d24883b0a31e88776d7860eb2",
       "indexCommit": "e8922ef01198b5550e9c98b00bbe61b3a2fb289f",
       "ref": "refs/porting/snapshots/2026-09-23-native-ledger-folding-prerequisites"
+    },
+    "checkedOpsNativeResidual": {
+      "commit": "255ba02d0018c484f069c440e791ed2c7fabb7a8",
+      "indexCommit": "225f7bc640870b47274bc843a6057d631e7a2b52",
+      "ref": "refs/porting/snapshots/2026-09-23-native-ledger-checked-ops"
     }
   },
   "sourceMap": [
