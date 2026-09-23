@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Continue the nonconstant binary, conditional and hardware-intrinsic folding closure before activating fgInline (B054). Scalar unary/binary constant folding and identity-preserving unthreaded replacement are implemented (B082); the eight-method NativeAOT corpus now has four exactly matching import prefixes, including six folds in FoldConstants. Value-numbered folding remains explicit NYI (B083); post-morph cached argument references and LIR ownership still need adaptation (B064). Keep the incomplete dispatcher, overflow/VN bodies and shared native bashing templates in the residual tree. Follow the visual-grouping guidance in AGENTS.md and README.md rather than applying blank-line rules mechanically. Both native trees use the target revision; read the intact oracle.",
+    "nextAction": "Port fgMorphTreeDone and its local-assertion bookkeeping prerequisites before completing identical-operand comparisons, conditional folding and integer-special folding (B054). Do not replace morph completion with SetMorphed alone. Scalar folding (B082) and complete floating constant-operand folding (B084) are active; the nine-method NativeAOT corpus has five exactly matching import prefixes, including four identity folds in FoldFloating. HWI folding, nullable boxing and colon-condition cleanup remain unported. Value-numbered folding remains explicit NYI (B083); post-morph cached argument references and LIR ownership need adaptation (B064). Keep the incomplete dispatcher, overflow/VN bodies and shared native bashing templates in the residual tree; fgInline remains disabled. Follow the visual-grouping guidance in AGENTS.md and README.md. Both native trees use the target revision; read the intact oracle.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -30,8 +30,8 @@
         "functionalWipIncluded": false,
         "nativeAotRecaptured": false
       },
-      "debugBuild": "passed-after-scalar-folding",
-      "releaseBuild": "passed-after-scalar-folding",
+      "debugBuild": "passed-after-floating-special-folding",
+      "releaseBuild": "passed-after-floating-special-folding",
       "testSourcesPresent": true,
       "writerRegressionCases": 16,
       "writerRegressionConfigurations": ["Debug", "Release"],
@@ -366,9 +366,29 @@
         "debugTests": "artifacts\\scalar-folding-final-debug.trx",
         "releaseTests": "artifacts\\scalar-folding-final-release.trx"
       },
-      "nativeAotPublish": "passed-after-scalar-folding",
+      "floatingSpecialFoldingMilestone": {
+        "managedSourceCommit": "db6744ff093f229f6e18e48fc1f4d651337d6ca9",
+        "newFoldingCasesPerConfiguration": 40,
+        "initialRegressionFailures": 28,
+        "newIntegerDumpCasesDebug": 4,
+        "newFloatingFormatCasesDebug": 2,
+        "combinedDebugPassed": 130,
+        "combinedReleasePassed": 87,
+        "skipped": 0,
+        "nativeCompilationHeaders": 9,
+        "managedCompilationHeaders": 9,
+        "nativeAotRecaptured": true,
+        "equalImportPrefixes": ["Add", "Branch", "Locals", "FoldConstants", "FoldFloating"],
+        "foldFloatingFoldCount": 4,
+        "firstDifferences": "unchanged-inline-candidate-diagnostics-and-processing",
+        "fullPhaseParityEstablished": false,
+        "comparison": "artifacts\\floating-special-parity-comparison.json",
+        "debugTests": "artifacts\\floating-special-parity-debug.trx",
+        "releaseTests": "artifacts\\floating-special-parity-release.trx"
+      },
+      "nativeAotPublish": "passed-after-floating-special-folding",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
-      "phaseDumpParity": "four-of-eight-import-prefixes-equal-remaining-inline-candidate-differences",
+      "phaseDumpParity": "five-of-nine-import-prefixes-equal-remaining-inline-candidate-differences",
       "codegenParity": "not-available"
     }
   },
@@ -393,12 +413,12 @@
     "commit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "nativeConfiguration": "windows.x64.Checked",
     "librariesConfiguration": "Release",
-    "nativeCompilationHeaders": 8,
-    "durableCorpusNativeCompilationHeaders": 8,
+    "nativeCompilationHeaders": 9,
+    "durableCorpusNativeCompilationHeaders": 9,
     "oldNativeHostPreservedAndExecuted": true,
-    "managedCapture": "eight-selected-methods-loaded-with-target-abi",
+    "managedCapture": "nine-selected-methods-loaded-with-target-abi",
     "managedGuid": "cb2fa75d-449d-4ee0-93ef-57011daefb8c",
-    "latestManagedBinarySha256": "A383625158599066F956500F7F0C9979ACAE7287D91761D4D203C6C35202B51F",
+    "latestManagedBinarySha256": "8C908B00802B9B8635311E375895E95C7371711786AEE267D1F345CDD8DC6509",
     "wrongGuidCaptureRejected": true,
     "nativeLayoutMeasurements": "matched-raw-managed-sizeof-and-debug-variable-offsets",
     "latestPrefixDifference": "inline-candidate-diagnostics-and-processing",
@@ -425,7 +445,8 @@
       "Async inline-frame return helpers preserve cold resumption branches, caller context loads, frame-depth slot sharing, resumed-indicator propagation through retained fault handlers, and symbolic-offset cloning/dumps in focused IR/EE cases, including invocation through inline block splicing. Successful helper inlining, continuation layout and async lowering remain unverified.",
       "Inline invocation rollback and failed-call cleanup have controlled EE coverage. Managed exception trapping and synthetic native SEH unwinding pass a Windows-x64 NativeAOT probe, but real EE-thrown failures and successful nested inline compilation remain unexercised. fgInline stays disabled pending expression folding and its remaining closure.",
       "Tree-form scalar folding preserves logical IDs and has exact native import-prefix coverage for six folds. Replacement requires unthreaded source nodes; value numbering, cached post-morph argument aliases and LIR replacement remain unsupported. The full inliner remains disabled.",
-      "The eight-method corpus contains no EH or pinned-local cases and establishes neither phase nor codegen parity."
+      "Floating constant-operand folding preserves native signed-zero and NaN rules, full-optimization gates, effects and JTRUE relop roots. Its four identity folds have exact import-prefix coverage; NaN/effect combinations have focused IR coverage, not codegen evidence. VN support and global-morph assertion closure remain incomplete.",
+      "The nine-method corpus contains no EH or pinned-local cases and establishes neither full-phase nor codegen parity."
     ]
   },
   "localRecovery": {
@@ -546,6 +567,15 @@
       "commit": "c1511108ceae20e30d0519c424a617a8b3c9ad47",
       "indexCommit": "0e8cd2071da5eb23d19dd41146cad216b771bf89",
       "ref": "refs/porting/snapshots/native-ledger-scalar-folding"
+    },
+    "floatingSpecialManagedSource": {
+      "commit": "db6744ff093f229f6e18e48fc1f4d651337d6ca9",
+      "ref": "refs/porting/snapshots/floating-special-parity-source"
+    },
+    "floatingSpecialNativeResidual": {
+      "commit": "51736f510c106c7c3adf7d42edc899e75c95afaa",
+      "indexCommit": "56952a4c00884c99d946fc648e420b2bd8445d62",
+      "ref": "refs/porting/snapshots/native-ledger-floating-special"
     }
   },
   "sourceMap": [

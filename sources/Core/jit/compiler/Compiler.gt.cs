@@ -1529,7 +1529,7 @@ public partial class Compiler
                         }
                         else
                         {
-                            jitprintf($" -0x{-dspIconVal:x}");
+                            jitprintf($" -0x{unchecked((nuint)(-dspIconVal)):x}");
                         }
                     }
 #endif
@@ -1541,7 +1541,7 @@ public partial class Compiler
                         }
                         else
                         {
-                            jitprintf($" -0x{-dspIconVal:X}");
+                            jitprintf($" -0x{unchecked((nuint)(-dspIconVal)):X}");
                         }
                     }
 
@@ -3677,15 +3677,170 @@ public partial class Compiler
         {
             var op = tree.AsOp();
 
-            if ((op.Op1 is not null) && (op.Op2 is not null) && !tree.Oper.IsAtomic &&
-                op.Op1.Oper.IsConst && op.Op2.Oper.IsConst)
+            if ((op.Op1 is not null) && (op.Op2 is not null) && !tree.Oper.IsAtomic)
             {
-                return gtFoldExprBinaryConst(op);
+                if (op.Op1.Oper.IsConst && op.Op2.Oper.IsConst)
+                {
+                    return gtFoldExprBinaryConst(op);
+                }
+
+                if (opts.OptimizationEnabled && (tree.Oper is not GT_COMMA)
+                    && varTypeIsFloating(op.Op1.Type) && (op.Op1.Oper.IsConst || op.Op2.Oper.IsConst))
+                {
+                    return gtFoldExprSpecialFloating(op);
+                }
             }
         }
 
-        // TODO: Port nonconstant binary, conditional and hardware-intrinsic folding.
+        // TODO: Port the remaining nonconstant binary, conditional and hardware-intrinsic folding.
         return tree;
+    }
+
+    public GenTree gtFoldExprSpecialFloating(GenTreeOp tree)
+    {
+        assert(tree.Oper.IsBinary);
+
+        var op1 = tree.Op1;
+        var op2 = tree.Op2;
+        var oper = tree.Oper;
+        assert(varTypeIsFloating(op1.Type) && varTypeIsFloating(op2.Type));
+
+        if (oper is GT_CAST)
+        {
+            return tree;
+        }
+
+        GenTree op;
+        GenTreeDblCon cons;
+
+        if (op1.Oper is GT_CNS_DBL)
+        {
+            op = op2;
+            cons = op1.AsDblCon();
+        }
+        else if (op2.Oper is GT_CNS_DBL)
+        {
+            op = op1;
+            cons = op2.AsDblCon();
+        }
+        else
+        {
+            return tree;
+        }
+
+        var value = cons.DconVal;
+
+        if (((op.Flags & GTF_SIDE_EFFECT) != 0) && tree.Oper.IsCompare && ((tree.Flags & GTF_RELOP_JMP_USED) != 0))
+        {
+            // Some phases require a JTRUE operand to remain a relop, not a side-effect COMMA.
+            return tree;
+        }
+
+        // NaN arithmetic folds are safe because signaling NaNs do not fault.
+        switch (oper)
+        {
+            case GT_ADD:
+            {
+                if (cons.IsNaN)
+                {
+                    op = gtWrapWithSideEffects(cons, op, GTF_ALL_EFFECT);
+                    goto DONE_FOLD;
+                }
+
+                if (cons.IsNegativeZero)
+                {
+                    goto DONE_FOLD;
+                }
+
+                // Adding positive zero is not an identity: -0 + 0 is +0.
+                break;
+            }
+
+            case GT_DIV:
+            {
+                if (cons.IsNaN)
+                {
+                    op = gtWrapWithSideEffects(cons, op, GTF_ALL_EFFECT);
+                    goto DONE_FOLD;
+                }
+
+                if ((op2 == cons) && (value == 1.0))
+                {
+                    goto DONE_FOLD;
+                }
+
+                break;
+            }
+
+            case GT_EQ:
+            case GT_NE:
+            case GT_GE:
+            case GT_GT:
+            case GT_LE:
+            case GT_LT:
+            {
+                if (cons.IsNaN)
+                {
+                    var result = (tree.Flags & GTF_RELOP_NAN_UN) != 0 ? 1 : 0;
+                    var icon = gtNewIconNode(TYP_INT, result);
+                    icon.SetMorphed(this);
+                    op = gtWrapWithSideEffects(icon, op, GTF_ALL_EFFECT);
+                    goto DONE_FOLD;
+                }
+
+                break;
+            }
+
+            case GT_MUL:
+            {
+                if (cons.IsNaN)
+                {
+                    op = gtWrapWithSideEffects(cons, op, GTF_ALL_EFFECT);
+                    goto DONE_FOLD;
+                }
+
+                if (value == 1.0)
+                {
+                    goto DONE_FOLD;
+                }
+
+                // Multiplication by either signed zero is not a constant fold:
+                // -0 * +0 is -0, while -0 * -0 is +0.
+                break;
+            }
+
+            case GT_SUB:
+            {
+                if (cons.IsNaN)
+                {
+                    op = gtWrapWithSideEffects(cons, op, GTF_ALL_EFFECT);
+                    goto DONE_FOLD;
+                }
+
+                if ((cons == op2) && cons.IsPositiveZero)
+                {
+                    goto DONE_FOLD;
+                }
+
+                // Subtracting negative zero is not an identity: -0 - -0 is +0.
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
+        }
+
+        return tree;
+
+    DONE_FOLD:
+        JITDUMP("\nFolding binary operator with a constant operand:\n");
+        DISPTREE(tree);
+        JITDUMP("Transformed into:\n");
+        DISPTREE(op);
+        op.SetMorphed(this);
+        return op;
     }
 
     public GenTree gtFoldExprConst(GenTree tree)

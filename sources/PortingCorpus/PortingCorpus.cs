@@ -44,6 +44,11 @@ internal static class PortingCorpus
             return 7;
         }
 
+        if (BitConverter.DoubleToInt64Bits(FoldFloating(-0.0)) != long.MinValue)
+        {
+            return 8;
+        }
+
         return 0;
     }
 
@@ -81,6 +86,9 @@ internal static class PortingCorpus
         // BitConverter keeps these constants in IL until the JIT imports the intrinsics.
         return ((long)BitConverter.Int32BitsToSingle(0x40F00000) + (int)BitConverter.Int64BitsToDouble(0x4004000000000000)) * 3;
     }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static double FoldFloating(double value) => (((value + -0.0) * 1.0) - 0.0) / 1.0;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int InlineCandidate(int value) => value * 2;

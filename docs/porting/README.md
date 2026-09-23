@@ -222,10 +222,15 @@ differences in the comparison tooling.
 
 Build `sources\PortingCorpus\PortingCorpus.csproj` in Release. Its output is
 `artifacts\bin\sources\PortingCorpus\Release\net11.0\PortingCorpus.dll`.
-It checks eight entry points covering arithmetic, branches, locals, direct and
-managed indirect calls, an inline candidate, and scalar constant folding.
+It checks nine entry points covering arithmetic, branches, locals, direct and
+managed indirect calls, an inline candidate, scalar constant folding, and
+floating-point identities with one constant operand.
 `FoldConstants` uses `BitConverter` intrinsics to keep constants in IL until JIT
 import, exercising casts and arithmetic without Roslyn folding them first.
+`FoldFloating` exercises addition of negative zero, multiplication/division by
+one, and subtraction of positive zero; its caller checks the negative-zero bit
+pattern. The native and managed import prefixes contain all four folding
+diagnostics with identical logical node IDs.
 It is a standalone fixture, not a compiler coverage claim.
 
 Use `scripts\porting\Invoke-PortingCorpus.ps1` with `-CoreRoot`, `-Corpus`,

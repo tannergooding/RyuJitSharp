@@ -1,7 +1,9 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.IO;
 using System.Runtime.CompilerServices;
+using System.Text;
 using NUnit.Framework;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.GenTreeFlags;
@@ -220,7 +222,154 @@ internal static unsafe class ScalarFoldingTests
         });
     }
 
-    private static void WithCompiler(Action<Compiler> action)
+    [TestCase(TYP_DOUBLE, GT_ADD, -0.0, false, true)]
+    [TestCase(TYP_DOUBLE, GT_ADD, -0.0, true, true)]
+    [TestCase(TYP_DOUBLE, GT_ADD, 0.0, false, false)]
+    [TestCase(TYP_DOUBLE, GT_ADD, 0.0, true, false)]
+    [TestCase(TYP_FLOAT, GT_ADD, -0.0, false, true)]
+    [TestCase(TYP_FLOAT, GT_ADD, 0.0, false, false)]
+    [TestCase(TYP_DOUBLE, GT_SUB, 0.0, false, true)]
+    [TestCase(TYP_DOUBLE, GT_SUB, -0.0, false, false)]
+    [TestCase(TYP_DOUBLE, GT_SUB, 0.0, true, false)]
+    [TestCase(TYP_DOUBLE, GT_MUL, 1.0, false, true)]
+    [TestCase(TYP_DOUBLE, GT_MUL, 1.0, true, true)]
+    [TestCase(TYP_FLOAT, GT_MUL, 1.0, false, true)]
+    [TestCase(TYP_DOUBLE, GT_MUL, 0.0, false, false)]
+    [TestCase(TYP_DOUBLE, GT_MUL, -0.0, false, false)]
+    [TestCase(TYP_DOUBLE, GT_DIV, 1.0, false, true)]
+    [TestCase(TYP_DOUBLE, GT_DIV, 1.0, true, false)]
+    public static void FloatingIdentitiesRetainSignedZero(var_types type, genTreeOps oper,
+        double value, bool constantFirst, bool folds)
+    {
+        WithCompiler(compiler => {
+            var operand = compiler.gtNewLclvNode(type, 0);
+            var constant = compiler.gtNewDconNode(type, value);
+            var tree = compiler.gtNewBinaryNode(oper, type,
+                constantFirst ? constant : operand, constantFirst ? operand : constant);
+            Assert.That(compiler.gtFoldExpr(tree), Is.SameAs(folds ? operand : tree));
+        });
+    }
+
+    [TestCase(GT_ADD, false)]
+    [TestCase(GT_ADD, true)]
+    [TestCase(GT_SUB, false)]
+    [TestCase(GT_SUB, true)]
+    [TestCase(GT_MUL, false)]
+    [TestCase(GT_MUL, true)]
+    [TestCase(GT_DIV, false)]
+    [TestCase(GT_DIV, true)]
+    public static void FloatingNaNFoldsPreserveSideEffects(genTreeOps oper, bool constantFirst)
+    {
+        WithCompiler(compiler => {
+            var call = compiler.gtNewCallNode(TYP_DOUBLE, gtCallTypes.CT_USER_FUNC, null);
+            var nan = compiler.gtNewDconNode(TYP_DOUBLE, BitConverter.Int64BitsToDouble(unchecked((long)0xFFF8000000000123)));
+            var tree = compiler.gtNewBinaryNode(oper, TYP_DOUBLE, constantFirst ? nan : call, constantFirst ? call : nan);
+            var result = compiler.gtFoldExpr(tree);
+            Assert.That(result.Oper, Is.EqualTo(GT_COMMA));
+            Assert.That(result.AsOp().Op1, Is.SameAs(call));
+            Assert.That(result.AsOp().Op2, Is.SameAs(nan));
+            Assert.That(result.Flags & GTF_CALL, Is.EqualTo(GTF_CALL));
+        });
+    }
+
+    [TestCase(GT_EQ, false)]
+    [TestCase(GT_EQ, true)]
+    [TestCase(GT_NE, false)]
+    [TestCase(GT_NE, true)]
+    [TestCase(GT_LT, false)]
+    [TestCase(GT_LT, true)]
+    [TestCase(GT_LE, false)]
+    [TestCase(GT_LE, true)]
+    [TestCase(GT_GT, false)]
+    [TestCase(GT_GT, true)]
+    [TestCase(GT_GE, false)]
+    [TestCase(GT_GE, true)]
+    public static void FloatingNaNComparisonsRespectUnorderedFlags(genTreeOps oper, bool unordered)
+    {
+        WithCompiler(compiler => {
+            var operand = compiler.gtNewLclvNode(TYP_FLOAT, 0);
+            var nan = compiler.gtNewDconNode(TYP_FLOAT, float.NaN);
+            var tree = compiler.gtNewBinaryNode(oper, TYP_INT, operand, nan);
+            tree.Flags |= unordered ? GTF_RELOP_NAN_UN : GTF_EMPTY;
+            Assert.That(compiler.gtFoldExpr(tree).AsIntCon().IconValue, Is.EqualTo(unordered ? (nint)1 : 0));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void FloatingNaNComparisonsPreserveEffectsAndJumpRoots(bool jumpUsed)
+    {
+        WithCompiler(compiler => {
+            var call = compiler.gtNewCallNode(TYP_DOUBLE, gtCallTypes.CT_USER_FUNC, null);
+            var tree = compiler.gtNewBinaryNode(GT_NE, TYP_INT, call, compiler.gtNewDconNode(TYP_DOUBLE, double.NaN));
+            tree.Flags |= GTF_RELOP_NAN_UN;
+            tree.Flags |= jumpUsed ? GTF_RELOP_JMP_USED : GTF_EMPTY;
+            var result = compiler.gtFoldExpr(tree);
+
+            if (jumpUsed)
+            {
+                Assert.That(result, Is.SameAs(tree));
+            }
+            else
+            {
+                Assert.That(result.Oper, Is.EqualTo(GT_COMMA));
+                Assert.That(result.AsOp().Op1, Is.SameAs(call));
+                Assert.That(result.AsOp().Op2.AsIntCon().IconValue, Is.EqualTo((nint)1));
+                Assert.That(result.Flags & GTF_CALL, Is.EqualTo(GTF_CALL));
+            }
+        });
+    }
+
+    [Test]
+    public static void FloatingConstantOperandFoldingRespectsTier0()
+    {
+        WithCompiler(compiler => {
+            Assert.That(compiler.opts.Tier0OptimizationEnabled, Is.True);
+            var operand = compiler.gtNewLclvNode(TYP_DOUBLE, 0);
+            var tree = compiler.gtNewBinaryNode(GT_MUL, TYP_DOUBLE, operand, compiler.gtNewDconNode(TYP_DOUBLE, 1));
+            Assert.That(compiler.gtFoldExpr(tree), Is.SameAs(tree));
+        }, minOpts: true);
+    }
+
+    [Test]
+    public static void FloatingCommaDoesNotTreatItsValueAsArithmetic()
+    {
+        WithCompiler(compiler => {
+            var tree = compiler.gtNewBinaryNode(GT_COMMA, TYP_INT,
+                compiler.gtNewDconNode(TYP_DOUBLE, double.NaN), compiler.gtNewLclvNode(TYP_INT, 0));
+            Assert.That(compiler.gtFoldExpr(tree), Is.SameAs(tree));
+        });
+    }
+
+#if DEBUG
+    [TestCase(long.MinValue, " -0x8000000000000000")]
+    [TestCase(long.MinValue + 1, " -0x7fffffffffffffff")]
+    [TestCase(-1000L, " -0x3e8")]
+    [TestCase(long.MaxValue, " 0x7fffffffffffffff")]
+    public static void IntegerDumpPreservesUnsignedHexMagnitude(long value, string expected)
+    {
+        WithCompiler(compiler => {
+            using var stream = new MemoryStream();
+            using var writer = new JitTextWriter(stream, leaveOpen: true);
+            var previous = s_jitstdout;
+
+            try
+            {
+                s_jitstdout = writer;
+                compiler.gtDispConst(compiler.gtNewLconNode(value));
+                writer.Flush();
+            }
+            finally
+            {
+                s_jitstdout = previous;
+            }
+
+            Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo(expected));
+        });
+    }
+#endif
+
+    private static void WithCompiler(Action<Compiler> action, bool minOpts = false)
     {
 #if DEBUG
         using var tls = new JitTls(null);
@@ -229,7 +378,7 @@ internal static unsafe class ScalarFoldingTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.opts.SetMinOpts(minOpts);
         JitTls.Compiler = compiler;
 
         try

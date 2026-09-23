@@ -6576,7 +6576,7 @@ public partial class Compiler
                     var value = BinaryPrimitives.ReadDoubleLittleEndian(new ReadOnlySpan<byte>(codeAddr, sizeof(double)));
                     var dcon = gtNewDconNode(TYP_DOUBLE, value);
                     impPushOnStack(dcon, new typeInfo(TYP_DOUBLE));
-                    JITDUMP($" {value:G17}");
+                    JITDUMP($" {formatFloatWithTrailingZeros(value, 17)}");
                     break;
                 }
 
@@ -6585,7 +6585,7 @@ public partial class Compiler
                     var value = BinaryPrimitives.ReadSingleLittleEndian(new ReadOnlySpan<byte>(codeAddr, sizeof(float)));
                     var dcon = gtNewDconNode(TYP_FLOAT, value);
                     impPushOnStack(dcon, new typeInfo(TYP_FLOAT));
-                    JITDUMP($" {value:G17}");
+                    JITDUMP($" {formatFloatWithTrailingZeros(value, 17)}");
                     break;
                 }
 
