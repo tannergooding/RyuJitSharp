@@ -2460,9 +2460,6 @@ public partial class Compiler
     // TODO: Port phase - rangeCheckPhase
     public PhaseStatus rangeCheckPhase() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port phase - SaveAsyncContexts
-    public PhaseStatus SaveAsyncContexts() => PhaseStatus.MODIFIED_NOTHING;
-
     // TODO: Port phase - StressSplitTree
     public PhaseStatus StressSplitTree() => PhaseStatus.MODIFIED_NOTHING;
 

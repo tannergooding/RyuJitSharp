@@ -48,6 +48,13 @@ areas in 501 commits. This is an inventory bound, not a claim that every change
 needs translation. The source and target revisions are frozen in `state.json`;
 do not chase a moving `main` while reconciling them.
 
+Prefer substantial source sections and their dependency closure over individual
+helper batches. Use builds and small focused checks for concrete behavior changes
+or translation defects; reserve NativeAOT publication and corpus recapture for
+milestones, ABI changes, or changes that can affect the observed dump frontier.
+Do not repeatedly capture an unchanged frontier merely because another helper
+was ported. Commit each verified coherent batch, keeping checkpoint updates brief.
+
 Process dependency-coherent batches in this order:
 
 1. JIT/EE interfaces, GUID, native layouts, calling conventions, flags, enums,

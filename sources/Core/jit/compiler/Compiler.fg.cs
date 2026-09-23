@@ -10846,6 +10846,40 @@ public partial class Compiler
     // TODO: Port phase - fgRetypeImplicitByRefArgs
     private PhaseStatus fgRetypeImplicitByRefArgs() => PhaseStatus.MODIFIED_NOTHING;
 
+    /// <summary>Insert at the beginning, preserving leading phi definitions and the catch argument store.</summary>
+    public void fgInsertStmtAtBeg(BasicBlock block, Statement stmt)
+    {
+        var firstStmt = block.FirstStmt;
+        if (stmt.IsPhiDefnStmt)
+        {
+            block.FirstStmt = stmt;
+            stmt.NextStmt = firstStmt;
+            if (firstStmt is not null)
+            {
+                var lastStmt = firstStmt.PrevStmt;
+                noway_assert((lastStmt is not null) && (lastStmt.NextStmt is null));
+                firstStmt.PrevStmt = stmt;
+                stmt.PrevStmt = lastStmt;
+            }
+            else
+            {
+                stmt.PrevStmt = stmt;
+            }
+        }
+        else
+        {
+            var insertBeforeStmt = block.GetFirstNonPhiDefOrCatchArgStore();
+            if (insertBeforeStmt is not null)
+            {
+                fgInsertStmtBefore(block, insertBeforeStmt, stmt);
+            }
+            else
+            {
+                fgInsertStmtAtEnd(block, stmt);
+            }
+        }
+    }
+
     public void fgChangeSwitchBlock(BasicBlock oldSwitchBlock, BasicBlock newSwitchBlock)
     {
         noway_assert(oldSwitchBlock is not null);

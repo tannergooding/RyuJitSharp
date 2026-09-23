@@ -328,6 +328,10 @@ public partial class Compiler
     /// <summary>Does this method return a multi-reg value?</summary>
     public bool compMethodReturnsMultiRegRetType => compRetTypeDesc.IsMultiRegRetType;
 
+    /// <summary>Whether the method returns a value, including a return-buffer address when required by the ABI.</summary>
+    public bool compMethodHasRetVal
+        => info.compRetBuffArg != BAD_VAR_NUM ? compMethodReturnsRetBufAddr : info.compRetType != TYP_VOID;
+
     /// <summary>Returns true if the method being compiled returns RetBuf addr as its return value</summary>
     /// <remarks>
     ///   <para>There are cases where implicit RetBuf argument should be explicitly returned in a register.</para>
