@@ -12,6 +12,26 @@ continue. A milestone does not require a conversational stop. Pause for an
 explicit user request, an unresolved decision requiring approval, a publication
 conflict, or a blocker that cannot be safely resolved.
 
+## 2026-09-23: Node assertions and morph completion
+
+**Commit:** `761762d`.
+
+**Result:** Complete `optAssertionGen`, `fgAssertionGen` and `fgMorphTreeDone`.
+Local/global fact selection, conditional edge sets, implied boolean ranges and
+physical-definition kill-before-gen ordering retain the native behavior.
+Four complete native definitions retired.
+
+**Evidence:** 152 Debug / 149 Release selected cases passed, zero skipped.
+Coverage includes conditional suppression, both successor sets, stale-fact
+invalidation, morph gates, conservative VNs, array helpers and tail-call checks.
+
+**Frontier:** These complete support routines do not activate block/global
+morph. General local assertion propagation and the remaining folding dispatcher
+are still pending.
+
+**Next:** Resume the scalar/integer/comparison folding closure and its
+morph-completion callers toward inline activation.
+
 ## 2026-09-23: Unary VN expressions
 
 **Commit:** `75e9074`.
