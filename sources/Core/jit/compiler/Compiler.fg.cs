@@ -18,6 +18,135 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    /// <summary>Compute the candidate's depth and reject disallowed recursion.</summary>
+    /// <remarks>The root method is at depth zero. The implementation limit also bounds traversal of the context chain.</remarks>
+    public int fgCheckInlineDepthAndRecursion(InlineInfo inlineInfo)
+    {
+        var inlineContext = inlineInfo.inlineCandidateInfo.inlinersContext;
+        var inlineResult = inlineInfo.inlineResult;
+        assert(inlineContext is not null);
+
+        var depth = 0;
+
+        for (; inlineContext is not null; inlineContext = inlineContext.Parent)
+        {
+            depth++;
+
+            if (IsDisallowedRecursiveInline(inlineContext, inlineInfo))
+            {
+                inlineResult.NoteFatal(InlineObservation.CALLSITE_IS_RECURSIVE);
+                return depth;
+            }
+
+            if (depth > InlineStrategy.IMPLEMENTATION_MAX_INLINE_DEPTH)
+            {
+                break;
+            }
+        }
+
+        inlineResult.NoteInt(InlineObservation.CALLSITE_DEPTH, depth);
+        return depth;
+    }
+
+    /// <summary>Check whether the candidate repeats an ancestor with a disallowed generic context.</summary>
+    public unsafe bool IsDisallowedRecursiveInline(InlineContext ancestor, InlineInfo inlineInfo)
+    {
+        if ((ancestor.Callee == inlineInfo.fncHandle) &&
+            (ancestor.RuntimeContext == inlineInfo.inlineCandidateInfo.exactContextHandle))
+        {
+            JITDUMP("Call site is trivially recursive\n");
+            return true;
+        }
+
+        // Polymorphic recursion can force unbounded type/method loading. Match the
+        // native limit of 64 types across the recursively expanded generic context.
+        if (info.compCompHnd->haveSameMethodDefinition(inlineInfo.fncHandle, ancestor.Callee) &&
+            ContextComplexityExceeds(inlineInfo.inlineCandidateInfo.exactContextHandle, 64))
+        {
+            JITDUMP("Call site is recursive with a complex generic context\n");
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>Check whether a generic context contains more than the specified number of types.</summary>
+    public unsafe bool ContextComplexityExceeds(CORINFO_CONTEXT_HANDLE handle, int max)
+    {
+        if (handle is null)
+        {
+            return false;
+        }
+
+        var cur = 0;
+        assert(handle != METHOD_BEING_COMPILED_CONTEXT());
+
+        if (((nuint)handle & (nuint)CORINFO_CONTEXTFLAGS_MASK) == (nuint)CORINFO_CONTEXTFLAGS_METHOD)
+        {
+            return MethodInstantiationComplexityExceeds((CORINFO_METHOD_HANDLE)((nuint)handle & ~(nuint)CORINFO_CONTEXTFLAGS_MASK), ref cur, max);
+        }
+
+        return TypeInstantiationComplexityExceeds((CORINFO_CLASS_HANDLE)((nuint)handle & ~(nuint)CORINFO_CONTEXTFLAGS_MASK), ref cur, max);
+    }
+
+    /// <summary>Count a method's class and method instantiations, stopping when their complexity exceeds the limit.</summary>
+    public unsafe bool MethodInstantiationComplexityExceeds(CORINFO_METHOD_HANDLE handle, ref int cur, int max)
+    {
+        CORINFO_SIG_INFO sig;
+        info.compCompHnd->getMethodSig(handle, &sig);
+
+        cur += sig.sigInst.classInstCount + sig.sigInst.methInstCount;
+
+        if (cur > max)
+        {
+            return true;
+        }
+
+        for (var i = 0; i < sig.sigInst.classInstCount; i++)
+        {
+            if (TypeInstantiationComplexityExceeds(sig.sigInst.classInst[i], ref cur, max))
+            {
+                return true;
+            }
+        }
+
+        for (var i = 0; i < sig.sigInst.methInstCount; i++)
+        {
+            if (TypeInstantiationComplexityExceeds(sig.sigInst.methInst[i], ref cur, max))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>Recursively count a type's instantiation, stopping when its complexity exceeds the limit.</summary>
+    public unsafe bool TypeInstantiationComplexityExceeds(CORINFO_CLASS_HANDLE handle, ref int cur, int max)
+    {
+        for (var i = 0; ; i++)
+        {
+            var instArg = info.compCompHnd->getTypeInstantiationArgument(handle, i);
+
+            if (instArg == NO_CLASS_HANDLE)
+            {
+                break;
+            }
+
+            if (++cur > max)
+            {
+                return true;
+            }
+
+            if (TypeInstantiationComplexityExceeds(instArg, ref cur, max))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>Append statements that are needed after the inlined call.</summary>
     /// <param name="inlineInfo">information about the inline</param>
     /// <param name="block">basic block for the new statements</param>
@@ -8853,7 +8982,54 @@ public partial class Compiler
     /// <summary>Clear up annotations for any struct promotion temps created for implicit byrefs.</summary>
     public void fgMarkDemotedImplicitByRefArgs()
     {
-        // TODO: Port Compiler.fgMarkDemotedImplicitByRefArgs
+        JITDUMP("\n*************** In fgMarkDemotedImplicitByRefArgs()\n");
+
+#if FEATURE_IMPLICIT_BYREFS
+        for (var lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+        {
+            ref var varDsc = ref lvaGetDesc(lclNum);
+
+            if (lvaIsImplicitByRefLocal(lclNum))
+            {
+                JITDUMP($"Clearing annotation for V{lclNum:D2}\n");
+
+                if (varDsc.lvPromoted)
+                {
+                    // Retyping left these annotations to tell morph to redirect uses
+                    // to a promoted struct temp. The parameter is now just a pointer.
+                    varDsc.lvPromoted = false;
+                    varDsc.lvFieldLclStart = 0;
+                }
+                else if (varDsc.lvFieldLclStart != 0)
+                {
+                    // Promotion was undone. The hijacked field start identifies the
+                    // unused struct temp, whose fields still refer to the parameter.
+                    var structLclNum = varDsc.lvFieldLclStart;
+                    varDsc.lvFieldLclStart = 0;
+
+                    ref var structVarDsc = ref lvaGetDesc(structLclNum);
+                    structVarDsc.CleanAddressExposed();
+#if DEBUG
+                    structVarDsc.lvUnusedStruct = true;
+                    structVarDsc.lvUndoneStructPromotion = true;
+#endif
+
+                    var fieldLclStart = structVarDsc.lvFieldLclStart;
+                    var fieldLclStop = fieldLclStart + structVarDsc.lvFieldCnt;
+
+                    for (var fieldLclNum = fieldLclStart; fieldLclNum < fieldLclStop; fieldLclNum++)
+                    {
+                        JITDUMP($"Fixing pointer for field V{fieldLclNum:D2} from V{lclNum:D2} to V{structLclNum:D2}\n");
+
+                        ref var fieldVarDsc = ref lvaGetDesc(fieldLclNum);
+                        assert(fieldVarDsc.lvParentLcl == lclNum);
+                        fieldVarDsc.lvParentLcl = structLclNum;
+                        fieldVarDsc.CleanAddressExposed();
+                    }
+                }
+            }
+        }
+#endif
     }
 
     /// <summary>check if two profile weights are within some small percentage of one another, or are both less than some epsilon.</summary>

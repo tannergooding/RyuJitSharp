@@ -242,6 +242,54 @@ internal static unsafe class InlineArgumentTests
         });
     }
 
+    [TestCase(0)]
+    [TestCase(1)]
+    [TestCase(2)]
+    public static void DemotionClearsOnlyImplicitByRefPromotionAnnotations(int promotionState)
+    {
+        WithCompiler((compiler, inlinee, info) => {
+            compiler.info.compArgsCount = 1;
+            ref var arg = ref compiler.lvaTable[0];
+            arg.Type = TYP_BYREF;
+            arg.lvIsParam = true;
+            arg.IsImplicitByRef = true;
+            arg.lvPromoted = promotionState == 1;
+            arg.lvFieldLclStart = promotionState == 0 ? 0 : 2;
+            compiler.lvaTable[1].lvPromoted = true;
+            compiler.lvaTable[1].lvFieldLclStart = 7;
+            ref var temp = ref compiler.lvaTable[2];
+            temp.Type = TYP_STRUCT;
+            temp.lvPromoted = true;
+            temp.lvFieldLclStart = 3;
+            temp.lvFieldCnt = 2;
+            temp.SetAddressExposed(true, default);
+            for (var i = 3; i < 5; i++)
+            {
+                compiler.lvaTable[i].lvParentLcl = 0;
+                compiler.lvaTable[i].SetAddressExposed(true, default);
+            }
+
+            compiler.fgMarkDemotedImplicitByRefArgs();
+
+            Assert.That(arg.lvPromoted, Is.False);
+            Assert.That(arg.lvFieldLclStart, Is.Zero);
+            Assert.That(arg.IsImplicitByRef, Is.True);
+            Assert.That(compiler.lvaTable[1].lvPromoted, Is.True);
+            Assert.That(compiler.lvaTable[1].lvFieldLclStart, Is.EqualTo(7));
+            Assert.That(temp.IsAddressExposed, Is.EqualTo(promotionState != 2));
+            Assert.That(temp.lvPromoted, Is.True);
+#if DEBUG
+            Assert.That(temp.lvUnusedStruct, Is.EqualTo(promotionState == 2));
+            Assert.That(temp.lvUndoneStructPromotion, Is.EqualTo(promotionState == 2));
+#endif
+            for (var i = 3; i < 5; i++)
+            {
+                Assert.That(compiler.lvaTable[i].lvParentLcl, Is.EqualTo(promotionState == 2 ? 2 : 0));
+                Assert.That(compiler.lvaTable[i].IsAddressExposed, Is.EqualTo(promotionState != 2));
+            }
+        });
+    }
+
     private static InlArgInfo TempArg(CallArg arg, int local)
         => new() { arg = arg, argTmpNum = local, argHasTmp = true, argIsUsed = true };
 
