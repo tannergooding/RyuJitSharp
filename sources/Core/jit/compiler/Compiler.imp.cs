@@ -12801,6 +12801,10 @@ public partial class Compiler
                     // If we do see any further uses, we will clear this.
                     argInfo.argBashTmpNode = op1;
                 }
+                else
+                {
+                    argInfo.argBashTmpNode = null;
+                }
             }
         }
 

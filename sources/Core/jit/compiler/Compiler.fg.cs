@@ -18,6 +18,489 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    /// <summary>Append statements that are needed after the inlined call.</summary>
+    /// <param name="inlineInfo">information about the inline</param>
+    /// <param name="block">basic block for the new statements</param>
+    /// <param name="stmtAfter">insertion point for mid-block cases</param>
+    /// <remarks>If the call we're inlining is in tail position then we skip nulling the locals, since it can interfere with tail calls introduced by the local.</remarks>
+    public unsafe void fgInlineAppendStatements(InlineInfo inlineInfo, BasicBlock block, Statement? stmtAfter)
+    {
+        // Null out any gc ref locals
+        if (!inlineInfo.HasGcRefLocals)
+        {
+            // No ref locals, nothing to do.
+            JITDUMP("fgInlineAppendStatements: no gc ref inline locals.\n");
+            return;
+        }
+
+        var iciCall = inlineInfo.iciCall;
+        assert(iciCall is not null);
+
+        if (iciCall.IsImplicitTailCall)
+        {
+            JITDUMP("fgInlineAppendStatements: implicit tail call; skipping nulling.\n");
+            return;
+        }
+
+        JITDUMP("fgInlineAppendStatements: nulling out gc ref inlinee locals.\n");
+        assert(InlineeCompiler is not null);
+
+        var callStmt = inlineInfo.iciStmt;
+        assert(callStmt is not null);
+
+        ref readonly var callDI = ref callStmt.DebugInfo;
+        var inlineeMethodInfo = InlineeCompiler.info.compMethodInfo;
+        var lclCnt = inlineeMethodInfo->locals.numArgs;
+        var lclVarInfo = (Span<InlLclVarInfo>)(inlineInfo.lclVarInfo);
+        var gcRefLclCnt = inlineInfo.numberOfGcRefLocals;
+        var argCnt = inlineInfo.argCnt;
+        var inlCandInfo = inlineInfo.inlineCandidateInfo;
+
+        for (var lclNum = 0; lclNum < lclCnt; lclNum++)
+        {
+            // Is the local a gc ref type? Need to look at the
+            // inline info for this since we will not have local
+            // temps for unused inlinee locals.
+            var lclTyp = lclVarInfo[argCnt + lclNum].lclTypeInfo;
+
+            if (!varTypeIsGC(lclTyp))
+            {
+                // Nope, nothing to null out.
+                continue;
+            }
+
+            // Ensure we're examining just the right number of locals.
+            assert(gcRefLclCnt > 0);
+            gcRefLclCnt--;
+
+            // Fetch the temp for this inline local
+            var tmpNum = inlineInfo.lclTmpNum[lclNum];
+
+            // Is the local used at all?
+            if (tmpNum == BAD_VAR_NUM)
+            {
+                // Nope, nothing to null out.
+                continue;
+            }
+
+            // Local was used, make sure the type is consistent.
+            assert(lvaTable[tmpNum].Type == lclTyp);
+
+            // Does the local we're about to null out appear in the return
+            // expression?  If so we somehow messed up and didn't properly
+            // spill the return value. See impInlineFetchLocal.
+            if (inlCandInfo.retExpr is not null)
+            {
+                var substExpr = inlCandInfo.retExpr.SubstExpr;
+
+                if (substExpr is not null)
+                {
+                    var interferesWithReturn = gtHasRef(substExpr, tmpNum);
+                    noway_assert(!interferesWithReturn);
+                }
+            }
+
+            // Assign null to the local.
+            var nullExpr = gtNewTempStore(tmpNum, gtNewZeroConNode(lclTyp));
+            var nullStmt = gtNewStmt(nullExpr, callDI);
+
+            if (stmtAfter is null)
+            {
+                fgInsertStmtAtBeg(block, nullStmt);
+            }
+            else
+            {
+                fgInsertStmtAfter(block, stmtAfter, nullStmt);
+            }
+            stmtAfter = nullStmt;
+
+#if DEBUG
+            if (verbose)
+            {
+                gtDispStmt(nullStmt);
+            }
+#endif
+        }
+
+        // There should not be any GC ref locals left to null out.
+        assert(gcRefLclCnt == 0);
+    }
+
+    /// <summary>prepend statements needed to match up caller and inlined callee</summary>
+    /// <param name="inlineInfo">info for the inline</param>
+    /// <returns>The last statement that was added, or the original call if no statements were added.</returns>
+    public unsafe Statement fgInlinePrependStatements(InlineInfo inlineInfo)
+    {
+        // Statements prepended may include the following:
+        // * This pointer null check
+        // * Class initialization
+        // * Zeroing of must-init locals in the callee
+        // * Passing of call arguments via temps
+        //
+        // Newly added statements are placed just after the original call
+        // and are given the same inline context as the call any calls
+        // added here will appear to have been part of the immediate caller.
+
+        var block = inlineInfo.iciBlock;
+        assert(block is not null);
+
+        var callStmt = inlineInfo.iciStmt;
+        assert(callStmt is not null);
+
+        ref readonly var callDI = ref callStmt.DebugInfo;
+
+        // afterStmt is the place where the new statements should be inserted after.
+        var afterStmt = callStmt;
+
+        var call = inlineInfo.iciCall;
+        assert(call is not null);
+
+        // Prepend statements for any initialization / side effects
+
+        var inlArgInfo = (Span<InlArgInfo>)(inlineInfo.inlArgInfo);
+        var lclVarInfo = (Span<InlLclVarInfo>)(inlineInfo.lclVarInfo);
+
+        // Create the null check statement (but not appending it to the statement list yet) for the 'this' pointer if
+        // necessary.
+        // The NULL check should be done after "argument setup statements".
+        // The only reason we move it here is for calling "impInlineFetchArg(0,..." to reserve a temp
+        // for the "this" pointer.
+        // Note: Here we no longer do the optimization that was done by thisDereferencedFirst in the old inliner.
+        // However the assertionProp logic will remove any unnecessary null checks that we may have added
+
+        var nullcheck = null as GenTree;
+
+        if (((call.Flags & GTF_CALL_NULLCHECK) is not 0) && !inlineInfo.thisDereferencedFirst)
+        {
+            // Call impInlineFetchArg to "reserve" a temp for the "this" pointer.
+            var thisOp = impInlineFetchArg(ref inlArgInfo[0], lclVarInfo[0]);
+
+            if (fgAddrCouldBeNull(thisOp))
+            {
+                nullcheck = gtNewNullCheck(thisOp);
+                // The NULL-check statement will be inserted to the statement list after those statements
+                // that assign arguments to temps and before the actual body of the inlinee method.
+            }
+        }
+
+#if DEBUG
+        if (call.Args.CountUserArgs() > 0)
+        {
+            JITDUMP("\nArguments setup:\n");
+        }
+#endif
+
+        var ilArgNum = 0;
+        var newStmt = null as Statement;
+
+        foreach (var arg in call.Args.Args)
+        {
+            ref var argInfo = ref Unsafe.NullRef<InlArgInfo>();
+
+            if (arg.IsUserArg)
+            {
+                assert(ilArgNum < inlineInfo.argCnt);
+                argInfo = ref inlArgInfo[ilArgNum++];
+            }
+            else if (arg.WellKnownArg is WellKnownArg.InstParam)
+            {
+                assert(inlineInfo.inlInstParamArgInfo is not null);
+                argInfo = ref inlineInfo.inlInstParamArgInfo[0];
+            }
+            else
+            {
+                continue;
+            }
+
+            assert(!Unsafe.IsNullRef(in argInfo));
+            fgInsertInlineeArgument(ref argInfo, block, ref afterStmt, ref newStmt, callDI);
+        }
+
+        assert(ilArgNum == inlineInfo.argCnt);
+
+        // Add the CCTOR check if asked for.
+        // Note: We no longer do the optimization that is done before by staticAccessedFirstUsingHelper in the old inliner.
+        //       Therefore we might prepend redundant call to HELPER.CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE
+        //       before the inlined method body, even if a static field of this type was accessed in the inlinee
+        //       using a helper before any other observable side-effect.
+
+        if ((inlineInfo.inlineCandidateInfo.initClassResult & CORINFO_INITCLASS_USE_HELPER) is not 0)
+        {
+            var exactClass = eeGetClassFromContext(inlineInfo.inlineCandidateInfo.exactContextHandle);
+            var tree = fgGetSharedCCtor(exactClass);
+            assert(tree is not null);
+
+            newStmt = gtNewStmt(tree, callDI);
+            fgInsertStmtAfter(block, afterStmt, newStmt);
+            afterStmt = newStmt;
+        }
+
+        // Insert the nullcheck statement now.
+        if (nullcheck is not null)
+        {
+            newStmt = gtNewStmt(nullcheck, callDI);
+            fgInsertStmtAfter(block, afterStmt, newStmt);
+            afterStmt = newStmt;
+        }
+
+        // Now zero-init inlinee locals
+
+        assert(InlineeCompiler is not null);
+        var inlineeMethodInfo = InlineeCompiler.info.compMethodInfo;
+
+        var lclCnt = inlineeMethodInfo->locals.numArgs;
+        var bbInALoop = block.HasFlag(BBF_BACKWARD_JUMP);
+        var bbIsReturn = block.Kind is BBJ_RETURN;
+
+        // If the callee contains zero-init locals, we need to explicitly initialize them if we are
+        // in a loop or if the caller doesn't have compInitMem set. Otherwise we can rely on the
+        // normal logic in the caller to insert zero-init in the prolog if necessary.
+
+        if ((lclCnt != 0) && ((inlineeMethodInfo->options & CORINFO_OPT_INIT_LOCALS) != 0) && ((bbInALoop && !bbIsReturn) || !info.compInitMem))
+        {
+
+#if DEBUG
+            if (verbose)
+            {
+                jitprintf("\nZero init inlinee locals:\n");
+            }
+#endif
+
+            for (var lclNum = 0; lclNum < lclCnt; lclNum++)
+            {
+                var tmpNum = inlineInfo.lclTmpNum[lclNum];
+
+                // If the local is used check whether we need to insert explicit zero initialization.
+                if (tmpNum != BAD_VAR_NUM)
+                {
+                    ref var tmpDsc = ref lvaGetDesc(tmpNum);
+
+                    if (!fgVarNeedsExplicitZeroInit(tmpNum, bbInALoop, bbIsReturn))
+                    {
+                        JITDUMP($"\nSuppressing zero-init for V{tmpNum:D2} -- expect to zero in prolog\n");
+                        tmpDsc.lvSuppressedZeroInit = true;
+                        compSuppressedZeroInit = true;
+                        continue;
+                    }
+
+                    var lclTyp = tmpDsc.Type;
+                    noway_assert(lclTyp == lclVarInfo[lclNum + inlineInfo.argCnt].lclTypeInfo);
+
+                    var tree = gtNewTempStore(tmpNum, (lclTyp == TYP_STRUCT) ? gtNewIconNode(TYP_INT, 0) : gtNewZeroConNode(lclTyp));
+
+                    newStmt = gtNewStmt(tree, callDI);
+                    fgInsertStmtAfter(block, afterStmt, newStmt);
+                    afterStmt = newStmt;
+
+                    DISPSTMT(afterStmt);
+                }
+            }
+        }
+        return afterStmt;
+    }
+
+    /// <summary>wire up the given argument from the callsite with the inlinee</summary>
+    /// <param name="argInfo">information about the argument</param>
+    /// <param name="block">block to insert the argument into</param>
+    /// <param name="afterStmt">statement to insert the argument after</param>
+    /// <param name="newStmt">updated with the new statement</param>
+    /// <param name="callDI">debug info for the call</param>
+    public void fgInsertInlineeArgument(ref InlArgInfo argInfo, BasicBlock block, ref Statement afterStmt, ref Statement? newStmt, in DebugInfo callDI)
+    {
+        var argIsSingleDef = !argInfo.argHasLdargaOp && !argInfo.argHasStargOp;
+
+        var arg = argInfo.arg;
+        var argNode = arg.Node;
+
+        assert(argNode is not null);
+        assert(argNode.Oper is not GT_RET_EXPR);
+
+        if (argInfo.argHasTmp)
+        {
+            noway_assert(argInfo.argIsUsed);
+
+            // argBashTmpNode is non-NULL iff the argument's value was
+            // referenced exactly once by the original IL. This offers an
+            // opportunity to avoid an intermediate temp and just insert
+            // the original argument tree.
+            //
+            // However, if the temp node has been cloned somewhere while
+            // importing (e.g. when handling isinst or dup), or if the IL
+            // took the address of the argument, then argBashTmpNode will
+            // be set (because the value was only explicitly retrieved
+            // once) but the optimization cannot be applied.
+
+            var argSingleUseNode = argInfo.argBashTmpNode;
+
+            if ((argSingleUseNode is not null) && ((argSingleUseNode.Flags & GTF_VAR_MOREUSES) is 0) && argIsSingleDef)
+            {
+                // Substitute the actual argument for its single use.
+                // We currently do not support this for struct arguments, so it must not be a GT_BLK.
+
+                assert(argNode.Oper is not GT_BLK);
+
+                fgReplaceInlineArgument(argSingleUseNode, argNode);
+                argInfo.argBashTmpNode = argNode;
+                return;
+            }
+            else
+            {
+                // We're going to assign the argument value to the temp we use for it in the inline body.
+                var store = gtNewTempStore(argInfo.argTmpNum, argNode);
+
+                newStmt = gtNewStmt(store, callDI);
+                fgInsertStmtAfter(block, afterStmt, newStmt);
+
+                afterStmt = newStmt;
+                DISPSTMT(afterStmt);
+            }
+        }
+        else if (argInfo.argIsByRefToStructLocal)
+        {
+            // Do nothing.
+            // Arg was directly substituted as we read the inlinee.
+        }
+        else
+        {
+            // The argument is either not used or a const or lcl var
+            noway_assert(!argInfo.argIsUsed || argInfo.argIsInvariant || argInfo.argIsLclVar);
+            noway_assert(!argInfo.argIsLclVar == ((argNode.Oper is not GT_LCL_VAR) || ((argNode.Flags & GTF_GLOB_REF) is not 0)));
+
+            // If the argument has side effects, append it
+            if (argInfo.argHasSideEff)
+            {
+                noway_assert(argInfo.argIsUsed == false);
+                newStmt = null;
+
+                var append = true;
+
+                if (argNode.Oper is GT_BLK)
+                {
+                    // Don't put GT_BLK node under a GT_COMMA.
+                    // Codegen can't deal with it.
+                    // If the indirection may fault, preserve the null check.
+                    var addr = argNode.AsBlk().Op1;
+                    newStmt = gtNewStmt(argNode.IndirMayFault(this) ? gtNewNullCheck(addr) : gtUnusedValNode(addr), callDI);
+                }
+                else
+                {
+                    // In some special cases, unused args with side effects can
+                    // trigger further changes.
+                    //
+                    // (1) If the arg is a static field access and the field access
+                    // was produced by a call to EqualityComparer<T>.get_Default, the
+                    // helper call to ensure the field has a value can be suppressed.
+                    // This helper call is marked as a "Special DCE" helper during
+                    // importation, over in fgGetStaticsCCtorHelper.
+                    //
+                    // (2) NYI. If we find that the actual arg expression
+                    // has no side effects, we can skip appending all
+                    // together. This will help jit TP a bit.
+
+                    assert(argNode.Oper is not GT_RET_EXPR);
+
+                    // For case (1)
+                    //
+                    // Look for the following tree shapes
+                    // prejit: (IND (ADD (CONST, CALL(special dce helper...))))
+                    // jit   : (COMMA (CALL(special dce helper...), (FIELD ...)))
+                    if (argNode.Oper is GT_COMMA)
+                    {
+                        var comma = argNode.AsOp();
+
+                        // Look for (COMMA (CALL(special dce helper...), (FIELD ...)))
+                        var op1 = comma.Op1;
+                        var op2 = comma.Op2;
+
+                        if (op1.Oper.IsCall && ((op1.AsCall()._callMoreFlags & GTF_CALL_M_HELPER_SPECIAL_DCE) is not 0) && (op2.Oper is GT_IND) && (op2.AsIndir().Op1.IsIconHandle() && ((op2.Flags & GTF_EXCEPT) is 0)))
+                        {
+#if DEBUG
+                            JITDUMP($"\nPerforming special dce on unused arg [{argNode.TreeId:D6}]: actual arg [{argNode.TreeId:D6}] helper call [{op1.TreeId:D6}]\n");
+#endif
+                            // Drop the whole tree
+                            append = false;
+                        }
+                    }
+                    else if (argNode.Oper is GT_IND)
+                    {
+                        // Look for (IND (ADD (CONST, CALL(special dce helper...))))
+                        var addr = argNode.AsIndir().Op1;
+
+                        if (addr.Oper is GT_ADD)
+                        {
+                            var add = addr.AsOp();
+
+                            var op1 = add.Op1;
+                            var op2 = add.Op2;
+
+                            if (op1.Oper.IsCall && ((op1.AsCall()._callMoreFlags & GTF_CALL_M_HELPER_SPECIAL_DCE) is not 0) && op2.Oper.IsCnsIntOrI)
+                            {
+                                // Drop the whole tree
+#if DEBUG
+                                JITDUMP($"\nPerforming special dce on unused arg [{argNode.TreeId:D6}]: actual arg [{argNode.TreeId:D6}] helper call [{op1.TreeId:D6}]\n");
+#endif
+                                append = false;
+                            }
+                        }
+                    }
+                }
+
+                if (!append)
+                {
+                    assert(newStmt is null);
+                    JITDUMP("Arg tree side effects were discardable, not appending anything for arg\n");
+                }
+                else
+                {
+                    // If we don't have something custom to append,
+                    // just append the arg node as an unused value.
+                    newStmt ??= gtNewStmt(gtUnusedValNode(argNode), callDI);
+
+                    fgInsertStmtAfter(block, afterStmt, newStmt);
+                    afterStmt = newStmt;
+                    DISPSTMT(afterStmt);
+                }
+            }
+            else if (argNode.Oper is GT_BOX)
+            {
+                var box = argNode.AsBox();
+
+                if (box.IsBoxedValue)
+                {
+                    // Try to clean up any unnecessary boxing side effects
+                    // since the box itself will be ignored.
+                    _ = gtTryRemoveBoxUpstreamEffects(box);
+                }
+            }
+        }
+    }
+
+    private void fgReplaceInlineArgument(GenTree target, GenTree replacement)
+    {
+        assert(InlineeCompiler is not null);
+        assert(InlineeCompiler.fgNodeThreading is NodeThreading.None);
+        assert((replacement.Prev is null) && (replacement.Next is null));
+
+        // Managed nodes cannot change CLR subtype like native ReplaceWith. Rewrite live edges
+        // before splicing the inlinee, including a return expression kept outside its statements.
+        var visitor = new ReplaceInlineArgumentVisitor(target, replacement);
+        foreach (var block in InlineeCompiler.Blocks)
+        {
+            foreach (var stmt in block.Statements)
+            {
+                _ = visitor.WalkTree(ref stmt.RootNodeRef, null);
+            }
+        }
+
+        assert(InlineeCompiler.impInlineInfo is not null);
+        var retExpr = InlineeCompiler.impInlineInfo.inlineCandidateInfo.retExpr;
+        if ((retExpr is not null) && (retExpr.SubstExpr is GenTree substExpr))
+        {
+            _ = visitor.WalkTree(ref substExpr, null);
+            retExpr.SubstExpr = substExpr;
+        }
+    }
+
     /// <summary>Check for a cycle that does not pass through a GC safe point, requiring full interruptibility.</summary>
     public bool fgHasCycleWithoutGCSafePoint()
     {

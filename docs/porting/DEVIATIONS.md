@@ -84,6 +84,15 @@ native two-successor inline storage and separate larger-array storage; diagnosti
 traversal remains top-down. `BasicBlock.GetLastNode()` maps native `lastNode()`
 without hiding the inherited LIR-only `LastNode` property.
 
+Single-use inline arguments cannot use native `GenTree::ReplaceWith`, which
+copies a node's complete representation (including its vtable and source tree
+ID). `fgReplaceInlineArgument` instead rewrites matching edges in the unthreaded
+inlinee's statements and detached return substitution before block splicing.
+It retains the source object and ID, updates shared references, and permits an
+already-eliminated use. This costs a scan of the inlinee per eligible argument,
+unlike native pointer bashing; no throughput equivalence is claimed. It is not
+a general-purpose replacement for native object retagging.
+
 ### D003: Deferred non-Windows-x64-only paths
 
 **Status:** accepted scoped deferral; not a successful execution/parity result.

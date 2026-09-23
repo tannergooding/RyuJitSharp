@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Continue protected C# WIP integration. LIR/local/alias utilities, inline bookkeeping/diagnostics, support-file moves, tree splitting, statement construction/threading, placeholder/devirtualization walkers, and GC-safe-point cycle detection are restored. Next integrate remaining saved inlining/rationalization bodies and their dependencies, including async frame-return support and expression folding (B054). Do not activate incomplete phases. Both native trees use the target revision; synchronization uses raw upstream deltas, preserving prior deletions and unported new APIs. After WIP integration, prioritize required minopts phases toward code generation. The first PGO dump gap remains pending.",
+    "nextAction": "Continue protected C# WIP integration. LIR/local/alias utilities, inline bookkeeping/diagnostics, support-file moves, tree splitting, statement construction/threading, placeholder/devirtualization walkers, GC-safe-point cycle detection, and inline argument/prelude/epilogue integration are restored. Next integrate remaining saved inlining/rationalization bodies and their dependencies, including async frame-return support and expression folding (B054). Do not activate incomplete phases. Both native trees use the target revision; synchronization uses raw upstream deltas, preserving prior deletions and unported new APIs. After WIP integration, prioritize required minopts phases toward code generation. The first PGO dump gap remains pending.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -24,8 +24,8 @@
       "testSourcesPresent": true,
       "writerRegressionCases": 16,
       "writerRegressionConfigurations": ["Debug", "Release"],
-      "targetFocusedTestsDebug": 493,
-      "targetFocusedTestsRelease": 401,
+      "targetFocusedTestsDebug": 516,
+      "targetFocusedTestsRelease": 424,
       "targetFocusedTestsSkipped": 0,
       "callIntrinsicSpotChecks": {
         "debugPassed": 81,
@@ -94,6 +94,13 @@
         "savedTreeTerminalFailures": 3,
         "nativeAotRecaptured": false
       },
+      "inlineArgumentSpotChecks": {
+        "debugPassed": 23,
+        "releasePassed": 23,
+        "skipped": 0,
+        "savedBehaviorFailures": 10,
+        "nativeAotRecaptured": false
+      },
       "savedWipSupportMilestone": {
         "managedSourceCommit": "24b9352dc6f293228d58cb24871280827f936ab7",
         "nativeCompilationHeaders": 7,
@@ -156,6 +163,7 @@
       "Instrumented value-profile collection and constrained boxing order are source-reconciled but remain unexercised by the current corpus.",
       "The importer/intrinsic batches pass localized managed checks and a subsequent NativeAOT/native-host corpus capture. That corpus does not exercise Half expansion, helper-to-user conversion, generic Memmove, multidimensional stores, span spilling, runtime async expansions or non-x64 paths; no execution/codegen evidence is claimed for them. The new custom-awaiter-in-continuation optimization, its main-call hook, and continuation-member representation remain unported.",
       "Inline placeholder and candidate-diagnostic support has focused coverage for effects, node identity, nested substitution, block flags, byref retyping, constant branches and prior failures. Expression folding remains stubbed; successful EE-backed late devirtualization, multi-register struct repair and full inlining are not established.",
+      "Inline argument/prelude/epilogue integration has focused coverage for live-edge substitution, pseudo-argument classification, struct-load faults, initialization, GC-local cleanup and null-check ordering. EE-backed cctor insertion and full inline-phase execution remain unexercised.",
       "The seven-method corpus contains no EH or pinned-local cases and establishes neither phase nor codegen parity."
     ]
   },
