@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Resolve the cross-kind node mutation design decision (B064) before constant folding: native BashToConst preserves node identity, but managed operators/constants have different CLR layouts. Investigate audited replacement-node/alias updates versus a stable-identity mutable payload; the existing inline-only rewrite is not general. Structural comparison and HWI initialization/classification are committed and verified. After the decision, complete folding (B054), global-morph assertion bookkeeping and the remaining fgInline closure; then resume rationalization. Both native trees use the target revision. The first PGO dump gap remains pending.",
+    "nextAction": "Keep cross-kind constant bashing gated on B064: native lowering explicitly retains the original node and LIR users, so updating importer return slots alone is insufficient. No broad IR redesign is authorized while the user is unavailable. Continue independent folding prerequisites, next CheckedOps cast overflow predicates. Arithmetic success/overflow contracts are corrected (B065); structural comparison and HWI initialization/classification are verified. After the representation decision, complete folding (B054), global-morph assertion bookkeeping and the remaining fgInline closure; then resume rationalization. Both native trees use the target revision. The first PGO dump gap remains pending.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -19,8 +19,8 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "10.0.401",
-      "debugBuild": "passed-after-hwi-node-initialization",
-      "releaseBuild": "passed-after-hwi-node-initialization",
+      "debugBuild": "passed-after-checked-arithmetic-correction",
+      "releaseBuild": "passed-after-checked-arithmetic-correction",
       "testSourcesPresent": true,
       "writerRegressionCases": 16,
       "writerRegressionConfigurations": ["Debug", "Release"],
@@ -169,6 +169,14 @@
         "skipped": 0,
         "nativeAotRecaptured": false,
         "fullPhaseParityEstablished": false
+      },
+      "checkedArithmeticSpotChecks": {
+        "debugPassed": 30,
+        "releasePassed": 30,
+        "originalBehaviorFailures": 28,
+        "operandPairsPerArithmeticCase": 256,
+        "skipped": 0,
+        "nativeAotRecaptured": false
       },
       "savedWipSupportMilestone": {
         "managedSourceCommit": "24b9352dc6f293228d58cb24871280827f936ab7",

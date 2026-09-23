@@ -35,6 +35,14 @@ C# helpers may replace native structure where appropriate. Examples include
 collection ordering, integer semantics, ownership, and native interop contracts.
 Larger algorithmic or architectural changes require separate approval.
 
+The existing `CheckedOps.Try*` arithmetic APIs return success (the inverse of
+native `CheckedOps::*Overflows`) and expose the wrapped result through an out
+parameter. Addition/subtraction use sign-bit checks or unsigned ordering;
+signed multiplication checks that the full product is the sign extension of its low
+half. These implement the native `ClrSafeInt` overflow decisions without using
+exceptions for expected overflow. Callers must invert success when asking
+whether an operation overflows (B065).
+
 Managed error-trap callbacks capture exceptions before leaving their
 `UnmanagedCallersOnly` shim. An owned `GCHandle` keeps the action and captured
 exception alive until the native trap returns. The regular trap reports

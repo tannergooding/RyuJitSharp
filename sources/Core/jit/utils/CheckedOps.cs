@@ -15,16 +15,17 @@ public static class CheckedOps
         where T : IBinaryInteger<T>, ISignedNumber<T>
     {
         assert((typeof(T) == typeof(int)) || (typeof(T) == typeof(long)));
-        result = left + right;
-        return T.IsNegative((result ^ left) & ~(left ^ right));
+        result = unchecked(left + right);
+        return !T.IsNegative((result ^ left) & ~(left ^ right));
     }
 
     public static bool TryAddUns<T>(T left, T right, out T result)
         where T : IBinaryInteger<T>, ISignedNumber<T>
     {
         assert((typeof(T) == typeof(int)) || (typeof(T) == typeof(long)));
-        result = left + right;
-        return (result < left);
+        result = unchecked(left + right);
+        // Sign extension also preserves unsigned ordering when T is int.
+        return ulong.CreateTruncating(result) >= ulong.CreateTruncating(left);
     }
 
     public static bool TryAlignUp(int value, int alignment, out int result)
@@ -59,13 +60,13 @@ public static class CheckedOps
     {
         var result64 = int.BigMul(left, right);
         result = unchecked((int)(result64));
-        return (int)(result64 >> 32) == ((left ^ right) >> 31);
+        return result64 == result;
     }
 
     public static bool TryMul(long left, long right, out long result)
     {
         var upper = Math.BigMul(left, right, out result);
-        return upper == ((left ^ right) >> 63);
+        return upper == (result >> 63);
     }
 
     public static bool TryMulUns(int left, int right, out int result)
@@ -86,15 +87,15 @@ public static class CheckedOps
         where T : IBinaryInteger<T>, ISignedNumber<T>
     {
         assert((typeof(T) == typeof(int)) || (typeof(T) == typeof(long)));
-        result = left - right;
-        return T.IsNegative((result ^ left) & (left ^ right));
+        result = unchecked(left - right);
+        return !T.IsNegative((result ^ left) & (left ^ right));
     }
 
     public static bool TrySubUns<T>(T left, T right, out T result)
         where T : IBinaryInteger<T>, ISignedNumber<T>
     {
         assert((typeof(T) == typeof(int)) || (typeof(T) == typeof(long)));
-        result = left - right;
-        return (result > left);
+        result = unchecked(left - right);
+        return ulong.CreateTruncating(result) <= ulong.CreateTruncating(left);
     }
 }
