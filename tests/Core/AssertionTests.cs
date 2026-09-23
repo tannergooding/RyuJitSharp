@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using NUnit.Framework;
 using static RyuJitSharp.Compiler.optAssertionKind;
@@ -21,6 +22,303 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class AssertionTests
 {
+    [TestCase(VNFunc.VNF_NEG, int.MinValue, int.MinValue)]
+    [TestCase(VNFunc.VNF_NOT, int.MinValue, int.MaxValue)]
+    [TestCase(VNFunc.VNF_BSWAP16, -32767, 384)]
+    [TestCase(VNFunc.VNF_BSWAP, 128, int.MinValue)]
+    public static void UnaryIntValueNumbersUseNativeWidth(VNFunc func, int value, int expected)
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            var input = store.VNForIntCon(value);
+            var result = store.VNForFunc(TYP_INT, func, input);
+            Assert.That(result, Is.EqualTo(store.VNForIntCon(expected)));
+            Assert.That(store.VNForFunc(TYP_INT, func, input), Is.EqualTo(result));
+        });
+    }
+
+    [TestCase(VNFunc.VNF_NEG, long.MinValue, long.MinValue)]
+    [TestCase(VNFunc.VNF_NOT, long.MinValue, long.MaxValue)]
+    [TestCase(VNFunc.VNF_BSWAP16, -32767L, 384L)]
+    [TestCase(VNFunc.VNF_BSWAP, 128L, long.MinValue)]
+    public static void UnaryLongValueNumbersUseNativeWidth(VNFunc func, long value, long expected)
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            Assert.That(store.VNForFunc(TYP_LONG, func, store.VNForLongCon(value)), Is.EqualTo(store.VNForLongCon(expected)));
+        });
+    }
+
+    [TestCase(0L, 0)]
+    [TestCase(long.MinValue, int.MinValue)]
+    [TestCase(0x7FF8123456789ABCL, 0x7FC12345)]
+    [TestCase(0x7FF0000000000001L, 0x7F800001)]
+    [TestCase(0x7FF0000000000000L, 0x7F800000)]
+    public static void UnaryFloatingNegationPreservesPayloadAndFlipsSign(long doubleBits, int floatBits)
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            var doubleVN = store.VNForFunc(TYP_DOUBLE, VNFunc.VNF_NEG, store.VNForDoubleCon(BitConverter.Int64BitsToDouble(doubleBits)));
+            var floatVN = store.VNForFunc(TYP_FLOAT, VNFunc.VNF_NEG, store.VNForFloatCon(BitConverter.Int32BitsToSingle(floatBits)));
+            Assert.That(BitConverter.DoubleToInt64Bits(store.GetConstantDouble(doubleVN)), Is.EqualTo(doubleBits ^ long.MinValue));
+            Assert.That(BitConverter.SingleToInt32Bits(store.GetConstantSingle(floatVN)), Is.EqualTo(floatBits ^ int.MinValue));
+        });
+    }
+
+    [Test]
+    public static void UnaryInterningCancelsDoubleNotAndRetainsStableFunctionViews()
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            var input = store.VNForExpr(null, TYP_INT);
+            var first = store.VNForFunc(TYP_INT, VNFunc.VNF_NOT, input);
+            Assert.That(first, Is.EqualTo(input + 1));
+            var app = new VNFuncApp();
+            Assert.That(store.GetVNFunc(first, ref app), Is.True);
+            for (var index = 0; index < 300; index++)
+            {
+                _ = store.VNForFunc(TYP_INT, VNFunc.VNF_NOT, store.VNForExpr(null, TYP_INT));
+            }
+
+            Assert.That(app.Func, Is.EqualTo(VNFunc.VNF_NOT));
+            Assert.That(app.GetArg(0), Is.EqualTo(input));
+            Assert.That(store.VNForFunc(TYP_INT, VNFunc.VNF_NOT, input), Is.EqualTo(first));
+            Assert.That(store.VNForFunc(TYP_INT, VNFunc.VNF_NOT, first), Is.EqualTo(input));
+            var nullLength = store.VNForFunc(TYP_INT, VNFunc.VNF_ARR_LENGTH, ValueNumStore.VNForNull());
+            Assert.That(store.VNHasExc(nullLength), Is.False);
+            Assert.That(store.IsVNConstant(nullLength), Is.False);
+        });
+    }
+
+    [Test]
+    public static void ExceptionSetsUnionInOrderAndFlattenValueWrappers()
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            var first = store.VNForFunc(TYP_REF, VNFunc.VNF_NullPtrExc, ValueNumStore.VNForNull());
+            var second = store.VNForFunc(TYP_REF, VNFunc.VNF_NullPtrExc, store.VNForExpr(null, TYP_REF));
+            var third = store.VNForFunc(TYP_REF, VNFunc.VNF_NullPtrExc, store.VNForExpr(null, TYP_REF));
+            var one = store.VNExcSetSingleton(first);
+            var two = store.VNExcSetSingleton(second);
+            var three = store.VNExcSetSingleton(third);
+            var union = store.VNExcSetUnion(store.VNExcSetUnion(three, one), store.VNExcSetUnion(two, three));
+            var cursor = union;
+            int[] ordered = [first, second, third];
+            foreach (var expected in ordered)
+            {
+                var app = new VNFuncApp();
+                Assert.That(store.GetVNFunc(cursor, ref app), Is.True);
+                Assert.That(app.Func, Is.EqualTo(VNFunc.VNF_ExcSetCons));
+                Assert.That(app.GetArg(0), Is.EqualTo(expected));
+                cursor = app.GetArg(1);
+            }
+
+            Assert.That(cursor, Is.EqualTo(ValueNumStore.VNForEmptyExcSet()));
+            Assert.That(store.VNExcSetUnion(union, union), Is.EqualTo(union));
+            var value = store.VNForIntCon(42);
+            var wrapped = store.VNWithExc(store.VNWithExc(value, one), union);
+            store.VNUnpackExc(wrapped, out var normal, out var exceptions);
+            Assert.That(normal, Is.EqualTo(value));
+            Assert.That(exceptions, Is.EqualTo(union));
+            Assert.That(store.VNHasExc(wrapped), Is.True);
+            Assert.That(store.VNWithExc(wrapped, ValueNumStore.VNForEmptyExcSet()), Is.EqualTo(wrapped));
+            store.VNUnpackExc(value, out normal, out exceptions);
+            Assert.That(normal, Is.EqualTo(value));
+            Assert.That(exceptions, Is.EqualTo(ValueNumStore.VNForEmptyExcSet()));
+        });
+    }
+
+    [TestCase(VNFunc.VNF_JitNewArr)]
+    [TestCase(VNFunc.VNF_JitNewLclArr)]
+    [TestCase(VNFunc.VNF_JitReadyToRunNewArr)]
+    [TestCase(VNFunc.VNF_JitReadyToRunNewLclArr)]
+    public static void NewArrayValueNumbersRespectConstantLengthBounds(VNFunc func)
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            long[] sizes = [-1, 0, int.MaxValue, (long)int.MaxValue + 1];
+            foreach (var size in sizes)
+            {
+                var array = StoreFunctionRecord(store, TYP_REF, func, ValueNumStore.VNForNull(),
+                    store.VNForLongCon(size), store.VNForExpr(null, TYP_REF));
+                var valid = size is >= 0 and <= int.MaxValue;
+                Assert.That(store.TryGetNewArrSize(array, out var actual), Is.EqualTo(valid));
+                Assert.That(actual, Is.EqualTo(valid ? (int)size : 0));
+                var length = store.VNForFunc(TYP_INT, VNFunc.VNF_ARR_LENGTH, array);
+                var folds = valid || ((func == VNFunc.VNF_JitNewArr) && (size is >= int.MinValue and <= int.MaxValue));
+                Assert.That(store.IsVNConstant(length), Is.EqualTo(folds));
+                if (folds)
+                {
+                    Assert.That(store.GetConstantInt32(length), Is.EqualTo((int)size));
+                }
+            }
+        });
+    }
+
+    [TestCase(VNFunc.VNF_JitNewArr)]
+    [TestCase(VNFunc.VNF_StrFastAllocate)]
+    public static void AllocationLengthsNormalizeSignedWidening(VNFunc func)
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            var size = store.VNForExpr(null, TYP_INT);
+            var widened = store.VNForFuncNoFolding(TYP_LONG, VNFunc.VNF_Cast, size, store.VNForCastOper(TYP_LONG, false));
+            var array = StoreFunctionRecord(store, TYP_REF, func, ValueNumStore.VNForNull(),
+                widened, store.VNForExpr(null, TYP_REF));
+            Assert.That(store.VNForFunc(TYP_INT, VNFunc.VNF_ARR_LENGTH, array), Is.EqualTo(size));
+        });
+    }
+
+    [TestCase(0)]
+    [TestCase(42)]
+    [TestCase(-1)]
+    public static void FrozenObjectLengthsUseAndCacheEEAnswers(int length)
+    {
+        WithCompiler(compiler => {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.getArrayOrStringLength = &GetArrayLength;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
+            var metadata = new ArrayMetadata { Length = length };
+            var store = new ValueNumStore(compiler);
+            var obj = store.VNForHandle((nint)(&metadata), GTF_ICON_OBJ_HDL);
+            var result = store.VNForFunc(TYP_INT, VNFunc.VNF_ARR_LENGTH, obj);
+            Assert.That(store.IsVNConstant(result), Is.EqualTo(length >= 0));
+            if (length >= 0)
+            {
+                Assert.That(store.GetConstantInt32(result), Is.EqualTo(length));
+            }
+
+            Assert.That(store.VNForFunc(TYP_INT, VNFunc.VNF_ARR_LENGTH, obj), Is.EqualTo(result));
+            Assert.That(metadata.Calls, Is.EqualTo(1));
+        });
+    }
+
+    [TestCase(true, 17)]
+    [TestCase(true, -1)]
+    [TestCase(false, 17)]
+    public static void ReadonlyFieldLengthsPreserveEEContractAndCanonicalIdentity(bool readable, int length)
+    {
+        WithCompiler(compiler => {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.getArrayOrStringLength = &GetArrayLength;
+            vtable.Base.Base.isFieldStatic = &IsFieldStatic;
+            vtable.Base.getStaticFieldContent =
+                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_FIELD_STRUCT_*, byte*, int, int, bool, byte>)
+                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_FIELD_STRUCT_*, byte*, int, int, byte, byte>)&GetStaticFieldContent;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
+            var array = new ArrayMetadata { Length = length };
+            var field = new FieldMetadata { Object = (nint)(&array), Readable = readable };
+            var sequence = new FieldSeq((CORINFO_FIELD_STRUCT_*)&field, 0, FieldSeq.FieldKind.SharedStatic);
+            var other = new FieldSeq((CORINFO_FIELD_STRUCT_*)&field, 0, FieldSeq.FieldKind.SharedStatic);
+            var store = new ValueNumStore(compiler);
+            var sequenceVN = store.VNForFieldSeq(sequence);
+            Assert.That(store.VNForFieldSeq(sequence), Is.EqualTo(sequenceVN));
+            Assert.That(store.VNForFieldSeq(other), Is.Not.EqualTo(sequenceVN));
+            GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+            Assert.That(store.FieldSeqVNToFieldSeq(sequenceVN), Is.SameAs(sequence));
+            Assert.That(store.FieldSeqVNToFieldSeq(store.VNForFieldSeq(null)), Is.Null);
+            var load = store.VNForFunc(TYP_REF, VNFunc.VNF_InvariantNonNullLoad, sequenceVN);
+            var result = store.VNForFunc(TYP_INT, VNFunc.VNF_ARR_LENGTH, load);
+            Assert.That(field.ValidRequest, Is.True);
+            Assert.That(field.Calls, Is.EqualTo(1));
+            Assert.That(array.Calls, Is.EqualTo(readable ? 1 : 0));
+            Assert.That(store.IsVNConstant(result), Is.EqualTo(readable && (length >= 0)));
+            if (readable && (length >= 0))
+            {
+                Assert.That(store.GetConstantInt32(result), Is.EqualTo(length));
+            }
+        });
+    }
+
+#if DEBUG
+    [Test]
+    public static void NullFieldSequenceDumpUsesNativeSymbolicFormat()
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            using var stream = new MemoryStream();
+            using var writer = new JitTextWriter(stream, leaveOpen: true);
+            var previous = s_jitstdout;
+            int vn;
+            try
+            {
+                s_jitstdout = writer;
+                compiler.verbose = true;
+                vn = store.VNForFieldSeq(null);
+                writer.Flush();
+            }
+            finally
+            {
+                s_jitstdout = previous;
+                compiler.verbose = false;
+            }
+
+            Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo($"     {{ }} is ${vn:x}{Environment.NewLine}"));
+        });
+    }
+#endif
+
+    private struct ArrayMetadata
+    {
+        public int Length;
+        public int Calls;
+    }
+
+    private struct FieldMetadata
+    {
+        public nint Object;
+        public int Calls;
+        public bool Readable;
+        public bool ValidRequest;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int GetArrayLength(ICorJitInfo* info, CORINFO_OBJECT_STRUCT_* handle)
+    {
+        var metadata = (ArrayMetadata*)handle;
+        metadata->Calls++;
+        return metadata->Length;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte IsFieldStatic(ICorJitInfo* info, CORINFO_FIELD_STRUCT_* handle) => 1;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte GetStaticFieldContent(ICorJitInfo* info, CORINFO_FIELD_STRUCT_* handle, byte* buffer,
+        int size, int offset, byte ignoreMovableObjects)
+    {
+        var metadata = (FieldMetadata*)handle;
+        metadata->Calls++;
+        metadata->ValidRequest = (size == TARGET_POINTER_SIZE) && (offset == 0) && (ignoreMovableObjects == 0);
+        if (!metadata->Readable || !metadata->ValidRequest)
+        {
+            return 0;
+        }
+
+        Unsafe.CopyBlockUnaligned(buffer, &metadata->Object, (uint)size);
+        return 1;
+    }
+
+    private static int StoreFunctionRecord(ValueNumStore store, var_types type, VNFunc func, params int[] arguments)
+    {
+        var allocator = typeof(ValueNumStore).GetMethod("GetAllocChunk", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException();
+        var attribute = Enum.Parse(allocator.GetParameters()[1].ParameterType, $"CEA_Func{arguments.Length}");
+        var chunk = allocator.Invoke(store, [type, attribute]) ?? throw new InvalidOperationException();
+        var chunkType = typeof(ValueNumStore).GetNestedType("Chunk", BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException();
+        var allocVN = chunkType.GetMethod("AllocVN") ?? throw new InvalidOperationException();
+        var offset = (int)(allocVN.Invoke(chunk, null) ?? throw new InvalidOperationException());
+        var funcApp = chunkType.GetMethod("FuncApp") ?? throw new InvalidOperationException();
+        var record = (Memory<int>)(funcApp.Invoke(chunk, [offset, arguments.Length]) ?? throw new InvalidOperationException());
+        record.Span[0] = (int)func;
+        arguments.CopyTo(record.Span[1..]);
+        var baseVN = chunkType.GetField("BaseVN") ?? throw new InvalidOperationException();
+        return unchecked((int)(baseVN.GetValue(chunk) ?? throw new InvalidOperationException()) + offset);
+    }
+
     [TestCase(TYP_SIMD8)]
     [TestCase(TYP_SIMD12)]
     [TestCase(TYP_SIMD16)]

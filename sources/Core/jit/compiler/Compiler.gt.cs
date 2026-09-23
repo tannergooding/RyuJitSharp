@@ -1716,7 +1716,7 @@ public partial class Compiler
     /// <summary>Print out the fields in this field sequence.</summary>
     /// <param name="fieldSeq">The field sequence</param>
     /// <param name="offset">Offset of the (implicit) struct fields in the sequence</param>
-    public unsafe void gtDispFieldSeq(FieldSeq fieldSeq, nint offset)
+    public unsafe void gtDispFieldSeq(FieldSeq? fieldSeq, nint offset)
     {
         if (fieldSeq is null)
         {

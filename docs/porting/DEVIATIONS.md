@@ -103,6 +103,15 @@ zero-initialized maximum-width value. Scalar numeric and vector access remain
 separate managed helpers rather than emulating C++ template specialization.
 ARM64 scalable/mask storage is still explicitly NYI (B097).
 
+Unary function folding publishes its dictionary result after recursive calls,
+without keeping a managed entry reference across possible dictionary growth.
+Canonical field sequences use store-owned reference-identity tokens, with zero
+reserved for null, rather than movable object addresses or pinned GC handles.
+These tokens remain metadata: EE calls receive the sequence's actual field
+handle. Field-sequence diagnostics retain native symbolic formatting; the
+general VN dumper is not yet ported. Exception lists retain native unsigned-VN
+ordering and recursive union rather than managed collection enumeration (B098).
+
 Phi definitions own copied SSA-number arrays and expose readonly memory.
 Reaching-VN traversal uses a managed stack and membership set, preserving native
 push/pop order, conservative SSA lookup, duplicate suppression, cycles and early

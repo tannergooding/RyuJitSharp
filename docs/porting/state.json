@@ -12,25 +12,26 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete the fixed-width VN constant model required by node-wide assertion generation: vector/mask interning and retrieval, generic constant import, zero-by-type and int-to-long normalization. Preserve explicit ARM64 scalable/mask storage boundaries.",
+      "scope": "Complete unary VN expressions required by node-wide assertion generation, including native constant folding, known array lengths, exception-value composition and safe canonical field-sequence identity.",
       "doneWhen": [
-        "Scalar and fixed-vector zero/import/retrieval operations preserve exact bits, independent type chunks and copied ownership.",
-        "Int-to-long normalization retains the native unsigned-source non-negativity gate.",
+        "Unary interning preserves native numbering, double-NOT cancellation, integer widths, signed zero and floating payloads.",
+        "Frozen objects, readonly fields and recognized allocation VNs use the native array-length rules and EE contracts.",
+        "Field-sequence identities survive managed movement without pinning; exception sets preserve ordering, deduplication and normal-value composition.",
         "The selected Debug/Release checks pass and complete functions are committed with their native retirement and checkpoint."
       ],
       "validation": [
         "One combined assertion/integral-range selection in Debug and Release.",
-        "Cover all fixed vector widths, SIMD12 active bytes/zero padding, generic signedness, scalar/handle zeros and widening-cast normalization in the existing assertion fixture.",
+        "Cover scalar unary edge cases, field-sequence ownership, EE array-length paths, allocation bounds and exception-set unions in the existing assertion fixture.",
         "No full suite or NativeAOT recapture unless a concrete failure or newly reachable compiler phase requires it."
       ],
       "deferred": [
-        "General VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
+        "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
         "Assertion generation and fgMorphTreeDone completion.",
         "Remaining integer/comparison/conditional/HWI folding and fgInline activation.",
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "General assertion creation/JTRUE facts and fixed-width VN constants are complete (B094/B097). Continue complete unary VN expression support required by optAssertionGen, including actual constant folding, known array lengths, exception-value composition and managed field-sequence identity; do not substitute non-folding interning. Then complete optAssertionGen, fgAssertionGen and fgMorphTreeDone. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop. Preserve unchanged-frontier evidence.",
+    "nextAction": "Unary VN expressions and their field-sequence/exception prerequisites are complete (B098). Continue optAssertionGen, fgAssertionGen and fgMorphTreeDone with native local/global behavior intact. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop. Preserve unchanged-frontier evidence.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -512,6 +513,19 @@
         "debugTests": "artifacts\\vn-constants-debug.trx",
         "releaseTests": "artifacts\\vn-constants-release.trx"
       },
+      "vnUnaryExpressions": {
+        "managedSourceCommit": "6f504ac6988a317e23b93b2d255ba86049cb0591",
+        "debugPassed": 136,
+        "releasePassed": 133,
+        "skipped": 0,
+        "newDebugCases": 28,
+        "newReleaseCases": 27,
+        "nativeDefinitionsRetired": 18,
+        "nativeAotRecaptured": false,
+        "phaseActivated": false,
+        "debugTests": "artifacts\\vn-unary-debug.trx",
+        "releaseTests": "artifacts\\vn-unary-release.trx"
+      },
       "nativeAotPublish": "passed-after-integral-ranges",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "five-of-nine-import-prefixes-equal-remaining-inline-candidate-differences",
@@ -775,6 +789,15 @@
       "commit": "fa197c6fafd9807d3daf219ff5279bae76c66a11",
       "indexCommit": "2509386b304593150f61589c5bee9cb76fe20332",
       "ref": "refs/porting/snapshots/native-ledger-vn-constants"
+    },
+    "vnUnaryManagedSource": {
+      "commit": "6f504ac6988a317e23b93b2d255ba86049cb0591",
+      "ref": "refs/porting/snapshots/vn-unary-source"
+    },
+    "vnUnaryNativeResidual": {
+      "commit": "b28d3afbf832a4f4633bc7f12fe321a6ceb480d4",
+      "indexCommit": "e71a9b383679d377ce6a23987398f9a8342db916",
+      "ref": "refs/porting/snapshots/native-ledger-vn-unary"
     }
   },
   "sourceMap": [
