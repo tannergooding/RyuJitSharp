@@ -61,7 +61,6 @@ public static class CheckedOps
     {
         assert((typeof(T) == typeof(int)) || (typeof(T) == typeof(long)));
         result = unchecked(left + right);
-
         return !T.IsNegative((result ^ left) & ~(left ^ right));
     }
 
@@ -107,14 +106,12 @@ public static class CheckedOps
     {
         var result64 = int.BigMul(left, right);
         result = unchecked((int)(result64));
-
         return result64 == result;
     }
 
     public static bool TryMul(long left, long right, out long result)
     {
         var upper = Math.BigMul(left, right, out result);
-
         return upper == (result >> 63);
     }
 
@@ -137,7 +134,6 @@ public static class CheckedOps
     {
         assert((typeof(T) == typeof(int)) || (typeof(T) == typeof(long)));
         result = unchecked(left - right);
-
         return !T.IsNegative((result ^ left) & (left ^ right));
     }
 
@@ -146,7 +142,6 @@ public static class CheckedOps
     {
         assert((typeof(T) == typeof(int)) || (typeof(T) == typeof(long)));
         result = unchecked(left - right);
-
         return ulong.CreateTruncating(result) <= ulong.CreateTruncating(left);
     }
 }

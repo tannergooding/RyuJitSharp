@@ -182,7 +182,6 @@ internal static unsafe class InlineRecursionTests
     private static byte HaveSameMethodDefinition(ICorJitInfo* self, CORINFO_METHOD_STRUCT_* first, CORINFO_METHOD_STRUCT_* second)
     {
         s_definitionQueries++;
-
         return s_sameDefinition ? (byte)1 : (byte)0;
     }
 
@@ -190,7 +189,6 @@ internal static unsafe class InlineRecursionTests
     private static CORINFO_CLASS_STRUCT_* GetTypeInstantiationArgument(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type, int index)
     {
         s_typeQueries++;
-
         return (index == 0) && ((nuint)type >= 0x1000) && ((nuint)type < (nuint)(0x1000 + (8 * s_typeDepth)))
             ? (CORINFO_CLASS_STRUCT_*)((nuint)type + 8) : null;
     }

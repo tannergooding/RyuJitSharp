@@ -311,7 +311,6 @@ internal static unsafe class ProfileEdgeCountTests
 
         compiler.fgFirstBB = blocks[0];
         compiler.fgLastBB = blocks[^1];
-
         return blocks;
     }
 
@@ -320,7 +319,6 @@ internal static unsafe class ProfileEdgeCountTests
         var edge = new FlowEdge(source, target, target.bbPreds) { Likelihood = likelihood };
         target.bbPreds = edge;
         target.bbRefs++;
-
         return edge;
     }
 

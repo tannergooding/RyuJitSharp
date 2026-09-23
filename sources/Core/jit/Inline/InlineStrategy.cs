@@ -572,7 +572,6 @@ public sealed class InlineStrategy
 
         var seed = externalSeed ^ internalSeed;
         JITDUMP($"\n*** Using random seed ext({externalSeed}) ^ int({internalSeed}) = {seed}\n");
-
         return new CLRRandom(seed);
     }
 #endif

@@ -82,12 +82,16 @@ fall through. Do not globally change that policy as an incidental porting edit.
 Preserve recognizable algorithms without copying native layout or compressing
 the translation. Follow the surrounding C# conventions: multiline control-flow
 bodies, braced switch sections, and one executable statement per line. Separate
-switch sections and distinct steps with a blank line. Leave a blank line before
-an `if`, `switch`, loop, or other control-flow statement when it follows another
-statement, after a completed control-flow block, and before a final return.
-Do not insert blank lines between an opening brace and its first statement or
-between an `if` and its `else`. Keep related declarations and operations together,
-and wrap long calls and expressions at meaningful boundaries.
+switch sections with a blank line, and wrap long calls and expressions at
+meaningful boundaries.
+
+Use whitespace for visual balance and readable flow, like paragraph structure.
+Assertions, values, computations, and returns may belong together or form
+separate groups depending on their purpose in the surrounding code. Keep things
+together when that makes their relationship clearer; separate unrelated steps
+and setup or cleanup that forms its own logical component. A blank line before
+a return or around control flow should clarify that structure, not satisfy a
+mechanical rule based on the statement kind.
 
 `.editorconfig` governs mechanical formatting, but cannot identify logical
 groups or choose useful line breaks. Its preservation of single-line blocks

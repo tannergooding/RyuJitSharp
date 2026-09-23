@@ -212,7 +212,6 @@ internal static unsafe class AsyncContextTests
     {
         var call = compiler.gtNewCallNode(var_types.TYP_INT, gtCallTypes.CT_USER_FUNC, null);
         call.SetIsAsync(default);
-
         return call;
     }
 

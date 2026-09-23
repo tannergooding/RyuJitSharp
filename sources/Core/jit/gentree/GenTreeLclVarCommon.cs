@@ -95,7 +95,6 @@ public abstract class GenTreeLclVarCommon : GenTreeUnOp
         }
 
         assert(Oper is GT_LCL_FLD or GT_STORE_LCL_FLD);
-
         return AsLclFld().Layout;
     }
 

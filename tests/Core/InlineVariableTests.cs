@@ -235,7 +235,6 @@ internal static unsafe class InlineVariableTests
         var index = (nuint)argument;
         s_queries.Add(index);
         *type = null;
-
         return index > 0 && index <= (nuint)s_types.Length ? s_types[(int)index - 1] : (CorInfoTypeWithMod)CORINFO_TYPE_INT;
     }
 
@@ -243,7 +242,6 @@ internal static unsafe class InlineVariableTests
     private static CORINFO_ARG_LIST_STRUCT_* GetNextArgument(ICorJitInfo* self, CORINFO_ARG_LIST_STRUCT_* argument)
     {
         s_nextCalls++;
-
         return (CORINFO_ARG_LIST_STRUCT_*)((nuint)argument + 1);
     }
 

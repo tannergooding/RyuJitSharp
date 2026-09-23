@@ -42,7 +42,6 @@ public partial class Compiler
     public bool ehIsAsyncContextRestore(ushort ehID)
     {
         var root = impInlineRoot;
-
         return (root._asyncContextRestoreEHIDs is not null) && root._asyncContextRestoreEHIDs.Contains(ehID);
     }
 
@@ -282,7 +281,6 @@ public partial class Compiler
     public bool bbIsHandlerBeg(BasicBlock block)
     {
         ref var ehDsc = ref ehGetBlockHndDsc(block);
-
         return !Unsafe.IsNullRef(in ehDsc) &&
             ((block == ehDsc.ebdHndBeg) || (ehDsc.HasFilter && (block == ehDsc.ebdFilter)));
     }
@@ -544,7 +542,6 @@ public partial class Compiler
     {
         assert(finallyIndex is not EHblkDsc.NO_ENCLOSING_INDEX);
         assert(ehGetDsc(finallyIndex).HasFinallyHandler);
-
         return ehGetDsc(finallyIndex).ebdGetEnclosingRegionIndex(out inTryRegion);
     }
 

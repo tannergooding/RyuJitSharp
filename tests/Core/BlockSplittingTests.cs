@@ -428,7 +428,6 @@ internal static unsafe class BlockSplittingTests
     {
         var block = BasicBlock.New(compiler, kind);
         block.bbRefs = 0;
-
         return block;
     }
 

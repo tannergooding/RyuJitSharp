@@ -18,7 +18,6 @@ public partial class Compiler
             if (use == target)
             {
                 use = replacement;
-
                 return fgWalkResult.WALK_SKIP_SUBTREES;
             }
 

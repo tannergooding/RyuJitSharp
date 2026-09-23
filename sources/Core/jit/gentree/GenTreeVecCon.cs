@@ -68,7 +68,6 @@ public sealed class GenTreeVecCon : GenTree
             {
                 NYI("ARM64 scalable vector constant comparison");
                 fatal(CORJIT_IMPLLIMITATION);
-
                 return false;
             }
 #endif

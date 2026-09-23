@@ -81,7 +81,6 @@ public partial class Globals
         {
             var compiler = JitTls.Compiler;
             assert(compiler is not null);
-
             return unchecked((uint)compiler.info.compMethodHash());
         }
 

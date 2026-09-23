@@ -631,7 +631,6 @@ internal static unsafe class AsyncContextSaveTests
             ? compiler.gtNewLclVarNode(TYP_BYREF, 0) : compiler.gtNewIconNode(type, value);
         var stmt = compiler.gtNewStmt(new GenTreeUnOp(GT_RETURN, type, operand));
         compiler.fgInsertStmtAtEnd(block, stmt);
-
         return stmt;
     }
 
@@ -675,7 +674,6 @@ internal static unsafe class AsyncContextSaveTests
         var block = BasicBlock.New(compiler, kind);
         block.bbCodeOffs = offset;
         block.bbCodeOffsEnd = offset + 10;
-
         return block;
     }
 
@@ -693,7 +691,6 @@ internal static unsafe class AsyncContextSaveTests
     private static CorInfoFlag GetMethodFlags(ICorJitInfo* jitInfo, CORINFO_METHOD_STRUCT_* method)
     {
         s_methodQueries++;
-
         return CorInfoFlag.CORINFO_FLG_STATIC;
     }
 

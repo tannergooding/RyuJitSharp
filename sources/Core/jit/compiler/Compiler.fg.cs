@@ -56,7 +56,6 @@ public partial class Compiler
 
 #endif
             createdContext = null;
-
             return;
         }
 
@@ -194,7 +193,6 @@ public partial class Compiler
 #endif
 
                 inlineResult.NoteFatal(InlineObservation.CALLSITE_LACKS_RETURN);
-
                 return;
             }
         }
@@ -259,7 +257,6 @@ public partial class Compiler
         {
             result.NoteFatal(InlineObservation.CALLSITE_OVER_INLINE_LIMIT);
             createdContext = null;
-
             return;
         }
 #endif
@@ -1028,7 +1025,6 @@ public partial class Compiler
         if (!InlineeCompiler.compAsyncBodyMaySuspend)
         {
             JITDUMP("Inlinee cannot suspend; no async frame transition IR needed\n");
-
             return;
         }
 
@@ -1039,7 +1035,6 @@ public partial class Compiler
         if (resumedDefArg is null)
         {
             JITDUMP("Inlining call does no context handling; no async frame transition IR needed\n");
-
             return;
         }
 
@@ -1144,7 +1139,6 @@ public partial class Compiler
             if (IsDisallowedRecursiveInline(inlineContext, inlineInfo))
             {
                 inlineResult.NoteFatal(InlineObservation.CALLSITE_IS_RECURSIVE);
-
                 return depth;
             }
 
@@ -1155,7 +1149,6 @@ public partial class Compiler
         }
 
         inlineResult.NoteInt(InlineObservation.CALLSITE_DEPTH, depth);
-
         return depth;
     }
 
@@ -1166,7 +1159,6 @@ public partial class Compiler
             (ancestor.RuntimeContext == inlineInfo.inlineCandidateInfo.exactContextHandle))
         {
             JITDUMP("Call site is trivially recursive\n");
-
             return true;
         }
 
@@ -1176,7 +1168,6 @@ public partial class Compiler
             ContextComplexityExceeds(inlineInfo.inlineCandidateInfo.exactContextHandle, 64))
         {
             JITDUMP("Call site is recursive with a complex generic context\n");
-
             return true;
         }
 
@@ -1272,7 +1263,6 @@ public partial class Compiler
         {
             // No ref locals, nothing to do.
             JITDUMP("fgInlineAppendStatements: no gc ref inline locals.\n");
-
             return;
         }
 
@@ -1282,7 +1272,6 @@ public partial class Compiler
         if (iciCall.IsImplicitTailCall)
         {
             JITDUMP("fgInlineAppendStatements: implicit tail call; skipping nulling.\n");
-
             return;
         }
 
@@ -1587,7 +1576,6 @@ public partial class Compiler
 
                 fgReplaceInlineArgument(argSingleUseNode, argNode);
                 argInfo.argBashTmpNode = argNode;
-
                 return;
             }
             else
@@ -2258,7 +2246,6 @@ public partial class Compiler
                     if (fgFirstBB is not null)
                     {
                         var sufficientSamples = 1000.0;
-
                         return fgFirstBB.bbWeight > sufficientSamples;
                     }
 
@@ -2290,7 +2277,6 @@ public partial class Compiler
         get
         {
             assert(Debugger.IsAttached || compIsForInlining);
-
             return lvaInlineeReturnSpillTemp != BAD_VAR_NUM;
         }
     }
@@ -2309,7 +2295,6 @@ public partial class Compiler
         if (!inTry && !inHnd)
         {
             dsg = AcdKeyDesignator.KD_NONE;
-
             return 0;
         }
 
@@ -2319,7 +2304,6 @@ public partial class Compiler
         {
             // The most enclosing region is a try body, use it
             dsg = AcdKeyDesignator.KD_TRY;
-
             return tryIndex;
         }
 
@@ -2330,12 +2314,10 @@ public partial class Compiler
         if (ehGetDsc((ushort)(hndIndex - 1)).InFilterRegionBBRange(blk))
         {
             dsg = AcdKeyDesignator.KD_FLT;
-
             return hndIndex | AddCodeDscKey.AcdFilterFlag;
         }
 
         dsg = AcdKeyDesignator.KD_HND;
-
         return hndIndex | AddCodeDscKey.AcdHandlerFlag;
     }
 
@@ -2396,7 +2378,6 @@ public partial class Compiler
             case GT_BOX:
             {
                 var box = addr.AsBox();
-
                 return !box.IsBoxedValue;
             }
 
@@ -2471,7 +2452,6 @@ public partial class Compiler
             case GT_CALL:
             {
                 var call = addr.AsCall();
-
                 return !call.IsHelperCall() || !call.HelperNum.NonNullReturn;
             }
 
@@ -3422,14 +3402,12 @@ public partial class Compiler
         if (!verifyLikelyWeights && !verifyHasLikelihood)
         {
             JITDUMP("[profile weight checks disabled]\n");
-
             return true;
         }
 
         if (fgPgoDeferredInconsistency)
         {
             JITDUMP("[deferred prior check failed -- skipping this check]\n");
-
             return false;
         }
 
@@ -3924,7 +3902,6 @@ public partial class Compiler
         if (compHndBBtabCount == 0)
         {
             jitprintf(" is empty\n");
-
             return;
         }
 
@@ -4243,7 +4220,6 @@ public partial class Compiler
                     {
                         JITDUMP($"Inlinee EH clause {XTnum} is a catch; we can't inline these (yet)\n");
                         compInlineResult.NoteFatal(InlineObservation.CALLEE_HAS_EH);
-
                         return;
                     }
                 }
@@ -4519,7 +4495,6 @@ public partial class Compiler
                     if (block is null)
                     {
                         BADCODE($"Missing endfilter for filter at offset {filtBB.bbCodeOffs:X4}");
-
                         return;
                     }
 
@@ -5546,7 +5521,6 @@ public partial class Compiler
                             if (compIsForInlining)
                             {
                                 assert(compInlineResult.IsFailure);
-
                                 return;
                             }
 
@@ -6064,7 +6038,6 @@ public partial class Compiler
                             if (compIsForInlining)
                             {
                                 assert(compInlineResult.IsFailure);
-
                                 return;
                             }
                         }
@@ -6183,7 +6156,6 @@ public partial class Compiler
                         assert(impInlineRoot._inlineStrategy is not null);
                         impInlineRoot._inlineStrategy.NoteUnprofitable();
                         JITDUMP("\n\nInline expansion aborted, inline not profitable\n");
-
                         return;
                     }
                     else
@@ -6963,7 +6935,6 @@ public partial class Compiler
         }
 
         noway_assert(tree is not null);
-
         return tree;
     }
 
@@ -7022,7 +6993,6 @@ public partial class Compiler
         }
 
         pred = null;
-
         return ref Unsafe.NullRef<FlowEdge?>();
     }
 
@@ -7269,7 +7239,6 @@ public partial class Compiler
         var load = tempInfo.Load;
 
         treeRef = gtNewCommaNode(treeRef.Type, store, load);
-
         return gtCloneLclVar(load);
     }
 
@@ -7334,7 +7303,6 @@ public partial class Compiler
         }
 
         noway_assert((block.FirstStmt is null) || ((block.FirstStmt.PrevStmt is Statement last) && (last.NextStmt is null)));
-
         return stmtLast;
     }
 
@@ -7425,7 +7393,6 @@ public partial class Compiler
         if (fgFirstFuncletBB is not null)
         {
             assert(fgFirstFuncletBB.Prev is not null);
-
             return fgFirstFuncletBB.Prev;
         }
 
@@ -7678,7 +7645,6 @@ public partial class Compiler
                 if ((lo == hi) && (lo == (fgBBcount - 1)))
                 {
                     noway_assert(addr == dsc.bbCodeOffsEnd);
-
                     return null; // NULL means the end of method
                 }
 
@@ -7700,7 +7666,6 @@ public partial class Compiler
 #endif
 
         NO_WAY("fgLookupBB failed.");
-
         return null;
     }
 
@@ -7881,7 +7846,6 @@ public partial class Compiler
                             compInlineResult.NoteFatal(InlineObservation.CALLEE_EXPLICIT_TAIL_PREFIX);
                             retBlocks++;
                             fgReturnCount = retBlocks;
-
                             return;
                         }
 
@@ -8191,7 +8155,6 @@ public partial class Compiler
     public TempInfo fgMakeTemp(GenTree value)
     {
         var lclNum = lvaGrabTemp(shortLifetime: true, "fgMakeTemp is creating a new local variable");
-
         return new TempInfo {
             Store = gtNewTempStore(lclNum, value),
             Load = gtNewLclvNode(value.Type.ActualType, lclNum),
@@ -10205,7 +10168,6 @@ public partial class Compiler
         }
 
         assert(bNext is not null);
-
         return bNext;
     }
 
@@ -10231,7 +10193,6 @@ public partial class Compiler
             if (succs[i] == succEdge)
             {
                 fgRemoveEhfSuccFromTable(block, i);
-
                 return;
             }
         }
@@ -10630,7 +10591,6 @@ public partial class Compiler
         }
 
         assert(preOrderIndex == postOrderIndex);
-
         return new FlowGraphDfsTree(this, postOrder, preOrderIndex, hasCycle, useProfile);
     }
 
@@ -10693,7 +10653,6 @@ public partial class Compiler
 
         _ = block.VisitEHEnclosedHandlerSecondPassSuccs(this, successor => {
             successors.Add(successor);
-
             return BasicBlockVisit.Continue;
         });
 
@@ -10773,7 +10732,6 @@ public partial class Compiler
         }
 
         var relativeDelta = delta / weight2;
-
         return fgProfileWeightsEqual(relativeDelta, BB_ZERO_WEIGHT);
     }
 
@@ -11239,7 +11197,6 @@ public partial class Compiler
             }
 
             weightWB = weight;
-
             return true;
         }
 #endif
@@ -11259,20 +11216,17 @@ public partial class Compiler
             if (fgPgoSchema[i].InstrumentationKind is ICorJitInfo.PgoInstrumentationKind.BasicBlockIntCount)
             {
                 weightWB = *(uint*)(fgPgoData + fgPgoSchema[i].Offset);
-
                 return true;
             }
 
             if (fgPgoSchema[i].InstrumentationKind is ICorJitInfo.PgoInstrumentationKind.BasicBlockLongCount)
             {
                 weightWB = *(ulong*)(fgPgoData + fgPgoSchema[i].Offset);
-
                 return true;
             }
         }
 
         weightWB = 0;
-
         return true;
     }
 
@@ -11284,14 +11238,12 @@ public partial class Compiler
             _ = fgIncorporateBlockCounts();
             ProfileSynthesis.Run(this, ProfileSynthesisOption.RepairLikelihoods);
             fgApplyProfileScale();
-
             return PhaseStatus.MODIFIED_EVERYTHING;
         }
 
         if (!opts.OptimizationEnabled)
         {
             JITDUMP("not optimizing, so not incorporating any profile data\n");
-
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
@@ -11303,7 +11255,6 @@ public partial class Compiler
                 JITDUMP("Synthesizing profile data\n");
                 ProfileSynthesis.Run(this, ProfileSynthesisOption.AssignLikelihoods);
                 fgApplyProfileScale();
-
                 return PhaseStatus.MODIFIED_EVERYTHING;
             }
         }
@@ -11313,7 +11264,6 @@ public partial class Compiler
             JITDUMP("Synthesizing profile data and writing it out as the actual profile data\n");
             ProfileSynthesis.Run(this, ProfileSynthesisOption.AssignLikelihoods);
             fgApplyProfileScale();
-
             return PhaseStatus.MODIFIED_EVERYTHING;
         }
 
@@ -11336,7 +11286,6 @@ public partial class Compiler
             }
 
             fgApplyProfileScale();
-
             return compIsForInlining ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
         }
 
@@ -11584,7 +11533,6 @@ public partial class Compiler
         {
             // It's the 1st entry, assign new head of list.
             fgReturnBlocks = fgReturnBlocks.Next;
-
             return;
         }
 
@@ -12469,7 +12417,6 @@ public partial class Compiler
             }
 
             printedBlockWidth += stringBuilder.Length;
-
             return stringBuilder.ToString();
         }
     }
@@ -12640,7 +12587,6 @@ public partial class Compiler
 
         // Now the entry is there, but not filled in
         compHndBBtabCount = (ushort)(newCount);
-
         return XTnum + count - 1;
     }
 
@@ -12794,7 +12740,6 @@ public partial class Compiler
         }
 
         fgCreateNewInitBB();
-
         return PhaseStatus.MODIFIED_EVERYTHING;
     }
 
@@ -12931,7 +12876,6 @@ public partial class Compiler
         }
 
         fgImportDone = true;
-
         return PhaseStatus.MODIFIED_EVERYTHING;
     }
 
@@ -13042,28 +12986,24 @@ public partial class Compiler
         if (!enabled)
         {
             JITDUMP("Unreachable try removal disabled by config.\n");
-
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
         if (compHndBBtabCount == 0)
         {
             JITDUMP("No EH in this method; nothing to do.\n");
-
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
         if (opts.MinOpts)
         {
             JITDUMP("Method compiled with MinOpts; skipping.\n");
-
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
         if (opts.compDbgCode)
         {
             JITDUMP("Method compiled with debug codegen; skipping.\n");
-
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
@@ -13257,7 +13197,6 @@ public partial class Compiler
         }
 
         JITDUMP($"\nfgRemoveUnreachableTry removed {removedCount} unreachable EH region(s)\n");
-
         return PhaseStatus.MODIFIED_EVERYTHING;
     }
 
@@ -13579,7 +13518,6 @@ public partial class Compiler
                 if (!dfsTree.Contains(block))
                 {
                     anyCallFinallyPairs |= block.isBBCallFinallyPair;
-
                     return true;
                 }
 
@@ -14062,7 +14000,6 @@ public partial class Compiler
         }
 
         JITDUMP($"fgUnpinNonMovableLocals: {unpinned} local{(unpinned == 1 ? "" : "s")} unpinned after {iterations} iteration{(iterations == 1 ? "" : "s")}\n");
-
         return PhaseStatus.MODIFIED_NOTHING;
     }
 

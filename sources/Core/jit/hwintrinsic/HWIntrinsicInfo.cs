@@ -80,7 +80,6 @@ public readonly partial struct HWIntrinsicInfo
             }
 
             id = LookupIdForIsa(sig, InstructionSet_AVX512v2, methodName);
-
             return id is not NI_Illegal ? id : LookupIdForIsa(sig, InstructionSet_AVX512v3, methodName);
         }
         else if (isa is InstructionSet_AVX10v1_X64)
@@ -126,7 +125,6 @@ public readonly partial struct HWIntrinsicInfo
             {
                 var expectedArgCount = s_numArgs[rangeIndex];
                 assert((expectedArgCount == byte.MaxValue) || (sig->numArgs == expectedArgCount));
-
                 return (NamedIntrinsic)((int)NI_HW_INTRINSIC_START + rangeIndex + 1);
             }
         }
@@ -158,7 +156,6 @@ public readonly partial struct HWIntrinsicInfo
     private static int GetTableIndex(NamedIntrinsic id)
     {
         assert(id is > NI_HW_INTRINSIC_START and < NI_HW_INTRINSIC_END);
-
         return id - NI_HW_INTRINSIC_START - 1;
     }
 
@@ -245,7 +242,6 @@ public readonly partial struct HWIntrinsicInfo
     public static int lookupNumArgs(NamedIntrinsic id)
     {
         var count = s_numArgs[GetTableIndex(id)];
-
         return count == byte.MaxValue ? -1 : count;
     }
 

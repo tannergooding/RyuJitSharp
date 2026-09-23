@@ -13,7 +13,6 @@ public partial class Compiler
     public ValueSize lvaLclValueSize(int varNum)
     {
         assert((uint)varNum < (uint)lvaCount);
-
         return lvaGetDesc(varNum).lvValueSize;
     }
 

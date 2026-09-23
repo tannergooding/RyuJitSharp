@@ -30,7 +30,6 @@ public readonly struct ContinuationMember
         {
             assert(Type is ContinuationMemberType.CustomAwaiterOfLayout);
             assert(_customAwaiterLayout is not null);
-
             return _customAwaiterLayout;
         }
     }
@@ -40,7 +39,6 @@ public readonly struct ContinuationMember
         get
         {
             assert(IsInlineFrameMember);
-
             return _inlineDepth;
         }
     }

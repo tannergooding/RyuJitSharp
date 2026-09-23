@@ -125,7 +125,6 @@ public sealed class FlowGraphNaturalLoop
         var result = BitVecOps.VisitBits(LoopBlockTraits(), _blocks, index => {
             var poIndex = _header.bbPostorderNum - index;
             assert((uint)poIndex < (uint)_dfsTree.PostOrderCount);
-
             return func(_dfsTree.GetPostOrder(poIndex)) is BasicBlockVisit.Continue;
         });
 
@@ -137,7 +136,6 @@ public sealed class FlowGraphNaturalLoop
         var result = BitVecOps.VisitBitsReverse(LoopBlockTraits(), _blocks, index => {
             var poIndex = _header.bbPostorderNum - index;
             assert((uint)poIndex < (uint)_dfsTree.PostOrderCount);
-
             return func(_dfsTree.GetPostOrder(poIndex)) is BasicBlockVisit.Continue;
         });
 
@@ -201,7 +199,6 @@ public sealed class FlowGraphNaturalLoop
         if (loop is null)
         {
             jitprintf("loop is nullptr");
-
             return;
         }
 
@@ -303,7 +300,6 @@ public sealed class FlowGraphNaturalLoop
                 _ = loop.VisitLoopBlocksReversePostOrder(block => {
                     jitprintf($"{(first ? "" : ";")}{FMT_BB(block.bbNum)}");
                     first = false;
-
                     return BasicBlockVisit.Continue;
                 });
                 jitprintf($"\n  Lexical top: {FMT_BB(lexicalTop.bbNum)}");

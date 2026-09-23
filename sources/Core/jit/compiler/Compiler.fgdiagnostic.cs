@@ -101,7 +101,6 @@ public partial class Compiler
         if (compIsForInlining && compInlineResult.IsFailure)
         {
             JITDUMP("... failed inline attempt, no checking needed\n");
-
             return;
         }
 
@@ -368,7 +367,6 @@ public partial class Compiler
     {
         assert(fgFuncletsCreated);
         ref var ehDsc = ref ehGetBlockHndDsc(block);
-
         return !Unsafe.IsNullRef(in ehDsc) &&
                ((block == ehDsc.ebdHndBeg) || (ehDsc.HasFilter && (block == ehDsc.ebdFilter)));
     }
@@ -425,7 +423,6 @@ public partial class Compiler
             if (!_compiler.fgPredsComputed)
             {
                 assert(block.bbPreds is null);
-
                 return 0;
             }
 
@@ -456,7 +453,6 @@ public partial class Compiler
             }
 
             assert(block.checkPredListOrder());
-
             return blockRefs;
         }
 
@@ -504,7 +500,6 @@ public partial class Compiler
 
             JITDUMP($"Jump into the middle of try region: {FMT_BB(blockPred.bbNum)} branches to {FMT_BB(block.bbNum)}\n");
             assert(false, "Jump into middle of try region");
-
             return false;
         }
 
@@ -544,13 +539,11 @@ public partial class Compiler
 
                 JITDUMP($"Jump between filter and filter handler regions: {FMT_BB(blockPred.bbNum)} branches to {FMT_BB(block.bbNum)}\n");
                 assert(false, "Jump between filter and filter handler regions");
-
                 return false;
             }
 
             JITDUMP($"Jump into the middle of handler region: {FMT_BB(blockPred.bbNum)} branches to {FMT_BB(block.bbNum)}\n");
             assert(false, "Jump into the middle of handler region");
-
             return false;
         }
 
@@ -561,7 +554,6 @@ public partial class Compiler
                 case BBJ_COND:
                 {
                     assert((blockPred.FalseTarget == block) || (blockPred.TrueTarget == block));
-
                     return true;
                 }
 
@@ -579,14 +571,12 @@ public partial class Compiler
                     }
 
                     assert(blockPred.TargetEdge.Likelihood == 1.0);
-
                     return true;
                 }
 
                 case BBJ_EHFINALLYRET:
                 {
                     assert(CheckEHFinallyRet(blockPred, block));
-
                     return true;
                 }
 
@@ -686,7 +676,6 @@ public partial class Compiler
                 if (!_compiler.fgTrysContiguous())
                 {
                     JITDUMP("Tolerating, since try regions are not contiguous\n");
-
                     return true;
                 }
 

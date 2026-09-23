@@ -30,7 +30,6 @@ public sealed class FlowGraphDfsTree
     public BasicBlock GetPostOrder(int index)
     {
         assert((uint)index < (uint)_postOrderCount);
-
         return _postOrder[index];
     }
 
@@ -63,7 +62,6 @@ public sealed class FlowGraphDfsTree
     public bool IsAncestor(BasicBlock ancestor, BasicBlock descendant)
     {
         assert(Contains(ancestor) && Contains(descendant));
-
         return (ancestor.bbPreorderNum <= descendant.bbPreorderNum) &&
                (descendant.bbPostorderNum <= ancestor.bbPostorderNum);
     }

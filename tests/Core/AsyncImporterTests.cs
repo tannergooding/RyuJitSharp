@@ -73,7 +73,6 @@ internal static unsafe class AsyncImporterTests
             {
                 Assert.That(lockObject.AsIntCon().IconValue, Is.EqualTo((nint)0x5678));
                 Assert.That(lockObject.AsIntCon().IsIconHandle(Globals.GTF_ICON_OBJ_HDL), Is.True);
-
                 return;
             }
 
@@ -521,7 +520,6 @@ internal static unsafe class AsyncImporterTests
     private static CORINFO_CLASS_STRUCT_* EmbedMonitorClass(ICorJitInfo* jitInfo, CORINFO_CLASS_STRUCT_* cls, void** indirection)
     {
         *indirection = null;
-
         return cls;
     }
 
@@ -534,7 +532,6 @@ internal static unsafe class AsyncImporterTests
         *lookup = default;
         lookup->constLookup.accessType = InfoAccessType.IAT_VALUE;
         lookup->constLookup.handle = (CORINFO_GENERIC_STRUCT_*)0x1234;
-
         return caller;
     }
 
@@ -560,7 +557,6 @@ internal static unsafe class AsyncImporterTests
         ICorJitInfo* jitInfo, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* arg, CORINFO_CLASS_STRUCT_** type)
     {
         *type = null;
-
         return (CorInfoTypeWithMod)CorInfoType.CORINFO_TYPE_CLASS;
     }
 

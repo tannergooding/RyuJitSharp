@@ -91,7 +91,6 @@ internal static unsafe class NaturalLoopTests
             var visited = new List<BasicBlock>();
             Assert.That(loop.VisitLoopBlocksReversePostOrder(block => {
                 visited.Add(block);
-
                 return BasicBlockVisit.Continue;
             }), Is.EqualTo(BasicBlockVisit.Continue));
             Assert.That(visited, Is.EqualTo(blocks[1..^1]));
@@ -99,14 +98,12 @@ internal static unsafe class NaturalLoopTests
             var postOrder = new List<BasicBlock>();
             _ = loop.VisitLoopBlocksPostOrder(block => {
                 postOrder.Add(block);
-
                 return BasicBlockVisit.Continue;
             });
             Assert.That(postOrder, Is.EqualTo(visited));
             var exitVisits = new List<BasicBlock>();
             _ = loop.VisitRegularExitBlocks(block => {
                 exitVisits.Add(block);
-
                 return BasicBlockVisit.Continue;
             });
             Assert.That(exitVisits, Is.EqualTo([blocks[^1]]));
@@ -263,7 +260,6 @@ internal static unsafe class NaturalLoopTests
                 }
 
                 visited.Add(index);
-
                 return !abort;
             }
             var result = reverse ? BitVecOps.VisitBitsReverse(traits, bits, Visit) : BitVecOps.VisitBits(traits, bits, Visit);
@@ -334,7 +330,6 @@ internal static unsafe class NaturalLoopTests
 
         compiler.fgFirstBB = blocks[0];
         compiler.fgLastBB = blocks[^1];
-
         return blocks;
     }
 
@@ -343,7 +338,6 @@ internal static unsafe class NaturalLoopTests
         var edge = new FlowEdge(source, target, target.bbPreds) { Likelihood = 0.5 };
         target.bbPreds = edge;
         target.bbRefs++;
-
         return edge;
     }
 
@@ -352,7 +346,6 @@ internal static unsafe class NaturalLoopTests
         var edge = Connect(source, target);
         edge.Likelihood = 1;
         source.SetKindAndTargetEdge(BBJ_ALWAYS, edge);
-
         return edge;
     }
 

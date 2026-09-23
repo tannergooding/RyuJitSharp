@@ -32,14 +32,12 @@ public struct ConfigDoubleArray
         if (_values is null)
         {
             jitprintf("<uninitialized config double array>\n");
-
             return;
         }
 
         if (_values.Length == 0)
         {
             jitprintf("<empty config double array>\n");
-
             return;
         }
 
@@ -103,7 +101,6 @@ public struct ConfigDoubleArray
         if ((unsigned.Length >= 3) && Ascii.EqualsIgnoreCase(unsigned[..3], "inf"u8))
         {
             consumed = text.Length - unsigned.Length + 3;
-
             return text[0] == '-' ? double.NegativeInfinity : double.PositiveInfinity;
         }
 

@@ -92,7 +92,6 @@ internal static unsafe class SimdTypeTests
                 var size = compiler.GetSimdTypeSizeInBytes((CORINFO_CLASS_STRUCT_*)&info);
                 var baseType = var_types.TYP_UNDEF;
                 var type = normalize ? compiler.impNormStructType((CORINFO_CLASS_STRUCT_*)&info, out baseType) : var_types.TYP_UNDEF;
-
                 return (size, compiler._usesSimdTypes, type, baseType);
             }
         }
@@ -117,7 +116,6 @@ internal static unsafe class SimdTypeTests
     {
         var info = (ClassInfo*)type;
         *namespaceName = info->Namespace;
-
         return info->Name;
     }
 

@@ -230,7 +230,6 @@ public partial class Compiler
                 }
 
                 prefixFlags &= ~PREFIX_TAILCALL;
-
                 return compiler.impReturnInstruction(prefixFlags, ref opcode);
             }
 
@@ -327,7 +326,6 @@ public partial class Compiler
                         callInfo = ref calliInfo,
                         opcodeOffs = opcodeOffs,
                     };
-
                     return importCallHelper.Import(compiler);
                 }
 
@@ -708,7 +706,6 @@ public partial class Compiler
                                 if (wasmInstParam is null)
                                 {
                                     assert(compiler.compDonotInline);
-
                                     return TYP_UNDEF;
                                 }
                             }
@@ -1003,7 +1000,6 @@ public partial class Compiler
                     if (instParam is null)
                     {
                         assert(compiler.compDonotInline);
-
                         return TYP_UNDEF;
                     }
                 }
@@ -1445,7 +1441,6 @@ public partial class Compiler
             {
                 // Preserve the identity used by impSetupAsyncCall for always-suspending helpers.
                 intrinsicName = ni;
-
                 return null;
             }
             else if (ni is NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait)
@@ -1461,7 +1456,6 @@ public partial class Compiler
             else if (ni is NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync)
             {
                 JITDUMP($"\nExpanding RuntimeHelpers.IsRuntimeAsync to {(compiler.compIsAsync ? "true" : "false")} early\n");
-
                 return compiler.compIsAsync ? compiler.gtNewTrue() : compiler.gtNewFalse();
             }
 

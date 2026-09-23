@@ -99,7 +99,6 @@ public partial struct GenTreeUseEdgesList
                         if (phiUse is not null)
                         {
                             _phiUse = phiUse;
-
                             return SetCurrent(ref phiUse.NodeRef, index + 1);
                         }
 
@@ -219,7 +218,6 @@ public partial struct GenTreeUseEdgesList
                             if (callArg is not null)
                             {
                                 _callArg = callArg;
-
                                 return SetCurrent(ref callArg.EarlyNodeRef, -1);
                             }
 
@@ -242,7 +240,6 @@ public partial struct GenTreeUseEdgesList
                             if (callArg is not null)
                             {
                                 _callArg = callArg;
-
                                 return SetCurrent(ref callArg.LateNodeRef, 0);
                             }
 
@@ -274,7 +271,6 @@ public partial struct GenTreeUseEdgesList
                         if (fieldListUse is not null)
                         {
                             _fieldListUse = fieldListUse;
-
                             return SetCurrent(ref fieldListUse.NodeRef, index + 1);
                         }
 
@@ -291,7 +287,6 @@ public partial struct GenTreeUseEdgesList
 
             _current = ref Unsafe.NullRef<GenTree?>();
             _index = int.MaxValue;
-
             return false;
         }
 
@@ -302,7 +297,6 @@ public partial struct GenTreeUseEdgesList
         {
             _current = ref operand;
             _index = operand is null ? int.MaxValue : nextIndex;
-
             return operand is not null;
         }
 

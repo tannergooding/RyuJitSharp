@@ -214,7 +214,6 @@ internal static unsafe class UseEdgeIteratorTests
         public Compiler.fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
         {
             Count++;
-
             return Compiler.fgWalkResult.WALK_ABORT;
         }
 
@@ -580,7 +579,6 @@ internal static unsafe class UseEdgeIteratorTests
             List<GenTree> definitions = [];
             var result = call.VisitPhysicalLocalDefNodes(compiler, node => {
                 definitions.Add(node);
-
                 return abort ? GenTree.VisitResult.Abort : GenTree.VisitResult.Continue;
             });
             GenTree[] expectedDefinitions = retBuffer && !abort ? [resumed, ret] : [resumed];

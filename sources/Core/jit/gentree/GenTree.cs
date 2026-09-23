@@ -793,7 +793,6 @@ public partial class GenTree
                 case GT_MUL:
                 {
                     var op = AsOp();
-
                     return (HasOverflowCheck || op.Op1.Oper.IsCnsIntOrI) ? 0 : op.Op2.ScaleIndexMul;
                 }
 
@@ -803,7 +802,6 @@ public partial class GenTree
                 case GT_LSH:
                 {
                     var op = AsOp();
-
                     return op.Op1.Oper.IsCnsIntOrI ? 0 : op.Op2.ScaleIndexShf;
                 }
 
@@ -1361,7 +1359,6 @@ public partial class GenTree
             default:
             {
                 assert(false, "unexpected operator");
-
                 return false;
             }
         }

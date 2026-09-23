@@ -33,7 +33,6 @@ public struct GCSafePointSuccessorEnumerator
             }
 
             numSuccs++;
-
             return BasicBlockVisit.Continue;
         });
 
@@ -48,7 +47,6 @@ public struct GCSafePointSuccessorEnumerator
                 _inlineSuccessors[0] = comp.fgFirstBB;
 
                 _numSuccs = 1;
-
                 return;
             }
         }
@@ -65,7 +63,6 @@ public struct GCSafePointSuccessorEnumerator
             _ = block.VisitRegularSuccs(comp, (succ) => {
                 assert(foundSuccs < numSuccs);
                 successors[foundSuccs++] = succ;
-
                 return BasicBlockVisit.Continue;
             });
 

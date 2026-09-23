@@ -66,7 +66,6 @@ internal static class PortingCorpus
     public static unsafe int IndirectCall(int value)
     {
         delegate* managed<int, int, int> target = &Add;
-
         return target(value, value + 1);
     }
 

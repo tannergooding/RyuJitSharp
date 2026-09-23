@@ -150,7 +150,6 @@ public partial class LIR
 
             var checkLclVarSemanticsHelper = new CheckLclVarSemanticsHelper(compiler, this, unusedDefs);
             assert(checkLclVarSemanticsHelper.Check());
-
             return true;
         }
 #endif
@@ -608,14 +607,12 @@ public partial class LIR
                     if (!Unsafe.IsNullRef(in edge))
                     {
                         use = new Use(this, ref edge, potentialUser);
-
                         return true;
                     }
                 }
             }
 
             use = new Use();
-
             return false;
         }
 

@@ -233,7 +233,6 @@ internal static unsafe class InlineInvocationTests
         if (s_executeCallback)
         {
             callback(state);
-
             return 1;
         }
 

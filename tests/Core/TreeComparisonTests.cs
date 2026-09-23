@@ -99,7 +99,6 @@ internal static unsafe class TreeComparisonTests
             GenTree Make(int variant)
             {
                 var local = compiler.gtNewLclvNode(TYP_REF, 0);
-
                 return kind switch {
                     0 => new GenTreeLclFld(GT_LCL_FLD, TYP_INT, 0, (ushort)(variant * 4)),
                     1 => new GenTreeArrLen(TYP_INT, local, 8 + variant),
@@ -168,7 +167,6 @@ internal static unsafe class TreeComparisonTests
             {
                 var call = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, null);
                 argument = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, 1)));
-
                 return call;
             }
 
@@ -278,7 +276,6 @@ internal static unsafe class TreeComparisonTests
             {
                 var intrinsic = new GenTreeHWIntrinsic(TYP_SIMD16, NamedIntrinsic.NI_X86Base_Add, TYP_INT, 16,
                     new GenTreeLclVar(TYP_SIMD16, 0), new GenTreeLclVar(TYP_SIMD16, 1));
-
                 return intrinsic;
             }
 

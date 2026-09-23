@@ -115,7 +115,6 @@ internal static unsafe class FlowGraphDfsTests
             var result = block.VisitRegularSuccs(compiler, successor => {
                 Assert.That(successor, Is.SameAs(expected[0]));
                 visited++;
-
                 return BasicBlockVisit.Abort;
             });
             Assert.That(visited, Is.EqualTo(count == 0 ? 0 : 1));
@@ -571,7 +570,6 @@ internal static unsafe class FlowGraphDfsTests
     {
         var method = typeof(Compiler).GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException($"{name} was not found.");
-
         return method.Invoke(compiler, args);
     }
 }

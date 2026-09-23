@@ -491,7 +491,6 @@ public sealed partial class BasicBlock : LIR.Range
 
         var lastStmt = LastStmt;
         assert(lastStmt is not null);
-
         return lastStmt.RootNode;
     }
 
@@ -501,7 +500,6 @@ public sealed partial class BasicBlock : LIR.Range
         {
             var lastNode = GetLastNode();
             assert(lastNode is not null);
-
             return lastNode.Oper is GT_JMP;
         }
 
@@ -688,7 +686,6 @@ public sealed partial class BasicBlock : LIR.Range
             default:
             {
                 unreached();
-
                 return default;
             }
         }

@@ -126,7 +126,6 @@ internal static unsafe class ExceptionalPredecessorTests
             var visited = new List<BasicBlock>();
             var result = blocks[4].VisitEHEnclosedHandlerSecondPassSuccs(compiler, block => {
                 visited.Add(block);
-
                 return abort ? BasicBlockVisit.Abort : BasicBlockVisit.Continue;
             });
             Assert.That(result, Is.EqualTo(abort ? BasicBlockVisit.Abort : BasicBlockVisit.Continue));
@@ -250,7 +249,6 @@ internal static unsafe class ExceptionalPredecessorTests
 
         compiler.fgFirstBB = blocks[0];
         compiler.fgLastBB = blocks[^1];
-
         return blocks;
     }
 

@@ -141,7 +141,6 @@ public partial class Compiler
                 {
                     //* The argument cannot be bashed into a ref (see bug 750871)
                     inlineResult.NoteFatal(InlineObservation.CALLSITE_ARG_NO_BASH_TO_REF);
-
                     return;
                 }
 
@@ -224,7 +223,6 @@ public partial class Compiler
             if (!isPlausibleTypeMatch)
             {
                 inlineResult.NoteFatal(InlineObservation.CALLSITE_ARG_TYPES_INCOMPATIBLE);
-
                 return;
             }
 
@@ -249,7 +247,6 @@ public partial class Compiler
                     {
                         // Arguments 'int <- byref' cannot be changed
                         inlineResult.NoteFatal(InlineObservation.CALLSITE_ARG_NO_BASH_TO_INT);
-
                         return;
                     }
                 }
@@ -464,7 +461,6 @@ public partial class Compiler
             {
                 // Abort inlining at this call site
                 inlineResult.NoteFatal(InlineObservation.CALLSITE_ARG_HAS_NULL_THIS);
-
                 return;
             }
         }
@@ -685,7 +681,6 @@ public partial class Compiler
         {
             var objectClass = info.compCompHnd->getBuiltinClass(CLASSID_SYSTEM_OBJECT);
             assert(objectClass is not null);
-
             return objectClass;
         }
     }
@@ -696,7 +691,6 @@ public partial class Compiler
         {
             var refAnyClass = info.compCompHnd->getBuiltinClass(CLASSID_TYPED_BYREF);
             assert(refAnyClass is not null);
-
             return refAnyClass;
         }
     }
@@ -707,7 +701,6 @@ public partial class Compiler
         {
             var argIteratorClass = info.compCompHnd->getBuiltinClass(CLASSID_ARGUMENT_HANDLE);
             assert(argIteratorClass is not null);
-
             return argIteratorClass;
         }
     }
@@ -720,7 +713,6 @@ public partial class Compiler
         {
             var stringClass = info.compCompHnd->getBuiltinClass(CLASSID_STRING);
             assert(stringClass is not null);
-
             return stringClass;
         }
     }
@@ -731,7 +723,6 @@ public partial class Compiler
         {
             var typeHandleClass = info.compCompHnd->getBuiltinClass(CLASSID_TYPE_HANDLE);
             assert(typeHandleClass is not null);
-
             return typeHandleClass;
         }
     }
@@ -821,7 +812,6 @@ public partial class Compiler
         if (!s_jitGuardedDevirtualizationRange.Contains(impInlineRoot.info.compMethodHash()))
         {
             JITDUMP($"NOT Marking call [{call.TreeId:D6}] as guarded devirtualization candidate -- excluded by JitGuardedDevirtualizationRange");
-
             return;
         }
 #endif
@@ -1076,7 +1066,6 @@ public partial class Compiler
         if (!hasPgoData)
         {
             JITDUMP("Not guessing; no PGO and no exact classes\n");
-
             return;
         }
 
@@ -1301,7 +1290,6 @@ public partial class Compiler
 
             var ctxTree = gtNewLclvNode(TYP_I_IMPL, impInlineRoot.info.compTypeCtxtArg);
             ctxTree.Flags |= GTF_VAR_CONTEXT;
-
             return ctxTree;
         }
     }
@@ -1595,7 +1583,6 @@ public partial class Compiler
 
         // Append the statement to the current block's stmt list
         impAppendStmt(stmt, chkLevel, checkConsumedDebugInfo);
-
         return stmt;
     }
 
@@ -1614,7 +1601,6 @@ public partial class Compiler
         if (compCodeOpt == SMALL_CODE)
         {
             JITDUMP("impArrayAccessIntrinsic: rejecting array intrinsic due to SMALL_CODE\n");
-
             return null;
         }
 
@@ -1624,7 +1610,6 @@ public partial class Compiler
         if (rank > GenTreeArrElem.MaxRank)
         {
             JITDUMP($"impArrayAccessIntrinsic: rejecting array intrinsic because rank ({rank}) > GT_ARR_MAX_RANK ({GenTreeArrElem.MaxRank})\n");
-
             return null;
         }
 
@@ -1632,7 +1617,6 @@ public partial class Compiler
         if (rank <= 1)
         {
             JITDUMP($"impArrayAccessIntrinsic: rejecting array intrinsic because rank ({rank}) <= 1\n");
-
             return null;
         }
 
@@ -1675,7 +1659,6 @@ public partial class Compiler
             if (!info.compCompHnd->isExactType(actualElemClsHnd))
             {
                 JITDUMP($"impArrayAccessIntrinsic: rejecting array intrinsic because actualElemClsHnd ({FMT_PTR(actualElemClsHnd)}) is not exact\n");
-
                 return null;
             }
         }
@@ -1887,7 +1870,6 @@ public partial class Compiler
 
         // If inlining, verify conditions for the call site block too.
         assert(impInlineInfo.iciBlock is not null);
-
         return impInlineRoot.impCanPInvokeInlineCallSite(impInlineInfo.iciBlock);
     }
 
@@ -2103,7 +2085,6 @@ public partial class Compiler
             if (JitConfig.JitNoInline is not 0)
             {
                 inlineResult.NoteFatal(InlineObservation.CALLEE_IS_JIT_NOINLINE);
-
                 return;
             }
 
@@ -2129,7 +2110,6 @@ public partial class Compiler
             if (!compCompHnd->getMethodInfo(fncHandle, &methInfo, exactContextHnd))
             {
                 inlineResult.NoteFatal(InlineObservation.CALLEE_NO_METHOD_INFO);
-
                 return;
             }
 
@@ -2146,7 +2126,6 @@ public partial class Compiler
             if (inlineResult.IsFailure)
             {
                 assert(inlineResult.IsNever);
-
                 return;
             }
 
@@ -2157,7 +2136,6 @@ public partial class Compiler
             if ((initClassResult & CORINFO_INITCLASS_DONT_INLINE) is not 0)
             {
                 inlineResult.NoteFatal(InlineObservation.CALLSITE_CANT_CLASS_INIT);
-
                 return;
             }
 
@@ -2179,7 +2157,6 @@ public partial class Compiler
             {
                 // The VM already self-reported this failure, so mark it specially so the JIT doesn't also try reporting it.
                 inlineResult.SetVMFailure();
-
                 return;
             }
 
@@ -2483,7 +2460,6 @@ public partial class Compiler
             if (!opts.compInlineMethodsWithEH)
             {
                 inlineResult.NoteFatal(InlineObservation.CALLEE_HAS_EH);
-
                 return;
             }
         }
@@ -2491,7 +2467,6 @@ public partial class Compiler
         if ((methInfo->ILCode is null) || (codeSize == 0))
         {
             inlineResult.NoteFatal(InlineObservation.CALLEE_HAS_NO_BODY);
-
             return;
         }
 
@@ -2500,7 +2475,6 @@ public partial class Compiler
         if (methInfo->args.isVarArg())
         {
             inlineResult.NoteFatal(InlineObservation.CALLEE_HAS_MANAGED_VARARGS);
-
             return;
         }
 
@@ -2513,7 +2487,6 @@ public partial class Compiler
         if (methInfo->locals.numArgs > MAX_INL_LCLS)
         {
             inlineResult.NoteFatal(InlineObservation.CALLEE_TOO_MANY_LOCALS);
-
             return;
         }
 
@@ -2526,7 +2499,6 @@ public partial class Compiler
         if (methInfo->args.numArgs > MAX_INL_ARGS)
         {
             inlineResult.NoteFatal(InlineObservation.CALLEE_TOO_MANY_ARGUMENTS);
-
             return;
         }
 
@@ -2583,7 +2555,6 @@ public partial class Compiler
             if (possibleClone is not null)
             {
                 clone = possibleClone;
-
                 return tree;
             }
         }
@@ -2731,7 +2702,6 @@ public partial class Compiler
     {
         ref var lvaDsc = ref lvaTable[lclNum];
         var lclTyp = lvaDsc.lvNormalizeOnLoad ? lvaDsc.Type : lvaDsc.Type.ActualType;
-
         return gtNewLclvNode(lclTyp, lclNum, offset);
     }
 
@@ -2924,7 +2894,6 @@ public partial class Compiler
         if (JitConfig.JitEnableDevirtualization is 0)
         {
             exactContextHandle = null;
-
             return;
         }
 
@@ -2978,7 +2947,6 @@ public partial class Compiler
             assert(IsAot);
 
             JITDUMP("\nimpDevirtualizeCall: [R2R] base method not virtual, sorry\n");
-
             return;
         }
 
@@ -3007,12 +2975,10 @@ public partial class Compiler
             {
                 // Don't try guarded devirtualiztion when we're doing late devirtualization.
                 JITDUMP("No guarded devirt during late devirtualization\n");
-
                 return;
             }
 
             considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, baseClass, ref contextHandle);
-
             return;
         }
 
@@ -3052,12 +3018,10 @@ public partial class Compiler
             {
                 // Don't try guarded devirtualiztion when we're doing late devirtualization.
                 JITDUMP("No guarded devirt during late devirtualization\n");
-
                 return;
             }
 
             considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, baseClass, ref contextHandle);
-
             return;
         }
 
@@ -3131,7 +3095,6 @@ public partial class Compiler
                 {
                     exactContextHandle = null;
                     JITDUMP("Array interface devirt: array type is inexact, sorry.\n");
-
                     return;
                 }
             }
@@ -3183,12 +3146,10 @@ public partial class Compiler
             {
                 // Don't try guarded devirtualiztion if we're doing late devirtualization.
                 JITDUMP("No guarded devirt during late devirtualization\n");
-
                 return;
             }
 
             considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, objClass, ref contextHandle);
-
             return;
         }
 
@@ -3325,7 +3286,6 @@ public partial class Compiler
                 if (userArg.Node.Oper.IsConst)
                 {
                     JITDUMP("Profiled arg is already a constant - bail out.\n");
-
                     return call;
                 }
 
@@ -3630,7 +3590,6 @@ public partial class Compiler
                 assert(op3 is not null);
 
                 var mulNode = gtNewBinaryNode(GT_MUL, callType, op1, op2);
-
                 return gtNewBinaryNode(GT_ADD, callType, mulNode, op3);
             }
 
@@ -3650,7 +3609,6 @@ public partial class Compiler
             default:
             {
                 unreached();
-
                 return null;
             }
         }
@@ -3710,7 +3668,6 @@ public partial class Compiler
         {
             // Not profitable to expand
             JITDUMP("impExpandHalfConstEquals: block is cold - not profitable to expand.\n");
-
             return null;
         }
 
@@ -3747,7 +3704,6 @@ public partial class Compiler
             if (indirCmp is null)
             {
                 JITDUMP("unable to compose indirCmp\n");
-
                 return null;
             }
 
@@ -3924,7 +3880,6 @@ public partial class Compiler
             {
                 // E.g. a comparison of SIMD ops returning TYP_INT;
                 assert(varTypeIsSimd(op2.Type));
-
                 return compiler.gtNewSimdCmpOpAllNode(oper, type, op1, op2, TYP_U_IMPL, op1.Type.Size);
             }
 
@@ -4125,7 +4080,6 @@ public partial class Compiler
                 // never introduce copies due to this.
                 var tmpNum = lvaGrabTemp(shortLifetime: true, "Retbuf for unmanaged call");
                 impStoreToTemp(tmpNum, call, CHECK_SPILL_ALL);
-
                 return gtNewLclvNode(lvaGetDesc(tmpNum).Type, tmpNum);
             }
 
@@ -4404,7 +4358,6 @@ public partial class Compiler
         }
 
         assert(actualType is TYP_BYREF or TYP_DOUBLE or TYP_FLOAT or TYP_LONG or TYP_INT);
-
         return actualType;
     }
 
@@ -4479,7 +4432,6 @@ public partial class Compiler
                 if (instParam is null)
                 {
                     assert(compDonotInline);
-
                     return null;
                 }
             }
@@ -4494,7 +4446,6 @@ public partial class Compiler
             if (compIsForInlining && ((clsFlags & CORINFO_FLG_ARRAY) is not 0))
             {
                 compInlineResult.NoteFatal(InlineObservation.CALLEE_IS_ARRAY_METHOD);
-
                 return null;
             }
 
@@ -4530,7 +4481,6 @@ public partial class Compiler
                 if (instParam is null)
                 {
                     assert(compDonotInline);
-
                     return null;
                 }
             }
@@ -4563,7 +4513,6 @@ public partial class Compiler
                 }
 
                 indirFlags = val.Flags & GTF_IND_COPYABLE_FLAGS;
-
                 return val.AsIndir().Addr;
             }
 
@@ -4571,7 +4520,6 @@ public partial class Compiler
             case GT_STORE_LCL_VAR:
             {
                 val.Flags |= GTF_VAR_MOREUSES;
-
                 return gtNewLclVarAddrNode(TYP_BYREF, val.AsLclVar().LclNum);
             }
 
@@ -4580,7 +4528,6 @@ public partial class Compiler
             {
                 var lclFld = val.AsLclFld();
                 val.Flags |= GTF_VAR_MOREUSES;
-
                 return gtNewLclAddrNode(TYP_BYREF, lclFld.LclNum, lclFld.LclOffs);
             }
 
@@ -4588,7 +4535,6 @@ public partial class Compiler
             {
                 var op = val.AsOp();
                 _ = impAppendTree(op.Op1, curLevel, impCurStmtDI);
-
                 return impGetNodeAddr(op.Op2, curLevel, allowedMustPreserveIndirFlags, out indirFlags);
             }
 
@@ -4966,7 +4912,6 @@ public partial class Compiler
     public unsafe bool impILConsumesAddr(byte* codeAddr, byte* codeEndp)
     {
         var opcode = impGetNonPrefixOpcode(codeAddr, codeEndp);
-
         return opcode is CEE_LDFLD;
     }
 
@@ -5311,7 +5256,6 @@ public partial class Compiler
                 // and have run across a type we can't describe.
 
                 assert(compDonotInline);
-
                 return;
             }
 
@@ -5500,7 +5444,6 @@ public partial class Compiler
             {
                 // We must be backing out of an inline.
                 assert(compDonotInline);
-
                 return;
             }
 
@@ -5605,7 +5548,6 @@ public partial class Compiler
         JITDUMP($" inlined BOX({eeGetClassName(nullableCls)}) as QMARK allocating box and copying fields:\n");
         DISPTREE(qmark);
         JITDUMP("\n");
-
         return true;
     }
 
@@ -6820,7 +6762,6 @@ public partial class Compiler
                     {
                         NO_WAY("Shouldn't have exception handlers in the inlinee!");
                         compInlineResult.NoteFatal(InlineObservation.CALLEE_HAS_ENDFINALLY);
-
                         return;
                     }
 
@@ -6847,7 +6788,6 @@ public partial class Compiler
                     {
                         NO_WAY("Shouldn't have exception handlers in the inlinee!");
                         compInlineResult.NoteFatal(InlineObservation.CALLEE_HAS_ENDFILTER);
-
                         return;
                     }
 
@@ -6998,7 +6938,6 @@ public partial class Compiler
                     if (type is null)
                     {
                         assert(compDonotInline);
-
                         return;
                     }
 
@@ -8206,7 +8145,6 @@ public partial class Compiler
                         if (((mflags & (CORINFO_FLG_FINAL | CORINFO_FLG_STATIC)) is not 0) || ((mflags & CORINFO_FLG_VIRTUAL) is 0))
                         {
                             compInlineResult.NoteFatal(InlineObservation.CALLSITE_LDVIRTFN_ON_NON_VIRTUAL);
-
                             return;
                         }
                     }
@@ -8349,7 +8287,6 @@ public partial class Compiler
                         {
                             // Fail fast if lvaGrabTemp fails with CALLSITE_TOO_MANY_LOCALS.
                             assert(compInlineResult.Observation == InlineObservation.CALLSITE_TOO_MANY_LOCALS);
-
                             return;
                         }
 
@@ -8710,14 +8647,12 @@ public partial class Compiler
                             case CORINFO_FIELD_STATIC_TLS:
                             {
                                 compInlineResult.NoteFatal(InlineObservation.CALLEE_LDFLD_NEEDS_HELPER);
-
                                 return;
                             }
 
                             case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
                             {
                                 compInlineResult.NoteFatal(InlineObservation.CALLSITE_LDFLD_NEEDS_HELPER);
-
                                 return;
                             }
 
@@ -8999,7 +8934,6 @@ public partial class Compiler
                             case CORINFO_FIELD_STATIC_TLS:
                             {
                                 compInlineResult.NoteFatal(InlineObservation.CALLEE_STFLD_NEEDS_HELPER);
-
                                 return;
                             }
 
@@ -9008,7 +8942,6 @@ public partial class Compiler
                             {
                                 // We may be able to inline the field accessors in specific instantiations of generic methods
                                 compInlineResult.NoteFatal(InlineObservation.CALLSITE_STFLD_NEEDS_HELPER);
-
                                 return;
                             }
 
@@ -9623,7 +9556,6 @@ public partial class Compiler
                             var obs = op2.Oper.IsIntegralConst ? InlineObservation.CALLEE_LOCALLOC_TOO_LARGE
                                                                : InlineObservation.CALLSITE_LOCALLOC_SIZE_UNKNOWN;
                             compInlineResult.NoteFatal(obs);
-
                             return;
                         }
 
@@ -9875,7 +9807,6 @@ public partial class Compiler
                     if (op2 is null)
                     {
                         assert(compDonotInline);
-
                         return;
                     }
 
@@ -10546,7 +10477,6 @@ public partial class Compiler
                     if (compIsForInlining)
                     {
                         compInlineResult.NoteFatal(InlineObservation.CALLEE_COMPILATION_ERROR);
-
                         return;
                     }
 
@@ -10916,7 +10846,6 @@ public partial class Compiler
                     {
                         // Toss the cast, it's a waste of time
                         compiler.impPushOnStack(op1, new typeInfo());
-
                         return;
                     }
                     else if (ival == mask)
@@ -11073,7 +11002,6 @@ public partial class Compiler
 
                 {
                     compiler.impPushOnStack(op1, new typeInfo());
-
                     return;
                 }
             }
@@ -11405,7 +11333,6 @@ public partial class Compiler
             if (compiler.compIsForInlining && op1.IsIntegralConst(0))
             {
                 compiler.compInlineResult.NoteFatal(InlineObservation.CALLEE_HAS_NULL_FOR_LDELEM);
-
                 return false;
             }
 
@@ -11424,7 +11351,6 @@ public partial class Compiler
             }
 
             compiler.impPushOnStack(op1, tiRetVal);
-
             return true;
         }
 
@@ -11513,7 +11439,6 @@ public partial class Compiler
             heapToken._token.hMethod = callInfo.hMethod;
 
             compiler.impPushOnStack(op1, new typeInfo(heapToken));
-
             return true;
         }
 
@@ -11538,7 +11463,6 @@ public partial class Compiler
                 if (op1.Oper is not GT_LCL_VAR)
                 {
                     compiler.compInlineResult.NoteFatal(InlineObservation.CALLSITE_LDARGA_NOT_LOCAL_VAR);
-
                     return false;
                 }
 
@@ -11567,7 +11491,6 @@ public partial class Compiler
             if (compiler.compIsForInlining && !compiler.opts.compInlineMethodsWithEH)
             {
                 compiler.compInlineResult.NoteFatal(InlineObservation.CALLEE_HAS_LEAVE);
-
                 return false;
             }
 
@@ -11817,7 +11740,6 @@ public partial class Compiler
         }
 
         impPushOnStack(node, expSe.seTypeInfo);
-
         return node.Type;
     }
 #endif
@@ -11869,7 +11791,6 @@ public partial class Compiler
             if (exactTypeDesc is null)
             {
                 assert(compIsForInlining);
-
                 return null;
             }
 
@@ -11878,7 +11799,6 @@ public partial class Compiler
             if (exactMethodDesc is null)
             {
                 assert(compIsForInlining);
-
                 return null;
             }
 
@@ -12685,7 +12605,6 @@ public partial class Compiler
         }
 
         indirFlags |= additionalIndirFlags;
-
         return op1;
     }
 
@@ -12721,7 +12640,6 @@ public partial class Compiler
                 {
                     JITDUMP("... success! The value is:\n");
                     DISPTREE(cnsValue);
-
                     return cnsValue;
                 }
             }
@@ -12744,7 +12662,6 @@ public partial class Compiler
                 {
                     // Limit to simd_t bytes for better throughput
                     JITDUMP($"struct is larger than {LargeStructBufferSize} bytes - bail out.");
-
                     return null;
                 }
 
@@ -12784,7 +12701,6 @@ public partial class Compiler
                         {
                             var vecCon = gtNewVconNode(simdType);
                             Unsafe.CopyBlockUnaligned(ref vecCon.SimdVal.u8[0], in largeStructBuffer[0], (uint)(totalSize));
-
                             return vecCon;
                         }
                     }
@@ -12795,7 +12711,6 @@ public partial class Compiler
                         // Value is not all zeroes - bail out.
                         // Although, We might eventually support that too.
                         JITDUMP("value is not all zeros - bail out.");
-
                         return null;
                     }
 
@@ -12804,12 +12719,10 @@ public partial class Compiler
                     lvaSetStruct(largeStructTempNum, fieldClsHnd, unsafeValueClsCheck: false);
 
                     impStoreToTemp(largeStructTempNum, gtNewIconNode(TYP_INT, 0), CHECK_SPILL_NONE);
-
                     return gtNewLclVarNode(TYP_UNDEF, largeStructTempNum);
                 }
 
                 JITDUMP("getStaticFieldContent returned false - bail out.");
-
                 return null;
             }
 
@@ -12825,7 +12738,6 @@ public partial class Compiler
             if (!varTypeIsIntegral(fieldVarType))
             {
                 JITDUMP("struct has non-primitive fields - bail out.");
-
                 return null;
             }
 
@@ -12835,7 +12747,6 @@ public partial class Compiler
             {
                 // The field is expected to be of the exact size as the struct with 0 offset
                 JITDUMP("struct has complex layout - bail out.");
-
                 return null;
             }
 
@@ -12857,7 +12768,6 @@ public partial class Compiler
             impAppendTree(fieldStoreTree, CHECK_SPILL_NONE, impCurStmtDI);
 
             JITDUMP($"Folding 'static readonly {eeGetClassName(fieldClsHnd)}' field to a STORE_LCL_FLD(CNS) node\n");
-
             return impCreateLocalNode(structTempNum, (0));
         }
 
@@ -12886,7 +12796,6 @@ public partial class Compiler
         {
             // Caller also has no async contexts handling
             assert((resumedDefArg is null) && (execArg is null) && (syncArg is null));
-
             return;
         }
 
@@ -13038,7 +12947,6 @@ public partial class Compiler
         if (node is null)
         {
             assert(compDonotInline);
-
             return null;
         }
 
@@ -13840,7 +13748,6 @@ public partial class Compiler
     public bool impInlineIsThis(GenTree tree, ReadOnlySpan<InlArgInfo> inlArgInfo)
     {
         assert(compIsForInlining);
-
         return (tree.Oper is GT_LCL_VAR) && (tree.AsLclVarCommon().LclNum == inlArgInfo[0].argTmpNum);
     }
 
@@ -13896,7 +13803,6 @@ public partial class Compiler
             // No expansion needed, just call the helper
             var call = gtNewHelperCallNode(TYP_VOID, CORINFO_HELP_UNBOX_NULLABLE, resultAddr, nullableClsNode, obj);
             _ = impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
-
             return gtNewLclvNode(TYP_STRUCT, resultTmp);
         }
 
@@ -13950,7 +13856,6 @@ public partial class Compiler
 
         // Spill the root QMARK and return the result local
         _ = impAppendTree(nullCheckQmark, CHECK_SPILL_ALL, impCurStmtDI);
-
         return gtNewLclvNode(TYP_STRUCT, resultTmp);
     }
 
@@ -14093,13 +13998,11 @@ public partial class Compiler
         if (tree.Oper is GT_LCL_ADDR)
         {
             lclVarTree = tree.AsLclFld();
-
             return true;
         }
         else
         {
             lclVarTree = null;
-
             return false;
         }
     }
@@ -14226,7 +14129,6 @@ public partial class Compiler
     public bool impIsInvariant(GenTree tree)
     {
         var oper = tree.Oper;
-
         return oper.IsConst || impIsAddressInLocal(tree) || (oper is GT_FTN_ADDR);
     }
 
@@ -14370,7 +14272,6 @@ public partial class Compiler
             if (ilArgNum >= info.compArgsCount)
             {
                 compInlineResult.NoteFatal(InlineObservation.CALLEE_BAD_ARGUMENT_NUMBER);
-
                 return;
             }
 
@@ -14412,7 +14313,6 @@ public partial class Compiler
             if ((ilLclNum < 0) || (ilLclNum >= info.compMethodInfo->locals.numArgs))
             {
                 compInlineResult.NoteFatal(InlineObservation.CALLEE_BAD_LOCAL_NUMBER);
-
                 return;
             }
 
@@ -14535,7 +14435,6 @@ public partial class Compiler
         if (!opts.OptEnabled(CLFLG_INLINING))
         {
             assert(!compIsForInlining);
-
             return;
         }
 
@@ -14634,7 +14533,6 @@ public partial class Compiler
         if (opts.compDbgCode)
         {
             inlineResult.NoteFatal(InlineObservation.CALLER_DEBUG_CODEGEN);
-
             return;
         }
 
@@ -14642,7 +14540,6 @@ public partial class Compiler
         if (inlineStrategy.IsInliningDisabled())
         {
             inlineResult.NoteFatal(InlineObservation.CALLER_IS_JIT_NOINLINE);
-
             return;
         }
 
@@ -14650,7 +14547,6 @@ public partial class Compiler
         if (info.compHasNextCallRetAddr)
         {
             inlineResult.NoteFatal(InlineObservation.CALLER_USES_NEXT_CALL_RET_ADDR);
-
             return;
         }
 
@@ -14659,7 +14555,6 @@ public partial class Compiler
         if (call.IsTailPrefixedCall)
         {
             inlineResult.NoteFatal(InlineObservation.CALLSITE_EXPLICIT_TAIL_PREFIX);
-
             return;
         }
 
@@ -14668,7 +14563,6 @@ public partial class Compiler
         if (call.IsDelegateInvoke && !call.IsGuardedDevirtualizationCandidate)
         {
             inlineResult.NoteFatal(InlineObservation.CALLEE_HAS_NO_BODY);
-
             return;
         }
 
@@ -14679,7 +14573,6 @@ public partial class Compiler
         if (gtIsRecursiveCall(call) && call.IsImplicitTailCall)
         {
             inlineResult.NoteFatal(InlineObservation.CALLSITE_IMPLICIT_REC_TAIL_CALL);
-
             return;
         }
 
@@ -14687,7 +14580,6 @@ public partial class Compiler
         {
             // Allow guarded devirt calls to be treated as inline candidates, but reject all other virtual calls.
             inlineResult.NoteFatal(InlineObservation.CALLSITE_IS_NOT_DIRECT);
-
             return;
         }
 
@@ -14697,7 +14589,6 @@ public partial class Compiler
             assert(!call.IsGuardedDevirtualizationCandidate);
 
             inlineResult.NoteFatal(InlineObservation.CALLSITE_IS_CALL_TO_HELPER);
-
             return;
         }
 
@@ -14708,7 +14599,6 @@ public partial class Compiler
             if (!call.IsGuardedDevirtualizationCandidate)
             {
                 inlineResult.NoteFatal(InlineObservation.CALLSITE_IS_NOT_DIRECT_MANAGED);
-
                 return;
             }
             else
@@ -14723,7 +14613,6 @@ public partial class Compiler
         if (call.UnmanagedCallConv != CorInfoCallConvExtension.Managed)
         {
             inlineResult.NoteFatal(InlineObservation.CALLEE_HAS_UNMANAGED_CALLCONV);
-
             return;
         }
 
@@ -14793,7 +14682,6 @@ public partial class Compiler
 #endif
 
                 inlineResult.NoteFatal(InlineObservation.CALLSITE_IS_WITHIN_CATCH);
-
                 return;
             }
 
@@ -14807,7 +14695,6 @@ public partial class Compiler
 #endif
 
                 inlineResult.NoteFatal(InlineObservation.CALLSITE_IS_WITHIN_FILTER);
-
                 return;
             }
         }
@@ -14817,7 +14704,6 @@ public partial class Compiler
         if ((methAttr & CORINFO_FLG_DONT_INLINE) is not 0)
         {
             inlineResult.NoteFatal(InlineObservation.CALLEE_IS_NOINLINE);
-
             return;
         }
 
@@ -14826,7 +14712,6 @@ public partial class Compiler
         if ((methAttr & CORINFO_FLG_SYNCH) is not 0)
         {
             inlineResult.NoteFatal(InlineObservation.CALLEE_IS_SYNCHRONIZED);
-
             return;
         }
 
@@ -14837,7 +14722,6 @@ public partial class Compiler
             if (!impCanPInvokeInlineCallSite(compCurBB))
             {
                 inlineResult.NoteFatal(InlineObservation.CALLSITE_PINVOKE_EH);
-
                 return;
             }
         }
@@ -14858,7 +14742,6 @@ public partial class Compiler
             {
                 // We cannot inline methods with EH into filter clauses, even if marked as aggressive inline
                 inlineResult.NoteFatal(InlineObservation.CALLSITE_IS_WITHIN_FILTER);
-
                 return;
             }
 
@@ -14866,7 +14749,6 @@ public partial class Compiler
             {
                 // Do not inline pinvoke stubs with EH.
                 inlineResult.NoteFatal(InlineObservation.CALLEE_HAS_EH);
-
                 return;
             }
         }
@@ -14935,7 +14817,6 @@ public partial class Compiler
                 if (nextOpcode == CEE_CGT_UN)
                 {
                     consumed = 3;
-
                     return true;
                 }
 
@@ -15045,7 +14926,6 @@ public partial class Compiler
 
         lclNum = matchedLclNum;
         codeAddr = code;
-
         return true;
     }
 
@@ -15062,7 +14942,6 @@ public partial class Compiler
         if ((nextOpcode < codeEndp) && (*nextOpcode == (byte)CEE_RET))
         {
             numBytesMatched = 1;
-
             return true;
         }
 
@@ -15112,7 +14991,6 @@ public partial class Compiler
             nextOpcode += sizeof(int) + 1;
             JITDUMP("Matched \"return new ValueTask(TaskReturn())\"\n");
             numBytesMatched = (int)(nextOpcode - codeAddr);
-
             return true;
         }
 
@@ -15148,7 +15026,6 @@ public partial class Compiler
             JITDUMP("Matched \"return ValueTaskReturn().AsTask()\"\n");
             prefixFlags |= PREFIX_IS_ADAPTED_FROM_VALUETASK;
             numBytesMatched = (int)(nextOpcode - codeAddr);
-
             return true;
         }
 
@@ -15578,7 +15455,6 @@ public partial class Compiler
             {
                 // Cast will succeed, result is simply op1.
                 JITDUMP("Cast will succeed, optimizing to simply return input\n");
-
                 return op1;
             }
             else if (castResult == TypeCompareState.MustNot)
@@ -16060,7 +15936,6 @@ public partial class Compiler
         if (!varTypeIsArithmetic(retType))
         {
             assert((intrinsic is NI_PRIMITIVE_ConvertToInteger) || (intrinsic is NI_PRIMITIVE_ConvertToIntegerNative));
-
             return null;
         }
 
@@ -16750,7 +16625,6 @@ public partial class Compiler
                     impPushOnStack(tree, new typeInfo(clsHnd));
 
                     assert(hndBlk.Next is not null);
-
                     return hndBlk.Next;
                 }
             }
@@ -16815,7 +16689,6 @@ public partial class Compiler
         }
 
         impPushOnStack(arg, new typeInfo(clsHnd));
-
         return hndBlk;
     }
 
@@ -17237,7 +17110,6 @@ public partial class Compiler
                     JITDUMP("CALLSITE_COMPILATION_ERROR: inlinee's stack is not empty.");
 
                     compInlineResult.NoteFatal(InlineObservation.CALLSITE_COMPILATION_ERROR);
-
                     return false;
                 }
 
@@ -17274,7 +17146,6 @@ public partial class Compiler
                     {
                         JITDUMP($"Return type mismatch: have {returnType.Name}, needed {originalCallType.Name}\n");
                         compInlineResult.NoteFatal(InlineObservation.CALLSITE_RETURN_TYPE_MISMATCH);
-
                         return false;
                     }
                 }
@@ -17690,7 +17561,6 @@ public partial class Compiler
             if (callRetType == TYP_VOID)
             {
                 assert(info.compRetType == TYP_VOID);
-
                 return true;
             }
 
@@ -17769,7 +17639,6 @@ public partial class Compiler
             }
 
             JITDUMP("Optimized \"return new ValueTask()\" to return default\n");
-
             return true;
         }
         else if (lastTree.Oper.IsCall && lastTree.AsCall().IsSpecialIntrinsic(this, NI_System_Threading_Tasks_ValueTask_1__ctor))
@@ -17813,7 +17682,6 @@ public partial class Compiler
             DISPTREE(value);
 
             lastTree.BashToNOP();
-
             return true;
         }
 
@@ -17985,7 +17853,6 @@ public partial class Compiler
             if ((prefixFlags & PREFIX_IS_ADAPTED_FROM_VALUETASK) != 0)
             {
                 compInlineResult.NoteFatal(InlineObservation.CALLEE_AWAIT);
-
                 return;
             }
 
@@ -17994,7 +17861,6 @@ public partial class Compiler
                 if (!generalAsyncInliningEnabled())
                 {
                     compInlineResult.NoteFatal(InlineObservation.CALLEE_AWAIT);
-
                     return;
                 }
 
@@ -18002,7 +17868,6 @@ public partial class Compiler
                 {
                     JITDUMP("Cannot inline an await into a non-async root method\n");
                     compInlineResult.NoteFatal(InlineObservation.CALLSITE_AWAIT_IN_NON_ASYNC_ROOT);
-
                     return;
                 }
 
@@ -18014,14 +17879,12 @@ public partial class Compiler
                 if (impInlineInfo.InlinerCompiler.ehIsInsideNonAsyncContextRestoreRegion(callSiteBlock))
                 {
                     compInlineResult.NoteFatal(InlineObservation.CALLSITE_AWAIT_IN_TRY_REGION);
-
                     return;
                 }
 
                 if ((compCurBB is not null) && (compCurBB.hasTryIndex || compCurBB.hasHndIndex))
                 {
                     compInlineResult.NoteFatal(InlineObservation.CALLEE_AWAIT_IN_TRY);
-
                     return;
                 }
 
@@ -18129,7 +17992,6 @@ public partial class Compiler
         }
 
         op1 = gtNewLclFldNode(TYP_USHORT, op1Tmp, lclOffs: 0);
-
         return gtNewSimdCreateScalarNode(TYP_SIMD16, op1, TYP_USHORT, 16);
     }
 
@@ -18148,7 +18010,6 @@ public partial class Compiler
         op1 = gtNewStoreLclFldNode(TYP_USHORT, resTmp, offset: 0, op1);
 
         _ = impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
-
         return gtNewLclvNode(TYP_STRUCT, resTmp);
     }
 
@@ -18404,7 +18265,6 @@ public partial class Compiler
                 }
 
                 var type = impGetByRefResultType(GT_ADD, fUnsigned: false, ref op1, ref op2);
-
                 return gtNewBinaryNode(GT_ADD, type, op1, op2);
             }
 
@@ -18424,7 +18284,6 @@ public partial class Compiler
                 impBashVarAddrsToI(op2);
 
                 var type = impGetByRefResultType(GT_ADD, fUnsigned: false, ref op1, ref op2);
-
                 return gtNewBinaryNode(GT_ADD, type, op1, op2);
             }
 
@@ -18441,7 +18300,6 @@ public partial class Compiler
                 var op1 = impPopStack().val;
 
                 var tmp = gtNewBinaryNode(GT_EQ, TYP_INT, op1, op2);
-
                 return gtFoldExpr(tmp);
             }
 
@@ -18467,7 +18325,6 @@ public partial class Compiler
                     if ((oldClass != NO_CLASS_HANDLE) && ((oldClass == inst) || !info.compCompHnd->isMoreSpecificType(oldClass, inst)))
                     {
                         JITDUMP($"Unsafe.As: Keep using old '{eeGetClassName(oldClass)}' type\n");
-
                         return op;
                     }
 
@@ -18478,7 +18335,6 @@ public partial class Compiler
 
                     // NOTE: we still can't say for sure that it is the exact type of the argument
                     lvaSetClass(localNum, inst, isExact: false);
-
                     return gtNewLclvNode(TYP_REF, localNum);
                 }
 
@@ -18602,14 +18458,12 @@ public partial class Compiler
                         if (fromType is TYP_DOUBLE)
                         {
                             var f64Cns = op1.AsDblCon().DconVal;
-
                             return gtNewLconNode(BitConverter.DoubleToInt64Bits(f64Cns));
                         }
                         else
                         {
                             assert(fromType is TYP_FLOAT);
                             var f32Cns = (float)op1.AsDblCon().DconVal;
-
                             return gtNewIconNode(TYP_INT, BitConverter.SingleToInt32Bits(f32Cns));
                         }
                     }
@@ -18617,7 +18471,6 @@ public partial class Compiler
                     {
                         // TODO-CQ: We should support this on 32-bit via decomposition
                         toType = varTypeToSigned(toType);
-
                         return gtNewBitCastNode(toType, op1);
                     }
                 }
@@ -18628,7 +18481,6 @@ public partial class Compiler
                         if (toType is TYP_DOUBLE)
                         {
                             var i64Cns = op1.AsIntConCommon().LngValue;
-
                             return gtNewDconNode(TYP_DOUBLE, BitConverter.Int64BitsToDouble(i64Cns));
                         }
                         else
@@ -18636,7 +18488,6 @@ public partial class Compiler
                             assert(toType is TYP_FLOAT);
 
                             var i32Cns = (int)(op1.AsIntConCommon().IconValue);
-
                             return gtNewDconNode(TYP_FLOAT, BitConverter.Int32BitsToSingle(i32Cns));
                         }
                     }
@@ -18713,7 +18564,6 @@ public partial class Compiler
                 var dest = impPopStack().val;
 
                 var value = gtNewLoadValueNode(type, source, layout);
-
                 return gtNewStoreValueNode(type, dest, value, layout);
             }
 
@@ -18785,7 +18635,6 @@ public partial class Compiler
 
                 var tmp = gtNewBinaryNode(GT_GT, TYP_INT, op1, op2);
                 tmp.IsUnsigned = true;
-
                 return gtFoldExpr(tmp);
             }
 
@@ -18805,7 +18654,6 @@ public partial class Compiler
 
                 var tmp = gtNewBinaryNode(GT_GE, TYP_INT, op1, op2);
                 tmp.IsUnsigned = true;
-
                 return gtFoldExpr(tmp);
             }
 
@@ -18823,7 +18671,6 @@ public partial class Compiler
 
                 var tmp = gtNewBinaryNode(GT_LT, TYP_INT, op1, op2);
                 tmp.IsUnsigned = true;
-
                 return gtFoldExpr(tmp);
             }
 
@@ -18843,7 +18690,6 @@ public partial class Compiler
 
                 var tmp = gtNewBinaryNode(GT_LE, TYP_INT, op1, op2);
                 tmp.IsUnsigned = true;
-
                 return gtFoldExpr(tmp);
             }
 
@@ -18861,7 +18707,6 @@ public partial class Compiler
                 var cns = gtNewIconNode(TYP_BYREF, 0);
 
                 var tmp = gtNewBinaryNode(GT_EQ, TYP_INT, op1, cns);
-
                 return gtFoldExpr(tmp);
             }
 
@@ -18901,7 +18746,6 @@ public partial class Compiler
                 // ret
 
                 var classSize = info.compCompHnd->getClassSize(sig.sigInst.methInst[0]);
-
                 return gtNewIconNode(TYP_INT, classSize);
             }
 
@@ -18952,7 +18796,6 @@ public partial class Compiler
                 }
 
                 var type = impGetByRefResultType(GT_SUB, fUnsigned: false, ref op1, ref op2);
-
                 return gtNewBinaryNode(GT_SUB, type, op1, op2);
             }
 
@@ -18972,7 +18815,6 @@ public partial class Compiler
                 impBashVarAddrsToI(op2);
 
                 var type = impGetByRefResultType(GT_SUB, fUnsigned: false, ref op1, ref op2);
-
                 return gtNewBinaryNode(GT_SUB, type, op1, op2);
             }
 
@@ -19018,7 +18860,6 @@ public partial class Compiler
             default:
             {
                 unreached();
-
                 return null;
             }
         }
@@ -19055,7 +18896,6 @@ public partial class Compiler
         ret.CanCse = false;
 
         assert(IsMultiRegReturnedType(hClass, callConv) || op.IsMultiRegNode);
-
         return ret;
     }
 
@@ -19240,7 +19080,6 @@ public partial class Compiler
                     retExpr.Type = TYP_VOID;
                     var tmpType = lvaGetDesc(lclNum).Type;
                     dataRef = gtNewCommaNode(tmpType, retExpr, gtNewLclvNode(tmpType, lclNum));
-
                     return impStoreStruct(store, ref afterStmt, CHECK_SPILL_ALL, di, block);
                 }
 
@@ -19320,7 +19159,6 @@ public partial class Compiler
             // Evaluate the second thing using recursion.
             dataRef = comma.Op2;
             gtUpdateNodeSideEffects(store);
-
             return impStoreStruct(store, ref afterStmt, curLevel, usedDI, block);
         }
 
@@ -19344,7 +19182,6 @@ public partial class Compiler
         var type = value.Type;
         var layout = (type == TYP_STRUCT) ? value.GetLayout(this) : null;
         var store = gtNewStoreValueNode(type, destAddr, value, layout, indirFlags);
-
         return impStoreStruct(store, curLevel);
     }
 
@@ -19498,7 +19335,6 @@ public partial class Compiler
             impStoreToTemp(boxedArgNameTmp, valueName, CHECK_SPILL_ALL);
 
             _ = gtTryRemoveBoxUpstreamEffects(value.AsBox(), BR_REMOVE_AND_NARROW);
-
             return gtNewNothingNode();
         }
         else if (value.Oper.IsCall && value.AsCall().IsHelperCall(CORINFO_HELP_BOX))
@@ -19518,7 +19354,6 @@ public partial class Compiler
             var boxedArgNameTmp = lvaGrabTemp(shortLifetime: true, "boxedArg spilled");
             impStoreToTemp(boxedAddrTmp, addressArg.Node, CHECK_SPILL_ALL);
             impStoreToTemp(boxedArgNameTmp, valueName, CHECK_SPILL_ALL);
-
             return gtNewNothingNode();
         }
         else
@@ -20033,7 +19868,6 @@ public partial class Compiler
                 assert((obj.Type.ActualType is TYP_I_IMPL) || (obj.Type is TYP_BYREF));
 
                 var constraintTyp = info.compCompHnd->asCorInfoType(constrainedResolvedToken.hClass);
-
                 return gtNewLoadValueNode(constraintTyp.VarType, obj, layout: null);
             }
 
@@ -20076,7 +19910,6 @@ public partial class Compiler
                 }
 
                 obj = impPopStack().val;
-
                 return obj;
             }
 
@@ -20310,7 +20143,6 @@ public partial class Compiler
         else
         {
             assert(predOrSucc == SpillCliqueSucc);
-
             return impInlineRoot.impSpillCliqueSuccMembers.ExpandAndGet(blk.bbInd);
         }
     }
@@ -20701,7 +20533,6 @@ public partial class Compiler
         {
             // This optimization spawns several temps so make sure we have a room
             JITDUMP("impUtf16SpanComparison: Method has too many locals - bail out.\n");
-
             return null;
         }
 
@@ -20810,7 +20641,6 @@ public partial class Compiler
             if (cnsLength > (GetUnrollThreshold(MemcmpU16) / 2))
             {
                 JITDUMP("UTF16 data is too long to unroll - bail out.\n");
-
                 return null;
             }
 
@@ -20918,7 +20748,6 @@ public partial class Compiler
         if (lvaHaveManyLocals(0.75f))
         {
             JITDUMP("impUtf16StringComparison: Method has too many locals - bail out.\n");
-
             return null;
         }
 
@@ -21022,7 +20851,6 @@ public partial class Compiler
             if (cnsLength > (GetUnrollThreshold(MemcmpU16) / 2))
             {
                 JITDUMP("UTF16 data is too long to unroll - bail out.\n");
-
                 return null;
             }
 
@@ -21079,7 +20907,6 @@ public partial class Compiler
     public static bool impValidSpilledStackEntry(GenTree tree)
     {
         var oper = tree.Oper;
-
         return (oper is GT_LCL_VAR) || oper.IsConst;
     }
 
@@ -21144,7 +20971,6 @@ public partial class Compiler
         if (!sameRetTypes)
         {
             JITDUMP("Incompatible method GDV: Return types do not match - bail out.\n");
-
             return false;
         }
 
@@ -21161,7 +20987,6 @@ public partial class Compiler
             if ((callRetKind != gdvRetKind) || !ClassLayout.AreCompatible(typGetObjLayout(callSig.retTypeClass), typGetObjLayout(sigInfo.retTypeClass)))
             {
                 JITDUMP("Incompatible method GDV: Return struct types do not match - bail out.\n");
-
                 return false;
             }
         }
@@ -21247,7 +21072,6 @@ public partial class Compiler
             _ = impPopStack();
             var rotateValue = impPopStack().val;
             var rotateAmount = gtNewBinaryNode(GT_AND, op2.Type.ActualType, op2, gtNewIconNode(op2.Type.ActualType, rotateMask));
-
             return gtNewBinaryNode(rotateOper, baseType, rotateValue, rotateAmount);
         }
 
@@ -21265,17 +21089,14 @@ public partial class Compiler
             if (varTypeIsLong(baseType))
             {
                 var value = op1.AsIntConCommon().LngValue;
-
                 return gtNewLconNode(rotateOper is GT_ROL ? long.RotateLeft(value, amount) : long.RotateRight(value, amount));
             }
 
             var intValue = unchecked((int)op1.AsIntConCommon().IconValue);
-
             return gtNewIconNode(baseType, rotateOper is GT_ROL ? int.RotateLeft(intValue, amount) : int.RotateRight(intValue, amount));
         }
 
         op2.AsIntConCommon().IconValue = amount;
-
         return gtFoldExpr(gtNewBinaryNode(rotateOper, baseType, op1, op2));
     }
 
@@ -21337,14 +21158,12 @@ public partial class Compiler
             case NI_System_Math_Truncate:
             {
                 assert((intrinsicName > NI_SYSTEM_MATH_START) && (intrinsicName < NI_SYSTEM_MATH_END));
-
                 return true;
             }
 
             default:
             {
                 assert((intrinsicName < NI_SYSTEM_MATH_START) || (intrinsicName > NI_SYSTEM_MATH_END));
-
                 return false;
             }
         }
@@ -22544,7 +22363,6 @@ public partial class Compiler
             default:
             {
                 noway_assert(false);
-
                 return -1;
             }
         }
@@ -23090,7 +22908,6 @@ public partial class Compiler
                 else if (isSupportedProperty)
                 {
                     assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
-
                     return NI_IsSupported_Dynamic;
                 }
             }
@@ -23144,7 +22961,6 @@ public partial class Compiler
     private bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa)
     {
         _ = compExactlyDependsOn(isa);
-
         return opts.compSupportsISA.HasInstructionSet(isa);
     }
 
@@ -23187,7 +23003,6 @@ public partial class Compiler
             default:
             {
                 unreached();
-
                 return InstructionSet_ILLEGAL;
             }
         }

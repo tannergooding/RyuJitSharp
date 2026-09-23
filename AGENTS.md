@@ -17,9 +17,11 @@ checkpoint, and load only the relevant sections of the
   or dumps. Ask before substantial redesigns or new observable deviations.
 - Follow the existing C# layout, not compressed native or generated-looking
   translation. Use multiline control-flow bodies and braced switch sections,
-  one executable statement per line, and blank lines between distinct steps,
-  before control-flow statements, after completed control-flow blocks, and
-  before a final return. Keep related declarations and operations together.
+  with one executable statement per line. Group code for visual balance and
+  readable flow, much like paragraphs: keep related assertions, values,
+  operations, and returns together; separate distinct steps or setup/cleanup
+  when they form their own logical components. Choose blank lines from the
+  surrounding context, not a hard rule tied to statement kinds.
   Respect `.editorconfig`, but also review logical grouping and wrap long
   expressions at meaningful boundaries; formatter compliance is not sufficient.
 - Use the intact, pinned `runtime-oracle` for source and behavior comparisons.

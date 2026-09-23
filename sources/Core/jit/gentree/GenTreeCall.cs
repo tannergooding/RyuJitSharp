@@ -29,7 +29,6 @@ public sealed class GenTreeCall : GenTree
     public ref AsyncCallInfo GetAsyncInfo()
     {
         assert(IsAsync);
-
         return ref _asyncInfo;
     }
 
@@ -726,12 +725,10 @@ public sealed class GenTreeCall : GenTree
         {
             // In this case we should access it through gtInlineCandidateInfoList
             assert(_inlineCandidateInfoList is not null);
-
             return _inlineCandidateInfoList[index];
         }
 
         assert(_inlineCandidateInfo is not null);
-
         return _inlineCandidateInfo;
     }
 

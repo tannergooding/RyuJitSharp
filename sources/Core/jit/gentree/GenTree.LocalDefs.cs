@@ -20,7 +20,6 @@ public partial class GenTree
             if (fieldVarDsc.lvValueSize == storeSize)
             {
                 var index = fieldLclNum - varDsc.lvFieldLclStart;
-
                 return visitor.Visit(new PromotedRangeLocalDef(def, fieldLclNum, index, true, 0, storeSize, 0, storeSize));
             }
         }
@@ -157,7 +156,6 @@ public partial class GenTree
             {
                 var storeSize = new ValueSize(compiler.typGetObjLayout(call.RetClsHnd).Size);
                 var isEntire = compiler.IsEntireAccess(retBufLclAddr.LclNum, retBufLclAddr.LclOffs, storeSize);
-
                 return VisitLocalDef(compiler, retBufLclAddr, isEntire, retBufLclAddr.LclOffs, storeSize, ref visitor);
             }
         }

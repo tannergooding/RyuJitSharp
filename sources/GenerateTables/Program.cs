@@ -2470,7 +2470,6 @@ public static partial class var_typesExtensions
                 });
 
                 _ = builder.Append(hwiBuilder);
-
                 return;
             }
 
@@ -2544,7 +2543,6 @@ public enum VNFunc
                 });
 
                 _ = builder.Append(hwiBuilder);
-
                 return;
             }
 

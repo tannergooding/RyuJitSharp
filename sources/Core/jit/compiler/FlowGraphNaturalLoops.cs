@@ -127,7 +127,6 @@ public sealed class FlowGraphNaturalLoops
         if (!dfsTree.HasCycle)
         {
             JITDUMP("Flow graph has no cycles; skipping identification of natural loops\n");
-
             return loops;
         }
 
@@ -194,7 +193,6 @@ public sealed class FlowGraphNaturalLoops
 
                     return BasicBlockVisit.Continue;
                 });
-
                 return BasicBlockVisit.Continue;
             });
 
@@ -226,7 +224,6 @@ public sealed class FlowGraphNaturalLoops
                 var containsHeader = otherLoop.ContainsBlock(header);
                 _ = loop.VisitLoopBlocks(loopBlock => {
                     assert(otherLoop.ContainsBlock(loopBlock) == containsHeader);
-
                     return BasicBlockVisit.Continue;
                 });
             }
@@ -323,7 +320,6 @@ public sealed class FlowGraphNaturalLoops
                 if (!dfsTree.IsAncestor(loop.Header, pred))
                 {
                     JITDUMP($"Loop is not natural; witness {FMT_BB(pred.bbNum)} -> {FMT_BB(loopBlock.bbNum)}\n");
-
                     return false;
                 }
 

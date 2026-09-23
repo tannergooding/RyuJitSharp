@@ -265,7 +265,6 @@ internal static unsafe class InlineBlockTests
         }
 
         compiler.fgLastBB = block;
-
         return block;
     }
 

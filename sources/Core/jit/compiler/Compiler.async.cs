@@ -31,7 +31,6 @@ public partial class Compiler
         }
 
         root._asyncContinuationMembers.Add(member);
-
         return root._asyncContinuationMembers.Count - 1;
     }
 
@@ -47,14 +46,12 @@ public partial class Compiler
                 if (ContinuationMember.AreCompatible(member, members[i]))
                 {
                     index = i;
-
                     return true;
                 }
             }
         }
 
         index = 0;
-
         return false;
     }
 
@@ -65,7 +62,6 @@ public partial class Compiler
         var members = impInlineRoot._asyncContinuationMembers;
         assert(members is not null);
         assert((uint)index < (uint)members.Count);
-
         return members[index];
     }
 
@@ -391,7 +387,6 @@ public partial class Compiler
             if (call.Args.FindWellKnownArg(WellKnownArg.AsyncResumedUse) is not null)
             {
                 assert(_compiler.compIsForInlining);
-
                 return WALK_CONTINUE;
             }
 

@@ -30,7 +30,6 @@ public sealed class AsyncStressPolicy : ExtendedDefaultPolicy
         if (observation == InlineObservation.CALLEE_IS_ASYNC)
         {
             _isAsyncCall = value;
-
             return;
         }
 
@@ -44,7 +43,6 @@ public sealed class AsyncStressPolicy : ExtendedDefaultPolicy
             case InlineObservation.CALLSITE_ASYNC_STRESS_INDEX:
             {
                 _asyncStressIndex = value;
-
                 return;
             }
 
@@ -130,14 +128,12 @@ public sealed class AsyncStressPolicy : ExtendedDefaultPolicy
             }
 
             base.DetermineProfitability(methodInfo);
-
             return;
         }
 
         if (_isPrejitRoot)
         {
             SetCandidate(InlineObservation.CALLEE_IS_PROFITABLE_INLINE);
-
             return;
         }
 
@@ -146,7 +142,6 @@ public sealed class AsyncStressPolicy : ExtendedDefaultPolicy
         if (unchecked((uint)_callsiteDepth) > unchecked((uint)JitConfig.JitStressAsyncInliningMaxDepth))
         {
             SetFailure(InlineObservation.CALLSITE_RANDOM_REJECT);
-
             return;
         }
 

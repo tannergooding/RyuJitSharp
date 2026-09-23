@@ -53,7 +53,6 @@ internal static unsafe class ImporterCallTests
         CORINFO_ARG_LIST_STRUCT_* argument, CORINFO_CLASS_STRUCT_** type)
     {
         *type = null;
-
         return (CorInfoTypeWithMod)signature->retType;
     }
 
@@ -481,7 +480,6 @@ internal static unsafe class ImporterCallTests
     {
         handle->Embedded++;
         *indirection = handle->Indirect ? &handle->Value : null;
-
         return handle->Indirect ? null : (void*)handle->Value;
     }
 
@@ -507,7 +505,6 @@ internal static unsafe class ImporterCallTests
     private static CorInfoHelpFunc GetNewHelper(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type, bool* sideEffects)
     {
         *sideEffects = false;
-
         return CorInfoHelpFunc.CORINFO_HELP_NEWSFAST;
     }
 
@@ -559,7 +556,6 @@ internal static unsafe class ImporterCallTests
     private static byte RunWithErrorTrap(ICorJitInfo* self, delegate* unmanaged[Cdecl]<void*, void> callback, void* state)
     {
         callback(state);
-
         return 1;
     }
 

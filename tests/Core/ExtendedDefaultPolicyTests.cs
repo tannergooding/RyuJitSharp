@@ -592,7 +592,6 @@ internal static class ExtendedDefaultPolicyTests
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.lvaTable = [];
-
         return compiler;
     }
 

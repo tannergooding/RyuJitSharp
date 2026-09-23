@@ -278,7 +278,6 @@ internal static unsafe class AsyncTailCallTests
             ? (byte*)Unsafe.AsPointer(in MemoryMarshal.GetReference("ValueTask`1"u8))
             : (byte*)Unsafe.AsPointer(in MemoryMarshal.GetReference("ValueTask"u8));
         *namespaceName = (byte*)Unsafe.AsPointer(in MemoryMarshal.GetReference("System.Threading.Tasks"u8));
-
         return state->AsTask
             ? (byte*)Unsafe.AsPointer(in MemoryMarshal.GetReference("AsTask"u8))
             : (byte*)Unsafe.AsPointer(in MemoryMarshal.GetReference(".ctor"u8));
@@ -299,7 +298,6 @@ internal static unsafe class AsyncTailCallTests
     private static CORINFO_CLASS_STRUCT_* GetPatternArgumentClass(ICorJitInfo* jitInfo, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* arg)
     {
         var state = (PatternState*)arg;
-
         return state->ValueConstructor ? state->GenericType : (CORINFO_CLASS_STRUCT_*)18;
     }
 
@@ -311,7 +309,6 @@ internal static unsafe class AsyncTailCallTests
         state->Queries++;
         state->ExactCallee = (nint)exactCallee;
         state->ExplicitPrefix = explicitPrefix != 0;
-
         return state->Allowed ? (byte)1 : (byte)0;
     }
 

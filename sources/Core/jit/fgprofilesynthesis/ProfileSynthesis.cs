@@ -384,7 +384,6 @@ public sealed class ProfileSynthesis
         {
             assert(trueEdge.DupCount == 2);
             trueEdge.Likelihood = 1.0;
-
             return;
         }
 
@@ -759,7 +758,6 @@ public sealed class ProfileSynthesis
 
         _ = loop.VisitLoopBlocks(static block => {
             block.bbWeight = 0.0;
-
             return BasicBlockVisit.Continue;
         });
 
@@ -989,7 +987,6 @@ public sealed class ProfileSynthesis
         if (useSolver)
         {
             GaussSeidelSolver();
-
             return;
         }
 

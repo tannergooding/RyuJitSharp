@@ -39,7 +39,6 @@ public partial class Compiler
         {
             fieldRelativeOffset = 0;
             fieldAffectedBytes = fieldSize;
-
             return true;
         }
         else if (fieldSize.IsExact && storeSize.IsExact)
@@ -51,13 +50,11 @@ public partial class Compiler
             {
                 fieldRelativeOffset = (offset < fieldOffset) ? 0 : (offset - fieldOffset);
                 fieldAffectedBytes = new ValueSize((int)(nint.Min(storeEndOffset, fieldEndOffset) - nint.Max(offset, fieldOffset)));
-
                 return true;
             }
 
             fieldRelativeOffset = 0;
             fieldAffectedBytes = default;
-
             return false;
         }
         else
@@ -65,7 +62,6 @@ public partial class Compiler
             // Inexact bounds cannot establish non-overlap. The caller must handle an unknown affected size.
             fieldRelativeOffset = (offset < fieldOffset) ? 0 : (offset - fieldOffset);
             fieldAffectedBytes = ValueSize.Unknown;
-
             return true;
         }
     }
@@ -10542,7 +10538,6 @@ public partial class Compiler
                     tmp2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_AVX_ConvertToVector128Single, opBaseType, simdSize, op2);
 
                     tmp1 = gtNewSimdHWIntrinsicNode(type, NI_Vector_ToVector256Unsafe, simdBaseType, 16, tmp1);
-
                     return gtNewSimdWithUpperNode(type, tmp1, tmp2, simdBaseType, simdSize);
                 }
 
@@ -15457,7 +15452,6 @@ public partial class Compiler
             if (copyDstAddr.Oper is not GT_ADD)
             {
                 JITDUMP("Unexpected copy dest address tree\n");
-
                 return null;
             }
 
@@ -15466,7 +15460,6 @@ public partial class Compiler
             if ((copyDstAddrOp1.Oper is not GT_LCL_VAR) || (copyDstAddrOp1.AsLclVar().LclNum != boxTempLcl))
             {
                 JITDUMP("Unexpected copy dest address 1st addend\n");
-
                 return null;
             }
 
@@ -15475,7 +15468,6 @@ public partial class Compiler
             if ((copyDstAddrOp2 is null) || !copyDstAddrOp2.IsIntegralConst(TARGET_POINTER_SIZE))
             {
                 JITDUMP("Unexpected copy dest address 2nd addend\n");
-
                 return null;
             }
 
@@ -15490,7 +15482,6 @@ public partial class Compiler
             DEBUG_DESTROY_NODE(boxLclDef);
 
             copy.AsIndir().Addr = gtNewLclVarAddrNode(TYP_BYREF, boxTempLcl);
-
             return gtNewLclVarAddrNode(TYP_BYREF, boxTempLcl);
         }
 

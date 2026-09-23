@@ -103,7 +103,6 @@ internal static unsafe class ErrorTrapTests
         }
 
         callback(state);
-
         return 1;
     }
 }

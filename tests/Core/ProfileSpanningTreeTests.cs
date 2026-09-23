@@ -195,7 +195,6 @@ internal static unsafe class ProfileSpanningTreeTests
 
         compiler.fgFirstBB = blocks[0];
         compiler.fgLastBB = blocks[^1];
-
         return blocks;
     }
 

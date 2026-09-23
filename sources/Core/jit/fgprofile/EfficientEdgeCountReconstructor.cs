@@ -67,7 +67,6 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
     private static BlockInfo BlockToInfo(BasicBlock block)
     {
         assert(block.bbSparseCountInfo is not null);
-
         return block.bbSparseCountInfo;
     }
 
@@ -101,7 +100,6 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
         {
             JITDUMP($"Did not expect tree edge {FMT_BB(source.bbNum)} -> {FMT_BB(target.bbNum)} to be present in the schema (key {key.SourceKey:x8}, {key.TargetKey:x8})\n");
             Mismatch();
-
             return;
         }
 
@@ -248,7 +246,6 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
         if (_badcode || _mismatch || _allWeightsZero)
         {
             JITDUMP($"... not solving because of the {(_badcode ? "badcode" : _allWeightsZero ? "zero counts" : "mismatch")}\n");
-
             return;
         }
 
@@ -429,7 +426,6 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
         {
             JITDUMP($"\nSolver: failed to converge in {nPasses} passes, {_unknownBlocks} blocks and {_unknownEdges} edges remain unsolved\n");
             FailedToConverge();
-
             return;
         }
 
@@ -456,7 +452,6 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
                 : _failedToConverge ? "PGO data available, but solver did not converge"
                 : "PGO data available, profile data was all zero";
             JITDUMP($"... discarding profile count data: {_compiler.fgPgoFailReason}\n");
-
             return;
         }
 
@@ -589,7 +584,6 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
             assert(block == pseudoEdge.SourceBlock);
             assert(block.HasInitializedTarget);
             assert(block.TargetEdge.Likelihood == 1.0);
-
             return;
         }
 
@@ -650,7 +644,6 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
         if (info.Weight < sufficientSamples)
         {
             JITDUMP($"Switch in {FMT_BB(block.bbNum)} was hit {FMT_WT(info.Weight)} < {FMT_WT(sufficientSamples)} times, NOT checking for dominant edge\n");
-
             return;
         }
 
@@ -662,7 +655,6 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
             if (!edge.WeightKnown)
             {
                 JITDUMP("Found edge with unknown weight.\n");
-
                 return;
             }
 
@@ -683,7 +675,6 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
         if (fraction < sufficientFraction)
         {
             JITDUMP($"Maximum edge likelihood is {FMT_WT(fraction)} < {FMT_WT(sufficientFraction)}; not sufficient to trigger peeling)\n");
-
             return;
         }
 
@@ -716,7 +707,6 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
         if (block.SwitchTargets.HasDefaultCase && (dominantCase == caseCount - 1))
         {
             JITDUMP($"Default case {dominantCase} uniquely leads to target {FMT_BB(dominantEdge.TargetBlock.bbNum)} of dominant edge, so will be peeled already\n");
-
             return;
         }
 

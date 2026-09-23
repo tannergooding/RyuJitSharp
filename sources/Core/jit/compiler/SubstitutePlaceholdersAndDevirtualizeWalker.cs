@@ -59,7 +59,6 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
         if (tree is null)
         {
             assert((parent is not null) && (parent.Oper is GT_NOP));
-
             return;
         }
 
@@ -532,7 +531,6 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
         _firstNewStmt = null;
 
         _ = WalkTree(ref _curStmt.RootNodeRef, null);
-
         return (_firstNewStmt is null) ? _curStmt : _firstNewStmt;
     }
 
