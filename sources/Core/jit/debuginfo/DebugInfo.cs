@@ -42,6 +42,20 @@ public readonly struct DebugInfo
         return true;
     }
 
+    /// <summary>Get debug info for the statement in the root function that eventually led to this debug info through inlines.</summary>
+    /// <returns>If this DebugInfo instance is valid, returns a DebugInfo instance representing the call in the root function that eventually inlined the statement this DebugInfo describes.</returns>
+    /// <remarks>If this DebugInfo instance is invalid, returns an invalid DebugInfo instance.</remarks>
+    public DebugInfo GetRoot()
+    {
+        var result = this;
+        while (result.GetParent(out var parent))
+        {
+            result = parent;
+        }
+
+        return result;
+    }
+
 #if DEBUG
     // Dump textual representation of this DebugInfo to jitstdout.
     public void Dump(bool recurse)

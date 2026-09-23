@@ -398,6 +398,144 @@ internal static class ExtendedDefaultPolicyTests
     }
 #endif
 
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static unsafe void InlineContextsPreserveOutcomeBudgetAndDebugAncestry(bool force, bool success)
+    {
+        var compiler = CreateCompiler();
+        var strategy = (InlineStrategy)RuntimeHelpers.GetUninitializedObject(typeof(InlineStrategy));
+        SetField(typeof(InlineStrategy), strategy, "_compiler", compiler);
+        SetField(typeof(InlineStrategy), strategy, "_currentTimeEstimate", 100);
+        SetField(typeof(InlineStrategy), strategy, "_currentTimeBudget", 100);
+        SetField(typeof(InlineStrategy), strategy, "_currentSizeEstimate", 500);
+        var root = new InlineContext(strategy) { _ilSize = 20 };
+#if DEBUG
+        root._ilInstsSet = new System.Collections.BitArray(20, true);
+#endif
+        SetField(typeof(InlineStrategy), strategy, "_rootContext", root);
+        var call = new GenTreeCall(var_types.TYP_INT) {
+            _inlineContext = root,
+            _callMethHnd = (CORINFO_METHOD_STRUCT_*)123,
+            SingleInlineCandidateInfo = new InlineCandidateInfo {
+                methInfo = new CORINFO_METHOD_INFO { ILCode = (byte*)456, ILCodeSize = 20 },
+                ilOffset = 9,
+            },
+        };
+        call.SetIsAsync(default);
+        var stmt = new Statement(call, 1);
+        stmt.SetDebugInfo(new DebugInfo(root, new ILLocation(5, 0)));
+        var context = strategy.NewContext(root, stmt, call);
+        Assert.That(root.Child, Is.SameAs(context));
+        Assert.That(context.Parent, Is.SameAs(root));
+        Assert.That(context.ActualCallOffset, Is.EqualTo(9));
+        Assert.That((nuint)context.Callee, Is.EqualTo((nuint)123));
+        Assert.That((nuint)context.Code, Is.EqualTo((nuint)456));
+        Assert.That(context.ILSize, Is.EqualTo(20));
+#if DEBUG
+        Assert.That(context.IsAsyncCall, Is.True);
+#endif
+        var debugInfo = new DebugInfo(context, new ILLocation(17, 0)).GetRoot();
+        Assert.That(debugInfo.InlineContext, Is.SameAs(root));
+        Assert.That(debugInfo.Location.Offset, Is.EqualTo(5));
+        Assert.That(new DebugInfo().GetRoot().IsValid, Is.False);
+
+        var observation = force ? InlineObservation.CALLEE_IS_FORCE_INLINE : InlineObservation.CALLEE_IS_DISCRETIONARY_INLINE;
+        var result = (InlineResult)RuntimeHelpers.GetUninitializedObject(typeof(InlineResult));
+        SetField(typeof(InlineResult), result, "_policy", new OutcomePolicy(compiler, observation));
+        result.ImportedILSize = 20;
+        Assert.That(result.ReasonString, Is.EqualTo(observation.String));
+        Assert.That(result.ResultString, Is.EqualTo(result.Policy.Decision.String));
+        if (success)
+        {
+            context.SetSucceeded(new InlineInfo { inlineResult = result });
+        }
+        else
+        {
+            context.SetFailed(result);
+        }
+        Assert.That(context.IsSuccess, Is.EqualTo(success));
+        Assert.That(context.Observation, Is.EqualTo(observation));
+        Assert.That(context.ImportedILSize, Is.EqualTo(20));
+        Assert.That(strategy.InlineCount, Is.EqualTo(success ? 1 : 0));
+        Assert.That(context.Ordinal, Is.EqualTo(success ? 1 : 0));
+        Assert.That(strategy.BudgetCheck(7), Is.EqualTo(success && !force));
+#if DEBUG
+        Assert.That(strategy.CurrentSizeEstimate, Is.EqualTo(success ? 530 : 500));
+#else
+        Assert.That(strategy.CurrentSizeEstimate, Is.EqualTo(500));
+#endif
+        var sibling = strategy.NewContext(root, stmt, call);
+        Assert.That(root.Child, Is.SameAs(sibling));
+        Assert.That(sibling.Sibling, Is.SameAs(context));
+    }
+
+    private sealed class OutcomePolicy : DefaultPolicy
+    {
+        public OutcomePolicy(Compiler compiler, InlineObservation observation) : base(compiler, isPrejitRoot: false)
+        {
+            _observation = observation;
+        }
+
+        public override int CodeSizeEstimate() => 30;
+    }
+
+#if DEBUG
+    [TestCase(false, false, false)]
+    [TestCase(false, true, true)]
+    [TestCase(true, false, false)]
+    [TestCase(true, false, true)]
+    [TestCase(true, true, false)]
+    [TestCase(true, true, true)]
+    public static unsafe void InlineDumpPreservesNativeAsyncAnnotations(bool asyncCaller, bool asyncCall, bool verbose)
+    {
+        var compiler = CreateCompiler();
+        JitFlags flags = default;
+        if (asyncCaller)
+        {
+            flags.Set(JitFlags.JIT_FLAG_ASYNC);
+        }
+        compiler.opts.jitFlags = &flags;
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.Base.Base.getMethodDefFromMethod = &GetMethodToken;
+        ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+        compiler.info.compCompHnd = &jitInfo;
+        var strategy = (InlineStrategy)RuntimeHelpers.GetUninitializedObject(typeof(InlineStrategy));
+        SetField(typeof(InlineStrategy), strategy, "_compiler", compiler);
+        var context = new InlineContext(strategy) {
+            _parent = new InlineContext(strategy),
+            _flags = asyncCall ? InlineContext.Flags.AsyncCall : InlineContext.Flags.None,
+            _treeId = 12,
+            _actualCallOffset = 9,
+        };
+        SetField(typeof(InlineContext), context, "_observation", InlineObservation.CALLEE_IS_NOINLINE);
+
+        using var stream = new MemoryStream();
+        using var writer = new JitTextWriter(stream, leaveOpen: true);
+        var previous = Globals.s_jitstdout;
+        try
+        {
+            Globals.s_jitstdout = writer;
+            context.Dump(verbose, 2);
+            writer.Flush();
+        }
+        finally
+        {
+            Globals.s_jitstdout = previous;
+        }
+        var asyncness = asyncCaller ? (asyncCall ? " ASYNC" : " SYNC") : "";
+        var reason = InlineObservation.CALLEE_IS_NOINLINE.String;
+        var expected = verbose
+            ? $"  [{Globals.FMT_INL_CTX(0)} IL=0009 TR=000012 06000042] [FAILED: callee: {reason}{asyncness}] <unknown>\r\n"
+            : $"  [FAILED: {reason}{asyncness}] <unknown>\r\n";
+        Assert.That(System.Text.Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo(expected));
+    }
+
+    [System.Runtime.InteropServices.UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static unsafe int GetMethodToken(ICorJitInfo* self, CORINFO_METHOD_STRUCT_* method) => 0x06000042;
+#endif
+
     private static void SetField([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)] Type type, object target, string name, object value)
     {
         var field = type.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)

@@ -112,6 +112,12 @@ public sealed class InlineResult
         }
     }
 
+    /// <summary>The call being considered</summary>
+    public GenTreeCall? Call => _call;
+
+    /// <summary>The callee handle for this result</summary>
+    public unsafe CORINFO_METHOD_HANDLE Callee => _callee;
+
     public int ImportedILSize
     {
         get
@@ -124,6 +130,9 @@ public sealed class InlineResult
             _importedILSize = value;
         }
     }
+
+    /// <summary>Get the InlineContext for this inline.</summary>
+    public InlineContext? InlineContext => _inlineContext;
 
     /// <summary>Has the policy determined this inline attempt is still viable?</summary>
     public bool IsCandidate => _policy.Decision.IsCandidate;
@@ -149,6 +158,30 @@ public sealed class InlineResult
     /// <summary>Get the policy that evaluated this result.</summary>
     public InlinePolicy Policy => _policy;
 
+    /// <summary>String describing the reason for the decision</summary>
+    public string ReasonString
+    {
+        get
+        {
+            if (_reportFailureAsVmFailure)
+            {
+                return "VM Reported !CanInline";
+            }
+            else if (_successResult == INLINE_PREJIT_SUCCESS)
+            {
+                return "PreJIT Success";
+            }
+            else if (_successResult == INLINE_CHECK_CAN_INLINE_SUCCESS)
+            {
+                return "CheckCanInline Success";
+            }
+            else
+            {
+                return _policy.Observation.String;
+            }
+        }
+    }
+
     public CorInfoInline Result
     {
         get
@@ -168,6 +201,30 @@ public sealed class InlineResult
         set
         {
             _successResult = value;
+        }
+    }
+
+    /// <summary>String describing the decision made</summary>
+    public string ResultString
+    {
+        get
+        {
+            if (_reportFailureAsVmFailure)
+            {
+                return "VM Reported !CanInline";
+            }
+            else if (_successResult == INLINE_PREJIT_SUCCESS)
+            {
+                return "PreJIT Success";
+            }
+            else if (_successResult == INLINE_CHECK_CAN_INLINE_SUCCESS)
+            {
+                return "CheckCanInline Success";
+            }
+            else
+            {
+                return _policy.Decision.String;
+            }
         }
     }
 
@@ -208,6 +265,16 @@ public sealed class InlineResult
     /// <param name="value"></param>
     public void NoteInt(InlineObservation observation, int value)
         => _policy.NoteInt(observation, value);
+
+#if DEBUG
+    /// <summary>Record observation from an earlier failure.</summary>
+    /// <param name="obs"></param>
+    public void NotePriorFailure(InlineObservation obs)
+    {
+        _policy.NotePriorFailure(obs);
+        assert(IsFailure);
+    }
+#endif
 
     /// <summary>NoteSuccess means the all the various checks have passed and the inline can happen.</summary>
     public void NoteSuccess()

@@ -184,6 +184,40 @@ public sealed class InlineStrategy
         return result;
     }
 
+#if DEBUG
+    /// <summary>dump description of inline behavior</summary>
+    /// <param name="verbose">print more details such as final budget values and IL offsets</param>
+    public void Dump(bool verbose)
+    {
+        assert(_rootContext is not null);
+        _rootContext.Dump(verbose);
+
+        if (!verbose)
+        {
+            return;
+        }
+
+        jitprintf($"Budget: initialTime={_initialTimeEstimate}, finalTime={_currentTimeEstimate}, initialBudget={_initialTimeBudget}, currentBudget={_currentTimeBudget}\n");
+
+        if (_currentTimeBudget > _initialTimeBudget)
+        {
+            jitprintf($"Budget: increased by {_currentTimeBudget - _initialTimeBudget} because of force inlines\n");
+        }
+
+        if (_currentTimeEstimate > _currentTimeBudget)
+        {
+            jitprintf($"Budget: went over budget by {_currentTimeEstimate - _currentTimeBudget}\n");
+        }
+
+        if (_hasForceViaDiscretionary)
+        {
+            jitprintf("Budget: discretionary inline caused a force inline\n");
+        }
+
+        jitprintf($"Budget: initialSize={_initialSizeEstimate}, finalSize={_currentSizeEstimate}\n");
+    }
+#endif
+
     // Dump csv header for inline stats to indicated file.
     public static void DumpCsvHeader(StreamWriter streamWriter)
     {
@@ -285,6 +319,67 @@ public sealed class InlineStrategy
 #endif
     }
 
+    // Create context for the specified inline candidate contained in the specified statement.
+    public unsafe InlineContext NewContext(InlineContext parentContext, Statement stmt, GenTreeCall call)
+    {
+        var context = new InlineContext(this) {
+            _inlineStrategy = this,
+            _parent = parentContext,
+            _sibling = parentContext._child
+        };
+        parentContext._child = context;
+
+        // The inline context should always match the parent context we are seeing
+        // here.
+        assert(parentContext == call._inlineContext);
+
+        if (call.IsInlineCandidate)
+        {
+            var info = call.SingleInlineCandidateInfo;
+            assert(info is not null);
+
+            context._code = info.methInfo.ILCode;
+            context._ilSize = info.methInfo.ILCodeSize;
+            context._actualCallOffset = info.ilOffset;
+            context._runtimeContext = info.exactContextHandle;
+
+#if DEBUG
+            // All inline candidates should get their own statements that have
+            // appropriate debug info (or no debug info).
+            var diInlineContext = stmt.DebugInfo.InlineContext;
+            assert((diInlineContext is null) || (diInlineContext == parentContext));
+#endif
+        }
+        else
+        {
+#if DEBUG
+            // Should only get here in debug builds
+            context._actualCallOffset = call._rawILOffset;
+#endif
+        }
+
+        // We currently store both the statement location (used when reporting
+        // only-style mappings) and the actual call offset (used when reporting the
+        // inline tree for rich debug info).
+        // These are not always the same, consider e.g.
+        // ldarg.0
+        // call <foo>
+        // which becomes a single statement where the IL location points to the
+        // ldarg instruction.
+        context._location = stmt.DebugInfo.Location;
+        context._callee = call._callMethHnd;
+
+#if DEBUG
+        context._flags |= call.IsDevirtualized ? InlineContext.Flags.Devirtualized : InlineContext.Flags.None;
+        context._flags |= call.IsGuarded ? InlineContext.Flags.Guarded : InlineContext.Flags.None;
+        context._flags |= call.IsUnboxed ? InlineContext.Flags.Unboxed : InlineContext.Flags.None;
+        context._flags |= call.IsAsync ? InlineContext.Flags.AsyncCall : InlineContext.Flags.None;
+        context._treeId = call.TreeId;
+#endif
+
+        return context;
+    }
+
     /// <summary>Inform strategy that a candidate has passed screening and that the jit will attempt to inline.</summary>
     public void NoteAttempt(InlineResult result)
     {
@@ -339,6 +434,99 @@ public sealed class InlineStrategy
 
     /// <summary>Inform strategy that jit is about to import the inlinee IL.</summary>
     public void NoteImport() => _importCount++;
+
+    /// <summary>do bookkeeping for an inline</summary>
+    /// <param name="context">context for the inline</param>
+    internal void NoteOutcome(InlineContext context)
+    {
+        // Note we can't generally count up failures here -- we only
+        // create contexts for failures in debug modes, and even then
+        // we may not get them all.
+        if (context.IsSuccess)
+        {
+            _inlineCount++;
+
+#if DEBUG
+            // Keep track of the inline targeted for data collection or,
+            // if we don't have one (yet), the last successful inline.
+            var updateLast = (_lastSuccessfulPolicy is null) || !_lastSuccessfulPolicy.IsDataCollectionTarget;
+
+            if (updateLast)
+            {
+                _lastContext = context;
+                _lastSuccessfulPolicy = context._policy;
+            }
+            else
+            {
+                // We only expect one inline to be a data collection target.
+                assert(context._policy is not null);
+                assert(!context._policy.IsDataCollectionTarget);
+            }
+#endif
+
+            // Budget update.
+            //
+            // If callee is a force inline, increase budget, provided all
+            // parent contexts are likewise force inlines.
+            //
+            // If callee is discretionary or has a discretionary ancestor,
+            // increase expense.
+
+            var currentContext = context;
+            var isForceInline = false;
+
+            while (currentContext != _rootContext)
+            {
+                assert(currentContext is not null);
+                var observation = currentContext.Observation;
+
+                if (observation != InlineObservation.CALLEE_IS_FORCE_INLINE)
+                {
+                    if (isForceInline)
+                    {
+                        // Interesting case where discretionary inlines pull
+                        // in a force inline...
+                        _hasForceViaDiscretionary = true;
+                    }
+
+                    isForceInline = false;
+                    break;
+                }
+
+                isForceInline = true;
+                currentContext = currentContext.Parent;
+            }
+
+            var timeDelta = EstimateTime(context);
+
+            if (isForceInline)
+            {
+                // Update budget since this inline was forced.
+                // Only allow budget to increase.
+
+                if (timeDelta > 0)
+                {
+                    _currentTimeBudget += timeDelta;
+                }
+            }
+
+            // Update time estimate.
+            _currentTimeEstimate += timeDelta;
+
+            // Update size estimate.
+            //
+            // Sometimes estimates don't make sense. Don't let the method size go negative.
+            var sizeDelta = EstimateSize(context);
+
+            if ((_currentSizeEstimate + sizeDelta) <= 0)
+            {
+                sizeDelta = 0;
+            }
+
+            // Update the code size estimate.
+            _currentSizeEstimate += sizeDelta;
+        }
+    }
 
     /// <summary>Note an over-budget inline that was admitted due to the callee's [Intrinsic] type.</summary>
     public void NoteOverBudgetIntrinsicInline() => _overBudgetIntrinsicInlineCount++;

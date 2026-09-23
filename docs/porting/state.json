@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Continue protected C# WIP integration. LIR utilities, local sequencing, physical/logical local definitions, definition providers, overlap helpers, and complete local/alias sets are restored. The local-store query now uses logical promoted-field definitions. Next integrate remaining saved inlining/rationalization bodies and support-file moves. Do not activate incomplete phases. Both native trees use the target revision; synchronization uses raw upstream deltas, preserving prior deletions and unported new APIs. After WIP integration, prioritize required minopts phases toward code generation. The first PGO dump gap remains pending.",
+    "nextAction": "Continue protected C# WIP integration. LIR/local/alias utilities and inline context/result/strategy bookkeeping are restored, including target async dump annotations and root debug-info traversal. Next integrate remaining saved inlining/rationalization bodies and support-file moves. Do not activate incomplete phases. Both native trees use the target revision; synchronization uses raw upstream deltas, preserving prior deletions and unported new APIs. After WIP integration, prioritize required minopts phases toward code generation. The first PGO dump gap remains pending.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -61,6 +61,14 @@
         "releasePassed": 56,
         "skipped": 0,
         "newCases": 6,
+        "nativeAotRecaptured": false
+      },
+      "inlineBookkeepingSpotChecks": {
+        "debugPassed": 79,
+        "releasePassed": 55,
+        "skipped": 0,
+        "newOutcomeCases": 4,
+        "newDebugDumpCases": 6,
         "nativeAotRecaptured": false
       },
       "nativeAotPublish": "passed-at-upstream-reconciliation-milestone",
