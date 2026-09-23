@@ -147,9 +147,13 @@ public partial class Compiler
 #endif
 
 #if DEBUG
-    public static InlineArrayCompilerStressCount<string> s_compStressModeNames;
+    public static readonly string[] s_compStressModeNames = Enum.GetNames<compStressArea>();
 
     public InlineArrayCompilerStressCount<byte> compActiveStressModes;
+
+    private static readonly int[] s_compStressAreaHashes = new int[(int)STRESS_COUNT];
+
+    private static readonly byte[][] s_compStressModeNamesUtf8 = Array.ConvertAll(s_compStressModeNames, static name => Encoding.ASCII.GetBytes(name));
 #endif
 
     /// <summary>ABI return type descriptor for the method</summary>
@@ -2880,6 +2884,33 @@ public partial class Compiler
 #if DEBUG
     public bool compInlineStress() => compStressCompile(STRESS_LEGACY_INLINE, 50);
 
+    public bool compAsyncInliningStress()
+    {
+        if (JitConfig.JitStressAsyncInlining != 0)
+        {
+            return true;
+        }
+
+        return impInlineRoot.compIsAsync && compStressCompile(STRESS_ASYNC_INLINE, 50);
+    }
+
+    public int compAsyncInliningStressSeed()
+    {
+        var seed = JitConfig.JitStressAsyncInlining;
+
+        if (seed == 0)
+        {
+            seed = JitStressLevel;
+
+            if (seed == 0)
+            {
+                seed = 2;
+            }
+        }
+
+        return seed;
+    }
+
     /// <summary>determine if a stress mode should be enabled</summary>
     /// <param name="stressArea">stress mode to possibly enable</param>
     /// <param name="weightPercentage">percent of time this mode should be turned on (range 0 to 100); weight 0 effectively disables</param>
@@ -2893,7 +2924,7 @@ public partial class Compiler
     public bool compStressCompile(compStressArea stressArea, int weightPercentage)
     {
         // This can be called early, before info is fully set up.
-        if ((info.compMethodName is null) || (info.compFullName is null))
+        if (string.IsNullOrEmpty(info.compMethodName) || string.IsNullOrEmpty(info.compFullName))
         {
             return false;
         }
@@ -2907,21 +2938,98 @@ public partial class Compiler
 
         var doStress = compStressCompileHelper(stressArea, weightPercentage);
 
-        if (doStress && (compActiveStressModes[(int)(stressArea)] != 0))
+        if (doStress && (compActiveStressModes[(int)(stressArea)] == 0))
         {
             if (verbose)
             {
-                jitprintf($"\n\n*** JitStress: {stressArea} ***\n\n");
+                jitprintf($"\n\n*** JitStress: {s_compStressModeNames[(int)stressArea]} ***\n\n");
             }
             compActiveStressModes[(int)(stressArea)] = 1;
         }
         return doStress;
     }
 
-    public bool compStressCompileHelper(compStressArea stressArea, int weightPercentage)
+    public static uint compStressAreaHash(compStressArea area)
     {
-        // TODO: Port Compiler.compStressCompileHelper
-        return false;
+        ref var hashCode = ref s_compStressAreaHashes[(int)area];
+        var result = unchecked((uint)Volatile.Read(ref hashCode));
+
+        if (result == 0)
+        {
+            result = unchecked((uint)HashString(s_compStressModeNames[(int)area]));
+            if (result == 0)
+            {
+                result = 1;
+            }
+
+            _ = Interlocked.Exchange(ref hashCode, unchecked((int)result));
+        }
+
+        return result;
+    }
+
+    private static unsafe bool StressModeNamesContain(byte* names, ReadOnlySpan<byte> stressModeName)
+    {
+        return (names is not null) && (MemoryMarshal.CreateReadOnlySpanFromNullTerminated(names).IndexOf(stressModeName) >= 0);
+    }
+
+    public unsafe bool compStressCompileHelper(compStressArea stressArea, int weightPercentage)
+    {
+        if (!compAllowStress)
+        {
+            return false;
+        }
+
+        var stressModeName = s_compStressModeNamesUtf8[(int)stressArea].AsSpan();
+
+        if (StressModeNamesContain(JitConfig.JitStressModeNamesNot, stressModeName))
+        {
+            return false;
+        }
+
+        var namesAllow = JitConfig.JitStressModeNamesAllow;
+        if ((namesAllow is not null) && !StressModeNamesContain(namesAllow, stressModeName))
+        {
+            return false;
+        }
+
+        var names = JitConfig.JitStressModeNames;
+        if (names is not null)
+        {
+            if (StressModeNamesContain(names, stressModeName))
+            {
+                return true;
+            }
+
+            if (JitConfig.JitStressModeNamesOnly != 0)
+            {
+                return false;
+            }
+        }
+
+        var stressLevel = JitStressLevel;
+        assert((uint)weightPercentage <= MAX_STRESS_WEIGHT);
+
+        if ((stressLevel == 0) || (weightPercentage == 0))
+        {
+            return false;
+        }
+
+        if ((stressArea > STRESS_COUNT_VARN) && (stressLevel == 2))
+        {
+            return true;
+        }
+
+        if (weightPercentage == MAX_STRESS_WEIGHT)
+        {
+            return true;
+        }
+
+        assert(stressArea != STRESS_NONE);
+        var hash = (unchecked((uint)info.compMethodHash()) ^ compStressAreaHash(stressArea) ^ unchecked((uint)stressLevel)) % MAX_STRESS_WEIGHT;
+        assert((hash < MAX_STRESS_WEIGHT) && ((uint)weightPercentage <= MAX_STRESS_WEIGHT));
+
+        return hash < (uint)weightPercentage;
     }
 #else
     public bool compStressCompile(compStressArea stressArea, int weightPercentage) => false;

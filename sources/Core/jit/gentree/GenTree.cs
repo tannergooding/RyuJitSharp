@@ -458,7 +458,6 @@ public partial class GenTree
 
             if (_oper is GT_NOP)
             {
-                // NOPs may only be present in LIR if they do not produce a value.
                 result = IsNothingNode;
             }
             else
@@ -530,7 +529,7 @@ public partial class GenTree
     /// <summary>whether a local var node defines multiple registers</summary>
     public bool IsMultiRegLclVar => _oper.IsScalarLocal && AsLclVar().IsMultiReg;
 
-    public bool IsNothingNode => (_oper is GT_NOP) && (_type is TYP_VOID);
+    public bool IsNothingNode => _oper is GT_NOP;
 
     public bool IsPartOfAddressMode => (_oper is GT_ADD or GT_MUL or GT_LSH or GT_CAST) && ((_flags & GTF_ADDRMODE_NO_CSE) is not 0);
 

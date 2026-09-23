@@ -30,6 +30,7 @@ public partial class Compiler
     public const compStressArea STRESS_UNSAFE_BUFFER_CHECKS = compStressArea.STRESS_UNSAFE_BUFFER_CHECKS;
     public const compStressArea STRESS_NULL_OBJECT_CHECK = compStressArea.STRESS_NULL_OBJECT_CHECK;
     public const compStressArea STRESS_RANDOM_INLINE = compStressArea.STRESS_RANDOM_INLINE;
+    public const compStressArea STRESS_ASYNC_INLINE = compStressArea.STRESS_ASYNC_INLINE;
     public const compStressArea STRESS_SWITCH_CMP_BR_EXPANSION = compStressArea.STRESS_SWITCH_CMP_BR_EXPANSION;
     public const compStressArea STRESS_GENERIC_VARN = compStressArea.STRESS_GENERIC_VARN;
     public const compStressArea STRESS_PROFILER_CALLBACKS = compStressArea.STRESS_PROFILER_CALLBACKS;
@@ -57,6 +58,7 @@ public partial class Compiler
     public const compStressArea STRESS_IF_CONVERSION_INNER_LOOPS = compStressArea.STRESS_IF_CONVERSION_INNER_LOOPS;
     public const compStressArea STRESS_POISON_IMPLICIT_BYREFS = compStressArea.STRESS_POISON_IMPLICIT_BYREFS;
     public const compStressArea STRESS_THREE_OPT_LAYOUT = compStressArea.STRESS_THREE_OPT_LAYOUT;
+    public const compStressArea STRESS_GET_RANGE = compStressArea.STRESS_GET_RANGE;
     public const compStressArea STRESS_COUNT = compStressArea.STRESS_COUNT;
 
     public enum compStressArea
@@ -112,6 +114,9 @@ public partial class Compiler
         STRESS_NULL_OBJECT_CHECK,
 
         STRESS_RANDOM_INLINE,
+
+        /// <summary>Randomly inline async callees that may suspend</summary>
+        STRESS_ASYNC_INLINE,
 
         STRESS_SWITCH_CMP_BR_EXPANSION,
 
@@ -186,6 +191,8 @@ public partial class Compiler
         STRESS_POISON_IMPLICIT_BYREFS,
 
         STRESS_THREE_OPT_LAYOUT,
+
+        STRESS_GET_RANGE,
 
         STRESS_COUNT,
     }

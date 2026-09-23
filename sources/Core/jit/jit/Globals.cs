@@ -576,14 +576,14 @@ public partial class Globals
             case ShortInlineR:
             {
                 double dOp = BinaryPrimitives.ReadSingleLittleEndian(new ReadOnlySpan<byte>(opcodePtr, 4));
-                operand = $" {formatILFloat(dOp)}";
+                operand = $" {formatFloat(dOp, "F6")}";
                 break;
             }
 
             case InlineR:
             {
                 var dOp = BinaryPrimitives.ReadDoubleLittleEndian(new ReadOnlySpan<byte>(opcodePtr, 8));
-                operand = $" {formatILFloat(dOp)}";
+                operand = $" {formatFloat(dOp, "F6")}";
                 break;
             }
 
@@ -634,12 +634,14 @@ public partial class Globals
         return (IL_OFFSET)(opcodePtr - startOpcodePtr);
     }
 
-    private static string formatILFloat(double value)
+#endif
+
+    internal static string formatFloat(double value, string format)
     {
-        // Match dumpSingleInstr's %f, including the Windows CRT's NaN encodings.
+        // Preserve CRT spellings independently of the finite-number precision.
         if (double.IsFinite(value))
         {
-            return value.ToString("F6", CultureInfo.InvariantCulture);
+            return value.ToString(format, CultureInfo.InvariantCulture);
         }
 
         var sign = double.IsNegative(value) ? "-" : "";
@@ -665,7 +667,6 @@ public partial class Globals
 
         return sign + "nan";
     }
-#endif
 
     [Conditional("DEBUG")]
     public static void LABELEDDISPTREERANGE(string label, LIR.Range range, GenTree tree)

@@ -2111,7 +2111,7 @@ public partial class Compiler
     /// <param name="lclNum">The local's number</param>
     /// <param name="offset">The address' offset</param>
     /// <returns>Whether "LCL_ADDR&lt;lclNum&gt; [+offset]" would be valid IR.</returns>
-    /// <remarks>Local address nodes cannot point beyond the local and can only store 16 bits worth of offset.</remarks>
+    /// <remarks>Local address nodes cannot point beyond the local or exceed 16 bits of offset; locals numbered 32768 or greater require a byte-sized offset.</remarks>
     public bool IsValidLclAddr(int lclNum, int offset)
     {
 #if TARGET_ARM64
@@ -2120,7 +2120,12 @@ public partial class Compiler
             return offset is 0;
         }
 #endif
-        return (offset < ushort.MaxValue) && (offset < lvaLclExactSize(lclNum));
+        if ((lclNum >= 32768) && (offset >= 256))
+        {
+            return false;
+        }
+
+        return ((uint)offset < ushort.MaxValue) && ((uint)offset < (uint)lvaLclExactSize(lclNum));
     }
 
     /// <summary>One line log function.</summary>

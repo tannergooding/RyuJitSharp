@@ -290,6 +290,12 @@ public partial class Compiler
     /// <remarks>These weights may come from instrumentation or from synthesis.</remarks>
     public bool fgHaveProfileWeights => fgPgoHaveWeights;
 
+    public bool fgHaveTrustedProfileWeights => fgHaveProfileWeights && (fgPgoSource switch {
+        ICorJitInfo.PgoSource.Dynamic or ICorJitInfo.PgoSource.Text or ICorJitInfo.PgoSource.Blend => true,
+        ICorJitInfo.PgoSource.Synthesis => fgPgoSingleEdge,
+        _ => false,
+    });
+
     /// <summary>check if profile data is available and is sufficient enough to be trustful.</summary>
     /// <remarks>See notes for fgHaveProfileData.</remarks>
     public bool fgHaveSufficientProfileWeights

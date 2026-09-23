@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 
@@ -208,7 +209,7 @@ public abstract class InlinePolicy
     {
         if (value is not 0)
         {
-            stream.Write($" {valueExpression}=\"{value}\"");
+            stream.Write($" {valueExpression}=\"{value.ToString(CultureInfo.InvariantCulture)}\"");
         }
     }
 
@@ -216,7 +217,7 @@ public abstract class InlinePolicy
     {
         if (double.Abs(value) > 0.01)
         {
-            stream.Write($" {valueExpression}=\"{value:F2}\"");
+            stream.Write($" {valueExpression}=\"{formatFloat(value, "F2")}\"");
         }
     }
 }

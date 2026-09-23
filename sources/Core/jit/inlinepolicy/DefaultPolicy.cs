@@ -790,31 +790,31 @@ public partial class DefaultPolicy : LegacyPolicy
 #if DEBUG
     public override void OnDumpXml(StreamWriter stream, int indent = 0)
     {
-        XATTR_R8(stream, _multiplier);
-        XATTR_I4(stream, _codeSize);
-        XATTR_I4(stream, (int)(_callsiteFrequency));
-        XATTR_I4(stream, _callsiteDepth);
-        XATTR_I4(stream, _instructionCount);
-        XATTR_I4(stream, _loadStoreCount);
-        XATTR_I4(stream, _argFeedsTest);
-        XATTR_I4(stream, _argFeedsConstantTest);
-        XATTR_I4(stream, _argFeedsRangeCheck);
-        XATTR_I4(stream, _constantArgFeedsConstantTest);
-        XATTR_I4(stream, _calleeNativeSizeEstimate);
-        XATTR_I4(stream, _callsiteNativeSizeEstimate);
-        XATTR_B(stream, IsForceInline);
-        XATTR_B(stream, IsForceInlineKnown);
-        XATTR_B(stream, IsInstanceCtor);
-        XATTR_B(stream, IsFromPromotableValueClass);
-        XATTR_B(stream, HasSimd);
-        XATTR_B(stream, LooksLikeWrapperMethod);
-        XATTR_B(stream, MethodIsMostlyLoadStore);
-        XATTR_B(stream, CallsiteIsInTryRegion);
-        XATTR_B(stream, CallsiteIsInLoop);
-        XATTR_B(stream, IsNoReturn);
-        XATTR_B(stream, IsNoReturnKnown);
-        XATTR_B(stream, InsideThrowBlock);
-        XATTR_B(stream, IsIntrinsicType);
+        XATTR_R8(stream, _multiplier, "m_Multiplier");
+        XATTR_I4(stream, _codeSize, "m_CodeSize");
+        XATTR_I4(stream, (int)(_callsiteFrequency), "m_CallsiteFrequency");
+        XATTR_I4(stream, _callsiteDepth, "m_CallsiteDepth");
+        XATTR_I4(stream, _instructionCount, "m_InstructionCount");
+        XATTR_I4(stream, _loadStoreCount, "m_LoadStoreCount");
+        XATTR_I4(stream, _argFeedsTest, "m_ArgFeedsTest");
+        XATTR_I4(stream, _argFeedsConstantTest, "m_ArgFeedsConstantTest");
+        XATTR_I4(stream, _argFeedsRangeCheck, "m_ArgFeedsRangeCheck");
+        XATTR_I4(stream, _constantArgFeedsConstantTest, "m_ConstantArgFeedsConstantTest");
+        XATTR_I4(stream, _calleeNativeSizeEstimate, "m_CalleeNativeSizeEstimate");
+        XATTR_I4(stream, _callsiteNativeSizeEstimate, "m_CallsiteNativeSizeEstimate");
+        XATTR_B(stream, IsForceInline, "m_IsForceInline");
+        XATTR_B(stream, IsForceInlineKnown, "m_IsForceInlineKnown");
+        XATTR_B(stream, IsInstanceCtor, "m_IsInstanceCtor");
+        XATTR_B(stream, IsFromPromotableValueClass, "m_IsFromPromotableValueClass");
+        XATTR_B(stream, HasSimd, "m_HasSimd");
+        XATTR_B(stream, LooksLikeWrapperMethod, "m_LooksLikeWrapperMethod");
+        XATTR_B(stream, MethodIsMostlyLoadStore, "m_MethodIsMostlyLoadStore");
+        XATTR_B(stream, CallsiteIsInTryRegion, "m_CallsiteIsInTryRegion");
+        XATTR_B(stream, CallsiteIsInLoop, "m_CallsiteIsInLoop");
+        XATTR_B(stream, IsNoReturn, "m_IsNoReturn");
+        XATTR_B(stream, IsNoReturnKnown, "m_IsNoReturnKnown");
+        XATTR_B(stream, InsideThrowBlock, "m_InsideThrowBlock");
+        XATTR_B(stream, IsIntrinsicType, "m_IsIntrinsicType");
     }
 #endif
 
