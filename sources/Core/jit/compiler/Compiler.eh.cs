@@ -24,6 +24,20 @@ public partial class Compiler
 
     public bool ehTableFinalized;
 
+    /// <summary>Find an EH descriptor by stable ID, or return a null reference when absent.</summary>
+    public ref EHblkDsc ehFindEHblkDscById(ushort id)
+    {
+        foreach (ref var clause in new EHClauses(this))
+        {
+            if (clause.ebdID == id)
+            {
+                return ref clause;
+            }
+        }
+
+        return ref Unsafe.NullRef<EHblkDsc>();
+    }
+
     /// <summary>Check whether an EH clause restores an async frame's contexts.</summary>
     public bool ehIsAsyncContextRestore(ushort ehID)
     {

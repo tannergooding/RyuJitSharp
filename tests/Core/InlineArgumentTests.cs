@@ -38,7 +38,7 @@ internal static unsafe class InlineArgumentTests
             Assert.That(after.RootNode.Oper, Is.EqualTo(nonFaulting ? GT_COMMA : GT_NULLCHECK));
             Assert.That(after.RootNode.AsUnOp().Op1, Is.SameAs(address));
             Assert.That((after.RootNode.Flags & GenTreeFlags.GTF_EXCEPT) != 0, Is.EqualTo(!nonFaulting));
-            Assert.That(after.RootNode.Flags & GenTreeFlags.GTF_ASG, Is.Not.Zero);
+            Assert.That(after.RootNode.Flags & GenTreeFlags.GTF_ASG, Is.EqualTo(GenTreeFlags.GTF_ASG));
         });
     }
 

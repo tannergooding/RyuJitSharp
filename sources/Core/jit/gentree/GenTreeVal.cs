@@ -12,7 +12,7 @@ public sealed class GenTreeVal : GenTree
     public GenTreeVal(genTreeOps oper, var_types type, nint val)
         : base(oper, type)
     {
-        assert(oper is GT_JMP or GT_ASYNC_RESUME_INFO or GT_RECORD_ASYNC_RESUME);
+        assert(oper is GT_JMP or GT_ASYNC_RESUME_INFO or GT_RECORD_ASYNC_RESUME or GT_CONTINUATION_MEMBER_OFFSET);
         _val1 = val;
     }
 

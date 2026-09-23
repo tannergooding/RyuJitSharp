@@ -846,6 +846,7 @@ public partial class Compiler
                 case GT_JMP:
                 case GT_ASYNC_RESUME_INFO:
                 case GT_RECORD_ASYNC_RESUME:
+                case GT_CONTINUATION_MEMBER_OFFSET:
                 {
                     var val = tree.AsVal();
                     copy = new GenTreeVal(oper, val.Type, val.Val1);
@@ -1814,6 +1815,14 @@ public partial class Compiler
             case GT_WASM_JEXCEPT:
 #endif
             {
+                break;
+            }
+
+            case GT_CONTINUATION_MEMBER_OFFSET:
+            {
+                var index = (int)tree.AsVal().Val1;
+                jitprintf($" index={index} ");
+                GetContinuationMember(index).Print();
                 break;
             }
 

@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Continue protected C# WIP integration. LIR/local/alias utilities, inline bookkeeping/diagnostics, support-file moves, tree splitting, statement construction/threading, placeholder/devirtualization walkers, GC-safe-point cycle detection, inline argument/prelude/epilogue integration, recursive-inline guards and implicit-byref demotion cleanup are implemented. Next integrate remaining saved inlining/rationalization bodies and their dependencies, including async frame-return support and expression folding (B054). Do not activate incomplete phases. Both native trees use the target revision; synchronization uses raw upstream deltas, preserving prior deletions and unported new APIs. After WIP integration, prioritize required minopts phases toward code generation. The first PGO dump gap remains pending.",
+    "nextAction": "Continue protected C# WIP integration. Inline argument/prelude/epilogue integration, recursion guards, implicit-byref demotion cleanup, continuation-member registration and async frame-return support now join the restored tree/graph utilities and placeholder walkers. Next integrate saved inline block insertion and invocation bodies, then their remaining dependencies including expression folding (B054), before continuing rationalization. Do not activate incomplete phases. Both native trees use the target revision; synchronization uses raw upstream deltas, preserving prior deletions and unported new APIs. After WIP integration, prioritize required minopts phases toward code generation. The first PGO dump gap remains pending.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -24,8 +24,8 @@
       "testSourcesPresent": true,
       "writerRegressionCases": 16,
       "writerRegressionConfigurations": ["Debug", "Release"],
-      "targetFocusedTestsDebug": 532,
-      "targetFocusedTestsRelease": 440,
+      "targetFocusedTestsDebug": 547,
+      "targetFocusedTestsRelease": 451,
       "targetFocusedTestsSkipped": 0,
       "callIntrinsicSpotChecks": {
         "debugPassed": 81,
@@ -109,6 +109,15 @@
         "newDemotionCases": 3,
         "nativeAotRecaptured": false
       },
+      "asyncFrameReturnSpotChecks": {
+        "debugPassed": 30,
+        "releasePassed": 26,
+        "skipped": 0,
+        "newCases": 11,
+        "newDebugDumpCases": 4,
+        "originalValueNodeDebugFailures": 5,
+        "nativeAotRecaptured": false
+      },
       "savedWipSupportMilestone": {
         "managedSourceCommit": "24b9352dc6f293228d58cb24871280827f936ab7",
         "nativeCompilationHeaders": 7,
@@ -169,10 +178,11 @@
       "Conditional Wasm address-mode recognition passed isolated managed probes; declaration and ARM64 threshold synchronization does not establish non-x64 target support.",
       "The managed calli corpus case reaches imported CALL ind IR; it does not establish unmanaged calli conversion, NativeAOT fat-pointer execution, or codegen parity.",
       "Instrumented value-profile collection and constrained boxing order are source-reconciled but remain unexercised by the current corpus.",
-      "The importer/intrinsic batches pass localized managed checks and a subsequent NativeAOT/native-host corpus capture. That corpus does not exercise Half expansion, helper-to-user conversion, generic Memmove, multidimensional stores, span spilling, runtime async expansions or non-x64 paths; no execution/codegen evidence is claimed for them. The new custom-awaiter-in-continuation optimization, its main-call hook, and continuation-member representation remain unported.",
+      "The importer/intrinsic batches pass localized managed checks and a subsequent NativeAOT/native-host corpus capture. That corpus does not exercise Half expansion, helper-to-user conversion, generic Memmove, multidimensional stores, span spilling, runtime async expansions or non-x64 paths; no execution/codegen evidence is claimed for them. The new custom-awaiter-in-continuation optimization and its main-call hook remain unported; continuation-member descriptors and registration now exist, but layout and lowering remain unported.",
       "Inline placeholder and candidate-diagnostic support has focused coverage for effects, node identity, nested substitution, block flags, byref retyping, constant branches and prior failures. Expression folding remains stubbed; successful EE-backed late devirtualization, multi-register struct repair and full inlining are not established.",
       "Inline argument/prelude/epilogue integration has focused coverage for live-edge substitution, pseudo-argument classification, struct-load faults, initialization, GC-local cleanup and null-check ordering. EE-backed cctor insertion and full inline-phase execution remain unexercised.",
       "Recursive-inline guards preserve exact-context rejection, depth-observation ordering, the implementation depth bound, and the 64-type generic-loading threshold in controlled EE tests. Implicit-byref demotion cleanup covers retained/undone/no promotion; global morph and end-to-end generic inlining remain unverified.",
+      "Async inline-frame return helpers preserve cold resumption branches, caller context loads, frame-depth slot sharing, resumed-indicator propagation through retained fault handlers, and symbolic-offset cloning/dumps in focused IR/EE cases. Their inline block-splicing caller, successful helper inlining, continuation layout and async lowering remain unverified.",
       "The seven-method corpus contains no EH or pinned-local cases and establishes neither phase nor codegen parity."
     ]
   },

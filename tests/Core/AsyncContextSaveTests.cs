@@ -2,8 +2,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.BBKinds;
@@ -13,10 +16,296 @@ using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
+[NonParallelizable]
 internal static unsafe class AsyncContextSaveTests
 {
     private static int s_metadataQueries;
     private static int s_methodQueries;
+
+    [Test]
+    public static void ContinuationMembersShareRootStorageAndCompatibleAwaiterLayouts()
+    {
+        WithCompiler(compiler => {
+            var inlinee = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+            inlinee.impInlineInfo = new InlineInfo { InlineRoot = compiler, InlinerCompiler = compiler };
+            var exec = ContinuationMember.InlineFrameExecutionContext(1);
+            Assert.That(inlinee.TryGetContinuationMemberIndex(exec, out _), Is.False);
+            Assert.That(compiler.GetContinuationMemberCount(), Is.Zero);
+            Assert.That(inlinee.GetContinuationMemberIndex(exec), Is.Zero);
+            Assert.That(compiler.GetContinuationMemberIndex(exec), Is.Zero);
+            Assert.That(compiler.GetContinuationMemberIndex(ContinuationMember.InlineFrameContinuationContext(1)), Is.EqualTo(1));
+            Assert.That(compiler.GetContinuationMemberIndex(ContinuationMember.InlineFrameFlags(1)), Is.EqualTo(2));
+            Assert.That(compiler.GetContinuationMemberIndex(ContinuationMember.InlineFrameExecutionContext(2)), Is.EqualTo(3));
+            var layout = new ClassLayout((CORINFO_CLASS_STRUCT_*)0x100, true, 8, TYP_STRUCT, "Awaiter", "Awaiter");
+            Assert.That(compiler.GetContinuationMemberIndex(ContinuationMember.CustomAwaiterOfLayout(layout)), Is.EqualTo(4));
+            var compatible = new ClassLayout((CORINFO_CLASS_STRUCT_*)0x200, true, 8, TYP_STRUCT, "OtherAwaiter", "OtherAwaiter");
+            Assert.That(inlinee.GetContinuationMemberIndex(ContinuationMember.CustomAwaiterOfLayout(compatible)), Is.EqualTo(4));
+            Assert.That(compiler.GetContinuationMemberIndex(ContinuationMember.CustomAwaiterOfLayout(new ClassLayout(16))), Is.EqualTo(5));
+            Assert.That(inlinee.GetContinuationMemberCount(), Is.EqualTo(6));
+            Assert.That(inlinee.TryGetContinuationMemberIndex(ContinuationMember.InlineFrameFlags(1), out var index), Is.True);
+            Assert.That(index, Is.EqualTo(2));
+            Assert.That(inlinee.TryGetContinuationMemberIndex(ContinuationMember.InlineFrameFlags(2), out _), Is.False);
+            Assert.That(inlinee.GetContinuationMemberCount(), Is.EqualTo(6));
+            Assert.That(inlinee.GetContinuationMember(0).GetStorageType(out var execLayout), Is.EqualTo(TYP_REF));
+            Assert.That(execLayout, Is.Null);
+            Assert.That(inlinee.GetContinuationMember(2).GetStorageType(out var flagsLayout), Is.EqualTo(TYP_INT));
+            Assert.That(flagsLayout, Is.Null);
+            Assert.That(inlinee.GetContinuationMember(3).InlineDepth, Is.EqualTo(2));
+            Assert.That(inlinee.GetContinuationMember(4).GetStorageType(out var awaiterLayout), Is.EqualTo(TYP_STRUCT));
+            Assert.That(awaiterLayout, Is.SameAs(layout));
+            Assert.That(inlinee.GetContinuationMember(4).CustomAwaiterLayout, Is.SameAs(layout));
+        });
+    }
+
+    [TestCase(TYP_REF)]
+    [TestCase(TYP_INT)]
+    public static void ContinuationMemberLoadsKeepSymbolicOffsetAndObjectHeader(var_types type)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaAsyncContinuationArg = 0;
+            compiler.lvaTable[0].Type = TYP_REF;
+            var member = type == TYP_REF ? ContinuationMember.InlineFrameExecutionContext(1) : ContinuationMember.InlineFrameFlags(1);
+            var indir = compiler.gtNewContinuationMemberIndir(member, type);
+            Assert.That(indir.Type, Is.EqualTo(type));
+            Assert.That(indir.Flags & GenTreeFlags.GTF_IND_NONFAULTING, Is.EqualTo(GenTreeFlags.GTF_IND_NONFAULTING));
+            Assert.That(indir.Flags & GenTreeFlags.GTF_EXCEPT, Is.EqualTo(GenTreeFlags.GTF_EMPTY));
+            var address = indir.AsIndir().Op1.AsOp();
+            Assert.That(address.Type, Is.EqualTo(TYP_BYREF));
+            Assert.That(address.Op1.AsLclVarCommon().LclNum, Is.Zero);
+            var offset = address.Op2.AsOp();
+            Assert.That(offset.Op1.Oper, Is.EqualTo(GT_CONTINUATION_MEMBER_OFFSET));
+            Assert.That(offset.Op1.AsVal().Val1, Is.EqualTo((nint)0));
+            var copy = compiler.gtCloneExpr(offset.Op1);
+            Assert.That(copy, Is.Not.SameAs(offset.Op1));
+            Assert.That(copy.Oper, Is.EqualTo(GT_CONTINUATION_MEMBER_OFFSET));
+            Assert.That(copy.AsVal().Val1, Is.EqualTo((nint)0));
+            var edgeCount = 0;
+            foreach (ref var edge in copy.UseEdges)
+            {
+                edgeCount++;
+            }
+            Assert.That(edgeCount, Is.Zero);
+            Assert.That(offset.Op2.IsIntegralConst(SIZEOF__CORINFO_Object), Is.True);
+            Assert.That(compiler.GetContinuationMember(0).Type, Is.EqualTo(member.Type));
+        });
+    }
+
+#if DEBUG
+    [TestCase(ContinuationMemberType.CustomAwaiterOfLayout, "CustomAwaiter<Awaiter>")]
+    [TestCase(ContinuationMemberType.InlineFrameExecutionContext, "ExecutionContext for inline depth 2")]
+    [TestCase(ContinuationMemberType.InlineFrameContinuationContext, "Continuation context for inline depth 2")]
+    [TestCase(ContinuationMemberType.InlineFrameFlags, "Continuation flags for inline depth 2")]
+    public static void ContinuationMemberLeafDumpMatchesNative(ContinuationMemberType type, string expected)
+    {
+        WithCompiler(compiler => {
+            var member = type switch {
+                ContinuationMemberType.CustomAwaiterOfLayout => ContinuationMember.CustomAwaiterOfLayout(
+                    new ClassLayout((CORINFO_CLASS_STRUCT_*)0x100, true, 8, TYP_STRUCT, "Awaiter", "Awaiter")),
+                ContinuationMemberType.InlineFrameExecutionContext => ContinuationMember.InlineFrameExecutionContext(2),
+                ContinuationMemberType.InlineFrameContinuationContext => ContinuationMember.InlineFrameContinuationContext(2),
+                _ => ContinuationMember.InlineFrameFlags(2),
+            };
+            var index = compiler.GetContinuationMemberIndex(member);
+            var node = new GenTreeVal(GT_CONTINUATION_MEMBER_OFFSET, TYP_I_IMPL, index);
+            using var stream = new MemoryStream();
+            using var writer = new JitTextWriter(stream, leaveOpen: true);
+            var previousWriter = Globals.s_jitstdout;
+            try
+            {
+                Globals.s_jitstdout = writer;
+                IndentStack indent = default;
+                compiler.gtDispLeaf(node, ref indent);
+                writer.Flush();
+            }
+            finally
+            {
+                Globals.s_jitstdout = previousWriter;
+            }
+            Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo($" index=0 {expected}"));
+        });
+    }
+#endif
+
+    [Test]
+    public static void FrameTransitionAwaitHasOnlyItsContinuationPseudoArgument()
+    {
+        WithCompiler(compiler => {
+            var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, 5)));
+            compiler.fgSetupAsyncFrameTransitionCall(call, default);
+            Assert.That(call.IsAsync, Is.True);
+            Assert.That(call.GetAsyncInfo().ContinuationContextHandling, Is.EqualTo(ContinuationContextHandling.None));
+            var kinds = new List<WellKnownArg>();
+            foreach (var arg in call.Args.Args)
+            {
+                kinds.Add(arg.WellKnownArg);
+            }
+            WellKnownArg[] expected = Target.TgtArgOrder == Target.ARG_ORDER_R2L
+                ? [WellKnownArg.AsyncContinuation, WellKnownArg.None] : [WellKnownArg.None, WellKnownArg.AsyncContinuation];
+            Assert.That(kinds, Is.EqualTo(expected));
+            var continuation = call.Args.FindWellKnownArg(WellKnownArg.AsyncContinuation)
+                ?? throw new InvalidOperationException("Missing continuation.");
+            Assert.That(continuation.Node.IsIntegralConst(0), Is.True);
+        });
+    }
+
+    [TestCase(false, 1)]
+    [TestCase(true, 1)]
+    [TestCase(true, 2)]
+    public static void InlinedFrameRestoresCallerContextsOnlyOnResumption(bool faultHandler, int depth)
+    {
+        WithCompiler(compiler => {
+            var previousConfig = Globals.JitConfig;
+            object config = previousConfig;
+            var configField = typeof(JitConfigValues).GetField("_jitAsyncInlining", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("Missing async inlining setting.");
+            configField.SetValue(config, 1);
+            Globals.JitConfig = (JitConfigValues)config;
+            try
+            {
+                compiler.lvaTable = [
+                    new LclVarDsc { Type = TYP_I_IMPL },
+                    new LclVarDsc { Type = TYP_REF },
+                    new LclVarDsc { Type = TYP_I_IMPL },
+                ];
+                compiler.lvaCount = 3;
+                compiler.lvaAsyncContinuationArg = 1;
+                var inlinee = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+                inlinee.lvaResumedIndicator = 2;
+                inlinee.compAsyncBodyMaySuspend = true;
+                inlinee.asyncContextRestoreEHID = faultHandler ? (ushort)7 : ushort.MaxValue;
+                compiler.InlineeCompiler = inlinee;
+                var join = NewBlock(compiler, BBJ_RETURN, 0);
+                join.setBBProfileWeight(10);
+                compiler.fgFirstBB = join;
+                compiler.fgLastBB = join;
+                compiler.fgReturnCount = 1;
+                var originalReturn = AddReturn(compiler, join, TYP_VOID, 0);
+                BasicBlock? handler = null;
+                if (faultHandler)
+                {
+                    handler = NewBlock(compiler, BBJ_EHFAULTRET, 10);
+                    join.Next = handler;
+                    compiler.fgLastBB = handler;
+                    join.TryIndex = 0;
+                    handler.HndIndex = 0;
+                    compiler.compHndBBtab = [new EHblkDsc {
+                        ebdID = 7, ebdTryBeg = join, ebdTryLast = join, ebdHndBeg = handler, ebdHndLast = handler,
+                        ebdHandlerType = EHHandlerType.EH_HANDLER_FAULT,
+                        ebdEnclosingTryIndex = EHblkDsc.NO_ENCLOSING_INDEX, ebdEnclosingHndIndex = EHblkDsc.NO_ENCLOSING_INDEX,
+                    }];
+                    compiler.compHndBBtabCount = 1;
+                }
+                var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+                _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclVarAddrNode(TYP_BYREF, 0)).WithWellKnownArg(WellKnownArg.AsyncResumedDef));
+                for (var i = 0; i < depth; i++)
+                {
+                    _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclvNode(TYP_I_IMPL, 0)).WithWellKnownArg(WellKnownArg.AsyncResumedUse));
+                }
+                var info = new InlineInfo { iciCall = call, iciStmt = compiler.gtNewStmt(call) };
+
+                compiler.fgInlineAppendAsyncFrameStatements(info, join);
+
+                Assert.That(join.Kind, Is.EqualTo(BBJ_COND));
+                var restore = join.FalseTarget;
+                var rest = join.TrueTarget;
+                Assert.That(join.TrueEdge.Likelihood, Is.EqualTo(1.0));
+                Assert.That(join.FalseEdge.Likelihood, Is.EqualTo(0.0));
+                Assert.That(restore.bbWeight, Is.Zero);
+                Assert.That(rest.bbWeight, Is.EqualTo(10));
+                Assert.That(restore.Target, Is.SameAs(rest));
+                Assert.That(rest.FirstStmt, Is.SameAs(originalReturn));
+                Assert.That(rest.bbRefs, Is.EqualTo(2));
+                var restoreStatements = Statements(restore);
+                Assert.That(restoreStatements.Count, Is.EqualTo(2));
+                var restoreCall = restoreStatements[0].RootNode.AsCall();
+                Assert.That((nuint)restoreCall._callMethHnd, Is.EqualTo((nuint)4));
+                Assert.That(restoreCall.IsAsync, Is.True);
+                Assert.That(restoreCall.GetAsyncInfo().ContinuationContextHandling, Is.EqualTo(ContinuationContextHandling.None));
+                var memberIndex = 0;
+                foreach (var arg in restoreCall.Args.Args)
+                {
+                    if (arg.IsUserArg)
+                    {
+                        var offset = arg.Node.AsIndir().Op1.AsOp().Op2.AsOp().Op1.AsVal();
+                        Assert.That(offset.Val1, Is.EqualTo((nint)memberIndex++));
+                    }
+                    else
+                    {
+                        Assert.That(arg.WellKnownArg, Is.EqualTo(WellKnownArg.AsyncContinuation));
+                    }
+                }
+                Assert.That(memberIndex, Is.EqualTo(3));
+                var callerResumed = restoreStatements[1].RootNode.AsLclVar();
+                Assert.That(callerResumed.LclNum, Is.Zero);
+                Assert.That(callerResumed.Data.IsIntegralConst(1), Is.True);
+                Assert.That(compiler.GetContinuationMemberCount(), Is.EqualTo(3));
+                for (var i = 0; i < 3; i++)
+                {
+                    Assert.That(compiler.GetContinuationMember(i).InlineDepth, Is.EqualTo(depth));
+                }
+                if (handler is not null)
+                {
+                    var propagate = Statements(handler)[0].RootNode.AsLclVar();
+                    Assert.That(propagate.LclNum, Is.Zero);
+                    var merged = propagate.Data.AsOp();
+                    Assert.That(merged.Oper, Is.EqualTo(GT_OR));
+                    Assert.That(merged.Op1.AsLclVarCommon().LclNum, Is.Zero);
+                    Assert.That(merged.Op2.AsLclVarCommon().LclNum, Is.EqualTo(2));
+                    Assert.That(restore.TryIndex, Is.Zero);
+                    Assert.That(rest.TryIndex, Is.Zero);
+                }
+            }
+            finally
+            {
+                Globals.JitConfig = previousConfig;
+            }
+        });
+    }
+
+    [TestCase("disabled")]
+    [TestCase("inherited")]
+    [TestCase("synchronous")]
+    [TestCase("no-caller")]
+    public static void FrameTransitionExclusionsLeaveTheGraphUntouched(string reason)
+    {
+        WithCompiler(compiler => {
+            var previousConfig = Globals.JitConfig;
+            object config = previousConfig;
+            var configField = typeof(JitConfigValues).GetField("_jitAsyncInlining", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("Missing async inlining setting.");
+            configField.SetValue(config, reason == "disabled" ? 0 : 1);
+            Globals.JitConfig = (JitConfigValues)config;
+            try
+            {
+                var inlinee = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+                inlinee.lvaResumedIndicator = reason == "inherited" ? BAD_VAR_NUM : 0;
+                inlinee.compAsyncBodyMaySuspend = reason != "synchronous";
+                compiler.InlineeCompiler = inlinee;
+                var join = NewBlock(compiler, BBJ_RETURN, 0);
+                compiler.fgFirstBB = join;
+                compiler.fgLastBB = join;
+                var originalReturn = AddReturn(compiler, join, TYP_VOID, 0);
+                var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+                if (reason != "no-caller")
+                {
+                    _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclVarAddrNode(TYP_BYREF, 0)).WithWellKnownArg(WellKnownArg.AsyncResumedDef));
+                    _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclvNode(TYP_I_IMPL, 0)).WithWellKnownArg(WellKnownArg.AsyncResumedUse));
+                }
+                var info = new InlineInfo { iciCall = call, iciStmt = compiler.gtNewStmt(call) };
+                compiler.fgInlineAppendAsyncFrameStatements(info, join);
+                Assert.That(join.Kind, Is.EqualTo(BBJ_RETURN));
+                Assert.That(join.FirstStmt, Is.SameAs(originalReturn));
+                Assert.That(join.Next, Is.Null);
+                Assert.That(compiler.GetContinuationMemberCount(), Is.Zero);
+                Assert.That(s_metadataQueries, Is.Zero);
+            }
+            finally
+            {
+                Globals.JitConfig = previousConfig;
+            }
+        });
+    }
 
     [TestCase(TYP_VOID, false, false, false)]
     [TestCase(TYP_INT, false, false, false)]
@@ -316,6 +605,7 @@ internal static unsafe class AsyncContextSaveTests
         *result = default;
         result->captureContextsMethHnd = (CORINFO_METHOD_STRUCT_*)1;
         result->restoreContextsMethHnd = (CORINFO_METHOD_STRUCT_*)2;
+        result->restoreInlinedFrameContextsMethHnd = (CORINFO_METHOD_STRUCT_*)4;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]

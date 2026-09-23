@@ -9,6 +9,60 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    private List<ContinuationMember>? _asyncContinuationMembers;
+
+    public int GetContinuationMemberIndex(in ContinuationMember member)
+    {
+        var root = impInlineRoot;
+        if (root._asyncContinuationMembers is null)
+        {
+            root._asyncContinuationMembers = [];
+        }
+        else
+        {
+            for (var i = 0; i < root._asyncContinuationMembers.Count; i++)
+            {
+                if (ContinuationMember.AreCompatible(member, root._asyncContinuationMembers[i]))
+                {
+                    return i;
+                }
+            }
+        }
+
+        root._asyncContinuationMembers.Add(member);
+        return root._asyncContinuationMembers.Count - 1;
+    }
+
+    /// <summary>Look up an existing member without growing a table whose continuation layout may already be fixed.</summary>
+    public bool TryGetContinuationMemberIndex(in ContinuationMember member, out int index)
+    {
+        var members = impInlineRoot._asyncContinuationMembers;
+        if (members is not null)
+        {
+            for (var i = 0; i < members.Count; i++)
+            {
+                if (ContinuationMember.AreCompatible(member, members[i]))
+                {
+                    index = i;
+                    return true;
+                }
+            }
+        }
+
+        index = 0;
+        return false;
+    }
+
+    public int GetContinuationMemberCount() => impInlineRoot._asyncContinuationMembers?.Count ?? 0;
+
+    public ContinuationMember GetContinuationMember(int index)
+    {
+        var members = impInlineRoot._asyncContinuationMembers;
+        assert(members is not null);
+        assert((uint)index < (uint)members.Count);
+        return members[index];
+    }
+
     public unsafe PhaseStatus SaveAsyncContexts()
     {
         if ((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0)

@@ -93,6 +93,13 @@ already-eliminated use. This costs a scan of the inlinee per eligible argument,
 unlike native pointer bashing; no throughput equivalence is claimed. It is not
 a general-purpose replacement for native object retagging.
 
+Continuation members are immutable managed descriptors in a root-owned
+`List<ContinuationMember>`. Indices use managed collection-sized integers; lookup
+preserves native insertion order and layout/depth compatibility. Reading a member
+returns the descriptor by value rather than exposing a reference invalidated by
+list growth. Symbolic offsets retain the member index until async layout, including
+the native object-header adjustment and diagnostic text.
+
 ### D003: Deferred non-Windows-x64-only paths
 
 **Status:** accepted scoped deferral; not a successful execution/parity result.

@@ -18,6 +18,154 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    /// <summary>Configure an await that restores an inlined frame's caller context without capturing it again.</summary>
+    public void fgSetupAsyncFrameTransitionCall(GenTreeCall call, in DebugInfo di)
+    {
+        var asyncInfo = new AsyncCallInfo {
+            ContinuationContextHandling = ContinuationContextHandling.None,
+            CallAsyncDebugInfo = di,
+        };
+        call.SetIsAsync(asyncInfo);
+
+        var continuationArg = NewCallArg.CreateForPrimitive(gtNewNull(), TYP_REF).WithWellKnownArg(WellKnownArg.AsyncContinuation);
+
+        if (Target.TgtArgOrder == Target.ARG_ORDER_R2L)
+        {
+            _ = call.Args.PushFront(continuationArg);
+        }
+        else
+        {
+            _ = call.Args.PushBack(continuationArg);
+        }
+    }
+
+    /// <summary>Load a symbolically indexed member from the resumed continuation.</summary>
+    public GenTree gtNewContinuationMemberIndir(in ContinuationMember member, var_types type)
+    {
+        var memberIndex = GetContinuationMemberIndex(member);
+        var memberOffset = new GenTreeVal(GT_CONTINUATION_MEMBER_OFFSET, TYP_I_IMPL, memberIndex);
+        var headerSize = gtNewIconNode(TYP_I_IMPL, SIZEOF__CORINFO_Object);
+        var offset = gtNewBinaryNode(GT_ADD, TYP_I_IMPL, memberOffset, headerSize);
+        var continuation = gtNewLclvNode(TYP_REF, lvaAsyncContinuationArg);
+        var addr = gtNewBinaryNode(GT_ADD, TYP_BYREF, continuation, offset);
+
+        return gtNewIndir(type, addr, GTF_IND_NONFAULTING);
+    }
+
+    /// <summary>Restore the logical caller's contexts when returning from a resumed inlined async frame.</summary>
+    public unsafe void fgInlineAppendAsyncFrameStatements(InlineInfo inlineInfo, BasicBlock joinBlock)
+    {
+        if (!generalAsyncInliningEnabled())
+        {
+            return;
+        }
+
+        assert(InlineeCompiler is not null);
+
+        if (InlineeCompiler.lvaResumedIndicator == BAD_VAR_NUM)
+        {
+            return;
+        }
+
+        if (!InlineeCompiler.compAsyncBodyMaySuspend)
+        {
+            JITDUMP("Inlinee cannot suspend; no async frame transition IR needed\n");
+            return;
+        }
+
+        var call = inlineInfo.iciCall;
+        assert(call is not null);
+        var resumedDefArg = call.Args.FindWellKnownArg(WellKnownArg.AsyncResumedDef);
+
+        if (resumedDefArg is null)
+        {
+            JITDUMP("Inlining call does no context handling; no async frame transition IR needed\n");
+            return;
+        }
+
+        var resumedCallerAddr = resumedDefArg.Node;
+        var numCallerSets = 0;
+        foreach (var arg in call.Args.Args)
+        {
+            if (arg.WellKnownArg is WellKnownArg.AsyncResumedUse)
+            {
+                numCallerSets++;
+            }
+        }
+
+        assert(numCallerSets >= 1);
+        var inlineDepth = numCallerSets;
+        var resumedInlinee = InlineeCompiler.lvaResumedIndicator;
+#if DEBUG
+        JITDUMP($"Adding async frame transition IR for async frame depth {inlineDepth}: resumed V{resumedInlinee:D2} -> [{resumedCallerAddr.TreeId:D6}]\n");
+#endif
+        var stmt = inlineInfo.iciStmt;
+        assert(stmt is not null);
+        ref readonly var di = ref stmt.DebugInfo;
+
+        // Exceptional returns bypass the normal join. The inlinee's retained fault
+        // handler must propagate resumption so enclosing fault handlers can observe it.
+        if (InlineeCompiler.asyncContextRestoreEHID != ushort.MaxValue)
+        {
+            ref var inlineeContextRestore = ref ehFindEHblkDscById(InlineeCompiler.asyncContextRestoreEHID);
+            assert(!Unsafe.IsNullRef(in inlineeContextRestore) && inlineeContextRestore.HasFaultHandler);
+
+            var callerResumed = gtNewLoadValueNode(TYP_I_IMPL, gtCloneExpr(resumedCallerAddr));
+            var inlineeDidResume = gtNewLclvNode(TYP_I_IMPL, resumedInlinee);
+            var merged = gtNewBinaryNode(GT_OR, TYP_I_IMPL, callerResumed, inlineeDidResume);
+            var store = gtNewStoreValueNode(TYP_I_IMPL, gtCloneExpr(resumedCallerAddr), merged);
+            fgInsertStmtAtBeg(inlineeContextRestore.ebdHndBeg, gtNewStmt(store));
+#if DEBUG
+            JITDUMP($"Marking [{resumedCallerAddr.TreeId:D6}] as resumed from the inlinee's context restore handler {FMT_BB(inlineeContextRestore.ebdHndBeg.bbNum)}\n");
+#endif
+        }
+
+        var restBlock = fgSplitBlockAtBeginning(joinBlock);
+        var restoreBlock = fgNewBBafter(BBJ_ALWAYS, joinBlock, extendRegion: true);
+        restoreBlock.inheritWeightPercentage(joinBlock, 0);
+
+        var resumed = gtNewLclvNode(TYP_INT, resumedInlinee);
+        var isZero = gtNewBinaryNode(GT_EQ, TYP_INT, resumed, gtNewIconNode(TYP_INT, 0));
+        var jtrue = gtNewUnaryNode(GT_JTRUE, TYP_VOID, isZero);
+        fgInsertStmtAtEnd(joinBlock, gtNewStmt(jtrue));
+
+        fgRemoveRefPred(joinBlock.TargetEdge);
+        var toRest = fgAddRefPred(restBlock, joinBlock);
+        var toRestore = fgAddRefPred(restoreBlock, joinBlock);
+        joinBlock.SetCond(toRest, toRestore);
+        toRest.Likelihood = 1.0;
+        toRestore.Likelihood = 0.0;
+
+        var asyncInfo = eeGetAsyncInfo();
+        var execCtx = gtNewContinuationMemberIndir(ContinuationMember.InlineFrameExecutionContext(inlineDepth), TYP_REF);
+        var contContext = gtNewContinuationMemberIndir(ContinuationMember.InlineFrameContinuationContext(inlineDepth), TYP_REF);
+        var flags = gtNewContinuationMemberIndir(ContinuationMember.InlineFrameFlags(inlineDepth), TYP_INT);
+
+        var restoreCall = gtNewUserCallNode(TYP_VOID, asyncInfo.restoreInlinedFrameContextsMethHnd);
+        _ = restoreCall.Args.PushFront(NewCallArg.CreateForPrimitive(flags));
+        _ = restoreCall.Args.PushFront(NewCallArg.CreateForPrimitive(contContext));
+        _ = restoreCall.Args.PushFront(NewCallArg.CreateForPrimitive(execCtx));
+        fgSetupAsyncFrameTransitionCall(restoreCall, di);
+
+        CORINFO_CALL_INFO callInfo = default;
+        callInfo.hMethod = restoreCall._callMethHnd;
+        callInfo.methodFlags = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
+        assert(compInlineContext is not null);
+        impMarkInlineCandidate(restoreCall, MAKE_METHODCONTEXT(callInfo.hMethod), callInfo, compInlineContext);
+        fgInsertStmtAtEnd(restoreBlock, gtNewStmt(restoreCall));
+
+        var markResumed = gtNewStoreValueNode(TYP_I_IMPL, gtCloneExpr(resumedCallerAddr), gtNewIconNode(TYP_I_IMPL, 1));
+        fgInsertStmtAtEnd(restoreBlock, gtNewStmt(markResumed));
+        restoreBlock.SetKindAndTargetEdge(BBJ_ALWAYS, fgAddRefPred(restBlock, restoreBlock));
+
+#if DEBUG
+        if (verbose)
+        {
+            fgDispBasicBlocks(joinBlock, restBlock, true);
+        }
+#endif
+    }
+
     /// <summary>Compute the candidate's depth and reject disallowed recursion.</summary>
     /// <remarks>The root method is at depth zero. The implementation limit also bounds traversal of the context chain.</remarks>
     public int fgCheckInlineDepthAndRecursion(InlineInfo inlineInfo)
