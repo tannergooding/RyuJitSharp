@@ -9707,6 +9707,58 @@ public partial class Compiler
         return PhaseStatus.MODIFIED_EVERYTHING;
     }
 
+#if DEBUG
+    public void fgAsyncStressPrepare(int depth)
+    {
+        assert(compAsyncInliningStress());
+
+        List<InlineCandidateInfo> candidates = [];
+        foreach (var block in Blocks)
+        {
+            foreach (var stmt in block.Statements)
+            {
+                var expr = stmt.RootNode;
+
+                // The importer places each inline candidate at its own statement root.
+                if (expr.Oper is GT_CALL)
+                {
+                    var call = expr.AsCall();
+                    if (call.IsAsync && call.IsInlineCandidate && !call.IsGuardedDevirtualizationCandidate)
+                    {
+                        var candidateInfo = call.SingleInlineCandidateInfo;
+                        assert(candidateInfo is not null);
+                        candidates.Add(candidateInfo);
+                    }
+                }
+            }
+        }
+
+        if (candidates.Count == 0)
+        {
+            return;
+        }
+
+        var strategy = impInlineRoot._inlineStrategy;
+        assert(strategy is not null);
+        var random = strategy.GetRandom(compAsyncInliningStressSeed());
+
+        // Fisher-Yates varies the favored callsites by seed. Candidates created after
+        // this per-body pass retain index -1 and use the normal profitability policy.
+        for (var i = candidates.Count - 1; i > 0; i--)
+        {
+            var j = random.Next(i + 1);
+            (candidates[i], candidates[j]) = (candidates[j], candidates[i]);
+        }
+
+        for (var i = 0; i < candidates.Count; i++)
+        {
+            candidates[i].asyncStressIndex = i;
+        }
+
+        JITDUMP($"Async inlining stress: {candidates.Count} async candidate(s) in this body, to be inlined at depth {unchecked((uint)depth)}\n");
+    }
+#endif
+
     // TODO: Port phase - fgInline
     public PhaseStatus fgInline() => PhaseStatus.MODIFIED_NOTHING;
 

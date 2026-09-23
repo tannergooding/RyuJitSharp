@@ -50,4 +50,9 @@ public sealed class InlineCandidateInfo : HandleHistogramProfileCandidateInfo
     public bool exactContextNeedsRuntimeLookup;
 
     public InlineContext? inlinersContext;
+
+#if DEBUG
+    // -1 keeps late-created candidates outside the body's shuffled async group.
+    public int asyncStressIndex = -1;
+#endif
 }

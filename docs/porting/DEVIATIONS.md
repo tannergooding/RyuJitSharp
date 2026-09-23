@@ -35,6 +35,12 @@ C# helpers may replace native structure where appropriate. Examples include
 collection ordering, integer semantics, ownership, and native interop contracts.
 Larger algorithmic or architectural changes require separate approval.
 
+`GenTreeCall` stores its tailcall, async-call, and unmanaged-call-convention
+variants separately. The native union cannot be reproduced with explicit
+overlapping fields because async debug information contains managed references.
+Call flags still select the active variant, and cloning copies the same grouped
+storage. These are managed IR objects, not JIT/EE interop structures; see B019.
+
 ### D003: Deferred non-Windows-x64-only paths
 
 **Status:** accepted scoped deferral; not a successful execution/parity result.
@@ -50,6 +56,11 @@ Current target-sync additions under `TARGET_WASM` are
 `Compiler.fg.cs`. They throw `NotImplementedException` rather than returning a
 successful phase status. Try-entry repair and GC-reference spilling remain
 unported; no Wasm execution support is claimed.
+
+The parameterless `CLRRandom.Init` in `sources/Core/inc/random/CLRRandom.cs`
+currently supports only Windows, using the native performance-counter, OS-thread,
+and process inputs. It explicitly throws on other hosts. Explicitly seeded
+initialization is portable; no unseeded cross-host sequence equivalence is claimed.
 
 ## Implementation notes and parity findings
 

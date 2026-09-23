@@ -270,6 +270,22 @@ public sealed class GenTreeVecCon : GenTree
         return true;
     }
 
+    public bool ContainsNaN(var_types simdBaseType)
+    {
+        assert(varTypeIsFloating(simdBaseType));
+        var elementCount = ElementCount(Type.Size, simdBaseType);
+
+        for (var i = 0; i < elementCount; i++)
+        {
+            if (double.IsNaN(GetElementFloating(simdBaseType, i)))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public bool IsNegativeZero(var_types simdBaseType)
     {
         var elementCount = ElementCount(Type.Size, simdBaseType);
@@ -284,6 +300,40 @@ public sealed class GenTreeVecCon : GenTree
             }
         }
         return true;
+    }
+
+    public bool ContainsNegativeZero(var_types simdBaseType)
+    {
+        assert(varTypeIsFloating(simdBaseType));
+        var elementCount = ElementCount(Type.Size, simdBaseType);
+
+        for (var i = 0; i < elementCount; i++)
+        {
+            var element = GetElementFloating(simdBaseType, i);
+            if ((element == 0.0) && double.IsNegative(element))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public bool ContainsPositiveZero(var_types simdBaseType)
+    {
+        assert(varTypeIsFloating(simdBaseType));
+        var elementCount = ElementCount(Type.Size, simdBaseType);
+
+        for (var i = 0; i < elementCount; i++)
+        {
+            var element = GetElementFloating(simdBaseType, i);
+            if ((element == 0.0) && !double.IsNegative(element))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public void SetElementFloating(var_types simdBaseType, int index, double value)

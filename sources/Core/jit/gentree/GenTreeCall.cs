@@ -6,7 +6,6 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
@@ -26,6 +25,12 @@ public sealed class GenTreeCall : GenTree
 
     /// <summary>Used for async calls</summary>
     internal ref AsyncCallInfo _asyncInfo => ref _anonymous1.AsyncInfo;
+
+    public ref AsyncCallInfo GetAsyncInfo()
+    {
+        assert(IsAsync);
+        return ref _asyncInfo;
+    }
 
     /// <summary>Only used for unmanaged calls, which cannot be tail-called</summary>
     internal ref CorInfoCallConvExtension _unmgdCallConv => ref _anonymous1.UnmgdCallConv;
@@ -289,6 +294,17 @@ public sealed class GenTreeCall : GenTree
     /// <summary>Get the helper identifier for this call or <see cref="CORINFO_HELP_UNDEF" /> if this is not a helper call.</summary>
     public unsafe CorInfoHelpFunc HelperNum
         => IsHelperCall() ? Compiler.eeGetHelperNum(_callMethHnd) : CORINFO_HELP_UNDEF;
+
+    public ExceptionSetFlags CallExceptions()
+    {
+        var helper = HelperNum;
+        if (helper == CORINFO_HELP_UNDEF)
+        {
+            return ExceptionSetFlags.UnknownException;
+        }
+
+        return helper.ThrownExceptions;
+    }
 
     public byte InlineCandidatesCount => _inlineInfoCount;
 
@@ -787,16 +803,14 @@ public sealed class GenTreeCall : GenTree
         }
     }
 
-    [StructLayout(LayoutKind.Explicit)]
+    // Async debug info contains managed references, so the native union's variants
+    // cannot overlap. Call flags select the active variant; cloning copies all fields.
     internal struct _Anonymous1_e__Union
     {
-        [FieldOffset(0)]
         public TailCallSiteInfo TailCallInfo;
 
-        [FieldOffset(0)]
         public AsyncCallInfo AsyncInfo;
 
-        [FieldOffset(0)]
         public CorInfoCallConvExtension UnmgdCallConv;
     }
 }

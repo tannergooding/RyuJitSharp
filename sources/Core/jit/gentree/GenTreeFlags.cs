@@ -282,9 +282,6 @@ public enum GenTreeFlags
     /// <summary>GT_DIV, GT_MOD -- Div or mod definitely does not overflow.</summary>
     GTF_DIV_MOD_NO_OVERFLOW = 1 << 30,
 
-    /// <summary>GT_BOUNDS_CHECK -- have proven this check is always in-bounds</summary>
-    GTF_CHK_INDEX_INBND = 1 << 31,
-
     /// <summary>GT_ARR_LENGTH  -- An array length operation that cannot fault. Same as GT_IND_NONFAULTING.</summary>
     GTF_ARRLEN_NONFAULTING = 1 << 29,
 

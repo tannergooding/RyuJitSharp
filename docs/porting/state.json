@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "syncing-upstream",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "ExtendedDefaultPolicy and compiler.hpp stress helpers are now implemented. Close AsyncStressPolicy's random/grouping and inline-context dependencies, then the remaining upstream inventory before restoring saved WIP. The next dump frontier requires real PGO incorporation, not a log-only fix.",
+    "nextAction": "Continue the remaining upstream inventory, including importer producers and inline-context changes, before restoring saved WIP. Async policies, native RNG, metadata declarations, and grouping helper are implemented; grouping still needs its unported fgInline/fgInvokeInlineeCompiler callers. The first dump gap requires real PGO incorporation.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -24,10 +24,10 @@
       "testSourcesPresent": true,
       "writerRegressionCases": 16,
       "writerRegressionConfigurations": ["Debug", "Release"],
-      "targetFocusedTestsDebug": 104,
-      "targetFocusedTestsRelease": 69,
+      "targetFocusedTestsDebug": 124,
+      "targetFocusedTestsRelease": 72,
       "targetFocusedTestsSkipped": 0,
-      "nativeAotPublish": "passed-at-source-target-abi-and-extended-policy-checkpoints",
+      "nativeAotPublish": "passed-at-source-target-abi-policy-and-async-support-checkpoints",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "six-method-baseline-captured-with-known-differences",
       "codegenParity": "not-available"
@@ -59,13 +59,14 @@
     "oldNativeHostPreservedAndExecuted": true,
     "managedCapture": "six-selected-methods-loaded-with-target-abi",
     "managedGuid": "cb2fa75d-449d-4ee0-93ef-57011daefb8c",
-    "latestManagedBinarySha256": "73D6E1F997BD946D3D2151CE43B69628D23A116A9EDE3BE7D10D906659D9A718",
+    "latestManagedBinarySha256": "8DF36FCD66A0005991CC24BC6D388DC50E2E06ABEC23653F0EF0E5D998059778",
     "wrongGuidCaptureRejected": true,
     "nativeLayoutMeasurements": "matched-raw-managed-sizeof-and-debug-variable-offsets",
     "latestPrefixDifference": "missing-BBOPT-profile-diagnostic",
     "knownExecutionLimits": [
       "Local threading is not built by the existing fgLocalMorph stub; do not exercise unpinning on pinned locals until that prerequisite is ported.",
       "Corrected DFS/tree/EH support passes six focused graph cases in Debug/Release; runtime EH parity remains unestablished.",
+      "Async-stress policy/grouping contracts have focused coverage, but grouping integration awaits the unported inliner bodies; no end-to-end async inlining parity is claimed.",
       "The six-method corpus contains no EH or pinned-local cases and establishes neither phase nor codegen parity."
     ]
   },

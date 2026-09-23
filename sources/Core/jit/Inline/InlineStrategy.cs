@@ -63,7 +63,7 @@ public sealed class InlineStrategy
 
 #if DEBUG
     private int _methodXmlFilePosition;
-    private Random? _random;
+    private CLRRandom? _random;
 #endif
 
     public InlineStrategy(Compiler compiler)
@@ -229,7 +229,7 @@ public sealed class InlineStrategy
     }
 
 #if DEBUG
-    public Random GetRandom(int optionalSeed = 0)
+    public CLRRandom GetRandom(int optionalSeed = 0)
     {
         var random = _random;
 
@@ -354,7 +354,7 @@ public sealed class InlineStrategy
     public void NoteUnprofitable() => _unprofitableCandidateCount++;
 
 #if DEBUG
-    private Random CreateRandom(int optionalSeed)
+    private CLRRandom CreateRandom(int optionalSeed)
     {
         var externalSeed = optionalSeed;
 
@@ -384,7 +384,7 @@ public sealed class InlineStrategy
 
         var seed = externalSeed ^ internalSeed;
         JITDUMP($"\n*** Using random seed ext({externalSeed}) ^ int({internalSeed}) = {seed}\n");
-        return new Random(seed);
+        return new CLRRandom(seed);
     }
 #endif
 

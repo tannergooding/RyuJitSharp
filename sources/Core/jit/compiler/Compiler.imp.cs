@@ -16370,7 +16370,7 @@ public partial class Compiler
     /// <param name="callDI">Debug info for the async call</param>
     public unsafe void impSetupAsyncCall(GenTreeCall call, OPCODE opcode, int prefixFlags, in DebugInfo callDI)
     {
-        Unsafe.SkipInit(out AsyncCallInfo asyncInfo);
+        AsyncCallInfo asyncInfo = default;
 
         if (compIsForInlining)
         {
@@ -16388,7 +16388,7 @@ public partial class Compiler
 #endif
 
             assert(inlCall.IsAsync);
-            var inlAsyncInfo = inlCall._asyncInfo;
+            var inlAsyncInfo = inlCall.GetAsyncInfo();
 
             asyncInfo.ContinuationContextHandling = inlAsyncInfo.ContinuationContextHandling;
 

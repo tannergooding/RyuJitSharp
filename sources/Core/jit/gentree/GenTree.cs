@@ -450,24 +450,7 @@ public partial class GenTree
     public bool IsLclVarAddr => (_oper is GT_LCL_ADDR) && (AsLclFld().LclOffs == 0);
 
 #if DEBUG
-    public bool IsLirOp
-    {
-        get
-        {
-            bool result;
-
-            if (_oper is GT_NOP)
-            {
-                result = IsNothingNode;
-            }
-            else
-            {
-                result = (_oper.DebugKind & DBK_NOTLIR) == 0;
-            }
-
-            return result;
-        }
-    }
+    public bool IsLirOp => (_oper.DebugKind & DBK_NOTLIR) == 0;
 #endif
 
 #if FEATURE_MASKED_HW_INTRINSICS
@@ -691,6 +674,8 @@ public partial class GenTree
 
     public bool IsVectorZero => false;
 #endif
+
+    public bool IsZeroForSelect => IsVectorZero || IsMaskZero;
 
     public GenTree? Next
     {
@@ -1134,13 +1119,7 @@ public partial class GenTree
 
             case GT_CALL:
             {
-                var helper = AsCall().HelperNum;
-
-                if (helper == CORINFO_HELP_UNDEF)
-                {
-                    return ExceptionSetFlags.UnknownException;
-                }
-                return helper.ThrownExceptions;
+                return AsCall().CallExceptions();
             }
 
             case GT_LOCKADD:

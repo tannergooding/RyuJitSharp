@@ -50,6 +50,11 @@ public abstract class InlinePolicy
     public static unsafe InlinePolicy GetPolicy(Compiler compiler, bool isPrejitRoot)
     {
 #if DEBUG
+        if (compiler.compAsyncInliningStress())
+        {
+            return new AsyncStressPolicy(compiler, isPrejitRoot);
+        }
+
         var useRandomPolicyForStress = compiler.compRandomInlineStress();
         var useRandomPolicy = JitConfig.JitInlinePolicyRandom is not 0;
 

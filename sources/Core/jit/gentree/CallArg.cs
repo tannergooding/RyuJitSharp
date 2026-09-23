@@ -69,21 +69,20 @@ public sealed partial class CallArg
     ///   <para>Note that the 'late' here is separate from CallArg.GetLateNode and friends. Late here refers to this being an argument that is added by morph instead of the importer.</para>
     /// </remarks>
     public bool IsArgAddedLate => _wellKnownArg switch {
-        WellKnownArg.WrapperDelegateCell => true,
         WellKnownArg.VirtualStubCell => true,
-        WellKnownArg.PInvokeCookie => true,
-        WellKnownArg.PInvokeTarget => true,
         WellKnownArg.R2RIndirectionCell => true,
         _ => false,
     };
 
     /// <summary>Check if this is an argument that can be treated as user-defined (in IL).</summary>
-    /// <remarks>"this" and ShiftLow/ShiftHigh are recognized as user-defined</remarks>
+    /// <remarks>The accepted well-known arguments match the native `wellknownargs.h` `isILArg` values.</remarks>
     public bool IsUserArg => _wellKnownArg switch {
         WellKnownArg.None => true,
         WellKnownArg.ThisPointer => true,
         WellKnownArg.ShiftLow => true,
         WellKnownArg.ShiftHigh => true,
+        WellKnownArg.SwiftError => true,
+        WellKnownArg.SwiftSelf => true,
         WellKnownArg.SecretStubParam => true,
         _ => false,
     };

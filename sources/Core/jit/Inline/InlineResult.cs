@@ -59,9 +59,11 @@ public sealed class InlineResult
     /// <param name="stmt"></param>
     /// <param name="description"></param>
     /// <param name="doNotReport"></param>
-    public unsafe InlineResult(Compiler compiler, GenTreeCall call, Statement? stmt, string description, bool doNotReport = false)
+    /// <param name="callee"></param>
+    public unsafe InlineResult(Compiler compiler, GenTreeCall call, Statement? stmt, string description, bool doNotReport = false, CORINFO_METHOD_HANDLE callee = null)
     {
         _call = call;
+        _callee = callee;
         _description = description;
         _doNotReport = doNotReport;
 
@@ -71,6 +73,15 @@ public sealed class InlineResult
         // Set the policy
         const bool isPrejitRoot = false;
         _policy = InlinePolicy.GetPolicy(_rootCompiler, isPrejitRoot);
+
+#if DEBUG
+        if (_rootCompiler.compAsyncInliningStress() && call.IsAsync && call.IsInlineCandidate && !call.IsGuardedDevirtualizationCandidate)
+        {
+            var candidateInfo = call.SingleInlineCandidateInfo;
+            assert(candidateInfo is not null);
+            _policy.NoteInt(InlineObservation.CALLSITE_ASYNC_STRESS_INDEX, candidateInfo.asyncStressIndex);
+        }
+#endif
 
         // Pass along some optional information to the policy.
         if (stmt is not null)
@@ -90,7 +101,7 @@ public sealed class InlineResult
         _caller = compiler.info.compMethodHnd;
 
         // Get method handle for callee, if known
-        if (_call._callType == CT_USER_FUNC)
+        if ((_callee is null) && (_call._callType == CT_USER_FUNC))
         {
             _callee = _call._callMethHnd;
         }
