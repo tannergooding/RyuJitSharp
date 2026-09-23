@@ -12,26 +12,26 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete unary VN expressions required by node-wide assertion generation, including native constant folding, known array lengths, exception-value composition and safe canonical field-sequence identity.",
+      "scope": "Complete node-wide assertion generation and morph completion: optAssertionGen, fgAssertionGen and fgMorphTreeDone, preserving local/global facts, conditional edge sets, implied boolean ranges, invalidation order and diagnostics.",
       "doneWhen": [
-        "Unary interning preserves native numbering, double-NOT cancellation, integer widths, signed zero and floating payloads.",
-        "Frozen objects, readonly fields and recognized allocation VNs use the native array-length rules and EE contracts.",
-        "Field-sequence identities survive managed movement without pinning; exception sets preserve ordering, deduplication and normal-value composition.",
+        "Node-wide generation preserves the native fact selection and exclusion gates for stores, indirections, calls, bounds checks, division and branches.",
+        "Local assertion generation updates the correct conditional edge sets and implied ranges.",
+        "Morph completion marks nodes only in global morph, kills physical definitions before generating facts, and honors early assertion propagation.",
         "The selected Debug/Release checks pass and complete functions are committed with their native retirement and checkpoint."
       ],
       "validation": [
         "One combined assertion/integral-range selection in Debug and Release.",
-        "Cover scalar unary edge cases, field-sequence ownership, EE array-length paths, allocation bounds and exception-set unions in the existing assertion fixture.",
+        "Cover local/global fact selection, conditional edge sets, implied ranges, definition kill/gen order and morph gates in the existing assertion fixture.",
         "No full suite or NativeAOT recapture unless a concrete failure or newly reachable compiler phase requires it."
       ],
       "deferred": [
         "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
-        "Assertion generation and fgMorphTreeDone completion.",
+        "General local assertion propagation, block morph and the full global-morph phase.",
         "Remaining integer/comparison/conditional/HWI folding and fgInline activation.",
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Unary VN expressions and their field-sequence/exception prerequisites are complete (B098). Continue optAssertionGen, fgAssertionGen and fgMorphTreeDone with native local/global behavior intact. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop. Preserve unchanged-frontier evidence.",
+    "nextAction": "Node-wide assertion generation and morph completion are complete (B099), following the unary VN prerequisites (B098). Continue the remaining scalar/integer/comparison folding closure and its morph-completion callers toward fgInline activation; general local propagation and block/global morph remain unported. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop. Preserve unchanged-frontier evidence.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -526,6 +526,18 @@
         "debugTests": "artifacts\\vn-unary-debug.trx",
         "releaseTests": "artifacts\\vn-unary-release.trx"
       },
+      "nodeAssertionGeneration": {
+        "managedSourceCommit": "3020e9cd70b2fbb15be1b3d09738465617e88605",
+        "debugPassed": 152,
+        "releasePassed": 149,
+        "skipped": 0,
+        "newCases": 16,
+        "nativeDefinitionsRetired": 4,
+        "nativeAotRecaptured": false,
+        "phaseActivated": false,
+        "debugTests": "artifacts\\node-assertions-debug.trx",
+        "releaseTests": "artifacts\\node-assertions-release.trx"
+      },
       "nativeAotPublish": "passed-after-integral-ranges",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "five-of-nine-import-prefixes-equal-remaining-inline-candidate-differences",
@@ -798,6 +810,15 @@
       "commit": "b28d3afbf832a4f4633bc7f12fe321a6ceb480d4",
       "indexCommit": "e71a9b383679d377ce6a23987398f9a8342db916",
       "ref": "refs/porting/snapshots/native-ledger-vn-unary"
+    },
+    "nodeAssertionsManagedSource": {
+      "commit": "3020e9cd70b2fbb15be1b3d09738465617e88605",
+      "ref": "refs/porting/snapshots/node-assertions-source"
+    },
+    "nodeAssertionsNativeResidual": {
+      "commit": "4298aa598b168fe557bb46c317d24acc66a45e28",
+      "indexCommit": "ce8f5095f082e012cf28d461edeeaf2332d48b1b",
+      "ref": "refs/porting/snapshots/native-ledger-node-assertions"
     }
   },
   "sourceMap": [

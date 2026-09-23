@@ -125,6 +125,12 @@ or morph completion (B093). General assertion creation and JTRUE equality/type
 facts are now also implemented. Unary native operand access uses the managed
 `GenTreeUnOp` base rather than casting unary nodes to `GenTreeOp`; CSE comma
 queries preserve the native single-store/same-local condition (B094).
+Node-wide generation and morph completion now preserve native edge selection,
+boolean implications and physical-definition kill/gen ordering. Native bitset
+reference parameters are managed array references; the in-place bit operations
+do not replace those arrays. The morph diagnostic invocation number is accepted
+in both builds but used only in Debug, like the existing invalidation diagnostic
+tree parameter (B099).
 
 Profile weight lookup uses a managed `ref` output: native leaves the pointed-to
 value unchanged when no profile weights are available, so an unconditional

@@ -22,6 +22,215 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class AssertionTests
 {
+    [Test]
+    public static void MorphCompletionKillsOldFactsBeforeGeneratingNewOnes()
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }, new LclVarDsc { Type = TYP_INT }];
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            compiler.apLocal = BitOps.MakeEmpty(traits);
+            compiler.apLocalPostorder = BitOps.MakeEmpty(traits);
+            compiler.fgGlobalMorph = true;
+            var first = compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, 1));
+            compiler.fgMorphTreeDone(first);
+            var firstIndex = first.AssertionInfo.AssertionIndex;
+            Assert.That(BitOps.IsMember(traits, compiler.apLocal, firstIndex - 1), Is.True);
+            var read = compiler.gtNewLclvNode(TYP_INT, 0);
+            Assert.That(compiler.optAssertionIsSubrange(read, new(Zero, One), compiler.apLocal), Is.Not.Zero);
+            compiler.apLocalPostorder = BitOps.MakeCopy(traits, compiler.apLocal);
+
+            var second = compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, 2));
+            compiler.fgMorphTreeDone(second);
+            Assert.That(BitOps.IsMember(traits, compiler.apLocal, firstIndex - 1), Is.False);
+            Assert.That(BitOps.IsEmpty(traits, compiler.apLocalPostorder), Is.True);
+            Assert.That(BitOps.IsMember(traits, compiler.apLocal, second.AssertionInfo.AssertionIndex - 1), Is.True);
+            Assert.That(compiler.optAssertionIsSubrange(read, new(Zero, One), compiler.apLocal), Is.Zero);
+
+            second.Flags |= GTF_COLON_COND;
+            compiler.optAssertionGen(second);
+            Assert.That(second.GeneratesAssertion, Is.False);
+        });
+    }
+
+    [TestCase(false, false)]
+    [TestCase(true, true)]
+    [TestCase(true, false)]
+    public static void MorphCompletionHonorsGlobalAndEarlyPropagationGates(bool global, bool alreadyPropagated)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }, new LclVarDsc { Type = TYP_INT }];
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            compiler.apLocal = BitOps.MakeEmpty(traits);
+            compiler.apLocalPostorder = BitOps.MakeEmpty(traits);
+            compiler.fgGlobalMorph = global;
+            var tree = compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, 3));
+            compiler.fgMorphTreeDone(tree, alreadyPropagated);
+            Assert.That(tree.GeneratesAssertion, Is.EqualTo(global && !alreadyPropagated));
+#if DEBUG
+            Assert.That(tree.WasMorphed, Is.EqualTo(global));
+#endif
+        });
+    }
+
+    [TestCase(GT_EQ)]
+    [TestCase(GT_NE)]
+    [TestCase(GT_LT)]
+    public static void ConditionalGenerationSeparatesEdgesAndBooleanRanges(genTreeOps oper)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }, new LclVarDsc { Type = TYP_INT }];
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            compiler.apLocal = BitOps.MakeEmpty(traits);
+#if DEBUG
+            compiler.fgSafeBasicBlockCreation = true;
+#endif
+            var block = BasicBlock.New(compiler, BBKinds.BBJ_COND);
+            var ifTrue = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            var ifFalse = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            block.SetCond(new FlowEdge(block, ifTrue, null), new FlowEdge(block, ifFalse, null));
+            compiler.compCurBB = block;
+            var local = compiler.gtNewLclvNode(TYP_INT, 0);
+            var compare = compiler.gtNewBinaryNode(oper, TYP_INT, local, compiler.gtNewIconNode(TYP_INT, 1));
+            var branch = compiler.gtNewUnaryNode(GT_JTRUE, TYP_VOID, compare);
+            compiler.fgAssertionGen(branch);
+            Assert.That(compiler.apLocalIfTrue, Is.Not.Null.And.Not.SameAs(compiler.apLocal));
+            if (oper == GT_LT)
+            {
+                Assert.That(branch.GeneratesAssertion, Is.False);
+                Assert.That(BitOps.IsEmpty(traits, compiler.apLocalIfTrue), Is.True);
+                Assert.That(BitOps.IsEmpty(traits, compiler.apLocal), Is.True);
+                return;
+            }
+
+            var index = branch.AssertionInfo.AssertionIndex;
+            var complement = compiler.optFindComplementary(index);
+            Assert.That(complement, Is.Not.Zero);
+            Assert.That(BitOps.IsMember(traits, compiler.apLocalIfTrue, index - 1), Is.True);
+            Assert.That(BitOps.IsMember(traits, compiler.apLocal, index - 1), Is.False);
+            Assert.That(BitOps.IsMember(traits, compiler.apLocal, complement - 1), Is.True);
+            var equalEdge = (oper == GT_EQ ? compiler.apLocalIfTrue : compiler.apLocal) ?? throw new InvalidOperationException();
+            var unequalEdge = (oper == GT_EQ ? compiler.apLocal : compiler.apLocalIfTrue) ?? throw new InvalidOperationException();
+            Assert.That(compiler.optAssertionIsSubrange(local, new(Zero, One), equalEdge), Is.Not.Zero);
+            Assert.That(compiler.optAssertionIsSubrange(local, new(Zero, One), unequalEdge), Is.Zero);
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void NodeGenerationKeepsNullFactsSeparateFromNonfaultingLoads(bool nonfaulting)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_REF }, new LclVarDsc { Type = TYP_INT }];
+            var load = new GenTreeIndir(GT_IND, TYP_INT, compiler.gtNewLclvNode(TYP_REF, 0));
+            if (nonfaulting)
+            {
+                load.Flags |= GTF_IND_NONFAULTING;
+            }
+
+            compiler.optAssertionGen(load);
+            Assert.That(load.GeneratesAssertion, Is.EqualTo(!nonfaulting));
+            if (!nonfaulting)
+            {
+                var assertion = compiler.optGetAssertion(load.AssertionInfo.AssertionIndex);
+                Assert.That(assertion.Kind, Is.EqualTo(OAK_NOT_EQUAL));
+                Assert.That(assertion.Op1.LclNum, Is.Zero);
+            }
+        });
+    }
+
+    [TestCase(false, false, true)]
+    [TestCase(true, false, false)]
+    [TestCase(true, true, true)]
+    public static void CallNullFactsRespectTailCallAndExplicitCheckGates(bool tailCall, bool nullCheck, bool expected)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_REF }, new LclVarDsc { Type = TYP_INT }];
+            var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+            call.Flags |= GTF_CALL_VIRT_VTABLE;
+            if (tailCall)
+            {
+                call._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_TAILCALL;
+            }
+
+            if (nullCheck)
+            {
+                call.Flags |= GTF_CALL_NULLCHECK;
+            }
+
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclvNode(TYP_REF, 0))
+                .WithWellKnownArg(WellKnownArg.ThisPointer));
+            compiler.optAssertionGen(call);
+            Assert.That(call.GeneratesAssertion, Is.EqualTo(expected));
+        });
+    }
+
+    [Test]
+    public static void GlobalGenerationUsesConservativeFactsForLocalsBoundsAndDivision()
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_INT, IsNeverNegative = true }, new LclVarDsc { Type = TYP_INT }];
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var local = compiler.gtNewLclvNode(TYP_INT, 0);
+            var vn = store.VNForExpr(null, TYP_INT);
+            local._vnPair.SetBoth(vn);
+            compiler.optAssertionGen(local);
+            Assert.That(compiler.optGetAssertion(local.AssertionInfo.AssertionIndex).Kind, Is.EqualTo(OAK_GE));
+            var divisor = compiler.gtNewLclvNode(TYP_INT, 1);
+            var divisorVN = store.VNForExpr(null, TYP_INT);
+            divisor._vnPair = new(store.VNForIntCon(0), divisorVN);
+            var divide = compiler.gtNewBinaryNode(GT_DIV, TYP_INT, local, divisor);
+            compiler.optAssertionGen(divide);
+            var assertion = compiler.optGetAssertion(divide.AssertionInfo.AssertionIndex);
+            Assert.That(assertion.Kind, Is.EqualTo(OAK_NOT_EQUAL));
+            Assert.That(assertion.Op1.VN, Is.EqualTo(divisorVN));
+            var check = new GenTreeBoundsChk(divisor, local, SpecialCodeKind.SCK_RNGCHK_FAIL);
+            compiler.optAssertionGen(check);
+            Assert.That(compiler.optGetAssertion(check.AssertionInfo.AssertionIndex).IsBoundsCheckNoThrow, Is.True);
+            local._vnPair.SetBoth(ValueNumStore.NoVN);
+            compiler.optAssertionGen(check);
+            Assert.That(check.GeneratesAssertion, Is.False);
+        }, local: false);
+    }
+
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT)]
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_ARRADDR_ST)]
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_LDELEMA_REF)]
+    public static void HelperCallsGenerateAllocationAndArrayBoundsFacts(CorInfoHelpFunc helper)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_REF }, new LclVarDsc { Type = TYP_INT }];
+            compiler.optMethodFlags |= OMF_HAS_NEWARRAY;
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var array = compiler.gtNewLclvNode(TYP_REF, 0);
+            array._vnPair.SetBoth(store.VNForExpr(null, TYP_REF));
+            var index = compiler.gtNewLclvNode(TYP_INT, 1);
+            var indexVN = store.VNForExpr(null, TYP_INT);
+            index._vnPair.SetBoth(indexVN);
+            var call = compiler.gtNewCallNode(TYP_REF, gtCallTypes.CT_HELPER, Compiler.eeFindHelper(helper));
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(array));
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(index));
+            if (helper != CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT)
+            {
+                _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewNull()));
+            }
+
+            compiler.optAssertionGen(call);
+            var assertion = compiler.optGetAssertion(call.AssertionInfo.AssertionIndex);
+            Assert.That(assertion.Op1.VN, Is.EqualTo(indexVN));
+            if (helper == CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT)
+            {
+                Assert.That(assertion.Kind, Is.EqualTo(OAK_GE));
+            }
+            else
+            {
+                Assert.That(assertion.IsBoundsCheckNoThrow, Is.True);
+                Assert.That(assertion.Op2.VN, Is.EqualTo(store.VNForFunc(TYP_INT, VNFunc.VNF_ARR_LENGTH, array._vnPair.Conservative)));
+            }
+        }, local: false);
+    }
+
     [TestCase(VNFunc.VNF_NEG, int.MinValue, int.MinValue)]
     [TestCase(VNFunc.VNF_NOT, int.MinValue, int.MaxValue)]
     [TestCase(VNFunc.VNF_BSWAP16, -32767, 384)]
