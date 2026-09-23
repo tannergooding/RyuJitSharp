@@ -1165,6 +1165,15 @@ public partial class Compiler
                 assert(!compiler.info.compMatchedVM);
             }
 
+            if (ni is NI_System_Numerics_Intrinsic or NI_System_Runtime_Intrinsics_Intrinsic)
+            {
+                // Only an actual recursive intrinsic call requires replacement.
+                if (compiler.gtIsRecursiveCall(methHnd, false))
+                {
+                    ni = NI_Throw_PlatformNotSupportedException;
+                }
+            }
+
             // We specially support the following on all platforms to allow for dead
             // code optimization and to more generally support recursive intrinsics.
 
@@ -1203,7 +1212,8 @@ public partial class Compiler
 
                             compiler.impInlineRoot._inlineStrategy.NoteHardwareIntrinsicCheckObserved();
 
-                            typeArgHnd = compiler.info.compCompHnd->getTypeInstantiationArgument(clsHnd, 0);
+                            assert(sigInfo.sigInst.classInstCount is 1);
+                            typeArgHnd = sigInfo.sigInst.classInst[0];
                             simdBaseJitType = compiler.info.compCompHnd->getTypeForPrimitiveNumericClass(typeArgHnd);
 
                             switch (simdBaseJitType)
@@ -1240,7 +1250,6 @@ public partial class Compiler
                         {
                             var typeArgHnd = compiler.info.compCompHnd->getTypeInstantiationArgument(clsHnd, 0);
                             var simdBaseJitType = compiler.info.compCompHnd->getTypeForPrimitiveNumericClass(typeArgHnd);
-                            var simdSize = compiler.info.compCompHnd->getClassSize(clsHnd);
 
                             switch (simdBaseJitType)
                             {
@@ -1258,6 +1267,7 @@ public partial class Compiler
                                 case CORINFO_TYPE_NATIVEUINT:
                                 {
                                     var simdBaseType = simdBaseJitType.PreciseVarType;
+                                    var simdSize = compiler.info.compCompHnd->getClassSize(clsHnd);
                                     var elementSize = simdBaseType.Size;
                                     var countNode = compiler.gtNewIconNode(TYP_INT, simdSize / elementSize);
 
@@ -1417,6 +1427,15 @@ public partial class Compiler
                 intrinsicName = ni;
                 return null;
             }
+            else if (ni is NI_System_Runtime_CompilerServices_AsyncHelpers_AwaitAwaiter
+                or NI_System_Runtime_CompilerServices_AsyncHelpers_UnsafeAwaitAwaiter
+                or NI_System_Runtime_CompilerServices_AsyncHelpers_Suspend
+                or NI_System_Runtime_CompilerServices_AsyncHelpers_TransparentSuspend)
+            {
+                // Preserve the identity used by impSetupAsyncCall for always-suspending helpers.
+                intrinsicName = ni;
+                return null;
+            }
             else if (ni is NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait)
             {
                 if ((compiler.info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) is not 0)
@@ -1426,6 +1445,11 @@ public partial class Compiler
 
                 compiler._nextAwaitIsTail = true;
                 return compiler.gtNewNothingNode();
+            }
+            else if (ni is NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync)
+            {
+                JITDUMP($"\nExpanding RuntimeHelpers.IsRuntimeAsync to {(compiler.compIsAsync ? "true" : "false")} early\n");
+                return compiler.compIsAsync ? compiler.gtNewTrue() : compiler.gtNewFalse();
             }
 
             var betterToExpand = false;
@@ -1502,6 +1526,7 @@ public partial class Compiler
                     case NI_System_Type_get_TypeHandle:
                     case NI_System_RuntimeType_get_TypeHandle:
                     case NI_System_RuntimeTypeHandle_ToIntPtr:
+                    case NI_System_Buffer_Memmove:
                     {
                         betterToExpand = true;
                         break;
@@ -1546,6 +1571,15 @@ public partial class Compiler
                         break;
                     }
 
+                    case NI_System_Threading_Tasks_Task_FromResult:
+                    case NI_System_Threading_Tasks_Task_get_CompletedTask:
+                    case NI_System_Threading_Tasks_ValueTask_FromResult:
+                    case NI_System_Threading_Tasks_ValueTask_get_CompletedTask:
+                    {
+                        betterToExpand = (sigInfo.callConv & CORINFO_CALLCONV_ASYNCCALL) is not 0;
+                        break;
+                    }
+
                     default:
                     {
                         // Various intrinsics are all small enough to prefer expansions.
@@ -1564,6 +1598,8 @@ public partial class Compiler
                     // Intrinsics that we should make every effort to expand for NativeAOT.
                     // If the intrinsic cannot possibly be expanded, it's fine, but
                     // if it can be, it should expand.
+                    // ILScanner mirrors the expansion checks before omitting dependencies.
+                    // Keep new bailout conditions in sync with ILImporter.Scanner.cs.
                     case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
                     case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
                     {
@@ -1867,6 +1903,12 @@ public partial class Compiler
                         break;
                     }
 
+                    case NI_System_Activator_CreateInstance_T:
+                    {
+                        isSpecial = true;
+                        break;
+                    }
+
                     case NI_System_Span_get_Item:
                     case NI_System_ReadOnlySpan_get_Item:
                     {
@@ -1895,7 +1937,7 @@ public partial class Compiler
                         JITDUMP($"\nimpIntrinsic: Expanding {(isReadOnly ? "ReadOnly" : "")}Span<T>.get_Item, T={compiler.eeGetClassName(spanElemHnd)}, sizeof(T)={elemSize}\n");
 
                         var index = compiler.impPopStack().val;
-                        var ptrToSpan = compiler.impPopStack().val;
+                        var ptrToSpan = compiler.impStackTop().val;
 
                         assert(index.Type.ActualType is TYP_INT);
                         assert(ptrToSpan.Type is TYP_BYREF or  TYP_I_IMPL);
@@ -1912,8 +1954,10 @@ public partial class Compiler
 #endif
 
                         // We need to use both index and ptr-to-span twice, so clone or spill.
+                        // Keep ptr-to-span on the stack so it is evaluated before any index spill.
                         index = compiler.impCloneExpr(index, out var indexClone, CHECK_SPILL_ALL, "Span.get_Item index");
 
+                        ptrToSpan = compiler.impPopStack().val;
                         GenTree? ptrToSpanClone;
 
                         if (compiler.impIsAddressInLocal(ptrToSpan))
@@ -2045,7 +2089,7 @@ public partial class Compiler
                         {
                             // Skip roundtrip "handle -> RuntimeType -> handle" for
                             // RuntimeTypeHandle.ToIntPtr(typeof(T).TypeHandle)
-                            if (compiler.lookupNamedIntrinsic(call._callMethHnd) is NI_System_RuntimeType_get_TypeHandle)
+                            if ((call._callType is CT_USER_FUNC) && (compiler.lookupNamedIntrinsic(call._callMethHnd) is NI_System_RuntimeType_get_TypeHandle))
                             {
                                 // Check that the arg is CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE helper call
                                 var arg = call.Args.GetArgByIndex(0);
@@ -2280,9 +2324,10 @@ public partial class Compiler
                                 {
                                     // getTypeForPrimitiveValueClass returns underlying type for enums, so we check it first because enums are not primitive types.
 
-                                    if ((compiler.info.compCompHnd->isEnum(hClass, underlyingType: null) is TypeCompareState.MustNot) && (compiler.info.compCompHnd->getTypeForPrimitiveValueClass(hClass) is not CORINFO_TYPE_UNDEF))
+                                    if (compiler.info.compCompHnd->isEnum(hClass, underlyingType: null) is TypeCompareState.MustNot)
                                     {
-                                        retNode = compiler.gtNewTrue();
+                                        var type = compiler.info.compCompHnd->getTypeForPrimitiveValueClass(hClass);
+                                        retNode = compiler.gtNewIconNode(TYP_INT, type is not CORINFO_TYPE_UNDEF and not CORINFO_TYPE_VOID ? 1 : 0);
                                     }
                                     else
                                     {
@@ -2353,7 +2398,22 @@ public partial class Compiler
                                     compiler.impPopStack();
 
                                     retExpr.InlineCandidate = compiler.gtNewNothingNode();
-                                    retNode = compiler.gtNewHelperCallNode(TYP_INT, CORINFO_HELP_GETCURRENTMANAGEDTHREADID);
+                                    var tidCall = compiler.gtNewHelperCallNode(TYP_INT, CORINFO_HELP_GETCURRENTMANAGEDTHREADID);
+                                    compiler.impConvertToUserCallAndMarkForInlining(tidCall);
+
+                                    if (tidCall.IsInlineCandidate)
+                                    {
+                                        compiler.impAppendTree(tidCall, CHECK_SPILL_ALL, compiler.impCurStmtDI, false);
+                                        var tidRetExpr = compiler.gtNewInlineCandidateReturnExpr(tidCall, TYP_INT);
+                                        var candidateInfo = tidCall.SingleInlineCandidateInfo;
+                                        assert(candidateInfo is not null);
+                                        candidateInfo.retExpr = tidRetExpr;
+                                        retNode = tidRetExpr;
+                                    }
+                                    else
+                                    {
+                                        retNode = tidCall;
+                                    }
                                 }
                             }
                         }
@@ -2870,7 +2930,9 @@ public partial class Compiler
                                     assert(compiler.compDonotInline);
                                     return null;
                                 }
-                                retNode = compiler.gtNewHelperCallNode(TYP_REF, CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, typeHandleOp);
+                                var runtimeType = compiler.gtNewHelperCallNode(TYP_REF, CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, typeHandleOp);
+                                var sideEffects = compiler.fgAddrCouldBeNull(op1) ? compiler.gtNewNullCheck(op1) : op1;
+                                retNode = compiler.gtWrapWithSideEffects(runtimeType, sideEffects, GTF_ALL_EFFECT);
                             }
                         }
 
@@ -3083,6 +3145,55 @@ public partial class Compiler
                         break;
                     }
 
+                    case NI_System_Buffer_Memmove:
+                    {
+                        if (sigInfo.sigInst.methInstCount is not 1)
+                        {
+                            break;
+                        }
+
+                        var primitiveType = compiler.info.compCompHnd->getTypeForPrimitiveValueClass(sigInfo.sigInst.methInst[0]);
+                        if (primitiveType is CORINFO_TYPE_UNDEF)
+                        {
+                            break;
+                        }
+
+                        var elementType = primitiveType.VarType;
+                        if (!varTypeIsArithmetic(elementType))
+                        {
+                            break;
+                        }
+
+                        var memmoveHnd = NO_METHOD_HANDLE;
+                        compiler.info.compCompHnd->getHelperFtn(CORINFO_HELP_MEMCPY, null, &memmoveHnd);
+                        if (memmoveHnd == NO_METHOD_HANDLE)
+                        {
+                            break;
+                        }
+
+                        assert(sigInfo.numArgs is 3);
+                        assert(sigInfo.retType is CORINFO_TYPE_VOID);
+
+                        var length = compiler.impImplicitIorI4Cast(compiler.impPopStack().val, TYP_I_IMPL, zeroExtend: true);
+                        var source = compiler.impPopStack().val;
+                        var destination = compiler.impPopStack().val;
+                        var elementSize = elementType.Size;
+                        if (elementSize is not 1)
+                        {
+                            length = compiler.gtFoldExpr(compiler.gtNewBinaryNode(GT_MUL, TYP_I_IMPL, length, compiler.gtNewIconNode(TYP_I_IMPL, elementSize)));
+                        }
+
+                        // Keep the byte-length probe at this call site, rather than inside the generic wrapper.
+                        var memmove = compiler.gtNewUserCallNode(TYP_VOID, memmoveHnd, compiler.impCurStmtDI);
+                        _ = memmove.Args.PushBack(NewCallArg.CreateForPrimitive(destination));
+                        _ = memmove.Args.PushBack(NewCallArg.CreateForPrimitive(source));
+                        _ = memmove.Args.PushBack(NewCallArg.CreateForPrimitive(length));
+                        memmove._callMoreFlags |= GTF_CALL_M_SPECIAL_INTRINSIC;
+                        compiler.gtUpdateNodeSideEffects(memmove);
+                        retNode = memmove;
+                        break;
+                    }
+
                     case NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8:
                     case NI_System_SpanHelpers_SequenceEqual:
                     case NI_System_SpanHelpers_ClearWithoutReferences:
@@ -3144,7 +3255,7 @@ public partial class Compiler
                     case NI_System_BitConverter_Int32BitsToSingle:
                     {
                         var op1 = compiler.impPopStack().val;
-                        assert(varTypeIsInt(op1.Type));
+                        assert(varTypeIsInt(op1.Type.ActualType));
 
                         if (op1.Oper.IsIntegralConst)
                         {
@@ -3255,6 +3366,51 @@ public partial class Compiler
                         var addr = compiler.impPopStack().val;
 
                         retNode = compiler.gtNewStoreIndNode(type, addr, value, GTF_IND_VOLATILE);
+                        break;
+                    }
+
+                    case NI_System_Threading_Tasks_Task_FromResult:
+                    case NI_System_Threading_Tasks_ValueTask_FromResult:
+                    {
+                        assert(sigInfo.sigInst.methInstCount is 1);
+                        if ((sigInfo.callConv & CORINFO_CALLCONV_ASYNCCALL) is 0)
+                        {
+                            break;
+                        }
+
+                        var type = compiler.TypeHandleToVarType(sigInfo.sigInst.methInst[0], out _);
+                        var value = compiler.impPopStack().val;
+                        if (varTypeIsStruct(value.Type))
+                        {
+                            value = compiler.impNormStructVal(value, CHECK_SPILL_ALL);
+                        }
+                        else
+                        {
+                            value = compiler.impImplicitR4orR8Cast(value, type);
+                            value = compiler.impImplicitIorI4Cast(value, type);
+                        }
+
+                        if (varTypeIsSmall(type) && compiler.fgCastNeeded(value, type))
+                        {
+                            value = compiler.gtNewCastNode(TYP_INT, value, false, type);
+                        }
+                        retNode = value;
+                        break;
+                    }
+
+                    case NI_System_Threading_Tasks_Task_get_CompletedTask:
+                    case NI_System_Threading_Tasks_ValueTask_get_CompletedTask:
+                    {
+                        if ((sigInfo.callConv & CORINFO_CALLCONV_ASYNCCALL) is not 0)
+                        {
+                            retNode = compiler.gtNewNothingNode();
+                        }
+                        break;
+                    }
+
+                    case NI_System_Threading_Tasks_ValueTask_1__ctor:
+                    {
+                        isSpecial = compiler.compIsAsyncVersion;
                         break;
                     }
 

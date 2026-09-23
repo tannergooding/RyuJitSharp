@@ -11,6 +11,49 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ImporterCallTests
 {
+    [TestCase(var_types.TYP_INT, genTreeOps.GT_ROL)]
+    [TestCase(var_types.TYP_INT, genTreeOps.GT_ROR)]
+    [TestCase(var_types.TYP_LONG, genTreeOps.GT_ROL)]
+    [TestCase(var_types.TYP_LONG, genTreeOps.GT_ROR)]
+    public static void VariableRotatesMaskTheirAmount(var_types type, genTreeOps operation)
+    {
+#if DEBUG
+        using var jitTls = new JitTls(null);
+#endif
+        var previous = JitTls.Compiler;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        compiler.compCurBB = new BasicBlock(null, null);
+        compiler.info.compMaxStack = 2;
+        compiler.stackState.esStack = new StackEntry[2];
+        JitTls.Compiler = compiler;
+        try
+        {
+            GenTree value = type == var_types.TYP_LONG
+                ? compiler.gtNewLconNode(42)
+                : compiler.gtNewIconNode(type, 42);
+            var amount = compiler.gtNewLclvNode(var_types.TYP_INT, 0);
+            compiler.impPushOnStack(value, new typeInfo(type));
+            compiler.impPushOnStack(amount, new typeInfo(var_types.TYP_INT));
+
+            var result = compiler.impRotateHelper(type, operation)
+                ?? throw new InvalidOperationException("Variable rotate was not imported.");
+            var maskedAmount = result.AsOp().Op2.AsOp();
+            Assert.Multiple(() => {
+                Assert.That(compiler.impStackHeight, Is.Zero);
+                Assert.That(result.Oper, Is.EqualTo(operation));
+                Assert.That(result.AsOp().Op1, Is.SameAs(value));
+                Assert.That(maskedAmount.Oper, Is.EqualTo(genTreeOps.GT_AND));
+                Assert.That(maskedAmount.Op1, Is.SameAs(amount));
+                Assert.That(maskedAmount.Op2.AsIntCon().IconValue,
+                    Is.EqualTo((nint)(type == var_types.TYP_LONG ? 63 : 31)));
+            });
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+
     [TestCase(false, false, false)]
     [TestCase(false, true, false)]
     [TestCase(true, false, false)]

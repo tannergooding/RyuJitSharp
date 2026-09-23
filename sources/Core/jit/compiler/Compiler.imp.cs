@@ -1647,7 +1647,6 @@ public partial class Compiler
             {
                 unmanagedCallConv = info.compCompHnd->getUnmanagedCallConv(method: null, pSigInfo, &suppressGCTransition);
             }
-            assert((call._callCookie.accessType is IAT_VALUE) && (call._callCookie.addr is null));
         }
 
         if (suppressGCTransition)
@@ -1668,12 +1667,11 @@ public partial class Compiler
         }
         optNativeCallCount++;
 
-        if (methHnd is null && (IsTargetAbi(CORINFO_NATIVEAOT_ABI) || (opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB) && !compIsForInlining)))
+        if (methHnd is null)
         {
-            // PInvoke CALLI in NativeAOT ABI must be always inlined. Non-inlineable CALLI cases have been
-            // converted to regular method calls earlier using convertPInvokeCalliToCall.
-
-            // PInvoke CALLI in IL stubs must be inlined
+            // PInvoke CALLI must always be inlined. Call sites that cannot be inlined have been converted
+            // to a call to a marshalling stub earlier using convertPInvokeCalliToCall, or, in ReadyToRun,
+            // have aborted the compilation of this method.
         }
         else if (opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB) && IsReadyToRun)
         {
@@ -2019,8 +2017,49 @@ public partial class Compiler
     /// <summary>convert a helper call to a user call and mark it for inlining.</summary>
     /// <param name="call">the helper call to convert</param>
     /// <remarks>This is used for helper calls that are known to be backed by a user method that can be inlined.</remarks>
-    public void impConvertToUserCallAndMarkForInlining(GenTreeCall call)
+    public unsafe void impConvertToUserCallAndMarkForInlining(GenTreeCall call)
     {
+        assert(call.IsHelperCall());
+
+        if (!opts.OptEnabled(CLFLG_INLINING))
+        {
+            return;
+        }
+
+        var helperCallHnd = call._callMethHnd;
+        var managedCallHnd = NO_METHOD_HANDLE;
+        CORINFO_CONST_LOOKUP nativeEntrypoint = default;
+        info.compCompHnd->getHelperFtn(eeGetHelperNum(helperCallHnd), &nativeEntrypoint, &managedCallHnd);
+
+        if (managedCallHnd != NO_METHOD_HANDLE)
+        {
+            call._callMethHnd = managedCallHnd;
+            call._callType = CT_USER_FUNC;
+            gtUpdateNodeSideEffects(call);
+
+            var callInfo = new CORINFO_CALL_INFO {
+                hMethod = managedCallHnd,
+                methodFlags = info.compCompHnd->getMethodAttribs(managedCallHnd),
+            };
+            assert(compInlineContext is not null);
+            impMarkInlineCandidate(call, null, callInfo, compInlineContext);
+
+            var helperMap = impInlineRoot._helperToManagedMap ??= [];
+#if DEBUG
+            if (helperMap.TryGetValue(helperCallHnd, out var existingValue))
+            {
+                assert(existingValue == managedCallHnd);
+            }
+#endif
+            helperMap[helperCallHnd] = managedCallHnd;
+
+#if DEBUG
+            if (verbose)
+            {
+                JITDUMP($"Converting helperCall [{call.TreeId:D6}] to user call [{eeGetMethodFullName(managedCallHnd)}] and marking for inlining\n");
+            }
+#endif
+        }
     }
 
     /// <summary>Create a DebugInfo instance with the specified IL offset and 'is call' bit, using the current stack to determine whether to set the 'stack empty' bit.</summary>
@@ -3414,14 +3453,15 @@ public partial class Compiler
 
             assert(retRegCount >= 2);
 
-            if (!call.CanTailCall && !call.IsInlineCandidate)
+            if (!call.CanTailCall && !call.IsInlineCandidate && !call.IsGuardedDevirtualizationCandidate)
             {
                 // Force a call returning multi-reg struct to be always of the IR form
                 //   tmp = call
                 //
                 // No need to assign a multi-reg struct to a local var if:
                 //  - It is a tail call or
-                //  - The call is marked for in-lining later
+                //  - The call is marked for inlining later or
+                //  - It is a GDV candidate whose fate is not yet known
                 return impStoreMultiRegValueToVar(call, retClsHnd, call.UnmanagedCallConv);
             }
         }
@@ -14893,9 +14933,9 @@ public partial class Compiler
                 // insert any widening or narrowing casts for backwards compatibility
                 argNode = impImplicitIorI4Cast(argNode, jitSigType);
 
-                if ((compAppleArm64Abi() || TargetArchitecture.IsArm32) && call.IsUnmanaged && varTypeIsSmall(jitSigType))
+                if ((compAppleArm64Abi() || TargetArchitecture.IsArm32 || TargetArchitecture.IsWasm) && call.IsUnmanaged && varTypeIsSmall(jitSigType))
                 {
-                    // Apple arm64 and arm32 ABIs require arguments to be zero/sign
+                    // Apple arm64, arm32, and Wasm ABIs require arguments to be zero/sign
                     // extended up to 32 bit. The managed ABI does not require
                     // this.
 
@@ -15520,102 +15560,11 @@ public partial class Compiler
             }
 
             case NI_PRIMITIVE_RotateLeft:
-            {
-                assert(sigInfo.numArgs is 2);
-                assert(!varTypeIsSmall(retType) && !varTypeIsSmall(baseType));
-
-                var op2 = impStackTop().val;
-
-                if (!op2.Oper.IsIntegralConst)
-                {
-                    // TODO-CQ: ROL currently expects op2 to be a constant
-                    break;
-                }
-
-                // Pop the value from the stack
-                _ = impPopStack();
-
-                var op1 = impPopStack().val;
-                var cns2 = (int)(op2.AsIntConCommon().IconValue);
-
-                // Mask the offset to ensure deterministic xplat behavior for overshifting
-                cns2 &= varTypeIsLong(baseType) ? 0x3F : 0x1F;
-
-                if (cns2 is 0)
-                {
-                    // No rotation is a nop
-                    return op1;
-                }
-
-                if (op1.Oper.IsIntegralConst)
-                {
-                    if (varTypeIsLong(baseType))
-                    {
-                        var cns1 = op1.AsIntConCommon().LngValue;
-                        result = gtNewLconNode(long.RotateLeft(cns1, cns2));
-                    }
-                    else
-                    {
-                        var cns1 = (int)(op1.AsIntConCommon().IconValue);
-                        result = gtNewIconNode(baseType, int.RotateLeft(cns1, cns2));
-                    }
-                    break;
-                }
-
-                op2.AsIntConCommon().IconValue = cns2;
-
-                result = gtNewBinaryNode(GT_ROL, baseType, op1, op2);
-                result = gtFoldExpr(result);
-                break;
-            }
-
             case NI_PRIMITIVE_RotateRight:
             {
                 assert(sigInfo.numArgs is 2);
                 assert(!varTypeIsSmall(retType) && !varTypeIsSmall(baseType));
-
-                var op2 = impStackTop().val;
-
-                if (!op2.Oper.IsIntegralConst)
-                {
-                    // TODO-CQ: ROR currently expects op2 to be a constant
-                    break;
-                }
-
-                // Pop the value from the stack
-                impPopStack();
-
-                var op1 = impPopStack().val;
-                var cns2 = (int)(op2.AsIntConCommon().IconValue);
-
-                // Mask the offset to ensure deterministic xplat behavior for overshifting
-                cns2 &= varTypeIsLong(baseType) ? 0x3F : 0x1F;
-
-                if (cns2 is 0)
-                {
-                    // No rotation is a nop
-                    return op1;
-                }
-
-                if (op1.Oper.IsIntegralConst)
-                {
-                    if (varTypeIsLong(baseType))
-                    {
-                        var cns1 = op1.AsIntConCommon().LngValue;
-                        result = gtNewLconNode(long.RotateRight(cns1, cns2));
-                    }
-                    else
-                    {
-                        var cns1 = (int)(op1.AsIntConCommon().IconValue);
-                        result = gtNewIconNode(baseType, int.RotateRight(cns1, cns2));
-                    }
-                    break;
-                }
-
-                op2.AsIntConCommon().IconValue = cns2;
-
-                result = gtNewBinaryNode(GT_ROR, baseType, op1, op2);
-                result = gtFoldExpr(result);
+                result = impRotateHelper(baseType, intrinsic is NI_PRIMITIVE_RotateLeft ? GT_ROL : GT_ROR);
                 break;
             }
 
@@ -20048,26 +19997,9 @@ public partial class Compiler
 
         foreach (var arg in call.Args.Args)
         {
-            switch (arg.WellKnownArg)
+            if (!arg.IsUserArg || arg.WellKnownArg is WellKnownArg.ThisPointer)
             {
-                case WellKnownArg.RetBuffer:
-                case WellKnownArg.ThisPointer:
-                case WellKnownArg.AsyncContinuation:
-                {
-                    // Not part of signature but we still expect to see it here
-                    continue;
-                }
-
-                case WellKnownArg.None:
-                {
-                    break;
-                }
-
-                default:
-                {
-                    NO_WAY("Unexpected well known arg to method GDV candidate");
-                    continue;
-                }
+                continue;
             }
             numArgs++;
 
@@ -20119,6 +20051,52 @@ public partial class Compiler
             return false;
         }
         return true;
+    }
+
+    public GenTree? impRotateHelper(var_types baseType, genTreeOps rotateOper)
+    {
+        assert(rotateOper is GT_ROL or GT_ROR);
+        var op2 = impStackTop().val;
+        var rotateMask = varTypeIsLong(baseType) ? 0x3F : 0x1F;
+
+        if (!op2.Oper.IsIntegralConst)
+        {
+#if LOWER_DECOMPOSE_LONGS
+            if (varTypeIsLong(baseType))
+            {
+                // Variable-sized long rotates need special handling on 32-bit.
+                return null;
+            }
+#endif
+            // Lowering removes the explicit mask when the target's rotate implicitly masks its operand.
+            _ = impPopStack();
+            var rotateValue = impPopStack().val;
+            var rotateAmount = gtNewBinaryNode(GT_AND, op2.Type.ActualType, op2, gtNewIconNode(op2.Type.ActualType, rotateMask));
+            return gtNewBinaryNode(rotateOper, baseType, rotateValue, rotateAmount);
+        }
+
+        _ = impPopStack();
+        var op1 = impPopStack().val;
+        var amount = unchecked((int)op2.AsIntConCommon().IconValue) & rotateMask;
+        if (amount is 0)
+        {
+            return op1;
+        }
+
+        if (op1.Oper.IsIntegralConst)
+        {
+            if (varTypeIsLong(baseType))
+            {
+                var value = op1.AsIntConCommon().LngValue;
+                return gtNewLconNode(rotateOper is GT_ROL ? long.RotateLeft(value, amount) : long.RotateRight(value, amount));
+            }
+
+            var intValue = unchecked((int)op1.AsIntConCommon().IconValue);
+            return gtNewIconNode(baseType, rotateOper is GT_ROL ? int.RotateLeft(intValue, amount) : int.RotateRight(intValue, amount));
+        }
+
+        op2.AsIntConCommon().IconValue = amount;
+        return gtFoldExpr(gtNewBinaryNode(rotateOper, baseType, op1, op2));
     }
 
     public bool IsIntrinsicImplementedByUserCall(NamedIntrinsic intrinsicName)

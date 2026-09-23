@@ -37,6 +37,13 @@ they are not expected to exist in a fresh clone.
 
 ## Unit of work
 
+Complete upstream synchronization before resuming saved WIP and new phase
+porting. Batch changes by source/dependency area; after synchronization, target
+required minopts phases before optional optimizations. Reuse the prepared native
+build and `Core_Root`, with small AltJIT programs at meaningful boundaries.
+Intermediate checks should be localized and fast; deeper investigation is driven
+by actual failures or mismatches, not a mandatory cycle for every helper.
+
 Port a whole native function and its required support, rather than a fragment
 selected to get one test running. Preserve all Windows-x64 behavior in that
 function. Paths unique to other targets may be explicit NYIs, with their target,

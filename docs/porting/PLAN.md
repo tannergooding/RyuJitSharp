@@ -5,6 +5,35 @@ centralized newline proposal were approved on 2026-09-22. Prioritize a clean por
 with minimal divergence; extensive tooling tests and larger restructuring are
 deferred. Exact revisions and the checkpoint are in [state.json](state.json).
 
+## Execution order and iteration
+
+First finish reconciling already ported code and the native residual tree with
+the pinned upstream `main` revision. Then reconcile and resume the preserved WIP.
+Only after that, start new phase porting, prioritizing required Windows-x64
+minopts transformations toward code generation over optional optimizations.
+Do not expand synchronization into implementing every currently unported phase:
+record those boundaries accurately and reconcile existing implementations.
+
+Work in substantial dependency-coherent batches during both synchronization and
+new porting. Use source spot checks and localized incremental builds between
+milestones, not exhaustive new fixtures or repeated full validation per helper.
+
+Reuse the matching oracle product build and `Core_Root`. The native setup is
+`.\build.cmd -subset clr -config checked`, then
+`.\build.cmd -subset clr+libs -config release`, then
+`.\src\tests\build.cmd x64 checked generatelayoutonly`.
+Do not repeat that setup unless the native revision or required artifacts change.
+
+Choose a required phase, port a substantial dependency-coherent section with
+localized incremental builds or spot checks, then build RyuJitSharp and run a
+small hello-world-style program using its DLL/PDB as the AltJIT against that
+layout. The small program should execute in milliseconds; builds and publication
+are separate costs, not part of each test invocation. Follow the next real
+failure or missing transformation. Deep analysis and focused regression checks
+belong at concrete bugs or mismatches, not automatically at every helper.
+Use dumps and eventual disassembly to preserve fidelity without mistaking native
+fallback or stub phases for managed code generation.
+
 ## 0. Preserve and establish the starting point
 
 Completed setup: the isolated C# branch starts from `fgImport`, its latest WIP
@@ -108,11 +137,12 @@ Retain recovery refs until these checks are complete.
 
 ## 4. Continue by compiler dependencies
 
-Select the next complete function/dependency cluster from the residual source
-and actual reachable frontier. Prioritize finishing the importer/inlining/morph
-support needed by the corpus, then the remaining analysis/optimization phases,
-lowering, register allocation, code generation, and GC/EH/unwind emission.
-This is a dependency guide, not permission to bypass earlier required phases.
+Select the next required minopts phase and its dependency cluster from the
+residual source and actual reachable frontier. Prioritize mandatory importer,
+morph, rationalization, lowering, register allocation, code generation, and
+GC/EH/unwind support. Inlining and other optional optimizations can wait.
+Do not bypass required transformations or claim an optional phase is implemented
+merely because minopts does not need it.
 
 Port functions completely while validating milestones at phase boundaries.
 Add corpus dimensions deliberately: exceptional flow, generics and structs,

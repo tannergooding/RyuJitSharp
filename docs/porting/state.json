@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "syncing-upstream",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Resume the pinned-revision review of already ported surfaces and saved-WIP dependencies in larger coherent sections. SaveAsyncContexts and CreateReturnBB now produce saved contexts, enclosing fault regions, inline-root EH IDs, and merged normal exits; their block, statement, and metadata dependencies are ported. Multi-clause EH iteration is corrected (B046). The separate recursive visitor still has an execution-order defect (B045). Custom awaiter optimization, general inline expansion, TransformAsync, and broader lowering remain unported; do not confuse those future porting areas with completed upstream reconciliation. Saved inlining/local-morph/LIR/rationalization/alias-set boundaries are classified, not restored. Native residual reconciliation and the first PGO dump gap remain pending.",
+    "nextAction": "Finish pinned-upstream reconciliation before saved-WIP integration and new minopts phase porting. Call argument/GDV/PInvoke contracts, helper-to-user conversion, variable rotates, span evaluation order, type-query effects, Buffer.Memmove expansion and lightweight async intrinsic changes are reconciled. Finish remaining intrinsic deltas (including Half), the importer review and native residual reconciliation. Use larger source batches, localized builds and fast spot checks; reuse the matching Core_Root for small AltJIT milestone runs. General inlining, custom awaiters and async lowering remain unported. The first PGO dump gap remains pending.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -27,6 +27,13 @@
       "targetFocusedTestsDebug": 412,
       "targetFocusedTestsRelease": 328,
       "targetFocusedTestsSkipped": 0,
+      "callIntrinsicSpotChecks": {
+        "debugPassed": 81,
+        "releasePassed": 81,
+        "skipped": 0,
+        "newVariableRotateCases": 4,
+        "nativeAotRecaptured": false
+      },
       "nativeAotPublish": "passed-through-target-async-context-save-milestone",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "seven-method-corpus-captured-with-known-differences",
@@ -79,6 +86,7 @@
       "Conditional Wasm address-mode recognition passed isolated managed probes; declaration and ARM64 threshold synchronization does not establish non-x64 target support.",
       "The managed calli corpus case reaches imported CALL ind IR; it does not establish unmanaged calli conversion, NativeAOT fat-pointer execution, or codegen parity.",
       "Instrumented value-profile collection and constrained boxing order are source-reconciled but remain unexercised by the current corpus.",
+      "The call/intrinsic reconciliation batch uses localized managed checks rather than a new NativeAOT capture. Helper-to-user conversion, generic Memmove, span spilling, runtime async expansions and non-x64 argument extension do not yet have execution/codegen evidence. Remaining Half intrinsic changes are not reconciled.",
       "The seven-method corpus contains no EH or pinned-local cases and establishes neither phase nor codegen parity."
     ]
   },
