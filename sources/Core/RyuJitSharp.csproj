@@ -301,6 +301,7 @@
     <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);FEATURE_FASTTAILCALL</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);FEATURE_FASTTAILCALL</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_FASTTAILCALL</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'wasm'">$(DefineConstants);FEATURE_FASTTAILCALL</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64'">$(DefineConstants);FEATURE_FASTTAILCALL</DefineConstants>
     
     <!-- FEATURE_FIXED_OUT_ARGS: Preallocate the outgoing arg area in the prolog -->

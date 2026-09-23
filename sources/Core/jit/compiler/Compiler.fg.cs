@@ -5752,6 +5752,7 @@ public partial class Compiler
     public int fgMeasureIR()
     {
         var nodeCount = 0;
+        var visitor = new MeasureIRVisitor();
 
         foreach (var block in Blocks)
         {
@@ -5759,9 +5760,7 @@ public partial class Compiler
             {
                 foreach (var stmt in block.Statements)
                 {
-                    var visitor = new MeasureIRVisitor();
                     _ = visitor.WalkTree(ref stmt.RootNodeRef, user: null);
-                    nodeCount = visitor.NodeCount;
                 }
             }
             else
@@ -5772,7 +5771,7 @@ public partial class Compiler
                 }
             }
         }
-        return nodeCount;
+        return nodeCount + visitor.NodeCount;
     }
 #endif
 

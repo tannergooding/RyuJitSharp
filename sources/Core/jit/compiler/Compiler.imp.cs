@@ -18977,18 +18977,20 @@ public partial class Compiler
 
             var stackTop = impStackTop(0).val;
 
-            if (stackTop.Oper.IsIntegralConst)
+            if (!stackTop.Oper.IsIntegralConst)
             {
-                var intCon = stackTop.AsIntCon();
+                return null;
+            }
 
-                if (intCon.IsIntegralConst((int)(StringComparison.OrdinalIgnoreCase)))
-                {
-                    cmpMode = StringComparison.OrdinalIgnoreCase;
-                }
-                else if (!intCon.IsIntegralConst((int)(StringComparison.Ordinal)))
-                {
-                    return null;
-                }
+            var intCon = stackTop.AsIntCon();
+
+            if (intCon.IsIntegralConst((int)(StringComparison.OrdinalIgnoreCase)))
+            {
+                cmpMode = StringComparison.OrdinalIgnoreCase;
+            }
+            else if (!intCon.IsIntegralConst((int)(StringComparison.Ordinal)))
+            {
+                return null;
             }
 
             op1 = impStackTop(2).val;
@@ -19071,7 +19073,7 @@ public partial class Compiler
                 return null;
             }
 
-            JITDUMP($"Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"{str[..int.Min(cnsLength, 50)]}{((cnsLength > 50) ? "..." : "")}%s\")...\n");
+            JITDUMP($"Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"{str[..int.Min(cnsLength, 50)]}{((cnsLength > 50) ? "..." : "")}\")...\n");
         }
 
         int spanLclNum;
@@ -19101,17 +19103,11 @@ public partial class Compiler
 
         if (unrolled is not null)
         {
-            // Wrap with the reference equality check for Equals.
-            // We believe it's less likely to be useful for StartsWith/EndsWith.
-            if (kind == StringComparisonKind.Equals)
-            {
-                var refEqualityColon = gtNewColonNode(TYP_INT, gtNewTrue(), unrolled);
-                unrolled = gtNewQmarkNode(TYP_INT, gtNewBinaryNode(GT_EQ, TYP_INT, gtCloneExpr(spanReferenceFld), gtCloneExpr(cnsStr)), refEqualityColon);
-            }
+            impPopStack(argsCount);
 
             if (spanObj.Oper is not GT_LCL_VAR)
             {
-                impStoreToTemp(spanLclNum, spanObj, CHECK_SPILL_NONE);
+                impStoreToTemp(spanLclNum, spanObj, CHECK_SPILL_ALL);
             }
 
             if (unrolled.Oper is GT_QMARK)
@@ -19119,30 +19115,25 @@ public partial class Compiler
                 // QMARK can't be a root node, spill it to a temp
                 var rootTmp = lvaGrabTemp(shortLifetime: true, "spilling unroll qmark");
 
-                impStoreToTemp(rootTmp, unrolled, CHECK_SPILL_NONE);
+                impStoreToTemp(rootTmp, unrolled, CHECK_SPILL_ALL);
                 unrolled = gtNewLclvNode(TYP_INT, rootTmp);
             }
 
             JITDUMP("... Successfully unrolled to:\n");
             DISPTREE(unrolled);
-    
-            for (var i = 0; i < argsCount; i++)
-            {
-                _ = impPopStack();
-            }
 
             // We have to clean up GT_RET_EXPR for String.op_Implicit or MemoryExtensions.AsSpans
             if ((spanObj != op1) && (op1.Oper is GT_RET_EXPR))
             {
-                var inlineCandidate = op1.AsRetExpr().InlineCandidate;
-                assert(inlineCandidate.Oper.IsCall);
-                inlineCandidate  = gtNewNothingNode();
+                var retExpr = op1.AsRetExpr();
+                assert(retExpr.InlineCandidate.Oper.IsCall);
+                retExpr.InlineCandidate = gtNewNothingNode();
             }
             else if ((spanObj != op2) && (op2.Oper is GT_RET_EXPR))
             {
-                var inlineCandidate = op2.AsRetExpr().InlineCandidate;
-                assert(inlineCandidate.Oper.IsCall);
-                inlineCandidate  = gtNewNothingNode();
+                var retExpr = op2.AsRetExpr();
+                assert(retExpr.InlineCandidate.Oper.IsCall);
+                retExpr.InlineCandidate = gtNewNothingNode();
             }
         }
         return unrolled;
@@ -19196,19 +19187,22 @@ public partial class Compiler
         {
             var stackTop = impStackTop(0).val;
 
-            if (stackTop.Oper.IsIntegralConst)
+            if (!stackTop.Oper.IsIntegralConst)
             {
-                var intCon = stackTop.AsIntCon();
-
-                if (intCon.IsIntegralConst((int)(StringComparison.OrdinalIgnoreCase)))
-                {
-                    cmpMode = StringComparison.OrdinalIgnoreCase;
-                }
-                else if (!intCon.IsIntegralConst((int)(StringComparison.Ordinal)))
-                {
-                    return null;
-                }
+                return null;
             }
+
+            var intCon = stackTop.AsIntCon();
+
+            if (intCon.IsIntegralConst((int)(StringComparison.OrdinalIgnoreCase)))
+            {
+                cmpMode = StringComparison.OrdinalIgnoreCase;
+            }
+            else if (!intCon.IsIntegralConst((int)(StringComparison.Ordinal)))
+            {
+                return null;
+            }
+
             op1 = impStackTop(2).val;
             op2 = impStackTop(1).val;
         }
@@ -19265,7 +19259,7 @@ public partial class Compiler
         {
             // check for fake "" first
             cnsLength = 0;
-            JITDUMP($"Trying to unroll String.Equals|StartsWith|EndsWith(op1, \"{str}\")...\n");
+            JITDUMP("Trying to unroll String.Equals|StartsWith|EndsWith(op1, \"\")...\n");
         }
         else
         {
@@ -19316,23 +19310,20 @@ public partial class Compiler
                 unrolled = gtNewQmarkNode(TYP_INT, gtNewBinaryNode(GT_EQ, TYP_INT, gtCloneExpr(varStrLcl), gtCloneExpr(cnsStr)), refEqualityColon);
             }
 
-            impStoreToTemp(varStrTmp, varStr, CHECK_SPILL_NONE);
+            impPopStack(argsCount);
+
+            impStoreToTemp(varStrTmp, varStr, CHECK_SPILL_ALL);
 
             if (unrolled.Oper is GT_QMARK)
             {
                 // QMARK nodes cannot reside on the evaluation stack
                 var rootTmp = lvaGrabTemp(true, "spilling unroll qmark");
-                impStoreToTemp(rootTmp, unrolled, CHECK_SPILL_NONE);
+                impStoreToTemp(rootTmp, unrolled, CHECK_SPILL_ALL);
                 unrolled = gtNewLclvNode(TYP_INT, rootTmp);
             }
 
             JITDUMP("\n... Successfully unrolled to:\n");
             DISPTREE(unrolled);
-
-            for (var i = 0; i < argsCount; i++)
-            {
-                _ = impPopStack();
-            }
         }
         return unrolled;
     }

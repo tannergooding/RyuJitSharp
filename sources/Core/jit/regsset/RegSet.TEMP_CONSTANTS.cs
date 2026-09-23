@@ -11,7 +11,7 @@ public partial struct RegSet
     public const int TEMP_MAX_SIZE = sizeof(double);
 #elif TARGET_XARCH
     public const int TEMP_MAX_SIZE = ZMM_REGSIZE_BYTES;
-#elif TARGET_ARM64
+#elif TARGET_ARM64 || TARGET_WASM
     public const int TEMP_MAX_SIZE = FP_REGSIZE_BYTES;
 #endif
 

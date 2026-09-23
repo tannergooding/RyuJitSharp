@@ -173,6 +173,9 @@ public struct AbiPassingSegment
             return Size switch {
                 4 => TYP_FLOAT,
                 8 => TYP_DOUBLE,
+#if FEATURE_SIMD && TARGET_WASM
+                12 => TYP_SIMD16,
+#endif
 #if FEATURE_SIMD
                 16 => TYP_SIMD16,
 #endif

@@ -78,29 +78,6 @@ public partial class Compiler
         return stringBuilder;
     }
 
-    /// <summary>Convert a tuple of "{ value, pValue }" to "CORINFO_CONST_LOOKUP".</summary>
-    /// <param name="value">The direct value (IAT_VALUE)</param>
-    /// <param name="pValue">The indirect value (IAT_PVALUE)</param>
-    /// <returns>The lookup.</returns>
-    public unsafe CORINFO_CONST_LOOKUP eeConvertToLookup(void* value, void* pValue)
-    {
-        Unsafe.SkipInit(out CORINFO_CONST_LOOKUP lookup);
-
-        if (value is not null)
-        {
-            assert(pValue is null);
-            lookup.accessType = IAT_VALUE;
-            lookup.addr = value;
-        }
-        else
-        {
-            assert(pValue is not null);
-            lookup.accessType = IAT_PVALUE;
-            lookup.addr = pValue;
-        }
-        return lookup;
-    }
-
     public static unsafe CORINFO_METHOD_HANDLE eeFindHelper(CorInfoHelpFunc helpFunc)
     {
         // Helpers are marked by the fact that they are odd numbers

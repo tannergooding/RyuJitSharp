@@ -6051,26 +6051,12 @@ public partial class Compiler
     /// <summary>Initialize a store node.</summary>
     /// <param name="store">The store node</param>
     /// <param name="value">The value to store</param>
-    /// <remarks>Common initialization for all STORE nodes. Marks simd locals as "used in a HW intrinsic".</remarks>
+    /// <remarks>Common initialization for all STORE nodes.</remarks>
     public void gtInitializeStoreNode(GenTree store, GenTree value)
     {
         // TODO-ASG: add asserts that the types match here.
         assert(store.Data == value);
 
-#if FEATURE_SIMD
-        if (varTypeIsSimdOrMask(value.Type))
-        {
-            // TODO-ASG: delete this zero-diff quirk.
-            if (!value.Oper.IsCall || !value.AsCall().ShouldHaveRetBufArg)
-            {
-                // We want to track simd stores as being intrinsics since they are
-                // functionally simd `mov` instructions and are more efficient when
-                // we don't promote, particularly when it occurs due to inlining.
-                SetOpLclRelatedToSimdIntrinsic(store);
-                SetOpLclRelatedToSimdIntrinsic(value);
-            }
-        }
-#endif
     }
 
     private bool gtIsAsyncCall(GenTree tree)
@@ -7744,19 +7730,11 @@ public partial class Compiler
 #if FEATURE_HW_INTRINSICS
     public GenTreeHWIntrinsic gtNewSimdHWIntrinsicNode(var_types type, NamedIntrinsic hwIntrinsicId, var_types simdBaseType, byte simdSize, params GenTree[] operands)
     {
-        foreach (var operand in operands)
-        {
-            SetOpLclRelatedToSimdIntrinsic(operand);
-        }
         return new GenTreeHWIntrinsic(type, hwIntrinsicId, simdBaseType, simdSize, operands);
     }
 
     public GenTreeHWIntrinsic gtNewScalarHWIntrinsicNode(var_types type, NamedIntrinsic hwIntrinsicId, params GenTree[] operands)
     {
-        foreach (var operand in operands)
-        {
-            SetOpLclRelatedToSimdIntrinsic(operand);
-        }
         return new GenTreeHWIntrinsic(type, hwIntrinsicId, TYP_UNKNOWN, simdSize: 0, operands);
     }
 

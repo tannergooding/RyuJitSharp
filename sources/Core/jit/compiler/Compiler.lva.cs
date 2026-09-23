@@ -2867,23 +2867,4 @@ public partial class Compiler
     }
 #endif
 
-#if FEATURE_SIMD
-    /// <summary>Set the flag that indicates that the lclVar referenced by this tree is used in a simd intrinsic.</summary>
-    /// <param name="tree"></param>
-    public void setLclRelatedToSimdIntrinsic(GenTreeLclVarCommon tree)
-    {
-        ref var lclVarDsc = ref lvaGetDesc(tree.LclNum);
-        lclVarDsc.lvUsedInSimdIntrinsic = true;
-    }
-
-    /// <summary>Determine if the tree has a local var that needs to be set as used by a simd intrinsic, and if so, set that local var appropriately.</summary>
-    /// <param name="op">The tree, to be an operand of a new simd-related node, to check.</param>
-    public void SetOpLclRelatedToSimdIntrinsic(GenTree op)
-    {
-        if (op.Oper.IsScalarLocal)
-        {
-            setLclRelatedToSimdIntrinsic(op.AsLclVarCommon());
-        }
-    }
-#endif
 }

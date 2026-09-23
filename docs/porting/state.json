@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "syncing-upstream",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Continue the remaining upstream inventory, including obsolete SIMD-local markers, importer producers, and inline-context changes, before restoring saved WIP. Existing driver/tree/intrinsic lookup and graph/SIMD helper deltas have another verified checkpoint; broader async, SIMD importer, and backend closures remain unported. The first dump gap still requires real PGO incorporation.",
+    "nextAction": "Continue the remaining upstream inventory, especially importer producers, inline/GDV candidate contracts, and compiler declarations, before restoring saved WIP. Obsolete SIMD-local markers are removed; IR counting and UTF-16 vectorization helpers are reconciled. Broader async, SIMD importer, and backend closures remain unported. The first dump gap still requires real PGO incorporation.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -24,10 +24,10 @@
       "testSourcesPresent": true,
       "writerRegressionCases": 16,
       "writerRegressionConfigurations": ["Debug", "Release"],
-      "targetFocusedTestsDebug": 153,
-      "targetFocusedTestsRelease": 100,
+      "targetFocusedTestsDebug": 156,
+      "targetFocusedTestsRelease": 103,
       "targetFocusedTestsSkipped": 0,
-      "nativeAotPublish": "passed-through-target-helper-synchronization-checkpoint",
+      "nativeAotPublish": "passed-through-target-post-helper-synchronization-checkpoint",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "six-method-baseline-captured-with-known-differences",
       "codegenParity": "not-available"
@@ -59,7 +59,7 @@
     "oldNativeHostPreservedAndExecuted": true,
     "managedCapture": "six-selected-methods-loaded-with-target-abi",
     "managedGuid": "cb2fa75d-449d-4ee0-93ef-57011daefb8c",
-    "latestManagedBinarySha256": "545A83158D56CA91FA0257C9F6E19002BEE769887F4A1FEA3D7EC27BAAF99D45",
+    "latestManagedBinarySha256": "3E36C97A917D7EC607B189F42A2259A499FCF813D2ED60691AFC6AEE158B1BF6",
     "wrongGuidCaptureRejected": true,
     "nativeLayoutMeasurements": "matched-raw-managed-sizeof-and-debug-variable-offsets",
     "latestPrefixDifference": "missing-BBOPT-profile-diagnostic",
@@ -68,6 +68,7 @@
       "Corrected DFS/tree/EH support passes six focused graph cases in Debug/Release; runtime EH parity remains unestablished.",
       "Async-stress policy/grouping contracts have focused coverage, but grouping integration awaits the unported inliner bodies; no end-to-end async inlining parity is claimed.",
       "SIMD helper/lookup probes and metadata-boundary tests do not establish intrinsic execution parity; impHWIntrinsic, cross-platform vector import, and substantial non-x64 closures remain unported.",
+      "UTF-16 comparison vectorization has rejection-path probes and source-contract checks, but successful EE-backed expansion remains unexercised.",
       "The six-method corpus contains no EH or pinned-local cases and establishes neither phase nor codegen parity."
     ]
   },
@@ -90,7 +91,7 @@
     },
     {
       "area": "importer",
-      "native": ["src\\coreclr\\jit\\importer.cpp", "src\\coreclr\\jit\\importercalls.cpp"],
+      "native": ["src\\coreclr\\jit\\importer.cpp", "src\\coreclr\\jit\\importercalls.cpp", "src\\coreclr\\jit\\importervectorization.cpp"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.imp.cs", "sources\\Core\\jit\\compiler\\Compiler.ImportCallHelper.cs"],
       "reconciledCommit": null
     },

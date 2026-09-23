@@ -9,6 +9,55 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class FlowGraphHelperTests
 {
+    [TestCase(1, 1)]
+    [TestCase(1, 3)]
+    [TestCase(3, 1)]
+    public static void IRMeasurementCountsAllStatements(int blockCount, int statementsPerBlock)
+    {
+#if DEBUG
+        using var jitTls = new JitTls(null);
+#endif
+        var previous = JitTls.Compiler;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitFlags jitFlags = default;
+        compiler.opts.jitFlags = &jitFlags;
+        JitTls.Compiler = compiler;
+#if DEBUG
+        compiler.fgSafeBasicBlockCreation = true;
+#endif
+
+        try
+        {
+            BasicBlock? last = null;
+            for (var i = 0; i < blockCount; i++)
+            {
+                var block = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+                if (last is null)
+                {
+                    compiler.fgFirstBB = block;
+                }
+                else
+                {
+                    last.Next = block;
+                }
+                last = block;
+
+                for (var j = 0; j < statementsPerBlock; j++)
+                {
+                    var statement = new Statement(compiler.gtNewNothingNode(), (i * statementsPerBlock) + j + 1);
+                    compiler.fgInsertStmtAtEnd(block, statement);
+                }
+            }
+            compiler.fgLastBB = last;
+
+            Assert.That(compiler.fgMeasureIR(), Is.EqualTo(blockCount * statementsPerBlock));
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+
     [TestCase(false, 0)]
     [TestCase(false, 8)]
     [TestCase(false, -8)]
