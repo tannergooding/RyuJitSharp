@@ -875,6 +875,12 @@ public partial class GenTree
             GT_LOCKADD => true,
             GT_CMPXCHG => true,
             GT_MEMORYBARRIER => true,
+            // Proven-safe division must remain below the checks that established
+            // GTF_DIV_MOD_NO_BY_ZERO and, for signed operations, GTF_DIV_MOD_NO_OVERFLOW.
+            GT_DIV => true,
+            GT_UDIV => true,
+            GT_MOD => true,
+            GT_UMOD => true,
             GT_CATCH_ARG => true,
             GT_ASYNC_CONTINUATION => true,
             GT_RETURN_SUSPEND => true,

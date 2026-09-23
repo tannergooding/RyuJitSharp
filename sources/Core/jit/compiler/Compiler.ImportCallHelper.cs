@@ -532,7 +532,7 @@ public partial class Compiler
 
                             call = compiler.gtNewIndCallNode(callRetTyp, stubAddr, debugInfo);
 
-                            call.Flags |= (GTF_EXCEPT | GTF_CALL_VIRT_STUB | (stubAddr.Flags & GTF_GLOB_EFFECT));
+                            call.Flags |= GTF_CALL_VIRT_STUB | (stubAddr.Flags & GTF_ALL_EFFECT);
 
 #if TARGET_X86
                             // No tailcalls allowed for these yet...
@@ -645,10 +645,11 @@ public partial class Compiler
                         assert(fptr is not null);
 
                         indCall.Args.PushFront(NewCallArg.CreateForPrimitive(thisPtrCopy).WithWellKnownArg(WellKnownArg.ThisPointer));
+                        indCall.Flags |= thisPtrCopy.Flags & GTF_ALL_EFFECT;
 
                         // Now make an indirect call through the function pointer
                         indCall.ControlExpr = fptr;
-                        indCall.Flags |= (GTF_EXCEPT | (fptr.Flags & GTF_GLOB_EFFECT));
+                        indCall.Flags |= fptr.Flags & GTF_ALL_EFFECT;
 
                         if (needsFatPointerHandling)
                         {
@@ -670,6 +671,32 @@ public partial class Compiler
 
                         // Since we are jumping over some code, check that its OK to skip that code
                         assert((sigInfo.callConv & CORINFO_CALLCONV_MASK) is not CORINFO_CALLCONV_VARARG and not CORINFO_CALLCONV_NATIVEVARARG);
+
+#if TARGET_WASM
+                        // LDVIRTFTN bypasses the shared hidden-argument path. Wasm indirect
+                        // call signatures still require the type context, including array Address.
+                        if (sigInfo.hasTypeArg())
+                        {
+                            GenTree? wasmInstParam;
+                            if (compiler.lvaNextCallGenericContext is not BAD_VAR_NUM)
+                            {
+                                wasmInstParam = compiler.gtNewLclVarNode(TYP_UNDEF, compiler.lvaNextCallGenericContext);
+                                compiler.lvaNextCallGenericContext = BAD_VAR_NUM;
+                            }
+                            else
+                            {
+                                wasmInstParam = compiler.impGetInstParamArg(resolvedToken, callInfo, exactContextHnd,
+                                    exactContextNeedsRuntimeLookup, clsFlags, isReadonlyCall);
+                                if (wasmInstParam is null)
+                                {
+                                    assert(compiler.compDonotInline);
+                                    return TYP_UNDEF;
+                                }
+                            }
+
+                            _ = indCall.Args.InsertInstParam(compiler, wasmInstParam);
+                        }
+#endif
 
                         return Devirt(compiler, indCall);
                     }
@@ -719,7 +746,7 @@ public partial class Compiler
                         fptr = compiler.gtNewLclvNode(TYP_I_IMPL, lclNum);
 
                         call = compiler.gtNewIndCallNode(callRetTyp, fptr, debugInfo);
-                        call.Flags |= (GTF_EXCEPT | (fptr.Flags & GTF_GLOB_EFFECT));
+                        call.Flags |= fptr.Flags & GTF_ALL_EFFECT;
 
                         if (callInfo.nullInstanceCheck)
                         {
@@ -950,92 +977,12 @@ public partial class Compiler
 
                     assert(opcode != CEE_CALLI);
 
-                    // Instantiated generic method
-                    if (((nuint)(exactContextHnd) & (nuint)(CORINFO_CONTEXTFLAGS_MASK)) == (nuint)(CORINFO_CONTEXTFLAGS_METHOD))
+                    instParam = compiler.impGetInstParamArg(resolvedToken, callInfo, exactContextHnd,
+                        exactContextNeedsRuntimeLookup, clsFlags, isReadonlyCall);
+                    if (instParam is null)
                     {
-                        assert(exactContextHnd != METHOD_BEING_COMPILED_CONTEXT());
-                        var exactMethodHandle = (CORINFO_METHOD_HANDLE)((nuint)(exactContextHnd) & ~(nuint)(CORINFO_CONTEXTFLAGS_MASK));
-
-                        if (!exactContextNeedsRuntimeLookup)
-                        {
-#if FEATURE_READYTORUN
-                            if (compiler.IsAot)
-                            {
-                                instParam = compiler.gtNewIconEmbHndNode(callInfo.instParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle);
-
-                                if (instParam is null)
-                                {
-                                    assert(compiler.compDonotInline);
-                                    return TYP_UNDEF;
-                                }
-                            }
-                            else
-#endif
-                            {
-                                instParam = compiler.gtNewIconEmbMethHndNode(exactMethodHandle);
-                                compiler.info.compCompHnd->methodMustBeLoadedBeforeCodeIsRun(exactMethodHandle);
-                            }
-                        }
-                        else
-                        {
-                            instParam = compiler.impTokenToHandle(resolvedToken, mustRestoreHandle: true);
-
-                            if (instParam is null)
-                            {
-                                assert(compiler.compDonotInline);
-                                return TYP_UNDEF;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // otherwise must be an instance method in a generic struct,
-                        // a static method in a generic type, or a runtime-generated array method
-
-                        assert(((nuint)(exactContextHnd) & (nuint)(CORINFO_CONTEXTFLAGS_MASK)) == (nuint)(CORINFO_CONTEXTFLAGS_CLASS));
-                        var exactClassHandle = compiler.eeGetClassFromContext(exactContextHnd);
-
-                        if (compiler.compIsForInlining && ((clsFlags & CORINFO_FLG_ARRAY) is not 0))
-                        {
-                            compiler.compInlineResult.NoteFatal(InlineObservation.CALLEE_IS_ARRAY_METHOD);
-                            return TYP_UNDEF;
-                        }
-
-                        if (((clsFlags & CORINFO_FLG_ARRAY) is not 0) && isReadonlyCall)
-                        {
-                            // We indicate "readonly" to the Address operation by using a null instParam.
-                            instParam = compiler.gtNewIconNode(TYP_REF, 0);
-                        }
-                        else if (!exactContextNeedsRuntimeLookup)
-                        {
-#if FEATURE_READYTORUN
-                            if (compiler.IsAot)
-                            {
-                                instParam = compiler.gtNewIconEmbHndNode(callInfo.instParamLookup, GTF_ICON_CLASS_HDL, exactClassHandle);
-
-                                if (instParam is null)
-                                {
-                                    assert(compiler.compDonotInline);
-                                    return TYP_UNDEF;
-                                }
-                            }
-                            else
-#endif
-                            {
-                                instParam = compiler.gtNewIconEmbClsHndNode(exactClassHandle);
-                                compiler.info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(exactClassHandle);
-                            }
-                        }
-                        else
-                        {
-                            instParam = compiler.impParentClassTokenToHandle(resolvedToken, mustRestoreHandle: true);
-
-                            if (instParam is null)
-                            {
-                                assert(compiler.compDonotInline);
-                                return TYP_UNDEF;
-                            }
-                        }
+                        assert(compiler.compDonotInline);
+                        return TYP_UNDEF;
                     }
                 }
             }
@@ -1080,16 +1027,19 @@ public partial class Compiler
                     if (varArgsCookie is not null)
                     {
                         call.Args.PushFront(NewCallArg.CreateForPrimitive(varArgsCookie).WithWellKnownArg(WellKnownArg.VarArgsCookie));
+                        call.Flags |= varArgsCookie.Flags & GTF_ALL_EFFECT;
                     }
 
                     if (asyncContinuation is not null)
                     {
                         call.Args.PushFront(NewCallArg.CreateForPrimitive(asyncContinuation).WithWellKnownArg(WellKnownArg.AsyncContinuation));
+                        call.Flags |= asyncContinuation.Flags & GTF_ALL_EFFECT;
                     }
 
                     if (instParam is not null)
                     {
                         call.Args.PushFront(NewCallArg.CreateForPrimitive(instParam).WithWellKnownArg(WellKnownArg.InstParam));
+                        call.Flags |= instParam.Flags & GTF_ALL_EFFECT;
                     }
                 }
                 else
@@ -1097,16 +1047,19 @@ public partial class Compiler
                     if (asyncContinuation is not null)
                     {
                         call.Args.PushBack(NewCallArg.CreateForPrimitive(asyncContinuation).WithWellKnownArg(WellKnownArg.AsyncContinuation));
+                        call.Flags |= asyncContinuation.Flags & GTF_ALL_EFFECT;
                     }
 
                     if (instParam is not null)
                     {
                         call.Args.PushBack(NewCallArg.CreateForPrimitive(instParam).WithWellKnownArg(WellKnownArg.InstParam));
+                        call.Flags |= instParam.Flags & GTF_ALL_EFFECT;
                     }
 
                     if (varArgsCookie is not null)
                     {
                         call.Args.PushBack(NewCallArg.CreateForPrimitive(varArgsCookie).WithWellKnownArg(WellKnownArg.VarArgsCookie));
+                        call.Flags |= varArgsCookie.Flags & GTF_ALL_EFFECT;
                     }
                 }
             }
@@ -1139,7 +1092,7 @@ public partial class Compiler
                 }
 
                 // Store the "this" value in the call
-                call.Flags |= (obj.Flags & GTF_GLOB_EFFECT);
+                call.Flags |= obj.Flags & GTF_ALL_EFFECT;
                 call.Args.PushFront(NewCallArg.CreateForPrimitive(obj).WithWellKnownArg(WellKnownArg.ThisPointer));
 
                 if (compiler.impIsThis(obj))

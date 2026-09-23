@@ -3707,6 +3707,103 @@ public partial class Compiler
         return null;
     }
 
+    /// <summary>Compute the hidden instantiation argument for a call with a type argument.</summary>
+    /// <returns>The instantiation argument, or null when importing the inlinee must abort.</returns>
+    public unsafe GenTree? impGetInstParamArg(in CORINFO_RESOLVED_TOKEN resolvedToken, in CORINFO_CALL_INFO callInfo,
+        CORINFO_CONTEXT_HANDLE exactContextHnd, bool exactContextNeedsRuntimeLookup, CorInfoFlag clsFlags, bool isReadonlyCall)
+    {
+        GenTree? instParam;
+
+        // Instantiated generic method
+        if (((nuint)(exactContextHnd) & (nuint)(CORINFO_CONTEXTFLAGS_MASK)) == (nuint)(CORINFO_CONTEXTFLAGS_METHOD))
+        {
+            assert(exactContextHnd != METHOD_BEING_COMPILED_CONTEXT());
+            var exactMethodHandle = (CORINFO_METHOD_HANDLE)((nuint)(exactContextHnd) & ~(nuint)(CORINFO_CONTEXTFLAGS_MASK));
+
+            if (!exactContextNeedsRuntimeLookup)
+            {
+#if FEATURE_READYTORUN
+                if (IsAot)
+                {
+                    instParam = gtNewIconEmbHndNode(callInfo.instParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle);
+
+                    if (instParam is null)
+                    {
+                        assert(compDonotInline);
+                        return null;
+                    }
+                }
+                else
+#endif
+                {
+                    instParam = gtNewIconEmbMethHndNode(exactMethodHandle);
+                    info.compCompHnd->methodMustBeLoadedBeforeCodeIsRun(exactMethodHandle);
+                }
+            }
+            else
+            {
+                instParam = impTokenToHandle(resolvedToken, mustRestoreHandle: true);
+
+                if (instParam is null)
+                {
+                    assert(compDonotInline);
+                    return null;
+                }
+            }
+        }
+        else
+        {
+            // Otherwise an instance method in a generic struct, a static method in a
+            // generic type, or a runtime-generated array method.
+            assert(((nuint)(exactContextHnd) & (nuint)(CORINFO_CONTEXTFLAGS_MASK)) == (nuint)(CORINFO_CONTEXTFLAGS_CLASS));
+            var exactClassHandle = eeGetClassFromContext(exactContextHnd);
+
+            if (compIsForInlining && ((clsFlags & CORINFO_FLG_ARRAY) is not 0))
+            {
+                compInlineResult.NoteFatal(InlineObservation.CALLEE_IS_ARRAY_METHOD);
+                return null;
+            }
+
+            if (((clsFlags & CORINFO_FLG_ARRAY) is not 0) && isReadonlyCall)
+            {
+                // The array Address operation interprets a null instParam as readonly.
+                instParam = gtNewIconNode(TYP_REF, 0);
+            }
+            else if (!exactContextNeedsRuntimeLookup)
+            {
+#if FEATURE_READYTORUN
+                if (IsAot)
+                {
+                    instParam = gtNewIconEmbHndNode(callInfo.instParamLookup, GTF_ICON_CLASS_HDL, exactClassHandle);
+
+                    if (instParam is null)
+                    {
+                        assert(compDonotInline);
+                        return null;
+                    }
+                }
+                else
+#endif
+                {
+                    instParam = gtNewIconEmbClsHndNode(exactClassHandle);
+                    info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(exactClassHandle);
+                }
+            }
+            else
+            {
+                instParam = impParentClassTokenToHandle(resolvedToken, mustRestoreHandle: true);
+
+                if (instParam is null)
+                {
+                    assert(compDonotInline);
+                    return null;
+                }
+            }
+        }
+
+        return instParam;
+    }
+
     /// <summary>Get the address of a value.</summary>
     /// <param name="val">The value in question</param>
     /// <param name="curLevel">Stack level for spilling</param>
@@ -10711,7 +10808,7 @@ public partial class Compiler
         // Create the call node
         var call = gtNewIndCallNode(callRetTyp, fptr, di);
 
-        call.Flags |= (GTF_EXCEPT | (fptr.Flags & GTF_GLOB_EFFECT));
+        call.Flags |= fptr.Flags & GTF_ALL_EFFECT;
 #if UNIX_X86_ABI
         call.Flags &= ~GTF_CALL_POP_ARGS;
 #endif
@@ -11799,7 +11896,7 @@ public partial class Compiler
 
     /// <summary>Inherit async args from inlining call as part of a new async call.</summary>
     /// <param name="call">The async call</param>
-    /// <remarks>Currently we only allow inlining of async calls when all awaits are tail awaits. In that case inlining is simplified as we can just inherit everything from the inlining call.</remarks>
+    /// <remarks>Tail awaits and transparent async-version awaits run in the inlining call's frame and inherit its context chain. Awaits that may suspend in their own frame instead use that frame's saved contexts.</remarks>
     public void impInheritAsyncContextsFromInliner(GenTreeCall call)
     {
         if (!compIsForInlining)
@@ -11810,34 +11907,68 @@ public partial class Compiler
         var inlCall = impInlineInfo.iciCall;
         assert(inlCall is not null);
 
+        var resumedUseArg = inlCall.Args.FindWellKnownArg(WellKnownArg.AsyncResumedUse);
+        var resumedDefArg = inlCall.Args.FindWellKnownArg(WellKnownArg.AsyncResumedDef);
         var execArg = inlCall.Args.FindWellKnownArg(WellKnownArg.AsyncExecutionContext);
         var syncArg = inlCall.Args.FindWellKnownArg(WellKnownArg.AsyncSynchronizationContext);
 
-        if (execArg is null)
+        if (resumedUseArg is null)
         {
             // Caller also has no async contexts handling
-            assert(syncArg is null);
+            assert((resumedDefArg is null) && (execArg is null) && (syncArg is null));
             return;
         }
-        assert(syncArg is not null);
+        assert((resumedDefArg is not null) && (execArg is not null) && (syncArg is not null));
 
-        // We are inlining an async call that does not save contexts into a call
-        // that does. We currently allow this only in cases where the tail of the
-        // inlinee can run in the caller's context, and hence we propagate the
-        // caller's context here. It means we do not need to worry about switching
-        // into the caller's context when the inlinee is returning to the caller
-        // after the await.
+        // Take the values from the inlining call so suspension restores and captures
+        // exactly what the frame this await ended up in would have.
+        assert((resumedUseArg.Node.Oper is GT_LCL_VAR) && (resumedDefArg.Node.Oper is GT_LCL_ADDR)
+            && (execArg.Node.Oper is GT_LCL_VAR) && (syncArg.Node.Oper is GT_LCL_VAR));
 
 #if DEBUG
-        assert((execArg.Node.Oper is GT_LCL_VAR) && (syncArg.Node.Oper is GT_LCL_VAR));
-        JITDUMP($"Inheriting contexts [{execArg.Node.TreeId:D6}] and [{syncArg.Node.TreeId:D6}] from caller node\n");
+        JITDUMP($"Inheriting resumed use [{resumedUseArg.Node.TreeId:D6}], resumed def [{resumedDefArg.Node.TreeId:D6}], and contexts [{execArg.Node.TreeId:D6}] and [{syncArg.Node.TreeId:D6}] from caller node\n");
 #endif
 
+        var resumedUseNode = gtCloneExpr(resumedUseArg.Node);
+        var resumedDefNode = gtCloneExpr(resumedDefArg.Node);
         var execNode = gtCloneExpr(execArg.Node);
         var syncNode = gtCloneExpr(syncArg.Node);
 
+        call.Flags |= (resumedUseNode.Flags | resumedDefNode.Flags | execNode.Flags | syncNode.Flags) & GTF_ALL_EFFECT;
         _ = call.Args.PushFront(NewCallArg.CreateForPrimitive(syncNode).WithWellKnownArg(WellKnownArg.AsyncSynchronizationContext));
         _ = call.Args.PushFront(NewCallArg.CreateForPrimitive(execNode).WithWellKnownArg(WellKnownArg.AsyncExecutionContext));
+        _ = call.Args.PushFront(NewCallArg.CreateForPrimitive(resumedUseNode).WithWellKnownArg(WellKnownArg.AsyncResumedUse));
+        _ = call.Args.PushFront(NewCallArg.CreateForPrimitive(resumedDefNode).WithWellKnownArg(WellKnownArg.AsyncResumedDef));
+
+        // Outer frames must retain their order: suspension hands off through the
+        // same chain of frame transitions as the inlining call.
+        var skippedFirst = false;
+        foreach (var arg in inlCall.Args.Args)
+        {
+            var kind = arg.WellKnownArg;
+            if (kind is not (WellKnownArg.AsyncResumedUse or WellKnownArg.AsyncExecutionContext or WellKnownArg.AsyncSynchronizationContext))
+            {
+                continue;
+            }
+
+            if ((kind is WellKnownArg.AsyncResumedUse) && !skippedFirst)
+            {
+                // Only the innermost frame has a resumed def; both were inherited above.
+                skippedFirst = true;
+                continue;
+            }
+
+            if ((arg == execArg) || (arg == syncArg))
+            {
+                continue;
+            }
+
+            var argNode = gtCloneExpr(arg.Node);
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(argNode).WithWellKnownArg(kind));
+            call.Flags |= argNode.Flags & GTF_ALL_EFFECT;
+        }
+
+        call.GetAsyncInfo().InlineFrameContextHandling = inlCall.GetAsyncInfo().InlineFrameContextHandling;
     }
 
     /// <summary>Locate the next stmt boundary for which we need to record info.</summary>

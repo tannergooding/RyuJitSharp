@@ -6764,9 +6764,11 @@ public partial class Compiler
         }
 #endif
 
-        if (callType is not CT_INDIRECT)
-        {            
-            node.ClearInlineInfo();
+        node.ClearInlineInfo();
+
+        if (node.CallExceptions() != ExceptionSetFlags.None)
+        {
+            node.Flags |= GTF_EXCEPT;
         }
 
         // Spec: Managed Retval sequence points needs to be generated while generating debug info for debuggable code.
@@ -15450,13 +15452,19 @@ public partial class Compiler
             flags &= ~GTF_CALL;
         }
 
+        // Operand effects are recomputed by the caller after the node's own effects.
+        if (((flags & GTF_ORDER_SIDEEFF) != 0) && !tree.SupportsOrderingSideEffect())
+        {
+            flags &= ~GTF_ORDER_SIDEEFF;
+        }
+
         tree.Flags = flags;
     }
 
     /// <summary>Update the side effects based on the node operation and children's side efects.</summary>
     /// <param name="tree">Tree to update the side effects on</param>
     /// <remarks>
-    ///   <para>This method currently only updates GTF_EXCEPT, GTF_ASG, and GTF_CALL flags.</para>
+    ///   <para>This method currently only updates GTF_EXCEPT, GTF_ASG, GTF_CALL, and GTF_ORDER_SIDEEFF flags.</para>
     ///   <para>The other side effect flags may remain unnecessarily (conservatively) set.</para>
     /// </remarks>
     public void gtUpdateNodeSideEffects(GenTree tree)

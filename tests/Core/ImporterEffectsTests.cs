@@ -9,6 +9,85 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ImporterEffectsTests
 {
+    [TestCase(genTreeOps.GT_ADD, var_types.TYP_INT, false)]
+    [TestCase(genTreeOps.GT_ADD, var_types.TYP_BYREF, true)]
+    [TestCase(genTreeOps.GT_DIV, var_types.TYP_INT, true)]
+    [TestCase(genTreeOps.GT_UDIV, var_types.TYP_INT, true)]
+    [TestCase(genTreeOps.GT_MOD, var_types.TYP_INT, true)]
+    [TestCase(genTreeOps.GT_UMOD, var_types.TYP_INT, true)]
+    public static void OperationEffectsRetainOnlySupportedOrdering(genTreeOps oper, var_types type, bool supported)
+    {
+        WithCompiler(compiler => {
+            var tree = compiler.gtNewBinaryNode(oper, type,
+                compiler.gtNewIconNode(var_types.TYP_INT, 4), compiler.gtNewIconNode(var_types.TYP_INT, 2));
+            tree.Flags |= GenTreeFlags.GTF_ORDER_SIDEEFF;
+            Assert.That(tree.SupportsOrderingSideEffect(), Is.EqualTo(supported));
+
+            compiler.gtUpdateNodeSideEffects(tree);
+
+            Assert.That((tree.Flags & GenTreeFlags.GTF_ORDER_SIDEEFF) != 0, Is.EqualTo(supported));
+        });
+    }
+
+    [Test]
+    public static void OperandEffectsAreRestoredAfterResettingCallOperationEffects()
+    {
+        WithCompiler(compiler => {
+            var argument = compiler.gtNewIndir(var_types.TYP_INT, compiler.gtNewIconNode(Globals.TYP_I_IMPL, 8),
+                GenTreeFlags.GTF_IND_VOLATILE);
+            var call = compiler.gtNewCallNode(var_types.TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(argument));
+            call.Flags |= GenTreeFlags.GTF_ORDER_SIDEEFF;
+
+            compiler.gtUpdateNodeOperSideEffects(call);
+            Assert.That((call.Flags & GenTreeFlags.GTF_ORDER_SIDEEFF) != 0, Is.False);
+
+            compiler.gtUpdateNodeSideEffects(call);
+            Assert.That((call.Flags & GenTreeFlags.GTF_ORDER_SIDEEFF) != 0, Is.True);
+        });
+    }
+
+    [TestCase(gtCallTypes.CT_USER_FUNC, CorInfoHelpFunc.CORINFO_HELP_UNDEF, true)]
+    [TestCase(gtCallTypes.CT_INDIRECT, CorInfoHelpFunc.CORINFO_HELP_UNDEF, true)]
+    [TestCase(gtCallTypes.CT_HELPER, CorInfoHelpFunc.CORINFO_HELP_DIV, true)]
+    [TestCase(gtCallTypes.CT_HELPER, CorInfoHelpFunc.CORINFO_HELP_GETCURRENTMANAGEDTHREADID, false)]
+    public static void CallCreationIncludesItsOwnExceptions(gtCallTypes kind, CorInfoHelpFunc helper, bool mayThrow)
+    {
+        WithCompiler(compiler => {
+            var handle = kind == gtCallTypes.CT_HELPER ? Compiler.eeFindHelper(helper) : null;
+            var call = compiler.gtNewCallNode(var_types.TYP_INT, kind, handle);
+            Assert.That((call.Flags & GenTreeFlags.GTF_EXCEPT) != 0, Is.EqualTo(mayThrow));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void IndirectCallsPreserveVolatilePointerEvaluation(bool isVolatile)
+    {
+        WithCompiler(compiler => {
+            var address = compiler.gtNewIconNode(Globals.TYP_I_IMPL, 8);
+            var pointer = compiler.gtNewIndir(Globals.TYP_I_IMPL, address,
+                isVolatile ? GenTreeFlags.GTF_IND_VOLATILE : 0);
+            Assert.That((pointer.Flags & GenTreeFlags.GTF_ORDER_SIDEEFF) != 0, Is.EqualTo(isVolatile));
+            compiler.info.compMaxStack = 1;
+            compiler.stackState.esStack = [new() { val = pointer }];
+            compiler.stackState.esStackDepth = 1;
+            var signature = new CORINFO_SIG_INFO {
+                callConv = CorInfoCallConv.CORINFO_CALLCONV_DEFAULT,
+                retType = CorInfoType.CORINFO_TYPE_VOID,
+            };
+
+            var call = compiler.impImportIndirectCall(signature);
+
+            Assert.Multiple(() => {
+                Assert.That(call.ControlExpr, Is.SameAs(pointer));
+                Assert.That((call.Flags & GenTreeFlags.GTF_ORDER_SIDEEFF) != 0, Is.EqualTo(isVolatile));
+                Assert.That((call.Flags & GenTreeFlags.GTF_EXCEPT) != 0, Is.True);
+                Assert.That(compiler.stackState.esStackDepth, Is.Zero);
+            });
+        });
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void OrderingEffectsSpillEarlierGlobalReads(bool localStore)

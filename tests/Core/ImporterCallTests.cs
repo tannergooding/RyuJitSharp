@@ -11,6 +11,67 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ImporterCallTests
 {
+    [TestCase(false, false, false)]
+    [TestCase(false, true, false)]
+    [TestCase(true, false, false)]
+    [TestCase(true, true, false)]
+    [TestCase(true, false, true)]
+    public static void HiddenInstantiationArgumentsPreserveHandleKindAndRestoration(bool classContext, bool indirect, bool readonlyArray)
+    {
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.Base.embedClassHandle = &EmbedInstantiationClass;
+        vtable.Base.embedMethodHandle = &EmbedInstantiationMethod;
+        vtable.Base.Base.classMustBeLoadedBeforeCodeIsRun = &RestoreInstantiationClass;
+        vtable.Base.Base.methodMustBeLoadedBeforeCodeIsRun = &RestoreInstantiationMethod;
+        ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+#if DEBUG
+        using var jitTls = new JitTls(&jitInfo);
+#endif
+        var previous = JitTls.Compiler;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitFlags flags = default;
+        compiler.opts.jitFlags = &flags;
+        compiler.info = new Compiler.Info { compCompHnd = &jitInfo };
+        JitTls.Compiler = compiler;
+        try
+        {
+            var stateValue = new InstantiationHandle { Value = 0x40, Indirect = indirect };
+            var state = &stateValue;
+            var context = classContext
+                ? Globals.MAKE_CLASSCONTEXT((CORINFO_CLASS_STRUCT_*)state)
+                : Globals.MAKE_METHODCONTEXT((CORINFO_METHOD_STRUCT_*)state);
+            var result = compiler.impGetInstParamArg(default, default, context, false,
+                readonlyArray ? CorInfoFlag.CORINFO_FLG_ARRAY : 0, readonlyArray)
+                ?? throw new InvalidOperationException("Missing instantiation argument.");
+
+            if (readonlyArray)
+            {
+                Assert.Multiple(() => {
+                    Assert.That(result.Type, Is.EqualTo(var_types.TYP_REF));
+                    Assert.That(result.AsIntCon().IconValue, Is.EqualTo((nint)0));
+                    Assert.That(state->Embedded, Is.Zero);
+                    Assert.That(state->Restored, Is.Zero);
+                });
+            }
+            else
+            {
+                Assert.That(result.Oper, Is.EqualTo(indirect ? genTreeOps.GT_IND : genTreeOps.GT_CNS_INT));
+                var icon = indirect ? result.AsIndir().Addr.AsIntCon() : result.AsIntCon();
+                Assert.Multiple(() => {
+                    Assert.That(icon.Flags & GenTreeFlags.GTF_ICON_HDL_MASK,
+                        Is.EqualTo(classContext ? Globals.GTF_ICON_CLASS_HDL : Globals.GTF_ICON_METHOD_HDL));
+                    Assert.That(icon.IconValue, Is.EqualTo(indirect ? (nint)(&state->Value) : state->Value));
+                    Assert.That(state->Embedded, Is.EqualTo(1));
+                    Assert.That(state->Restored, Is.EqualTo(1));
+                });
+            }
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+
     [TestCase(CorInfoCallConvExtension.Managed, CorInfoCallConvExtension.Managed, true, true)]
     [TestCase(CorInfoCallConvExtension.Managed, CorInfoCallConvExtension.Managed, false, false)]
     [TestCase(CorInfoCallConvExtension.Managed, CorInfoCallConvExtension.C, true, false)]
@@ -304,6 +365,37 @@ internal static unsafe class ImporterCallTests
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int GetArrayRank(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => *(int*)type;
+
+    private struct InstantiationHandle
+    {
+        public nint Value;
+        public int Embedded;
+        public int Restored;
+        public bool Indirect;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CORINFO_CLASS_STRUCT_* EmbedInstantiationClass(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* handle, void** indirection)
+        => (CORINFO_CLASS_STRUCT_*)EmbedInstantiation((InstantiationHandle*)handle, indirection);
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CORINFO_METHOD_STRUCT_* EmbedInstantiationMethod(ICorJitInfo* self, CORINFO_METHOD_STRUCT_* handle, void** indirection)
+        => (CORINFO_METHOD_STRUCT_*)EmbedInstantiation((InstantiationHandle*)handle, indirection);
+
+    private static void* EmbedInstantiation(InstantiationHandle* handle, void** indirection)
+    {
+        handle->Embedded++;
+        *indirection = handle->Indirect ? &handle->Value : null;
+        return handle->Indirect ? null : (void*)handle->Value;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void RestoreInstantiationClass(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* handle)
+        => ((InstantiationHandle*)handle)->Restored++;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void RestoreInstantiationMethod(ICorJitInfo* self, CORINFO_METHOD_STRUCT_* handle)
+        => ((InstantiationHandle*)handle)->Restored++;
 
     private struct BoxClass
     {
