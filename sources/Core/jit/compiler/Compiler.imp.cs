@@ -4373,7 +4373,7 @@ public partial class Compiler
             var shareBoxedTemps = opts.OptimizationDisabled;
 
             // Avoid sharing in some tier 0 cases to, potentially, avoid boxing in Enum.HasFlag.
-            if (shareBoxedTemps && varTypeIsIntegral(exprToBox.Type) && !lvaHaveManyLocals() && (info.compCompHnd->isEnum(resolvedToken.hClass, null) != TypeCompareState.Must))
+            if (shareBoxedTemps && varTypeIsIntegral(exprToBox.Type) && !lvaHaveManyLocals() && (info.compCompHnd->isEnum(resolvedToken.hClass, null) == TypeCompareState.Must))
             {
                 shareBoxedTemps = false;
             }
