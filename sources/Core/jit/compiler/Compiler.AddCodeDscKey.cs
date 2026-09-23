@@ -12,6 +12,9 @@ public partial class Compiler
 {
     public struct AddCodeDscKey : IEquatable<AddCodeDscKey>
     {
+        public const int AcdHandlerFlag = 0x40000000;
+        public const int AcdFilterFlag = int.MinValue;
+
         private SpecialCodeKind acdKind;
         private int acdData;
 
@@ -38,14 +41,22 @@ public partial class Compiler
                 acdData = add.acdKeyDsg switch {
                     AcdKeyDesignator.KD_NONE => 0,
                     AcdKeyDesignator.KD_TRY => add.acdTryIndex,
-                    AcdKeyDesignator.KD_HND => add.acdHndIndex | 0x40000000,
-                    AcdKeyDesignator.KD_FLT => add.acdHndIndex | int.MinValue,
+                    AcdKeyDesignator.KD_HND => add.acdHndIndex | AcdHandlerFlag,
+                    AcdKeyDesignator.KD_FLT => add.acdHndIndex | AcdFilterFlag,
                     _ => -1,
                 };
             }
         }
 
         public readonly int Data => acdData;
+
+        public readonly AcdKeyDesignator Designator => acdData == 0 ? AcdKeyDesignator.KD_NONE
+            : (acdData & AcdFilterFlag) != 0 ? AcdKeyDesignator.KD_FLT
+            : (acdData & AcdHandlerFlag) != 0 ? AcdKeyDesignator.KD_HND
+            : AcdKeyDesignator.KD_TRY;
+
+        /// <summary>The zero-based EH region index; not valid for KD_NONE.</summary>
+        public readonly int RegionIndex => (acdData & ~(AcdHandlerFlag | AcdFilterFlag)) - 1;
 
         public static bool operator ==(AddCodeDscKey left, AddCodeDscKey right) => left.Equals(right);
 

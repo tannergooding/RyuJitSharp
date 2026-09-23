@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "syncing-upstream",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Continue the remaining upstream inventory, including importer producers and inline-context changes, before restoring saved WIP. Async policies, native RNG, metadata declarations, and grouping helper are implemented; grouping still needs its unported fgInline/fgInvokeInlineeCompiler callers. The first dump gap requires real PGO incorporation.",
+    "nextAction": "Continue the remaining upstream inventory, including obsolete SIMD-local markers, importer producers, and inline-context changes, before restoring saved WIP. Existing driver/tree/intrinsic lookup and graph/SIMD helper deltas have another verified checkpoint; broader async, SIMD importer, and backend closures remain unported. The first dump gap still requires real PGO incorporation.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -24,10 +24,10 @@
       "testSourcesPresent": true,
       "writerRegressionCases": 16,
       "writerRegressionConfigurations": ["Debug", "Release"],
-      "targetFocusedTestsDebug": 124,
-      "targetFocusedTestsRelease": 72,
+      "targetFocusedTestsDebug": 153,
+      "targetFocusedTestsRelease": 100,
       "targetFocusedTestsSkipped": 0,
-      "nativeAotPublish": "passed-at-source-target-abi-policy-and-async-support-checkpoints",
+      "nativeAotPublish": "passed-through-target-helper-synchronization-checkpoint",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "six-method-baseline-captured-with-known-differences",
       "codegenParity": "not-available"
@@ -59,7 +59,7 @@
     "oldNativeHostPreservedAndExecuted": true,
     "managedCapture": "six-selected-methods-loaded-with-target-abi",
     "managedGuid": "cb2fa75d-449d-4ee0-93ef-57011daefb8c",
-    "latestManagedBinarySha256": "8DF36FCD66A0005991CC24BC6D388DC50E2E06ABEC23653F0EF0E5D998059778",
+    "latestManagedBinarySha256": "545A83158D56CA91FA0257C9F6E19002BEE769887F4A1FEA3D7EC27BAAF99D45",
     "wrongGuidCaptureRejected": true,
     "nativeLayoutMeasurements": "matched-raw-managed-sizeof-and-debug-variable-offsets",
     "latestPrefixDifference": "missing-BBOPT-profile-diagnostic",
@@ -67,6 +67,7 @@
       "Local threading is not built by the existing fgLocalMorph stub; do not exercise unpinning on pinned locals until that prerequisite is ported.",
       "Corrected DFS/tree/EH support passes six focused graph cases in Debug/Release; runtime EH parity remains unestablished.",
       "Async-stress policy/grouping contracts have focused coverage, but grouping integration awaits the unported inliner bodies; no end-to-end async inlining parity is claimed.",
+      "SIMD helper/lookup probes and metadata-boundary tests do not establish intrinsic execution parity; impHWIntrinsic, cross-platform vector import, and substantial non-x64 closures remain unported.",
       "The six-method corpus contains no EH or pinned-local cases and establishes neither phase nor codegen parity."
     ]
   },
@@ -95,7 +96,7 @@
     },
     {
       "area": "flowgraph-and-inlining",
-      "native": ["src\\coreclr\\jit\\fgbasic.cpp", "src\\coreclr\\jit\\fginline.cpp", "src\\coreclr\\jit\\fgdiagnostic.cpp", "src\\coreclr\\jit\\inline.cpp", "src\\coreclr\\jit\\inlinepolicy.cpp"],
+      "native": ["src\\coreclr\\jit\\fgbasic.cpp", "src\\coreclr\\jit\\fginline.cpp", "src\\coreclr\\jit\\fgdiagnostic.cpp", "src\\coreclr\\jit\\flowgraph.cpp", "src\\coreclr\\jit\\fgprofile.cpp", "src\\coreclr\\jit\\inline.cpp", "src\\coreclr\\jit\\inlinepolicy.cpp"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.fg.cs", "sources\\Core\\jit\\Inline", "sources\\Core\\jit\\inlinepolicy"],
       "reconciledCommit": null
     },
@@ -103,6 +104,18 @@
       "area": "trees-and-locals",
       "native": ["src\\coreclr\\jit\\gentree.cpp", "src\\coreclr\\jit\\gentree.h", "src\\coreclr\\jit\\lclvars.cpp"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.gt.cs", "sources\\Core\\jit\\compiler\\Compiler.lva.cs", "sources\\Core\\jit\\gentree"],
+      "reconciledCommit": null
+    },
+    {
+      "area": "simd-recognition",
+      "native": ["src\\coreclr\\jit\\simd.cpp"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.cs", "sources\\Core\\jit\\compiler\\Compiler.lva.cs"],
+      "reconciledCommit": null
+    },
+    {
+      "area": "register-temporaries",
+      "native": ["src\\coreclr\\jit\\regset.cpp", "src\\coreclr\\jit\\regset.h"],
+      "csharp": ["sources\\Core\\jit\\regsset\\RegSet.cs"],
       "reconciledCommit": null
     },
     {

@@ -26,13 +26,33 @@ public readonly partial struct HWIntrinsicInfo
             {
                 isaRangeBounds[boundsIndex] = index;
             }
-            else
+            else if (isaRangeBounds[boundsIndex + 1] != index - 1)
             {
-                assert(isaRangeBounds[boundsIndex + 1] == index - 1);
+                // Internal codegen-only intrinsics appear after their ISA's sorted lookup range.
+                continue;
             }
 
             isaRangeBounds[boundsIndex + 1] = index;
         }
+
+        // All portable vector widths use the same intrinsic IDs and names.
+        var vectorRange = (int)InstructionSet_Vector * 2;
+        var vector128Range = (int)InstructionSet_Vector128 * 2;
+        isaRangeBounds[vector128Range] = isaRangeBounds[vectorRange];
+        isaRangeBounds[vector128Range + 1] = isaRangeBounds[vectorRange + 1];
+
+#if TARGET_XARCH
+        var vector256Range = (int)InstructionSet_Vector256 * 2;
+        var vector512Range = (int)InstructionSet_Vector512 * 2;
+        isaRangeBounds[vector256Range] = isaRangeBounds[vectorRange];
+        isaRangeBounds[vector256Range + 1] = isaRangeBounds[vectorRange + 1];
+        isaRangeBounds[vector512Range] = isaRangeBounds[vectorRange];
+        isaRangeBounds[vector512Range + 1] = isaRangeBounds[vectorRange + 1];
+#elif TARGET_ARM64
+        var vector64Range = (int)InstructionSet_Vector64 * 2;
+        isaRangeBounds[vector64Range] = isaRangeBounds[vectorRange];
+        isaRangeBounds[vector64Range + 1] = isaRangeBounds[vectorRange + 1];
+#endif
 
         return isaRangeBounds;
     }
@@ -81,6 +101,11 @@ public readonly partial struct HWIntrinsicInfo
 
         var rangeLower = s_isaRangeBounds[boundsIndex];
         var rangeUpper = s_isaRangeBounds[boundsIndex + 1];
+
+        if (rangeLower is -1)
+        {
+            return NI_Illegal;
+        }
 
         while (rangeLower <= rangeUpper)
         {

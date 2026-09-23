@@ -44,7 +44,7 @@ public abstract partial class Phase
 
         // Don't dump or check post phase unless the phase made changes.
         var doPostPhase = status != PhaseStatus.MODIFIED_NOTHING;
-        var doPostPhaseChecks = compiler.activePhaseChecks != PhaseChecks.CHECK_NONE;
+        var doPostPhaseChecks = (compiler.activePhaseChecks != PhaseChecks.CHECK_NONE) && (JitConfig.JitEnablePhaseChecks != 0);
         var doPostPhaseDumps = compiler.activePhaseDumps == PhaseDumps.DUMP_ALL;
 
         var statusMessage = doPostPhase ? "" : " [no changes]";

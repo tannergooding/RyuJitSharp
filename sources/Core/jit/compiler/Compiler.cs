@@ -206,7 +206,6 @@ public partial class Compiler
     /// <remarks>This is currently used by struct promotion to avoid getting type information for a struct field to see if it is a simd type, if we haven't seen any simd types or operations in the method.</remarks>
     public bool _usesSimdTypes;
 
-    public simdHandlesCache? _simdHandleCache;
 #endif
 
     /// <summary>The Compiler instance for the inlinee</summary>
@@ -1514,7 +1513,8 @@ public partial class Compiler
 #if TARGET_WASM
         var abiType = info.compCompHnd->getWasmLowering(clsHnd);
 
-        if (abiType is CORINFO_WASM_TYPE_VOID)
+        // An aggregate wider than its lowered wasm value returns through a hidden buffer.
+        if ((abiType is CORINFO_WASM_TYPE_VOID) || (structSize > WasmClassifier.ToJitType(abiType).Size))
         {
             howToReturnStruct = SPK_ByReference;
             useType = TYP_UNKNOWN;
@@ -1738,7 +1738,7 @@ public partial class Compiler
                     assert(structSize > TARGET_POINTER_SIZE);
 
                     // TODO-SVE: For now, we always pass Vector<T> by reference. Support passing Vector<T> in Z registers.
-                    if (structSizeMightRepresentSIMDType(structSize) && (getBaseTypeAndSizeOfSIMDType(clsHnd, out var simdSize) is not TYP_UNDEF) && (simdSize is SIZE_UNKNOWN))
+                    if (structMightRepresentSimdType(clsHnd) && (getBaseTypeAndSizeOfSIMDType(clsHnd, out var simdSize) is not TYP_UNDEF) && (simdSize is SIZE_UNKNOWN))
                     {
                         howToReturnStruct = SPK_ByReference;
                         useType = TYP_UNKNOWN;
@@ -2478,35 +2478,11 @@ public partial class Compiler
     /// <param name="sizeBytes">set to size in bytes.</param>
     /// <returns>base type of simd vector.</returns>
     /// <remarks>
-    ///   <para>If the size of the struct is already known call <see cref="structSizeMightRepresentSimdType" /> to determine if this api needs to be called.</para>
+    ///   <para>If the size of the struct is already known call <see cref="structMightRepresentSimdType" /> to determine if this api needs to be called.</para>
     ///   <para>The type handle passed here can only be used in a subset of JIT-EE calls since it may be called by promotion during AOT of a method that does not version with SPC. See CORINFO_TYPE_LAYOUT_NODE for the contract on the supported JIT-EE calls.</para>
     /// </remarks>
     private unsafe var_types getBaseTypeAndSizeOfSimdType(CORINFO_CLASS_HANDLE typeHnd, out int sizeBytes)
     {
-        var simdHandleCache = _simdHandleCache;
-
-        if (simdHandleCache is null)
-        {
-            if (impInlineInfo is null)
-            {
-                simdHandleCache = new simdHandlesCache();
-            }
-            else
-            {
-                // Steal the inliner compiler's cache (create it if not available).
-
-                var inlineRoot = impInlineInfo.InlineRoot;
-                simdHandleCache = inlineRoot._simdHandleCache;
-
-                if (simdHandleCache is null)
-                {
-                    simdHandleCache = new simdHandlesCache();
-                    inlineRoot._simdHandleCache = simdHandleCache;
-                }
-            }
-            _simdHandleCache = simdHandleCache;
-        }
-
         sizeBytes = 0;
 
         if ((typeHnd is null) || !isIntrinsicType(typeHnd))
@@ -2516,13 +2492,12 @@ public partial class Compiler
 
         var className = getClassNameFromMetadata(typeHnd, out var namespaceName);
 
-        // fast path search using cached type handles of important types
         var simdBaseType = TYP_UNDEF;
         var size = 0;
 
         if (namespaceName.Equals("System.Numerics", StringComparison.Ordinal))
         {
-            switch (className[0])
+            switch (className.Length == 0 ? '\0' : className[0])
             {
                 case 'P':
                 {
@@ -2532,8 +2507,6 @@ public partial class Compiler
                     }
 
                     JITDUMP("  Known type Plane\n");
-                    simdHandleCache.PlaneHandle = typeHnd;
-
                     simdBaseType = TYP_FLOAT;
                     size = 4 * TYP_FLOAT.Size;
                     break;
@@ -2547,8 +2520,6 @@ public partial class Compiler
                     }
 
                     JITDUMP("  Known type Quaternion\n");
-                    simdHandleCache.QuaternionHandle = typeHnd;
-
                     simdBaseType = TYP_FLOAT;
                     size = 4 * TYP_FLOAT.Size;
                     break;
@@ -2561,25 +2532,22 @@ public partial class Compiler
                         return TYP_UNDEF;
                     }
 
-                    switch (className[6])
+                    switch (className.Length == 6 ? '\0' : className[6])
                     {
                         case '\0':
                         {
                             JITDUMP(" Found type Vector\n");
-                            simdHandleCache.VectorHandle = typeHnd;
                             break;
                         }
 
                         case '2':
                         {
-                            if (className[7] != '\0')
+                            if (className.Length != 7)
                             {
                                 return TYP_UNDEF;
                             }
 
                             JITDUMP(" Found Vector2\n");
-                            simdHandleCache.Vector2Handle = typeHnd;
-
                             simdBaseType = TYP_FLOAT;
                             size = 2 * TYP_FLOAT.Size;
                             break;
@@ -2587,14 +2555,12 @@ public partial class Compiler
 
                         case '3':
                         {
-                            if (className[7] != '\0')
+                            if (className.Length != 7)
                             {
                                 return TYP_UNDEF;
                             }
 
                             JITDUMP(" Found Vector3\n");
-                            simdHandleCache.Vector3Handle = typeHnd;
-
                             simdBaseType = TYP_FLOAT;
                             size = 3 * TYP_FLOAT.Size;
                             break;
@@ -2602,14 +2568,12 @@ public partial class Compiler
 
                         case '4':
                         {
-                            if (className[7] != '\0')
+                            if (className.Length != 7)
                             {
                                 return TYP_UNDEF;
                             }
 
                             JITDUMP(" Found Vector4\n");
-                            simdHandleCache.Vector4Handle = typeHnd;
-
                             simdBaseType = TYP_FLOAT;
                             size = 4 * TYP_FLOAT.Size;
                             break;
@@ -2617,7 +2581,7 @@ public partial class Compiler
 
                         case '`':
                         {
-                            if ((className[7] != '1') || (className[8] != '\0'))
+                            if ((className.Length != 8) || (className[7] != '1'))
                             {
                                 return TYP_UNDEF;
                             }
@@ -2631,9 +2595,15 @@ public partial class Compiler
                             }
 
                             JITDUMP($" Found Vector<{simdBaseType.Name}>\n");
-                            size = GetVectorTByteLength();
+                            size = unchecked((int)getCompileTimeVectorTByteLength());
 
                             if (size == 0)
+                            {
+                                return TYP_UNDEF;
+                            }
+
+                            // Cross-targeting can disagree with the VM's Vector<T> size.
+                            if (!info.compMatchedVM && (size != info.compCompHnd->getClassSize(typeHnd)))
                             {
                                 return TYP_UNDEF;
                             }
@@ -2765,7 +2735,11 @@ public partial class Compiler
 
         if (simdBaseType != TYP_UNDEF)
         {
+#if TARGET_ARM64
+            assert((size == info.compCompHnd->getClassSize(typeHnd)) || (size == SIZE_UNKNOWN));
+#else
             assert(size == info.compCompHnd->getClassSize(typeHnd));
+#endif
             UsesSimdTypes = true;
         }
         return simdBaseType;

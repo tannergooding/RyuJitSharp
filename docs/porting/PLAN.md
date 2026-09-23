@@ -9,12 +9,13 @@ deferred. Exact revisions and the checkpoint are in [state.json](state.json).
 
 Completed setup: the isolated C# branch starts from `fgImport`, its latest WIP
 is preserved separately, and the native deletion ledger has a protected snapshot.
-`runtime-port` has been restored exactly, including index state. `runtime-oracle`
-is an intact detached worktree at the original native revision.
+`runtime-port` was restored exactly, including index state. `runtime-oracle`
+was established as an intact detached worktree at the original native revision.
 
-The unstashed C# baseline builds in Debug and Release. This establishes a build
-baseline only: native publish/loading, phase parity, and executable codegen have
-not been validated. The test project currently contains no test sources.
+The initial unstashed C# baseline built in Debug and Release, before native
+publish/loading and phase comparisons were established; its test project had no
+test sources. Current revisions and accumulated validation are recorded in
+[state.json](state.json), rather than inferred from this setup milestone.
 
 ## 1. Establish reproducible comparison inputs
 

@@ -336,6 +336,52 @@ public sealed class GenTreeVecCon : GenTree
         return false;
     }
 
+    /// <summary>Returns an all-bits-set mask for lanes containing the requested signed zero.</summary>
+    public simd_t GetFloatingZeroMask(var_types simdBaseType, bool isNegativeZero)
+    {
+        assert(varTypeIsFloating(simdBaseType));
+
+        var elementCount = ElementCount(Type.Size, simdBaseType);
+        var result = default(simd_t);
+
+        switch (simdBaseType)
+        {
+            case TYP_FLOAT:
+            {
+                for (var i = 0; i < elementCount; i++)
+                {
+                    var element = GetElementFloating(simdBaseType, i);
+                    if ((element == 0.0) && (double.IsNegative(element) == isNegativeZero))
+                    {
+                        result.u32[i] = uint.MaxValue;
+                    }
+                }
+                break;
+            }
+
+            case TYP_DOUBLE:
+            {
+                for (var i = 0; i < elementCount; i++)
+                {
+                    var element = GetElementFloating(simdBaseType, i);
+                    if ((element == 0.0) && (double.IsNegative(element) == isNegativeZero))
+                    {
+                        result.u64[i] = ulong.MaxValue;
+                    }
+                }
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+
+        return result;
+    }
+
     public void SetElementFloating(var_types simdBaseType, int index, double value)
     {
         var elementCount = ElementCount(Type.Size, simdBaseType);

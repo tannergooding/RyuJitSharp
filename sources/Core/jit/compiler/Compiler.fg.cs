@@ -396,11 +396,11 @@ public partial class Compiler
         if (ehGetDsc((ushort)(hndIndex - 1)).InFilterRegionBBRange(blk))
         {
             dsg = AcdKeyDesignator.KD_FLT;
-            return hndIndex | int.MinValue;
+            return hndIndex | AddCodeDscKey.AcdFilterFlag;
         }
 
         dsg = AcdKeyDesignator.KD_HND;
-        return hndIndex | 0x40000000;
+        return hndIndex | AddCodeDscKey.AcdHandlerFlag;
     }
 
     /// <summary>Check whether the address tree may represent a heap address.</summary>
@@ -408,32 +408,18 @@ public partial class Compiler
     /// <returns>True if address could be a heap address; false otherwise (i.e. stack, native memory, etc.)</returns>
     public bool fgAddrCouldBeHeap(GenTree addr)
     {
-        var op = addr;
-        var oper = op.Oper;
-
-        while (oper is GT_FIELD_ADDR)
-        {
-            var fieldAddr = op.AsFieldAddr();
-
-            if (!fieldAddr.IsInstance)
-            {
-                break;
-            }
-
-            op = fieldAddr.FldObj;
-            oper = op.Oper;
-        }
+        var op = gtPeelFieldAddrs(addr);
 
         // Ignore the offset for locals
         gtPeelOffsets(ref op, out _);
 
         var result = true;
 
-        if (oper is GT_LCL_ADDR)
+        if (op.Oper is GT_LCL_ADDR)
         {
             result = false;
         }
-        else if (oper.IsScalarLocal && (op.AsLclVarCommon().LclNum == impInlineRoot.info.compRetBuffArg))
+        else if (op.Oper.IsScalarLocal && (op.AsLclVarCommon().LclNum == impInlineRoot.info.compRetBuffArg))
         {
             // RetBuf is known to be on the stack
             result = false;
@@ -4655,20 +4641,20 @@ public partial class Compiler
             case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT:
             {
                 callFlags |= GTF_CALL_HOISTABLE;
-                type = TYP_I_IMPL;
-                break;
+                goto case CORINFO_HELP_GETPINNED_GCSTATIC_BASE;
             }
 
             case CORINFO_HELP_GETPINNED_GCSTATIC_BASE:
             case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE:
             {
-                type = TYP_I_IMPL;
+                // Byrefs, including derived addresses, are killed across async suspensions.
+                type = impInlineRoot.compIsAsync ? TYP_BYREF : TYP_I_IMPL;
                 break;
             }
 
             case CORINFO_HELP_INITCLASS:
             {
-                type = TYP_VOID;
+                type = HelperInitClassRetType;
                 break;
             }
 

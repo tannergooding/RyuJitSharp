@@ -9000,7 +9000,8 @@ public partial class Compiler
                         {
                             return;
                         }
-                        op1 = gtNewHelperCallNode(TYP_VOID, helper, op2, op1);
+                        // The byref is formed below; the enclosing conditional discards the helper result.
+                        op1 = gtUnusedValNode(gtNewHelperCallNode(HelperUnboxDiscardedRetType, helper, op2, op1));
 
                         op1 = gtNewColonNode(TYP_VOID, gtNewNothingNode(), op1);
                         op1 = gtNewQmarkNode(TYP_VOID, condBox, op1.AsColon());
@@ -11921,7 +11922,7 @@ public partial class Compiler
 
         if (runtimeLookup)
         {
-            node = gtNewHelperCallNode(TYP_VOID, CORINFO_HELP_INITCLASS, node);
+            node = gtNewHelperCallNode(HelperInitClassRetType, CORINFO_HELP_INITCLASS, node);
         }
         else
         {

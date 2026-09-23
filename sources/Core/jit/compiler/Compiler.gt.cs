@@ -6180,7 +6180,18 @@ public partial class Compiler
             var addrModeCostSz = (byte)(0);
 
 #if TARGET_WASM
-            NYI_WASM("gtMarkAddrMode");
+            // Only "base + cns" is an addressing mode on Wasm. The constant folds into the memarg, which grows by
+            // the size of its ULEB encoding.
+            //
+            assert((baseAddr is not null) && (idx is null));
+
+            addrModeCostEx += baseAddr!.CostEx;
+            addrModeCostSz += baseAddr!.CostSz;
+
+            for (nuint value = unchecked((nuint)cns); value >= 0x80; value >>= 7)
+            {
+                addrModeCostSz++;
+            }
 #else
 #if TARGET_XARCH
             // addrmodeCount is the count of items that we used to form
@@ -6973,6 +6984,18 @@ public partial class Compiler
             }
         }
     }
+
+#if TARGET_WASM
+    // Wasm init-class helpers return void*; preserve that call_indirect signature even though the value is unused.
+    public const var_types HelperInitClassRetType = TYP_I_IMPL;
+
+    // Wasm unbox helpers return byref. Using void on other targets avoids code size with no semantic benefit.
+    public const var_types HelperUnboxDiscardedRetType = TYP_BYREF;
+#else
+    public const var_types HelperInitClassRetType = TYP_VOID;
+
+    public const var_types HelperUnboxDiscardedRetType = TYP_VOID;
+#endif
 
     /// <summary>Helper to create a call helper node.</summary>
     /// <param name="type">Type of the node</param>
@@ -7837,13 +7860,21 @@ public partial class Compiler
         assert(op1 is not null);
         assert(op2 is not null);
 
-        assert((op1.Type == type) || (op1.Type == simdBaseType) || (op1.Type == simdBaseType.ActualType) || ((op1.Type is TYP_SIMD12) && (type is TYP_SIMD16)));
+        // These shape checks validate HIR builders. LIR may feed size-changing reinterpret operands
+        // such as an elided GetLower or ToVector conversion; the operation still uses only simdSize
+        // bytes, and containment validates any memory operand's size before allowing a load.
+        var isLIR = (fgNodeThreading == NodeThreading.LIR);
+
+        if (!isLIR)
+        {
+            assert((op1.Type == type) || (op1.Type == simdBaseType) || (op1.Type == simdBaseType.ActualType) || ((op1.Type is TYP_SIMD12) && (type is TYP_SIMD16)));
+        }
 
         if (op is GT_LSH or GT_RSH or GT_RSZ)
         {
             assert(op2.Type.ActualType is TYP_INT);
         }
-        else
+        else if (!isLIR)
         {
             assert((op2.Type.ActualType == type.ActualType) || (op2.Type.ActualType == simdBaseType.ActualType) || ((op2.Type is TYP_SIMD12) && (type is TYP_SIMD16)));
         }
@@ -7907,6 +7938,7 @@ public partial class Compiler
 #if TARGET_XARCH
                     op2ForLookup = op2;
                     op2 = gtNewSimdCreateScalarNode(TYP_SIMD16, op2, TYP_INT, 16);
+                    gtUpdateNodeSideEffects(op2);
 #elif TARGET_ARM64
                     if (op is not GT_LSH)
                     {
@@ -8073,6 +8105,7 @@ public partial class Compiler
                 else
                 {
                     assert(op2.IsHWIntrinsic(NI_Vector_CreateScalar));
+                    assert(op2.AsHWIntrinsic().SimdSize is 16);
 
                     ref var op2Op1Ref = ref op2.AsHWIntrinsic().GetOpRef(1);
                     var shiftCountDup = fgMakeMultiUse(ref op2Op1Ref);
@@ -8257,151 +8290,61 @@ public partial class Compiler
 #if TARGET_XARCH
                 if (varTypeIsByte(simdBaseType))
                 {
-                    if (simdSize is 32 && compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                    if (((simdSize is 16) && compOpportunisticallyDependsOn(InstructionSet_AVX2)) ||
+                        ((simdSize is 32) && compOpportunisticallyDependsOn(InstructionSet_AVX512)))
                     {
-                        // Input is SIMD32 [U]Byte and AVX512 is supported:
-                        // - Widen inputs as SIMD64 [U]Short
-                        // - Multiply widened inputs (SIMD64 [U]Short) as widened product (SIMD64 [U]Short)
-                        // - Narrow widened product (SIMD64 [U]Short) as SIMD32 [U]Byte
+                        // Widen to the next vector size for one product. AVX512 can narrow directly;
+                        // otherwise mask the low bytes, pack them, and permute the packed lanes back
+                        // into element order.
+                        var widenedSimdSize = (byte)(simdSize * 2);
+                        var widenedType = GetSimdTypeForSize(widenedSimdSize);
+                        var widenIntrinsic = (simdSize is 16)
+                            ? NI_AVX2_ConvertToVector256Int16
+                            : NI_AVX512_ConvertToVector512Int16;
 
-                        var widenedSimdBaseType = TYP_USHORT;
-                        var widenIntrinsic = NI_AVX512_ConvertToVector512UInt16;
-                        var narrowIntrinsic = NI_AVX512_ConvertToVector256Byte;
-
-                        if (simdBaseType is TYP_BYTE)
-                        {
-                            widenedSimdBaseType = TYP_SHORT;
-                            widenIntrinsic = NI_AVX512_ConvertToVector512Int16;
-                            narrowIntrinsic = NI_AVX512_ConvertToVector256SByte;
-                        }
-
-                        var widenedType = TYP_SIMD64;
-                        var widenedSimdSize = (byte)(64);
-
-                        // Vector512<ushort> widenedOp1 = Avx512BW.ConvertToVector512UInt16(op1)
                         var widenedOp1 = gtNewSimdHWIntrinsicNode(widenedType, widenIntrinsic, simdBaseType, widenedSimdSize, op1);
-
-                        // Vector512<ushort> widenedOp2 = Avx512BW.ConvertToVector512UInt16(op2)
                         var widenedOp2 = gtNewSimdHWIntrinsicNode(widenedType, widenIntrinsic, simdBaseType, widenedSimdSize, op2);
+                        var widenedProduct = gtNewSimdBinOpNode(GT_MUL, widenedType, widenedOp1, widenedOp2, TYP_SHORT, widenedSimdSize);
 
-                        // Vector512<ushort> widenedProduct = widenedOp1 * widenedOp2;
-                        var widenedProduct = gtNewSimdBinOpNode(GT_MUL, widenedType, widenedOp1, widenedOp2, widenedSimdBaseType, widenedSimdSize);
-
-                        // Vector256<byte> product = Avx512BW.ConvertToVector256Byte(widenedProduct)
-                        return gtNewSimdHWIntrinsicNode(type, narrowIntrinsic, widenedSimdBaseType, widenedSimdSize, widenedProduct);
-                    }
-                    else if (simdSize is 16 && compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                    {
                         if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
                         {
-                            // Input is SIMD16 [U]Byte and AVX512 is supported:
-                            // - Widen inputs as SIMD32 [U]Short
-                            // - Multiply widened inputs (SIMD32 [U]Short) as widened product (SIMD32 [U]Short)
-                            // - Narrow widened product (SIMD32 [U]Short) as SIMD16 [U]Byte
+                            var narrowIntrinsic = (simdSize is 16)
+                                ? NI_AVX512_ConvertToVector128Byte
+                                : NI_AVX512_ConvertToVector256Byte;
 
-                            var widenIntrinsic = NI_AVX2_ConvertToVector256Int16;
-                            var widenedSimdBaseType = TYP_USHORT;
-                            var narrowIntrinsic = NI_AVX512_ConvertToVector128Byte;
-
-                            if (simdBaseType is TYP_BYTE)
-                            {
-                                widenedSimdBaseType = TYP_SHORT;
-                                narrowIntrinsic = NI_AVX512_ConvertToVector128SByte;
-                            }
-
-                            var widenedType = TYP_SIMD32;
-                            var widenedSimdSize = (byte)(32);
-
-                            // Vector256<ushort> widenedOp1 = Avx2.ConvertToVector256Int16(op1).AsUInt16()
-                            var widenedOp1 = gtNewSimdHWIntrinsicNode(widenedType, widenIntrinsic, simdBaseType, widenedSimdSize, op1);
-
-                            // Vector256<ushort> widenedOp2 = Avx2.ConvertToVector256Int16(op2).AsUInt16()
-                            var widenedOp2 = gtNewSimdHWIntrinsicNode(widenedType, widenIntrinsic, simdBaseType, widenedSimdSize, op2);
-
-                            // Vector256<ushort> widenedProduct = widenedOp1 * widenedOp2
-                            var widenedProduct = gtNewSimdBinOpNode(GT_MUL, widenedType, widenedOp1, widenedOp2, widenedSimdBaseType, widenedSimdSize);
-
-                            // Vector128<byte> product = Avx512BW.VL.ConvertToVector128Byte(widenedProduct)
-                            return gtNewSimdHWIntrinsicNode(type, narrowIntrinsic, widenedSimdBaseType, widenedSimdSize, widenedProduct);
+                            return gtNewSimdHWIntrinsicNode(type, narrowIntrinsic, TYP_USHORT, widenedSimdSize, widenedProduct);
                         }
                         else
                         {
-                            // Input is SIMD16 [U]Byte and AVX512 is NOT supported (only AVX2 will be used):
-                            // - Widen inputs as SIMD32 [U]Short
-                            // - Multiply widened inputs (SIMD32 [U]Short) as widened product (SIMD32 [U]Short)
-                            // - Mask widened product (SIMD32 [U]Short) to select relevant bits
-                            // - Pack masked product so that relevant bits are packed together in upper and lower halves
-                            // - Shuffle packed product so that relevant bits are placed together in the lower half
-                            // - Select lower (SIMD16 [U]Byte) from shuffled product (SIMD32 [U]Short)
-                            var widenedSimdBaseType = (simdBaseType is TYP_BYTE) ? TYP_SHORT : TYP_USHORT;
-                            var widenIntrinsic = NI_AVX2_ConvertToVector256Int16;
-                            var widenedType = TYP_SIMD32;
-                            var widenedSimdSize = (byte)(32);
+                            var loByteMask = gtNewVconNode(widenedType);
+                            loByteMask.EvaluateBroadcastInPlace(TYP_SHORT, byte.MaxValue);
 
-                            // Vector256<ushort> widenedOp1 = Avx2.ConvertToVector256Int16(op1).AsUInt16()
-                            var widenedOp1 = gtNewSimdHWIntrinsicNode(widenedType, widenIntrinsic, simdBaseType, widenedSimdSize, op1);
-
-                            // Vector256<ushort> widenedOp2 = Avx2.ConvertToVector256Int16(op2).AsUInt16()
-                            var widenedOp2 = gtNewSimdHWIntrinsicNode(widenedType, widenIntrinsic, simdBaseType, widenedSimdSize, op2);
-
-                            // Vector256<ushort> widenedProduct = widenedOp1 * widenedOp2
-                            var widenedProduct = gtNewSimdBinOpNode(GT_MUL, widenedType, widenedOp1, widenedOp2, widenedSimdBaseType, widenedSimdSize);
-
-                            // Vector256<ushort> vecCon1 = Vector256.Create(0x00FF00FF00FF00FF).AsUInt16()
-                            var vecCon1 = gtNewVconNode(widenedType);
-                            vecCon1.EvaluateBroadcastInPlace(TYP_USHORT, 0x00FF);
-
-                            // Vector256<short> maskedProduct = Avx2.And(widenedProduct, vecCon1).AsInt16()
-                            var maskedProduct = gtNewSimdBinOpNode(GT_AND, widenedType, widenedProduct, vecCon1, widenedSimdBaseType, widenedSimdSize);
+                            var maskedProduct = gtNewSimdBinOpNode(GT_AND, widenedType, widenedProduct, loByteMask, TYP_SHORT, widenedSimdSize);
                             var maskedProductDup = fgMakeMultiUse(ref maskedProduct);
 
-                            // Vector256<ulong> packedProduct = Avx2.PackuintSaturate(maskedProduct, maskedProduct).AsUInt64()
                             var packedProduct = gtNewSimdHWIntrinsicNode(widenedType, NI_AVX2_PackUnsignedSaturate, TYP_UBYTE, widenedSimdSize, maskedProduct, maskedProductDup);
+                            var shuffledProduct = gtNewSimdHWIntrinsicNode(widenedType, NI_AVX2_Permute4x64, TYP_LONG, widenedSimdSize, packedProduct, gtNewIconNode(TYP_INT, SHUFFLE_WYZX));
 
-                            var permuteBaseType = (simdBaseType == TYP_BYTE) ? TYP_LONG : TYP_ULONG;
-
-                            // Vector256<byte> shuffledProduct = Avx2.Permute4x64(w1, 0xD8).AsByte()
-                            var shuffledProduct = gtNewSimdHWIntrinsicNode(widenedType, NI_AVX2_Permute4x64, permuteBaseType, widenedSimdSize, packedProduct, gtNewIconNode(TYP_INT, SHUFFLE_WYZX));
-
-                            // Vector128<byte> product = shuffledProduct.getLower()
                             return gtNewSimdGetLowerNode(type, shuffledProduct, simdBaseType, widenedSimdSize);
                         }
                     }
-                    else
-                    {
-                        // No special handling could be performed, apply fallback logic:
-                        // - Widen both inputs lower and upper halves as [U]Short (using helper method)
-                        // - Multiply corrsponding widened input halves together as widened product halves
-                        // - Narrow widened product halves as [U]Byte (using helper method)
-                        var widenedSimdBaseType = simdBaseType == TYP_BYTE ? TYP_SHORT : TYP_USHORT;
 
-                        // op1Dup = op1
-                        var op1Dup = fgMakeMultiUse(ref op1);
+                    // The low byte of pmullw(x, y) is independent of the sources' high bytes.
+                    // Multiplying x by (y << 8) moves that byte into the high position; for odd
+                    // input bytes, (x >> 8) * (y & 0xFF00) produces the same high-byte result.
+                    var op1Dup = fgMakeMultiUse(ref op1);
+                    var op2Dup = fgMakeMultiUse(ref op2);
 
-                        // op2Dup = op2
-                        var op2Dup = fgMakeMultiUse(ref op2);
+                    var hiByteMask = gtNewVconNode(type);
+                    hiByteMask.EvaluateBroadcastInPlace(TYP_SHORT, unchecked((short)0xFF00));
 
-                        // Vector256<ushort> lowerOp1 = Avx2.ConvertToVector256Int16(op1.GetLower()).AsUInt16()
-                        var lowerOp1 = gtNewSimdWidenLowerNode(type, op1, simdBaseType, simdSize);
+                    var evenProduct = gtNewSimdBinOpNode(GT_MUL, type, op1, op2, TYP_SHORT, simdSize);
+                    var oddOp1 = gtNewSimdBinOpNode(GT_RSZ, type, op1Dup, gtNewIconNode(TYP_INT, 8), TYP_SHORT, simdSize);
+                    var oddOp2 = gtNewSimdBinOpNode(GT_AND, type, op2Dup, hiByteMask, TYP_SHORT, simdSize);
+                    var oddProduct = gtNewSimdBinOpNode(GT_MUL, type, oddOp1, oddOp2, TYP_SHORT, simdSize);
+                    var evenMasked = gtNewSimdBinOpNode(GT_AND_NOT, type, evenProduct, gtCloneExpr(hiByteMask), TYP_SHORT, simdSize);
 
-                        // Vector256<ushort> lowerOp2 = Avx2.ConvertToVector256Int16(op2.GetLower()).AsUInt16()
-                        var lowerOp2 = gtNewSimdWidenLowerNode(type, op2, simdBaseType, simdSize);
-
-                        // Vector256<ushort> lowerProduct = lowerOp1 * lowerOp2
-                        var lowerProduct = gtNewSimdBinOpNode(GT_MUL, type, lowerOp1, lowerOp2, widenedSimdBaseType, simdSize);
-
-                        // Vector256<ushort> upperOp1 = Avx2.ConvertToVector256Int16(op1.GetUpper()).AsUInt16()
-                        var upperOp1 = gtNewSimdWidenUpperNode(type, op1Dup, simdBaseType, simdSize);
-
-                        // Vector256<ushort> upperOp2 = Avx2.ConvertToVector256Int16(op2.GetUpper()).AsUInt16()
-                        var upperOp2 = gtNewSimdWidenUpperNode(type, op2Dup, simdBaseType, simdSize);
-
-                        // Vector256<ushort> upperProduct = upperOp1 * upperOp2
-                        var upperProduct = gtNewSimdBinOpNode(GT_MUL, type, upperOp1, upperOp2, widenedSimdBaseType, simdSize);
-
-                        // Narrow and merge halves using helper method
-                        return gtNewSimdNarrowNode(type, lowerProduct, upperProduct, simdBaseType, simdSize);
-                    }
+                    return gtNewSimdBinOpNode(GT_OR, type, evenMasked, oddProduct, simdBaseType, simdSize);
                 }
                 else if (varTypeIsLong(simdBaseType))
                 {
@@ -9549,6 +9492,9 @@ public partial class Compiler
 
                 if (!isMagnitude)
                 {
+                    // Partially NaN constants cannot use operand ordering, while mixed zero constants
+                    // require per-element fixup.
+                    var hasPartialNaN = !isScalar && cnsNode.AsVecCon().ContainsNaN(simdBaseType);
                     var needsFixup = false;
                     var canHandle = false;
 
@@ -9559,10 +9505,10 @@ public partial class Compiler
                         // not be propagated for isNumber and to be propagated otherwise.
                         //
                         // This means for isNumber we want to do `max other, cns` and
-                        // can only handle cns being -0 if Avx512F is supported. This is
-                        // because if other was NaN, we want to return the non-NaN cns.
-                        // But if cns was -0 and other was +0 we'd want to return +0 and
-                        // so need to be able to fixup the result.
+                        // cannot handle cns being -0. If other was NaN, we want to return
+                        // the non-NaN cns. But if cns was -0 and other was +0 we'd want
+                        // to return +0, and the ZERO fixup token cannot distinguish the
+                        // opaque operand's sign.
                         //
                         // For !isNumber we have the inverse and want `max cns, other` and
                         // can only handle cns being +0 if Avx512F is supported. This is
@@ -9578,7 +9524,7 @@ public partial class Compiler
                             }
                             else
                             {
-                                needsFixup = cnsNode.IsVectorNegativeZero(simdBaseType);
+                                needsFixup |= cnsNode.AsVecCon().ContainsNegativeZero(simdBaseType);
                             }
                         }
                         else if (isScalar)
@@ -9587,10 +9533,10 @@ public partial class Compiler
                         }
                         else
                         {
-                            needsFixup = cnsNode.IsVectorZero;
+                            needsFixup |= cnsNode.AsVecCon().ContainsPositiveZero(simdBaseType);
                         }
 
-                        if (!needsFixup || compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                        if (!hasPartialNaN && (!needsFixup || (!isNumber && compOpportunisticallyDependsOn(InstructionSet_AVX512))))
                         {
                             // Given the checks, op1 can safely be the cns and op2 the other node
 
@@ -9609,10 +9555,10 @@ public partial class Compiler
                         // not be propagated for isNumber and to be propagated otherwise.
                         //
                         // This means for isNumber we want to do `min other, cns` and
-                        // can only handle cns being +0 if Avx512F is supported. This is
-                        // because if other was NaN, we want to return the non-NaN cns.
-                        // But if cns was +0 and other was -0 we'd want to return -0 and
-                        // so need to be able to fixup the result.
+                        // cannot handle cns being +0. If other was NaN, we want to return
+                        // the non-NaN cns. But if cns was +0 and other was -0 we'd want
+                        // to return -0, and the ZERO fixup token cannot distinguish the
+                        // opaque operand's sign.
                         //
                         // For !isNumber we have the inverse and want `min cns, other` and
                         // can only handle cns being -0 if Avx512F is supported. This is
@@ -9628,7 +9574,7 @@ public partial class Compiler
                             }
                             else
                             {
-                                needsFixup = cnsNode.IsVectorZero;
+                                needsFixup |= cnsNode.AsVecCon().ContainsPositiveZero(simdBaseType);
                             }
                         }
                         else if (isScalar)
@@ -9637,13 +9583,10 @@ public partial class Compiler
                         }
                         else
                         {
-                            needsFixup = cnsNode.IsVectorZero;
-                        }
-                        {
-                            needsFixup = cnsNode.IsVectorNegativeZero(simdBaseType);
+                            needsFixup |= cnsNode.AsVecCon().ContainsNegativeZero(simdBaseType);
                         }
 
-                        if (!needsFixup || compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                        if (!hasPartialNaN && (!needsFixup || (!isNumber && compOpportunisticallyDependsOn(InstructionSet_AVX512))))
                         {
                             // Given the checks, op1 can safely be the cns and op2 the other node
 
@@ -9675,46 +9618,42 @@ public partial class Compiler
                         {
                             var op2Clone = fgMakeMultiUse(ref op2);
                             retNode.AsHWIntrinsic().GetOpRef(2) = op2;
+                            gtUpdateNodeSideEffects(retNode);
 
                             var tblVecCon = gtNewVconNode(type);
+                            var tblValue = isMax ? 0x00000800 : 0x00000700;
 
-                            // FixupScalar(left, right, table, control) computes the input type of right
-                            // adjusts it based on the table and then returns
+                            // Fixup(left, right, table, control) classifies right using the table
+                            // and returns the selected value.
                             //
-                            // In our case, left is going to be the result of the RangeScalar operation
-                            // and right is going to be op1 or op2. In the case op1/op2 is QNaN or SNaN
-                            // we want to preserve it instead. Otherwise we want to preserve the original
-                            // result computed by RangeScalar.
-                            //
-                            // If both inputs are NaN, then we'll end up taking op1 by virtue of it being
-                            // the latter fixup.
+                            // Here, left is the min/max result and right is the opaque operand. The table
+                            // preserves left except on lanes where the constant has the problematic zero.
 
-                            if (isMax)
+                            if (!isScalar)
                             {
-                                // QNAN: 0b0000:  Preserve left
-                                // SNAN: 0b0000
-                                // ZERO: 0b1000:  +0
-                                // +ONE: 0b0000
-                                // -INF: 0b0000
-                                // +INF: 0b0000
-                                // -VAL: 0b0000
-                                // +VAL: 0b0000
+                                var zeroMask = cnsNode.AsVecCon().GetFloatingZeroMask(simdBaseType, isNegativeZero: !isMax);
+                                var elementCount = GenTreeVecCon.ElementCount(simdSize, simdBaseType);
 
-                                var tblValue = 0x00000800;
-                                tblVecCon.EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG, tblValue);
+                                ref var tableValue = ref tblVecCon.SimdVal;
+
+                                if (simdBaseType == TYP_FLOAT)
+                                {
+                                    for (var i = 0; i < elementCount; i++)
+                                    {
+                                        tableValue.u32[i] = (uint)tblValue & zeroMask.u32[i];
+                                    }
+                                }
+                                else
+                                {
+                                    for (var i = 0; i < elementCount; i++)
+                                    {
+                                        tableValue.u64[i] = (ulong)tblValue & zeroMask.u64[i];
+                                    }
+                                }
                             }
-                            else
-                            {
-                                // QNAN: 0b0000:  Preserve left
-                                // SNAN: 0b0000
-                                // ZERO: 0b0111:  -0
-                                // +ONE: 0b0000
-                                // -INF: 0b0000
-                                // +INF: 0b0000
-                                // -VAL: 0b0000
-                                // +VAL: 0b0000
 
-                                var tblValue = 0x00000700;
+                            if (isScalar)
+                            {
                                 tblVecCon.EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG, tblValue);
                             }
 
@@ -9916,7 +9855,7 @@ public partial class Compiler
                 // | MaxNumber          | LessThan(y, x)          | IsNaN(y)    | Equals(x, y)       | IsNegative(y) |
                 // | MinNumber          | LessThan(x, y)          | IsNaN(y)    | Equals(x, y)       | IsNegative(x) |
 
-                if (isMagnitude)
+                if (isMagnitude && !varTypeIsUnsigned(simdBaseType))
                 {
                     var absOp1 = gtNewSimdAbsNode(type, op1, simdBaseType, simdSize);
                     var absOp2 = gtNewSimdAbsNode(type, op2, simdBaseType, simdSize);
@@ -11800,13 +11739,16 @@ public partial class Compiler
 
     /// <inheritdoc cref="gtPeelOffsets(ref GenTree, out long, out FieldSeq)" />
     public void gtPeelOffsets(ref GenTree addr, out target_ssize_t offset)
-        => gtPeelOffsets(ref addr, out offset, out _);
+        => gtPeelOffsetsCore(ref addr, out offset, out _, includeFieldSeq: false);
 
     /// <summary>Peel all ADD(addr, CNS_INT(x)) nodes off the specified address node and return the base node and sum of offsets peeled.</summary>
     /// <param name="addr">The address node.</param>
     /// <param name="offset">The sum of offset peeled such that ADD(addr, offset) is equivalent to the original addr.</param>
     /// <param name="fldSeq">The combined field sequence for all the peeled offsets.</param>
     public void gtPeelOffsets(ref GenTree addr, out target_ssize_t offset, out FieldSeq? fldSeq)
+        => gtPeelOffsetsCore(ref addr, out offset, out fldSeq, includeFieldSeq: true);
+
+    private void gtPeelOffsetsCore(ref GenTree addr, out target_ssize_t offset, out FieldSeq? fldSeq, bool includeFieldSeq)
     {
         assert(addr.Type is TYP_I_IMPL or TYP_BYREF or TYP_REF);
 
@@ -11830,8 +11772,10 @@ public partial class Compiler
                     {
                         offset += intCon.IconValue;
 
-                        assert(_fieldSeqStore is not null);
-                        fldSeq = _fieldSeqStore.Append(fldSeq, intCon.FieldSeq);
+                        if (includeFieldSeq)
+                        {
+                            fldSeq = FieldSeqStore.Append(fldSeq, intCon.FieldSeq);
+                        }
 
                         addr = op1;
                         continue;
@@ -11846,8 +11790,10 @@ public partial class Compiler
                     {
                         offset += intCon.IconValue;
 
-                        assert(_fieldSeqStore is not null);
-                        fldSeq = _fieldSeqStore.Append(intCon.FieldSeq, fldSeq);
+                        if (includeFieldSeq)
+                        {
+                            fldSeq = FieldSeqStore.Append(intCon.FieldSeq, fldSeq);
+                        }
 
                         addr = op2;
                         continue;
@@ -11874,6 +11820,18 @@ public partial class Compiler
                 break;
             }
         }
+    }
+
+    /// <summary>Peel instance field-address nodes and return their underlying base address.</summary>
+    /// <remarks>Static field addresses remain intact because they represent helper calls, not constant-offset addends.</remarks>
+    public GenTree gtPeelFieldAddrs(GenTree addr)
+    {
+        while ((addr.Oper is GT_FIELD_ADDR) && addr.AsFieldAddr().IsInstance)
+        {
+            addr = addr.AsFieldAddr().FldObj;
+        }
+
+        return addr;
     }
 
     public GenTree gtReverseCond(GenTree tree)
@@ -12877,6 +12835,23 @@ public partial class Compiler
                                 break;
                             }
 
+                            case NI_PRIMITIVE_SaturateToInt8:
+                            case NI_PRIMITIVE_SaturateToInt16:
+                            case NI_PRIMITIVE_SaturateToUInt8:
+                            case NI_PRIMITIVE_SaturateToUInt16:
+                            {
+#if TARGET_ARM
+                                // Single SSAT/USAT instruction.
+                                costEx = 1;
+                                costSz = 4;
+#else
+                                // Other targets normalize, materialize bounds, and branch/move for each bound.
+                                costEx = 7;
+                                costSz = 28;
+#endif
+                                break;
+                            }
+
                             case NI_System_Math_Acos:
                             case NI_System_Math_Acosh:
                             case NI_System_Math_Asin:
@@ -13462,6 +13437,15 @@ public partial class Compiler
                             case NI_System_Math_MaxNative:
                             case NI_System_Math_Min:
                             case NI_System_Math_MinUnsigned:
+                            case NI_System_Math_MinNative:
+                            {
+                                level++;
+                                break;
+                            }
+#elif TARGET_WASM
+                            // Wasm lowers these to native min/max instructions, including the
+                            // float-to-small-int saturation clamp.
+                            case NI_System_Math_MaxNative:
                             case NI_System_Math_MinNative:
                             {
                                 level++;
@@ -14680,6 +14664,7 @@ public partial class Compiler
                         case NI_AVX_Divide:
                         case NI_AVX512_Divide:
                         case NI_AVX512_DivideScalar:
+                        case NI_AVX10v1_DivideScalar:
                         {
                             costEx = (byte)((simdBaseType == TYP_DOUBLE) ? 14 : 11);
                             break;
@@ -14730,6 +14715,7 @@ public partial class Compiler
                         case NI_AVX_Sqrt:
                         case NI_AVX512_Sqrt:
                         case NI_AVX512_SqrtScalar:
+                        case NI_AVX10v1_SqrtScalar:
                         {
                             costEx = (byte)((simdBaseType == TYP_DOUBLE) ? 16 : 12);
                             break;
@@ -14998,11 +14984,17 @@ public partial class Compiler
             }
 
             // We want the more complex tree to be evaluated first.
+#if TARGET_WASM
+            // Wasm's stack-machine codegen requires operands to be evaluated in source order, so it
+            // cannot honor GTF_REVERSE_OPS here. A future commutative-intrinsic path could swap
+            // operands physically to retain the CQ benefit.
+#else
             if ((level < lvl2) && !multiOp.AsHWIntrinsic().IsUserCall && gtCanSwapOrder(op1, op2))
             {
                 multiOp.IsReverseOp ^= true;
                 (level, lvl2) = (lvl2, level);
             }
+#endif
 
             if (level < 1)
             {

@@ -761,24 +761,17 @@ public partial class GenTree
         _ => false,
     };
 
-    /// <summary>If the given tree is a scaled index (i.e. "op * 4" or "op &lt;&lt; 2"), returns the multiplier: 2, 4, or 8; otherwise returns 0.Note that "1" is never returned.</summary>
+    /// <summary>If the given tree is a scaled index (i.e. "op * 4" or "op &lt;&lt; 2") that does not require an overflow check, returns the multiplier: 2, 4, or 8; otherwise returns 0. Note that "1" is never returned.</summary>
     public int ScaledIndex
     {
         get
         {
-            if (_oper.IsUnary)
-            {
-                if (AsUnOp().Op1.Oper.IsCnsIntOrI)
-                {
-                    return 0;
-                }
-            }
-
             switch (_oper)
             {
                 case GT_MUL:
                 {
-                    return AsOp().Op2.ScaleIndexMul;
+                    var op = AsOp();
+                    return (HasOverflowCheck || op.Op1.Oper.IsCnsIntOrI) ? 0 : op.Op2.ScaleIndexMul;
                 }
 
 #if TARGET_RISCV64
@@ -786,7 +779,8 @@ public partial class GenTree
 #endif
                 case GT_LSH:
                 {
-                    return AsOp().Op2.ScaleIndexShf;
+                    var op = AsOp();
+                    return op.Op1.Oper.IsCnsIntOrI ? 0 : op.Op2.ScaleIndexShf;
                 }
 
                 default:
@@ -1829,6 +1823,7 @@ public partial class GenTree
         GT_GCPOLL => true,
         GT_INTRINSIC => comp.IsIntrinsicImplementedByUserCall(AsIntrinsic().IntrinsicName),
         GT_KEEPALIVE => true,
+        GT_LCLHEAP => true,
         GT_NONLOCAL_JMP => true,
 #if FEATURE_HW_INTRINSICS
         GT_HWINTRINSIC => AsHWIntrinsic().RequiresCallFlag(),
