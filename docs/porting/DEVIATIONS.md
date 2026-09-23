@@ -69,6 +69,13 @@ comparison promotion. The cast-overflow predicates retain native overflow
 polarity and floating-point bounds; casts to floating-point destinations never
 report overflow, including narrowing to infinity (B066).
 
+`IntegralRange` is a readonly value type with ordered enum bounds and managed
+value equality. Its native signed-domain interpretation is unchanged, including
+unsigned cast inputs whose bit patterns appear negative before widening.
+Tree-based non-negativity inference is active; queries that still require
+`ValueNumStore.IsVNNeverNegative` fail explicitly until that prerequisite exists
+(B083/B086), rather than silently skipping the native VN query.
+
 Profile weight lookup uses a managed `ref` output: native leaves the pointed-to
 value unchanged when no profile weights are available, so an unconditional
 `out` initialization would change that contract (B067).

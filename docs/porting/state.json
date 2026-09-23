@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Port fgMorphTreeDone and its local-assertion bookkeeping prerequisites before completing identical-operand comparisons, conditional folding and integer-special folding (B054). Do not replace morph completion with SetMorphed alone. Scalar folding (B082) and complete floating constant-operand folding (B084) are active; the nine-method NativeAOT corpus has five exactly matching import prefixes, including four identity folds in FoldFloating. HWI folding, nullable boxing and colon-condition cleanup remain unported. Value-numbered folding remains explicit NYI (B083); post-morph cached argument references and LIR ownership need adaptation (B064). Keep the incomplete dispatcher, overflow/VN bodies and shared native bashing templates in the residual tree; fgInline remains disabled. Follow the visual-grouping guidance in AGENTS.md and README.md. Both native trees use the target revision; read the intact oracle.",
+    "nextAction": "Port AssertionDsc and local-assertion table/generation support, then fgKillDependentAssertions, fgAssertionGen and fgMorphTreeDone before completing identical-operand comparisons, conditional folding and integer-special folding (B054). IntegralRange is complete and tree-based non-negativity is active (B086); do not replace morph completion with SetMorphed alone. Scalar folding (B082) and floating constant-operand folding (B084) retain five exactly matching import prefixes in the nine-method NativeAOT corpus. HWI folding, nullable boxing and colon-condition cleanup remain unported. Value-numbered folding and non-negativity queries remain explicit NYI where VN facts are required (B083); post-morph cached references and LIR ownership need adaptation (B064). Keep incomplete native bodies in the residual tree; fgInline remains disabled. Follow the visual-grouping guidance in AGENTS.md and README.md. Both native trees use the target revision; read the intact oracle.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -30,15 +30,15 @@
         "functionalWipIncluded": false,
         "nativeAotRecaptured": false
       },
-      "debugBuild": "passed-after-floating-special-folding",
-      "releaseBuild": "passed-after-floating-special-folding",
+      "debugBuild": "passed-after-integral-ranges",
+      "releaseBuild": "passed-after-integral-ranges",
       "testSourcesPresent": true,
       "writerRegressionCases": 16,
       "writerRegressionConfigurations": ["Debug", "Release"],
-      "targetFocusedTestsDebug": 1046,
-      "targetFocusedTestsRelease": 860,
+      "targetFocusedTestsDebug": 1146,
+      "targetFocusedTestsRelease": 953,
       "targetFocusedTestsSkipped": 0,
-      "fullSuiteSourceCommit": "f187aff24764b05e821ff938bf2ce7de253c9ddd",
+      "fullSuiteSourceCommit": "a30bec1b3bc2e6f2d6cb0bf63b3db9419daf278e",
       "callIntrinsicSpotChecks": {
         "debugPassed": 81,
         "releasePassed": 81,
@@ -386,7 +386,27 @@
         "debugTests": "artifacts\\floating-special-parity-debug.trx",
         "releaseTests": "artifacts\\floating-special-parity-release.trx"
       },
-      "nativeAotPublish": "passed-after-floating-special-folding",
+      "integralRangeMilestone": {
+        "managedSourceCommit": "a30bec1b3bc2e6f2d6cb0bf63b3db9419daf278e",
+        "newCasesDebug": 54,
+        "newCasesRelease": 53,
+        "checkedCastCombinations": 32,
+        "originalNonNegativityFailures": 3,
+        "fullSuiteDebugPassed": 1146,
+        "fullSuiteReleasePassed": 953,
+        "skipped": 0,
+        "nativeCompilationHeaders": 9,
+        "managedCompilationHeaders": 9,
+        "nativeAotRecaptured": true,
+        "equalImportPrefixes": ["Add", "Branch", "Locals", "FoldConstants", "FoldFloating"],
+        "firstDifferences": "unchanged-inline-candidate-diagnostics-and-processing",
+        "rangeSpecificCodegenEstablished": false,
+        "fullPhaseParityEstablished": false,
+        "comparison": "artifacts\\integral-range-comparison.json",
+        "debugTests": "artifacts\\integral-range-full-debug.trx",
+        "releaseTests": "artifacts\\integral-range-full-release.trx"
+      },
+      "nativeAotPublish": "passed-after-integral-ranges",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "five-of-nine-import-prefixes-equal-remaining-inline-candidate-differences",
       "codegenParity": "not-available"
@@ -418,7 +438,7 @@
     "oldNativeHostPreservedAndExecuted": true,
     "managedCapture": "nine-selected-methods-loaded-with-target-abi",
     "managedGuid": "cb2fa75d-449d-4ee0-93ef-57011daefb8c",
-    "latestManagedBinarySha256": "8C908B00802B9B8635311E375895E95C7371711786AEE267D1F345CDD8DC6509",
+    "latestManagedBinarySha256": "BEC274C7DD49DFD1A5C8BA7CA6DED3DA4CFB9B76DFCBE120E8F9859DEBFCB29A",
     "wrongGuidCaptureRejected": true,
     "nativeLayoutMeasurements": "matched-raw-managed-sizeof-and-debug-variable-offsets",
     "latestPrefixDifference": "inline-candidate-diagnostics-and-processing",
@@ -446,6 +466,7 @@
       "Inline invocation rollback and failed-call cleanup have controlled EE coverage. Managed exception trapping and synthetic native SEH unwinding pass a Windows-x64 NativeAOT probe, but real EE-thrown failures and successful nested inline compilation remain unexercised. fgInline stays disabled pending expression folding and its remaining closure.",
       "Tree-form scalar folding preserves logical IDs and has exact native import-prefix coverage for six folds. Replacement requires unthreaded source nodes; value numbering, cached post-morph argument aliases and LIR replacement remain unsupported. The full inliner remains disabled.",
       "Floating constant-operand folding preserves native signed-zero and NaN rules, full-optimization gates, effects and JTRUE relop roots. Its four identity folds have exact import-prefix coverage; NaN/effect combinations have focused IR coverage, not codegen evidence. VN support and global-morph assertion closure remain incomplete.",
+      "Integral ranges and tree-based non-negativity have focused cast/IR coverage and retain the existing corpus prefixes. VN-dependent non-negativity fails explicitly when tree facts are insufficient. Assertion generation, global morph, non-x64 execution and range-driven codegen are not established.",
       "The nine-method corpus contains no EH or pinned-local cases and establishes neither full-phase nor codegen parity."
     ]
   },
@@ -576,6 +597,15 @@
       "commit": "51736f510c106c7c3adf7d42edc899e75c95afaa",
       "indexCommit": "56952a4c00884c99d946fc648e420b2bd8445d62",
       "ref": "refs/porting/snapshots/native-ledger-floating-special"
+    },
+    "integralRangeManagedSource": {
+      "commit": "a30bec1b3bc2e6f2d6cb0bf63b3db9419daf278e",
+      "ref": "refs/porting/snapshots/integral-range-source"
+    },
+    "integralRangeNativeResidual": {
+      "commit": "ea58e615c7f95346143d4cf2945bf6de173a1d0a",
+      "indexCommit": "d25aa5ca8082f2d4fbc531dee7bc5490790b9cba",
+      "ref": "refs/porting/snapshots/native-ledger-integral-range"
     }
   },
   "sourceMap": [
@@ -619,6 +649,12 @@
       "area": "trees-and-locals",
       "native": ["src\\coreclr\\jit\\gentree.cpp", "src\\coreclr\\jit\\gentree.h", "src\\coreclr\\jit\\lclvars.cpp"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.gt.cs", "sources\\Core\\jit\\compiler\\Compiler.lva.cs", "sources\\Core\\jit\\gentree"],
+      "reconciledCommit": null
+    },
+    {
+      "area": "assertion-ranges",
+      "native": ["src\\coreclr\\jit\\assertionprop.cpp", "src\\coreclr\\jit\\compiler.h"],
+      "csharp": ["sources\\Core\\jit\\compiler\\IntegralRange.cs", "sources\\Core\\jit\\compiler\\SymbolicIntegerValue.cs"],
       "reconciledCommit": null
     },
     {

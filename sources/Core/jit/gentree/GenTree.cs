@@ -2167,16 +2167,15 @@ public partial class GenTree
             }
         }
 
-        // TODO: Port GenTree.IsNeverNegative
-        // if (IntegralRange.ForNode(const_cast<GenTree*>(this), comp).IsNonNegative())
-        // {
-        //     return true;
-        // }
-        // 
-        // if ((comp.vnStore is not null) && comp.vnStore->IsVNNeverNegative(gtVNPair.GetConservative()))
-        // {
-        //     return true;
-        // }
+        if (IntegralRange.ForNode(this, comp).IsNonNegative)
+        {
+            return true;
+        }
+
+        if (comp.vnStore is not null)
+        {
+            throw new NotImplementedException("Value-number non-negativity analysis is not yet ported.");
+        }
 
         return false;
     }
