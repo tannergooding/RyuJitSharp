@@ -1958,6 +1958,15 @@ public partial class GenTree
 #endif
     }
 
+    public void BashToNOP()
+    {
+        // GT_NOP uses only base fields, so retain the managed object and its logical node identity.
+        SetOperRaw(GT_NOP);
+        _vnPair.SetBoth(ValueNumStore.NoVN);
+        _type = TYP_VOID;
+        _flags &= GTF_COMMON_MASK & ~(GTF_ALL_EFFECT | GTF_REVERSE_OPS);
+    }
+
     public void SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate = CLEAR_VN)
     {
 #if DEBUG

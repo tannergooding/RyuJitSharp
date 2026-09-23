@@ -4512,6 +4512,72 @@ public partial class Compiler
         return true;
     }
 
+    /// <summary>Get the lock object for a static synchronized method, including shared generic lookups.</summary>
+    public unsafe GenTree fgGetCritSectOfStaticMethod()
+    {
+        noway_assert(!compIsForInlining);
+        noway_assert(info.compIsStatic);
+
+        GenTree? tree = null;
+        CORINFO_LOOKUP_KIND kind;
+        info.compCompHnd->getLocationOfThisType(info.compMethodHnd, &kind);
+
+        if (!kind.needsRuntimeLookup)
+        {
+            var pointer = info.compCompHnd->getRuntimeTypePointer(info.compClassHnd);
+            if (pointer != NO_OBJECT_HANDLE)
+            {
+                tree = gtNewIconEmbObjHndNode(pointer);
+            }
+            else
+            {
+                tree = gtNewIconEmbClsHndNode(info.compClassHnd);
+                tree = gtNewHelperCallNode(TYP_REF, CORINFO_HELP_GETSYNCFROMCLASSHANDLE, tree);
+            }
+        }
+        else
+        {
+            // Collectible types require reporting the generic context used by shared code.
+            lvaGenericsContextInUse = true;
+
+            switch (kind.runtimeLookupKind)
+            {
+                case CORINFO_LOOKUP_THISOBJ:
+                {
+                    noway_assert(false, "Should never get this for static method.");
+                    break;
+                }
+
+                case CORINFO_LOOKUP_CLASSPARAM:
+                {
+                    tree = gtNewLclvNode(TYP_I_IMPL, info.compTypeCtxtArg);
+                    tree.Flags |= GTF_VAR_CONTEXT;
+                    break;
+                }
+
+                case CORINFO_LOOKUP_METHODPARAM:
+                {
+                    tree = gtNewLclvNode(TYP_I_IMPL, info.compTypeCtxtArg);
+                    tree.Flags |= GTF_VAR_CONTEXT;
+                    tree = gtNewHelperCallNode(TYP_I_IMPL, CORINFO_HELP_GETCLASSFROMMETHODPARAM, tree);
+                    break;
+                }
+
+                default:
+                {
+                    noway_assert(false, "Unknown LOOKUP_KIND");
+                    break;
+                }
+            }
+
+            noway_assert(tree is not null);
+            tree = gtNewHelperCallNode(TYP_REF, CORINFO_HELP_GETSYNCFROMCLASSHANDLE, tree);
+        }
+
+        noway_assert(tree is not null);
+        return tree;
+    }
+
     /// <summary>Obtain the first basic block that was created due to IL.</summary>
     /// <returns>The basic block, skipping the init BB.</returns>
     public BasicBlock fgGetFirstILBlock()

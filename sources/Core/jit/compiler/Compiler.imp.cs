@@ -16074,6 +16074,15 @@ public partial class Compiler
         var op2 = null as GenTree;
         var op1 = null as GenTree;
 
+        if (((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) == 0) && compIsAsyncVersion)
+        {
+            JITDUMP("\nWrapping return value in await\n");
+            if (!impWrapTopOfStackInAwait())
+            {
+                return false;
+            }
+        }
+
         if (info.compRetType is not TYP_VOID)
         {
             op2 = impPopStack().val;
@@ -16419,6 +16428,267 @@ public partial class Compiler
 #endif
 
         return true;
+    }
+
+    /// <summary>Unwrap the original task-valued IL return for a runtime-generated async version.</summary>
+    /// <returns>False if a required runtime lookup cannot be represented during inlining.</returns>
+    public unsafe bool impWrapTopOfStackInAwait()
+    {
+        if ((info.compFlags & CORINFO_FLG_SYNCH) != 0)
+        {
+            assert(!compIsForInlining);
+
+            if (lvaMonAcquired == BAD_VAR_NUM)
+            {
+                lvaMonAcquired = lvaGrabTemp(shortLifetime: true, "Synchronized method monitor acquired boolean");
+                lvaGetDesc(lvaMonAcquired).Type = TYP_I_IMPL;
+            }
+
+            var varAddrNode = gtNewLclVarAddrNode(TYP_BYREF, lvaMonAcquired);
+            var lockObject = info.compIsStatic ? fgGetCritSectOfStaticMethod() : gtNewLclvNode(TYP_REF, info.compThisArg);
+            var exitMon = gtNewHelperCallNode(TYP_VOID, CORINFO_HELP_MON_EXIT, lockObject, varAddrNode);
+            _ = impAppendTree(exitMon, CHECK_SPILL_ALL, impCurStmtDI);
+
+            // The fault handler must not release the monitor again if the await throws.
+            impStoreToTemp(lvaMonAcquired, gtNewZeroConNode(TYP_I_IMPL), CHECK_SPILL_ALL);
+        }
+
+        if (impFoldAwaitedTopOfStack())
+        {
+            return true;
+        }
+
+        CORINFO_LOOKUP instArgLookup;
+        CORINFO_CONTEXT_HANDLE contextHandle;
+        var awaitMethod = info.compCompHnd->getAwaitReturnCall(info.compMethodHnd, &contextHandle, &instArgLookup);
+        CORINFO_SIG_INFO awaitSig;
+        info.compCompHnd->getMethodSig(awaitMethod, &awaitSig);
+        assert(awaitSig.isAsyncCall());
+
+        var callRetType = awaitSig.retType.VarType;
+        var awaitCall = gtNewUserCallNode(callRetType, awaitMethod);
+        CORINFO_CLASS_HANDLE taskTypeHnd;
+        var taskType = strip(info.compCompHnd->getArgType(&awaitSig, awaitSig.args, &taskTypeHnd));
+        var awaitable = impPopStack().val;
+        var taskJitType = taskType.VarType;
+        NewCallArg taskArg;
+
+        if (taskJitType == TYP_STRUCT)
+        {
+            awaitable = impNormStructVal(awaitable, CHECK_SPILL_ALL);
+            taskArg = NewCallArg.CreateForStruct(awaitable, TYP_STRUCT, typGetObjLayout(taskTypeHnd));
+        }
+        else
+        {
+            taskArg = NewCallArg.CreateForPrimitive(awaitable, taskJitType);
+        }
+
+        _ = awaitCall.Args.PushFront(taskArg);
+        awaitCall.Flags |= taskArg.Node.Flags & GTF_ALL_EFFECT;
+
+        var asyncContArg = NewCallArg.CreateForPrimitive(gtNewNull()).WithWellKnownArg(WellKnownArg.AsyncContinuation);
+        NewCallArg instArg = default;
+        if (awaitSig.hasTypeArg())
+        {
+            var instArgTree = impLookupToTree(instArgLookup, GTF_ICON_METHOD_HDL, awaitMethod);
+            if (instArgTree is null)
+            {
+                return false;
+            }
+
+            instArg = NewCallArg.CreateForPrimitive(instArgTree).WithWellKnownArg(WellKnownArg.InstParam);
+            awaitCall.Flags |= instArg.Node.Flags & GTF_ALL_EFFECT;
+        }
+
+        if (Target.TgtArgOrder == Target.ARG_ORDER_R2L)
+        {
+            _ = awaitCall.Args.PushFront(asyncContArg);
+            if (awaitSig.hasTypeArg())
+            {
+                _ = awaitCall.Args.PushFront(instArg);
+            }
+        }
+        else
+        {
+            _ = awaitCall.Args.PushBack(asyncContArg);
+            if (awaitSig.hasTypeArg())
+            {
+                _ = awaitCall.Args.PushBack(instArg);
+            }
+        }
+
+        CORINFO_CALL_INFO callInfo = default;
+        callInfo.hMethod = awaitMethod;
+        callInfo.methodFlags = info.compCompHnd->getMethodAttribs(awaitMethod);
+        assert(compInlineContext is not null);
+        impMarkInlineCandidate(awaitCall, contextHandle, callInfo, compInlineContext);
+
+        GenTree toPush = awaitCall;
+        if (varTypeIsStruct(callRetType))
+        {
+            toPush = impFixupCallStructReturn(awaitCall, awaitSig.retTypeClass);
+        }
+
+        AsyncCallInfo asyncInfo = default;
+        GenTreeCall? inliningCall = null;
+        if (compIsForInlining)
+        {
+            assert(impInlineInfo is not null);
+            inliningCall = impInlineInfo.iciCall;
+        }
+
+        var hasContextHandling = (inliningCall is not null) &&
+            (inliningCall.Args.FindWellKnownArg(WellKnownArg.AsyncResumedUse) is not null);
+
+        if (!hasContextHandling)
+        {
+            asyncInfo.IsTailAwait = (inliningCall is null) || inliningCall.GetAsyncInfo().IsTailAwait;
+
+#if FEATURE_TAILCALL_OPT
+            // This implementation-detail call intentionally does not consult the EE's canTailCall.
+            if (asyncInfo.IsTailAwait && opts.compTailCallOpt && opts.OptimizationEnabled)
+            {
+                awaitCall._callMoreFlags |= GTF_CALL_M_IMPLICIT_TAILCALL;
+            }
+#endif
+            awaitCall.SetIsAsync(asyncInfo);
+        }
+        else
+        {
+            assert(inliningCall is not null && inliningCall.IsAsync);
+#if DEBUG
+            JITDUMP($"Inheriting continuation handling {(uint)inliningCall.GetAsyncInfo().ContinuationContextHandling} from caller [{inliningCall.TreeId:D6}]\n");
+#endif
+            asyncInfo.ContinuationContextHandling = inliningCall.GetAsyncInfo().ContinuationContextHandling;
+            // Frame depth is in async info, so mark the call before inheriting its contexts.
+            awaitCall.SetIsAsync(asyncInfo);
+            impInheritAsyncContextsFromInliner(awaitCall);
+        }
+
+        if (awaitCall.IsInlineCandidate)
+        {
+            assert(toPush == awaitCall);
+            _ = impAppendTree(awaitCall, CHECK_SPILL_ALL, impCurStmtDI, checkConsumedDebugInfo: false);
+
+            if (callRetType == TYP_VOID)
+            {
+                assert(info.compRetType == TYP_VOID);
+                return true;
+            }
+
+            var retExpr = gtNewInlineCandidateReturnExpr(awaitCall, awaitCall.Type.ActualType);
+            var candidateInfo = awaitCall.SingleInlineCandidateInfo;
+            assert(candidateInfo is not null);
+            candidateInfo.retExpr = retExpr;
+            toPush = retExpr;
+        }
+
+        if (info.compRetType == TYP_VOID)
+        {
+            _ = impAppendTree(toPush, CHECK_SPILL_ALL, impCurStmtDI);
+        }
+        else
+        {
+            impPushOnStack(toPush, makeTypeInfo(awaitSig.retType, awaitSig.retTypeClass));
+        }
+
+        return true;
+    }
+
+    /// <summary>Fold default ValueTask returns and ValueTask&lt;T&gt;(value) before introducing TransparentAwait.</summary>
+    public unsafe bool impFoldAwaitedTopOfStack()
+    {
+        if (!opts.Tier0OptimizationEnabled)
+        {
+            return false;
+        }
+
+        var value = impStackTop().val;
+        if (!value.Oper.IsScalarLocal)
+        {
+            return false;
+        }
+
+        var valueLcl = value.AsLclVarCommon();
+        var lastStmt = impLastStmt;
+        if (lastStmt is null)
+        {
+            return false;
+        }
+
+        var lastTree = lastStmt.RootNode;
+        if (lastTree.Oper == GT_STORE_LCL_VAR)
+        {
+            var storeLcl = lastTree.AsLclVarCommon();
+            if ((storeLcl.LclNum != valueLcl.LclNum) || !storeLcl.Data.IsIntegralConst(0))
+            {
+                return false;
+            }
+
+            _ = impPopStack();
+            if (info.compRetType == TYP_VOID)
+            {
+                lastTree.BashToNOP();
+            }
+            else if (info.compRetType != TYP_STRUCT)
+            {
+                impPushOnStack(gtNewZeroConNode(info.compRetType), new typeInfo(info.compRetType));
+                lastTree.BashToNOP();
+            }
+            else
+            {
+                var returnLcl = lvaGrabTemp(shortLifetime: true, "Return temp");
+                lvaSetStruct(returnLcl, info.compMethodInfo->args.retTypeClass, unsafeValueClsCheck: false);
+                // Reuse the ValueTask zeroing for the unwrapped struct.
+                lastTree.AsLclVar().LclNum = returnLcl;
+                impPushOnStack(gtNewLclVarNode(TYP_UNDEF, returnLcl),
+                    makeTypeInfo(info.compMethodInfo->args.retType, info.compMethodInfo->args.retTypeClass));
+            }
+
+            JITDUMP("Optimized \"return new ValueTask()\" to return default\n");
+            return true;
+        }
+        else if (lastTree.Oper.IsCall && lastTree.AsCall().IsSpecialIntrinsic(this, NI_System_Threading_Tasks_ValueTask_1__ctor))
+        {
+            var thisArg = lastTree.AsCall().Args.ThisArg;
+            assert(thisArg is not null);
+            if ((thisArg.Node.Oper != GT_LCL_ADDR) || (thisArg.Node.AsLclVarCommon().LclNum != valueLcl.LclNum))
+            {
+                return false;
+            }
+
+            CORINFO_SIG_INFO sig;
+            info.compCompHnd->getMethodSig(lastTree.AsCall()._callMethHnd, &sig);
+            if (sig.numArgs != 1)
+            {
+                return false;
+            }
+
+            assert((sig.sigInst.classInstCount == 1) && (sig.sigInst.methInstCount == 0));
+            var paramClass = info.compCompHnd->getArgClass(&sig, sig.args);
+            if (paramClass != sig.sigInst.classInst[0])
+            {
+                return false;
+            }
+
+            var valueArg = lastTree.AsCall().Args.GetUserArgByIndex(1);
+            assert(valueArg is not null);
+            value = valueArg.Node;
+            if (varTypeIsSmall(valueArg.SignatureType) && fgCastNeeded(value, valueArg.SignatureType))
+            {
+                value = gtNewCastNode(TYP_INT, value, fromUnsigned: false, valueArg.SignatureType);
+            }
+
+            var stackEntry = impPopStack();
+            impPushOnStack(value, stackEntry.seTypeInfo);
+            JITDUMP("Optimized \"return new ValueTask(value)\" to return value directly:\n");
+            DISPTREE(value);
+
+            lastTree.BashToNOP();
+            return true;
+        }
+
+        return false;
     }
 
     /// <summary>Import a dictionary lookup to access a handle in code shared between generic instantiations.</summary>

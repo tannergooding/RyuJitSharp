@@ -41,6 +41,12 @@ overlapping fields because async debug information contains managed references.
 Call flags still select the active variant, and cloning copies the same grouped
 storage. These are managed IR objects, not JIT/EE interop structures; see B019.
 
+`GenTree.BashToNOP` retains the existing managed object, links, and logical node ID.
+`GT_NOP` uses only base `GenTree` fields; the object's CLR subtype does not change.
+Traversal and dumping must classify the node by its operator rather than treating
+its former subtype's operands as live. This preserves native in-place folding
+without allocating a replacement node or changing subsequent node IDs.
+
 ### D003: Deferred non-Windows-x64-only paths
 
 **Status:** accepted scoped deferral; not a successful execution/parity result.

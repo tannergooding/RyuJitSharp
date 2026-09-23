@@ -3054,7 +3054,7 @@ public partial class Compiler
 #endif
             gtDispCommonEndLine(tree);
 
-            if (!topOnly && (tree is GenTreeUnOp unOp))
+            if (!topOnly && !tree.Oper.IsLeaf && (tree is GenTreeUnOp unOp))
             {
                 var op1 = unOp.Op1;
                 var op2 = null as GenTree;
@@ -6806,6 +6806,23 @@ public partial class Compiler
 #endif
 
         return node;
+    }
+
+    /// <summary>Create a user call, including its entrypoint when compiling for ReadyToRun.</summary>
+    public unsafe GenTreeCall gtNewUserCallNode(var_types type, CORINFO_METHOD_HANDLE handle, in DebugInfo di = default)
+    {
+        var call = gtNewCallNode(type, CT_USER_FUNC, handle, di);
+
+#if FEATURE_READYTORUN
+        if (IsReadyToRun)
+        {
+            CORINFO_CONST_LOOKUP entryPoint;
+            info.compCompHnd->getFunctionEntryPoint(handle, &entryPoint);
+            call._entryPoint = entryPoint;
+        }
+#endif
+
+        return call;
     }
 
     public GenTreeCast gtNewCastNode(var_types type, GenTree op, bool fromUnsigned, var_types castType)
