@@ -18,6 +18,526 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    /// <summary>incorporate statements for an inline into the root method.</summary>
+    /// <param name="inlineInfo">info for the inline</param>
+    /// <remarks>
+    ///   <para>The inlining attempt cannot be failed once this method is called.</para>
+    ///   <para>Adds all inlinee statements, plus any glue statements needed either before or after the inlined call.</para>
+    ///   <para>Updates flow graph and assigns weights to inlinee blocks. Currently does not attempt to read IBC data for the inlinee.</para>
+    ///   <para>Updates relevant root method status flags (eg optMethodFlags) to include information from the inlinee.</para>
+    ///   <para>Marks newly added statements with an appropriate inline context.</para>
+    /// </remarks>
+    public unsafe void fgInsertInlineeBlocks(InlineInfo inlineInfo)
+    {
+        var iciBlock = inlineInfo.iciBlock;
+        var iciCall = inlineInfo.iciCall;
+        var iciStmt = inlineInfo.iciStmt;
+
+        assert(iciBlock is not null);
+        assert(iciCall is not null);
+        assert(iciStmt is not null);
+
+        noway_assert(iciBlock.FirstStmt is not null);
+        noway_assert(iciStmt.RootNode is not null);
+        assert(iciStmt.RootNode == iciCall);
+        noway_assert(iciCall.Oper is GT_CALL);
+
+#if DEBUG
+        var currentDumpStmt = null as Statement;
+
+        if (verbose)
+        {
+            jitprintf("\n\n----------- Statements (and blocks) added due to the inlining of call ");
+            printTreeId(iciCall);
+            jitprintf(" -----------\n");
+        }
+#endif
+
+        // Mark success.
+        inlineInfo.inlineContext.SetSucceeded(inlineInfo);
+
+        // Prepend statements
+        var stmtAfter = fgInlinePrependStatements(inlineInfo);
+
+#if DEBUG
+        if (verbose)
+        {
+            currentDumpStmt = stmtAfter;
+            jitprintf("\nInlinee method body:");
+        }
+#endif
+
+        var topBlock = iciBlock;
+        var bottomBlock = null as BasicBlock;
+        var insertInlineeBlocks = true;
+
+        assert(InlineeCompiler is not null);
+
+        if (InlineeCompiler.fgBBcount == 1)
+        {
+            // When fgBBCount is 1 we will always have a non-NULL fgFirstBB
+            assert(InlineeCompiler.fgFirstBB is not null);
+
+            // DDB 91389: Don't throw away the (only) inlinee block
+            // when its return type is not BBJ_RETURN.
+            // In other words, we need its BBJ_ to perform the right thing.
+            if (InlineeCompiler.fgFirstBB.Kind is BBJ_RETURN)
+            {
+                // Inlinee contains just one BB. So just insert its statement list to topBlock.
+                if (InlineeCompiler.fgFirstBB.FirstStmt is not null)
+                {
+                    JITDUMP($"\nInserting inlinee code into {FMT_BB(iciBlock.bbNum)}\n");
+                    stmtAfter = fgInsertStmtListAfter(iciBlock, stmtAfter, InlineeCompiler.fgFirstBB.FirstStmt);
+                }
+                else
+                {
+                    JITDUMP("\ninlinee was empty\n");
+                }
+
+                // Copy inlinee bbFlags to caller bbFlags.
+                var inlineeBlockFlags = InlineeCompiler.fgFirstBB.FlagsRaw;
+                noway_assert((inlineeBlockFlags & BBF_HAS_JMP) == 0);
+                noway_assert((inlineeBlockFlags & BBF_KEEP_BBJ_ALWAYS) == 0);
+
+                // Todo: we may want to exclude some flags here.
+                iciBlock.SetFlags(inlineeBlockFlags);
+
+#if DEBUG
+                if (verbose)
+                {
+                    noway_assert(currentDumpStmt is not null);
+
+                    if (currentDumpStmt != stmtAfter)
+                    {
+                        do
+                        {
+                            currentDumpStmt = currentDumpStmt.NextStmt;
+                            assert(currentDumpStmt is not null);
+
+                            jitprintf("\n");
+                            gtDispStmt(currentDumpStmt);
+                            jitprintf("\n");
+
+                        }
+                        while (currentDumpStmt != stmtAfter);
+                    }
+                }
+#endif
+
+                // Append statements to null out gc ref locals, if necessary.
+                fgInlineAppendStatements(inlineInfo, iciBlock, stmtAfter);
+                // Saving async contexts introduces a try/fault and a merged return.
+                assert(InlineeCompiler.lvaResumedIndicator == BAD_VAR_NUM);
+                insertInlineeBlocks = false;
+            }
+            else
+            {
+                JITDUMP("\ninlinee was single-block, but not BBJ_RETURN\n");
+            }
+        }
+
+        // ======= Inserting inlinee's basic blocks ===============
+
+        if (insertInlineeBlocks)
+        {
+            JITDUMP("\nInserting inlinee blocks\n");
+            bottomBlock = fgSplitBlockAfterStatement(topBlock, stmtAfter);
+            var baseBBNum = fgBBNumMax;
+
+            JITDUMP($"split {FMT_BB(topBlock.bbNum)} after the inlinee call site; after portion is now {FMT_BB(bottomBlock.bbNum)}\n");
+
+            // The newly split block is not special so doesn't need to be kept.
+            bottomBlock.RemoveFlags(BBF_DONT_REMOVE);
+
+            // If the inlinee has EH, merge the EH tables, and figure out how much of
+            // a shift we need to make in the inlinee blocks EH indices.
+
+            var inlineeRegionCount = InlineeCompiler.compHndBBtabCount;
+            var inlineeHasEH = inlineeRegionCount > 0;
+            var inlineeIndexShift = (ushort)(0);
+
+            if (inlineeHasEH)
+            {
+                // If the call site also has EH, we need to insert the inlinee clauses
+                // so they are a child of the call site's innermost enclosing region.
+                // Figure out what this is.
+
+                var enclosingRegion = ehGetMostNestedRegionIndex(iciBlock, out var inTryRegion);
+
+                // We will insert the inlinee clauses in bulk before this index.
+                var insertBeforeIndex = (ushort)(0);
+
+                if (enclosingRegion == 0)
+                {
+                    // The call site is not in an EH region, so we can put the inlinee EH clauses
+                    // at the end of root method's the EH table.
+                    //
+                    // For example, if the root method already has EH#0, and the inlinee has 2 regions
+                    //
+                    //   enclosingRegion   will be 0
+                    //   inlineeIndexShift will be 1
+                    //   insertBeforeIndex will be 1
+                    //
+                    //   inlinee eh0 -> eh1
+                    //   inlinee eh1 -> eh2
+                    //
+                    //   root eh0 -> eh0
+
+                    inlineeIndexShift = compHndBBtabCount;
+                    insertBeforeIndex = compHndBBtabCount;
+                }
+                else
+                {
+                    // The call site is in an EH region, so we can put the inlinee EH clauses
+                    // just before the enclosing region
+                    //
+                    // Note enclosingRegion is region index + 1. So EH#0 will be represented by 1 here.
+                    //
+                    // For example, if the enclosing EH regions are try#2 and hnd#3, and the inlinee has 2 eh clauses
+                    //
+                    //   enclosingRegion   will be 3  (try2 + 1)
+                    //   inlineeIndexShift will be 2
+                    //   insertBeforeIndex will be 2
+                    //
+                    //   inlinee eh0 -> eh2
+                    //   inlinee eh1 -> eh3
+                    //
+                    //   root eh0 -> eh0
+                    //   root eh1 -> eh1
+                    //
+                    //   root eh2 -> eh4
+                    //   root eh3 -> eh5
+
+                    inlineeIndexShift = (ushort)(enclosingRegion - 1);
+                    insertBeforeIndex = (ushort)(enclosingRegion - 1);
+                }
+
+                JITDUMP($"Inlinee has EH. In root method, inlinee's {inlineeRegionCount} EH region indices will shift by {inlineeIndexShift} and become EH#{insertBeforeIndex:D2} ... EH#{insertBeforeIndex + inlineeRegionCount - 1:D2} ({FMT_PTR(&inlineeIndexShift)})\n");
+
+                if (enclosingRegion != 0)
+                {
+                    JITDUMP($"Inlinee is nested within current {(inTryRegion ? "try" : "hnd")} EH#{enclosingRegion - 1:D2} (which will become EH#{enclosingRegion - 1 + inlineeRegionCount:D2})\n");
+                }
+                else
+                {
+                    JITDUMP("Inlinee is not nested inside any EH region\n");
+                }
+
+                // Grow the EH table. We verified in fgFindBasicBlocks that this won't fail.
+                var outermostEbdIdx = fgTryAddEHTableEntries(insertBeforeIndex, inlineeRegionCount, deferAdding: false);
+                assert(outermostEbdIdx != -1);
+
+                // fgTryAddEHTableEntries has adjusted the indices of all root method blocks and EH clauses
+                // to accommodate the new entries. No other changes to those are needed.
+                //
+                // We just need to add in and fix up the new entries from the inlinee.
+                //
+                // Fetch the new enclosing try/handler table indices.
+
+                var enclosingTryIndex = iciBlock.hasTryIndex ? iciBlock.TryIndex : EHblkDsc.NO_ENCLOSING_INDEX;
+                var enclosingHndIndex = iciBlock.hasHndIndex ? iciBlock.HndIndex : EHblkDsc.NO_ENCLOSING_INDEX;
+
+                // Copy over the EH table entries from inlinee->root and adjust their enclosing indicies.
+
+                for (var XTnum = (ushort)(0); XTnum < inlineeRegionCount; XTnum++)
+                {
+                    var newXTnum = (ushort)(XTnum + inlineeIndexShift);
+                    ref var ebd = ref ehGetDsc(newXTnum);
+                    ebd = InlineeCompiler.ehGetDsc(XTnum);
+
+                    if (ebd.ebdEnclosingTryIndex != EHblkDsc.NO_ENCLOSING_INDEX)
+                    {
+                        ebd.ebdEnclosingTryIndex += inlineeIndexShift;
+                    }
+                    else
+                    {
+                        ebd.ebdEnclosingTryIndex = enclosingTryIndex;
+                    }
+
+                    if (ebd.ebdEnclosingHndIndex != EHblkDsc.NO_ENCLOSING_INDEX)
+                    {
+                        ebd.ebdEnclosingHndIndex += inlineeIndexShift;
+                    }
+                    else
+                    {
+                        ebd.ebdEnclosingHndIndex = enclosingHndIndex;
+                    }
+                }
+            }
+
+            // Fetch the new enclosing try/handler indices for blocks.
+            // Note these are represented differently than the EH table indices.
+
+            var blockEnclosingTryIndex = (ushort)(iciBlock.hasTryIndex ? (iciBlock.TryIndex + 1) : 0);
+            var blockEnclosingHndIndex = (ushort)(iciBlock.hasHndIndex ? (iciBlock.HndIndex + 1) : 0);
+
+            // Set the try and handler index and fix the jump types of inlinee's blocks.
+
+            foreach (var block in InlineeCompiler.Blocks)
+            {
+                if (block.hasTryIndex)
+                {
+                    JITDUMP($"Inlinee {FMT_BB(block.bbNum)} has old try index {block.bbTryIndex}, shift {inlineeIndexShift}, new try index {block.bbTryIndex + inlineeIndexShift}\n");
+                    block.bbTryIndex += inlineeIndexShift;
+                }
+                else
+                {
+                    block.bbTryIndex = blockEnclosingTryIndex;
+                }
+
+                if (block.hasHndIndex)
+                {
+                    block.bbHndIndex += inlineeIndexShift;
+                }
+                else
+                {
+                    block.bbHndIndex = blockEnclosingHndIndex;
+                }
+
+                // Sanity checks
+
+                if (iciBlock.hasTryIndex)
+                {
+                    assert(block.hasTryIndex);
+                    assert(block.TryIndex <= iciBlock.TryIndex);
+                }
+
+                if (iciBlock.hasHndIndex)
+                {
+                    assert(block.hasHndIndex);
+                    assert(block.HndIndex <= iciBlock.HndIndex);
+                }
+
+                block.CopyFlags(iciBlock, BBF_BACKWARD_JUMP | BBF_PROF_WEIGHT);
+
+                // Update block nums appropriately
+                block.bbNum += baseBBNum;
+                fgBBNumMax = int.Max(block.bbNum, fgBBNumMax);
+
+                var di = iciStmt.DebugInfo.GetRoot();
+
+                if (di.IsValid)
+                {
+                    block.bbCodeOffs = di.Location.Offset;
+                    block.bbCodeOffsEnd = block.bbCodeOffs + 1; // TODO: is code size of 1 some magic number for inlining?
+                }
+                else
+                {
+                    block.bbCodeOffs = 0; // TODO: why not BAD_IL_OFFSET?
+                    block.bbCodeOffsEnd = 0;
+                    block.SetFlags(BBF_INTERNAL);
+                }
+
+                if (block.Kind is BBJ_RETURN)
+                {
+                    noway_assert(!block.HasFlag(BBF_HAS_JMP));
+                    JITDUMP($"\nConvert bbKind of {FMT_BB(block.bbNum)} to BBJ_ALWAYS to bottom block {FMT_BB(bottomBlock.bbNum)}\n");
+
+                    var newEdge = fgAddRefPred(bottomBlock, block);
+                    block.SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+                }
+            }
+
+            // Inlinee's top block will have an artificial ref count. Remove.
+            assert(InlineeCompiler.fgFirstBB is not null);
+            assert(InlineeCompiler.fgFirstBB.bbRefs > 0);
+            InlineeCompiler.fgFirstBB.bbRefs--;
+
+            // Insert inlinee's blocks into inliner's block list.
+            assert(topBlock.Kind is BBJ_ALWAYS);
+            assert(topBlock.Target == bottomBlock);
+            fgRedirectEdge(ref topBlock.TargetEdgeRef, InlineeCompiler.fgFirstBB);
+
+            assert(InlineeCompiler.fgLastBB is not null);
+            topBlock.Next = InlineeCompiler.fgFirstBB;
+            InlineeCompiler.fgLastBB.Next = bottomBlock;
+
+            // Add inlinee's block count to inliner's.
+            fgBBcount += InlineeCompiler.fgBBcount;
+
+            // Append statements to null out gc ref locals, if necessary.
+            fgInlineAppendStatements(inlineInfo, bottomBlock, stmtAfter: null);
+
+#if DEBUG
+            if (verbose)
+            {
+                fgDispBasicBlocks(InlineeCompiler.fgFirstBB, InlineeCompiler.fgLastBB, dumpTrees: true);
+            }
+#endif
+            fgInlineAppendAsyncFrameStatements(inlineInfo, bottomBlock);
+        }
+
+        // At this point, we have successfully inserted inlinee's code.
+
+        // Copy out some flags
+        compLongUsed |= InlineeCompiler.compLongUsed;
+        compFloatingPointUsed |= InlineeCompiler.compFloatingPointUsed;
+        compLocallocUsed |= InlineeCompiler.compLocallocUsed;
+        compLocallocOptimized |= InlineeCompiler.compLocallocOptimized;
+        compQmarkUsed |= InlineeCompiler.compQmarkUsed;
+        compGSReorderStackLayout |= InlineeCompiler.compGSReorderStackLayout;
+        compHasBackwardJump |= InlineeCompiler.compHasBackwardJump;
+        compMaskConvertUsed |= InlineeCompiler.compMaskConvertUsed;
+
+        lvaGenericsContextInUse |= InlineeCompiler.lvaGenericsContextInUse;
+
+#if TARGET_ARM64
+        info.compNeedsConsecutiveRegisters |= InlineeCompiler.info.compNeedsConsecutiveRegisters;
+#endif
+
+        if (InlineeCompiler.fgHasSwitch)
+        {
+            fgHasSwitch = true;
+
+            // If the inlinee compiler encounters switch tables, disable hot/cold splitting in the root compiler.
+            // TODO-CQ: Implement hot/cold splitting of methods with switch tables.
+            if (opts.compProcedureSplitting)
+            {
+                opts.compProcedureSplitting = false;
+                JITDUMP($"Turning off procedure splitting for this method, as inlinee compiler encountered switch tables; implementation limitation.\n");
+            }
+        }
+
+#if FEATURE_SIMD
+        if (InlineeCompiler.UsesSimdTypes)
+        {
+            UsesSimdTypes = true;
+        }
+#endif
+
+        // Update unmanaged call details
+        info.compUnmanagedCallCountWithGCTransition += InlineeCompiler.info.compUnmanagedCallCountWithGCTransition;
+
+        // Update stats for inlinee PGO
+        if (InlineeCompiler.fgPgoSchema is not null)
+        {
+            fgPgoInlineePgo++;
+        }
+        else if (InlineeCompiler.fgPgoFailReason is not null)
+        {
+            // Single block inlinees may not have probes
+            // when we've enabled minimal profiling (which
+            // is now the default).
+
+            if (InlineeCompiler.fgBBcount == 1)
+            {
+                fgPgoInlineeNoPgoSingleBlock++;
+            }
+            else
+            {
+                fgPgoInlineeNoPgo++;
+            }
+        }
+
+        // Update no-return call count
+        optNoReturnCallCount += InlineeCompiler.optNoReturnCallCount;
+
+#if DEBUG
+        // Update metrics
+        Metrics.mergeToRoot(InlineeCompiler);
+#endif
+
+        // Update optMethodFlags
+
+#if DEBUG
+        var optMethodFlagsBefore = optMethodFlags;
+#endif
+
+        optMethodFlags |= InlineeCompiler.optMethodFlags;
+
+#if DEBUG
+        if (optMethodFlags != optMethodFlagsBefore)
+        {
+            JITDUMP($"INLINER: Updating optMethodFlags --  root:{(int)(optMethodFlagsBefore):x} callee:{(int)(InlineeCompiler.optMethodFlags):x} new:{(int)(optMethodFlags):x}\n");
+        }
+#endif
+
+        // Update profile consistency
+        // If inlinee is inconsistent, root method will be inconsistent too.
+
+        if (!InlineeCompiler.fgPgoConsistent)
+        {
+            if (fgPgoConsistent)
+            {
+                JITDUMP("INLINER: profile data in root now inconsistent -- inlinee had inconsistency\n");
+                Metrics.ProfileInconsistentInlinee++;
+                fgPgoConsistent = false;
+            }
+        }
+
+        // If we inline a no-return call at a site with profile weight,
+        // we will introduce inconsistency.
+        //
+        if (InlineeCompiler.fgReturnCount == 0)
+        {
+            JITDUMP("INLINER: no-return inlinee\n");
+
+            if (iciBlock.bbWeight > 0)
+            {
+                if (fgPgoConsistent)
+                {
+                    JITDUMP($"INLINER: profile data in root now inconsistent -- no-return inlinee at call site in {FMT_BB(iciBlock.bbNum)} with weight {FMT_WT(iciBlock.bbWeight)}\n");
+                    Metrics.ProfileInconsistentNoReturnInlinee++;
+                    fgPgoConsistent = false;
+                }
+            }
+            else
+            {
+                // Inlinee scaling should assure this is so.
+                assert(InlineeCompiler.fgFirstBB is not null);
+                assert(InlineeCompiler.fgFirstBB.bbWeight == 0);
+            }
+        }
+
+        // If the call site is not in a try and the callee has a throw, we may introduce inconsistency.
+
+        if (InlineeCompiler.fgThrowCount > 0)
+        {
+            JITDUMP("INLINER: may-throw inlinee\n");
+
+            if (iciBlock.bbWeight > 0)
+            {
+                if (fgPgoConsistent)
+                {
+                    JITDUMP($"INLINER: profile data in root now inconsistent -- may-throw inlinee at call site in {FMT_BB(iciBlock.bbNum)} with weight {FMT_WT(iciBlock.bbWeight)}\n");
+                    Metrics.ProfileInconsistentMayThrowInlinee++;
+                    fgPgoConsistent = false;
+                }
+            }
+            else
+            {
+                // Inlinee scaling should assure this is so.
+                assert(InlineeCompiler.fgFirstBB is not null);
+                assert(InlineeCompiler.fgFirstBB.bbWeight == 0);
+            }
+        }
+
+        // If an inlinee needs GS cookie we need to make sure that the cookie will not be allocated at zero stack offset.
+        // Note that if the root method needs GS cookie then this has already been taken care of.
+        if (!NeedsGSSecurityCookie && InlineeCompiler.NeedsGSSecurityCookie)
+        {
+            NeedsGSSecurityCookie = true;
+
+            if (NeedsGSSecurityCookie)
+            {
+                var dummy = lvaGrabTempWithImplicitUse(shortLifetime: false, "GSCookie dummy for inlinee");
+
+                ref var gsCookieDummy = ref lvaGetDesc(dummy);
+                gsCookieDummy.Type = TYP_INT;
+
+                // It is not alive at all, set the flag to prevent zero-init.
+                gsCookieDummy.lvIsTemp = true;
+
+                lvaSetVarDoNotEnregister(dummy, DoNotEnregisterReason.VMNeedsStackAddr);
+            }
+        }
+
+        // Detach the GT_CALL node from the original statement by hanging a "nothing" node under it,
+        // so that fgMorphStmts can remove the statement once we return from here.
+
+        iciStmt.RootNode = gtNewNothingNode();
+    }
+
     /// <summary>Configure an await that restores an inlined frame's caller context without capturing it again.</summary>
     public void fgSetupAsyncFrameTransitionCall(GenTreeCall call, in DebugInfo di)
     {
@@ -5860,6 +6380,33 @@ public partial class Compiler
         }
     }
 
+    /// <summary>Insert a nonempty statement list after an existing statement and return the last inserted statement.</summary>
+    public Statement fgInsertStmtListAfter(BasicBlock block, Statement stmtAfter, Statement stmtList)
+    {
+        var stmtLast = stmtList.PrevStmt;
+        assert(stmtLast is not null);
+        noway_assert(stmtLast.NextStmt is null);
+        var stmtNext = stmtAfter.NextStmt;
+
+        if (stmtNext is null)
+        {
+            stmtAfter.NextStmt = stmtList;
+            stmtList.PrevStmt = stmtAfter;
+            assert(block.FirstStmt is not null);
+            block.FirstStmt.PrevStmt = stmtLast;
+        }
+        else
+        {
+            stmtAfter.NextStmt = stmtList;
+            stmtList.PrevStmt = stmtAfter;
+            stmtLast.NextStmt = stmtNext;
+            stmtNext.PrevStmt = stmtLast;
+        }
+
+        noway_assert((block.FirstStmt is null) || ((block.FirstStmt.PrevStmt is Statement last) && (last.NextStmt is null)));
+        return stmtLast;
+    }
+
     /// <summary>Insert the given statement at the end of the given basic block.</summary>
     /// <param name="block">the block into which 'stmt' will be inserted;</param>
     /// <param name="stmt">the statement to be inserted.</param>
@@ -10453,7 +11000,7 @@ public partial class Compiler
             if (XTnum != currentTableCount)
             {
                 // Move over the stuff after the new entry
-                currentTable.AsSpan(XTnum).CopyTo(newTable.AsSpan(XTnum + count));
+                currentTable.AsSpan(XTnum, currentTableCount - XTnum).CopyTo(newTable.AsSpan(XTnum + count));
             }
 
             // Now set the new table as the table to use.
@@ -10462,7 +11009,7 @@ public partial class Compiler
         else if (XTnum != currentTableCount)
         {
             // Leave the elements before the new elements alone. Move the ones after it, to make space.
-            currentTable.AsSpan(XTnum).CopyTo(currentTable.AsSpan(XTnum + count));
+            currentTable.AsSpan(XTnum, currentTableCount - XTnum).CopyTo(currentTable.AsSpan(XTnum + count));
         }
 
         // Now the entry is there, but not filled in
@@ -11907,6 +12454,58 @@ public partial class Compiler
 #if DEBUG
         assert(target.checkPredListOrder());
 #endif
+    }
+
+    /// <summary>Find the first valid root-method statement offset, or BAD_IL_OFFSET if none exists.</summary>
+    public IL_OFFSET fgFindBlockILOffset(BasicBlock block)
+    {
+        assert(!block.IsLIR);
+
+        foreach (var stmt in block.Statements)
+        {
+            var di = stmt.DebugInfo.GetRoot();
+            if (di.IsValid)
+            {
+                return di.Location.Offset;
+            }
+        }
+
+        return BAD_IL_OFFSET;
+    }
+
+    /// <summary>Move code after the statement into a new successor block; a null statement requires an empty block.</summary>
+    public BasicBlock fgSplitBlockAfterStatement(BasicBlock curr, Statement? stmt)
+    {
+        assert(!curr.IsLIR);
+        var newBlock = fgSplitBlockAtEnd(curr);
+
+        if (stmt is not null)
+        {
+            newBlock.FirstStmt = stmt.NextStmt;
+            assert(curr.FirstStmt is not null);
+
+            if (newBlock.FirstStmt is Statement first)
+            {
+                first.PrevStmt = curr.FirstStmt.PrevStmt;
+            }
+
+            curr.FirstStmt.PrevStmt = stmt;
+            stmt.NextStmt = null;
+            assert(newBlock.bbCodeOffs == BAD_IL_OFFSET);
+            assert(newBlock.bbCodeOffsEnd == BAD_IL_OFFSET);
+            newBlock.bbCodeOffsEnd = curr.bbCodeOffsEnd;
+
+            var splitPointILOffset = fgFindBlockILOffset(newBlock);
+            // Native IL_OFFSET is unsigned, so BAD_IL_OFFSET sorts after every valid offset.
+            curr.bbCodeOffsEnd = unchecked((int)uint.Max((uint)curr.bbCodeOffs, (uint)splitPointILOffset));
+            newBlock.bbCodeOffs = unchecked((int)uint.Min((uint)splitPointILOffset, (uint)newBlock.bbCodeOffsEnd));
+        }
+        else
+        {
+            assert(curr.FirstStmt is null);
+        }
+
+        return newBlock;
     }
 
     /// <summary>Split after all code, leaving it in the original block and transferring control flow to the new block.</summary>

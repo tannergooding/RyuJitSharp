@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Continue protected C# WIP integration. Inline argument/prelude/epilogue integration, recursion guards, implicit-byref demotion cleanup, continuation-member registration and async frame-return support now join the restored tree/graph utilities and placeholder walkers. Next integrate saved inline block insertion and invocation bodies, then their remaining dependencies including expression folding (B054), before continuing rationalization. Do not activate incomplete phases. Both native trees use the target revision; synchronization uses raw upstream deltas, preserving prior deletions and unported new APIs. After WIP integration, prioritize required minopts phases toward code generation. The first PGO dump gap remains pending.",
+    "nextAction": "Continue protected C# WIP integration. Inline block splicing, statement-list insertion and splitting now join inline argument integration, recursion guards, implicit-byref cleanup, continuation-member registration and async frame-return support. Next integrate saved inline invocation and call-morph bodies, then their remaining dependencies including expression folding (B054), before continuing rationalization. Do not activate incomplete phases. Both native trees use the target revision; synchronization uses raw upstream deltas, preserving prior deletions and unported new APIs. After WIP integration, prioritize required minopts phases toward code generation. The first PGO dump gap remains pending.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -19,13 +19,13 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "10.0.401",
-      "debugBuild": "passed-at-inline-closure-support-milestone",
-      "releaseBuild": "passed-at-inline-closure-support-milestone",
+      "debugBuild": "passed-after-inline-block-splicing",
+      "releaseBuild": "passed-after-inline-block-splicing",
       "testSourcesPresent": true,
       "writerRegressionCases": 16,
       "writerRegressionConfigurations": ["Debug", "Release"],
-      "targetFocusedTestsDebug": 547,
-      "targetFocusedTestsRelease": 451,
+      "targetFocusedTestsDebug": 565,
+      "targetFocusedTestsRelease": 469,
       "targetFocusedTestsSkipped": 0,
       "callIntrinsicSpotChecks": {
         "debugPassed": 81,
@@ -117,6 +117,15 @@
         "newDebugDumpCases": 4,
         "originalValueNodeDebugFailures": 5,
         "nativeAotRecaptured": false
+      },
+      "inlineBlockSplicingSpotChecks": {
+        "newInsertionCases": 13,
+        "newStatementSplitCases": 4,
+        "newAsyncIntegrationCases": 1,
+        "originalEhCapacityFailures": 2,
+        "skipped": 0,
+        "nativeAotRecaptured": false,
+        "fullPhaseParityEstablished": false
       },
       "savedWipSupportMilestone": {
         "managedSourceCommit": "24b9352dc6f293228d58cb24871280827f936ab7",

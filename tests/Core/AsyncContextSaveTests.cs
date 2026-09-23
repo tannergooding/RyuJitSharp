@@ -149,10 +149,11 @@ internal static unsafe class AsyncContextSaveTests
         });
     }
 
-    [TestCase(false, 1)]
-    [TestCase(true, 1)]
-    [TestCase(true, 2)]
-    public static void InlinedFrameRestoresCallerContextsOnlyOnResumption(bool faultHandler, int depth)
+    [TestCase(false, 1, false)]
+    [TestCase(true, 1, false)]
+    [TestCase(true, 2, false)]
+    [TestCase(false, 1, true)]
+    public static void InlinedFrameRestoresCallerContextsOnlyOnResumption(bool faultHandler, int depth, bool spliceBlocks)
     {
         WithCompiler(compiler => {
             var previousConfig = Globals.JitConfig;
@@ -204,7 +205,47 @@ internal static unsafe class AsyncContextSaveTests
                 }
                 var info = new InlineInfo { iciCall = call, iciStmt = compiler.gtNewStmt(call) };
 
-                compiler.fgInlineAppendAsyncFrameStatements(info, join);
+                if (spliceBlocks)
+                {
+                    CORINFO_METHOD_INFO methodInfo = default;
+                    inlinee.info.compMethodInfo = &methodInfo;
+                    inlinee.compHndBBtab = [];
+                    inlinee.fgPredsComputed = true;
+                    inlinee.opts.jitFlags = compiler.opts.jitFlags;
+                    inlinee.opts.SetMinOpts(false);
+#if DEBUG
+                    inlinee.fgSafeBasicBlockCreation = true;
+                    inlinee.fgSafeFlowEdgeCreation = true;
+#endif
+                    var entry = NewBlock(inlinee, BBJ_ALWAYS, 0);
+                    var exit = NewBlock(inlinee, BBJ_RETURN, 1);
+                    entry.bbRefs = 1;
+                    entry.Next = exit;
+                    entry.SetKindAndTargetEdge(BBJ_ALWAYS, inlinee.fgAddRefPred(exit, entry));
+                    inlinee.fgFirstBB = entry;
+                    inlinee.fgLastBB = exit;
+                    inlinee.fgReturnCount = 1;
+                    var strategy = (InlineStrategy)RuntimeHelpers.GetUninitializedObject(typeof(InlineStrategy));
+                    compiler._inlineStrategy = strategy;
+                    var result = new InlineResult(compiler, call, null, "async block insertion", doNotReport: true);
+                    result.NoteBool(InlineObservation.CALLEE_IS_FORCE_INLINE, false);
+                    result.NoteInt(InlineObservation.CALLEE_IL_CODE_SIZE, 1);
+                    result.NoteSuccess();
+                    info.inlineResult = result;
+                    info.inlineContext = new InlineContext(strategy);
+                    info.inlineCandidateInfo = new InlineCandidateInfo();
+                    info.InlinerCompiler = info.InlineRoot = compiler;
+                    info.iciBlock = join;
+                    inlinee.impInlineInfo = info;
+                    compiler.fgInsertStmtAtBeg(join, info.iciStmt);
+
+                    compiler.fgInsertInlineeBlocks(info);
+                    join = exit.Target;
+                }
+                else
+                {
+                    compiler.fgInlineAppendAsyncFrameStatements(info, join);
+                }
 
                 Assert.That(join.Kind, Is.EqualTo(BBJ_COND));
                 var restore = join.FalseTarget;

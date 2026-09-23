@@ -1,6 +1,7 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -349,6 +350,64 @@ internal static unsafe class BlockSplittingTests
                 Assert.That(iterator.MoveNext(), Is.False);
                 iterator.Reset();
             }
+        });
+    }
+
+    [TestCase(0, BAD_IL_OFFSET, 20)]
+    [TestCase(1, BAD_IL_OFFSET, 20)]
+    [TestCase(2, 10, 10)]
+    [TestCase(3, 20, BAD_IL_OFFSET)]
+    public static void StatementSplitsPreserveListsAndUnsignedRootOffsets(int scenario, int end, int start)
+    {
+        WithCompiler(compiler => {
+            var block = NewBlock(compiler, BBJ_RETURN);
+            compiler.fgFirstBB = compiler.fgLastBB = block;
+            block.bbCodeOffs = 2;
+            block.bbCodeOffsEnd = 20;
+            Statement? splitAfter = null;
+            if (scenario != 3)
+            {
+                splitAfter = compiler.gtNewStmt(compiler.gtNewIconNode(TYP_INT, 1));
+                compiler.fgInsertStmtAtEnd(block, splitAfter);
+            }
+            Statement? suffix = null;
+            Statement? last = null;
+            if (scenario is 1 or 2)
+            {
+                suffix = compiler.gtNewStmt(compiler.gtNewIconNode(TYP_INT, 2));
+                compiler.fgInsertStmtAtEnd(block, suffix);
+                last = suffix;
+                if (scenario == 2)
+                {
+                    var strategy = (InlineStrategy)RuntimeHelpers.GetUninitializedObject(typeof(InlineStrategy));
+                    var root = new InlineContext(strategy) { _ilSize = 11 };
+                    var child = new InlineContext(strategy) { _parent = root, _location = new ILLocation(10, 0), _ilSize = 124 };
+#if DEBUG
+                    root._ilInstsSet = new BitArray(11, true);
+                    child._ilInstsSet = new BitArray(124, true);
+#endif
+                    last = compiler.gtNewStmt(compiler.gtNewIconNode(TYP_INT, 3), new DebugInfo(child, new ILLocation(123, 0)));
+                    compiler.fgInsertStmtAtEnd(block, last);
+                }
+            }
+
+            var bottom = compiler.fgSplitBlockAfterStatement(block, splitAfter);
+
+            Assert.Multiple(() => {
+                Assert.That(block.bbCodeOffs, Is.EqualTo(2));
+                Assert.That(block.bbCodeOffsEnd, Is.EqualTo(end));
+                Assert.That(bottom.bbCodeOffs, Is.EqualTo(start));
+                Assert.That(bottom.bbCodeOffsEnd, Is.EqualTo(scenario == 3 ? BAD_IL_OFFSET : 20));
+                Assert.That(block.FirstStmt, Is.SameAs(splitAfter));
+                Assert.That(splitAfter?.PrevStmt, Is.SameAs(splitAfter));
+                Assert.That(splitAfter?.NextStmt, Is.Null);
+                Assert.That(bottom.FirstStmt, Is.SameAs(suffix));
+                Assert.That(suffix?.PrevStmt, Is.SameAs(last));
+                Assert.That(last?.NextStmt, Is.Null);
+                Assert.That(block.Target, Is.SameAs(bottom));
+                Assert.That(bottom.Kind, Is.EqualTo(BBJ_RETURN));
+                Assert.That(compiler.fgFindBlockILOffset(bottom), Is.EqualTo(scenario == 2 ? 10 : BAD_IL_OFFSET));
+            });
         });
     }
 
