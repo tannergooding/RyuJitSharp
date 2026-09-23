@@ -3537,7 +3537,7 @@ public partial class Compiler
 #endif
 
                         // Is it an inline candidate?
-                        compiler.impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, compiler.compInlineContext);
+                        compiler.impMarkInlineCandidate(call, exactContextHnd, callInfo, compiler.compInlineContext);
                     }
 
                     // append the call node.
@@ -3766,7 +3766,7 @@ public partial class Compiler
 #endif
 
                 // Is it an inline candidate?
-                compiler.impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, compiler.compInlineContext);
+                compiler.impMarkInlineCandidate(call, exactContextHnd, callInfo, compiler.compInlineContext);
 
                 // If the call is virtual, extra information for possible use during late devirt inlining.
                 //

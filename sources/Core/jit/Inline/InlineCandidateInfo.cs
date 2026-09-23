@@ -45,9 +45,10 @@ public sealed class InlineCandidateInfo : HandleHistogramProfileCandidateInfo
 
     public CorInfoFlag methAttr;
 
-    public CorInfoInitClassResult initClassResult;
+    /// <summary>Whether the target can be inlined; GDV candidates may be retained for devirtualization alone.</summary>
+    public bool isInlineable;
 
-    public bool exactContextNeedsRuntimeLookup;
+    public CorInfoInitClassResult initClassResult;
 
     public InlineContext? inlinersContext;
 

@@ -1587,11 +1587,9 @@ public partial class Compiler
             candidateInfo.clsAttr = clsAttr;
             candidateInfo.methAttr = methAttr;
             candidateInfo.initClassResult = initClassResult;
-            candidateInfo.exactContextNeedsRuntimeLookup = false;
             candidateInfo.inlinersContext = inlinersContext;
         });
 
-        // Note exactContextNeedsRuntimeLookup is reset later on, over in impMarkInlineCandidate.
         inlineCandidateInfo = candidateInfo;
 
         if (!success)
@@ -13334,14 +13332,43 @@ public partial class Compiler
         return impRuntimeLookupToTree(lookup, compileTimeHandle);
     }
 
+    /// <summary>Check whether a GDV candidate can be kept for devirtualization without inlining.</summary>
+    public unsafe bool canKeepNonInlineableGdvCandidate(GenTreeCall call)
+    {
+        assert(call.IsGuardedDevirtualizationCandidate);
+
+        if (JitConfig.JitGuardedDevirtualizationRequireInlining is not 0)
+        {
+            return false;
+        }
+
+        // Method-based (for example, delegate) GDV still requires inlining.
+        if (call.GetGdvCandidateInfo(0).guardedClassHandle == NO_CLASS_HANDLE)
+        {
+            return false;
+        }
+
+        if (call.CanTailCall)
+        {
+            return false;
+        }
+
+        // NextCallReturnAddress needs the call to stay exactly where it is.
+        if (info.compHasNextCallRetAddr)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
     /// <summary>determine if this call can be subsequently inlined</summary>
     /// <param name="call">call under scrutiny</param>
     /// <param name="exactContextHnd">context handle for inlining</param>
-    /// <param name="exactContextNeedsRuntimeLookup">true if context required runtime lookup</param>
     /// <param name="callInfo">call info from VM</param>
     /// <param name="inlinersContext">the inliner's context</param>
-    /// <remarks>Mostly a wrapper for impMarkInlineCandidateHelper that also undoes guarded devirtualization for virtual calls where the method we'd devirtualize to cannot be inlined.</remarks>
-    public unsafe void impMarkInlineCandidate(GenTreeCall call, CORINFO_CONTEXT_HANDLE exactContextHnd, bool exactContextNeedsRuntimeLookup, in CORINFO_CALL_INFO callInfo, InlineContext inlinersContext)
+    /// <remarks>Mostly a wrapper for impMarkInlineCandidateHelper that also undoes guarded devirtualization when it is not worthwhile or legal without inlining.</remarks>
+    public unsafe void impMarkInlineCandidate(GenTreeCall call, CORINFO_CONTEXT_HANDLE exactContextHnd, in CORINFO_CALL_INFO callInfo, InlineContext inlinersContext)
     {
         if (!opts.OptEnabled(CLFLG_INLINING))
         {
@@ -13356,21 +13383,39 @@ public partial class Compiler
         {
             assert(call.InlineCandidatesCount > 0);
 
-            for (byte candidateId = 0; candidateId < call.InlineCandidatesCount; candidateId++)
+            var keepNonInlineable = canKeepNonInlineableGdvCandidate(call);
+
+            for (byte candidateId = 0; candidateId < call.InlineCandidatesCount;)
             {
-                var inlineResult = new InlineResult(this, call, stmt: null, "impMarkInlineCandidate for GDV");
+                var gdvCandidate = call.GetGdvCandidateInfo(candidateId);
+                var callee = gdvCandidate.guardedMethodUnboxedResolvedToken.hMethod;
+                if (callee is null)
+                {
+                    callee = gdvCandidate.guardedMethodHandle;
+                }
+                var inlineResult = new InlineResult(this, call, stmt: null, "impMarkInlineCandidate for GDV", doNotReport: false, callee: callee);
 
                 // Do the actual evaluation
-                impMarkInlineCandidateHelper(call, candidateId, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, inlinersContext, inlineResult);
+                impMarkInlineCandidateHelper(call, candidateId, exactContextHnd, callInfo, inlinersContext, inlineResult);
 
-                // Ignore non-inlineable candidates
-                // TODO: Consider keeping them to just devirtualize without inlining, at least for interface
-                // calls on NativeAOT, but that requires more changes elsewhere too.
                 if (!inlineResult.IsCandidate)
                 {
-                    call.RemoveGdvCandidateInfo(this, candidateId);
-                    candidateId--;
+                    if (!keepNonInlineable)
+                    {
+#if DEBUG
+                        JITDUMP($"Revoking guarded devirtualization candidate {candidateId} of call [{call.TreeId:D6}]: target method can't be inlined\n");
+#endif
+                        call.RemoveGdvCandidateInfo(this, candidateId);
+                        continue;
+                    }
+
+#if DEBUG
+                    JITDUMP($"Keeping GDV candidate {candidateId} of call [{call.TreeId:D6}] for devirtualization only: target can't be inlined\n");
+#endif
+                    assert(!call.GetGdvCandidateInfo(candidateId).isInlineable);
+                    assert(call.GetGdvCandidateInfo(candidateId).guardedClassHandle != NO_CLASS_HANDLE);
                 }
+                candidateId++;
             }
 
             // None of the candidates made it, make sure the call is no longer marked as "has inline info"
@@ -13386,35 +13431,14 @@ public partial class Compiler
             assert(candidatesCount <= 1);
 
             var inlineResult = new InlineResult(this, call, null, "impMarkInlineCandidate");
-            impMarkInlineCandidateHelper(call, 0, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, inlinersContext, inlineResult);
+            impMarkInlineCandidateHelper(call, 0, exactContextHnd, callInfo, inlinersContext, inlineResult);
         }
-
-        // If this call is an inline candidate or is not a guarded devirtualization
-        // candidate, we're done.
-        if (call.IsInlineCandidate || !call.IsGuardedDevirtualizationCandidate)
-        {
-            return;
-        }
-
-        // If we can't inline the call we'd guardedly devirtualize to,
-        // we undo the guarded devirtualization, as the benefit from
-        // just guarded devirtualization alone is likely not worth the
-        // extra jit time and code size.
-        //
-        // TODO: it is possibly interesting to allow this, but requires
-        // fixes elsewhere too...
-#if DEBUG
-        JITDUMP($"Revoking guarded devirtualization candidacy for call [{call.TreeId}]: target method can't be inlined\n");
-#endif
-
-        call.ClearInlineInfo();
     }
 
     /// <summary>determine if this call can be subsequently inlined</summary>
     /// <param name="call">call under scrutiny</param>
     /// <param name="candidateIndex">index of the inline candidate to evaluate</param>
     /// <param name="exactContextHnd">context handle for inlining</param>
-    /// <param name="exactContextNeedsRuntimeLookup">true if context required runtime lookup</param>
     /// <param name="callInfo">call info from VM</param>
     /// <param name="inlinersContext">the inliner's context</param>
     /// <param name="inlineResult"></param>
@@ -13422,7 +13446,7 @@ public partial class Compiler
     ///   <para>If callNode is an inline candidate, this method sets the flag GTF_CALL_INLINE_CANDIDATE, and ensures that helper methods have filled in the associated InlineCandidateInfo.</para>
     ///   <para>If callNode is not an inline candidate, and the reason is method may be marked as "noinline" to short-circuit any future assessments of calls to this method.</para>
     /// </remarks>
-    public unsafe void impMarkInlineCandidateHelper(GenTreeCall call, byte candidateIndex, CORINFO_CONTEXT_HANDLE exactContextHnd, bool exactContextNeedsRuntimeLookup, in CORINFO_CALL_INFO callInfo, InlineContext inlinersContext, InlineResult inlineResult)
+    public unsafe void impMarkInlineCandidateHelper(GenTreeCall call, byte candidateIndex, CORINFO_CONTEXT_HANDLE exactContextHnd, in CORINFO_CALL_INFO callInfo, InlineContext inlinersContext, InlineResult inlineResult)
     {
         assert(compCurBB is not null);
 
@@ -13660,8 +13684,6 @@ public partial class Compiler
         // The old value should be null OR this call should be a guarded devirtualization candidate.
         assert(call.IsGuardedDevirtualizationCandidate || (call.SingleInlineCandidateInfo is null));
 
-        inlineCandidateInfo.exactContextNeedsRuntimeLookup = exactContextNeedsRuntimeLookup;
-
         if (compIsForInlining && call.CanTailCall && (impInlineInfo.inlineCandidateInfo.preexistingSpillTemp is not BAD_VAR_NUM))
         {
             // If we're in an inlinee compiler, and have a return spill temp, and this inline candidate is also a tail call candidate, it can use the same return spill temp.
@@ -13682,6 +13704,8 @@ public partial class Compiler
             assert(candidateIndex is 0);
             call.SingleInlineCandidateInfo = inlineCandidateInfo;
         }
+
+        inlineCandidateInfo.isInlineable = true;
 
         // Let the strategy know there's another candidate.
         inlineStrategy.NoteCandidate();

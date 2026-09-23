@@ -617,14 +617,15 @@ public sealed class GenTreeCall : GenTree
 
     public InlineCandidateInfo GetGdvCandidateInfo(byte index)
     {
-        assert(IsInlineCandidate);
         assert(index < _inlineInfoCount);
 
         if (_inlineInfoCount > 1)
         {
             // In this case we should access it through gtInlineCandidateInfoList
+            assert(_inlineCandidateInfoList is not null);
             return _inlineCandidateInfoList[index];
         }
+        assert(_inlineCandidateInfo is not null);
         return _inlineCandidateInfo;
     }
 
