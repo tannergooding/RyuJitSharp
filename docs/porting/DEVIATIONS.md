@@ -102,6 +102,12 @@ Reaching-VN traversal uses a managed stack and membership set, preserving native
 push/pop order, conservative SSA lookup, duplicate suppression, cycles and early
 abort. Memory phis are not traversed, matching native behavior (B091).
 
+Checked-bound/index registries use managed membership sets; no enumeration order
+is observed. Unsigned comparison results use a readonly record and failed queries
+leave ref outputs unchanged. JTRUE bounds generation retains native edge
+polarity and usefulness gates; it does not activate general assertion generation
+or morph completion (B093).
+
 Profile weight lookup uses a managed `ref` output: native leaves the pointed-to
 value unchanged when no profile weights are available, so an unconditional
 `out` initialization would change that contract (B067).

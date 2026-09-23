@@ -6,8 +6,10 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using NUnit.Framework;
+using static RyuJitSharp.Compiler.optAssertionKind;
 using static RyuJitSharp.Compiler.optOp2Kind;
 using static RyuJitSharp.GenTreeFlags;
+using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.SymbolicIntegerValue;
 using static RyuJitSharp.var_types;
@@ -19,6 +21,83 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class AssertionTests
 {
+    [TestCase(VNFunc.VNF_LT_UN, false, false)]
+    [TestCase(VNFunc.VNF_GE_UN, false, true)]
+    [TestCase(VNFunc.VNF_GT_UN, true, false)]
+    [TestCase(VNFunc.VNF_LE_UN, true, true)]
+    public static void BoundsAssertionsRetainUnsignedEdgePolarity(VNFunc func, bool swapped, bool nextEdge)
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var index = store.VNForExpr(null, TYP_INT);
+            var bound = store.VNForExpr(null, TYP_INT);
+            store.SetVNIsCheckedBound(bound);
+            var info = GenerateBounds(compiler, store, func, swapped ? bound : index, swapped ? index : bound);
+            Assert.That(info.HasAssertion, Is.True);
+            Assert.That(info.AssertionHoldsOnFalseEdge, Is.EqualTo(nextEdge));
+            var assertion = compiler.optGetAssertion(info.AssertionIndex);
+            Assert.That(assertion.Kind, Is.EqualTo(OAK_LT_UN));
+            Assert.That(assertion.Op1.VN, Is.EqualTo(index));
+            Assert.That(assertion.Op2.VN, Is.EqualTo(bound));
+            Assert.That(assertion.Op2.IsVNNeverNegative, Is.True);
+        }, local: false);
+    }
+
+    [Test]
+    public static void CheckedBoundQueriesPreserveCastAndConstantCanonicalization()
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var bound = store.VNForExpr(null, TYP_INT);
+            store.SetVNIsCheckedBound(bound);
+            var five = store.VNForIntCon(5);
+            var info = GenerateBounds(compiler, store, VNFunc.VNF_GE_UN, bound, five);
+            Assert.That(info.AssertionHoldsOnFalseEdge, Is.False);
+            var assertion = compiler.optGetAssertion(info.AssertionIndex);
+            Assert.That(store.ConstantValue<int>(assertion.Op1.VN), Is.EqualTo(4));
+            Assert.That(assertion.Op2.VN, Is.EqualTo(bound));
+            var cast = store.VNForFuncNoFolding(TYP_LONG, VNFunc.VNF_Cast, bound, store.VNForCastOper(TYP_LONG, true));
+            var comparison = store.VNForFuncNoFolding(TYP_INT, VNFunc.VNF_LT_UN, store.VNForLongCon(0), cast);
+            var decoded = new ValueNumStore.UnsignedCompareCheckedBoundInfo();
+            Assert.That(store.IsVNUnsignedCompareCheckedBound(comparison, ref decoded), Is.True);
+            Assert.That(decoded.VNBound, Is.EqualTo(bound));
+            var subtract = store.VNForFuncNoFolding(TYP_INT, VNFunc.VNF_SUB, bound, five);
+            var checkedBound = ValueNumStore.NoVN;
+            var addend = 0;
+            Assert.That(store.IsVNCheckedBoundAddConst(subtract, ref checkedBound, ref addend), Is.True);
+            Assert.That(addend, Is.EqualTo(-5));
+            var overflow = store.VNForFuncNoFolding(TYP_INT, VNFunc.VNF_SUB, bound, store.VNForIntCon(int.MinValue));
+            Assert.That(store.IsVNCheckedBoundAddConst(overflow, ref checkedBound, ref addend), Is.False);
+            Assert.That(checkedBound, Is.EqualTo(bound));
+            Assert.That(addend, Is.EqualTo(-5));
+        }, local: false);
+    }
+
+    [Test]
+    public static void BoundsGenerationRespectsEqualityAndTablePressureGates()
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var left = store.VNForExpr(null, TYP_INT);
+            var right = store.VNForExpr(null, TYP_INT);
+            Assert.That(GenerateBounds(compiler, store, VNFunc.VNF_LT, left, right).HasAssertion, Is.False);
+            Assert.That(GenerateBounds(compiler, store, VNFunc.VNF_LT, left, store.VNForIntCon(10)).HasAssertion, Is.True);
+            Assert.That(GenerateBounds(compiler, store, VNFunc.VNF_LT, left, right).HasAssertion, Is.True);
+            store.SetVNIsCheckedBound(right);
+            Assert.That(GenerateBounds(compiler, store, VNFunc.VNF_NE, right, store.VNForIntCon(0)).HasAssertion, Is.False);
+            Assert.That(GenerateBounds(compiler, store, VNFunc.VNF_NE, left, right).HasAssertion, Is.True);
+            var addition = store.VNForFuncNoFolding(TYP_INT, VNFunc.VNF_ADD, right, store.VNForIntCon(1));
+            Assert.That(GenerateBounds(compiler, store, VNFunc.VNF_EQ, left, addition).HasAssertion, Is.False);
+            var info = GenerateBounds(compiler, store, VNFunc.VNF_LT, left, addition);
+            Assert.That(info.HasAssertion, Is.True);
+            Assert.That(compiler.optGetAssertion(info.AssertionIndex).Op2.Cns, Is.EqualTo(1));
+            Assert.That(GenerateBounds(compiler, store, VNFunc.VNF_LT_UN, left, store.VNForIntCon(0)).HasAssertion, Is.False);
+        }, local: false);
+    }
+
     [Test]
     public static void PhiQueriesOwnArgumentsAndTraverseConservativeValuesInNativeOrder()
     {
@@ -459,6 +538,13 @@ internal static unsafe class AssertionTests
 
     private static AssertionDsc IntAssertion(Compiler compiler, nint value)
         => AssertionDsc.CreateConstLclVarAssertion(compiler, 0, ValueNumStore.NoVN, value, ValueNumStore.NoVN, true);
+
+    private static AssertionInfo GenerateBounds(Compiler compiler, ValueNumStore store, VNFunc func, int left, int right)
+    {
+        var relop = compiler.gtNewBinaryNode(GT_LT, TYP_INT, compiler.gtNewIconNode(TYP_INT, 0), compiler.gtNewIconNode(TYP_INT, 0));
+        relop._vnPair.SetBoth(store.VNForFuncNoFolding(TYP_INT, func, left, right));
+        return compiler.optCreateJTrueBoundsAssertion(compiler.gtNewUnaryNode(GT_JTRUE, TYP_VOID, relop));
+    }
 
     private static void SetField(object target, string name, object value)
     {

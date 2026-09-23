@@ -221,6 +221,166 @@ public partial class Compiler
         return assertion;
     }
 
+    public ValueNum optConservativeNormalVN(GenTree tree)
+    {
+        if (optLocalAssertionProp)
+        {
+            return ValueNumStore.NoVN;
+        }
+
+        assert(vnStore is not null);
+        return vnStore.VNNormalValue(tree._vnPair.Conservative);
+    }
+
+    public AssertionInfo optCreateJTrueBoundsAssertion(GenTree tree)
+    {
+        if (optLocalAssertionProp)
+        {
+            return new(NO_ASSERTION_INDEX);
+        }
+
+        var relop = tree.AsUnOp().Op1;
+        if (!relop.Oper.IsCompare)
+        {
+            return new(NO_ASSERTION_INDEX);
+        }
+
+        assert(vnStore is not null);
+        var relopVN = optConservativeNormalVN(relop);
+        var app = new VNFuncApp();
+        if (!vnStore.GetVNFunc(relopVN, ref app))
+        {
+            return new(NO_ASSERTION_INDEX);
+        }
+
+        bool isUnsigned;
+        var isEquality = false;
+        if (app.FuncIs(VNF_LE, VNF_LT, VNF_GE, VNF_GT))
+        {
+            isUnsigned = false;
+        }
+        else if (app.FuncIs(VNF_LE_UN, VNF_LT_UN, VNF_GE_UN, VNF_GT_UN))
+        {
+            isUnsigned = true;
+        }
+        else if (app.FuncIs(VNF_EQ, VNF_NE))
+        {
+            isUnsigned = false;
+            isEquality = true;
+        }
+        else
+        {
+            return new(NO_ASSERTION_INDEX);
+        }
+
+        var func = app.Func;
+        var op1 = app.GetArg(0);
+        var op2 = app.GetArg(1);
+        if ((vnStore.TypeOfVN(op1).ActualType != TYP_INT) || (vnStore.TypeOfVN(op2).ActualType != TYP_INT))
+        {
+            return new(NO_ASSERTION_INDEX);
+        }
+
+        var unsignedBound = new ValueNumStore.UnsignedCompareCheckedBoundInfo();
+        var isUnsignedBound = vnStore.IsVNUnsignedCompareCheckedBound(relopVN, ref unsignedBound);
+        var arrLenIsOp1 = !isUnsignedBound && vnStore.IsVNArrLen(op1) && app.FuncIs(VNF_LT_UN, VNF_GE_UN);
+        var arrLenIsOp2 = !isUnsignedBound && vnStore.IsVNArrLen(op2) && app.FuncIs(VNF_GT_UN, VNF_LE_UN);
+        if (arrLenIsOp1 || arrLenIsOp2)
+        {
+            if (arrLenIsOp1)
+            {
+                func = ValueNumStore.SwapRelop(func);
+                (op1, op2) = (op2, op1);
+            }
+
+            var index = optAddAssertion(AssertionDsc.CreateCompareCheckedBound(this, func, op1, op2, 0, true));
+            optCreateComplementaryAssertion(index);
+            return new(index);
+        }
+
+        // Constant/checked-bound equality must use the more useful local-variable assertion path.
+        if (!isUnsigned && vnStore.IsVNCheckedBound(op1) && !(isEquality && vnStore.IsVNConstant(op2)))
+        {
+            func = ValueNumStore.SwapRelop(func);
+            var index = optAddAssertion(AssertionDsc.CreateCompareCheckedBound(this, func, op2, op1, 0));
+            optCreateComplementaryAssertion(index);
+            return new(index);
+        }
+
+        if (!isUnsigned && vnStore.IsVNCheckedBound(op2) && !(isEquality && vnStore.IsVNConstant(op1)))
+        {
+            var index = optAddAssertion(AssertionDsc.CreateCompareCheckedBound(this, func, op1, op2, 0));
+            optCreateComplementaryAssertion(index);
+            return new(index);
+        }
+
+        if (!isUnsignedBound && isUnsigned && (op1 != op2) && !vnStore.IsVNConstant(op1) &&
+            !vnStore.IsVNConstant(op2) && vnStore.IsVNCheckedBoundIndex(op1) && optAssertionHasAssertionsForVN(op2))
+        {
+            var index = optAddAssertion(AssertionDsc.CreateRelopVN(this, func, op1, op2));
+            optCreateComplementaryAssertion(index);
+            return new(index);
+        }
+
+        // RangeCheck only consumes equality with the bound itself, not bound-plus-constant forms.
+        if (isEquality)
+        {
+            return new(NO_ASSERTION_INDEX);
+        }
+
+        var checkedBound = ValueNumStore.NoVN;
+        var checkedBoundCns = 0;
+        if (!isUnsigned && vnStore.IsVNCheckedBoundAddConst(op1, ref checkedBound, ref checkedBoundCns))
+        {
+            func = ValueNumStore.SwapRelop(func);
+            var index = optAddAssertion(AssertionDsc.CreateCompareCheckedBound(this, func, op2, checkedBound, checkedBoundCns));
+            optCreateComplementaryAssertion(index);
+            return new(index);
+        }
+
+        if (!isUnsigned && vnStore.IsVNCheckedBoundAddConst(op2, ref checkedBound, ref checkedBoundCns))
+        {
+            var index = optAddAssertion(AssertionDsc.CreateCompareCheckedBound(this, func, op1, checkedBound, checkedBoundCns));
+            optCreateComplementaryAssertion(index);
+            return new(index);
+        }
+
+        if (isUnsignedBound)
+        {
+            var indexVN = vnStore.VNNormalValue(unsignedBound.VNIdx);
+            var boundVN = vnStore.VNNormalValue(unsignedBound.VNBound);
+            var index = optAddAssertion(AssertionDsc.CreateNoThrowArrBnd(this, indexVN, boundVN));
+            // JTRUE assertions normally hold on the jump edge; >= establishes the bound on the next edge.
+            return unsignedBound.CmpOper == VNF_GE_UN ? AssertionInfo.ForNextEdge(index) : new(index);
+        }
+
+        if (vnStore.IsVNIntegralConstant(op1, out nint constant) && (!isUnsigned || (constant > 0)))
+        {
+            func = ValueNumStore.SwapRelop(func);
+            var index = optAddAssertion(AssertionDsc.CreateConstantBound(this, func, op2, op1));
+            optCreateComplementaryAssertion(index);
+            return new(index);
+        }
+
+        if (vnStore.IsVNIntegralConstant(op2, out constant) && (!isUnsigned || (constant > 0)))
+        {
+            var index = optAddAssertion(AssertionDsc.CreateConstantBound(this, func, op1, op2));
+            optCreateComplementaryAssertion(index);
+            return new(index);
+        }
+
+        // Avoid consuming table slots unless a signed VN-to-VN assertion can chain with existing facts.
+        if (!isUnsigned && (op1 != op2) && !vnStore.IsVNConstant(op1) && !vnStore.IsVNConstant(op2) &&
+            (optAssertionHasAssertionsForVN(op1) || optAssertionHasAssertionsForVN(op2)))
+        {
+            var index = optAddAssertion(AssertionDsc.CreateRelopVN(this, func, op1, op2));
+            optCreateComplementaryAssertion(index);
+            return new(index);
+        }
+
+        return new(NO_ASSERTION_INDEX);
+    }
+
     public AssertionIndex optAddAssertion(AssertionDsc newAssertion)
     {
         assert(apTraits is not null);
@@ -346,7 +506,7 @@ public partial class Compiler
         }
     }
 
-    public bool optAssertionHasAssertionsForVN(ValueNum vn, bool addIfNotFound)
+    public bool optAssertionHasAssertionsForVN(ValueNum vn, bool addIfNotFound = false)
     {
         assert(!optLocalAssertionProp);
         if (vn == ValueNumStore.NoVN)
