@@ -12,6 +12,138 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class UseEdgeIteratorTests
 {
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void InlinePlaceholdersPreserveEffectsAndUnusedNodeIdentity(bool nested, bool unused)
+    {
+        WithCompiler(compiler => {
+            var call = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, null);
+            GenTree value = unused
+                ? compiler.gtNewIconNode(TYP_INT, 1)
+                : compiler.gtNewIndir(TYP_INT, compiler.gtNewIconNode(Globals.TYP_I_IMPL, 1));
+            var sourceBlock = new BasicBlock(null, null);
+            sourceBlock.SetFlags(BasicBlockFlags.BBF_HAS_NEWARR);
+            compiler.compCurBB = new BasicBlock(null, null);
+            var inner = new GenTreeRetExpr(TYP_INT, call) {
+                Flags = GenTreeFlags.GTF_CALL,
+                SubstExpr = value,
+                SubstBB = sourceBlock,
+            };
+            var placeholder = nested
+                ? new GenTreeRetExpr(TYP_INT, call) { Flags = GenTreeFlags.GTF_CALL, SubstExpr = inner }
+                : inner;
+            var parent = new GenTreeOp(GT_COMMA, TYP_INT, placeholder, compiler.gtNewIconNode(TYP_INT, 2)) {
+                Flags = GenTreeFlags.GTF_CALL,
+            };
+            var walker = new SubstitutePlaceholdersAndDevirtualizeWalker(compiler);
+            GenTree use = placeholder;
+            Assert.That(walker.PreOrderVisit(ref use, unused ? parent : null), Is.EqualTo(Compiler.fgWalkResult.WALK_CONTINUE));
+            Assert.That(walker.PostOrderVisit(ref use, parent), Is.EqualTo(Compiler.fgWalkResult.WALK_CONTINUE));
+            Assert.That(walker.MadeChanges, Is.True);
+            Assert.That(compiler.compCurBB.HasFlag(BasicBlockFlags.BBF_HAS_NEWARR), Is.True);
+            if (unused)
+            {
+                Assert.That(use, Is.SameAs(placeholder));
+                Assert.That(use.Oper, Is.EqualTo(GT_NOP));
+                Assert.That(use.Type, Is.EqualTo(TYP_VOID));
+            }
+            else
+            {
+                Assert.That(use, Is.SameAs(value));
+                Assert.That(parent.Flags & GenTreeFlags.GTF_ALL_EFFECT,
+                    Is.EqualTo(GenTreeFlags.GTF_CALL | (value.Flags & GenTreeFlags.GTF_ALL_EFFECT)));
+                Assert.That(parent.Flags & GenTreeFlags.GTF_EXCEPT, Is.Not.Zero);
+            }
+        });
+    }
+
+    [Test]
+    public static void InlinePlaceholderRetypesNativeIntegerIndirectionAsByref()
+    {
+        WithCompiler(compiler => {
+            var call = compiler.gtNewCallNode(TYP_BYREF, gtCallTypes.CT_USER_FUNC, null);
+            var value = compiler.gtNewIndir(Globals.TYP_I_IMPL, compiler.gtNewIconNode(Globals.TYP_I_IMPL, 1));
+            var placeholder = new GenTreeRetExpr(TYP_BYREF, call) { Flags = GenTreeFlags.GTF_CALL, SubstExpr = value };
+            var stmt = new Statement(placeholder, 1);
+            var walker = new SubstitutePlaceholdersAndDevirtualizeWalker(compiler);
+            Assert.That(walker.WalkStatement(stmt), Is.SameAs(stmt));
+            Assert.That(stmt.RootNode, Is.SameAs(value));
+            Assert.That(value.Type, Is.EqualTo(TYP_BYREF));
+        });
+    }
+
+    [Test]
+    public static void InlinePlaceholderSelfStoreBashesOriginalNode()
+    {
+        WithCompiler(compiler => {
+            var call = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, null);
+            var placeholder = new GenTreeRetExpr(TYP_INT, call) {
+                Flags = GenTreeFlags.GTF_CALL,
+                SubstExpr = compiler.gtNewLclvNode(TYP_INT, 0),
+            };
+            var store = new GenTreeLclVar(TYP_INT, 0, placeholder) {
+                Flags = GenTreeFlags.GTF_CALL | GenTreeFlags.GTF_ASG,
+            };
+            var stmt = new Statement(store, 1);
+            var walker = new SubstitutePlaceholdersAndDevirtualizeWalker(compiler);
+            Assert.That(walker.WalkStatement(stmt), Is.SameAs(stmt));
+            Assert.That(stmt.RootNode, Is.SameAs(store));
+            Assert.That(store.Oper, Is.EqualTo(GT_NOP));
+            Assert.That(walker.MadeChanges, Is.True);
+        });
+    }
+
+    [TestCase(0)]
+    [TestCase(1)]
+    public static void InlinePlaceholderBranchFoldingPreservesEffectsAndEdges(int condition)
+    {
+        WithCompiler(compiler => {
+            compiler.fgPredsComputed = true;
+#if DEBUG
+            compiler.fgSafeBasicBlockCreation = true;
+            compiler.fgSafeFlowEdgeCreation = true;
+#endif
+            var block = BasicBlock.New(compiler, BBKinds.BBJ_COND);
+            var left = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            var right = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            left.bbRefs = 0;
+            right.bbRefs = 0;
+            compiler.compCurBB = block;
+            var trueEdge = compiler.fgAddRefPred(left, block);
+            var falseEdge = compiler.fgAddRefPred(right, block);
+            block.SetCond(trueEdge, falseEdge);
+            trueEdge.Likelihood = 0.5;
+            falseEdge.Likelihood = 0.5;
+            var call = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, null);
+            var firstEffect = new GenTreeLclVar(TYP_INT, 0, compiler.gtNewIconNode(TYP_INT, 1)) { Flags = GenTreeFlags.GTF_ASG };
+            var secondEffect = new GenTreeLclVar(TYP_INT, 1, compiler.gtNewIconNode(TYP_INT, 2)) { Flags = GenTreeFlags.GTF_ASG };
+            var value = compiler.gtNewCommaNode(TYP_INT, firstEffect,
+                compiler.gtNewCommaNode(TYP_INT, secondEffect, compiler.gtNewIconNode(TYP_INT, condition)));
+            var placeholder = new GenTreeRetExpr(TYP_INT, call) { Flags = GenTreeFlags.GTF_CALL, SubstExpr = value };
+            var branch = new GenTreeUnOp(GT_JTRUE, TYP_VOID, placeholder) { Flags = GenTreeFlags.GTF_CALL };
+            var stmt = new Statement(branch, 1);
+            compiler.fgInsertStmtAtEnd(block, stmt);
+            var walker = new SubstitutePlaceholdersAndDevirtualizeWalker(compiler);
+            Assert.That(walker.WalkStatement(stmt), Is.SameAs(stmt));
+            Assert.That(stmt.RootNode, Is.SameAs(branch));
+            Assert.That(branch.Oper, Is.EqualTo(GT_NOP));
+            Assert.That(block.Kind, Is.EqualTo(BBKinds.BBJ_ALWAYS));
+            Assert.That(block.TargetEdge, Is.SameAs(condition == 0 ? falseEdge : trueEdge));
+            Assert.That(block.Target.bbRefs, Is.EqualTo(1));
+            Assert.That((condition == 0 ? left : right).bbRefs, Is.Zero);
+            var first = block.FirstStmt ?? throw new InvalidOperationException("Missing first side effect.");
+            var second = first.NextStmt ?? throw new InvalidOperationException("Missing second side effect.");
+            Assert.That(first.RootNode, Is.SameAs(firstEffect));
+            Assert.That(second.RootNode, Is.SameAs(secondEffect));
+            Assert.That(second.NextStmt, Is.SameAs(stmt));
+            Assert.That(stmt.PrevStmt, Is.SameAs(second));
+            Assert.That(first.PrevStmt, Is.SameAs(stmt));
+            Assert.That(compiler.Metrics.InlinerBranchFold, Is.EqualTo(1));
+        });
+    }
+
     [TestCase(NodeThreading.None)]
     [TestCase(NodeThreading.AllLocals)]
     [TestCase(NodeThreading.AllTrees)]

@@ -96,7 +96,7 @@ public partial class Compiler
     /// <summary>Keeps the mapping from SSA #'s to VN's for the implicit memory variables.</summary>
     protected SsaDefArray<SsaMemDef> lvMemoryPerSsaData;
 
-    protected bool hasUpdatedTypeLocals;
+    internal bool hasUpdatedTypeLocals;
 
     public const int CHECK_SPILL_ALL = -1;
 

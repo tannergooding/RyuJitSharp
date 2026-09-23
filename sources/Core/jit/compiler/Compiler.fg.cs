@@ -17,6 +17,96 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+#if DEBUG
+    public unsafe void fgNoteNonInlineCandidate(Statement stmt, GenTreeCall call)
+    {
+        if (call.IsInlineCandidate || call.IsGuardedDevirtualizationCandidate || call.WasInlineCandidate)
+        {
+            return;
+        }
+
+        var inlineResult = new InlineResult(this, call, stmt: null, nameof(fgNoteNonInlineCandidate), doNotReport: true);
+        var currentObservation = InlineObservation.CALLSITE_NOT_CANDIDATE;
+
+        // Recover the reason left behind when this call was rejected.
+        var priorObservation = call._inlineObservation;
+        if (priorObservation.IsValid)
+        {
+            currentObservation = priorObservation;
+        }
+
+        inlineResult.NotePriorFailure(currentObservation);
+        if (call._callType is CT_USER_FUNC)
+        {
+            assert(_inlineStrategy is not null);
+            assert(call._inlineContext is not null);
+            _inlineStrategy.NewContext(call._inlineContext, stmt, call).SetFailed(inlineResult);
+        }
+    }
+#endif
+
+    public Statement fgNewStmtNearEnd(BasicBlock block, GenTree tree, in DebugInfo di = default)
+    {
+        var stmt = gtNewStmt(tree, di);
+        fgInsertStmtNearEnd(block, stmt);
+
+        return stmt;
+    }
+
+    public void fgInsertStmtNearEnd(BasicBlock block, Statement stmt)
+    {
+        assert(fgOrder is FGOrderTree);
+
+        if (block.HasTerminator)
+        {
+            var firstStmt = block.FirstStmt;
+            noway_assert(firstStmt is not null);
+            var lastStmt = block.LastStmt;
+            noway_assert((lastStmt is not null) && (lastStmt.NextStmt is null));
+            var insertionPoint = lastStmt.PrevStmt;
+
+#if DEBUG
+            if (block.Kind is BBJ_COND)
+            {
+                assert(lastStmt.RootNode.Oper is GT_JTRUE);
+            }
+            else if (block.Kind is BBJ_RETURN)
+            {
+                assert((lastStmt.RootNode.Oper is GT_RETURN or GT_SWIFT_ERROR_RET or GT_JMP) ||
+                       // Void tail-prefixed calls and real tail calls have no trailing GT_RETURN.
+                       ((lastStmt.RootNode.Oper is GT_CALL) && ((info.compRetType is TYP_VOID) || lastStmt.RootNode.AsCall().IsTailCall)));
+            }
+            else if (block.Kind is BBJ_EHFINALLYRET or BBJ_EHFAULTRET or BBJ_EHFILTERRET)
+            {
+                assert(lastStmt.RootNode.Oper is GT_RETFILT);
+            }
+            else
+            {
+                assert(block.Kind is BBJ_SWITCH);
+                assert(lastStmt.RootNode.Oper is GT_SWITCH);
+            }
+#endif
+
+            stmt.NextStmt = lastStmt;
+            lastStmt.PrevStmt = stmt;
+            if (firstStmt == lastStmt)
+            {
+                block.FirstStmt = stmt;
+                stmt.PrevStmt = lastStmt;
+            }
+            else
+            {
+                noway_assert((insertionPoint is not null) && (insertionPoint.NextStmt == lastStmt));
+                insertionPoint.NextStmt = stmt;
+                stmt.PrevStmt = insertionPoint;
+            }
+        }
+        else
+        {
+            fgInsertStmtAtEnd(block, stmt);
+        }
+    }
+
     public Statement fgNewStmtFromTree(GenTree tree, BasicBlock? block = null, in DebugInfo di = default)
     {
         var stmt = gtNewStmt(tree, di);

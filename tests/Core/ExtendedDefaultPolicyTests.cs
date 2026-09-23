@@ -482,6 +482,33 @@ internal static class ExtendedDefaultPolicyTests
     }
 
 #if DEBUG
+    [TestCase(false)]
+    [TestCase(true)]
+    public static unsafe void NonInlineCandidateVisitorPreservesPriorFailure(bool priorFailure)
+    {
+        var compiler = CreateCompiler();
+        JitFlags flags = default;
+        compiler.opts.jitFlags = &flags;
+        var strategy = (InlineStrategy)RuntimeHelpers.GetUninitializedObject(typeof(InlineStrategy));
+        SetField(typeof(InlineStrategy), strategy, "_compiler", compiler);
+        compiler._inlineStrategy = strategy;
+        var root = new InlineContext(strategy);
+        var call = new GenTreeCall(var_types.TYP_INT) {
+            _callType = gtCallTypes.CT_USER_FUNC,
+            _inlineContext = root,
+            _inlineObservation = priorFailure ? InlineObservation.CALLEE_TOO_MUCH_IL : default,
+        };
+        var stmt = new Statement(call, 1);
+        var visitor = new FindNonInlineCandidateVisitor(compiler, stmt);
+        _ = visitor.WalkTree(ref stmt.RootNodeRef, null);
+        var context = root.Child ?? throw new InvalidOperationException("Missing failed inline context.");
+        Assert.That(context.IsSuccess, Is.False);
+        Assert.That(context.Observation, Is.EqualTo(priorFailure
+            ? InlineObservation.CALLEE_TOO_MUCH_IL
+            : InlineObservation.CALLSITE_NOT_CANDIDATE));
+        Assert.That(strategy.InlineCount, Is.Zero);
+    }
+
     [TestCase(false, false, false)]
     [TestCase(false, true, true)]
     [TestCase(true, false, false)]
