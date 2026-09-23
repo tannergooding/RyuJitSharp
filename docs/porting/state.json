@@ -12,15 +12,15 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete optCreateAssertion, optCreateJtrueAssertions and optAssertionGenJtrue for local/global propagation, including scalar/vector constants, copy gates, type checks and instance-test edges. Include the missing comma-store value query and correct fgIsBigOffset unsigned comparison required to reject negative-offset null facts.",
+      "scope": "Complete the fixed-width VN constant model required by node-wide assertion generation: vector/mask interning and retrieval, generic constant import, zero-by-type and int-to-long normalization. Preserve explicit ARM64 scalable/mask storage boundaries.",
       "doneWhen": [
-        "General assertion creation and JTRUE generation preserve native validity, normalization, edge and representation rules.",
-        "CSE-wrapped values and negative-offset null checks follow the oracle contracts.",
+        "Scalar and fixed-vector zero/import/retrieval operations preserve exact bits, independent type chunks and copied ownership.",
+        "Int-to-long normalization retains the native unsigned-source non-negativity gate.",
         "The selected Debug/Release checks pass and complete functions are committed with their native retirement and checkpoint."
       ],
       "validation": [
         "One combined assertion/integral-range selection in Debug and Release.",
-        "Cover small-local truncation, copy normalization, negative-offset null checks, comma-wrapped type facts and integral-only SIMD equality in existing assertion tests.",
+        "Cover all fixed vector widths, SIMD12 active bytes/zero padding, generic signedness, scalar/handle zeros and widening-cast normalization in the existing assertion fixture.",
         "No full suite or NativeAOT recapture unless a concrete failure or newly reachable compiler phase requires it."
       ],
       "deferred": [
@@ -30,7 +30,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "General assertion creation and optAssertionGenJtrue are complete (B094). Continue the VN zero/vector constant and unary-expression prerequisites needed by optAssertionGen, then complete fgAssertionGen and fgMorphTreeDone. Replace checkpoint.activeBatch before editing; do not substitute local-only generation or non-folding unary interning for the native implementation. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop. Preserve the established import-prefix evidence without recapturing an unchanged frontier.",
+    "nextAction": "General assertion creation/JTRUE facts and fixed-width VN constants are complete (B094/B097). Continue complete unary VN expression support required by optAssertionGen, including actual constant folding, known array lengths, exception-value composition and managed field-sequence identity; do not substitute non-folding interning. Then complete optAssertionGen, fgAssertionGen and fgMorphTreeDone. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop. Preserve unchanged-frontier evidence.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -500,6 +500,18 @@
         "debugTests": "artifacts\\assertion-creation-debug.trx",
         "releaseTests": "artifacts\\assertion-creation-release.trx"
       },
+      "vnConstantOperations": {
+        "managedSourceCommit": "889689b8b6a03ac9177785b05e56195eeb5d2278",
+        "debugPassed": 108,
+        "releasePassed": 106,
+        "skipped": 0,
+        "newCases": 7,
+        "nativeDefinitionsRetired": 18,
+        "nativeAotRecaptured": false,
+        "phaseActivated": false,
+        "debugTests": "artifacts\\vn-constants-debug.trx",
+        "releaseTests": "artifacts\\vn-constants-release.trx"
+      },
       "nativeAotPublish": "passed-after-integral-ranges",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "five-of-nine-import-prefixes-equal-remaining-inline-candidate-differences",
@@ -754,6 +766,15 @@
       "commit": "6ad133d77d69ff811b7e980710fb9d01f7fc0255",
       "indexCommit": "dcf3eff851334029bffc932141ebd81f1c4c1154",
       "ref": "refs/porting/snapshots/native-ledger-assertion-creation"
+    },
+    "vnConstantsManagedSource": {
+      "commit": "889689b8b6a03ac9177785b05e56195eeb5d2278",
+      "ref": "refs/porting/snapshots/vn-constants-source"
+    },
+    "vnConstantsNativeResidual": {
+      "commit": "fa197c6fafd9807d3daf219ff5279bae76c66a11",
+      "indexCommit": "2509386b304593150f61589c5bee9cb76fe20332",
+      "ref": "refs/porting/snapshots/native-ledger-vn-constants"
     }
   },
   "sourceMap": [

@@ -21,6 +21,78 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class AssertionTests
 {
+    [TestCase(TYP_SIMD8)]
+    [TestCase(TYP_SIMD12)]
+    [TestCase(TYP_SIMD16)]
+    [TestCase(TYP_SIMD32)]
+    [TestCase(TYP_SIMD64)]
+    public static void VectorValueNumbersOwnExactPayloadAndZeroPadRetrieval(var_types type)
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            var bytes = new byte[type.Size];
+            for (var index = 0; index < bytes.Length; index++)
+            {
+                bytes[index] = (byte)(index + 1);
+            }
+
+            var original = (byte[])bytes.Clone();
+            var vn = store.VNForGenericCon(type, bytes);
+            Assert.That(store.VNForGenericCon(type, bytes), Is.EqualTo(vn));
+            bytes[^1] ^= 128;
+            Assert.That(store.VNForGenericCon(type, bytes), Is.Not.EqualTo(vn));
+            var vector = store.GetConstantSimd(vn);
+            Assert.That(vector.AsSpan<byte>()[..type.Size].ToArray(), Is.EqualTo(original));
+            Assert.That(vector.AsSpan<byte>()[type.Size..].ToArray(), Is.All.Zero);
+            Assert.That(store.GetConstantSimd(store.VNZeroForType(type)).IsZero, Is.True);
+        });
+    }
+
+    [Test]
+    public static void GenericValueNumbersPreserveSignednessHandlesAndMaskBits()
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            byte[] bits = [255, 255, 255, 255, 255, 255, 255, 255];
+            Assert.That(store.GetConstantInt32(store.VNForGenericCon(TYP_BYTE, bits)), Is.EqualTo(-1));
+            Assert.That(store.GetConstantInt32(store.VNForGenericCon(TYP_UBYTE, bits)), Is.EqualTo(255));
+            Assert.That(store.GetConstantInt32(store.VNForGenericCon(TYP_USHORT, bits)), Is.EqualTo(65535));
+            Assert.That(store.GetConstantInt32(store.VNForGenericCon(TYP_UINT, bits)), Is.EqualTo(-1));
+            Assert.That(store.GetConstantInt64(store.VNForGenericCon(TYP_ULONG, bits)), Is.EqualTo(-1L));
+            var mask = store.VNForGenericCon(TYP_MASK, bits);
+            Assert.That(store.GetConstantSimdMask(mask).RawBits, Is.EqualTo(-1L));
+            Assert.That(store.VNForSimdMaskCon(store.GetConstantSimdMask(mask)), Is.EqualTo(mask));
+            var negativeZero = store.VNForGenericCon(TYP_DOUBLE, BitConverter.GetBytes(-0.0));
+            Assert.That(BitConverter.DoubleToInt64Bits(store.GetConstantDouble(negativeZero)), Is.EqualTo(long.MinValue));
+            Assert.That(store.VNZeroForType(TYP_DOUBLE), Is.Not.EqualTo(negativeZero));
+            Assert.That(store.VNZeroForType(TYP_UBYTE), Is.EqualTo(store.VNForIntCon(0)));
+            Assert.That(store.VNZeroForType(TYP_BYREF), Is.EqualTo(store.VNForByrefCon(0)));
+            Assert.That(store.VNZeroForType(TYP_REF), Is.EqualTo(ValueNumStore.VNForNull()));
+            var handle = store.VNForGenericCon(TYP_REF, BitConverter.GetBytes(42L));
+            Assert.That(store.IsVNObjHandle(handle), Is.True);
+            Assert.That(store.ConstantValue<nint>(handle), Is.EqualTo((nint)42));
+        });
+    }
+
+    [Test]
+    public static void WideningVNNormalizationRequiresUnsignedSourceNonnegativity()
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            var unknown = store.VNForExpr(null, TYP_INT);
+            var signed = store.VNForFuncNoFolding(TYP_LONG, VNFunc.VNF_Cast, unknown, store.VNForCastOper(TYP_LONG, false));
+            var unsigned = store.VNForFuncNoFolding(TYP_LONG, VNFunc.VNF_Cast, unknown, store.VNForCastOper(TYP_LONG, true));
+            Assert.That(store.VNIgnoreIntToLongCast(signed), Is.EqualTo(unknown));
+            Assert.That(store.VNIgnoreIntToLongCast(unsigned), Is.EqualTo(unsigned));
+            var positive = store.VNForIntCon(1);
+            var positiveCast = store.VNForFuncNoFolding(TYP_LONG, VNFunc.VNF_Cast, positive, store.VNForCastOper(TYP_LONG, true));
+            Assert.That(store.VNIgnoreIntToLongCast(positiveCast), Is.EqualTo(positive));
+            Assert.That(store.VNIgnoreIntToLongCast(store.VNForLongCon(int.MinValue)), Is.EqualTo(store.VNForIntCon(int.MinValue)));
+            var wide = store.VNForLongCon(long.MaxValue);
+            Assert.That(store.VNIgnoreIntToLongCast(wide), Is.EqualTo(wide));
+        });
+    }
+
     [TestCase(-1, false)]
     [TestCase(0, true)]
     [TestCase(1, false)]

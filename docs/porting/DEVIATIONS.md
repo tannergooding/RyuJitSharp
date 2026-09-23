@@ -96,6 +96,12 @@ access uses generic numeric conversion rather than reinterpretation; Debug check
 require compatible storage size and floating/integral categories. SIMD12 storage
 is exactly 12 bytes. ARM64 scalable/mask storage remains explicitly NYI; scalar
 storage support does not imply VN folding or phase activation (B090).
+Fixed-width vector/mask constants now use value-type dictionary keys and typed
+chunk arrays. Generic constant import accepts a bounded readonly byte span and
+uses unaligned-safe reads; SIMD retrieval copies the active payload into a
+zero-initialized maximum-width value. Scalar numeric and vector access remain
+separate managed helpers rather than emulating C++ template specialization.
+ARM64 scalable/mask storage is still explicitly NYI (B097).
 
 Phi definitions own copied SSA-number arrays and expose readonly memory.
 Reaching-VN traversal uses a managed stack and membership set, preserving native
