@@ -3433,7 +3433,7 @@ public partial class Compiler
     /// <summary>Adjust a struct value being returned.</summary>
     /// <param name="op">the return value</param>
     /// <returns>The (possibly modified) value to return.</returns>
-    /// <remarks>In the multi-reg case, we we force IR to be one of the following: GT_RETURN(LCL_VAR) or GT_RETURN(CALL). If op is anything other than a lclvar or call, it is assigned to a temp, which is then returned. In the non-multireg case, the two special helpers with "fake" return buffers are handled ("GETFIELDSTRUCT" and "UNBOX_NULLABLE").</remarks>
+    /// <remarks>In the multi-reg case, force IR to be GT_RETURN(LCL_VAR) or GT_RETURN(CALL), assigning other values to a temp. Also materialize a return buffer for a call or inline-candidate placeholder when the enclosing method's return type does not use one.</remarks>
     public unsafe GenTree impFixupStructReturnType(GenTree op)
     {
         assert(varTypeIsStruct(info.compRetType));
@@ -3442,18 +3442,28 @@ public partial class Compiler
         JITDUMP("\nimpFixupStructReturnType: retyping\n");
         DISPTREE(op);
 
-        if (op.Oper.IsCall && op.AsCall().ShouldHaveRetBufArg)
+        GenTreeCall? retBufCall = null;
+
+        if (op.Oper.IsCall)
         {
-            // This must be one of those 'special' helpers that don't really have a return buffer, but instead
-            // use it as a way to keep the trees cleaner with fewer address-taken temps. Well now we have to
-            // materialize the return buffer as an address-taken temp. Then we can return the temp.
+            retBufCall = op.AsCall();
+        }
+        else if (op.Oper is GT_RET_EXPR)
+        {
+            // This import created the placeholder; substitution chains are formed and walked later.
+            assert(op.AsRetExpr().SubstExpr is null);
+            retBufCall = op.AsRetExpr().InlineCandidate.AsCall();
+        }
+
+        if ((retBufCall is not null) && retBufCall.ShouldHaveRetBufArg)
+        {
             var tmpNum = lvaGrabTemp(shortLifetime: true, "pseudo return buffer");
 
             // No need to spill anything as we're about to return.
             impStoreToTemp(tmpNum, op, CHECK_SPILL_NONE);
 
             op = gtNewLclvNode(info.compRetType, tmpNum);
-            JITDUMP("\nimpFixupStructReturnType: created a pseudo-return buffer for a special helper\n");
+            JITDUMP("\nimpFixupStructReturnType: created a pseudo-return buffer\n");
             DISPTREE(op);
 
             return op;
@@ -17742,7 +17752,7 @@ public partial class Compiler
         // For integral types the managed calling convention dictates that callee
         // will widen the return value to 4 bytes, so we can allow implicit widening
         // in managed to managed tailcalls when dealing with <= 4 bytes.
-        var isManaged = callerCallConv is CorInfoCallConvExtension.Managed or CorInfoCallConvExtension.Managed;
+        var isManaged = (callerCallConv is CorInfoCallConvExtension.Managed) && (calleeCallConv is CorInfoCallConvExtension.Managed);
 
         if (allowWidening && isManaged && varTypeIsIntegral(callerRetType) && varTypeIsIntegral(calleeRetType) && (callerRetType.Size <= 4) && (calleeRetType.Size <= callerRetType.Size))
         {

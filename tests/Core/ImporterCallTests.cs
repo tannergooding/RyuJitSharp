@@ -11,6 +11,104 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ImporterCallTests
 {
+    [TestCase(CorInfoCallConvExtension.Managed, CorInfoCallConvExtension.Managed, true, true)]
+    [TestCase(CorInfoCallConvExtension.Managed, CorInfoCallConvExtension.Managed, false, false)]
+    [TestCase(CorInfoCallConvExtension.Managed, CorInfoCallConvExtension.C, true, false)]
+    [TestCase(CorInfoCallConvExtension.C, CorInfoCallConvExtension.Managed, true, false)]
+    [TestCase(CorInfoCallConvExtension.C, CorInfoCallConvExtension.C, true, false)]
+    public static void TailReturnWideningRequiresTwoManagedConventions(
+        CorInfoCallConvExtension caller, CorInfoCallConvExtension callee, bool allowWidening, bool expected)
+    {
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        var result = compiler.impTailCallRetTypeCompatible(allowWidening,
+            var_types.TYP_INT, null, caller, var_types.TYP_SHORT, null, callee);
+        Assert.That(result, Is.EqualTo(expected));
+    }
+
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void StructReturnsMaterializeCandidateReturnBuffers(bool placeholder, bool returnBuffer)
+    {
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.Base.Base.getClassAttribs = &GetStructFlags;
+        vtable.Base.Base.getClassSize = &GetStructSize;
+        vtable.Base.Base.isValueClass =
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_STRUCT_*, bool>)
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_STRUCT_*, byte>)&IsValueClass;
+        vtable.Base.Base.isIntrinsicType =
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_STRUCT_*, bool>)
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_STRUCT_*, byte>)&IsIntrinsicType;
+        vtable.Base.Base.getArrayRank = &GetBoxRank;
+        vtable.Base.Base.getTypeInstantiationArgument = &GetBoxTypeArgument;
+        vtable.Base.Base.printClassName = &PrintBoxClassName;
+        vtable.Base.Base.runWithSPMIErrorTrap =
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, delegate* unmanaged[Cdecl]<void*, void>, void*, bool>)
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, delegate* unmanaged[Cdecl]<void*, void>, void*, byte>)&RunWithErrorTrap;
+        ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+#if DEBUG
+        using var jitTls = new JitTls(&jitInfo);
+#endif
+        var previous = JitTls.Compiler;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitFlags flags = default;
+        compiler.opts.jitFlags = &flags;
+        compiler.opts.compMinOptsIsSet = true;
+        compiler.info = new Compiler.Info {
+            compCompHnd = &jitInfo,
+            compRetType = var_types.TYP_STRUCT,
+            compRetBuffArg = Globals.BAD_VAR_NUM,
+        };
+        compiler.lvaTable = [];
+        compiler.stackState.esStack = [];
+        compiler.compCurBB = new BasicBlock(null, null);
+        JitTls.Compiler = compiler;
+
+        try
+        {
+            var call = new GenTreeCall(var_types.TYP_STRUCT) {
+                _callType = gtCallTypes.CT_USER_FUNC,
+                _callMethHnd = (CORINFO_METHOD_STRUCT_*)1,
+                RetClsHnd = (CORINFO_CLASS_STRUCT_*)2,
+            };
+            if (returnBuffer)
+            {
+                call._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_RETBUFFARG;
+            }
+            GenTree value = call;
+            if (placeholder)
+            {
+                call.SingleInlineCandidateInfo = new InlineCandidateInfo();
+                compiler.impAppendStmt(compiler.gtNewStmt(call));
+                value = new GenTreeRetExpr(var_types.TYP_STRUCT, call);
+            }
+
+            var result = compiler.impFixupStructReturnType(value);
+
+            Assert.Multiple(() => {
+                Assert.That(result.Oper, Is.EqualTo(returnBuffer ? genTreeOps.GT_LCL_VAR : value.Oper));
+                Assert.That(call.Args.HasRetBuffer, Is.EqualTo(returnBuffer));
+                Assert.That(call.Type, Is.EqualTo(returnBuffer ? var_types.TYP_VOID : var_types.TYP_STRUCT));
+                Assert.That(compiler.lvaCount, Is.EqualTo(returnBuffer ? 1 : 0));
+            });
+            if (returnBuffer)
+            {
+                var argument = call.Args.RetBufferArg ?? throw new InvalidOperationException("Missing return buffer argument.");
+                Assert.That(argument.Node.AsLclVarCommon().LclNum, Is.EqualTo(result.AsLclVar().LclNum));
+                Assert.That(compiler.lvaTable[result.AsLclVar().LclNum].lvExactSize, Is.EqualTo(sizeof(int)));
+            }
+            else
+            {
+                Assert.That(result, Is.SameAs(value));
+            }
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+
     [TestCase(TypeCompareState.Must)]
     [TestCase(TypeCompareState.MustNot)]
     [TestCase(TypeCompareState.May)]
@@ -270,4 +368,16 @@ internal static unsafe class ImporterCallTests
         callback(state);
         return 1;
     }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CorInfoFlag GetStructFlags(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => CorInfoFlag.CORINFO_FLG_VALUECLASS;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int GetStructSize(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => sizeof(int);
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte IsValueClass(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => 1;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte IsIntrinsicType(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => 0;
 }
