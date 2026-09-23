@@ -12,15 +12,15 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete JTRUE bounds-assertion generation and its VN query closure: checked-bound/index tracking, cast descriptors, unsigned-bound canonicalization, bound-plus-constant recognition and relop swapping.",
+      "scope": "Complete optCreateAssertion, optCreateJtrueAssertions and optAssertionGenJtrue for local/global propagation, including scalar/vector constants, copy gates, type checks and instance-test edges. Include the missing comma-store value query and correct fgIsBigOffset unsigned comparison required to reject negative-offset null facts.",
       "doneWhen": [
-        "optCreateJTrueBoundsAssertion preserves native assertion shape, edge polarity, equality exclusions and table-pressure gates.",
-        "All required VN queries are complete, including ulong casts and constant-minus-one canonicalization.",
+        "General assertion creation and JTRUE generation preserve native validity, normalization, edge and representation rules.",
+        "CSE-wrapped values and negative-offset null checks follow the oracle contracts.",
         "The selected Debug/Release checks pass and complete functions are committed with their native retirement and checkpoint."
       ],
       "validation": [
         "One combined assertion/integral-range selection in Debug and Release.",
-        "Check unsigned edge polarity, equality/constant exclusions, signed-minimum subtraction and registered-VN gating in the existing fixture.",
+        "Cover small-local truncation, copy normalization, negative-offset null checks, comma-wrapped type facts and integral-only SIMD equality in existing assertion tests.",
         "No full suite or NativeAOT recapture unless a concrete failure or newly reachable compiler phase requires it."
       ],
       "deferred": [
@@ -30,7 +30,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Complete optAssertionGenJtrue and optAssertionGen through their real remaining optCreateAssertion/type/constant prerequisites, then fgAssertionGen and fgMorphTreeDone. The VN store/query, descriptor, insertion and optCreateJTrueBoundsAssertion prerequisites are now implemented (B090/B091/B093). Replace checkpoint.activeBatch with the next coherent dependency boundary before editing; do not substitute SetMorphed or local-only generation. General VN evaluation and optional fgInline activation remain pending. Preserve the five established import-prefix matches without recapturing an unchanged frontier.",
+    "nextAction": "General assertion creation and optAssertionGenJtrue are complete (B094). Continue the VN zero/vector constant and unary-expression prerequisites needed by optAssertionGen, then complete fgAssertionGen and fgMorphTreeDone. Replace checkpoint.activeBatch before editing; do not substitute local-only generation or non-folding unary interning for the native implementation. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop. Preserve the established import-prefix evidence without recapturing an unchanged frontier.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -488,6 +488,18 @@
         "debugTests": "artifacts\\bounds-generation-debug.trx",
         "releaseTests": "artifacts\\bounds-generation-release.trx"
       },
+      "generalAssertionCreation": {
+        "managedSourceCommit": "3ef9a51580f78b0a37e9af6e054125bfdc3d63a2",
+        "debugPassed": 101,
+        "releasePassed": 99,
+        "skipped": 0,
+        "newCases": 8,
+        "nativeDefinitionsRetired": 4,
+        "nativeAotRecaptured": false,
+        "phaseActivated": false,
+        "debugTests": "artifacts\\assertion-creation-debug.trx",
+        "releaseTests": "artifacts\\assertion-creation-release.trx"
+      },
       "nativeAotPublish": "passed-after-integral-ranges",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "five-of-nine-import-prefixes-equal-remaining-inline-candidate-differences",
@@ -733,6 +745,15 @@
       "commit": "ba20a6f2127fb1800bcf383354cb6962131497da",
       "indexCommit": "b01747e8054ba10883a3a9f9df20a1acbb4cdca8",
       "ref": "refs/porting/snapshots/native-ledger-bounds-generation"
+    },
+    "assertionCreationManagedSource": {
+      "commit": "3ef9a51580f78b0a37e9af6e054125bfdc3d63a2",
+      "ref": "refs/porting/snapshots/assertion-creation-source"
+    },
+    "assertionCreationNativeResidual": {
+      "commit": "6ad133d77d69ff811b7e980710fb9d01f7fc0255",
+      "indexCommit": "dcf3eff851334029bffc932141ebd81f1c4c1154",
+      "ref": "refs/porting/snapshots/native-ledger-assertion-creation"
     }
   },
   "sourceMap": [

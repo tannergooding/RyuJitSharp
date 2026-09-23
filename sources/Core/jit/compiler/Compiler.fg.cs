@@ -7434,7 +7434,7 @@ public partial class Compiler
     }
 
     public bool fgIsBigOffset(nint offset)
-        => offset > compMaxUncheckedOffsetForNullObject;
+        => unchecked((nuint)offset) > unchecked((nuint)compMaxUncheckedOffsetForNullObject);
 
 #if DEBUG
     /// <summary>In non-Release builds, set fgBBs to empty.</summary>

@@ -106,7 +106,10 @@ Checked-bound/index registries use managed membership sets; no enumeration order
 is observed. Unsigned comparison results use a readonly record and failed queries
 leave ref outputs unchanged. JTRUE bounds generation retains native edge
 polarity and usefulness gates; it does not activate general assertion generation
-or morph completion (B093).
+or morph completion (B093). General assertion creation and JTRUE equality/type
+facts are now also implemented. Unary native operand access uses the managed
+`GenTreeUnOp` base rather than casting unary nodes to `GenTreeOp`; CSE comma
+queries preserve the native single-store/same-local condition (B094).
 
 Profile weight lookup uses a managed `ref` output: native leaves the pointed-to
 value unchanged when no profile weights are available, so an unconditional

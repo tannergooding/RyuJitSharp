@@ -21,6 +21,87 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class AssertionTests
 {
+    [TestCase(-1, false)]
+    [TestCase(0, true)]
+    [TestCase(1, false)]
+    public static void NonNullAssertionsRespectUnsignedOffsetLimit(int offset, bool expected)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_REF }, new LclVarDsc { Type = TYP_INT }];
+            var address = compiler.gtNewBinaryNode(GT_ADD, TYP_BYREF, compiler.gtNewLclvNode(TYP_REF, 0),
+                compiler.gtNewIconNode(TYP_I_IMPL, offset));
+            Assert.That(compiler.fgIsBigOffset(offset), Is.EqualTo(!expected));
+            Assert.That(compiler.optCreateAssertion(address, null, false) != 0, Is.EqualTo(expected));
+        });
+    }
+
+    [Test]
+    public static void AssertionCreationPreservesSmallLocalAndCopyNormalization()
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_UBYTE }, new LclVarDsc { Type = TYP_UBYTE, lvIsParam = true }];
+            var local = compiler.gtNewLclvNode(TYP_INT, 0);
+            var large = compiler.gtNewIconNode(TYP_INT, 256);
+            Assert.That(compiler.optCreateAssertion(local, large, true), Is.Zero);
+            var store = compiler.gtNewStoreLclVarNode(0, large);
+            var index = compiler.optCreateAssertion(store, large, true);
+            Assert.That(compiler.optGetAssertion(index).Op2.IntConstant, Is.EqualTo((nint)0));
+            var other = compiler.gtNewLclvNode(TYP_INT, 1);
+            Assert.That(compiler.optCreateAssertion(local, other, true), Is.Zero);
+            compiler.lvaTable[0].lvIsParam = true;
+            compiler.lvaTable[1].lvRedefinedInEmbeddedStatement = true;
+            Assert.That(compiler.optCreateAssertion(local, other, true), Is.Zero);
+            compiler.lvaTable[1].lvRedefinedInEmbeddedStatement = false;
+            Assert.That(compiler.optGetAssertion(compiler.optCreateAssertion(local, other, true)).Op2.Kind, Is.EqualTo(O2K_LCLVAR_COPY));
+            Assert.That(compiler.optCreateAssertion(local, compiler.gtNewDconNode(TYP_DOUBLE, double.NaN), true), Is.Zero);
+        });
+    }
+
+    [TestCase(TYP_INT, true)]
+    [TestCase(TYP_FLOAT, false)]
+    public static void VectorBranchAssertionsRequireBitwiseEquality(var_types baseType, bool expected)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_SIMD16 }, new LclVarDsc { Type = TYP_INT }];
+            var vector = compiler.gtNewLclvNode(TYP_SIMD16, 0);
+            var intrinsic = new GenTreeHWIntrinsic(TYP_INT, NamedIntrinsic.NI_Vector_op_Equality, baseType, 16,
+                vector, new GenTreeVecCon(TYP_SIMD16));
+            var compare = compiler.gtNewBinaryNode(GT_EQ, TYP_INT, intrinsic, compiler.gtNewIconNode(TYP_INT, 1));
+            var info = compiler.optAssertionGenJtrue(compiler.gtNewUnaryNode(GT_JTRUE, TYP_VOID, compare));
+            Assert.That(info.HasAssertion, Is.EqualTo(expected));
+            if (expected)
+            {
+                Assert.That(compiler.optGetAssertion(info.AssertionIndex).Kind, Is.EqualTo(OAK_EQUAL));
+            }
+        });
+    }
+
+    [TestCase(GT_EQ, false)]
+    [TestCase(GT_NE, true)]
+    public static void ExactTypeAssertionsLookThroughCommaStoresAndRetainEdge(genTreeOps oper, bool nextEdge)
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_REF }, new LclVarDsc { Type = TYP_I_IMPL }];
+            var obj = compiler.gtNewLclvNode(TYP_REF, 0);
+            var objVN = store.VNForExpr(null, TYP_REF);
+            obj._vnPair.SetBoth(objVN);
+            var indirection = new GenTreeIndir(GT_IND, TYP_I_IMPL, obj);
+            var save = compiler.gtNewStoreLclVarNode(1, indirection);
+            var comma = compiler.gtNewBinaryNode(GT_COMMA, TYP_I_IMPL, save, compiler.gtNewLclvNode(TYP_I_IMPL, 1));
+            Assert.That(comma.CommaStoreVal, Is.SameAs(indirection));
+            var handle = compiler.gtNewIconNode(TYP_I_IMPL, 123);
+            handle._vnPair.SetBoth(store.VNForHandle(123, GTF_ICON_CLASS_HDL));
+            var compare = compiler.gtNewBinaryNode(oper, TYP_INT, comma, handle);
+            var info = compiler.optAssertionGenJtrue(compiler.gtNewUnaryNode(GT_JTRUE, TYP_VOID, compare));
+            Assert.That(info.HasAssertion, Is.True);
+            Assert.That(info.AssertionHoldsOnFalseEdge, Is.EqualTo(nextEdge));
+            Assert.That(compiler.optGetAssertion(info.AssertionIndex).Op1.Kind, Is.EqualTo(Compiler.optOp1Kind.O1K_EXACT_TYPE));
+            Assert.That(compiler.optFindComplementary(info.AssertionIndex), Is.Zero);
+        }, local: false);
+    }
+
     [TestCase(VNFunc.VNF_LT_UN, false, false)]
     [TestCase(VNFunc.VNF_GE_UN, false, true)]
     [TestCase(VNFunc.VNF_GT_UN, true, false)]

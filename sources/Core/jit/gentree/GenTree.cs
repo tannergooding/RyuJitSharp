@@ -269,6 +269,24 @@ public partial class GenTree
         }
     }
 
+    public GenTree CommaStoreVal
+    {
+        get
+        {
+            if (_oper is GT_COMMA)
+            {
+                var comma = AsOp();
+                if ((comma.Op2.Oper is GT_LCL_VAR) && (comma.Op1.Oper is GT_STORE_LCL_VAR) &&
+                    (comma.Op1.AsLclVarCommon().LclNum == comma.Op2.AsLclVarCommon().LclNum))
+                {
+                    return comma.Op1.AsLclVarCommon().Data;
+                }
+            }
+
+            return this;
+        }
+    }
+
     public bool GeneratesAssertion => _assertionInfo.HasAssertion;
 
     /// <summary>Determine whether this node is a last use of any value</summary>
