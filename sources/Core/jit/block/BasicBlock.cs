@@ -731,6 +731,11 @@ public sealed partial class BasicBlock : LIR.Range
 
     public bool hasTryIndex => bbTryIndex != 0;
 
+    // EH boundaries represent flow that is not fully described by regular CFG edges.
+    public bool hasEHBoundaryIn => bbCatchType != BBCT_NONE;
+
+    public bool hasEHBoundaryOut => Kind is BBJ_EHFILTERRET or BBJ_EHFINALLYRET or BBJ_EHFAULTRET or BBJ_EHCATCHRET;
+
     public ushort HndIndex
     {
         get

@@ -3335,8 +3335,298 @@ public partial class Compiler
     // TODO: Port phase check - fgDebugCheckNodesUniqueness
     public void fgDebugCheckNodesUniqueness() { }
 
-    // TODO: Port phase check - fgDebugCheckProfile
-    public void fgDebugCheckProfile(PhaseChecks checks = PhaseChecks.CHECK_NONE) { }
+    public void fgDebugCheckProfile(PhaseChecks checks = PhaseChecks.CHECK_NONE)
+    {
+        var configEnabled = (JitConfig.JitProfileChecks >= 0) && fgHaveProfileWeights && fgPredsComputed;
+        assert(checks != PhaseChecks.CHECK_NONE);
+
+        if (configEnabled)
+        {
+            _ = fgDebugCheckProfileWeights((ProfileChecks)JitConfig.JitProfileChecks);
+        }
+        else if ((checks & PhaseChecks.CHECK_PROFILE) != 0)
+        {
+            var profileChecks = ProfileChecks.CHECK_LIKELY | ProfileChecks.RAISE_ASSERT;
+            if ((checks & PhaseChecks.CHECK_PROFILE_FLAGS) != 0)
+            {
+                profileChecks |= ProfileChecks.CHECK_FLAGS;
+            }
+            _ = fgDebugCheckProfileWeights(profileChecks);
+        }
+        else if ((checks & PhaseChecks.CHECK_LIKELIHOODS) != 0)
+        {
+            _ = fgDebugCheckProfileWeights(ProfileChecks.CHECK_HASLIKELIHOOD |
+                ProfileChecks.CHECK_LIKELIHOODSUM | ProfileChecks.RAISE_ASSERT);
+        }
+    }
+
+    public bool fgDebugCheckProfileWeights(ProfileChecks checks, bool dump = false)
+    {
+        var verifyLikelyWeights = (checks & ProfileChecks.CHECK_LIKELY) != 0;
+        var verifyHasLikelihood = (checks & ProfileChecks.CHECK_HASLIKELIHOOD) != 0;
+        var verifyLikelihoodSum = (checks & ProfileChecks.CHECK_LIKELIHOODSUM) != 0;
+        var checkProfileFlag = ((checks & ProfileChecks.CHECK_FLAGS) != 0) && fgIsUsingProfileWeights;
+        var assertOnFailure = ((checks & ProfileChecks.RAISE_ASSERT) != 0) && fgPgoConsistent;
+        var checkAllBlocks = (checks & ProfileChecks.CHECK_ALL_BLOCKS) != 0;
+
+        if (!verifyLikelyWeights && !verifyHasLikelihood)
+        {
+            JITDUMP("[profile weight checks disabled]\n");
+            return true;
+        }
+        if (fgPgoDeferredInconsistency)
+        {
+            JITDUMP("[deferred prior check failed -- skipping this check]\n");
+            return false;
+        }
+
+        JITDUMP($"Checking Profile Weights (flags:0x{(uint)checks:x})\n");
+        var problemBlocks = 0;
+        var unprofiledBlocks = 0;
+        var profiledBlocks = 0;
+        var unflaggedBlocks = 0;
+        var entryProfiled = false;
+        var exitProfiled = false;
+        var hasTry = false;
+        weight_t entryWeight = 0;
+        weight_t exitWeight = 0;
+
+        foreach (var block in Blocks)
+        {
+            if (!block.hasProfileWeight)
+            {
+                if (checkProfileFlag && (block.bbPreds is not null))
+                {
+                    unflaggedBlocks++;
+                }
+                if (!checkAllBlocks)
+                {
+                    unprofiledBlocks++;
+                    continue;
+                }
+            }
+
+            profiledBlocks++;
+            // Exception flow is not modeled by the entry/exit balance check.
+            hasTry |= block.hasTryIndex;
+            var blockWeight = block.bbWeight;
+            var verifyIncoming = true;
+            var verifyOutgoing = true;
+            if (block == fgFirstBB)
+            {
+                entryWeight += blockWeight;
+                entryProfiled = !opts.IsOSR;
+                verifyIncoming = false;
+            }
+            if (block.Kind is BBJ_RETURN)
+            {
+                exitWeight += blockWeight;
+                exitProfiled = true;
+                verifyOutgoing = false;
+            }
+            else if (block.Kind is BBJ_THROW)
+            {
+                if (block.hasTryIndex)
+                {
+                    assert(hasTry);
+                }
+                else
+                {
+                    exitWeight += blockWeight;
+                    exitProfiled = true;
+                }
+                verifyOutgoing = false;
+            }
+
+            // OSR and EH entries can receive flow absent from the regular CFG.
+            if ((block == fgOSREntryBB) || (block == fgEntryBB) || block.hasEHBoundaryIn)
+            {
+                verifyIncoming = false;
+            }
+            if (block.hasEHBoundaryOut)
+            {
+                verifyOutgoing = false;
+            }
+            var incomingConsistent = true;
+            var outgoingConsistent = true;
+            if (verifyIncoming)
+            {
+                incomingConsistent = fgDebugCheckIncomingProfileData(block, checks);
+            }
+            if (verifyOutgoing)
+            {
+                outgoingConsistent = fgDebugCheckOutgoingProfileData(block, checks);
+            }
+            if (!incomingConsistent || !outgoingConsistent)
+            {
+                problemBlocks++;
+            }
+        }
+
+        if (verifyLikelyWeights && entryProfiled && exitProfiled && !hasTry)
+        {
+            assert(fgFirstBB is not null);
+            if (fgFirstBB.bbRefs > 1)
+            {
+                JITDUMP($"  Method entry {FMT_BB(fgFirstBB.bbNum)} is loop head, can't check entry/exit balance\n");
+            }
+            else if (!fgProfileWeightsConsistent(entryWeight, exitWeight))
+            {
+                problemBlocks++;
+                JITDUMP($"  Method entry {FMT_WT(entryWeight)} method exit {FMT_WT(exitWeight)} weight mismatch\n");
+            }
+        }
+
+        if (problemBlocks == 0)
+        {
+            if (profiledBlocks == 0)
+            {
+                JITDUMP("No blocks were profiled, so nothing to check\n");
+            }
+            else if (verifyLikelyWeights)
+            {
+                JITDUMP($"Profile is self-consistent ({profiledBlocks} profiled blocks, {unprofiledBlocks} unprofiled)\n");
+            }
+            else if (verifyLikelihoodSum)
+            {
+                JITDUMP("All block successor flow edge likelihoods sum to 1.0\n");
+            }
+            else if (verifyHasLikelihood)
+            {
+                JITDUMP("All flow edges have likelihoods\n");
+            }
+        }
+        else
+        {
+            JITDUMP($"Profile is NOT self-consistent, found {problemBlocks} problems ({profiledBlocks} profiled blocks, {unprofiledBlocks} unprofiled)\n");
+            if (assertOnFailure && !dump)
+            {
+                var wasVerbose = verbose;
+                verbose = true;
+                _ = fgDebugCheckProfileWeights(checks, dump: true);
+                verbose = wasVerbose;
+                assert(false, "Inconsistent profile data");
+            }
+        }
+        if ((unflaggedBlocks > 0) && !dump)
+        {
+            JITDUMP($"{unflaggedBlocks} blocks are missing BBF_PROF_WEIGHT flag.\n");
+            assert(false, "Missing BBF_PROF_WEIGHT flag");
+        }
+
+        return problemBlocks == 0;
+    }
+
+    public bool fgDebugCheckIncomingProfileData(BasicBlock block, ProfileChecks checks)
+    {
+        var verifyLikelyWeights = (checks & ProfileChecks.CHECK_LIKELY) != 0;
+        var verifyHasLikelihood = (checks & ProfileChecks.CHECK_HASLIKELIHOOD) != 0;
+        if (!verifyLikelyWeights && !verifyHasLikelihood)
+        {
+            return true;
+        }
+        var blockWeight = block.bbWeight;
+        weight_t incomingLikelyWeight = 0;
+        var missingLikelyWeight = 0;
+        var foundPreds = false;
+        foreach (var predEdge in block.PredEdges)
+        {
+            if (predEdge.hasLikelihood)
+            {
+                incomingLikelyWeight += predEdge.LikelyWeight;
+            }
+            else
+            {
+                JITDUMP($"Missing likelihood on {fgFormatProfileEdgeAddress(predEdge)} {FMT_BB(predEdge.SourceBlock.bbNum)}->{FMT_BB(block.bbNum)}\n");
+                missingLikelyWeight++;
+            }
+            foundPreds = true;
+        }
+        var likelyWeightsValid = true;
+        if (foundPreds)
+        {
+            if (verifyLikelyWeights && !fgProfileWeightsConsistentOrSmall(blockWeight, incomingLikelyWeight))
+            {
+                JITDUMP($"  {FMT_BB(block.bbNum)} - block weight {FMT_WT(blockWeight)} inconsistent with incoming likely weight {FMT_WT(incomingLikelyWeight)}\n");
+                likelyWeightsValid = false;
+            }
+            if (verifyHasLikelihood && (missingLikelyWeight > 0))
+            {
+                JITDUMP($"  {FMT_BB(block.bbNum)} -- {missingLikelyWeight} incoming edges are missing likely weights\n");
+                likelyWeightsValid = false;
+            }
+        }
+
+        return likelyWeightsValid;
+    }
+
+    public bool fgDebugCheckOutgoingProfileData(BasicBlock block, ProfileChecks checks)
+    {
+        var verifyHasLikelihood = (checks & ProfileChecks.CHECK_HASLIKELIHOOD) != 0;
+        var verifyLikelihoodSum = (checks & ProfileChecks.CHECK_LIKELIHOODSUM) != 0;
+        if (!verifyHasLikelihood && !verifyLikelihoodSum)
+        {
+            return true;
+        }
+        var likelyWeightsValid = true;
+        var numSuccs = block.NumSucc;
+        if ((numSuccs > 0) && (block.Kind is not BBJ_EHFAULTRET and not BBJ_EHFILTERRET))
+        {
+            weight_t outgoingLikelihood = 0;
+            var missingLikelihood = 0;
+            foreach (var succEdge in block.Succs.Edges)
+            {
+                if (succEdge.hasLikelihood)
+                {
+                    outgoingLikelihood += succEdge.Likelihood;
+                }
+                else
+                {
+                    JITDUMP($"Missing likelihood on {fgFormatProfileEdgeAddress(succEdge)} {FMT_BB(block.bbNum)}->{FMT_BB(succEdge.DestinationBlock.bbNum)}\n");
+                    missingLikelihood++;
+                }
+            }
+            if (verifyHasLikelihood && (missingLikelihood > 0))
+            {
+                JITDUMP($"  {FMT_BB(block.bbNum)} - missing likelihood on {missingLikelihood} successor edges\n");
+                likelyWeightsValid = false;
+            }
+            if (verifyLikelihoodSum && !fgProfileWeightsConsistent(outgoingLikelihood, 1.0))
+            {
+                JITDUMP($"  {FMT_BB(block.bbNum)} - outgoing likelihood {FMT_WT(outgoingLikelihood)} should be 1.0\n");
+                if (block == fgOSREntryBB)
+                {
+                    JITDUMP("   ignoring this as block is the OSR entry\n");
+                }
+                else
+                {
+                    likelyWeightsValid = false;
+                    if (verbose)
+                    {
+                        foreach (var succEdge in block.Succs.Edges)
+                        {
+                            if (succEdge.hasLikelihood)
+                            {
+                                jitprintf($"  {FMT_BB(block.bbNum)} -> {FMT_BB(succEdge.DestinationBlock.bbNum)}: {FMT_WT(succEdge.Likelihood)}\n");
+                            }
+                            else
+                            {
+                                jitprintf($"  {FMT_BB(block.bbNum)} -> {FMT_BB(succEdge.DestinationBlock.bbNum)}: no likelihood\n");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return likelyWeightsValid;
+    }
+
+    private static unsafe string fgFormatProfileEdgeAddress(FlowEdge edge)
+    {
+        // Snapshot for diagnostics only; never dereference or retain the address across a GC.
+        return FMT_PTR((void*)Unsafe.As<FlowEdge, nint>(ref edge));
+    }
 
     // TODO: Port fgStress64RsltMul
     public void fgStress64RsltMul() { }
@@ -9422,6 +9712,17 @@ public partial class Compiler
     public static bool fgProfileWeightsEqual(weight_t weight1, weight_t weight2, weight_t epsilon = 0.01)
     {
         return weight_t.Abs(weight1 - weight2) <= epsilon;
+    }
+
+    public static bool fgProfileWeightsConsistent(weight_t weight1, weight_t weight2)
+    {
+        if (weight2 == BB_ZERO_WEIGHT)
+        {
+            return fgProfileWeightsEqual(weight1, weight2);
+        }
+        var relativeDiff = (weight2 - weight1) / weight2;
+
+        return fgProfileWeightsEqual(relativeDiff, BB_ZERO_WEIGHT);
     }
 
     /// <summary>Sets the given edge's target block to 'newTarget', updating pred lists as needed.</summary>

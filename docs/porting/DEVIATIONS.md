@@ -79,6 +79,12 @@ the same abort contract; each bit-vector word is captured before callbacks,
 while later words are read when reached. Header-relative containment rejects
 negative indices without checked-conversion exceptions (B072).
 
+Profile checkers preserve the native flag-selection and failure policy (B074).
+Missing-likelihood diagnostics format a snapshot of the managed edge's current
+address; it is never dereferenced or retained for later use. These failure
+messages have pointer-format coverage, not native-address parity, and introduce
+no dump-comparison normalization.
+
 Managed error-trap callbacks capture exceptions before leaving their
 `UnmanagedCallersOnly` shim. An owned `GCHandle` keeps the action and captured
 exception alive until the native trap returns. The regular trap reports
