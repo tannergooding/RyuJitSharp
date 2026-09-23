@@ -482,6 +482,150 @@ public sealed partial class BasicBlock : LIR.Range
     {
     }
 
+    public GenTree? GetLastNode()
+    {
+        if (IsLIR)
+        {
+            return _lastNode;
+        }
+
+        var lastStmt = LastStmt;
+        assert(lastStmt is not null);
+        return lastStmt.RootNode;
+    }
+
+    public bool EndsWithJmpMethod(Compiler comp)
+    {
+        if (comp.compJmpOpUsed && (_kind is BBJ_RETURN) && HasFlag(BBF_HAS_JMP))
+        {
+            var lastNode = GetLastNode();
+            assert(lastNode is not null);
+            return lastNode.Oper is GT_JMP;
+        }
+
+        return false;
+    }
+
+    public bool EndsWithTailCall(Compiler comp, bool fastTailCallsOnly, bool tailCallsConvertibleToLoopOnly, out GenTreeCall? tailCall)
+    {
+        assert(!fastTailCallsOnly || !tailCallsConvertibleToLoopOnly);
+        var result = false;
+        tailCall = null;
+
+        if (comp.compTailCallUsed)
+        {
+            if (fastTailCallsOnly || tailCallsConvertibleToLoopOnly)
+            {
+                result = HasFlag(BBF_HAS_JMP) && (_kind is BBJ_RETURN);
+            }
+            else
+            {
+                result = (_kind is BBJ_THROW) || (HasFlag(BBF_HAS_JMP) && (_kind is BBJ_RETURN));
+            }
+
+            if (result)
+            {
+                var lastNode = GetLastNode();
+                assert(lastNode is not null);
+                if (lastNode.Oper is GT_CALL)
+                {
+                    var call = lastNode.AsCall();
+                    if (tailCallsConvertibleToLoopOnly)
+                    {
+                        result = call.IsTailCallConvertibleToLoop;
+                    }
+                    else if (fastTailCallsOnly)
+                    {
+                        result = call.IsFastTailCall;
+                    }
+                    else
+                    {
+                        result = call.IsTailCall;
+                    }
+
+                    if (result)
+                    {
+                        tailCall = call;
+                    }
+                }
+                else
+                {
+                    result = false;
+                }
+            }
+        }
+
+        return result;
+    }
+
+    public bool EndsWithTailCallOrJmp(Compiler comp, bool fastTailCallsOnly = false)
+        => EndsWithJmpMethod(comp) || EndsWithTailCall(comp, fastTailCallsOnly, tailCallsConvertibleToLoopOnly: false, out _);
+
+    public BasicBlockVisit VisitRegularSuccs(Compiler comp, Func<BasicBlock, BasicBlockVisit> func)
+    {
+        switch (_kind)
+        {
+            case BBJ_EHFINALLYRET:
+            {
+                // Before import, LEAVEs may not yet have callfinally return successors.
+                if (bbEhfTargets is BBJumpTable targets)
+                {
+                    foreach (var edge in targets.Succs)
+                    {
+                        if (func(edge.DestinationBlock) is BasicBlockVisit.Abort)
+                        {
+                            return BasicBlockVisit.Abort;
+                        }
+                    }
+                }
+                return BasicBlockVisit.Continue;
+            }
+            case BBJ_CALLFINALLY:
+            case BBJ_CALLFINALLYRET:
+            case BBJ_EHCATCHRET:
+            case BBJ_EHFILTERRET:
+            case BBJ_LEAVE:
+            case BBJ_ALWAYS:
+            {
+                return func(Target);
+            }
+            case BBJ_COND:
+            {
+                if (func(FalseTarget) is BasicBlockVisit.Abort)
+                {
+                    return BasicBlockVisit.Abort;
+                }
+                if ((TrueEdge != FalseEdge) && (func(TrueTarget) is BasicBlockVisit.Abort))
+                {
+                    return BasicBlockVisit.Abort;
+                }
+                return BasicBlockVisit.Continue;
+            }
+            case BBJ_SWITCH:
+            {
+                foreach (var edge in bbSwtTargets.Succs)
+                {
+                    if (func(edge.DestinationBlock) is BasicBlockVisit.Abort)
+                    {
+                        return BasicBlockVisit.Abort;
+                    }
+                }
+                return BasicBlockVisit.Continue;
+            }
+            case BBJ_THROW:
+            case BBJ_RETURN:
+            case BBJ_EHFAULTRET:
+            {
+                return BasicBlockVisit.Continue;
+            }
+            default:
+            {
+                unreached();
+                return default;
+            }
+        }
+    }
+
     /// <summary>"bbNum" is one-based (for unknown reasons); it is sometimes useful to have the corresponding zero-based number for use as an array index.</summary>
     public int bbInd
     {

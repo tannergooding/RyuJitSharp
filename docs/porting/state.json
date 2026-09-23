@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Continue protected C# WIP integration. LIR/local/alias utilities, inline bookkeeping/diagnostics, support-file moves, tree splitting, statement construction/threading, and placeholder/devirtualization walkers are restored. Next integrate remaining saved inlining/rationalization bodies and their dependencies, including async frame-return support and expression folding (B054). Do not activate incomplete phases. Both native trees use the target revision; synchronization uses raw upstream deltas, preserving prior deletions and unported new APIs. After WIP integration, prioritize required minopts phases toward code generation. The first PGO dump gap remains pending.",
+    "nextAction": "Continue protected C# WIP integration. LIR/local/alias utilities, inline bookkeeping/diagnostics, support-file moves, tree splitting, statement construction/threading, placeholder/devirtualization walkers, and GC-safe-point cycle detection are restored. Next integrate remaining saved inlining/rationalization bodies and their dependencies, including async frame-return support and expression folding (B054). Do not activate incomplete phases. Both native trees use the target revision; synchronization uses raw upstream deltas, preserving prior deletions and unported new APIs. After WIP integration, prioritize required minopts phases toward code generation. The first PGO dump gap remains pending.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -24,8 +24,8 @@
       "testSourcesPresent": true,
       "writerRegressionCases": 16,
       "writerRegressionConfigurations": ["Debug", "Release"],
-      "targetFocusedTestsDebug": 478,
-      "targetFocusedTestsRelease": 386,
+      "targetFocusedTestsDebug": 493,
+      "targetFocusedTestsRelease": 401,
       "targetFocusedTestsSkipped": 0,
       "callIntrinsicSpotChecks": {
         "debugPassed": 81,
@@ -84,6 +84,14 @@
         "skipped": 0,
         "newCases": 10,
         "savedBehaviorFailures": 7,
+        "nativeAotRecaptured": false
+      },
+      "gcSafePointCycleSpotChecks": {
+        "debugPassed": 24,
+        "releasePassed": 24,
+        "skipped": 0,
+        "newCases": 15,
+        "savedTreeTerminalFailures": 3,
         "nativeAotRecaptured": false
       },
       "savedWipSupportMilestone": {

@@ -11,12 +11,79 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    /// <summary>Check for a cycle that does not pass through a GC safe point, requiring full interruptibility.</summary>
+    public bool fgHasCycleWithoutGCSafePoint()
+    {
+        var stack = new List<GCSafePointSuccessorEnumerator>();
+        var traits = new BitVecTraits(this, fgBBNumMax + 1);
+        var visited = BitVecOps.MakeEmpty(traits);
+        var finished = BitVecOps.MakeEmpty(traits);
+
+        foreach (var block in Blocks)
+        {
+            if (block.HasFlag(BBF_GC_SAFE_POINT) || BitVecOps.IsMember(traits, finished, block.bbNum))
+            {
+                continue;
+            }
+
+            var added = BitVecOps.TryAddElemD(traits, visited, block.bbNum);
+            assert(added);
+            stack.Add(new GCSafePointSuccessorEnumerator(this, block));
+
+            while (stack.Count > 0)
+            {
+                ref var currentEntry = ref CollectionsMarshal.AsSpan(stack)[^1];
+                var currentBlock = currentEntry.Block;
+                var succ = currentEntry.NextSuccessor;
+                if (succ is not null)
+                {
+                    if (succ.HasFlag(BBF_GC_SAFE_POINT) || BitVecOps.IsMember(traits, finished, succ.bbNum))
+                    {
+                        continue;
+                    }
+
+                    if (!BitVecOps.TryAddElemD(traits, visited, succ.bbNum))
+                    {
+#if DEBUG
+                        if (verbose)
+                        {
+                            jitprintf("Found a cycle that does not go through a GC safe point:\n");
+                            jitprintf(FMT_BB(succ.bbNum));
+                            for (var i = stack.Count - 1; i >= 0; i--)
+                            {
+                                var entryBlock = stack[i].Block;
+                                jitprintf($" <- {FMT_BB(entryBlock.bbNum)}");
+                                if (entryBlock == succ)
+                                {
+                                    break;
+                                }
+                            }
+                            jitprintf("\n");
+                        }
+#endif
+                        return true;
+                    }
+
+                    stack.Add(new GCSafePointSuccessorEnumerator(this, succ));
+                }
+                else
+                {
+                    BitVecOps.AddElemD(traits, finished, currentBlock.bbNum);
+                    stack.RemoveAt(stack.Count - 1);
+                }
+            }
+        }
+
+        return false;
+    }
+
 #if DEBUG
     public unsafe void fgNoteNonInlineCandidate(Statement stmt, GenTreeCall call)
     {

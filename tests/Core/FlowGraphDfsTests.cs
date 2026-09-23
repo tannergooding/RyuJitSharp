@@ -12,6 +12,167 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class FlowGraphDfsTests
 {
+    [TestCase("acyclic", false)]
+    [TestCase("cycle", true)]
+    [TestCase("safe-cycle", false)]
+    [TestCase("bypass", true)]
+    [TestCase("disconnected", true)]
+    public static void DetectsCyclesThatAvoidSafePoints(string shape, bool expected)
+    {
+        var compiler = CreateCompiler();
+#if DEBUG
+        using var jitTls = new JitTls(null);
+#endif
+        var previous = JitTls.Compiler;
+        JitTls.Compiler = compiler;
+        try
+        {
+            var entry = BasicBlock.New(compiler, BBJ_ALWAYS);
+            var loop = BasicBlock.New(compiler, BBJ_ALWAYS);
+            var exit = BasicBlock.New(compiler, BBJ_RETURN);
+            entry.Next = loop;
+            loop.Next = exit;
+            compiler.fgFirstBB = entry;
+            compiler.fgLastBB = exit;
+            entry.SetKindAndTargetEdge(BBJ_ALWAYS, new FlowEdge(entry, loop, null));
+            loop.SetKindAndTargetEdge(BBJ_ALWAYS, new FlowEdge(loop, shape == "acyclic" ? exit : loop, null));
+            if (shape == "safe-cycle")
+            {
+                loop.SetFlags(BasicBlockFlags.BBF_GC_SAFE_POINT);
+            }
+            else if (shape == "bypass")
+            {
+                exit.SetFlags(BasicBlockFlags.BBF_GC_SAFE_POINT);
+                loop.SetCond(new FlowEdge(loop, loop, null), new FlowEdge(loop, exit, null));
+            }
+            else if (shape == "disconnected")
+            {
+                entry.SetKindAndTargetEdge(BBJ_RETURN, null);
+            }
+
+            Assert.That(compiler.fgHasCycleWithoutGCSafePoint(), Is.EqualTo(expected));
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+
+    [TestCase(0)]
+    [TestCase(1)]
+    [TestCase(2)]
+    [TestCase(3)]
+    public static void RegularSuccessorEnumerationPreservesOrderAndAbort(int count)
+    {
+        var compiler = CreateCompiler();
+#if DEBUG
+        using var jitTls = new JitTls(null);
+#endif
+        var previous = JitTls.Compiler;
+        JitTls.Compiler = compiler;
+        try
+        {
+            var block = BasicBlock.New(compiler, count == 3 ? BBJ_SWITCH : BBJ_EHFINALLYRET);
+            compiler.fgFirstBB = block;
+            var first = BasicBlock.New(compiler, BBJ_RETURN);
+            var second = BasicBlock.New(compiler, BBJ_RETURN);
+            var third = BasicBlock.New(compiler, BBJ_RETURN);
+            var firstEdge = new FlowEdge(block, first, null);
+            var secondEdge = new FlowEdge(block, second, null);
+            BasicBlock[] expected = [];
+            if (count == 1)
+            {
+                block.SetCond(firstEdge, firstEdge);
+                expected = [first];
+            }
+            else if (count == 2)
+            {
+                block.SetCond(firstEdge, secondEdge);
+                expected = [second, first];
+            }
+            else if (count == 3)
+            {
+                var thirdEdge = new FlowEdge(block, third, null);
+                block.SwitchTargets = new BBswtDesc([firstEdge, secondEdge, thirdEdge], [0, 1, 2], hasDefault: true, dominantCase: 0);
+                expected = [first, second, third];
+            }
+
+            var enumerator = new GCSafePointSuccessorEnumerator(compiler, block);
+            Assert.That(enumerator.Block, Is.SameAs(block));
+            foreach (var successor in expected)
+            {
+                Assert.That(enumerator.NextSuccessor, Is.SameAs(successor));
+            }
+            Assert.That(enumerator.NextSuccessor, Is.Null);
+            Assert.That(enumerator.NextSuccessor, Is.Null);
+            var visited = 0;
+            var result = block.VisitRegularSuccs(compiler, successor => {
+                Assert.That(successor, Is.SameAs(expected[0]));
+                visited++;
+                return BasicBlockVisit.Abort;
+            });
+            Assert.That(visited, Is.EqualTo(count == 0 ? 0 : 1));
+            Assert.That(result, Is.EqualTo(count == 0 ? BasicBlockVisit.Continue : BasicBlockVisit.Abort));
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+
+    [TestCase(false, "fast")]
+    [TestCase(true, "fast")]
+    [TestCase(false, "helper")]
+    [TestCase(true, "helper")]
+    [TestCase(false, "jmp")]
+    [TestCase(true, "jmp")]
+    public static void TailcallPseudoSuccessorsUseTreeAndLirTerminals(bool lir, string kind)
+    {
+        var compiler = CreateCompiler();
+#if DEBUG
+        using var jitTls = new JitTls(null);
+#endif
+        var previous = JitTls.Compiler;
+        JitTls.Compiler = compiler;
+        try
+        {
+            compiler.compJmpOpUsed = kind == "jmp";
+            compiler.compTailCallUsed = kind != "jmp";
+            var block = BasicBlock.New(compiler, kind == "helper" ? BBJ_THROW : BBJ_RETURN);
+            compiler.fgFirstBB = block;
+            compiler.fgLastBB = block;
+            block.SetFlags(BasicBlockFlags.BBF_HAS_JMP);
+            var call = new GenTreeCall(var_types.TYP_VOID) {
+                _callMoreFlags = GenTreeCallFlags.GTF_CALL_M_TAILCALL |
+                    (kind == "helper" ? GenTreeCallFlags.GTF_CALL_M_TAILCALL_VIA_JIT_HELPER : 0),
+            };
+            var terminal = kind == "jmp" ? new GenTreeVal(genTreeOps.GT_JMP, var_types.TYP_VOID, 0) : (GenTree)call;
+            if (lir)
+            {
+                block.SetFlags(BasicBlockFlags.BBF_IS_LIR);
+                block.FirstLIRNode = terminal;
+                block.LastLIRNode = terminal;
+            }
+            else
+            {
+                compiler.fgInsertStmtAtEnd(block, new Statement(terminal, 1));
+            }
+
+            Assert.That(block.GetLastNode(), Is.SameAs(terminal));
+            Assert.That(block.EndsWithTailCallOrJmp(compiler), Is.True);
+            Assert.That(block.EndsWithTailCall(compiler, false, false, out var tail), Is.EqualTo(kind != "jmp"));
+            Assert.That(tail, Is.SameAs(kind == "jmp" ? null : call));
+            var enumerator = new GCSafePointSuccessorEnumerator(compiler, block);
+            Assert.That(enumerator.NextSuccessor, Is.SameAs(kind == "helper" ? null : block));
+            Assert.That(enumerator.NextSuccessor, Is.Null);
+            Assert.That(compiler.fgHasCycleWithoutGCSafePoint(), Is.EqualTo(kind != "helper"));
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void PreservesSuccessorOrderAndTreeNumbering(bool useProfile)

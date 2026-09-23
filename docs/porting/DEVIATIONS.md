@@ -77,6 +77,13 @@ identity, governs matching and rewrites. `gtSplitTree` returns the split use
 by reference and exposes native change reporting through `out bool madeChanges`.
 Splitting retains native execution/spill order and statement debug information.
 
+GC-safe-point cycle detection uses a `List<GCSafePointSuccessorEnumerator>` as
+the native DFS stack, accessing its top through a transient `CollectionsMarshal`
+span. No reference is used after resizing the list. The enumerator retains the
+native two-successor inline storage and separate larger-array storage; diagnostic
+traversal remains top-down. `BasicBlock.GetLastNode()` maps native `lastNode()`
+without hiding the inherited LIR-only `LastNode` property.
+
 ### D003: Deferred non-Windows-x64-only paths
 
 **Status:** accepted scoped deferral; not a successful execution/parity result.
