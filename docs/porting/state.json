@@ -168,7 +168,15 @@
         "firstDifference": "missing-BBOPT-profile-diagnostic",
         "fullPhaseParityEstablished": false
       },
-      "nativeAotPublish": "passed-at-inline-closure-support-milestone",
+      "inlineInvocationSupportMilestone": {
+        "managedSourceCommit": "f3473d5caf0aba4e1fc94911432c57ea805d28b2",
+        "nativeCompilationHeaders": 7,
+        "managedCompilationHeaders": 7,
+        "nativeAotRecaptured": true,
+        "firstDifference": "missing-BBOPT-profile-diagnostic",
+        "fullPhaseParityEstablished": false
+      },
+      "nativeAotPublish": "passed-at-inline-invocation-support-milestone",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "seven-method-corpus-captured-with-known-differences",
       "codegenParity": "not-available"
@@ -200,7 +208,7 @@
     "oldNativeHostPreservedAndExecuted": true,
     "managedCapture": "seven-selected-methods-loaded-with-target-abi",
     "managedGuid": "cb2fa75d-449d-4ee0-93ef-57011daefb8c",
-    "latestManagedBinarySha256": "B627045E98B99272687095C95CB022C777E5EA91CFA57309F2FF4F6FBAFBCAAC",
+    "latestManagedBinarySha256": "456437BFD5D214AD77F9277BE96E04E8B62182721974099B09F96681B33C0E84",
     "wrongGuidCaptureRejected": true,
     "nativeLayoutMeasurements": "matched-raw-managed-sizeof-and-debug-variable-offsets",
     "latestPrefixDifference": "missing-BBOPT-profile-diagnostic",
@@ -224,7 +232,8 @@
       "Inline placeholder and candidate-diagnostic support has focused coverage for effects, node identity, nested substitution, block flags, byref retyping, constant branches and prior failures. Expression folding remains stubbed; successful EE-backed late devirtualization, multi-register struct repair and full inlining are not established.",
       "Inline argument/prelude/epilogue integration has focused coverage for live-edge substitution, pseudo-argument classification, struct-load faults, initialization, GC-local cleanup and null-check ordering. EE-backed cctor insertion and full inline-phase execution remain unexercised.",
       "Recursive-inline guards preserve exact-context rejection, depth-observation ordering, the implementation depth bound, and the 64-type generic-loading threshold in controlled EE tests. Implicit-byref demotion cleanup covers retained/undone/no promotion; global morph and end-to-end generic inlining remain unverified.",
-      "Async inline-frame return helpers preserve cold resumption branches, caller context loads, frame-depth slot sharing, resumed-indicator propagation through retained fault handlers, and symbolic-offset cloning/dumps in focused IR/EE cases. Their inline block-splicing caller, successful helper inlining, continuation layout and async lowering remain unverified.",
+      "Async inline-frame return helpers preserve cold resumption branches, caller context loads, frame-depth slot sharing, resumed-indicator propagation through retained fault handlers, and symbolic-offset cloning/dumps in focused IR/EE cases, including invocation through inline block splicing. Successful helper inlining, continuation layout and async lowering remain unverified.",
+      "Inline invocation rollback and failed-call cleanup have controlled EE coverage. Managed exception trapping and synthetic native SEH unwinding pass a Windows-x64 NativeAOT probe, but real EE-thrown failures and successful nested inline compilation remain unexercised. fgInline stays disabled pending expression folding and its remaining closure.",
       "The seven-method corpus contains no EH or pinned-local cases and establishes neither phase nor codegen parity."
     ]
   },
@@ -251,6 +260,11 @@
       "commit": "0540bd75ec47869c664cc90af2896fc5402e85c0",
       "indexCommit": "2f6b37b429dba109f923b99692354ac2ba184235",
       "ref": "refs/porting/snapshots/2026-09-23-native-ledger-inline-closure"
+    },
+    "inlineInvocationSupportNativeResidual": {
+      "commit": "296858b6a86f5fa5a792189a2a09f0de7a6db4db",
+      "indexCommit": "e7b9bf7aa003e49d49816cc6feede90ef8e4da89",
+      "ref": "refs/porting/snapshots/2026-09-23-native-ledger-inline-invocation"
     }
   },
   "sourceMap": [
