@@ -757,6 +757,24 @@ public sealed class GenTreeCall : GenTree
 
     public unsafe bool IsHelperCall(CorInfoHelpFunc helperFunc) => IsHelperCall(Compiler.eeFindHelper(helperFunc));
 
+    /// <summary>Returns true if this call is pure.</summary>
+    /// <param name="compiler">the compiler context.</param>
+    /// <returns>True if the call is pure; false otherwise.</returns>
+    /// <remarks>
+    ///   <para>For now, this uses the same definition of "pure" that is that used by HelperCallProperties: a pure call does not read or write any aliased (e.g. heap) memory or have other global side effects (e.g. class constructors, finalizers), but is allowed to throw an exception.</para>
+    ///   <para>Recognizes known pure helpers and the special GetTypeFromHandle intrinsic.</para>
+    /// </remarks>
+    public bool IsPure(Compiler compiler)
+    {
+        if (IsHelperCall())
+        {
+            return HelperNum.IsPure;
+        }
+
+        // If needed, we can annotate other special intrinsic methods as pure as well.
+        return IsSpecialIntrinsic(compiler, NI_System_Type_GetTypeFromHandle);
+    }
+
     public bool IsSpecialIntrinsic() => (_callMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) != 0;
 
     /// <summary>Determine if this GT_CALL node is a specific intrinsic.</summary>

@@ -35,7 +35,7 @@ public sealed class GenTreeLclFld : GenTreeLclVarCommon
 #endif
 
     /// <summary>offset into the variable to access</summary>
-    public ushort LclOffs
+    public new ushort LclOffs
     {
         get
         {

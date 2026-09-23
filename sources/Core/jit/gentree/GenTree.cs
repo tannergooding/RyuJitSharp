@@ -397,6 +397,28 @@ public partial class GenTree
 
     public bool IsFloatNegativeZero => _oper.IsCnsFltOrDbl && AsDblCon().IsNegativeZero;
 
+    /// <summary>Check whether the operation contains an implicit indirection.</summary>
+    public bool IsImplicitIndir => _oper switch {
+        GT_LOCKADD => true,
+        GT_XORR => true,
+        GT_XAND => true,
+        GT_XADD => true,
+        GT_XCHG => true,
+        GT_CMPXCHG => true,
+        GT_BLK => true,
+        GT_STORE_BLK => true,
+        GT_BOX => true,
+        GT_ARR_ELEM => true,
+        GT_ARR_LENGTH => true,
+        GT_MDARR_LENGTH => true,
+        GT_MDARR_LOWER_BOUND => true,
+        GT_INTRINSIC => AsIntrinsic().IntrinsicName is NI_System_Object_GetType,
+#if FEATURE_HW_INTRINSICS
+        GT_HWINTRINSIC => AsHWIntrinsic().IsMemoryLoadOrStore,
+#endif
+        _ => false,
+    };
+
     public bool IsIndirAddrMode
     {
         get
@@ -1998,7 +2020,7 @@ public partial class GenTree
         _oper = oper;
     }
 
-    public VisitResult VisitLocalDefNodes(Compiler comp, GenTreeVisitorFunc visitor)
+    public VisitResult VisitPhysicalLocalDefNodes(Compiler comp, GenTreeVisitorFunc visitor)
     {
         if (_oper is GT_STORE_LCL_VAR)
         {
@@ -2011,6 +2033,12 @@ public partial class GenTree
         else if (_oper is GT_CALL)
         {
             var call = AsCall();
+            var asyncResumedLclAddr = comp.gtCallGetDefinedAsyncResumedLclAddr(call);
+            if ((asyncResumedLclAddr is not null) && (visitor(asyncResumedLclAddr) is VisitResult.Abort))
+            {
+                return VisitResult.Abort;
+            }
+
             var lclAddr = comp.gtCallGetDefinedRetBufLclAddr(call);
 
             if (lclAddr is not null)

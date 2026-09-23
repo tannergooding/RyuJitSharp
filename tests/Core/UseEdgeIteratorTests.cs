@@ -16,6 +16,85 @@ internal static unsafe class UseEdgeIteratorTests
     [TestCase(false, true)]
     [TestCase(true, false)]
     [TestCase(true, true)]
+    public static void CallDefinitionsFollowOperandReads(bool retBuffer, bool abort)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [
+                new LclVarDsc { Type = Globals.TYP_I_IMPL },
+                new LclVarDsc { Type = TYP_INT },
+                new LclVarDsc { Type = TYP_INT },
+            ];
+            compiler.lvaCount = compiler.lvaTable.Length;
+#if DEBUG
+            compiler.lvaTable[0].IsDefinedViaAddress = true;
+            compiler.lvaTable[1].IsDefinedViaAddress = true;
+#endif
+            var resumed = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
+            var ret = compiler.gtNewLclAddrNode(TYP_BYREF, 1, 0);
+            var read = compiler.gtNewLclvNode(TYP_INT, 2);
+            var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+            call.SetIsAsync(default);
+            if (retBuffer)
+            {
+                call._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_RETBUFFARG_LCLOPT;
+                _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(ret).WithWellKnownArg(WellKnownArg.RetBuffer));
+            }
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(resumed).WithWellKnownArg(WellKnownArg.AsyncResumedDef));
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(read));
+
+            List<GenTree> definitions = [];
+            var result = call.VisitPhysicalLocalDefNodes(compiler, node => {
+                definitions.Add(node);
+                return abort ? GenTree.VisitResult.Abort : GenTree.VisitResult.Continue;
+            });
+            GenTree[] expectedDefinitions = retBuffer && !abort ? [resumed, ret] : [resumed];
+            Assert.That(result, Is.EqualTo(abort ? GenTree.VisitResult.Abort : GenTree.VisitResult.Continue));
+            Assert.That(definitions, Is.EqualTo(expectedDefinitions));
+
+            var statement = new Statement(call, 1);
+            var sequencer = new LocalSequencer(compiler);
+            sequencer.Sequence(statement);
+            GenTree[] expectedLocals = retBuffer ? [read, resumed, ret] : [read, resumed];
+            List<GenTree> locals = [];
+            for (var node = statement.TreeListBegin; node is not null; node = node.Next)
+            {
+                Assert.That(locals.Count, Is.LessThan(expectedLocals.Length));
+                locals.Add(node);
+            }
+            Assert.That(locals, Is.EqualTo(expectedLocals));
+            Assert.That(statement.TreeListEnd, Is.SameAs(expectedLocals[^1]));
+            Assert.That(call.Next, Is.Null);
+        });
+    }
+
+    [Test]
+    public static void RestoredLirUtilitiesFindUsesAndValidateLinks()
+    {
+        WithCompiler(compiler => {
+            var first = compiler.gtNewIconNode(TYP_INT, 1);
+            var second = compiler.gtNewIconNode(TYP_INT, 2);
+            var user = new GenTreeOp(GT_ADD, TYP_INT, first, second);
+            first.Next = second;
+            second.Prev = first;
+            second.Next = user;
+            user.Prev = second;
+            var range = new LIR.Range(first, user);
+
+            Assert.That(range.TryGetUse(first, out var use), Is.True);
+            Assert.That(use.Def(), Is.SameAs(first));
+            Assert.That(use.User(), Is.SameAs(user));
+            Assert.That(range.TryGetUse(user, out _), Is.False);
+            Globals.CheckDoublyLinkedList(first);
+#if DEBUG
+            Assert.That(range.CheckLir(compiler), Is.True);
+#endif
+        });
+    }
+
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
     public static void RecursiveExecutionOrderPreservesOperandSlots(bool reverse, bool replace)
     {
         WithCompiler(compiler => {

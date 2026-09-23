@@ -3,6 +3,9 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+
 namespace RyuJitSharp;
 
 public partial class LIR
@@ -22,6 +25,134 @@ public partial class LIR
             : base(firstNode, lastNode)
         {
         }
+
+#if DEBUG
+        /// <summary>Performs a set of correctness checks on the LIR contained in this range.</summary>
+        /// <param name="compiler">A compiler context.</param>
+        /// <param name="checkUnusedValues"></param>
+        /// <returns>'true' if the LIR for the specified range is legal.</returns>
+        public bool CheckLir(Compiler compiler, bool checkUnusedValues = false)
+        {
+            // This method checks the following properties:
+            // - Defs are singly-used
+            // - Uses follow defs
+            // - Uses are correctly linked into the block
+            // - Nodes that do not produce values are not used
+            // - Only LIR nodes are present in the block
+            //
+            // The first four properties are verified by walking the range's LIR in execution order,
+            // inserting defs into a set as they are visited, and removing them as they are used. The
+            // different cases are distinguished only when an error is detected.
+
+            if (IsEmpty)
+            {
+                // Nothing more to check.
+                return true;
+            }
+
+            CheckDoublyLinkedList(FirstNode);
+
+            var unusedDefs = new Dictionary<GenTree, bool>(capacity: 32);
+            var previous = null as GenTree;
+
+            foreach (var node in this)
+            {
+                // Verify that the node is allowed in LIR.
+                assert(node.IsLirOp);
+
+                if (node.IsContained)
+                {
+                    assert(node.CanBeContained);
+                    assert(!node.IsUnusedValue);
+                }
+
+                // Some nodes should never be marked unused, as they must be contained in the backend.
+                // These may be marked as unused during dead code elimination traversal, but they *must* be subsequently removed.
+                assert(!node.IsUnusedValue || (node.Oper is not GT_FIELD_LIST and not GT_INIT_VAL));
+
+                // Verify that the REVERSE_OPS flag is not set. NOTE: if we ever decide to reuse the bit assigned to
+                // GTF_REVERSE_OPS for an LIR-only flag we will need to move this check to the points at which we
+                // insert nodes into an LIR range.
+                assert((node.Flags & GTF_REVERSE_OPS) == 0);
+
+                // TODO: validate catch arg stores
+
+                foreach (ref var useEdge in node.UseEdges)
+                {
+                    var def = useEdge;
+
+                    assert(!checkUnusedValues || !def.IsUnusedValue, "operands should never be marked as unused values");
+
+                    if (!def.IsValue)
+                    {
+                        // Stack arguments do not produce a value, but they are considered children of the call.
+                        // It may be useful to remove these from being call operands, but that may also impact
+                        // other code that relies on being able to reach all the operands from a call node.
+                        // The argument of a JTRUE doesn't produce a value (just sets a flag).
+                        assert(((node.Oper is GT_CALL) && (def.Oper is GT_PUTARG_STK)) ||
+                               ((node.Oper is GT_JTRUE) && (def.Type is TYP_VOID) && ((def.Flags & GTF_SET_FLAGS) is not 0)));
+                    }
+                    else if (!unusedDefs.Remove(def, out var _))
+                    {
+                        // First, scan backwards and look for a preceding use.
+                        for (var prev = node; prev is not null; prev = prev.Prev)
+                        {
+                            // TODO: dump the users and the def
+                            ref var earlierUseEdge = ref prev.GetUseRefOrNullRef(def);
+                            assert(Unsafe.IsNullRef(in earlierUseEdge) || Unsafe.AreSame(in earlierUseEdge, in useEdge), "found multiply-used LIR node");
+                        }
+
+                        // The def did not precede the use. Check to see if it exists in the block at all.
+                        for (var next = node.Next; next is not null; next = next.Next)
+                        {
+                            // TODO: dump the user and the def
+                            assert(next != def, "found def after use");
+                        }
+
+                        // The def might not be a node that produces a value.
+                        assert(def.IsValue, "found use of a node that does not produce a value");
+
+                        // By this point, the only possibility is that the def is not threaded into the LIR sequence.
+                        NO_WAY("found use of a node that is not in the LIR sequence");
+                    }
+                }
+
+                if (node.IsValue)
+                {
+                    assert(unusedDefs.TryAdd(node, true));
+                }
+
+                previous = node;
+            }
+
+            assert(previous == _lastNode);
+
+            // At this point the unusedDefs map should contain only unused values.
+            if (checkUnusedValues)
+            {
+                foreach (var kvp in unusedDefs)
+                {
+                    var node = kvp.Key;
+
+                    if (!node.IsUnusedValue)
+                    {
+                        JITDUMP($"[{node.TreeId:D6}] is an unmarked unused value\n");
+                        NO_WAY("Found an unmarked unused value");
+                    }
+
+                    if (node.IsContained)
+                    {
+                        JITDUMP($"[{node.TreeId:D6}] is a contained node with no user\n");
+                        NO_WAY("A contained node should have a user");
+                    }
+                }
+            }
+
+            var checkLclVarSemanticsHelper = new CheckLclVarSemanticsHelper(compiler, this, unusedDefs);
+            assert(checkLclVarSemanticsHelper.Check());
+            return true;
+        }
+#endif
 
         /// <summary>Deletes a node from this range.</summary>
         /// <param name="node">The node to delete. Must be part of this range.</param>
@@ -452,6 +583,37 @@ public partial class LIR
 
             Remove(range);
             return new Range(range.FirstNode, range.LastNode);
+        }
+
+        /// <summary>Try to find the use for a given node.</summary>
+        /// <param name="node">The node for which to find the corresponding use.</param>
+        /// <param name="use">The use of the corresponding node, if any. Invalid if this method returns false.</param>
+        /// <returns>Return Value: Returns true if a use was found; false otherwise.</returns>
+        public bool TryGetUse(GenTree node, out Use use)
+        {
+#if DEBUG
+            assert(Contains(node));
+#endif
+
+            // Don't bother looking for uses of nodes that are not values.
+            // If the node is the last node, we won't find a use (and we would
+            // end up creating an illegal range if we tried).
+            if (node.IsValue && !node.IsUnusedValue && (node != LastNode))
+            {
+                foreach (var potentialUser in new ReadOnlyRange(node.Next, _lastNode))
+                {
+                    ref var edge = ref potentialUser.GetUseRefOrNullRef(node);
+
+                    if (!Unsafe.IsNullRef(in edge))
+                    {
+                        use = new Use(this, ref edge, potentialUser);
+                        return true;
+                    }
+                }
+            }
+
+            use = new Use();
+            return false;
         }
 
         /// <summary>Helper function to finalize InsertAfter processing: link the range to insertionPoint. gtNext/gtPrev links between first and last are already set.</summary>

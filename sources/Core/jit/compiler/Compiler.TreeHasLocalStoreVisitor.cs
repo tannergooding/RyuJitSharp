@@ -38,7 +38,7 @@ public partial class Compiler
             var compiler = _compiler;
             var lclNum = _lclNum;
 
-            var visitResult = node.VisitLocalDefNodes(compiler, (lclDefNode) => {
+            var visitResult = node.VisitPhysicalLocalDefNodes(compiler, (lclDefNode) => {
                 var lclDefNodeNum = lclDefNode.AsLclVarCommon().LclNum;
 
                 if (lclDefNodeNum == lclNum)

@@ -21,6 +21,27 @@ public partial class Compiler
     // TODO: Port Compiler.gtClearColonCond
     // public static unsafe fgWalkPreFn gtClearColonCond;
 
+    public GenTreeLclVarCommon? gtCallGetDefinedAsyncResumedLclAddr(GenTreeCall call)
+    {
+        if (!call.IsAsync)
+        {
+            return null;
+        }
+
+        var arg = call.Args.FindWellKnownArg(WellKnownArg.AsyncResumedDef);
+        if (arg is null)
+        {
+            return null;
+        }
+
+        var node = arg.Node;
+#if DEBUG
+        assert((node.Oper is GT_LCL_ADDR) && lvaGetDesc(node.AsLclVarCommon().LclNum).IsDefinedViaAddress);
+#endif
+
+        return node.AsLclVarCommon();
+    }
+
     /// <summary>Get the tree corresponding to the address of the retbuf that this call defines.</summary>
     /// <param name="call">The call node</param>
     /// <returns>A tree representing the address of a local.</returns>

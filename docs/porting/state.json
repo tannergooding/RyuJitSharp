@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Integrate the protected C# WIP by function against the reconciled target, preserving current changes and the saved index/worktree distinction. Start with the saved LIR/visitor/alias-classifier utilities, then reconcile their local-definition and rationalizer dependencies without activating incomplete phases. Both native trees now use the target revision. Existing importer/call and intrinsic deltas, including Half, primitive conversion/fallback contracts, multidimensional stores, spill/localloc effects and async JMP, are reconciled. New custom-awaiter/continuation-member and other unported APIs remain in the native residual view. Use raw upstream deltas rather than expanded deletion conflicts. After WIP integration, prioritize required minopts phases toward code generation. The first PGO dump gap remains pending.",
+    "nextAction": "Continue protected C# WIP integration. LIR validation/use lookup, doubly linked-list checking, the node-level alias classifier, local sequencing, and their node accessors are restored; physical local definitions now include async-resumed definitions before return buffers. Next reconcile logical local definitions and the complete alias sets, then the remaining saved inlining/rationalization bodies and support-file moves. Do not activate incomplete phases. Both native trees use the target revision; synchronization uses raw upstream deltas, preserving prior deletions and unported new APIs. After WIP integration, prioritize required minopts phases toward code generation. The first PGO dump gap remains pending.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -24,8 +24,8 @@
       "testSourcesPresent": true,
       "writerRegressionCases": 16,
       "writerRegressionConfigurations": ["Debug", "Release"],
-      "targetFocusedTestsDebug": 422,
-      "targetFocusedTestsRelease": 338,
+      "targetFocusedTestsDebug": 427,
+      "targetFocusedTestsRelease": 343,
       "targetFocusedTestsSkipped": 0,
       "callIntrinsicSpotChecks": {
         "debugPassed": 81,
@@ -39,6 +39,13 @@
         "releasePassed": 88,
         "skipped": 0,
         "newLog2AndTraversalCases": 6,
+        "nativeAotRecaptured": false
+      },
+      "savedWipUtilitySpotChecks": {
+        "debugPassed": 69,
+        "releasePassed": 69,
+        "skipped": 0,
+        "newCases": 5,
         "nativeAotRecaptured": false
       },
       "nativeAotPublish": "passed-at-upstream-reconciliation-milestone",
