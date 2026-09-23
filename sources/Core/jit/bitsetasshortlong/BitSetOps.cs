@@ -340,4 +340,46 @@ public struct BitSetOps<TEnv, TBitSetTraits>
 
     public static nint[] MakeFull(TEnv env)
         => MakeFullArrayBits(env);
+
+    public static bool VisitBits(TEnv env, ReadOnlySpan<nint> bs, Func<int, bool> func)
+    {
+        bs = bs[..TBitSetTraits.GetArrSize(env)];
+        var bitsPerWord = Unsafe.SizeOf<nint>() * 8;
+        for (var i = 0; i < bs.Length; i++)
+        {
+            var bits = bs[i];
+            while (bits != 0)
+            {
+                var index = (int)nint.TrailingZeroCount(bits);
+                if (!func((i * bitsPerWord) + index))
+                {
+                    return false;
+                }
+                bits ^= (nint)1 << index;
+            }
+        }
+
+        return true;
+    }
+
+    public static bool VisitBitsReverse(TEnv env, ReadOnlySpan<nint> bs, Func<int, bool> func)
+    {
+        bs = bs[..TBitSetTraits.GetArrSize(env)];
+        var bitsPerWord = Unsafe.SizeOf<nint>() * 8;
+        for (var i = bs.Length; i != 0; i--)
+        {
+            var bits = bs[i - 1];
+            while (bits != 0)
+            {
+                var index = bitsPerWord - 1 - (int)nint.LeadingZeroCount(bits);
+                if (!func(((i - 1) * bitsPerWord) + index))
+                {
+                    return false;
+                }
+                bits ^= (nint)1 << index;
+            }
+        }
+
+        return true;
+    }
 }

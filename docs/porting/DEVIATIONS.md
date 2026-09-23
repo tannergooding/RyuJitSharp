@@ -71,6 +71,14 @@ regular predecessor chain; SSA stress retains native in-place link shuffling.
 Second-pass filter successor visitation is shared with DFS via a managed
 callback, preserving region order and early abort (B071).
 
+Natural-loop descriptors use managed references, ordered edge lists exposed as
+read-only spans, and the existing native-word bit vectors. Discovery retains
+DFS/header order, exceptional predecessors, backward worklist order and
+parent/child/sibling identity. Loop and bit visitors use managed callbacks with
+the same abort contract; each bit-vector word is captured before callbacks,
+while later words are read when reached. Header-relative containment rejects
+negative indices without checked-conversion exceptions (B072).
+
 Managed error-trap callbacks capture exceptions before leaving their
 `UnmanagedCallersOnly` shim. An owned `GCHandle` keeps the action and captured
 exception alive until the native trap returns. The regular trap reports
