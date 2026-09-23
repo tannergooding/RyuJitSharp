@@ -12,6 +12,26 @@ continue. A milestone does not require a conversational stop. Pause for an
 explicit user request, an unresolved decision requiring approval, a publication
 conflict, or a blocker that cannot be safely resolved.
 
+## 2026-09-23: Fixed-width VN constants
+
+**Commit:** `c068366`.
+
+**Result:** Fixed-vector and mask interning/retrieval, bounded generic constant
+import, zero-by-type, and widening-cast normalization. All five vector widths
+preserve owned bit-exact payloads; SIMD12 retrieval zeroes inactive bytes.
+Eighteen complete Windows-x64 native definitions retired.
+
+**Evidence:** 108 Debug / 106 Release selected cases passed, zero skipped.
+Coverage includes vector ownership and padding, signed/unsigned imports,
+signed zero, handles, mask bits and unsigned widening restrictions.
+
+**Frontier:** General unary VN expressions and node-wide assertion generation
+remain pending. ARM64 scalable/mask storage is still explicitly NYI. The
+unrelated existing mask `AllBitsSet` defect is recorded as B096, not changed.
+
+**Next:** Complete unary VN expressions with native folding, known array
+lengths, exception-value composition and field-sequence identity.
+
 ## 2026-09-23: General assertion creation and branch facts
 
 **Commit:** `f56d1b4`.
