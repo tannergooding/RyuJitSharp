@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Continue protected C# WIP integration. Inline invocation, block splicing, argument/local initialization and async frame returns are integrated; managed error recovery and JIT/EE boolean results are corrected (B061/B062). Structural comparison and HWI initialization/classification now support the folding closure. Port constant, special, conditional and call folding (B054), including global-morph assertion bookkeeping, before activating the remaining fgInline closure; then continue rationalization. Both native trees use the target revision. After WIP integration, prioritize required minopts phases toward code generation. The first PGO dump gap remains pending.",
+    "nextAction": "Resolve the cross-kind node mutation design decision (B064) before constant folding: native BashToConst preserves node identity, but managed operators/constants have different CLR layouts. Investigate audited replacement-node/alias updates versus a stable-identity mutable payload; the existing inline-only rewrite is not general. Structural comparison and HWI initialization/classification are committed and verified. After the decision, complete folding (B054), global-morph assertion bookkeeping and the remaining fgInline closure; then resume rationalization. Both native trees use the target revision. The first PGO dump gap remains pending.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -283,6 +283,11 @@
       "commit": "296858b6a86f5fa5a792189a2a09f0de7a6db4db",
       "indexCommit": "e7b9bf7aa003e49d49816cc6feede90ef8e4da89",
       "ref": "refs/porting/snapshots/2026-09-23-native-ledger-inline-invocation"
+    },
+    "foldingPrerequisiteNativeResidual": {
+      "commit": "bfe10dd92e5a2f0d24883b0a31e88776d7860eb2",
+      "indexCommit": "e8922ef01198b5550e9c98b00bbe61b3a2fb289f",
+      "ref": "refs/porting/snapshots/2026-09-23-native-ledger-folding-prerequisites"
     }
   },
   "sourceMap": [
