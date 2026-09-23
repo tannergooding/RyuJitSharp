@@ -527,5 +527,34 @@ public partial class Compiler
             return new(optAssertionKind.OAK_LT_UN, new(comp, optOp1Kind.O1K_VN, idxVN),
                 new(comp, optOp2Kind.O2K_VN_ADD_CNS, lenVN, isVNNeverNegative: true));
         }
+
+        public static AssertionDsc CreateInt32ConstantVNAssertion(Compiler comp, ValueNum op1VN, ValueNum op2VN, bool equals)
+        {
+            assert((op1VN != ValueNumStore.NoVN) && (op2VN != ValueNumStore.NoVN));
+            assert(comp.vnStore is not null);
+            assert(comp.vnStore.IsVNInt32Constant(op2VN) && !comp.vnStore.IsVNHandle(op2VN));
+            assert(!comp.optLocalAssertionProp);
+            return new(equals ? optAssertionKind.OAK_EQUAL : optAssertionKind.OAK_NOT_EQUAL,
+                new(comp, optOp1Kind.O1K_VN, op1VN),
+                new(comp, optOp2Kind.O2K_CONST_INT, op2VN, iconVal: comp.vnStore.ConstantValue<int>(op2VN)));
+        }
+
+        public static AssertionDsc CreateSubtype(Compiler comp, ValueNum objVN, ValueNum typeHndVN, bool exact)
+        {
+            assert(comp.vnStore is not null);
+            assert((objVN != ValueNumStore.NoVN) && comp.vnStore.IsVNTypeHandle(typeHndVN));
+            return new(optAssertionKind.OAK_EQUAL, new(comp, exact ? optOp1Kind.O1K_EXACT_TYPE : optOp1Kind.O1K_SUBTYPE, objVN),
+                new(comp, optOp2Kind.O2K_CONST_INT, typeHndVN, iconVal: comp.vnStore.CoercedConstantValue<nint>(typeHndVN)));
+        }
+
+        public static AssertionDsc CreateConstantBound(Compiler comp, VNFunc relop, ValueNum op1VN, ValueNum cnsVN)
+        {
+            assert(op1VN != ValueNumStore.NoVN);
+            assert(comp.vnStore is not null);
+            var isConstant = comp.vnStore.IsVNIntegralConstant(cnsVN, out nint constant);
+            assert(isConstant);
+            return new(FromVNFunc(relop), new(comp, optOp1Kind.O1K_VN, op1VN),
+                new(comp, optOp2Kind.O2K_CONST_INT, cnsVN, iconVal: constant));
+        }
     }
 }

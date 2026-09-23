@@ -129,6 +129,13 @@ internal static unsafe class NaturalLoopTests
             var outer = loops.GetLoopByIndex(0);
             var first = loops.GetLoopByIndex(1);
             var second = loops.GetLoopByIndex(2);
+            var map = BlockToNaturalLoopMap.Build(loops);
+            Assert.That(map.GetLoop(blocks[0]), Is.Null);
+            Assert.That(map.GetLoop(blocks[1]), Is.SameAs(outer));
+            Assert.That(map.GetLoop(blocks[2]), Is.SameAs(first));
+            Assert.That(map.GetLoop(blocks[3]), Is.SameAs(second));
+            Assert.That(map.GetLoop(blocks[4]), Is.SameAs(outer));
+            Assert.That(map.GetLoop(blocks[5]), Is.Null);
             Assert.That(outer.NumLoopBlocks(), Is.EqualTo(4));
             Assert.That(outer.Child, Is.SameAs(first));
             Assert.That(first.Sibling, Is.SameAs(second));

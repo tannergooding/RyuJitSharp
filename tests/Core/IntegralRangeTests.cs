@@ -291,7 +291,7 @@ internal static unsafe class IntegralRangeTests
     public static void ValueNumberAnalysisFailsExplicitlyWhenRequired()
     {
         WithCompiler(compiler => {
-            compiler.vnStore = new ValueNumStore();
+            compiler.vnStore = new ValueNumStore(compiler);
             var unknown = compiler.gtNewUnaryNode(GT_NEG, TYP_INT, compiler.gtNewLclvNode(TYP_INT, 0));
             _ = Assert.Throws<NotImplementedException>(() => unknown.IsNeverNegative(compiler));
             Assert.That(compiler.gtNewIconNode(TYP_INT, -1).IsNeverNegative(compiler), Is.False);

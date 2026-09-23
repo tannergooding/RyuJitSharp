@@ -12,25 +12,25 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Completed after fe43b6a: dependent-assertion invalidation, local subrange/constant queries, small-constant truncation and copy-propagation access-width checks. Preserve this boundary until the next capability is selected.",
+      "scope": "Implement the VN storage/query slice required to complete assertion insertion: native chunk numbering, scalar constants and handles, function views and non-folding binary interning, integral-constant recognition, and assertion duplicate/dependency registration. Include the missing block-to-loop map because VNForExpr must preserve loop provenance; reuse existing loop discovery rather than omit that path.",
       "doneWhen": [
-        "All six native functions preserve their local/field dependency, lookup-order and access-width contracts.",
-        "The combined focused checks pass and implementation, native retirement and checkpoint form a logical commit.",
-        "No assertion generation or morph phase is activated before its remaining prerequisites exist."
+        "VN allocation and lookup preserve reserved identifiers, 64-value chunks, constant bit identity and function argument ownership.",
+        "optAddAssertion and complementary creation work for both local and global assertions, including VN-plus-constant dependency registration.",
+        "The selected Debug/Release checks pass and complete functions are committed with their native retirement and checkpoint."
       ],
       "validation": [
-        "Build and run the combined AssertionTests and BitVecTests selection in Debug and Release.",
-        "Extend the existing fixture only for parent/field invalidation of both active sets and ordered local queries; no separate helper fixtures or before/after replay.",
-        "No full suite or NativeAOT recapture unless a concrete failure or newly reachable path requires it."
+        "One focused VN storage/insertion selection in Debug and Release, including the existing assertion and integral-range checks affected by constructor changes.",
+        "Check chunk rollover/reserved IDs, floating bit identity and insertion dependency registration; no per-helper matrices or before/after replay.",
+        "No full suite or NativeAOT recapture unless a concrete failure or newly reachable compiler phase requires it."
       ],
       "deferred": [
-        "VN expression storage and VN-dependent assertion factories/insertion.",
+        "VN folding/evaluation, phi traversal, map selection, non-negativity reasoning and the value-numbering phase.",
         "Assertion generation and fgMorphTreeDone completion.",
         "Remaining integer/comparison/conditional/HWI folding and fgInline activation.",
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Assertion representation/table support and local invalidation/queries are complete (B087/B089). Select the next bounded required morph/folding capability and replace checkpoint.activeBatch before editing. Assertion insertion and generation require the missing VN expression store; do not replace them with local-only implementations or silently expand into all VN support. fgAssertionGen and fgMorphTreeDone remain unported; do not substitute SetMorphed alone. Keep optional fgInline activation behind its actual prerequisites, and preserve the five established import-prefix matches without recapturing an unchanged frontier.",
+    "nextAction": "VN storage and complete local/global assertion insertion are implemented (B090). Continue through the remaining VN non-negativity query closure, including phi traversal and intrinsic decoding, then finish the dependent descriptor factories. Replace checkpoint.activeBatch with that explicit boundary before editing. General VN evaluation, assertion generation, fgMorphTreeDone and optional fgInline activation remain pending; do not substitute SetMorphed or local-only behavior. Preserve the five established import-prefix matches without recapturing an unchanged frontier.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -450,6 +450,18 @@
         "debugTests": "artifacts\\local-assertions-debug.trx",
         "releaseTests": "artifacts\\local-assertions-release.trx"
       },
+      "vnStorageAndInsertion": {
+        "managedSourceCommit": "deca41dbc88b42b88ef2b9f1b68ec5a5f4216e16",
+        "debugPassed": 107,
+        "releasePassed": 103,
+        "skipped": 0,
+        "nativeDefinitionsRetired": 35,
+        "nativeRepresentationTypesRetired": 2,
+        "nativeAotRecaptured": false,
+        "phaseActivated": false,
+        "debugTests": "artifacts\\vn-storage-debug.trx",
+        "releaseTests": "artifacts\\vn-storage-release.trx"
+      },
       "nativeAotPublish": "passed-after-integral-ranges",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "five-of-nine-import-prefixes-equal-remaining-inline-candidate-differences",
@@ -668,6 +680,15 @@
       "commit": "bece5caf680755595ba28c9e6d484ab6275996a4",
       "indexCommit": "3fd0c990a65a1dc3190e254879a872c4d15a6d57",
       "ref": "refs/porting/snapshots/native-ledger-local-assertions"
+    },
+    "vnStorageManagedSource": {
+      "commit": "deca41dbc88b42b88ef2b9f1b68ec5a5f4216e16",
+      "ref": "refs/porting/snapshots/vn-storage-source"
+    },
+    "vnStorageNativeResidual": {
+      "commit": "78f94c2785cdef468089e938eb7dda35a10937cc",
+      "indexCommit": "5588f433b8c19bbee450f8e1c03a55a054f08553",
+      "ref": "refs/porting/snapshots/native-ledger-vn-storage"
     }
   },
   "sourceMap": [

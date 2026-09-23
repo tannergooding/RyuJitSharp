@@ -221,6 +221,131 @@ public partial class Compiler
         return assertion;
     }
 
+    public AssertionIndex optAddAssertion(AssertionDsc newAssertion)
+    {
+        assert(apTraits is not null);
+        var canAddNewAssertions = optAssertionCount < optMaxAssertionCount;
+        if (optLocalAssertionProp)
+        {
+            assert(newAssertion.Op1.KindIs(O1K_LCLVAR));
+            var duplicate = NO_ASSERTION_INDEX;
+            _ = BitVecOps.VisitBits(apTraits, GetAssertionDep(newAssertion.Op1.LclNum), bitIndex => {
+                var index = GetAssertionIndex((ushort)bitIndex);
+                if (optGetAssertion(index).Equals(newAssertion, vnBased: false))
+                {
+                    duplicate = index;
+                    return false;
+                }
+
+                return true;
+            });
+            if (duplicate != NO_ASSERTION_INDEX)
+            {
+                return duplicate;
+            }
+        }
+        else
+        {
+            var mayHaveDuplicates = optAssertionHasAssertionsForVN(newAssertion.Op1.VN, canAddNewAssertions);
+            if (newAssertion.Op2.KindIs(O2K_VN_ADD_CNS))
+            {
+                mayHaveDuplicates |= optAssertionHasAssertionsForVN(newAssertion.Op2.VN, canAddNewAssertions);
+                assert(vnStore is not null);
+                var addOpVN = ValueNumStore.NoVN;
+                var constant = 0;
+                if (vnStore.IsVNBinFuncWithConst(newAssertion.Op1.VN, VNF_ADD, ref addOpVN, ref constant))
+                {
+                    mayHaveDuplicates |= optAssertionHasAssertionsForVN(addOpVN, canAddNewAssertions);
+                }
+            }
+
+            if (mayHaveDuplicates)
+            {
+                for (var index = optAssertionCount; index >= 1; index--)
+                {
+                    if (optGetAssertion(index).Equals(newAssertion, vnBased: true))
+                    {
+                        return index;
+                    }
+                }
+            }
+        }
+
+        if (!canAddNewAssertions)
+        {
+            optAssertionOverflow++;
+            return NO_ASSERTION_INDEX;
+        }
+
+        // Immutable descriptors can be shared without changing native value-copy semantics.
+        optAssertionTabPrivate[optAssertionCount] = newAssertion;
+        optAssertionCount++;
+#if DEBUG
+        if (verbose)
+        {
+            jitprintf("GenTreeNode creates assertion:\n");
+            assert(optAssertionPropCurrentTree is not null);
+            assert(compCurBB is not null);
+            gtDispTree(optAssertionPropCurrentTree, topOnly: true);
+            jitprintf($"In {FMT_BB(compCurBB.bbNum)} New {(optLocalAssertionProp ? "Local" : "Global")} ");
+            optPrintAssertion(newAssertion, optAssertionCount);
+        }
+#endif
+        optCanPropLclVar |= newAssertion.CanPropLclVar;
+        if (optLocalAssertionProp)
+        {
+            BitVecOps.AddElemD(apTraits, GetAssertionDep(newAssertion.Op1.LclNum), optAssertionCount - 1);
+            if (newAssertion.Op2.KindIs(O2K_LCLVAR_COPY))
+            {
+                BitVecOps.AddElemD(apTraits, GetAssertionDep(newAssertion.Op2.LclNum), optAssertionCount - 1);
+            }
+        }
+#if DEBUG
+        optDebugCheckAssertions(optAssertionCount);
+#endif
+        return optAssertionCount;
+    }
+
+    public void optCreateComplementaryAssertion(AssertionIndex assertionIndex)
+    {
+        if (assertionIndex == NO_ASSERTION_INDEX)
+        {
+            return;
+        }
+
+        var candidate = optGetAssertion(assertionIndex);
+        if (candidate.KindIs(OAK_EQUAL))
+        {
+            if (candidate.Op1.KindIs(O1K_LCLVAR, O1K_VN))
+            {
+                if (candidate.Op2.KindIs(O2K_CONST_INT) && (candidate.Op2.IntConstant != 0) && (candidate.Op2.IntConstant != 1))
+                {
+                    return;
+                }
+
+                if (candidate.Op2.KindIs(O2K_LCLVAR_COPY))
+                {
+                    return;
+                }
+            }
+
+            if (candidate.Op1.KindIs(O1K_EXACT_TYPE, O1K_SUBTYPE))
+            {
+                return;
+            }
+
+            optMapComplementary(optAddAssertion(candidate.Reverse()), assertionIndex);
+        }
+        else if (candidate.KindIs(OAK_LT_UN, OAK_LE_UN) && candidate.Op2.KindIs(O2K_VN_ADD_CNS))
+        {
+            return;
+        }
+        else if (AssertionDsc.IsReversible(candidate.Kind))
+        {
+            optMapComplementary(optAddAssertion(candidate.Reverse()), assertionIndex);
+        }
+    }
+
     public bool optAssertionHasAssertionsForVN(ValueNum vn, bool addIfNotFound)
     {
         assert(!optLocalAssertionProp);

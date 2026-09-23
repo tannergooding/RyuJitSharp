@@ -19,6 +19,120 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class AssertionTests
 {
+    [Test]
+    public static void ValueNumberChunksRetainReservedIdsAndAllocationOrder()
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            Assert.That(store.VNIsValid(ValueNumStore.VNForNull()), Is.True);
+            Assert.That(store.VNIsValid(ValueNumStore.VNForVoid()), Is.True);
+            Assert.That(store.VNIsValid(ValueNumStore.VNForEmptyExcSet()), Is.True);
+            Assert.That(store.VNIsValid(3), Is.False);
+            Assert.That(store.VNIsValid(ValueNumStore.NoVN), Is.False);
+            Assert.That(store.IsVNConstant(ValueNumStore.VNForVoid()), Is.False);
+            for (var index = 0; index < 65; index++)
+            {
+                var vn = store.VNForIntCon(1000 + index);
+                Assert.That(vn, Is.EqualTo(64 + index));
+                Assert.That(store.ConstantValue<int>(vn), Is.EqualTo(1000 + index));
+            }
+
+            Assert.That(store.VNForIntCon(1000), Is.EqualTo(64));
+            Assert.That(store.VNForLongCon(1000), Is.EqualTo(192));
+            Assert.That(store.VNForIntCon(0), Is.EqualTo(store.VNForIntCon(0)));
+            Assert.That(store.IsVNIntegralConstant(store.VNForLongCon(-1), out uint value), Is.False);
+            Assert.That(value, Is.Zero);
+            var handle = store.VNForHandle(123, GTF_ICON_CLASS_HDL);
+            Assert.That(store.IsVNTypeHandle(handle), Is.True);
+            Assert.That(store.ConstantValue<nint>(handle), Is.EqualTo((nint)123));
+            Assert.That(store.VNForHandle(123, GTF_ICON_CLASS_HDL), Is.EqualTo(handle));
+            Assert.That(store.VNForHandle(123, GTF_ICON_OBJ_HDL), Is.Not.EqualTo(handle));
+            Assert.That(sizeof(simd12_t), Is.EqualTo(12));
+        });
+    }
+
+    [Test]
+    public static void ValueNumberFloatingConstantsPreserveBitIdentity()
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            Assert.That(store.VNForDoubleCon(0.0), Is.Not.EqualTo(store.VNForDoubleCon(-0.0)));
+            Assert.That(store.VNForFloatCon(0.0f), Is.Not.EqualTo(store.VNForFloatCon(-0.0f)));
+            var nan = BitConverter.Int64BitsToDouble(0x7ff8000000000001);
+            var vn = store.VNForDoubleCon(nan);
+            Assert.That(store.VNForDoubleCon(nan), Is.EqualTo(vn));
+            Assert.That(store.VNForDoubleCon(BitConverter.Int64BitsToDouble(0x7ff8000000000002)), Is.Not.EqualTo(vn));
+            Assert.That(BitConverter.DoubleToInt64Bits(store.ConstantValue<double>(vn)), Is.EqualTo(0x7ff8000000000001));
+            Assert.That(BitConverter.DoubleToInt64Bits(store.ConstantValue<double>(store.VNForDoubleCon(-0.0))), Is.EqualTo(long.MinValue));
+        });
+    }
+
+    [Test]
+    public static void GlobalInsertionRegistersBothBoundsAndUnderlyingAdditionOperand()
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var variable = store.VNForExpr(null, TYP_INT);
+            var bound = store.VNForExpr(null, TYP_INT);
+            var constant = store.VNForIntCon(5);
+            var sum = store.VNForFuncNoFolding(TYP_INT, VNFunc.VNF_ADD, variable, constant);
+            Assert.That(store.VNForFuncNoFolding(TYP_INT, VNFunc.VNF_ADD, variable, constant), Is.EqualTo(sum));
+            var app = new VNFuncApp();
+            Assert.That(store.GetVNFunc(sum, ref app), Is.True);
+            for (var index = 0; index < 512; index++)
+            {
+                _ = store.VNForExpr(null, TYP_INT);
+            }
+
+            Assert.That(app.GetArg(0), Is.EqualTo(variable));
+            Assert.That(app.GetArg(1), Is.EqualTo(constant));
+            var reversed = store.VNForFuncNoFolding(TYP_INT, VNFunc.VNF_ADD, constant, variable);
+            Assert.That(reversed, Is.Not.EqualTo(sum));
+            var operand = ValueNumStore.NoVN;
+            var addend = 0;
+            Assert.That(store.IsVNBinFuncWithConst(reversed, VNFunc.VNF_ADD, ref operand, ref addend), Is.True);
+            Assert.That(operand, Is.EqualTo(variable));
+            Assert.That(addend, Is.EqualTo(5));
+            Assert.That(store.IsVNBinFuncWithConst(reversed, VNFunc.VNF_SUB, ref operand, ref addend), Is.False);
+            Assert.That(operand, Is.EqualTo(variable));
+            Assert.That(addend, Is.EqualTo(5));
+            Assert.That(store.GetVNFunc(constant, ref app), Is.False);
+            Assert.That(app.GetArg(0), Is.EqualTo(variable));
+            var bounds = AssertionDsc.CreateNoThrowArrBnd(compiler, sum, bound);
+            var assertion = compiler.optAddAssertion(bounds);
+            Assert.That(compiler.optAddAssertion(bounds), Is.EqualTo(assertion));
+            Assert.That(compiler.optAssertionHasAssertionsForVN(variable, false), Is.True);
+            Assert.That(compiler.optAssertionHasAssertionsForVN(sum, false), Is.True);
+            Assert.That(compiler.optAssertionHasAssertionsForVN(bound, false), Is.True);
+            var nonNull = compiler.optAddAssertion(AssertionDsc.CreateVNNonNullAssertion(compiler, store.VNForExpr(null, TYP_REF)));
+            compiler.optCreateComplementaryAssertion(nonNull);
+            Assert.That(compiler.optFindComplementary(nonNull), Is.Not.Zero);
+        }, local: false);
+    }
+
+    [Test]
+    public static void LocalInsertionDeduplicatesAtCapacityAndResetsCopyDependencies()
+    {
+        WithCompiler(compiler => {
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            var copy = AssertionDsc.CreateLclvarCopy(compiler, 0, 1, true);
+            Assert.That(compiler.optAddAssertion(copy), Is.EqualTo(1));
+            Assert.That(BitOps.IsMember(traits, compiler.GetAssertionDep(1), 0), Is.True);
+            for (var index = 1; index < 64; index++)
+            {
+                Assert.That(compiler.optAddAssertion(IntAssertion(compiler, index)), Is.EqualTo(index + 1));
+            }
+
+            Assert.That(compiler.optAddAssertion(IntAssertion(compiler, 63)), Is.EqualTo(64));
+            Assert.That(compiler.optAddAssertion(IntAssertion(compiler, 64)), Is.Zero);
+            compiler.optAssertionReset();
+            Assert.That(compiler.AssertionCount, Is.Zero);
+            Assert.That(BitOps.IsEmpty(traits, compiler.GetAssertionDep(0)), Is.True);
+            Assert.That(BitOps.IsEmpty(traits, compiler.GetAssertionDep(1)), Is.True);
+        }, crossBlock: false);
+    }
+
     [TestCase(0, false, 16)]
     [TestCase(1, false, 20)]
     [TestCase(3, false, 15)]
@@ -258,6 +372,9 @@ internal static unsafe class AssertionTests
         SetField(config, "_jitEnableCrossBlockLocalAssertionProp", crossBlock ? 1 : 0);
         JitConfig = (JitConfigValues)config;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitFlags flags = default;
+        compiler.opts.jitFlags = &flags;
+        compiler.opts.SetMinOpts(false);
         compiler.lvaCount = Math.Max(2, tracked);
         compiler.lvaTrackedCount = tracked;
 #if DEBUG

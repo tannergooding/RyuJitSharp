@@ -82,9 +82,20 @@ containing only the active payload, instead of native inline/arena storage.
 Equality preserves signed-zero and NaN bit patterns, handle flags, and native
 field-sequence exclusion. Dependency vectors and complementary indices use
 managed collections without changing index or traversal order (B087).
-VN-dependent factories and insertion remain unported, not local-only
-implementations presented as complete. ARM64 scalable-vector assertion constants
+Insertion and complementary creation now cover both local and global assertions,
+including underlying `VN + constant` dependencies. The non-negativity-dependent
+factories and generation remain unported (B090). ARM64 scalable-vector assertion constants
 explicitly report NYI, matching the existing scalable-vector representation gap.
+
+VN chunks use typed managed arrays and preserve native reserved IDs, 64-value
+chunk boundaries and allocation grouping. Function applications borrow readonly
+memory from stable chunk arrays rather than pointers into an arena. Floating
+interning keys are raw bits; function keys retain native argument order and omit
+result type. Failed function queries preserve ref outputs. Scalar constant
+access uses generic numeric conversion rather than reinterpretation; Debug checks
+require compatible storage size and floating/integral categories. SIMD12 storage
+is exactly 12 bytes. ARM64 scalable/mask storage remains explicitly NYI; scalar
+storage support does not imply VN folding or phase activation (B090).
 
 Profile weight lookup uses a managed `ref` output: native leaves the pointed-to
 value unchanged when no profile weights are available, so an unconditional
