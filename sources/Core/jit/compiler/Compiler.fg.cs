@@ -10846,6 +10846,116 @@ public partial class Compiler
     // TODO: Port phase - fgRetypeImplicitByRefArgs
     private PhaseStatus fgRetypeImplicitByRefArgs() => PhaseStatus.MODIFIED_NOTHING;
 
+    public void fgChangeSwitchBlock(BasicBlock oldSwitchBlock, BasicBlock newSwitchBlock)
+    {
+        noway_assert(oldSwitchBlock is not null);
+        noway_assert(newSwitchBlock is not null);
+        noway_assert(oldSwitchBlock.Kind is BBJ_SWITCH);
+        assert(fgPredsComputed);
+
+        foreach (var succEdge in oldSwitchBlock.SwitchTargets.Succs)
+        {
+            assert(succEdge.SourceBlock == oldSwitchBlock);
+            fgReplacePred(succEdge, newSwitchBlock);
+        }
+    }
+
+    /// <summary>Change an edge's source while retaining its identity, duplicate count, and target ref count.</summary>
+    public void fgReplacePred(FlowEdge edge, BasicBlock newPred)
+    {
+        assert(edge is not null);
+        assert(newPred is not null);
+        assert(edge.SourceBlock != newPred);
+
+        var target = edge.DestinationBlock;
+        var oldPred = edge.SourceBlock;
+        ref var listp = ref fgGetPredInsertPoint(oldPred, target);
+        assert(listp == edge);
+        listp = edge.NextPredEdge;
+        edge.SourceBlock = newPred;
+        listp = ref fgGetPredInsertPoint(newPred, target);
+        edge.NextPredEdge = listp;
+        listp = edge;
+#if DEBUG
+        assert(target.checkPredListOrder());
+#endif
+    }
+
+    /// <summary>Split after all code, leaving it in the original block and transferring control flow to the new block.</summary>
+    public BasicBlock fgSplitBlockAtEnd(BasicBlock curr)
+    {
+        // Update predecessors before linking the new block, while curr's successors are still valid.
+        var newBlock = BasicBlock.New(this);
+        newBlock.bbRefs = 0;
+
+        if (curr.Kind is BBJ_SWITCH)
+        {
+            fgChangeSwitchBlock(curr, newBlock);
+        }
+        else
+        {
+            var successors = curr.Succs;
+            foreach (var succEdge in successors.Edges)
+            {
+                assert(succEdge.SourceBlock != newBlock);
+                var succBlock = succEdge.DestinationBlock;
+                JITDUMP($"{FMT_BB(succBlock.bbNum)} previous predecessor was {FMT_BB(curr.bbNum)}, now is {FMT_BB(newBlock.bbNum)}\n");
+                fgReplacePred(succEdge, newBlock);
+            }
+        }
+
+        newBlock.inheritWeight(curr);
+        newBlock.CopyFlags(curr);
+        newBlock.RemoveFlags(BBF_KEEP_BBJ_ALWAYS | BBF_OSR_PATCHPOINT | BBF_BACKWARD_JUMP_TARGET | BBF_LOOP_ALIGN);
+
+        // Callers also use this to split in the middle or at the beginning. Conservatively
+        // clear the safe point until they establish which block contains the original code.
+        newBlock.RemoveFlags(BBF_GC_SAFE_POINT);
+
+        // The empty block retains BAD_IL_OFFSET; callers moving code must update its IL range.
+        fgInsertBBafter(curr, newBlock);
+        fgExtendEHRegionAfter(curr);
+        curr.RemoveFlags(BBF_HAS_JMP | BBF_RETLESS_CALL);
+
+        var newEdge = fgAddRefPred(newBlock, curr);
+
+        // Transfer only after predecessor and EH updates, which still use the original targets.
+        newBlock.TransferTarget(curr);
+        curr.SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+        assert(curr.JumpsToNext);
+
+        return newBlock;
+    }
+
+    /// <summary>Split before all code, moving it to the new block along with its IL range and safe point.</summary>
+    public BasicBlock fgSplitBlockAtBeginning(BasicBlock curr)
+    {
+        var newBlock = fgSplitBlockAtEnd(curr);
+
+        if (curr.IsLIR)
+        {
+            newBlock.FirstLIRNode = curr.FirstLIRNode;
+            newBlock.LastLIRNode = curr.LastLIRNode;
+            curr.FirstLIRNode = null;
+            curr.LastLIRNode = null;
+        }
+        else
+        {
+            newBlock.FirstStmt = curr.FirstStmt;
+            curr.FirstStmt = null;
+        }
+
+        newBlock.bbCodeOffs = curr.bbCodeOffs;
+        newBlock.bbCodeOffsEnd = curr.bbCodeOffsEnd;
+        curr.bbCodeOffs = BAD_IL_OFFSET;
+        curr.bbCodeOffsEnd = BAD_IL_OFFSET;
+
+        newBlock.CopyFlags(curr, BBF_GC_SAFE_POINT);
+        curr.RemoveFlags(BBF_GC_SAFE_POINT);
+
+        return newBlock;
+    }
+
 #nullable disable
     /// <summary>Searches newTarget->bbPreds for where to insert an edge from blockPred.</summary>
     /// <param name="blockPred">The block we want to make a predecessor of newTarget (it could already be one).</param>

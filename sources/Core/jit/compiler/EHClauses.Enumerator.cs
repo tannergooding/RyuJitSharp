@@ -25,25 +25,24 @@ public partial struct EHClauses
 
         public bool MoveNext()
         {
+            if (Unsafe.AreSame(in _current, in _end))
+            {
+                return false;
+            }
+
             ref var current = ref _current;
 
-            if (!Unsafe.IsNullRef(ref _current))
+            if (!Unsafe.IsNullRef(ref current))
             {
-                current = ref Unsafe.Add(ref _first, 1);
+                current = ref Unsafe.Add(ref current, 1);
             }
             else
             {
                 current = ref _first;
             }
 
-            var succeeded = false;
-
-            if (!Unsafe.AreSame(in current, in _end))
-            {
-                _current = ref current;
-                succeeded = true;
-            }
-            return succeeded;
+            _current = ref current;
+            return !Unsafe.AreSame(in current, in _end);
         }
 
         public void Reset()

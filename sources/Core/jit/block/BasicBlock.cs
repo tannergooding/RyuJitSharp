@@ -507,6 +507,19 @@ public sealed partial class BasicBlock : LIR.Range
         }
     }
 
+    public GenTree? LastLIRNode
+    {
+        get
+        {
+            return _lastNode;
+        }
+
+        set
+        {
+            _lastNode = value;
+        }
+    }
+
     /// <summary>Returns the first statement in the block</summary>
     public Statement? FirstStmt
     {
@@ -1377,6 +1390,66 @@ public sealed partial class BasicBlock : LIR.Range
     {
         _kind = BBJ_EHFINALLYRET;
         bbEhfTargets = ehfTargets;
+    }
+
+    public void SetCond(FlowEdge trueEdge, FlowEdge falseEdge)
+    {
+        _kind = BBJ_COND;
+        TrueEdge = trueEdge;
+        FalseEdge = falseEdge;
+    }
+
+    /// <summary>Transfer the kind and targets, taking ownership of switch and finally-return descriptors.</summary>
+    public void TransferTarget(BasicBlock from)
+    {
+        switch (from.Kind)
+        {
+            case BBJ_SWITCH:
+            {
+                SwitchTargets = from.SwitchTargets;
+                from._anonymous1 = null;
+                break;
+            }
+
+            case BBJ_EHFINALLYRET:
+            {
+                var targets = from.EhfTargets;
+                assert(targets is not null);
+                SetEhf(targets);
+                from.bbEhfTargets = null;
+                break;
+            }
+
+            // The edges' source blocks may already have been changed to this block.
+            // Read the raw fields to avoid the source assertions in the edge getters.
+            case BBJ_COND:
+            {
+                var trueEdge = from.bbTrueEdge;
+                var falseEdge = from.bbFalseEdge;
+                assert(trueEdge is not null);
+                assert(falseEdge is not null);
+                SetCond(trueEdge, falseEdge);
+                break;
+            }
+
+            case BBJ_ALWAYS:
+            case BBJ_CALLFINALLY:
+            case BBJ_CALLFINALLYRET:
+            case BBJ_EHCATCHRET:
+            case BBJ_EHFILTERRET:
+            case BBJ_LEAVE:
+            {
+                SetKindAndTargetEdge(from.Kind, from.bbTargetEdge);
+                break;
+            }
+
+            default:
+            {
+                SetKindAndTargetEdge(from.Kind, null);
+                break;
+            }
+        }
+        assert(Kind == from.Kind);
     }
 
     public void SetFlags(BasicBlockFlags flags)

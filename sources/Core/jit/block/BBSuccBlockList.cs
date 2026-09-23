@@ -86,16 +86,18 @@ public readonly ref partial struct BBSuccBlockList
     }
 
     [UnscopedRef]
-    public readonly BlockEnumerator GetEnumerator()
+    public readonly ReadOnlySpan<FlowEdge> Edges
     {
-        var succs = _succs;
-
-        if (succs.Length is 0)
+        get
         {
-            var succsInline = (ReadOnlySpan<FlowEdge>)(_succsInline);
-            succsInline = succsInline[.._succCount];
-            return new BlockEnumerator(succsInline);
+            if (_succs.Length is 0)
+            {
+                return ((ReadOnlySpan<FlowEdge>)_succsInline)[.._succCount];
+            }
+            return _succs;
         }
-        return new BlockEnumerator(succs);
     }
+
+    [UnscopedRef]
+    public readonly BlockEnumerator GetEnumerator() => new BlockEnumerator(Edges);
 }
