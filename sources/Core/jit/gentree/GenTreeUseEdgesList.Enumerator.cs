@@ -32,7 +32,11 @@ public partial struct GenTreeUseEdgesList
         [MemberNotNullWhen(true, nameof(Current))]
         public bool MoveNext()
         {
-            ref var current = ref Unsafe.NullRef<GenTree>();
+            if (_index == int.MaxValue)
+            {
+                return false;
+            }
+
             var index = _index;
 
             var tree = _tree;
@@ -48,18 +52,19 @@ public partial struct GenTreeUseEdgesList
 
                 if (index < 0)
                 {
-                    current = ref (tree.IsReverseOp ? ref op.Op2Ref : ref op.Op1Ref);
-
-                    if (current is null)
+                    ref var first = ref (tree.IsReverseOp ? ref op.Op2Ref : ref op.Op1Ref);
+                    if (first is not null)
                     {
-                        // We can have null op1 and non-null op2 for some nodes, such as GT_LEA
-                        index++;
+                        return SetCurrent(ref first, 0);
                     }
+
+                    // We can have null op1 and non-null op2 for some nodes, such as GT_LEA.
+                    index++;
                 }
 
                 if (index == 0)
                 {
-                    current = ref (tree.IsReverseOp ? ref op.Op1Ref : ref op.Op2Ref);
+                    return SetCurrent(ref (tree.IsReverseOp ? ref op.Op1Ref : ref op.Op2Ref), 1);
                 }
             }
             else if (oper.IsUnary)
@@ -68,7 +73,7 @@ public partial struct GenTreeUseEdgesList
 
                 if (index < 0)
                 {
-                    current = ref unOp.Op1Ref;
+                    return SetCurrent(ref unOp.Op1Ref, 0);
                 }
             }
             else
@@ -92,8 +97,8 @@ public partial struct GenTreeUseEdgesList
 
                         if (phiUse is not null)
                         {
-                            current = ref phiUse.NodeRef;
                             _phiUse = phiUse;
+                            return SetCurrent(ref phiUse.NodeRef, index + 1);
                         }
                         break;
                     }
@@ -104,34 +109,39 @@ public partial struct GenTreeUseEdgesList
 
                         if (index < 0)
                         {
-                            current = ref cmpXchg.AddrRef;
+                            return SetCurrent(ref cmpXchg.AddrRef, 0);
                         }
                         else if (index == 0)
                         {
-                            current = ref cmpXchg.DataRef;
+                            return SetCurrent(ref cmpXchg.DataRef, 1);
                         }
                         else if (index == 1)
                         {
-                            current = ref cmpXchg.ComparandRef;
+                            return SetCurrent(ref cmpXchg.ComparandRef, 2);
                         }
                         break;
                     }
 
+#if TARGET_ARM64
+                    case GT_SELECT_NEG:
+                    case GT_SELECT_INV:
+                    case GT_SELECT_INC:
+#endif
                     case GT_SELECT:
                     {
                         var conditional = tree.AsConditional();
 
                         if (index < 0)
                         {
-                            current = ref conditional.CondRef;
+                            return SetCurrent(ref conditional.CondRef, 0);
                         }
                         else if (index == 0)
                         {
-                            current = ref conditional.Op1Ref;
+                            return SetCurrent(ref conditional.Op1Ref, 1);
                         }
                         else if (index == 1)
                         {
-                            current = ref conditional.Op2Ref;
+                            return SetCurrent(ref conditional.Op2Ref, 2);
                         }
                         break;
                     }
@@ -144,18 +154,19 @@ public partial struct GenTreeUseEdgesList
 
                         if (tree.IsReverseOp)
                         {
+                            assert(operands.Length == 2);
                             if (index < 0)
                             {
-                                current = ref operands[1]!;
+                                return SetCurrent(ref operands[1], 0);
                             }
                             else if (index == 0)
                             {
-                                current = ref operands[0]!;
+                                return SetCurrent(ref operands[0], 1);
                             }
                         }
                         else if ((index + 1) < operands.Length)
                         {
-                            current = ref operands[index + 1]!;
+                            return SetCurrent(ref operands[index + 1], index + 1);
                         }
                         break;
                     }
@@ -167,11 +178,11 @@ public partial struct GenTreeUseEdgesList
 
                         if (index < 0)
                         {
-                            current = ref arrElem.ArrObjRef;
+                            return SetCurrent(ref arrElem.ArrObjRef, 0);
                         }
                         else if (index < arrElem.ArrRank)
                         {
-                            current = ref arrElem.ArrInds[index]!;
+                            return SetCurrent(ref arrElem.ArrInds[index], index + 1);
                         }
                         break;
                     }
@@ -199,22 +210,13 @@ public partial struct GenTreeUseEdgesList
 
                             if (callArg is not null)
                             {
-                                current = ref callArg.EarlyNodeRef;
                                 _callArg = callArg;
+                                return SetCurrent(ref callArg.EarlyNodeRef, -1);
                             }
 
-                            if (current is null)
-                            {
-                                index++;
-                            }
-                            else
-                            {
-                                // we don't know how many early args we have, so we decrement
-                                // to ensure the latter increment keeps it at `-1` until we
-                                // finish enumerating all early args
-
-                                index--;
-                            }
+                            // Late arguments have their own order, independent of the early list.
+                            _callArg = null;
+                            index = 0;
                         }
 
                         if (index == 0)
@@ -230,25 +232,17 @@ public partial struct GenTreeUseEdgesList
 
                             if (callArg is not null)
                             {
-                                current = ref callArg.LateNodeRef;
                                 _callArg = callArg;
+                                return SetCurrent(ref callArg.LateNodeRef, 0);
                             }
 
-                            if (current is null)
-                            {
-                                index++;
-                            }
-                            else
-                            {
-                                // same again for late args, but this time moving to the control
-                                // expression when we finish enumerating all late args
-                                index--;
-                            }
+                            _callArg = null;
+                            index = 1;
                         }
 
                         if (index == 1)
                         {
-                            current = ref call.ControlExprRef;
+                            return SetCurrent(ref call.ControlExprRef, 2);
                         }
                         break;
                     }
@@ -268,8 +262,8 @@ public partial struct GenTreeUseEdgesList
 
                         if (fieldListUse is not null)
                         {
-                            current = ref fieldListUse.NodeRef;
                             _fieldListUse = fieldListUse;
+                            return SetCurrent(ref fieldListUse.NodeRef, index + 1);
                         }
                         break;
                     }
@@ -282,20 +276,27 @@ public partial struct GenTreeUseEdgesList
                 }
             }
 
-            var succeeded = false;
+            _current = ref Unsafe.NullRef<GenTree?>();
+            _index = int.MaxValue;
+            return false;
+        }
 
-            if (current is not null)
-            {
-                _current = ref current;
-                _index = index + 1;
-                succeeded = true;
-            }
-            return succeeded;
+        [MemberNotNullWhen(true, nameof(Current))]
+#nullable disable
+        private bool SetCurrent([UnscopedRef] ref GenTree operand, int nextIndex)
+#nullable restore
+        {
+            _current = ref operand;
+            _index = operand is null ? int.MaxValue : nextIndex;
+            return operand is not null;
         }
 
         public void Reset()
         {
             _current = ref Unsafe.NullRef<GenTree?>();
+            _phiUse = null;
+            _callArg = null;
+            _fieldListUse = null;
             _index = -1;
         }
     }

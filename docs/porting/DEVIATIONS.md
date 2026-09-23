@@ -47,6 +47,12 @@ Traversal and dumping must classify the node by its operator rather than treatin
 its former subtype's operands as live. This preserves native in-place folding
 without allocating a replacement node or changing subsequent node IDs.
 
+The use-edge enumerator represents native pointer/function-pointer iteration
+with managed byrefs and explicit index/cursor state. Only actual operand storage
+is yielded; absence is a terminal state, never a dereferenced null byref. Reset
+clears every linked-list cursor. Writable edge identity and execution order are
+preserved, including distinct early/late argument order (B040).
+
 ### D003: Deferred non-Windows-x64-only paths
 
 **Status:** accepted scoped deferral; not a successful execution/parity result.
