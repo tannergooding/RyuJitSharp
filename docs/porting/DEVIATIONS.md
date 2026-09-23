@@ -53,6 +53,11 @@ Profile weight lookup uses a managed `ref` output: native leaves the pointed-to
 value unchanged when no profile weights are available, so an unconditional
 `out` initialization would change that contract (B067).
 
+Profile spanning traversal uses `Stack<BasicBlock>` for pending blocks and a
+`List<BasicBlock>` successor snapshot. The snapshot is indexed from its end,
+matching native `ArrayStack::Top(i)`; callbacks must not change later successor
+selection through mutations of the live successor list (B068).
+
 Managed error-trap callbacks capture exceptions before leaving their
 `UnmanagedCallersOnly` shim. An owned `GCHandle` keeps the action and captured
 exception alive until the native trap returns. The regular trap reports

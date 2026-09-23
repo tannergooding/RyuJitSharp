@@ -10307,6 +10307,226 @@ public partial class Compiler
         fgRemoveRefPred(block.TargetEdge);
     }
 
+    // Instrumentation and reconstruction must build the same tree, so ordering may
+    // depend only on information apparent in the IL, not incorporated profile data.
+    public void WalkSpanningTree(SpanningTreeVisitor visitor)
+    {
+        assert(fgFirstBB is not null);
+        var traits = new BitVecTraits(this, compBasicBlockID);
+        var marked = BitVecOps.MakeEmpty(traits);
+        var stack = new Stack<BasicBlock>();
+        var scratch = new List<BasicBlock>();
+        var processed = BitVecOps.MakeEmpty(traits);
+
+        foreach (var hnd in new EHClauses(this))
+        {
+            var handler = hnd.ebdHndBeg;
+            stack.Push(handler);
+            BitVecOps.AddElemD(traits, marked, handler.bbID);
+            if (hnd.HasFilter)
+            {
+                var filter = hnd.ebdFilter;
+                stack.Push(filter);
+                BitVecOps.AddElemD(traits, marked, filter.bbID);
+            }
+        }
+
+        // Visit the method entry before the independently queued handler regions.
+        stack.Push(fgFirstBB);
+        BitVecOps.AddElemD(traits, marked, fgFirstBB.bbID);
+
+        while (stack.Count != 0)
+        {
+            var block = stack.Pop();
+            assert(BitVecOps.IsMember(traits, marked, block.bbID));
+            visitor.VisitBlock(block);
+
+            switch (block.Kind)
+            {
+                case BBJ_CALLFINALLY:
+                {
+                    // A retless callfinally has no IL offset for a probe key.
+                    if (block.isBBCallFinallyPair)
+                    {
+                        var target = block.Next;
+                        assert(target is not null);
+                        assert(!BitVecOps.IsMember(traits, marked, target.bbID));
+                        visitor.VisitTreeEdge(block, target);
+                        stack.Push(target);
+                        BitVecOps.AddElemD(traits, marked, target.bbID);
+                    }
+                    break;
+                }
+
+                case BBJ_THROW:
+                {
+                    if ((JitConfig.JitMinimalJitProfiling != 0) && (fgReturnCount > 0))
+                    {
+                        break;
+                    }
+                    goto case BBJ_RETURN;
+                }
+
+                case BBJ_RETURN:
+                {
+                    visitor.VisitNonTreeEdge(block, fgFirstBB, SpanningTreeVisitor.EdgeKind.Pseudo);
+                    break;
+                }
+
+                case BBJ_EHFINALLYRET:
+                case BBJ_EHFAULTRET:
+                case BBJ_EHCATCHRET:
+                case BBJ_EHFILTERRET:
+                case BBJ_LEAVE:
+                {
+                    _ = ehGetMostNestedRegionIndex(block, out var isInTry);
+                    ref var hnd = ref ehGetBlockHndDsc(block);
+                    if (isInTry || (hnd.ebdHandlerType is EH_HANDLER_CATCH))
+                    {
+                        var target = block.Target;
+                        if (target is null)
+                        {
+                            JITDUMP($"No jump dest for {FMT_BB(block.bbNum)}, suspect bad code\n");
+                            visitor.Badcode();
+                        }
+                        else if (block.Kind is not BBJ_LEAVE)
+                        {
+                            JITDUMP($"EH RET in {FMT_BB(block.bbNum)} most-nested in try, suspect bad code\n");
+                            visitor.Badcode();
+                        }
+                        else if (BitVecOps.IsMember(traits, marked, target.bbID))
+                        {
+                            visitor.VisitNonTreeEdge(block, target, SpanningTreeVisitor.EdgeKind.PostdominatesSource);
+                        }
+                        else
+                        {
+                            visitor.VisitTreeEdge(block, target);
+                            stack.Push(target);
+                            BitVecOps.AddElemD(traits, marked, target.bbID);
+                        }
+                    }
+                    else
+                    {
+                        var target = hnd.ebdHndBeg;
+                        assert(BitVecOps.IsMember(traits, marked, target.bbID));
+                        visitor.VisitNonTreeEdge(block, target, SpanningTreeVisitor.EdgeKind.Pseudo);
+                    }
+                    break;
+                }
+
+                default:
+                {
+                    var numSucc = block.NumSucc;
+                    if (numSucc == 1)
+                    {
+                        var target = block.Succs.Edges[0].DestinationBlock;
+                        if (BitVecOps.IsMember(traits, marked, target.bbID))
+                        {
+                            // Probes cannot go in a callfinally pair's tail.
+                            visitor.VisitNonTreeEdge(block, target, block.isBBCallFinallyPairTail
+                                ? SpanningTreeVisitor.EdgeKind.CriticalEdge
+                                : SpanningTreeVisitor.EdgeKind.PostdominatesSource);
+                        }
+                        else
+                        {
+                            visitor.VisitTreeEdge(block, target);
+                            stack.Push(target);
+                            BitVecOps.AddElemD(traits, marked, target.bbID);
+                        }
+                    }
+                    else
+                    {
+                        scratch.Clear();
+                        BitVecOps.ClearD(traits, processed);
+                        foreach (var succ in block.Succs)
+                        {
+                            scratch.Add(succ);
+                        }
+
+                        // Native ArrayStack.Top(i) scans the snapshot backwards. Queue rare,
+                        // then ordinary, then critical edges so the DFS visits costly edges first.
+                        for (var i = 0; i < numSucc; i++)
+                        {
+                            var target = scratch[^(i + 1)];
+                            if (BitVecOps.IsMember(traits, processed, i) ||
+                                block.isRunRarely || !target.isRunRarely)
+                            {
+                                continue;
+                            }
+
+                            BitVecOps.AddElemD(traits, processed, i);
+                            if (BitVecOps.IsMember(traits, marked, target.bbID))
+                            {
+                                visitor.VisitNonTreeEdge(block, target, target.CountOfInEdges > 1
+                                    ? SpanningTreeVisitor.EdgeKind.CriticalEdge
+                                    : SpanningTreeVisitor.EdgeKind.DominatesTarget);
+                            }
+                            else
+                            {
+                                visitor.VisitTreeEdge(block, target);
+                                stack.Push(target);
+                                BitVecOps.AddElemD(traits, marked, target.bbID);
+                            }
+                        }
+
+                        for (var i = 0; i < numSucc; i++)
+                        {
+                            var target = scratch[^(i + 1)];
+                            if (BitVecOps.IsMember(traits, processed, i) || (target.CountOfInEdges != 1))
+                            {
+                                continue;
+                            }
+
+                            BitVecOps.AddElemD(traits, processed, i);
+                            if (BitVecOps.IsMember(traits, marked, target.bbID))
+                            {
+                                visitor.VisitNonTreeEdge(block, target, SpanningTreeVisitor.EdgeKind.DominatesTarget);
+                            }
+                            else
+                            {
+                                visitor.VisitTreeEdge(block, target);
+                                stack.Push(target);
+                                BitVecOps.AddElemD(traits, marked, target.bbID);
+                            }
+                        }
+
+                        for (var i = 0; i < numSucc; i++)
+                        {
+                            var target = scratch[^(i + 1)];
+                            if (BitVecOps.IsMember(traits, processed, i))
+                            {
+                                continue;
+                            }
+
+                            BitVecOps.AddElemD(traits, processed, i);
+                            if (BitVecOps.IsMember(traits, marked, target.bbID))
+                            {
+                                visitor.VisitNonTreeEdge(block, target, SpanningTreeVisitor.EdgeKind.CriticalEdge);
+                            }
+                            else
+                            {
+                                visitor.VisitTreeEdge(block, target);
+                                stack.Push(target);
+                                BitVecOps.AddElemD(traits, marked, target.bbID);
+                            }
+                        }
+
+                        assert(numSucc == BitVecOps.Count(traits, processed));
+                    }
+                    break;
+                }
+            }
+        }
+
+        foreach (var block in Blocks)
+        {
+            if (!BitVecOps.IsMember(traits, marked, block.bbID))
+            {
+                visitor.VisitBlock(block);
+            }
+        }
+    }
+
     public void fgApplyProfileScale()
     {
         if (!compIsForInlining)
