@@ -290,28 +290,24 @@ public partial class Compiler
 
             if (opcode is CEE_CALLI)
             {
-                if (compiler.IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+                bool wasConverted;
+                fixed (CORINFO_RESOLVED_TOKEN* pResolvedToken = &resolvedToken)
                 {
-                    var wasConverted = false;
+                    wasConverted = compiler.info.compCompHnd->convertPInvokeCalliToCall(pResolvedToken, !compiler.impCanPInvokeInlineCallSite(compiler.compCurBB));
+                }
 
-                    fixed (CORINFO_RESOLVED_TOKEN* pResolvedToken = &resolvedToken)
-                    {
-                        wasConverted = compiler.info.compCompHnd->convertPInvokeCalliToCall(pResolvedToken, !compiler.impCanPInvokeInlineCallSite(compiler.compCurBB));
-                    }
+                if (wasConverted)
+                {
+                    compiler.eeGetCallInfo(resolvedToken, in Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), CORINFO_CALLINFO_ALLOWINSTPARAM, out var calliInfo);
 
-                    if (wasConverted)
-                    {
-                        compiler.eeGetCallInfo(resolvedToken, in Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), CORINFO_CALLINFO_ALLOWINSTPARAM, out var calliInfo);
-
-                        var importCallHelper = new ImportCallHelper {
-                            opcode = CEE_CALL,
-                            resolvedToken = ref resolvedToken,
-                            prefixFlags = prefixFlags,
-                            callInfo = ref calliInfo,
-                            opcodeOffs = opcodeOffs,
-                        };
-                        return importCallHelper.Import(compiler);
-                    }
+                    var importCallHelper = new ImportCallHelper {
+                        opcode = CEE_CALL,
+                        resolvedToken = ref resolvedToken,
+                        prefixFlags = prefixFlags,
+                        callInfo = ref calliInfo,
+                        opcodeOffs = opcodeOffs,
+                    };
+                    return importCallHelper.Import(compiler);
                 }
 
                 // Get the call site sig
@@ -617,6 +613,11 @@ public partial class Compiler
                             }
                         }
 
+                        if (callInfo.thisTransform is not CORINFO_NO_THIS_TRANSFORM)
+                        {
+                            compiler.impSpillSideEffects(false, CHECK_SPILL_ALL, "LDVIRTFTN constrained call requires transforming 'this'");
+                        }
+
                         compiler.impPopCallArgs(sigInfo, indCall);
 
                         if (indCall.IsAsync)
@@ -653,10 +654,6 @@ public partial class Compiler
 
                         if (needsFatPointerHandling)
                         {
-                            var fptrLclNum = compiler.lvaGrabTemp(shortLifetime: true, "fat pointer temp");
-                            compiler.impStoreToTemp(fptrLclNum, fptr, CHECK_SPILL_ALL);
-
-                            indCall.ControlExpr = compiler.gtNewLclvNode(fptr.Type.ActualType, fptrLclNum);
                             compiler.addFatPointerCandidate(indCall);
                         }
 
@@ -1006,15 +1003,15 @@ public partial class Compiler
             // The main group of arguments, and the this pointer.
 
             // 'this' is pushed on the IL stack before all call args, but if this is a
-            // constrained call 'this' is a byref that may need to be dereferenced.
-            // That dereference should happen _after_ all args, so we need to spill
-            // them if they can interfere.
+            // constrained call 'this' is a byref that may need to be dereferenced or
+            // boxed. That transformation should happen _after_ all args, so we need
+            // to spill them if they can interfere.
 
             var hasThis = ((mflags & CORINFO_FLG_STATIC) is 0) && ((sigInfo.callConv & CORINFO_CALLCONV_EXPLICITTHIS) is 0) && ((opcode is not CEE_NEWOBJ) || (newObjThis is not null));
 
-            if (hasThis && (constraintCallThisTransform is CORINFO_DEREF_THIS))
+            if (hasThis && (constraintCallThisTransform is not CORINFO_NO_THIS_TRANSFORM))
             {
-                compiler.impSpillSideEffects(spillGlobEffects: false, CHECK_SPILL_ALL, "constrained call requires dereference for 'this' right before call");
+                compiler.impSpillSideEffects(spillGlobEffects: false, CHECK_SPILL_ALL, "constrained call requires transforming 'this' right before call");
             }
 
             compiler.impPopCallArgs(sigInfo, call);
@@ -3817,6 +3814,26 @@ public partial class Compiler
         {
             assert(compiler.compCurBB is not null);
 
+            // Collect profiles before inline candidates are wrapped, including optimized instrumented tiers.
+            if (compiler.opts.IsInstrumented && (JitConfig.JitProfileValues is not 0)
+                && result.Oper.IsCall && result.AsCall().IsSpecialIntrinsic())
+            {
+                var call = result.AsCall();
+                var intrinsic = compiler.lookupNamedIntrinsic(call._callMethHnd);
+                if (intrinsic is NI_System_SpanHelpers_Memmove or NI_System_SpanHelpers_SequenceEqual)
+                {
+                    assert(!call.IsGuardedDevirtualizationCandidate);
+
+                    // Inline and profile metadata share a slot, so retain the candidate object.
+                    var profileInfo = call.IsInlineCandidate ? call.SingleInlineCandidateInfo : new HandleHistogramProfileCandidateInfo();
+                    assert(profileInfo is not null);
+                    profileInfo.ilOffset = opcodeOffs;
+                    profileInfo.probeIndex = 0;
+                    call._handleHistogramProfileCandidateInfo = profileInfo;
+                    compiler.compCurBB.SetFlags(BBF_HAS_VALUE_PROFILE);
+                }
+            }
+
             // Push or append the result of the call
 
             if (callRetTyp is TYP_VOID)
@@ -3827,37 +3844,20 @@ public partial class Compiler
                     assert(compiler.stackState.esStackDepth > 0);
                     _ = compiler.impAppendTree(result, compiler.stackState.esStackDepth - 1, compiler.impCurStmtDI);
                 }
+                else if ((JitConfig.JitProfileValues is not 0) && result.Oper.IsCall
+                    && result.AsCall().IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_Memmove))
+                {
+                    if (compiler.opts.IsOptimizedWithProfile && !compiler.opts.IsInstrumented)
+                    {
+                        result = compiler.impDuplicateWithProfiledArg(result.AsCall(), opcodeOffs);
+                    }
+                    compiler.impAppendTree(result, CHECK_SPILL_ALL, compiler.impCurStmtDI);
+                }
                 else
                 {
-                    if (result.Oper.IsCall)
+                    if (result.Oper.IsCall && result.AsCall().IsSpecialIntrinsic(compiler, NI_System_ArgumentNullException_ThrowIfNull))
                     {
-                        var call = result.AsCall();
-
-                        if (call.IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_Memmove))
-                        {
-                            if (JitConfig.JitProfileValues is not 0)
-                            {
-                                if (compiler.opts.IsOptimizedWithProfile)
-                                {
-                                    result = compiler.impDuplicateWithProfiledArg(call, opcodeOffs);
-                                }
-                                else if (compiler.opts.IsInstrumented)
-                                {
-                                    // We might want to instrument it for optimized versions too, but we don't currently.
-                                    call._handleHistogramProfileCandidateInfo = new HandleHistogramProfileCandidateInfo {
-                                        ilOffset = opcodeOffs,
-                                        probeIndex = 0,
-
-                                    };
-
-                                    compiler.compCurBB.SetFlags(BBF_HAS_VALUE_PROFILE);
-                                }
-                            }
-                        }
-                        else if (call.IsSpecialIntrinsic(compiler, NI_System_ArgumentNullException_ThrowIfNull))
-                        {
-                            result = compiler.impThrowIfNull(call);
-                        }
+                        result = compiler.impThrowIfNull(result.AsCall());
                     }
                     compiler.impAppendTree(result, CHECK_SPILL_ALL, compiler.impCurStmtDI);
                 }
@@ -3989,7 +3989,7 @@ public partial class Compiler
 
                                 if ((JitConfig.JitProfileValues is not 0) && resultCall.IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_SequenceEqual))
                                 {
-                                    if (compiler.opts.IsOptimizedWithProfile)
+                                    if (compiler.opts.IsOptimizedWithProfile && !compiler.opts.IsInstrumented)
                                     {
                                         result = compiler.impDuplicateWithProfiledArg(resultCall, opcodeOffs);
 
@@ -4000,16 +4000,6 @@ public partial class Compiler
                                             compiler.impStoreToTemp(tmp, result, CHECK_SPILL_ALL);
                                             result = compiler.gtNewLclvNode(result.Type, tmp);
                                         }
-                                    }
-                                    else if (compiler.opts.IsInstrumented)
-                                    {
-                                        // We might want to instrument it for optimized versions too, but we don't currently.
-                                        resultCall._handleHistogramProfileCandidateInfo = new HandleHistogramProfileCandidateInfo {
-                                            ilOffset = opcodeOffs,
-                                            probeIndex = 0,
-                                        };
-
-                                        compiler.compCurBB.SetFlags(BBF_HAS_VALUE_PROFILE);
                                     }
                                 }
                             }

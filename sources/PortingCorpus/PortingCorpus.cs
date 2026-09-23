@@ -33,6 +33,11 @@ internal static class PortingCorpus
             return 5;
         }
 
+        if (IndirectCall(6) != 13)
+        {
+            return 6;
+        }
+
         return 0;
     }
 
@@ -56,6 +61,13 @@ internal static class PortingCorpus
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int InlineCaller(int value) => InlineCandidate(value) + 1;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static unsafe int IndirectCall(int value)
+    {
+        delegate* managed<int, int, int> target = &Add;
+        return target(value, value + 1);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int InlineCandidate(int value) => value * 2;

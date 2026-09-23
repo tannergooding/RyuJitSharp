@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "syncing-upstream",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Finish main call-import ordering, calli conversion, and profiling changes, then the async prefix/context producer closure. Shared instantiation-argument construction, inherited async context chains, call exceptions/operand effects, and ordering-effect recomputation are reconciled in their recorded scope. Saved local-morph/LIR/rationalization/alias-set boundaries are classified; inline review and WIP integration remain pending. Broader async, SIMD importer, and backend closures remain unported; the first dump gap still requires real PGO incorporation.",
+    "nextAction": "Continue the async await-pattern/prefix/context producer closure, async-aware tailcall eligibility, and custom awaiter optimization dependencies. Ordinary call-import ordering, calli conversion query scope, and value-profile metadata collection are source-reconciled; shared instantiation/context/effect helpers retain their focused coverage. Saved inlining/local-morph/LIR/rationalization/alias-set boundaries are classified, not restored. Broader async, SIMD importer, and backend closures remain unported; the first dump gap still requires real PGO incorporation.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -27,9 +27,9 @@
       "targetFocusedTestsDebug": 233,
       "targetFocusedTestsRelease": 180,
       "targetFocusedTestsSkipped": 0,
-      "nativeAotPublish": "passed-through-target-call-effect-synchronization-checkpoint",
+      "nativeAotPublish": "passed-through-target-main-call-synchronization-checkpoint",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
-      "phaseDumpParity": "six-method-baseline-captured-with-known-differences",
+      "phaseDumpParity": "seven-method-corpus-captured-with-known-differences",
       "codegenParity": "not-available"
     }
   },
@@ -54,12 +54,12 @@
     "commit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "nativeConfiguration": "windows.x64.Checked",
     "librariesConfiguration": "Release",
-    "nativeCompilationHeaders": 6,
-    "durableCorpusNativeCompilationHeaders": 6,
+    "nativeCompilationHeaders": 7,
+    "durableCorpusNativeCompilationHeaders": 7,
     "oldNativeHostPreservedAndExecuted": true,
-    "managedCapture": "six-selected-methods-loaded-with-target-abi",
+    "managedCapture": "seven-selected-methods-loaded-with-target-abi",
     "managedGuid": "cb2fa75d-449d-4ee0-93ef-57011daefb8c",
-    "latestManagedBinarySha256": "803E656A5EBD7829D083389EDACD9E5AEC160150629E18781585D369BD5704ED",
+    "latestManagedBinarySha256": "EEB3EF8AC07F46396B1BA32D8C8F20D90F48D1A0CF8AEF77B702D4FB7C454EDF",
     "wrongGuidCaptureRejected": true,
     "nativeLayoutMeasurements": "matched-raw-managed-sizeof-and-debug-variable-offsets",
     "latestPrefixDifference": "missing-BBOPT-profile-diagnostic",
@@ -74,7 +74,9 @@
       "Shared instantiation construction preserves direct/indirect method/class handles and readonly-array behavior in controlled EE cases. Its Wasm ldvirtftn integration remains unvalidated on that target.",
       "Inherited async context chains preserve argument order, effects, and metadata identity in focused IR cases; SaveAsyncContexts and general async expansion/lowering remain unported.",
       "Conditional Wasm address-mode recognition passed isolated managed probes; declaration and ARM64 threshold synchronization does not establish non-x64 target support.",
-      "The six-method corpus contains no EH or pinned-local cases and establishes neither phase nor codegen parity."
+      "The managed calli corpus case reaches imported CALL ind IR; it does not establish unmanaged calli conversion, NativeAOT fat-pointer execution, or codegen parity.",
+      "Instrumented value-profile collection and constrained boxing order are source-reconciled but remain unexercised by the current corpus.",
+      "The seven-method corpus contains no EH or pinned-local cases and establishes neither phase nor codegen parity."
     ]
   },
   "localRecovery": {

@@ -180,8 +180,8 @@ differences in the comparison tooling.
 
 Build `sources\PortingCorpus\PortingCorpus.csproj` in Release. Its output is
 `artifacts\bin\sources\PortingCorpus\Release\net10.0\PortingCorpus.dll`.
-It checks six non-inlined entry points covering arithmetic, branches, locals,
-calls, and an inline candidate. It is a standalone fixture, not a compiler
+It checks seven entry points covering arithmetic, branches, locals,
+direct and managed indirect calls, and an inline candidate. It is a standalone fixture, not a compiler
 coverage claim.
 
 Use `scripts\porting\Invoke-PortingCorpus.ps1` with `-CoreRoot`, `-Corpus`,

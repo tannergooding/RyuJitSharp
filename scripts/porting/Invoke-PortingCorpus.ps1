@@ -7,7 +7,7 @@ param(
     [string] $ManagedJit = "",
     [string] $ManagedSource = "",
     [string] $TypeName = "RyuJitSharp.PortingCorpus",
-    [string[]] $ExpectedMethods = @("Main", "Add", "Branch", "Locals", "Call", "InlineCaller"),
+    [string[]] $ExpectedMethods = @("Main", "Add", "Branch", "Locals", "Call", "InlineCaller", "IndirectCall"),
     [ValidateRange(1, 3600)][int] $TimeoutSeconds = 120
 )
 
