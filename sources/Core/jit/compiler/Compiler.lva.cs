@@ -10,6 +10,33 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    public ValueSize lvaLclValueSize(int varNum)
+    {
+        assert((uint)varNum < (uint)lvaCount);
+        return lvaGetDesc(varNum).lvValueSize;
+    }
+
+    public bool IsEntireAccess(int lclNum, uint offset, ValueSize accessSize)
+        => (lvaLclValueSize(lclNum) == accessSize) && (offset == 0);
+
+    public int lvaGetFieldLocal(in LclVarDsc varDsc, uint fldOffset)
+    {
+        noway_assert(varTypeIsStruct(varDsc.Type));
+        noway_assert(varDsc.lvPromoted);
+
+        for (var i = varDsc.lvFieldLclStart; i < varDsc.lvFieldLclStart + varDsc.lvFieldCnt; i++)
+        {
+            noway_assert(lvaTable[i].lvIsStructField);
+            noway_assert(lvaTable[i].lvParentLcl == lvaGetLclNum(varDsc));
+            if (lvaTable[i].lvFldOffset == fldOffset)
+            {
+                return i;
+            }
+        }
+
+        return BAD_VAR_NUM;
+    }
+
     /// <summary>Current local ref count state</summary>
     public RefCountState lvaRefCountState;
 

@@ -15,6 +15,43 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    /// <summary>Determine overlap with a promoted field, conservatively reporting unknown-sized overlap.</summary>
+    public bool gtStoreMayDefineField(in LclVarDsc fieldVarDsc, nint offset, ValueSize storeSize,
+        out nint fieldRelativeOffset, out ValueSize fieldAffectedBytes)
+    {
+        nint fieldOffset = fieldVarDsc.lvFldOffset;
+        var fieldSize = fieldVarDsc.lvValueSize;
+
+        if ((offset == fieldOffset) && (fieldSize == storeSize))
+        {
+            fieldRelativeOffset = 0;
+            fieldAffectedBytes = fieldSize;
+            return true;
+        }
+        else if (fieldSize.IsExact && storeSize.IsExact)
+        {
+            var storeEndOffset = offset + storeSize.ExactSize;
+            var fieldEndOffset = fieldOffset + fieldSize.ExactSize;
+            if ((fieldOffset < storeEndOffset) && (offset < fieldEndOffset))
+            {
+                fieldRelativeOffset = (offset < fieldOffset) ? 0 : (offset - fieldOffset);
+                fieldAffectedBytes = new ValueSize((int)(nint.Min(storeEndOffset, fieldEndOffset) - nint.Max(offset, fieldOffset)));
+                return true;
+            }
+
+            fieldRelativeOffset = 0;
+            fieldAffectedBytes = default;
+            return false;
+        }
+        else
+        {
+            // Inexact bounds cannot establish non-overlap. The caller must handle an unknown affected size.
+            fieldRelativeOffset = (offset < fieldOffset) ? 0 : (offset - fieldOffset);
+            fieldAffectedBytes = ValueSize.Unknown;
+            return true;
+        }
+    }
+
     // TODO: Port Compiler.gtMarkColonCond
     // public static unsafe fgWalkPreFn gtMarkColonCond;
 

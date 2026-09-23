@@ -53,6 +53,14 @@ is yielded; absence is a terminal state, never a dereferenced null byref. Reset
 clears every linked-list cursor. Writable edge identity and execution order are
 preserved, including distinct early/late argument order (B040).
 
+Native `LocalDefProvider`/generic definition callbacks map to the five original
+readonly descriptor structs implementing `ILocalDef`, constrained
+`ILocalDefVisitor.Visit<TDef>` calls, and shared SSA extension methods.
+Visitors are passed by reference so mutable visitor state survives traversal
+without boxing descriptors or allocating a callback per definition. Descriptor
+queries remain lazy; promoted-field order, offsets, SSA indices, and early abort
+match `compiler.hpp`.
+
 ### D003: Deferred non-Windows-x64-only paths
 
 **Status:** accepted scoped deferral; not a successful execution/parity result.

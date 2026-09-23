@@ -9,7 +9,7 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    public struct TreeHasLocalStoreVisitor : IGenTreeVisitor<TreeHasLocalStoreVisitor>
+    public struct TreeHasLocalStoreVisitor : IGenTreeVisitor<TreeHasLocalStoreVisitor>, ILocalDefVisitor
     {
         public static bool DoPreOrder => true;
 
@@ -26,7 +26,7 @@ public partial class Compiler
             assert(!_compiler.lvaGetDesc(lclNum).IsAddressExposed);
         }
 
-        public readonly fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
+        public fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
         {
             var node = use;
 
@@ -35,36 +35,28 @@ public partial class Compiler
                 return WALK_SKIP_SUBTREES;
             }
 
-            var compiler = _compiler;
-            var lclNum = _lclNum;
-
-            var visitResult = node.VisitPhysicalLocalDefNodes(compiler, (lclDefNode) => {
-                var lclDefNodeNum = lclDefNode.AsLclVarCommon().LclNum;
-
-                if (lclDefNodeNum == lclNum)
-                {
-                    return GenTree.VisitResult.Abort;
-                }
-
-                ref var lclDsc = ref compiler.lvaGetDesc(lclDefNodeNum);
-
-                if (lclDsc.lvIsStructField && (lclDefNodeNum == lclDsc.lvParentLcl))
-                {
-                    return GenTree.VisitResult.Abort;
-                }
-
-                if (lclDsc.lvPromoted && (lclDefNodeNum >= lclDsc.lvFieldLclStart) && (lclDefNodeNum < (lclDsc.lvFieldLclStart + lclDsc.lvFieldCnt)))
-                {
-                    return GenTree.VisitResult.Abort;
-                }
-                return GenTree.VisitResult.Continue;
-            });
-
-            if (visitResult == GenTree.VisitResult.Abort)
+            if (node.VisitLogicalLocalDefs(_compiler, ref this) == GenTree.VisitResult.Abort)
             {
                 return WALK_ABORT;
             }
             return WALK_CONTINUE;
+        }
+
+        public readonly GenTree.VisitResult Visit<TDef>(TDef def) where TDef : struct, ILocalDef
+        {
+            var lclNum = def.LclNum;
+            if (lclNum == _lclNum)
+            {
+                return GenTree.VisitResult.Abort;
+            }
+
+            ref var lclDsc = ref _compiler.lvaGetDesc(_lclNum);
+            if (lclDsc.lvPromoted && (lclNum >= lclDsc.lvFieldLclStart) && (lclNum < lclDsc.lvFieldLclStart + lclDsc.lvFieldCnt))
+            {
+                return GenTree.VisitResult.Abort;
+            }
+
+            return GenTree.VisitResult.Continue;
         }
 
         public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;

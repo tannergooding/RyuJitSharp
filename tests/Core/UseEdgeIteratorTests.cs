@@ -12,6 +12,118 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class UseEdgeIteratorTests
 {
+    [TestCase(-1, false, new[] { 1, 2 })]
+    [TestCase(-1, true, new[] { 1 })]
+    [TestCase(0, false, new[] { 1 })]
+    [TestCase(2, false, new[] { 1, 2 })]
+    [TestCase(4, false, new[] { 2 })]
+    [TestCase(8, false, new int[0])]
+    public static void LogicalDefinitionsRespectPromotedRanges(int offset, bool abort, int[] expected)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [
+                new LclVarDsc { Type = TYP_STRUCT, Layout = new ClassLayout(12), lvPromoted = true, lvFieldLclStart = 1, lvFieldCnt = 2 },
+                new LclVarDsc { Type = TYP_INT, lvIsStructField = true, lvParentLcl = 0, lvFldOffset = 0 },
+                new LclVarDsc { Type = TYP_INT, lvIsStructField = true, lvParentLcl = 0, lvFldOffset = 4 },
+                new LclVarDsc { Type = TYP_INT },
+            ];
+            compiler.lvaCount = compiler.lvaTable.Length;
+            GenTreeLclVarCommon store = offset < 0
+                ? new GenTreeLclVar(TYP_STRUCT, 0, new GenTree(GT_NOP, TYP_STRUCT))
+                : new GenTreeLclFld(TYP_INT, 0, (ushort)offset, compiler.gtNewIconNode(TYP_INT, 0), null);
+            store.Flags |= GenTreeFlags.GTF_ASG;
+            var visitor = new DefinitionVisitor(compiler, abort);
+            var result = store.VisitLogicalLocalDefs(compiler, ref visitor);
+            Assert.That(visitor.Locals, Is.EqualTo(expected));
+            Assert.That(result, Is.EqualTo(abort ? GenTree.VisitResult.Abort : GenTree.VisitResult.Continue));
+            Assert.That(store.HasAnyLocalDefs(compiler), Is.True);
+            foreach (var entry in visitor.Definitions)
+            {
+                Assert.That(entry.Node, Is.SameAs(store));
+                Assert.That(entry.Index, Is.EqualTo(entry.Local - 1));
+                Assert.That(entry.Entire, Is.EqualTo(offset != 2));
+                Assert.That(entry.Size, Is.EqualTo(offset == 2 ? 2 : 4));
+                Assert.That(entry.Offset, Is.EqualTo(offset == 2 && entry.Local == 1 ? 2 : 0));
+                Assert.That(entry.ValueOffset, Is.EqualTo(offset < 0 ? (entry.Local - 1) * 4 : offset == 2 && entry.Local == 2 ? 2 : 0));
+                Assert.That(entry.StoreSize, Is.EqualTo(offset < 0 ? 12 : 4));
+            }
+
+            for (var local = 0; local < compiler.lvaCount; local++)
+            {
+                var affects = local == 0 ? expected.Length != 0 : Array.IndexOf(expected, local) >= 0;
+                if (!abort)
+                {
+                    Assert.That(compiler.gtTreeHasLocalStore(store, local), Is.EqualTo(affects), $"V{local}");
+                }
+            }
+        });
+    }
+
+    [TestCase(0, 4, true, 0, 4)]
+    [TestCase(2, 4, true, 2, 2)]
+    [TestCase(-2, 4, true, 0, 2)]
+    [TestCase(4, 4, false, 0, 0)]
+    [TestCase(-4, 4, false, 0, 0)]
+    public static void FieldDefinitionOverlapPreservesSignedBounds(int offset, int size, bool overlaps, int relative, int affected)
+    {
+        WithCompiler(compiler => {
+            var field = new LclVarDsc { Type = TYP_INT, lvIsStructField = true };
+            Assert.That(compiler.gtStoreMayDefineField(field, offset, new ValueSize(size), out var actualOffset, out var actualSize), Is.EqualTo(overlaps));
+            if (overlaps)
+            {
+                Assert.That(actualOffset, Is.EqualTo((nint)relative));
+                Assert.That(actualSize.ExactSize, Is.EqualTo(affected));
+            }
+
+            Assert.That(compiler.gtStoreMayDefineField(field, offset, ValueSize.Unknown, out _, out actualSize), Is.True);
+            Assert.That(actualSize.IsUnknown, Is.True);
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void AsyncLogicalDefinitionsPreserveOffsetsAndAbort(bool abort)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_STRUCT, Layout = new ClassLayout(16) }];
+            compiler.lvaCount = 1;
+#if DEBUG
+            compiler.lvaTable[0].IsDefinedViaAddress = true;
+#endif
+            var resumed = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 8);
+            var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+            call.SetIsAsync(default);
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(resumed).WithWellKnownArg(WellKnownArg.AsyncResumedDef));
+            var visitor = new DefinitionVisitor(compiler, abort);
+            Assert.That(call.VisitLogicalLocalDefs(compiler, ref visitor), Is.EqualTo(abort ? GenTree.VisitResult.Abort : GenTree.VisitResult.Continue));
+            Assert.That(visitor.Locals, Has.Count.EqualTo(1));
+            Assert.That(visitor.Locals[0], Is.Zero);
+            var def = visitor.Definitions[0];
+            Assert.That(def.Node, Is.SameAs(resumed));
+            Assert.That(def.Index, Is.EqualTo(Globals.BAD_VAR_NUM));
+            Assert.That(def.Entire, Is.False);
+            Assert.That(def.Offset, Is.EqualTo(8));
+            Assert.That(def.Size, Is.EqualTo(Globals.TARGET_POINTER_SIZE));
+            Assert.That(call.IsEntireLocalDef(compiler, resumed), Is.False);
+        });
+    }
+
+    private struct DefinitionVisitor(Compiler compiler, bool abort) : ILocalDefVisitor
+    {
+        public readonly List<int> Locals = [];
+        public readonly List<(GenTree Node, int Local, int Index, bool Entire, int Offset, int Size, int ValueOffset, int StoreSize)> Definitions = [];
+
+        public readonly GenTree.VisitResult Visit<TDef>(TDef def) where TDef : struct, ILocalDef
+        {
+            Locals.Add(def.LclNum);
+            Definitions.Add((def.DefNode, def.LclNum, def.MultiDefIndex, def.IsEntire(compiler),
+                (int)def.GetOffset(compiler), def.GetSize(compiler).ExactSize,
+                (int)def.GetValueOffset(compiler), def.GetStoreSize(compiler).ExactSize));
+
+            return abort ? GenTree.VisitResult.Abort : GenTree.VisitResult.Continue;
+        }
+    }
+
     [TestCase(false, false)]
     [TestCase(false, true)]
     [TestCase(true, false)]
