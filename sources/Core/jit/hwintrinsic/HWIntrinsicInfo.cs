@@ -228,10 +228,20 @@ public readonly partial struct HWIntrinsicInfo
         }
     }
 
-    public static bool HasSpecialSideEffect(NamedIntrinsic id)
+    public static bool HasSpecialSideEffect(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_SpecialSideEffectMask) != 0;
+
+    public static bool HasSpecialSideEffect_Barrier(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_SpecialSideEffect_Barrier) != 0;
+
+    public static bool IsInvalidNodeId(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_InvalidNodeId) != 0;
+
+#if TARGET_XARCH
+    public static bool NeedsNormalizeSmallTypeToInt(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_NormalizeSmallTypeToInt) != 0;
+#endif
+
+    public static int lookupNumArgs(NamedIntrinsic id)
     {
-        // TODO: Port HWIntrinsicInfo.HasSpecialSideEffect
-        return false;
+        var count = s_numArgs[GetTableIndex(id)];
+        return count == byte.MaxValue ? -1 : count;
     }
 
     public static bool IsMultiReg(NamedIntrinsic id)

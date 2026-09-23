@@ -241,10 +241,8 @@ internal static unsafe class TreeComparisonTests
         WithCompiler(compiler => {
             static GenTreeHWIntrinsic MakeIntrinsic()
             {
-                var intrinsic = new GenTreeHWIntrinsic(TYP_SIMD16, NamedIntrinsic.NI_Vector_op_Addition, TYP_INT, 16,
+                var intrinsic = new GenTreeHWIntrinsic(TYP_SIMD16, NamedIntrinsic.NI_X86Base_Add, TYP_INT, 16,
                     new GenTreeLclVar(TYP_SIMD16, 0), new GenTreeLclVar(TYP_SIMD16, 1));
-                // Initialize remains unported; supply the established native metadata contract.
-                IntrinsicId(intrinsic) = NamedIntrinsic.NI_Vector_op_Addition;
                 return intrinsic;
             }
 
@@ -254,7 +252,7 @@ internal static unsafe class TreeComparisonTests
             switch (difference)
             {
                 case 0:
-                    IntrinsicId(right) = NamedIntrinsic.NI_Vector_op_Subtraction;
+                    right.SetHWIntrinsicId(NamedIntrinsic.NI_X86Base_Subtract);
                     break;
                 case 1:
                     right.SimdBaseType = TYP_FLOAT;
@@ -272,9 +270,6 @@ internal static unsafe class TreeComparisonTests
             Assert.That(GenTree.Compare(left, right, true), Is.False);
         });
     }
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_hwIntrinsicId")]
-    private static extern ref NamedIntrinsic IntrinsicId(GenTreeJitIntrinsic node);
 
     private static void WithCompiler(Action<Compiler> action)
     {

@@ -16,7 +16,17 @@ public sealed class GenTreeHWIntrinsic : GenTreeJitIntrinsic
         Initialize(hwIntrinsicId);
     }
 
-    public NamedIntrinsic HWIntrinsicId => _hwIntrinsicId;
+    public NamedIntrinsic HWIntrinsicId
+    {
+        get
+        {
+#if DEBUG
+            var numArgs = HWIntrinsicInfo.lookupNumArgs(_hwIntrinsicId);
+            assert((numArgs < 0) || (numArgs == Operands.Length));
+#endif
+            return _hwIntrinsicId;
+        }
+    }
 
     public static bool Equals(GenTreeHWIntrinsic op1, GenTreeHWIntrinsic op2)
     {
@@ -43,13 +53,10 @@ public sealed class GenTreeHWIntrinsic : GenTreeJitIntrinsic
             }
 
 #if TARGET_XARCH
-            // TODO: Port GenTreeHWIntrinsic.IsMemoryStoreOrBarrier
-            // var intrinsicId = _hwIntrinsicId;
-            // 
-            // if (HWIntrinsicInfo.HasSpecialSideEffect_Barrier(intrinsicId))
-            // {
-            //     return true;
-            // }
+            if (HWIntrinsicInfo.HasSpecialSideEffect_Barrier(_hwIntrinsicId))
+            {
+                return true;
+            }
 #endif
 
             return false;
@@ -58,7 +65,92 @@ public sealed class GenTreeHWIntrinsic : GenTreeJitIntrinsic
 
     private void Initialize(NamedIntrinsic intrinsicId)
     {
-        // TODO: Port Initialize
+        SetHWIntrinsicId(intrinsicId);
+
+        if (IsMemoryStore(out _))
+        {
+            Flags |= GTF_ASG | GTF_GLOB_REF | GTF_EXCEPT;
+        }
+        else if (IsMemoryLoad())
+        {
+            Flags |= GTF_GLOB_REF | GTF_EXCEPT;
+        }
+        else if (HWIntrinsicInfo.HasSpecialSideEffect(intrinsicId))
+        {
+            switch (intrinsicId)
+            {
+#if TARGET_XARCH
+                case NI_X86Base_LoadFence:
+                case NI_X86Base_MemoryFence:
+                case NI_X86Base_StoreFence:
+                case NI_X86Serialize_Serialize:
+                    Flags |= GTF_ASG | GTF_GLOB_REF;
+                    break;
+
+                case NI_X86Base_Pause:
+                case NI_X86Base_Prefetch0:
+                case NI_X86Base_Prefetch1:
+                case NI_X86Base_Prefetch2:
+                case NI_X86Base_PrefetchNonTemporal:
+                    Flags |= GTF_CALL | GTF_GLOB_REF;
+                    break;
+
+                case NI_Vector_op_Division:
+                    assert(SimdSize is 16 or 32);
+                    Flags |= GTF_EXCEPT;
+                    break;
+#endif
+
+#if TARGET_ARM64
+                case NI_ArmBase_Yield:
+                case NI_Sve_GatherPrefetch16Bit:
+                case NI_Sve_GatherPrefetch32Bit:
+                case NI_Sve_GatherPrefetch64Bit:
+                case NI_Sve_GatherPrefetch8Bit:
+                case NI_Sve_Prefetch16Bit:
+                case NI_Sve_Prefetch32Bit:
+                case NI_Sve_Prefetch64Bit:
+                case NI_Sve_Prefetch8Bit:
+                case NI_Sve_GetFfrByte:
+                case NI_Sve_GetFfrDouble:
+                case NI_Sve_GetFfrInt16:
+                case NI_Sve_GetFfrInt32:
+                case NI_Sve_GetFfrInt64:
+                case NI_Sve_GetFfrSByte:
+                case NI_Sve_GetFfrSingle:
+                case NI_Sve_GetFfrUInt16:
+                case NI_Sve_GetFfrUInt32:
+                case NI_Sve_GetFfrUInt64:
+                case NI_Sve_SetFfr:
+                    Flags |= GTF_CALL | GTF_GLOB_REF;
+                    break;
+#endif
+
+                default:
+                    assert(false, "Unexpected hwintrinsic side-effect");
+                    break;
+            }
+        }
+    }
+
+    public void SetHWIntrinsicId(NamedIntrinsic intrinsicId)
+    {
+#if DEBUG
+        var newOperandCount = HWIntrinsicInfo.lookupNumArgs(intrinsicId);
+        assert((newOperandCount < 0) || (Operands.Length == newOperandCount));
+#if !TARGET_WASM
+        assert(!HWIntrinsicInfo.IsInvalidNodeId(intrinsicId));
+#endif
+#endif
+
+        _hwIntrinsicId = intrinsicId;
+#if TARGET_XARCH
+        var simdBaseType = SimdBaseType;
+        if (HWIntrinsicInfo.NeedsNormalizeSmallTypeToInt(intrinsicId) && varTypeIsSmall(simdBaseType))
+        {
+            SimdBaseType = varTypeIsUnsigned(simdBaseType) ? TYP_UINT : TYP_INT;
+        }
+#endif
     }
 
     public bool IsMemoryLoad() => IsMemoryLoad(out _);

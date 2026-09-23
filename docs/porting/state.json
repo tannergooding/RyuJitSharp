@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Continue protected C# WIP integration. Inline invocation, block splicing, argument/local initialization and async frame returns are integrated; managed error recovery and JIT/EE boolean results are corrected (B061/B062). Structural tree/call and fixed-width vector/mask comparison now supports the folding closure. Port constant, special, conditional and call folding (B054), including HWI initialization/classification prerequisites (B063), before activating the remaining fgInline closure; then continue rationalization. Both native trees use the target revision. After WIP integration, prioritize required minopts phases toward code generation. The first PGO dump gap remains pending.",
+    "nextAction": "Continue protected C# WIP integration. Inline invocation, block splicing, argument/local initialization and async frame returns are integrated; managed error recovery and JIT/EE boolean results are corrected (B061/B062). Structural comparison and HWI initialization/classification now support the folding closure. Port constant, special, conditional and call folding (B054), including global-morph assertion bookkeeping, before activating the remaining fgInline closure; then continue rationalization. Both native trees use the target revision. After WIP integration, prioritize required minopts phases toward code generation. The first PGO dump gap remains pending.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -19,13 +19,13 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "10.0.401",
-      "debugBuild": "passed-after-structural-tree-comparison",
-      "releaseBuild": "passed-after-structural-tree-comparison",
+      "debugBuild": "passed-after-hwi-node-initialization",
+      "releaseBuild": "passed-after-hwi-node-initialization",
       "testSourcesPresent": true,
       "writerRegressionCases": 16,
       "writerRegressionConfigurations": ["Debug", "Release"],
-      "targetFocusedTestsDebug": 640,
-      "targetFocusedTestsRelease": 544,
+      "targetFocusedTestsDebug": 661,
+      "targetFocusedTestsRelease": 565,
       "targetFocusedTestsSkipped": 0,
       "callIntrinsicSpotChecks": {
         "debugPassed": 81,
@@ -158,8 +158,16 @@
         "originalStubFailures": 39,
         "skipped": 0,
         "nativeAotRecaptured": false,
-        "hwiConstructionExercised": false,
+        "hwiConstructionExercised": true,
         "arm64ScalableConstantComparisons": "explicit-nyi",
+        "fullPhaseParityEstablished": false
+      },
+      "hwiInitializationSpotChecks": {
+        "debugPassed": 21,
+        "releasePassed": 21,
+        "originalConstructorFailures": 18,
+        "skipped": 0,
+        "nativeAotRecaptured": false,
         "fullPhaseParityEstablished": false
       },
       "savedWipSupportMilestone": {

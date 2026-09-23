@@ -752,7 +752,7 @@ internal static unsafe class UseEdgeIteratorTests
                         "intrinsic" => [first, second, third],
                         _ => [first, second],
                     };
-                    tree = new GenTreeHWIntrinsic(TYP_SIMD16, NamedIntrinsic.NI_Illegal, TYP_INT, 16, operands) {
+                    tree = new GenTreeHWIntrinsic(TYP_SIMD16, NamedIntrinsic.NI_Vector_Create, TYP_INT, 16, operands) {
                         IsReverseOp = shape == "reverse-intrinsic",
                     };
                     expected = tree.IsReverseOp ? [second, first] : operands;
