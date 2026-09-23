@@ -101,6 +101,13 @@ and evidence. Label still-unported changes as remaining work; explicitly defer
 new non-Windows-x64-only behavior with NYIs where needed. Do not introduce silent
 stubs on relevant Windows-x64 paths to make reconciliation appear complete.
 
+Use the raw old-to-new upstream diff, not the size of merge-conflict regions, to
+drive reconciliation. Preserve previous deletions of ported methods, retain net
+new APIs that remain unported, and apply changed-method deltas to their existing
+C# implementations. Large deletion conflicts do not require reviewing or restoring
+thousands of unchanged lines. If a pass becomes disproportionately expensive,
+reassess its scope and approach rather than expanding the investigation.
+
 Move the oracle to the pinned target only with a clean source tree and preserved
 old-baseline evidence. Update the residual tree with its snapshots protected.
 For modify/delete conflicts, compare old native code, new native code, and the C#
