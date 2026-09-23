@@ -92,7 +92,7 @@ public interface IGenTreeVisitor<TSelf>
                 {
                     result = WalkTree(ref self, ref op2Use, op, ancestors);
                 }
-                else
+                else if (result is not fgWalkResult.WALK_ABORT)
                 {
 #if DEBUG
                     assert(op.IsNullOp2Legal);
@@ -112,7 +112,7 @@ public interface IGenTreeVisitor<TSelf>
                 {
                     result = WalkTree(ref self, ref unOp.Op1Ref, unOp, ancestors);
                 }
-                else
+                else if (result is not fgWalkResult.WALK_ABORT)
                 {
 #if DEBUG
                     assert(unOp.IsNullOp1Legal);

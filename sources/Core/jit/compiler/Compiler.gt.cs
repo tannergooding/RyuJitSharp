@@ -15,6 +15,19 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    /// <summary>Split preceding non-invariant computations into statements and return the writable split-point use.</summary>
+    /// <remarks>The caller must update the original statement's effects after further edits. Newly introduced block operations may need morphing, which invalidates the returned use.</remarks>
+    public ref GenTree gtSplitTree(BasicBlock block, Statement stmt, GenTree splitPoint,
+        out Statement? firstNewStmt, out bool madeChanges, bool early = false)
+    {
+        var splitter = new SplitTreeVisitor(this, block, stmt, splitPoint, early);
+        _ = splitter.WalkTree(ref stmt.RootNodeRef, null);
+        firstNewStmt = splitter.FirstStatement;
+        madeChanges = splitter.MadeChanges;
+
+        return ref splitter.SplitNodeUse;
+    }
+
     /// <summary>Determine overlap with a promoted field, conservatively reporting unknown-sized overlap.</summary>
     public bool gtStoreMayDefineField(in LclVarDsc fieldVarDsc, nint offset, ValueSize storeSize,
         out nint fieldRelativeOffset, out ValueSize fieldAffectedBytes)

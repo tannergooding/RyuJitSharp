@@ -68,6 +68,15 @@ membership, intersection, and emptiness are observable through this API, not
 iteration order. The separate general-purpose `hashBv` port remains incomplete.
 Pinned upstream quirks B049/B052 are preserved rather than silently corrected.
 
+`SplitTreeVisitor` stores a node owner and operand ordinal in its managed
+use stack, reacquiring actual writable operand references through `UseEdges`.
+The statement owns the root slot. This avoids keeping managed byrefs inside
+heap collections or exposing `Stack<T>` backing storage; resolving an operand
+scans that owner's edges. Slot identity, rather than the referenced node's
+identity, governs matching and rewrites. `gtSplitTree` returns the split use
+by reference and exposes native change reporting through `out bool madeChanges`.
+Splitting retains native execution/spill order and statement debug information.
+
 ### D003: Deferred non-Windows-x64-only paths
 
 **Status:** accepted scoped deferral; not a successful execution/parity result.

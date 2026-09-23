@@ -17,6 +17,36 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    public Statement fgNewStmtFromTree(GenTree tree, BasicBlock? block = null, in DebugInfo di = default)
+    {
+        var stmt = gtNewStmt(tree, di);
+        if (fgNodeThreading is NodeThreading.AllTrees)
+        {
+            gtSetStmtInfo(stmt);
+            fgSetStmtSeq(stmt);
+        }
+        else if (fgNodeThreading is NodeThreading.AllLocals)
+        {
+            fgSequenceLocals(stmt);
+        }
+
+#if DEBUG
+        if (block is not null)
+        {
+            fgDebugCheckNodeLinks(block, stmt);
+        }
+#endif
+
+        return stmt;
+    }
+
+    public void fgSequenceLocals(Statement stmt)
+    {
+        assert(fgNodeThreading is NodeThreading.AllLocals);
+        var sequencer = new LocalSequencer(this);
+        sequencer.Sequence(stmt);
+    }
+
     public bool fgNeedToSortEHTable;
 
 #if DEBUG

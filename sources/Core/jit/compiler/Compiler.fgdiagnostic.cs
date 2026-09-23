@@ -13,6 +13,78 @@ namespace RyuJitSharp;
 public partial class Compiler
 {
 #if DEBUG
+    public void fgDebugCheckNodeLinks(BasicBlock block, Statement stmt)
+    {
+        assert(fgNodeThreading is not NodeThreading.None);
+        noway_assert(stmt.TreeListBegin is not null);
+        assert(stmt.TreeListBegin.Prev is null);
+
+        for (var tree = stmt.TreeListBegin; tree is not null; tree = tree.Next)
+        {
+            if (tree.Prev is not null)
+            {
+                noway_assert(tree.Prev.Next == tree);
+            }
+            else
+            {
+                noway_assert(tree == stmt.TreeListBegin);
+            }
+
+            if (tree.Next is not null)
+            {
+                noway_assert(tree.Next.Prev == tree);
+            }
+            else
+            {
+                noway_assert(tree == stmt.RootNode);
+            }
+
+            GenTree? expectedPrevTree = null;
+            if (tree.Oper.IsLeaf)
+            {
+                if (tree.Oper is GT_CATCH_ARG)
+                {
+                    noway_assert((tree.Flags & GTF_ORDER_SIDEEFF) is not 0);
+                    noway_assert(stmt == block.GetFirstNonPhiDef());
+                    noway_assert(stmt.TreeListBegin.Oper is GT_CATCH_ARG);
+                    noway_assert((stmt.RootNode.Flags & GTF_ORDER_SIDEEFF) is not 0);
+                }
+                else if (tree.Oper is GT_ASYNC_CONTINUATION)
+                {
+                    assert((tree.Flags & GTF_ORDER_SIDEEFF) is not 0);
+                }
+            }
+
+            if (tree.Oper.IsUnary && (tree.AsOp().Op1 is not null))
+            {
+                expectedPrevTree = tree.AsOp().Op1;
+            }
+            else if (tree.Oper.IsBinary && (tree.AsOp().Op1 is not null))
+            {
+                switch (tree.Oper)
+                {
+                    case GT_QMARK:
+                    {
+                        expectedPrevTree = tree.AsOp().Op2.AsColon().ThenNode;
+                        break;
+                    }
+                    case GT_COLON:
+                    {
+                        expectedPrevTree = tree.AsColon().ElseNode;
+                        break;
+                    }
+                    default:
+                    {
+                        expectedPrevTree = (tree.AsOp().Op2 is null) || tree.IsReverseOp ? tree.AsOp().Op1 : tree.AsOp().Op2;
+                        break;
+                    }
+                }
+            }
+
+            noway_assert((expectedPrevTree is null) || (tree.Prev == expectedPrevTree));
+        }
+    }
+
     private static int bbTraverseLabel = 1;
 
     // Check that bbNum, bbRefs, and bbPreds are consistent with the block list.

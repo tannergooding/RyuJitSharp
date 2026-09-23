@@ -12,6 +12,175 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class UseEdgeIteratorTests
 {
+    [TestCase(NodeThreading.None)]
+    [TestCase(NodeThreading.AllLocals)]
+    [TestCase(NodeThreading.AllTrees)]
+    public static void NewStatementsRespectCurrentThreading(NodeThreading threading)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }];
+            compiler.lvaCount = 1;
+            JitFlags flags = default;
+            flags.Set(JitFlags.JIT_FLAG_MIN_OPT);
+            compiler.opts.jitFlags = &flags;
+            compiler.opts.SetMinOpts(true);
+            compiler.fgNodeThreading = threading;
+            var local = compiler.gtNewLclvNode(TYP_INT, 0);
+            var constant = compiler.gtNewIconNode(TYP_INT, 1);
+            var root = new GenTreeOp(GT_ADD, TYP_INT, local, constant);
+            var stmt = compiler.fgNewStmtFromTree(root, threading == NodeThreading.AllTrees ? new BasicBlock(null, null) : null);
+            if (threading == NodeThreading.None)
+            {
+                Assert.That(stmt.TreeListBegin, Is.Null);
+            }
+            else
+            {
+                Assert.That(stmt.TreeListBegin, Is.SameAs(local));
+                Assert.That(local.Prev, Is.Null);
+                if (threading == NodeThreading.AllLocals)
+                {
+                    Assert.That(stmt.TreeListEnd, Is.SameAs(local));
+                    Assert.That(local.Next, Is.Null);
+                }
+                else
+                {
+                    Assert.That(local.Next, Is.SameAs(constant));
+                    Assert.That(constant.Next, Is.SameAs(root));
+                    Assert.That(root.Next, Is.Null);
+                }
+            }
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void LocalOnlyVisitorAbortDoesNotValidateUnvisitedOperands(bool store)
+    {
+        WithCompiler(compiler => {
+            var value = compiler.gtNewIconNode(TYP_INT, 1);
+            GenTree tree = store
+                ? new GenTreeLclVar(TYP_INT, 0, value)
+                : new GenTreeOp(GT_ADD, TYP_INT, compiler.gtNewLclvNode(TYP_INT, 0), value);
+            var visitor = new AbortingLocalVisitor();
+            Assert.That(visitor.WalkTree(ref tree, null), Is.EqualTo(Compiler.fgWalkResult.WALK_ABORT));
+            Assert.That(visitor.Count, Is.EqualTo(1));
+        });
+    }
+
+    private struct AbortingLocalVisitor() : IGenTreeVisitor<AbortingLocalVisitor>
+    {
+        private readonly Stack<GenTree> _ancestors = [];
+        public int Count;
+        public static bool DoPreOrder => true;
+        public static bool DoLclVarsOnly => true;
+
+        public Compiler.fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
+        {
+            Count++;
+            return Compiler.fgWalkResult.WALK_ABORT;
+        }
+
+        public readonly Compiler.fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => Compiler.fgWalkResult.WALK_CONTINUE;
+
+        public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user)
+            => IGenTreeVisitor<AbortingLocalVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+    }
+
+    [TestCase("sibling")]
+    [TestCase("reversed")]
+    [TestCase("ancestor")]
+    [TestCase("operands")]
+    [TestCase("root")]
+    [TestCase("none")]
+    [TestCase("shared")]
+    public static void SplitTreePreservesExecutionOrderAndWritableUseIdentity(string shape)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = new LclVarDsc[8];
+            JitFlags flags = default;
+            compiler.opts.jitFlags = &flags;
+            var one = compiler.gtNewIconNode(TYP_INT, 1);
+            var two = compiler.gtNewIconNode(TYP_INT, 2);
+            var before = new GenTreeOp(GT_ADD, TYP_INT, one, two);
+            var second = new GenTreeOp(GT_SUB, TYP_INT, one, two);
+            GenTree split = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, null);
+            GenTree root;
+            GenTreeOp? owner;
+            var firstOperand = false;
+            GenTree[] spilled;
+            switch (shape)
+            {
+                case "reversed":
+                    owner = new GenTreeOp(GT_ADD, TYP_INT, split, before) { IsReverseOp = true };
+                    root = owner;
+                    firstOperand = true;
+                    spilled = [before];
+                    break;
+                case "ancestor":
+                    owner = new GenTreeOp(GT_ADD, TYP_INT, split, one);
+                    root = new GenTreeOp(GT_ADD, TYP_INT, before, owner);
+                    firstOperand = true;
+                    spilled = [before];
+                    break;
+                case "operands":
+                    split = new GenTreeOp(GT_ADD, TYP_INT, before, second);
+                    owner = new GenTreeOp(GT_ADD, TYP_INT, one, split);
+                    root = owner;
+                    spilled = [before, second];
+                    break;
+                case "root":
+                    split = new GenTreeOp(GT_ADD, TYP_INT, before, second);
+                    root = split;
+                    owner = null;
+                    spilled = [before, second];
+                    break;
+                case "none":
+                case "shared":
+                    owner = new GenTreeOp(GT_ADD, TYP_INT, split, shape == "shared" ? split : before);
+                    root = owner;
+                    firstOperand = true;
+                    spilled = [];
+                    break;
+                default:
+                    owner = new GenTreeOp(GT_ADD, TYP_INT, before, split);
+                    root = owner;
+                    spilled = [before];
+                    break;
+            }
+
+            var stmt = new Statement(root, 1);
+            stmt.PrevStmt = stmt;
+            var block = new BasicBlock(null, null) { FirstStmt = stmt };
+            ref var use = ref compiler.gtSplitTree(block, stmt, split, out var first, out var changed);
+            Assert.That(use, Is.SameAs(split));
+            Assert.That(changed, Is.EqualTo(spilled.Length != 0));
+            Assert.That(compiler.lvaCount, Is.EqualTo(spilled.Length));
+            var current = first;
+            for (var i = 0; i < spilled.Length; i++)
+            {
+                if (current is null)
+                {
+                    throw new InvalidOperationException("Missing spill statement.");
+                }
+                Assert.That(current.RootNode.Oper, Is.EqualTo(GT_STORE_LCL_VAR));
+                Assert.That(current.RootNode.AsLclVarCommon().Data, Is.SameAs(spilled[i]));
+                Assert.That(current.RootNode.AsLclVarCommon().LclNum, Is.EqualTo(i));
+                Assert.That(compiler.lvaTable[i].lvSingleDef, Is.True);
+                current = current.NextStmt;
+            }
+            Assert.That(current, Is.SameAs(spilled.Length == 0 ? null : stmt));
+            Assert.That(block.FirstStmt, Is.SameAs(first ?? stmt));
+
+            var replacement = compiler.gtNewIconNode(TYP_INT, 3);
+            use = replacement;
+            Assert.That(owner is null ? stmt.RootNode : firstOperand ? owner.Op1 : owner.Op2, Is.SameAs(replacement));
+            if (shape == "shared")
+            {
+                Assert.That(root.AsOp().Op2, Is.SameAs(split));
+            }
+        });
+    }
+
     [TestCase(false, false)]
     [TestCase(false, true)]
     [TestCase(true, false)]
