@@ -10786,12 +10786,14 @@ public partial class Compiler
         // NativeAOT generic virtual method
         if ((callInfo.sig.sigInst.methInstCount is not 0) && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
-            var runtimeMethodHandle = impLookupToTree(callInfo.codePointerLookup, GTF_ICON_METHOD_HDL, callInfo.hMethod);
-            assert(runtimeMethodHandle is not null);
-            call = gtNewVirtualFunctionLookupHelperCallNode(TYP_I_IMPL, CORINFO_HELP_GVMLOOKUP_FOR_SLOT, thisPtr, runtimeMethodHandle);
+            var dispatchCell = impLookupToTree(callInfo.codePointerLookup, GTF_ICON_FTN_ADDR, callInfo.hMethod);
+            assert(dispatchCell is not null);
+            call = gtNewVirtualFunctionLookupHelperCallNode(TYP_I_IMPL, CORINFO_HELP_GVMLOOKUP_FOR_SLOT, thisPtr, dispatchCell);
         }
 
-#if FEATURE_READYTORUN
+        // Wasm lacks the dynamic-helper thunks used by the ReadyToRun fast path;
+        // use CORINFO_HELP_VIRTUAL_FUNC_PTR instead.
+#if FEATURE_READYTORUN && !TARGET_WASM
         else if (IsAot)
         {
             if (!callInfo.exactContextNeedsRuntimeLookup)
@@ -11269,12 +11271,11 @@ public partial class Compiler
             lvaSetStruct(lvaNewObjArrayArgs, typGetBlkLayout(dimensionsSize), unsafeValueClsCheck: false);
         }
 
-        // Increase size of lvaNewObjArrayArgs to be the largest size needed to hold 'numArgs' integers for our call to CORINFO_HELP_NEW_MDARR.
-        ref var lvaDsc = ref lvaTable[lvaNewObjArrayArgs];
-
-        if (dimensionsSize > lvaDsc.lvExactSize)
+        // Growing an existing temp would turn earlier full-width stores into partial definitions.
+        if (dimensionsSize > lvaTable[lvaNewObjArrayArgs].lvExactSize)
         {
-            lvaDsc.GrowBlockLayout(typGetBlkLayout(dimensionsSize));
+            lvaNewObjArrayArgs = lvaGrabTemp(shortLifetime: false, "NewObjArrayArgs");
+            lvaSetStruct(lvaNewObjArrayArgs, typGetBlkLayout(dimensionsSize), unsafeValueClsCheck: false);
         }
 
         // The side-effects may include allocation of more multi-dimensional arrays. Spill all side-effects
