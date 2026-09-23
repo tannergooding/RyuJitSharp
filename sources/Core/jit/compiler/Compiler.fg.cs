@@ -1415,9 +1415,6 @@ public partial class Compiler
     }
 
 #if DEBUG
-    // TODO: Port phase check - fgDebugCheckBBlist
-    public void fgDebugCheckBBlist(bool checkBBNum = false, bool checkBBRefs = true) { }
-
     /// <summary>Check that the block list bbNum are in increasing order in the bbNext traversal</summary>
     /// <remarks>
     ///   <para>Given a block B1 and its bbNext successor B2, this means `B1->bbNum &lt; B2-&gt;bbNum`, but not that `B1->bbNum + 1 == B2-&gt;bbNum`.</para>
@@ -2699,6 +2696,7 @@ public partial class Compiler
             // Observe force inline state and code size.
             compInlineResult.NoteBool(InlineObservation.CALLEE_IS_FORCE_INLINE, (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0);
             compInlineResult.NoteBool(InlineObservation.CALLEE_IS_INTRINSIC_TYPE, (info.compClassAttr & CORINFO_FLG_INTRINSIC_TYPE) != 0);
+            compInlineResult.NoteBool(InlineObservation.CALLEE_IS_ASYNC, compIsAsync);
             compInlineResult.NoteInt(InlineObservation.CALLEE_IL_CODE_SIZE, codeSize);
 
             if (compIsForInlining)
@@ -3091,7 +3089,34 @@ public partial class Compiler
                         case CEE_CALL:
                         case CEE_CALLVIRT:
                         {
-                            if ((codeAddr < (codeEndp - sz)) && ((OPCODE)(codeAddr[sz]) is CEE_RET))
+                            var ni = NI_Illegal;
+
+                            if (preciseScan)
+                            {
+                                impResolveToken(codeAddr, out var resolvedToken, CORINFO_TOKENKIND_Method);
+                                var methodHnd = resolvedToken.hMethod;
+
+                                if (eeIsIntrinsic(methodHnd))
+                                {
+                                    ni = resolveNamedIntrinsic(methodHnd, lookupNamedIntrinsic(methodHnd));
+
+                                    if ((ni is NI_System_Numerics_Intrinsic or NI_System_Runtime_Intrinsics_Intrinsic) &&
+                                        gtIsRecursiveCall(methodHnd, useInlineRoot: false))
+                                    {
+                                        ni = NI_Throw_PlatformNotSupportedException;
+                                    }
+
+                                    ObserveNamedIntrinsicPrecise(this, ni, ref fgStack);
+                                }
+                                else if (!FgStack.IsArgument(fgStack.Top()))
+                                {
+                                    // Optimistically preserve an argument-dependent result for "call(arg)".
+                                    fgStack.PushUnknown();
+                                }
+                            }
+
+                            if ((ni != NI_Throw_PlatformNotSupportedException) &&
+                                (codeAddr < (codeEndp - sz)) && ((OPCODE)(codeAddr[sz]) is CEE_RET))
                             {
                                 // If the method has a call followed by a ret, assume that it is a wrapper method.
                                 compInlineResult.Note(InlineObservation.CALLEE_LOOKS_LIKE_WRAPPER);
@@ -3216,23 +3241,6 @@ public partial class Compiler
                             case CEE_CALL:
                             case CEE_CALLVIRT:
                             {
-                                impResolveToken(codeAddr, out var resolvedToken, CORINFO_TOKENKIND_Method);
-                                var methodHnd = resolvedToken.hMethod;
-
-                                if (eeIsIntrinsic(methodHnd))
-                                {
-                                    var ni = lookupNamedIntrinsic(methodHnd);
-                                    ObserveNamedIntrinsicPrecise(this, ni, ref fgStack);
-                                }
-                                else if (FgStack.IsArgument(fgStack.Top()))
-                                {
-                                    // Optimistically assume that "call(arg)" returns something arg-dependent.
-                                    // However, we don't know how many args it expects and its return type.
-                                }
-                                else
-                                {
-                                    fgStack.PushUnknown();
-                                }
                                 break;
                             }
 
@@ -3658,6 +3666,11 @@ public partial class Compiler
                         {
                             BADCODE("tailcall. has to be followed by call, callvirt or calli");
                         }
+
+                        if (compIsAsyncVersion)
+                        {
+                            prefixFlags &= ~PREFIX_TAILCALL_EXPLICIT;
+                        }
                         break;
                     }
 
@@ -3764,9 +3777,11 @@ public partial class Compiler
             // return blocks we don't know it returns as it may be counting unreachable code.
             // However we will still make the CALLEE_DOES_NOT_RETURN observation.
 
-            compInlineResult.NoteBool(InlineObservation.CALLEE_DOES_NOT_RETURN, retBlocks == 0);
+            // Async suspension runs caller code even when the callee's IL never returns.
+            var doesNotReturn = (retBlocks == 0) && !compIsAsync;
+            compInlineResult.NoteBool(InlineObservation.CALLEE_DOES_NOT_RETURN, doesNotReturn);
 
-            if ((retBlocks == 0) && compIsForInlining)
+            if (doesNotReturn && compIsForInlining)
             {
                 var iciCall = impInlineInfo.iciCall;
                 assert(iciCall is not null);
@@ -3948,11 +3963,6 @@ public partial class Compiler
             {
                 // Most Math(F) intrinsics have single arguments
                 foldableIntrinsic = FgStack.IsConstantOrConstArg(fgStack.Top(), impInlineInfo);
-
-                if (compiler.IsTargetIntrinsic(ni))
-                {
-                    compInlineResult.Note(InlineObservation.CALLEE_INTRINSIC);
-                }
             }
             else if (ni is not NI_Illegal)
             {
@@ -4007,6 +4017,13 @@ public partial class Compiler
                         }
 
                         // RuntimeHelpers.IsKnownConstant is always folded into a const
+                        fgStack.PushConstant();
+                        foldableIntrinsic = true;
+                        break;
+                    }
+
+                    case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync:
+                    {
                         fgStack.PushConstant();
                         foldableIntrinsic = true;
                         break;
@@ -4098,11 +4115,6 @@ public partial class Compiler
                     case NI_SRCS_UNSAFE_ByteOffset:
                     case NI_SRCS_UNSAFE_Subtract:
                     case NI_SRCS_UNSAFE_SubtractByteOffset:
-                    {
-                        ObserveBinaryPrecise(compiler, CEE_CALL, ref fgStack);
-                        break;
-                    }
-
                     case NI_SRCS_UNSAFE_AreSame:
                     case NI_SRCS_UNSAFE_IsAddressGreaterThan:
                     case NI_SRCS_UNSAFE_IsAddressGreaterThanOrEqualTo:
@@ -4110,7 +4122,66 @@ public partial class Compiler
                     case NI_SRCS_UNSAFE_IsAddressLessThanOrEqualTo:
                     case NI_SRCS_UNSAFE_IsNullRef:
                     {
-                        ObserveComparisonPrecise(compiler, CEE_CALL, ref fgStack, isBranch: false);
+                        FgStack.FgSlot arg0;
+                        bool isArg0Arg, isArg0Const, isArg0ConstArg;
+                        bool isArg1Arg, isArg1Const, isArg1ConstArg;
+
+                        if (ni == NI_SRCS_UNSAFE_IsNullRef)
+                        {
+                            // IsNullRef is unary, but always compares against zero.
+                            arg0 = fgStack.Top();
+                            isArg0Arg = FgStack.IsArgument(arg0);
+                            isArg0Const = FgStack.IsConstant(arg0);
+                            isArg0ConstArg = FgStack.IsConstArgument(arg0, impInlineInfo);
+                            isArg1Arg = false;
+                            isArg1Const = true;
+                            isArg1ConstArg = false;
+                        }
+                        else
+                        {
+                            arg0 = fgStack.Top(1);
+                            isArg0Arg = FgStack.IsArgument(arg0);
+                            isArg0Const = FgStack.IsConstant(arg0);
+                            isArg0ConstArg = FgStack.IsConstArgument(arg0, impInlineInfo);
+
+                            var arg1 = fgStack.Top();
+                            isArg1Arg = FgStack.IsArgument(arg1);
+                            isArg1Const = FgStack.IsConstant(arg1);
+                            isArg1ConstArg = FgStack.IsConstantOrConstArg(arg1, impInlineInfo);
+                        }
+
+                        if (isArg0Const && isArg1ConstArg)
+                        {
+                            foldableIntrinsic = true;
+                        }
+                        else if (isArg0ConstArg && (isArg1Const || isArg1ConstArg))
+                        {
+                            if (isArg1Const)
+                            {
+                                fgStack.Push(arg0);
+                            }
+                            foldableIntrinsic = true;
+                        }
+                        else if (isArg0Const && isArg1Const)
+                        {
+                            foldableIntrinsic = true;
+                        }
+                        else if (isArg0Arg && (isArg1Const || isArg1ConstArg))
+                        {
+                            fgStack.Push(arg0);
+                            stackAlreadyCorrect = true;
+                        }
+                        else if (isArg1Arg && (isArg0Const || isArg0ConstArg))
+                        {
+                            stackAlreadyCorrect = true;
+                        }
+
+                        // Preserve the native stack update for X op ConstArg.
+                        if (isArg1ConstArg)
+                        {
+                            fgStack.Push(arg0);
+                            stackAlreadyCorrect = true;
+                        }
                         break;
                     }
 
@@ -4215,13 +4286,20 @@ public partial class Compiler
                         break;
                     }
                 }
-
-                compInlineResult.Note(InlineObservation.CALLEE_INTRINSIC);
             }
 
-            if (foldableIntrinsic)
+            if (ni == NI_Throw_PlatformNotSupportedException)
+            {
+                compInlineResult.Note(InlineObservation.CALLEE_THROW_BLOCK);
+            }
+            else if (foldableIntrinsic)
             {
                 compInlineResult.Note(InlineObservation.CALLSITE_FOLDABLE_INTRINSIC);
+                stackAlreadyCorrect = true;
+            }
+            else if ((ni != NI_Illegal) && (!compiler.IsMathIntrinsic(ni) || compiler.IsTargetIntrinsic(ni)))
+            {
+                compInlineResult.Note(InlineObservation.CALLEE_INTRINSIC);
             }
 
             if (!stackAlreadyCorrect)
@@ -5314,7 +5392,6 @@ public partial class Compiler
                             return;
                         }
 
-                        tailCall = true;
                         goto case CEE_UNALIGNED;
                     }
 
@@ -5456,6 +5533,8 @@ public partial class Compiler
 
             // Jump over the operand
             codeAddr += sz;
+
+            tailCall = (opcode == CEE_TAILCALL) && !compIsAsyncVersion;
 
             // Make sure a jump target isn't in the middle of our opcode
             if (actualSz is not 0)
@@ -7490,6 +7569,9 @@ public partial class Compiler
             // Unlink this block from the bbNext chain
             fgUnlinkBlockForRemoval(block);
 
+            // A surviving EH region can still end here after the block's EH indices were cleared.
+            ehUpdateLastBlocks(block, bPrev);
+
             // At this point the bbPreds and bbRefs had better be zero
             noway_assert((block.bbRefs is 0) && (block.bbPreds is null));
         }
@@ -7883,54 +7965,88 @@ public partial class Compiler
         fgSsaValid = false;
     }
 
-    private FlowGraphDfsTree fgComputeDfs()
+    private FlowGraphDfsTree fgComputeDfs(bool useProfile = false)
     {
-        var visited = new HashSet<BasicBlock>();
-        var postOrder = new List<BasicBlock>(fgBBcount);
+        var postOrder = new BasicBlock[fgBBcount];
+        var hasCycle = false;
+        var traits = new BitVecTraits(this, fgBBNumMax + 1);
+        var visited = BitVecOps.MakeEmpty(traits);
+        var preOrderIndex = 0;
+        var postOrderIndex = 0;
         var pending = new Stack<(BasicBlock Block, List<BasicBlock> Successors, int Next)>();
 
-        void VisitEntry(BasicBlock? entry)
+        void VisitEntry(BasicBlock entry)
         {
-            if ((entry is null) || !visited.Add(entry))
-            {
-                return;
-            }
-
-            pending.Push((entry, fgGetAllSuccessors(entry), 0));
+            BitVecOps.AddElemD(traits, visited, entry.bbNum);
+            pending.Push((entry, fgGetAllSuccessors(entry, useProfile), 0));
+            entry.bbPreorderNum = preOrderIndex++;
+            entry.bbPostorderNum = -1;
             while (pending.Count > 0)
             {
                 var (block, successors, next) = pending.Pop();
                 if (next == successors.Count)
                 {
-                    postOrder.Add(block);
+                    block.bbPostorderNum = postOrderIndex;
+                    assert(postOrderIndex < fgBBcount);
+                    postOrder[postOrderIndex++] = block;
                     continue;
                 }
 
                 pending.Push((block, successors, next + 1));
                 var successor = successors[next];
-                if (visited.Add(successor))
+                if (BitVecOps.TryAddElemD(traits, visited, successor.bbNum))
                 {
-                    pending.Push((successor, fgGetAllSuccessors(successor), 0));
+                    pending.Push((successor, fgGetAllSuccessors(successor, useProfile), 0));
+                    successor.bbPreorderNum = preOrderIndex++;
+                    successor.bbPostorderNum = -1;
+                }
+
+                // A node still active in the DFS, discovered no later than the
+                // current block, is an ancestor reached by a backedge.
+                if ((successor.bbPreorderNum <= block.bbPreorderNum) && (successor.bbPostorderNum == -1))
+                {
+                    hasCycle = true;
                 }
             }
         }
 
+        assert(fgFirstBB is not null);
         VisitEntry(fgFirstBB);
-        VisitEntry(fgEntryBB);
-        if (!fgGlobalMorphDone)
+
+        if (fgEntryBB is not null)
+        {
+            assert(opts.IsOSR);
+            if (!BitVecOps.IsMember(traits, visited, fgEntryBB.bbNum))
+            {
+                VisitEntry(fgEntryBB);
+            }
+        }
+
+        if ((genReturnBB is not null) && !fgGlobalMorphDone &&
+            !BitVecOps.IsMember(traits, visited, genReturnBB.bbNum))
         {
             VisitEntry(genReturnBB);
         }
 
-        return new FlowGraphDfsTree(postOrder);
+        assert(preOrderIndex == postOrderIndex);
+        return new FlowGraphDfsTree(this, postOrder, preOrderIndex, hasCycle, useProfile);
     }
 
-    private List<BasicBlock> fgGetAllSuccessors(BasicBlock block)
+    private List<BasicBlock> fgGetAllSuccessors(BasicBlock block, bool useProfile = false)
     {
         var successors = new List<BasicBlock>();
-        foreach (var successor in block.Succs)
+        if (useProfile && (block.Kind is BBJ_COND) && (block.TrueEdge != block.FalseEdge) &&
+            (block.TrueEdge.Likelihood < block.FalseEdge.Likelihood))
         {
-            successors.Add(successor);
+            successors.Add(block.TrueTarget);
+            successors.Add(block.FalseTarget);
+        }
+        else
+        {
+            foreach (var successor in block.Succs)
+            {
+                successors.Add(successor);
+            }
         }
 
         if (block.Kind is BBJ_CALLFINALLYRET)
@@ -9847,11 +9963,21 @@ public partial class Compiler
             return;
         }
 
+        JITDUMP($"\nUpdating ACDs before removing EH#{xtnum}\n");
+
         ref var eh = ref ehGetDsc(xtnum);
         var map = fgAddCodeDscMap;
 
         foreach (var add in new List<AddCodeDsc>(map.Values))
         {
+            JITDUMP("Considering ");
+#if DEBUG
+            if (verbose)
+            {
+                add.Dump();
+            }
+#endif
+
             var oldKey = new AddCodeDscKey(add);
             var inHnd = add.acdHndIndex > 0;
             var inTry = add.acdTryIndex > 0;
@@ -9862,11 +9988,21 @@ public partial class Compiler
             {
                 var removed = map.Remove(oldKey);
                 assert(removed);
+#if DEBUG
+                JITDUMP($"ACD{add.acdNum} was in EH#{xtnum} filter region: removing\n");
+                if (verbose)
+                {
+                    add.Dump();
+                }
+#endif
                 continue;
             }
 
             if (!inThisTry && !inThisHnd)
             {
+#if DEBUG
+                JITDUMP($"ACD{add.acdNum} not affected\n");
+#endif
                 continue;
             }
 
@@ -9889,6 +10025,13 @@ public partial class Compiler
 
             if (!rekey)
             {
+#if DEBUG
+                JITDUMP($"ACD{add.acdNum} non-enclosing region updated; key remains the same\n");
+                if (verbose)
+                {
+                    add.Dump();
+                }
+#endif
                 continue;
             }
 
@@ -9896,11 +10039,30 @@ public partial class Compiler
             var oldKeyRemoved = map.Remove(oldKey);
             assert(oldKeyRemoved);
             var newKey = new AddCodeDscKey(add);
-            if (!map.ContainsKey(newKey))
+            if (map.TryGetValue(newKey, out var existing))
             {
+#if DEBUG
+                JITDUMP($"ACD{add.acdNum} merged into ACD{existing.acdNum}\n");
+                if (verbose)
+                {
+                    existing.Dump();
+                }
+#endif
+            }
+            else
+            {
+#if DEBUG
+                JITDUMP($"ACD{add.acdNum} updated with new key\n");
+                if (verbose)
+                {
+                    add.Dump();
+                }
+#endif
                 map[newKey] = add;
             }
         }
+
+        JITDUMP("... done updating ACDs\n");
     }
 
     private void fgRemoveEHTableEntry(ushort xtnum)
@@ -9958,6 +10120,9 @@ public partial class Compiler
                     if (block.TryIndex == xtnum)
                     {
                         noway_assert(block.HasFlag(BBF_REMOVED));
+#if DEBUG
+                        block.TryIndex = MAX_XCPTN_INDEX;
+#endif
                     }
                     else if (block.TryIndex > xtnum)
                     {
@@ -9970,6 +10135,9 @@ public partial class Compiler
                     if (block.HndIndex == xtnum)
                     {
                         noway_assert(block.HasFlag(BBF_REMOVED));
+#if DEBUG
+                        block.HndIndex = MAX_XCPTN_INDEX;
+#endif
                     }
                     else if (block.HndIndex > xtnum)
                     {
@@ -9985,8 +10153,13 @@ public partial class Compiler
             }
         }
 
-        if (fgHasAddCodeDscMap)
+        if (!fgHasAddCodeDscMap)
         {
+            JITDUMP("No ACD entries to update");
+        }
+        else
+        {
+            JITDUMP("Updating ACD entries after EH removal\n");
             var map = fgAddCodeDscMap;
             var modified = new Stack<AddCodeDsc>();
             foreach (var add in new List<AddCodeDsc>(map.Values))
@@ -10021,81 +10194,151 @@ public partial class Compiler
             {
                 var add = modified.Pop();
                 var key = new AddCodeDscKey(add);
-                if (!map.ContainsKey(key))
+                if (map.TryGetValue(key, out var existing))
                 {
+#if DEBUG
+                    JITDUMP($"ACD{add.acdNum} merged into ACD{existing.acdNum}\n");
+                    if (verbose)
+                    {
+                        existing.Dump();
+                    }
+#endif
+                }
+                else
+                {
+#if DEBUG
+                    JITDUMP($"ACD{add.acdNum} updated\n");
+                    if (verbose)
+                    {
+                        add.Dump();
+                    }
+#endif
                     map[key] = add;
                 }
             }
+
+            JITDUMP("... done updating ACD entries after EH removal\n");
         }
     }
 
     private bool fgRemoveBlocksOutsideDfsTree()
     {
-        assert(_dfsTree is not null);
-        if (_dfsTree.PostOrderCount == fgBBcount)
+        var dfsTree = _dfsTree;
+        assert(dfsTree is not null);
+        if (dfsTree.PostOrderCount == fgBBcount)
         {
             return false;
         }
 
-        // Removing a call-finally pair can expose additional dead blocks; recompute
-        // reachability only in that case and repeat until the graph is closed.
+#if DEBUG
+        if (verbose)
+        {
+            jitprintf($"{fgBBcount - dfsTree.PostOrderCount}/{fgBBcount} blocks are unreachable and will be removed:\n");
+            foreach (var block in Blocks)
+            {
+                if (!dfsTree.Contains(block))
+                {
+                    jitprintf($"  {FMT_BB(block.bbNum)}\n");
+                }
+            }
+        }
+#endif
+
+        // Call-finally removal can expose additional unreachable blocks that
+        // the previous DFS did not find.
         while (true)
         {
             var anyCallFinallyPairs = false;
-            var hasUnreachableBlocks = false;
-
-            foreach (var block in Blocks)
+            _ = fgRemoveUnreachableBlocks(block =>
             {
-                if (block.HasFlag(BBF_THROW_HELPER) || (block == genReturnBB)
-                    || (block.HasFlag(BBF_DONT_REMOVE) && block.IsEmpty && (block.Kind is BBJ_THROW))
-                    || _dfsTree.Contains(block))
+                if (!dfsTree.Contains(block))
                 {
-                    continue;
+                    anyCallFinallyPairs |= block.isBBCallFinallyPair;
+                    return true;
                 }
 
-                anyCallFinallyPairs |= block.isBBCallFinallyPair;
-                fgUnreachableBlock(block);
-                noway_assert(block.HasFlag(BBF_REMOVED));
-
-                if (block.HasFlag(BBF_DONT_REMOVE))
-                {
-                    if (block.isBBCallFinallyPair)
-                    {
-                        var tail = block.Next;
-                        noway_assert(tail is not null);
-                        fgPrepareCallFinallyRetForRemoval(tail);
-                    }
-
-                    block.RemoveFlags(BBF_REMOVED | BBF_INTERNAL);
-                    block.SetFlags(BBF_IMPORTED);
-                    block.SetKindAndTargetEdge(BBJ_THROW, null);
-                    block.bbSetRunRarely();
-                }
-                else
-                {
-                    hasUnreachableBlocks = true;
-                }
-            }
-
-            if (hasUnreachableBlocks)
-            {
-                for (var block = fgFirstBB; block is not null;)
-                {
-                    block = block.HasFlag(BBF_REMOVED)
-                        ? fgRemoveBlock(block, unreachable: true)
-                        : block.Next;
-                }
-            }
+                return false;
+            });
 
             if (!anyCallFinallyPairs)
             {
                 break;
             }
 
-            _dfsTree = fgComputeDfs();
+            dfsTree = fgComputeDfs();
+            _dfsTree = dfsTree;
         }
 
+#if DEBUG
+        if (verbose && (dfsTree.PostOrderCount != fgBBcount))
+        {
+            jitprintf($"{fgBBcount - dfsTree.PostOrderCount} unreachable blocks were not removed:\n");
+            foreach (var block in Blocks)
+            {
+                if (!dfsTree.Contains(block))
+                {
+                    jitprintf($"  {FMT_BB(block.bbNum)}\n");
+                }
+            }
+        }
+#endif
+
         return true;
+    }
+
+    private bool fgRemoveUnreachableBlocks(Func<BasicBlock, bool> canRemoveBlock)
+    {
+        var hasUnreachableBlocks = false;
+        var changed = false;
+
+        foreach (var block in Blocks)
+        {
+            if (block.HasFlag(BBF_THROW_HELPER) || (block == genReturnBB) ||
+                (block.HasFlag(BBF_DONT_REMOVE) && block.IsEmpty && (block.Kind is BBJ_THROW)) ||
+                !canRemoveBlock(block))
+            {
+                continue;
+            }
+
+            fgUnreachableBlock(block);
+            noway_assert(block.HasFlag(BBF_REMOVED));
+
+            if (block.HasFlag(BBF_DONT_REMOVE))
+            {
+                JITDUMP($"Converting BBF_DONT_REMOVE block {FMT_BB(block.bbNum)} to BBJ_THROW\n");
+
+                if (block.isBBCallFinallyPair)
+                {
+                    var leaveBlock = block.Next;
+                    assert(leaveBlock is not null);
+                    fgPrepareCallFinallyRetForRemoval(leaveBlock);
+                }
+
+                changed |= block.NumSucc > 0;
+
+                block.RemoveFlags(BBF_REMOVED | BBF_INTERNAL);
+                block.SetFlags(BBF_IMPORTED);
+                block.SetKindAndTargetEdge(BBJ_THROW, null);
+                block.bbSetRunRarely();
+            }
+            else
+            {
+                hasUnreachableBlocks = true;
+                changed = true;
+            }
+        }
+
+        if (hasUnreachableBlocks)
+        {
+            for (var block = fgFirstBB; block is not null;)
+            {
+                block = block.HasFlag(BBF_REMOVED)
+                    ? fgRemoveBlock(block, unreachable: true)
+                    : block.Next;
+            }
+        }
+
+        return changed;
     }
 
     // TODO: Port phase - fgRepairProfile

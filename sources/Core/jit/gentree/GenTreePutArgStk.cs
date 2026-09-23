@@ -20,7 +20,7 @@ public sealed partial class GenTreePutArgStk : GenTreeUnOp
     private int _argPadding;
 #endif
 
-#if FEATURE_FASTTAILCALL
+#if FEATURE_FASTTAILCALL || TARGET_WASM
     private bool _putInIncomingArgArea;
 #endif
 
@@ -40,7 +40,7 @@ public sealed partial class GenTreePutArgStk : GenTreeUnOp
         _argOffset = argOffset;
         _stackByteSize = stackByteSize;
 
-#if FEATURE_FASTTAILCALL
+#if FEATURE_FASTTAILCALL || TARGET_WASM
         _putInIncomingArgArea = putInIncomingArgArea;
 #else
         assert(!putInIncomingArgArea);
@@ -110,7 +110,7 @@ public sealed partial class GenTreePutArgStk : GenTreeUnOp
     ///   <para>By default this is false and will be placed in out-going arg area.</para>
     ///   <para>Fast tail calls set this to true.</para>
     /// </remarks>
-#if FEATURE_FASTTAILCALL
+#if FEATURE_FASTTAILCALL || TARGET_WASM
     public bool PutInIncomingArgArea => _putInIncomingArgArea;
 #else
     public bool PutInIncomingArgArea => false;

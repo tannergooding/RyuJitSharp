@@ -47,13 +47,21 @@ public ref struct LikelyClassMethodHistogram
 
             var currentEntry = nint.CreateTruncating(histogramEntries[k]);
 
+            var found = false;
+
             for (var h = 0; h < countHistogramElements; h++)
             {
                 if (_histogram[h]._handle == currentEntry)
                 {
                     _histogram[h]._count++;
-                    return;
+                    found = true;
+                    break;
                 }
+            }
+
+            if (found)
+            {
+                continue;
             }
 
             if (countHistogramElements >= HISTOGRAM_MAX_SIZE_COUNT)

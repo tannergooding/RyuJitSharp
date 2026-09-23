@@ -1870,7 +1870,7 @@ public partial class Compiler
         opts.compTailCallOpt = true;
 #endif
 
-#if FEATURE_FASTTAILCALL
+#if FEATURE_FASTTAILCALL || TARGET_WASM
         // By default fast tail calls are enabled.
         opts.compFastTailCalls = true;
 #endif
@@ -2372,7 +2372,7 @@ public partial class Compiler
         }
 #endif
 
-#if FEATURE_FASTTAILCALL
+#if FEATURE_FASTTAILCALL || TARGET_WASM
         if (JitConfig.FastTailCalls == 0)
         {
             opts.compFastTailCalls = false;

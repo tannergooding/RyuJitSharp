@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "syncing-upstream",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Reconcile the pinned JIT/EE ABI and table changes, then validate against a target-revision native runtime.",
+    "nextAction": "Continue the remaining pinned target/platform and infrastructure deltas, recording per-file dispositions, before restoring saved WIP. The next dump frontier requires real PGO incorporation, not a log-only fix.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -19,12 +19,15 @@
     "nativeResidualBaseCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
     "validation": {
       "sdk": "10.0.401",
-      "debugBuild": "source-baseline-passed-target-sync-blocked-on-generated-tables",
-      "releaseBuild": "source-baseline-passed-target-sync-blocked-on-generated-tables",
+      "debugBuild": "passed-at-target-integration-checkpoint-further-sync-in-progress",
+      "releaseBuild": "passed-at-target-integration-checkpoint-further-sync-in-progress",
       "testSourcesPresent": true,
       "writerRegressionCases": 16,
       "writerRegressionConfigurations": ["Debug", "Release"],
-      "nativeAotPublish": "passed-at-source-baseline-with-output-fixes",
+      "targetFocusedTestsDebug": 60,
+      "targetFocusedTestsRelease": 26,
+      "targetFocusedTestsSkipped": 0,
+      "nativeAotPublish": "passed-at-source-and-target-abi-checkpoints",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "six-method-baseline-captured-with-known-differences",
       "codegenParity": "not-available"
@@ -42,8 +45,8 @@
     "newlineOnlyChangeVerified": true,
     "knownGaps": [
       "CORJIT_SKIPPED and native fallback remain intentional until codegen is ported.",
-      "fgDebugCheckBBlist is a stub and differs from native diagnostic output.",
-      "Integer, floating and variable-length IL display fixes target the new revision and await managed validation.",
+      "The original fgDebugCheckBBlist stub has been ported at the target revision; broader EH cases remain unvalidated.",
+      "Integer, floating and variable-length IL display fixes passed focused tests against pinned native probe output.",
       "Full importation/pipeline dump equality has not been established."
     ]
   },
@@ -54,7 +57,16 @@
     "nativeCompilationHeaders": 6,
     "durableCorpusNativeCompilationHeaders": 6,
     "oldNativeHostPreservedAndExecuted": true,
-    "managedCapture": "pending-coherent-target-abi-build"
+    "managedCapture": "six-selected-methods-loaded-with-target-abi",
+    "managedGuid": "cb2fa75d-449d-4ee0-93ef-57011daefb8c",
+    "wrongGuidCaptureRejected": true,
+    "nativeLayoutMeasurements": "matched-raw-managed-sizeof-and-debug-variable-offsets",
+    "latestPrefixDifference": "missing-BBOPT-profile-diagnostic",
+    "knownExecutionLimits": [
+      "Local threading is not built by the existing fgLocalMorph stub; do not exercise unpinning on pinned locals until that prerequisite is ported.",
+      "Corrected DFS/tree/EH support passes six focused graph cases in Debug/Release; runtime EH parity remains unestablished.",
+      "The six-method corpus contains no EH or pinned-local cases and establishes neither phase nor codegen parity."
+    ]
   },
   "localRecovery": {
     "csharpWip": {
@@ -119,10 +131,10 @@
     "baselineOutputCount": 34,
     "baselineDeterministic": true,
     "targetInputCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
-    "targetInputCount": 38,
+    "targetInputCount": 39,
     "targetOutputCount": 34,
     "targetChangedOutputCount": 22,
     "targetDeterministic": true,
-    "targetConsumers": "shared-vector-identity-synchronization-in-progress"
+    "targetConsumers": "shared-vector-identity-consumers-synchronized-and-built"
   }
 }

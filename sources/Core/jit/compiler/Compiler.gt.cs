@@ -5772,6 +5772,10 @@ public partial class Compiler
         {
             name = "TypeCtx";
         }
+        else if (num == ICorDebugInfo.ASYNC_CONTINUATION_ILNUM)
+        {
+            name = "AsyncCont";
+        }
         else if (num == ICorDebugInfo.UNKNOWN_ILNUM)
         {
             if (lclNumIsTrueCSE(lclNum))
@@ -5784,7 +5788,7 @@ public partial class Compiler
             {
                 // We introduce this LclVar in lowering, hence special case the printing of
                 // it instead of handling it in "rationalizer" below.
-                ilName = "FFReg";
+                name = "FFReg";
             }
 #endif
             else if ((optCSEstart >= 0) && (optCSEstart <= lclNum))
@@ -5819,7 +5823,7 @@ public partial class Compiler
 #if JIT32_GCENCODER
             else if (lclNum == lvaLocAllocSPvar)
             {
-                ilName = "LocAllocSP";
+                name = "LocAllocSP";
             }
 #endif
             else if (lclNum == lvaAsyncContinuationArg)
@@ -5829,7 +5833,7 @@ public partial class Compiler
 #if TARGET_WASM
             else if (lclNum == lvaWasmSpArg)
             {
-                ilName = "SP";
+                name = "SP";
             }
 #endif
             else

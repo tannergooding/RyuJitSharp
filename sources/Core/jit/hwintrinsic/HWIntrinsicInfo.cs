@@ -3,10 +3,136 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
+
 namespace RyuJitSharp;
 
 public readonly partial struct HWIntrinsicInfo
 {
+#if FEATURE_HW_INTRINSICS
+    private static readonly int[] s_isaRangeBounds = CreateIsaRangeBounds();
+
+    private static int[] CreateIsaRangeBounds()
+    {
+        var instructionSets = s_instructionSets;
+        var isaRangeBounds = new int[((int)InstructionSet_NONE + 1) * 2];
+        Array.Fill(isaRangeBounds, -1);
+
+        for (var index = 0; index < instructionSets.Length; index++)
+        {
+            var boundsIndex = (int)instructionSets[index] * 2;
+
+            if (isaRangeBounds[boundsIndex] is -1)
+            {
+                isaRangeBounds[boundsIndex] = index;
+            }
+            else
+            {
+                assert(isaRangeBounds[boundsIndex + 1] == index - 1);
+            }
+
+            isaRangeBounds[boundsIndex + 1] = index;
+        }
+
+        return isaRangeBounds;
+    }
+
+    public static unsafe NamedIntrinsic LookupId(CORINFO_SIG_INFO* sig, CORINFO_InstructionSet isa, ReadOnlySpan<byte> methodName)
+    {
+        if (sig->hasThis() || isa is InstructionSet_NONE)
+        {
+            return NI_Illegal;
+        }
+
+        if (isa is InstructionSet_Vector)
+        {
+            return LookupIdForIsa(sig, InstructionSet_Vector128, methodName);
+        }
+
+#if TARGET_XARCH
+        if (isa is InstructionSet_AVX10v1)
+        {
+            var id = LookupIdForIsa(sig, InstructionSet_AVX512, methodName);
+            if (id is not NI_Illegal)
+            {
+                return id;
+            }
+
+            id = LookupIdForIsa(sig, InstructionSet_AVX512v2, methodName);
+            return id is not NI_Illegal ? id : LookupIdForIsa(sig, InstructionSet_AVX512v3, methodName);
+        }
+        else if (isa is InstructionSet_AVX10v1_X64)
+        {
+            return LookupIdForIsa(sig, InstructionSet_AVX512_X64, methodName);
+        }
+#endif
+
+        return LookupIdForIsa(sig, isa, methodName);
+    }
+
+    private static unsafe NamedIntrinsic LookupIdForIsa(CORINFO_SIG_INFO* sig, CORINFO_InstructionSet isa, ReadOnlySpan<byte> methodName)
+    {
+        var boundsIndex = (int)isa * 2;
+
+        if ((uint)boundsIndex >= (uint)s_isaRangeBounds.Length)
+        {
+            return NI_Illegal;
+        }
+
+        var rangeLower = s_isaRangeBounds[boundsIndex];
+        var rangeUpper = s_isaRangeBounds[boundsIndex + 1];
+
+        while (rangeLower <= rangeUpper)
+        {
+            var rangeIndex = (rangeUpper + rangeLower) / 2;
+            var sortOrder = CompareUtf8Name(methodName, s_names[rangeIndex]);
+
+            if (sortOrder < 0)
+            {
+                rangeUpper = rangeIndex - 1;
+            }
+            else if (sortOrder > 0)
+            {
+                rangeLower = rangeIndex + 1;
+            }
+            else
+            {
+                var expectedArgCount = s_numArgs[rangeIndex];
+                assert((expectedArgCount == byte.MaxValue) || (sig->numArgs == expectedArgCount));
+                return (NamedIntrinsic)((int)NI_HW_INTRINSIC_START + rangeIndex + 1);
+            }
+        }
+
+        return NI_Illegal;
+    }
+
+    private static int CompareUtf8Name(ReadOnlySpan<byte> utf8Name, string intrinsicName)
+    {
+        var compareLength = int.Min(utf8Name.Length, intrinsicName.Length);
+
+        for (var index = 0; index < compareLength; index++)
+        {
+            var character = intrinsicName[index];
+            assert(character <= byte.MaxValue);
+
+            var comparison = utf8Name[index].CompareTo((byte)character);
+
+            if (comparison is not 0)
+            {
+                return comparison;
+            }
+        }
+
+        return utf8Name.Length.CompareTo(intrinsicName.Length);
+    }
+#endif
+
+    private static int GetTableIndex(NamedIntrinsic id)
+    {
+        assert(id is > NI_HW_INTRINSIC_START and < NI_HW_INTRINSIC_END);
+        return id - NI_HW_INTRINSIC_START - 1;
+    }
+
     public static byte GetMultiRegCount(NamedIntrinsic id)
     {
         assert(IsMultiReg(id));
@@ -91,14 +217,12 @@ public readonly partial struct HWIntrinsicInfo
 
     public static HWIntrinsicCategory lookupCategory(NamedIntrinsic id)
     {
-        assert(id is > NI_HW_INTRINSIC_START and < NI_HW_INTRINSIC_END);
-        return s_categories[id - NI_HW_INTRINSIC_START];
+        return s_categories[GetTableIndex(id)];
     }
 
     public static HWIntrinsicFlag lookupFlags(NamedIntrinsic id)
     {
-        assert(id is > NI_HW_INTRINSIC_START and < NI_HW_INTRINSIC_END);
-        return s_flags[id - NI_HW_INTRINSIC_START];
+        return s_flags[GetTableIndex(id)];
     }
 
     public static bool ReturnsBoolean(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_ReturnsBoolean) != 0;
@@ -108,22 +232,19 @@ public readonly partial struct HWIntrinsicInfo
 #if TARGET_XARCH
     public static byte lookupFltCost(NamedIntrinsic id)
     {
-        assert(id is > NI_HW_INTRINSIC_START and < NI_HW_INTRINSIC_END);
-        return s_fltCosts[id - NI_HW_INTRINSIC_START];
+        return s_fltCosts[GetTableIndex(id)];
     }
 
     public static byte lookupIntCost(NamedIntrinsic id)
     {
-        assert(id is > NI_HW_INTRINSIC_START and < NI_HW_INTRINSIC_END);
-        return s_intCosts[id - NI_HW_INTRINSIC_START];
+        return s_intCosts[GetTableIndex(id)];
     }
 #endif
 
 #if DEBUG
     public static string lookupName(NamedIntrinsic id)
     {
-        assert(id is > NI_HW_INTRINSIC_START and < NI_HW_INTRINSIC_END);
-        return s_names[id - NI_HW_INTRINSIC_START];
+        return s_names[GetTableIndex(id)];
     }
 #endif
 

@@ -232,12 +232,17 @@ public partial class Compiler
             assert(varTypeIsStruct(varDsc.Type));
             assert(!varDsc.lvPromoted); // Don't ask again :)
 
-            // If this lclVar is used in a simd intrinsic, then we don't want to struct promote it.
-            // Note, however, that simd lclVars that are NOT used in a simd intrinsic may be
-            // profitably promoted.
-            if (varDsc.lvIsUsedInSimdIntrinsic)
+            if (varTypeIsSimdOrMask(varDsc.Type))
             {
-                JITDUMP($"  struct promotion of V{lclNum:D2} is disabled because lvIsUsedInSimdIntrinsic()\n");
+                // SIMD and mask locals have specialized IR or no accessible fields.
+                JITDUMP($"  struct promotion of V{lclNum:D2} is disabled because it is a SIMD or MASK type\n");
+                return false;
+            }
+
+            if (varDsc.IsBitcastToSimd())
+            {
+                // Treat user-defined vector wrappers as vectors rather than promoting their fields.
+                JITDUMP($"  struct promotion of V{lclNum:D2} is disabled because IsBitcastToSimd()\n");
                 return false;
             }
 
@@ -332,16 +337,6 @@ public partial class Compiler
                         {
                             canPromote = false;
                         }
-#if FEATURE_SIMD
-                        // If we have a register-passed struct with mixed non-opaque simd types (i.e. with defined fields)
-                        // and non-simd types, we don't currently handle that case in the prolog, so we can't promote.
-                        else if ((fieldCnt > 1) && varTypeIsStruct(fieldType) &&
-                                 (structPromotionInfo.fields[i].fldSimdTypeHnd != NO_CLASS_HANDLE) &&
-                                 !_compiler.isOpaqueSimdType(structPromotionInfo.fields[i].fldSimdTypeHnd))
-                        {
-                            canPromote = false;
-                        }
-#endif
                     }
                 }
 #elif UNIX_AMD64_ABI
@@ -669,8 +664,66 @@ public partial class Compiler
 
         private unsafe var_types TryPromoteValueClassAsPrimitive(CORINFO_TYPE_LAYOUT_NODE* treeNodes, nint maxTreeNodes, nint index)
         {
-            // TODO: Port Compiler.StructPromotionHelper.TryPromoteValueClassAsPrimitive
-            return TYP_UNDEF;
+            assert(index < maxTreeNodes);
+            ref var node = ref treeNodes[index];
+            assert(node.type is CORINFO_TYPE_VALUECLASS);
+
+            if (node.simdTypeHnd != NO_CLASS_HANDLE)
+            {
+                var className = _compiler.getClassNameFromMetadata(node.simdTypeHnd, out var namespaceName);
+
+#if FEATURE_SIMD
+                if (namespaceName is "System.Runtime.Intrinsics" or "System.Numerics")
+                {
+                    var simdBaseType = _compiler.getBaseTypeAndSizeOfSimdType(node.simdTypeHnd, out var simdSize);
+
+                    if ((simdBaseType is not TYP_UNDEF) && _compiler.structMightRepresentSimdType(node.simdTypeHnd))
+                    {
+                        return GetSimdTypeForSize(simdSize);
+                    }
+                }
+#endif
+
+#if TARGET_64BIT
+                // Vector64<T> was historically promotable as a long when SIMD is not in use.
+                if ((namespaceName is "System.Runtime.Intrinsics") && (className is "Vector64`1"))
+                {
+                    return TYP_LONG;
+                }
+#endif
+            }
+
+            if ((node.numFields != 1) || (index + 1 >= maxTreeNodes))
+            {
+                return TYP_UNDEF;
+            }
+
+            ref var primNode = ref treeNodes[index + 1];
+
+            if ((primNode.type is CORINFO_TYPE_VALUECLASS) || (primNode.offset != node.offset))
+            {
+                return TYP_UNDEF;
+            }
+
+            if (primNode.size != node.size)
+            {
+                JITDUMP("Promotion blocked: struct contains struct field with one field, but that field is not the same size as its parent.\n");
+                return TYP_UNDEF;
+            }
+
+            if (primNode.size > TARGET_POINTER_SIZE)
+            {
+                JITDUMP("Promotion blocked: struct contains struct field with one field, but that field has invalid size.\n");
+                return TYP_UNDEF;
+            }
+
+            if ((primNode.size != TARGET_POINTER_SIZE) && ((node.offset % primNode.size) != 0))
+            {
+                JITDUMP($"Promotion blocked: struct contains struct field with one field, but the outer struct offset {node.offset} is not a multiple of the inner field size {primNode.size}.\n");
+                return TYP_UNDEF;
+            }
+
+            return primNode.type.VarType;
         }
 
         /// <summary>Skip over a tree node and all its children.</summary>

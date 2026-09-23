@@ -1187,7 +1187,7 @@ public partial class Compiler
             var isIntrinsic = (methodFlags & CORINFO_FLG_INTRINSIC) is not 0;
             var memberRef = resolvedToken.token;
 
-            var ni = compiler.lookupNamedIntrinsic(methHnd);
+            var ni = compiler.resolveNamedIntrinsic(methHnd, compiler.lookupNamedIntrinsic(methHnd));
 
             if (isIntrinsic)
             {

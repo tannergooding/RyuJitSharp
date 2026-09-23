@@ -33,6 +33,12 @@ $names = @($nativeMethods.Keys)
 if ($names.Count -ne $managedMethods.Count) {
     throw "Compilation counts differ: native $($names.Count), managed $($managedMethods.Count)."
 }
+$managedNames = @($managedMethods.Keys)
+for ($i = 0; $i -lt $names.Count; $i++) {
+    if (-not [string]::Equals($names[$i], $managedNames[$i], [StringComparison]::Ordinal)) {
+        throw "Compilation order or identity differs at entry $($i + 1): '$($names[$i])' vs '$($managedNames[$i])'."
+    }
+}
 $results = foreach ($name in $names) {
     if (-not $managedMethods.Contains($name)) {
         throw "Missing managed compilation: $name"

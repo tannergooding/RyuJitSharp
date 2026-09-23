@@ -489,6 +489,44 @@ public partial class Compiler
         return ehDsc.ebdGetEnclosingRegionIndex(out inTryRegion);
     }
 
+    public ushort ehGetCallFinallyRegionIndex(ushort finallyIndex, out bool inTryRegion)
+    {
+        assert(finallyIndex is not EHblkDsc.NO_ENCLOSING_INDEX);
+        assert(ehGetDsc(finallyIndex).HasFinallyHandler);
+        return ehGetDsc(finallyIndex).ebdGetEnclosingRegionIndex(out inTryRegion);
+    }
+
+    /// <summary>Find the inclusive block range that can call the indicated finally.</summary>
+    public void ehGetCallFinallyBlockRange(ushort finallyIndex, out BasicBlock startBlock, out BasicBlock lastBlock)
+    {
+        assert(finallyIndex is not EHblkDsc.NO_ENCLOSING_INDEX);
+        assert(ehGetDsc(finallyIndex).HasFinallyHandler);
+
+        var callFinallyRegionIndex = ehGetCallFinallyRegionIndex(finallyIndex, out var inTryRegion);
+
+        if (callFinallyRegionIndex == EHblkDsc.NO_ENCLOSING_INDEX)
+        {
+            assert(fgFirstBB is not null);
+            startBlock = fgFirstBB;
+            lastBlock = fgLastBBInMainFunction();
+        }
+        else
+        {
+            ref var ehDsc = ref ehGetDsc(callFinallyRegionIndex);
+
+            if (inTryRegion)
+            {
+                startBlock = ehDsc.ebdTryBeg;
+                lastBlock = ehDsc.ebdTryLast;
+            }
+            else
+            {
+                startBlock = ehDsc.ebdHndBeg;
+                lastBlock = ehDsc.ebdHndLast;
+            }
+        }
+    }
+
     /// <summary>Return the EH descriptor index of the enclosing try, for the given region index.</summary>
     /// <param name="regionIndex"></param>
     /// <returns></returns>

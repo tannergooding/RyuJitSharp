@@ -87,7 +87,7 @@ public sealed class ClassLayoutTable
 
     public int AddCustomLayout(Compiler compiler, ClassLayout layout)
     {
-        if (HasSmallCapacity)
+        if (_layoutCount < 3)
         {
             var layoutCount = _layoutCount++;
             _layoutArray[layoutCount] = layout;
@@ -137,7 +137,7 @@ public sealed class ClassLayoutTable
 
     public unsafe int AddObjLayout(Compiler compiler, ClassLayout layout)
     {
-        if (HasSmallCapacity)
+        if (_layoutCount < 3)
         {
             var layoutCount = _layoutCount++;
             _layoutArray[layoutCount] = layout;

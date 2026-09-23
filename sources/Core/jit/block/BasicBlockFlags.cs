@@ -130,8 +130,11 @@ public enum BasicBlockFlags : long
     /// <summary>Block is a call to a throw helper</summary>
     BBF_THROW_HELPER = 1L << 38,
 
+    /// <summary>Block's branch condition VN only describes flow that actually passes through the block (set/used by RBO)</summary>
+    BBF_STALE_PREDICATE = 1L << 39,
+
     /// <summary>Flags to update when two blocks are compacted</summary>
-    BBF_COMPACT_UPD = BBF_GC_SAFE_POINT | BBF_NEEDS_GCPOLL | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_MDARRAYREF | BBF_MAY_HAVE_BOUNDS_CHECKS,
+    BBF_COMPACT_UPD = BBF_GC_SAFE_POINT | BBF_NEEDS_GCPOLL | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_MDARRAYREF | BBF_MAY_HAVE_BOUNDS_CHECKS | BBF_RECURSIVE_TAILCALL,
 
     /// <summary>Flags a block should not have had before it is split.</summary>
     BBF_SPLIT_NONEXIST = BBF_RETLESS_CALL | BBF_COLD | BBF_THROW_HELPER,
@@ -155,5 +158,5 @@ public enum BasicBlockFlags : long
     ///   <para>These are flags that limit processing of a block if the code in question doesn't exist.</para>
     ///   <para>This is conservative; we might not have actually copied one of these type of tree nodes, but if we only copy a portion of the block's statements, we don't know (unless we actually pay close attention during the copy).</para>
     /// </remarks>
-    BBF_COPY_PROPAGATE = BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_MDARRAYREF | BBF_MAY_HAVE_BOUNDS_CHECKS,
+    BBF_COPY_PROPAGATE = BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_MDARRAYREF | BBF_MAY_HAVE_BOUNDS_CHECKS | BBF_RECURSIVE_TAILCALL,
 }

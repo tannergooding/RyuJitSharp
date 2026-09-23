@@ -42,6 +42,8 @@ public partial struct JitFlags
 
     public const JitFlag JIT_FLAG_USE_DISPATCH_HELPERS = JitFlag.JIT_FLAG_USE_DISPATCH_HELPERS;
 
+    public const JitFlag JIT_FLAG_VERIFY_GC_MODE_TRANSITIONS = JitFlag.JIT_FLAG_VERIFY_GC_MODE_TRANSITIONS;
+
     public enum JitFlag
     {
         /// <summary>optimize for speed</summary>
@@ -141,6 +143,9 @@ public partial struct JitFlags
 
         /// <summary>The JIT should use helpers for interface dispatch instead of virtual stub dispatch</summary>
         JIT_FLAG_USE_DISPATCH_HELPERS = 31,
+
+        /// <summary>The JIT should emit diagnostic helpers that verify GC mode transitions are legal</summary>
+        JIT_FLAG_VERIFY_GC_MODE_TRANSITIONS = 32,
 
         // Note: the mcs tool uses the currently unused upper flags bits when outputting SuperPMI MC file flags.
         // See EXTRA_JIT_FLAGS and spmidumphelper.cpp. Currently, these are bits 56 through 63. If they overlap,

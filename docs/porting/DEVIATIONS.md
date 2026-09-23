@@ -45,6 +45,12 @@ and missing behavior when introducing such a deferral. Windows-x64 behavior
 within the function must not be replaced by stubs. Verify that the selected
 failure path cannot continue as if implemented in Debug or Release.
 
+Current target-sync additions under `TARGET_WASM` are
+`Compiler.fgWasmRepairTryEntries` and `Compiler.fgWasmSpillRefs` in
+`Compiler.fg.cs`. They throw `NotImplementedException` rather than returning a
+successful phase status. Try-entry repair and GC-reference spilling remain
+unported; no Wasm execution support is claimed.
+
 ## Implementation notes and parity findings
 
 ### R001: Temporary serialization for debugging
@@ -88,8 +94,9 @@ managed dump. The Unix branch preserves LF; execution on Unix is not yet verifie
 
 **Remaining action:** compare message layout as more functions become reachable;
 the writer cannot restore newlines omitted at individual ported call sites.
-Using managed output is not itself a defect. Culture/encoding fidelity still
-needs comparison; no defect in either has been established by this investigation.
+Using managed output is not itself a defect. Broader culture/encoding fidelity
+still needs comparison. The later numeric-IL investigation found and corrected
+fixed-point and non-finite formatting differences; see B006 in the backlog.
 
 The earlier object-identity concern was too broad: the two `PendingDsc` hash-code
 diagnostics in `Compiler.imp.cs` are both behind `if (false && verbose)`, matching

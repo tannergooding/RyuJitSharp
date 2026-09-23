@@ -132,6 +132,8 @@ public partial class Globals
             message = $"Assertion failed '{reason}' in '{compiler.info.compFullName}' during '{phaseName}' (IL size {compiler.info.compILCodeSize}; hash 0x{compiler.info.compMethodHash():x8)}; {compiler.compGetTieringName(wantShortName: true)})\n";
         }
 
+        jitstdout().Flush();
+
 #if FUNC_INFO_LOGGING
         if (Compiler.compJitFuncInfoFile is StreamWriter compJitFuncInfoFile)
         {

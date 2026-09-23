@@ -58,6 +58,10 @@ public partial class Globals
     /// <summary>equal to sizeof(void*) and the managed pointer size in bytes for this target</summary>
     public const int TARGET_POINTER_SIZE = 8;
 
+    public const int TARGET_MASKS_SHIFTS = 1;
+
+    public const int TARGET_HAS_MULHI = 1;
+
     public const int CNT_HIGHFLOAT = 16;
 
     public const regMask SRBM_LOWFLOAT = SRBM_XMM0 | SRBM_XMM1 | SRBM_XMM2 | SRBM_XMM3 | SRBM_XMM4 | SRBM_XMM5 | SRBM_XMM6 | SRBM_XMM7 | SRBM_XMM8 | SRBM_XMM9 | SRBM_XMM10 | SRBM_XMM11 | SRBM_XMM12 | SRBM_XMM13 | SRBM_XMM14 | SRBM_XMM15;
@@ -420,16 +424,6 @@ public partial class Globals
     public const regNumber REG_R2R_INDIRECT_PARAM = REG_RAX;
 
     public const regMask SRBM_R2R_INDIRECT_PARAM = SRBM_RAX;
-
-    /// <summary>GenericPInvokeCalliHelper VASigCookie Parameter</summary>
-    public const regNumber REG_PINVOKE_COOKIE_PARAM = REG_R11;
-
-    public const regMask SRBM_PINVOKE_COOKIE_PARAM = SRBM_R11;
-
-    /// <summary>GenericPInvokeCalliHelper unmanaged target Parameter</summary>
-    public const regNumber REG_PINVOKE_TARGET_PARAM = REG_R10;
-
-    public const regMask SRBM_PINVOKE_TARGET_PARAM = SRBM_R10;
 
     /// <summary>IL stub's secret MethodDesc parameter (JitFlags.JIT_FLAG_PUBLISH_SECRET_PARAM)</summary>
     public const regNumber REG_SECRET_STUB_PARAM = REG_R10;

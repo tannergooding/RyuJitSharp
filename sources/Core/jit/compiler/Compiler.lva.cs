@@ -2391,10 +2391,36 @@ public partial class Compiler
 #if DEBUG
             if (JitConfig.EnableExtraSuperPmiQueries != 0)
             {
+                var savedFloatingPointUsed = compFloatingPointUsed;
                 makeExtraStructQueries(layout.ClassHandle, 2);
+                compFloatingPointUsed = savedFloatingPointUsed;
             }
 #endif
         }
+    }
+
+    public unsafe bool structMightRepresentSimdType(CORINFO_CLASS_HANDLE clsHnd)
+    {
+        var classFlags = info.compCompHnd->getClassAttribs(clsHnd);
+        var filteredFlags = classFlags & (CORINFO_FLG_VALUECLASS | CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_BYREF_LIKE | CORINFO_FLG_INTRINSIC_TYPE);
+
+        if (filteredFlags != (CORINFO_FLG_VALUECLASS | CORINFO_FLG_INTRINSIC_TYPE))
+        {
+            return false;
+        }
+
+        var structSize = info.compCompHnd->getClassSize(clsHnd);
+
+#if FEATURE_SIMD
+#if TARGET_ARM64
+        var maxSize = compOpportunisticallyDependsOn(InstructionSet_VectorT) ? MAX_SVE_REGSIZE_BYTES : FP_REGSIZE_BYTES;
+#else
+        var maxSize = GetMaxVectorByteLength();
+#endif
+        return (structSize >= GetMinVectorByteLength()) && (structSize <= maxSize);
+#else
+        return false;
+#endif
     }
 
     /// <summary>Set the type of a local to a struct, given its type handle.</summary>

@@ -28,6 +28,21 @@ public partial class Compiler
 
     public VarResultInfo? eeVars;
 
+#if TARGET_WASM
+    public unsafe ref CORINFO_WASM_WELLKNOWN_GLOBALS eeGetWasmWellKnownGlobals()
+    {
+        if (!wasmWellKnownGlobalsInitialized)
+        {
+            fixed (CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobals = &wasmWellKnownGlobals)
+            {
+                info.compCompHnd->getWasmWellKnownGlobals(pWellKnownGlobals);
+            }
+            wasmWellKnownGlobalsInitialized = true;
+        }
+        return ref wasmWellKnownGlobals;
+    }
+#endif
+
     /// <summary>Append the output of one of the JIT-EE 'print' functions to a StringBuilder.</summary>
     /// <param name="stringBuilder">the builder</param>
     /// <param name="printFunc">A functor to print the string that follows the conventions of the JIT-EE print* functions.</param>

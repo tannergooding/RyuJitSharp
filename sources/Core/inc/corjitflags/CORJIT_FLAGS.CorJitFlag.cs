@@ -45,6 +45,8 @@ public partial struct CORJIT_FLAGS
 
     public const CorJitFlag CORJIT_FLAG_USE_DISPATCH_HELPERS = CorJitFlag.CORJIT_FLAG_USE_DISPATCH_HELPERS;
 
+    public const CorJitFlag CORJIT_FLAG_VERIFY_GC_MODE_TRANSITIONS = CorJitFlag.CORJIT_FLAG_VERIFY_GC_MODE_TRANSITIONS;
+
     // No number should be re-used between different target conditions, so platform-independent code can know uniquely which number corresponds to which flag.
     public enum CorJitFlag
     {

@@ -319,7 +319,7 @@ public sealed class GenTreeCall : GenTree
         }
     }
 
-#if FEATURE_FASTTAILCALL
+#if FEATURE_FASTTAILCALL || TARGET_WASM
     public bool IsFastTailCall
     {
         get

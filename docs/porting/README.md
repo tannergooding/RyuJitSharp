@@ -198,7 +198,8 @@ success.
 `scripts\porting\Compare-PortingDumps.ps1 -NativeDump <file> -ManagedDump <file>
 -OutputPath <report.json>` compares each compilation from its start header up
 to, but excluding, `Finishing PHASE Importation`. It preserves CR/LF and reports
-the first differing line. Missing methods or phase boundaries are errors;
+the first differing line. Changed compilation order/identity, missing methods,
+or missing phase boundaries are errors;
 ordinary differences are diagnostic report entries, not a failing process exit.
 This deliberately narrow prefix comparison does not include the final
 post-import phase dump and must not be reported as full phase or pipeline parity.
@@ -225,6 +226,8 @@ only in an explicitly identified generator workspace, never an arbitrary root.
 Check input provenance, review generated output, and update the corresponding
 files under `sources\Core`; generating output does not integrate it automatically.
 Establish clean-baseline reproducibility before regenerating against new inputs.
+`NamedIntrinsic` uses the pinned `namedintrinsiclist.h` enum body as well as the
+hardware tables; validate the complete ordered enum, not just HWI row counts.
 Continue sharing native table definitions through these generators. Small tools
 for repetitive translation, provenance checks, inventories, or maintenance are
 appropriate when they reduce repeated work or mistakes. Keep their scope narrow

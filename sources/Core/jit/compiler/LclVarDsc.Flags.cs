@@ -65,6 +65,7 @@ public partial struct LclVarDsc
 
 #if FEATURE_SIMD
         UsedInSimdIntrinsic = 1L << 47,
+        IsBitcastToSimd = 1L << 50,
 #endif
 
 #if FEATURE_IMPLICIT_BYREFS

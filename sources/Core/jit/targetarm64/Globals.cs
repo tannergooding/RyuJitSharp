@@ -9,5 +9,15 @@ namespace RyuJitSharp;
 public partial class Globals
 {
     public const int TARGET_POINTER_SIZE = 8;
+
+    public const int TARGET_MASKS_SHIFTS = 1;
+
+    public const int TARGET_HAS_MULHI = 1;
+
+    public const regNumber REG_SCRATCH_V = REG_V9;
+
+    public const regNumber REG_SCRATCH_P = REG_P4;
+
+    public const int MAX_SVE_REGSIZE_BYTES = 256;
 }
 #endif

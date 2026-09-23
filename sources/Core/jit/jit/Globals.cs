@@ -716,9 +716,10 @@ public partial class Globals
     /// <param name="schema">profile schema</param>
     /// <param name="pInstrumentationData">associated data</param>
     /// <param name="ilOffset">il offset of the callvirt</param>
-    /// <returns>Estimated number of classes seen at runtime</returns>
+    /// <returns>Number of likely class records written to <paramref name="likelyClasses" />.</returns>
     /// <remarks>
     ///   <para>A "monomorphic" call site will return likelihood 100 and number of entries = 1.</para>
+    ///   <para>Returned likelihoods reflect the observed proportions and are not guaranteed to sum to 100.</para>
     ///   <para>This is used by the devirtualization logic below, and by crossgen2 when producing the R2R image (to reduce the sizecost of carrying the type histogram)</para>
     ///   <para>This code can runs without a jit instance present, so JITDUMP and related cannot be used.</para>
     /// </remarks>
@@ -925,10 +926,8 @@ public partial class Globals
 
                             assert(totalLikelihood <= 100);
 
-                            // Distribute the rounding error and just apply it to the first entry.
-                            // Assume that there is no error If we have unknown handles.
-
-                            if (!containsUnknownHandles)
+                            // Distribute the rounding error only if the returned entries represent the entire histogram.
+                            if ((numberOfClasses == knownHandles) && !containsUnknownHandles)
                             {
                                 assert(numberOfClasses > 0);
                                 assert(totalLikelihood > 0);
@@ -972,14 +971,20 @@ public partial class Globals
     /// <param name="schemas">profile schema</param>
     /// <param name="pInstrumentationData">associated data</param>
     /// <param name="ilOffset">il offset of the node of interest</param>
-    /// <returns>Estimated number of different constants seen at runtime</returns>
+    /// <returns>Number of likely value records written to <paramref name="likelyValues" />.</returns>
+    /// <remarks>Returned likelihoods reflect the observed proportions and are not guaranteed to sum to 100.</remarks>
     public static unsafe int getLikelyValues(Span<LikelyValueRecord> likelyValues, ReadOnlySpan<ICorJitInfo.PgoInstrumentationSchema> schemas, byte* pInstrumentationData, int ilOffset)
     {
-        if ((likelyValues.Length == 0) || schemas.IsEmpty)
+        if (likelyValues.Length == 0)
         {
             return 0;
         }
         likelyValues.Clear();
+
+        if (schemas.IsEmpty)
+        {
+            return 0;
+        }
 
         for (var i = 0; i < schemas.Length; i++)
         {
@@ -1021,11 +1026,7 @@ public partial class Globals
                     }
 
                     // sort by m_count (descending)
-                    // jitstd::sort(sortedEntries, sortedEntries + h.countHistogramElements,
-                    //              [](const LikelyClassMethodHistogramEntry&h1,
-                    //                     const LikelyClassMethodHistogramEntry&h2) -> bool {
-                    //     return h1.m_count > h2.m_count;
-                    // });
+                    sortedEntries[..h.countHistogramElements].Sort((h1, h2) => h2._count.CompareTo(h1._count));
 
                     var numberOfLikelyConst = int.Min(h.countHistogramElements, likelyValues.Length);
                     var totalLikelihood = 0;
@@ -1044,12 +1045,15 @@ public partial class Globals
 
                     assert(totalLikelihood <= 100);
 
-                    // Distribute the rounding error and just apply it to the first entry.
-                    assert(numberOfLikelyConst > 0);
-                    assert(totalLikelihood > 0);
+                    // Distribute the rounding error only if the returned entries represent the entire histogram.
+                    if (numberOfLikelyConst == h.countHistogramElements)
+                    {
+                        assert(numberOfLikelyConst > 0);
+                        assert(totalLikelihood > 0);
 
-                    likelyValues[0].likelihood += (100 - totalLikelihood);
-                    assert(likelyValues[0].likelihood <= 100);
+                        likelyValues[0].likelihood += 100 - totalLikelihood;
+                        assert(likelyValues[0].likelihood <= 100);
+                    }
 
                     return numberOfLikelyConst;
                 }
@@ -1061,6 +1065,10 @@ public partial class Globals
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)], EntryPoint = nameof(getLikelyValues))]
     public static unsafe int getLikelyValues(LikelyValueRecord* pLikelyValues, int maxLikelyValues, ICorJitInfo.PgoInstrumentationSchema* schema, int countSchemaItems, byte* pInstrumentationData, int ilOffset)
     {
+        if (schema is null)
+        {
+            return 0;
+        }
         return getLikelyValues(new Span<LikelyValueRecord>(pLikelyValues, maxLikelyValues), new ReadOnlySpan<ICorJitInfo.PgoInstrumentationSchema>(schema, countSchemaItems), pInstrumentationData, ilOffset);
     }
 

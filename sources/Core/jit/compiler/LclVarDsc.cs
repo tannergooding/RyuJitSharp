@@ -835,6 +835,20 @@ public partial struct LclVarDsc
             _flags = (_flags & ~Flags.UsedInSimdIntrinsic) | (value ? Flags.UsedInSimdIntrinsic : Flags.None);
         }
     }
+
+    /// <summary>This struct local has been bitcast to a SIMD type.</summary>
+    public bool lvIsBitcastToSimd
+    {
+        readonly get
+        {
+            return (_flags & Flags.IsBitcastToSimd) != 0;
+        }
+
+        set
+        {
+            _flags = (_flags & ~Flags.IsBitcastToSimd) | (value ? Flags.IsBitcastToSimd : Flags.None);
+        }
+    }
 #endif
 
 #if FEATURE_IMPLICIT_BYREFS
@@ -1155,8 +1169,12 @@ public partial struct LclVarDsc
 
 #if FEATURE_SIMD
     public readonly bool lvIsUsedInSimdIntrinsic => lvUsedInSimdIntrinsic;
+
+    public readonly bool IsBitcastToSimd() => lvIsBitcastToSimd;
 #else
     public const bool lvIsUsedInSimdIntrinsic = false;
+
+    public readonly bool IsBitcastToSimd() => false;
 #endif
 
     public bool IsSpan

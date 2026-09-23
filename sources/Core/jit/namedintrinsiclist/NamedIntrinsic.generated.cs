@@ -24,9 +24,41 @@ public enum NamedIntrinsic : ushort
     NI_System_BitConverter_Int64BitsToDouble,
     NI_System_BitConverter_SingleToInt32Bits,
 
+    NI_System_Buffer_Memmove,
     NI_System_SpanHelpers_Memmove,
 
+    NI_System_Half_FusedMultiplyAdd,
+    NI_System_Half_ReciprocalEstimate,
+    NI_System_Half_ReciprocalSqrtEstimate,
+    NI_System_Half_Round,
+    NI_System_Half_Sqrt,
+
+    NI_System_Half_op_Addition,
+    NI_System_Half_op_Decrement,
+    NI_System_Half_op_Division,
+    NI_System_Half_op_Equality,
     NI_System_Half_op_Explicit,
+    NI_System_Half_op_GreaterThan,
+    NI_System_Half_op_GreaterThanOrEqual,
+    NI_System_Half_op_Increment,
+    NI_System_Half_op_Inequality,
+    NI_System_Half_op_LessThan,
+    NI_System_Half_op_LessThanOrEqual,
+    NI_System_Half_op_Multiply,
+    NI_System_Half_op_Subtraction,
+
+    NI_System_Half_get_MinValue,
+    NI_System_Half_get_MaxValue,
+    NI_System_Half_get_Epsilon,
+    NI_System_Half_get_NaN,
+    NI_System_Half_get_PositiveInfinity,
+    NI_System_Half_get_NegativeInfinity,
+    NI_System_Half_get_One,
+    NI_System_Half_get_Zero,
+
+    NI_System_Half_Ceiling,
+    NI_System_Half_Floor,
+    NI_System_Half_Truncate,
 
     NI_SYSTEM_MATH_START,
     NI_System_Math_Abs,
@@ -101,6 +133,7 @@ public enum NamedIntrinsic : ushort
     NI_System_Type_op_Inequality,
     NI_System_Type_GetTypeFromHandle,
     NI_System_Type_GetGenericTypeDefinition,
+    NI_System_Activator_CreateInstance_T,
     NI_System_Array_Clone,
     NI_System_Array_GetLength,
     NI_System_Array_GetLowerBound,
@@ -124,6 +157,7 @@ public enum NamedIntrinsic : ushort
     NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant,
+    NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier,
@@ -134,6 +168,10 @@ public enum NamedIntrinsic : ushort
     NI_System_Runtime_CompilerServices_AsyncHelpers_Await,
     NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation,
     NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait,
+    NI_System_Runtime_CompilerServices_AsyncHelpers_AwaitAwaiter,
+    NI_System_Runtime_CompilerServices_AsyncHelpers_UnsafeAwaitAwaiter,
+    NI_System_Runtime_CompilerServices_AsyncHelpers_Suspend,
+    NI_System_Runtime_CompilerServices_AsyncHelpers_TransparentSuspend,
 
     NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref,
 
@@ -168,13 +206,30 @@ public enum NamedIntrinsic : ushort
     NI_System_Threading_Interlocked_MemoryBarrier,
 
     NI_System_Threading_Tasks_Task_ConfigureAwait,
+    NI_System_Threading_Tasks_Task_FromResult,
+    NI_System_Threading_Tasks_Task_get_CompletedTask,
 
-    // These two are special marker IDs so that we still get the inlining profitability boost
+    NI_System_Threading_Tasks_ValueTask_FromResult,
+    NI_System_Threading_Tasks_ValueTask_get_CompletedTask,
+    NI_System_Threading_Tasks_ValueTask__ctor,
+    NI_System_Threading_Tasks_ValueTask_AsTask,
+
+    NI_System_Threading_Tasks_ValueTask_1__ctor,
+    NI_System_Threading_Tasks_ValueTask_1_AsTask,
+
+    // These are special marker IDs so that we still get the inlining profitability boost.
     NI_System_Numerics_Intrinsic,
     NI_System_Runtime_Intrinsics_Intrinsic,
+    NI_System_Runtime_Intrinsics_PlatformIntrinsic,
+
+    // Support-query identities; resolution determines their value for the target.
+    NI_IsSupported,
+    NI_IsHardwareAccelerated,
 
 #if FEATURE_HW_INTRINSICS
     NI_HW_INTRINSIC_START,
+
+    // clang-format off
 #if FEATURE_HW_INTRINSICS
     NI_Vector_Abs,
     NI_Vector_AddSaturate,
@@ -2207,14 +2262,15 @@ public enum NamedIntrinsic : ushort
 #error Unsupported platform
 #endif
 #endif
+    // clang-format on
 
     NI_HW_INTRINSIC_END,
-#endif
+#endif // FEATURE_HW_INTRINSICS
 
 #if FEATURE_SIMD
     NI_SIMD_UpperRestore,
     NI_SIMD_UpperSave,
-#endif
+#endif // FEATURE_SIMD
 
     //
     // Special Import Intrinsics
@@ -2285,6 +2341,10 @@ public enum NamedIntrinsic : ushort
     NI_PRIMITIVE_PopCount,
     NI_PRIMITIVE_RotateLeft,
     NI_PRIMITIVE_RotateRight,
+    NI_PRIMITIVE_SaturateToInt8,
+    NI_PRIMITIVE_SaturateToInt16,
+    NI_PRIMITIVE_SaturateToUInt8,
+    NI_PRIMITIVE_SaturateToUInt16,
     NI_PRIMITIVE_TrailingZeroCount,
 
     NI_PRIMITIVE_END,

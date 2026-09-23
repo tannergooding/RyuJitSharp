@@ -191,6 +191,12 @@ public partial class Compiler
 
     public bool asyncInfoInitialized;
 
+#if TARGET_WASM
+    public CORINFO_WASM_WELLKNOWN_GLOBALS wasmWellKnownGlobals;
+
+    public bool wasmWellKnownGlobalsInitialized;
+#endif
+
     public VirtualStubParamInfo? virtualStubParamInfo;
 
     public ICodeGen? codeGen;
@@ -222,7 +228,7 @@ public partial class Compiler
     public static MethodSet2? s_pJitMethodSet;
 #endif
 
-    public Info info;
+    public Info info = new Info();
 
     private ClassLayoutTable? _classLayoutTable;
 
@@ -485,7 +491,7 @@ public partial class Compiler
         // check that HelperCallProperties are initialized
         assert(CORINFO_HELP_GET_GCSTATIC_BASE.IsPure);
 
-        virtualStubParamInfo = new VirtualStubParamInfo(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+        virtualStubParamInfo = new VirtualStubParamInfo();
 
         // compMatchedVM is set to true if both CPU/ABI and OS are matching the execution engine requirements
         //

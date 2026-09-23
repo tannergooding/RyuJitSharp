@@ -9,9 +9,36 @@ public partial class Compiler
 {
     public sealed class VirtualStubParamInfo
     {
-        public VirtualStubParamInfo(bool isNativeAOT)
+        public VirtualStubParamInfo()
         {
-            // TODO: Port VirtualStubParamInfo.ctor
+#if TARGET_X86
+            Reg = REG_EAX;
+            RegMask = RBM_EAX;
+#elif TARGET_AMD64
+            Reg = REG_R11;
+            RegMask = RBM_R11;
+#elif TARGET_ARM
+            Reg = REG_R12;
+            RegMask = RBM_R12;
+#elif TARGET_ARM64
+            Reg = REG_R11;
+            RegMask = RBM_R11;
+#elif TARGET_LOONGARCH64
+            Reg = REG_T8;
+            RegMask = RBM_T8;
+#elif TARGET_RISCV64
+            Reg = REG_T5;
+            RegMask = RBM_T5;
+#elif TARGET_WASM
+            Reg = REG_NA;
+            RegMask = RBM_NONE;
+#else
+#error Unsupported or unset target architecture
+#endif
         }
+
+        public regNumber Reg { get; }
+
+        public regMaskTP RegMask { get; }
     }
 }

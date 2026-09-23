@@ -120,7 +120,7 @@ public sealed class ClassLayout
 #if TARGET_64BIT || TARGET_WASM
                 8 => TYP_LONG,
 #endif
-#if FEATURE_SIMD
+#if FEATURE_SIMD && !TARGET_WASM
                 // TODO: check TYP_SIMD12 profitability, it will need additional support in `BuildStoreLoc`.
                 16 => TYP_SIMD16,
 #endif
@@ -132,6 +132,18 @@ public sealed class ClassLayout
     public ushort SlotCount => (ushort)(roundUp(_size, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE);
 
     public int Size => _size;
+
+    public unsafe int GetAlignmentRequirement(Compiler compiler)
+    {
+        if (IsCustomLayout)
+        {
+            return HasGCPtr ? TARGET_POINTER_SIZE : 1;
+        }
+        else
+        {
+            return compiler.info.compCompHnd->getClassAlignmentRequirement(ClassHandle);
+        }
+    }
 
     public var_types Type => _type;
 
@@ -454,6 +466,49 @@ public sealed class ClassLayout
             }
         }
         return nonPadding;
+    }
+
+    public ClassLayout SliceLayout(Compiler compiler, int offset, int size)
+    {
+        if ((offset == 0) && (size == Size))
+        {
+            return this;
+        }
+
+        var builder = new ClassLayoutBuilder(compiler, size);
+        var end = unchecked(offset + size);
+
+#if DEBUG
+        builder.SetName($"{ClassName}[{offset:D3}..{end:D3}]", $"{ShortClassName}[{offset:D3}..{end:D3}]");
+#endif
+
+        if (((offset % TARGET_POINTER_SIZE) == 0) && ((size % TARGET_POINTER_SIZE) == 0) && HasGCPtr)
+        {
+            for (var i = 0; i < size; i += TARGET_POINTER_SIZE)
+            {
+                builder.SetGCPtrType(i / TARGET_POINTER_SIZE, GetGCPtrType((offset + i) / TARGET_POINTER_SIZE));
+            }
+        }
+        else
+        {
+            assert(!HasGCPtr);
+        }
+
+        builder.AddPadding(new SegmentList.Segment(0, size));
+
+        foreach (var nonPadding in GetNonPadding(compiler))
+        {
+            if ((nonPadding.End <= offset) || (nonPadding.Start >= end))
+            {
+                continue;
+            }
+
+            var start = nonPadding.Start <= offset ? 0 : (nonPadding.Start - offset);
+            var segmentEnd = nonPadding.End >= end ? size : (nonPadding.End - offset);
+
+            builder.RemovePadding(new SegmentList.Segment(start, segmentEnd));
+        }
+        return compiler.typGetCustomLayout(builder);
     }
 
     /// <summary>Check if this classlayout has a TYP_BYREF GC pointer in it.</summary>

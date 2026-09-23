@@ -9,5 +9,9 @@ namespace RyuJitSharp;
 public partial class Globals
 {
     public const int TARGET_POINTER_SIZE = 8;
+
+    public const int TARGET_MASKS_SHIFTS = 1;
+
+    public const int TARGET_HAS_MULHI = 1;
 }
 #endif

@@ -13,6 +13,12 @@ public static class TargetArchitecture
     public const bool Is64Bit = false;
 #endif
 
+#if TARGET_WASM
+    public const bool IsWasm = true;
+#else
+    public const bool IsWasm = false;
+#endif
+
 #if TARGET_ARM
     public const bool IsX86 = false;
     public const bool IsX64 = false;

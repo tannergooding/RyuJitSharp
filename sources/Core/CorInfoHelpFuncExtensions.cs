@@ -133,7 +133,8 @@ public static class CorInfoHelpFuncExtensions
         MutatesHeap | IsNoGC,                       // CORINFO_HELP_PROF_FCN_LEAVE
         MutatesHeap | IsNoGC,                       // CORINFO_HELP_PROF_FCN_TAILCALL
         MutatesHeap | IsNoGC,                       // CORINFO_HELP_TAILCALL
-        IsPure,                                     // CORINFO_HELP_GETCURRENTMANAGEDTHREADID
+        // Runtime async methods may resume on another thread.
+        None,                                       // CORINFO_HELP_GETCURRENTMANAGEDTHREADID
         IsNoGC,                                     // CORINFO_HELP_INIT_PINVOKE_FRAME
         IsNoEscape,                                 // CORINFO_HELP_MEMSET
         IsNoEscape,                                 // CORINFO_HELP_MEMZERO

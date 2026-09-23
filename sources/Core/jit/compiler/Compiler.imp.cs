@@ -13,6 +13,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.VisualBasic;
+using unsafe MetadataNamePointerArray = byte**;
 
 namespace RyuJitSharp;
 
@@ -9463,7 +9464,7 @@ public partial class Compiler
                     impResolveToken(codeAddr, out var resolvedToken, CORINFO_TOKENKIND_Class);
                     JITDUMP($" {resolvedToken.token:X8}");
 
-                    Obj(this, resolvedToken, prefixFlags);
+                    Obj(this, resolvedToken, prefixFlags, isLdobj: true);
                     break;
                 }
 
@@ -10078,13 +10079,30 @@ public partial class Compiler
             MathOp2Ovf(compiler, GT_MUL);
         }
 
-        static void Obj(Compiler compiler, in CORINFO_RESOLVED_TOKEN resolvedToken, int prefixFlags)
+        static void Obj(Compiler compiler, in CORINFO_RESOLVED_TOKEN resolvedToken, int prefixFlags, bool isLdobj = false)
         {
             var lclTyp = compiler.TypeHandleToVarType(resolvedToken.hClass, out var layout);
             var tiRetVal = compiler.makeTypeInfo(resolvedToken.hClass);
 
             var op1 = compiler.impPopStack().val;
             compiler.assertImp((op1.Type.ActualType is TYP_I_IMPL) || (op1.Type is TYP_BYREF), op1);
+
+#if FEATURE_SIMD
+            if (isLdobj && varTypeIsSimd(lclTyp))
+            {
+                var addr = op1.EffectiveVal;
+
+                if (addr.IsLclVarAddr)
+                {
+                    var lclVar = compiler.lvaGetDesc(addr.AsLclFld().LclNum);
+
+                    if ((lclVar.Type is TYP_STRUCT) && (lclVar.lvExactSize == lclTyp.Size))
+                    {
+                        lclVar.lvIsBitcastToSimd = true;
+                    }
+                }
+            }
+#endif
 
             op1 = compiler.gtNewLoadValueNode(lclTyp, op1, layout, impPrefixFlagsToIndirFlags(prefixFlags));
             compiler.impPushOnStack(op1, tiRetVal);
@@ -16794,7 +16812,30 @@ public partial class Compiler
                 // ldarg.0
                 // ret
 
-                return impPopStack().val;
+                var simdOp = impPopStack().val;
+
+#if FEATURE_SIMD
+                var addr = simdOp.EffectiveVal;
+
+                if (addr.IsLclVarAddr)
+                {
+                    var toTypeHnd = sig.sigInst.methInst[1];
+                    var toType = TypeHandleToVarType(toTypeHnd);
+
+                    if (varTypeIsSimd(toType))
+                    {
+                        var fromTypeHnd = sig.sigInst.methInst[0];
+                        _ = TypeHandleToVarType(fromTypeHnd, out var fromLayout);
+
+                        if ((fromLayout is not null) && (fromLayout.Size == toType.Size))
+                        {
+                            lvaGetDesc(addr.AsLclFld().LclNum).lvIsBitcastToSimd = true;
+                        }
+                    }
+                }
+#endif
+
+                return simdOp;
             }
 
             case NI_SRCS_UNSAFE_AsPointer:
@@ -16939,6 +16980,13 @@ public partial class Compiler
                 else
                 {
                     addr = impGetNodeAddr(op1, CHECK_SPILL_ALL, GTF_IND_MUST_PRESERVE_FLAGS, out indirFlags);
+
+#if FEATURE_SIMD
+                    if (varTypeIsSimd(toType) && addr.IsLclVarAddr)
+                    {
+                        lvaGetDesc(addr.AsLclFld().LclNum).lvIsBitcastToSimd = true;
+                    }
+#endif
                 }
 
                 if (info.compCompHnd->getClassAlignmentRequirement(fromTypeHnd) < info.compCompHnd->getClassAlignmentRequirement(toTypeHnd))
@@ -19649,9 +19697,1815 @@ public partial class Compiler
 
     public unsafe NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
     {
-        // TODO: Port Compiler.lookupNamedIntrinsic
+        byte* classNamePointer = null;
+        byte* namespaceNamePointer = null;
+        MetadataNamePointerArray enclosingClassNamePointers = stackalloc byte*[2];
+        enclosingClassNamePointers[0] = null;
+        enclosingClassNamePointers[1] = null;
+        var methodNamePointer = info.compCompHnd->getMethodNameFromMetadata(method, &classNamePointer, &namespaceNamePointer, enclosingClassNamePointers, 2);
+
+        if (isNullPointer(namespaceNamePointer) || isNullPointer(classNamePointer) || isNullPointer(methodNamePointer))
+        {
+            return info.compCompHnd->getArrayIntrinsicID(method) switch
+            {
+                CorInfoArrayIntrinsic.GET => NI_Array_Get,
+                CorInfoArrayIntrinsic.SET => NI_Array_Set,
+                CorInfoArrayIntrinsic.ADDRESS => NI_Array_Address,
+                _ => NI_Illegal,
+            };
+        }
+
+        var namespaceName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(namespaceNamePointer);
+        var className = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(classNamePointer);
+        var methodName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(methodNamePointer);
+        var enclosingClassName = enclosingClassNamePointers[0] is not null
+            ? MemoryMarshal.CreateReadOnlySpanFromNullTerminated(enclosingClassNamePointers[0])
+            : default;
+        var result = NI_Illegal;
+
+        if (NameStartsWith(namespaceName, "System"u8))
+        {
+            namespaceName = namespaceName[6..];
+
+            if (namespaceName.IsEmpty)
+            {
+                if (NameEquals(className, "Activator"u8))
+                {
+                    if (NameEquals(methodName, "AllocatorOf"u8))
+                    {
+                        result = NI_System_Activator_AllocatorOf;
+                    }
+                    else if (NameEquals(methodName, "CreateInstance"u8))
+                    {
+                        CORINFO_SIG_INFO sig;
+                        info.compCompHnd->getMethodSig(method, &sig);
+
+                        if ((sig.sigInst.methInstCount is 1) && (sig.sigInst.classInstCount is 0))
+                        {
+                            result = NI_System_Activator_CreateInstance_T;
+                        }
+                    }
+                    else if (NameEquals(methodName, "DefaultConstructorOf"u8))
+                    {
+                        result = NI_System_Activator_DefaultConstructorOf;
+                    }
+                }
+                else if (NameEquals(className, "ArgumentNullException"u8))
+                {
+                    if (NameEquals(methodName, "ThrowIfNull"u8))
+                    {
+                        result = NI_System_ArgumentNullException_ThrowIfNull;
+                    }
+                }
+                else if (NameEquals(className, "Array"u8))
+                {
+                    if (NameEquals(methodName, "Clone"u8))
+                    {
+                        result = NI_System_Array_Clone;
+                    }
+                    else if (NameEquals(methodName, "GetLength"u8))
+                    {
+                        result = NI_System_Array_GetLength;
+                    }
+                    else if (NameEquals(methodName, "GetLowerBound"u8))
+                    {
+                        result = NI_System_Array_GetLowerBound;
+                    }
+                    else if (NameEquals(methodName, "GetUpperBound"u8))
+                    {
+                        result = NI_System_Array_GetUpperBound;
+                    }
+                }
+                else if (NameEquals(className, "Array`1"u8) && NameEquals(methodName, "GetEnumerator"u8))
+                {
+                    result = NI_System_Array_T_GetEnumerator;
+                }
+                else if (NameEquals(className, "BitConverter"u8))
+                {
+                    if (NameEquals(methodName, "DoubleToInt64Bits"u8) || NameEquals(methodName, "DoubleToUInt64Bits"u8))
+                    {
+                        result = NI_System_BitConverter_DoubleToInt64Bits;
+                    }
+                    else if (NameEquals(methodName, "Int32BitsToSingle"u8) || NameEquals(methodName, "UInt32BitsToSingle"u8))
+                    {
+                        result = NI_System_BitConverter_Int32BitsToSingle;
+                    }
+                    else if (NameEquals(methodName, "Int64BitsToDouble"u8) || NameEquals(methodName, "UInt64BitsToDouble"u8))
+                    {
+                        result = NI_System_BitConverter_Int64BitsToDouble;
+                    }
+                    else if (NameEquals(methodName, "SingleToInt32Bits"u8) || NameEquals(methodName, "SingleToUInt32Bits"u8))
+                    {
+                        result = NI_System_BitConverter_SingleToInt32Bits;
+                    }
+                }
+                else if (NameEquals(className, "Buffer"u8) && NameEquals(methodName, "Memmove"u8))
+                {
+                    result = NI_System_Buffer_Memmove;
+                }
+                else if (NameEquals(className, "Double"u8) || NameEquals(className, "Math"u8) || NameEquals(className, "MathF"u8) || NameEquals(className, "Single"u8))
+                {
+                    result = lookupPrimitiveFloatNamedIntrinsic(methodName);
+                }
+                else if (NameEquals(className, "Enum"u8))
+                {
+                    if (NameEquals(methodName, "Equals"u8))
+                    {
+                        result = NI_System_Enum_Equals;
+                    }
+                    else if (NameEquals(methodName, "HasFlag"u8))
+                    {
+                        result = NI_System_Enum_HasFlag;
+                    }
+                }
+                else if (NameEquals(className, "GC"u8) && NameEquals(methodName, "KeepAlive"u8))
+                {
+                    result = NI_System_GC_KeepAlive;
+                }
+                else if (NameEquals(className, "Half"u8))
+                {
+                    result = lookupHalfNamedIntrinsic(methodName);
+                }
+                else if (NameEquals(className, "Int32"u8) || NameEquals(className, "Int64"u8) || NameEquals(className, "IntPtr"u8) ||
+                         NameEquals(className, "UInt32"u8) || NameEquals(className, "UInt64"u8) || NameEquals(className, "UIntPtr"u8))
+                {
+                    result = lookupPrimitiveIntNamedIntrinsic(methodName);
+                }
+                else if (NameEquals(className, "MemoryExtensions"u8))
+                {
+                    if (NameEquals(methodName, "AsSpan"u8))
+                    {
+                        result = NI_System_MemoryExtensions_AsSpan;
+                    }
+                    else if (NameEquals(methodName, "Equals"u8))
+                    {
+                        result = NI_System_MemoryExtensions_Equals;
+                    }
+                    else if (NameEquals(methodName, "SequenceEqual"u8))
+                    {
+                        result = NI_System_MemoryExtensions_SequenceEqual;
+                    }
+                    else if (NameEquals(methodName, "StartsWith"u8))
+                    {
+                        result = NI_System_MemoryExtensions_StartsWith;
+                    }
+                    else if (NameEquals(methodName, "EndsWith"u8))
+                    {
+                        result = NI_System_MemoryExtensions_EndsWith;
+                    }
+                }
+                else if (NameEquals(className, "Object"u8))
+                {
+                    if (NameEquals(methodName, "GetType"u8))
+                    {
+                        result = NI_System_Object_GetType;
+                    }
+                    else if (NameEquals(methodName, "MemberwiseClone"u8))
+                    {
+                        result = NI_System_Object_MemberwiseClone;
+                    }
+                }
+                else if (NameEquals(className, "ReadOnlySpan`1"u8))
+                {
+                    if (NameEquals(methodName, "get_Item"u8))
+                    {
+                        result = NI_System_ReadOnlySpan_get_Item;
+                    }
+                    else if (NameEquals(methodName, "get_Length"u8))
+                    {
+                        result = NI_System_ReadOnlySpan_get_Length;
+                    }
+                }
+                else if (NameEquals(className, "RuntimeType"u8))
+                {
+                    if (NameEquals(methodName, "get_IsActualEnum"u8))
+                    {
+                        result = NI_System_Type_get_IsEnum;
+                    }
+                    else if (NameEquals(methodName, "get_TypeHandle"u8))
+                    {
+                        result = NI_System_RuntimeType_get_TypeHandle;
+                    }
+                }
+                else if (NameEquals(className, "RuntimeTypeHandle"u8) && NameEquals(methodName, "ToIntPtr"u8))
+                {
+                    result = NI_System_RuntimeTypeHandle_ToIntPtr;
+                }
+                else if (NameEquals(className, "Span`1"u8))
+                {
+                    if (NameEquals(methodName, "get_Item"u8))
+                    {
+                        result = NI_System_Span_get_Item;
+                    }
+                    else if (NameEquals(methodName, "get_Length"u8))
+                    {
+                        result = NI_System_Span_get_Length;
+                    }
+                }
+                else if (NameEquals(className, "SpanHelpers"u8))
+                {
+                    if (NameEquals(methodName, "SequenceEqual"u8))
+                    {
+                        result = NI_System_SpanHelpers_SequenceEqual;
+                    }
+                    else if (NameEquals(methodName, "Fill"u8))
+                    {
+                        result = NI_System_SpanHelpers_Fill;
+                    }
+                    else if (NameEquals(methodName, "ClearWithoutReferences"u8))
+                    {
+                        result = NI_System_SpanHelpers_ClearWithoutReferences;
+                    }
+                    else if (NameEquals(methodName, "Memmove"u8))
+                    {
+                        result = NI_System_SpanHelpers_Memmove;
+                    }
+                }
+                else if (NameEquals(className, "String"u8))
+                {
+                    if (NameEquals(methodName, "Equals"u8))
+                    {
+                        result = NI_System_String_Equals;
+                    }
+                    else if (NameEquals(methodName, "FastAllocateString"u8))
+                    {
+                        result = NI_System_String_FastAllocateString;
+                    }
+                    else if (NameEquals(methodName, "get_Chars"u8))
+                    {
+                        result = NI_System_String_get_Chars;
+                    }
+                    else if (NameEquals(methodName, "get_Length"u8))
+                    {
+                        result = NI_System_String_get_Length;
+                    }
+                    else if (NameEquals(methodName, "op_Implicit"u8))
+                    {
+                        result = NI_System_String_op_Implicit;
+                    }
+                    else if (NameEquals(methodName, "StartsWith"u8))
+                    {
+                        result = NI_System_String_StartsWith;
+                    }
+                    else if (NameEquals(methodName, "EndsWith"u8))
+                    {
+                        result = NI_System_String_EndsWith;
+                    }
+                }
+                else if (NameEquals(className, "SZArrayHelper"u8) && NameEquals(methodName, "GetEnumerator"u8))
+                {
+                    result = NI_System_SZArrayHelper_GetEnumerator;
+                }
+                else if (NameEquals(className, "Type"u8))
+                {
+                    if (NameEquals(methodName, "get_IsEnum"u8))
+                    {
+                        result = NI_System_Type_get_IsEnum;
+                    }
+                    else if (NameEquals(methodName, "get_IsValueType"u8))
+                    {
+                        result = NI_System_Type_get_IsValueType;
+                    }
+                    else if (NameEquals(methodName, "get_IsPrimitive"u8))
+                    {
+                        result = NI_System_Type_get_IsPrimitive;
+                    }
+                    else if (NameEquals(methodName, "get_IsGenericType"u8))
+                    {
+                        result = NI_System_Type_get_IsGenericType;
+                    }
+                    else if (NameEquals(methodName, "get_IsByRefLike"u8))
+                    {
+                        result = NI_System_Type_get_IsByRefLike;
+                    }
+                    else if (NameEquals(methodName, "GetEnumUnderlyingType"u8))
+                    {
+                        result = NI_System_Type_GetEnumUnderlyingType;
+                    }
+                    else if (NameEquals(methodName, "GetTypeFromHandle"u8))
+                    {
+                        result = NI_System_Type_GetTypeFromHandle;
+                    }
+                    else if (NameEquals(methodName, "GetGenericTypeDefinition"u8))
+                    {
+                        result = NI_System_Type_GetGenericTypeDefinition;
+                    }
+                    else if (NameEquals(methodName, "IsAssignableFrom"u8))
+                    {
+                        result = NI_System_Type_IsAssignableFrom;
+                    }
+                    else if (NameEquals(methodName, "IsAssignableTo"u8))
+                    {
+                        result = NI_System_Type_IsAssignableTo;
+                    }
+                    else if (NameEquals(methodName, "op_Equality"u8))
+                    {
+                        result = NI_System_Type_op_Equality;
+                    }
+                    else if (NameEquals(methodName, "op_Inequality"u8))
+                    {
+                        result = NI_System_Type_op_Inequality;
+                    }
+                    else if (NameEquals(methodName, "get_TypeHandle"u8))
+                    {
+                        result = NI_System_Type_get_TypeHandle;
+                    }
+                }
+            }
+            else if (namespaceName[0] is (byte)'.')
+            {
+                namespaceName = namespaceName[1..];
+
+#if TARGET_XARCH || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+                if (NameEquals(namespaceName, "Buffers.Binary"u8))
+                {
+                    if (NameEquals(className, "BinaryPrimitives"u8) && NameEquals(methodName, "ReverseEndianness"u8))
+                    {
+#if TARGET_RISCV64
+                        if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
+#endif
+                        {
+                            result = NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness;
+                        }
+                    }
+                }
+                else
+#endif
+                if (NameEquals(namespaceName, "Collections.Generic"u8))
+                {
+                    if (NameEquals(className, "Comparer`1"u8) && NameEquals(methodName, "get_Default"u8))
+                    {
+                        result = NI_System_Collections_Generic_Comparer_get_Default;
+                    }
+                    else if (NameEquals(className, "EqualityComparer`1"u8) && NameEquals(methodName, "get_Default"u8))
+                    {
+                        result = NI_System_Collections_Generic_EqualityComparer_get_Default;
+                    }
+                    else if (NameEquals(className, "IEnumerable`1"u8) && NameEquals(methodName, "GetEnumerator"u8))
+                    {
+                        result = NI_System_Collections_Generic_IEnumerable_GetEnumerator;
+                    }
+                }
+                else if (NameEquals(namespaceName, "Numerics"u8))
+                {
+                    if (NameEquals(className, "BitOperations"u8))
+                    {
+                        result = lookupPrimitiveIntNamedIntrinsic(methodName);
+                    }
+                    else
+                    {
+#if FEATURE_HW_INTRINSICS
+                        var isVectorT = NameEquals(className, "Vector`1"u8);
+                        var isVector = NameEquals(className, "Vector"u8);
+
+                        if (isVectorT || isVector)
+                        {
+                            var lookupMethodName = methodName;
+
+                            var vectorInterfacePrefixUtf8 = "System.Runtime.Intrinsics.ISimdVector<System.Numerics.Vector"u8;
+
+                            if (NameStartsWith(methodName, vectorInterfacePrefixUtf8))
+                            {
+                                var interfaceSuffix = methodName[vectorInterfacePrefixUtf8.Length..];
+                                if (NameStartsWith(interfaceSuffix, "<T>,T>."u8))
+                                {
+                                    lookupMethodName = interfaceSuffix[7..];
+                                }
+                            }
+
+                            if (NameStartsWith(lookupMethodName, "As"u8) && (lookupMethodName.Length > 2))
+                            {
+                                var vectorConversion = lookupMethodName[2..];
+                                var converted = false;
+
+                                if (NameStartsWith(vectorConversion, "Vector"u8))
+                                {
+                                    var conversionType = vectorConversion[6..];
+                                    if (NameEquals(conversionType, "Byte"u8))
+                                    {
+                                        lookupMethodName = "AsByte"u8;
+                                        converted = true;
+                                    }
+                                    else if (NameEquals(conversionType, "Double"u8))
+                                    {
+                                        lookupMethodName = "AsDouble"u8;
+                                        converted = true;
+                                    }
+                                    else if (NameEquals(conversionType, "Int16"u8))
+                                    {
+                                        lookupMethodName = "AsInt16"u8;
+                                        converted = true;
+                                    }
+                                    else if (NameEquals(conversionType, "Int32"u8))
+                                    {
+                                        lookupMethodName = "AsInt32"u8;
+                                        converted = true;
+                                    }
+                                    else if (NameEquals(conversionType, "Int64"u8))
+                                    {
+                                        lookupMethodName = "AsInt64"u8;
+                                        converted = true;
+                                    }
+                                    else if (NameEquals(conversionType, "NInt"u8))
+                                    {
+                                        lookupMethodName = "AsNInt"u8;
+                                        converted = true;
+                                    }
+                                    else if (NameEquals(conversionType, "NUInt"u8))
+                                    {
+                                        lookupMethodName = "AsNUInt"u8;
+                                        converted = true;
+                                    }
+                                    else if (NameEquals(conversionType, "SByte"u8))
+                                    {
+                                        lookupMethodName = "AsSByte"u8;
+                                        converted = true;
+                                    }
+                                    else if (NameEquals(conversionType, "Single"u8))
+                                    {
+                                        lookupMethodName = "AsSingle"u8;
+                                        converted = true;
+                                    }
+                                    else if (NameEquals(conversionType, "UInt16"u8))
+                                    {
+                                        lookupMethodName = "AsUInt16"u8;
+                                        converted = true;
+                                    }
+                                    else if (NameEquals(conversionType, "UInt32"u8))
+                                    {
+                                        lookupMethodName = "AsUInt32"u8;
+                                        converted = true;
+                                    }
+                                    else if (NameEquals(conversionType, "UInt64"u8))
+                                    {
+                                        lookupMethodName = "AsUInt64"u8;
+                                        converted = true;
+                                    }
+                                }
+
+                                if (!converted)
+                                {
+                                    lookupMethodName = default;
+                                }
+                            }
+                            else if (NameEquals(lookupMethodName, "SquareRoot"u8))
+                            {
+                                lookupMethodName = "Sqrt"u8;
+                            }
+
+                            if (!lookupMethodName.IsEmpty)
+                            {
+                                CORINFO_SIG_INFO sig;
+                                info.compCompHnd->getMethodSig(method, &sig);
+                                result = HWIntrinsicInfo.LookupId(&sig, InstructionSet_Vector, lookupMethodName);
+                            }
+                        }
+#endif
+
+                        if (result is NI_Illegal)
+                        {
+                            if (NameEquals(methodName, "get_IsSupported"u8))
+                            {
+                                assert(NameEquals(className, "Vector`1"u8));
+                                result = NI_IsSupported_Type;
+                            }
+                            else if (NameEquals(methodName, "get_IsHardwareAccelerated"u8))
+                            {
+                                result = NI_IsHardwareAccelerated;
+                            }
+                            else if (NameEquals(methodName, "get_Count"u8))
+                            {
+                                assert(NameEquals(className, "Vector`1"u8));
+                                result = NI_Vector_GetCount;
+                            }
+                            else
+                            {
+                                result = NI_System_Numerics_Intrinsic;
+                            }
+                        }
+                    }
+                }
+                else if (NameStartsWith(namespaceName, "Runtime."u8))
+                {
+                    namespaceName = namespaceName[8..];
+
+                    if (NameEquals(namespaceName, "CompilerServices"u8))
+                    {
+                        if (NameEquals(className, "RuntimeHelpers"u8))
+                        {
+                            if (NameEquals(methodName, "CreateSpan"u8))
+                            {
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan;
+                            }
+                            else if (NameEquals(methodName, "InitializeArray"u8))
+                            {
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray;
+                            }
+                            else if (NameEquals(methodName, "IsKnownConstant"u8))
+                            {
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant;
+                            }
+                            else if (NameEquals(methodName, "IsRuntimeAsync"u8))
+                            {
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync;
+                            }
+                            else if (NameEquals(methodName, "WriteBarrier"u8))
+                            {
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier;
+                            }
+                            else if (NameEquals(methodName, "IsReferenceOrContainsReferences"u8))
+                            {
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences;
+                            }
+                            else if (NameEquals(methodName, "GetMethodTable"u8))
+                            {
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable;
+                            }
+                            else if (NameEquals(methodName, "SetNextCallGenericContext"u8))
+                            {
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext;
+                            }
+                            else if (NameEquals(methodName, "SetNextCallAsyncContinuation"u8))
+                            {
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation;
+                            }
+                        }
+                        else if (NameEquals(className, "AsyncHelpers"u8))
+                        {
+                            if (NameEquals(methodName, "AsyncSuspend"u8))
+                            {
+                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend;
+                            }
+                            else if (NameEquals(methodName, "Await"u8))
+                            {
+                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_Await;
+                            }
+                            else if (NameEquals(methodName, "AsyncCallContinuation"u8))
+                            {
+                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation;
+                            }
+                            else if (NameEquals(methodName, "TailAwait"u8))
+                            {
+                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait;
+                            }
+                            else if (NameEquals(methodName, "AwaitAwaiter"u8))
+                            {
+                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_AwaitAwaiter;
+                            }
+                            else if (NameEquals(methodName, "UnsafeAwaitAwaiter"u8))
+                            {
+                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_UnsafeAwaitAwaiter;
+                            }
+                            else if (NameEquals(methodName, "Suspend"u8))
+                            {
+                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_Suspend;
+                            }
+                            else if (NameEquals(methodName, "TransparentSuspend"u8))
+                            {
+                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_TransparentSuspend;
+                            }
+                        }
+                        else if (NameEquals(className, "StaticsHelpers"u8) && NameEquals(methodName, "VolatileReadAsByref"u8))
+                        {
+                            result = NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref;
+                        }
+                        else if (NameEquals(className, "Unsafe"u8))
+                        {
+                            result = lookupUnsafeNamedIntrinsic(methodName);
+                        }
+                    }
+                    else if (NameEquals(namespaceName, "InteropServices"u8))
+                    {
+                        if (NameEquals(className, "MemoryMarshal"u8) && NameEquals(methodName, "GetArrayDataReference"u8))
+                        {
+                            result = NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference;
+                        }
+                    }
+                    else if (NameStartsWith(namespaceName, "Intrinsics"u8))
+                    {
+                        namespaceName = namespaceName[10..];
+                        var isXplatIntrinsic = namespaceName.IsEmpty;
+
+#if FEATURE_HW_INTRINSICS
+                        ReadOnlySpan<byte> platformNamespaceName;
+#if TARGET_XARCH
+                        platformNamespaceName = ".X86"u8;
+#elif TARGET_ARM64
+                        platformNamespaceName = ".Arm"u8;
+#elif TARGET_WASM
+                        platformNamespaceName = ".Wasm"u8;
+#else
+#error Unsupported hardware intrinsic platform
+#endif
+
+                        var interfacePrefix = "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector"u8;
+                        if (NameStartsWith(methodName, interfacePrefix))
+                        {
+                            var suffix = methodName[interfacePrefix.Length..];
+                            if (NameStartsWith(suffix, "64<T>,T>."u8))
+                            {
+                                methodName = suffix[9..];
+                            }
+                            else if (NameStartsWith(suffix, "128<T>,T>."u8) || NameStartsWith(suffix, "256<T>,T>."u8) || NameStartsWith(suffix, "512<T>,T>."u8))
+                            {
+                                methodName = suffix[10..];
+                            }
+                        }
+
+                        if (isXplatIntrinsic || NameEquals(namespaceName, platformNamespaceName))
+                        {
+                            CORINFO_SIG_INFO sig;
+                            info.compCompHnd->getMethodSig(method, &sig);
+                            var outerEnclosingClassName = enclosingClassNamePointers[1] is not null
+                                ? MemoryMarshal.CreateReadOnlySpanFromNullTerminated(enclosingClassNamePointers[1])
+                                : default;
+                            var isa = lookupIsa(className, enclosingClassName, outerEnclosingClassName);
+                            if (isa is not InstructionSet_ILLEGAL)
+                            {
+                                result = HWIntrinsicInfo.LookupId(&sig, isa, methodName);
+                            }
+                        }
+#endif
+
+                        if (result is NI_Illegal)
+                        {
+                            if (NameEquals(methodName, "get_IsSupported"u8))
+                            {
+                                if (NameStartsWith(className, "Vector"u8))
+                                {
+                                    assert(NameEquals(className, "Vector64`1"u8) || NameEquals(className, "Vector128`1"u8) ||
+                                           NameEquals(className, "Vector256`1"u8) || NameEquals(className, "Vector512`1"u8));
+                                    result = NI_IsSupported_Type;
+                                }
+                                else
+                                {
+                                    result = NI_IsSupported;
+                                }
+                            }
+                            else if (NameEquals(methodName, "get_IsHardwareAccelerated"u8))
+                            {
+                                result = NI_IsHardwareAccelerated;
+                            }
+                            else if (NameEquals(methodName, "get_Count"u8))
+                            {
+                                assert(NameEquals(className, "Vector64`1"u8) || NameEquals(className, "Vector128`1"u8) ||
+                                       NameEquals(className, "Vector256`1"u8) || NameEquals(className, "Vector512`1"u8));
+                                result = NI_Vector_GetCount;
+                            }
+                            else if (!isXplatIntrinsic)
+                            {
+                                result = NI_System_Runtime_Intrinsics_PlatformIntrinsic;
+                            }
+                            else
+                            {
+                                result = NI_System_Runtime_Intrinsics_Intrinsic;
+                            }
+                        }
+                    }
+                }
+                else if (NameEquals(namespaceName, "StubHelpers"u8) && NameEquals(className, "StubHelpers"u8))
+                {
+                    if (NameEquals(methodName, "GetStubContext"u8))
+                    {
+                        result = NI_System_StubHelpers_GetStubContext;
+                    }
+                    else if (NameEquals(methodName, "NextCallReturnAddress"u8))
+                    {
+                        result = NI_System_StubHelpers_NextCallReturnAddress;
+                    }
+                }
+                else if (NameEquals(namespaceName, "Text"u8) && NameEquals(className, "UTF8EncodingSealed"u8) &&
+                         NameEquals(methodName, "ReadUtf8"u8))
+                {
+                    assert(NameEquals(enclosingClassName, "UTF8Encoding"u8));
+                    result = NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8;
+                }
+                else if (NameEquals(namespaceName, "Threading"u8))
+                {
+                    if (NameEquals(className, "Interlocked"u8))
+                    {
+                        if (NameEquals(methodName, "And"u8))
+                        {
+                            result = NI_System_Threading_Interlocked_And;
+                        }
+                        else if (NameEquals(methodName, "Or"u8))
+                        {
+                            result = NI_System_Threading_Interlocked_Or;
+                        }
+                        else if (NameEquals(methodName, "CompareExchange"u8))
+                        {
+                            result = NI_System_Threading_Interlocked_CompareExchange;
+                        }
+                        else if (NameEquals(methodName, "Exchange"u8))
+                        {
+                            result = NI_System_Threading_Interlocked_Exchange;
+                        }
+                        else if (NameEquals(methodName, "ExchangeAdd"u8))
+                        {
+                            result = NI_System_Threading_Interlocked_ExchangeAdd;
+                        }
+                        else if (NameEquals(methodName, "MemoryBarrier"u8))
+                        {
+                            result = NI_System_Threading_Interlocked_MemoryBarrier;
+                        }
+                    }
+                    else if (NameEquals(className, "Thread"u8))
+                    {
+                        if (NameEquals(methodName, "get_CurrentThread"u8))
+                        {
+                            result = NI_System_Threading_Thread_get_CurrentThread;
+                        }
+                        else if (NameEquals(methodName, "get_ManagedThreadId"u8))
+                        {
+                            result = NI_System_Threading_Thread_get_ManagedThreadId;
+                        }
+                        else if (NameEquals(methodName, "FastPollGC"u8))
+                        {
+                            result = NI_System_Threading_Thread_FastPollGC;
+                        }
+                    }
+                    else if (NameEquals(className, "Volatile"u8))
+                    {
+                        if (NameEquals(methodName, "Read"u8))
+                        {
+                            result = NI_System_Threading_Volatile_Read;
+                        }
+                        else if (NameEquals(methodName, "Write"u8))
+                        {
+                            result = NI_System_Threading_Volatile_Write;
+                        }
+                        else if (NameEquals(methodName, "ReadBarrier"u8))
+                        {
+                            result = NI_System_Threading_Volatile_ReadBarrier;
+                        }
+                        else if (NameEquals(methodName, "WriteBarrier"u8))
+                        {
+                            result = NI_System_Threading_Volatile_WriteBarrier;
+                        }
+                    }
+                }
+                else if (NameEquals(namespaceName, "Threading.Tasks"u8))
+                {
+                    if (NameEquals(methodName, "ConfigureAwait"u8) &&
+                        (NameEquals(className, "Task`1"u8) || NameEquals(className, "Task"u8) ||
+                         NameEquals(className, "ValueTask`1"u8) || NameEquals(className, "ValueTask"u8)))
+                    {
+                        result = NI_System_Threading_Tasks_Task_ConfigureAwait;
+                    }
+                    else if (NameEquals(className, "Task"u8))
+                    {
+                        if (NameEquals(methodName, "FromResult"u8))
+                        {
+                            result = NI_System_Threading_Tasks_Task_FromResult;
+                        }
+                        else if (NameEquals(methodName, "get_CompletedTask"u8))
+                        {
+                            result = NI_System_Threading_Tasks_Task_get_CompletedTask;
+                        }
+                    }
+                    else if (NameEquals(className, "ValueTask"u8))
+                    {
+                        if (NameEquals(methodName, "FromResult"u8))
+                        {
+                            result = NI_System_Threading_Tasks_ValueTask_FromResult;
+                        }
+                        else if (NameEquals(methodName, "get_CompletedTask"u8))
+                        {
+                            result = NI_System_Threading_Tasks_ValueTask_get_CompletedTask;
+                        }
+                        else if (NameEquals(methodName, ".ctor"u8))
+                        {
+                            result = NI_System_Threading_Tasks_ValueTask__ctor;
+                        }
+                        else if (NameEquals(methodName, "AsTask"u8))
+                        {
+                            result = NI_System_Threading_Tasks_ValueTask_AsTask;
+                        }
+                    }
+                    else if (NameEquals(className, "ValueTask`1"u8))
+                    {
+                        if (NameEquals(methodName, ".ctor"u8))
+                        {
+                            result = NI_System_Threading_Tasks_ValueTask_1__ctor;
+                        }
+                        else if (NameEquals(methodName, "AsTask"u8))
+                        {
+                            result = NI_System_Threading_Tasks_ValueTask_1_AsTask;
+                        }
+                    }
+                }
+            }
+        }
+        else if (NameEquals(namespaceName, "Internal.Runtime"u8) && NameEquals(className, "MethodTable"u8) &&
+                 NameEquals(methodName, "Of"u8))
+        {
+            result = NI_Internal_Runtime_MethodTable_Of;
+        }
+
+        assert((result is not NI_IsSupported_True) && (result is not NI_IsSupported_False) &&
+               (result is not NI_IsSupported_Dynamic) && (result is not NI_Throw_PlatformNotSupportedException));
+        return result;
+    }
+
+    private static bool NameEquals(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value) => name.SequenceEqual(value);
+
+    private static bool NameStartsWith(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value) => name.StartsWith(value);
+
+    private static unsafe bool isNullPointer(void* value) => value is null;
+
+    private static NamedIntrinsic lookupUnsafeNamedIntrinsic(ReadOnlySpan<byte> methodName)
+    {
+        if (NameEquals(methodName, "Add"u8))
+        {
+            return NI_SRCS_UNSAFE_Add;
+        }
+        if (NameEquals(methodName, "AddByteOffset"u8))
+        {
+            return NI_SRCS_UNSAFE_AddByteOffset;
+        }
+        if (NameEquals(methodName, "AreSame"u8))
+        {
+            return NI_SRCS_UNSAFE_AreSame;
+        }
+        if (NameEquals(methodName, "As"u8))
+        {
+            return NI_SRCS_UNSAFE_As;
+        }
+        if (NameEquals(methodName, "AsPointer"u8))
+        {
+            return NI_SRCS_UNSAFE_AsPointer;
+        }
+        if (NameEquals(methodName, "AsRef"u8))
+        {
+            return NI_SRCS_UNSAFE_AsRef;
+        }
+        if (NameEquals(methodName, "BitCast"u8))
+        {
+            return NI_SRCS_UNSAFE_BitCast;
+        }
+        if (NameEquals(methodName, "ByteOffset"u8))
+        {
+            return NI_SRCS_UNSAFE_ByteOffset;
+        }
+        if (NameEquals(methodName, "Copy"u8))
+        {
+            return NI_SRCS_UNSAFE_Copy;
+        }
+        if (NameEquals(methodName, "CopyBlock"u8))
+        {
+            return NI_SRCS_UNSAFE_CopyBlock;
+        }
+        if (NameEquals(methodName, "CopyBlockUnaligned"u8))
+        {
+            return NI_SRCS_UNSAFE_CopyBlockUnaligned;
+        }
+        if (NameEquals(methodName, "InitBlock"u8))
+        {
+            return NI_SRCS_UNSAFE_InitBlock;
+        }
+        if (NameEquals(methodName, "InitBlockUnaligned"u8))
+        {
+            return NI_SRCS_UNSAFE_InitBlockUnaligned;
+        }
+        if (NameEquals(methodName, "IsAddressGreaterThan"u8))
+        {
+            return NI_SRCS_UNSAFE_IsAddressGreaterThan;
+        }
+        if (NameEquals(methodName, "IsAddressGreaterThanOrEqualTo"u8))
+        {
+            return NI_SRCS_UNSAFE_IsAddressGreaterThanOrEqualTo;
+        }
+        if (NameEquals(methodName, "IsAddressLessThan"u8))
+        {
+            return NI_SRCS_UNSAFE_IsAddressLessThan;
+        }
+        if (NameEquals(methodName, "IsAddressLessThanOrEqualTo"u8))
+        {
+            return NI_SRCS_UNSAFE_IsAddressLessThanOrEqualTo;
+        }
+        if (NameEquals(methodName, "IsNullRef"u8))
+        {
+            return NI_SRCS_UNSAFE_IsNullRef;
+        }
+        if (NameEquals(methodName, "NullRef"u8))
+        {
+            return NI_SRCS_UNSAFE_NullRef;
+        }
+        if (NameEquals(methodName, "Read"u8))
+        {
+            return NI_SRCS_UNSAFE_Read;
+        }
+        if (NameEquals(methodName, "ReadUnaligned"u8))
+        {
+            return NI_SRCS_UNSAFE_ReadUnaligned;
+        }
+        if (NameEquals(methodName, "SizeOf"u8))
+        {
+            return NI_SRCS_UNSAFE_SizeOf;
+        }
+        if (NameEquals(methodName, "SkipInit"u8))
+        {
+            return NI_SRCS_UNSAFE_SkipInit;
+        }
+        if (NameEquals(methodName, "Subtract"u8))
+        {
+            return NI_SRCS_UNSAFE_Subtract;
+        }
+        if (NameEquals(methodName, "SubtractByteOffset"u8))
+        {
+            return NI_SRCS_UNSAFE_SubtractByteOffset;
+        }
+        if (NameEquals(methodName, "Unbox"u8))
+        {
+            return NI_SRCS_UNSAFE_Unbox;
+        }
+        if (NameEquals(methodName, "Write"u8))
+        {
+            return NI_SRCS_UNSAFE_Write;
+        }
+        if (NameEquals(methodName, "WriteUnaligned"u8))
+        {
+            return NI_SRCS_UNSAFE_WriteUnaligned;
+        }
         return NI_Illegal;
     }
+
+    private static NamedIntrinsic lookupPrimitiveFloatNamedIntrinsic(ReadOnlySpan<byte> methodName)
+    {
+        if (NameEquals(methodName, "Abs"u8))
+        {
+            return NI_System_Math_Abs;
+        }
+        if (NameEquals(methodName, "Acos"u8))
+        {
+            return NI_System_Math_Acos;
+        }
+        if (NameEquals(methodName, "Acosh"u8))
+        {
+            return NI_System_Math_Acosh;
+        }
+        if (NameEquals(methodName, "Asin"u8))
+        {
+            return NI_System_Math_Asin;
+        }
+        if (NameEquals(methodName, "Asinh"u8))
+        {
+            return NI_System_Math_Asinh;
+        }
+        if (NameEquals(methodName, "Atan"u8))
+        {
+            return NI_System_Math_Atan;
+        }
+        if (NameEquals(methodName, "Atanh"u8))
+        {
+            return NI_System_Math_Atanh;
+        }
+        if (NameEquals(methodName, "Atan2"u8))
+        {
+            return NI_System_Math_Atan2;
+        }
+        if (NameEquals(methodName, "Cbrt"u8))
+        {
+            return NI_System_Math_Cbrt;
+        }
+        if (NameEquals(methodName, "Ceiling"u8))
+        {
+            return NI_System_Math_Ceiling;
+        }
+        if (NameEquals(methodName, "ConvertToInteger"u8))
+        {
+            return NI_PRIMITIVE_ConvertToInteger;
+        }
+        if (NameEquals(methodName, "ConvertToIntegerNative"u8))
+        {
+            return NI_PRIMITIVE_ConvertToIntegerNative;
+        }
+        if (NameEquals(methodName, "Cos"u8))
+        {
+            return NI_System_Math_Cos;
+        }
+        if (NameEquals(methodName, "Cosh"u8))
+        {
+            return NI_System_Math_Cosh;
+        }
+        if (NameEquals(methodName, "Exp"u8))
+        {
+            return NI_System_Math_Exp;
+        }
+        if (NameEquals(methodName, "Floor"u8))
+        {
+            return NI_System_Math_Floor;
+        }
+        if (NameEquals(methodName, "FusedMultiplyAdd"u8))
+        {
+            return NI_System_Math_FusedMultiplyAdd;
+        }
+        if (NameEquals(methodName, "ILogB"u8))
+        {
+            return NI_System_Math_ILogB;
+        }
+        if (NameEquals(methodName, "Log"u8))
+        {
+            return NI_System_Math_Log;
+        }
+        if (NameEquals(methodName, "Log2"u8))
+        {
+            return NI_System_Math_Log2;
+        }
+        if (NameEquals(methodName, "Log10"u8))
+        {
+            return NI_System_Math_Log10;
+        }
+        if (NameEquals(methodName, "Max"u8))
+        {
+            return NI_System_Math_Max;
+        }
+        if (NameEquals(methodName, "MaxMagnitude"u8))
+        {
+            return NI_System_Math_MaxMagnitude;
+        }
+        if (NameEquals(methodName, "MaxMagnitudeNumber"u8))
+        {
+            return NI_System_Math_MaxMagnitudeNumber;
+        }
+        if (NameEquals(methodName, "MaxNative"u8))
+        {
+            return NI_System_Math_MaxNative;
+        }
+        if (NameEquals(methodName, "MaxNumber"u8))
+        {
+            return NI_System_Math_MaxNumber;
+        }
+        if (NameEquals(methodName, "Min"u8))
+        {
+            return NI_System_Math_Min;
+        }
+        if (NameEquals(methodName, "MinMagnitude"u8))
+        {
+            return NI_System_Math_MinMagnitude;
+        }
+        if (NameEquals(methodName, "MinMagnitudeNumber"u8))
+        {
+            return NI_System_Math_MinMagnitudeNumber;
+        }
+        if (NameEquals(methodName, "MinNative"u8))
+        {
+            return NI_System_Math_MinNative;
+        }
+        if (NameEquals(methodName, "MinNumber"u8))
+        {
+            return NI_System_Math_MinNumber;
+        }
+        if (NameEquals(methodName, "MultiplyAddEstimate"u8))
+        {
+            return NI_System_Math_MultiplyAddEstimate;
+        }
+        if (NameEquals(methodName, "Pow"u8))
+        {
+            return NI_System_Math_Pow;
+        }
+        if (NameEquals(methodName, "ReciprocalEstimate"u8))
+        {
+            return NI_System_Math_ReciprocalEstimate;
+        }
+        if (NameEquals(methodName, "ReciprocalSqrtEstimate"u8))
+        {
+            return NI_System_Math_ReciprocalSqrtEstimate;
+        }
+        if (NameEquals(methodName, "Round"u8))
+        {
+            return NI_System_Math_Round;
+        }
+        if (NameEquals(methodName, "Sin"u8))
+        {
+            return NI_System_Math_Sin;
+        }
+        if (NameEquals(methodName, "Sinh"u8))
+        {
+            return NI_System_Math_Sinh;
+        }
+        if (NameEquals(methodName, "Sqrt"u8))
+        {
+            return NI_System_Math_Sqrt;
+        }
+        if (NameEquals(methodName, "Tan"u8))
+        {
+            return NI_System_Math_Tan;
+        }
+        if (NameEquals(methodName, "Tanh"u8))
+        {
+            return NI_System_Math_Tanh;
+        }
+        if (NameEquals(methodName, "Truncate"u8))
+        {
+            return NI_System_Math_Truncate;
+        }
+        if (NameEquals(methodName, "op_Explicit"u8))
+        {
+            return NI_System_Half_op_Explicit;
+        }
+        return NI_Illegal;
+    }
+
+    private static NamedIntrinsic lookupHalfNamedIntrinsic(ReadOnlySpan<byte> methodName)
+    {
+        if (NameEquals(methodName, "op_Addition"u8))
+        {
+            return NI_System_Half_op_Addition;
+        }
+        if (NameEquals(methodName, "op_Subtraction"u8))
+        {
+            return NI_System_Half_op_Subtraction;
+        }
+        if (NameEquals(methodName, "op_Multiply"u8))
+        {
+            return NI_System_Half_op_Multiply;
+        }
+        if (NameEquals(methodName, "op_Division"u8))
+        {
+            return NI_System_Half_op_Division;
+        }
+        if (NameEquals(methodName, "op_Equality"u8))
+        {
+            return NI_System_Half_op_Equality;
+        }
+        if (NameEquals(methodName, "op_Inequality"u8))
+        {
+            return NI_System_Half_op_Inequality;
+        }
+        if (NameEquals(methodName, "op_GreaterThan"u8))
+        {
+            return NI_System_Half_op_GreaterThan;
+        }
+        if (NameEquals(methodName, "op_GreaterThanOrEqual"u8))
+        {
+            return NI_System_Half_op_GreaterThanOrEqual;
+        }
+        if (NameEquals(methodName, "op_LessThan"u8))
+        {
+            return NI_System_Half_op_LessThan;
+        }
+        if (NameEquals(methodName, "op_LessThanOrEqual"u8))
+        {
+            return NI_System_Half_op_LessThanOrEqual;
+        }
+        if (NameEquals(methodName, "op_Explicit"u8))
+        {
+            return NI_System_Half_op_Explicit;
+        }
+        if (NameEquals(methodName, "Sqrt"u8))
+        {
+            return NI_System_Half_Sqrt;
+        }
+        if (NameEquals(methodName, "ReciprocalEstimate"u8))
+        {
+            return NI_System_Half_ReciprocalEstimate;
+        }
+        if (NameEquals(methodName, "ReciprocalSqrtEstimate"u8))
+        {
+            return NI_System_Half_ReciprocalSqrtEstimate;
+        }
+        if (NameEquals(methodName, "FusedMultiplyAdd"u8))
+        {
+            return NI_System_Half_FusedMultiplyAdd;
+        }
+        if (NameEquals(methodName, "Round"u8))
+        {
+            return NI_System_Half_Round;
+        }
+        if (NameEquals(methodName, "Ceiling"u8))
+        {
+            return NI_System_Half_Ceiling;
+        }
+        if (NameEquals(methodName, "Floor"u8))
+        {
+            return NI_System_Half_Floor;
+        }
+        if (NameEquals(methodName, "Truncate"u8))
+        {
+            return NI_System_Half_Truncate;
+        }
+        if (NameEquals(methodName, "op_Increment"u8))
+        {
+            return NI_System_Half_op_Increment;
+        }
+        if (NameEquals(methodName, "op_Decrement"u8))
+        {
+            return NI_System_Half_op_Decrement;
+        }
+        if (NameEquals(methodName, "get_MinValue"u8))
+        {
+            return NI_System_Half_get_MinValue;
+        }
+        if (NameEquals(methodName, "get_MaxValue"u8))
+        {
+            return NI_System_Half_get_MaxValue;
+        }
+        if (NameEquals(methodName, "get_Epsilon"u8))
+        {
+            return NI_System_Half_get_Epsilon;
+        }
+        if (NameEquals(methodName, "get_NaN"u8))
+        {
+            return NI_System_Half_get_NaN;
+        }
+        if (NameEquals(methodName, "get_PositiveInfinity"u8))
+        {
+            return NI_System_Half_get_PositiveInfinity;
+        }
+        if (NameEquals(methodName, "get_NegativeInfinity"u8))
+        {
+            return NI_System_Half_get_NegativeInfinity;
+        }
+        if (NameEquals(methodName, "get_One"u8))
+        {
+            return NI_System_Half_get_One;
+        }
+        if (NameEquals(methodName, "get_Zero"u8))
+        {
+            return NI_System_Half_get_Zero;
+        }
+        return NI_Illegal;
+    }
+
+    private static NamedIntrinsic lookupPrimitiveIntNamedIntrinsic(ReadOnlySpan<byte> methodName)
+    {
+        if (NameEquals(methodName, "Crc32C"u8))
+        {
+            return NI_PRIMITIVE_Crc32C;
+        }
+        if (NameEquals(methodName, "LeadingZeroCount"u8))
+        {
+            return NI_PRIMITIVE_LeadingZeroCount;
+        }
+        if (NameEquals(methodName, "Log2"u8))
+        {
+            return NI_PRIMITIVE_Log2;
+        }
+        if (NameEquals(methodName, "PopCount"u8))
+        {
+            return NI_PRIMITIVE_PopCount;
+        }
+        if (NameEquals(methodName, "RotateLeft"u8))
+        {
+            return NI_PRIMITIVE_RotateLeft;
+        }
+        if (NameEquals(methodName, "RotateRight"u8))
+        {
+            return NI_PRIMITIVE_RotateRight;
+        }
+        if (NameEquals(methodName, "TrailingZeroCount"u8))
+        {
+            return NI_PRIMITIVE_TrailingZeroCount;
+        }
+        return NI_Illegal;
+    }
+
+    public unsafe NamedIntrinsic resolveNamedIntrinsic(CORINFO_METHOD_HANDLE method, NamedIntrinsic intrinsic)
+    {
+        var isSupportQuery = (intrinsic is NI_IsSupported) || (intrinsic is NI_IsHardwareAccelerated);
+        var isPlatformIntrinsic = intrinsic is NI_System_Runtime_Intrinsics_PlatformIntrinsic;
+        var isHWIntrinsic = false;
+
+#if FEATURE_HW_INTRINSICS
+        isHWIntrinsic = (intrinsic > NI_HW_INTRINSIC_START) && (intrinsic < NI_HW_INTRINSIC_END);
+#endif
+
+        if (!isSupportQuery && !isPlatformIntrinsic && !isHWIntrinsic)
+        {
+            return intrinsic;
+        }
+
+        var result = NI_Illegal;
+        var fallback = NI_System_Runtime_Intrinsics_Intrinsic;
+
+#if FEATURE_HW_INTRINSICS
+        byte* classNamePointer = null;
+        byte* namespaceNamePointer = null;
+        MetadataNamePointerArray enclosingClassNamePointers = stackalloc byte*[2];
+        enclosingClassNamePointers[0] = null;
+        enclosingClassNamePointers[1] = null;
+        _ = info.compCompHnd->getMethodNameFromMetadata(method, &classNamePointer, &namespaceNamePointer, enclosingClassNamePointers, 2);
+
+        assert(!isNullPointer(classNamePointer));
+        assert(!isNullPointer(namespaceNamePointer));
+
+        var className = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(classNamePointer);
+        var namespaceName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(namespaceNamePointer);
+        var isNumerics = NameEquals(namespaceName, "System.Numerics"u8);
+        var isXplatIntrinsic = isNumerics || NameEquals(namespaceName, "System.Runtime.Intrinsics"u8);
+        var isa = InstructionSet_ILLEGAL;
+
+        if (isNumerics)
+        {
+            fallback = NI_System_Numerics_Intrinsic;
+            isa = lookupVectorIsa(getCompileTimeVectorTByteLength());
+        }
+        else
+        {
+#if TARGET_XARCH
+            ReadOnlySpan<byte> platformNamespaceName = "System.Runtime.Intrinsics.X86"u8;
+#elif TARGET_ARM64
+            ReadOnlySpan<byte> platformNamespaceName = "System.Runtime.Intrinsics.Arm"u8;
+#elif TARGET_WASM
+            ReadOnlySpan<byte> platformNamespaceName = "System.Runtime.Intrinsics.Wasm"u8;
+#else
+#error Unsupported hardware intrinsic platform
+#endif
+
+            if (!isXplatIntrinsic && !NameEquals(namespaceName, platformNamespaceName))
+            {
+                return isSupportQuery ? NI_IsSupported_False : NI_Throw_PlatformNotSupportedException;
+            }
+
+            var innerEnclosingClassName = enclosingClassNamePointers[0] is not null
+                ? MemoryMarshal.CreateReadOnlySpanFromNullTerminated(enclosingClassNamePointers[0])
+                : default;
+            var outerEnclosingClassName = enclosingClassNamePointers[1] is not null
+                ? MemoryMarshal.CreateReadOnlySpanFromNullTerminated(enclosingClassNamePointers[1])
+                : default;
+            isa = lookupIsa(className, innerEnclosingClassName, outerEnclosingClassName);
+        }
+
+        if (isa is not InstructionSet_ILLEGAL)
+        {
+            result = resolveHardwareIntrinsicId(intrinsic, isa, isXplatIntrinsic);
+        }
+#endif
+
+        if (isSupportQuery)
+        {
+            return result is NI_Illegal ? NI_IsSupported_False : result;
+        }
+
+        if ((result is NI_Illegal) || (result is NI_System_Runtime_Intrinsics_PlatformIntrinsic))
+        {
+            return fallback;
+        }
+
+        return result;
+    }
+
+#if FEATURE_HW_INTRINSICS
+    private NamedIntrinsic resolveHardwareIntrinsicId(NamedIntrinsic intrinsic, CORINFO_InstructionSet isa, bool isXplatIntrinsic)
+    {
+        assert(isa is not InstructionSet_ILLEGAL);
+
+        var isHWIntrinsicEnabled = JitConfig.EnableHWIntrinsic != 0;
+        var isIsaSupported = isHWIntrinsicEnabled && compSupportsHWIntrinsic(isa);
+        var isHardwareAcceleratedProperty = intrinsic is NI_IsHardwareAccelerated;
+        var isSupportedProperty = intrinsic is NI_IsSupported;
+        var vectorByteLength = 0;
+
+#if TARGET_XARCH
+        if (isHardwareAcceleratedProperty)
+        {
+            if (isa is InstructionSet_Vector128)
+            {
+                isa = InstructionSet_X86Base;
+                vectorByteLength = 16;
+            }
+            else if (isa is InstructionSet_Vector256)
+            {
+                isa = InstructionSet_AVX2;
+                vectorByteLength = 32;
+            }
+            else if (isa is InstructionSet_Vector512)
+            {
+                isa = InstructionSet_AVX512;
+                vectorByteLength = 64;
+            }
+        }
+#endif
+
+        if (isSupportedProperty || isHardwareAcceleratedProperty)
+        {
+            if (isIsaSupported && compSupportsHWIntrinsic(isa) &&
+                (vectorByteLength <= GetPreferredVectorByteLength()))
+            {
+                if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI) || compExactlyDependsOn(isa))
+                {
+                    return NI_IsSupported_True;
+                }
+                else if (isSupportedProperty)
+                {
+                    assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+                    return NI_IsSupported_Dynamic;
+                }
+            }
+
+            return NI_IsSupported_False;
+        }
+        else if (!isIsaSupported)
+        {
+            return !isXplatIntrinsic ? NI_Throw_PlatformNotSupportedException : NI_Illegal;
+        }
+
+        if (isa is InstructionSet_Vector128)
+        {
+            if (!isHWIntrinsicEnabled)
+            {
+                return NI_Illegal;
+            }
+        }
+#if TARGET_XARCH
+        else if (isa is InstructionSet_Vector256)
+        {
+            if (!compOpportunisticallyDependsOn(InstructionSet_AVX))
+            {
+                return NI_Illegal;
+            }
+        }
+        else if (isa is InstructionSet_Vector512)
+        {
+            if (!compOpportunisticallyDependsOn(InstructionSet_AVX512))
+            {
+                return NI_Illegal;
+            }
+        }
+#elif TARGET_ARM64
+        else if (isa is InstructionSet_Vector64)
+        {
+            if (!isHWIntrinsicEnabled)
+            {
+                return NI_Illegal;
+            }
+        }
+        else if (isa is InstructionSet_VectorT)
+        {
+            return NI_Illegal;
+        }
+#endif
+
+        return intrinsic;
+    }
+
+    private bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa)
+    {
+        _ = compExactlyDependsOn(isa);
+        return opts.compSupportsISA.HasInstructionSet(isa);
+    }
+
+    private uint getCompileTimeVectorTByteLength()
+    {
+#if TARGET_WASM
+        return FP_REGSIZE_BYTES;
+#else
+        return (uint)GetVectorTByteLength();
+#endif
+    }
+
+    private static CORINFO_InstructionSet lookupVectorIsa(uint size)
+    {
+        switch (size)
+        {
+            case 16:
+            {
+                return InstructionSet_Vector128;
+            }
+#if TARGET_XARCH
+            case 32:
+            {
+                return InstructionSet_Vector256;
+            }
+            case 64:
+            {
+                return InstructionSet_Vector512;
+            }
+#elif TARGET_ARM64
+            case SIZE_UNKNOWN:
+            {
+                return InstructionSet_VectorT;
+            }
+#endif
+            default:
+            {
+                unreached();
+                return InstructionSet_ILLEGAL;
+            }
+        }
+    }
+
+    private CORINFO_InstructionSet lookupIsa(ReadOnlySpan<byte> className, ReadOnlySpan<byte> innerEnclosingClassName, ReadOnlySpan<byte> outerEnclosingClassName)
+    {
+        if (innerEnclosingClassName.IsEmpty)
+        {
+            return lookupInstructionSet(className);
+        }
+
+        var enclosingIsa = lookupIsa(innerEnclosingClassName, outerEnclosingClassName, default);
+
+#if TARGET_XARCH
+        if (NameEquals(className, "X64"u8))
+        {
+            return X64VersionOfIsa(enclosingIsa);
+        }
+        else if (NameEquals(className, "V256"u8))
+        {
+            return V256VersionOfIsa(enclosingIsa);
+        }
+        else if (NameEquals(className, "V512"u8))
+        {
+            return V512VersionOfIsa(enclosingIsa);
+        }
+        else if (NameEquals(className, "VL"u8))
+        {
+            return VLVersionOfIsa(enclosingIsa);
+        }
+#elif TARGET_ARM64
+        if (NameEquals(className, "Arm64"u8))
+        {
+            return Arm64VersionOfIsa(enclosingIsa);
+        }
+#elif TARGET_WASM
+        _ = enclosingIsa;
+#endif
+
+        return InstructionSet_ILLEGAL;
+    }
+
+    private CORINFO_InstructionSet lookupInstructionSet(ReadOnlySpan<byte> className)
+    {
+#if TARGET_XARCH
+        if (NameEquals(className, "Aes"u8))
+        {
+            return InstructionSet_AES;
+        }
+        else if (NameEquals(className, "Avx"u8))
+        {
+            return InstructionSet_AVX;
+        }
+        else if (NameEquals(className, "Avx2"u8) || NameEquals(className, "Bmi1"u8) ||
+                 NameEquals(className, "Bmi2"u8) || NameEquals(className, "Fma"u8) ||
+                 NameEquals(className, "F16c"u8) || NameEquals(className, "Lzcnt"u8))
+        {
+            return InstructionSet_AVX2;
+        }
+        else if (NameEquals(className, "Avx10v1"u8))
+        {
+            return InstructionSet_AVX10v1;
+        }
+        else if (NameEquals(className, "Avx10v2"u8))
+        {
+            return InstructionSet_AVX10v2;
+        }
+        else if (NameEquals(className, "Avx512Bitalg"u8) || NameEquals(className, "Avx512Vpopcntdq"u8))
+        {
+            return InstructionSet_AVX512v3;
+        }
+        else if (NameEquals(className, "Avx512Bf16"u8) || NameEquals(className, "Avx512Fp16"u8))
+        {
+            return InstructionSet_AVX10v1;
+        }
+        else if (NameEquals(className, "Avx512BW"u8) || NameEquals(className, "Avx512CD"u8) ||
+                 NameEquals(className, "Avx512DQ"u8) || NameEquals(className, "Avx512F"u8))
+        {
+            return InstructionSet_AVX512;
+        }
+        else if (NameEquals(className, "Avx512Bmm"u8))
+        {
+            return InstructionSet_AVX512BMM;
+        }
+        else if (NameEquals(className, "Avx512Vbmi"u8))
+        {
+            return InstructionSet_AVX512v2;
+        }
+        else if (NameEquals(className, "Avx512Vbmi2"u8))
+        {
+            return InstructionSet_AVX512v3;
+        }
+        else if (NameEquals(className, "Avx512Vp2intersect"u8))
+        {
+            return InstructionSet_AVX512VP2INTERSECT;
+        }
+        else if (NameEquals(className, "AvxIfma"u8))
+        {
+            return InstructionSet_AVXIFMA;
+        }
+        else if (NameEquals(className, "AvxVnni"u8))
+        {
+            return compSupportsHWIntrinsic(InstructionSet_AVXVNNI) ? InstructionSet_AVXVNNI : InstructionSet_AVX512v3;
+        }
+        else if (NameEquals(className, "AvxVnniInt8"u8) || NameEquals(className, "AvxVnniInt16"u8))
+        {
+            return compSupportsHWIntrinsic(InstructionSet_AVXVNNIINT) ? InstructionSet_AVXVNNIINT : InstructionSet_AVXVNNIINT_V512;
+        }
+        else if (NameEquals(className, "Gfni"u8))
+        {
+            return InstructionSet_GFNI;
+        }
+        else if (NameEquals(className, "Pclmulqdq"u8))
+        {
+            return InstructionSet_AES;
+        }
+        else if (NameEquals(className, "Popcnt"u8) || NameEquals(className, "Sse"u8) ||
+                 NameEquals(className, "Sse2"u8) || NameEquals(className, "Sse3"u8) ||
+                 NameEquals(className, "Sse41"u8) || NameEquals(className, "Sse42"u8) ||
+                 NameEquals(className, "X86Base"u8))
+        {
+            return InstructionSet_X86Base;
+        }
+        else if (NameEquals(className, "Sha"u8))
+        {
+            return InstructionSet_SHA;
+        }
+        else if (NameEquals(className, "WaitPkg"u8))
+        {
+            return InstructionSet_WAITPKG;
+        }
+        else if (NameEquals(className, "X86Serialize"u8))
+        {
+            return InstructionSet_X86Serialize;
+        }
+        else if (NameEquals(className, "Vector128"u8) || NameEquals(className, "Vector128`1"u8))
+        {
+            return InstructionSet_Vector128;
+        }
+        else if (NameEquals(className, "Vector256"u8) || NameEquals(className, "Vector256`1"u8))
+        {
+            return InstructionSet_Vector256;
+        }
+        else if (NameEquals(className, "Vector512"u8) || NameEquals(className, "Vector512`1"u8))
+        {
+            return InstructionSet_Vector512;
+        }
+#elif TARGET_ARM64
+        if (NameEquals(className, "AdvSimd"u8))
+        {
+            return InstructionSet_AdvSimd;
+        }
+        if (NameEquals(className, "Aes"u8))
+        {
+            return InstructionSet_Aes;
+        }
+        if (NameEquals(className, "ArmBase"u8))
+        {
+            return InstructionSet_ArmBase;
+        }
+        if (NameEquals(className, "Crc32"u8))
+        {
+            return InstructionSet_Crc32;
+        }
+        if (NameEquals(className, "Dp"u8))
+        {
+            return InstructionSet_Dp;
+        }
+        if (NameEquals(className, "Rdm"u8))
+        {
+            return InstructionSet_Rdm;
+        }
+        if (NameEquals(className, "Sha1"u8))
+        {
+            return InstructionSet_Sha1;
+        }
+        if (NameEquals(className, "Sha256"u8))
+        {
+            return InstructionSet_Sha256;
+        }
+        if (NameEquals(className, "Sve2"u8))
+        {
+            return InstructionSet_Sve2;
+        }
+        if (NameEquals(className, "Sve"u8))
+        {
+            return InstructionSet_Sve;
+        }
+        if (NameEquals(className, "Sha3"u8))
+        {
+            return InstructionSet_Sha3;
+        }
+        if (NameEquals(className, "Sm4"u8))
+        {
+            return InstructionSet_Sm4;
+        }
+        if (NameEquals(className, "SveAes"u8))
+        {
+            return InstructionSet_SveAes;
+        }
+        if (NameEquals(className, "SveSha3"u8))
+        {
+            return InstructionSet_SveSha3;
+        }
+        if (NameEquals(className, "SveSm4"u8))
+        {
+            return InstructionSet_SveSm4;
+        }
+        if (NameEquals(className, "Vector"u8) || NameEquals(className, "Vector`1"u8))
+        {
+            return InstructionSet_VectorT;
+        }
+        if (NameEquals(className, "Vector64"u8) || NameEquals(className, "Vector64`1"u8))
+        {
+            return InstructionSet_Vector64;
+        }
+        if (NameEquals(className, "Vector128"u8) || NameEquals(className, "Vector128`1"u8))
+        {
+            return InstructionSet_Vector128;
+        }
+#elif TARGET_WASM
+        if (NameEquals(className, "WasmBase"u8))
+        {
+            return InstructionSet_WasmBase;
+        }
+        if (NameEquals(className, "PackedSimd"u8))
+        {
+            return InstructionSet_PackedSimd;
+        }
+        if (NameEquals(className, "Vector128"u8) || NameEquals(className, "Vector128`1"u8))
+        {
+            return InstructionSet_Vector128;
+        }
+#endif
+
+        return InstructionSet_ILLEGAL;
+    }
+
+#if TARGET_XARCH
+    private static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
+    {
+        return isa switch
+        {
+            InstructionSet_X86Base => InstructionSet_X86Base_X64,
+            InstructionSet_AVX => InstructionSet_AVX_X64,
+            InstructionSet_AVX2 => InstructionSet_AVX2_X64,
+            InstructionSet_AVX512 => InstructionSet_AVX512_X64,
+            InstructionSet_AVX512v2 => InstructionSet_AVX512v2_X64,
+            InstructionSet_AVX512v3 => InstructionSet_AVX512v3_X64,
+            InstructionSet_AVX10v1 => InstructionSet_AVX10v1_X64,
+            InstructionSet_AVX10v2 => InstructionSet_AVX10v2_X64,
+            InstructionSet_AES => InstructionSet_AES_X64,
+            InstructionSet_AVX512VP2INTERSECT => InstructionSet_AVX512VP2INTERSECT_X64,
+            InstructionSet_AVXIFMA => InstructionSet_AVXIFMA_X64,
+            InstructionSet_AVXVNNI => InstructionSet_AVXVNNI_X64,
+            InstructionSet_AVXVNNIINT => InstructionSet_AVXVNNIINT,
+            InstructionSet_AVXVNNIINT_V512 => InstructionSet_AVXVNNIINT_V512,
+            InstructionSet_GFNI => InstructionSet_GFNI_X64,
+            InstructionSet_SHA => InstructionSet_SHA_X64,
+            InstructionSet_WAITPKG => InstructionSet_WAITPKG_X64,
+            InstructionSet_X86Serialize => InstructionSet_X86Serialize_X64,
+            _ => InstructionSet_NONE,
+        };
+    }
+
+    private static CORINFO_InstructionSet V256VersionOfIsa(CORINFO_InstructionSet isa)
+    {
+        return isa switch
+        {
+            InstructionSet_AES => InstructionSet_AES_V256,
+            InstructionSet_GFNI => InstructionSet_GFNI_V256,
+            _ => InstructionSet_NONE,
+        };
+    }
+
+    private static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
+    {
+        return isa switch
+        {
+            InstructionSet_AVX10v1 => InstructionSet_AVX10v1,
+            InstructionSet_AVX10v1_X64 => InstructionSet_AVX10v1_X64,
+            InstructionSet_AVX10v2 => InstructionSet_AVX10v2,
+            InstructionSet_AVX10v2_X64 => InstructionSet_AVX10v2_X64,
+            InstructionSet_AES => InstructionSet_AES_V512,
+            InstructionSet_GFNI => InstructionSet_GFNI_V512,
+            InstructionSet_AVXVNNIINT or InstructionSet_AVXVNNIINT_V512 => InstructionSet_AVXVNNIINT_V512,
+            InstructionSet_AVXVNNI or InstructionSet_AVX512v3 => InstructionSet_AVX512v3,
+            _ => InstructionSet_NONE,
+        };
+    }
+
+    private static CORINFO_InstructionSet VLVersionOfIsa(CORINFO_InstructionSet isa)
+    {
+        return isa switch
+        {
+            InstructionSet_AVX512 or InstructionSet_AVX512v2 or InstructionSet_AVX512v3 or InstructionSet_AVX10v1 => isa,
+            _ => InstructionSet_NONE,
+        };
+    }
+#elif TARGET_ARM64
+    private static CORINFO_InstructionSet Arm64VersionOfIsa(CORINFO_InstructionSet isa)
+    {
+        return isa switch
+        {
+            InstructionSet_AdvSimd => InstructionSet_AdvSimd_Arm64,
+            InstructionSet_Aes => InstructionSet_Aes_Arm64,
+            InstructionSet_ArmBase => InstructionSet_ArmBase_Arm64,
+            InstructionSet_Crc32 => InstructionSet_Crc32_Arm64,
+            InstructionSet_Dp => InstructionSet_Dp_Arm64,
+            InstructionSet_Sha1 => InstructionSet_Sha1_Arm64,
+            InstructionSet_Sha256 => InstructionSet_Sha256_Arm64,
+            InstructionSet_Rdm => InstructionSet_Rdm_Arm64,
+            InstructionSet_Sve => InstructionSet_Sve_Arm64,
+            InstructionSet_Sve2 => InstructionSet_Sve2_Arm64,
+            InstructionSet_Sha3 => InstructionSet_Sha3_Arm64,
+            InstructionSet_Sm4 => InstructionSet_Sm4_Arm64,
+            InstructionSet_SveAes => InstructionSet_SveAes_Arm64,
+            InstructionSet_SveSha3 => InstructionSet_SveSha3_Arm64,
+            InstructionSet_SveSm4 => InstructionSet_SveSm4_Arm64,
+            _ => InstructionSet_NONE,
+        };
+    }
+#endif
+#endif
 
     /// <summary>Use profile information to pick a GDV/cast type candidate for a call site.</summary>
     /// <param name="call">the call (either virtual or cast helper)</param>

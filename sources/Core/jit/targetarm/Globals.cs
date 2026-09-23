@@ -9,5 +9,13 @@ namespace RyuJitSharp;
 public partial class Globals
 {
     public const int TARGET_POINTER_SIZE = 4;
+
+    public const int TARGET_MASKS_SHIFTS = 0;
+
+    public const int TARGET_HAS_MULHI = 0;
+
+    public const regNumber REG_R2R_INDIRECT_PARAM = REG_R12;
+
+    public const regMask SRBM_R2R_INDIRECT_PARAM = SRBM_R12;
 }
 #endif

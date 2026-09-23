@@ -1463,7 +1463,8 @@ public sealed partial class BasicBlock : LIR.Range
     /// <summary>Print the flags</summary>
     public void dspFlags()
     {
-        dspFlag(this, BBF_IMPORTED, "i", sep: "");
+        var first = true;
+        dspFlag(this, BBF_IMPORTED, "i");
         dspFlag(this, BBF_IS_LIR, "LIR");
         dspFlag(this, BBF_PROF_WEIGHT, "IBC");
         dspFlag(this, BBF_MARKED, "m");
@@ -1502,12 +1503,18 @@ public sealed partial class BasicBlock : LIR.Range
         dspFlag(this, BBF_ASYNC_RESUMPTION, "a-resume");
         dspFlag(this, BBF_CATCH_RESUMPTION, "c-resume");
         dspFlag(this, BBF_THROW_HELPER, "throw-hlpr");
+        dspFlag(this, BBF_STALE_PREDICATE, "stale-pred");
 
-        static void dspFlag(BasicBlock block, BasicBlockFlags flag, string displayString, string sep = " ")
+        void dspFlag(BasicBlock block, BasicBlockFlags flag, string displayString)
         {
             if (block.HasFlag(flag))
             {
-                jitprintf($"{sep}{displayString}");
+                if (!first)
+                {
+                    jitprintf(" ");
+                }
+                jitprintf(displayString);
+                first = false;
             }
         }
     }

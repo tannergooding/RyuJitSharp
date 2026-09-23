@@ -388,7 +388,7 @@ public partial class Compiler
         public bool compTailCallLoopOpt;
 #endif
 
-#if FEATURE_FASTTAILCALL
+#if FEATURE_FASTTAILCALL || TARGET_WASM
         /// <summary>Whether fast tail calls are allowed.</summary>
         public bool compFastTailCalls;
 #endif
