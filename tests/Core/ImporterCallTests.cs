@@ -183,16 +183,13 @@ internal static unsafe class ImporterCallTests
         vtable.Base.Base.getClassAttribs = &GetStructFlags;
         vtable.Base.Base.getClassSize = &GetStructSize;
         vtable.Base.Base.isValueClass =
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_STRUCT_*, bool>)
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_STRUCT_*, byte>)&IsValueClass;
         vtable.Base.Base.isIntrinsicType =
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_STRUCT_*, bool>)
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_STRUCT_*, byte>)&IsIntrinsicType;
         vtable.Base.Base.getArrayRank = &GetBoxRank;
         vtable.Base.Base.getTypeInstantiationArgument = &GetBoxTypeArgument;
         vtable.Base.Base.printClassName = &PrintBoxClassName;
         vtable.Base.Base.runWithSPMIErrorTrap =
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, delegate* unmanaged[Cdecl]<void*, void>, void*, bool>)
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, delegate* unmanaged[Cdecl]<void*, void>, void*, byte>)&RunWithErrorTrap;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
 #if DEBUG
@@ -276,7 +273,6 @@ internal static unsafe class ImporterCallTests
         vtable.Base.Base.getTypeInstantiationArgument = &GetBoxTypeArgument;
         vtable.Base.Base.printClassName = &PrintBoxClassName;
         vtable.Base.Base.runWithSPMIErrorTrap =
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, delegate* unmanaged[Cdecl]<void*, void>, void*, bool>)
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, delegate* unmanaged[Cdecl]<void*, void>, void*, byte>)&RunWithErrorTrap;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
 #if DEBUG

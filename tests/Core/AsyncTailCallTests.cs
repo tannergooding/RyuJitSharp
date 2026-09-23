@@ -27,7 +27,6 @@ internal static unsafe class AsyncTailCallTests
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.Base.Base.resolveToken = &ResolvePatternToken;
             vtable.Base.Base.isIntrinsic =
-                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_STRUCT_*, bool>)
                 (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_STRUCT_*, byte>)&IsIntrinsic;
             vtable.Base.Base.getMethodNameFromMetadata = &GetPatternName;
             vtable.Base.Base.getMethodSig = &GetPatternSignature;
@@ -92,7 +91,7 @@ internal static unsafe class AsyncTailCallTests
         WithCompiler(compiler => {
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.Base.Base.canTailCall =
-                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_STRUCT_*, CORINFO_METHOD_STRUCT_*, CORINFO_METHOD_STRUCT_*, bool, bool>)
+                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_STRUCT_*, CORINFO_METHOD_STRUCT_*, CORINFO_METHOD_STRUCT_*, bool, byte>)
                 (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_STRUCT_*, CORINFO_METHOD_STRUCT_*, CORINFO_METHOD_STRUCT_*, byte, byte>)&CanTailCall;
             ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
             TailState state = new() { Allowed = allowed };

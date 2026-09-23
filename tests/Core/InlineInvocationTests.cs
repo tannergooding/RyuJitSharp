@@ -164,10 +164,8 @@ internal static unsafe class InlineInvocationTests
         compiler.opts.compFlags = CLFLG_INLINING;
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.Base.haveSameMethodDefinition =
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_STRUCT_*, CORINFO_METHOD_STRUCT_*, bool>)
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_STRUCT_*, CORINFO_METHOD_STRUCT_*, byte>)&HaveSameDefinition;
         vtable.Base.Base.runWithErrorTrap =
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, delegate* unmanaged[Cdecl]<void*, void>, void*, bool>)
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, delegate* unmanaged[Cdecl]<void*, void>, void*, byte>)&RunWithErrorTrap;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
         compiler.info.compCompHnd = &jitInfo;

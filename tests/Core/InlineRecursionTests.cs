@@ -146,7 +146,6 @@ internal static unsafe class InlineRecursionTests
         depthField.SetValue(compiler._inlineStrategy, 3);
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.Base.haveSameMethodDefinition =
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_STRUCT_*, CORINFO_METHOD_STRUCT_*, bool>)
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_STRUCT_*, CORINFO_METHOD_STRUCT_*, byte>)&HaveSameMethodDefinition;
         vtable.Base.Base.getTypeInstantiationArgument = &GetTypeInstantiationArgument;
         vtable.Base.Base.getMethodSig = &GetMethodSig;

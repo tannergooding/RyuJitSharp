@@ -35,6 +35,14 @@ C# helpers may replace native structure where appropriate. Examples include
 collection ordering, integer semantics, ownership, and native interop contracts.
 Larger algorithmic or architectural changes require separate approval.
 
+Managed error-trap callbacks capture exceptions before leaving their
+`UnmanagedCallersOnly` shim. An owned `GCHandle` keeps the action and captured
+exception alive until the native trap returns. The regular trap reports
+nonterminal managed failures as false; terminal HRESULTs and SPMI-only managed
+failures are rethrown with their original identity and stack. Native exceptions
+remain subject to the EE's trap. This adapts exception ownership to the managed
+boundary without broadening the native recovery policy (B061).
+
 `GenTreeCall` stores its tailcall, async-call, and unmanaged-call-convention
 variants separately. The native union cannot be reproduced with explicit
 overlapping fields because async debug information contains managed references.

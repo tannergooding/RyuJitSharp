@@ -5,9 +5,11 @@
 
 using System;
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -981,36 +983,56 @@ public partial class Compiler
         return info.compCompHnd->runWithSPMIErrorTrap((errorTrapFunction)(function), parameter);
     }
 
-    public unsafe bool eeRunFunctorWithErrorTrap(Action function)
-    {
-        var functionHandle = new GCHandle<Action>(function);
-        var succeeded = info.compCompHnd->runWithErrorTrap(&NativeShim, (void*)(GCHandle<Action>.ToIntPtr(functionHandle)));
+    public bool eeRunFunctorWithErrorTrap(Action function) => eeRunFunctorWithErrorTrap(function, spmiOnly: false);
 
-        functionHandle.Dispose();
+    public bool eeRunFunctorWithSpmiErrorTrap(Action function) => eeRunFunctorWithErrorTrap(function, spmiOnly: true);
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Capture managed exceptions inside the unmanaged callback, then apply the EE trap's recovery or rethrow policy.")]
+    private unsafe bool eeRunFunctorWithErrorTrap(Action function, bool spmiOnly)
+    {
+        var callback = new ErrorTrapCallback(function);
+        using var functionHandle = new GCHandle<ErrorTrapCallback>(callback);
+        var parameter = (void*)GCHandle<ErrorTrapCallback>.ToIntPtr(functionHandle);
+        var succeeded = spmiOnly
+            ? info.compCompHnd->runWithSPMIErrorTrap(&NativeShim, parameter)
+            : info.compCompHnd->runWithErrorTrap(&NativeShim, parameter);
+
+        if (callback.Failure is Exception failure)
+        {
+            // CEEInfo::runWithErrorTrap rethrows terminal HRESULTs (utilcode/ex.cpp, Exception::IsTerminal).
+            // The SPMI-only trap does not absorb ordinary JIT/managed exceptions.
+            const int COR_E_THREADABORTED = unchecked((int)0x80131530);
+            if (spmiOnly || failure.HResult == COR_E_THREADABORTED)
+            {
+                ExceptionDispatchInfo.Throw(failure);
+            }
+
+            return false;
+        }
+
         return succeeded;
 
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
         static void NativeShim(void* parameter)
         {
-            var functionHandle = GCHandle<Action>.FromIntPtr(unchecked((nint)(parameter)));
-            functionHandle.Target();
+            var callback = GCHandle<ErrorTrapCallback>.FromIntPtr((nint)parameter).Target;
+            try
+            {
+                callback.Function();
+            }
+            catch (Exception failure)
+            {
+                // No managed exception may escape the reverse-P/Invoke boundary. Handle it after returning to managed code.
+                callback.Failure = failure;
+            }
         }
     }
 
-    public unsafe bool eeRunFunctorWithSpmiErrorTrap(Action function)
+    private sealed class ErrorTrapCallback(Action function)
     {
-        var functionHandle = new GCHandle<Action>(function);
-        var succeeded = info.compCompHnd->runWithSPMIErrorTrap(&NativeShim, (void*)(GCHandle<Action>.ToIntPtr(functionHandle)));
+        public Action Function { get; } = function;
 
-        functionHandle.Dispose();
-        return succeeded;
-
-        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-        static void NativeShim(void* parameter)
-        {
-            var functionHandle = GCHandle<Action>.FromIntPtr(unchecked((nint)(parameter)));
-            functionHandle.Target();
-        }
+        public Exception? Failure { get; set; }
     }
 
 #if DEBUG

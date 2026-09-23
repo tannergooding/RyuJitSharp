@@ -61,14 +61,13 @@ internal static unsafe class SimdTypeTests
     {
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         // Native bool is one byte; reverse P/Invoke signatures require blittable types.
-        vtable.Base.Base.isIntrinsicType = (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_STRUCT_*, bool>)
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_STRUCT_*, byte>)&IsIntrinsicType;
+        vtable.Base.Base.isIntrinsicType = (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_STRUCT_*, byte>)&IsIntrinsicType;
         vtable.Base.Base.getClassNameFromMetadata = &GetClassName;
         vtable.Base.Base.getClassSize = &GetClassSize;
         vtable.Base.Base.getClassAttribs = &GetClassAttribs;
         vtable.Base.Base.getTypeInstantiationArgument = &GetTypeArgument;
         vtable.Base.Base.getTypeForPrimitiveNumericClass = &GetNumericType;
-        vtable.Base.notifyInstructionSetUsage = (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, bool>)
+        vtable.Base.notifyInstructionSetUsage = (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, byte>)
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, byte, byte>)&NotifyInstructionSetUsage;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
         JitFlags flags = default;
