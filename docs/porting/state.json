@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Finish the profile-incorporation integration batch: fgIncorporateProfileData is implemented and focused tests pass, but native-host capture exposed the still-stubbed fgDfsBlocksAndRemove before throw-likelihood adjustment. Complete that phase dependency and recapture all seven methods before claiming the milestone. Profile synthesis is committed in 37f2a0a. Debug ConfigDoubleArray's CRT compatibility/failure policy remains provisional (B075/R003); invariant managed parsing is an alternative under discussion, not yet applied. B064 is no longer a design blocker: the user explicitly directed whole-node replacement with caller/owner/alias/LIR updates while retaining the C# hierarchy. Implement that contract before activating folding/full inlining. B073's MakeFull defect does not affect discovery. Both native trees use the target revision; read the intact oracle.",
+    "nextAction": "Upgrade to the installed .NET 11 RC1 SDK and replace ConfigDoubleArray's provisional CRT interop with managed TryParsePartial and hexadecimal-float support, as directed by the user. Then continue whole-node replacement for folding and its caller/owner/alias/LIR contracts (B064); do not emulate native cross-kind bashing or redesign the hierarchy. Profile incorporation and DFS phase preparation are implemented (B079/B080), and a seven-method native/managed recapture has three exactly matching import prefixes. Remaining first differences concern inline-candidate processing, not the old BBOPT diagnostic. B073's MakeFull defect does not affect discovery. Both native trees use the target revision; read the intact oracle.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -19,15 +19,15 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "10.0.401",
-      "debugBuild": "passed-after-profile-synthesis-driver",
-      "releaseBuild": "passed-after-profile-synthesis-driver",
+      "debugBuild": "passed-after-profile-incorporation-and-dfs-phases",
+      "releaseBuild": "passed-after-profile-incorporation-and-dfs-phases",
       "testSourcesPresent": true,
       "writerRegressionCases": 16,
       "writerRegressionConfigurations": ["Debug", "Release"],
-      "targetFocusedTestsDebug": 837,
-      "targetFocusedTestsRelease": 708,
+      "targetFocusedTestsDebug": 969,
+      "targetFocusedTestsRelease": 795,
       "targetFocusedTestsSkipped": 0,
-      "fullSuiteSourceCommit": "d6a8aef3a42de1832adbc430b35d2d2094cfe4ce",
+      "fullSuiteSourceCommit": "29d375c3b1d77d1f230c13b32bf4061cb3690338",
       "callIntrinsicSpotChecks": {
         "debugPassed": 81,
         "releasePassed": 81,
@@ -298,9 +298,21 @@
         "firstDifference": "missing-BBOPT-profile-diagnostic",
         "fullPhaseParityEstablished": false
       },
-      "nativeAotPublish": "passed-at-folding-support-milestone",
+      "profileIncorporationMilestone": {
+        "managedSourceCommit": "29d375c3b1d77d1f230c13b32bf4061cb3690338",
+        "newPhaseCasesDebug": 23,
+        "newPhaseCasesRelease": 13,
+        "nativeCompilationHeaders": 7,
+        "managedCompilationHeaders": 7,
+        "nativeAotRecaptured": true,
+        "profilePhaseActivated": true,
+        "equalImportPrefixes": ["Add", "Branch", "Locals"],
+        "firstDifferences": "inline-candidate-diagnostics-and-processing",
+        "fullPhaseParityEstablished": false
+      },
+      "nativeAotPublish": "passed-at-profile-incorporation-milestone",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
-      "phaseDumpParity": "seven-method-corpus-captured-with-known-differences",
+      "phaseDumpParity": "three-of-seven-import-prefixes-equal-remaining-inline-candidate-differences",
       "codegenParity": "not-available"
     }
   },
@@ -443,6 +455,15 @@
       "commit": "c8e75503438d300d4c38b4f805bf9aec42341d3a",
       "indexCommit": "f6e251def381f59b780c02e505b31f9c2da4edd9",
       "ref": "refs/porting/snapshots/2026-09-23-native-ledger-profile-driver"
+    },
+    "profilePhaseNativeResidual": {
+      "commit": "ed8b7a58aa23e7c3412bc43eb95eb53f2f39e47e",
+      "indexCommit": "cf59c633f2a8e82f66445d5f0f52477ce6036f65",
+      "ref": "refs/porting/snapshots/2026-09-23-native-ledger-profile-phase"
+    },
+    "profilePhaseManagedSource": {
+      "commit": "29d375c3b1d77d1f230c13b32bf4061cb3690338",
+      "ref": "refs/porting/snapshots/2026-09-23-profile-phase-source"
     }
   },
   "sourceMap": [

@@ -261,6 +261,9 @@ internal static unsafe class FlowGraphDfsTests
                 Assert.That(compiler.fgSsaValid, Is.False);
                 Assert.That(entry.bbPostorderNum, Is.EqualTo(1));
             });
+            Assert.That(compiler.fgDfsBlocksAndRemove(), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
+            Assert.That(compiler._dfsTree, Is.Not.Null.And.Not.SameAs(dfs));
+            Assert.That(compiler._dfsTree!.HasCycle, Is.True);
         }
         finally
         {
@@ -346,9 +349,13 @@ internal static unsafe class FlowGraphDfsTests
             retained.SetFlags(BasicBlockFlags.BBF_DONT_REMOVE | BasicBlockFlags.BBF_INTERNAL);
             compiler._dfsTree = ComputeDfs(compiler, false);
 
-            _ = InvokePrivate(compiler, "fgRemoveBlocksOutsideDfsTree");
+            var previousDfs = compiler._dfsTree;
+            compiler.fgSsaValid = true;
+            Assert.That(compiler.fgDfsBlocksAndRemove(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
 
             Assert.Multiple(() => {
+                Assert.That(compiler._dfsTree, Is.Not.Null.And.Not.SameAs(previousDfs));
+                Assert.That(compiler.fgSsaValid, Is.False);
                 Assert.That(compiler.fgBBcount, Is.EqualTo(2));
                 Assert.That(entry.Next, Is.SameAs(retained));
                 Assert.That(retained.Prev, Is.SameAs(entry));

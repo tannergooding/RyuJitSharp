@@ -10985,6 +10985,150 @@ public partial class Compiler
         return true;
     }
 
+    protected unsafe PhaseStatus fgIncorporateProfileData()
+    {
+        if (fgStressBBProf() > 0)
+        {
+            JITDUMP("JitStress -- incorporating random profile data\n");
+            _ = fgIncorporateBlockCounts();
+            ProfileSynthesis.Run(this, ProfileSynthesisOption.RepairLikelihoods);
+            fgApplyProfileScale();
+            return PhaseStatus.MODIFIED_EVERYTHING;
+        }
+        if (!opts.OptimizationEnabled)
+        {
+            JITDUMP("not optimizing, so not incorporating any profile data\n");
+            return PhaseStatus.MODIFIED_NOTHING;
+        }
+#if DEBUG
+        if (JitConfig.JitSynthesizeCounts > 0)
+        {
+            if ((JitConfig.JitSynthesizeCounts == 1) || ((JitConfig.JitSynthesizeCounts == 2) && !fgHaveProfileData))
+            {
+                JITDUMP("Synthesizing profile data\n");
+                ProfileSynthesis.Run(this, ProfileSynthesisOption.AssignLikelihoods);
+                fgApplyProfileScale();
+                return PhaseStatus.MODIFIED_EVERYTHING;
+            }
+        }
+        if (opts.jitFlags->IsSet(JitFlags.JIT_FLAG_BBINSTR) && (JitConfig.JitPropagateSynthesizedCountsToProfileData > 0))
+        {
+            JITDUMP("Synthesizing profile data and writing it out as the actual profile data\n");
+            ProfileSynthesis.Run(this, ProfileSynthesisOption.AssignLikelihoods);
+            fgApplyProfileScale();
+            return PhaseStatus.MODIFIED_EVERYTHING;
+        }
+#endif
+        if (!fgHaveProfileData)
+        {
+            if (opts.jitFlags->IsSet(JitFlags.JIT_FLAG_BBOPT))
+            {
+                JITDUMP($"BBOPT set, but no profile data available (hr={fgPgoQueryResult:x8})\n");
+            }
+            else
+            {
+                JITDUMP("BBOPT not set\n");
+            }
+            if (fgPgoDynamic)
+            {
+                JITDUMP("Dynamic PGO active, synthesizing profile data\n");
+                ProfileSynthesis.Run(this, ProfileSynthesisOption.AssignLikelihoods);
+            }
+            fgApplyProfileScale();
+            return compIsForInlining ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
+        }
+
+        JITDUMP($"Have {compPgoSourceName}: {fgPgoSchemaCount} schema records (schema at {FMT_PTR((void*)dspPtr(fgPgoSchema))}, data at {FMT_PTR((void*)dspPtr(fgPgoData))})\n");
+        fgNumProfileRuns = 0;
+        uint otherRecords = 0;
+        for (var i = 0; i < fgPgoSchemaCount; i++)
+        {
+            switch (fgPgoSchema[i].InstrumentationKind)
+            {
+                case ICorJitInfo.PgoInstrumentationKind.NumRuns:
+                    fgNumProfileRuns = unchecked(fgNumProfileRuns + fgPgoSchema[i].Other);
+                    break;
+                case ICorJitInfo.PgoInstrumentationKind.BasicBlockIntCount:
+                case ICorJitInfo.PgoInstrumentationKind.BasicBlockLongCount:
+                    fgPgoBlockCounts++;
+                    break;
+                case ICorJitInfo.PgoInstrumentationKind.EdgeIntCount:
+                case ICorJitInfo.PgoInstrumentationKind.EdgeLongCount:
+                    fgPgoEdgeCounts++;
+                    break;
+                case ICorJitInfo.PgoInstrumentationKind.GetLikelyClass:
+                    fgPgoClassProfiles++;
+                    break;
+                case ICorJitInfo.PgoInstrumentationKind.GetLikelyMethod:
+                    fgPgoMethodProfiles++;
+                    break;
+                case ICorJitInfo.PgoInstrumentationKind.HandleHistogramIntCount:
+                case ICorJitInfo.PgoInstrumentationKind.HandleHistogramLongCount:
+                    if (i + 1 < fgPgoSchemaCount)
+                    {
+                        if (fgPgoSchema[i + 1].InstrumentationKind is ICorJitInfo.PgoInstrumentationKind.HandleHistogramTypes)
+                        {
+                            fgPgoClassProfiles++;
+                            i++;
+                            break;
+                        }
+                        if (fgPgoSchema[i + 1].InstrumentationKind is ICorJitInfo.PgoInstrumentationKind.HandleHistogramMethods)
+                        {
+                            fgPgoMethodProfiles++;
+                            i++;
+                            break;
+                        }
+                    }
+                    goto default;
+                default:
+                    JITDUMP($"Unknown PGO record type 0x{unchecked((uint)fgPgoSchema[i].InstrumentationKind):x} in schema entry {i} (offset 0x{fgPgoSchema[i].ILOffset:x} count 0x{fgPgoSchema[i].Count:x} other 0x{fgPgoSchema[i].Other:x})\n");
+                    otherRecords++;
+                    break;
+            }
+        }
+        if (fgNumProfileRuns == 0)
+        {
+            fgNumProfileRuns = 1;
+        }
+        JITDUMP($"Profile summary: {fgNumProfileRuns} runs, {fgPgoBlockCounts} block probes, {fgPgoEdgeCounts} edge probes, {fgPgoClassProfiles} class profiles, {fgPgoMethodProfiles} method profiles, {otherRecords} other records\n");
+
+        var haveBlockCounts = fgPgoBlockCounts > 0;
+        var haveEdgeCounts = fgPgoEdgeCounts > 0;
+        fgPgoHaveWeights = haveBlockCounts || haveEdgeCounts;
+        if (fgPgoHaveWeights)
+        {
+            // Prefer edge counts when both forms are present.
+            if (haveEdgeCounts)
+            {
+                _ = fgIncorporateEdgeCounts();
+            }
+            else if (haveBlockCounts)
+            {
+                _ = fgIncorporateBlockCounts();
+            }
+            if (fgPgoHaveWeights)
+            {
+                JITDUMP("\nRepairing profile...\n");
+                ProfileSynthesis.Run(this, ProfileSynthesisOption.RepairLikelihoods);
+            }
+            else
+            {
+                JITDUMP("\nSynthesizing profile...\n");
+                ProfileSynthesis.Run(this, ProfileSynthesisOption.ResetAndSynthesize);
+            }
+        }
+#if DEBUG
+        if (JitConfig.JitSynthesizeCounts == 3)
+        {
+            JITDUMP("Synthesizing profile data and blending it with the actual profile data\n");
+            ProfileSynthesis.Run(this, ProfileSynthesisOption.BlendLikelihoods);
+        }
+#endif
+        fgApplyProfileScale();
+
+        return PhaseStatus.MODIFIED_EVERYTHING;
+    }
+
     public bool fgIncorporateEdgeCounts()
     {
         JITDUMP("\nReconstructing block counts from sparse edge instrumentation\n");
@@ -12315,8 +12459,13 @@ public partial class Compiler
     // TODO: Port phase - fgDetermineFirstColdBlock
     public PhaseStatus fgDetermineFirstColdBlock() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port phase - fgDfsBlocksAndRemove
-    public PhaseStatus fgDfsBlocksAndRemove() => PhaseStatus.MODIFIED_NOTHING;
+    public PhaseStatus fgDfsBlocksAndRemove()
+    {
+        fgInvalidateDfsTree();
+        _dfsTree = fgComputeDfs();
+
+        return fgRemoveBlocksOutsideDfsTree() ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
+    }
 
     // TODO: Port phase - fgEarlyLiveness
     public PhaseStatus fgEarlyLiveness() => PhaseStatus.MODIFIED_NOTHING;
@@ -13177,9 +13326,6 @@ public partial class Compiler
 
     // TODO: Port phase - fgComputeDominators
     protected PhaseStatus fgComputeDominators() => PhaseStatus.MODIFIED_NOTHING;
-
-    // TODO: Port phase - fgIncorporateProfileData
-    protected PhaseStatus fgIncorporateProfileData() => PhaseStatus.MODIFIED_NOTHING;
 
     // TODO: Port phase - fgInstrumentMethod
     protected PhaseStatus fgInstrumentMethod() => PhaseStatus.MODIFIED_NOTHING;
