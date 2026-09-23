@@ -2149,7 +2149,7 @@ public partial class Compiler
         if (expensiveDebugCheckLevel == 0)
         {
             // If we're in a stress mode that modifies the flowgraph, make 1 the default.
-            if (fgStressBBProf() || compStressCompile(STRESS_DO_WHILE_LOOPS, 30))
+            if ((fgStressBBProf() != 0) || compStressCompile(STRESS_DO_WHILE_LOOPS, 30))
             {
                 expensiveDebugCheckLevel = 1;
             }

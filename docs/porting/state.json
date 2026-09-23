@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Resolve B064 before implementing constant bashing: native lowering retains the original node and LIR users, so updating importer return slots alone is insufficient. A general replacement contract must cover aliases and LIR ownership, or a stable-identity mutable-payload redesign needs separate approval. Structural comparison, HWI initialization/classification, checked arithmetic and cast predicates form the validated folding-support milestone. Constant folding and global-morph assertion bookkeeping remain dependencies before enabling the full inliner and resuming rationalization. Both native trees use the target revision. The first PGO dump gap remains pending.",
+    "nextAction": "Continue profile incorporation prerequisites (B067), following the first observed dump gap. Block-count lookup, incorporation, inline scaling and unsigned stress seeds are implemented; edge reconstruction and ProfileSynthesis remain before activating fgIncorporateProfileData. Do not insert the missing BBOPT diagnostic alone. In parallel with this dependency direction, B064 still gates constant bashing: replacement must cover aliases/LIR ownership or a stable-identity mutable-payload redesign needs separate approval. Folding and global-morph assertion bookkeeping remain before enabling the full inliner and resuming rationalization. Both native trees use the target revision.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -19,8 +19,8 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "10.0.401",
-      "debugBuild": "passed-after-checked-cast-support",
-      "releaseBuild": "passed-after-checked-cast-support",
+      "debugBuild": "passed-after-profile-count-support",
+      "releaseBuild": "passed-after-profile-count-support",
       "testSourcesPresent": true,
       "writerRegressionCases": 16,
       "writerRegressionConfigurations": ["Debug", "Release"],
@@ -185,6 +185,14 @@
         "nativeAotRecaptured": false,
         "fullPhaseParityEstablished": false
       },
+      "profileCountSpotChecks": {
+        "debugPassed": 14,
+        "releasePassed": 11,
+        "booleanSeedNormalizationFailures": 2,
+        "skipped": 0,
+        "nativeAotRecaptured": false,
+        "profilePhaseActivated": false
+      },
       "savedWipSupportMilestone": {
         "managedSourceCommit": "24b9352dc6f293228d58cb24871280827f936ab7",
         "nativeCompilationHeaders": 7,
@@ -317,6 +325,11 @@
       "commit": "255ba02d0018c484f069c440e791ed2c7fabb7a8",
       "indexCommit": "225f7bc640870b47274bc843a6057d631e7a2b52",
       "ref": "refs/porting/snapshots/2026-09-23-native-ledger-checked-ops"
+    },
+    "profileCountsNativeResidual": {
+      "commit": "8b966cca700a1b60e3a281fdc10db7345d34cb58",
+      "indexCommit": "b22fa7a025459b4e5c43cb661e699d82dd8e3585",
+      "ref": "refs/porting/snapshots/2026-09-23-native-ledger-profile-counts"
     }
   },
   "sourceMap": [

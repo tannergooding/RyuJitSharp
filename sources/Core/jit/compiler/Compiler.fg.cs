@@ -2248,7 +2248,7 @@ public partial class Compiler
     protected unsafe bool fgHaveProfileData => fgPgoSchema is not null;
 
     /// <summary>true if we have real profile data for this method or if we have some fake profile data for the stress mode</summary>
-    public bool fgIsUsingProfileWeights => fgHaveProfileWeights || fgStressBBProf();
+    public bool fgIsUsingProfileWeights => fgHaveProfileWeights || (fgStressBBProf() != 0);
 
     /// <summary>Answers does the inlinee need to spill all returns as a temp.</summary>
     public bool fgNeedReturnSpillTemp
@@ -10307,6 +10307,146 @@ public partial class Compiler
         fgRemoveRefPred(block.TargetEdge);
     }
 
+    public void fgApplyProfileScale()
+    {
+        if (!compIsForInlining)
+        {
+            return;
+        }
+
+        assert(fgFirstBB is not null);
+        JITDUMP("Computing inlinee profile scale:\n");
+
+        if (!fgHaveProfileWeights)
+        {
+            JITDUMP("   ... no callee profile data, will use non-pgo weight to scale\n");
+        }
+
+        // Backedges into the entry block are not input flow from the caller.
+        weight_t firstBlockPredWeight = 0;
+        foreach (var firstBlockPred in fgFirstBB.PredEdges)
+        {
+            firstBlockPredWeight += firstBlockPred.LikelyWeight;
+        }
+
+        var calleeWeight = fgFirstBB.bbWeight;
+        if (calleeWeight <= firstBlockPredWeight)
+        {
+            calleeWeight = fgHaveProfileWeights ? 1.0 : BB_UNITY_WEIGHT;
+            JITDUMP($"   ... callee entry has zero or negative weight, will use weight of {FMT_WT(calleeWeight)} to scale\n");
+            JITDUMP($"Profile data could not be scaled consistently. Data {(fgPgoConsistent ? "is now" : "was already")} inconsistent.\n");
+
+            if (fgPgoConsistent)
+            {
+                Metrics.ProfileInconsistentInlineeScale++;
+                fgPgoConsistent = false;
+            }
+        }
+        else
+        {
+            calleeWeight -= firstBlockPredWeight;
+        }
+
+        var callSiteBlock = impInlineInfo.iciBlock;
+        assert(callSiteBlock is not null);
+        if (!callSiteBlock.hasProfileWeight)
+        {
+            JITDUMP("   ... call site not profiled, will use non-pgo weight to scale\n");
+        }
+
+        var callSiteWeight = callSiteBlock.bbWeight;
+        if (callSiteWeight == BB_ZERO_WEIGHT)
+        {
+            JITDUMP("   ... zero call site count; scale will be 0.0\n");
+        }
+
+        // Sampled profiles need not cover a complete run, so scaling may increase counts.
+        var scale = callSiteWeight / calleeWeight;
+        JITDUMP($"   call site count {FMT_WT(callSiteWeight)} callee entry count {FMT_WT(calleeWeight)} scale {FMT_WT(scale)}\n");
+        JITDUMP("Scaling inlinee blocks\n");
+
+        foreach (var block in Blocks)
+        {
+            block.scaleBBWeight(scale);
+        }
+    }
+
+    public unsafe bool fgGetProfileWeightForBasicBlock(IL_OFFSET offset, ref weight_t weightWB)
+    {
+#if DEBUG
+        var hashSeed = fgStressBBProf();
+        if (hashSeed != 0)
+        {
+            var hash = unchecked(((uint)info.compMethodHash() * hashSeed) ^ ((uint)offset * 1027));
+            weight_t weight;
+
+            // About 44% of blocks have zero weight to stress procedure splitting.
+            if ((hash % 3) == 0)
+            {
+                weight = BB_ZERO_WEIGHT;
+            }
+            else if ((hash % 11) == 0)
+            {
+                weight = (weight_t)(hash % 23) * (hash % 29) * (hash % 31);
+            }
+            else
+            {
+                weight = (weight_t)(hash % 17) * (hash % 19);
+            }
+
+            if ((offset == 0) && (weight == BB_ZERO_WEIGHT))
+            {
+                weight = 1 + (hash % 5);
+            }
+
+            weightWB = weight;
+            return true;
+        }
+#endif
+
+        if (!fgHaveProfileWeights)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < fgPgoSchemaCount; i++)
+        {
+            if (fgPgoSchema[i].ILOffset != offset)
+            {
+                continue;
+            }
+
+            if (fgPgoSchema[i].InstrumentationKind is ICorJitInfo.PgoInstrumentationKind.BasicBlockIntCount)
+            {
+                weightWB = *(uint*)(fgPgoData + fgPgoSchema[i].Offset);
+                return true;
+            }
+
+            if (fgPgoSchema[i].InstrumentationKind is ICorJitInfo.PgoInstrumentationKind.BasicBlockLongCount)
+            {
+                weightWB = *(ulong*)(fgPgoData + fgPgoSchema[i].Offset);
+                return true;
+            }
+        }
+
+        weightWB = 0;
+        return true;
+    }
+
+    public bool fgIncorporateBlockCounts()
+    {
+        foreach (var block in Blocks)
+        {
+            weight_t profileWeight = 0;
+            if (fgGetProfileWeightForBasicBlock(block.bbCodeOffs, ref profileWeight))
+            {
+                block.setBBProfileWeight(profileWeight);
+            }
+        }
+
+        return true;
+    }
+
     /// <summary>Remove all traces of profile info</summary>
     /// <param name="reason">string describing why profile data is being removed</param>
     /// <remarks>
@@ -12487,9 +12627,18 @@ public partial class Compiler
     protected PhaseStatus fgPrepareToInstrumentMethod() => PhaseStatus.MODIFIED_NOTHING;
 
 #if DEBUG
-    protected bool fgStressBBProf() => (JitConfig.JitStressBBProf != 0) || compStressCompile(STRESS_BB_PROFILE, 15);
+    protected uint fgStressBBProf()
+    {
+        var result = unchecked((uint)JitConfig.JitStressBBProf);
+        if ((result == 0) && compStressCompile(STRESS_BB_PROFILE, 15))
+        {
+            result = 1;
+        }
+
+        return result;
+    }
 #else
-    protected bool fgStressBBProf() => false;
+    protected uint fgStressBBProf() => 0;
 #endif
 
     /// <summary>Switch the opt level from tier 0 to optimized</summary>

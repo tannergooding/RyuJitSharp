@@ -49,6 +49,10 @@ comparison promotion. The cast-overflow predicates retain native overflow
 polarity and floating-point bounds; casts to floating-point destinations never
 report overflow, including narrowing to infinity (B066).
 
+Profile weight lookup uses a managed `ref` output: native leaves the pointed-to
+value unchanged when no profile weights are available, so an unconditional
+`out` initialization would change that contract (B067).
+
 Managed error-trap callbacks capture exceptions before leaving their
 `UnmanagedCallersOnly` shim. An owned `GCHandle` keeps the action and captured
 exception alive until the native trap returns. The regular trap reports
