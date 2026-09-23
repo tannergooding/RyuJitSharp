@@ -561,6 +561,55 @@ public sealed partial class BasicBlock : LIR.Range
     public bool EndsWithTailCallOrJmp(Compiler comp, bool fastTailCallsOnly = false)
         => EndsWithJmpMethod(comp) || EndsWithTailCall(comp, fastTailCallsOnly, tailCallsConvertibleToLoopOnly: false, out _);
 
+    /// <summary>Visit enclosed finally/fault handlers that can execute after this filter during second-pass EH.</summary>
+    public BasicBlockVisit VisitEHEnclosedHandlerSecondPassSuccs(Compiler comp, Func<BasicBlock, BasicBlockVisit> func)
+    {
+        if (!hasHndIndex)
+        {
+            return BasicBlockVisit.Continue;
+        }
+
+        var thisHndIndex = HndIndex;
+        ref var enclosing = ref comp.ehGetDsc(thisHndIndex);
+        if (!enclosing.InFilterRegionBBRange(this))
+        {
+            return BasicBlockVisit.Continue;
+        }
+
+        assert(enclosing.HasFilter);
+        // Enclosed regions are contiguous immediately before the enclosing region.
+        for (var index = thisHndIndex - 1; index >= 0; index--)
+        {
+            var enclosingIndex = comp.ehGetEnclosingRegionIndex((ushort)index, out var inTry);
+            var isEnclosed = false;
+            while (enclosingIndex != EHblkDsc.NO_ENCLOSING_INDEX)
+            {
+                if (enclosingIndex == thisHndIndex)
+                {
+                    isEnclosed = true;
+                    break;
+                }
+                enclosingIndex = comp.ehGetEnclosingRegionIndex(enclosingIndex, out inTry);
+            }
+
+            if (!isEnclosed)
+            {
+                break;
+            }
+
+            if (inTry)
+            {
+                ref var enclosed = ref comp.ehGetDsc((ushort)index);
+                if (enclosed.HasFinallyOrFaultHandler && (func(enclosed.ebdHndBeg) is BasicBlockVisit.Abort))
+                {
+                    return BasicBlockVisit.Abort;
+                }
+            }
+        }
+
+        return BasicBlockVisit.Continue;
+    }
+
     public BasicBlockVisit VisitRegularSuccs(Compiler comp, Func<BasicBlock, BasicBlockVisit> func)
     {
         switch (_kind)

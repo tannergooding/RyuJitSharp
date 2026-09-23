@@ -277,6 +277,14 @@ public partial class Compiler
         return (tryIndex == regionIndex);
     }
 
+    /// <summary>Check the EH table for the start of the block's innermost handler or filter.</summary>
+    public bool bbIsHandlerBeg(BasicBlock block)
+    {
+        ref var ehDsc = ref ehGetBlockHndDsc(block);
+        return !Unsafe.IsNullRef(in ehDsc) &&
+            ((block == ehDsc.ebdHndBeg) || (ehDsc.HasFilter && (block == ehDsc.ebdFilter)));
+    }
+
     /// <summary>Check if this block is part of a filter.</summary>
     /// <param name="blk">The block</param>
     /// <returns>True if the block is part of a filter clause. Otherwise false.</returns>

@@ -9946,6 +9946,66 @@ public partial class Compiler
         fgSsaValid = false;
     }
 
+    public BlockToFlowEdgeMap GetBlockToEHPreds() => _blockToEHPreds ??= [];
+
+    /// <summary>Return the regular and exceptional predecessors, caching handler/filter lists.</summary>
+    public FlowEdge? BlockPredsWithEH(BasicBlock blk)
+    {
+        if (!bbIsHandlerBeg(blk))
+        {
+            return blk.bbPreds;
+        }
+
+        var ehPreds = GetBlockToEHPreds();
+        if (ehPreds.TryGetValue(blk, out var res))
+        {
+            return res;
+        }
+
+        res = blk.bbPreds;
+        var tryIndex = blk.HndIndex;
+        // Funclets can split a try's layout range, so examine all blocks.
+        // Callfinally tails cannot transfer control to a handler.
+        foreach (var bb in Blocks)
+        {
+            if (bbInExnFlowRegions(tryIndex, bb) && !bb.isBBCallFinallyPairTail)
+            {
+                res = new FlowEdge(bb, blk, res);
+            }
+        }
+
+        ref var ehblk = ref ehGetDsc(tryIndex);
+        if (ehblk.HasFinallyOrFaultHandler && (ehblk.ebdHndBeg == blk))
+        {
+            for (var enclosing = ehblk.ebdEnclosingTryIndex; enclosing != EHblkDsc.NO_ENCLOSING_INDEX;)
+            {
+                ref var enclosingDsc = ref ehGetDsc(enclosing);
+                if (enclosingDsc.HasFilter)
+                {
+                    for (var filterBlk = enclosingDsc.ebdFilter; filterBlk != enclosingDsc.ebdHndBeg; filterBlk = filterBlk.Next)
+                    {
+                        assert(filterBlk is not null);
+                        res = new FlowEdge(filterBlk, blk, res);
+                        assert(filterBlk.VisitEHEnclosedHandlerSecondPassSuccs(this,
+                            succ => succ == blk ? BasicBlockVisit.Abort : BasicBlockVisit.Continue) is BasicBlockVisit.Abort);
+                    }
+                }
+                enclosing = enclosingDsc.ebdEnclosingTryIndex;
+            }
+        }
+
+#if DEBUG
+        var hash = SsaStressHashHelper();
+        if (hash != 0)
+        {
+            res = ShuffleHelper(hash, res);
+        }
+#endif
+        ehPreds[blk] = res;
+
+        return res;
+    }
+
     private FlowGraphDfsTree fgComputeDfs(bool useProfile = false)
     {
         var postOrder = new BasicBlock[fgBBcount];
@@ -10067,39 +10127,10 @@ public partial class Compiler
             eh = ref ehGetDsc(eh.ebdEnclosingTryIndex);
         }
 
-        if (block.hasHndIndex)
-        {
-            var hndIndex = block.HndIndex;
-            ref var enclosing = ref ehGetDsc(hndIndex);
-            if (enclosing.InFilterRegionBBRange(block))
-            {
-                for (var index = hndIndex - 1; index >= 0; index--)
-                {
-                    var enclosingIndex = ehGetEnclosingRegionIndex((ushort)index, out var inTry);
-                    var isEnclosed = false;
-                    while (enclosingIndex != EHblkDsc.NO_ENCLOSING_INDEX)
-                    {
-                        if (enclosingIndex == hndIndex)
-                        {
-                            isEnclosed = true;
-                            break;
-                        }
-
-                        enclosingIndex = ehGetEnclosingRegionIndex(enclosingIndex, out inTry);
-                    }
-
-                    if (!isEnclosed)
-                    {
-                        break;
-                    }
-
-                    if (inTry && ehGetDsc((ushort)index).HasFinallyOrFaultHandler)
-                    {
-                        successors.Add(ehGetDsc((ushort)index).ebdHndBeg);
-                    }
-                }
-            }
-        }
+        _ = block.VisitEHEnclosedHandlerSecondPassSuccs(this, successor => {
+            successors.Add(successor);
+            return BasicBlockVisit.Continue;
+        });
 
         return successors;
     }

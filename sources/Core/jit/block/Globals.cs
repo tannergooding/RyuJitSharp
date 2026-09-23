@@ -42,4 +42,45 @@ public partial class Globals
     public const int NO_BASE_TMP = -1;
 
     public const ushort MAX_XCPTN_INDEX = ushort.MaxValue - 1;
+
+#if DEBUG
+    public static FlowEdge? ShuffleHelper(uint hash, FlowEdge? res)
+    {
+        var head = res;
+        for (FlowEdge? prev = null; res is not null; prev = res, res = res.NextPredEdge)
+        {
+            var blockNum = unchecked((uint)res.SourceBlock.bbNum);
+            var blkHash = hash ^ (blockNum << 16) ^ blockNum;
+            if ((((blkHash % 1879) & 1) != 0) && (prev is not null))
+            {
+                assert(head is not null);
+                prev.NextPredEdge = head;
+                var resNext = res.NextPredEdge;
+                var headNext = head.NextPredEdge;
+                head.NextPredEdge = resNext;
+                res.NextPredEdge = headNext;
+                (head, res) = (res, head);
+            }
+        }
+
+        return head;
+    }
+
+    public static uint SsaStressHashHelper()
+    {
+        var hash = unchecked((uint)JitConfig.JitSsaStress);
+        if (hash == 0)
+        {
+            return hash;
+        }
+        if (hash == 1)
+        {
+            var compiler = JitTls.Compiler;
+            assert(compiler is not null);
+            return unchecked((uint)compiler.info.compMethodHash());
+        }
+
+        return (hash >> 16) == 0 ? (hash << 16) | hash : hash;
+    }
+#endif
 }

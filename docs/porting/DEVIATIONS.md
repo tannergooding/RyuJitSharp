@@ -65,6 +65,12 @@ replacement, and the edge-key hash are retained; iteration order is not observed
 model edges remain prepended linked lists, preserving summation and solver order
 independently of dictionary storage (B069).
 
+EH predecessor caches hold nullable managed edge heads: a cached empty list is
+distinct from an uncached block. New exceptional edges prepend to the original
+regular predecessor chain; SSA stress retains native in-place link shuffling.
+Second-pass filter successor visitation is shared with DFS via a managed
+callback, preserving region order and early abort (B071).
+
 Managed error-trap callbacks capture exceptions before leaving their
 `UnmanagedCallersOnly` shim. An owned `GCHandle` keeps the action and captured
 exception alive until the native trap returns. The regular trap reports

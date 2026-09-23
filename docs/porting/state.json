@@ -11,7 +11,7 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
-    "nextAction": "Continue profile incorporation prerequisites (B067), next ProfileSynthesis and its DFS/natural-loop dependencies. Block counts, inline scaling, unsigned stress seeds, spanning traversal (B068) and complete sparse edge reconstruction (B069) are implemented. Switch default metadata is corrected (B070). ProfileSynthesis still gates activating fgIncorporateProfileData; do not insert the missing BBOPT diagnostic alone. B064 still gates constant bashing: replacement must cover aliases/LIR ownership or a stable-identity mutable-payload redesign needs separate approval. Folding and global-morph assertion bookkeeping remain before enabling the full inliner and resuming rationalization. Both native trees use the target revision; read the intact oracle, not residual bodies, as source of truth.",
+    "nextAction": "Continue profile incorporation prerequisites (B067), next natural-loop discovery, then ProfileSynthesis. FlowGraphNaturalLoops is still a stub and FlowGraphNaturalLoop is absent. Their EH-aware predecessor and second-pass filter traversal prerequisites are implemented (B071). Block counts, inline scaling, spanning traversal (B068) and sparse edge reconstruction (B069) are implemented; switch default metadata is corrected (B070). ProfileSynthesis still gates activating fgIncorporateProfileData; do not insert the missing BBOPT diagnostic alone. B064 still gates constant bashing: replacement must cover aliases/LIR ownership or a stable-identity mutable-payload redesign needs separate approval. Folding and global-morph assertion bookkeeping remain before enabling the full inliner and resuming rationalization. Both native trees use the target revision; read the intact oracle, not residual bodies, as source of truth.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -19,14 +19,15 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "10.0.401",
-      "debugBuild": "passed-after-profile-edge-reconstruction",
-      "releaseBuild": "passed-after-profile-edge-reconstruction",
+      "debugBuild": "passed-after-eh-predecessor-support",
+      "releaseBuild": "passed-after-eh-predecessor-support",
       "testSourcesPresent": true,
       "writerRegressionCases": 16,
       "writerRegressionConfigurations": ["Debug", "Release"],
       "targetFocusedTestsDebug": 769,
       "targetFocusedTestsRelease": 667,
       "targetFocusedTestsSkipped": 0,
+      "fullSuiteSourceCommit": "2a6c154755749dd7c916d9660c0722dd204b5991",
       "callIntrinsicSpotChecks": {
         "debugPassed": 81,
         "releasePassed": 81,
@@ -209,6 +210,14 @@
         "profilePhaseActivated": false,
         "source": "pinned-oracle-including-current-OSR-incomplete-flow-fallback"
       },
+      "exceptionalPredecessorSpotChecks": {
+        "debugPassed": 21,
+        "releasePassed": 10,
+        "existingDfsCasesPassedPerConfiguration": 24,
+        "skipped": 0,
+        "nativeAotRecaptured": false,
+        "profilePhaseActivated": false
+      },
       "savedWipSupportMilestone": {
         "managedSourceCommit": "24b9352dc6f293228d58cb24871280827f936ab7",
         "nativeCompilationHeaders": 7,
@@ -356,6 +365,11 @@
       "commit": "2f189cabe85bfab5871cef7fa1f26bd4fc86f801",
       "indexCommit": "2b98f7a234ac220e624ccc16b926cf0b9bdf8f71",
       "ref": "refs/porting/snapshots/2026-09-23-native-ledger-profile-edges"
+    },
+    "exceptionalPredecessorNativeResidual": {
+      "commit": "773e290e124a2b93fd38e9a1e5c4b39e3138082d",
+      "indexCommit": "02bb7371a16635c17c4505be0037948e0e6c2b5b",
+      "ref": "refs/porting/snapshots/2026-09-23-native-ledger-eh-predecessors"
     }
   },
   "sourceMap": [
@@ -381,6 +395,12 @@
       "area": "flowgraph-and-inlining",
       "native": ["src\\coreclr\\jit\\fgbasic.cpp", "src\\coreclr\\jit\\fgstmt.cpp", "src\\coreclr\\jit\\fginline.cpp", "src\\coreclr\\jit\\fgdiagnostic.cpp", "src\\coreclr\\jit\\flowgraph.cpp", "src\\coreclr\\jit\\fgprofile.cpp", "src\\coreclr\\jit\\inline.cpp", "src\\coreclr\\jit\\inlinepolicy.cpp"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.fg.cs", "sources\\Core\\jit\\Inline", "sources\\Core\\jit\\inlinepolicy"],
+      "reconciledCommit": null
+    },
+    {
+      "area": "basic-block-eh-flow",
+      "native": ["src\\coreclr\\jit\\block.cpp", "src\\coreclr\\jit\\block.h", "src\\coreclr\\jit\\jiteh.cpp", "src\\coreclr\\jit\\compiler.hpp"],
+      "csharp": ["sources\\Core\\jit\\block", "sources\\Core\\jit\\compiler\\Compiler.fg.cs", "sources\\Core\\jit\\compiler\\Compiler.eh.cs"],
       "reconciledCommit": null
     },
     {
