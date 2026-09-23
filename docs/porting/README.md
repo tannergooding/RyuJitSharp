@@ -6,6 +6,8 @@ the same inputs and configuration, except for explicitly approved differences.
 Internal C# representation may differ without changing those results.
 
 Start with [state.json](state.json) for revisions and the current checkpoint.
+Read the [milestone journal](MILESTONES.md) to catch up on completed capabilities,
+evidence and remaining boundaries without replaying the conversation.
 The [continuation plan](PLAN.md) defines milestones; the
 [deviation register](DEVIATIONS.md) distinguishes accepted changes from existing
 limitations. Neither is an assertion that the current port is complete.
@@ -48,6 +50,9 @@ Before editing or resuming, follow the plan's
 condition, selected validation, and deferred work in `checkpoint.activeBatch`.
 Use that boundary to decide what to investigate and test, rather than restarting
 a helper-by-helper validation cycle after each commit or context refresh.
+At validated milestones, update the journal and push the current porting branch,
+then continue; publication is authorized for this ongoing port. Do not open PRs,
+rewrite published history, or update other branches without separate approval.
 
 Port a whole native function and its required support, rather than a fragment
 selected to get one test running. Preserve all Windows-x64 behavior in that

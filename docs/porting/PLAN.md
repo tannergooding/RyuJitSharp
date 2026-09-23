@@ -66,8 +66,13 @@ If a prerequisite starts requiring another substantial subsystem, new tooling,
 or extensive fixtures, reassess the boundary rather than silently expanding it.
 
 After committing a batch, select the next batch and continue. A logical commit
-is a checkpoint, not a reason to stop; stop at a substantial milestone, an
-explicit user pause, or a decision requiring approval.
+is a checkpoint, not a reason to stop. At a substantial validated milestone,
+update [MILESTONES.md](MILESTONES.md), commit the checkpoint and push the current
+porting branch, then continue into the next dependency boundary. The ongoing
+milestone publication workflow was approved on 2026-09-23; it does not authorize
+PR creation, history rewriting, or publication to other branches.
+Pause only for an explicit user request, a decision requiring approval,
+a publication conflict, or a blocker that cannot be safely resolved.
 
 ## 0. Preserve and establish the starting point
 
