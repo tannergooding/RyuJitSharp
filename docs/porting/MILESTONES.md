@@ -19,6 +19,11 @@ calls while preserving earlier side effects. Literal construction and debug
 stress copies preserve native handle shapes, logical identity and operand
 ownership.
 
+Indirection finalization turns in-range local-address accesses into field loads
+and stores, preserving partial definitions and volatile-access restrictions.
+Eligible promoted struct returns expose their fields, and equal-size memory
+bitcasts can avoid an extra conversion.
+
 Outgoing calls can classify signature types into Windows-x64 argument registers
 and stack slots, account for shadow space, insert virtual-stub and ReadyToRun
 cells, and remove those cells before reclassification. Argument scheduling,

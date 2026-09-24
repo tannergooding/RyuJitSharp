@@ -135,6 +135,107 @@ internal static unsafe class MorphTreeSupportTests
     }
 #endif
 
+    [TestCase((ushort)4, false, true)]
+    [TestCase((ushort)6, false, false)]
+    [TestCase((ushort)4, true, false)]
+    public static void FinalizeIndirectionRespectsExtentAndVolatility(ushort offset, bool isVolatile, bool converted)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_LONG }];
+            compiler.lvaCount = 1;
+            var address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, offset);
+            var indirection = compiler.gtNewIndir(TYP_INT, address, isVolatile ? GTF_IND_VOLATILE : GTF_EMPTY);
+            indirection._vnPair.SetBoth(123);
+            indirection.Flags |= GTF_GLOB_REF;
+            var result = compiler.fgMorphFinalizeIndir(indirection);
+            if (converted)
+            {
+                Assert.That(result, Is.SameAs(address));
+                Assert.That(address.Oper, Is.EqualTo(GT_LCL_FLD));
+                Assert.That(address.Type, Is.EqualTo(TYP_INT));
+                Assert.That(address.LclOffs, Is.EqualTo(offset));
+                Assert.That(address._vnPair.Liberal, Is.EqualTo(123));
+                Assert.That(address.Flags & GTF_GLOB_REF, Is.EqualTo(GTF_GLOB_REF));
+            }
+            else
+            {
+                Assert.That(result, Is.Null);
+                Assert.That(address.Oper, Is.EqualTo(GT_LCL_ADDR));
+                Assert.That(address.Type, Is.EqualTo(TYP_BYREF));
+            }
+        });
+    }
+
+    [TestCase(TYP_INT, true)]
+    [TestCase(TYP_LONG, false)]
+    public static void FinalizeLocalStorePreservesDataAndPartialDefinition(var_types type, bool partial)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_LONG }];
+            compiler.lvaCount = 1;
+            var address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
+            var value = compiler.gtNewIndir(type, compiler.gtNewIconNode(TYP_I_IMPL, 0x1234));
+            var store = compiler.gtNewStoreIndNode(type, address, value);
+            store._vnPair.SetBoth(456);
+            var result = compiler.fgMorphFinalizeIndir(store);
+
+            Assert.That(result, Is.SameAs(address));
+            Assert.That(address.Oper, Is.EqualTo(GT_STORE_LCL_FLD));
+            Assert.That(address.Data, Is.SameAs(value));
+            Assert.That(address.Flags & (GTF_ASG | GTF_VAR_DEF), Is.EqualTo(GTF_ASG | GTF_VAR_DEF));
+            Assert.That((address.Flags & GTF_VAR_USEASG) != 0, Is.EqualTo(partial));
+            Assert.That(address.Flags & GTF_EXCEPT, Is.EqualTo(GTF_EXCEPT));
+            Assert.That(address._vnPair.Liberal, Is.EqualTo(456));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void StructReturnReplacementUpdatesTheOwningUse(bool promoted)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [
+                new LclVarDsc { Type = TYP_STRUCT, Layout = new ClassLayout(8), lvPromoted = promoted, lvFieldLclStart = 1, lvFieldCnt = 2 },
+                new LclVarDsc { Type = TYP_INT, lvIsStructField = true, lvParentLcl = 0, lvFldOffset = 0 },
+                new LclVarDsc { Type = TYP_INT, lvIsStructField = true, lvParentLcl = 0, lvFldOffset = 4 },
+            ];
+            compiler.lvaCount = 3;
+            var local = compiler.gtNewLclvNode(TYP_STRUCT, 0);
+            var returnNode = compiler.gtNewUnaryNode(GT_RETURN, TYP_STRUCT, local);
+            var replaced = compiler.fgTryReplaceStructLocalWithFields(ref returnNode.Op1Ref);
+            Assert.That(replaced, Is.EqualTo(promoted));
+            Assert.That(returnNode.Op1.Oper, Is.EqualTo(promoted ? GT_FIELD_LIST : GT_LCL_VAR));
+            Assert.That(local.Oper, Is.EqualTo(GT_LCL_VAR));
+        });
+    }
+
+    [TestCase(false, false)]
+    [TestCase(true, false)]
+    [TestCase(false, true)]
+    public static void BitCastRetypesEqualSizedMemoryLoads(bool field, bool minOpts)
+    {
+        WithCompiler(compiler => {
+            compiler.opts.SetMinOpts(minOpts);
+            GenTree source = field
+                ? new GenTreeLclFld(GT_LCL_FLD, TYP_INT, 0, 4)
+                : compiler.gtNewIndir(TYP_INT, compiler.gtNewIconNode(TYP_I_IMPL, 0x1234));
+            var cast = compiler.gtNewUnaryNode(GT_BITCAST, TYP_FLOAT, source);
+            cast._vnPair.SetBoth(789);
+            var result = compiler.fgOptimizeBitCast(cast);
+            if (minOpts)
+            {
+                Assert.That(result, Is.Null);
+                Assert.That(source.Type, Is.EqualTo(TYP_INT));
+            }
+            else
+            {
+                Assert.That(result, Is.SameAs(source));
+                Assert.That(source.Type, Is.EqualTo(TYP_FLOAT));
+                Assert.That(source._vnPair.Liberal, Is.EqualTo(789));
+            }
+        });
+    }
+
     private static void WithCompiler(Action<Compiler> action)
     {
 #if DEBUG
@@ -142,6 +243,8 @@ internal static unsafe class MorphTreeSupportTests
 #endif
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitFlags flags = default;
+        compiler.opts.jitFlags = &flags;
         JitTls.Compiler = compiler;
 
         try

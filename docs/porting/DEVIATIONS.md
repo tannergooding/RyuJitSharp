@@ -61,6 +61,12 @@ is prior art, not proof that other replacement contexts already work. Do not
 reinterpret incompatible CLR layouts or introduce a mutable-payload redesign
 merely to emulate native bashing (B064).
 
+Local addresses and local-field loads/stores all use `GenTreeLclFld`, so
+indirection finalization can retag that compatible object in place while
+preserving its logical ID. The caller consumes the returned local in place of
+the indirection. Promoted struct returns instead replace their owning use with
+a field-list node; they do not retag the original local into a different CLR type.
+
 Scalar constant folding now uses replacement constructors that copy base
 metadata and the logical tree ID without allocating another ID. Operation-specific
 flags are cleared using the native node mask. The source must be unthreaded;
