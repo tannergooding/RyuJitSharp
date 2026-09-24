@@ -12,15 +12,15 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete same-class HWI intrinsic-ID and operand reconfiguration without cross-kind node bashing.",
+      "scope": "Complete xarch comparison-mode normalization and variable-shift metadata required by the full HWI folding dispatcher.",
       "doneWhen": [
-        "Allow partial operand replacement with unchanged count and full replacement with a different count.",
-        "Preserve node identity, metadata and caller-owned side-effect flags while applying existing intrinsic-ID validation/normalization.",
-        "Document operand-view invalidation and remove native allocator-only parameters; keep cross-kind replacement and full folding activation separate.",
+        "Preserve all native comparison-mode mappings for vector, scalar and mask forms, including signaling/non-signaling equivalence.",
+        "Retain the original intrinsic for modes handled by the folding dispatcher or left unnormalized.",
+        "Distinguish per-lane variable shifts from uniform vector shift-count operands; keep dispatcher activation deferred until its complete closure is ready.",
         "The selected Debug/Release checks pass and complete functions are committed with their native retirement and checkpoint."
       ],
       "validation": [
-        "Extend existing HWI coverage for ID-only/partial changes, operand growth/shrinkage and unchanged flags/metadata.",
+        "Verify framework FloatComparisonMode names/encodings against native and cover every mapped mode pair plus unchanged modes and variable-shift IDs.",
         "Run one HWI/scalar selection in Debug and Release.",
         "No NativeAOT recapture or full suite for support-only changes unless the reachable frontier changes."
       ],
@@ -31,7 +31,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "HWI evaluation/conversion prerequisites (B102-B107), per-element mask recognition (B108) and same-class reconfiguration (B109) are complete. Port the full HWI folding closure, preserving existing equivalent vector queries and scalar element access rather than duplicating native wrappers; audit fgInline activation afterward. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
+    "nextAction": "HWI evaluation/conversion, mask recognition, same-class reconfiguration and xarch comparison/shift metadata (B102-B110) are complete. Port the full HWI folding dispatcher, preserving existing equivalent vector queries and scalar element access rather than duplicating native wrappers. Recapture NativeAOT/corpus when activation changes reachable behavior; audit fgInline activation afterward. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -679,6 +679,20 @@
         "debugTests": "artifacts\\hwi-reconfiguration-debug.trx",
         "releaseTests": "artifacts\\hwi-reconfiguration-release.trx"
       },
+      "hwiComparisonMetadata": {
+        "managedSourceCommit": "ddd446a6ed51fe3d11bf420587b65fdc982dad9d",
+        "debugPassed": 397,
+        "releasePassed": 393,
+        "newCasesPerConfiguration": 26,
+        "skipped": 0,
+        "nativeDefinitionsRetired": 2,
+        "nativeEnumsRetired": 1,
+        "verifiedComparisonModeEncodings": 32,
+        "nativeAotRecaptured": false,
+        "phaseActivated": false,
+        "debugTests": "artifacts\\hwi-comparison-debug.trx",
+        "releaseTests": "artifacts\\hwi-comparison-release.trx"
+      },
       "nativeAotPublish": "passed-after-special-folding",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "six-of-ten-import-prefixes-equal-remaining-inline-candidate-differences",
@@ -1055,6 +1069,15 @@
       "commit": "0f26d22303edc80a16a631ca7931f518bac4f7d1",
       "indexCommit": "4ede0a519a15c74fb6e0a5f6311690c40bed2dcc",
       "ref": "refs/porting/snapshots/native-ledger-hwi-reconfiguration"
+    },
+    "hwiComparisonManagedSource": {
+      "commit": "ddd446a6ed51fe3d11bf420587b65fdc982dad9d",
+      "ref": "refs/porting/snapshots/hwi-comparison-source"
+    },
+    "hwiComparisonNativeResidual": {
+      "commit": "6815149e3a62f57e85e1bf8cc2cc265bdee086ee",
+      "indexCommit": "aca7f732f4411cefd69b74f13ca7da3936e7546b",
+      "ref": "refs/porting/snapshots/native-ledger-hwi-comparison"
     }
   },
   "sourceMap": [

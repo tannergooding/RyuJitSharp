@@ -2,6 +2,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.X86;
 using NUnit.Framework;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.GenTreeFlags;
@@ -13,6 +14,64 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class HardwareIntrinsicInitializationTests
 {
+    [TestCase(FloatComparisonMode.OrderedEqualNonSignaling, NI_X86Base_CompareEqual, NI_AVX_CompareEqual, NI_X86Base_CompareScalarEqual, NI_AVX512_CompareEqualMask)]
+    [TestCase(FloatComparisonMode.OrderedGreaterThanSignaling, NI_X86Base_CompareGreaterThan, NI_AVX_CompareGreaterThan, NI_X86Base_CompareScalarGreaterThan, NI_AVX512_CompareGreaterThanMask)]
+    [TestCase(FloatComparisonMode.OrderedGreaterThanOrEqualSignaling, NI_X86Base_CompareGreaterThanOrEqual, NI_AVX_CompareGreaterThanOrEqual, NI_X86Base_CompareScalarGreaterThanOrEqual, NI_AVX512_CompareGreaterThanOrEqualMask)]
+    [TestCase(FloatComparisonMode.OrderedLessThanSignaling, NI_X86Base_CompareLessThan, NI_AVX_CompareLessThan, NI_X86Base_CompareScalarLessThan, NI_AVX512_CompareLessThanMask)]
+    [TestCase(FloatComparisonMode.OrderedLessThanOrEqualSignaling, NI_X86Base_CompareLessThanOrEqual, NI_AVX_CompareLessThanOrEqual, NI_X86Base_CompareScalarLessThanOrEqual, NI_AVX512_CompareLessThanOrEqualMask)]
+    [TestCase(FloatComparisonMode.UnorderedNotEqualNonSignaling, NI_X86Base_CompareNotEqual, NI_AVX_CompareNotEqual, NI_X86Base_CompareScalarNotEqual, NI_AVX512_CompareNotEqualMask)]
+    [TestCase(FloatComparisonMode.UnorderedNotGreaterThanSignaling, NI_X86Base_CompareNotGreaterThan, NI_AVX_CompareNotGreaterThan, NI_X86Base_CompareScalarNotGreaterThan, NI_AVX512_CompareNotGreaterThanMask)]
+    [TestCase(FloatComparisonMode.UnorderedNotGreaterThanOrEqualSignaling, NI_X86Base_CompareNotGreaterThanOrEqual, NI_AVX_CompareNotGreaterThanOrEqual, NI_X86Base_CompareScalarNotGreaterThanOrEqual, NI_AVX512_CompareNotGreaterThanOrEqualMask)]
+    [TestCase(FloatComparisonMode.UnorderedNotLessThanSignaling, NI_X86Base_CompareNotLessThan, NI_AVX_CompareNotLessThan, NI_X86Base_CompareScalarNotLessThan, NI_AVX512_CompareNotLessThanMask)]
+    [TestCase(FloatComparisonMode.UnorderedNotLessThanOrEqualSignaling, NI_X86Base_CompareNotLessThanOrEqual, NI_AVX_CompareNotLessThanOrEqual, NI_X86Base_CompareScalarNotLessThanOrEqual, NI_AVX512_CompareNotLessThanOrEqualMask)]
+    [TestCase(FloatComparisonMode.OrderedNonSignaling, NI_X86Base_CompareOrdered, NI_AVX_CompareOrdered, NI_X86Base_CompareScalarOrdered, NI_AVX512_CompareOrderedMask)]
+    [TestCase(FloatComparisonMode.UnorderedNonSignaling, NI_X86Base_CompareUnordered, NI_AVX_CompareUnordered, NI_X86Base_CompareScalarUnordered, NI_AVX512_CompareUnorderedMask)]
+    public static void FloatComparisonNormalizationPreservesWidthAndScalarMaskForms(FloatComparisonMode comparison,
+        NamedIntrinsic vector128, NamedIntrinsic vector256, NamedIntrinsic scalar, NamedIntrinsic mask)
+    {
+        FloatComparisonMode[] modes = [comparison, (FloatComparisonMode)((byte)comparison ^ 16)];
+        foreach (var mode in modes)
+        {
+            Assert.That(HWIntrinsicInfo.lookupIdForFloatComparisonMode(NI_AVX_Compare, mode, TYP_FLOAT, 16), Is.EqualTo(vector128));
+            Assert.That(HWIntrinsicInfo.lookupIdForFloatComparisonMode(NI_AVX_Compare, mode, TYP_DOUBLE, 32), Is.EqualTo(vector256));
+            Assert.That(HWIntrinsicInfo.lookupIdForFloatComparisonMode(NI_AVX_CompareScalar, mode, TYP_DOUBLE, 16), Is.EqualTo(scalar));
+            Assert.That(HWIntrinsicInfo.lookupIdForFloatComparisonMode(NI_AVX512_CompareMask, mode, TYP_FLOAT, 64), Is.EqualTo(mask));
+            Assert.That(HWIntrinsicInfo.lookupIdForFloatComparisonMode(NI_AVX512_CompareMask, mode, TYP_DOUBLE, 16), Is.EqualTo(mask));
+        }
+    }
+
+    [TestCase(FloatComparisonMode.UnorderedEqualNonSignaling)]
+    [TestCase(FloatComparisonMode.OrderedNotEqualNonSignaling)]
+    [TestCase(FloatComparisonMode.OrderedFalseNonSignaling)]
+    [TestCase(FloatComparisonMode.UnorderedTrueNonSignaling)]
+    public static void OtherComparisonModesKeepOriginalIntrinsic(FloatComparisonMode comparison)
+    {
+        FloatComparisonMode[] modes = [comparison, (FloatComparisonMode)((byte)comparison ^ 16)];
+        NamedIntrinsic[] intrinsics = [NI_AVX_Compare, NI_AVX_CompareScalar, NI_AVX512_CompareMask];
+        foreach (var mode in modes)
+        {
+            foreach (var intrinsic in intrinsics)
+            {
+                Assert.That(HWIntrinsicInfo.lookupIdForFloatComparisonMode(intrinsic, mode, TYP_FLOAT, 16), Is.EqualTo(intrinsic));
+            }
+        }
+    }
+
+    [TestCase(NI_AVX2_ShiftLeftLogicalVariable, true)]
+    [TestCase(NI_AVX2_ShiftRightArithmeticVariable, true)]
+    [TestCase(NI_AVX2_ShiftRightLogicalVariable, true)]
+    [TestCase(NI_AVX512_ShiftLeftLogicalVariable, true)]
+    [TestCase(NI_AVX512_ShiftRightArithmeticVariable, true)]
+    [TestCase(NI_AVX512_ShiftRightLogicalVariable, true)]
+    [TestCase(NI_X86Base_ShiftLeftLogical, false)]
+    [TestCase(NI_AVX2_ShiftLeftLogical, false)]
+    [TestCase(NI_AVX512_ShiftRightLogical, false)]
+    [TestCase(NI_X86Base_Add, false)]
+    public static void VariableShiftRecognitionExcludesUniformShiftCounts(NamedIntrinsic id, bool expected)
+    {
+        Assert.That(HWIntrinsicInfo.IsVariableShift(id), Is.EqualTo(expected));
+    }
+
     [Test]
     public static void IntrinsicIdChangePreservesUnspecifiedOperandsAndMetadata()
     {

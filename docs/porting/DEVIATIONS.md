@@ -172,6 +172,12 @@ operand spans/refs. The native compiler/inline-array allocation parameters are
 unnecessary. Existing ID normalization is applied, but side-effect flags and
 other metadata remain caller-owned, as native requires (B109).
 
+Xarch comparison normalization uses
+`System.Runtime.Intrinsics.X86.FloatComparisonMode` rather than duplicating the
+native enum. All 32 names/encodings and its byte representation were verified
+against the pinned header. The native mapping and signaling-mode normalization
+are unchanged (B110).
+
 Phi definitions own copied SSA-number arrays and expose readonly memory.
 Reaching-VN traversal uses a managed stack and membership set, preserving native
 push/pop order, conservative SSA lookup, duplicate suppression, cycles and early

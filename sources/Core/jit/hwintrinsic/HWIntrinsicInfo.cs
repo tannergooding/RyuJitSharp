@@ -265,6 +265,14 @@ public readonly partial struct HWIntrinsicInfo
 
     public static bool ReturnsPerElementMask(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_ReturnsPerElementMask) != 0;
 
+#if TARGET_XARCH
+    public static bool IsVariableShift(NamedIntrinsic id) => id is NI_AVX2_ShiftLeftLogicalVariable or
+        NI_AVX2_ShiftRightArithmeticVariable or NI_AVX2_ShiftRightLogicalVariable or
+        NI_AVX512_ShiftLeftLogicalVariable or NI_AVX512_ShiftRightArithmeticVariable or NI_AVX512_ShiftRightLogicalVariable;
+#else
+    public static bool IsVariableShift(NamedIntrinsic id) => false;
+#endif
+
     public static bool ReturnsScalarT(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_ReturnsScalarT) != 0;
 
 #if TARGET_XARCH
