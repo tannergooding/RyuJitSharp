@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit no-return statement repair, then port oracle morphblock.cpp's complete MorphInitBlockHelper/MorphCopyBlockHelper closure and fgMorphInitBlock/fgMorphCopyBlock wrappers. These missing block-store transforms are needed by global tree morph and fgMergeBlockReturn; fgConvertSyncReturnToLeave and fgGetFirstILBlock already exist. The block helper's constructor/Morph/PrepareDst start and public wrappers have been read; continue at PrepareDst around line 170. Reuse stable descriptor indices across lvaGrabTemp, not cached managed byrefs. Driver tracing is complete: fgMorphBlocks -> fgMorphBlock -> fgMorphStmts -> fgMorphTree, whose const/leaf/simple-op/call branches form a larger recursive closure. No-return repair and bookkeeping are complete and retired, with 167 Debug / 164 Release local/loop/use-edge cases passing. Local expansion is committed as ad0e72f and bookkeeping as cc79273. fgMorphBlocks remains inactive; no new phase activation or unchanged-frontier recapture is claimed.",
+    "nextAction": "Commit block initialization morphing, then begin the integrated tree-morph closure at oracle morph.cpp::fgMorphTree (12677-12908). Its complete dispatcher has been read. MorphInitBlockHelper and fgMorphInitBlock are complete and retired; 265 Debug / 260 Release block-init/local/scalar cases pass. gtNewConWithPattern is complete for scalars/fixed SIMD but retains its native body for the explicit ARM64 scalable-vector deferral. MorphCopyBlockHelper has been read in full: CopyFieldByField's address-cloning path calls fgMorphTree, so copy morphing belongs to the recursive closure rather than an independently compilable helper batch. Do not introduce Windows-x64 stubs to break that cycle. The closure includes const/leaf/local/simple-op/call/HWI morphing, with existing fgMorphTreeDone and assertions reused. No-return repair is committed as 3e31c29. fgMergeBlockReturn still needs copy morphing; fgConvertSyncReturnToLeave and fgGetFirstILBlock exist. fgMorphBlocks remains inactive; no unchanged-frontier NativeAOT recapture is needed.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -1159,6 +1159,21 @@
         "globalMorphActive": false,
         "nativeAotRecaptured": false
       },
+      "blockInitializationMorphing": {
+        "debugPassed": 265,
+        "releasePassed": 260,
+        "skipped": 0,
+        "newCases": 42,
+        "selection": ["BlockMorphTests", "LocalMorphTests", "ScalarFoldingTests"],
+        "debugTests": "artifacts\\block-init-debug.trx",
+        "releaseTests": "artifacts\\block-init-release.trx",
+        "coverage": ["integer width and signed byte patterns", "floating bit patterns including NaN and zero", "full fixed-vector constant storage", "primitive owning replacements and logical IDs", "VN clearing and small-local normalization", "live/dead promoted fields", "GC initialization and exposed holes", "partial initialization fallback", "computed init-value effects and reversed evaluation"],
+        "nativeDefinitionsRetired": ["MorphInitBlockHelper", "Compiler::fgMorphInitBlock", "GenTree::BashToZeroConst"],
+        "nativeFactoryRetained": "Compiler::gtNewConWithPattern retains its native body/declaration for ARM64 scalable constants.",
+        "remaining": "Copy morphing and the shared helper's copy-specific comma extraction need the integrated tree-morph closure. No-return calls and global block/statement/tree drivers remain unwired.",
+        "globalMorphActive": false,
+        "nativeAotRecaptured": false
+      },
       "nativeAotPublish": "passed-after-implicit-byref-retyping",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "all-twenty-minopts-implicit-byref-retyping-phase-sections-and-its-emitted-IR-equal; earlier-local-morph-gaps-remain-scoped-in-localMorphActivation",
@@ -1668,6 +1683,11 @@
       "indexCommit": "7c73962aaeea60751489206ff9ca1cb75d358183",
       "ref": "refs/porting/snapshots/native-ledger-global-morph-bookkeeping"
     },
+    "blockInitializationNativeResidual": {
+      "commit": "7800d5965cf337233bff4eca28c8d316aba7a3d1",
+      "indexCommit": "86818f07e407eae8b12174f85bd83da1fbabd80e",
+      "ref": "refs/porting/snapshots/native-ledger-block-init"
+    },
     "internalBlockPhaseNativeResidual": {
       "commit": "494ccbc0132fcf507b8133bffa2fef635d788858",
       "indexCommit": "343e35183b190e9bccb68af25de8c3b499e6bf1e",
@@ -1804,6 +1824,12 @@
       "area": "trees-and-locals",
       "native": ["src\\coreclr\\jit\\gentree.cpp", "src\\coreclr\\jit\\gentree.h", "src\\coreclr\\jit\\lclvars.cpp"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.gt.cs", "sources\\Core\\jit\\compiler\\Compiler.lva.cs", "sources\\Core\\jit\\gentree"],
+      "reconciledCommit": null
+    },
+    {
+      "area": "block-initialization-morphing",
+      "native": ["src\\coreclr\\jit\\morphblock.cpp", "src\\coreclr\\jit\\compiler.hpp", "src\\coreclr\\jit\\gentree.cpp"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.MorphInitBlockHelper.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.cs", "sources\\Core\\jit\\gentree\\GenTree.cs", "sources\\Core\\jit\\compiler\\Compiler.gt.cs"],
       "reconciledCommit": null
     },
     {

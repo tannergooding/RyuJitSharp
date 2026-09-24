@@ -2532,6 +2532,32 @@ public partial class GenTree
 #endif
     }
 
+    /// <summary>Return a zero constant with this node's logical identity. The caller must replace its owning use.</summary>
+    internal GenTree BashToZeroConst(var_types type)
+    {
+        GenTree result;
+
+        if (varTypeIsFloating(type))
+        {
+            result = new GenTreeDblCon(type, 0.0, this);
+        }
+        else
+        {
+            assert(varTypeIsIntegral(type) || varTypeIsGC(type));
+            type = type.ActualType;
+#if TARGET_64BIT
+            result = new GenTreeIntCon(type, 0, fields: null, this);
+#else
+            result = (type is TYP_LONG)
+                ? new GenTreeLngCon(0, this)
+                : new GenTreeIntCon(type, 0, fields: null, this);
+#endif
+        }
+
+        result._vnPair.SetBoth(ValueNumStore.NoVN);
+        return result;
+    }
+
     public void BashToNOP()
     {
         // GT_NOP uses only base fields, so retain the managed object and its logical node identity.

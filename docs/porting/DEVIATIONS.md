@@ -70,6 +70,13 @@ Overflow folding retains the native global-morph gate. Value-numbered constant
 replacement now refreshes both VNs, and overflow helpers carry the native
 exception-set composition (B082/B083/B100).
 
+Block initialization uses the same replacement contract for primitive stores and
+`GenTree.BashToZeroConst`. The latter returns a replacement instead of mutating
+the node's CLR kind; both the source value and owning store are replaced, with
+native VN clearing and logical IDs preserved. These replacements are unthreaded.
+The block helper keeps descriptor indices and reacquires descriptors instead of
+retaining managed references across local-table growth.
+
 Allocation-to-helper conversion uses a `GenTreeCall` replacement constructor
 and the source-node overload of `gtNewHelperCallNode`. Unlike constant folding,
 native `ChangeOper` preserves the common flag mask. The replacement preserves
@@ -499,6 +506,11 @@ call the nonreturning `fatal(CORJIT_IMPLLIMITATION)` path, even if NYI reporting
 itself returns. Fixed-width comparisons are implemented; the native vector/mask
 equality bodies remain in the residual tree as the scalable-storage reference.
 Windows-x64 comparisons are covered; ARM64 builds/execution remain unverified.
+
+`Compiler.gtNewConWithPattern` implements scalar and fixed-width vector byte
+patterns. Its `TARGET_ARM64` / `TYP_SIMD` branch throws `NotImplementedException`
+until scalable-vector constant construction is ported. The native factory and
+declaration remain in the residual tree as that branch's reference.
 
 ## Implementation notes and parity findings
 

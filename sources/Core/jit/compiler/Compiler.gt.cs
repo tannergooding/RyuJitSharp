@@ -13063,6 +13063,87 @@ public partial class Compiler
         return result;
     }
 
+    /// <summary>Create a constant with the byte pattern broadcast through its storage, extending small integer types.</summary>
+    public GenTree gtNewConWithPattern(var_types type, byte pattern)
+    {
+        switch (type)
+        {
+            case TYP_UBYTE:
+            {
+                return gtNewIconNode(TYP_INT, pattern);
+            }
+
+            case TYP_BYTE:
+            {
+                return gtNewIconNode(TYP_INT, unchecked((sbyte)pattern));
+            }
+
+            case TYP_SHORT:
+            {
+                return gtNewIconNode(TYP_INT, unchecked((short)(pattern * 0x0101)));
+            }
+
+            case TYP_USHORT:
+            {
+                return gtNewIconNode(TYP_INT, unchecked((ushort)(pattern * 0x0101)));
+            }
+
+            case TYP_INT:
+            {
+                return gtNewIconNode(TYP_INT, unchecked(pattern * 0x01010101));
+            }
+
+            case TYP_LONG:
+            {
+                return gtNewLconNode(unchecked(pattern * 0x0101010101010101L));
+            }
+
+            case TYP_FLOAT:
+            {
+                return gtNewDconNode(TYP_FLOAT, BitConverter.Int32BitsToSingle(unchecked(pattern * 0x01010101)));
+            }
+
+            case TYP_DOUBLE:
+            {
+                return gtNewDconNode(TYP_DOUBLE, BitConverter.Int64BitsToDouble(unchecked(pattern * 0x0101010101010101L)));
+            }
+
+            case TYP_REF:
+            case TYP_BYREF:
+            {
+                assert(pattern == 0);
+                return gtNewZeroConNode(type);
+            }
+
+#if FEATURE_SIMD
+            case TYP_SIMD8:
+            case TYP_SIMD12:
+            case TYP_SIMD16:
+#if TARGET_XARCH
+            case TYP_SIMD32:
+            case TYP_SIMD64:
+#endif
+            {
+                var node = gtNewVconNode(type);
+                node.SimdVal.AsSpan<byte>().Fill(pattern);
+                return node;
+            }
+
+#if TARGET_ARM64
+            case TYP_SIMD:
+            {
+                throw new NotImplementedException("Scalable SIMD constant construction is not yet ported.");
+            }
+#endif
+#endif
+            default:
+            {
+                unreached();
+                return null;
+            }
+        }
+    }
+
     public GenTree gtNewZeroConNode(var_types type)
     {
 #if FEATURE_SIMD

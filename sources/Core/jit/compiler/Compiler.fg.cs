@@ -14167,6 +14167,8 @@ public partial class Compiler
     // TODO: Port phase - fgMorphBlocks
     public PhaseStatus fgMorphBlocks() => PhaseStatus.MODIFIED_NOTHING;
 
+    internal GenTree fgMorphInitBlock(GenTree tree) => MorphInitBlockHelper.MorphInitBlock(this, tree);
+
     internal bool gtRemoveTreesAfterNoReturnCall(BasicBlock block, Statement statement)
     {
         var visitor = new RemoveTreesAfterNoReturnCallVisitor(this, block, statement);
