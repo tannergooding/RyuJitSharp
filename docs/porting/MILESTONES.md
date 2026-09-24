@@ -427,3 +427,23 @@ storage remains explicitly unsupported.
 **Next:** Complete the remaining assertion creation/generation prerequisites,
 then `fgAssertionGen` and `fgMorphTreeDone`, preserving native semantics rather
 than substituting local-only generation or `SetMorphed`.
+
+## Earlier port milestones
+
+These entries backfill the port's history before the September continuation,
+using repository commits and their author dates. They summarize the capability
+and limitations recorded at those points, not newly executed validation of the
+historical revisions. They do not imply that every supporting function or phase
+was complete.
+
+| Date | Commits | Milestone and boundary |
+| --- | --- | --- |
+| 2026-06-19 | `16baaa7` | The inherited baseline: cleanup to let the Hello World path complete without failure, including class-layout and segment-list support. This was not managed code generation; the port still relied on native fallback. Uncommitted continuation work was preserved separately at the start of the September work. |
+| 2026-06-17–18 | `9a77e8b`, `82560cd` | Import-completion fixes, followed by `fgFindOperOrder`. The import-completion commit explicitly retained the `impHWIntrinsic` null-return boundary. |
+| 2026-06-15–17 | `53c98a1`, `cf8a1e3`, `19e8466`, `986e355` | Added the static table-generation tool, expanded generation of already ported table-driven types, and introduced basic inline-policy support. Inline policy was support code, not an active inline-expansion phase. |
+| 2026-06-14–15 | `bf72466`, `1d903b2` | Filled newly required support functions, restored the Release build, and corrected dump inconsistencies while progressing through importation. |
+| 2026-05-12–06-07 | `d07a5b2`, `b25af34`, `8eb9726`, `6fcc75b`, `dde20d1` | Advanced `fgImport` through the block-code, call and intrinsic boundaries, reaching the hardware-intrinsic boundary. Upstream synchronization ended at runtime commit `65b74673`, the source baseline inherited by the September continuation. |
+| 2026-05-09 | `9420d96`, `85d225a`, `fb8cc74` | Added basic-block construction, initialized the local-variable table, and ported first-block canonicalization. |
+| 2026-05-02–04 | `00c589d`, `ff7f8f2`, `38b9178`, `97f18d4` | Extended compiler initialization toward `compCompile` and installed the phase-dispatch framework. The phase-addition commit explicitly made the phases no-ops; their presence did not establish implemented transformations. |
+| 2026-04-18–26 | `dcb6da3`, `0157c66` | Retargeted to .NET 10 and refreshed the project to resume porting. |
+| 2024-02-18 | `a40a297`, `67d2c9b`, `21b7101`, `4e66abc` | Established the project, core include/interface ports, and the minimal native-facing machinery needed to load and no-op as an AltJIT. This was the interop/loading foundation, not a compiler producing native code. |
