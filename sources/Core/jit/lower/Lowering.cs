@@ -3,8 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System;
-
 namespace RyuJitSharp;
 
 public sealed partial class Lowering : Phase
@@ -105,6 +103,8 @@ public sealed partial class Lowering : Phase
 
     protected override PhaseStatus DoPhase()
     {
-        throw new NotImplementedException("Lowering.DoPhase requires the remaining node and block lowering dependencies.");
+        const string message = "Lowering.DoPhase requires the remaining node and block lowering dependencies.";
+        JITDUMP($"\nCOMPILATION FAILED: {message}\n");
+        throw new FatalJitException(CORJIT_SKIPPED, message);
     }
 }

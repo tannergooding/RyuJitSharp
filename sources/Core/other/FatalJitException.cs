@@ -17,8 +17,17 @@ public sealed class FatalJitException : SystemException
     {
     }
 
-    public FatalJitException(string? message, Exception? innerException) : base(message, innerException)
+    public FatalJitException(string? message, Exception? innerException)
+        : this(CORJIT_INTERNALERROR, message, innerException)
+    {
+    }
+
+    public FatalJitException(CorJitResult result, string? message = null, Exception? innerException = null)
+        : base(message, innerException)
     {
         HResult = FATAL_JIT_EXCEPTION;
+        Result = result;
     }
+
+    public CorJitResult Result { get; }
 }

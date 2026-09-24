@@ -350,16 +350,15 @@ public partial class Globals
             }
             catch (Exception ex) when (ex.HResult == FATAL_JIT_EXCEPTION)
             {
+                result = ex is FatalJitException failure ? failure.Result : CORJIT_INTERNALERROR;
                 if (jitInfo is not null)
                 {
-                    jitInfo->reportFatalError(CORJIT_INTERNALERROR);
+                    jitInfo->reportFatalError(result);
                 }
 
                 // If we were looking at an inlinee....
                 // Note that we failed to compile the inlinee, and that there's no point trying to inline it again anywhere else.
                 inlineInfo?.inlineResult.NoteFatal(InlineObservation.CALLEE_COMPILATION_ERROR);
-                result = CORJIT_INTERNALERROR;
-
                 methodCodePtr = null;
                 methodCodeSize = 0;
             }

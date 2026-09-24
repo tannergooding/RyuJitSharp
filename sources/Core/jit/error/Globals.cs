@@ -117,7 +117,7 @@ public partial class Globals
         }
 #endif
 
-        throw new FatalJitException();
+        throw new FatalJitException(jitResult);
     }
 
     [DoesNotReturn]

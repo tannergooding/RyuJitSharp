@@ -12,6 +12,27 @@ internal static unsafe class ErrorTrapTests
 {
     private static bool s_reject;
 
+    [TestCase(CorJitResult.CORJIT_BADCODE)]
+    [TestCase(CorJitResult.CORJIT_INTERNALERROR)]
+    [TestCase(CorJitResult.CORJIT_IMPLLIMITATION)]
+    [TestCase(CorJitResult.CORJIT_SKIPPED)]
+    public static void FatalFailurePreservesJitResult(CorJitResult result)
+    {
+        var failure = Assert.Throws<FatalJitException>(() => Globals.fatal(result));
+        Assert.That(failure?.Result, Is.EqualTo(result));
+        Assert.That(failure?.HResult, Is.EqualTo(Globals.FATAL_JIT_EXCEPTION));
+    }
+
+    [Test]
+    public static void UnspecifiedFatalResultRemainsInternalError()
+    {
+        var inner = new InvalidOperationException();
+        var failure = new FatalJitException("failure", inner);
+        Assert.That(failure.Result, Is.EqualTo(CorJitResult.CORJIT_INTERNALERROR));
+        Assert.That(failure.Message, Is.EqualTo("failure"));
+        Assert.That(failure.InnerException, Is.SameAs(inner));
+    }
+
     [TestCase(false, 0)]
     [TestCase(false, 2)]
     [TestCase(false, 3)]

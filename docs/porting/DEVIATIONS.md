@@ -509,6 +509,14 @@ failures are rethrown with their original identity and stack. Native exceptions
 remain subject to the EE's trap. This adapts exception ownership to the managed
 boundary without broadening the native recovery policy (B061).
 
+`FatalJitException` carries the native `CorJitResult` exception payload. The
+compilation boundary reports and returns that result instead of collapsing
+skipped, invalid-code and implementation-limit failures into internal errors.
+The unfinished lowering driver explicitly reports its limitation and rejects
+compilation with `CORJIT_SKIPPED`; it does not finish the phase or run allocation.
+This preserves the temporary native-fallback boundary in G001, not a successful
+managed backend.
+
 `GenTreeCall` stores its tailcall, async-call, and unmanaged-call-convention
 variants separately. The native union cannot be reproduced with explicit
 overlapping fields because async debug information contains managed references.
