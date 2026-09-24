@@ -12,27 +12,27 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port root class-initialization construction needed by morph initialization, without activating the incomplete inliner.",
+      "scope": "Port hashed outgoing-argument temporary storage and morph initialization, without activating the incomplete inliner.",
       "doneWhen": [
-        "Complete fgInitThisClass for direct and runtime-context lookups, including the NativeAOT-specific ReadyToRun helper paths.",
-        "Reuse existing shared-cctor, runtime-context and helper construction, preserving argument order and generic-context reporting.",
-        "Keep fgInline and fgMorphInit disabled until their remaining prerequisites are complete.",
-        "Validate focused controlled-EE cases in Debug and Release, retire complete native functions, and commit the documented batch."
+        "Implement hashBv creation, lookup, insertion, removal, native resize ordering and callback traversal needed by outgoing-argument temporary reuse.",
+        "Complete fgMorphInit using existing class-initialization, statement insertion and local allocation helpers.",
+        "Keep fgInline disabled until the remaining B112 prerequisites are complete.",
+        "Validate ordering and morph-init side effects in Debug and Release, retire complete native functions, and commit the documented batch."
       ],
       "validation": [
-        "Cover direct/shared class lookup and all three CoreCLR generic-context forms, plus NativeAOT helper/token selection.",
-        "Run the smallest related Debug/Release selection.",
+        "Cover sparse bit-vector growth/shrink ordering and removal during an aborting traversal.",
+        "Run the smallest related Debug/Release selection, including existing root class-initialization cases.",
         "Recapture NativeAOT/corpus when a completed phase is activated, not for unreachable helper-only changes."
       ],
       "deferred": [
         "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
         "General local assertion propagation, block morph and the full global-morph phase.",
-        "Non-xarch hardware-intrinsic folding, hashBv storage and fgInline/fgMorphInit activation.",
+        "Non-xarch hardware-intrinsic folding, hashBv bulk/set algebra and iterator APIs, and fgInline activation.",
         "Early qmark expansion, patchpoint/indirect-call transformation and post-import cleanup, which still gate successful inline-phase activation.",
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Root class-initialization construction is complete (B113). Port the required hashBv storage, then complete morph initialization; retain the early-transform/post-import gates in B112 before enabling fgInline. FoldHardware records the separate impHWIntrinsic stub boundary, not vector folding execution parity. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
+    "nextAction": "Root class-initialization construction and morph initialization are complete (B113/B114), including the outgoing-argument hashBv storage slice. Port early qmark expansion next; retain the patchpoint/indirect-call and post-import cleanup gates in B112 before enabling fgInline. Hash-vector bulk/set algebra and iterator APIs remain native; B115 records suspected upstream arithmetic defects to resolve when those APIs are needed. FoldHardware records the separate impHWIntrinsic stub boundary, not vector folding execution parity. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -735,7 +735,31 @@
         "debugTests": "artifacts\\root-class-init-validated-debug.trx",
         "releaseTests": "artifacts\\root-class-init-validated-release.trx"
       },
-      "nativeAotPublish": "passed-after-hwi-folding",
+      "morphInitialization": {
+        "managedSourceCommit": "274301d35a4dc22dac284dc72d23cb075d1781c4",
+        "debugPassed": 47,
+        "releasePassed": 44,
+        "newDebugCases": 18,
+        "newReleaseCases": 15,
+        "skipped": 0,
+        "nativeDefinitionsRetired": 28,
+        "phaseActivated": true,
+        "nativeAotRecaptured": true,
+        "nativeAotLibrary": "artifacts\\morph-init-native\\RyuJitSharp.dll",
+        "nativeAotSha256": "7E0E1FFADEF66451D7986DAC97C086B85AF956D8FF6DB29FCDC28B18342E6FDC",
+        "debugTests": "artifacts\\morph-init-debug.trx",
+        "releaseTests": "artifacts\\morph-init-release.trx",
+        "nativeManifest": "artifacts\\morph-init-corpus-native\\manifest.json",
+        "managedManifest": "artifacts\\morph-init-corpus-managed\\manifest.json",
+        "comparison": "artifacts\\morph-init-comparison.json",
+        "corpusMethods": 11,
+        "morphInitCompletions": 11,
+        "morphInitCorpusChanges": 0,
+        "exactImportPrefixes": ["Add", "Branch", "Locals", "FoldConstants", "FoldFloating", "FoldInteger"],
+        "fullPhaseParityEstablished": false,
+        "codegenParity": "not-available"
+      },
+      "nativeAotPublish": "passed-after-morph-initialization",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "six-of-eleven-import-prefixes-equal-four-inline-differences-and-one-vector-importer-gap",
       "codegenParity": "not-available"
@@ -1139,6 +1163,15 @@
       "commit": "9ada34c69e9e12380589f48de902a3ef947147f4",
       "indexCommit": "ed027937b88709d34fb4137934867772da4298a2",
       "ref": "refs/porting/snapshots/native-ledger-root-class-init"
+    },
+    "morphInitializationManagedSource": {
+      "commit": "274301d35a4dc22dac284dc72d23cb075d1781c4",
+      "ref": "refs/porting/snapshots/morph-init-source"
+    },
+    "morphInitializationNativeResidual": {
+      "commit": "017bbf247db3c781b146ae0b2defa4b1b7cc2c01",
+      "indexCommit": "a34fd23ddc2cbd31e57e54ff01609f9d278c1974",
+      "ref": "refs/porting/snapshots/native-ledger-morph-init"
     }
   },
   "sourceMap": [

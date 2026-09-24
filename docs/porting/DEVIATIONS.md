@@ -198,6 +198,21 @@ contract; zero-initialized resolved tokens use `default` instead of `memset`.
 Helper selection, argument ordering and generic-context reporting match native
 (B113).
 
+The outgoing-argument `hashBv` storage uses managed nodes and bucket arrays, not
+compiler-owned arena free lists; `Init` therefore has no allocator state to reset.
+Native pointer-to-link operations use managed byrefs, and growth keeps a tail
+reference per destination bucket. Shrink merging, resize thresholds, 16-bit node
+counts and bucket/node/bit traversal order are preserved, including the native
+32-bit logical element stride on AMD64's 64-bit element storage. Callback traversal
+uses a delegate in place of the native template functor. Bulk/set algebra and the
+separate iterator are not yet ported (B114/B115).
+
+Morph initialization composes `gtNewStmt` and `fgInsertStmtAtBeg`, exactly as the
+native `fgNewStmtAtBeg` wrapper does. An EE request to use the class-init helper
+establishes the required non-null tree invariant. Entry insertion order and phase
+status match native, including E&C frame requirements not alone marking IR as
+modified (B114).
+
 Phi definitions own copied SSA-number arrays and expose readonly memory.
 Reaching-VN traversal uses a managed stack and membership set, preserving native
 push/pop order, conservative SSA lookup, duplicate suppression, cycles and early

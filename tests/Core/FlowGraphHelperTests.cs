@@ -1,6 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
@@ -10,6 +11,109 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class FlowGraphHelperTests
 {
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void MorphInitializationPreparesEntryAndFrame(bool initializeClass, bool editAndContinue)
+    {
+        WithClassInitializationCompiler((compiler, ee) => {
+            PrepareMorphInitialization(compiler);
+            var first = compiler.fgFirstBB ?? throw new InvalidOperationException();
+            var original = compiler.gtNewStmt(compiler.gtNewNothingNode());
+            compiler.fgInsertStmtAtEnd(first, original);
+            compiler.opts.compDbgEnC = editAndContinue;
+            ee->InitClassResult = initializeClass ? CorInfoInitClassResult.CORINFO_INITCLASS_USE_HELPER : 0;
+            var contextField = typeof(Compiler).GetField("impTokenLookupContextHandle", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException();
+            contextField.SetValue(compiler, System.Reflection.Pointer.Box((void*)0x3000, typeof(CORINFO_CONTEXT_STRUCT_*)));
+
+            Assert.That(compiler.fgMorphInit(), Is.EqualTo(initializeClass
+                ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING));
+            Assert.That((compiler.codeGen ?? throw new InvalidOperationException()).IsFramePointerRequired, Is.EqualTo(editAndContinue));
+            Assert.That(ee->InitClassRequests, Is.EqualTo(1));
+            Assert.That(ee->InitField, Is.EqualTo((nint)0));
+            Assert.That(ee->InitMethod, Is.EqualTo((nint)0));
+            Assert.That(ee->InitContext, Is.EqualTo((nint)0x3000));
+
+            var availableField = typeof(Compiler).GetField("fgAvailableOutgoingArgTemps", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException();
+            var available = availableField.GetValue(compiler) as hashBv ?? throw new InvalidOperationException();
+            Assert.That(available.numNodes, Is.Zero);
+            Assert.That(available.hashtable_size(), Is.EqualTo(1));
+            if (initializeClass)
+            {
+                var init = first.FirstStmt ?? throw new InvalidOperationException();
+                Assert.That(init.RootNode.AsCall().HelperNum, Is.EqualTo(CorInfoHelpFunc.CORINFO_HELP_INITCLASS));
+                Assert.That(init.NextStmt, Is.SameAs(original));
+            }
+            else
+            {
+                Assert.That(first.FirstStmt, Is.SameAs(original));
+            }
+        });
+    }
+
+#if DEBUG
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void MorphInitializationPrependsGcChecksInNativeOrder(bool initializeClass)
+    {
+        WithClassInitializationCompiler((compiler, ee) => {
+            PrepareMorphInitialization(compiler);
+            compiler.lvaTable = [
+                new LclVarDsc { Type = var_types.TYP_REF },
+                new LclVarDsc { Type = var_types.TYP_INT },
+                new LclVarDsc { Type = var_types.TYP_REF }
+            ];
+            compiler.lvaCount = 3;
+            compiler.info.compArgsCount = 3;
+            compiler.opts.compGcChecks = true;
+            ee->InitClassResult = initializeClass ? CorInfoInitClassResult.CORINFO_INITCLASS_USE_HELPER : 0;
+            Assert.That(compiler.fgMorphInit(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+
+            var stmt = compiler.fgFirstBB?.FirstStmt;
+            for (var local = 2; local >= 0; local -= 2)
+            {
+                var call = (stmt ?? throw new InvalidOperationException()).RootNode.AsCall();
+                Assert.That(call.HelperNum, Is.EqualTo(CorInfoHelpFunc.CORINFO_HELP_CHECK_OBJ));
+                Assert.That((call.Args.GetArgByIndex(0) ?? throw new InvalidOperationException()).Node.AsLclVar().LclNum, Is.EqualTo(local));
+                stmt = stmt.NextStmt;
+                if (local == 2)
+                {
+                    Assert.That(stmt, Is.Not.Null);
+                }
+            }
+
+            if (initializeClass)
+            {
+                Assert.That((stmt ?? throw new InvalidOperationException()).RootNode.AsCall().HelperNum,
+                    Is.EqualTo(CorInfoHelpFunc.CORINFO_HELP_INITCLASS));
+            }
+            else
+            {
+                Assert.That(stmt, Is.Null);
+            }
+        });
+    }
+
+    [Test]
+    public static void MorphInitializationKeepsReturnStackCheckLocalAlive()
+    {
+        WithClassInitializationCompiler((compiler, ee) => {
+            PrepareMorphInitialization(compiler);
+            compiler.opts.compStackCheckOnRet = true;
+            Assert.That(compiler.fgMorphInit(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            Assert.That(compiler.lvaReturnSpCheck, Is.EqualTo(2));
+            var local = compiler.lvaGetDesc(compiler.lvaReturnSpCheck);
+            Assert.That(local.Type, Is.EqualTo(Globals.TYP_I_IMPL));
+            Assert.That(local.lvImplicitlyReferenced, Is.True);
+            Assert.That(local.lvDoNotEnregister, Is.True);
+            Assert.That(local.DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.ReturnSpCheck));
+        });
+    }
+#endif
+
     [TestCase(false)]
     [TestCase(true)]
     public static void RootClassInitializationUsesDirectClassHandle(bool aot)
@@ -315,6 +419,11 @@ internal static unsafe class FlowGraphHelperTests
         public nint HelperMethod;
         public int ReadyToRunRequests;
         public bool HelperAvailable;
+        public CorInfoInitClassResult InitClassResult;
+        public int InitClassRequests;
+        public nint InitField;
+        public nint InitMethod;
+        public nint InitContext;
     }
 
     private delegate void ClassInitializationAction(Compiler compiler, ClassInitializationEE* ee);
@@ -343,6 +452,7 @@ internal static unsafe class FlowGraphHelperTests
         vtable.Base.Base.getClassAttribs = &GetClassAttribs;
         vtable.Base.Base.getReadyToRunHelper = &GetReadyToRunHelper;
         vtable.Base.Base.getEEInfo = &GetEEInfo;
+        vtable.Base.Base.initClass = &InitClass;
         ClassInitializationEE ee = new() {
             Interface = new ICorJitInfo { lpVtbl = &vtable },
             Abi = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI,
@@ -358,6 +468,28 @@ internal static unsafe class FlowGraphHelperTests
         {
             JitTls.Compiler = previous;
         }
+    }
+
+    private static void PrepareMorphInitialization(Compiler compiler)
+    {
+#if DEBUG
+        compiler.fgSafeBasicBlockCreation = true;
+#endif
+        compiler.codeGen = new CodeGen(compiler) { IsFramePointerRequired = false };
+        compiler.fgFirstBB = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+        compiler.fgLastBB = compiler.fgFirstBB;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CorInfoInitClassResult InitClass(ICorJitInfo* self, CORINFO_FIELD_STRUCT_* field,
+        CORINFO_METHOD_STRUCT_* method, CORINFO_CONTEXT_STRUCT_* context)
+    {
+        var ee = (ClassInitializationEE*)self;
+        ee->InitClassRequests++;
+        ee->InitField = (nint)field;
+        ee->InitMethod = (nint)method;
+        ee->InitContext = (nint)context;
+        return ee->InitClassResult;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]

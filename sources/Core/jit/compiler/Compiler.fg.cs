@@ -13085,8 +13085,75 @@ public partial class Compiler
     // TODO: Port phase - fgMorphBlocks
     public PhaseStatus fgMorphBlocks() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port phase - fgMorphInit
-    public PhaseStatus fgMorphInit() => PhaseStatus.MODIFIED_NOTHING;
+    public unsafe PhaseStatus fgMorphInit()
+    {
+        var madeChanges = false;
+
+        // E&C needs room to establish an EBP frame after an edit, which also
+        // prevents double alignment. Supporting localloc needs matching EE handling.
+        if (opts.compDbgEnC)
+        {
+            assert(codeGen is not null);
+            codeGen.IsFramePointerRequired = true;
+        }
+
+        fgAvailableOutgoingArgTemps = hashBv.Create(this);
+
+        if ((info.compCompHnd->initClass(null, null, impTokenLookupContextHandle) & CORINFO_INITCLASS_USE_HELPER) != 0)
+        {
+            var init = fgInitThisClass();
+            assert(init is not null);
+            assert(fgFirstBB is not null);
+            fgInsertStmtAtBeg(fgFirstBB, gtNewStmt(init));
+            madeChanges = true;
+        }
+
+#if DEBUG
+        if (opts.compGcChecks)
+        {
+            for (var i = 0; i < info.compArgsCount; i++)
+            {
+                if (lvaGetDesc(i).Type == TYP_REF)
+                {
+                    GenTree op = gtNewLclvNode(TYP_REF, i);
+                    op = gtNewHelperCallNode(TYP_REF, CORINFO_HELP_CHECK_OBJ, op);
+
+                    assert(fgFirstBB is not null);
+                    fgInsertStmtAtBeg(fgFirstBB, gtNewStmt(op));
+                    madeChanges = true;
+
+                    if (verbose)
+                    {
+                        jitprintf("\ncompGcChecks tree:\n");
+                        gtDispTree(op);
+                    }
+                }
+            }
+        }
+#endif
+
+#if DEBUG && TARGET_XARCH
+        if (opts.compStackCheckOnRet)
+        {
+            lvaReturnSpCheck = lvaGrabTempWithImplicitUse(false, "ReturnSpCheck");
+            lvaSetVarDoNotEnregister(lvaReturnSpCheck, DoNotEnregisterReason.ReturnSpCheck);
+            lvaGetDesc(lvaReturnSpCheck).Type = TYP_I_IMPL;
+            madeChanges = true;
+        }
+#endif
+
+#if DEBUG && TARGET_X86
+        if (opts.compStackCheckOnCall)
+        {
+            lvaCallSpCheck = lvaGrabTempWithImplicitUse(false, "CallSpCheck");
+            lvaSetVarDoNotEnregister(lvaCallSpCheck, DoNotEnregisterReason.CallSpCheck);
+            lvaGetDesc(lvaCallSpCheck).Type = TYP_I_IMPL;
+            madeChanges = true;
+        }
+#endif
+
+        return madeChanges ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
+    }
 
     // TODO: Port phase - fgPostImportationCleanup
     public PhaseStatus fgPostImportationCleanup() => PhaseStatus.MODIFIED_NOTHING;
