@@ -87,8 +87,14 @@ behavior. This is not yet connected to the compiler's allocation phase.
 Minopts candidate preparation now gathers exception and finally liveness sets
 and keeps locals stack-assigned. Frame selection honors required frame pointers
 and P/Invoke frame discovery, removing the frame register from the allocation
-pool when needed. Per-node reference construction is still required before
-these pieces can drive allocation.
+pool when needed.
+
+Definition and use construction now connects temporary values and tracked
+locals to allocation intervals, including target preferences, delayed frees
+and register-optional upper-vector restores. New intervals emit the native
+creation diagnostics before their references are attached. Operand and
+instruction-specific builders are still needed to prepare complete reference
+streams for allocation.
 
 ## 2026-09-24: Rationalization and linear IR
 

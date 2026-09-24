@@ -39,6 +39,10 @@ public sealed partial class LinearScan
 
 #if DEBUG
         interval.intervalIndex = (uint)(intervals.Count - 1);
+        if (VERBOSE)
+        {
+            dumpInterval(interval);
+        }
 #endif
 
         return interval;

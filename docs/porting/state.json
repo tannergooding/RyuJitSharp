@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "B178 is committed as 3d78cf7 and candidate/frame preparation as 995c61f. Complete per-block/per-node/MarkUseDef liveness generation plus B180/B181 now passes independent integration (369 Debug/342 Release), including the required CallArgs.PushLateBack support. Liveness worker collected through turn 45 owns complete DoLiveVarAnalysis/PerBlockAnalysis/MarkMustInitAndEHVars and authorized canonical EH-only successor, handler-union, diagnostic and raw descriptor-flag support; InterBlockLocalVarLiveness remains absent because its backward walkers/rewriting are not yet ported. LSRA worker collected through turn 62 is repairing the held generic BuildDef/use packet: xarch optional upper-vector restores and canonical interval diagnostics are corrected; exact multi-register type rules still need final handoff. Sol, last collected through turn 44, now owns full xarch HW-intrinsic containment and immediate/memory prerequisites in new partials, not the transformation dispatcher. Parent completed common block/scalar/call-result dispatch, coalescing, full LCLHEAP wiring, B179 zero-helper unwrapping and B182 INIT_VAL traversal. Broad snapshot passes 596 Debug/586 Release; final GC-copy/wrapper traversal additions separately pass 30 Debug/24 Release, covering 128-byte bulk-helper boundary, nullchecks and volatile mixed-layout decomposition. Next close remaining call/range/stack-level and hardware transformation dependencies before committing/activating broad lowering. Keep allocation/lowering drivers inactive and native bodies retained. Managed code size remains zero.",
+    "nextAction": "Per-block liveness generation is committed as a81222e. Generic LSRA definition/use construction is complete and independently validated, including failing-before regressions for optional upper-vector restores and creation diagnostics. Next integrate the returned seven-file fixed-point/EH packet from artifacts\\liveness-fixed-point-handoff.txt into the committed-source export. Liveness worker collected through turn 47 now owns complete backward LIR liveness and immediate dead-store support; ILivenessPolicy.EliminateDeadCode and internal accessibility for unchanged TransformUnusedIndirection are authorized. InterBlockLocalVarLiveness and phase activation remain absent. LSRA worker collected through turn 63 owns operand/address/call-argument use builders. Sol, collected through turn 48, owns complete hardware containment and canonical instruction input-size, embedded-broadcast and ternary-logic prerequisites. Parent ToScalar/property/seven tests are unvalidated and unwired pending real containment. Broad common block/call/LCLHEAP lowering remains validated but uncommitted pending its full dependency closure; retain native bodies and inactive drivers. Managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -41,6 +41,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "referenceBuilding": {
+        "debugPassed": 206,
+        "releasePassed": 183,
+        "skipped": 0,
+        "selection": ["LinearScan*", "CompilerRegallocFrameTests", "BlockMorphTests", "LivenessInitializationTests", "TrackedLocalSelectionTests"],
+        "debugTests": "artifacts\\reference-build-final-debug.trx",
+        "releaseTests": "artifacts\\reference-build-final-release.trx",
+        "failingBefore": "artifacts\\reference-build-before.trx",
+        "scope": "Complete generic definition/use construction, native-order pending-definition list, target preferences, delayed frees, dying-local preferences, upper-vector restores and register typing. Two regressions fail with optional restores and creation diagnostics removed; restored implementation passes. Earlier broader integration passed 222 Debug/196 Release. Operand/instruction-specific reference builders and allocation activation remain separate."
+      },
       "livenessUseDefGeneration": {
         "debugPassed": 369,
         "releasePassed": 342,

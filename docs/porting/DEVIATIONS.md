@@ -644,6 +644,12 @@ The reference-kind and physical-register discriminants select typed referents
 and mask fields instead of overlapping native union storage. AMD64 callee-save
 sets reuse the generated `typelist.h` register classification.
 
+The pending-definition list uses managed links and the existing node pool,
+matching native removal by node identity and multi-register index. Temporary
+uses consume those entries in native order; local uses retain their owning node.
+Interval creation reuses the canonical diagnostic formatter rather than a
+separate managed representation of the same dump.
+
 `identifyCandidatesMinimal` represents the complete native
 `identifyCandidates<false>` specialization, including EH exception/finally
 sets. Optimized candidate selection remains separate. Its diagnostic set
