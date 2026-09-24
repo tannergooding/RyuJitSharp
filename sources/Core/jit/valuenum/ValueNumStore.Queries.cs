@@ -229,6 +229,71 @@ public sealed partial class ValueNumStore
     }
 
 #if FEATURE_HW_INTRINSICS
+    public bool IsVectorPerElementMask(ValueNum vn, var_types simdBaseType, byte simdSize)
+    {
+        // Keep in sync with GenTree.IsVectorPerElementMask.
+        var type = TypeOfVN(vn);
+        var elementCount = GenTreeVecCon.ElementCount(simdSize, simdBaseType);
+        assert(varTypeIsSimd(type) && (type.Size == simdSize));
+        if (IsVNConstant(vn))
+        {
+            var value = GetConstantSimd(vn);
+            return ElementsAreAllBitsSetOrZero(value.AsSpan<byte>(), simdBaseType, elementCount);
+        }
+
+        var app = new VNFuncApp();
+        NamedIntrinsic id = default;
+        var intrinsicSize = 0;
+        var intrinsicBaseType = TYP_UNDEF;
+        if (!IsVNHWIntrinsicFunc(vn, ref app, ref id, ref intrinsicSize, ref intrinsicBaseType) ||
+            (intrinsicSize != simdSize))
+        {
+            return false;
+        }
+
+        if (HWIntrinsicInfo.ReturnsPerElementMask(id))
+        {
+            // A wider mask lane also supplies narrower masks, but not vice versa:
+            // two byte lanes may form 0x00FF rather than a ushort mask.
+            return intrinsicBaseType.Size >= simdBaseType.Size;
+        }
+
+        var oper = GenTreeHWIntrinsic.GetOperForHWIntrinsicId(id, simdBaseType, out var isScalar);
+#if TARGET_ARM64
+        if (!isScalar && (oper is GT_EQ or GT_NE or GT_GT or GT_GE or GT_LT or GT_LE))
+        {
+            return intrinsicBaseType.Size >= simdBaseType.Size;
+        }
+#endif
+
+        switch (oper)
+        {
+            case GT_AND:
+            case GT_AND_NOT:
+            case GT_OR:
+            case GT_OR_NOT:
+            case GT_XOR:
+            case GT_XOR_NOT:
+            {
+                return IsVectorPerElementMask(app.GetArg(0), simdBaseType, simdSize) &&
+                    IsVectorPerElementMask(app.GetArg(1), simdBaseType, simdSize);
+            }
+
+            case GT_NOT:
+            {
+                return IsVectorPerElementMask(app.GetArg(0), simdBaseType, simdSize);
+            }
+
+            default:
+            {
+                assert(!GenTreeHWIntrinsic.OperIsBitwiseHWIntrinsic(oper));
+                break;
+            }
+        }
+
+        return false;
+    }
+
     public int GetVNHWIntrinsicSizeAndBaseType(VNFuncApp app, ref var_types simdBaseType)
     {
         assert((app.Func >= VNF_HWI_FIRST) && (app.Func <= VNF_HWI_LAST));

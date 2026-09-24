@@ -22,6 +22,238 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class AssertionTests
 {
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void AssertionUpdatesReplaceTheOwningUseAndPreserveForwardTraversal(bool root)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_I_IMPL }, new LclVarDsc { Type = TYP_INT }];
+            var original = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
+            var parent = compiler.gtNewIndir(TYP_REF, original);
+            var statement = compiler.gtNewStmt(root ? original : parent);
+            var next = compiler.gtNewNothingNode();
+            original.Next = next;
+            var replacement = compiler.gtNewIconHandleNode(0x1000, GTF_ICON_STR_HDL);
+            var previous = compiler.gtNewNothingNode();
+            replacement.Prev = previous;
+
+            Assert.That(compiler.optAssertionProp_Update(replacement, original, statement), Is.SameAs(replacement));
+            Assert.That(root ? statement.RootNode : parent.Addr, Is.SameAs(replacement));
+            Assert.That(replacement.Next, Is.SameAs(next));
+            Assert.That(replacement.Prev, Is.SameAs(previous));
+            Assert.That(AssertionPropagated(compiler), Is.True);
+            Assert.That(AssertionPropagatedCurrentStmt(compiler), Is.True);
+            if (!root)
+            {
+                Assert.That(parent.Flags & (GTF_IND_INVARIANT | GTF_IND_NONNULL),
+                    Is.EqualTo(GTF_IND_INVARIANT | GTF_IND_NONNULL));
+            }
+        }, local: false);
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void ZeroObjectPropagationReplacesTheOrdinaryOrSwiftReturnValue(bool swift)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_STRUCT, Layout = new ClassLayout(8) }, new LclVarDsc { Type = TYP_INT }];
+#if DEBUG
+            compiler.fgSafeBasicBlockCreation = true;
+#endif
+            compiler.compCurBB = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            compiler.info.compRetNativeType = TYP_LONG;
+            var assertions = InstallAssertions(compiler, [
+                AssertionDsc.CreateConstLclVarAssertion(compiler, 0, ValueNumStore.NoVN, O2K_ZEROOBJ, ValueNumStore.NoVN, true),
+            ]);
+            var original = compiler.gtNewLclvNode(TYP_STRUCT, 0);
+            original._vnPair.SetBoth(42);
+            var error = compiler.gtNewNull();
+            var tree = swift
+                ? compiler.gtNewBinaryNode(GT_SWIFT_ERROR_RET, TYP_STRUCT, error, original)
+                : compiler.gtNewUnaryNode(GT_RETURN, TYP_STRUCT, original);
+
+            Assert.That(compiler.optAssertionProp_Return(assertions, tree, null), Is.SameAs(tree));
+            var value = swift ? tree.AsOp().Op2 : tree.AsUnOp().Op1;
+            Assert.That(value, Is.TypeOf<GenTreeIntCon>());
+            Assert.That(value.Type, Is.EqualTo(TYP_INT));
+            Assert.That(value.AsIntCon().IconValue, Is.EqualTo((nint)0));
+            Assert.That(value._vnPair, Is.EqualTo(new ValueNumPair()));
+            Assert.That(original.Oper, Is.EqualTo(GT_LCL_VAR));
+            if (swift)
+            {
+                Assert.That(tree.AsOp().Op1, Is.SameAs(error));
+            }
+#if DEBUG
+            Assert.That(value.TreeId, Is.EqualTo(original.TreeId));
+#endif
+            Assert.That(AssertionPropagatedCurrentStmt(compiler), Is.True);
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void NonNullApplicationRetainsCallEffectsAndIndirectionOrdering(bool local)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_REF }, new LclVarDsc { Type = TYP_INT }];
+#if DEBUG
+            compiler.fgSafeBasicBlockCreation = true;
+#endif
+            compiler.compCurBB = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var receiver = compiler.gtNewLclvNode(TYP_REF, 0);
+            var vn = store.VNForExpr(null, TYP_REF);
+            receiver._vnPair.SetBoth(vn);
+            var assertion = compiler.optAddAssertion(local
+                ? AssertionDsc.CreateLclNonNullAssertion(compiler, 0) : AssertionDsc.CreateVNNonNullAssertion(compiler, vn));
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            var assertions = BitOps.MakeEmpty(traits);
+            BitOps.AddElemD(traits, assertions, assertion - 1);
+            var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+            call.Flags |= GTF_CALL_NULLCHECK;
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(receiver).WithWellKnownArg(WellKnownArg.ThisPointer));
+            var indir = compiler.gtNewIndir(TYP_INT, receiver);
+            var callFlags = call.Flags;
+            var indirFlags = indir.Flags;
+
+            Assert.That(compiler.optNonNullAssertionProp_Call(null, call), Is.Null);
+            Assert.That(compiler.optNonNullAssertionProp_Ind(null, indir), Is.False);
+            Assert.That(call.Flags, Is.EqualTo(callFlags));
+            Assert.That(indir.Flags, Is.EqualTo(indirFlags));
+            Assert.That(compiler.optNonNullAssertionProp_Call(assertions, call), Is.SameAs(call));
+            Assert.That(call.Flags, Is.EqualTo(callFlags & ~(GTF_CALL_NULLCHECK | GTF_EXCEPT)));
+            Assert.That(call.Flags & GTF_CALL, Is.Not.EqualTo(GTF_EMPTY));
+            Assert.That(compiler.optAssertionProp_Ind(assertions, indir, local ? null : compiler.gtNewStmt(indir)), Is.SameAs(indir));
+            Assert.That(indir.Flags, Is.EqualTo((indirFlags & ~GTF_EXCEPT) | GTF_IND_NONFAULTING | GTF_ORDER_SIDEEFF));
+            Assert.That(compiler.optNonNullAssertionProp_Ind(assertions, indir), Is.False);
+        }, local);
+    }
+
+    [TestCase(false, false, true)]
+    [TestCase(true, false, false)]
+    [TestCase(true, true, true)]
+    public static void BarrierPropagationRejectsVariableOffsetsButRecognizesNullValues(bool variableOffset, bool nullValue, bool noBarrier)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_BYREF }, new LclVarDsc { Type = TYP_REF }];
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var zero = store.VNForIntCon(0);
+            var stack = store.VNForFuncNoFolding(TYP_BYREF, VNFunc.VNF_PtrToLoc, zero, zero);
+            var offset = variableOffset ? store.VNForExpr(null, TYP_I_IMPL) : store.VNForLongCon(8);
+            var address = compiler.gtNewLclvNode(TYP_BYREF, 0);
+            address._vnPair.SetBoth(store.VNForFuncNoFolding(TYP_BYREF, VNFunc.VNF_ADD, stack, offset));
+            var value = compiler.gtNewLclvNode(TYP_REF, 1);
+            value._vnPair = new(ValueNumStore.VNForNull(), nullValue ? ValueNumStore.VNForNull() : store.VNForExpr(null, TYP_REF));
+            var indir = new GenTreeStoreInd(TYP_REF, address, value);
+
+            Assert.That(compiler.optWriteBarrierAssertionProp_StoreInd(null, indir), Is.EqualTo(noBarrier));
+            Assert.That((indir.Flags & GTF_IND_TGT_NOT_HEAP) != 0, Is.EqualTo(noBarrier));
+            Assert.That(indir.Flags & GTF_IND_TGT_HEAP, Is.EqualTo(GTF_EMPTY));
+        }, local: false);
+    }
+
+    [Test]
+    public static void BarrierPropagationClassifiesArrayAndBoxedStaticAddressesAndHonorsExistingFlags()
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_BYREF }, new LclVarDsc { Type = TYP_REF }];
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var zero = store.VNForIntCon(0);
+            var stack = store.VNForFuncNoFolding(TYP_BYREF, VNFunc.VNF_PtrToLoc, zero, zero);
+            var heap = store.VNForExpr(null, TYP_REF);
+            var boxed = store.VNForHandle(0x1000, GTF_ICON_STATIC_BOX_PTR);
+            var addresses = new[] {
+                (stack, GTF_IND_TGT_NOT_HEAP),
+                (heap, GTF_IND_TGT_HEAP),
+                (StoreFunctionRecord(store, TYP_BYREF, VNFunc.VNF_PtrToStatic, boxed, zero, zero), GTF_IND_TGT_HEAP),
+                (StoreFunctionRecord(store, TYP_BYREF, VNFunc.VNF_PtrToArrElem, zero, stack, zero, zero), GTF_IND_TGT_NOT_HEAP),
+                (StoreFunctionRecord(store, TYP_BYREF, VNFunc.VNF_PtrToArrElem, zero, heap, zero, zero), GTF_IND_TGT_HEAP),
+            };
+            var builder = new ClassLayoutBuilder(compiler, TARGET_POINTER_SIZE);
+            builder.SetGCPtrType(0, TYP_REF);
+            var layout = ClassLayout.Create(compiler, builder);
+            foreach (var (vn, expected) in addresses)
+            {
+                var address = compiler.gtNewLclvNode(TYP_BYREF, 0);
+                address._vnPair.SetBoth(vn);
+                var value = compiler.gtNewLclvNode(TYP_REF, 1);
+                value._vnPair.SetBoth(store.VNForExpr(null, TYP_REF));
+                var indir = new GenTreeStoreInd(TYP_REF, address, value);
+                var block = new GenTreeBlk(TYP_STRUCT, address, compiler.gtNewIconNode(TYP_INT, 0), layout);
+                Assert.That(compiler.optWriteBarrierAssertionProp_StoreInd(null, indir), Is.True);
+                Assert.That(indir.Flags & (GTF_IND_TGT_HEAP | GTF_IND_TGT_NOT_HEAP), Is.EqualTo(expected));
+                Assert.That(compiler.optWriteBarrierAssertionProp_StoreBlk(null, block), Is.True);
+                Assert.That(block.Flags & (GTF_IND_TGT_HEAP | GTF_IND_TGT_NOT_HEAP), Is.EqualTo(expected));
+                Assert.That(compiler.optWriteBarrierAssertionProp_StoreBlk(null, block), Is.False);
+                Assert.That(compiler.optWriteBarrierAssertionProp_StoreInd(null, indir), Is.False);
+
+                if (expected is GTF_IND_TGT_HEAP)
+                {
+                    value._vnPair.SetBoth(ValueNumStore.VNForNull());
+                    Assert.That(compiler.optWriteBarrierAssertionProp_StoreInd(null, indir), Is.True);
+                    Assert.That(indir.Flags & GTF_IND_TGT_NOT_HEAP, Is.Not.EqualTo(GTF_EMPTY));
+                }
+            }
+        }, local: false);
+    }
+
+    [TestCase(TYP_BYTE, true)]
+    [TestCase(TYP_SHORT, true)]
+    [TestCase(TYP_INT, false)]
+    public static void ValueNumberMasksRespectLaneWidthsAndBitwiseInputs(var_types baseType, bool expected)
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            simd16_t value = default;
+            value.AsSpan<ushort>()[0] = ushort.MaxValue;
+            var constant = store.VNForSimd16Con(value);
+            Assert.That(store.IsVectorPerElementMask(constant, baseType, 16), Is.EqualTo(expected));
+#if TARGET_XARCH
+            var simdType = store.VNForFuncNoFolding(TYP_UNKNOWN, VNFunc.VNF_SimdType,
+                store.VNForIntCon(16), store.VNForIntCon((int)TYP_SHORT));
+            var unknown = store.VNForExpr(null, TYP_SIMD16);
+            var compare = StoreFunctionRecord(store, TYP_SIMD16, VNFunc.VNF_HWI_SSE2_CompareEqual, unknown, unknown, simdType);
+            var bitwise = StoreFunctionRecord(store, TYP_SIMD16, VNFunc.VNF_HWI_SSE2_AndNot, compare, constant, simdType);
+            Assert.That(store.IsVectorPerElementMask(compare, baseType, 16), Is.EqualTo(expected));
+            Assert.That(store.IsVectorPerElementMask(bitwise, baseType, 16), Is.EqualTo(expected));
+            var unproven = StoreFunctionRecord(store, TYP_SIMD16, VNFunc.VNF_HWI_SSE2_AndNot, compare, unknown, simdType);
+            Assert.That(store.IsVectorPerElementMask(unproven, baseType, 16), Is.False);
+#endif
+        });
+    }
+
+    [Test]
+    public static void HardwareMaskPropagationRequiresAllConservativePhiInputs()
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_SIMD16, lvSingleDef = true }, new LclVarDsc { Type = TYP_INT }];
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            simd16_t value = default;
+            var mask = store.VNForSimd16Con(value);
+            ref var definitions = ref compiler.lvaTable[0].lvPerSsaData;
+            var first = definitions.AllocSsaNum();
+            var second = definitions.AllocSsaNum();
+            var definition = definitions.AllocSsaNum();
+            definitions.GetSsaDef(first)._vnPair.SetBoth(mask);
+            definitions.GetSsaDef(second)._vnPair = new(mask, store.VNForExpr(null, TYP_SIMD16));
+            var local = compiler.gtNewLclvNode(TYP_SIMD16, 0);
+            local._vnPair.SetBoth(store.VNForPhiDef(TYP_SIMD16, 0, definition, [first, second]));
+            var extract = new GenTreeHWIntrinsic(TYP_INT, NamedIntrinsic.NI_Vector_ExtractMostSignificantBits, TYP_SHORT, 16, local);
+
+            compiler.optAssertionProp_HWIntrinsic(extract);
+            Assert.That(compiler.lvaTable[0].IsVectorPerElementMask(TYP_SHORT), Is.False);
+            definitions.GetSsaDef(second)._vnPair.Conservative = mask;
+            compiler.optAssertionProp_HWIntrinsic(extract);
+            Assert.That(compiler.lvaTable[0].IsVectorPerElementMask(TYP_SHORT), Is.True);
+            Assert.That(compiler.lvaTable[0].IsVectorPerElementMask(TYP_BYTE), Is.True);
+            Assert.That(compiler.lvaTable[0].IsVectorPerElementMask(TYP_INT), Is.False);
+        }, local: false);
+    }
+
     [TestCase(-1, false)]
     [TestCase(0, true)]
     [TestCase(4095, true)]
@@ -1443,6 +1675,12 @@ internal static unsafe class AssertionTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compMaxUncheckedOffsetForNullObject")]
     private static extern ref int MaxUncheckedOffset(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "optAssertionPropagated")]
+    private static extern ref bool AssertionPropagated(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "optAssertionPropagatedCurrentStmt")]
+    private static extern ref bool AssertionPropagatedCurrentStmt(Compiler compiler);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "bbJtrueAssertionOut")]
     private static extern ref nint[][]? JtrueAssertionOut(Compiler compiler);

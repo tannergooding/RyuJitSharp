@@ -36,6 +36,12 @@ Non-null proofs use local facts, value numbers and predecessor-edge assertions,
 including conservative SSA values across PHIs. Field null-check delegation
 respects cumulative offsets and cannot move a fault past a store's side effects.
 
+Assertion application can remove proven null checks, classify scalar and GC-containing
+block-store barriers, and propagate per-element vector-mask facts through conservative
+SSA values. Zero-initialized struct return values become scalar zero operands when
+required by the return ABI, including Swift error returns. Statement updates preserve
+the current traversal and annotate invariant handle loads.
+
 Integral cast optimization now uses range proofs and expression narrowing to
 remove redundant conversions, retaining overflow checks and small-local
 normalization where required.

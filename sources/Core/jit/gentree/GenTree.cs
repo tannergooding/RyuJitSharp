@@ -2128,15 +2128,15 @@ public partial class GenTree
             else
             {
                 assert(oper.IsUnary || oper.IsBinary);
-                var opNode = AsOp();
+                var opNode = AsUnOp();
 
                 if (def == opNode.Op1)
                 {
                     use = ref opNode.Op1Ref;
                 }
-                else if (_oper.IsBinary && (def == opNode.Op2))
+                else if (_oper.IsBinary && (def == AsOp().Op2))
                 {
-                    use = ref opNode.Op2Ref;
+                    use = ref AsOp().Op2Ref;
                 }
             }
         }

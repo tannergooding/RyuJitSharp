@@ -91,6 +91,13 @@ effects. The field driver consumes the returned owner; old aliases remain
 field nodes. Module-index arithmetic explicitly reinterprets the EE's managed
 `int` as native `unsigned` before multiplication and pointer-width widening.
 
+Zero-object assertion propagation takes an owning operand by reference and installs
+the replacement zero constant instead of changing the local node's managed kind.
+Ordinary returns update their unary operand; Swift error returns update the value
+operand without changing the error operand. Global assertion updates use the
+managed owning edge or statement root and preserve the forward traversal link;
+the native later remorph remains responsible for rebuilding all statement links.
+
 Constant field-sequence annotations are mutable metadata, allowing negation
 motion to clear an annotation without replacing the constant. `SetValueTruncating`
 accepts a `long` instead of a native signed-integer template; its int-width

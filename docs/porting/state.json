@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Port optAssertionProp (oracle assertionprop.cpp:5909) and its real application-helper closure. It is now the only unresolved entry point in the nine protected global-morph drafts: joint Debug/Release probes report three diagnostics at tree, copy-block and simple-driver call sites. LclVarTypeCheck and the complete non-null proof closure are live; most other assertion application helpers remain unported, so this is not a one-function completion estimate. Non-null tree/VN queries, offset peeling, PHI-reaching assertions, edge selection and field null-check marking are live, tested and retired. The addresses draft now contains only fgMorphFieldAddr and fgMorphIndexAddr. The casts draft contains the helper predicate/conversions and cast expansion. Keep recursive drivers outside the normal build until the real dependency closure compiles; no stubs or Windows NYIs. Preserve whole-node owning uses, common flags and explicit VN update policies, use AsUnOp for unary/store-local nodes, keep tail EE pinning and the unused-result eeGetCallInfo query, and preserve native diagnostic layout. The optional arithmetic draft uses HasOverflowCheckEx for arbitrary operators. B145, B153 and B156 remain deferred. fgMorphBlocks is inactive; incomplete draft probes are not successful validation or phase/codegen parity.",
+    "nextAction": "Continue the optAssertionProp dispatcher dependency closure, starting with optAssertionProp_LclVar and optAssertionProp_LclFld (oracle assertionprop.cpp:3846 and 3967). The tenth protected draft contains the complete dispatcher; joint Debug/Release probes now identify eleven missing application helpers: LclVar, LclFld, LocalStore, BlockStore, AddMulSub, ModDiv, BndsChk, Cast, Call, RelOp and optVNConstantPropOnJTrue. Update bookkeeping, zero-object and ordinary/Swift return application, indirection application, non-null call/indirection application, scalar/block write-barrier classification, hardware mask propagation and the VN mask query are live, tested and retired. Unary owning-use lookup was corrected (B157). Investigate AllTrees source-constructor ownership at the actual global constant-replacement call sites: existing source constructors accept None/AllLocals, not AllTrees or LIR; do not pass AllLocals merely to evade checks. The other nine drafts remain protected and unchanged. Keep recursive drivers outside the normal build until the real dependency closure compiles; no stubs or Windows NYIs. Preserve whole-node owners, common flags, explicit VN policies, tail EE pinning and native diagnostics. B145, B153 and B156 remain deferred. fgMorphBlocks is inactive; incomplete draft probes are not successful validation or phase/codegen parity.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -49,6 +49,23 @@
         "skipped": 0,
         "sourceCheck": "Canonical tokens, comments, directives and literals preserved across nine preprocessor configurations, allowing only switch-section scope blocks.",
         "functionalWipIncluded": false,
+        "nativeAotRecaptured": false
+      },
+      "assertionApplicationSupport": {
+        "debugPassed": 198,
+        "releasePassed": 196,
+        "skipped": 0,
+        "newCases": 14,
+        "selection": ["AssertionTests", "IndirectCallTransformationTests"],
+        "debugTests": "artifacts\\assertion-application-debug.trx",
+        "releaseTests": "artifacts\\assertion-application-release.trx",
+        "nativeDefinitionsRetired": ["Compiler::optAssertionProp_Update", "Compiler::optZeroObjAssertionProp", "Compiler::optAssertionProp_Return", "Compiler::optAssertionProp_Ind", "Compiler::optNonNullAssertionProp_Call", "Compiler::optNonNullAssertionProp_Ind", "GetWriteBarrierForm", "Compiler::optWriteBarrierAssertionProp_StoreInd", "Compiler::optWriteBarrierAssertionProp_StoreBlk", "optAssertionProp_HWIntrinsic", "ValueNumStore::IsVectorPerElementMask"],
+        "nativeTypesRetired": ["GCInfo::WriteBarrierForm"],
+        "coverage": ["owning edges, roots, invariant handles and forward traversal", "ordinary and Swift return zero replacements with identity and VN policies", "non-null call effects and indirection ordering", "conservative values, variable offsets, array and boxed-static barrier forms", "GC-containing block stores and existing barrier flags", "mask lane widths, bitwise inputs and conservative PHI values"],
+        "draftProbeConfigurations": ["Debug", "Release"],
+        "remainingDraftDependencies": ["optAssertionProp_LclVar", "optAssertionProp_LclFld", "optAssertionProp_LocalStore", "optAssertionProp_BlockStore", "optAssertionProp_AddMulSub", "optAssertionProp_ModDiv", "optAssertionProp_BndsChk", "optAssertionProp_Cast", "optAssertionProp_Call", "optAssertionProp_RelOp", "optVNConstantPropOnJTrue"],
+        "draftProbesSucceeded": false,
+        "globalMorphActive": false,
         "nativeAotRecaptured": false
       },
       "nonNullAssertionSupport": {
@@ -2147,6 +2164,11 @@
       "indexCommit": "cbef691b2ba9397b4d8dde136c8a91771971ad56",
       "ref": "refs/porting/snapshots/native-ledger-nonnull-assertion-support"
     },
+    "assertionApplicationNativeResidual": {
+      "commit": "040a4f2e55f5298a03c4557f9615ec91e3186aa3",
+      "indexCommit": "9c040df899dce43cc6f7d96e5f04cf67457e129f",
+      "ref": "refs/porting/snapshots/native-ledger-assertion-application-support"
+    },
     "globalMorphDrafts": {
       "treeBlob": "36908cd7d0294ece59d91854bbdbfcb05d83f228",
       "treeRef": "refs/porting/drafts/global-morph-tree",
@@ -2166,7 +2188,9 @@
       "castsRef": "refs/porting/drafts/global-morph-casts",
       "addressesBlob": "3fb12374315e93a7fb9679757392f62f5185bdcc",
       "addressesRef": "refs/porting/drafts/global-morph-addresses",
-      "status": "Nine incomplete local integration drafts with Debug/Release dependency diagnostics, not successfully compiled or validated; session files carry matching .cs.draft names. Hardware has four functions, call has fgMorphCall plus both tail-call transformations, args has both struct-argument transformations, fgMorphArgs and EvalArgsToTemps, copy-block has the complete helper class and driver, simple-optional has both arithmetic optimizers and the optional dispatcher, simple has the full initial required dispatcher plus conditional-execution marking, casts has the helper predicate/conversions and cast expansion, and addresses has the field/index drivers."
+      "assertionsBlob": "98418bfa6640084cc3ea8141960f2ed334e8a99a",
+      "assertionsRef": "refs/porting/drafts/global-morph-assertions",
+      "status": "Ten incomplete local integration drafts with Debug/Release dependency diagnostics, not successfully compiled or validated; session files carry matching .cs.draft names. Hardware has four functions, call has fgMorphCall plus both tail-call transformations, args has both struct-argument transformations, fgMorphArgs and EvalArgsToTemps, copy-block has the complete helper class and driver, simple-optional has both arithmetic optimizers and the optional dispatcher, simple has the full initial required dispatcher plus conditional-execution marking, casts has the helper predicate/conversions and cast expansion, addresses has the field/index drivers, and assertions has the application dispatcher."
     },
     "internalBlockPhaseNativeResidual": {
       "commit": "494ccbc0132fcf507b8133bffa2fef635d788858",
