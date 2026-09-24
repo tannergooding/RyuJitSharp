@@ -35,6 +35,15 @@ public sealed class GenTreeArrElem : GenTree
 
     public int ArrElemSize => _arrElemSize;
 
+#if DEBUG
+    internal override GenTree CloneForMorphStress(Compiler compiler)
+    {
+        var clone = (GenTreeArrElem)base.CloneForMorphStress(compiler);
+        clone._arrInds = (GenTree[])_arrInds.Clone();
+        return clone;
+    }
+#endif
+
     public Span<GenTree> ArrInds
     {
         get

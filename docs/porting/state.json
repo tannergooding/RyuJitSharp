@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit block initialization morphing, then begin the integrated tree-morph closure at oracle morph.cpp::fgMorphTree (12677-12908). Its complete dispatcher has been read. MorphInitBlockHelper and fgMorphInitBlock are complete and retired; 265 Debug / 260 Release block-init/local/scalar cases pass. gtNewConWithPattern is complete for scalars/fixed SIMD but retains its native body for the explicit ARM64 scalable-vector deferral. MorphCopyBlockHelper has been read in full: CopyFieldByField's address-cloning path calls fgMorphTree, so copy morphing belongs to the recursive closure rather than an independently compilable helper batch. Do not introduce Windows-x64 stubs to break that cycle. The closure includes const/leaf/local/simple-op/call/HWI morphing, with existing fgMorphTreeDone and assertions reused. No-return repair is committed as 3e31c29. fgMergeBlockReturn still needs copy morphing; fgConvertSyncReturnToLeave and fgGetFirstILBlock exist. fgMorphBlocks remains inactive; no unchanged-frontier NativeAOT recapture is needed.",
+    "nextAction": "Continue required call-argument morphing: read oracle morph.cpp::CallArgs::ArgsComplete from line 743, then close argument scheduling/evaluation dependencies before integrating fgMorphArgs. Outgoing argument ABI classification, final VSD/R2R argument insertion/reset, stack sizing, safepoint classification, local-definition flags, string literals and DEBUG morph-stress copies now build and pass focused Debug/Release coverage. The incomplete dispatcher and fgMorphCall drafts are preserved outside the build as session files global-morph-tree.cs.draft and global-morph-call.cs.draft and protected Git blobs in localRecovery.globalMorphDrafts; restore only with a complete compilable closure. Their remaining dependencies include optAssertionProp, fgMorphSmpOp, fgMorphHWIntrinsic, fgMorphPotentialTailCall, fgMorphArgs and SharedTempsScope. Native fgMorphSmpOp was read through line 7630; next unread line is 7631. The native assertion dispatcher at assertionprop.cpp:5909 and MorphCopyBlockHelper are already read; assertion application helpers are missing, and copy morphing recursively morphs cloned addresses. fgExpandVirtualVtableCallTarget already exists in Compiler.fg.cs. No global phase activation or new codegen/phase parity is claimed; fgMorphBlocks remains inactive.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -1174,6 +1174,22 @@
         "globalMorphActive": false,
         "nativeAotRecaptured": false
       },
+      "callMorphSupport": {
+        "debugPassed": 166,
+        "releasePassed": 161,
+        "skipped": 0,
+        "newDebugCases": 30,
+        "newReleaseCases": 25,
+        "selection": ["CallArgumentMorphTests", "MorphTreeSupportTests", "UseEdgeIteratorTests", "IndirectCallTransformationTests"],
+        "debugTests": "artifacts\\call-morph-debug.trx",
+        "releaseTests": "artifacts\\call-morph-release.trx",
+        "coverage": ["Windows-x64 shadow space and shared integer/floating argument slots", "signature-based classification and zero-segment pseudo-arguments", "VSD insertion order, indirect target cloning and reset/reclassification", "ReadyToRun fast-tail-call and delegate gates", "address retyping and cloned stack-size metadata", "safepoint and partial-definition flags", "literal indirection flags and handle identity", "stress-copy node IDs, sequence numbers and native inline/external operand ownership"],
+        "nativeDefinitionsRetired": ["CallArgs::GetCustomRegister", "CallArgs::IsNonStandard", "CallArgs::ResetFinalArgsAndABIInfo", "CallArgs::DetermineABIInfo", "CallArgs::OutgoingArgsStackSize", "Compiler::gtNewStringLiteralNode", "Compiler::fgGetStubAddrArg", "Compiler::fgAssignSetVarDef", "Compiler::IsGcSafePoint", "Compiler::GetOutgoingArgByteSize", "hasFixedRetBuffReg", "theFixedRetBuffReg"],
+        "nativeDefinitionsRetained": ["CallArgs::AddFinalArgsAndDetermineABIInfo retains its body/declaration for Wasm shadow-stack argument insertion.", "GenTree::ReplaceWith remains for callers beyond the DEBUG morph-stress clone."],
+        "remaining": "Argument scheduling/evaluation and tail-call transformation still precede integration of the saved recursive tree/call-morph drafts. Other target ABI paths are source-ported but unvalidated; Wasm argument finalization explicitly throws.",
+        "globalMorphActive": false,
+        "nativeAotRecaptured": false
+      },
       "nativeAotPublish": "passed-after-implicit-byref-retyping",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "all-twenty-minopts-implicit-byref-retyping-phase-sections-and-its-emitted-IR-equal; earlier-local-morph-gaps-remain-scoped-in-localMorphActivation",
@@ -1688,6 +1704,18 @@
       "indexCommit": "86818f07e407eae8b12174f85bd83da1fbabd80e",
       "ref": "refs/porting/snapshots/native-ledger-block-init"
     },
+    "callMorphSupportNativeResidual": {
+      "commit": "b63de7301a4ffb24157fe68b524fdfd5b7476935",
+      "indexCommit": "0519348645cbb4383f64386c589bfc6b8c7e27ad",
+      "ref": "refs/porting/snapshots/native-ledger-call-morph-support"
+    },
+    "globalMorphDrafts": {
+      "treeBlob": "36908cd7d0294ece59d91854bbdbfcb05d83f228",
+      "treeRef": "refs/porting/drafts/global-morph-tree",
+      "callBlob": "8a3297b113e87ea1c7006e7a923ee6bdbe3375cf",
+      "callRef": "refs/porting/drafts/global-morph-call",
+      "status": "Incomplete local integration drafts, not compiled or validated; session files carry matching .cs.draft names."
+    },
     "internalBlockPhaseNativeResidual": {
       "commit": "494ccbc0132fcf507b8133bffa2fef635d788858",
       "indexCommit": "343e35183b190e9bccb68af25de8c3b499e6bf1e",
@@ -1830,6 +1858,12 @@
       "area": "block-initialization-morphing",
       "native": ["src\\coreclr\\jit\\morphblock.cpp", "src\\coreclr\\jit\\compiler.hpp", "src\\coreclr\\jit\\gentree.cpp"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.MorphInitBlockHelper.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.cs", "sources\\Core\\jit\\gentree\\GenTree.cs", "sources\\Core\\jit\\compiler\\Compiler.gt.cs"],
+      "reconciledCommit": null
+    },
+    {
+      "area": "outgoing-call-abi-and-morph-support",
+      "native": ["src\\coreclr\\jit\\morph.cpp", "src\\coreclr\\jit\\gentree.cpp", "src\\coreclr\\jit\\compiler.hpp", "src\\coreclr\\jit\\target.h"],
+      "csharp": ["sources\\Core\\jit\\gentree\\CallArgs.Morph.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.CallSupport.cs", "sources\\Core\\jit\\compiler\\Compiler.gt.cs", "sources\\Core\\jit\\gentree\\GenTree.cs", "sources\\Core\\jit\\target\\Globals.cs"],
       "reconciledCommit": null
     },
     {

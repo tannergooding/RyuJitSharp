@@ -35,6 +35,21 @@ public abstract class GenTreeMultiOp : GenTree
 
     protected void ResetOperands(GenTree[] operands) => _operands = operands;
 
+#if DEBUG
+    internal override GenTree CloneForMorphStress(Compiler compiler)
+    {
+        var clone = (GenTreeMultiOp)base.CloneForMorphStress(compiler);
+
+        // Native stores up to two operands inline; ReplaceWith shares larger arrays.
+        if (_operands.Length <= 2)
+        {
+            clone._operands = (GenTree[])_operands.Clone();
+        }
+
+        return clone;
+    }
+#endif
+
     public static bool OperandsAreEqual(GenTreeMultiOp op1, GenTreeMultiOp op2)
     {
         if (op1._operands.Length != op2._operands.Length)

@@ -77,6 +77,14 @@ native VN clearing and logical IDs preserved. These replacements are unthreaded.
 The block helper keeps descriptor indices and reacquires descriptors instead of
 retaining managed references across local-table growth.
 
+Debug morph-stress replacement uses a same-CLR-type shallow copy instead of
+allocating an unrelated native node and overwriting its storage. It preserves
+the source logical ID and metadata, consumes the native destination-allocation
+ID, and resets the sequence number. Array-index storage and hardware-intrinsic
+operand slots that native stores inline are copied; external operand arrays
+remain shared. It requires unthreaded source nodes and does not emulate poisoning
+the discarded native node. The recursive morph dispatcher is not yet active.
+
 Allocation-to-helper conversion uses a `GenTreeCall` replacement constructor
 and the source-node overload of `gtNewHelperCallNode`. Unlike constant folding,
 native `ChangeOper` preserves the common flag mask. The replacement preserves
@@ -511,6 +519,15 @@ Windows-x64 comparisons are covered; ARM64 builds/execution remain unverified.
 patterns. Its `TARGET_ARM64` / `TYP_SIMD` branch throws `NotImplementedException`
 until scalable-vector constant construction is ported. The native factory and
 declaration remain in the residual tree as that branch's reference.
+
+`CallArgs.AddFinalArgsAndDetermineAbiInfo` implements outgoing argument
+classification and non-standard argument insertion for Windows x64. Its Wasm
+branch throws `NotImplementedException` pending shadow-stack argument insertion;
+the complete native body/declaration remain available in the residual tree.
+Unix varargs also throw explicitly, matching the native unsupported path rather
+than continuing with an unsupported ABI. Other target-specific register rules
+are source-ported, not execution-validated. Classification is not argument
+evaluation/scheduling and does not activate call morphing.
 
 ## Implementation notes and parity findings
 

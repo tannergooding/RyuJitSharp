@@ -10,6 +10,30 @@ namespace RyuJitSharp;
 
 public static partial class Globals
 {
+    public static bool hasFixedRetBuffReg(CorInfoCallConvExtension callConv)
+    {
+#if TARGET_ARM64
+        return !TargetOS.IsWindows || !callConvIsInstanceMethodCallConv(callConv);
+#elif TARGET_AMD64 && SWIFT_SUPPORT
+        return callConv is CorInfoCallConvExtension.Swift;
+#else
+        return false;
+#endif
+    }
+
+    public static regNumber theFixedRetBuffReg(CorInfoCallConvExtension callConv)
+    {
+        assert(hasFixedRetBuffReg(callConv));
+#if TARGET_ARM64
+        return REG_ARG_RET_BUFF;
+#elif TARGET_AMD64 && SWIFT_SUPPORT
+        assert(callConv is CorInfoCallConvExtension.Swift);
+        return REG_SWIFT_ARG_RET_BUFF;
+#else
+        return REG_NA;
+#endif
+    }
+
     // The following are human readable names for the target architectures
 #if TARGET_X86
     public const string TARGET_READABLE_NAME = "X86";

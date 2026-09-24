@@ -2558,6 +2558,19 @@ public partial class GenTree
         return result;
     }
 
+#if DEBUG
+    internal virtual GenTree CloneForMorphStress(Compiler compiler)
+    {
+        assert((_prev is null) && (_next is null));
+        var clone = (GenTree)MemberwiseClone();
+        clone._seqNum = 0;
+
+        // Native allocates a destination before ReplaceWith restores the source ID.
+        compiler.compGenTreeID++;
+        return clone;
+    }
+#endif
+
     public void BashToNOP()
     {
         // GT_NOP uses only base fields, so retain the managed object and its logical node identity.

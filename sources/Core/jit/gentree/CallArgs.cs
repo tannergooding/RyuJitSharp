@@ -13,9 +13,11 @@ public partial struct CallArgs
 
     private CallArg _lateHead;
 
+    private int _argsStackSize;
+
 #if UNIX_X86_ABI
     /// <summary>Number of stack bytes pushed before we start pushing these arguments.</summary>
-    private int _argsStackSize;
+    private int _stkSizeBytes;
 
     /// <summary>Stack alignment in bytes required before arguments are pushed for this call.</summary>
     /// <remarks>Computed dynamically during codegen, based on _stkSizeBytes and the current stack level (genStackLevel) when the first stack adjustment is made for this call.</remarks>
@@ -415,11 +417,11 @@ public partial struct CallArgs
     internal void InternalCopyFrom(Compiler compiler, in CallArgs other)
     {
         assert((_head is null) && (_lateHead is null));
+        _argsStackSize = other._argsStackSize;
 
 #if UNIX_X86_ABI
         // Unix x86 info related to stack alignment intentionally not copied as they depend on where the call will be inserted.
         _flags = other._flags & ~Flags.AlignmentDone;
-        _argsStackSize = other._argsStackSize;
 #else
         _flags = other._flags;
 #endif

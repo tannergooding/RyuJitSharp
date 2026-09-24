@@ -44,7 +44,7 @@ public sealed partial class CallArg
         _abiInfo = other._abiInfo;
     }
 
-    public ref readonly AbiPassingInformation AbiInfo => ref _abiInfo;
+    public ref AbiPassingInformation AbiInfo => ref _abiInfo;
 
     public GenTree EarlyNode
     {
@@ -63,9 +63,9 @@ public sealed partial class CallArg
     public ref GenTree EarlyNodeRef => ref _earlyNode;
 #nullable restore
 
-    /// <summary>Check if this is an argument that is added late, by `DetermineArgAbiInformation`.</summary>
+    /// <summary>Check if this is an argument added by `AddFinalArgsAndDetermineAbiInfo`.</summary>
     /// <remarks>
-    ///   <para>These arguments must be removed if ABI information needs to be reclassified by calling `DetermineArgAbiInformation` as otherwise they will be readded. See `CallArgs.ResetFinalArgsAndAbiInfo`.</para>
+    ///   <para>These arguments must be removed before adding final arguments again or they will be duplicated. See `CallArgs.ResetFinalArgsAndAbiInfo`.</para>
     ///   <para>Note that the 'late' here is separate from CallArg.GetLateNode and friends. Late here refers to this being an argument that is added by morph instead of the importer.</para>
     /// </remarks>
     public bool IsArgAddedLate => _wellKnownArg switch {

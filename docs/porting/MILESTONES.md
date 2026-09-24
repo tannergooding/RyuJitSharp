@@ -11,6 +11,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-24: Global-morph foundations and outgoing-call ABI
+
+Global morph now has transformations for local references, primitive and
+promoted-field block initialization, and removal of expressions after no-return
+calls while preserving earlier side effects. Literal construction and debug
+stress copies preserve native handle shapes, logical identity and operand
+ownership.
+
+Outgoing calls can classify signature types into Windows-x64 argument registers
+and stack slots, account for shadow space, insert virtual-stub and ReadyToRun
+cells, and remove those cells before reclassification. Argument scheduling,
+tail-call transformation and the recursive tree/block drivers remain unfinished;
+these foundations are not yet activated as a global-morph phase.
+
 ## 2026-09-23: Implicit-byref parameter preparation
 
 Struct parameters passed through pointers now receive their byref descriptor

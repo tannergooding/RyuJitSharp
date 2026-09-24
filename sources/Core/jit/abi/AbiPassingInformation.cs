@@ -10,9 +10,17 @@ namespace RyuJitSharp;
 
 public struct AbiPassingInformation
 {
-    private readonly AbiPassingSegment[] _segments;
+    private readonly AbiPassingSegment[]? _segments;
     private AbiPassingSegment _singleSegment;
     private bool _passedByRef;
+
+    public AbiPassingInformation(int numSegments)
+    {
+        if (numSegments != 1)
+        {
+            _segments = new AbiPassingSegment[numSegments];
+        }
+    }
 
     /// <summary>The number of segments used to pass the value.</summary>
     /// <remarks>

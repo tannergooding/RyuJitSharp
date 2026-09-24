@@ -12799,6 +12799,41 @@ public partial class Compiler
         }
     }
 
+    public unsafe GenTree gtNewStringLiteralNode(InfoAccessType accessType, void* value)
+    {
+        switch (accessType)
+        {
+            case IAT_VALUE:
+            {
+                return gtNewIconEmbObjHndNode((CORINFO_OBJECT_HANDLE)value);
+            }
+
+            case IAT_PVALUE:
+            {
+                var tree = gtNewIndOfIconHandleNode(TYP_REF, (nint)value, GTF_ICON_STR_HDL);
+#if DEBUG
+                tree.AsUnOp().Op1.AsIntCon().TargetHandle = (nint)value;
+#endif
+                return tree;
+            }
+
+            case IAT_PPVALUE:
+            {
+                var tree = gtNewIndOfIconHandleNode(TYP_I_IMPL, (nint)value, GTF_ICON_CONST_PTR);
+#if DEBUG
+                tree.AsUnOp().Op1.AsIntCon().TargetHandle = (nint)value;
+#endif
+                return gtNewIndir(TYP_REF, tree, GTF_IND_NONFAULTING | GTF_IND_INVARIANT | GTF_IND_NONNULL);
+            }
+
+            default:
+            {
+                NO_WAY("Unexpected InfoAccessType");
+                return null;
+            }
+        }
+    }
+
     /// <summary>create GenTreeIntCon node for the given string literal to store its length.</summary>
     /// <param name="node">string literal node.</param>
     /// <returns>GenTreeIntCon node with string's length as a value or null.</returns>
