@@ -248,6 +248,17 @@
         "releaseTests": "artifacts\\backend-call-integration-release.trx",
         "scope": "Frozen uncommitted call integration includes memory-helper expansion and ordinary-call fallback, native next-node conventions, single-register struct returns and comparison containment. No lowering-driver activation or managed code generation."
       },
+      "scalarMathContainment": {
+        "scope": "Complete xarch ContainCheckIntrinsic and ContainCheckDivOrMod/LowerDivOrMod. Scalar math containment distinguishes positive zero from negative zero and retains NaN bits; integral division uses native memory/register-optional rules.",
+        "intrinsicCases": 23,
+        "divisionCases": 12,
+        "debugIntegrationPassed": 134,
+        "releaseIntegrationPassed": 134,
+        "debugTests": "artifacts\\return-integration-debug.trx",
+        "releaseTests": "artifacts\\return-integration-release.trx",
+        "integrationScope": "Includes returned return/PInvoke-frame helpers, twenty-two dispatch cases and existing call consumers. The shared temporary-use helper now rechecks the full intervening range; its regression fails before that correction.",
+        "remaining": "Constant-division transforms are uncommitted pending ChangeOper flag filtering, source-preserving CAST replacement and native temporary-helper corrections. Return/phase traversal integration is also uncommitted."
+      },
       "partialSimdAbiGate": {
         "debugPassed": 155,
         "releasePassed": 146,
