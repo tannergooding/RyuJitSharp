@@ -11,6 +11,69 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ImporterCallTests
 {
+    [Test]
+    public static void VirtualMethodPointerEmbedsMethodBeforeParentAndKeepsHelperArgumentOrder()
+    {
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.Base.embedGenericHandle =
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_RESOLVED_TOKEN*, bool, CORINFO_METHOD_STRUCT_*, CORINFO_GENERICHANDLE_RESULT*, void>)
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_RESOLVED_TOKEN*, byte, CORINFO_METHOD_STRUCT_*, CORINFO_GENERICHANDLE_RESULT*, void>)&EmbedVirtualMethodHandle;
+        var state = new VirtualMethodLookup { Interface = new ICorJitInfo { lpVtbl = &vtable } };
+#if DEBUG
+        using var tls = new JitTls(&state.Interface);
+#endif
+        var previous = JitTls.Compiler;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitFlags flags = default;
+        compiler.opts.jitFlags = &flags;
+        compiler.info.compCompHnd = &state.Interface;
+        compiler.info.compMethodHnd = (CORINFO_METHOD_STRUCT_*)0x6000;
+        JitTls.Compiler = compiler;
+        try
+        {
+            var token = new CORINFO_RESOLVED_TOKEN { token = 0x06000001 };
+            var instance = compiler.gtNewZeroConNode(var_types.TYP_REF);
+            instance.Flags |= GenTreeFlags.GTF_ORDER_SIDEEFF;
+            var result = compiler.getVirtMethodPointerTree(instance, token).AsCall();
+            Assert.That(state.Order, Is.EqualTo(12));
+            Assert.That(state.ContextMatched, Is.EqualTo(2));
+            Assert.That(result.IsHelperCall(CorInfoHelpFunc.CORINFO_HELP_VIRTUAL_FUNC_PTR), Is.True);
+            Assert.That(result.Type, Is.EqualTo(Globals.TYP_I_IMPL));
+            Assert.That(result.Flags & GenTreeFlags.GTF_ORDER_SIDEEFF, Is.EqualTo(GenTreeFlags.GTF_ORDER_SIDEEFF));
+            Assert.That(result.Args.CountArgs(), Is.EqualTo(3));
+            var thisArg = result.Args.GetArgByIndex(0) ?? throw new InvalidOperationException();
+            var typeArg = result.Args.GetArgByIndex(1) ?? throw new InvalidOperationException();
+            var methodArg = result.Args.GetArgByIndex(2) ?? throw new InvalidOperationException();
+            Assert.That(thisArg.Node, Is.SameAs(instance));
+            Assert.That(typeArg.Node.AsIntCon().IconValue, Is.EqualTo((nint)0x5000));
+            Assert.That(methodArg.Node.AsIntCon().IconValue, Is.EqualTo((nint)0x4000));
+            Assert.That(methodArg.WellKnownArg, Is.EqualTo(WellKnownArg.RuntimeMethodHandle));
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+
+    private struct VirtualMethodLookup
+    {
+        public ICorJitInfo Interface;
+        public int Order;
+        public int ContextMatched;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void EmbedVirtualMethodHandle(ICorJitInfo* info, CORINFO_RESOLVED_TOKEN* token, byte parent, CORINFO_METHOD_STRUCT_* context, CORINFO_GENERICHANDLE_RESULT* result)
+    {
+        var state = (VirtualMethodLookup*)info;
+        state->Order = (state->Order * 10) + parent + 1;
+        state->ContextMatched += (context == (CORINFO_METHOD_STRUCT_*)0x6000) && (token->token == 0x06000001) ? 1 : 0;
+        *result = default;
+        result->lookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
+        result->lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)(parent == 0 ? 0x4000 : 0x5000);
+        result->compileTimeHandle = result->lookup.constLookup.handle;
+    }
+
     [TestCase(CorInfoType.CORINFO_TYPE_INT)]
     [TestCase(CorInfoType.CORINFO_TYPE_LONG)]
     public static void NegativeLog2LeavesItsArgumentForTheManagedFallback(CorInfoType type)

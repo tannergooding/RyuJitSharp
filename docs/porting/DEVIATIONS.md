@@ -302,6 +302,11 @@ contract; zero-initialized resolved tokens use `default` instead of `memset`.
 Helper selection, argument ordering and generic-context reporting match native
 (B113).
 
+Helper equivalence reuses the existing managed helper dictionary on the inline
+root. Lookup preserves the output handle on failure through a `ref` parameter.
+Virtual method-pointer construction omits native's unused call-info parameter;
+method and parent token lookups retain their ordering and root-method context.
+
 The outgoing-argument `hashBv` storage uses managed nodes and bucket arrays, not
 compiler-owned arena free lists; `Init` therefore has no allocator state to reset.
 Native pointer-to-link operations use managed byrefs, and growth keeps a tail

@@ -82,6 +82,10 @@ helper path prepares explicit receiver null checks and its special stack
 arguments. Debug validation follows the tail-call result through stores and
 normalizing casts to the return.
 
+Call morphing can recognize managed replacements of runtime helpers through the
+inline root's helper map. Virtual method-pointer construction retains exact
+method and parent-type handles, their lookup order, and the receiver's effects.
+
 Materializing argument temporaries, selecting and transforming other tail calls,
 and the recursive tree/block drivers remain unfinished; these foundations are not
 yet activated as a global-morph phase.

@@ -20,6 +20,37 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class CallArgumentMorphTests
 {
+    [Test]
+    public static void HelperEquivalenceUsesTheInlineRootWithoutChangingFailedLookupOutputs()
+    {
+        WithCompiler(compiler => {
+            var helper = Compiler.eeFindHelper(CorInfoHelpFunc.CORINFO_HELP_ARRADDR_ST);
+            var managed = (CORINFO_METHOD_STRUCT_*)0x1234;
+            var result = managed;
+            Assert.That(compiler.HelperToManagedMapLookup(helper, ref result), Is.False);
+            Assert.That((nuint)result, Is.EqualTo((nuint)managed));
+
+            HelperMap(compiler) = new() { [helper] = managed };
+            var inlinee = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+            inlinee.impInlineInfo = new InlineInfo { InlineRoot = compiler };
+
+            var call = compiler.gtNewCallNode(TYP_VOID, CT_HELPER, helper);
+            Assert.That(call.IsHelperCallOrUserEquivalent(inlinee, CorInfoHelpFunc.CORINFO_HELP_ARRADDR_ST), Is.True);
+            call._callType = CT_USER_FUNC;
+            call._callMethHnd = managed;
+            Assert.That(call.IsHelperCallOrUserEquivalent(inlinee, CorInfoHelpFunc.CORINFO_HELP_ARRADDR_ST), Is.True);
+            Assert.That(call.IsHelperCallOrUserEquivalent(inlinee, CorInfoHelpFunc.CORINFO_HELP_THROW), Is.False);
+            call._callType = CT_INDIRECT;
+            Assert.That(call.IsHelperCallOrUserEquivalent(inlinee, CorInfoHelpFunc.CORINFO_HELP_ARRADDR_ST), Is.False);
+
+            Assert.That(compiler.HelperToManagedMapLookup(Compiler.eeFindHelper(CorInfoHelpFunc.CORINFO_HELP_THROW), ref result), Is.False);
+            Assert.That((nuint)result, Is.EqualTo((nuint)managed));
+        });
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_helperToManagedMap")]
+    private static extern ref Dictionary<Pointer<CORINFO_METHOD_STRUCT_>, Pointer<CORINFO_METHOD_STRUCT_>>? HelperMap(Compiler compiler);
+
     [TestCase(0, 32)]
     [TestCase(4, 32)]
     [TestCase(5, 40)]

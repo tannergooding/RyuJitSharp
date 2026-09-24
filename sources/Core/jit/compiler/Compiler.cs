@@ -1331,6 +1331,25 @@ public partial class Compiler
         return getRuntimeLookupTree(lookup, compileTimeHandle);
     }
 
+    public unsafe bool HelperToManagedMapLookup(CORINFO_METHOD_HANDLE helperCallHnd, ref CORINFO_METHOD_HANDLE userCallHnd)
+    {
+        if ((_helperToManagedMap is not null) && _helperToManagedMap.TryGetValue(helperCallHnd, out var managedCallHnd))
+        {
+            userCallHnd = managedCallHnd;
+            return true;
+        }
+
+        return false;
+    }
+
+    public GenTree getVirtMethodPointerTree(GenTree thisPtr, in CORINFO_RESOLVED_TOKEN resolvedToken)
+    {
+        var exactMethodDesc = getTokenHandleTree(resolvedToken, parent: false);
+        var exactTypeDesc = getTokenHandleTree(resolvedToken, parent: true);
+
+        return gtNewVirtualFunctionLookupHelperCallNode(TYP_I_IMPL, CORINFO_HELP_VIRTUAL_FUNC_PTR, thisPtr, exactMethodDesc, exactTypeDesc);
+    }
+
     public unsafe GenTree getTokenHandleTree(in CORINFO_RESOLVED_TOKEN resolvedToken, bool parent)
     {
         CORINFO_GENERICHANDLE_RESULT embedInfo;

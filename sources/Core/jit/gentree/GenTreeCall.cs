@@ -888,6 +888,24 @@ public sealed class GenTreeCall : GenTree
 
     public unsafe bool IsHelperCall(CorInfoHelpFunc helperFunc) => IsHelperCall(Compiler.eeFindHelper(helperFunc));
 
+    public unsafe bool IsHelperCallOrUserEquivalent(Compiler compiler, CorInfoHelpFunc helper)
+    {
+        var helperCallHnd = Compiler.eeFindHelper(helper);
+        if (IsHelperCall())
+        {
+            return helperCallHnd == _callMethHnd;
+        }
+
+        if (_callType is CT_USER_FUNC)
+        {
+            var userCallHnd = NO_METHOD_HANDLE;
+            return compiler.impInlineRoot.HelperToManagedMapLookup(helperCallHnd, ref userCallHnd)
+                && (userCallHnd == _callMethHnd);
+        }
+
+        return false;
+    }
+
     /// <summary>Returns true if this call is pure.</summary>
     /// <param name="compiler">the compiler context.</param>
     /// <returns>True if the call is pure; false otherwise.</returns>
