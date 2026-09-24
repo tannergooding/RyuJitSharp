@@ -6,6 +6,7 @@ using NUnit.Framework;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.RefCountState;
 using static RyuJitSharp.var_types;
 
@@ -233,6 +234,147 @@ internal static unsafe class LocalMorphTests
         });
     }
 
+    [TestCase(TYP_INT, TYP_INT, false, GT_LCL_VAR, TYP_INT)]
+    [TestCase(TYP_INT, TYP_FLOAT, false, GT_BITCAST, TYP_FLOAT)]
+    [TestCase(TYP_INT, TYP_SHORT, false, GT_CAST, TYP_INT)]
+    [TestCase(TYP_INT, TYP_SHORT, true, GT_LCL_FLD, TYP_SHORT)]
+    public static void LocalIndirectionsHonorTypeAndOptimizationGates(
+        var_types localType, var_types accessType, bool minOpts, genTreeOps expectedOper, var_types expectedType)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable[0].Type = localType;
+            var address = compiler.gtNewLclVarAddrNode(TYP_BYREF, 0);
+            var indir = compiler.gtNewIndir(accessType, address);
+            var user = compiler.gtNewUnaryNode(GT_RETURN, accessType.ActualType, indir);
+            var visitor = new LocalAddressVisitor(compiler);
+            visitor.MorphLocalIndir(ref user.Op1Ref, 0, 0, user);
+            var result = user.Op1;
+
+            Assert.That(result.Oper, Is.EqualTo(expectedOper));
+            Assert.That(result.Type, Is.EqualTo(expectedType));
+            var local = result.Oper.IsAnyLocal ? result : result.AsUnOp().Op1;
+            Assert.That(local.AsLclVarCommon().LclNum, Is.Zero);
+            Assert.That(local.Flags, Is.EqualTo(GTF_EMPTY));
+            Assert.That(compiler.lvaTable[0].lvDoNotEnregister, Is.EqualTo(expectedOper is GT_LCL_FLD));
+#if DEBUG
+            Assert.That(local.TreeId, Is.EqualTo(result.Oper.IsAnyLocal ? indir.TreeId : address.TreeId));
+
+            if (expectedOper is GT_CAST)
+            {
+                Assert.That(result.TreeId, Is.GreaterThan(user.TreeId));
+            }
+            else
+            {
+                Assert.That(result.TreeId, Is.EqualTo(indir.TreeId));
+            }
+#endif
+        }, minOpts);
+    }
+
+    [Test]
+    public static void UnusedIndirectLocalLoadsBecomeNopsWithoutAllocatingNodes()
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable[0].Type = TYP_INT;
+            GenTree tree = compiler.gtNewIndir(TYP_INT, compiler.gtNewLclVarAddrNode(TYP_BYREF, 0));
+            var original = tree;
+            var visitor = new LocalAddressVisitor(compiler);
+            visitor.MorphLocalIndir(ref tree, 0, 0, user: null);
+
+            Assert.That(tree, Is.SameAs(original));
+            Assert.That(tree.Oper, Is.EqualTo(GT_NOP));
+            Assert.That(tree.Type, Is.EqualTo(TYP_VOID));
+            Assert.That(tree.Flags & GTF_ALL_EFFECT, Is.EqualTo(GTF_EMPTY));
+        });
+    }
+
+    [Test]
+    public static void LocalIndirectionToPromotedFieldRefreshesTheReplacementAlias()
+    {
+        WithCompiler(compiler => {
+            InitializePromotedPair(compiler);
+            var data = compiler.gtNewIndir(TYP_INT, compiler.gtNewIconNode(TYP_I_IMPL, 16));
+            GenTree tree = compiler.gtNewStoreIndNode(TYP_INT, compiler.gtNewLclVarAddrNode(TYP_BYREF, 0), data);
+            var visitor = new LocalAddressVisitor(compiler);
+            visitor.MorphLocalIndir(ref tree, 0, 4, user: null);
+
+            Assert.That(tree.Oper, Is.EqualTo(GT_STORE_LCL_VAR));
+            Assert.That(tree.AsLclVar().LclNum, Is.EqualTo(2));
+            Assert.That(tree.AsLclVar().Data, Is.SameAs(data));
+            Assert.That(tree.Flags, Is.EqualTo((data.Flags & GTF_ALL_EFFECT) | GTF_ASG | GTF_VAR_DEF));
+        });
+    }
+
+    [Test]
+    public static void PartialSmallLocalStoresForceNormalizationOnLoad()
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable[0].Type = TYP_SHORT;
+            GenTree tree = compiler.gtNewStoreIndNode(TYP_BYTE, compiler.gtNewLclVarAddrNode(TYP_BYREF, 0),
+                compiler.gtNewIconNode(TYP_INT, 1));
+            var visitor = new LocalAddressVisitor(compiler);
+            visitor.MorphLocalIndir(ref tree, 0, 1, user: null);
+
+            Assert.That(tree.Oper, Is.EqualTo(GT_STORE_LCL_FLD));
+            Assert.That(tree.AsLclFld().LclOffs, Is.EqualTo(1));
+            Assert.That(tree.Flags & GTF_VAR_USEASG, Is.EqualTo(GTF_VAR_USEASG));
+            Assert.That(compiler.lvaTable[0].IsAddressExposed, Is.True);
+            Assert.That(compiler.lvaTable[0].lvNormalizeOnLoad, Is.True);
+        }, minOpts: true);
+    }
+
+    [TestCase(false, 0u, NI_Vector_ToScalar)]
+    [TestCase(false, 4u, NI_Vector_GetElement)]
+    [TestCase(true, 4u, NI_Vector_WithElement)]
+    public static void VectorLocalFieldAccessesUseElementOperations(bool store, uint offset, NamedIntrinsic expectedId)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable[0].Type = TYP_SIMD16;
+            var address = compiler.gtNewLclVarAddrNode(TYP_BYREF, 0);
+            GenTree tree = store
+                ? compiler.gtNewStoreIndNode(TYP_FLOAT, address, compiler.gtNewDconNode(TYP_FLOAT, 1))
+                : compiler.gtNewIndir(TYP_FLOAT, address);
+            var user = compiler.gtNewUnaryNode(GT_RETURN, tree.Type, tree);
+            var visitor = new LocalAddressVisitor(compiler);
+            visitor.MorphLocalIndir(ref user.Op1Ref, 0, offset, user);
+            var result = user.Op1;
+            var intrinsic = (store ? result.AsLclVar().Data : result).AsHWIntrinsic();
+
+            Assert.That(intrinsic.HWIntrinsicId, Is.EqualTo(expectedId));
+            Assert.That(intrinsic.GetOp(1).AsLclVar().LclNum, Is.Zero);
+
+            if (store)
+            {
+                Assert.That(result.Oper, Is.EqualTo(GT_STORE_LCL_VAR));
+                Assert.That(result.Type, Is.EqualTo(TYP_SIMD16));
+                Assert.That(result.Flags, Is.EqualTo(GTF_ASG | GTF_VAR_DEF));
+            }
+        });
+    }
+
+    [TestCase(false, -1)]
+    [TestCase(false, 4)]
+    [TestCase(true, 4)]
+    public static void VectorElementFactoriesPreserveOutOfRangeChecks(bool store, int index)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable[0].Type = TYP_SIMD16;
+            var vector = compiler.gtNewLclVarNode(TYP_UNDEF, 0);
+            var indexNode = compiler.gtNewIconNode(TYP_INT, index);
+            var tree = store
+                ? compiler.gtNewSimdWithElementNode(TYP_SIMD16, vector, indexNode,
+                    compiler.gtNewDconNode(TYP_FLOAT, 1), TYP_FLOAT, 16)
+                : compiler.gtNewSimdGetElementNode(TYP_FLOAT, vector, indexNode, TYP_FLOAT, 16);
+            var checkedIndex = tree.AsHWIntrinsic().GetOp(2).AsOp();
+            var check = checkedIndex.Op1.AsBoundsChk();
+
+            Assert.That(checkedIndex.Oper, Is.EqualTo(GT_COMMA));
+            Assert.That(check.Index.AsIntCon().IconValue, Is.EqualTo((nint)index));
+            Assert.That(check.ArrayLength.AsIntCon().IconValue, Is.EqualTo((nint)4));
+            Assert.That(checkedIndex.Op2.AsIntCon().IconValue, Is.EqualTo((nint)index));
+            Assert.That(tree.Flags & GTF_EXCEPT, Is.EqualTo(GTF_EXCEPT));
+        });
+    }
     private static void InitializePromotedPair(Compiler compiler)
     {
         compiler.lvaTable[0].Type = TYP_STRUCT;
@@ -331,13 +473,16 @@ internal static unsafe class LocalMorphTests
         });
     }
 
-    private static void WithCompiler(Action<Compiler> action)
+    private static void WithCompiler(Action<Compiler> action, bool minOpts = false)
     {
 #if DEBUG
         using var tls = new JitTls(null);
 #endif
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitFlags flags = default;
+        compiler.opts.jitFlags = &flags;
+        compiler.opts.SetMinOpts(minOpts);
         compiler.lvaTable = new LclVarDsc[3];
         compiler.lvaCount = 3;
         compiler.lvaRefCountState = RCS_EARLY;

@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Continue B143 with MorphLocalAddress and local indirection transforms in native lclmorph.cpp:1652-2055, then escapes and pre/post-order traversal. Promoted-field transformations (2076-2243), Value owning slots, access bounds, hidden return buffers and early reference counts are implemented and validated; do not restart their exploration. Source-based constructors explicitly support locals-only threading, and LocalSequencer.ReplaceNode transfers links/cursor before the owning use is updated. Preserve logical IDs, VN clearing and the native flag masks; do not weaken the unthreaded constructor contract. LocalEqualsLocalAddrAssertions (419-700) and LoopDefinitions (180-376) remain unported; FlowGraphNaturalLoops is implemented. fgLocalMorph remains a stub. Keep minopts execution first and do not reopen B141 allocation construction, optional escape analysis or unrelated B142/B135 diagnostics.",
+    "nextAction": "Continue B143 with address escape/canonicalization and visitor traversal in native lclmorph.cpp:901-1678. MorphLocalIndir/SelectLocalIndirTransform and promoted-field transformations are implemented, including scalar casts, partial small stores, vector fields/halves and owner/alias updates. The vector element factories and immediate bounds-check helper are complete; do not restart their exploration. Source-based constructors explicitly support locals-only threading, and LocalSequencer.ReplaceNode transfers links/cursor before installing the replacement. MorphLocalAddress's debug precondition and escape/traversal paths reference the unported LocalEqualsLocalAddrAssertions (419-700); LoopDefinitions (180-376) also remains unported, while FlowGraphNaturalLoops is implemented. Resolve only the support required to activate the complete required visitor. fgLocalMorph remains a stub. Keep minopts execution first; defer unrelated B142/B135 diagnostics and B145 overflow failures in existing SIMD code/tests.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -1036,6 +1036,26 @@
         "nativeAotRecaptured": false,
         "nativeDefinitionsRetired": []
       },
+      "localIndirectionMorph": {
+        "debugPassed": 195,
+        "releasePassed": 191,
+        "skipped": 0,
+        "selection": ["LocalMorphTests", "AllocationLoweringTests", "ScalarFoldingTests"],
+        "debugTests": "artifacts\\local-indir-focused-debug.trx",
+        "releaseTests": "artifacts\\local-indir-focused-release.trx",
+        "coverage": ["minopts field versus optimized cast selection", "unused loads", "replacement aliases after promoted-field stores", "partial small-store address exposure", "vector field loads/stores", "vector index bounds checks"],
+        "nativeDefinitionsRetired": ["Compiler::gtNewSimdGetElementNode", "Compiler::gtNewSimdWithElementNode", "Compiler::addRangeCheckForHWIntrinsic"],
+        "nativeDeclarationsRetired": 3,
+        "visitorActivated": false,
+        "nativeAotRecaptured": false,
+        "broaderHwiDebugSelection": {
+          "passed": 276,
+          "failed": 33,
+          "skipped": 0,
+          "tests": "artifacts\\local-indir-hwi-existing-debug.trx",
+          "finding": "B145: overflow failures in unchanged SIMD mask/broadcast/folding code and test conversions; not fixed in this batch."
+        }
+      },
       "nativeAotPublish": "passed-after-heap-allocation-activation",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "all-seventeen-minopts-allocation-and-internal-block-phase-sections-and-all-emitted-post-phase-IR-sections-equal",
@@ -1512,6 +1532,11 @@
       "indexCommit": "c741ee9922f591734a1d5590a290ab525d01d53f",
       "ref": "refs/porting/snapshots/native-ledger-local-access"
     },
+    "localIndirectionNativeResidual": {
+      "commit": "983abdef5ca5aed8317136579a5afc1272bfbae1",
+      "indexCommit": "70120f602b5e2d9dcf3a9020ce65f9ee521192db",
+      "ref": "refs/porting/snapshots/native-ledger-local-indir"
+    },
     "internalBlockPhaseNativeResidual": {
       "commit": "494ccbc0132fcf507b8133bffa2fef635d788858",
       "indexCommit": "343e35183b190e9bccb68af25de8c3b499e6bf1e",
@@ -1552,6 +1577,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "local-indirection-vector-construction",
+      "native": ["src\\coreclr\\jit\\gentree.cpp", "src\\coreclr\\jit\\hwintrinsic.cpp"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.gt.cs"],
+      "reconciledCommit": null,
+      "status": "Complete gtNewSimdGetElementNode, gtNewSimdWithElementNode and addRangeCheckForHWIntrinsic at the pinned target. The hwintrinsic.cpp bounds-check helper is colocated with its tree-construction callers; this does not complete either native file."
+    },
     {
       "area": "inline-phase-and-boxing-patterns",
       "native": ["src\\coreclr\\jit\\fginline.cpp", "src\\coreclr\\jit\\compiler.cpp", "src\\coreclr\\jit\\importer.cpp", "src\\coreclr\\jit\\phase.h"],

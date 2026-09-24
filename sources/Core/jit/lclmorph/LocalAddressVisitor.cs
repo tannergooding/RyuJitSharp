@@ -11,6 +11,20 @@ internal partial struct LocalAddressVisitor
     private readonly bool _sequenceLocals;
     private LocalSequencer _sequencer;
     private bool _stmtModified;
+    private bool _stmtSideEffectsModified;
+
+    private enum IndirTransform
+    {
+        Nop,
+        BitCast,
+        NarrowCast,
+#if FEATURE_HW_INTRINSICS
+        GetElement,
+        WithElement,
+#endif
+        LclVar,
+        LclFld,
+    }
 
     internal LocalAddressVisitor(Compiler compiler, LocalSequencer? sequencer = null)
     {
@@ -29,6 +43,353 @@ internal partial struct LocalAddressVisitor
         }
 
         use = replacement;
+    }
+
+    private GenTreeLclVar MorphAddressToLocal(ref GenTree use, int lclNum)
+    {
+        ref var varDsc = ref _compiler.lvaGetDesc(lclNum);
+        var type = varDsc.lvNormalizeOnLoad ? varDsc.Type : varDsc.Type.ActualType;
+        var local = new GenTreeLclVar(GT_LCL_VAR, type, lclNum, data: null, use, ReplacementThreading);
+        local.Flags &= GTF_COMMON_MASK;
+        ReplaceNode(ref use, local);
+        return local;
+    }
+
+    internal void MorphLocalIndir(ref GenTree use, int lclNum, uint offset, GenTree? user)
+    {
+        var indir = use.AsIndir();
+        var layout = indir.Oper.IsBlk ? indir.AsBlk().Layout : null;
+        var transform = SelectLocalIndirTransform(indir, lclNum, offset, user);
+        ref var varDsc = ref _compiler.lvaGetDesc(lclNum);
+        GenTreeLclVarCommon? lclNode = null;
+        var isDef = indir.Oper is GT_STOREIND or GT_STORE_BLK;
+
+        switch (transform)
+        {
+            case IndirTransform.Nop:
+            {
+                indir.BashToNOP();
+                _stmtModified = true;
+                return;
+            }
+
+            case IndirTransform.BitCast:
+            {
+                lclNode = MorphAddressToLocal(ref indir.AddrRef, lclNum);
+                ReplaceNode(ref use, new GenTreeUnOp(GT_BITCAST, indir.Type, lclNode, indir, ReplacementThreading));
+                break;
+            }
+
+            case IndirTransform.NarrowCast:
+            {
+                assert(varTypeIsIntegral(indir.Type));
+                assert(varTypeIsIntegral(varDsc.Type));
+                assert(varDsc.Type.Size >= indir.Type.Size);
+                assert(!isDef);
+
+                lclNode = MorphAddressToLocal(ref indir.AddrRef, lclNum);
+                ReplaceNode(ref use, _compiler.gtNewCastNode(indir.Type.ActualType, lclNode, false, indir.Type));
+                break;
+            }
+
+#if FEATURE_HW_INTRINSICS
+            // Vector fields include scalar floats, a Plane's Vector3 and halves
+            // of larger vectors. Preserve the native construction and ID order.
+            case IndirTransform.GetElement:
+            {
+                GenTree? hwiNode = null;
+                var elementType = indir.Type;
+                lclNode = MorphAddressToLocal(ref indir.AddrRef, lclNum);
+
+                switch (elementType)
+                {
+                    case TYP_FLOAT:
+                    {
+                        var index = _compiler.gtNewIconNode(TYP_INT, (nint)(offset / elementType.Size));
+                        hwiNode = _compiler.gtNewSimdGetElementNode(elementType, lclNode, index, TYP_FLOAT, varDsc.Type.Size);
+                        break;
+                    }
+
+                    case TYP_SIMD12:
+                    {
+                        assert(varDsc.Type.Size is 16);
+                        hwiNode = _compiler.gtNewSimdHWIntrinsicNode(elementType, NI_Vector_AsVector3, TYP_FLOAT, 16, lclNode);
+                        break;
+                    }
+
+#if TARGET_XARCH
+                    case TYP_SIMD16:
+                    case TYP_SIMD32:
+#elif TARGET_ARM64
+                    case TYP_SIMD8:
+#endif
+#if TARGET_XARCH || TARGET_ARM64
+                    {
+                        assert((elementType.Size * 2) == varDsc.Type.Size);
+
+                        if (offset is 0)
+                        {
+                            hwiNode = _compiler.gtNewSimdGetLowerNode(elementType, lclNode, TYP_FLOAT, varDsc.Type.Size);
+                        }
+                        else
+                        {
+                            assert(offset == elementType.Size);
+                            hwiNode = _compiler.gtNewSimdGetUpperNode(elementType, lclNode, TYP_FLOAT, varDsc.Type.Size);
+                        }
+                        break;
+                    }
+#endif
+
+                    default:
+                    {
+                        unreached();
+                        break;
+                    }
+                }
+
+                assert(hwiNode is not null);
+                ReplaceNode(ref use, hwiNode);
+                break;
+            }
+
+            case IndirTransform.WithElement:
+            {
+                GenTree? hwiNode = null;
+                var elementType = indir.Type;
+                GenTree simdLclNode = _compiler.gtNewLclVarNode(TYP_UNDEF, lclNum);
+                var elementNode = indir.Data;
+
+                switch (elementType)
+                {
+                    case TYP_FLOAT:
+                    {
+                        var index = _compiler.gtNewIconNode(TYP_INT, (nint)(offset / elementType.Size));
+                        hwiNode = _compiler.gtNewSimdWithElementNode(varDsc.Type, simdLclNode, index,
+                            elementNode, TYP_FLOAT, varDsc.Type.Size);
+                        break;
+                    }
+
+                    case TYP_SIMD12:
+                    {
+                        assert(varDsc.Type is TYP_SIMD16);
+
+                        // Use the stored Vector3 as the main value and retain the
+                        // original local's fourth element in the resulting Vector4.
+                        elementNode = _compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_Vector_AsVector128Unsafe,
+                            TYP_FLOAT, 12, elementNode);
+                        var index1 = _compiler.gtNewIconNode(TYP_INT, 3);
+                        simdLclNode = _compiler.gtNewSimdGetElementNode(TYP_FLOAT, simdLclNode, index1, TYP_FLOAT, 16);
+                        var index2 = _compiler.gtNewIconNode(TYP_INT, 3);
+                        hwiNode = _compiler.gtNewSimdWithElementNode(TYP_SIMD16, elementNode, index2, simdLclNode, TYP_FLOAT, 16);
+                        break;
+                    }
+
+#if TARGET_XARCH
+                    case TYP_SIMD16:
+                    case TYP_SIMD32:
+#elif TARGET_ARM64
+                    case TYP_SIMD8:
+#endif
+#if TARGET_XARCH || TARGET_ARM64
+                    {
+                        assert((elementType.Size * 2) == varDsc.Type.Size);
+
+                        if (offset is 0)
+                        {
+                            hwiNode = _compiler.gtNewSimdWithLowerNode(varDsc.Type, simdLclNode, elementNode,
+                                TYP_FLOAT, varDsc.Type.Size);
+                        }
+                        else
+                        {
+                            assert(offset == elementType.Size);
+                            hwiNode = _compiler.gtNewSimdWithUpperNode(varDsc.Type, simdLclNode, elementNode,
+                                TYP_FLOAT, varDsc.Type.Size);
+                        }
+                        break;
+                    }
+#endif
+
+                    default:
+                    {
+                        unreached();
+                        break;
+                    }
+                }
+
+                assert(hwiNode is not null);
+                lclNode = new GenTreeLclVar(GT_STORE_LCL_VAR, varDsc.Type, lclNum, hwiNode, indir, ReplacementThreading);
+                ReplaceNode(ref use, lclNode);
+                break;
+            }
+#endif
+
+            case IndirTransform.LclVar:
+            {
+                var type = indir.Type;
+
+                if (type != varDsc.Type)
+                {
+                    assert(type.Size == varDsc.Type.Size);
+                    type = varDsc.lvNormalizeOnLoad ? varDsc.Type : varDsc.Type.ActualType;
+                }
+
+                lclNode = new GenTreeLclVar(isDef ? GT_STORE_LCL_VAR : GT_LCL_VAR, type, lclNum,
+                    isDef ? indir.Data : null, indir, ReplacementThreading);
+                ReplaceNode(ref use, lclNode);
+                break;
+            }
+
+            case IndirTransform.LclFld:
+            {
+                var local = new GenTreeLclFld(isDef ? GT_STORE_LCL_FLD : GT_LCL_FLD, indir.Type, lclNum,
+                    (ushort)offset, isDef ? indir.Data : null, layout, indir, ReplacementThreading);
+                ReplaceNode(ref use, local);
+
+                // STRUCT fields can still become enregisterable locals during
+                // global morph. Other field accesses must already establish DNER.
+                if (local.Type is not TYP_STRUCT)
+                {
+                    MorphLocalField(ref use, user);
+                }
+
+                lclNode = use.AsLclVarCommon();
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+
+        var lclNodeFlags = GTF_EMPTY;
+
+        if (isDef)
+        {
+            lclNodeFlags |= use.AsLclVarCommon().Data.Flags & GTF_ALL_EFFECT;
+            lclNodeFlags |= GTF_ASG | GTF_VAR_DEF;
+
+            if ((use.Oper is GT_LCL_FLD or GT_STORE_LCL_FLD) && use.AsLclFld().IsPartial(_compiler))
+            {
+                lclNodeFlags |= GTF_VAR_USEASG;
+
+                // Partial stores can leave a small local's upper bits incorrect.
+                // Exposing it ensures every subsequent load normalizes those bits.
+                if (varTypeIsSmall(varDsc.Type) && !varDsc.lvIsStructField)
+                {
+                    _compiler.lvaSetVarAddrExposed(lclNum, AddressExposedReason.SMALL_TYPE_PARTIAL_DEF);
+                }
+            }
+        }
+
+        assert(lclNode is not null);
+        lclNode.Flags = lclNodeFlags;
+        _stmtModified = true;
+        _stmtSideEffectsModified = true;
+    }
+
+    private readonly IndirTransform SelectLocalIndirTransform(GenTreeIndir indir, int lclNum, uint offset, GenTree? user)
+    {
+        assert((offset <= ushort.MaxValue) && !indir.IsVolatile);
+        var isDef = indir.Oper is GT_STOREIND or GT_STORE_BLK;
+
+        if (!isDef && IsUnused(indir, user))
+        {
+            return IndirTransform.Nop;
+        }
+
+        ref var varDsc = ref _compiler.lvaGetDesc(lclNum);
+
+        if (indir.Type is not TYP_STRUCT)
+        {
+            if (indir.Type == varDsc.Type)
+            {
+                return IndirTransform.LclVar;
+            }
+
+            if (isDef && (varTypeToSigned(indir.Type) == varTypeToSigned(varDsc.Type)))
+            {
+                assert(varTypeIsSmall(indir.Type));
+                return IndirTransform.LclVar;
+            }
+
+            if (_compiler.opts.OptimizationDisabled)
+            {
+                return IndirTransform.LclFld;
+            }
+
+#if FEATURE_HW_INTRINSICS
+            if (varTypeIsSimd(varDsc.Type))
+            {
+                if (indir.Type is TYP_FLOAT)
+                {
+                    if ((offset % TYP_FLOAT.Size) is 0)
+                    {
+                        return isDef ? IndirTransform.WithElement : IndirTransform.GetElement;
+                    }
+                }
+                else if (indir.Type is TYP_SIMD12)
+                {
+                    if ((offset is 0) && (varDsc.Type is TYP_SIMD16))
+                    {
+                        return isDef ? IndirTransform.WithElement : IndirTransform.GetElement;
+                    }
+                }
+#if TARGET_ARM64
+                else if (indir.Type is TYP_SIMD8)
+                {
+                    if ((varDsc.Type is TYP_SIMD16) && ((offset % 8) is 0))
+                    {
+                        return isDef ? IndirTransform.WithElement : IndirTransform.GetElement;
+                    }
+                }
+#endif
+#if FEATURE_SIMD && TARGET_XARCH
+                else if ((((indir.Type is TYP_SIMD16) && _compiler.compOpportunisticallyDependsOn(InstructionSet_AVX)) ||
+                          ((indir.Type is TYP_SIMD32) && _compiler.compOpportunisticallyDependsOn(InstructionSet_AVX512))) &&
+                         ((indir.Type.Size * 2) == varDsc.Type.Size) && ((offset % indir.Type.Size) is 0))
+                {
+                    return isDef ? IndirTransform.WithElement : IndirTransform.GetElement;
+                }
+#endif
+            }
+#endif
+
+            if (!isDef && (offset is 0))
+            {
+                if (varTypeIsIntegral(indir.Type) && varTypeIsIntegral(varDsc.Type))
+                {
+                    return IndirTransform.NarrowCast;
+                }
+
+                if ((indir.Type.Size == varDsc.Type.Size) && (indir.Type.Size <= TARGET_POINTER_SIZE) &&
+                    (varTypeIsFloating(indir.Type) || varTypeIsFloating(varDsc.Type)) && !varDsc.lvPromoted)
+                {
+                    return IndirTransform.BitCast;
+                }
+            }
+
+            return IndirTransform.LclFld;
+        }
+
+        if (varDsc.Type is not TYP_STRUCT)
+        {
+            return IndirTransform.LclFld;
+        }
+
+        if (offset is 0)
+        {
+            var localLayout = varDsc.Layout;
+            assert(localLayout is not null);
+
+            if (indir.AsBlk().Layout.CanAssignFrom(localLayout))
+            {
+                return IndirTransform.LclVar;
+            }
+        }
+
+        return IndirTransform.LclFld;
     }
 
     internal bool MorphStructField(ref GenTree use, GenTree? user)

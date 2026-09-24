@@ -10312,6 +10312,50 @@ public partial class Compiler
     }
 #endif
 
+    public GenTree gtNewSimdGetElementNode(var_types type, GenTree op1, GenTree op2, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsArithmetic(simdBaseType));
+
+        if (op2.IsIntegralConst(0))
+        {
+            return gtNewSimdToScalarNode(type, op1, simdBaseType, simdSize);
+        }
+
+        var immUpperBound = (simdSize / simdBaseType.Size) - 1;
+        var rangeCheckNeeded = !op2.Oper.IsConst;
+
+        if (!rangeCheckNeeded)
+        {
+            var imm8 = op2.AsIntCon().IconValue;
+            rangeCheckNeeded = (imm8 < 0) || (imm8 > immUpperBound);
+        }
+
+        if (rangeCheckNeeded)
+        {
+            op2 = addRangeCheckForHWIntrinsic(op2, 0, immUpperBound);
+        }
+
+        return gtNewSimdHWIntrinsicNode(type, NI_Vector_GetElement, simdBaseType, simdSize, op1, op2);
+    }
+
+    public GenTree addRangeCheckForHWIntrinsic(GenTree immOp, int immLowerBound, int immUpperBound)
+    {
+        // A single unsigned check of (index - lower) against (upper - lower + 1)
+        // rejects values outside either end of the inclusive range.
+        var adjustedUpperBound = (nint)immUpperBound - immLowerBound + 1;
+        var adjustedUpperBoundNode = gtNewIconNode(TYP_INT, adjustedUpperBound);
+        immOp = impCloneExpr(immOp, out var immOpDup, CHECK_SPILL_ALL,
+            "Clone an immediate operand for immediate value bounds check");
+
+        if (immLowerBound != 0)
+        {
+            immOpDup = gtNewBinaryNode(GT_SUB, TYP_INT, immOpDup, gtNewIconNode(TYP_INT, immLowerBound));
+        }
+
+        var check = new GenTreeBoundsChk(immOpDup, adjustedUpperBoundNode, SCK_ARG_RNG_EXCPN);
+        return gtNewBinaryNode(GT_COMMA, immOp.Type, check, immOp);
+    }
+
     public GenTree gtNewSimdGetLowerNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
     {
         assert(varTypeIsArithmetic(simdBaseType));
@@ -12473,6 +12517,68 @@ public partial class Compiler
 #else
 #error Unsupported platform
 #endif
+    }
+
+    public GenTree gtNewSimdWithElementNode(var_types type, GenTree op1, GenTree op2, GenTree op3, var_types simdBaseType, byte simdSize)
+    {
+        var intrinsic = NI_Vector_WithElement;
+        assert(varTypeIsArithmetic(simdBaseType));
+        assert(varTypeIsArithmetic(op3.Type));
+
+#if TARGET_XARCH
+        assert(!varTypeIsLong(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_X86Base_X64));
+#elif TARGET_ARM64
+        switch (simdBaseType)
+        {
+            case TYP_LONG:
+            case TYP_ULONG:
+            case TYP_DOUBLE:
+            {
+                if (simdSize is 8)
+                {
+                    return gtNewSimdHWIntrinsicNode(type, NI_Vector_Create, simdBaseType, simdSize, op3);
+                }
+                break;
+            }
+
+            case TYP_FLOAT:
+            case TYP_BYTE:
+            case TYP_UBYTE:
+            case TYP_SHORT:
+            case TYP_USHORT:
+            case TYP_INT:
+            case TYP_UINT:
+            {
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+
+        intrinsic = NI_AdvSimd_Insert;
+#elif !TARGET_WASM
+#error Unsupported platform
+#endif
+
+        var immUpperBound = (simdSize / simdBaseType.Size) - 1;
+        var rangeCheckNeeded = !op2.Oper.IsConst;
+
+        if (!rangeCheckNeeded)
+        {
+            var imm8 = op2.AsIntCon().IconValue;
+            rangeCheckNeeded = (imm8 < 0) || (imm8 > immUpperBound);
+        }
+
+        if (rangeCheckNeeded)
+        {
+            op2 = addRangeCheckForHWIntrinsic(op2, 0, immUpperBound);
+        }
+
+        return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1, op2, op3);
     }
 
     public GenTree gtNewSimdWithLowerNode(var_types type, GenTree op1, GenTree op2, var_types simdBaseType, byte simdSize)

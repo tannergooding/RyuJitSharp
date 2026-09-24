@@ -4628,7 +4628,7 @@ public partial class Compiler
     ///   <para>The result of this api call will match the target machine if the result is true.</para>
     ///   <para>If the result is false, then the target machine may have support for the instruction.</para>
     /// </remarks>
-    private bool compOpportunisticallyDependsOn(CORINFO_InstructionSet isa)
+    internal bool compOpportunisticallyDependsOn(CORINFO_InstructionSet isa)
         => opts.compSupportsISA.HasInstructionSet(isa) && compExactlyDependsOn(isa);
 
 #if DEBUG
