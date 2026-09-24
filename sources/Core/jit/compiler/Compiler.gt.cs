@@ -9942,6 +9942,32 @@ public partial class Compiler
         return result;
     }
 
+    public GenTree gtNewSimdSqrtNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsSimd(type));
+        assert(GetSimdTypeForSize(simdSize) == type);
+        assert(op1.Type == type);
+        assert(varTypeIsFloating(simdBaseType));
+
+#if TARGET_XARCH
+        var intrinsic = simdSize switch {
+            32 => NI_AVX_Sqrt,
+            64 => NI_AVX512_Sqrt,
+            _ => NI_X86Base_Sqrt,
+        };
+#elif TARGET_ARM64
+        var intrinsic = (simdSize == 8) && (simdBaseType is TYP_DOUBLE)
+            ? NI_AdvSimd_SqrtScalar
+            : NI_AdvSimd_Arm64_Sqrt;
+#elif TARGET_WASM
+        var intrinsic = NI_PackedSimd_Sqrt;
+#else
+#error Unsupported platform
+#endif
+
+        return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1);
+    }
+
     public GenTree gtNewSimdCmpOpNode(genTreeOps op, var_types type, GenTree op1, GenTree op2, var_types simdBaseType, byte simdSize)
     {
         assert(varTypeIsSimd(type));

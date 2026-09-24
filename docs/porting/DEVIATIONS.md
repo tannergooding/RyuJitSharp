@@ -285,6 +285,11 @@ Other-target dispatchers remain deferred (B111). Hardware-intrinsic constant
 reassociation (`fgOptimizeHWIntrinsicAssociative`) depends on that dispatcher;
 its folding path explicitly terminates compilation on targets without it.
 
+Floating reciprocal predicates use `BitConverter` and managed `IsNormal`
+classification instead of native reinterpretation. The native exponent and
+fraction tests are unchanged: normal signed powers of two qualify except
+positive and negative one, even when the reciprocal is subnormal.
+
 Managed debug destruction clears all use edges, unlike native's simple-node
 operand clearing. It must traverse those edges before poisoning type/flags:
 poisoning first sets `GTF_REVERSE_OPS` and breaks nonbinary HWI traversal.

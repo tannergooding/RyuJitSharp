@@ -14,6 +14,65 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class HardwareIntrinsicInitializationTests
 {
+    [TestCase(-1074, false)]
+    [TestCase(-1023, false)]
+    [TestCase(-1022, true)]
+    [TestCase(-1, true)]
+    [TestCase(0, false)]
+    [TestCase(1, true)]
+    [TestCase(1023, true)]
+    [TestCase(1024, false)]
+    public static void HardwareMorphPreciseReciprocalPreservesDoubleExponentBoundaries(int exponent, bool eligible)
+    {
+        var value = Math.ScaleB(1.0, exponent);
+        Assert.That(Globals.HasPreciseReciprocal(value), Is.EqualTo(eligible));
+        Assert.That(Globals.HasPreciseReciprocal(-value), Is.EqualTo(eligible));
+    }
+
+    [TestCase(-149, false)]
+    [TestCase(-127, false)]
+    [TestCase(-126, true)]
+    [TestCase(-1, true)]
+    [TestCase(0, false)]
+    [TestCase(1, true)]
+    [TestCase(127, true)]
+    [TestCase(128, false)]
+    public static void HardwareMorphPreciseReciprocalPreservesSingleExponentBoundaries(int exponent, bool eligible)
+    {
+        var value = MathF.ScaleB(1.0f, exponent);
+        Assert.That(Globals.HasPreciseReciprocal(value), Is.EqualTo(eligible));
+        Assert.That(Globals.HasPreciseReciprocal(-value), Is.EqualTo(eligible));
+    }
+
+    [TestCase(0.0)]
+    [TestCase(-0.0)]
+    [TestCase(3.0)]
+    [TestCase(double.NaN)]
+    [TestCase(double.PositiveInfinity)]
+    public static void HardwareMorphPreciseReciprocalRejectsOtherFloatingValues(double value)
+    {
+        Assert.That(Globals.HasPreciseReciprocal(value), Is.False);
+        Assert.That(Globals.HasPreciseReciprocal((float)value), Is.False);
+    }
+
+    [TestCase(TYP_SIMD8, NI_X86Base_Sqrt)]
+    [TestCase(TYP_SIMD12, NI_X86Base_Sqrt)]
+    [TestCase(TYP_SIMD16, NI_X86Base_Sqrt)]
+    [TestCase(TYP_SIMD32, NI_AVX_Sqrt)]
+    [TestCase(TYP_SIMD64, NI_AVX512_Sqrt)]
+    public static void HardwareMorphSquareRootSelectsVectorWidthWithoutDiscardingEffects(var_types type, NamedIntrinsic id)
+    {
+        WithCompiler(compiler => {
+            var operand = compiler.gtNewCallNode(type, gtCallTypes.CT_USER_FUNC, null);
+            var result = compiler.gtNewSimdSqrtNode(type, operand, TYP_FLOAT, (byte)type.Size).AsHWIntrinsic();
+            Assert.That(result.HWIntrinsicId, Is.EqualTo(id));
+            Assert.That(result.Type, Is.EqualTo(type));
+            Assert.That(result.SimdSize, Is.EqualTo(type.Size));
+            Assert.That(result.GetOp(1), Is.SameAs(operand));
+            Assert.That(result.Flags & GTF_CALL, Is.EqualTo(GTF_CALL));
+        });
+    }
+
     [TestCase(NI_X86Base_Shuffle, true)]
     [TestCase(NI_X86Base_Add, false)]
     public static void HardwareMorphImmediateOperandsUseTheTargetMetadata(NamedIntrinsic id, bool immediate)

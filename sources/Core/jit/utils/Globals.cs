@@ -13,6 +13,36 @@ namespace RyuJitSharp;
 
 public partial class Globals
 {
+    public static bool HasPreciseReciprocal(double value)
+    {
+        // Denormal inputs depend on the floating-point environment. Native
+        // strength reduction admits normal powers of two, excluding +/-1.
+        if (!double.IsNormal(value))
+        {
+            return false;
+        }
+
+        var bits = BitConverter.DoubleToUInt64Bits(value);
+        var exponent = (bits >> 52) & 0x7FF;
+        var mantissa = bits & 0xFFFFFFFFFFFFF;
+
+        return (mantissa == 0) && (exponent != 0) && (exponent != 1023);
+    }
+
+    public static bool HasPreciseReciprocal(float value)
+    {
+        if (!float.IsNormal(value))
+        {
+            return false;
+        }
+
+        var bits = BitConverter.SingleToUInt32Bits(value);
+        var exponent = (bits >> 23) & 0xFF;
+        var mantissa = bits & 0x7FFFFF;
+
+        return (mantissa == 0) && (exponent != 0) && (exponent != 127);
+    }
+
     private static ReadOnlySpan<int> PowersOf10 => [
         1,
         10,

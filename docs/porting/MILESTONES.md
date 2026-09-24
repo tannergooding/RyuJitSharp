@@ -58,6 +58,9 @@ Operand ordering respects element-type and explicit-rounding restrictions,
 while constant preference preserves useful shuffle indices and mask identities.
 Geometric vector sequences can be precomputed or expressed as a single broadcast
 and multiply, retaining integral lane wraparound and floating signed zero.
+Floating reciprocal eligibility preserves the native normal-power-of-two rules,
+including the exclusion of positive and negative one. Vector square roots use
+the target's width-specific intrinsic without dropping operand effects.
 
 Outgoing calls can classify signature types into Windows-x64 argument registers
 and stack slots, account for shadow space, insert virtual-stub and ReadyToRun

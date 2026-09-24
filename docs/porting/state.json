@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Translate fgOptimizeHWIntrinsic (oracle morph.cpp:9378-10286), whose complete body is read, into the protected global-morph-hardware.cs.draft alongside the three newly drafted fgMorphHWIntrinsic/Required/Optional functions. This is an uncompiled integration draft, not an active implementation. Associative optimization, commutativity, constant preference, immediate metadata and geometric-sequence construction are now implemented and retired. Compiler owns GetLookupTypeForCmpOp/GetHWIntrinsicIdForCmpOp/GetHWIntrinsicIdForBinOp in C#, rather than GenTreeHWIntrinsic; the draft uses those existing instance APIs. Native optional HWI is an identity function. The required HWI group recurses into fgMorphTree; keep drafts outside the build until the real closure compiles. The complete 329-line global-morph-tree.cs.draft is read; its const/leaf/local helpers also recurse into fgMorphTree, and DoNotEnregisterReason.simdUserForcesDep must become SimdUserForcesDep. fgMorphSmpOp, fgMorphSmpOpOptional, fgOptimizeCommutativeArithmetic and fgOptimizeAddition are fully read; optional SMP needs fgMorphCopyBlock and addition recurses into fgMorphTree. All arithmetic/remainder helpers and optRecordSsaUses are complete. Other recursive dependencies already read: fgMorphPotentialTailCall, fgMorphTailCallViaHelpers, fgMorphArgs, fgTryMorphStructArg, fgMakeOutgoingStructArgCopy, EvalArgsToTemps, MorphCopyBlockHelper and optAssertionProp's dispatcher at assertionprop.cpp:5909. Assertion application helpers remain. getVirtMethodPointerTree (5715) is read and unported; its token/lookup/virtual-helper dependencies already exist. Existing tree/call/hardware drafts are protected in localRecovery.globalMorphDrafts; do not replace missing Windows behavior with NYIs. TreeId is DEBUG-only. B145 is partially corrected: SetElementIntegral now truncates all narrow lanes, but other mask/broadcast/folding conversion failures remain deferred. Existing TARGET_32BIT syntax defects (B153) and the potential upstream XOR-rotation issue (B156) remain deferred. fgMorphBlocks is inactive; no new phase/codegen parity is claimed.",
+    "nextAction": "Close the actual remaining global-morph dependencies, using the session global-morph-draft-probe.targets to compile the three protected tree/call/hardware drafts together without adding stubs. The complete four-function hardware draft now includes fgOptimizeHWIntrinsic; its isolated probe reaches only two missing fgMorphTree calls. The combined probe identifies optAssertionProp, fgMorphSmpOp, fgMorphPotentialTailCall, fgMorphArgs and GenTreeCall.IsHelperCallOrUserEquivalent. The call draft's method-group and nullable-statement diagnostics have been corrected since that combined probe. Native helper equivalence is at gentree.cpp:2420 and uses the inline root's managed-helper map. Compiler owns GetLookupTypeForCmpOp/GetHWIntrinsicIdForCmpOp/GetHWIntrinsicIdForBinOp in C#; DoNotEnregisterReason.simdUserForcesDep is the correct existing enum spelling. Reciprocal predicates and SIMD square-root construction are now implemented and retired. fgMorphSmpOp, fgMorphSmpOpOptional, fgOptimizeCommutativeArithmetic and fgOptimizeAddition are fully read; optional SMP needs fgMorphCopyBlock and addition recurses into fgMorphTree. Other recursive dependencies already read: fgMorphPotentialTailCall, fgMorphTailCallViaHelpers, fgMorphArgs, fgTryMorphStructArg, fgMakeOutgoingStructArgCopy, EvalArgsToTemps, MorphCopyBlockHelper and optAssertionProp's dispatcher at assertionprop.cpp:5909. Assertion application helpers remain. getVirtMethodPointerTree (5715) is read and unported; its token/lookup/virtual-helper dependencies already exist. Keep drafts outside the build until the real closure compiles; do not replace missing Windows behavior with NYIs. TreeId is DEBUG-only. B145's remaining mask/broadcast/folding conversions, TARGET_32BIT syntax defects (B153) and the potential upstream XOR-rotation issue (B156) remain deferred. fgMorphBlocks is inactive; no new phase/codegen parity is claimed.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -49,6 +49,20 @@
         "skipped": 0,
         "sourceCheck": "Canonical tokens, comments, directives and literals preserved across nine preprocessor configurations, allowing only switch-section scope blocks.",
         "functionalWipIncluded": false,
+        "nativeAotRecaptured": false
+      },
+      "hardwareFloatingSupport": {
+        "debugPassed": 384,
+        "releasePassed": 378,
+        "skipped": 0,
+        "newCases": 26,
+        "selection": ["HardwareMorph", "HardwareReassociation", "LaneIdentityQueries", "ArithmeticMorphTests", "AssertionTests", "ScalarFoldingTests"],
+        "debugTests": "artifacts\\hardware-floating-support-debug.trx",
+        "releaseTests": "artifacts\\hardware-floating-support-release.trx",
+        "coverage": ["signed normal-power reciprocal eligibility", "unit, subnormal and nonfinite exclusions", "accepted subnormal reciprocals", "vector square-root width selection and operand effects"],
+        "nativeDefinitionsRetired": ["FloatingPointUtils::hasPreciseReciprocal(double)", "FloatingPointUtils::hasPreciseReciprocal(float)", "Compiler::gtNewSimdSqrtNode"],
+        "draftProbe": "The isolated hardware draft reports only two missing fgMorphTree calls. The combined tree/call/hardware draft probe remains incomplete; it is not a successful build or parity result.",
+        "globalMorphActive": false,
         "nativeAotRecaptured": false
       },
       "hardwareMorphSupport": {
@@ -1994,14 +2008,19 @@
       "indexCommit": "b0bbbbfba00cd1a98834e4165f261bcbef4df11b",
       "ref": "refs/porting/snapshots/native-ledger-hardware-morph-support"
     },
+    "hardwareFloatingSupportNativeResidual": {
+      "commit": "54729ff972d8a8da996146708d4aa1d8622889d6",
+      "indexCommit": "189255d287d77dd692372d23962a09465c75eaf5",
+      "ref": "refs/porting/snapshots/native-ledger-hardware-floating-support"
+    },
     "globalMorphDrafts": {
       "treeBlob": "36908cd7d0294ece59d91854bbdbfcb05d83f228",
       "treeRef": "refs/porting/drafts/global-morph-tree",
-      "callBlob": "8a3297b113e87ea1c7006e7a923ee6bdbe3375cf",
+      "callBlob": "0f82e708f47c7b56896a2ac393efbc9eec32af1f",
       "callRef": "refs/porting/drafts/global-morph-call",
-      "hardwareBlob": "0e6606e79dca79dfb04989f63d685d7b0517f555",
+      "hardwareBlob": "6668a35bb930acf25fd8f2ac0c0bd53d0ee2e39e",
       "hardwareRef": "refs/porting/drafts/global-morph-hardware",
-      "status": "Incomplete local integration drafts, not compiled or validated; session files carry matching .cs.draft names."
+      "status": "Incomplete local integration drafts with dependency diagnostics, not successfully compiled or validated; session files carry matching .cs.draft names. The hardware draft now contains the complete four-function translation."
     },
     "internalBlockPhaseNativeResidual": {
       "commit": "494ccbc0132fcf507b8133bffa2fef635d788858",
