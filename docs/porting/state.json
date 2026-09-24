@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Continue the scalar backend dependency closure. Register-argument bitcasts, placement, containment and allocator eligibility are implemented and independently validated without the unfinished backend files. LowerArgFieldList compatibility/packing/spilling is WIP: its single-field path passes, but complex packing and spilling still require cast, binary and local-store lowering in the incomplete LowerNode dispatcher. LowerArg, LowerArgsForCall, LowerPutArgStk and LowerCall remain unported. Before integrating LSRA reference/interval state, reconcile its native diagnostics and remove unused provisional accessors; its constructor and allocation driver remain incomplete. Compiler throw helpers and stack-level preparation remain WIP. Keep incomplete dispatch/allocation algorithms uncommitted and retain their native bodies. Lowering.DoPhase rejects its unimplemented phase. Managed code size remains zero; no additional parity capture is claimed.",
+    "nextAction": "Continue LowerArg/LowerArgsForCall and the Windows-x64 LowerPutArgStk dependency closure. Register-argument bitcasts, placement, containment and allocator eligibility are committed as 1dabb74. LSRA interval/reference identity, preference merging, local mapping, raw reference creation and compact native diagnostics are integrated separately from its unfinished constructor and allocation driver; provisional unused accessors were removed. LowerArgFieldList compatibility/packing/spilling is WIP: its single-field path passes, but complex packing and spilling still require cast, binary and local-store lowering in the incomplete LowerNode dispatcher. LowerPutArgStk's struct GT_BLK-to-GT_IND conversion needs approved whole-node replacement and complete LowerIndir/address-mode support. LowerCall, compiler throw-helper integration and stack-level activation remain unfinished. Keep incomplete dispatch/allocation algorithms uncommitted and retain their native bodies. Lowering.DoPhase rejects its unimplemented phase. Managed code size remains zero; no additional parity capture is claimed.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -88,6 +88,19 @@
         "wipDebugTests": "artifacts\\argument-containment-debug.trx",
         "wipReleaseTests": "artifacts\\argument-containment-release.trx",
         "remaining": ["Field-list packing/spilling dispatch dependencies", "LowerArg, LowerArgsForCall and LowerPutArgStk", "LowerCall and required call paths", "Backend driver activation, allocation and emission"],
+        "nativeBodiesRetained": true
+      },
+      "lsraReferenceSupport": {
+        "debugPassed": 248,
+        "releasePassed": 239,
+        "skipped": 0,
+        "newDebugCases": 15,
+        "newReleaseCases": 14,
+        "selection": "registerArgumentSupport selection plus LinearScanReferenceTests",
+        "debugTests": "artifacts\\lsra-reference-commit-debug.trx",
+        "releaseTests": "artifacts\\lsra-reference-commit-release.trx",
+        "scope": "Exact staged-source export, excluding the unfinished LSRA constructor and allocator. Covers aversion/kill-set preference merging, physical register banks, reference range ends, canonical tracked-local mappings, raw reference identity and compact native diagnostic text.",
+        "remaining": ["Complete LSRA constructor and register selector", "Reference association and interval building", "Minimal allocation and resolution", "Full interval/register/reference diagnostic printers"],
         "nativeBodiesRetained": true
       },
       "rationalizationActivation": {

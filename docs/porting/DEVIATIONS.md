@@ -606,6 +606,12 @@ the existing managed text-output types.
 `GenTreeFieldList.Uses` likewise returns its mutable list by reference, so
 cloning and lowering update the owning node rather than a discarded copy.
 
+LSRA intervals, physical registers and reference positions use managed objects
+and links; growing the owning reference list does not move its entries.
+The reference-kind and physical-register discriminants select typed referents
+and mask fields instead of overlapping native union storage. AMD64 callee-save
+sets reuse the generated `typelist.h` register classification.
+
 ### D003: Deferred non-Windows-x64-only paths
 
 **Status:** accepted scoped deferral; not a successful execution/parity result.
@@ -628,6 +634,10 @@ range checks; the shared direct-call lowering body remains in the native tree.
 `Lowering.IsContainableImmed` implements the xarch immediate and relocation
 rules. Other targets throw `NotImplementedException` pending their
 instruction-specific immediate checks; no non-xarch lowering is activated.
+
+`LinearScan.calleeSaveRegs` currently supports AMD64. Other targets report NYI
+and terminate with `fatal(CORJIT_IMPLLIMITATION)` pending their callee-save sets.
+The interval/reference support does not activate register allocation.
 
 Current target-sync additions under `TARGET_WASM` are
 `Compiler.fgWasmRepairTryEntries` and `Compiler.fgWasmSpillRefs` in
