@@ -12,6 +12,33 @@ continue. A milestone does not require a conversational stop. Pause for an
 explicit user request, an unresolved decision requiring approval, a publication
 conflict, or a blocker that cannot be safely resolved.
 
+## 2026-09-23: Morph initialization
+
+**Commits:** `99515ae`, `6d69f5e`, `b8b331a`.
+
+**Result:** Complete root class-initialization construction and the morph
+initializer: E&C frame requirements, constructor insertion, Debug GC argument
+checks and stack-check locals. Add the outgoing-argument hash-vector storage
+with native bucket/node/bit ordering and resize behavior. Retire 29 native
+definitions across the constructor, phase and storage batches.
+
+**Evidence:** The focused selection passes 47 Debug / 44 Release cases, zero
+skipped, covering runtime-context/helper selection, entry order, frame/local
+requirements, sparse collisions, growth/shrink and temporary consumption.
+NativeAOT publication succeeds. Both corpus captures finish morph initialization
+for all eleven methods without entry modifications; the six exact import
+prefixes remain unchanged.
+
+**Frontier:** Constructor and Debug-check insertion are established by controlled
+EE cases, not native execution parity. Early qmark expansion, patchpoint and
+indirect-call transforms, and post-import cleanup still gate successful inline
+compilation. Inlining remains disabled. Hash-vector bulk/set algebra and iterator
+APIs remain native; suspected upstream arithmetic defects are recorded in B115.
+The vector-import gap and lack of codegen parity remain unchanged.
+
+**Next:** Complete early qmark expansion, then the remaining early-transform and
+post-import prerequisites before activating the inliner.
+
 ## 2026-09-23: Windows-x64 HWI expression folding
 
 **Commits:** `2f9f9d8`, `f7676d0`.
