@@ -523,6 +523,19 @@ public partial class GenTree
     /// <summary>Determines whether the unsigned value of an integral constant is the power of 2.</summary>
     public bool IsIntegralConstUnsignedPow2 => _oper.IsIntegralConst && ulong.IsPow2(AsIntConCommon().UnsignedIntegralValue);
 
+    /// <summary>Get the implicit-byref parameter local before its accesses have been morphed.</summary>
+    public GenTreeLclVarCommon? IsImplicitByrefParameterValuePreMorph(Compiler compiler)
+    {
+#if FEATURE_IMPLICIT_BYREFS && !TARGET_LOONGARCH64
+        var local = Oper.IsLocal ? AsLclVarCommon() : null;
+        if ((local is not null) && compiler.lvaIsImplicitByRefLocal(local.LclNum))
+        {
+            return local;
+        }
+#endif
+        return null;
+    }
+
     public bool IsLclVarAddr => (_oper is GT_LCL_ADDR) && (AsLclFld().LclOffs == 0);
 
 #if DEBUG

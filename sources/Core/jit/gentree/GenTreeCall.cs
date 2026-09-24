@@ -350,6 +350,28 @@ public sealed class GenTreeCall : GenTree
     /// <summary>true implies that importer has performed tail call checks and providing a hint that this can be converted to a tail call.</summary>
     public bool CanTailCall => IsTailPrefixedCall || IsImplicitTailCall;
 
+    public bool HasNonStandardAddedArgs(Compiler compiler) => GetNonStandardAddedArgCount(compiler) != 0;
+
+    /// <summary>Count non-standard arguments added by morph, excluding those already present during import.</summary>
+    public int GetNonStandardAddedArgCount(Compiler compiler)
+    {
+#if TARGET_WASM
+        // Managed calls have shadow-stack and portable-entry-point arguments.
+        return IsUnmanaged ? 0 : 2;
+#else
+        if (IsUnmanaged && !compiler.opts.ShouldUsePInvokeHelpers)
+        {
+            return 1;
+        }
+        else if (IsVirtualStub)
+        {
+            return 1;
+        }
+
+        return 0;
+#endif
+    }
+
     public GenTree? ControlExpr
     {
         get

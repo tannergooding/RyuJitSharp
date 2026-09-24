@@ -2,8 +2,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text;
 using NUnit.Framework;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.GenTreeCallFlags;
@@ -40,6 +42,8 @@ internal static unsafe class CallArgumentMorphTests
             Assert.That(call.Args.HasRegArgs, Is.EqualTo(count > 0));
             Assert.That(call.Args.HasStackArgs, Is.EqualTo(count > 4));
             Assert.That(call.Args.OutgoingArgsStackSize, Is.EqualTo(expectedStackSize));
+            Assert.That(call.HasNonStandardAddedArgs(compiler), Is.False);
+            Assert.That(call.GetNonStandardAddedArgCount(compiler), Is.Zero);
             Assert.That(compiler.compFloatingPointUsed, Is.EqualTo(count > 1));
 
             regNumber[] registers = [REG_RCX, REG_XMM1, REG_R8, REG_XMM3];
@@ -94,6 +98,8 @@ internal static unsafe class CallArgumentMorphTests
         WithCompiler(compiler => {
             var call = compiler.gtNewCallNode(TYP_VOID, indirect ? CT_INDIRECT : CT_USER_FUNC, null);
             call.Flags |= GTF_CALL_VIRT_STUB;
+            Assert.That(call.HasNonStandardAddedArgs(compiler), Is.True);
+            Assert.That(call.GetNonStandardAddedArgCount(compiler), Is.EqualTo(1));
             if (indirect)
             {
                 call.ControlExpr = compiler.gtNewIconNode(TYP_I_IMPL, 0x1234);
@@ -531,6 +537,143 @@ internal static unsafe class CallArgumentMorphTests
             Assert.That(original.Oper, Is.EqualTo(GT_LCL_VAR));
         });
     }
+
+    [TestCase(32, 4, true)]
+    [TestCase(32, 5, false)]
+    [TestCase(39, 5, true)]
+    [TestCase(40, 5, true)]
+    public static void FastTailCallsRespectIncomingArgumentSpace(int incomingSize, int count, bool allowed)
+    {
+        WithCompiler(compiler => {
+            compiler.opts.compFastTailCalls = true;
+            compiler.lvaParameterStackSize = incomingSize;
+            var call = compiler.gtNewCallNode(TYP_VOID, CT_USER_FUNC, null);
+            for (var i = 0; i < count; i++)
+            {
+                _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, i)));
+            }
+
+            Assert.That(compiler.fgCanFastTailCall(call, out var reason), Is.EqualTo(allowed));
+            Assert.That(reason, Is.EqualTo(allowed ? null : "Not enough incoming arg space"));
+            Assert.That(call.Args.IsAbiInformationDetermined, Is.True);
+            Assert.That(call.Args.AreArgsComplete, Is.False);
+            Assert.That(call.Args.OutgoingArgsStackSize, Is.EqualTo(count > 4 ? 40 : 32));
+        });
+    }
+
+    [TestCase(false, true, true, true, "Configuration doesn't allow fast tail calls")]
+    [TestCase(true, true, true, true, "Localloc used")]
+    [TestCase(true, false, true, true, "Uses NextCallReturnAddress intrinsic")]
+    [TestCase(true, false, false, true, "Callee has RetBuf but caller does not.")]
+    [TestCase(true, false, false, false, null)]
+    public static void FastTailCallRejectionsPreserveNativePrecedence(
+        bool enabled, bool localloc, bool nextReturnAddress, bool returnBuffer, string? expectedReason)
+    {
+        WithCompiler(compiler => {
+            compiler.opts.compFastTailCalls = enabled;
+            compiler.compLocallocUsed = localloc;
+            compiler.info.compHasNextCallRetAddr = nextReturnAddress;
+            compiler.info.compRetBuffArg = BAD_VAR_NUM;
+            compiler.lvaParameterStackSize = 32;
+            var call = compiler.gtNewCallNode(TYP_VOID, CT_USER_FUNC, null);
+            if (returnBuffer)
+            {
+                _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclvNode(TYP_BYREF, 0))
+                    .WithWellKnownArg(WellKnownArg.RetBuffer));
+            }
+
+            Assert.That(compiler.fgCanFastTailCall(call, out var reason), Is.EqualTo(expectedReason is null));
+            Assert.That(reason, Is.EqualTo(expectedReason));
+            Assert.That(call.Args.IsAbiInformationDetermined, Is.True);
+        });
+    }
+
+    [TestCase(false, false, false, false, true)]
+    [TestCase(false, false, false, true, false)]
+    [TestCase(true, false, false, true, true)]
+    [TestCase(false, true, false, true, true)]
+    [TestCase(false, false, true, false, true)]
+    [TestCase(false, false, true, true, false)]
+    public static void FastTailCallsCannotRetainLocalStructCopies(
+        bool minOpts, bool promoted, bool undonePromotion, bool allDying, bool mustCopy)
+    {
+        WithCompiler(compiler => {
+            compiler.opts.compFastTailCalls = true;
+            compiler.lvaParameterStackSize = 32;
+            var layout = new ClassLayout((CORINFO_CLASS_STRUCT_*)0x1234, true, 24, TYP_STRUCT, "TailCallStruct", "TailCallStruct");
+            var layouts = new ClassLayoutTable();
+            _ = layouts.AddObjLayout(compiler, layout);
+            var layoutTableField = typeof(Compiler).GetField("_classLayoutTable", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("Missing class layout table.");
+            layoutTableField.SetValue(compiler, layouts);
+            ref var parameter = ref compiler.lvaTable[0];
+            parameter.Type = TYP_STRUCT;
+            parameter.Layout = layout;
+            parameter.lvIsParam = true;
+            parameter.IsImplicitByRef = true;
+            parameter.lvPromoted = promoted;
+            if (undonePromotion)
+            {
+                parameter.lvFieldLclStart = 2;
+                compiler.lvaTable[2].lvPromoted = true;
+                compiler.lvaTable[2].lvFieldCnt = 2;
+            }
+
+            var local = compiler.gtNewLclvNode(TYP_STRUCT, 0);
+            local.Flags |= allDying
+                ? (undonePromotion ? compiler.lvaTable[2].AllFieldDeathFlags : GTF_VAR_DEATH)
+                : (undonePromotion ? GTF_VAR_DEATH : GTF_EMPTY);
+            var call = compiler.gtNewCallNode(TYP_VOID, CT_USER_FUNC, null);
+            var argument = call.Args.PushBack(NewCallArg.CreateForStruct(local, TYP_STRUCT, layout));
+            Assert.That(local.IsImplicitByrefParameterValuePreMorph(compiler), Is.SameAs(local));
+            Assert.That(compiler.fgCanFastTailCall(call, out var reason), Is.EqualTo(!mustCopy));
+            Assert.That(argument.AbiInfo.IsPassedByReference, Is.True);
+            Assert.That(compiler.fgCallArgWillPointIntoLocalFrame(call, argument), Is.EqualTo(mustCopy));
+            Assert.That(reason, Is.EqualTo(mustCopy ? "Callee has a byref parameter" : null));
+            Assert.That(argument.Node, Is.SameAs(local));
+        }, minOpts);
+    }
+
+#if DEBUG
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void FastTailCallReportsPreserveNativeText(bool enabled)
+    {
+        WithCompiler(compiler => {
+            compiler.opts.compFastTailCalls = enabled;
+            compiler.lvaParameterStackSize = 32;
+            compiler.info.compFullName = "TailCaller";
+            var call = compiler.gtNewCallNode(TYP_VOID, CT_INDIRECT, null);
+            call.ControlExpr = compiler.gtNewIconNode(TYP_I_IMPL, 1);
+            var reportField = typeof(JitConfigValues).GetField("_jitReportFastTailCallDecisions", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("Missing fast-tail-call reporting setting.");
+            var previousConfig = JitConfig;
+            object config = previousConfig;
+            reportField.SetValue(config, 1);
+            using var stream = new MemoryStream();
+            using var writer = new JitTextWriter(stream, leaveOpen: true);
+            var previousWriter = s_jitstdout;
+            try
+            {
+                JitConfig = (JitConfigValues)config;
+                s_jitstdout = writer;
+                Assert.That(compiler.fgCanFastTailCall(call, out _), Is.EqualTo(enabled));
+                writer.Flush();
+            }
+            finally
+            {
+                s_jitstdout = previousWriter;
+                JitConfig = previousConfig;
+            }
+
+            var decision = enabled ? "Will fast tailcall" : "Will not fast tailcall (Configuration doesn't allow fast tail calls)";
+            Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo(
+                $"[Fast tailcall decision]: Caller: TailCaller{Environment.NewLine}" +
+                $"[Fast tailcall decision]: Callee: IndirectCall -- Decision: {decision}" +
+                $" (CallerArgStackSize: 32, CalleeArgStackSize: 32){Environment.NewLine}{Environment.NewLine}"));
+        });
+    }
+#endif
 
     private static GenTreeOp NewOverflowingAdd(Compiler compiler)
     {
