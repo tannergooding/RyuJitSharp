@@ -542,6 +542,61 @@ public static partial class Globals
     }
 #endif
 
+#if FEATURE_SIMD
+    public static void EvaluateExtractMSB(var_types baseType, ref simdmask_t result, ReadOnlySpan<byte> arg0)
+    {
+        var elementSize = GetSimdElementSize(baseType);
+        assert((arg0.Length <= Unsafe.SizeOf<simd_t>()) && ((arg0.Length % elementSize) == 0));
+        var count = arg0.Length / elementSize;
+        ulong mask = 0;
+        for (var index = 0; index < count; index++)
+        {
+            // Supported targets are little-endian; read the sign bit without loading floating data.
+            if ((arg0[((index + 1) * elementSize) - 1] & 0x80) != 0)
+            {
+                mask |= 1UL << index;
+            }
+        }
+
+        result.u64[0] = mask;
+    }
+
+    private static int GetSimdElementSize(var_types baseType)
+    {
+        switch (baseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+            {
+                return 1;
+            }
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+            {
+                return 2;
+            }
+
+            case TYP_INT:
+            case TYP_UINT:
+            case TYP_FLOAT:
+            {
+                return 4;
+            }
+
+            case TYP_LONG:
+            case TYP_ULONG:
+            case TYP_DOUBLE:
+            {
+                return 8;
+            }
+        }
+
+        unreached();
+        return 0;
+    }
+#endif
+
 #if FEATURE_MASKED_HW_INTRINSICS
     public static void EvaluateUnaryMask(genTreeOps oper, bool scalar, var_types baseType, int simdSize,
         ref simdmask_t result, in simdmask_t arg0)
@@ -615,7 +670,7 @@ public static partial class Globals
 
     public static void EvaluateSimdCvtMaskToVector(var_types baseType, Span<byte> result, in simdmask_t arg0)
     {
-        var elementSize = GetMaskElementSize(baseType);
+        var elementSize = GetSimdElementSize(baseType);
         assert((result.Length <= Unsafe.SizeOf<simd_t>()) && ((result.Length % elementSize) == 0));
         var count = result.Length / elementSize;
         var mask = (ulong)arg0.RawBits;
@@ -636,22 +691,17 @@ public static partial class Globals
 
     public static void EvaluateSimdCvtVectorToMask(var_types baseType, ref simdmask_t result, ReadOnlySpan<byte> arg0)
     {
-        var elementSize = GetMaskElementSize(baseType);
+#if TARGET_XARCH
+        EvaluateExtractMSB(baseType, ref result, arg0);
+#elif TARGET_ARM64
+        var elementSize = GetSimdElementSize(baseType);
         assert((arg0.Length <= Unsafe.SizeOf<simd_t>()) && ((arg0.Length % elementSize) == 0));
         var count = arg0.Length / elementSize;
         ulong mask = 0;
         for (var index = 0; index < count; index++)
         {
-#if TARGET_XARCH
-            // Supported targets are little-endian; read the sign bit without loading floating data.
-            var isSet = (arg0[((index + 1) * elementSize) - 1] & 0x80) != 0;
-            var bit = index;
-#elif TARGET_ARM64
             var isSet = arg0.Slice(index * elementSize, elementSize).IndexOfAnyExcept((byte)0) >= 0;
             var bit = index * elementSize;
-#else
-#error Unsupported platform
-#endif
             if (isSet)
             {
                 mask |= 1UL << bit;
@@ -659,46 +709,14 @@ public static partial class Globals
         }
 
         result.u64[0] = mask;
-    }
-
-    private static int GetMaskElementSize(var_types baseType)
-    {
-        switch (baseType)
-        {
-            case TYP_BYTE:
-            case TYP_UBYTE:
-            {
-                return 1;
-            }
-
-            case TYP_SHORT:
-            case TYP_USHORT:
-            {
-                return 2;
-            }
-
-            case TYP_INT:
-            case TYP_UINT:
-            case TYP_FLOAT:
-            {
-                return 4;
-            }
-
-            case TYP_LONG:
-            case TYP_ULONG:
-            case TYP_DOUBLE:
-            {
-                return 8;
-            }
-        }
-
-        unreached();
-        return 0;
+#else
+#error Unsupported platform
+#endif
     }
 
     private static ulong GetMaskEvaluationBitMask(var_types baseType, int simdSize)
     {
-        var elementSize = GetMaskElementSize(baseType);
+        var elementSize = GetSimdElementSize(baseType);
 #if TARGET_XARCH
         // Mask instructions have an eight-bit minimum even for vectors with fewer lanes.
         var count = Math.Max(simdSize / elementSize, 8);

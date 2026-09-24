@@ -10265,6 +10265,23 @@ public partial class Compiler
 #error Unsupported platform
 #endif
     }
+
+    public GenTree gtNewSimdCvtVectorToMaskNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsMask(type));
+        assert(varTypeIsSimd(op1.Type));
+        compMaskConvertUsed = true;
+
+#if TARGET_XARCH
+        return gtNewSimdHWIntrinsicNode(TYP_MASK, NI_AVX512_ConvertVectorToMask, simdBaseType, simdSize, op1);
+#elif TARGET_ARM64
+        // ARM64's cmpne requires an embedded predicate.
+        var trueMask = gtNewSimdHWIntrinsicNode(TYP_MASK, NI_Sve_ConversionTrueMask, simdBaseType, simdSize);
+        return gtNewSimdHWIntrinsicNode(TYP_MASK, NI_Sve_ConvertVectorToMask, simdBaseType, simdSize, trueMask, op1);
+#else
+#error Unsupported platform
+#endif
+    }
 #endif
 
     public GenTree gtNewSimdGetLowerNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)

@@ -13,6 +13,50 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class HardwareIntrinsicInitializationTests
 {
+    [TestCase(TYP_SIMD8, TYP_UBYTE)]
+    [TestCase(TYP_SIMD8, TYP_DOUBLE)]
+    [TestCase(TYP_SIMD12, TYP_FLOAT)]
+    [TestCase(TYP_SIMD16, TYP_INT)]
+    [TestCase(TYP_SIMD16, TYP_USHORT)]
+    [TestCase(TYP_SIMD32, TYP_LONG)]
+    [TestCase(TYP_SIMD64, TYP_BYTE)]
+    [TestCase(TYP_SIMD64, TYP_ULONG)]
+    public static void ConstantVectorToMaskFoldingPreservesInputsAndDefersFinalization(var_types type, var_types baseType)
+    {
+        WithCompiler(compiler => {
+            var value = new GenTreeVecCon(type) {
+                SimdVal = simd64_t.AllBitsSet,
+            };
+            value.SimdVal.AsSpan<byte>()[..type.Size].Clear();
+            value.SimdVal.u8[baseType.Size - 1] = 0x80;
+            value.SimdVal.u8[type.Size - 1] = 0x80;
+            var before = value.SimdVal;
+            var conversion = compiler.gtNewSimdCvtVectorToMaskNode(TYP_MASK, value, baseType, type.Size).AsHWIntrinsic();
+            Assert.That(compiler.compMaskConvertUsed, Is.True);
+            Assert.That(conversion.IsConvertVectorToMask, Is.True);
+            Assert.That(conversion.IsConvertMaskToVector, Is.False);
+            Assert.That(conversion.Type, Is.EqualTo(TYP_MASK));
+            Assert.That(conversion.SimdBaseType, Is.EqualTo(baseType));
+            Assert.That(conversion.SimdSize, Is.EqualTo(type.Size));
+
+            var result = compiler.gtFoldExprConvertVecCnsToMask(conversion, value).AsMskCon();
+            Assert.That(result.SimdMaskVal.u64[0], Is.EqualTo(1UL | (1UL << ((type.Size / baseType.Size) - 1))));
+            Assert.That(result.Type, Is.EqualTo(TYP_MASK));
+            Assert.That(conversion.GetOp(1), Is.SameAs(value));
+            Assert.That(value.SimdVal, Is.EqualTo(before));
+#if DEBUG
+            Assert.That(result.WasMorphed, Is.False);
+#endif
+            var secondResult = compiler.gtFoldExprConvertVecCnsToMask(conversion, value);
+            Assert.That(secondResult, Is.Not.SameAs(result));
+            var expanded = compiler.gtNewSimdCvtMaskToVectorNode(type, result, baseType, type.Size);
+            Assert.That(expanded.IsConvertMaskToVector, Is.True);
+            Assert.That(expanded.IsConvertVectorToMask, Is.False);
+            Assert.That(value.IsConvertMaskToVector, Is.False);
+            Assert.That(value.IsConvertVectorToMask, Is.False);
+        });
+    }
+
     [TestCase(1, 1UL)]
     [TestCase(8, 0xFFUL)]
     [TestCase(16, 0xFFFFUL)]
@@ -94,6 +138,8 @@ internal static unsafe class HardwareIntrinsicInitializationTests
         Assert.That(value.AsSpan<byte>()[size..].IndexOfAnyExcept(byte.MaxValue), Is.EqualTo(-1));
         simdmask_t result = default;
         Globals.EvaluateSimdCvtVectorToMask(type, ref result, value.AsSpan<byte>()[..size]);
+        Assert.That(result.u64[0], Is.EqualTo(mask.u64[0] & (ulong)simdmask_t.GetBitMask(size / type.Size)));
+        Globals.EvaluateExtractMSB(type, ref result, value.AsSpan<byte>()[..size]);
         Assert.That(result.u64[0], Is.EqualTo(mask.u64[0] & (ulong)simdmask_t.GetBitMask(size / type.Size)));
         value = simd64_t.AllBitsSet;
         Globals.EvaluateSimdCvtVectorToMask(type, ref result, value.AsSpan<byte>()[..size]);

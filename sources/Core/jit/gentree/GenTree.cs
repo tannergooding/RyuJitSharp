@@ -2140,6 +2140,20 @@ public partial class GenTree
 
     public bool IsHWIntrinsic(NamedIntrinsic intrinsicId) => _oper.IsHWIntrinsic && (AsHWIntrinsic().HWIntrinsicId == intrinsicId);
 
+#if TARGET_XARCH
+    public bool IsConvertMaskToVector => IsHWIntrinsic(NI_AVX512_ConvertMaskToVector);
+
+    public bool IsConvertVectorToMask => IsHWIntrinsic(NI_AVX512_ConvertVectorToMask);
+#elif TARGET_ARM64
+    public bool IsConvertMaskToVector => IsHWIntrinsic(NI_Sve_ConvertMaskToVector);
+
+    public bool IsConvertVectorToMask => IsHWIntrinsic(NI_Sve_ConvertVectorToMask);
+#else
+    public bool IsConvertMaskToVector => false;
+
+    public bool IsConvertVectorToMask => false;
+#endif
+
     public bool IsIconHandle() => _oper.IsCnsIntOrI && AsIntCon().IsIconHandle();
 
     public bool IsNotGcDef()

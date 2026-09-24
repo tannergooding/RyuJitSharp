@@ -153,6 +153,12 @@ arithmetic normalizes all-true results to 64 set bits; vector-to-mask conversion
 deliberately retains only the produced lane bits, matching native behavior.
 ARM64 predicates use spaced bits and nonzero-lane extraction (B106).
 
+Sequential MSB extraction is shared with xarch vector-to-mask conversion.
+Conversion recognition uses inherited `GenTree` properties rather than separate
+base/derived query implementations. Constant conversion creates a fresh typed
+mask through the existing managed constructor; the outer folding dispatcher
+remains responsible for morph and VN finalization (B107).
+
 Phi definitions own copied SSA-number arrays and expose readonly memory.
 Reaching-VN traversal uses a managed stack and membership set, preserving native
 push/pop order, conservative SSA lookup, duplicate suppression, cycles and early

@@ -12,15 +12,15 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete fixed-width mask unary/binary evaluation and vector conversions, including correction of the existing lane-count-independent AllBitsSet implementation.",
+      "scope": "Complete fixed-width HWI mask-conversion construction/folding prerequisites and shared most-significant-bit extraction.",
       "doneWhen": [
-        "Preserve native xarch mask widths, eight-bit minimum and all-true normalization.",
-        "Preserve mask/vector bit order, most-significant-bit extraction and all-bits-set lane expansion without loading floating data.",
-        "Correct AllBitsSet for every valid lane count; keep HWI dispatcher activation and scalable evaluation deferred.",
+        "Construct vector-to-mask intrinsics with native metadata, operand order and compMaskConvertUsed bookkeeping.",
+        "Fold constant-vector conversions into fresh mask nodes without changing input nodes or adding caller-owned morph/VN finalization.",
+        "Share sequential sign-bit extraction with xarch vector-to-mask conversion; keep ARM64 nonzero predicate extraction distinct and scalable folding explicitly NYI.",
         "The selected Debug/Release checks pass and complete functions are committed with their native retirement and checkpoint."
       ],
       "validation": [
-        "Extend existing HWI coverage for mask widths, normalization, scalar policy and vector conversions; reproduce the AllBitsSet defect before correcting it.",
+        "Extend existing HWI coverage for conversion recognition, construction/folding, node identity and sign-bit extraction.",
         "Run one HWI/scalar selection in Debug and Release.",
         "No NativeAOT recapture or full suite for support-only changes unless the reachable frontier changes."
       ],
@@ -31,7 +31,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Non-HWI expression folding (B101), HWI creation/classification (B102/B103), fixed-width vector evaluation (B104/B105) and mask evaluation/conversion (B106) are complete. Continue remaining HWI construction/evaluation prerequisites before wiring the HWI folding dispatcher, then audit fgInline activation. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
+    "nextAction": "Non-HWI expression folding (B101), HWI creation/classification (B102/B103), fixed-width vector evaluation (B104/B105), mask evaluation (B106) and HWI conversion prerequisites (B107) are complete. Audit the remaining full HWI folding closure, preserving existing equivalent vector queries rather than duplicating helpers, before activating its dispatcher; then audit fgInline activation. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -641,6 +641,19 @@
         "releaseTests": "artifacts\\mask-release.trx",
         "beforeTests": "artifacts\\mask-before.trx"
       },
+      "hwiConversionFolding": {
+        "managedSourceCommit": "50c55bd8214b4ae8c4f232843ad1d2610b6142fb",
+        "debugPassed": 345,
+        "releasePassed": 341,
+        "newCasesPerConfiguration": 8,
+        "skipped": 0,
+        "nativeDefinitionsRetired": 8,
+        "nativeAotRecaptured": false,
+        "phaseActivated": false,
+        "nonX64ExecutionEstablished": false,
+        "debugTests": "artifacts\\hwi-conversion-debug.trx",
+        "releaseTests": "artifacts\\hwi-conversion-release.trx"
+      },
       "nativeAotPublish": "passed-after-special-folding",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "six-of-ten-import-prefixes-equal-remaining-inline-candidate-differences",
@@ -990,6 +1003,15 @@
       "commit": "4e11d6f66f5edf99728803c81f81e78fb079b946",
       "indexCommit": "1226787fc57ec2e3e1775fbdf31f218f82bbf914",
       "ref": "refs/porting/snapshots/native-ledger-mask-evaluation"
+    },
+    "hwiConversionManagedSource": {
+      "commit": "50c55bd8214b4ae8c4f232843ad1d2610b6142fb",
+      "ref": "refs/porting/snapshots/hwi-conversion-source"
+    },
+    "hwiConversionNativeResidual": {
+      "commit": "0896c9edcf6c3e9fd7663b9ba35dd8032936cb9f",
+      "indexCommit": "1ae5cc1f962526c81b10226fc69a74aa853f3e04",
+      "ref": "refs/porting/snapshots/native-ledger-hwi-conversion"
     }
   },
   "sourceMap": [
