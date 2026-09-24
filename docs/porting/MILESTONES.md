@@ -12,6 +12,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-24: Register allocation foundations
+
+The backend now has target register state, interval/reference associations,
+per-block variable maps and the native minimal-register selection policy.
+This includes selection heuristics, fixed-register conflicts, reference
+diagnostics and allocation statistics. Managed register maps preserve
+split-block aliases without reproducing an oversized native byte copy.
+
+These foundations do not yet activate register allocation. Interval building,
+allocation traversal, resolution and machine-code emission remain unfinished.
+
 ## 2026-09-24: Rationalization and linear IR
 
 Rationalization now converts sequenced expression trees into linear IR, removes

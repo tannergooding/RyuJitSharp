@@ -608,6 +608,14 @@ arena allocations. The native negative numbering, normalized types, size-slot
 lists, acquisition/release order and total stack-space accounting are retained;
 equal-size GC and non-GC types still require distinct matching descriptors.
 
+LSRA variable-to-register maps use managed register arrays while retaining native
+tracked-index mappings, padded entry counts and split-block aliases.
+`setInVarToRegMap` copies the logical entry count into the existing destination;
+it does not reproduce the pinned native function's oversized byte copy from a
+`regNumberSmall` buffer using `sizeof(regNumber)`. No native callsites were found
+for that function; B165 records this as a source discrepancy, not a reproduced
+runtime failure.
+
 `GenTreeFieldList.Uses` likewise returns its mutable list by reference, so
 cloning and lowering update the owning node rather than a discarded copy.
 

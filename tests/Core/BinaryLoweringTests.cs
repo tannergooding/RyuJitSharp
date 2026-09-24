@@ -154,12 +154,14 @@ internal static unsafe class BinaryLoweringTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
+        compiler.opts.SetMinOpts(true);
         compiler.lvaTable = new LclVarDsc[3];
         compiler.lvaCount = 3;
         compiler.lvaTable[0].Type = var_types.TYP_LONG;
         compiler.lvaTable[1].Type = var_types.TYP_LONG;
         compiler.lvaTable[2].Type = var_types.TYP_INT;
         JitTls.Compiler = compiler;
+        compiler.codeGen = new CodeGen(compiler);
         try
         {
             action(compiler);

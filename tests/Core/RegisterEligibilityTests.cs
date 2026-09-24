@@ -67,12 +67,16 @@ internal static unsafe class RegisterEligibilityTests
 #endif
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitFlags flags = default;
+        compiler.opts.jitFlags = &flags;
+        compiler.opts.SetMinOpts(true);
         compiler.opts.compFlags = CLFLG_REGVAR;
         compiler.lvaTable = new LclVarDsc[1];
         compiler.lvaCount = 1;
         compiler.lvaTable[0].lvTracked = true;
         compiler.lvaRefCountState = RefCountState.RCS_NORMAL;
         JitTls.Compiler = compiler;
+        compiler.codeGen = new CodeGen(compiler);
         try
         {
             action(compiler);

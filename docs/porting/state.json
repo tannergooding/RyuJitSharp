@@ -248,6 +248,17 @@
         "releaseTests": "artifacts\\backend-call-integration-release.trx",
         "scope": "Frozen uncommitted call integration includes memory-helper expansion and ordinary-call fallback, native next-node conventions, single-register struct returns and comparison containment. No lowering-driver activation or managed code generation."
       },
+      "lsraStateAndSelectionSupport": {
+        "debugPassed": 162,
+        "releasePassed": 153,
+        "skipped": 0,
+        "selection": ["LinearScan tests", "BinaryLoweringTests", "CallLoweringTests", "CastLoweringTests", "RegisterEligibilityTests", "StackArgumentLoweringTests", "AddressLoweringTests", "ComparisonContainmentTests"],
+        "debugTests": "artifacts\\lsra-state-commit-debug.trx",
+        "releaseTests": "artifacts\\lsra-state-commit-release.trx",
+        "scope": "Exact-index export includes constructor/frame state, 17 selector heuristics, minimal selection and def/use conflicts, typed reference association/diagnostics, variable maps and required event/statistics support. Existing fixtures establish codegen and optimization state before constructing LSRA. Incomplete lowering, register assignment/allocation traversal and resolution are excluded.",
+        "deviation": "B165: counted managed map copy retains destination/split aliases instead of the oversized native byte count.",
+        "nativeBodiesRetained": true
+      },
       "conditionCodeSupport": {
         "debugPassed": 6,
         "releasePassed": 6,

@@ -165,7 +165,11 @@ internal static unsafe class LinearScanReferenceTests
 #endif
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitFlags flags = default;
+        compiler.opts.jitFlags = &flags;
+        compiler.opts.SetMinOpts(true);
         JitTls.Compiler = compiler;
+        compiler.codeGen = new CodeGen(compiler);
         try
         {
             action(compiler);

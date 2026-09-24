@@ -152,7 +152,6 @@ internal static unsafe class CallLoweringTests
     public static void RegisterArgumentsReinterpretOnlyValueBits(int bits, bool minOpts)
     {
         WithCompiler(compiler => {
-            compiler.opts.SetMinOpts(minOpts);
             var block = new BasicBlock(null, null);
             block.MakeLir(null, null);
             var lowering = new Lowering(compiler, new LinearScan(compiler));
@@ -190,7 +189,7 @@ internal static unsafe class CallLoweringTests
             }
             Assert.That(operand.Next, Is.SameAs(putArg));
             Assert.That(putArg.Prev, Is.SameAs(operand));
-        });
+        }, minOpts);
     }
 
     [TestCase(false, false)]
@@ -245,7 +244,7 @@ internal static unsafe class CallLoweringTests
         Assert.That(node.Flags & GenTreeFlags.GTF_ICON_HDL_MASK, Is.EqualTo(Globals.GTF_ICON_FTN_ADDR));
     }
 
-    private static void WithCompiler(Action<Compiler> action)
+    private static void WithCompiler(Action<Compiler> action, bool minOpts = true)
     {
 #if DEBUG
         using var tls = new JitTls(null);
@@ -254,7 +253,9 @@ internal static unsafe class CallLoweringTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
+        compiler.opts.SetMinOpts(minOpts);
         JitTls.Compiler = compiler;
+        compiler.codeGen = new CodeGen(compiler);
         try
         {
             action(compiler);

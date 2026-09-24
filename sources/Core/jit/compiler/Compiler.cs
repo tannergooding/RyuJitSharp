@@ -186,10 +186,10 @@ public partial class Compiler
 
     protected ASSERT_TP[]? bbJtrueAssertionOut;
 
-    protected FrameType rpFrameType;
+    protected internal FrameType rpFrameType;
 
     /// <summary>Set to true after we have called rpMustCreateEBPFrame once</summary>
-    protected bool rpMustCreateEBPCalled;
+    protected internal bool rpMustCreateEBPCalled;
 
     /// <summary>Lowering; needed to Lower IR that's added or modified after Lowering.</summary>
     private Lowering? _pLowering;

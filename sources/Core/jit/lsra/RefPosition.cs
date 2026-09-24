@@ -5,7 +5,7 @@
 
 namespace RyuJitSharp;
 
-public sealed class RefPosition
+public sealed partial class RefPosition
 {
     public Referenceable? referent;
     public RefPosition? nextRefPosition;

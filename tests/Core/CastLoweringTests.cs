@@ -84,6 +84,7 @@ internal static unsafe class CastLoweringTests
         compiler.lvaTable = new LclVarDsc[1];
         compiler.lvaCount = 1;
         JitTls.Compiler = compiler;
+        compiler.codeGen = new CodeGen(compiler);
         try
         {
             action(compiler);
