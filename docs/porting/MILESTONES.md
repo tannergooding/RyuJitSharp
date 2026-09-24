@@ -46,6 +46,11 @@ Complementary shifts can be recognized as rotations, with explicit
 count masking and restrictions on merging observable reads. Fresh IR nodes now
 start with undefined value numbers in Release as well as Debug.
 
+Remainder transformations can retain just the dividend's effects for division
+by one, mask unsigned power-of-two remainders, or expand to division, multiplication
+and subtraction. Expansion evaluates operands once in their original order,
+including reversed operands, and records the resulting SSA uses.
+
 Outgoing calls can classify signature types into Windows-x64 argument registers
 and stack slots, account for shadow space, insert virtual-stub and ReadyToRun
 cells, and remove those cells before reclassification. Argument scheduling,

@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Port the fully read fgMorphModToZero, fgMorphModToSubMulDiv and fgMorphUModToAndSub (oracle morph.cpp, following fgMorphHWIntrinsicOptional) with optRecordSsaUses (optimizer.cpp:3544-3594), also fully read. Reuse gtExtractSideEffList, fgMakeTemp, TempInfo, gtCloneExpr and the newly ported CheckDivideByConstOptimized. The SSA visitor must mutate LclSsaVarDsc by ref through GetPerSsaData; AddUse already exists. fgMoveOpsLeft and constant-division eligibility are now complete. fgMorphSmpOp and fgMorphSmpOpOptional are fully read; optional SMP remains coupled to fgMorphCopyBlock. fgOptimizeCommutativeArithmetic and fgOptimizeAddition are fully read; addition recurses into fgMorphTree for subtraction-to-XOR. fgMorphHWIntrinsic, fgMorphHWIntrinsicRequired and fgMorphHWIntrinsicOptional are now fully read through morph.cpp:12092. Native optional HWI is an identity function; required HWI still depends on recursive morph and fgOptimizeHWIntrinsic, whose next unread source is approximately 9601. Other recursive dependencies already read: fgMorphPotentialTailCall, fgMorphTailCallViaHelpers, fgMorphArgs, fgTryMorphStructArg, fgMakeOutgoingStructArgCopy, EvalArgsToTemps, MorphCopyBlockHelper and optAssertionProp's dispatcher at assertionprop.cpp:5909. Assertion application helpers remain. getVirtMethodPointerTree (5715) is read and unported; its token/lookup/virtual-helper dependencies already exist. fgExpandVirtualVtableCallTarget, gtSetEvalOrder, fgMakeMultiUse and Globals.ForEachHbvBitSet also exist. Incomplete tree/call drafts remain outside the build and protected in localRecovery.globalMorphDrafts; restore only with a complete compilable closure, not Windows NYIs. Fresh Release nodes now initialize VNs correctly (B155). Existing TARGET_32BIT syntax defects (B153) and the potential upstream XOR-rotation issue (B156) remain deferred. fgMorphBlocks is inactive; no new phase/codegen parity is claimed.",
+    "nextAction": "Finish reading oracle morph.cpp::fgOptimizeHWIntrinsic from approximately 9601, then close the remaining required global-morph dependency group rather than reopening completed arithmetic helpers. fgMoveOpsLeft, constant-division eligibility, all three remainder transforms and optRecordSsaUses are complete. fgMorphSmpOp and fgMorphSmpOpOptional are fully read; optional SMP remains coupled to fgMorphCopyBlock. fgOptimizeCommutativeArithmetic and fgOptimizeAddition are fully read; addition recurses into fgMorphTree for subtraction-to-XOR. fgMorphHWIntrinsic, fgMorphHWIntrinsicRequired and fgMorphHWIntrinsicOptional are fully read through morph.cpp:12092. Native optional HWI is an identity function; required HWI depends on recursive morph and fgOptimizeHWIntrinsic. Other recursive dependencies already read: fgMorphPotentialTailCall, fgMorphTailCallViaHelpers, fgMorphArgs, fgTryMorphStructArg, fgMakeOutgoingStructArgCopy, EvalArgsToTemps, MorphCopyBlockHelper and optAssertionProp's dispatcher at assertionprop.cpp:5909. Assertion application helpers remain. getVirtMethodPointerTree (5715) is read and unported; its token/lookup/virtual-helper dependencies already exist. fgExpandVirtualVtableCallTarget, gtSetEvalOrder, fgMakeMultiUse and Globals.ForEachHbvBitSet also exist. Incomplete tree/call drafts remain outside the build and protected in localRecovery.globalMorphDrafts; restore only with a complete compilable closure, not Windows NYIs. TreeId is DEBUG-only, so interpolated JITDUMP calls that reference it also need DEBUG guards. Fresh Release nodes now initialize VNs correctly (B155). Existing TARGET_32BIT syntax defects (B153) and the potential upstream XOR-rotation issue (B156) remain deferred. fgMorphBlocks is inactive; no new phase/codegen parity is claimed.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -1361,6 +1361,20 @@
         "globalMorphActive": false,
         "nativeAotRecaptured": false
       },
+      "remainderMorphing": {
+        "debugPassed": 322,
+        "releasePassed": 316,
+        "skipped": 0,
+        "newCases": 19,
+        "selection": ["ArithmeticMorphTests", "AssertionTests", "ScalarFoldingTests"],
+        "debugTests": "artifacts\\remainder-morph-debug.trx",
+        "releaseTests": "artifacts\\remainder-morph-release.trx",
+        "coverage": ["remainder-by-one effects, value numbers and optimization gates", "unsigned int/long high-bit masks", "zero, one and two temporary spills", "reversed execution order and local reassignment hazards", "division operand cloning and VN clearing", "signed and unsigned division selection", "per-SSA descriptor mutation, conservative use counts and cross-block uses", "definition exclusion with operand traversal", "division-only constant CSE exclusion"],
+        "nativeDefinitionsRetired": ["Compiler::fgMorphModToZero", "Compiler::fgMorphModToSubMulDiv", "Compiler::fgMorphUModToAndSub", "Compiler::optRecordSsaUses"],
+        "remaining": "Required HWI, block-copy and recursive morph integration remain; no new phase or codegen claim.",
+        "globalMorphActive": false,
+        "nativeAotRecaptured": false
+      },
       "nativeAotPublish": "passed-after-implicit-byref-retyping",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "all-twenty-minopts-implicit-byref-retyping-phase-sections-and-its-emitted-IR-equal; earlier-local-morph-gaps-remain-scoped-in-localMorphActivation",
@@ -1935,6 +1949,11 @@
       "indexCommit": "f351b9bbb6b25bf06ff067ab17a6dd0499749678",
       "ref": "refs/porting/snapshots/native-ledger-reassociation-divide"
     },
+    "remainderMorphNativeResidual": {
+      "commit": "9203c72be4427fa759d53611cda78b14b8d44188",
+      "indexCommit": "3406c13e8518a872406a7a5327551707ce098e93",
+      "ref": "refs/porting/snapshots/native-ledger-remainders"
+    },
     "globalMorphDrafts": {
       "treeBlob": "36908cd7d0294ece59d91854bbdbfcb05d83f228",
       "treeRef": "refs/porting/drafts/global-morph-tree",
@@ -2095,7 +2114,7 @@
     {
       "area": "simple-operator-morphing",
       "native": ["src\\coreclr\\jit\\morph.cpp", "src\\coreclr\\jit\\optimizer.cpp", "src\\coreclr\\jit\\flowgraph.cpp", "src\\coreclr\\jit\\gentree.cpp", "src\\coreclr\\jit\\gentree.h"],
-      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.fg.SimpleOps.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.Comparisons.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.Arithmetic.cs", "sources\\Core\\jit\\compiler\\Compiler.opt.Narrowing.cs", "sources\\Core\\jit\\compiler\\Compiler.gt.cs", "sources\\Core\\jit\\gentree\\GenTreeCast.cs", "sources\\Core\\jit\\gentree\\GenTreeIntCon.cs", "sources\\Core\\jit\\gentree\\GenTreeIntConCommon.cs", "sources\\Core\\jit\\gentree\\GenTreeOp.cs"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.fg.SimpleOps.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.Comparisons.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.Arithmetic.cs", "sources\\Core\\jit\\compiler\\Compiler.opt.Narrowing.cs", "sources\\Core\\jit\\compiler\\Compiler.opt.SsaUses.cs", "sources\\Core\\jit\\compiler\\Compiler.gt.cs", "sources\\Core\\jit\\gentree\\GenTreeCast.cs", "sources\\Core\\jit\\gentree\\GenTreeIntCon.cs", "sources\\Core\\jit\\gentree\\GenTreeIntConCommon.cs", "sources\\Core\\jit\\gentree\\GenTreeOp.cs"],
       "reconciledCommit": null
     },
     {

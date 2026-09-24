@@ -9,6 +9,122 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    public GenTree? fgMorphModToZero(GenTreeOp tree)
+    {
+        assert(tree.Oper is GT_MOD or GT_UMOD);
+        assert(tree.Op2.IsIntegralConst(1));
+        if (opts.OptimizationDisabled)
+        {
+            return null;
+        }
+
+        // A new comma would need its VNs updated outside global morph.
+        if (!fgGlobalMorph && ((tree.Op1.Flags & GTF_SIDE_EFFECT) != 0))
+        {
+            return null;
+        }
+
+#if DEBUG
+        JITDUMP($"\nMorphing MOD/UMOD [{tree.TreeId:D6}] to Zero\n");
+#endif
+        var zero = tree.Op2;
+        zero.AsIntConCommon().IntegralValue = 0;
+        fgUpdateConstTreeValueNumber(zero);
+
+        GenTree? sideEffects = null;
+        gtExtractSideEffList(tree.Op1, ref sideEffects, GTF_ALL_EFFECT);
+        var result = sideEffects is not null
+            ? gtNewBinaryNode(GT_COMMA, zero.Type, sideEffects, zero)
+            : zero;
+        result.SetMorphed(this);
+
+        return result;
+    }
+
+    /// <summary>Transform a % b into a - (a / b) * b, preserving operand evaluation order.</summary>
+    public GenTree fgMorphModToSubMulDiv(GenTreeOp tree)
+    {
+#if DEBUG
+        JITDUMP($"\nMorphing MOD/UMOD [{tree.TreeId:D6}] to Sub/Mul/Div\n");
+#endif
+        if (tree.Oper is GT_MOD)
+        {
+            tree.SetOper(GT_DIV);
+        }
+        else if (tree.Oper is GT_UMOD)
+        {
+            tree.SetOper(GT_UDIV);
+        }
+        else
+        {
+            noway_assert(false, "Illegal gtOper in fgMorphModToSubMulDiv");
+        }
+
+        var first = tree.Op1;
+        var second = tree.Op2;
+        if (tree.IsReverseOp)
+        {
+            (first, second) = (second, first);
+        }
+
+        InlineArray2<TempInfo> temps = default;
+        var tempCount = 0;
+
+        // Pre-morph GTF_GLOB_REF is not reliable. A later arbitrary expression
+        // can reassign a local read by the earlier operand, so spill that read too.
+        // Work in execution order to handle GTF_REVERSE_OPS the same way.
+        var spillSecond = !second.Oper.IsInvariant && !second.Oper.IsLocal;
+        var spillFirst = !first.Oper.IsInvariant && (spillSecond || !first.Oper.IsLocal);
+        if (spillFirst)
+        {
+            temps[tempCount] = fgMakeTemp(first);
+            first = temps[tempCount].Load;
+            tempCount++;
+        }
+
+        if (spillSecond)
+        {
+            temps[tempCount] = fgMakeTemp(second);
+            second = temps[tempCount].Load;
+            tempCount++;
+        }
+
+        var dividend = tree.IsReverseOp ? second : first;
+        var divisor = tree.IsReverseOp ? first : second;
+        tree.Op1 = gtCloneExpr(dividend);
+        tree.Op2 = gtCloneExpr(divisor);
+        var type = tree.Type;
+        var multiply = gtNewBinaryNode(GT_MUL, type, tree, divisor);
+        GenTree result = gtNewBinaryNode(GT_SUB, type, dividend, multiply);
+        for (var i = tempCount - 1; i >= 0; i--)
+        {
+            result = gtNewBinaryNode(GT_COMMA, type, temps[i].Store, result);
+        }
+
+        result.SetMorphed(this);
+        assert(compCurBB is not null);
+        optRecordSsaUses(result, compCurBB);
+        tree.CheckDivideByConstOptimized(this);
+
+        return result;
+    }
+
+    public GenTree fgMorphUModToAndSub(GenTreeOp tree)
+    {
+#if DEBUG
+        JITDUMP($"\nMorphing UMOD [{tree.TreeId:D6}] to And/Sub\n");
+#endif
+        assert(tree.Oper is GT_UMOD);
+        assert(tree.Op2.IsIntegralConstUnsignedPow2);
+
+        var type = tree.Type;
+        var mask = unchecked((nint)(tree.Op2.AsIntConCommon().UnsignedIntegralValue - 1));
+        var result = gtNewBinaryNode(GT_AND, type, tree.Op1, gtNewIconNodeWithVN(this, type, mask));
+        result.SetMorphed(this);
+
+        return result;
+    }
+
     public void fgMoveOpsLeft(GenTree tree)
     {
         GenTree right;

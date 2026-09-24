@@ -486,6 +486,178 @@ internal static unsafe class ArithmeticMorphTests
         });
     }
 
+    [TestCase(false, true, false)]
+    [TestCase(false, false, false)]
+    [TestCase(true, true, false)]
+    [TestCase(true, false, false)]
+    [TestCase(false, true, true)]
+    public static void RemainderByOnePreservesEffectsAndOptimizationGates(bool effects, bool global, bool minOpts)
+    {
+        WithCompiler(compiler => {
+            compiler.fgGlobalMorph = global;
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            GenTree dividend = effects
+                ? compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, null)
+                : compiler.gtNewLclvNode(TYP_INT, 1);
+            var divisor = compiler.gtNewIconNodeWithVN(compiler, TYP_INT, 1);
+            var remainder = compiler.gtNewBinaryNode(GT_MOD, TYP_INT, dividend, divisor);
+            var result = compiler.fgMorphModToZero(remainder);
+            if (minOpts || (effects && !global))
+            {
+                Assert.That(result, Is.Null);
+                Assert.That(divisor.IntegralValue, Is.EqualTo(1));
+                return;
+            }
+
+            Assert.That(result, Is.Not.Null);
+            Assert.That(divisor.IntegralValue, Is.Zero);
+            Assert.That(divisor._vnPair.Liberal, Is.EqualTo(store.VNForIntCon(0)));
+            if (effects)
+            {
+                Assert.That(result!.Oper, Is.EqualTo(GT_COMMA));
+                Assert.That(result.AsOp().Op1, Is.SameAs(dividend));
+                Assert.That(result.AsOp().Op2, Is.SameAs(divisor));
+                Assert.That(result.Flags & GTF_CALL, Is.EqualTo(GTF_CALL));
+            }
+            else
+            {
+                Assert.That(result, Is.SameAs(divisor));
+            }
+        }, minOpts);
+    }
+
+    [TestCase(TYP_INT, 1L, 0L)]
+    [TestCase(TYP_INT, int.MinValue, int.MaxValue)]
+    [TestCase(TYP_LONG, long.MinValue, long.MaxValue)]
+    public static void UnsignedRemainderMasksPreserveWidthAndOperandEffects(var_types type, long divisor, long mask)
+    {
+        WithCompiler(compiler => {
+            compiler.vnStore = new ValueNumStore(compiler);
+            var dividend = compiler.gtNewCallNode(type, gtCallTypes.CT_USER_FUNC, null);
+            var remainder = compiler.gtNewBinaryNode(GT_UMOD, type, dividend, compiler.gtNewIconNode(type, (nint)divisor));
+            var result = compiler.fgMorphUModToAndSub(remainder);
+            Assert.That(result.Oper, Is.EqualTo(GT_AND));
+            Assert.That(result.Type, Is.EqualTo(type));
+            Assert.That(result.AsOp().Op1, Is.SameAs(dividend));
+            Assert.That(result.AsOp().Op2.AsIntConCommon().IntegralValue, Is.EqualTo(mask));
+            Assert.That(result.AsOp().Op2._vnPair.BothDefined, Is.True);
+            Assert.That(result.Flags & GTF_CALL, Is.EqualTo(GTF_CALL));
+        });
+    }
+
+    [TestCase(0, 2, false, 1)]
+    [TestCase(1, 2, false, 2)]
+    [TestCase(1, 2, true, 1)]
+    [TestCase(2, 1, false, 1)]
+    [TestCase(2, 1, true, 2)]
+    [TestCase(2, 2, false, 2)]
+    [TestCase(2, 2, true, 2)]
+    [TestCase(1, 1, false, 0)]
+    public static void RemainderExpansionSpillsOnceInExecutionOrder(int dividendKind, int divisorKind, bool reverse, int spills)
+    {
+        WithCompiler(compiler => {
+            compiler.compCurBB = new BasicBlock(null, null);
+            compiler.lvaTable[0].Type = TYP_INT;
+            GenTree Operand(int kind, int local)
+            {
+                return kind switch {
+                    0 => compiler.gtNewIconNode(TYP_INT, 7),
+                    1 => compiler.gtNewLclvNode(TYP_INT, local),
+                    _ => compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, null),
+                };
+            }
+
+            var dividend = Operand(dividendKind, 0);
+            var divisor = Operand(divisorKind, 1);
+            var remainder = compiler.gtNewBinaryNode(GT_MOD, TYP_INT, dividend, divisor);
+            remainder._vnPair.SetBoth(42);
+            if (reverse)
+            {
+                remainder.Flags |= GTF_REVERSE_OPS;
+            }
+
+            var result = compiler.fgMorphModToSubMulDiv(remainder);
+            var current = result;
+            for (var i = 0; i < spills; i++)
+            {
+                Assert.That(current.Oper, Is.EqualTo(GT_COMMA));
+                var assignment = current.AsOp().Op1;
+                Assert.That(assignment.Oper, Is.EqualTo(GT_STORE_LCL_VAR));
+                GenTree expected;
+                if (spills == 2)
+                {
+                    expected = i == (reverse ? 1 : 0) ? dividend : divisor;
+                }
+                else
+                {
+                    expected = dividendKind == 2 ? dividend : divisor;
+                }
+                Assert.That(assignment.AsUnOp().Op1, Is.SameAs(expected));
+                current = current.AsOp().Op2;
+            }
+
+            Assert.That(compiler.lvaCount, Is.EqualTo(3 + spills));
+            Assert.That(current.Oper, Is.EqualTo(GT_SUB));
+            var multiply = current.AsOp().Op2.AsOp();
+            Assert.That(multiply.Oper, Is.EqualTo(GT_MUL));
+            Assert.That(multiply.Op1, Is.SameAs(remainder));
+            Assert.That(remainder.Oper, Is.EqualTo(GT_DIV));
+            Assert.That(remainder._vnPair.BothDefined, Is.False);
+            Assert.That(remainder.Op1, Is.Not.SameAs(current.AsOp().Op1));
+            Assert.That(remainder.Op2, Is.Not.SameAs(multiply.Op2));
+            if (remainder.Op1.Oper is GT_LCL_VAR)
+            {
+                Assert.That(remainder.Op1.AsLclVar().LclNum, Is.EqualTo(current.AsOp().Op1.AsLclVar().LclNum));
+            }
+            Assert.That(remainder.Op2.AsLclVar().LclNum, Is.EqualTo(multiply.Op2.AsLclVar().LclNum));
+        });
+    }
+
+    [TestCase(GT_MOD, GT_DIV)]
+    [TestCase(GT_UMOD, GT_UDIV)]
+    public static void RemainderExpansionRecordsClonedSsaUsesAndPreparesOnlyTheDivisionConstant(genTreeOps operation, genTreeOps division)
+    {
+        WithCompiler(compiler => {
+            var definingBlock = new BasicBlock(null, null);
+            compiler.compCurBB = new BasicBlock(null, null);
+            compiler.lvaTable[1].lvInSsa = true;
+            var number = compiler.lvaTable[1].lvPerSsaData.AllocSsaNum();
+            compiler.lvaTable[1].GetPerSsaData(number) = new LclSsaVarDsc(definingBlock);
+            compiler.lvaTable[1].GetPerSsaData(number).AddUse(definingBlock);
+            var dividend = compiler.gtNewLclvNode(TYP_INT, 1);
+            dividend.SsaNum = number;
+            var divisor = compiler.gtNewIconNode(TYP_INT, 3);
+            var remainder = compiler.gtNewBinaryNode(operation, TYP_INT, dividend, divisor);
+            var result = compiler.fgMorphModToSubMulDiv(remainder);
+            Assert.That(result.Oper, Is.EqualTo(GT_SUB));
+            Assert.That(remainder.Oper, Is.EqualTo(division));
+            Assert.That(compiler.lvaTable[1].GetPerSsaData(number).NumUses, Is.EqualTo(3));
+            Assert.That(compiler.lvaTable[1].GetPerSsaData(number).HasGlobalUse, Is.True);
+            Assert.That(compiler.lvaTable[1].GetPerSsaData(number).HasPhiUse, Is.False);
+            Assert.That(remainder.Op2.Flags & GTF_DONT_CSE, Is.EqualTo(GTF_DONT_CSE));
+            Assert.That(divisor.Flags & GTF_DONT_CSE, Is.EqualTo(GTF_EMPTY));
+        });
+    }
+
+    [Test]
+    public static void SsaUseRecordingIgnoresDefinitionsButVisitsTheirOperands()
+    {
+        WithCompiler(compiler => {
+            var block = new BasicBlock(null, null);
+            compiler.lvaTable[1].lvInSsa = true;
+            var number = compiler.lvaTable[1].lvPerSsaData.AllocSsaNum();
+            compiler.lvaTable[1].GetPerSsaData(number) = new LclSsaVarDsc(block);
+            var load = compiler.gtNewLclvNode(TYP_INT, 1);
+            load.SsaNum = number;
+            var assignment = compiler.gtNewStoreLclVarNode(1, load);
+            assignment.SsaNum = number;
+            compiler.optRecordSsaUses(assignment, block);
+            Assert.That(compiler.lvaTable[1].GetPerSsaData(number).NumUses, Is.EqualTo(1));
+            Assert.That(compiler.lvaTable[1].GetPerSsaData(number).HasGlobalUse, Is.False);
+        });
+    }
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static byte IsFieldStatic(ICorJitInfo* info, CORINFO_FIELD_STRUCT_* handle) => 1;
 
