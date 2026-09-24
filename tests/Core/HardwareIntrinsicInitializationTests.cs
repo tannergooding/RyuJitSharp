@@ -13,6 +13,108 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class HardwareIntrinsicInitializationTests
 {
+    [TestCase(1, 1UL)]
+    [TestCase(8, 0xFFUL)]
+    [TestCase(16, 0xFFFFUL)]
+    [TestCase(32, 0xFFFFFFFFUL)]
+    [TestCase(64, ulong.MaxValue)]
+    public static void MaskAllBitsSetHonorsElementCount(int count, ulong expected)
+    {
+        var value = simdmask_t.AllBitsSet(count);
+        Assert.That(value.u64[0], Is.EqualTo(expected));
+        Assert.That(value.IsAllBitsSet, Is.EqualTo(count == 64));
+    }
+
+    [TestCase(TYP_DOUBLE, 16, 0UL, ulong.MaxValue)]
+    [TestCase(TYP_INT, 16, 0x100UL, ulong.MaxValue)]
+    [TestCase(TYP_FLOAT, 16, 0xFEUL, 1UL)]
+    [TestCase(TYP_BYTE, 16, 0xFFFEUL, 1UL)]
+    [TestCase(TYP_SHORT, 64, 0xFFFFFFFEUL, 1UL)]
+    [TestCase(TYP_UBYTE, 64, ulong.MaxValue, 0UL)]
+    public static void UnaryMaskEvaluationUsesNativeWidthsAndNormalization(var_types type, int size, ulong value, ulong expected)
+    {
+        WithCompiler(_ => {
+            simdmask_t mask = default;
+            mask.u64[0] = value;
+            var node = new GenTreeMskCon(mask);
+            node.EvaluateUnaryInPlace(GT_NOT, scalar: false, type, size);
+            Assert.That(node.SimdMaskVal.u64[0], Is.EqualTo(expected));
+            node.SimdMaskVal = mask;
+            node.EvaluateUnaryInPlace(GT_NOT, scalar: true, type, size);
+            Assert.That(node.SimdMaskVal.u64[0], Is.EqualTo(expected));
+        });
+    }
+
+    [TestCase(GT_AND, 0xFFUL, 0x1FFUL, ulong.MaxValue)]
+    [TestCase(GT_AND, 0x100UL, 0x100UL, 0UL)]
+    [TestCase(GT_AND_NOT, 0xFUL, 0xAUL, 0x5UL)]
+    [TestCase(GT_OR, 0xAAUL, 0x55UL, ulong.MaxValue)]
+    [TestCase(GT_XOR, 0xAAUL, 0x55UL, ulong.MaxValue)]
+    [TestCase(GT_XOR, ulong.MaxValue, 0xFEUL, 1UL)]
+    public static void BinaryMaskEvaluationIgnoresScalarAndInactiveBits(genTreeOps oper, ulong left, ulong right, ulong expected)
+    {
+        WithCompiler(_ => {
+            simdmask_t mask = default;
+            mask.u64[0] = left;
+            var node = new GenTreeMskCon(mask);
+            mask.u64[0] = right;
+            var other = new GenTreeMskCon(mask);
+            node.EvaluateBinaryInPlace(oper, scalar: false, TYP_FLOAT, 16, other);
+            Assert.That(node.SimdMaskVal.u64[0], Is.EqualTo(expected));
+            node.SimdMaskVal.u64[0] = left;
+            node.EvaluateBinaryInPlace(oper, scalar: true, TYP_FLOAT, 16, other);
+            Assert.That(node.SimdMaskVal.u64[0], Is.EqualTo(expected));
+            Assert.That(other.SimdMaskVal.u64[0], Is.EqualTo(right));
+            node.EvaluateBinaryInPlace(GT_XOR, scalar: false, TYP_FLOAT, 16, node);
+            Assert.That(node.IsZero, Is.True);
+        });
+    }
+
+    [TestCase(TYP_BYTE, 8)]
+    [TestCase(TYP_UBYTE, 64)]
+    [TestCase(TYP_SHORT, 16)]
+    [TestCase(TYP_USHORT, 32)]
+    [TestCase(TYP_INT, 16)]
+    [TestCase(TYP_UINT, 64)]
+    [TestCase(TYP_FLOAT, 12)]
+    [TestCase(TYP_LONG, 16)]
+    [TestCase(TYP_ULONG, 32)]
+    [TestCase(TYP_DOUBLE, 64)]
+    public static void MaskVectorConversionsPreserveLaneOrderAndInactiveBytes(var_types type, int size)
+    {
+        simdmask_t mask = default;
+        mask.u64[0] = 0xAAAAAAAAAAAAAAAA;
+        var value = simd64_t.AllBitsSet;
+        Globals.EvaluateSimdCvtMaskToVector(type, value.AsSpan<byte>()[..size], mask);
+        for (var index = 0; index < size; index++)
+        {
+            Assert.That(value.u8[index], Is.EqualTo(((index / type.Size) & 1) != 0 ? byte.MaxValue : 0));
+        }
+
+        Assert.That(value.AsSpan<byte>()[size..].IndexOfAnyExcept(byte.MaxValue), Is.EqualTo(-1));
+        simdmask_t result = default;
+        Globals.EvaluateSimdCvtVectorToMask(type, ref result, value.AsSpan<byte>()[..size]);
+        Assert.That(result.u64[0], Is.EqualTo(mask.u64[0] & (ulong)simdmask_t.GetBitMask(size / type.Size)));
+        value = simd64_t.AllBitsSet;
+        Globals.EvaluateSimdCvtVectorToMask(type, ref result, value.AsSpan<byte>()[..size]);
+        Assert.That(result.i64[0], Is.EqualTo(simdmask_t.GetBitMask(size / type.Size)));
+    }
+
+    [Test]
+    public static void VectorToMaskUsesSignBitsRatherThanNonzeroFloatingLanes()
+    {
+        simd64_t value = default;
+        value.u32[0] = 0x7F800123;
+        value.u32[1] = 0xFF800123;
+        value.u32[2] = 0x80000000;
+        value.u32[3] = 1;
+        simdmask_t result = default;
+        Globals.EvaluateSimdCvtVectorToMask(TYP_FLOAT, ref result, value.AsSpan<byte>()[..16]);
+        Assert.That(result.u64[0], Is.EqualTo(6UL));
+        Assert.That(value.u32[0], Is.EqualTo(0x7F800123u));
+        Assert.That(value.u32[1], Is.EqualTo(0xFF800123u));
+    }
+
     [TestCase(TYP_INT, GT_ADD, int.MaxValue, 1L, int.MinValue)]
     [TestCase(TYP_UBYTE, GT_ADD, 255L, 1L, 0L)]
     [TestCase(TYP_BYTE, GT_MUL, 127L, 2L, -2L)]

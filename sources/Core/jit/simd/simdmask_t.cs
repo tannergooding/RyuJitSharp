@@ -59,7 +59,7 @@ public struct simdmask_t : IEquatable<simdmask_t>
     public static simdmask_t AllBitsSet(int elementCount)
     {
         Unsafe.SkipInit<simdmask_t>(out var result);
-        result.u64[0] = uint.MaxValue;
+        result.i64[0] = GetBitMask(elementCount);
         return result;
     }
 

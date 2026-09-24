@@ -145,6 +145,14 @@ unmasked SIMD overshifts and masked rotates. Floating bitwise operations never
 load floating values. Division retains native valid-input preconditions; no
 fallback value is introduced for invalid integer division (B105).
 
+Mask operations share the native element-size dispatch and mask-width policy.
+Conversions use bounded byte spans: lane expansion fills raw bytes, and xarch
+extraction reads each lane's sign bit using the supported little-endian layout.
+This avoids loading floating values, preserving signaling-NaN bits. Mask
+arithmetic normalizes all-true results to 64 set bits; vector-to-mask conversion
+deliberately retains only the produced lane bits, matching native behavior.
+ARM64 predicates use spaced bits and nonzero-lane extraction (B106).
+
 Phi definitions own copied SSA-number arrays and expose readonly memory.
 Reaching-VN traversal uses a managed stack and membership set, preserving native
 push/pop order, conservative SSA lookup, duplicate suppression, cycles and early

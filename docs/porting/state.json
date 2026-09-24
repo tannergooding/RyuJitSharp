@@ -12,15 +12,15 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete fixed-width vector binary evaluation, including scalar arithmetic, lane comparison masks, bitwise floating dispatch and target-specific shift/rotate semantics.",
+      "scope": "Complete fixed-width mask unary/binary evaluation and vector conversions, including correction of the existing lane-count-independent AllBitsSet implementation.",
       "doneWhen": [
-        "Preserve integer wraparound, signedness and all-bits-set comparison results for integer and floating lanes.",
-        "Preserve native zeroing/sign-propagating overshifts and masked rotates rather than inheriting managed scalar shift masking.",
-        "Retain scalar upper lanes, explicit evaluation width and inactive storage; keep HWI dispatcher activation and scalable/mask evaluation deferred.",
+        "Preserve native xarch mask widths, eight-bit minimum and all-true normalization.",
+        "Preserve mask/vector bit order, most-significant-bit extraction and all-bits-set lane expansion without loading floating data.",
+        "Correct AllBitsSet for every valid lane count; keep HWI dispatcher activation and scalable evaluation deferred.",
         "The selected Debug/Release checks pass and complete functions are committed with their native retirement and checkpoint."
       ],
       "validation": [
-        "Extend existing HWI coverage for width/signedness, bitwise floating data, scalar upper lanes and inactive padding.",
+        "Extend existing HWI coverage for mask widths, normalization, scalar policy and vector conversions; reproduce the AllBitsSet defect before correcting it.",
         "Run one HWI/scalar selection in Debug and Release.",
         "No NativeAOT recapture or full suite for support-only changes unless the reachable frontier changes."
       ],
@@ -31,7 +31,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Non-HWI expression folding (B101), HWI creation/classification (B102/B103) and fixed-width vector unary/binary evaluation (B104/B105) are complete. Continue mask evaluation and remaining construction prerequisites before wiring the HWI folding dispatcher, then audit fgInline activation. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
+    "nextAction": "Non-HWI expression folding (B101), HWI creation/classification (B102/B103), fixed-width vector evaluation (B104/B105) and mask evaluation/conversion (B106) are complete. Continue remaining HWI construction/evaluation prerequisites before wiring the HWI folding dispatcher, then audit fgInline activation. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -626,6 +626,21 @@
         "debugTests": "artifacts\\vector-binary-debug.trx",
         "releaseTests": "artifacts\\vector-binary-release.trx"
       },
+      "maskEvaluation": {
+        "managedSourceCommit": "0ca0f5dbff671c767a21773541d373d1bfca03f4",
+        "debugPassed": 337,
+        "releasePassed": 333,
+        "newCasesPerConfiguration": 28,
+        "originalAllBitsSetFailures": 5,
+        "skipped": 0,
+        "nativeDefinitionsRetired": 10,
+        "nativeAotRecaptured": false,
+        "phaseActivated": false,
+        "nonX64ExecutionEstablished": false,
+        "debugTests": "artifacts\\mask-debug.trx",
+        "releaseTests": "artifacts\\mask-release.trx",
+        "beforeTests": "artifacts\\mask-before.trx"
+      },
       "nativeAotPublish": "passed-after-special-folding",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "six-of-ten-import-prefixes-equal-remaining-inline-candidate-differences",
@@ -966,6 +981,15 @@
       "commit": "105e5b06a57bae36460576fdab0709488ae2e81d",
       "indexCommit": "25b6cc64429c6d4450bdf963601f324ab916c74f",
       "ref": "refs/porting/snapshots/native-ledger-vector-binary"
+    },
+    "maskEvaluationManagedSource": {
+      "commit": "0ca0f5dbff671c767a21773541d373d1bfca03f4",
+      "ref": "refs/porting/snapshots/mask-evaluation-source"
+    },
+    "maskEvaluationNativeResidual": {
+      "commit": "4e11d6f66f5edf99728803c81f81e78fb079b946",
+      "indexCommit": "1226787fc57ec2e3e1775fbdf31f218f82bbf914",
+      "ref": "refs/porting/snapshots/native-ledger-mask-evaluation"
     }
   },
   "sourceMap": [

@@ -22,6 +22,20 @@ public sealed class GenTreeMskCon : GenTree
 
     public bool IsZero => _simdMaskVal.IsZero;
 
+    public void EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types baseType, int simdSize)
+    {
+        simdmask_t result = default;
+        EvaluateUnaryMask(oper, scalar, baseType, simdSize, ref result, _simdMaskVal);
+        _simdMaskVal = result;
+    }
+
+    public void EvaluateBinaryInPlace(genTreeOps oper, bool scalar, var_types baseType, int simdSize, GenTreeMskCon other)
+    {
+        simdmask_t result = default;
+        EvaluateBinaryMask(oper, scalar, baseType, simdSize, ref result, _simdMaskVal, other._simdMaskVal);
+        _simdMaskVal = result;
+    }
+
     public static bool Equals(GenTreeMskCon left, GenTreeMskCon right)
     {
 #if TARGET_ARM64 && DEBUG

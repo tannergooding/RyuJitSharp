@@ -542,6 +542,201 @@ public static partial class Globals
     }
 #endif
 
+#if FEATURE_MASKED_HW_INTRINSICS
+    public static void EvaluateUnaryMask(genTreeOps oper, bool scalar, var_types baseType, int simdSize,
+        ref simdmask_t result, in simdmask_t arg0)
+    {
+        var bitMask = GetMaskEvaluationBitMask(baseType, simdSize);
+        var arg0Value = (ulong)arg0.RawBits & bitMask;
+        ulong resultValue = 0;
+        switch (oper)
+        {
+            case GT_NOT:
+            {
+                resultValue = ~arg0Value;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+
+        // Native mask evaluation ignores scalar and normalizes all-true to all 64 bits.
+        resultValue &= bitMask;
+        result.u64[0] = resultValue == bitMask ? ulong.MaxValue : resultValue;
+    }
+
+    public static void EvaluateBinaryMask(genTreeOps oper, bool scalar, var_types baseType, int simdSize,
+        ref simdmask_t result, in simdmask_t arg0, in simdmask_t arg1)
+    {
+        var bitMask = GetMaskEvaluationBitMask(baseType, simdSize);
+        var arg0Value = (ulong)arg0.RawBits & bitMask;
+        var arg1Value = (ulong)arg1.RawBits & bitMask;
+        ulong resultValue = 0;
+        switch (oper)
+        {
+            case GT_AND_NOT:
+            {
+                resultValue = arg0Value & ~arg1Value;
+                break;
+            }
+
+            case GT_AND:
+            {
+                resultValue = arg0Value & arg1Value;
+                break;
+            }
+
+            case GT_OR:
+            {
+                resultValue = arg0Value | arg1Value;
+                break;
+            }
+
+            case GT_XOR:
+            {
+                resultValue = arg0Value ^ arg1Value;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+
+        resultValue &= bitMask;
+        result.u64[0] = resultValue == bitMask ? ulong.MaxValue : resultValue;
+    }
+
+    public static void EvaluateSimdCvtMaskToVector(var_types baseType, Span<byte> result, in simdmask_t arg0)
+    {
+        var elementSize = GetMaskElementSize(baseType);
+        assert((result.Length <= Unsafe.SizeOf<simd_t>()) && ((result.Length % elementSize) == 0));
+        var count = result.Length / elementSize;
+        var mask = (ulong)arg0.RawBits;
+        for (var index = 0; index < count; index++)
+        {
+#if TARGET_XARCH
+            // Xarch packs one bit per lane; ARM64 uses one bit per byte of lane storage.
+            var bit = index;
+#elif TARGET_ARM64
+            var bit = index * elementSize;
+#else
+#error Unsupported platform
+#endif
+            var isSet = ((mask >> bit) & 1) != 0;
+            result.Slice(index * elementSize, elementSize).Fill(isSet ? byte.MaxValue : (byte)0);
+        }
+    }
+
+    public static void EvaluateSimdCvtVectorToMask(var_types baseType, ref simdmask_t result, ReadOnlySpan<byte> arg0)
+    {
+        var elementSize = GetMaskElementSize(baseType);
+        assert((arg0.Length <= Unsafe.SizeOf<simd_t>()) && ((arg0.Length % elementSize) == 0));
+        var count = arg0.Length / elementSize;
+        ulong mask = 0;
+        for (var index = 0; index < count; index++)
+        {
+#if TARGET_XARCH
+            // Supported targets are little-endian; read the sign bit without loading floating data.
+            var isSet = (arg0[((index + 1) * elementSize) - 1] & 0x80) != 0;
+            var bit = index;
+#elif TARGET_ARM64
+            var isSet = arg0.Slice(index * elementSize, elementSize).IndexOfAnyExcept((byte)0) >= 0;
+            var bit = index * elementSize;
+#else
+#error Unsupported platform
+#endif
+            if (isSet)
+            {
+                mask |= 1UL << bit;
+            }
+        }
+
+        result.u64[0] = mask;
+    }
+
+    private static int GetMaskElementSize(var_types baseType)
+    {
+        switch (baseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+            {
+                return 1;
+            }
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+            {
+                return 2;
+            }
+
+            case TYP_INT:
+            case TYP_UINT:
+            case TYP_FLOAT:
+            {
+                return 4;
+            }
+
+            case TYP_LONG:
+            case TYP_ULONG:
+            case TYP_DOUBLE:
+            {
+                return 8;
+            }
+        }
+
+        unreached();
+        return 0;
+    }
+
+    private static ulong GetMaskEvaluationBitMask(var_types baseType, int simdSize)
+    {
+        var elementSize = GetMaskElementSize(baseType);
+#if TARGET_XARCH
+        // Mask instructions have an eight-bit minimum even for vectors with fewer lanes.
+        var count = Math.Max(simdSize / elementSize, 8);
+        assert(count is 8 or 16 or 32 or 64);
+        return (ulong)simdmask_t.GetBitMask(count);
+#elif TARGET_ARM64
+        // Predicate bits are spaced by the element width, across the entire mask storage.
+        switch (elementSize)
+        {
+            case 1:
+            {
+                return 0xFFFFFFFFFFFFFFFF;
+            }
+
+            case 2:
+            {
+                return 0x5555555555555555;
+            }
+
+            case 4:
+            {
+                return 0x1111111111111111;
+            }
+
+            case 8:
+            {
+                return 0x0101010101010101;
+            }
+        }
+
+        unreached();
+        return 0;
+#else
+#error Unsupported platform
+#endif
+    }
+#endif
+
 #if TARGET_XARCH
     // SSE2 Shuffle control byte to shuffle vector <W, Z, Y, X>
     // These correspond to shuffle immediate byte in shufps SSE2 instruction.
