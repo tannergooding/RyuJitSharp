@@ -12,6 +12,29 @@ continue. A milestone does not require a conversational stop. Pause for an
 explicit user request, an unresolved decision requiring approval, a publication
 conflict, or a blocker that cannot be safely resolved.
 
+## 2026-09-23: Fixed-width vector evaluation
+
+**Commits:** `a7448a3`, `f500c0a`.
+
+**Result:** Unary and binary vector constant evaluation now preserve native
+lane arithmetic, comparison masks, shift/rotate boundaries and floating
+bitwise data. Scalar operations retain xarch upper lanes; in-place updates
+preserve inactive storage and support aliased inputs. Twenty-one complete
+Windows-x64 native definitions retired across the two batches.
+
+**Evidence:** 73 new cases; the latest combined HWI/scalar selection passes
+309 Debug / 305 Release, zero skipped. Includes integer wrapping and narrow
+division, signed and unsigned overshifts, NaN payloads, signed zero, all fixed
+widths and explicit partial evaluation widths.
+
+**Frontier:** The HWI dispatcher remains inactive. ARM64 scalar clearing and
+other-target shift policies are source-ported but unexercised; scalable ARM64
+unary evaluation remains explicitly NYI. The existing six exact import prefixes
+remain the last corpus evidence; these support-only changes make no new
+phase/codegen parity claim.
+
+**Next:** Mask evaluation and remaining HWI construction prerequisites.
+
 ## 2026-09-23: HWI constants and operation classification
 
 **Commits:** `a947c3c`, `88097ce`.
