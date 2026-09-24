@@ -618,6 +618,10 @@ does. Its non-AMD64 Swift path reports NYI and then terminates with
 `fatal(CORJIT_IMPLLIMITATION)` until the ARM64 target masks are available.
 The native constructor remains in the residual tree.
 
+`Lowering.IsCallTargetInRange` implements the xarch policy. Other targets report
+NYI and terminate with `fatal(CORJIT_IMPLLIMITATION)` pending their call-target
+range checks; the shared direct-call lowering body remains in the native tree.
+
 Current target-sync additions under `TARGET_WASM` are
 `Compiler.fgWasmRepairTryEntries` and `Compiler.fgWasmSpillRefs` in
 `Compiler.fg.cs`. They throw `NotImplementedException` rather than returning a

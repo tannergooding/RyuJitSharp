@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Canonical codegen/GC/register/disassembler initialization is committed as 0f59359. Continue integrating LSRA reference-state and lowering/stack-level WIP against complete native functions, then complete call lowering required by throw-helper generation. The register-mask support closure uses regMask for SingleTypeRegSet, with native masks generated alongside register names; predicate-bank overlap and zero-valued pseudo-registers are covered. Debug-only lowering diagnostics are guarded in Release. The integrated selection passes 167 Debug and 159 Release cases. LowerRange still explicitly rejects GT_CALL and other required operators, while allocator and lowering drivers remain unactivated. Do not retire or commit incomplete drivers. Managed code size remains zero; no additional parity capture is claimed.",
+    "nextAction": "Continue LowerArg/LowerArgsForCall and their register/stack/field-list dependencies. Canonical backend initialization and native single-type masks are committed as 0f59359 and 53b6864. The direct-call target, argument-placement legalization and outgoing-area support closure is validated: LowerDirectCall preserves native access kinds, helper/function lookups, ReadyToRun cells and target metadata; LegalizeArgPlacement preserves ordering across interfering calls. The current selection passes 177 Debug and 169 Release cases, including ten call/frame-support cases. This is support code, not LowerCall or phase activation. The partial LowerRange dispatcher, containment helpers, compiler throw helpers, stack-level phase and LSRA reference state remain WIP. Lowering.DoPhase now rejects its unimplemented phase instead of reporting a successful no-op. Keep incomplete dispatch/allocation algorithms uncommitted and retain their native bodies. Managed code size remains zero; no additional parity capture is claimed.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -52,6 +52,17 @@
         "releaseTests": "artifacts\\scalar-backend-boundary-release.trx",
         "scope": "Integration coverage includes uncommitted lowering/LSRA support; no backend driver activation or managed code generation.",
         "nativeBodiesRetained": ["CodeGen and RegSet constructors", "GCInfo initialization and descriptors", "DisAssembler::disInit", "Lowering and LSRA drivers"]
+      },
+      "callLoweringSupport": {
+        "debugPassed": 177,
+        "releasePassed": 169,
+        "skipped": 0,
+        "newCases": 10,
+        "selection": ["CallLoweringTests", "BackendInitializationTests", "RegisterMaskTests", "RationalizationTests", "UseEdgeIteratorTests", "FlowGraphHelperTests", "MorphTreeSupportTests"],
+        "debugTests": "artifacts\\scalar-backend-call-debug.trx",
+        "releaseTests": "artifacts\\scalar-backend-call-release.trx",
+        "scope": "Direct-call target shapes, ReadyToRun tailcall cell reuse, argument-placement ordering and marks, outgoing-area maximum and four-extra-slot frame-pointer threshold.",
+        "remaining": ["LowerArg and field-list/register/stack argument lowering", "LowerCall and required indirect/virtual/unmanaged/CFG/tailcall paths", "Node/block lowering driver", "LSRA build/allocation/resolution", "Machine-code emission"]
       },
       "rationalizationActivation": {
         "debugPassed": 152,

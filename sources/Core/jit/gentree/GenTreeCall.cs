@@ -188,7 +188,7 @@ public sealed class GenTreeCall : GenTree
     }
 
     /// <summary>Used to pass direct call address between lower and codegen</summary>
-    private unsafe void* _directCallAddress
+    internal unsafe void* _directCallAddress
     {
         get
         {
@@ -569,6 +569,30 @@ public sealed class GenTreeCall : GenTree
 #else
     public bool IsR2RRelativeIndir => false;
 #endif
+
+    public WellKnownArg IndirectionCellArgKind
+    {
+        get
+        {
+            if (IsVirtualStub)
+            {
+                return WellKnownArg.VirtualStubCell;
+            }
+
+#if TARGET_ARMARCH || TARGET_RISCV64 || TARGET_LOONGARCH64
+            if (IsR2RRelativeIndir && !IsDelegateInvoke)
+            {
+                return WellKnownArg.R2RIndirectionCell;
+            }
+#elif TARGET_XARCH
+            if (IsR2RRelativeIndir && IsFastTailCall)
+            {
+                return WellKnownArg.R2RIndirectionCell;
+            }
+#endif
+            return WellKnownArg.None;
+        }
+    }
 
     public bool IsSameThis => (_callMoreFlags & GTF_CALL_M_NONVIRT_SAME_THIS) != 0;
 
