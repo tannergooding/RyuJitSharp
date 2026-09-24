@@ -12,27 +12,27 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port hashed outgoing-argument temporary storage and morph initialization, without activating the incomplete inliner.",
+      "scope": "Port early and late top-level qmark expansion and required throwing-block conversion, preserving native control-flow and profile behavior.",
       "doneWhen": [
-        "Implement hashBv creation, lookup, insertion, removal, native resize ordering and callback traversal needed by outgoing-argument temporary reuse.",
-        "Complete fgMorphInit using existing class-initialization, statement insertion and local allocation helpers.",
+        "Complete qmark discovery, Debug shape checks, statement expansion and phase traversal for both early and late modes.",
+        "Complete throwing-block conversion and reuse existing edge, EH, statement and tree helpers.",
         "Keep fgInline disabled until the remaining B112 prerequisites are complete.",
-        "Validate ordering and morph-init side effects in Debug and Release, retire complete native functions, and commit the documented batch."
+        "Validate branch shape, stores, nested traversal, throwing arms and native likelihood/flag propagation; retire complete native functions and commit."
       ],
       "validation": [
-        "Cover sparse bit-vector growth/shrink ordering and removal during an aborting traversal.",
-        "Run the smallest related Debug/Release selection, including existing root class-initialization cases.",
-        "Recapture NativeAOT/corpus when a completed phase is activated, not for unreachable helper-only changes."
+        "Cover both-arm and single-arm expansion, early gating, nested qmarks, comma splitting, field stores and no-return calls.",
+        "Run related Debug/Release flow-graph cases; extend only for concrete failures.",
+        "Recapture NativeAOT/corpus after phase activation and explicitly distinguish entry-prefix equality from phase parity."
       ],
       "deferred": [
         "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
         "General local assertion propagation, block morph and the full global-morph phase.",
         "Non-xarch hardware-intrinsic folding, hashBv bulk/set algebra and iterator APIs, and fgInline activation.",
-        "Early qmark expansion, patchpoint/indirect-call transformation and post-import cleanup, which still gate successful inline-phase activation.",
+        "Patchpoint/indirect-call transformation and post-import cleanup, which still gate successful inline-phase activation.",
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Root class-initialization construction and morph initialization are complete (B113/B114), including the outgoing-argument hashBv storage slice. Port early qmark expansion next; retain the patchpoint/indirect-call and post-import cleanup gates in B112 before enabling fgInline. Hash-vector bulk/set algebra and iterator APIs remain native; B115 records suspected upstream arithmetic defects to resolve when those APIs are needed. FoldHardware records the separate impHWIntrinsic stub boundary, not vector folding execution parity. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
+    "nextAction": "Qmark expansion and throwing-block conversion are complete (B116). Continue with patchpoint transformation, followed by indirect-call transformation and post-import cleanup, before enabling fgInline (B112). B117 records native single-arm likelihood behavior retained by the port. Hash-vector bulk/set algebra and iterator APIs remain native (B115). FoldHardware records the separate impHWIntrinsic stub boundary, not vector folding execution parity. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -759,7 +759,30 @@
         "fullPhaseParityEstablished": false,
         "codegenParity": "not-available"
       },
-      "nativeAotPublish": "passed-after-morph-initialization",
+      "qmarkExpansion": {
+        "managedSourceCommit": "30344c994430129645d89c59626193e2034f1293",
+        "debugPassed": 60,
+        "releasePassed": 60,
+        "newCases": 17,
+        "skipped": 0,
+        "nativeDefinitionsRetired": 7,
+        "phaseActivated": true,
+        "nativeAotRecaptured": true,
+        "nativeAotLibrary": "artifacts\\qmark-native\\RyuJitSharp.dll",
+        "nativeAotSha256": "38A5C9D822B11463BA8F06F2FD89B9BFE1BBB8E5CBE8F773221B32502B3539E1",
+        "debugTests": "artifacts\\qmark-validated-debug.trx",
+        "releaseTests": "artifacts\\qmark-validated-release.trx",
+        "nativeManifest": "artifacts\\morph-init-corpus-native\\manifest.json",
+        "managedManifest": "artifacts\\qmark-corpus-managed\\manifest.json",
+        "comparison": "artifacts\\qmark-comparison.json",
+        "corpusMethods": 11,
+        "earlyExpansionCompletions": 11,
+        "earlyExpansionCorpusChanges": 0,
+        "exactImportPrefixes": ["Add", "Branch", "Locals", "FoldConstants", "FoldFloating", "FoldInteger"],
+        "nativeExpansionParityEstablished": false,
+        "codegenParity": "not-available"
+      },
+      "nativeAotPublish": "passed-after-qmark-expansion",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "six-of-eleven-import-prefixes-equal-four-inline-differences-and-one-vector-importer-gap",
       "codegenParity": "not-available"
@@ -1172,6 +1195,15 @@
       "commit": "017bbf247db3c781b146ae0b2defa4b1b7cc2c01",
       "indexCommit": "a34fd23ddc2cbd31e57e54ff01609f9d278c1974",
       "ref": "refs/porting/snapshots/native-ledger-morph-init"
+    },
+    "qmarkExpansionManagedSource": {
+      "commit": "30344c994430129645d89c59626193e2034f1293",
+      "ref": "refs/porting/snapshots/qmark-expansion-source"
+    },
+    "qmarkExpansionNativeResidual": {
+      "commit": "e311547021c6d3124383966f0627f7b6e1569538",
+      "indexCommit": "a3ab857b7ba9beaa670dd2466414d93b6af9b2ba",
+      "ref": "refs/porting/snapshots/native-ledger-qmark-expansion"
     }
   },
   "sourceMap": [

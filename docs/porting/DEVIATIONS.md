@@ -213,6 +213,13 @@ establishes the required non-null tree invariant. Entry insertion order and phas
 status match native, including E&C frame requirements not alone marking IR as
 modified (B114).
 
+Qmark discovery uses an `out` destination instead of an optional pointer-to-pointer.
+Expansion updates the qmark's owning condition reference after reversal, including
+when reversal creates a replacement node. The existing statement/block iterators
+visit the newly inserted arms and remainder; managed throw conversion retains the
+native callfinally-unpairing and profile-update order. Native single-arm likelihood
+assignments are deliberately retained, not corrected only in C# (B116/B117).
+
 Phi definitions own copied SSA-number arrays and expose readonly memory.
 Reaching-VN traversal uses a managed stack and membership set, preserving native
 push/pop order, conservative SSA lookup, duplicate suppression, cycles and early

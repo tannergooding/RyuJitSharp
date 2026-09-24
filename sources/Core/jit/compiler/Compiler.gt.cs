@@ -16485,6 +16485,11 @@ public partial class Compiler
         return gtFindNodeInTree(tree, gtIsAsyncCall, GTF_CALL) is not null;
     }
 
+    public bool gtTreeContainsOper(GenTree tree, genTreeOps oper)
+    {
+        return gtFindNodeInTree(tree, node => node.Oper == oper, GTF_EMPTY) is not null;
+    }
+
     /// <summary>Check if a tree contains any tail call or tail call candidate.</summary>
     /// <param name="tree">The tree</param>
     /// <returns>true if any node in the tree is a tail call or tail call candidate; false otherwise.</returns>

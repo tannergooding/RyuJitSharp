@@ -12903,8 +12903,338 @@ public partial class Compiler
     // TODO: Port phase - fgExpandHelper
     public PhaseStatus fgExpandHelper(bool skipRarelyRunBlocks) => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port phase - fgExpandQmarkNodes
-    public PhaseStatus fgExpandQmarkNodes(bool early) => PhaseStatus.MODIFIED_NOTHING;
+#if DEBUG
+    public void fgPreExpandQmarkChecks(GenTree expr)
+    {
+        var topQmark = fgGetTopLevelQmark(expr, out _);
+
+        if (topQmark is null)
+        {
+            assert(!gtTreeContainsOper(expr, GT_QMARK), "Illegal QMARK");
+        }
+        else
+        {
+            // Nested qmarks are allowed in the arms, but not in the condition.
+            assert(!gtTreeContainsOper(topQmark.Cond, GT_QMARK), "Illegal QMARK");
+            fgPreExpandQmarkChecks(topQmark.ElseNode);
+            fgPreExpandQmarkChecks(topQmark.ThenNode);
+        }
+    }
+
+    public void fgPostExpandQmarkChecks()
+    {
+        foreach (var block in Blocks)
+        {
+            foreach (var stmt in block.Statements)
+            {
+                assert(!gtTreeContainsOper(stmt.RootNode, GT_QMARK), "QMARKs are disallowed beyond morph");
+            }
+        }
+    }
+#endif
+
+    public GenTreeQmark? fgGetTopLevelQmark(GenTree expr, out GenTree? dst)
+    {
+        dst = null;
+
+        if (expr.Oper is GT_QMARK)
+        {
+            return expr.AsQmark();
+        }
+        else if (expr.Oper.IsLocalStore && (expr.AsLclVarCommon().Data.Oper is GT_QMARK))
+        {
+            dst = expr;
+            return expr.AsLclVarCommon().Data.AsQmark();
+        }
+
+        return null;
+    }
+
+    /// <summary>Expand a top-level qmark into branches, returning whether a throwing block was introduced.</summary>
+    public bool fgExpandQmarkStmt(BasicBlock block, Statement stmt, bool onlyEarlyQmarks)
+    {
+        var introducedThrow = false;
+        var qmark = fgGetTopLevelQmark(stmt.RootNode, out var dst);
+
+        if ((qmark is null) || (onlyEarlyQmarks && !qmark.IsEarlyExpandableQmark))
+        {
+            return false;
+        }
+
+#if DEBUG
+        if (verbose)
+        {
+            jitprintf($"\nExpanding top-level qmark in {FMT_BB(block.bbNum)} (before)\n");
+            fgDispBasicBlocks(block, block, true);
+        }
+#endif
+
+        var condExpr = qmark.Cond;
+        var trueExpr = qmark.ThenNode;
+        var falseExpr = qmark.ElseNode;
+        assert(!varTypeIsFloating(condExpr.Type));
+
+        var hasTrueExpr = trueExpr.Oper is not GT_NOP;
+        var hasFalseExpr = falseExpr.Oper is not GT_NOP;
+        assert(hasTrueExpr || hasFalseExpr);
+
+        // Splitting clears the remainder's safe point. Restore it and propagate
+        // copy flags, since the remainder still post-dominates the original block.
+        var propagateFlagsToRemainder = block.FlagsRaw & BBF_GC_SAFE_POINT;
+        var propagateFlagsToAll = block.FlagsRaw & BBF_COPY_PROPAGATE;
+        var remainderBlock = fgSplitBlockAfterStatement(block, stmt);
+        var condBlock = fgNewBBafter(BBJ_ALWAYS, block, true);
+        var elseBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true);
+
+        fgRedirectEdge(ref block.TargetEdgeRef, condBlock);
+        condBlock.TargetEdge = fgAddRefPred(elseBlock, condBlock);
+        elseBlock.TargetEdge = fgAddRefPred(remainderBlock, elseBlock);
+        condBlock.inheritWeight(block);
+
+        if (!block.HasFlag(BBF_INTERNAL))
+        {
+            condBlock.RemoveFlags(BBF_INTERNAL);
+            elseBlock.RemoveFlags(BBF_INTERNAL);
+            condBlock.SetFlags(BBF_IMPORTED);
+            elseBlock.SetFlags(BBF_IMPORTED);
+        }
+
+        block.RemoveFlags(BBF_NEEDS_GCPOLL);
+        remainderBlock.SetFlags(propagateFlagsToRemainder | propagateFlagsToAll);
+        condBlock.SetFlags(propagateFlagsToAll);
+        elseBlock.SetFlags(propagateFlagsToAll);
+        BasicBlock? thenBlock = null;
+
+        if (hasTrueExpr && hasFalseExpr)
+        {
+            // ~C branches over the then block to the else block.
+            qmark.Op1 = condExpr = gtReverseCond(condExpr);
+
+            thenBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true);
+            thenBlock.SetFlags(propagateFlagsToAll);
+
+            if (!block.HasFlag(BBF_INTERNAL))
+            {
+                thenBlock.RemoveFlags(BBF_INTERNAL);
+                thenBlock.SetFlags(BBF_IMPORTED);
+            }
+
+            var thenLikelihood = qmark.ThenNodeLikelihood;
+            var elseLikelihood = qmark.ElseNodeLikelihood;
+            thenBlock.TargetEdge = fgAddRefPred(remainderBlock, thenBlock);
+
+            assert(condBlock.Target == elseBlock);
+            var thenEdge = fgAddRefPred(thenBlock, condBlock);
+            var elseEdge = condBlock.TargetEdge;
+            condBlock.SetCond(elseEdge, thenEdge);
+            thenBlock.inheritWeightPercentage(condBlock, thenLikelihood);
+            elseBlock.inheritWeightPercentage(condBlock, elseLikelihood);
+            thenEdge.Likelihood = thenLikelihood / 100.0;
+            elseEdge.Likelihood = elseLikelihood / 100.0;
+        }
+        else if (hasTrueExpr)
+        {
+            // ~C branches past the only arm into the remainder.
+            qmark.Op1 = condExpr = gtReverseCond(condExpr);
+            var thenLikelihood = qmark.ThenNodeLikelihood;
+            var elseLikelihood = qmark.ElseNodeLikelihood;
+
+            assert(condBlock.Target == elseBlock);
+            var thenEdge = fgAddRefPred(remainderBlock, condBlock);
+            var elseEdge = condBlock.TargetEdge;
+            condBlock.SetCond(thenEdge, elseEdge);
+            thenBlock = elseBlock;
+            elseBlock = null;
+
+            thenBlock.inheritWeightPercentage(condBlock, thenLikelihood);
+            thenEdge.Likelihood = thenLikelihood / 100.0;
+            elseEdge.Likelihood = elseLikelihood / 100.0;
+        }
+        else if (hasFalseExpr)
+        {
+            var thenLikelihood = qmark.ThenNodeLikelihood;
+            var elseLikelihood = qmark.ElseNodeLikelihood;
+
+            assert(condBlock.Target == elseBlock);
+            var thenEdge = fgAddRefPred(remainderBlock, condBlock);
+            var elseEdge = condBlock.TargetEdge;
+            condBlock.SetCond(thenEdge, elseEdge);
+            elseBlock.inheritWeightPercentage(condBlock, elseLikelihood);
+            thenEdge.Likelihood = thenLikelihood / 100.0;
+            elseEdge.Likelihood = elseLikelihood / 100.0;
+        }
+
+        assert(condBlock.Kind is BBJ_COND);
+        var jmpTree = gtNewUnaryNode(GT_JTRUE, TYP_VOID, qmark.Cond);
+        var jmpStmt = fgNewStmtFromTree(jmpTree, di: stmt.DebugInfo);
+        fgInsertStmtAtEnd(condBlock, jmpStmt);
+        fgRemoveStmt(block, stmt);
+
+        var dstLclNum = BAD_VAR_NUM;
+
+        if (dst is not null)
+        {
+            dstLclNum = dst.AsLclVarCommon().LclNum;
+            assert(dst.Oper.IsLocalStore);
+        }
+        else
+        {
+            assert(qmark.Type is TYP_VOID);
+        }
+
+        if (hasTrueExpr)
+        {
+            assert(thenBlock is not null);
+
+            if ((trueExpr.Oper is GT_CALL) && trueExpr.AsCall().IsNoReturn)
+            {
+                var trueStmt = fgNewStmtFromTree(trueExpr, di: stmt.DebugInfo);
+                fgInsertStmtAtEnd(thenBlock, trueStmt);
+                fgConvertBBToThrowBB(thenBlock);
+                introducedThrow = true;
+            }
+            else
+            {
+                // Split root commas before writing back the arm's value.
+                while (trueExpr.Oper is GT_COMMA)
+                {
+                    var commaStmt = fgNewStmtFromTree(trueExpr.AsOp().Op1, di: stmt.DebugInfo);
+                    trueExpr = trueExpr.AsOp().Op2;
+                    fgInsertStmtAtEnd(thenBlock, commaStmt);
+                }
+
+                if (dst is not null)
+                {
+                    trueExpr = (dst.Oper is GT_STORE_LCL_FLD)
+                        ? gtNewStoreLclFldNode(dst.Type, dstLclNum, dst.AsLclFld().LclOffs, trueExpr)
+                        : gtNewStoreLclVarNode(dstLclNum, trueExpr);
+                }
+
+                var trueStmt = fgNewStmtFromTree(trueExpr, di: stmt.DebugInfo);
+                fgInsertStmtAtEnd(thenBlock, trueStmt);
+            }
+        }
+
+        if (hasFalseExpr)
+        {
+            assert(elseBlock is not null);
+
+            if ((falseExpr.Oper is GT_CALL) && falseExpr.AsCall().IsNoReturn)
+            {
+                var falseStmt = fgNewStmtFromTree(falseExpr, di: stmt.DebugInfo);
+                fgInsertStmtAtEnd(elseBlock, falseStmt);
+                fgConvertBBToThrowBB(elseBlock);
+                introducedThrow = true;
+            }
+            else
+            {
+                while (falseExpr.Oper is GT_COMMA)
+                {
+                    var commaStmt = fgNewStmtFromTree(falseExpr.AsOp().Op1, di: stmt.DebugInfo);
+                    falseExpr = falseExpr.AsOp().Op2;
+                    fgInsertStmtAtEnd(elseBlock, commaStmt);
+                }
+
+                if (dst is not null)
+                {
+                    falseExpr = (dst.Oper is GT_STORE_LCL_FLD)
+                        ? gtNewStoreLclFldNode(dst.Type, dstLclNum, dst.AsLclFld().LclOffs, falseExpr)
+                        : gtNewStoreLclVarNode(dstLclNum, falseExpr);
+                }
+
+                var falseStmt = fgNewStmtFromTree(falseExpr, di: stmt.DebugInfo);
+                fgInsertStmtAtEnd(elseBlock, falseStmt);
+            }
+        }
+
+#if DEBUG
+        if (verbose)
+        {
+            jitprintf($"\nExpanding top-level qmark in {FMT_BB(block.bbNum)} (after)\n");
+            fgDispBasicBlocks(block, remainderBlock, true);
+        }
+#endif
+
+        return introducedThrow;
+    }
+
+    public PhaseStatus fgExpandQmarkNodes(bool early)
+    {
+        if ((early && ((optMethodFlags & OMF_HAS_EARLY_QMARKS) == 0)) || !compQmarkUsed)
+        {
+            return PhaseStatus.MODIFIED_NOTHING;
+        }
+
+        var introducedThrows = false;
+
+        foreach (var block in Blocks)
+        {
+            foreach (var stmt in block.Statements)
+            {
+#if DEBUG
+                fgPreExpandQmarkChecks(stmt.RootNode);
+#endif
+                introducedThrows |= fgExpandQmarkStmt(block, stmt, early);
+            }
+        }
+
+        if (!early)
+        {
+#if DEBUG
+            fgPostExpandQmarkChecks();
+#endif
+            compQmarkRationalized = true;
+        }
+
+        if (introducedThrows)
+        {
+            JITDUMP("Qmark expansion created new throw blocks\n");
+        }
+
+        return PhaseStatus.MODIFIED_EVERYTHING;
+    }
+
+    public void fgConvertBBToThrowBB(BasicBlock block)
+    {
+        JITDUMP($"Converting {FMT_BB(block.bbNum)} to BBJ_THROW\n");
+        assert(fgPredsComputed);
+
+        // Remove the callfinally pairing before scrubbing successors. Leave its
+        // tail in the block list so callers can keep iterating safely.
+        if (block.isBBCallFinallyPair)
+        {
+            var leaveBlock = block.Next;
+            assert(leaveBlock is not null);
+            fgPrepareCallFinallyRetForRemoval(leaveBlock);
+        }
+
+        var profileInconsistent = false;
+
+        foreach (var succBlock in block.Succs)
+        {
+            var succEdge = fgRemoveAllRefPreds(succBlock, block);
+
+            if (block.hasProfileWeight && succBlock.hasProfileWeight)
+            {
+                succBlock.decreaseBBProfileWeight(succEdge.LikelyWeight);
+                profileInconsistent |= succBlock.NumSucc > 0;
+            }
+        }
+
+        if (profileInconsistent)
+        {
+            JITDUMP($"Flow removal of {FMT_BB(block.bbNum)} needs to be propagated. Data {(fgPgoConsistent ? "is now" : "was already")} inconsistent.\n");
+            fgPgoConsistent = false;
+        }
+
+        block.SetKindAndTargetEdge(BBJ_THROW, null);
+        block.RemoveFlags(BBF_RETLESS_CALL);
+
+        if (!block.hasProfileWeight)
+        {
+            block.bbSetRunRarely();
+        }
+    }
 
     // TODO: Port phase - fgExpandRuntimeLookups
     public PhaseStatus fgExpandRuntimeLookups() => PhaseStatus.MODIFIED_NOTHING;
