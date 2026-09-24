@@ -13,6 +13,84 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class HardwareIntrinsicInitializationTests
 {
+    [Test]
+    public static void IntrinsicIdChangePreservesUnspecifiedOperandsAndMetadata()
+    {
+        WithCompiler(compiler => {
+            var left = new GenTreeVecCon(TYP_SIMD16);
+            var right = new GenTreeVecCon(TYP_SIMD16);
+            var replacement = new GenTreeVecCon(TYP_SIMD16);
+            var node = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_X86Base_Add, TYP_INT, 16, left, right);
+            node.AuxiliaryType = TYP_LONG;
+            node.Flags |= GTF_ORDER_SIDEEFF;
+            var flags = node.Flags;
+            node.ChangeHWIntrinsicId(NI_X86Base_Xor, replacement);
+            Assert.That(node.HWIntrinsicId, Is.EqualTo(NI_X86Base_Xor));
+            Assert.That(node.GetOp(1), Is.SameAs(replacement));
+            Assert.That(node.GetOp(2), Is.SameAs(right));
+            node.ChangeHWIntrinsicId(NI_X86Base_Or);
+            Assert.That(node.HWIntrinsicId, Is.EqualTo(NI_X86Base_Or));
+            Assert.That(node.GetOp(1), Is.SameAs(replacement));
+            Assert.That(node.GetOp(2), Is.SameAs(right));
+            Assert.That(node.Flags, Is.EqualTo(flags));
+            Assert.That(node.Type, Is.EqualTo(TYP_SIMD16));
+            Assert.That(node.SimdBaseType, Is.EqualTo(TYP_INT));
+            Assert.That(node.SimdSize, Is.EqualTo(16));
+            Assert.That(node.AuxiliaryType, Is.EqualTo(TYP_LONG));
+        });
+    }
+
+    [TestCase(1, TYP_SIMD16)]
+    [TestCase(4, TYP_SIMD16)]
+    [TestCase(8, TYP_SIMD32)]
+    [TestCase(16, TYP_SIMD64)]
+    public static void IntrinsicResetReplacesAllOperandsAndPreservesFlags(int count, var_types type)
+    {
+        WithCompiler(compiler => {
+            var initial = compiler.gtNewIconNode(TYP_INT, 0);
+            var node = compiler.gtNewSimdHWIntrinsicNode(type, NI_Vector_Create, TYP_INT, type.Size, initial);
+            node.Flags |= GTF_ORDER_SIDEEFF;
+            node.AuxiliaryType = TYP_FLOAT;
+            var flags = node.Flags;
+            var operands = new GenTree[count];
+            for (var index = 0; index < count; index++)
+            {
+                operands[index] = compiler.gtNewIconNode(TYP_INT, index + 1);
+            }
+
+            node.ResetHWIntrinsicId(NI_Vector_Create, operands);
+            Assert.That(node.Operands.Length, Is.EqualTo(count));
+            for (var index = 0; index < count; index++)
+            {
+                Assert.That(node.GetOp(index + 1), Is.SameAs(operands[index]));
+            }
+
+            node.ResetHWIntrinsicId(NI_Vector_CreateScalarUnsafe, initial);
+            Assert.That(node.HWIntrinsicId, Is.EqualTo(NI_Vector_CreateScalarUnsafe));
+            Assert.That(node.Operands.Length, Is.EqualTo(1));
+            Assert.That(node.GetOp(1), Is.SameAs(initial));
+            Assert.That(node.Flags, Is.EqualTo(flags));
+            Assert.That(node.Type, Is.EqualTo(type));
+            Assert.That(node.SimdBaseType, Is.EqualTo(TYP_INT));
+            Assert.That(node.SimdSize, Is.EqualTo(type.Size));
+            Assert.That(node.AuxiliaryType, Is.EqualTo(TYP_FLOAT));
+        });
+    }
+
+    [Test]
+    public static void IntrinsicResetDoesNotReinitializeIntrinsicSideEffects()
+    {
+        WithCompiler(compiler => {
+            var node = compiler.gtNewScalarHWIntrinsicNode(TYP_VOID, NI_X86Base_LoadFence);
+            var flags = node.Flags;
+            node.ResetHWIntrinsicId(NI_X86Base_Pause);
+            Assert.That(node.HWIntrinsicId, Is.EqualTo(NI_X86Base_Pause));
+            Assert.That(node.Operands.Length, Is.Zero);
+            Assert.That(node.Flags, Is.EqualTo(flags));
+            Assert.That(node.Flags & GTF_CALL, Is.EqualTo(GTF_EMPTY));
+        });
+    }
+
     [TestCase(TYP_BYTE)]
     [TestCase(TYP_UBYTE)]
     [TestCase(TYP_SHORT)]

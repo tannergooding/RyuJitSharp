@@ -165,6 +165,13 @@ one lane qualifies, so floating signed zero and NaN payloads are not treated as
 numeric comparisons. Local and intrinsic mask-width compatibility is unchanged
 (B108).
 
+HWI reconfiguration changes only the ID and operands within the same
+`GenTreeHWIntrinsic` object, not its CLR type. Partial changes retain the operand
+array; full resets install the supplied managed array and invalidate borrowed
+operand spans/refs. The native compiler/inline-array allocation parameters are
+unnecessary. Existing ID normalization is applied, but side-effect flags and
+other metadata remain caller-owned, as native requires (B109).
+
 Phi definitions own copied SSA-number arrays and expose readonly memory.
 Reaching-VN traversal uses a managed stack and membership set, preserving native
 push/pop order, conservative SSA lookup, duplicate suppression, cycles and early

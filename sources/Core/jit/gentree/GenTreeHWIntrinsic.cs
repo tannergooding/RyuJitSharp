@@ -165,6 +165,24 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
 #endif
     }
 
+    /// <summary>Changes the ID and optional leading operands without changing the operand count. Flags remain caller-owned.</summary>
+    public void ChangeHWIntrinsicId(NamedIntrinsic intrinsicId, params GenTree[] operands)
+    {
+        assert(operands.Length <= Operands.Length);
+        SetHWIntrinsicId(intrinsicId);
+        for (var index = 0; index < operands.Length; index++)
+        {
+            SetOp(index + 1, operands[index]);
+        }
+    }
+
+    /// <summary>Replaces the ID and all operands. Existing operand spans/refs become obsolete; flags remain caller-owned.</summary>
+    public void ResetHWIntrinsicId(NamedIntrinsic intrinsicId, params GenTree[] operands)
+    {
+        ResetOperands(operands);
+        SetHWIntrinsicId(intrinsicId);
+    }
+
     public bool IsMemoryLoad() => IsMemoryLoad(out _);
 
     public bool IsMemoryLoad([NotNullWhen(true)] out GenTree? addr)

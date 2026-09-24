@@ -12,15 +12,15 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete vector per-element mask recognition for constants, annotated locals and HWI expressions, using existing local metadata and operation classification.",
+      "scope": "Complete same-class HWI intrinsic-ID and operand reconfiguration without cross-kind node bashing.",
       "doneWhen": [
-        "Recognize raw all-zero/all-one lanes without interpreting floating data or inactive storage.",
-        "Preserve width compatibility, local annotations, HWI return-mask metadata and recursive bitwise rules.",
-        "Keep value-number mask analysis, HWI reconfiguration and full folding activation deferred.",
+        "Allow partial operand replacement with unchanged count and full replacement with a different count.",
+        "Preserve node identity, metadata and caller-owned side-effect flags while applying existing intrinsic-ID validation/normalization.",
+        "Document operand-view invalidation and remove native allocator-only parameters; keep cross-kind replacement and full folding activation separate.",
         "The selected Debug/Release checks pass and complete functions are committed with their native retirement and checkpoint."
       ],
       "validation": [
-        "Extend existing HWI coverage for lane masks, size mismatches, local metadata and recursive intrinsic expressions.",
+        "Extend existing HWI coverage for ID-only/partial changes, operand growth/shrinkage and unchanged flags/metadata.",
         "Run one HWI/scalar selection in Debug and Release.",
         "No NativeAOT recapture or full suite for support-only changes unless the reachable frontier changes."
       ],
@@ -31,7 +31,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "HWI evaluation/conversion prerequisites (B102-B107) and per-element mask recognition (B108) are complete. Complete same-class HWI ID/operand reconfiguration and then the full HWI folding closure, preserving existing equivalent vector queries rather than duplicating helpers; audit fgInline activation afterward. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
+    "nextAction": "HWI evaluation/conversion prerequisites (B102-B107), per-element mask recognition (B108) and same-class reconfiguration (B109) are complete. Port the full HWI folding closure, preserving existing equivalent vector queries and scalar element access rather than duplicating native wrappers; audit fgInline activation afterward. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -667,6 +667,18 @@
         "debugTests": "artifacts\\vector-mask-shape-debug.trx",
         "releaseTests": "artifacts\\vector-mask-shape-release.trx"
       },
+      "hwiReconfiguration": {
+        "managedSourceCommit": "9b9a0f0b3ef3350b8f8621b1a37c4d07403bef19",
+        "debugPassed": 371,
+        "releasePassed": 367,
+        "newCasesPerConfiguration": 6,
+        "skipped": 0,
+        "nativeDefinitionsRetired": 5,
+        "nativeAotRecaptured": false,
+        "phaseActivated": false,
+        "debugTests": "artifacts\\hwi-reconfiguration-debug.trx",
+        "releaseTests": "artifacts\\hwi-reconfiguration-release.trx"
+      },
       "nativeAotPublish": "passed-after-special-folding",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "six-of-ten-import-prefixes-equal-remaining-inline-candidate-differences",
@@ -1034,6 +1046,15 @@
       "commit": "20849dd8df67e2a5c17af7b1914895fde2eb2ffb",
       "indexCommit": "ce6e4d228abaf2f49f6f5473a0daa1df9a9d948d",
       "ref": "refs/porting/snapshots/native-ledger-vector-mask-shape"
+    },
+    "hwiReconfigurationManagedSource": {
+      "commit": "9b9a0f0b3ef3350b8f8621b1a37c4d07403bef19",
+      "ref": "refs/porting/snapshots/hwi-reconfiguration-source"
+    },
+    "hwiReconfigurationNativeResidual": {
+      "commit": "0f26d22303edc80a16a631ca7931f518bac4f7d1",
+      "indexCommit": "4ede0a519a15c74fb6e0a5f6311690c40bed2dcc",
+      "ref": "refs/porting/snapshots/native-ledger-hwi-reconfiguration"
     }
   },
   "sourceMap": [

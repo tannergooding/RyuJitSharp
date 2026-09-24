@@ -10,7 +10,7 @@ namespace RyuJitSharp;
 /// <summary>A node with a flexible count of operands stored in an array.</summary>
 public abstract class GenTreeMultiOp : GenTree
 {
-    private readonly GenTree[] _operands;
+    private GenTree[] _operands;
 
     // template<unsigned InlineOperandCount, typename...Operands>
     protected GenTreeMultiOp(genTreeOps oper, var_types type, GenTree[] operands)
@@ -32,6 +32,8 @@ public abstract class GenTreeMultiOp : GenTree
 #endif
 
     public new Span<GenTree> Operands => _operands;
+
+    protected void ResetOperands(GenTree[] operands) => _operands = operands;
 
     public static bool OperandsAreEqual(GenTreeMultiOp op1, GenTreeMultiOp op2)
     {
