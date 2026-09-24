@@ -7,7 +7,7 @@ Internal C# representation may differ without changing those results.
 
 Start with [state.json](state.json) for revisions and the current checkpoint.
 Read the [milestone journal](MILESTONES.md) to catch up on completed capabilities,
-evidence and remaining boundaries without replaying the conversation.
+project history and remaining work without replaying the conversation.
 The [continuation plan](PLAN.md) defines milestones; the
 [deviation register](DEVIATIONS.md) distinguishes accepted changes from existing
 limitations. Neither is an assertion that the current port is complete.

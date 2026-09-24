@@ -71,6 +71,9 @@ update [MILESTONES.md](MILESTONES.md), commit the checkpoint and push the curren
 porting branch, then continue into the next dependency boundary. The ongoing
 milestone publication workflow was approved on 2026-09-23; it does not authorize
 PR creation, history rewriting, or publication to other branches.
+Keep the journal reader-facing: explain capabilities, their significance and
+remaining limitations, rather than test results, provenance or recovery details.
+Execution evidence belongs in `state.json`, not in milestone descriptions.
 Pause only for an explicit user request, a decision requiring approval,
 a publication conflict, or a blocker that cannot be safely resolved.
 
