@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Local marking is committed as 809163e; fatal-result recovery is 9695c1f; tracked-local selection/traits are fb993ea; physical-register setup and B176 are 0e476b1. B170 shared unsigned layout/value-size/segment and morph consumers now pass independent committed-source integration (239 Debug/237 Release), excluding unrelated block-node constructor WIP and uncommitted lower helpers. Integrate the returned full-size LCLHEAP/block helper packet before wiring it. Liveness Init and BasicBlock.InitVarSets are returned through turn 41; the worker now owns the required two-bit memory-kind packing correction, without dataflow/driver activation. LSRA diagnostics/loop repairs are returned through turn 55, ownership acknowledged through turn 56; parent applied the B176 mapped-loop bound correction to held traversal too. Finish reviewing and validating that complete loop/diagnostic packet before committing it. Keep lowering/allocation inactive and broad backend work uncommitted. Managed code size remains zero.",
+    "nextAction": "Unsigned layout/value-size/segment and morph consumers are committed as 81a479f; integrate full-size LCLHEAP/block helpers next before wiring. Minimal LSRA traversal and native-shaped diagnostics now pass independent integration (115 Debug/93 Release), including B176 in the mapped loop, native physical-register fixture initialization, and an explicit EVEX traversal case; final focused runs pass 17 Debug/10 Release. LSRA worker collected through turn 56, unsigned worker through turn 44. Liveness Init/BasicBlock.InitVarSets and two-bit memory-kind packing are returned through turn 42; parent must adapt the seven test enum assignments identified in memory-sets-handoff.txt and validate the combined packet. Keep lowering/allocation drivers inactive: interval construction, dataflow, resolution and emission are still incomplete. Broad backend work remains uncommitted. Managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -41,6 +41,17 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "minimalAllocationTraversal": {
+        "debugPassed": 115,
+        "releasePassed": 93,
+        "skipped": 0,
+        "selection": "All LinearScan tests in the committed-source export plus the repaired minimal traversal and interval/reference diagnostics.",
+        "debugTests": "artifacts\\minimal-traversal-integrated-debug.trx",
+        "releaseTests": "artifacts\\minimal-traversal-integrated-release.trx",
+        "finalFocusedDebugTests": "artifacts\\minimal-traversal-final-debug.trx",
+        "finalFocusedReleaseTests": "artifacts\\minimal-traversal-final-release.trx",
+        "scope": "Constructed reference streams cover location transitions, delayed frees, temporary copy reuse, fixed and GC kills, optional allocations, stress ordering and scored diagnostics. Fixtures prepare the block sequence and physical records through native-equivalent helpers. Legacy and EVEX traversal run explicitly. These are helper/stream checks, not native-host allocation or generated-code parity."
+      },
       "unsignedLayoutContracts": {
         "debugPassed": 239,
         "releasePassed": 237,

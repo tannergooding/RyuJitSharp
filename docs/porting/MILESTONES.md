@@ -42,7 +42,7 @@ diagnostics and allocation statistics. Managed register maps preserve
 split-block aliases without reproducing an oversized native byte copy.
 
 These foundations do not yet activate register allocation. Interval building,
-allocation traversal, resolution and machine-code emission remain unfinished.
+optimized allocation, resolution and machine-code emission remain unfinished.
 
 Register assignment and lifetime support now track active and inactive
 intervals, spills, reusable constant registers, delayed frees and block-entry
@@ -69,6 +69,11 @@ bitsets. The complete liveness and allocation drivers remain unfinished.
 Register kills and GC-specific spills now preserve live values and advance
 fixed-register constraints. Temporary copy-register allocation retains the
 interval's primary assignment and reports the native selection heuristic.
+
+The minimal allocator now walks prepared reference streams, handles block and
+location transitions, and releases ordinary, delayed-use and temporary-copy
+registers in native order. It preserves optional-register and stress-spill
+behavior. This is not yet connected to the compiler's allocation phase.
 
 ## 2026-09-24: Rationalization and linear IR
 
