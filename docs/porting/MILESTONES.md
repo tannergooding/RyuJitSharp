@@ -12,6 +12,35 @@ continue. A milestone does not require a conversational stop. Pause for an
 explicit user request, an unresolved decision requiring approval, a publication
 conflict, or a blocker that cannot be safely resolved.
 
+## 2026-09-23: Active inlining and nested compilation
+
+**Commits:** `b5d8fe4`, `d3d1ca9`, `6839eb3`.
+
+**Result:** The inline phase now expands candidates, substitutes return
+placeholders, repairs failed calls, and reports decisions deterministically.
+Every attempt starts with a newly constructed compiler, matching native
+placement-new rather than retaining a previous inlinee's metadata and SIMD
+state. Successful inline IR returns `CORJIT_OK`; root methods still return
+`CORJIT_SKIPPED` until codegen exists. Complete boxing patterns and nullable
+field helpers replace a false-success stub exposed by actual nested imports.
+
+**Evidence:** The related selection passes 336 Debug / 281 Release, zero skipped.
+All eleven corpus methods complete through the native host, including one
+successful scalar inline and 43 nested vector-fallback inlines. Ten import
+prefixes and ten post-inline IR sections match native exactly. Nine complete
+inline-phase sections match, without normalization or new exclusions.
+
+**Frontier:** Hardware-intrinsic import remains incomplete, so `FoldHardware`
+imports managed fallback bodies instead of native intrinsic IR. Scalar
+post-inline IR is exact, but native inlinee profile checks appear to read an
+uninitialized diagnostic flag (B135); two native captures reproduce the
+difference. No managed flag poisoning or diagnostic suppression was added.
+Full EH checking, EE text logging, global morph and codegen remain incomplete;
+native runtime fallback is not managed codegen success.
+
+**Next:** Correct the recorded flag-filtered search-pruning defect (B125), then
+identify the next complete global-morph dependency from the pinned oracle.
+
 ## 2026-09-23: Post-import cleanup and OSR entry repair
 
 **Commit:** `14891be`.
