@@ -374,8 +374,73 @@ public partial class GenTree
     public bool IsCnsInitVal => _oper.IsCnsIntOrI || (_oper.IsInitVal && AsOp().Op1.Oper.IsCnsIntOrI);
 
 #if FEATURE_HW_INTRINSICS
-    // TODO: Port isContainableHWIntrinsic
-    public bool IsContainableHWIntrinsic => false;
+    public bool IsContainableHWIntrinsic
+    {
+        get
+        {
+            var node = AsHWIntrinsic();
+#if TARGET_XARCH
+            return node.HWIntrinsicId switch {
+                NI_AVX512_ConvertToVector128UInt32 or
+                NI_AVX512_ConvertToVector128UInt32WithSaturation or
+                NI_AVX512_ConvertToVector256Int32 or
+                NI_AVX512_ConvertToVector256UInt32 => !varTypeIsFloating(node.SimdBaseType),
+
+                NI_X86Base_LoadAlignedVector128 or
+                NI_X86Base_LoadScalarVector128 or
+                NI_AVX_LoadAlignedVector256 or
+                NI_AVX512_LoadAlignedVector512 or
+                NI_Vector_ToScalar or
+                NI_X86Base_ConvertToInt32 or
+                NI_X86Base_ConvertToUInt32 or
+                NI_X86Base_Extract or
+                NI_X86Base_X64_ConvertToInt64 or
+                NI_X86Base_X64_ConvertToUInt64 or
+                NI_X86Base_X64_Extract or
+                NI_AVX_ExtractVector128 or
+                NI_AVX2_ConvertToInt32 or
+                NI_AVX2_ConvertToUInt32 or
+                NI_AVX2_ExtractVector128 or
+                NI_AVX512_ConvertToVector128Byte or
+                NI_AVX512_ConvertToVector128ByteWithSaturation or
+                NI_AVX512_ConvertToVector128Int16 or
+                NI_AVX512_ConvertToVector128Int16WithSaturation or
+                NI_AVX512_ConvertToVector128Int32 or
+                NI_AVX512_ConvertToVector128Int32WithSaturation or
+                NI_AVX512_ConvertToVector128SByte or
+                NI_AVX512_ConvertToVector128SByteWithSaturation or
+                NI_AVX512_ConvertToVector128UInt16 or
+                NI_AVX512_ConvertToVector128UInt16WithSaturation or
+                NI_AVX512_ConvertToVector256Byte or
+                NI_AVX512_ConvertToVector256ByteWithSaturation or
+                NI_AVX512_ConvertToVector256Int16 or
+                NI_AVX512_ConvertToVector256Int16WithSaturation or
+                NI_AVX512_ConvertToVector256Int32WithSaturation or
+                NI_AVX512_ConvertToVector256SByte or
+                NI_AVX512_ConvertToVector256SByteWithSaturation or
+                NI_AVX512_ConvertToVector256UInt16 or
+                NI_AVX512_ConvertToVector256UInt16WithSaturation or
+                NI_AVX512_ConvertToVector256UInt32WithSaturation or
+                NI_AVX512_ExtractVector128 or
+                NI_AVX512_ExtractVector256 or
+                NI_X86Base_LoadAndDuplicateToVector128 or
+                NI_X86Base_MoveAndDuplicate or
+                NI_AVX_BroadcastScalarToVector128 or
+                NI_AVX_BroadcastScalarToVector256 or
+                NI_AVX2_BroadcastScalarToVector128 or
+                NI_AVX2_BroadcastScalarToVector256 or
+                NI_AVX512_BroadcastScalarToVector512 => true,
+
+                NI_Vector_GetElement => node.SimdSize == 16,
+                _ => IsEmbeddedMaskingCompatible(),
+            };
+#elif TARGET_ARM64
+            return (node.HWIntrinsicId is NI_Sve_ConditionalSelect) || IsEmbeddedMaskingCompatible();
+#else
+            return false;
+#endif
+        }
+    }
 #else
     public bool IsContainableHWIntrinsic => false;
 #endif
@@ -499,6 +564,8 @@ public partial class GenTree
     }
 
     public bool IsInitBlkOp => IsBlkOp && (Data.Type is TYP_INT) && Data.SkipCopyOrReload.IsInitVal;
+
+    public bool IsInvariant => Oper.IsConst || (Oper is GT_LCL_ADDR or GT_FTN_ADDR);
 
     public bool IsInitVal => IsIntegralConst(0) || Oper.IsInitVal;
 

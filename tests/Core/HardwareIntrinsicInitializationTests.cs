@@ -14,6 +14,21 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class HardwareIntrinsicInitializationTests
 {
+    [TestCase(NI_Vector_ToScalar)]
+    [TestCase(NI_X86Base_Extract)]
+    public static void ScalarExtractionIntrinsicsCanBeContainedByStores(NamedIntrinsic intrinsicId)
+    {
+        WithCompiler(compiler => {
+            var vector = compiler.gtNewZeroConNode(TYP_SIMD16);
+            var node = intrinsicId is NI_X86Base_Extract
+                ? compiler.gtNewSimdHWIntrinsicNode(TYP_INT, intrinsicId, TYP_UBYTE, 16,
+                    vector, compiler.gtNewIconNode(TYP_INT, 0))
+                : compiler.gtNewSimdHWIntrinsicNode(TYP_INT, intrinsicId, TYP_UBYTE, 16, vector);
+
+            Assert.That(node.IsContainableHWIntrinsic, Is.True);
+        });
+    }
+
     [TestCase(-1074, false)]
     [TestCase(-1023, false)]
     [TestCase(-1022, true)]
