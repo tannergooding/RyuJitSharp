@@ -12,6 +12,27 @@ continue. A milestone does not require a conversational stop. Pause for an
 explicit user request, an unresolved decision requiring approval, a publication
 conflict, or a blocker that cannot be safely resolved.
 
+## 2026-09-23: Patchpoint transformation
+
+**Commit:** `2b0f3d2`.
+
+**Result:** Complete regular loop and forced partial-compilation patchpoint
+expansion. Regular patchpoints share one frame-local counter, initialized once
+at entry, with native decrement/test/helper control flow and 99/1 probabilities.
+Forced patchpoints replace the block's statements without allocating a counter.
+The complete native `patchpoint.cpp` is retired.
+
+**Evidence:** Seven new IR/CFG cases; the patchpoint/block-splitting selection
+passes 50 Debug / 50 Release, zero skipped. NativeAOT publication and the
+eleven-method corpus succeed, retaining the six exact import prefixes.
+
+**Frontier:** The corpus is not Tier0 and does not execute patchpoints.
+Constructed IR cases cover the transformations; patchpoint metadata/codegen and
+actual OSR execution remain unimplemented. Indirect-call transformation and
+post-import cleanup still gate inliner activation.
+
+**Next:** Complete indirect-call transformation, then post-import cleanup.
+
 ## 2026-09-23: Qmark expansion
 
 **Commit:** `2a53751`.
