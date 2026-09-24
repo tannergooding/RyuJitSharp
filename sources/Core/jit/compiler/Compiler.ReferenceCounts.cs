@@ -7,6 +7,55 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    public unsafe PhaseStatus lvaMarkLocalVars()
+    {
+        JITDUMP("\n*************** In lvaMarkLocalVars()");
+        if (compMethodRequiresPInvokeFrame)
+        {
+            assert(!opts.ShouldUsePInvokeHelpers || (info.compLvFrameListRoot == BAD_VAR_NUM));
+            if (!opts.ShouldUsePInvokeHelpers)
+            {
+                noway_assert((info.compLvFrameListRoot >= info.compLocalsCount) && (info.compLvFrameListRoot < lvaCount));
+            }
+        }
+
+        var originalLocalCount = lvaCount;
+#if JIT32_GCENCODER
+        if (compLocallocUsed)
+        {
+            lvaLocAllocSPvar = lvaGrabTempWithImplicitUse(false, "LocAllocSPvar");
+            lvaGetDesc(lvaLocAllocSPvar).Type = TYP_I_IMPL;
+        }
+#endif
+        lvaRefCountState = RCS_NORMAL;
+#if DEBUG
+        const bool setSlotNumbers = true;
+#else
+        var setSlotNumbers = opts.compScopeInfo && (info.compVarScopesCount > 0);
+#endif
+        lvaComputeRefCounts(isRecompute: false, setSlotNumbers);
+
+        if (!PreciseRefCountsRequired)
+        {
+            return lvaCount != originalLocalCount ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
+        }
+
+        var reportParamTypeArg = lvaReportParamTypeArg();
+        if (lvaKeepAliveAndReportThis())
+        {
+            lvaGetDesc(info.compThisArg).lvImplicitlyReferenced = reportParamTypeArg;
+        }
+        else if (lvaReportParamTypeArg())
+        {
+            assert(info.compTypeCtxtArg != BAD_VAR_NUM);
+            lvaGetDesc(info.compTypeCtxtArg).lvImplicitlyReferenced = reportParamTypeArg;
+        }
+
+        assert(PreciseRefCountsRequired);
+
+        return lvaCount != originalLocalCount ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
+    }
+
     public bool backendRequiresLocalVarLifetimes()
     {
         if (!opts.MinOpts)

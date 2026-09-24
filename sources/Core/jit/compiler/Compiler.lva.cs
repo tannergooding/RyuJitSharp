@@ -2390,13 +2390,6 @@ public partial class Compiler
         return roundUp(varDsc.lvExactSize, TARGET_POINTER_SIZE);
     }
 
-    // TODO: Port Compiler.lvaMarkLocalVars
-    public PhaseStatus lvaMarkLocalVars()
-    {
-        lvaRefCountState = RCS_NORMAL;
-        return PhaseStatus.MODIFIED_NOTHING;
-    }
-
     /// <summary>set class information for a local var.</summary>
     /// <param name="varNum">number of the variable</param>
     /// <param name="clsHnd">class handle to use in set or update</param>

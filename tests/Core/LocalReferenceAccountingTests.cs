@@ -15,6 +15,48 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LocalReferenceAccountingTests
 {
+    [TestCase(true, false, false)]
+    [TestCase(true, false, true)]
+    [TestCase(false, false, false)]
+    [TestCase(false, false, true)]
+    [TestCase(false, true, false)]
+    [TestCase(false, true, true)]
+    public static void PhaseInitializesCountsSlotsAndGenericContext(bool minopts, bool keepContext, bool scopeInfo)
+    {
+        WithCompiler(minopts, compiler => {
+            CORINFO_METHOD_INFO method = default;
+            method.options = CorInfoOptions.CORINFO_GENERICS_CTXT_FROM_METHODDESC;
+            if (keepContext)
+            {
+                method.options |= CorInfoOptions.CORINFO_GENERICS_CTXT_KEEP_ALIVE;
+            }
+            compiler.info.compMethodInfo = &method;
+            compiler.info.compIsStatic = true;
+            compiler.info.compTypeCtxtArg = 0;
+            compiler.info.compVarScopesCount = 1;
+            compiler.opts.compScopeInfo = scopeInfo;
+            compiler.lvaRefCountState = RCS_EARLY;
+            foreach (ref var local in compiler.lvaTable.AsSpan())
+            {
+                local.lvSlotNum = 99;
+            }
+            var block = TreeBlock(compiler, BB_UNITY_WEIGHT, compiler.gtNewLclvNode(TYP_INT, 1));
+            compiler.fgFirstBB = compiler.fgLastBB = block;
+
+            var result = compiler.lvaMarkLocalVars();
+
+            Assert.That(result, Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
+            Assert.That(compiler.lvaRefCountState, Is.EqualTo(RCS_NORMAL));
+            AssertCounts(compiler, 1, 1, BB_UNITY_WEIGHT);
+            Assert.That(compiler.lvaTable[0].lvImplicitlyReferenced, Is.EqualTo(minopts || keepContext));
+#if DEBUG
+            Assert.That(compiler.lvaTable[1].lvSlotNum, Is.EqualTo(1));
+#else
+            Assert.That(compiler.lvaTable[1].lvSlotNum, Is.EqualTo(scopeInfo ? 1 : 99));
+#endif
+        });
+    }
+
 #if DEBUG
     [Test]
     public static void DisqualificationReasonHasNativeDefaultAndValueCopySemantics()

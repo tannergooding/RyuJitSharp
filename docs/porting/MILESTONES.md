@@ -57,7 +57,9 @@ and dependently promoted parameters do not acquire register mappings.
 Local-reference accounting now handles both expression trees and linear IR,
 including weighted uses, implicit parameter and P/Invoke references, EH
 definition costs, and single-definition eligibility. Minopts retains the
-native implicit-reference fast path.
+native implicit-reference fast path. The local-marking phase now initializes
+these counts, diagnostic slot numbers and generic-context lifetimes before
+rationalization.
 
 Register kills and GC-specific spills now preserve live values and advance
 fixed-register constraints. Temporary copy-register allocation retains the

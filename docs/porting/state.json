@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Reference accounting, parameter mappings, layout-slot fixes and kill/copy/score support are committed. Parent is closing standalone bitwise/folding helpers (37 cases/configuration) and local enregistration preparation (combined helper/accounting selection: 65 Debug/64 Release). Cast/shift/rotate dispatch passes 83 integration cases/configuration; full binary optimization still needs BMI/conditional-compare dependencies. Calls worker collected through turn 41 is authorized to implement B170 unsigned layout/ValueSize/block contracts and required consumers, including full-size helper arguments; parent must avoid those shared files. Accounting worker collected through turn 37 now owns current Liveness.SelectTrackedLocals policies/comparers, not obsolete lvaSortByRefCount. LSRA collected through turn 52 is repairing missing minimal-loop location/free/copy transitions, stress/reference ordering and diagnostic fidelity; HOLD traversal commit and interval-builder work until repaired. Keep lowering/allocation drivers inactive and broad backend work uncommitted. Managed code size remains zero.",
+    "nextAction": "Local marking is active and validated against the twenty-method native-host corpus; fatal-result recovery is committed as 9695c1f. Scalar folding/bitwise helpers and enregistration preparation are committed through e1dd9b1. Collect and independently integrate B170's unsigned layout/ValueSize/block packet, returned through worker turn 43 with 314 selected cases/configuration; keep full LCLHEAP unwired until integration. Tracked-local selection is returned through turn 39; its worker now owns the required TrackedVarBitSetTraits element/word-count correction and consumer validation. LSRA returned through turn 54 includes buildPhysRegRecords and the repaired location/free/copy transitions; the worker is now replacing approximate interval/ref/variable-ref dumps with the native diagnostic closure. HOLD traversal commit until that closure is complete. Keep lowering/allocation inactive and broad backend work uncommitted. Managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -41,6 +41,22 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "localMarkingPhase": {
+        "debugPassed": 167,
+        "releasePassed": 160,
+        "skipped": 0,
+        "selection": ["ErrorTrapTests", "LocalReferenceAccountingTests", "LocalMorphTests", "RationalizationTests", "MorphTreeSupportTests"],
+        "debugTests": "artifacts\\ref-count-recovery-debug.trx",
+        "releaseTests": "artifacts\\ref-count-recovery-release.trx",
+        "beforeFix": "All six phase-initialization regressions fail against the state-only stub. The first host capture aborts at unfinished lowering; result-preserving recovery then restores one attempt per selected method.",
+        "managedCapture": "artifacts\\ref-count-phase-managed-recovery-minopts",
+        "phaseComparison": "artifacts\\ref-count-phase-comparison.json",
+        "irComparison": "artifacts\\ref-count-phase-ir-comparison.json",
+        "exactLocalMarkingPhases": 20,
+        "exactRationalizationPhases": 20,
+        "exactRationalizedIR": 17,
+        "scope": "Complete native local-marking initialization, slot assignment, P/Invoke checks and generic-context bookkeeping. All twenty managed rationalization post-phase sections are unchanged from the previous capture. FoldHardware and two EH cases retain known IR differences; full post-phase text retains B135 profile-check differences. Lowering explicitly rejects compilation with CORJIT_SKIPPED, so host execution remains native fallback rather than managed codegen."
+      },
       "scalarFoldingHelpers": {
         "debugPassed": 37,
         "releasePassed": 37,
