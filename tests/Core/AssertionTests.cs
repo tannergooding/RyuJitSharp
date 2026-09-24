@@ -22,6 +22,184 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class AssertionTests
 {
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void ConstantApplicationPreservesScalarIdentityAndInstallsThreadedGlobalUses(bool floating, bool global)
+    {
+        WithCompiler(compiler => {
+            var type = floating ? TYP_DOUBLE : TYP_INT;
+            compiler.lvaTable = [new LclVarDsc { Type = type }, new LclVarDsc { Type = TYP_INT }];
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var original = compiler.gtNewLclvNode(type, 0);
+            var unknown = store.VNForExpr(null, type);
+            original._vnPair.SetBoth(unknown);
+            original.Flags |= GTF_COLON_COND | GTF_VAR_DEATH;
+            var constant = floating ? store.VNForDoubleCon(1.5) : store.VNForIntCon(7);
+            var assertion = floating
+                ? AssertionDsc.CreateConstLclVarAssertion(compiler, 0, unknown, 1.5, constant, true)
+                : AssertionDsc.CreateConstLclVarAssertion(compiler, 0, unknown, (nint)7, constant, true);
+            var index = compiler.optAddAssertion(assertion);
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            var assertions = BitOps.MakeEmpty(traits);
+            BitOps.AddElemD(traits, assertions, index - 1);
+            var parent = compiler.gtNewUnaryNode(GT_RETURN, type, original);
+            var statement = global ? compiler.gtNewStmt(parent) : null;
+            if (global)
+            {
+                original.Prev = compiler.gtNewNothingNode();
+                original.Next = parent;
+            }
+
+            var replacement = compiler.optAssertionProp_LclVar(assertions, original, statement);
+            Assert.That(replacement, Is.Not.Null);
+            var result = replacement ?? throw new InvalidOperationException();
+            Assert.That(result.Oper, Is.EqualTo(floating ? GT_CNS_DBL : GT_CNS_INT));
+            Assert.That(result.Type, Is.EqualTo(type));
+            Assert.That(floating ? result.AsDblCon().DconVal : (double)result.AsIntCon().IconValue,
+                Is.EqualTo(floating ? 1.5 : 7.0));
+            Assert.That(result.Flags, Is.EqualTo(GTF_COLON_COND));
+            Assert.That(result._vnPair, Is.EqualTo(global ? new ValueNumPair(constant, constant) : new ValueNumPair()));
+            Assert.That(original.Oper, Is.EqualTo(GT_LCL_VAR));
+#if DEBUG
+            Assert.That(result.TreeId, Is.EqualTo(original.TreeId));
+#endif
+            if (global)
+            {
+                Assert.That(parent.AsUnOp().Op1, Is.SameAs(result));
+                Assert.That(result.Next, Is.SameAs(parent));
+            }
+        }, local: !global);
+    }
+
+    [TestCase(0L)]
+    [TestCase(long.MinValue)]
+    public static void FloatingEqualityAssertionsDoNotPropagateEitherSignedZero(long bits)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_DOUBLE }, new LclVarDsc { Type = TYP_INT }];
+            var value = compiler.gtNewLclvNode(TYP_DOUBLE, 0);
+            var assertion = AssertionDsc.CreateConstLclVarAssertion(compiler, 0, ValueNumStore.NoVN,
+                BitConverter.Int64BitsToDouble(bits), ValueNumStore.NoVN, true);
+            Assert.That(compiler.optConstantAssertionProp(assertion, value, null), Is.Null);
+            Assert.That(value.Oper, Is.EqualTo(GT_LCL_VAR));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void GlobalConstantApplicationOnlyBypassesCseProtectionForCheckedBounds(bool checkedBound)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_INT, lvIsCSE = true }, new LclVarDsc { Type = TYP_REF }];
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var vn = checkedBound
+                ? store.VNForFunc(TYP_INT, VNFunc.VNF_ARR_LENGTH, store.VNForExpr(null, TYP_REF))
+                : store.VNForExpr(null, TYP_INT);
+            var local = compiler.gtNewLclvNode(TYP_INT, 0);
+            local._vnPair.SetBoth(vn);
+            var statement = compiler.gtNewStmt(local);
+            var constant = store.VNForIntCon(3);
+            var assertion = AssertionDsc.CreateConstLclVarAssertion(compiler, 0, vn, (nint)3, constant, true);
+            var result = compiler.optConstantAssertionProp(assertion, local, statement);
+            Assert.That(result is not null, Is.EqualTo(checkedBound));
+            Assert.That(statement.RootNode.Oper, Is.EqualTo(checkedBound ? GT_CNS_INT : GT_LCL_VAR));
+        }, local: false);
+    }
+
+    [TestCase(false, false, false, true)]
+    [TestCase(true, false, false, false)]
+    [TestCase(true, true, false, true)]
+    [TestCase(false, false, true, false)]
+    public static void CopyApplicationRetainsEnregistrationAndSynchronousPathRestrictions(bool field, bool doNotEnregister, bool synchronous, bool expected)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [
+                new LclVarDsc { Type = TYP_LONG, lvIsMultiRegRet = true },
+                new LclVarDsc { Type = TYP_LONG, lvDoNotEnregister = doNotEnregister, lvOnlyUsedOnSynchronousPath = synchronous },
+            ];
+            var tree = field ? (GenTreeLclVarCommon)compiler.gtNewLclFldNode(TYP_INT, 0, 4) : compiler.gtNewLclvNode(TYP_LONG, 0);
+            tree.Flags |= GTF_VAR_DEATH;
+            var index = compiler.optAddAssertion(AssertionDsc.CreateLclvarCopy(compiler, 0, 1, true));
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            var assertions = BitOps.MakeEmpty(traits);
+            BitOps.AddElemD(traits, assertions, index - 1);
+
+            var result = field ? compiler.optAssertionProp_LclFld(assertions, tree, null)
+                : compiler.optAssertionProp_LclVar(assertions, tree, null);
+            Assert.That(result is not null, Is.EqualTo(expected));
+            Assert.That(tree.LclNum, Is.EqualTo(expected ? 1 : 0));
+            Assert.That((tree.Flags & GTF_VAR_DEATH) == 0, Is.EqualTo(expected));
+            Assert.That(compiler.lvaTable[1].lvIsMultiRegRet, Is.EqualTo(expected));
+            if (field)
+            {
+                Assert.That(tree.AsLclFld().LclOffs, Is.EqualTo(4));
+                Assert.That(compiler.lvaTable[1].lvDoNotEnregister, Is.EqualTo(doNotEnregister));
+            }
+        });
+    }
+
+    [TestCase(TYP_STRUCT, true)]
+    [TestCase(TYP_REF, true)]
+    [TestCase(TYP_INT, false)]
+    public static void RedundantZeroStoresPreserveIntegralLoopInitializers(var_types type, bool removed)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = type }, new LclVarDsc { Type = TYP_STRUCT, Layout = new ClassLayout(8) }];
+            if (type is TYP_STRUCT)
+            {
+                compiler.lvaTable[0].Layout = new ClassLayout(8);
+            }
+#if DEBUG
+            compiler.fgSafeBasicBlockCreation = true;
+#endif
+            compiler.compCurBB = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            var zero = type is TYP_STRUCT
+                ? AssertionDsc.CreateConstLclVarAssertion(compiler, 0, ValueNumStore.NoVN, O2K_ZEROOBJ, ValueNumStore.NoVN, true)
+                : AssertionDsc.CreateConstLclVarAssertion(compiler, 0, ValueNumStore.NoVN, (nint)0, ValueNumStore.NoVN, true);
+            var sourceZero = AssertionDsc.CreateConstLclVarAssertion(compiler, 1, ValueNumStore.NoVN, O2K_ZEROOBJ, ValueNumStore.NoVN, true);
+            var assertions = InstallAssertions(compiler, [zero, sourceZero]);
+            GenTree value = type is TYP_STRUCT ? compiler.gtNewLclvNode(TYP_STRUCT, 1) : compiler.gtNewIconNode(type, 0);
+            var tree = compiler.gtNewStoreLclVarNode(0, value);
+
+            var result = compiler.optAssertionProp_LocalStore(assertions, tree, null);
+            Assert.That(result is not null, Is.EqualTo(removed));
+            Assert.That(tree.Oper, Is.EqualTo(removed ? GT_NOP : GT_STORE_LCL_VAR));
+            if (type is TYP_STRUCT)
+            {
+                Assert.That(value.Oper, Is.EqualTo(GT_LCL_VAR));
+            }
+        });
+    }
+
+    [Test]
+    public static void BlockStoreZeroPropagationUpdatesTheOwningDataOperand()
+    {
+        WithCompiler(compiler => {
+            var layout = new ClassLayout(8);
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_STRUCT, Layout = layout }, new LclVarDsc { Type = TYP_BYREF }];
+#if DEBUG
+            compiler.fgSafeBasicBlockCreation = true;
+#endif
+            compiler.compCurBB = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            var assertions = InstallAssertions(compiler, [
+                AssertionDsc.CreateConstLclVarAssertion(compiler, 0, ValueNumStore.NoVN, O2K_ZEROOBJ, ValueNumStore.NoVN, true),
+            ]);
+            var original = compiler.gtNewLclvNode(TYP_STRUCT, 0);
+            var address = compiler.gtNewLclvNode(TYP_BYREF, 1);
+            var block = new GenTreeBlk(TYP_STRUCT, address, original, layout);
+
+            Assert.That(compiler.optAssertionProp_BlockStore(assertions, block, null), Is.SameAs(block));
+            Assert.That(block.Data, Is.TypeOf<GenTreeIntCon>());
+            Assert.That(block.Data.AsIntCon().IconValue, Is.EqualTo((nint)0));
+            Assert.That(block.Addr, Is.SameAs(address));
+            Assert.That(original.Oper, Is.EqualTo(GT_LCL_VAR));
+        });
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void AssertionUpdatesReplaceTheOwningUseAndPreserveForwardTraversal(bool root)

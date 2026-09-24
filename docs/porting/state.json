@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Continue the optAssertionProp dispatcher dependency closure, starting with optAssertionProp_LclVar and optAssertionProp_LclFld (oracle assertionprop.cpp:3846 and 3967). The tenth protected draft contains the complete dispatcher; joint Debug/Release probes now identify eleven missing application helpers: LclVar, LclFld, LocalStore, BlockStore, AddMulSub, ModDiv, BndsChk, Cast, Call, RelOp and optVNConstantPropOnJTrue. Update bookkeeping, zero-object and ordinary/Swift return application, indirection application, non-null call/indirection application, scalar/block write-barrier classification, hardware mask propagation and the VN mask query are live, tested and retired. Unary owning-use lookup was corrected (B157). Investigate AllTrees source-constructor ownership at the actual global constant-replacement call sites: existing source constructors accept None/AllLocals, not AllTrees or LIR; do not pass AllLocals merely to evade checks. The other nine drafts remain protected and unchanged. Keep recursive drivers outside the normal build until the real dependency closure compiles; no stubs or Windows NYIs. Preserve whole-node owners, common flags, explicit VN policies, tail EE pinning and native diagnostics. B145, B153 and B156 remain deferred. fgMorphBlocks is inactive; incomplete draft probes are not successful validation or phase/codegen parity.",
+    "nextAction": "Continue the optAssertionProp dispatcher dependency closure with optAssertionProp_Call (oracle assertionprop.cpp:5598) and its subtype-query dependency, then the remaining arithmetic, bounds, cast and comparison application. Joint Debug/Release probes identify seven missing entry points: AddMulSub, ModDiv, BndsChk, Cast, Call, RelOp and optVNConstantPropOnJTrue. Copy profitability, copy/constant application, local and local-field application, and local/block-store application are now live, tested and retired. Global scalar constant replacements explicitly accept AllTrees construction, install the owning use and forward link, preserve logical IDs, and assign assertion VNs; LIR remains unsupported. Fresh handles and vectors retain native allocation identities, and signed floating zero is not propagated. ARM64 scalable constant application explicitly throws pending its existing representation gap. All ten protected drafts remain unchanged. Keep recursive drivers outside the normal build until the real dependency closure compiles; no stubs or Windows NYIs. Preserve whole-node owners, common flags, explicit VN policies, tail EE pinning and native diagnostics. B145, B153 and B156 remain deferred. fgMorphBlocks is inactive; incomplete draft probes are not successful validation or phase/codegen parity.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -49,6 +49,23 @@
         "skipped": 0,
         "sourceCheck": "Canonical tokens, comments, directives and literals preserved across nine preprocessor configurations, allowing only switch-section scope blocks.",
         "functionalWipIncluded": false,
+        "nativeAotRecaptured": false
+      },
+      "localAssertionApplication": {
+        "debugPassed": 268,
+        "releasePassed": 260,
+        "skipped": 0,
+        "newCases": 16,
+        "selection": ["AssertionTests", "LocalMorphTests", "MorphTreeSupportTests"],
+        "debugTests": "artifacts\\assertion-locals-debug.trx",
+        "releaseTests": "artifacts\\assertion-locals-release.trx",
+        "nativeDefinitionsRetired": ["Compiler::optCopyProp_LclVarScore", "Compiler::optCopyAssertionProp", "Compiler::optConstantAssertionProp", "Compiler::optAssertionProp_LclVar", "Compiler::optAssertionProp_LclFld", "Compiler::optAssertionProp_LocalStore", "Compiler::optAssertionProp_BlockStore"],
+        "coverage": ["local/global scalar payloads, flags, identity and VN policies", "threaded owning uses and forward traversal", "both floating zero signs", "CSE checked-bound exception", "copy enregistration, synchronous paths, multi-register and last-use flags", "redundant struct/GC zero stores without suppressing integral loop initializers", "block-store zero replacement ownership"],
+        "deferredPaths": ["ARM64 scalable-vector constant assertion application explicitly throws pending representation support"],
+        "draftProbeConfigurations": ["Debug", "Release"],
+        "remainingDraftDependencies": ["optAssertionProp_AddMulSub", "optAssertionProp_ModDiv", "optAssertionProp_BndsChk", "optAssertionProp_Cast", "optAssertionProp_Call", "optAssertionProp_RelOp", "optVNConstantPropOnJTrue"],
+        "draftProbesSucceeded": false,
+        "globalMorphActive": false,
         "nativeAotRecaptured": false
       },
       "assertionApplicationSupport": {
@@ -2168,6 +2185,11 @@
       "commit": "040a4f2e55f5298a03c4557f9615ec91e3186aa3",
       "indexCommit": "9c040df899dce43cc6f7d96e5f04cf67457e129f",
       "ref": "refs/porting/snapshots/native-ledger-assertion-application-support"
+    },
+    "localAssertionApplicationNativeResidual": {
+      "commit": "ca1b738070a6f12c537b64b78791e5fe010d0bc5",
+      "indexCommit": "9ec196c96afc68c53639c8db5713c95e91de29aa",
+      "ref": "refs/porting/snapshots/native-ledger-assertion-local-application"
     },
     "globalMorphDrafts": {
       "treeBlob": "36908cd7d0294ece59d91854bbdbfcb05d83f228",

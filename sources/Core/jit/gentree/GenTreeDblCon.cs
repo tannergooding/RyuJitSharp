@@ -18,8 +18,8 @@ public sealed class GenTreeDblCon : GenTree
         _dconVal = val;
     }
 
-    internal GenTreeDblCon(var_types type, double val, GenTree source)
-        : base(GT_CNS_DBL, type, source)
+    internal GenTreeDblCon(var_types type, double val, GenTree source, NodeThreading threading = NodeThreading.None)
+        : base(GT_CNS_DBL, type, source, threading)
     {
         assert(varTypeIsFloating(type));
         _dconVal = val;

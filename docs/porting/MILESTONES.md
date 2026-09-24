@@ -42,6 +42,11 @@ SSA values. Zero-initialized struct return values become scalar zero operands wh
 required by the return ABI, including Swift error returns. Statement updates preserve
 the current traversal and annotate invariant handle loads.
 
+Local assertion application now substitutes scalar and vector constants, propagates
+profitable local copies, and suppresses redundant zero stores without hiding integral
+loop initializers. Copies retain enregistration, synchronous-path and last-use
+constraints; global scalar replacements preserve the statement's forward traversal.
+
 Integral cast optimization now uses range proofs and expression narrowing to
 remove redundant conversions, retaining overflow checks and small-local
 normalization where required.

@@ -13,8 +13,8 @@ public sealed class GenTreeLngCon : GenTreeIntConCommon
         LngValue = val;
     }
 
-    internal GenTreeLngCon(long val, GenTree source)
-        : base(GT_CNS_NATIVELONG, TYP_LONG, source)
+    internal GenTreeLngCon(long val, GenTree source, NodeThreading threading = NodeThreading.None)
+        : base(GT_CNS_NATIVELONG, TYP_LONG, source, threading)
     {
         LngValue = val;
     }

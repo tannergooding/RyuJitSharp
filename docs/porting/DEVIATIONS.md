@@ -98,6 +98,15 @@ operand without changing the error operand. Global assertion updates use the
 managed owning edge or statement root and preserve the forward traversal link;
 the native later remorph remains responsible for rebuilding all statement links.
 
+Scalar constant assertion replacements preserve logical identity and explicitly
+accept all-trees threading when a statement owns the use. Constructors do not
+copy links; assertion update installs the replacement and its forward link.
+Fresh handle and vector constants still allocate new identities, as native does.
+Local propagation clears VNs; global propagation assigns the assertion's constant
+VN to both kinds. Signed floating zero is not propagated through equality facts.
+ARM64 scalable-vector constant application explicitly throws until its storage
+representation is ported, consistent with assertion creation.
+
 Constant field-sequence annotations are mutable metadata, allowing negation
 motion to clear an annotation without replacing the constant. `SetValueTruncating`
 accepts a `long` instead of a native signed-integer template; its int-width
