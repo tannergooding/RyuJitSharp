@@ -36,6 +36,8 @@ public struct AbiPassingInformation
 
     public bool HasExactlyOneStackSegment => (NumSegments == 1) && Segments[0].IsPassedOnStack;
 
+    public bool HasExactlyOneRegisterSegment => (NumSegments == 1) && Segments[0].IsPassedInRegister;
+
     public bool HasAnyRegisterSegment
     {
         get
@@ -50,6 +52,33 @@ public struct AbiPassingInformation
 
             return false;
         }
+    }
+
+    public bool HasAnyStackSegment
+    {
+        get
+        {
+            foreach (ref readonly var segment in Segments)
+            {
+                if (segment.IsPassedOnStack)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    public int CountRegsAndStackSlots()
+    {
+        var count = 0;
+        foreach (ref readonly var segment in Segments)
+        {
+            count += segment.IsPassedInRegister ? 1 : (segment.Size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+        }
+
+        return count;
     }
 
     public bool IsSplitAcrossRegistersAndStack

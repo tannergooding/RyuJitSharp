@@ -23,10 +23,11 @@ Outgoing calls can classify signature types into Windows-x64 argument registers
 and stack slots, account for shadow space, insert virtual-stub and ReadyToRun
 cells, and remove those cells before reclassification. Argument scheduling,
 including spill decisions and evaluation ordering, preserves stores, exceptions,
-nested calls, stack allocations and control-flow-guard checks. Materializing
-argument temporaries, tail-call transformation and the recursive tree/block
-drivers remain unfinished; these foundations are not yet activated as a
-global-morph phase.
+nested calls, stack allocations and control-flow-guard checks. Struct-argument
+support maps promoted fields to ABI slots and scopes temporary reuse across
+nested calls. Materializing argument temporaries, tail-call transformation and
+the recursive tree/block drivers remain unfinished; these foundations are not
+yet activated as a global-morph phase.
 
 ## 2026-09-23: Implicit-byref parameter preparation
 

@@ -1,6 +1,8 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.genTreeOps;
@@ -433,6 +435,100 @@ internal static unsafe class CallArgumentMorphTests
             var sorted = new CallArg[count];
             call.Args.SortArgs(compiler, call, sorted);
             Assert.That(sorted, Is.EqualTo(original));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void SharedTemporaryScopesRestoreOuterLifetimes(bool exceptional)
+    {
+        WithCompiler(compiler => {
+            var availableField = typeof(Compiler).GetField("fgAvailableOutgoingArgTemps", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("Missing outgoing temporary pool.");
+            var usedField = typeof(Compiler).GetField("fgUsedSharedTemps", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("Missing outgoing temporary stack.");
+            var available = new hashBv();
+            var previous = new Stack<int>();
+            availableField.SetValue(compiler, available);
+            usedField.SetValue(compiler, previous);
+
+            using (var outer = new Compiler.SharedTempsScope(compiler))
+            {
+                var outerTemps = usedField.GetValue(compiler) as Stack<int>
+                    ?? throw new InvalidOperationException("Missing outer scope.");
+                outerTemps.Push(1);
+                if (exceptional)
+                {
+                    _ = Assert.Throws<NotSupportedException>(() => {
+                        using var inner = new Compiler.SharedTempsScope(compiler);
+                        var innerTemps = usedField.GetValue(compiler) as Stack<int>
+                            ?? throw new InvalidOperationException("Missing inner scope.");
+                        innerTemps.Push(2);
+                        throw new NotSupportedException();
+                    });
+                }
+                else
+                {
+                    using var inner = new Compiler.SharedTempsScope(compiler);
+                    var innerTemps = usedField.GetValue(compiler) as Stack<int>
+                        ?? throw new InvalidOperationException("Missing inner scope.");
+                    innerTemps.Push(2);
+                }
+
+                Assert.That(usedField.GetValue(compiler), Is.SameAs(outerTemps));
+                Assert.That(available.testBit(2), Is.True);
+                Assert.That(available.testBit(1), Is.False);
+            }
+
+            Assert.That(usedField.GetValue(compiler), Is.SameAs(previous));
+            Assert.That(available.testBit(1), Is.True);
+            Assert.That(previous, Is.Empty);
+        });
+    }
+
+    [TestCase(0, 16, true)]
+    [TestCase(0, 8, false)]
+    [TestCase(4, 16, false)]
+    [TestCase(0, 9, true)]
+    public static void PromotedFieldsMatchEveryRegisterAndRoundedStackSlot(int registerOffset, int stackSize, bool matches)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = new LclVarDsc[4];
+            compiler.lvaCount = 4;
+            ref var parent = ref compiler.lvaTable[0];
+            parent.Type = TYP_STRUCT;
+            parent.Layout = new ClassLayout(24);
+            parent.lvPromoted = true;
+            parent.lvFieldLclStart = 1;
+            parent.lvFieldCnt = 3;
+            for (var i = 1; i < 4; i++)
+            {
+                ref var field = ref compiler.lvaTable[i];
+                field.Type = TYP_LONG;
+                field.lvIsStructField = true;
+                field.lvParentLcl = 0;
+                field.lvFldOffset = (byte)((i - 1) * 8);
+            }
+
+            var abi = new AbiPassingInformation(2);
+            abi.Segments[0] = AbiPassingSegment.InRegister(REG_RCX, registerOffset, 8);
+            abi.Segments[1] = AbiPassingSegment.OnStack(32, 8, stackSize);
+            Assert.That(abi.HasAnyStackSegment, Is.True);
+            Assert.That(abi.IsSplitAcrossRegistersAndStack, Is.True);
+            Assert.That(abi.HasExactlyOneRegisterSegment, Is.False);
+            Assert.That(abi.CountRegsAndStackSlots(), Is.EqualTo(1 + ((stackSize + 7) / 8)));
+            Assert.That(compiler.FieldsMatchAbi(parent, abi), Is.EqualTo(matches));
+
+            var original = compiler.gtNewLclvNode(TYP_STRUCT, 0);
+            GenTreeFieldList.Use[] fields = [.. compiler.fgMorphLclToFieldList(original).Uses];
+            Assert.That(fields.Length, Is.EqualTo(3));
+            for (var i = 0; i < fields.Length; i++)
+            {
+                Assert.That(fields[i].Node.AsLclVar().LclNum, Is.EqualTo(i + 1));
+                Assert.That(fields[i].Offset, Is.EqualTo(i * 8));
+                Assert.That(fields[i].Type, Is.EqualTo(TYP_LONG));
+            }
+            Assert.That(original.Oper, Is.EqualTo(GT_LCL_VAR));
         });
     }
 

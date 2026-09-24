@@ -275,6 +275,11 @@ counts and bucket/node/bit traversal order are preserved, including the native
 uses a delegate in place of the native template functor. Bulk/set algebra and the
 separate iterator are not yet ported (B114/B115).
 
+`SharedTempsScope` is a managed `IDisposable` scope rather than a native destructor.
+It restores the enclosing temporary stack before releasing its own locals back
+to the pool, including on exception unwinding. `Stack<int>` enumeration preserves
+the native top-down release order.
+
 Morph initialization composes `gtNewStmt` and `fgInsertStmtAtBeg`, exactly as the
 native `fgNewStmtAtBeg` wrapper does. An EE request to use the class-init helper
 establishes the required non-null tree invariant. Entry insertion order and phase

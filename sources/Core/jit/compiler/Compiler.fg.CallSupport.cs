@@ -73,4 +73,54 @@ public partial class Compiler
             return GenTree.VisitResult.Continue;
         });
     }
+
+    public bool FieldsMatchAbi(in LclVarDsc variable, AbiPassingInformation abiInfo)
+    {
+        if (variable.lvFieldCnt != abiInfo.CountRegsAndStackSlots())
+        {
+            return false;
+        }
+
+        foreach (ref readonly var segment in abiInfo.Segments)
+        {
+            if (segment.IsPassedInRegister)
+            {
+                if (lvaGetFieldLocal(variable, (uint)segment.Offset) == BAD_VAR_NUM)
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                for (var offset = 0; offset < segment.Size; offset += TARGET_POINTER_SIZE)
+                {
+                    if (lvaGetFieldLocal(variable, (uint)(segment.Offset + offset)) == BAD_VAR_NUM)
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    public GenTreeFieldList fgMorphLclToFieldList(GenTreeLclVar local)
+    {
+        ref var variable = ref lvaGetDesc(local.LclNum);
+        assert(variable.lvPromoted);
+        var fieldCount = variable.lvFieldCnt;
+        var fieldLocal = variable.lvFieldLclStart;
+        var fields = new GenTreeFieldList();
+
+        for (var i = 0; i < fieldCount; i++)
+        {
+            ref var field = ref lvaGetDesc(fieldLocal);
+            var node = gtNewLclvNode(field.Type, fieldLocal);
+            fields.AddField(this, node, field.lvFldOffset, field.Type);
+            fieldLocal++;
+        }
+
+        return fields;
+    }
 }
