@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "The active inliner milestone is published and B125 node-search pruning is corrected. Continue B136 from native MergedReturns/shared return construction, then complete the remaining fgAddInternal prerequisites before phase activation. Preserve B127/B129/B135 diagnostic gaps and the hardware-import frontier; root methods still require native fallback.",
+    "nextAction": "MergedReturns and shared return construction are complete, including the insertion-point assertion correction (B137). Continue B136 with synchronized method protection, generic exception filters and reverse-P/Invoke entry/exit, then activate the complete fgAddInternal phase. Preserve B127/B129/B135 diagnostic gaps and the hardware-import frontier; root methods still require native fallback.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -949,6 +949,18 @@
         "releaseTests": "artifacts\\node-search-release.trx",
         "nativeAotRecaptured": false
       },
+      "mergedReturns": {
+        "debugPassed": 53,
+        "releasePassed": 53,
+        "newCases": 10,
+        "debugCasesFailingBeforeInsertionFix": 7,
+        "skipped": 0,
+        "debugTests": "artifacts\\merged-returns-debug.trx",
+        "releaseTests": "artifacts\\merged-returns-release.trx",
+        "nativeDefinitionsRetired": ["MergedReturns", "Compiler::fgMoveBlocksAfter", "PhasedVar::MarkAsReadOnly"],
+        "phaseActivated": false,
+        "nativeAotRecaptured": false
+      },
       "nativeAotPublish": "passed-after-inliner-activation",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "ten-of-eleven-import-prefixes-and-post-inline-IR-sections-equal-nine-inline-phase-sections-equal",
@@ -1406,6 +1418,11 @@
     "inlinePhaseManagedSource": {
       "commit": "6cbd3a3fced61d39e3b4c049ebca952f15446058",
       "ref": "refs/porting/snapshots/inline-phase-source"
+    },
+    "mergedReturnsNativeResidual": {
+      "commit": "7e9f97d593520b01a7025854f49e4719953e481d",
+      "indexCommit": "8394dabc23804b49d7b2e404b4e793ed6ed8fc6a",
+      "ref": "refs/porting/snapshots/native-ledger-merged-returns"
     },
     "inlineBoxNativeResidual": {
       "commit": "c636fad980a1a595434aef412b35632cd6138d27",

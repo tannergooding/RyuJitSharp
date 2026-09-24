@@ -8721,8 +8721,11 @@ public partial class Compiler
         }
 
         // Now find the insertion point.
-        assert(startBlk is not null);
-        afterBlk ??= fgFindInsertPoint(regionIndex, putInTryRegion, startBlk, endBlk, nearBlk, jumpBlk: null, runRarely);
+        if (afterBlk is null)
+        {
+            assert(startBlk is not null);
+            afterBlk = fgFindInsertPoint(regionIndex, putInTryRegion, startBlk, endBlk, nearBlk, jumpBlk: null, runRarely);
+        }
 
         // We have decided to insert the block after 'afterBlk'.
         JITDUMP($"fgNewBBinRegion(jumpKind={jumpKind}, tryIndex={tryIndex}, hndIndex={hndIndex}, putInFilter={dspBool(putInFilter)}, runRarely={dspBool(runRarely)}, insertAtEnd={dspBool(insertAtEnd)}): inserting after {FMT_BB(afterBlk.bbNum)}\n");
@@ -12841,6 +12844,29 @@ public partial class Compiler
         {
             block.Prev.Next = block.Next;
         }
+    }
+
+    /// <summary>Insert an already-unlinked block range after another block. The caller owns updating fgFirstFuncletBB.</summary>
+    public void fgMoveBlocksAfter(BasicBlock start, BasicBlock end, BasicBlock insertAfterBlk)
+    {
+#if DEBUG
+        if (verbose)
+        {
+            jitprintf($"Relocated block{(start == end ? "" : "s")} [{FMT_BB(start.bbNum)}..{FMT_BB(end.bbNum)}] inserted after {FMT_BB(insertAfterBlk.bbNum)}{(insertAfterBlk.IsLast ? " at the end of method" : "")}\n");
+        }
+#endif
+
+        if (insertAfterBlk == fgLastBB)
+        {
+            fgLastBB = end;
+            end.Next = null;
+        }
+        else
+        {
+            end.Next = insertAfterBlk.Next;
+        }
+
+        insertAfterBlk.Next = start;
     }
 
     /// <summary>unlink a block from the linked list because it is being removed, and adjust fgBBcount.</summary>

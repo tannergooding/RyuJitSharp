@@ -58,4 +58,16 @@ public struct PhasedVar<T>
             _value = value;
         }
     }
+
+#if DEBUG
+    public void MarkAsReadOnly()
+#else
+    public readonly void MarkAsReadOnly()
+#endif
+    {
+#if DEBUG
+        assert(_initialized);
+        _readPhase = true;
+#endif
+    }
 }
