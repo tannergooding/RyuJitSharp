@@ -16,6 +16,21 @@ internal static unsafe class BlockMorphTests
 {
     [TestCase(false)]
     [TestCase(true)]
+    public static void InitValueClassificationUsesTheUnaryOperand(bool constant)
+    {
+        WithCompiler(compiler => {
+            GenTree value = constant
+                ? compiler.gtNewIconNode(TYP_INT, 17)
+                : compiler.gtNewLclvNode(TYP_INT, 0);
+            var init = new GenTreeUnOp(GT_INIT_VAL, TYP_INT, value);
+
+            Assert.That(value.IsCnsInitVal, Is.EqualTo(constant));
+            Assert.That(init.IsCnsInitVal, Is.EqualTo(constant));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
     public static void ValueRetypingCanPreserveSimpleAndCompositeSsaIdentity(bool composite)
     {
         WithCompiler(compiler => {

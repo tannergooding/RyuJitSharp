@@ -371,7 +371,7 @@ public partial class GenTree
 
     public bool IsCnsNonZeroFltOrDbl => _oper.IsCnsFltOrDbl && !AsDblCon().IsBitwiseEqual(0);
 
-    public bool IsCnsInitVal => _oper.IsCnsIntOrI || (_oper.IsInitVal && AsOp().Op1.Oper.IsCnsIntOrI);
+    public bool IsCnsInitVal => _oper.IsCnsIntOrI || (_oper.IsInitVal && AsUnOp().Op1.Oper.IsCnsIntOrI);
 
 #if FEATURE_HW_INTRINSICS
     public bool IsContainableHWIntrinsic
