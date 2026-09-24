@@ -55,6 +55,14 @@ Overflow folding retains the native global-morph gate. Value-numbered constant
 replacement now refreshes both VNs, and overflow helpers carry the native
 exception-set composition (B082/B083/B100).
 
+Identical-operand comparisons allocate fresh constants, as native does, rather
+than using the scalar-bashing replacement constructors. Comparisons and SELECTs
+copy the original sequencing links only outside global morph; callers still own
+installing the returned node. QMARK flag cleanup uses the standard managed
+preorder visitor and skips nested COLON subtrees. The nullable `hasValue`
+zero-offset invariant is checked in the folding fixture instead of a C++
+`static_assert` (B101).
+
 The existing `CheckedOps.Try*` arithmetic APIs return success (the inverse of
 native `CheckedOps::*Overflows`) and expose the wrapped result through an out
 parameter. Addition/subtraction use sign-bit checks or unsigned ordering;

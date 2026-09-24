@@ -3675,24 +3675,15 @@ public partial class Compiler
 
         if (tree.Oper.IsBinary)
         {
-            var op = tree.AsOp();
-
-            if ((op.Op1 is not null) && (op.Op2 is not null) && !tree.Oper.IsAtomic)
-            {
-                if (op.Op1.Oper.IsConst && op.Op2.Oper.IsConst)
-                {
-                    return gtFoldExprBinaryConst(op);
-                }
-
-                if (opts.OptimizationEnabled && (tree.Oper is not GT_COMMA)
-                    && varTypeIsFloating(op.Op1.Type) && (op.Op1.Oper.IsConst || op.Op2.Oper.IsConst))
-                {
-                    return gtFoldExprSpecialFloating(op);
-                }
-            }
+            return gtFoldExprBinary(tree.AsOp());
         }
 
-        // TODO: Port the remaining nonconstant binary, conditional and hardware-intrinsic folding.
+        if (tree.Oper.IsConditional)
+        {
+            return gtFoldExprConditional(tree);
+        }
+
+        // TODO: Port hardware-intrinsic folding.
         return tree;
     }
 

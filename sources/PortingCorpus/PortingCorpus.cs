@@ -49,6 +49,11 @@ internal static class PortingCorpus
             return 8;
         }
 
+        if (FoldInteger(0x1234) != 4712)
+        {
+            return 9;
+        }
+
         return 0;
     }
 
@@ -89,6 +94,9 @@ internal static class PortingCorpus
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static double FoldFloating(double value) => (((value + -0.0) * 1.0) - 0.0) / 1.0;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int FoldInteger(int value) => (value & 0xFF) + (value / 1) + (value * 0);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int InlineCandidate(int value) => value * 2;

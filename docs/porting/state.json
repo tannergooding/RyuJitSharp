@@ -12,26 +12,26 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete VN-backed constant and overflow folding, including tree constant numbering, embedded-handle/field-address metadata maps and paired exception composition.",
+      "scope": "Complete one-constant integer/comparison folding and conditional folding, including nullable-box comparisons and conditional-execution flag cleanup. Wire the binary/conditional dispatcher while leaving hardware-intrinsic folding explicit as remaining work.",
       "doneWhen": [
-        "All Windows-x64 tree constant forms receive native-compatible VNs and metadata; unsupported scalable storage remains explicit.",
-        "Unknown compile-time handles do not overwrite valid embedded-handle mappings; only known-address static field sequences are registered.",
-        "Overflow folding preserves the global-morph gate and assigns matching normal/exception VNs to the helper and dummy result.",
+        "Complete gtFoldExprBinary, gtFoldExprSpecial, gtFoldExprCompare, gtFoldExprConditional and gtFoldBoxNullable with native gates, effects and node identities.",
+        "Zero-extension folds run complete morph finalization, and eliminated QMARKs clear conditional flags only above nested COLONs.",
+        "Debug/Release selected checks and refreshed native/managed import comparisons establish the changed reachable folding paths.",
         "The selected Debug/Release checks pass and complete functions are committed with their native retirement and checkpoint."
       ],
       "validation": [
-        "One combined assertion/scalar-folding selection in Debug and Release.",
-        "Cover value-numbered constant replacement, overflow exception pairs, handle/field metadata, reference/byref zero and vector/mask forms in the existing fixtures.",
-        "No full suite or NativeAOT recapture unless a concrete failure or newly reachable compiler phase requires it."
+        "One combined scalar-folding/assertion selection in Debug and Release, adding focused coverage for integer identities, effect gates, conditional flags and nullable boxing.",
+        "Publish NativeAOT and recapture the small corpus because importer-visible folding now changes.",
+        "No full-suite expansion unless a concrete failure requires it."
       ],
       "deferred": [
         "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
         "General local assertion propagation, block morph and the full global-morph phase.",
-        "Remaining integer/comparison/conditional/HWI folding and fgInline activation.",
+        "Hardware-intrinsic folding and fgInline activation.",
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "VN-backed constant/overflow folding is complete (B100), following node-wide assertion generation and morph completion (B099). Continue the remaining scalar/integer/comparison folding closure and its morph-completion callers toward fgInline activation; general local propagation and block/global morph remain unported. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop. Preserve unchanged-frontier evidence.",
+    "nextAction": "Non-HWI expression folding is complete (B101). Continue the hardware-intrinsic folding dependency closure, then audit fgInline activation against the remaining prerequisites; general local propagation and block/global morph remain unported. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -550,9 +550,32 @@
         "debugTests": "artifacts\\vn-folding-debug.trx",
         "releaseTests": "artifacts\\vn-folding-release.trx"
       },
-      "nativeAotPublish": "passed-after-integral-ranges",
+      "specialFolding": {
+        "managedSourceCommit": "917e3e343fe53209f5248d5d428d5babc3611dab",
+        "nativeAotSourceCommit": "570340d1b228056df947b5c0084f56b82ce8860b",
+        "capturedProductionSourcesMatchValidatedSnapshot": true,
+        "debugPassed": 254,
+        "releasePassed": 248,
+        "newCasesPerConfiguration": 57,
+        "originalDispatcherFailures": 45,
+        "skipped": 0,
+        "nativeFunctionsRetired": 5,
+        "nativeVisitorsRetired": 1,
+        "nativeAotRecaptured": true,
+        "nativeCompilationHeaders": 10,
+        "managedCompilationHeaders": 10,
+        "equalImportPrefixes": ["Add", "Branch", "Locals", "FoldConstants", "FoldFloating", "FoldInteger"],
+        "newIntegerCorpusFolds": 1,
+        "firstDifferences": "unchanged-inline-candidate-diagnostics-and-processing",
+        "fullPhaseParityEstablished": false,
+        "codegenParityEstablished": false,
+        "comparison": "artifacts\\special-folding-comparison.json",
+        "debugTests": "artifacts\\special-folding-debug.trx",
+        "releaseTests": "artifacts\\special-folding-release.trx"
+      },
+      "nativeAotPublish": "passed-after-special-folding",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
-      "phaseDumpParity": "five-of-nine-import-prefixes-equal-remaining-inline-candidate-differences",
+      "phaseDumpParity": "six-of-ten-import-prefixes-equal-remaining-inline-candidate-differences",
       "codegenParity": "not-available"
     }
   },
@@ -577,12 +600,12 @@
     "commit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "nativeConfiguration": "windows.x64.Checked",
     "librariesConfiguration": "Release",
-    "nativeCompilationHeaders": 9,
-    "durableCorpusNativeCompilationHeaders": 9,
+    "nativeCompilationHeaders": 10,
+    "durableCorpusNativeCompilationHeaders": 10,
     "oldNativeHostPreservedAndExecuted": true,
-    "managedCapture": "nine-selected-methods-loaded-with-target-abi",
+    "managedCapture": "ten-selected-methods-loaded-with-target-abi",
     "managedGuid": "cb2fa75d-449d-4ee0-93ef-57011daefb8c",
-    "latestManagedBinarySha256": "BEC274C7DD49DFD1A5C8BA7CA6DED3DA4CFB9B76DFCBE120E8F9859DEBFCB29A",
+    "latestManagedBinarySha256": "3FAEBD8989D158D2910C1E416C29F4AE32DD6641BCB1E17B06E40E3AFF930998",
     "wrongGuidCaptureRejected": true,
     "nativeLayoutMeasurements": "matched-raw-managed-sizeof-and-debug-variable-offsets",
     "latestPrefixDifference": "inline-candidate-diagnostics-and-processing",
@@ -611,7 +634,8 @@
       "Tree-form scalar folding preserves logical IDs and has exact native import-prefix coverage for six folds. Replacement requires unthreaded source nodes; value numbering, cached post-morph argument aliases and LIR replacement remain unsupported. The full inliner remains disabled.",
       "Floating constant-operand folding preserves native signed-zero and NaN rules, full-optimization gates, effects and JTRUE relop roots. Its four identity folds have exact import-prefix coverage; NaN/effect combinations have focused IR coverage, not codegen evidence. VN support and global-morph assertion closure remain incomplete.",
       "Integral ranges and tree-based non-negativity have focused cast/IR coverage and retain the existing corpus prefixes. VN-dependent non-negativity fails explicitly when tree facts are insufficient. Assertion generation, global morph, non-x64 execution and range-driven codegen are not established.",
-      "The nine-method corpus contains no EH or pinned-local cases and establishes neither full-phase nor codegen parity."
+      "Non-HWI folding now covers integer identities, identical comparisons, conditional selection and nullable-box comparisons. FoldInteger has an exact import prefix for its mask-to-cast fold; Roslyn removes multiply-by-zero, while existing importer handling removes divide-by-one before this folding helper. Those identities, effect gates and conditional/nullable cases also have focused IR coverage. HWI folding and full inline/global-morph activation remain pending.",
+      "The ten-method corpus contains no EH or pinned-local cases and establishes neither full-phase nor codegen parity."
     ]
   },
   "localRecovery": {
@@ -840,6 +864,19 @@
       "commit": "0c0886e8c13e8a032bc1b18648ecd0a59cf1fb65",
       "indexCommit": "74bb9930dcf24b09248bf25e4ba308eeae3c704d",
       "ref": "refs/porting/snapshots/native-ledger-vn-folding"
+    },
+    "specialFoldingManagedSource": {
+      "commit": "917e3e343fe53209f5248d5d428d5babc3611dab",
+      "ref": "refs/porting/snapshots/special-folding-validated-source"
+    },
+    "specialFoldingCaptureSource": {
+      "commit": "570340d1b228056df947b5c0084f56b82ce8860b",
+      "ref": "refs/porting/snapshots/special-folding-source"
+    },
+    "specialFoldingNativeResidual": {
+      "commit": "6cc436b030dc2b175624f51cf1987b5ceaf4b302",
+      "indexCommit": "40544cc40ecf48eaa46620749cfc505a16ab6b91",
+      "ref": "refs/porting/snapshots/native-ledger-special-folding"
     }
   },
   "sourceMap": [
@@ -895,6 +932,12 @@
       "area": "assertion-representation-and-tables",
       "native": ["src\\coreclr\\jit\\assertionprop.cpp", "src\\coreclr\\jit\\compiler.h", "src\\coreclr\\jit\\compiler.hpp", "src\\coreclr\\jit\\valuenum.h"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.AssertionDsc.cs", "sources\\Core\\jit\\compiler\\Compiler.ap.cs", "sources\\Core\\jit\\compiler\\Compiler.opt.cs", "sources\\Core\\jit\\valuenum\\ValueNumStore.cs"],
+      "reconciledCommit": null
+    },
+    {
+      "area": "non-hwi-expression-folding",
+      "native": ["src\\coreclr\\jit\\gentree.cpp", "src\\coreclr\\jit\\compiler.h"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.gt.SpecialFolding.cs", "sources\\Core\\jit\\compiler\\ClearColonCondVisitor.cs", "sources\\Core\\jit\\compiler\\Compiler.gt.cs"],
       "reconciledCommit": null
     },
     {

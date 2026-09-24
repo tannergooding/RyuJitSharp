@@ -2,6 +2,7 @@
 
 using System;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using NUnit.Framework;
@@ -15,6 +16,284 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ScalarFoldingTests
 {
+    [TestCase(GT_ADD, 0, false, true)]
+    [TestCase(GT_ADD, 0, true, true)]
+    [TestCase(GT_SUB, 0, false, true)]
+    [TestCase(GT_SUB, 0, true, false)]
+    [TestCase(GT_MUL, 1, false, true)]
+    [TestCase(GT_MUL, 1, true, true)]
+    [TestCase(GT_DIV, 1, false, true)]
+    [TestCase(GT_DIV, 1, true, false)]
+    [TestCase(GT_UDIV, 1, false, true)]
+    [TestCase(GT_OR, 0, true, true)]
+    [TestCase(GT_LSH, 0, false, true)]
+    [TestCase(GT_RSH, 0, false, true)]
+    [TestCase(GT_RSZ, 0, false, true)]
+    [TestCase(GT_ROL, 0, false, true)]
+    [TestCase(GT_ROR, 0, false, true)]
+    public static void IntegerIdentitiesPreserveOperandIdentity(genTreeOps oper, int value, bool constantFirst, bool folds)
+    {
+        WithCompiler(compiler => {
+            var operand = compiler.gtNewLclvNode(TYP_INT, 0);
+            var constant = compiler.gtNewIconNode(TYP_INT, value);
+            var tree = compiler.gtNewBinaryNode(oper, TYP_INT,
+                constantFirst ? constant : operand, constantFirst ? operand : constant);
+            Assert.That(compiler.gtFoldExpr(tree), Is.SameAs(folds ? operand : tree));
+        });
+    }
+
+    [TestCase(GT_MUL)]
+    [TestCase(GT_AND)]
+    [TestCase(GT_LSH)]
+    [TestCase(GT_RSH)]
+    [TestCase(GT_RSZ)]
+    [TestCase(GT_ROL)]
+    [TestCase(GT_ROR)]
+    public static void ZeroResultsPreserveEffectsAndConstantIdentity(genTreeOps oper)
+    {
+        WithCompiler(compiler => {
+            var call = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, null);
+            var zero = compiler.gtNewIconNode(TYP_INT, 0);
+            var tree = compiler.gtNewBinaryNode(oper, TYP_INT, zero, call);
+            var result = compiler.gtFoldExpr(tree);
+            Assert.That(result.Oper, Is.EqualTo(GT_COMMA));
+            Assert.That(result.AsOp().Op1, Is.SameAs(call));
+            Assert.That(result.AsOp().Op2, Is.SameAs(zero));
+            Assert.That(result.Flags & GTF_CALL, Is.EqualTo(GTF_CALL));
+        });
+    }
+
+    [TestCase(GT_LE, true, 1)]
+    [TestCase(GT_GE, false, 1)]
+    [TestCase(GT_LT, false, 0)]
+    [TestCase(GT_GT, true, 0)]
+    public static void UnsignedZeroComparisonsRetainEffectsAndJumpRoot(genTreeOps oper, bool constantFirst, int expected)
+    {
+        WithCompiler(compiler => {
+            var call = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, null);
+            var zero = compiler.gtNewIconNode(TYP_INT, 0);
+            var tree = compiler.gtNewBinaryNode(oper, TYP_INT,
+                constantFirst ? zero : call, constantFirst ? call : zero);
+            tree.Flags |= GTF_UNSIGNED | GTF_RELOP_JMP_USED;
+            Assert.That(compiler.gtFoldExpr(tree), Is.SameAs(tree));
+            tree.Flags &= ~GTF_RELOP_JMP_USED;
+            var result = compiler.gtFoldExpr(tree);
+            Assert.That(result.Oper, Is.EqualTo(GT_COMMA));
+            Assert.That(result.AsOp().Op1, Is.SameAs(call));
+            Assert.That(result.AsOp().Op2.AsIntCon().IconValue, Is.EqualTo((nint)expected));
+        });
+    }
+
+    [TestCase(false, 0xFFL, TYP_UBYTE)]
+    [TestCase(false, 0xFFFFL, TYP_USHORT)]
+    [TestCase(true, 0xFFL, TYP_UBYTE)]
+    [TestCase(true, 0xFFFFL, TYP_USHORT)]
+    [TestCase(true, 0xFFFFFFFFL, TYP_UINT)]
+    public static void IntegerMasksBecomeMorphedZeroExtensions(bool wide, long mask, var_types castType)
+    {
+        WithCompiler(compiler => {
+            compiler.fgGlobalMorph = true;
+            var type = wide ? TYP_LONG : TYP_INT;
+            var operand = compiler.gtNewLclvNode(type, 0);
+            var tree = compiler.gtNewBinaryNode(GT_AND, type, operand, compiler.gtNewIconNode(type, (nint)mask));
+            var result = compiler.gtFoldExpr(tree);
+            Assert.That(result.Oper, Is.EqualTo(GT_CAST));
+            Assert.That(result.Type, Is.EqualTo(type));
+#if DEBUG
+            Assert.That(result.WasMorphed, Is.True);
+#endif
+            if (wide)
+            {
+                Assert.That(result.Flags & GTF_UNSIGNED, Is.EqualTo(GTF_UNSIGNED));
+                Assert.That(result.AsCast().CastType, Is.EqualTo(TYP_LONG));
+                result = result.AsCast().CastOp;
+            }
+
+            Assert.That(result.Type, Is.EqualTo(TYP_INT));
+            Assert.That(result.AsCast().CastType, Is.EqualTo(castType));
+            Assert.That(result.AsCast().CastOp, Is.SameAs(operand));
+        });
+    }
+
+    [TestCase(GT_EQ, 1)]
+    [TestCase(GT_LE, 1)]
+    [TestCase(GT_GE, 1)]
+    [TestCase(GT_NE, 0)]
+    [TestCase(GT_LT, 0)]
+    [TestCase(GT_GT, 0)]
+    public static void IdenticalComparisonsKeepLinksAndAllocateNewIdentity(genTreeOps oper, int expected)
+    {
+        WithCompiler(compiler => {
+            var tree = compiler.gtNewBinaryNode(oper, TYP_INT,
+                compiler.gtNewLclvNode(TYP_INT, 0), compiler.gtNewLclvNode(TYP_INT, 0));
+            tree.Prev = compiler.gtNewIconNode(TYP_INT, 42);
+            tree.Next = compiler.gtNewIconNode(TYP_INT, 43);
+#if DEBUG
+            var nextId = compiler.compGenTreeID;
+#endif
+            var result = compiler.gtFoldExpr(tree);
+            Assert.That(result.AsIntCon().IconValue, Is.EqualTo((nint)expected));
+            Assert.That(result.Prev, Is.SameAs(tree.Prev));
+            Assert.That(result.Next, Is.SameAs(tree.Next));
+#if DEBUG
+            Assert.That(result.TreeId, Is.EqualTo(nextId));
+            Assert.That(compiler.compGenTreeID, Is.EqualTo(nextId + 1));
+#endif
+        }, minOpts: true);
+    }
+
+    [TestCase(TYP_DOUBLE, GTF_EMPTY, GTF_EMPTY, false)]
+    [TestCase(TYP_INT, GTF_EXCEPT, GTF_EMPTY, false)]
+    [TestCase(TYP_INT, GTF_ORDER_SIDEEFF, GTF_EMPTY, true)]
+    [TestCase(TYP_INT, GTF_EMPTY, GTF_ORDER_SIDEEFF, false)]
+    [TestCase(TYP_INT, GTF_ORDER_SIDEEFF, GTF_ORDER_SIDEEFF, false)]
+    public static void IdenticalComparisonsPreserveNaNsEffectsAndOrder(var_types type, GenTreeFlags firstFlags,
+        GenTreeFlags secondFlags, bool folds)
+    {
+        WithCompiler(compiler => {
+            var first = compiler.gtNewLclvNode(type, 0);
+            var second = compiler.gtNewLclvNode(type, 0);
+            first.Flags |= firstFlags;
+            second.Flags |= secondFlags;
+            var tree = compiler.gtNewBinaryNode(GT_EQ, TYP_INT, first, second);
+            Assert.That(compiler.gtFoldExpr(tree).Oper, Is.EqualTo(folds ? GT_CNS_INT : GT_EQ));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void ConstantSelectsFoldSelectedComparisons(bool condition)
+    {
+        WithCompiler(compiler => {
+            var compare = compiler.gtNewBinaryNode(GT_EQ, TYP_INT,
+                compiler.gtNewLclvNode(TYP_INT, 0), compiler.gtNewLclvNode(TYP_INT, 0));
+            var other = compiler.gtNewIconNode(TYP_INT, 42);
+            var tree = new GenTreeConditional(GT_SELECT, TYP_INT, compiler.gtNewIconNode(TYP_INT, condition ? 1 : 0),
+                condition ? compare : other, condition ? other : compare) {
+                Next = other,
+            };
+            var result = compiler.gtFoldExpr(tree);
+            Assert.That(result.AsIntCon().IconValue, Is.EqualTo((nint)1));
+            Assert.That(result.Next, Is.SameAs(other));
+        });
+    }
+
+    [TestCase(GTF_EMPTY, GTF_EMPTY, true)]
+    [TestCase(GTF_EXCEPT, GTF_EMPTY, false)]
+    [TestCase(GTF_ORDER_SIDEEFF, GTF_EMPTY, true)]
+    [TestCase(GTF_EMPTY, GTF_ORDER_SIDEEFF, false)]
+    [TestCase(GTF_ORDER_SIDEEFF, GTF_ORDER_SIDEEFF, false)]
+    public static void IdenticalSelectArmsRespectEffects(GenTreeFlags firstFlags, GenTreeFlags secondFlags, bool folds)
+    {
+        WithCompiler(compiler => {
+            var first = compiler.gtNewLclvNode(TYP_INT, 1);
+            var second = compiler.gtNewLclvNode(TYP_INT, 1);
+            first.Flags |= firstFlags;
+            second.Flags |= secondFlags;
+            var condition = compiler.gtNewBinaryNode(GT_EQ, TYP_INT,
+                compiler.gtNewLclvNode(TYP_INT, 0), compiler.gtNewIconNode(TYP_INT, 0));
+            var tree = new GenTreeConditional(GT_SELECT, TYP_INT, condition, first, second);
+            tree.Flags |= firstFlags | secondFlags;
+            Assert.That(compiler.gtFoldExpr(tree), Is.SameAs(folds ? first : tree));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void QmarkFoldingPreservesNestedConditionalExecution(bool conditionallyExecuted)
+    {
+        WithCompiler(compiler => {
+            var condition = compiler.gtNewLclvNode(TYP_INT, 0);
+            var thenNode = compiler.gtNewLclvNode(TYP_INT, 1);
+            var elseNode = compiler.gtNewLclvNode(TYP_INT, 2);
+            var colon = new GenTreeColon(TYP_INT, thenNode, elseNode);
+            var selected = new GenTreeQmark(TYP_INT, condition, colon);
+            selected.Flags |= GTF_COLON_COND;
+            condition.Flags |= GTF_COLON_COND;
+            colon.Flags |= GTF_COLON_COND;
+            thenNode.Flags |= GTF_COLON_COND;
+            elseNode.Flags |= GTF_COLON_COND;
+            var tree = new GenTreeQmark(TYP_INT, compiler.gtNewIconNode(TYP_INT, 1),
+                new GenTreeColon(TYP_INT, selected, compiler.gtNewIconNode(TYP_INT, 0)));
+            tree.Flags |= conditionallyExecuted ? GTF_COLON_COND : GTF_EMPTY;
+            Assert.That(compiler.gtFoldExpr(tree), Is.SameAs(selected));
+            var expected = conditionallyExecuted ? GTF_COLON_COND : GTF_EMPTY;
+            Assert.That(selected.Flags & GTF_COLON_COND, Is.EqualTo(expected));
+            Assert.That(condition.Flags & GTF_COLON_COND, Is.EqualTo(expected));
+            Assert.That(colon.Flags & GTF_COLON_COND, Is.EqualTo(GTF_COLON_COND));
+            Assert.That(thenNode.Flags & GTF_COLON_COND, Is.EqualTo(GTF_COLON_COND));
+            Assert.That(elseNode.Flags & GTF_COLON_COND, Is.EqualTo(GTF_COLON_COND));
+        });
+    }
+
+    [TestCase(GT_EQ, false, false)]
+    [TestCase(GT_NE, true, false)]
+    [TestCase(GT_GT, false, true)]
+    [TestCase(GT_GT, false, false)]
+    public static void NullableBoxComparisonReadsHasValue(genTreeOps oper, bool constantFirst, bool unsigned)
+    {
+        WithCompiler(compiler => {
+            Assert.That(OFFSETOF__CORINFO_NullableOfT__hasValue, Is.Zero);
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_BYREF }];
+            compiler.lvaCount = 1;
+            var call = compiler.gtNewCallNode(TYP_REF, gtCallTypes.CT_HELPER,
+                Compiler.eeFindHelper(CorInfoHelpFunc.CORINFO_HELP_BOX_NULLABLE));
+            var address = compiler.gtNewLclvNode(TYP_BYREF, 0);
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_I_IMPL, 42)));
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(address));
+            var zero = compiler.gtNewNull();
+            var tree = compiler.gtNewBinaryNode(oper, TYP_INT,
+                constantFirst ? zero : call, constantFirst ? call : zero);
+            tree.Flags |= unsigned ? GTF_UNSIGNED : GTF_EMPTY;
+            Assert.That(compiler.gtFoldExpr(tree), Is.SameAs(tree));
+            var operand = constantFirst ? tree.Op2 : tree.Op1;
+            if ((oper == GT_GT) && !unsigned)
+            {
+                Assert.That(operand, Is.SameAs(call));
+                return;
+            }
+
+            Assert.That(operand.Oper, Is.EqualTo(GT_IND));
+            Assert.That(operand.Type, Is.EqualTo(TYP_UBYTE));
+            Assert.That(operand.AsIndir().Addr, Is.SameAs(address));
+            Assert.That(zero.Type, Is.EqualTo(TYP_INT));
+        });
+    }
+
+    [Test]
+    public static void NullableBoxComparisonDoesNotRemoveCompletedArguments()
+    {
+        WithCompiler(compiler => {
+            var call = compiler.gtNewCallNode(TYP_REF, gtCallTypes.CT_HELPER,
+                Compiler.eeFindHelper(CorInfoHelpFunc.CORINFO_HELP_BOX_NULLABLE));
+            var flags = typeof(CallArgs).GetField("_flags", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("Missing call argument flags.");
+            var flagsType = typeof(CallArgs).GetNestedType("Flags", BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("Missing call argument flag type.");
+            object args = call.Args;
+            flags.SetValue(args, Enum.Parse(flagsType, "ArgsComplete"));
+            call.Args = (CallArgs)args;
+            var tree = compiler.gtNewBinaryNode(GT_EQ, TYP_INT, call, compiler.gtNewNull());
+            Assert.That(compiler.gtFoldExpr(tree), Is.SameAs(tree));
+            Assert.That(tree.Op1, Is.SameAs(call));
+        });
+    }
+
+    [Test]
+    public static void OneConstantFoldingRespectsTypeAndOptimizationGates()
+    {
+        WithCompiler(compiler => {
+            var pointer = compiler.gtNewLclvNode(TYP_BYREF, 0);
+            var tree = compiler.gtNewBinaryNode(GT_ADD, TYP_BYREF, pointer, compiler.gtNewIconNode(TYP_I_IMPL, 0));
+            Assert.That(compiler.gtFoldExpr(tree), Is.SameAs(tree));
+        });
+        WithCompiler(compiler => {
+            var local = compiler.gtNewLclvNode(TYP_INT, 0);
+            var tree = compiler.gtNewBinaryNode(GT_ADD, TYP_INT, local, compiler.gtNewIconNode(TYP_INT, 0));
+            Assert.That(compiler.gtFoldExpr(tree), Is.SameAs(tree));
+        }, minOpts: true);
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void ConstantReplacementRefreshesBothValueNumbers(bool wide)
