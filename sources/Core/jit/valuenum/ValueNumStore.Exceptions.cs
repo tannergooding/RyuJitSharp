@@ -10,6 +10,12 @@ public sealed partial class ValueNumStore
     public ValueNum VNExcSetSingleton(ValueNum exception)
         => VNForFuncNoFolding(TYP_REF, VNF_ExcSetCons, exception, VNForEmptyExcSet());
 
+    public ValueNumPair VNPExcSetSingleton(ValueNumPair exceptions)
+        => new(VNExcSetSingleton(exceptions.Liberal), VNExcSetSingleton(exceptions.Conservative));
+
+    public ValueNumPair VNPWithExc(ValueNumPair values, ValueNumPair exceptions)
+        => new(VNWithExc(values.Liberal, exceptions.Liberal), VNWithExc(values.Conservative, exceptions.Conservative));
+
     private bool VNCheckAscending(ValueNum item, ValueNum set)
     {
         if (set == VNForEmptyExcSet())

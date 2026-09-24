@@ -12,6 +12,34 @@ namespace RyuJitSharp;
 
 public sealed partial class ValueNumStore
 {
+    private Dictionary<nint, nint>? _embeddedToCompileTimeHandleMap;
+    private Dictionary<ValueNum, FieldSeq?>? _fieldAddressToFieldSeqMap;
+
+    public void AddToEmbeddedHandleMap(nint embeddedHandle, nint compileTimeHandle)
+    {
+        _embeddedToCompileTimeHandleMap ??= [];
+        _embeddedToCompileTimeHandleMap[embeddedHandle] = compileTimeHandle;
+    }
+
+    public bool EmbeddedHandleMapLookup(nint embeddedHandle, ref nint compileTimeHandle)
+    {
+        if ((_embeddedToCompileTimeHandleMap is not null) && _embeddedToCompileTimeHandleMap.TryGetValue(embeddedHandle, out var handle))
+        {
+            compileTimeHandle = handle;
+            return true;
+        }
+
+        return false;
+    }
+
+    public void AddToFieldAddressToFieldSeqMap(ValueNum address, FieldSeq? fieldSeq)
+    {
+        _fieldAddressToFieldSeqMap ??= [];
+        _fieldAddressToFieldSeqMap[address] = fieldSeq;
+    }
+
+    public FieldSeq? GetFieldSeqFromAddress(ValueNum address) => _fieldAddressToFieldSeqMap?.GetValueOrDefault(address);
+
 #if FEATURE_SIMD
     private Dictionary<simd8_t, ValueNum>? _simd8CnsMap;
     private Dictionary<simd12_t, ValueNum>? _simd12CnsMap;

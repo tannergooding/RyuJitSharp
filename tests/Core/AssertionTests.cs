@@ -22,6 +22,41 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class AssertionTests
 {
+    [TestCase(FieldSeq.FieldKind.SharedStatic, false)]
+    [TestCase(FieldSeq.FieldKind.SimpleStaticKnownAddress, true)]
+    public static void TreeConstantMetadataRegistersOnlyKnownStaticAddresses(FieldSeq.FieldKind kind, bool registered)
+    {
+        WithCompiler(compiler => {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.isFieldStatic = &IsFieldStatic;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var sequence = new FieldSeq((CORINFO_FIELD_STRUCT_*)0x1000, 0x2000, kind);
+            var node = compiler.gtNewIconNode(0x2000, sequence);
+            compiler.fgValueNumberTreeConst(node);
+            Assert.That(store.GetFieldSeqFromAddress(node._vnPair.Liberal), registered ? Is.SameAs(sequence) : Is.Null);
+        });
+    }
+
+    [Test]
+    public static void PairedUnaryAndExceptionCompositionKeepsConservativeValuesIndependent()
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            var pair = store.VNPairForFunc(TYP_INT, VNFunc.VNF_NEG, new(store.VNForIntCon(1), store.VNForIntCon(2)));
+            Assert.That(pair.Liberal, Is.EqualTo(store.VNForIntCon(-1)));
+            Assert.That(pair.Conservative, Is.EqualTo(store.VNForIntCon(-2)));
+            var exception = store.VNForFunc(TYP_REF, VNFunc.VNF_OverflowExc, ValueNumStore.VNForVoid());
+            var wrapped = store.VNPWithExc(pair, new(ValueNumStore.VNForEmptyExcSet(), store.VNExcSetSingleton(exception)));
+            Assert.That(wrapped.Liberal, Is.EqualTo(pair.Liberal));
+            store.VNUnpackExc(wrapped.Conservative, out var normal, out var exceptions);
+            Assert.That(normal, Is.EqualTo(pair.Conservative));
+            Assert.That(exceptions, Is.EqualTo(store.VNExcSetSingleton(exception)));
+        });
+    }
+
     [Test]
     public static void MorphCompletionKillsOldFactsBeforeGeneratingNewOnes()
     {
@@ -545,6 +580,11 @@ internal static unsafe class AssertionTests
 
             var original = (byte[])bytes.Clone();
             var vn = store.VNForGenericCon(type, bytes);
+            compiler.vnStore = store;
+            var node = new GenTreeVecCon(type);
+            bytes.CopyTo(node.SimdVal.AsSpan<byte>());
+            compiler.fgValueNumberTreeConst(node);
+            Assert.That(node._vnPair, Is.EqualTo(new ValueNumPair(vn, vn)));
             Assert.That(store.VNForGenericCon(type, bytes), Is.EqualTo(vn));
             bytes[^1] ^= 128;
             Assert.That(store.VNForGenericCon(type, bytes), Is.Not.EqualTo(vn));
@@ -567,6 +607,10 @@ internal static unsafe class AssertionTests
             Assert.That(store.GetConstantInt32(store.VNForGenericCon(TYP_UINT, bits)), Is.EqualTo(-1));
             Assert.That(store.GetConstantInt64(store.VNForGenericCon(TYP_ULONG, bits)), Is.EqualTo(-1L));
             var mask = store.VNForGenericCon(TYP_MASK, bits);
+            compiler.vnStore = store;
+            var maskNode = new GenTreeMskCon(store.GetConstantSimdMask(mask));
+            compiler.fgValueNumberTreeConst(maskNode);
+            Assert.That(maskNode._vnPair, Is.EqualTo(new ValueNumPair(mask, mask)));
             Assert.That(store.GetConstantSimdMask(mask).RawBits, Is.EqualTo(-1L));
             Assert.That(store.VNForSimdMaskCon(store.GetConstantSimdMask(mask)), Is.EqualTo(mask));
             var negativeZero = store.VNForGenericCon(TYP_DOUBLE, BitConverter.GetBytes(-0.0));

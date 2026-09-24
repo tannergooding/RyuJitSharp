@@ -4838,13 +4838,15 @@ public partial class Compiler
         JITDUMP("\nFolding binary operator with constant nodes into a comma throw:\n");
         DISPTREE(tree);
 
-        if (vnStore is not null)
-        {
-            throw new NotImplementedException("Overflow folding with value numbering is not yet ported.");
-        }
-
         var op1 = gtNewHelperCallNode(TYP_VOID, CORINFO_HELP_OVERFLOW);
         var op2 = gtNewZeroConNode(tree.Type.ActualType);
+
+        if (vnStore is not null)
+        {
+            op1._vnPair = vnStore.VNPWithExc(ValueNumStore.VNPForVoid(),
+                vnStore.VNPExcSetSingleton(vnStore.VNPairForFunc(TYP_REF, VNF_OverflowExc, ValueNumStore.VNPForVoid())));
+            op2._vnPair.SetBoth(vnStore.VNZeroForType(tree.Type.ActualType));
+        }
 
         return gtNewBinaryNode(GT_COMMA, tree.Type, op1, op2);
     }
@@ -4853,7 +4855,7 @@ public partial class Compiler
     {
         if (vnStore is not null)
         {
-            throw new NotImplementedException("Constant value numbering is not yet ported.");
+            fgValueNumberTreeConst(tree);
         }
     }
 

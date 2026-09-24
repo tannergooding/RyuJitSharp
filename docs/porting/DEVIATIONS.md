@@ -51,9 +51,9 @@ metadata and the logical tree ID without allocating another ID. Operation-specif
 flags are cleared using the native node mask. The source must be unthreaded;
 existing importer and placeholder-walker uses consume the returned replacement.
 This does not implement LIR relinking or repair arbitrary cached aliases.
-Overflow folding retains the native global-morph gate, and value-numbered
-constant/overflow folding explicitly reports the missing VN implementation
-rather than silently retaining stale value numbers (B082/B083).
+Overflow folding retains the native global-morph gate. Value-numbered constant
+replacement now refreshes both VNs, and overflow helpers carry the native
+exception-set composition (B082/B083/B100).
 
 The existing `CheckedOps.Try*` arithmetic APIs return success (the inverse of
 native `CheckedOps::*Overflows`) and expose the wrapped result through an out
@@ -111,6 +111,11 @@ These tokens remain metadata: EE calls receive the sequence's actual field
 handle. Field-sequence diagnostics retain native symbolic formatting; the
 general VN dumper is not yet ported. Exception lists retain native unsigned-VN
 ordering and recursive union rather than managed collection enumeration (B098).
+Tree constant numbering reuses the bounded vector-import helper instead of
+native stack temporaries and `memcpy`. Embedded-handle and field-address maps
+are lazy managed dictionaries; failed embedded-handle lookup leaves its `ref`
+output unchanged. Unknown compile-time class handles do not overwrite an
+existing mapping, matching the pinned native guard (B100).
 
 Phi definitions own copied SSA-number arrays and expose readonly memory.
 Reaching-VN traversal uses a managed stack and membership set, preserving native

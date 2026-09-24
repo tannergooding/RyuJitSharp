@@ -15,6 +15,76 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ScalarFoldingTests
 {
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void ConstantReplacementRefreshesBothValueNumbers(bool wide)
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var type = wide ? TYP_LONG : TYP_INT;
+            var tree = compiler.gtNewBinaryNode(GT_ADD, type,
+                compiler.gtNewIconNode(type, 2), compiler.gtNewIconNode(type, 3));
+            tree._vnPair = new(store.VNForExpr(null, type), store.VNForExpr(null, type));
+            var result = compiler.gtFoldExpr(tree);
+            var expected = wide ? store.VNForLongCon(5) : store.VNForIntCon(5);
+            Assert.That(result._vnPair.Liberal, Is.EqualTo(expected));
+            Assert.That(result._vnPair.Conservative, Is.EqualTo(expected));
+            Assert.That(tree._vnPair.Liberal, Is.Not.EqualTo(expected));
+        });
+    }
+
+    [Test]
+    public static void TreeConstantNumbersPreserveReferenceZerosAndFloatingBits()
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var byrefZero = compiler.gtNewIconNode(TYP_BYREF, 0);
+            compiler.fgValueNumberTreeConst(byrefZero);
+            Assert.That(byrefZero._vnPair.Liberal, Is.EqualTo(ValueNumStore.VNForNull()));
+            Assert.That(byrefZero._vnPair.Liberal, Is.Not.EqualTo(store.VNZeroForType(TYP_BYREF)));
+            var byref = compiler.gtNewIconNode(TYP_BYREF, -1);
+            compiler.fgValueNumberTreeConst(byref);
+            Assert.That(store.ConstantValue<nuint>(byref._vnPair.Liberal), Is.EqualTo(nuint.MaxValue));
+            var obj = compiler.gtNewIconNode(TYP_REF, 42);
+            obj.Flags |= GTF_ICON_OBJ_HDL;
+            compiler.fgValueNumberTreeConst(obj);
+            Assert.That(store.IsVNObjHandle(obj._vnPair.Liberal), Is.True);
+            var nullObj = compiler.gtNewNull();
+            compiler.fgValueNumberTreeConst(nullObj);
+            Assert.That(nullObj._vnPair.Liberal, Is.EqualTo(ValueNumStore.VNForNull()));
+            var negativeZero = compiler.gtNewDconNode(TYP_DOUBLE, -0.0);
+            compiler.fgValueNumberTreeConst(negativeZero);
+            Assert.That(BitConverter.DoubleToInt64Bits(store.GetConstantDouble(negativeZero._vnPair.Liberal)), Is.EqualTo(long.MinValue));
+            var rounded = compiler.gtNewDconNode(TYP_FLOAT, 16777217.0);
+            compiler.fgValueNumberTreeConst(rounded);
+            Assert.That(store.GetConstantSingle(rounded._vnPair.Liberal), Is.EqualTo(16777216.0f));
+        });
+    }
+
+    [Test]
+    public static void UnknownCompileTimeHandlesDoNotPoisonEmbeddedHandleMappings()
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var embedded = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
+            embedded.Flags |= GTF_ICON_CLASS_HDL;
+            embedded.CompileTimeHandle = 0x2000;
+            compiler.fgValueNumberTreeConst(embedded);
+            var reflagged = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
+            reflagged.Flags |= GTF_ICON_CLASS_HDL;
+            compiler.fgValueNumberTreeConst(reflagged);
+            nint handle = 42;
+            Assert.That(store.EmbeddedHandleMapLookup(0x1000, ref handle), Is.True);
+            Assert.That(handle, Is.EqualTo((nint)0x2000));
+            Assert.That(store.EmbeddedHandleMapLookup(0x3000, ref handle), Is.False);
+            Assert.That(handle, Is.EqualTo((nint)0x2000));
+            Assert.That(reflagged._vnPair, Is.EqualTo(embedded._vnPair));
+        });
+    }
+
     [TestCase(GT_ADD, int.MaxValue, 1, int.MinValue, false, false)]
     [TestCase(GT_ADD, long.MaxValue, 1, long.MinValue, true, false)]
     [TestCase(GT_SUB, int.MinValue, 1, int.MaxValue, false, false)]
@@ -172,11 +242,17 @@ internal static unsafe class ScalarFoldingTests
         });
     }
 
-    [Test]
-    public static void GlobalMorphOverflowCreatesAnOrderedThrowAndZero()
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void GlobalMorphOverflowCreatesAnOrderedThrowAndZero(bool valueNumbered)
     {
         WithCompiler(compiler => {
             compiler.fgGlobalMorph = true;
+            if (valueNumbered)
+            {
+                compiler.vnStore = new ValueNumStore(compiler);
+            }
+
             var tree = compiler.gtNewBinaryNode(GT_ADD, TYP_LONG, compiler.gtNewLconNode(long.MaxValue), compiler.gtNewLconNode(1));
             tree.Flags |= GTF_OVERFLOW | GTF_EXCEPT;
             var result = compiler.gtFoldExpr(tree);
@@ -187,6 +263,17 @@ internal static unsafe class ScalarFoldingTests
             Assert.That(result.AsOp().Op2.AsIntConCommon().LngValue, Is.EqualTo(0L));
             Assert.That(result.Flags & GTF_EXCEPT, Is.EqualTo(GTF_EXCEPT));
             Assert.That(tree.Oper, Is.EqualTo(GT_ADD));
+            if (compiler.vnStore is ValueNumStore store)
+            {
+                var helper = result.AsOp().Op1;
+                Assert.That(helper._vnPair.BothEqual(), Is.True);
+                store.VNUnpackExc(helper._vnPair.Liberal, out var normal, out var exceptions);
+                Assert.That(normal, Is.EqualTo(ValueNumStore.VNForVoid()));
+                var overflow = store.VNForFunc(TYP_REF, VNFunc.VNF_OverflowExc, ValueNumStore.VNForVoid());
+                Assert.That(exceptions, Is.EqualTo(store.VNExcSetSingleton(overflow)));
+                Assert.That(result.AsOp().Op2._vnPair.Liberal, Is.EqualTo(store.VNForLongCon(0)));
+                Assert.That(result.AsOp().Op2._vnPair.BothEqual(), Is.True);
+            }
         });
     }
 

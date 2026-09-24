@@ -12,16 +12,16 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete node-wide assertion generation and morph completion: optAssertionGen, fgAssertionGen and fgMorphTreeDone, preserving local/global facts, conditional edge sets, implied boolean ranges, invalidation order and diagnostics.",
+      "scope": "Complete VN-backed constant and overflow folding, including tree constant numbering, embedded-handle/field-address metadata maps and paired exception composition.",
       "doneWhen": [
-        "Node-wide generation preserves the native fact selection and exclusion gates for stores, indirections, calls, bounds checks, division and branches.",
-        "Local assertion generation updates the correct conditional edge sets and implied ranges.",
-        "Morph completion marks nodes only in global morph, kills physical definitions before generating facts, and honors early assertion propagation.",
+        "All Windows-x64 tree constant forms receive native-compatible VNs and metadata; unsupported scalable storage remains explicit.",
+        "Unknown compile-time handles do not overwrite valid embedded-handle mappings; only known-address static field sequences are registered.",
+        "Overflow folding preserves the global-morph gate and assigns matching normal/exception VNs to the helper and dummy result.",
         "The selected Debug/Release checks pass and complete functions are committed with their native retirement and checkpoint."
       ],
       "validation": [
-        "One combined assertion/integral-range selection in Debug and Release.",
-        "Cover local/global fact selection, conditional edge sets, implied ranges, definition kill/gen order and morph gates in the existing assertion fixture.",
+        "One combined assertion/scalar-folding selection in Debug and Release.",
+        "Cover value-numbered constant replacement, overflow exception pairs, handle/field metadata, reference/byref zero and vector/mask forms in the existing fixtures.",
         "No full suite or NativeAOT recapture unless a concrete failure or newly reachable compiler phase requires it."
       ],
       "deferred": [
@@ -31,7 +31,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Node-wide assertion generation and morph completion are complete (B099), following the unary VN prerequisites (B098). Continue the remaining scalar/integer/comparison folding closure and its morph-completion callers toward fgInline activation; general local propagation and block/global morph remain unported. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop. Preserve unchanged-frontier evidence.",
+    "nextAction": "VN-backed constant/overflow folding is complete (B100), following node-wide assertion generation and morph completion (B099). Continue the remaining scalar/integer/comparison folding closure and its morph-completion callers toward fgInline activation; general local propagation and block/global morph remain unported. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop. Preserve unchanged-frontier evidence.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -538,6 +538,18 @@
         "debugTests": "artifacts\\node-assertions-debug.trx",
         "releaseTests": "artifacts\\node-assertions-release.trx"
       },
+      "vnBackedConstantFolding": {
+        "managedSourceCommit": "152dedb6704cf676ad73ba3c754337189b330ba3",
+        "debugPassed": 197,
+        "releasePassed": 191,
+        "skipped": 0,
+        "newCases": 8,
+        "nativeDefinitionsRetired": 11,
+        "nativeAotRecaptured": false,
+        "phaseActivated": false,
+        "debugTests": "artifacts\\vn-folding-debug.trx",
+        "releaseTests": "artifacts\\vn-folding-release.trx"
+      },
       "nativeAotPublish": "passed-after-integral-ranges",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "five-of-nine-import-prefixes-equal-remaining-inline-candidate-differences",
@@ -819,6 +831,15 @@
       "commit": "4298aa598b168fe557bb46c317d24acc66a45e28",
       "indexCommit": "ce8f5095f082e012cf28d461edeeaf2332d48b1b",
       "ref": "refs/porting/snapshots/native-ledger-node-assertions"
+    },
+    "vnFoldingManagedSource": {
+      "commit": "152dedb6704cf676ad73ba3c754337189b330ba3",
+      "ref": "refs/porting/snapshots/vn-folding-source"
+    },
+    "vnFoldingNativeResidual": {
+      "commit": "0c0886e8c13e8a032bc1b18648ecd0a59cf1fb65",
+      "indexCommit": "74bb9930dcf24b09248bf25e4ba308eeae3c704d",
+      "ref": "refs/porting/snapshots/native-ledger-vn-folding"
     }
   },
   "sourceMap": [

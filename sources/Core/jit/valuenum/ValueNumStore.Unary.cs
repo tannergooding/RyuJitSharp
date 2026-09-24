@@ -168,6 +168,13 @@ public sealed partial class ValueNumStore
         => IsVNConstant(arg0VN) && (func < VNF_Boundary) &&
             ((genTreeOps)func is GT_NEG or GT_NOT or GT_BSWAP16 or GT_BSWAP);
 
+    public ValueNumPair VNPairForFunc(var_types type, VNFunc func, ValueNumPair argument)
+    {
+        var liberal = VNForFunc(type, func, argument.Liberal);
+        var conservative = argument.BothEqual() ? liberal : VNForFunc(type, func, argument.Conservative);
+        return new(liberal, conservative);
+    }
+
     private static T EvalIntegralOp<T>(VNFunc func, T value) where T : unmanaged, IBinaryInteger<T>
     {
         switch (func)
