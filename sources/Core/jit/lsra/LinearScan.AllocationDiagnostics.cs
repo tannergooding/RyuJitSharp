@@ -48,6 +48,9 @@ public sealed partial class LinearScan
 #if DEBUG
     private enum LsraDumpEvent
     {
+        FREE_REGS,
+        LAST_USE,
+        LAST_USE_DELAYED,
         DEFUSE_CONFLICT,
         DEFUSE_DEF_IN_FIXED_USE,
         DEFUSE_DEF_IN_USE,
@@ -132,6 +135,13 @@ public sealed partial class LinearScan
                     dumpAllocationRegisterRecords();
                 }
 
+                break;
+            }
+
+            case LsraDumpEvent.FREE_REGS:
+            case LsraDumpEvent.LAST_USE:
+            case LsraDumpEvent.LAST_USE_DELAYED:
+            {
                 break;
             }
 

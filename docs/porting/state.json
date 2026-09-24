@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "LIR block splitting/default-case preservation and standalone magic-divisor helpers are now validated independently of backend WIP. Returned optimized local-store support closes the six signed-magic failures; integrated division/switch/local-store/return/call-target coverage passes 234 Debug and 230 Release. Traversal wires division, switch, MULHI, native passthroughs and XADD-to-LOCKADD; the obsolete local-store MinOpts forwarding wrapper is removed. Parent also corrected checked signed reinterpretation of unsigned magic constants, with two regressions failing before the fix. Keep dependent traversal/backend packets uncommitted until closure. The calls worker owns optimized indirect-store/coalescing support. The comparison worker owns LowerBlock, CheckBlock and LowerJmpMethod, without phase activation. The LSRA worker owns lifetime repairs (reversed pending-free verifier mask and missing native allocation events), then kill/GC-kill/copy helpers; hold assignment/lifetime commits for those repairs. Collect complete handoffs and refill existing workers. Parent should close remaining scalar dispatch and method-level PInvoke dependencies. B170 blocks initialized constant LCLHEAP above Int32.MaxValue; do not mask or narrow that contract. Drivers remain inactive and managed code size remains zero.",
+    "nextAction": "Assignment/minimal-per-reference allocation/lifetime support is committed after passing all existing LinearScan consumers (87 Debug/72 Release), including repaired pending-free verification and Windows upper-vector spills. The LSRA worker now owns the full native allocateRegistersMinimal loop; its returned kill/GC-kill/copy packet still needs parent integration. Byte-swap containment is committed; async continuation/suspend-return traversal passes 71 cases with existing scalar dispatch/intrinsic consumers. Division/switch/local-store integration passes 234 Debug/230 Release. Parent should integrate returned complete indirect-store/coalescing and block/JMP/CheckBlock packets, switch dispatch to complete helpers and remove temporary forwarding wrappers. The calls worker now owns TryRemoveCast and its LIR folding contract; the comparison worker owns lvaComputeRefCounts and required accounting helpers. Keep DoPhase inactive until scalar node and method-driver closure, including B170's unsigned block-layout size contract. Keep unfinished backend packets uncommitted; collect and refill existing workers. Managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -41,6 +41,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "lsraAssignmentAndLifetime": {
+        "debugPassed": 87,
+        "releasePassed": 72,
+        "skipped": 0,
+        "selection": "All LinearScan tests in the committed-source export plus the assignment/minimal-allocation/lifetime packet; excludes the in-flight kill/copy and allocation traversal packets.",
+        "debugTests": "artifacts\\lsra-lifetime-integration-debug.trx",
+        "releaseTests": "artifacts\\lsra-lifetime-integration-release.trx",
+        "scope": "Physical register assignment, spilling, minimal per-reference selection, lifetime freeing/reset and native Debug event handling. Includes corrected pending-free verifier polarity, current-block spill writeback, lifetime stress, and enabled Windows upper-vector spill weighting.",
+        "remaining": ["Full minimal allocation traversal", "Interval building and allocation driver preparation", "Resolution and emission"]
+      },
       "byteSwapContainment": {
         "debugPassed": 29,
         "releasePassed": 29,

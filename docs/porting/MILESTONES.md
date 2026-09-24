@@ -39,6 +39,12 @@ split-block aliases without reproducing an oversized native byte copy.
 These foundations do not yet activate register allocation. Interval building,
 allocation traversal, resolution and machine-code emission remain unfinished.
 
+Register assignment and lifetime support now track active and inactive
+intervals, spills, reusable constant registers, delayed frees and block-entry
+locations. Windows-x64 upper-vector preservation follows the native ABI and
+spill-weight rules; register-state verification distinguishes pending frees
+from registers that should already be available.
+
 ## 2026-09-24: Rationalization and linear IR
 
 Rationalization now converts sequenced expression trees into linear IR, removes
