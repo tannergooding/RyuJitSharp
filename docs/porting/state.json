@@ -248,6 +248,16 @@
         "releaseTests": "artifacts\\backend-call-integration-release.trx",
         "scope": "Frozen uncommitted call integration includes memory-helper expansion and ordinary-call fallback, native next-node conventions, single-register struct returns and comparison containment. No lowering-driver activation or managed code generation."
       },
+      "arrayMetadataLowering": {
+        "debugPassed": 27,
+        "releasePassed": 27,
+        "skipped": 0,
+        "debugTests": "artifacts\\array-lowering-debug.trx",
+        "releaseTests": "artifacts\\array-lowering-release.trx",
+        "scope": "Native LowerArrLength handles SZ-array/string length and multidimensional length/lower-bound offsets, including the null-array fault path. Whole-node replacement updates the owning use and LIR links while preserving dump identity, filtering flags as ChangeOper does, and clearing VNs.",
+        "selection": "Twelve direct array-metadata cases plus fifteen range-dispatch cases; the latter include traversal revisiting the newly inserted address.",
+        "remaining": "Array dispatch is wired in the unfinished, inactive traversal. Native bodies remain retained."
+      },
       "scalarDispatchIntegration": {
         "debugPassed": 126,
         "releasePassed": 126,
