@@ -12,7 +12,7 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Advance Windows-x64 scalar minopts lowering, stack-level/throw-helper preparation, LSRA state and codegen initialization. Rationalization is committed and published as 619127a. Keep three disjoint implementation workers active: LSRA constructor/selector closure, call control-flow-guard lowering, and typed LSRA reference association. The coordinator implements block/local/scalar-store lowering, owns shared contracts, and integrates returned packets. Refill useful independent lanes at handoff rather than serializing all implementation behind integration. Validate stable packet exports when in-flight shared-tree edits would otherwise block them; do not duplicate worker investigations.",
+      "scope": "Advance Windows-x64 scalar minopts lowering, stack-level/throw-helper preparation, LSRA allocation and codegen initialization. Rationalization is committed and published as 619127a. Keep three disjoint implementation lanes moving: LSRA allocation, call/PInvoke lowering, and comparison/condition dependencies. The coordinator owns shared contracts and integrates returned packets. Collect handoffs on completion, record validation and commit state, and refill useful independent lanes without waiting for user reminders. Reuse workers with retained context; do not leave completed handoffs idle behind integration or mark unvalidated packets complete. Validate stable packet exports when in-flight shared-tree edits would otherwise block them; do not duplicate worker investigations.",
       "doneWhen": [
         "Integrate complete required lowering and stack-level helpers, including outgoing frame space and exception-helper construction, without activating an incomplete node dispatcher.",
         "Port LSRA interval/reference foundations and native minimal-allocation dependencies; retain incomplete native bodies and do not invent a reduced allocator.",
@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Validate the frozen returned backend packets in artifacts/backend-integration-snapshot, applying integration repairs to both real source and that snapshot. It contains constructor/17 selector heuristics/selectMinimal, reference association/maps, ordinary calls/arithmetic/CFG/memory helpers and parent store/RMW lowering. Scalar extraction now has native intrinsic containability (e35a976); the reference diagnostic expectation and call metadata fixtures were repaired. Fix remaining test diagnostics, run Debug/Release, then commit dependency-coherent portions without incomplete drivers. Compiler.GetReturnTypeForStruct already existed; its native-primitive namespace predicate is now corrected, with five before-failures and 29 passing cases in each configuration. Current workers: Luna closes allocation diagnostics omitted from selection; Sol ports memcmp specialization; Astra ports LowerCallStruct. Parent owns existing call dispatch/shared contracts. All drivers remain inactive; managed code size remains zero. Preserve native SetOper/BashToConst VN clearing and the documented B165 safe map-copy deviation.",
+    "nextAction": "Continue frozen backend integration in artifacts\\backend-integration-snapshot. Memory-call specialization, struct returns and comparison containment are wired into the inactive traversal; their combined 77 cases pass Debug/Release. Comparison containment also passes 26 cases per configuration in an exact-index export without backend WIP. Collect and integrate LSRA allocation diagnostics and selector fixture repairs, PInvoke call-site lowering, comparison reduction, and the GenTreeCC condition fix; rerun the combined selection and commit dependency-coherent portions. Current lanes advance minimal register allocation, method-level PInvoke frames, and generated instruction flags. Parent owns call dispatch/shared contracts and keeps native driver activation gated. Managed code size remains zero. Preserve native SetOper/BashToConst VN clearing and the documented B165 safe map-copy deviation.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -228,6 +228,25 @@
         "beforeFix": "artifacts\\struct-return-before.trx: five metadata-identity cases fail and 24 other classification cases pass",
         "scope": "Existing return classification is retained; only the inverted intrinsic-namespace predicate changes. Isolated validation covers native Windows-x64 sizes, GC layouts, supplied-size queries, member-call conventions, exact intrinsic identity and ReturnTypeDesc integration.",
         "nativeBodiesRetained": true
+      },
+      "comparisonContainmentSupport": {
+        "debugPassed": 26,
+        "releasePassed": 26,
+        "skipped": 0,
+        "selection": ["ComparisonContainmentTests"],
+        "debugTests": "artifacts\\comparison-containment-commit-debug.trx",
+        "releaseTests": "artifacts\\comparison-containment-commit-release.trx",
+        "scope": "Complete xarch comparison containment independently validated without backend WIP. Preserves floating operand selection, signed zero and NaN payloads, immediate encoding and relocation boundaries, interference checks, register-optional choices, flags and node ownership.",
+        "nativeBodiesRetained": true
+      },
+      "returnedCallIntegration": {
+        "debugPassed": 77,
+        "releasePassed": 77,
+        "skipped": 0,
+        "selection": ["CallDispatchLoweringTests", "MemoryCallLoweringTests", "MemoryCompareCallLoweringTests", "StructCallLoweringTests", "ComparisonContainmentTests"],
+        "debugTests": "artifacts\\backend-call-integration-debug.trx",
+        "releaseTests": "artifacts\\backend-call-integration-release.trx",
+        "scope": "Frozen uncommitted call integration includes memory-helper expansion and ordinary-call fallback, native next-node conventions, single-register struct returns and comparison containment. No lowering-driver activation or managed code generation."
       },
       "rationalizationActivation": {
         "debugPassed": 152,
