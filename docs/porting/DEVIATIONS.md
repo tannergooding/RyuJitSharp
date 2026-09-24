@@ -79,6 +79,11 @@ whole-local replacements with native `SetOper` value-number clearing. Comma-thro
 propagation installs its retyped zero in the comma's operand slot. These remain
 tree-form contracts, not general LIR replacement support.
 
+Repeated-addition reduction replaces its left subtree with a constant in the
+new multiplication's operand slot. The constant retains the left subtree's
+logical ID and native node-mask flags, clears VNs, and does not mutate aliases
+of the original subtree into a different managed kind.
+
 Constant field-sequence annotations are mutable metadata, allowing negation
 motion to clear an annotation without replacing the constant. `SetValueTruncating`
 accepts a `long` instead of a native signed-integer template; its int-width

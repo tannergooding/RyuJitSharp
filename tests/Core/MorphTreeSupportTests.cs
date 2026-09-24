@@ -2,6 +2,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.GenTreeFlags;
@@ -14,6 +15,68 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class MorphTreeSupportTests
 {
+    [TestCase(2L, 1, 0xD800)]
+    [TestCase(0x100000002L, 1, 0)]
+    [TestCase(0L, 0, 0)]
+    [TestCase(0L, -1, 0)]
+    public static void ConstantStringCharacterUsesTheEEQueryAndNativeIndexWidth(long index, int length, int character)
+    {
+        WithCompiler(compiler => {
+            compiler.opts.SetMinOpts(false);
+            LiteralQuery query = new() { ResultLength = length, Character = (char)character };
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.getStringLiteral = &GetStringLiteral;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
+            var literal = new GenTreeStrCon(42, (CORINFO_MODULE_STRUCT_*)&query);
+            var address = new GenTreeIndexAddr(literal, compiler.gtNewIconNode(TYP_I_IMPL, (nint)index),
+                TYP_USHORT, null, 2, 8, 12, boundsCheck: true);
+            var indirection = compiler.gtNewIndir(TYP_USHORT, address);
+
+            var result = compiler.gtFoldIndirConst(indirection);
+            Assert.That(query.Queries, Is.EqualTo(1));
+            Assert.That(query.Token, Is.EqualTo(42));
+            Assert.That(query.BufferSize, Is.EqualTo(1));
+            Assert.That(query.StartIndex, Is.EqualTo(unchecked((int)index)));
+            Assert.That(indirection.Addr, Is.SameAs(address));
+            if (length > 0)
+            {
+                Assert.That(result, Is.TypeOf<GenTreeIntCon>());
+                assert(result is not null);
+                Assert.That(result.Type, Is.EqualTo(TYP_INT));
+                Assert.That(result.AsIntCon().IconValue, Is.EqualTo((nint)character));
+                Assert.That(result.Flags & GTF_ALL_EFFECT, Is.EqualTo(GTF_EMPTY));
+            }
+            else
+            {
+                Assert.That(result, Is.Null);
+            }
+        });
+    }
+
+    [TestCase(-1, false, TYP_USHORT)]
+    [TestCase(0, true, TYP_USHORT)]
+    [TestCase(0, false, TYP_INT)]
+    public static void IneligibleStringCharacterLoadsDoNotQueryTheEE(int index, bool emptyField, var_types type)
+    {
+        WithCompiler(compiler => {
+            compiler.opts.SetMinOpts(false);
+            LiteralQuery query = default;
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.getStringLiteral = &GetStringLiteral;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
+            var literal = emptyField
+                ? new GenTreeStrCon(EMPTY_STRING_SCON, null)
+                : new GenTreeStrCon(42, (CORINFO_MODULE_STRUCT_*)&query);
+            var address = new GenTreeIndexAddr(literal, compiler.gtNewIconNode(TYP_INT, index),
+                type, null, type.Size, 8, 12, boundsCheck: true);
+
+            Assert.That(compiler.gtFoldIndirConst(compiler.gtNewIndir(type, address)), Is.Null);
+            Assert.That(query.Queries, Is.Zero);
+        });
+    }
+
     [TestCase(IAT_VALUE, 0, GTF_ICON_OBJ_HDL)]
     [TestCase(IAT_PVALUE, 1, GTF_ICON_STR_HDL)]
     [TestCase(IAT_PPVALUE, 2, GTF_ICON_CONST_PTR)]
@@ -234,6 +297,32 @@ internal static unsafe class MorphTreeSupportTests
                 Assert.That(source._vnPair.Liberal, Is.EqualTo(789));
             }
         });
+    }
+
+    private struct LiteralQuery
+    {
+        public int ResultLength;
+        public char Character;
+        public int Queries;
+        public int Token;
+        public int BufferSize;
+        public int StartIndex;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int GetStringLiteral(ICorJitInfo* self, CORINFO_MODULE_STRUCT_* module, int token,
+        char* buffer, int bufferSize, int startIndex)
+    {
+        var query = (LiteralQuery*)module;
+        query->Queries++;
+        query->Token = token;
+        query->BufferSize = bufferSize;
+        query->StartIndex = startIndex;
+        if (query->ResultLength > 0)
+        {
+            *buffer = query->Character;
+        }
+        return query->ResultLength;
     }
 
     private static void WithCompiler(Action<Compiler> action)

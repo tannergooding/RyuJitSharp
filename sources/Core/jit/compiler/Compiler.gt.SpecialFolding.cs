@@ -7,6 +7,35 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    public unsafe GenTree? gtFoldIndirConst(GenTreeIndir indirection)
+    {
+        assert(opts.OptimizationEnabled && !optValnumCSE_phase);
+        assert(indirection.Oper is GT_IND);
+        var address = indirection.Addr;
+        if ((indirection.Type is TYP_USHORT) && (address.Oper is GT_INDEX_ADDR)
+            && (address.AsIndexAddr().Arr.Oper is GT_CNS_STR))
+        {
+            var literal = address.AsIndexAddr().Arr.AsStrCon();
+            var index = address.AsIndexAddr().Index;
+            if (!literal.IsStringEmptyField && index.Oper.IsCnsIntOrI)
+            {
+                var constantIndex = unchecked((int)index.AsIntConCommon().IconValue);
+                if (constantIndex >= 0)
+                {
+                    char character;
+                    var length = info.compCompHnd->getStringLiteral(
+                        literal.ScpHnd, literal.SconCpx, &character, 1, constantIndex);
+                    if (length > 0)
+                    {
+                        return gtNewIconNode(TYP_INT, character);
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
     public GenTree gtFoldExprBinary(GenTreeOp tree)
     {
         assert(tree.Oper.IsBinary && !optValnumCSE_phase && opts.Tier0OptimizationEnabled);

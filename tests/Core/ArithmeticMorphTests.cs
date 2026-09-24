@@ -14,6 +14,65 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ArithmeticMorphTests
 {
+    [TestCase(TYP_INT, 2)]
+    [TestCase(TYP_LONG, 4)]
+    public static void RepeatedAdditionReplacesTheLeftSubtreeWithoutReusingItsManagedKind(var_types type, int count)
+    {
+        WithCompiler(compiler => {
+            GenTree tree = compiler.gtNewLclvNode(type, 0);
+            for (var i = 1; i < count; i++)
+            {
+                tree = compiler.gtNewBinaryNode(GT_ADD, type, tree, compiler.gtNewLclvNode(type, 0));
+            }
+
+            var left = tree.AsOp().Op1;
+            var right = tree.AsOp().Op2;
+            left._vnPair.SetBoth(123);
+#if DEBUG
+            var nextId = compiler.compGenTreeID;
+#endif
+            var result = compiler.fgMorphReduceAddOps(tree);
+            Assert.That(result.Oper, Is.EqualTo(GT_MUL));
+            Assert.That(result.Type, Is.EqualTo(type));
+            Assert.That(result.AsOp().Op1, Is.SameAs(right));
+            var constant = result.AsOp().Op2;
+            Assert.That(constant, Is.TypeOf<GenTreeIntCon>());
+            Assert.That(constant.Type, Is.EqualTo(type));
+            Assert.That(constant.AsIntCon().IconValue, Is.EqualTo((nint)count));
+            Assert.That(constant._vnPair.BothDefined, Is.False);
+            Assert.That(tree.AsOp().Op1, Is.SameAs(left));
+            Assert.That(left.Oper, Is.EqualTo(count == 2 ? GT_LCL_VAR : GT_ADD));
+#if DEBUG
+            Assert.That(constant.TreeId, Is.EqualTo(left.TreeId));
+            Assert.That(compiler.compGenTreeID, Is.EqualTo(nextId + 1));
+#endif
+        });
+    }
+
+    [TestCase(true, false, true)]
+    [TestCase(false, true, true)]
+    [TestCase(false, false, false)]
+    public static void RepeatedAdditionRejectsCheckedNodesAndDifferentLocals(bool checkedRoot, bool checkedChild, bool sameLocal)
+    {
+        WithCompiler(compiler => {
+            var left = compiler.gtNewBinaryNode(GT_ADD, TYP_INT,
+                compiler.gtNewLclvNode(TYP_INT, 1), compiler.gtNewLclvNode(TYP_INT, sameLocal ? 1 : 0));
+            var tree = compiler.gtNewBinaryNode(GT_ADD, TYP_INT, left, compiler.gtNewLclvNode(TYP_INT, 1));
+            if (checkedRoot)
+            {
+                tree.Flags |= GTF_OVERFLOW;
+            }
+            if (checkedChild)
+            {
+                left.Flags |= GTF_OVERFLOW;
+            }
+
+            Assert.That(compiler.fgMorphReduceAddOps(tree), Is.SameAs(tree));
+            Assert.That(tree.Op1, Is.SameAs(left));
+            Assert.That(left.Oper, Is.EqualTo(GT_ADD));
+        });
+    }
+
     [Test]
     public static void FreshNodesHaveUndefinedValueNumbersInEveryConfiguration()
     {

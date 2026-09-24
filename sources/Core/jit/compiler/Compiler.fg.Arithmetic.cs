@@ -9,6 +9,65 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    public GenTree fgMorphReduceAddOps(GenTree tree)
+    {
+        if ((tree.Oper is not GT_ADD) || tree.HasOverflowCheck)
+        {
+            return tree;
+        }
+
+#if !TARGET_64BIT && !TARGET_WASM
+        // Do not turn inline additions into a 64-bit multiplication helper.
+        if (tree.Type is TYP_LONG)
+        {
+            return tree;
+        }
+#endif
+        var local = tree.AsOp().Op2;
+        var constantSource = tree.AsOp().Op1;
+        var op1 = constantSource;
+        var op2 = local;
+        if ((op2.Oper is not GT_LCL_VAR) || !varTypeIsIntegral(op2.Type))
+        {
+            return tree;
+        }
+
+        var foldCount = 0;
+        var localNumber = op2.AsLclVarCommon().LclNum;
+        while (true)
+        {
+            if ((op1.Oper is GT_LCL_VAR) && (op1.AsLclVarCommon().LclNum == localNumber)
+                && (op2.Oper is GT_LCL_VAR) && (op2.AsLclVarCommon().LclNum == localNumber))
+            {
+                foldCount += 2;
+                break;
+            }
+            else if ((op1.Oper is GT_ADD) && !op1.HasOverflowCheck
+                && (op2.Oper is GT_LCL_VAR) && (op2.AsLclVarCommon().LclNum == localNumber))
+            {
+                foldCount++;
+                op2 = op1.AsOp().Op2;
+                op1 = op1.AsOp().Op1;
+            }
+            else
+            {
+                return tree;
+            }
+        }
+
+        // Replace the left subtree rather than retagging its managed object.
+        // Retain its logical identity; only the multiply allocates a new node ID.
+#if TARGET_64BIT
+        GenTree constant = new GenTreeIntCon(tree.Type, foldCount, fields: null, constantSource);
+#else
+        GenTree constant = tree.Type is TYP_LONG
+            ? new GenTreeLngCon(foldCount, constantSource)
+            : new GenTreeIntCon(tree.Type, foldCount, fields: null, constantSource);
+#endif
+        constant._vnPair.SetBoth(ValueNumStore.NoVN);
+        return gtNewBinaryNode(GT_MUL, tree.Type, local, constant);
+    }
+
     public GenTree? fgMorphModToZero(GenTreeOp tree)
     {
         assert(tree.Oper is GT_MOD or GT_UMOD);

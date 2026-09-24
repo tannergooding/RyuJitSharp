@@ -44,6 +44,10 @@ returned fields can become whole-local reads and remain enregisterable.
 Constant reassociation and left-deep rearrangement preserve side effects,
 overflow checks and GC-pointer boundaries. Constant-division preparation keeps
 eligible divisors available to lowering without suppressing required exceptions.
+Repeated additions of the same local can become a multiplication, retaining
+checked arithmetic when present. Constant character reads from string literals
+can fold through the runtime's literal query without treating unavailable or
+out-of-range characters as successful reads.
 Complementary shifts can be recognized as rotations, with explicit
 count masking and restrictions on merging observable reads. Fresh IR nodes now
 start with undefined value numbers in Release as well as Debug.
