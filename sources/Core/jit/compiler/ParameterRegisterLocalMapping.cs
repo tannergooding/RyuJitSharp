@@ -9,9 +9,9 @@ public struct ParameterRegisterLocalMapping
 {
     public AbiPassingSegment RegisterSegment;
     public int LclNum;
-    public int Offset;
+    public uint Offset;
 
-    public ParameterRegisterLocalMapping(AbiPassingSegment segment, int lclNum, int offset)
+    public ParameterRegisterLocalMapping(AbiPassingSegment segment, int lclNum, uint offset)
     {
         RegisterSegment = segment;
         LclNum = lclNum;

@@ -45,6 +45,10 @@ locations. Windows-x64 upper-vector preservation follows the native ABI and
 spill-weight rules; register-state verification distinguishes pending frees
 from registers that should already be available.
 
+Incoming parameter registers are mapped to independently promoted fields,
+preserving ABI segment order and existing rationalization mappings. Stack-only
+and dependently promoted parameters do not acquire register mappings.
+
 ## 2026-09-24: Rationalization and linear IR
 
 Rationalization now converts sequenced expression trees into linear IR, removes

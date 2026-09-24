@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Complete indirect-store/coalescing and block/JMP/CheckBlock helpers are integrated into the stable backend snapshot; 483 Debug/473 Release lowering cases pass, and obsolete MinOpts forwarding wrappers are removed. Slot-count truncation/rounding and no-GC slot queries are corrected independently; B170 still requires unsigned layout sizes before full LCLHEAP dispatch. Continue scalar node and method-driver closure without activating DoPhase. Collect existing workers: LSRA since turn 50 (minimal loop and Debug RegisterScore propagation; hold kill/copy commit until repaired), calls since turn 38 (TryRemoveCast and LIR folding ownership), accounting since turn 36 (lvaComputeRefCounts and default-aware writable single-definition reason). Assignment/lifetime foundations are committed; broad lowering remains uncommitted. Managed code size remains zero.",
+    "nextAction": "Block/indirect-store traversal plus nonlocal-jump dispatch and layout fixes pass 499 Debug/489 Release integration cases. Parameter-register mapping is independently validated with rationalization/register-eligibility consumers (18 per configuration), preserving native unsigned mapping offsets. Parent next integrates returned TryRemoveCast/TryFoldLirConst and implements optimized shift/rotate TryFoldBinop. Calls worker is collected through turn 39 and now owns TryLowerBitwiseOpToBitOp/TryLowerAndNegativeOne. Collect LSRA since turn 50 (minimal loop and Debug RegisterScore propagation; hold kill/copy commit until repaired) and accounting since turn 36 (lvaComputeRefCounts and default-aware writable single-definition reason). B170 unsigned layout sizes still block full LCLHEAP. Keep incomplete scalar/method drivers inactive and broad lowering uncommitted. Managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -41,6 +41,25 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "parameterRegisterLocals": {
+        "debugPassed": 18,
+        "releasePassed": 18,
+        "skipped": 0,
+        "selection": ["ParameterLocalMappingTests", "RationalizationTests", "RegisterEligibilityTests"],
+        "debugTests": "artifacts\\parameter-locals-debug.trx",
+        "releaseTests": "artifacts\\parameter-locals-release.trx",
+        "scope": "Committed-source export plus MapParameterRegisterLocals and unsigned mapping offsets. Preserves existing mappings, independent-promotion/register gates, overlap boundaries, segment order and per-field targets. No lowering driver activation."
+      },
+      "nonLocalJumpIntegration": {
+        "debugPassed": 499,
+        "releasePassed": 489,
+        "skipped": 0,
+        "selection": "blockStoreTraversalIntegration selection plus ClassLayoutTests and four nonlocal-jump dispatch cases",
+        "debugTests": "artifacts\\nonlocal-layout-integration-debug.trx",
+        "releaseTests": "artifacts\\nonlocal-layout-integration-release.trx",
+        "beforeFix": "artifacts\\nonlocal-jump-before.trx: all four dispatch cases fail at the unported node/containment paths.",
+        "scope": "Uncommitted range and containment dispatch reuse the native nonlocal-jump helper; includes independently corrected layout slots and GC queries."
+      },
       "layoutSlots": {
         "debugPassed": 12,
         "releasePassed": 12,
