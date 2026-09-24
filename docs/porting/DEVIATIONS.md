@@ -90,8 +90,13 @@ native `GenTree**`. Unary and binary operands use direct slot identifiers;
 special-node operands use an ordinal in the owner's stable operand list. This
 keeps managed references GC-safe and distinguishes two slots containing the
 same node. The owner must not restructure its operand list before consuming
-its child values. This support does not yet activate local morph or implement
-replacement of nodes in the locals-only threaded list.
+its child values. Local-morph replacement constructors explicitly accept
+locals-only threading; the existing unthreaded constructor contract is unchanged.
+`LocalSequencer.ReplaceNode` transfers transient links and the append cursor,
+including root-sentinel self-links, before the visitor installs the replacement
+in its owning slot. Replacements preserve logical IDs, clear VNs and apply the
+native `SetOper`/`ChangeOper` flag policy. This does not support LIR replacement
+or activate the unfinished local-morph phase.
 
 Identical-operand comparisons allocate fresh constants, as native does, rather
 than using the scalar-bashing replacement constructors. Comparisons and SELECTs

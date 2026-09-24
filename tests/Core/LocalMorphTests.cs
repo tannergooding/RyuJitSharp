@@ -97,19 +97,7 @@ internal static unsafe class LocalMorphTests
     public static void HiddenReturnBuffersDisableEnregistrationWithoutEscapingTheLocal()
     {
         WithCompiler(compiler => {
-            compiler.lvaTable[0].Type = TYP_STRUCT;
-            compiler.lvaTable[0].Layout = new ClassLayout(8);
-            compiler.lvaTable[0].lvPromoted = true;
-            compiler.lvaTable[0].lvFieldLclStart = 1;
-            compiler.lvaTable[0].lvFieldCnt = 2;
-
-            for (var i = 1; i < 3; i++)
-            {
-                compiler.lvaTable[i].Type = TYP_INT;
-                compiler.lvaTable[i].lvIsStructField = true;
-                compiler.lvaTable[i].lvParentLcl = 0;
-            }
-
+            InitializePromotedPair(compiler);
             compiler.lvaSetHiddenBufferStructArg(0);
 
             foreach (var local in compiler.lvaTable)
@@ -123,6 +111,145 @@ internal static unsafe class LocalMorphTests
         });
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void MatchingPromotedFieldsBecomeScalarLocalNodes(bool store)
+    {
+        WithCompiler(compiler => {
+            InitializePromotedPair(compiler);
+            var data = compiler.gtNewIconNode(TYP_INT, 7);
+            GenTree tree = store
+                ? new GenTreeLclFld(TYP_INT, 0, 4, data, layout: null)
+                : new GenTreeLclFld(GT_LCL_FLD, TYP_INT, 0, 4);
+            tree.Flags |= GTF_DONT_CSE;
+
+            if (store)
+            {
+                tree.Flags |= GTF_ASG | GTF_VAR_DEF | GTF_VAR_USEASG;
+            }
+
+            var original = tree;
+            var visitor = new LocalAddressVisitor(compiler);
+            visitor.MorphLocalField(ref tree, user: null);
+
+            Assert.That(tree, Is.Not.SameAs(original));
+            Assert.That(tree.Oper, Is.EqualTo(store ? GT_STORE_LCL_VAR : GT_LCL_VAR));
+            Assert.That(tree.AsLclVar().LclNum, Is.EqualTo(2));
+            Assert.That(tree.Flags & GTF_DONT_CSE, Is.EqualTo(GTF_DONT_CSE));
+            Assert.That(tree.Flags & GTF_VAR_USEASG, Is.EqualTo(GTF_EMPTY));
+            Assert.That(compiler.lvaTable[0].lvDoNotEnregister, Is.False);
+
+            if (store)
+            {
+                Assert.That(tree.AsLclVar().Data, Is.SameAs(data));
+                Assert.That(tree.Flags & (GTF_ASG | GTF_VAR_DEF), Is.EqualTo(GTF_ASG | GTF_VAR_DEF));
+            }
+#if DEBUG
+            Assert.That(tree.TreeId, Is.EqualTo(original.TreeId));
+#endif
+        });
+    }
+
+    [TestCase(TYP_INT, (ushort)2)]
+    [TestCase(TYP_FLOAT, (ushort)4)]
+    public static void UnmatchedPromotedFieldsKeepTheAccessAndDisableEnregistration(var_types type, ushort offset)
+    {
+        WithCompiler(compiler => {
+            InitializePromotedPair(compiler);
+            GenTree tree = new GenTreeLclFld(GT_LCL_FLD, type, 0, offset);
+            var original = tree;
+            var visitor = new LocalAddressVisitor(compiler);
+            visitor.MorphLocalField(ref tree, user: null);
+
+            Assert.That(tree, Is.SameAs(original));
+            Assert.That(compiler.lvaTable[0].lvDoNotEnregister, Is.True);
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void IndirectPromotedFieldsUpdateBothAddressAndAccessOwners(bool store)
+    {
+        WithCompiler(compiler => {
+            InitializePromotedPair(compiler);
+            var address = new GenTreeFieldAddr(TYP_BYREF, compiler.gtNewLclVarAddrNode(TYP_BYREF, 0), null, 4);
+            var data = compiler.gtNewIconNode(TYP_INT, 7);
+            GenTree tree = store ? compiler.gtNewStoreIndNode(TYP_INT, address, data) : compiler.gtNewIndir(TYP_INT, address);
+            var original = tree.AsIndir();
+            var visitor = new LocalAddressVisitor(compiler);
+
+            Assert.That(visitor.MorphStructField(ref tree, user: null), Is.True);
+            Assert.That(tree.Oper, Is.EqualTo(store ? GT_STORE_LCL_VAR : GT_LCL_VAR));
+            Assert.That(tree.AsLclVar().LclNum, Is.EqualTo(2));
+            Assert.That(original.Addr.Oper, Is.EqualTo(GT_LCL_ADDR));
+            Assert.That(original.Addr.AsLclFld().LclNum, Is.EqualTo(2));
+            Assert.That(original.Addr, Is.Not.SameAs(address));
+
+            if (store)
+            {
+                Assert.That(tree.AsLclVar().Data, Is.SameAs(data));
+            }
+#if DEBUG
+            Assert.That(tree.TreeId, Is.EqualTo(original.TreeId));
+            Assert.That(original.Addr.TreeId, Is.EqualTo(address.TreeId));
+#endif
+        });
+    }
+
+    [Test]
+    public static void DifferentlyTypedIndirectionStillUsesThePromotedFieldAddress()
+    {
+        WithCompiler(compiler => {
+            InitializePromotedPair(compiler);
+            var address = new GenTreeFieldAddr(TYP_BYREF, compiler.gtNewLclVarAddrNode(TYP_BYREF, 0), null, 4);
+            GenTree tree = compiler.gtNewIndir(TYP_FLOAT, address);
+            var original = tree;
+            var visitor = new LocalAddressVisitor(compiler);
+
+            Assert.That(visitor.MorphStructField(ref tree, user: null), Is.False);
+            Assert.That(tree, Is.SameAs(original));
+            Assert.That(tree.AsIndir().Addr.Oper, Is.EqualTo(GT_LCL_ADDR));
+            Assert.That(tree.AsIndir().Addr.AsLclFld().LclNum, Is.EqualTo(2));
+        });
+    }
+
+    [Test]
+    public static void VolatileIndirectionsRetainTheNativeDereferencedFieldQuirk()
+    {
+        WithCompiler(compiler => {
+            InitializePromotedPair(compiler);
+            var address = new GenTreeFieldAddr(TYP_BYREF, compiler.gtNewLclVarAddrNode(TYP_BYREF, 0), null, 4);
+            GenTree tree = compiler.gtNewIndir(TYP_INT, address, GTF_IND_VOLATILE);
+            var original = tree;
+            var visitor = new LocalAddressVisitor(compiler);
+
+            Assert.That(visitor.MorphStructField(ref tree, user: null), Is.False);
+            Assert.That(tree, Is.SameAs(original));
+            Assert.That(tree.AsIndir().Addr, Is.SameAs(address));
+
+            address.Flags |= GTF_FLD_DEREFERENCED;
+            Assert.That(visitor.MorphStructField(ref tree, user: null), Is.True);
+            Assert.That(tree.Oper, Is.EqualTo(GT_LCL_VAR));
+        });
+    }
+
+    private static void InitializePromotedPair(Compiler compiler)
+    {
+        compiler.lvaTable[0].Type = TYP_STRUCT;
+        compiler.lvaTable[0].Layout = new ClassLayout(8);
+        compiler.lvaTable[0].lvPromoted = true;
+        compiler.lvaTable[0].lvFieldLclStart = 1;
+        compiler.lvaTable[0].lvFieldCnt = 2;
+
+        for (var i = 1; i < 3; i++)
+        {
+            compiler.lvaTable[i].Type = TYP_INT;
+            compiler.lvaTable[i].lvIsStructField = true;
+            compiler.lvaTable[i].lvParentLcl = 0;
+            compiler.lvaTable[i].lvFldOffset = (byte)((i - 1) * sizeof(int));
+        }
+    }
+
     [Test]
     public static void EarlyReferenceCountsSaturate()
     {
@@ -133,6 +260,74 @@ internal static unsafe class LocalMorphTests
             visitor.UpdateEarlyRefCount(0, node: null, user: null);
 
             Assert.That(compiler.lvaTable[0].lvRefCnt(RCS_EARLY), Is.EqualTo(ushort.MaxValue));
+        });
+    }
+
+    [Test]
+    public static void ReplacingASequencedLocalTransfersLinksAndTheAppendCursor()
+    {
+        WithCompiler(compiler => {
+            compiler.fgNodeThreading = NodeThreading.AllLocals;
+            var first = compiler.gtNewLclvNode(TYP_INT, 0);
+            var source = new GenTreeLclFld(GT_LCL_FLD, TYP_INT, 1, 0);
+            source.Flags |= GTF_DONT_CSE;
+            source._vnPair.SetBoth(42);
+            var last = compiler.gtNewLclvNode(TYP_INT, 2);
+            var left = compiler.gtNewBinaryNode(GT_ADD, TYP_INT, first, source);
+            var stmt = compiler.gtNewStmt(compiler.gtNewBinaryNode(GT_ADD, TYP_INT, left, last));
+            var sequencer = new LocalSequencer(compiler);
+            sequencer.Start(stmt);
+            sequencer.SequenceLocal(first);
+            sequencer.SequenceLocal(source);
+#if DEBUG
+            var nextId = compiler.compGenTreeID;
+#endif
+            var replacement = new GenTreeLclVar(GT_LCL_VAR, TYP_INT, 1, data: null, source, NodeThreading.AllLocals);
+            left.Op2Ref = replacement;
+            sequencer.ReplaceNode(source, replacement);
+            sequencer.SequenceLocal(last);
+            sequencer.Finish(stmt);
+
+            Assert.That(stmt.TreeListBegin, Is.SameAs(first));
+            Assert.That(first.Next, Is.SameAs(replacement));
+            Assert.That(replacement.Prev, Is.SameAs(first));
+            Assert.That(replacement.Next, Is.SameAs(last));
+            Assert.That(last.Prev, Is.SameAs(replacement));
+            Assert.That(stmt.TreeListEnd, Is.SameAs(last));
+            Assert.That(source.Prev, Is.Null);
+            Assert.That(source.Next, Is.Null);
+            Assert.That(replacement.Flags, Is.EqualTo(GTF_DONT_CSE));
+            Assert.That(replacement._vnPair.Liberal, Is.EqualTo(ValueNumStore.NoVN));
+#if DEBUG
+            Assert.That(replacement.TreeId, Is.EqualTo(source.TreeId));
+            Assert.That(compiler.compGenTreeID, Is.EqualTo(nextId));
+#endif
+        });
+    }
+
+    [Test]
+    public static void ReplacingTheRootLocalPreservesTheTransientSentinel()
+    {
+        WithCompiler(compiler => {
+            compiler.fgNodeThreading = NodeThreading.AllLocals;
+            var source = compiler.gtNewLclvNode(TYP_BYREF, 0);
+            var stmt = compiler.gtNewStmt(source);
+            var sequencer = new LocalSequencer(compiler);
+            sequencer.Start(stmt);
+            sequencer.SequenceLocal(source);
+
+            var replacement = new GenTreeLclFld(GT_LCL_ADDR, TYP_BYREF, 1, 0, data: null,
+                layout: null, source, NodeThreading.AllLocals);
+            stmt.RootNodeRef = replacement;
+            sequencer.ReplaceNode(source, replacement);
+            sequencer.Finish(stmt);
+
+            Assert.That(stmt.TreeListBegin, Is.SameAs(replacement));
+            Assert.That(stmt.TreeListEnd, Is.SameAs(replacement));
+            Assert.That(replacement.Prev, Is.Null);
+            Assert.That(replacement.Next, Is.Null);
+            Assert.That(source.Prev, Is.Null);
+            Assert.That(source.Next, Is.Null);
         });
     }
 

@@ -37,6 +37,13 @@ public class GenTreeOp : GenTreeUnOp
         }
     }
 
+    internal GenTreeOp(genTreeOps oper, var_types type, GenTree? op1, GenTree? op2, GenTree source, NodeThreading threading)
+        : base(oper, type, op1, source, threading)
+    {
+        _op2 = op2;
+        assert(!oper.IsCompare || varTypeIsIntegral(type));
+    }
+
 #if DEBUG
     public bool IsNullOp2Legal => !Oper.IsBinary || Oper switch {
         GT_INTRINSIC => true,

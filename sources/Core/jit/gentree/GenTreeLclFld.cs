@@ -29,6 +29,15 @@ public sealed class GenTreeLclFld : GenTreeLclVarCommon
         _layout = layout;
     }
 
+    internal GenTreeLclFld(genTreeOps oper, var_types type, int lclNum, ushort lclOffs, GenTree? data,
+        ClassLayout? layout, GenTree source, NodeThreading threading)
+        : base(oper, type, lclNum, data, source, threading)
+    {
+        assert(oper is GT_LCL_FLD or GT_LCL_ADDR or GT_STORE_LCL_FLD);
+        _lclOffs = lclOffs;
+        _layout = layout;
+    }
+
 #if TARGET_ARM
     /// <summary>check if the field needs a special handling on arm.</summary>
     public bool IsOffsetMisaligned => varTypeIsFloating(Type) && ((_lclOffs % TYP_FLOAT.EmitSize) is not 0);

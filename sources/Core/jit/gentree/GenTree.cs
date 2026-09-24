@@ -102,8 +102,15 @@ public partial class GenTree
 
     /// <summary>Preserve an unthreaded node's metadata and logical identity when replacing its CLR representation.</summary>
     protected GenTree(genTreeOps oper, var_types type, GenTree source)
+        : this(oper, type, source, NodeThreading.None)
     {
-        assert((source._prev is null) && (source._next is null));
+    }
+
+    /// <remarks>Locals-only links must be transferred by the sequencer after construction. LIR replacement is not supported.</remarks>
+    protected GenTree(genTreeOps oper, var_types type, GenTree source, NodeThreading threading)
+    {
+        assert(threading is NodeThreading.None or NodeThreading.AllLocals);
+        assert((threading is NodeThreading.AllLocals) || ((source._prev is null) && (source._next is null)));
 #if DEBUG
         assert(oper.StructType == GetType());
 #endif

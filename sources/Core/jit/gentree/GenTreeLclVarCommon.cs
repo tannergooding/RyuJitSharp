@@ -28,6 +28,12 @@ public abstract class GenTreeLclVarCommon : GenTreeUnOp
         LclNum = lclNum;
     }
 
+    protected GenTreeLclVarCommon(genTreeOps oper, var_types type, int lclNum, GenTree? data, GenTree source, NodeThreading threading)
+        : base(oper, type, data, source, threading)
+    {
+        LclNum = lclNum;
+    }
+
     public new GenTree Data
     {
         get

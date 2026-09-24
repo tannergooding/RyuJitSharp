@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Continue B143 with native LocalAddressVisitor node transformations in lclmorph.cpp:1652-2245, then its pre/post-order traversal. Value owning-slot tracking, IsWideAccess, hidden return-buffer marking and UpdateEarlyRefCount are implemented and validated; do not restart their exploration. Whole-node replacement must update Value.Use/owners and preserve logical IDs, VN-clearing and flag masks. Existing base replacement constructors require unthreaded sources; local-only sequencing on the optimized path still needs an explicit ownership solution, not a weakened assertion. LocalEqualsLocalAddrAssertions (419-700) and LoopDefinitions (180-376) remain unported; FlowGraphNaturalLoops is already implemented. fgLocalMorph remains a stub. Keep minopts execution first and do not reopen B141 allocation construction, optional escape analysis or unrelated B142/B135 diagnostics.",
+    "nextAction": "Continue B143 with MorphLocalAddress and local indirection transforms in native lclmorph.cpp:1652-2055, then escapes and pre/post-order traversal. Promoted-field transformations (2076-2243), Value owning slots, access bounds, hidden return buffers and early reference counts are implemented and validated; do not restart their exploration. Source-based constructors explicitly support locals-only threading, and LocalSequencer.ReplaceNode transfers links/cursor before the owning use is updated. Preserve logical IDs, VN clearing and the native flag masks; do not weaken the unthreaded constructor contract. LocalEqualsLocalAddrAssertions (419-700) and LoopDefinitions (180-376) remain unported; FlowGraphNaturalLoops is implemented. fgLocalMorph remains a stub. Keep minopts execution first and do not reopen B141 allocation construction, optional escape analysis or unrelated B142/B135 diagnostics.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -1023,6 +1023,18 @@
         "nativeDeclarationsRetired": 2,
         "visitorActivated": false,
         "nativeAotRecaptured": false
+      },
+      "localFieldMorph": {
+        "debugPassed": 182,
+        "releasePassed": 178,
+        "skipped": 0,
+        "selection": ["LocalMorphTests", "AllocationLoweringTests", "ScalarFoldingTests"],
+        "debugTests": "artifacts\\local-field-debug.trx",
+        "releaseTests": "artifacts\\local-field-release.trx",
+        "coverage": ["locals-only link and cursor transfer", "root-sentinel replacement", "promoted field loads/stores and owning address replacement", "type/offset mismatch and DNER", "native volatile-field quirk"],
+        "visitorActivated": false,
+        "nativeAotRecaptured": false,
+        "nativeDefinitionsRetired": []
       },
       "nativeAotPublish": "passed-after-heap-allocation-activation",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",

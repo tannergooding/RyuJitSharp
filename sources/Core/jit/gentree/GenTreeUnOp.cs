@@ -34,6 +34,14 @@ public class GenTreeUnOp : GenTree
         }
     }
 
+    internal GenTreeUnOp(genTreeOps oper, var_types type, GenTree? op1, GenTree source, NodeThreading threading)
+        : base(oper, type, source, threading)
+    {
+        _op1 = op1;
+        Flags = source.Flags & GTF_COMMON_MASK;
+        _vnPair.SetBoth(ValueNumStore.NoVN);
+    }
+
 #if DEBUG
     public bool IsNullOp1Legal => !Oper.IsSimple || Oper switch {
         GT_LEA => true,

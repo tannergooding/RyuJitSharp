@@ -28,6 +28,13 @@ public sealed class GenTreeLclVar : GenTreeLclVarCommon
     {
     }
 
+    internal GenTreeLclVar(genTreeOps oper, var_types type, int lclNum, GenTree? data, GenTree source, NodeThreading threading)
+        : base(oper, type, lclNum, data, source, threading)
+    {
+        assert(oper is GT_LCL_VAR or GT_STORE_LCL_VAR);
+        Flags = source.Flags;
+    }
+
     public bool IsMultiReg => (Flags & GTF_VAR_MULTIREG) != 0;
 
 #if DEBUG

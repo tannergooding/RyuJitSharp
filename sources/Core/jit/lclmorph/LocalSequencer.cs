@@ -120,6 +120,37 @@ public struct LocalSequencer : IGenTreeVisitor<LocalSequencer>
         Finish(stmt);
     }
 
+    /// <summary>Transfer transient locals-only links and the sequencing cursor to a replacement node.</summary>
+    internal void ReplaceNode(GenTree source, GenTree replacement)
+    {
+        assert(_compiler.fgNodeThreading is NodeThreading.AllLocals);
+        assert(source != replacement);
+        assert((replacement.Prev is null) && (replacement.Next is null));
+
+        var prev = source.Prev;
+        var next = source.Next;
+        replacement.Prev = prev == source ? replacement : prev;
+        replacement.Next = next == source ? replacement : next;
+
+        if ((prev is not null) && (prev != source))
+        {
+            prev.Next = replacement;
+        }
+
+        if ((next is not null) && (next != source))
+        {
+            next.Prev = replacement;
+        }
+
+        if (_prevNode == source)
+        {
+            _prevNode = replacement;
+        }
+
+        source.Prev = null;
+        source.Next = null;
+    }
+
     /// <summary>Move a node from its current position in the linked list to the end.</summary>
     /// <param name="node">The node</param>
     private void MoveNodeToEnd(GenTreeLclVarCommon node)
