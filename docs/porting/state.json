@@ -898,6 +898,12 @@
       "reconciledCommit": null
     },
     {
+      "area": "value-numbered-tree-constants",
+      "native": ["src\\coreclr\\jit\\valuenum.cpp", "src\\coreclr\\jit\\valuenum.h", "src\\coreclr\\jit\\compiler.hpp"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.vn.Constants.cs", "sources\\Core\\jit\\valuenum"],
+      "reconciledCommit": null
+    },
+    {
       "area": "simd-recognition",
       "native": ["src\\coreclr\\jit\\simd.cpp"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.cs", "sources\\Core\\jit\\compiler\\Compiler.lva.cs"],

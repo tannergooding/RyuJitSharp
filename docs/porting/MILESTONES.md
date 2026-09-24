@@ -12,6 +12,26 @@ continue. A milestone does not require a conversational stop. Pause for an
 explicit user request, an unresolved decision requiring approval, a publication
 conflict, or a blocker that cannot be safely resolved.
 
+## 2026-09-23: VN-backed constant and overflow folding
+
+**Commit:** `741ad12`.
+
+**Result:** Tree constants now receive value numbers and register embedded
+class-handle/field-address metadata. Constant replacement refreshes both VNs;
+overflow folding supplies the native helper exception set and dummy zero.
+Eleven complete Windows-x64 native definitions retired.
+
+**Evidence:** 197 Debug / 191 Release selected cases passed, zero skipped.
+Coverage includes stale-pair replacement, unknown compile-time handles,
+field registration, reference/byref zero, vectors/masks and overflow exceptions.
+
+**Frontier:** The global-morph restriction on overflow replacement remains.
+ARM64 scalable/mask storage and general VN-phase activation remain unported;
+the reachable import corpus is unchanged.
+
+**Next:** Complete one-constant integer/comparison folding, including its
+nullable-box and conditional-tree dependencies.
+
 ## 2026-09-23: Node assertions and morph completion
 
 **Commit:** `761762d`.
