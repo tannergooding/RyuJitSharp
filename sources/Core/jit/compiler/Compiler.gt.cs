@@ -8919,6 +8919,35 @@ public partial class Compiler
         return nullCheck;
     }
 
+    public var_types gtTypeForNullCheck(GenTree tree)
+    {
+        if (varTypeIsStruct(tree.Type))
+        {
+            return TYP_BYTE;
+        }
+
+        var size = tree.Type.Size;
+#if TARGET_XARCH
+        if (size == 8)
+        {
+            return TYP_INT;
+        }
+#endif
+        ReadOnlySpan<var_types> typesBySize = [TYP_UNDEF, TYP_BYTE, TYP_SHORT, TYP_UNDEF, TYP_INT,
+            TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_LONG];
+        assert((size < typesBySize.Length) && (typesBySize[size] is not TYP_UNDEF));
+        return typesBySize[size];
+    }
+
+    public GenTreeIndir gtChangeOperToNullCheck(GenTree tree, NodeThreading threading = NodeThreading.None)
+    {
+        assert(tree.Oper is GT_IND or GT_BLK);
+        var nullCheck = new GenTreeIndir(GT_NULLCHECK, gtTypeForNullCheck(tree), tree.AsIndir().Addr, null, tree, threading);
+        nullCheck.SetIndirExceptionFlags(this);
+        optMethodFlags |= OMF_HAS_NULLCHECK;
+        return nullCheck;
+    }
+
     public GenTree gtNewOneConNode(var_types type, var_types simdBaseType = TYP_UNDEF)
     {
         switch (type)

@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Continue LowerIndir and LowerPutArgStk for Windows x64, then LowerArg/LowerArgsForCall. Xarch TryCreateAddrMode and local-source interference checking now use the existing CodeGen.genCreateAddrMode implementation; LIR.Range.ReplaceNode plus metadata constructors update the owning use, links and by-ref address alias while retaining logical IDs. Remaining indirection dependencies are ContainCheckIndir, IsContainableLclAddr, TransformUnusedIndirection, Compiler.gtTypeForNullCheck/gtChangeOperToNullCheck and GenTreeIntConCommon.FitsInAddrBase. The native null-check helpers are in compiler.cpp:10489-10529, not gentree.cpp. Register argument support is committed as 1dabb74 and LSRA reference foundations as 88652b2. Field-list packing/spilling still needs cast, binary and local-store dispatch. The LSRA constructor/allocation driver, LowerCall, compiler throw-helper integration and stack-level activation remain unfinished. Keep incomplete dispatch/allocation algorithms uncommitted and retain their native bodies. Managed code size remains zero; no additional parity capture is claimed.",
+    "nextAction": "Continue LowerArg/LowerArgsForCall and their field-list dependencies. LowerIndir, indirection containment, unused-load conversion, relocation hints and LowerPutArgStk now implement the xarch bodies. Stack-argument load-size decoding and the relocation enum ABI are corrected (B161/B162); BLK-to-IND replacement preserves all native SetOper flags and updates its owning LIR use. FEATURE_ARG_SPLIT is defined in sources/Core/RyuJitSharp.csproj for Armarch, LoongArch64 and RISC-V, not AMD64. Field-list packing/spilling still needs cast, binary and local-store dispatch. The LSRA constructor/allocation driver, LowerCall, compiler throw-helper integration and stack-level activation remain unfinished. Keep incomplete dispatch/allocation algorithms uncommitted and retain their native bodies. Managed code size remains zero; no additional parity capture is claimed.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -113,6 +113,24 @@
         "releaseTests": "artifacts\\address-lowering-release.trx",
         "scope": "Base/index/scale/displacement folding, scaled-index-only addresses, owner and alias replacement with stable logical IDs, rejection of local interference and checked adds, and first/middle/last/singleton LIR replacement.",
         "remaining": ["Indirection containment and unused-load transformation", "Stack argument lowering and call argument dispatch", "Lowering phase activation"],
+        "nativeBodiesRetained": true
+      },
+      "stackAndIndirectionSupport": {
+        "debugPassed": 127,
+        "releasePassed": 127,
+        "skipped": 0,
+        "newCases": 22,
+        "selection": ["StackArgumentLoweringTests", "AddressLoweringTests", "UseEdgeIteratorTests", "CallLoweringTests"],
+        "debugTests": "artifacts\\stack-indirection-debug.trx",
+        "releaseTests": "artifacts\\stack-indirection-release.trx",
+        "beforeFix": "artifacts\\stack-load-size-before.trx: three executed load-size decoding cases fail before B162",
+        "scope": "Includes the uncommitted single-field call argument case. Covers relocation hints, unused loads and null probes, stack copy widths/kinds, zero-immediate policy, and metadata-preserving block replacement.",
+        "standaloneDebugPassed": 126,
+        "standaloneReleasePassed": 126,
+        "standaloneDebugTests": "artifacts\\stack-indirection-commit-debug.trx",
+        "standaloneReleaseTests": "artifacts\\stack-indirection-commit-release.trx",
+        "standaloneScope": "Exact staged-source export excludes unfinished backend files and the single-field call argument case.",
+        "remaining": ["Call argument and field-list dispatch closure", "LowerCall and node/block lowering activation", "Allocation and machine-code emission"],
         "nativeBodiesRetained": true
       },
       "rationalizationActivation": {

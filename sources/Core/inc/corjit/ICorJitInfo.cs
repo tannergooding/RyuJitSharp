@@ -424,9 +424,9 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
     public void recordWasmManagedCallSig(CORINFO_SIG_INFO* callSig) => lpVtbl->recordWasmManagedCallSig((ICorJitInfo*)(Unsafe.AsPointer(ref this)), callSig);
 
-    public void recordRelocation(void* location, void* locationRW, void* target, ushort fRelocType, int addlDelta = 0) => lpVtbl->recordRelocation((ICorJitInfo*)(Unsafe.AsPointer(ref this)), location, locationRW, target, fRelocType, addlDelta);
+    public void recordRelocation(void* location, void* locationRW, void* target, CorInfoReloc fRelocType, int addlDelta = 0) => lpVtbl->recordRelocation((ICorJitInfo*)(Unsafe.AsPointer(ref this)), location, locationRW, target, fRelocType, addlDelta);
 
-    public ushort getRelocTypeHint(void* target) => lpVtbl->getRelocTypeHint((ICorJitInfo*)(Unsafe.AsPointer(ref this)), target);
+    public CorInfoReloc getRelocTypeHint(void* target) => lpVtbl->getRelocTypeHint((ICorJitInfo*)(Unsafe.AsPointer(ref this)), target);
 
     public CorInfoArch getExpectedTargetArchitecture() => lpVtbl->getExpectedTargetArchitecture((ICorJitInfo*)(Unsafe.AsPointer(ref this)));
 
@@ -555,9 +555,9 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
         // A relocation is recorded if we are pre-jitting.
         // A jump thunk may be inserted if we are jitting
-        void recordRelocation(void* location, void* locationRW, void* target, ushort fRelocType, int addlDelta = 0);
+        void recordRelocation(void* location, void* locationRW, void* target, CorInfoReloc fRelocType, int addlDelta = 0);
 
-        ushort getRelocTypeHint(void* target);
+        CorInfoReloc getRelocTypeHint(void* target);
 
         // For what machine does the VM expect the JIT to generate code? The VM
         // returns one of the IMAGE_FILE_MACHINE_* values. Note that if the VM
@@ -613,9 +613,9 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_SIG_INFO*, void> recordWasmManagedCallSig;
 
-        public delegate* unmanaged[MemberFunction]<TSelf*, void*, void*, void*, ushort, int, void> recordRelocation;
+        public delegate* unmanaged[MemberFunction]<TSelf*, void*, void*, void*, CorInfoReloc, int, void> recordRelocation;
 
-        public delegate* unmanaged[MemberFunction]<TSelf*, void*, ushort> getRelocTypeHint;
+        public delegate* unmanaged[MemberFunction]<TSelf*, void*, CorInfoReloc> getRelocTypeHint;
 
         public delegate* unmanaged[MemberFunction]<TSelf*, CorInfoArch> getExpectedTargetArchitecture;
 

@@ -30,6 +30,16 @@ public partial class Compiler
 
     public VarResultInfo? eeVars;
 
+    public unsafe CorInfoReloc eeGetRelocTypeHint(void* target)
+    {
+        if (info.compMatchedVM)
+        {
+            return info.compCompHnd->getRelocTypeHint(target);
+        }
+
+        return CorInfoReloc.NONE;
+    }
+
 #if TARGET_WASM
     public unsafe ref CORINFO_WASM_WELLKNOWN_GLOBALS eeGetWasmWellKnownGlobals()
     {

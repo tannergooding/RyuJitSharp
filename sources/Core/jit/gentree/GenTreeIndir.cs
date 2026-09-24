@@ -21,6 +21,10 @@ public class GenTreeIndir : GenTreeOp
         : base(oper, type, addr, data, source, threading)
     {
         assert(oper.IsIndir);
+        if (source.Oper.IsIndirOrArrMetaData)
+        {
+            Flags |= source.Flags & GTF_IND_NONFAULTING;
+        }
     }
 
     /// <summary>The address for the indirection.</summary>

@@ -143,6 +143,43 @@ public abstract class GenTreeIntConCommon : GenTree
     /// <returns>True if this immediate value requires us to record a relocation for it; false otherwise.</returns>
     public bool ImmedValNeedsReloc(Compiler comp) => comp.opts.compReloc && IsIconHandle();
 
+#if TARGET_AMD64 || TARGET_RISCV64 || TARGET_X86
+    public unsafe bool FitsInAddrBase(Compiler comp)
+    {
+#if DEBUG
+        if (!comp.opts.compEnablePCRelAddr)
+        {
+            return false;
+        }
+#endif
+#if TARGET_X86
+        return Oper.IsCnsIntOrI;
+#else
+        if (comp.opts.compReloc)
+        {
+            return IsIconHandle() && (comp.eeGetRelocTypeHint((void*)IconValue) == CorInfoReloc.RELATIVE32);
+        }
+
+        // Query the VM first: RIP-relative encoding is smaller than a zero-relative address.
+        return (comp.eeGetRelocTypeHint((void*)IconValue) == CorInfoReloc.RELATIVE32) || FitsInI32;
+#endif
+    }
+
+    public unsafe bool AddrNeedsReloc(Compiler comp)
+    {
+#if TARGET_X86
+        return comp.opts.compReloc && IsIconHandle();
+#else
+        if (comp.opts.compReloc)
+        {
+            return IsIconHandle() && (comp.eeGetRelocTypeHint((void*)IconValue) == CorInfoReloc.RELATIVE32);
+        }
+
+        return comp.eeGetRelocTypeHint((void*)IconValue) == CorInfoReloc.RELATIVE32;
+#endif
+    }
+#endif
+
     public new bool IsIntegralConst(nint value)
     {
 #if TARGET_32BIT

@@ -619,6 +619,12 @@ so replacing `GT_ADD` with `GT_LEA` preserves logical IDs without retaining the
 old managed node. Operands eliminated by the native transformation are removed
 in the same order.
 
+Unused-load conversion likewise replaces indirection nodes and returns the
+current node to its caller. The constructors retain the nonfaulting flag that
+native `ChangeOper` preserves. Stack-argument `GT_BLK` to `GT_IND` conversion
+preserves all flags, matching native `SetOper`, and rewrites the owning LIR use
+before lowering the new indirection.
+
 ### D003: Deferred non-Windows-x64-only paths
 
 **Status:** accepted scoped deferral; not a successful execution/parity result.
@@ -645,6 +651,10 @@ instruction-specific immediate checks; no non-xarch lowering is activated.
 `Lowering.TryCreateAddrMode` implements xarch address folding and interference
 checks. Other targets throw `NotImplementedException` pending their volatile,
 scaled-index and explicit-address-add handling.
+
+`Lowering.LowerIndir`, `ContainCheckIndir` and `LowerPutArgStk` implement the
+xarch bodies. Other targets throw `NotImplementedException` pending their
+target-specific indirection containment and argument placement rules.
 
 `LinearScan.calleeSaveRegs` currently supports AMD64. Other targets report NYI
 and terminate with `fatal(CORJIT_IMPLLIMITATION)` pending their callee-save sets.

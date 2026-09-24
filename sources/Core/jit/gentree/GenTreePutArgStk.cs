@@ -58,7 +58,7 @@ public sealed partial class GenTreePutArgStk : GenTreeUnOp
         get
         {
             assert(Debugger.IsAttached || (_argLoadSizeDelta is not byte.MaxValue));
-            return _argLoadSizeDelta;
+            return _stackByteSize - _argLoadSizeDelta;
         }
 
         set
