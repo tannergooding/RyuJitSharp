@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Scalar comparison lowering and generated instruction flags are committed as 6e9d852 after exact-index Debug/Release validation. Modified-register tracking and emitter group queries are committed as a8303a7. Comparison, bounds-check and xarch negation dispatch are integrated into the unfinished traversal; their combined selection passes 126 cases in each configuration, including 13 cases that previously failed at missing dispatch. Keep traversal and its integration tests uncommitted until dependency closure. Next close array-length and return lowering, then integrate the shared condition-to-flags helper and LowerJTrue with the select worker's handoff. Collect constant-division and repaired LSRA allocation/block-order packets when returned, verify their reported contracts, and refill useful lanes. Drivers remain inactive and managed code size remains zero.",
+    "nextAction": "Comparison, bounds-check, array metadata and native jump-table generation packets are committed. Conditional select/branch lowering and shared condition-to-flags handling pass 62 standalone cases in each configuration; their combined traversal selection passes 96. Keep traversal and LoweringDispatchTests uncommitted until node/phase dependency closure. The comparison worker now owns complete return lowering and return-specific dependencies. Collect constant-division and repaired LSRA allocation/block-order packets when returned, verify their reported contracts, and refill useful lanes. Parent should close remaining scalar dispatcher dependencies and method-level PInvoke hooks, preserving native successor/revisit behavior. Drivers remain inactive and managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -247,6 +247,20 @@
         "debugTests": "artifacts\\backend-call-integration-debug.trx",
         "releaseTests": "artifacts\\backend-call-integration-release.trx",
         "scope": "Frozen uncommitted call integration includes memory-helper expansion and ordinary-call fallback, native next-node conventions, single-register struct returns and comparison containment. No lowering-driver activation or managed code generation."
+      },
+      "conditionLowering": {
+        "debugPassed": 62,
+        "releasePassed": 62,
+        "skipped": 0,
+        "debugTests": "artifacts\\select-branch-commit-debug.trx",
+        "releaseTests": "artifacts\\select-branch-commit-release.trx",
+        "scope": "Standalone select, condition-descriptor, condition-construction, conditional-branch and compare-node coverage. Native flag-producer movement, bounded CCMP-chain movement, floating compound conditions, owner replacement, dump identity and VN clearing are preserved.",
+        "integrationDebugPassed": 96,
+        "integrationReleasePassed": 96,
+        "integrationDebugTests": "artifacts\\condition-dispatch-debug.trx",
+        "integrationReleaseTests": "artifacts\\condition-dispatch-release.trx",
+        "integrationScope": "Adds array/bounds helpers and seventeen dispatch cases, including replaced range ends and branch termination. Traversal remains unfinished and inactive.",
+        "nativeBodiesRetained": true
       },
       "jumpKindGeneration": {
         "scope": "emitJumpKind is generated from the pinned native emitjmps.h through the existing macro processor. Instruction flag generation is placed outside emitted raw-string templates and within GenerateInstruction.",

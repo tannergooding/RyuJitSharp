@@ -12,6 +12,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-24: Scalar condition and array lowering
+
+Lowering now includes integer comparison narrowing, bit-test reductions,
+condition reversal and reuse of processor flags for branches and conditional
+selection. Floating comparisons retain native unordered/NaN handling and
+compound condition checks. Instruction flags and jump kinds come from the
+native header tables.
+
+Array and string lengths, multidimensional lengths and lower bounds become
+loads at the runtime's native offsets, preserving null faults. Bounds checks
+use the native immediate and memory-operand containment rules.
+
+These are backend building blocks, not an active lowering phase. Remaining
+node and phase integration, register allocation and emission still prevent
+native-code generation.
+
 ## 2026-09-24: Register allocation foundations
 
 The backend now has target register state, interval/reference associations,

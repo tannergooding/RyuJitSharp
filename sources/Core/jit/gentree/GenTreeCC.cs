@@ -16,6 +16,13 @@ public sealed class GenTreeCC : GenTree
         assert(oper.IsCC);
     }
 
+    internal GenTreeCC(genTreeOps oper, var_types type, GenCondition condition, GenTree source, NodeThreading threading)
+        : base(oper, type, source, threading)
+    {
+        _condition = condition;
+        assert(oper.IsCC);
+    }
+
     public GenCondition Condition
     {
         get
