@@ -12,6 +12,28 @@ continue. A milestone does not require a conversational stop. Pause for an
 explicit user request, an unresolved decision requiring approval, a publication
 conflict, or a blocker that cannot be safely resolved.
 
+## 2026-09-23: HWI constants and operation classification
+
+**Commits:** `a947c3c`, `88097ce`.
+
+**Result:** Fixed-width vector creation constants preserve native lane bits,
+scalar upper-lane policy and partial-output behavior. HWI operation mapping
+retains all 146 target-guarded cases, scalar flags and effective NEG/NOT
+patterns. Lane zero/one and bitwise queries are complete. Ten native
+definitions retired across the two dependency batches.
+
+**Evidence:** 62 new cases across the batches; the latest combined HWI/scalar
+selection passes 236 Debug / 232 Release, zero skipped. Coverage includes
+integer narrowing, floating signed zero/NaN bits, fixed-width lane ordering,
+multiply type gates and effective-operation recognition.
+
+**Frontier:** The HWI folding dispatcher is not activated. ARM64/Wasm mapping
+branches and decomposed 32-bit long assembly remain unexercised. These support
+changes do not advance the import corpus or establish codegen parity.
+
+**Next:** Vector unary/binary evaluation and remaining HWI construction
+prerequisites.
+
 ## 2026-09-23: Non-HWI expression folding
 
 **Commit:** `1ff2dd7`.
