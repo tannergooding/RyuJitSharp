@@ -3,6 +3,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.var_types;
@@ -12,6 +13,114 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class HardwareIntrinsicInitializationTests
 {
+    [TestCase(NI_AVX2_And, TYP_INT, GT_AND, false)]
+    [TestCase(NI_AVX512_NotMask, TYP_INT, GT_NOT, false)]
+    [TestCase(NI_X86Base_Xor, TYP_FLOAT, GT_XOR, false)]
+    [TestCase(NI_AVX512_OrMask, TYP_LONG, GT_OR, false)]
+    [TestCase(NI_AVX2_AndNotVector, TYP_INT, GT_AND_NOT, false)]
+    [TestCase(NI_AVX_Add, TYP_DOUBLE, GT_ADD, false)]
+    [TestCase(NI_X86Base_AddScalar, TYP_FLOAT, GT_ADD, true)]
+    [TestCase(NI_X86Base_DivideScalar, TYP_DOUBLE, GT_DIV, true)]
+    [TestCase(NI_AVX512_MultiplyLow, TYP_INT, GT_MUL, false)]
+    [TestCase(NI_X86Base_Multiply, TYP_INT, GT_NONE, false)]
+    [TestCase(NI_X86Base_Multiply, TYP_FLOAT, GT_MUL, false)]
+    [TestCase(NI_AVX512_MultiplyScalar, TYP_DOUBLE, GT_MUL, true)]
+    [TestCase(NI_AVX512_RotateLeftVariable, TYP_INT, GT_ROL, false)]
+    [TestCase(NI_AVX512_RotateRight, TYP_LONG, GT_ROR, false)]
+    [TestCase(NI_AVX2_ShiftLeftLogicalVariable, TYP_INT, GT_LSH, false)]
+    [TestCase(NI_AVX2_ShiftRightArithmeticVariable, TYP_INT, GT_RSH, false)]
+    [TestCase(NI_X86Base_ShiftRightLogical, TYP_INT, GT_RSZ, false)]
+    [TestCase(NI_X86Base_SubtractScalar, TYP_DOUBLE, GT_SUB, true)]
+    [TestCase(NI_X86Base_CompareScalarEqual, TYP_DOUBLE, GT_EQ, true)]
+    [TestCase(NI_AVX512_CompareGreaterThanMask, TYP_INT, GT_GT, false)]
+    [TestCase(NI_X86Base_CompareScalarGreaterThanOrEqual, TYP_FLOAT, GT_GE, true)]
+    [TestCase(NI_AVX2_CompareLessThan, TYP_INT, GT_LT, false)]
+    [TestCase(NI_X86Base_CompareScalarLessThanOrEqual, TYP_DOUBLE, GT_LE, true)]
+    [TestCase(NI_X86Base_CompareScalarNotEqual, TYP_FLOAT, GT_NE, true)]
+    [TestCase(NI_Vector_Create, TYP_INT, GT_NONE, false)]
+    public static void IntrinsicOperationsPreserveTypeGatesAndScalarFlags(NamedIntrinsic id, var_types type,
+        genTreeOps expected, bool expectedScalar)
+    {
+        Assert.That(GenTreeHWIntrinsic.GetOperForHWIntrinsicId(id, type, out var scalar), Is.EqualTo(expected));
+        Assert.That(scalar, Is.EqualTo(expectedScalar));
+    }
+
+    [TestCase(NI_X86Base_Subtract, TYP_INT, false, false, GT_NEG)]
+    [TestCase(NI_X86Base_Subtract, TYP_DOUBLE, false, false, GT_SUB)]
+    [TestCase(NI_X86Base_Xor, TYP_INT, true, false, GT_NOT)]
+    [TestCase(NI_X86Base_Xor, TYP_FLOAT, false, true, GT_NEG)]
+    [TestCase(NI_X86Base_Xor, TYP_DOUBLE, false, true, GT_NEG)]
+    [TestCase(NI_X86Base_Xor, TYP_DOUBLE, false, false, GT_XOR)]
+    public static void EffectiveOperationsRecognizeOnlyNativePatterns(NamedIntrinsic id, var_types type,
+        bool allBits, bool negativeZero, genTreeOps expected)
+    {
+        WithCompiler(_ => {
+            var constant = new GenTreeVecCon(TYP_SIMD16);
+            if (allBits)
+            {
+                constant.SimdVal = simd64_t.AllBitsSet;
+            }
+            else if (negativeZero)
+            {
+                constant.EvaluateBroadcastInPlace(type, -0.0);
+            }
+
+            var other = new GenTreeLclVar(TYP_SIMD16, 0);
+            var subtraction = id == NI_X86Base_Subtract;
+            var node = new GenTreeHWIntrinsic(TYP_SIMD16, id, type, 16,
+                subtraction ? constant : other, subtraction ? other : constant);
+            Assert.That(node.GetOperForHWIntrinsicId(out var originalScalar), Is.EqualTo(subtraction ? GT_SUB : GT_XOR));
+            Assert.That(originalScalar, Is.False);
+            Assert.That(node.GetOperForHWIntrinsicId(out var scalar, getEffectiveOp: true), Is.EqualTo(expected));
+            Assert.That(scalar, Is.False);
+            Assert.That(node.OperIsBitwiseHWIntrinsic(), Is.EqualTo(!subtraction));
+        });
+    }
+
+    [TestCase(TYP_FLOAT)]
+    [TestCase(TYP_DOUBLE)]
+    [TestCase(TYP_INT)]
+    [TestCase(TYP_LONG)]
+    public static void LaneIdentityQueriesDistinguishNegativeZero(var_types type)
+    {
+        WithCompiler(_ => {
+            var node = new GenTreeVecCon(TYP_SIMD16);
+            Assert.That(node.IsScalarZero(type), Is.True);
+            Assert.That(node.IsScalarOne(type), Is.False);
+            if (type is TYP_FLOAT or TYP_DOUBLE)
+            {
+                node.SetElementFloating(type, 0, -0.0);
+                Assert.That(node.IsScalarZero(type), Is.False);
+                node.SetElementFloating(type, 0, 1.0);
+                node.SetElementFloating(type, 1, double.NaN);
+                Assert.That(node.IsElementOne(type, 1), Is.False);
+            }
+            else
+            {
+                node.SetElementIntegral(type, 0, 1);
+                node.SetElementIntegral(type, 1, -1);
+            }
+
+            Assert.That(node.IsScalarZero(type), Is.False);
+            Assert.That(node.IsScalarOne(type), Is.True);
+            Assert.That(node.IsElementZero(type, 1), Is.False);
+        });
+    }
+
+    [TestCase(GT_AND, true)]
+    [TestCase(GT_AND_NOT, true)]
+    [TestCase(GT_OR, true)]
+    [TestCase(GT_OR_NOT, true)]
+    [TestCase(GT_XOR, true)]
+    [TestCase(GT_XOR_NOT, true)]
+    [TestCase(GT_NOT, true)]
+    [TestCase(GT_NEG, false)]
+    [TestCase(GT_EQ, false)]
+    public static void BitwiseClassificationMatchesNativeOperators(genTreeOps oper, bool expected)
+    {
+        Assert.That(GenTreeHWIntrinsic.OperIsBitwiseHWIntrinsic(oper), Is.EqualTo(expected));
+    }
+
     [TestCase(NI_Vector_Create, 8)]
     [TestCase(NI_Vector_Create, 12)]
     [TestCase(NI_Vector_Create, 16)]

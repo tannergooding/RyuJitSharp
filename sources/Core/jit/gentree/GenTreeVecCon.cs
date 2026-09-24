@@ -446,6 +446,28 @@ public sealed class GenTreeVecCon : GenTree
         }
     }
 
+    public bool IsElementZero(var_types simdBaseType, int index)
+    {
+        var integralType = simdBaseType switch {
+            TYP_FLOAT => TYP_INT,
+            TYP_DOUBLE => TYP_LONG,
+            _ => simdBaseType,
+        };
+
+        return GetElementIntegral(integralType, index) == 0;
+    }
+
+    public bool IsElementOne(var_types simdBaseType, int index)
+    {
+        return varTypeIsFloating(simdBaseType)
+            ? GetElementFloating(simdBaseType, index) == 1
+            : GetElementIntegral(simdBaseType, index) == 1;
+    }
+
+    public bool IsScalarZero(var_types simdBaseType) => IsElementZero(simdBaseType, 0);
+
+    public bool IsScalarOne(var_types simdBaseType) => IsElementOne(simdBaseType, 0);
+
     public bool IsNaN(var_types simdBaseType)
     {
         var elementCount = ElementCount(Type.Size, simdBaseType);

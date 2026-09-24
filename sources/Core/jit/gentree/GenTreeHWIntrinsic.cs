@@ -8,7 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace RyuJitSharp;
 
-public sealed class GenTreeHWIntrinsic : GenTreeJitIntrinsic
+public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
 {
     public GenTreeHWIntrinsic(var_types type, NamedIntrinsic hwIntrinsicId, var_types simdBaseType, byte simdSize, params GenTree[] operands)
         : base(GT_HWINTRINSIC, type, simdBaseType, simdSize, operands)
