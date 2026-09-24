@@ -77,6 +77,12 @@ location transitions, and releases ordinary, delayed-use and temporary-copy
 registers in native order. It preserves optional-register and stress-spill
 behavior. This is not yet connected to the compiler's allocation phase.
 
+Minopts candidate preparation now gathers exception and finally liveness sets
+and keeps locals stack-assigned. Frame selection honors required frame pointers
+and P/Invoke frame discovery, removing the frame register from the allocation
+pool when needed. Per-node reference construction is still required before
+these pieces can drive allocation.
+
 ## 2026-09-24: Rationalization and linear IR
 
 Rationalization now converts sequenced expression trees into linear IR, removes

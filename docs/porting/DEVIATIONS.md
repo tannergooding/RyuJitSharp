@@ -644,6 +644,13 @@ The reference-kind and physical-register discriminants select typed referents
 and mask fields instead of overlapping native union storage. AMD64 callee-save
 sets reuse the generated `typelist.h` register classification.
 
+`identifyCandidatesMinimal` represents the complete native
+`identifyCandidates<false>` specialization, including EH exception/finally
+sets. Optimized candidate selection remains separate. Its diagnostic set
+conversion scans local descriptors in local-number order rather than allocating
+native's temporary byte-per-local array; printed local names and order are
+unchanged.
+
 LIR node replacement uses the existing metadata-preserving constructors with
 `NodeThreading.LIR`, followed by `LIR.Range.ReplaceNode` to transfer the owning
 use and range links. Address-mode lowering takes its address alias by reference,
@@ -673,6 +680,10 @@ failure path cannot continue as if implemented in Debug or Release.
 does. Its non-AMD64 Swift path reports NYI and then terminates with
 `fatal(CORJIT_IMPLLIMITATION)` until the ARM64 target masks are available.
 The native constructor remains in the residual tree.
+
+`LinearScan.setFrameType` implements AMD64 frame selection. Other targets report
+NYI and terminate with `CORJIT_IMPLLIMITATION`; their double-alignment and
+target-specific frame/register policies remain in the native tree.
 
 `Lowering.IsCallTargetInRange` implements the xarch policy. Other targets report
 NYI and terminate with `fatal(CORJIT_IMPLLIMITATION)` pending their call-target
