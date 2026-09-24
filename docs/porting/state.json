@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Continue LowerArg/LowerArgsForCall and their field-list dependencies. LowerIndir, indirection containment, unused-load conversion, relocation hints and LowerPutArgStk now implement the xarch bodies. Stack-argument load-size decoding and the relocation enum ABI are corrected (B161/B162); BLK-to-IND replacement preserves all native SetOper flags and updates its owning LIR use. FEATURE_ARG_SPLIT is defined in sources/Core/RyuJitSharp.csproj for Armarch, LoongArch64 and RISC-V, not AMD64. Field-list packing/spilling still needs cast, binary and local-store dispatch. The LSRA constructor/allocation driver, LowerCall, compiler throw-helper integration and stack-level activation remain unfinished. Keep incomplete dispatch/allocation algorithms uncommitted and retain their native bodies. Managed code size remains zero; no additional parity capture is claimed.",
+    "nextAction": "Continue field-list packing/spilling dependencies: LowerCast (lowerxarch.cpp:616-1100), arithmetic node dispatch and local-store dispatch. Xarch cast/binary containment, read-modify-write recognition and register-optional selection are complete; B163 corrects the inverted floating nonzero predicate. LowerArg/LowerArgsForCall are validated WIP in Lowering.CallArguments.cs (33 call/stack cases in Debug and Release), including early/late ownership, tail-call stack area and argument legalization. Do not commit that dispatcher until the field-list dependency closure is complete. FEATURE_ARG_SPLIT is absent on AMD64; non-xarch argument lowering, x86 IJW special-copy handling and Wasm post-processing remain explicit NYIs in that WIP. Native TryLowerAndOrToCCMP immediately returns false in minopts, but its caller's canUseApxEvexEncoding/config evaluation still records ISA dependencies and must be preserved if extracting a complete minopts arithmetic mode. Indirection/stack support is committed as 44fc2e1. The LSRA constructor/allocation driver, LowerCall, compiler throw-helper integration and stack-level activation remain unfinished. Keep incomplete dispatch/allocation algorithms uncommitted and retain their native bodies. Managed code size remains zero; no additional parity capture is claimed.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -131,6 +131,24 @@
         "standaloneReleaseTests": "artifacts\\stack-indirection-commit-release.trx",
         "standaloneScope": "Exact staged-source export excludes unfinished backend files and the single-field call argument case.",
         "remaining": ["Call argument and field-list dispatch closure", "LowerCall and node/block lowering activation", "Allocation and machine-code emission"],
+        "nativeBodiesRetained": true
+      },
+      "operandContainmentSupport": {
+        "debugPassed": 73,
+        "releasePassed": 73,
+        "skipped": 0,
+        "newCases": 21,
+        "selection": ["BinaryLoweringTests", "CastLoweringTests", "CallLoweringTests", "StackArgumentLoweringTests", "AddressLoweringTests"],
+        "debugTests": "artifacts\\operand-containment-debug.trx",
+        "releaseTests": "artifacts\\operand-containment-release.trx",
+        "beforeFix": "artifacts\\cast-containment-before.trx: four floating nonzero predicate cases fail, five integral cast cases pass",
+        "scope": "Includes four uncommitted call argument cases. Covers signed-zero and NaN bits, cast extension/overflow restrictions, binary memory operand selection, cached binary/unary RMW recognition, narrow-shift and overflow rejection, and cleanup of pending marks after address-source interference.",
+        "standaloneDebugPassed": 69,
+        "standaloneReleasePassed": 69,
+        "standaloneDebugTests": "artifacts\\operand-containment-commit-debug.trx",
+        "standaloneReleaseTests": "artifacts\\operand-containment-commit-release.trx",
+        "standaloneScope": "Exact staged-source export excludes unfinished backend dispatch and the four uncommitted call argument cases.",
+        "remaining": ["Cast expansion and arithmetic dispatch", "Field-list packing/spilling and local-store dispatch", "Call/node/block lowering activation", "Allocation and emission"],
         "nativeBodiesRetained": true
       },
       "rationalizationActivation": {

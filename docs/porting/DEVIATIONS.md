@@ -656,6 +656,12 @@ scaled-index and explicit-address-add handling.
 xarch bodies. Other targets throw `NotImplementedException` pending their
 target-specific indirection containment and argument placement rules.
 
+`Lowering.ContainCheckCast` and `ContainCheckBinary` implement xarch containment;
+other targets throw `NotImplementedException`. Xarch read-modify-write
+recognition retains native status caching, whole-address interference checks
+and temporary LIR marks. These helpers do not activate arithmetic or cast
+lowering, including floating conversion expansion and optimized transforms.
+
 `LinearScan.calleeSaveRegs` currently supports AMD64. Other targets report NYI
 and terminate with `fatal(CORJIT_IMPLLIMITATION)` pending their callee-save sets.
 The interval/reference support does not activate register allocation.

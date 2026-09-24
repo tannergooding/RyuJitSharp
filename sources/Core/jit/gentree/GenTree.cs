@@ -369,7 +369,7 @@ public partial class GenTree
 
     public bool IsBlkOp => _oper.IsStore && varTypeIsStruct(_type);
 
-    public bool IsCnsNonZeroFltOrDbl => _oper.IsCnsFltOrDbl && AsDblCon().IsBitwiseEqual(0);
+    public bool IsCnsNonZeroFltOrDbl => _oper.IsCnsFltOrDbl && !AsDblCon().IsBitwiseEqual(0);
 
     public bool IsCnsInitVal => _oper.IsCnsIntOrI || (_oper.IsInitVal && AsOp().Op1.Oper.IsCnsIntOrI);
 

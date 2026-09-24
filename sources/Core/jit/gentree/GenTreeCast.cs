@@ -24,6 +24,24 @@ public sealed class GenTreeCast : GenTreeUnOp
 
     public GenTree CastOp => Op1;
 
+    public bool IsZeroExtending
+    {
+        get
+        {
+            assert(varTypeIsIntegral(CastOp.Type) && varTypeIsIntegral(CastType));
+            if (varTypeIsSmall(CastType))
+            {
+                return varTypeIsUnsigned(CastType);
+            }
+            if ((Type is TYP_LONG) && (CastOp.Type.ActualType is TYP_INT))
+            {
+                return IsUnsigned;
+            }
+
+            return false;
+        }
+    }
+
     public var_types CastType
     {
         get
