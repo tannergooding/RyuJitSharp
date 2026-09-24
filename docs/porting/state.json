@@ -248,6 +248,15 @@
         "releaseTests": "artifacts\\backend-call-integration-release.trx",
         "scope": "Frozen uncommitted call integration includes memory-helper expansion and ordinary-call fallback, native next-node conventions, single-register struct returns and comparison containment. No lowering-driver activation or managed code generation."
       },
+      "modifiedRegisterTrackingSupport": {
+        "debugPassed": 16,
+        "releasePassed": 16,
+        "skipped": 0,
+        "selection": ["RegisterTrackingTests", "EmitterInstructionGroupPhaseTests"],
+        "debugTests": "artifacts\\register-tracking-integration\\artifacts\\register-tracking-debug.trx",
+        "releaseTests": "artifacts\\register-tracking-integration\\artifacts\\register-tracking-release.trx",
+        "scope": "Native modified-register tracking and callee-saved queries, including final-frame guards during real prolog/epilog instruction-group phases. Native instruction-group flags are represented; full instruction groups, allocator traversal and emission remain incomplete."
+      },
       "lsraStateAndSelectionSupport": {
         "debugPassed": 162,
         "releasePassed": 153,
