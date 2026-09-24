@@ -6,6 +6,8 @@ param(
     [Parameter(Mandatory)][ValidatePattern('^[0-9a-fA-F]{40}$')][string] $NativeCommit,
     [string] $ManagedJit = "",
     [string] $ManagedSource = "",
+    [switch] $MinOpts,
+    [switch] $DisableObjectStackAllocation,
     [string] $TypeName = "RyuJitSharp.PortingCorpus",
     [string[]] $ExpectedMethods = @("Main", "Add", "Branch", "Locals", "Call", "InlineCaller", "IndirectCall", "FoldConstants", "FoldFloating", "FoldInteger", "FoldHardware",
         "SynchronizedReturn", "GenericCatch", "PInvokeCall", "ReversePInvoke", "ManyReturns"),
@@ -14,6 +16,10 @@ param(
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
+
+if ($MinOpts -and -not $PSBoundParameters.ContainsKey("ExpectedMethods")) {
+    $ExpectedMethods += "InlineCandidate"
+}
 
 $coreRun = Join-Path $CoreRoot "corerun.exe"
 $nativeInputs = @($coreRun, (Join-Path $CoreRoot "coreclr.dll"), (Join-Path $CoreRoot "clrjit.dll"),
@@ -61,6 +67,12 @@ $settings = [ordered]@{
     DOTNET_JitDisasmDiffable = "1"
     DOTNET_JitDumpASCII = "1"
     DOTNET_JitStdOutFile = $dumpPath
+}
+if ($MinOpts) {
+    $settings.DOTNET_JitMinOpts = "1"
+}
+if ($DisableObjectStackAllocation) {
+    $settings.DOTNET_JitObjectStackAllocation = "0"
 }
 if ($ManagedJit) {
     $settings.DOTNET_AltJit = $selector

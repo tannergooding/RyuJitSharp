@@ -12,10 +12,10 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Advance required allocation lowering (B141) toward minopts/Tier-0-level code generation, then the required local/global morph dependencies. B136 internal-block construction is complete.",
+      "scope": "Advance required local morph (B143) toward minopts/Tier-0-level code generation, then implicit-byref/global morph, lowering and code generation. B141 heap allocation lowering is active; optional stack-allocation analysis remains explicitly unsupported.",
       "doneWhen": [
-        "Trace ObjectAllocator's required minopts path and port complete allocation-lowering functions with their genuine dependencies.",
-        "Replace the expanded Main's ALLOCOBJ with the native allocation helper and preserve call effects, ownership and diagnostics.",
+        "Trace lclmorph.cpp::fgLocalMorph against the managed stub and port its required local-address exposure and local-tree transformation dependencies.",
+        "Preserve local ownership, address-exposure flags, early reference counts and diagnostic ordering.",
         "Continue required local/global morph, lowering and code generation rather than filling optional adjacent optimization phases.",
         "Validate and retire complete definitions; commit coherent portions and publish execution milestones without stopping at them."
       ],
@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Read the pinned objectalloc.cpp constructor, DoPhase and MorphAllocations/MorphAllocObjNode path against sources/Core/jit/objectalloc/ObjectAllocator.cs, whose constructor, enable method and DoPhase are stubs. Determine the complete required allocation-lowering dependency closure, starting from the observed ALLOCOBJ-to-helper gap in Main, then implement it. B136 is validated: sixteen methods finish, fifteen raw phase sections and all five new-case post-phase IR sections match. Do not reopen B127/B129/B135 or unrelated optimization work; minopts code generation is the next execution goal, followed by Tier-1 and full-port coverage.",
+    "nextAction": "Resume at native lclmorph.cpp:2380, Compiler::fgLocalMorph, versus the stub in Compiler.fg.cs:15535. Follow the required local-address-exposure/local-tree transformation closure and implement coherent complete helpers toward phase activation. Allocation lowering is verified: all seventeen minopts allocation and internal-block phase sections, allocation IR and six internal-block IR sections match native. The heap path is deliberately staged; stack allocation fails explicitly and its full native phase/traversal remain in the ledger. Do not re-open allocation construction, optional escape analysis, B142 string-quote diagnostics, B135 profile text or hardware import while advancing required minopts phases.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -984,9 +984,37 @@
         "nativeDeclarationsRetired": 7,
         "codegenParity": "not-available"
       },
-      "nativeAotPublish": "passed-after-internal-block-activation",
+      "heapAllocationLowering": {
+        "sourceSnapshot": "f6739649d7e96f7751def37ccbd2aae0094723a4",
+        "debugPassed": 6,
+        "releasePassed": 6,
+        "skipped": 0,
+        "debugTests": "artifacts\\allocation-lowering-debug.trx",
+        "releaseTests": "artifacts\\allocation-lowering-release.trx",
+        "minoptsManagedCapture": "artifacts\\heap-allocation-managed-minopts\\manifest.json",
+        "minoptsNativeCapture": "artifacts\\heap-allocation-native-minopts-complete\\manifest.json",
+        "minoptsComparison": "artifacts\\heap-allocation-minopts-phase-comparison.json",
+        "minoptsMethodsCompleted": 17,
+        "minoptsExactAllocationPhaseSections": 17,
+        "minoptsExactAllocationIRSections": 1,
+        "minoptsExactInternalPhaseSections": 17,
+        "minoptsExactInternalIRSections": 6,
+        "optimizedManagedCapture": "artifacts\\heap-allocation-managed\\manifest.json",
+        "optimizedNativeCapture": "artifacts\\heap-allocation-native\\manifest.json",
+        "optimizedComparison": "artifacts\\heap-allocation-optimized-phase-comparison.json",
+        "optimizedMethodsCompleted": 16,
+        "optimizedExactAllocationPhaseSections": 16,
+        "optimizedFirstAllocationIRDifference": "Preexisting missing quotes in eePrintStringLiteral (B142).",
+        "unsupportedStackAllocationProbe": "artifacts\\heap-allocation-stack-request\\manifest.json",
+        "unsupportedStackAllocationResult": "Explicit compilation failure followed by a minopts retry of Main; host exit zero. Strict corpus validation correctly rejects the duplicate compilation header. Not a parity capture.",
+        "nativeDefinitionsRetired": ["ObjectAllocator::AllocationKind", "ObjectAllocator::MorphAllocObjNodeIntoHelperCall"],
+        "nativeDeclarationsRetired": 2,
+        "completeNativePhasePorted": false,
+        "codegenParity": "not-available"
+      },
+      "nativeAotPublish": "passed-after-heap-allocation-activation",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
-      "phaseDumpParity": "fifteen-of-sixteen-internal-block-phase-sections-and-all-five-new-case-post-phase-IR-sections-equal",
+      "phaseDumpParity": "all-seventeen-minopts-allocation-and-internal-block-phase-sections-and-all-emitted-post-phase-IR-sections-equal",
       "codegenParity": "not-available"
     }
   },
@@ -1445,6 +1473,15 @@
     "internalBlockPhaseManagedSource": {
       "commit": "676c685f802d99b264172984110ec53bdd08cebd",
       "ref": "refs/porting/snapshots/internal-block-phase-source"
+    },
+    "heapAllocationManagedSource": {
+      "commit": "f6739649d7e96f7751def37ccbd2aae0094723a4",
+      "ref": "refs/porting/snapshots/heap-allocation-source"
+    },
+    "heapAllocationNativeResidual": {
+      "commit": "b7709a20349c682efc7564b397dafc0ee464d36f",
+      "indexCommit": "dfbd51d1ef1f3325a7b1f416043006d551cae44b",
+      "ref": "refs/porting/snapshots/native-ledger-heap-allocation"
     },
     "internalBlockPhaseNativeResidual": {
       "commit": "494ccbc0132fcf507b8133bffa2fef635d788858",

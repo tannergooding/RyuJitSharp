@@ -70,6 +70,21 @@ Overflow folding retains the native global-morph gate. Value-numbered constant
 replacement now refreshes both VNs, and overflow helpers carry the native
 exception-set composition (B082/B083/B100).
 
+Allocation-to-helper conversion uses a `GenTreeCall` replacement constructor
+and the source-node overload of `gtNewHelperCallNode`. Unlike constant folding,
+native `ChangeOper` preserves the common flag mask. The replacement preserves
+that mask, value numbers and logical identity, then recomputes helper/argument
+effects without the fresh-call factory's extra global-reference flag. The
+owning local store installs the returned node. General argument morphing remains
+outside this construction helper; no unported argument morphing is implied.
+
+B141 currently activates only the stack-allocation-disabled path, including
+minopts. Requests for the unported stack-allocation analysis/cloning path end
+compilation with `CORJIT_IMPLLIMITATION`; they do not silently allocate on the
+heap. This is a staged implementation limitation, not completion of the native
+phase or an accepted dump/codegen difference. The complete native phase and
+combined allocation traversal remain in the residual ledger.
+
 Identical-operand comparisons allocate fresh constants, as native does, rather
 than using the scalar-bashing replacement constructors. Comparisons and SELECTs
 copy the original sequencing links only outside global morph; callers still own

@@ -12861,6 +12861,57 @@ public partial class Compiler
     }
 #endif
 
+    /// <summary>Create an unthreaded helper-call replacement, preserving the source's value numbers and logical identity.</summary>
+    /// <remarks>The owner must install the replacement. Argument morphing and SetMorphed belong to the caller.</remarks>
+    internal unsafe GenTreeCall gtNewHelperCallNode(GenTree source, CorInfoHelpFunc helper, params ReadOnlySpan<GenTree> args)
+    {
+        var call = new GenTreeCall(source) {
+            _callType = CT_HELPER,
+            _returnType = source.Type,
+            _callMethHnd = eeFindHelper(helper),
+        };
+        call.ClearInlineInfo();
+
+#if UNIX_X86_ABI
+        call.Flags |= GTF_CALL_POP_ARGS;
+#endif
+#if DEBUG
+        call._inlineObservation = InlineObservation.CALLSITE_IS_CALL_TO_HELPER;
+#endif
+#if FEATURE_READYTORUN
+        call._entryPoint.accessType = IAT_VALUE;
+#endif
+#if FEATURE_MULTIREG_RET
+        call._returnTypeDesc.Reset();
+        call.ClearOtherRegs();
+#if !TARGET_64BIT
+        if (varTypeIsLong(source.Type))
+        {
+            call._returnTypeDesc.InitializeLongReturnType();
+        }
+#endif
+#endif
+        if (call.CallExceptions() != ExceptionSetFlags.None)
+        {
+            call.Flags |= GTF_EXCEPT;
+        }
+        else
+        {
+            call.Flags &= ~GTF_EXCEPT;
+        }
+
+        call.Flags |= GTF_CALL;
+
+        for (var i = args.Length - 1; i >= 0; i--)
+        {
+            var arg = args[i];
+            call.Args.PushFront(NewCallArg.CreateForPrimitive(arg));
+            call.Flags |= arg.Flags & GTF_ALL_EFFECT;
+        }
+
+        return call;
+    }
+
     /// <summary>Helper to create a virtual function lookup helper node.</summary>
     /// <param name="type">Type of the node</param>
     /// <param name="helper">Call helper</param>

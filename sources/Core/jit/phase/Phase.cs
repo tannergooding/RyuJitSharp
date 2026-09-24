@@ -18,6 +18,8 @@ public abstract partial class Phase
         _phase = phase;
     }
 
+    protected Compiler CompilerInstance => _compiler;
+
     /// <summary>execute a phase and any before and after actions</summary>
     public virtual void Run()
     {

@@ -254,6 +254,13 @@ binary hashes, settings, timeout/exit status, and the raw dump. Native fallback
 is expected for this incomplete port; process success is not generated-code
 success.
 
+Use `-MinOpts` on both captures to exercise required, unoptimized compilation;
+the default method set then includes `InlineCandidate`, which is no longer
+inlined. For optimized captures that exclude the still-unported object stack
+allocation analysis, use `-DisableObjectStackAllocation` on both runs. These
+switches are recorded in the manifest and do not establish managed execution:
+the AltJIT still falls back to native code.
+
 `scripts\porting\Compare-PortingDumps.ps1 -NativeDump <file> -ManagedDump <file>
 -OutputPath <report.json>` compares each compilation from its start header up
 to, but excluding, `Finishing PHASE Importation`. It preserves CR/LF and reports

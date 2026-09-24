@@ -236,6 +236,12 @@ public sealed class GenTreeCall : GenTree
     {
     }
 
+    internal GenTreeCall(GenTree source)
+        : base(GT_CALL, source.Type, source)
+    {
+        Flags = source.Flags & GTF_COMMON_MASK;
+    }
+
     public ref CallArgs Args => ref _args;
 
     public static unsafe bool Equals(GenTreeCall c1, GenTreeCall c2)
