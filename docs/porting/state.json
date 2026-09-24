@@ -12,27 +12,28 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port early and late top-level qmark expansion and required throwing-block conversion, preserving native control-flow and profile behavior.",
+      "scope": "Port regular and partial-compilation patchpoint transformation, preserving native counter sharing, CFG shape, profile weights and IR.",
       "doneWhen": [
-        "Complete qmark discovery, Debug shape checks, statement expansion and phase traversal for both early and late modes.",
-        "Complete throwing-block conversion and reuse existing edge, EH, statement and tree helpers.",
+        "Complete PatchpointTransformer and fgTransformPatchpoints, including both patchpoint kinds and method eligibility gates.",
+        "Reuse existing block splitting, EH extension, edge, statement and local factories.",
         "Keep fgInline disabled until the remaining B112 prerequisites are complete.",
-        "Validate branch shape, stores, nested traversal, throwing arms and native likelihood/flag propagation; retire complete native functions and commit."
+        "Validate shared counters, counter initialization, branch probabilities, partial-compilation replacement and gating; retire complete native functions and commit."
       ],
       "validation": [
-        "Cover both-arm and single-arm expansion, early gating, nested qmarks, comma splitting, field stores and no-return calls.",
+        "Cover multiple regular patchpoints, negative/zero/positive initial counters and forced patchpoints without counter allocation.",
         "Run related Debug/Release flow-graph cases; extend only for concrete failures.",
-        "Recapture NativeAOT/corpus after phase activation and explicitly distinguish entry-prefix equality from phase parity."
+        "Recapture NativeAOT/corpus after phase activation; explicitly retain the Tier0/OSR codegen frontier."
       ],
       "deferred": [
         "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
         "General local assertion propagation, block morph and the full global-morph phase.",
         "Non-xarch hardware-intrinsic folding, hashBv bulk/set algebra and iterator APIs, and fgInline activation.",
-        "Patchpoint/indirect-call transformation and post-import cleanup, which still gate successful inline-phase activation.",
+        "Indirect-call transformation and post-import cleanup, which still gate successful inline-phase activation.",
+        "Patchpoint code generation, metadata generation and actual OSR execution.",
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Qmark expansion and throwing-block conversion are complete (B116). Continue with patchpoint transformation, followed by indirect-call transformation and post-import cleanup, before enabling fgInline (B112). B117 records native single-arm likelihood behavior retained by the port. Hash-vector bulk/set algebra and iterator APIs remain native (B115). FoldHardware records the separate impHWIntrinsic stub boundary, not vector folding execution parity. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
+    "nextAction": "Patchpoint transformation is complete (B118). Continue with indirect-call transformation and post-import cleanup before enabling fgInline (B112). Actual patchpoint metadata/codegen and OSR execution remain unavailable. B117 records native single-arm qmark likelihood behavior retained by the port. Hash-vector bulk/set algebra and iterator APIs remain native (B115). FoldHardware records the separate impHWIntrinsic stub boundary, not vector folding execution parity. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -782,7 +783,31 @@
         "nativeExpansionParityEstablished": false,
         "codegenParity": "not-available"
       },
-      "nativeAotPublish": "passed-after-qmark-expansion",
+      "patchpointTransformation": {
+        "managedSourceCommit": "d24d1a4f529e9728c070819839ae849f3870d2dd",
+        "debugPassed": 50,
+        "releasePassed": 50,
+        "newCases": 7,
+        "skipped": 0,
+        "nativeDefinitionsRetired": 7,
+        "nativeFilesRetired": ["src\\coreclr\\jit\\patchpoint.cpp"],
+        "phaseActivated": true,
+        "nativeAotRecaptured": true,
+        "nativeAotLibrary": "artifacts\\patchpoint-native\\RyuJitSharp.dll",
+        "nativeAotSha256": "2441CEB2968885F69F9D9F07CCE99B0A8E08AA7307721326E3BB193422B6C1EA",
+        "debugTests": "artifacts\\patchpoint-debug.trx",
+        "releaseTests": "artifacts\\patchpoint-release.trx",
+        "nativeManifest": "artifacts\\morph-init-corpus-native\\manifest.json",
+        "managedManifest": "artifacts\\patchpoint-corpus-managed\\manifest.json",
+        "comparison": "artifacts\\patchpoint-comparison.json",
+        "corpusMethods": 11,
+        "phaseCompletions": 11,
+        "corpusTransformations": 0,
+        "exactImportPrefixes": ["Add", "Branch", "Locals", "FoldConstants", "FoldFloating", "FoldInteger"],
+        "osrExecutionEstablished": false,
+        "codegenParity": "not-available"
+      },
+      "nativeAotPublish": "passed-after-patchpoint-transformation",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "six-of-eleven-import-prefixes-equal-four-inline-differences-and-one-vector-importer-gap",
       "codegenParity": "not-available"
@@ -1204,6 +1229,15 @@
       "commit": "e311547021c6d3124383966f0627f7b6e1569538",
       "indexCommit": "a3ab857b7ba9beaa670dd2466414d93b6af9b2ba",
       "ref": "refs/porting/snapshots/native-ledger-qmark-expansion"
+    },
+    "patchpointTransformationManagedSource": {
+      "commit": "d24d1a4f529e9728c070819839ae849f3870d2dd",
+      "ref": "refs/porting/snapshots/patchpoint-transformation-source"
+    },
+    "patchpointTransformationNativeResidual": {
+      "commit": "8494ea29bcc33f92776b78df0dc36d3ebf60465e",
+      "indexCommit": "f2c688c5de079bfcee36d417ffa7660e7ccf6da4",
+      "ref": "refs/porting/snapshots/native-ledger-patchpoint-transformation"
     }
   },
   "sourceMap": [

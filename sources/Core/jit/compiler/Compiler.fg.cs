@@ -14155,8 +14155,21 @@ public partial class Compiler
     // TODO: Port phase - fgTransformIndirectCalls
     public PhaseStatus fgTransformIndirectCalls() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port phase - fgTransformPatchpoints
-    public PhaseStatus fgTransformPatchpoints() => PhaseStatus.MODIFIED_NOTHING;
+    public PhaseStatus fgTransformPatchpoints()
+    {
+        if (!MethodHasPatchpoint)
+        {
+            JITDUMP("\n -- no patchpoints to transform\n");
+            return PhaseStatus.MODIFIED_NOTHING;
+        }
+
+        assert(!compIsForInlining);
+        assert(compCanHavePatchpoints());
+        var transformer = new PatchpointTransformer(this);
+        var count = transformer.Run();
+        JITDUMP($"\n -- {count} patchpoints transformed\n");
+        return count == 0 ? PhaseStatus.MODIFIED_NOTHING : PhaseStatus.MODIFIED_EVERYTHING;
+    }
 
     // TODO: Port phase - fgUpdateFlowGraphPhase
     public PhaseStatus fgUpdateFlowGraphPhase() => PhaseStatus.MODIFIED_NOTHING;

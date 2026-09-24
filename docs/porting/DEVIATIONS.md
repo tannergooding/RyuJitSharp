@@ -220,6 +220,12 @@ visit the newly inserted arms and remainder; managed throw conversion retains th
 native callfinally-unpairing and profile-update order. Native single-arm likelihood
 assignments are deliberately retained, not corrected only in C# (B116/B117).
 
+Patchpoint transformation composes existing statement factories/insertion helpers
+in place of native `fgNewStmtAtBeg`/`fgNewStmtAtEnd` wrappers. Managed unary and
+binary node factories preserve `GT_PATCHPOINT`/`GT_PATCHPOINT_FORCED` shapes and
+call flags; shared-counter lifetime, branch layout and probabilities are unchanged
+(B118). This does not supply patchpoint code generation or OSR metadata.
+
 Phi definitions own copied SSA-number arrays and expose readonly memory.
 Reaching-VN traversal uses a managed stack and membership set, preserving native
 push/pop order, conservative SSA lookup, duplicate suppression, cycles and early
