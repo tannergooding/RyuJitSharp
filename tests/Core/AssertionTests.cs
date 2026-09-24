@@ -22,6 +22,265 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class AssertionTests
 {
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void MorphUsesLocalAssertionsWithoutGlobalRangeAnalysis(bool cast)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }, new LclVarDsc { Type = TYP_INT }];
+            compiler.fgGlobalMorph = true;
+            compiler.apLocal = InstallAssertions(compiler, cast
+                ? [AssertionDsc.CreateSubrange(compiler, 0, new(Zero, UByteMax))]
+                : [IntAssertion(compiler, 7)]);
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            compiler.apLocalPostorder = BitOps.MakeCopy(traits, compiler.apLocal);
+            var local = compiler.gtNewLclvNode(TYP_INT, 0);
+            GenTree tree = cast
+                ? new GenTreeCast(TYP_INT, local, false, TYP_UBYTE)
+                : compiler.gtNewBinaryNode(GT_EQ, TYP_INT, local, compiler.gtNewIconNode(TYP_INT, 7));
+            var result = compiler.fgMorphTree(tree);
+            if (cast)
+            {
+                Assert.That(result, Is.SameAs(local));
+            }
+            else
+            {
+                Assert.That(result.Oper, Is.EqualTo(GT_CNS_INT));
+                Assert.That(result.AsIntCon().IconValue, Is.EqualTo((nint)1));
+            }
+            Assert.That(compiler.vnStore, Is.Null);
+        });
+    }
+
+    [TestCase(VNFunc.VNF_CastClass, false)]
+    [TestCase(VNFunc.VNF_IsInstanceOf, false)]
+    [TestCase(VNFunc.VNF_JitNew, true)]
+    public static void ObjectTypeRequiresMappedHandlesAndKeepsExactnessSeparate(VNFunc function, bool exact)
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            var type = store.VNForHandle(0x1000, GTF_ICON_CLASS_HDL);
+            var value = store.VNForFuncNoFolding(TYP_REF, function, type, store.VNForExpr(null, TYP_REF));
+            Assert.That(store.IsVNTypeHandle(type, out var handle), Is.False);
+            Assert.That((nint)handle, Is.EqualTo((nint)0));
+            Assert.That((nint)store.GetObjectType(value, out var isExact, out var nonNull), Is.EqualTo((nint)0));
+            Assert.That(isExact || nonNull, Is.False);
+            store.AddToEmbeddedHandleMap(0x1000, 0);
+            Assert.That(store.IsVNTypeHandle(type, out _), Is.False);
+            store.AddToEmbeddedHandleMap(0x1000, 0x2000);
+            Assert.That(store.IsVNTypeHandle(type, out handle), Is.True);
+            Assert.That((nint)handle, Is.EqualTo((nint)0x2000));
+            Assert.That((nint)store.GetObjectType(value, out isExact, out nonNull), Is.EqualTo((nint)0x2000));
+            Assert.That(isExact, Is.EqualTo(exact));
+            Assert.That(nonNull, Is.EqualTo(exact));
+            Assert.That(store.IsVNTypeHandle(store.VNForHandle(0x1000, GTF_ICON_OBJ_HDL), out _), Is.False);
+        });
+    }
+
+    [Test]
+    public static void ObjectTypeUsesRuntimeMetadataWithoutInventingExactness()
+    {
+        WithCompiler(compiler => {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.getObjectType = &GetAssertionObjectType;
+            vtable.Base.Base.getBuiltinClass = &GetAssertionBuiltinClass;
+            var ee = new ICorJitInfo { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &ee;
+            var store = new ValueNumStore(compiler);
+            var value = store.VNForHandle(0x4000, GTF_ICON_OBJ_HDL);
+            Assert.That((nint)store.GetObjectType(value, out var exact, out var nonNull), Is.EqualTo((nint)0x2000));
+            Assert.That(exact && nonNull, Is.True);
+            var getType = store.VNForFunc(TYP_REF, VNFunc.VNF_ObjGetType, value);
+            Assert.That((nint)store.GetObjectType(getType, out exact, out nonNull), Is.EqualTo((nint)0x3000));
+            Assert.That(exact, Is.False);
+            Assert.That(nonNull, Is.True);
+            int[] unknown = [ValueNumStore.NoVN, ValueNumStore.VNForNull(), store.VNForIntCon(1), store.VNForExpr(null, TYP_REF)];
+            foreach (var vn in unknown)
+            {
+                Assert.That((nint)store.GetObjectType(vn, out exact, out nonNull), Is.EqualTo((nint)0));
+                Assert.That(exact || nonNull, Is.False);
+            }
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void SubtypeProofRequiresAnActiveMatchingFactAndDefiniteRuntimeAnswer(bool exact)
+    {
+        WithCompiler(compiler => {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.compareTypesForCast = &CompareAssertionTypes;
+            var ee = new ICorJitInfo { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &ee;
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var type = store.VNForHandle(0x1000, GTF_ICON_CLASS_HDL);
+            var otherType = store.VNForHandle(0x5000, GTF_ICON_CLASS_HDL);
+            store.AddToEmbeddedHandleMap(0x1000, 0x2000);
+            store.AddToEmbeddedHandleMap(0x5000, 0x6000);
+            var value = store.VNForExpr(null, TYP_REF);
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            var assertions = BitOps.MakeEmpty(traits);
+            var index = compiler.optAddAssertion(AssertionDsc.CreateSubtype(compiler, value, type, exact));
+            Assert.That(compiler.optAssertionVNIsSubtype(value, type, assertions), Is.False);
+            BitOps.AddElemD(traits, assertions, index - 1);
+            Assert.That(compiler.optAssertionVNIsSubtype(value, type, assertions), Is.True);
+            Assert.That(compiler.optAssertionVNIsSubtype(value, type, assertions, budget: 0), Is.False);
+            Assert.That(compiler.optAssertionVNIsSubtype(value, otherType, assertions), Is.False);
+            Assert.That(compiler.optAssertionVNIsSubtype(store.VNForExpr(null, TYP_REF), type, assertions), Is.False);
+            Assert.That(compiler.optAssertionVNIsSubtype(ValueNumStore.NoVN, type, assertions), Is.False);
+            var allocation = store.VNForFuncNoFolding(TYP_REF, VNFunc.VNF_JitNew, type, ValueNumStore.VNForVoid());
+            Assert.That(compiler.optAssertionVNIsSubtype(allocation, type, null), Is.True);
+            Assert.That(compiler.optAssertionVNIsSubtype(allocation, type, null, budget: 0), Is.False);
+        }, local: false);
+    }
+
+    [Test]
+    public static void PhiSubtypeProofConsumesBudgetAndUsesPredecessorAssertions()
+    {
+        WithCompiler(compiler => {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.compareTypesForCast = &CompareAssertionTypes;
+            var ee = new ICorJitInfo { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &ee;
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_REF }, new LclVarDsc { Type = TYP_INT }];
+            ref var definitions = ref compiler.lvaTable[0].lvPerSsaData;
+            var argumentSsa = definitions.AllocSsaNum();
+            var phiSsa = definitions.AllocSsaNum();
+            var value = store.VNForExpr(null, TYP_REF);
+            definitions.GetSsaDef(argumentSsa)._vnPair.SetBoth(value);
+            var type = store.VNForHandle(0x1000, GTF_ICON_CLASS_HDL);
+            store.AddToEmbeddedHandleMap(0x1000, 0x2000);
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            var assertions = BitOps.MakeEmpty(traits);
+            var index = compiler.optAddAssertion(AssertionDsc.CreateSubtype(compiler, value, type, false));
+            BitOps.AddElemD(traits, assertions, index - 1);
+#if DEBUG
+            compiler.fgSafeBasicBlockCreation = true;
+#endif
+            var entry = BasicBlock.New(compiler, BBKinds.BBJ_COND);
+            var join = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            var other = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            compiler.fgFirstBB = entry;
+            entry.SetCond(new FlowEdge(entry, join, null), new FlowEdge(entry, other, null));
+            join.bbPreds = entry.TrueEdge;
+            var outgoing = new nint[compiler.fgBBNumMax + 1][];
+            outgoing[entry.bbNum] = assertions;
+            JtrueAssertionOut(compiler) = outgoing;
+            var argument = new GenTreePhiArg(TYP_REF, 0, argumentSsa, entry);
+            var phi = new GenTreePhi(TYP_REF) { FirstUse = new GenTreePhi.Use(argument) };
+            var definition = compiler.gtNewStoreLclVarNode(0, phi);
+            definition.SsaNum = phiSsa;
+            definitions.GetSsaDef(phiSsa) = new LclSsaVarDsc(join, definition);
+            var phiVN = store.VNForPhiDef(TYP_REF, 0, phiSsa, [argumentSsa]);
+
+            Assert.That(compiler.optAssertionVNIsSubtype(phiVN, type, null, budget: 1), Is.False);
+            Assert.That(compiler.optAssertionVNIsSubtype(phiVN, type, null, budget: 2), Is.True);
+            Assert.That(argument._vnPair, Is.EqualTo(new ValueNumPair()));
+            outgoing[entry.bbNum] = BitOps.MakeEmpty(traits);
+            Assert.That(compiler.optAssertionVNIsSubtype(phiVN, type, null), Is.False);
+        }, local: false);
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void CastAssertionApplicationPreservesArgumentEffectsAndSingleEvaluation(bool spillObject)
+    {
+        WithCompiler(compiler => {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.compareTypesForCast = &CompareAssertionTypes;
+            var ee = new ICorJitInfo { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &ee;
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_REF }, new LclVarDsc { Type = TYP_INT }];
+#if DEBUG
+            compiler.fgSafeBasicBlockCreation = true;
+#endif
+            compiler.compCurBB = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var type = store.VNForHandle(0x1000, GTF_ICON_CLASS_HDL);
+            store.AddToEmbeddedHandleMap(0x1000, 0x2000);
+            var value = store.VNForExpr(null, TYP_REF);
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            var assertions = BitOps.MakeEmpty(traits);
+            var index = compiler.optAddAssertion(AssertionDsc.CreateSubtype(compiler, value, type, false));
+            BitOps.AddElemD(traits, assertions, index - 1);
+            var typeEffect = compiler.gtNewHelperCallNode(TYP_VOID, CorInfoHelpFunc.CORINFO_HELP_POLL_GC);
+            var typeArgument = compiler.gtNewCommaNode(TYP_I_IMPL, typeEffect, compiler.gtNewIconHandleNode(0x1000, GTF_ICON_CLASS_HDL));
+            typeArgument._vnPair.SetBoth(type);
+            GenTree objectArgument = compiler.gtNewLclvNode(TYP_REF, 0);
+            if (spillObject)
+            {
+                var objectEffect = compiler.gtNewHelperCallNode(TYP_VOID, CorInfoHelpFunc.CORINFO_HELP_POLL_GC);
+                objectArgument = compiler.gtNewCommaNode(TYP_REF, objectEffect, objectArgument);
+            }
+
+            objectArgument._vnPair.SetBoth(value);
+            var call = compiler.gtNewHelperCallNode(TYP_REF, CorInfoHelpFunc.CORINFO_HELP_CHKCASTCLASS, typeArgument, objectArgument);
+            var firstException = store.VNExcSetSingleton(store.VNForFunc(TYP_REF, VNFunc.VNF_NullPtrExc, value));
+            var secondException = store.VNExcSetSingleton(store.VNForFunc(TYP_REF, VNFunc.VNF_OverflowExc, ValueNumStore.VNForVoid()));
+            var exceptions = new ValueNumPair(firstException, secondException);
+            call._vnPair = store.VNPWithExc(new(value, value), exceptions);
+            var statement = compiler.gtNewStmt(call);
+            var result = compiler.optAssertionProp_Call(assertions, call, statement) ?? throw new InvalidOperationException();
+            Assert.That(statement.RootNode, Is.SameAs(result));
+            Assert.That(result.Oper, Is.EqualTo(GT_COMMA));
+            Assert.That(call.Oper, Is.EqualTo(GT_CALL));
+            var effects = result.AsOp().Op1;
+            var returnedObject = result.AsOp().Op2.AsLclVarCommon();
+            if (spillObject)
+            {
+                Assert.That(effects.Oper, Is.EqualTo(GT_COMMA));
+                Assert.That(effects.AsOp().Op1, Is.SameAs(typeEffect));
+                var assignment = effects.AsOp().Op2;
+                Assert.That(assignment.Oper, Is.EqualTo(GT_STORE_LCL_VAR));
+                Assert.That(assignment.AsUnOp().Op1, Is.SameAs(objectArgument));
+                Assert.That(returnedObject.LclNum, Is.EqualTo(assignment.AsLclVarCommon().LclNum));
+                Assert.That(returnedObject.LclNum, Is.GreaterThanOrEqualTo(2));
+                var argument = call.Args.GetUserArgByIndex(1) ?? throw new InvalidOperationException();
+                Assert.That(argument.Node?.AsOp().Op1, Is.SameAs(assignment));
+            }
+            else
+            {
+                Assert.That(effects, Is.SameAs(typeEffect));
+                Assert.That(returnedObject.LclNum, Is.Zero);
+                Assert.That(store.VNPExceptionSet(result._vnPair), Is.EqualTo(exceptions));
+                Assert.That(store.VNNormalValue(result._vnPair.Conservative), Is.EqualTo(value));
+            }
+        }, local: false);
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void UnprovenCastOnlyReceivesNonNullHintWhenExpansionIsEnabled(bool expandable)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_REF }, new LclVarDsc { Type = TYP_INT }];
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var value = store.VNForExpr(null, TYP_REF);
+            var argument = compiler.gtNewLclvNode(TYP_REF, 0);
+            argument._vnPair.SetBoth(value);
+            var type = compiler.gtNewIconHandleNode(0x1000, GTF_ICON_CLASS_HDL);
+            type._vnPair.SetBoth(store.VNForHandle(0x1000, GTF_ICON_CLASS_HDL));
+            var call = compiler.gtNewHelperCallNode(TYP_REF, CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFCLASS, type, argument);
+            if (expandable)
+            {
+                call._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_CAST_CAN_BE_EXPANDED;
+            }
+
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            var assertions = BitOps.MakeEmpty(traits);
+            var index = compiler.optAddAssertion(AssertionDsc.CreateVNNonNullAssertion(compiler, value));
+            BitOps.AddElemD(traits, assertions, index - 1);
+            var result = compiler.optAssertionProp_Call(assertions, call, compiler.gtNewStmt(call));
+            Assert.That(result, expandable ? Is.SameAs(call) : Is.Null);
+            Assert.That((call._callMoreFlags & GenTreeCallFlags.GTF_CALL_M_CAST_OBJ_NONNULL) != 0, Is.EqualTo(expandable));
+        }, local: false);
+    }
+
     [TestCase(false, false)]
     [TestCase(false, true)]
     [TestCase(true, false)]
@@ -976,6 +1235,9 @@ internal static unsafe class AssertionTests
             Assert.That(normal, Is.EqualTo(value));
             Assert.That(exceptions, Is.EqualTo(union));
             Assert.That(store.VNHasExc(wrapped), Is.True);
+            Assert.That(store.VNExceptionSet(wrapped), Is.EqualTo(union));
+            Assert.That(store.VNExceptionSet(value), Is.EqualTo(ValueNumStore.VNForEmptyExcSet()));
+            Assert.That(store.VNExceptionSet(ValueNumStore.NoVN), Is.EqualTo(ValueNumStore.VNForEmptyExcSet()));
             Assert.That(store.VNWithExc(wrapped, ValueNumStore.VNForEmptyExcSet()), Is.EqualTo(wrapped));
             store.VNUnpackExc(value, out normal, out exceptions);
             Assert.That(normal, Is.EqualTo(value));
@@ -1120,6 +1382,18 @@ internal static unsafe class AssertionTests
         public int Length;
         public int Calls;
     }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CORINFO_CLASS_STRUCT_* GetAssertionObjectType(ICorJitInfo* info, CORINFO_OBJECT_STRUCT_* handle)
+        => (nint)handle == 0x4000 ? (CORINFO_CLASS_STRUCT_*)0x2000 : null;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CORINFO_CLASS_STRUCT_* GetAssertionBuiltinClass(ICorJitInfo* info, CorInfoClassId id)
+        => id is CorInfoClassId.CLASSID_RUNTIME_TYPE ? (CORINFO_CLASS_STRUCT_*)0x3000 : null;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static TypeCompareState CompareAssertionTypes(ICorJitInfo* info, CORINFO_CLASS_STRUCT_* from, CORINFO_CLASS_STRUCT_* to)
+        => ((nint)from == 0x2000) && ((nint)to == 0x2000) ? TypeCompareState.Must : TypeCompareState.May;
 
     private struct FieldMetadata
     {

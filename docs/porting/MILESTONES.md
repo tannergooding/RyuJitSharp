@@ -5,13 +5,21 @@ A newest-first history of what the port can do and how it has developed.
 The primary target is Windows x64. The port can import methods, expand inline
 calls, lower heap allocations, simplify local accesses and construct internal
 method entry/exit paths, but does not yet generate native code. Remaining work
-includes hardware-intrinsic import, later morphing phases and code generation.
+includes hardware-intrinsic import, rationalization, lowering and code generation.
 
 The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
-## 2026-09-24: Global-morph foundations and outgoing-call ABI
+## 2026-09-24: Global morph and outgoing-call ABI
+
+Global morph now runs through the recursive tree, statement and block drivers.
+It prepares outgoing arguments and their temporary copies, transforms casts and
+tail calls, removes dead statements, folds constant branches and merges returns.
+Local assertion application is separated from the later VN/SSA-based global
+assertion phase, so optional range analysis no longer blocks morph integration.
+The remaining hardware-intrinsic import gap still affects the IR reaching morph;
+rationalization, lowering, register allocation and code generation remain ahead.
 
 Global morph now has transformations for local references, primitive and
 promoted-field block initialization, and removal of expressions after no-return
@@ -119,9 +127,9 @@ Call morphing can recognize managed replacements of runtime helpers through the
 inline root's helper map. Virtual method-pointer construction retains exact
 method and parent-type handles, their lookup order, and the receiver's effects.
 
-Materializing argument temporaries, selecting and transforming other tail calls,
-and the recursive tree/block drivers remain unfinished; these foundations are not
-yet activated as a global-morph phase.
+Cast-helper assertion application can eliminate proven casts while preserving
+argument evaluation and exception value numbers. Subtype proofs use runtime
+type comparisons, mapped class handles and predecessor assertions.
 
 ## 2026-09-23: Implicit-byref parameter preparation
 

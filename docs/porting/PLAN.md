@@ -22,6 +22,14 @@ record those boundaries accurately and reconcile existing implementations.
 Work in substantial dependency-coherent batches during both synchronization and
 new porting. Use source spot checks and localized incremental builds between
 milestones, not exhaustive new fixtures or repeated full validation per helper.
+The default completion boundary is an entire phase or a larger runnable section,
+not each helper that it depends on. Keep native-source review, ownership analysis
+and numeric-semantic care in the implementation loop; defer test authoring and
+validation runs to that completion boundary unless a concrete defect blocks
+progress. Unit tests remain valuable, especially given RyuJIT's limited unit
+coverage, but reaching code generation and establishing dump/disassembly parity
+is the immediate goal. Do not turn helper-level commits into repeated testing,
+capture and documentation cycles.
 
 Reuse the matching oracle product build and `Core_Root`. The native setup is
 `.\build.cmd -subset clr -config checked`, then

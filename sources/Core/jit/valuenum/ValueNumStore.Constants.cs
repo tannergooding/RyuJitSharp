@@ -32,6 +32,20 @@ public sealed partial class ValueNumStore
         return false;
     }
 
+    public unsafe bool IsVNTypeHandle(ValueNum vn, out CORINFO_CLASS_HANDLE handle)
+    {
+        nint compileTimeHandle = 0;
+        if (IsVNTypeHandle(vn) && EmbeddedHandleMapLookup(ConstantValue<nint>(vn), ref compileTimeHandle) &&
+            (compileTimeHandle != 0))
+        {
+            handle = (CORINFO_CLASS_HANDLE)compileTimeHandle;
+            return true;
+        }
+
+        handle = NO_CLASS_HANDLE;
+        return false;
+    }
+
     public void AddToFieldAddressToFieldSeqMap(ValueNum address, FieldSeq? fieldSeq)
     {
         _fieldAddressToFieldSeqMap ??= [];

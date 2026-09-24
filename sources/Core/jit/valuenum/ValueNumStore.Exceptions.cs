@@ -16,6 +16,16 @@ public sealed partial class ValueNumStore
     public ValueNumPair VNPWithExc(ValueNumPair values, ValueNumPair exceptions)
         => new(VNWithExc(values.Liberal, exceptions.Liberal), VNWithExc(values.Conservative, exceptions.Conservative));
 
+    public ValueNum VNExceptionSet(ValueNum vn)
+    {
+        var normal = NoVN;
+        var exceptions = NoVN;
+        return IsVNBinFunc(vn, VNF_ValWithExc, ref normal, ref exceptions) ? exceptions : VNForEmptyExcSet();
+    }
+
+    public ValueNumPair VNPExceptionSet(ValueNumPair values)
+        => new(VNExceptionSet(values.Liberal), VNExceptionSet(values.Conservative));
+
     private bool VNCheckAscending(ValueNum item, ValueNum set)
     {
         if (set == VNForEmptyExcSet())

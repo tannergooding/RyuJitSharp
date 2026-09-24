@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Continue the optAssertionProp dispatcher dependency closure with optAssertionProp_Call (oracle assertionprop.cpp:5598) and its subtype-query dependency, then the remaining arithmetic, bounds, cast and comparison application. Joint Debug/Release probes identify seven missing entry points: AddMulSub, ModDiv, BndsChk, Cast, Call, RelOp and optVNConstantPropOnJTrue. Copy profitability, copy/constant application, local and local-field application, and local/block-store application are now live, tested and retired. Global scalar constant replacements explicitly accept AllTrees construction, install the owning use and forward link, preserve logical IDs, and assign assertion VNs; LIR remains unsupported. Fresh handles and vectors retain native allocation identities, and signed floating zero is not propagated. ARM64 scalable constant application explicitly throws pending its existing representation gap. All ten protected drafts remain unchanged. Keep recursive drivers outside the normal build until the real dependency closure compiles; no stubs or Windows NYIs. Preserve whole-node owners, common flags, explicit VN policies, tail EE pinning and native diagnostics. B145, B153 and B156 remain deferred. fgMorphBlocks is inactive; incomplete draft probes are not successful validation or phase/codegen parity.",
+    "nextAction": "Continue the required post-morph pipeline toward minopts code generation, starting with Rationalizer.DoPhase and its preserved native WIP. Global morph is active: all twenty existing minopts corpus methods complete the phase, with nineteen exact native phase sections and resulting IR; FoldHardware differs at import because of the existing HWI importer gap. Managed code size remains zero. Do not pursue optional global assertion/range analysis: all three local morph application sites now use the explicit local dispatcher, and mixed-mode native bodies remain in the residual tree. The nine former morph drafts are normal source and must not also be included through the old probe target. Validate whole phases or substantial runnable sections, not individual helpers. Preserve the native rationalize.cpp unstaged deletion while reconciling the remaining WIP.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -40,6 +40,28 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "globalMorphActivation": {
+        "debugPassed": 217,
+        "releasePassed": 210,
+        "skipped": 0,
+        "selection": ["AssertionTests", "CallFoldingTests", "MorphTreeSupportTests"],
+        "debugTests": "artifacts\\global-morph-boundary-debug.trx",
+        "releaseTests": "artifacts\\global-morph-boundary-release.trx",
+        "nativeAotBuild": "artifacts\\global-morph-publish.log",
+        "managedCapture": "artifacts\\global-morph-final-managed-minopts",
+        "nativeCapture": "artifacts\\implicit-byref-native-minopts",
+        "phaseComparison": "artifacts\\global-morph-final-phase-comparison.json",
+        "methodsCompleted": 20,
+        "exactPhaseMatches": 19,
+        "exactIRMatches": 19,
+        "unmatchedMethod": "FoldHardware: preexisting hardware-intrinsic import difference",
+        "managedCodeSize": 0,
+        "globalMorphActive": true,
+        "globalAssertionPhaseActive": false,
+        "broadDebugBaseline": "2274 passed, 33 existing B145 checked-arithmetic SIMD/HWI failures before block-driver activation; not a clean full-suite result",
+        "nativeBodiesRetained": ["mixed-mode assertion dispatcher and cast application", "global assertion and range-analysis support", "gtHashValue ARM64 scalable-vector branch"],
+        "deviations": ["D004 local/global assertion application split", "D002 managed layout identity in debug hashing", "D003 scalable-vector hashing"]
+      },
       "csharpLayoutCleanup": {
         "scopeBaseline": "16baaa76261ee07b239908d8ff50fddefca74d0f",
         "throughCommit": "d9c42fd",
@@ -2191,6 +2213,11 @@
       "indexCommit": "9ec196c96afc68c53639c8db5713c95e91de29aa",
       "ref": "refs/porting/snapshots/native-ledger-assertion-local-application"
     },
+    "globalMorphNativeResidual": {
+      "commit": "21b5a1ad38aa9b9af32543cce13174927d7171ca",
+      "indexCommit": "e35dbdd86f71a7da7ab3484e8207d8d6fb78fa71",
+      "ref": "refs/porting/snapshots/native-ledger-global-morph"
+    },
     "globalMorphDrafts": {
       "treeBlob": "36908cd7d0294ece59d91854bbdbfcb05d83f228",
       "treeRef": "refs/porting/drafts/global-morph-tree",
@@ -2212,7 +2239,7 @@
       "addressesRef": "refs/porting/drafts/global-morph-addresses",
       "assertionsBlob": "98418bfa6640084cc3ea8141960f2ed334e8a99a",
       "assertionsRef": "refs/porting/drafts/global-morph-assertions",
-      "status": "Ten incomplete local integration drafts with Debug/Release dependency diagnostics, not successfully compiled or validated; session files carry matching .cs.draft names. Hardware has four functions, call has fgMorphCall plus both tail-call transformations, args has both struct-argument transformations, fgMorphArgs and EvalArgsToTemps, copy-block has the complete helper class and driver, simple-optional has both arithmetic optimizers and the optional dispatcher, simple has the full initial required dispatcher plus conditional-execution marking, casts has the helper predicate/conversions and cast expansion, addresses has the field/index drivers, and assertions has the application dispatcher."
+      "status": "Historical recovery baselines. The nine morph drafts are integrated into normal compiler source and validated through global-morph activation; do not include their session copies through the old probe target. The assertions draft remains an unintegrated mixed local/global dispatcher: local morph uses the explicit local-only application path instead, preserving the unfinished native global paths."
     },
     "internalBlockPhaseNativeResidual": {
       "commit": "494ccbc0132fcf507b8133bffa2fef635d788858",

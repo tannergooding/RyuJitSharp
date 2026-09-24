@@ -60,6 +60,12 @@ function. Paths unique to other targets may be explicit NYIs, with their target,
 symbol, and missing behavior recorded. Other targets must remain compilable;
 compilation is not proof of their execution support.
 
+A shared native dispatcher may be split along its existing phase/mode predicates
+when that avoids making an unported optional phase a prerequisite of the active
+path. Implement the complete supported mode, make that mode explicit at its
+callsites, and retain the mixed-mode native bodies until their remaining paths
+are ported. This does not permit returning a fallback for required behavior.
+
 Preserve phase order, traversal and insertion order, identity semantics, enum
 values, integer widths, overflow/truncation, signedness, shifts, floating-point
 NaNs and signed zero, and error propagation. Managed objects must not invalidate

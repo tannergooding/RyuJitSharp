@@ -574,6 +574,11 @@ returns the descriptor by value rather than exposing a reference invalidated by
 list growth. Symbolic offsets retain the member index until async layout, including
 the native object-header adjustment and diagnostic text.
 
+The debug tree hash preserves native operator, payload and operand ordering.
+Where native hashes a `ClassLayout` address, it uses stable managed reference
+identity instead; the hash is not printed and is used only to detect tree
+changes for diagnostics.
+
 ### D003: Deferred non-Windows-x64-only paths
 
 **Status:** accepted scoped deferral; not a successful execution/parity result.
@@ -616,6 +621,24 @@ Unix varargs also throw explicitly, matching the native unsupported path rather
 than continuing with an unsupported ABI. Other target-specific register rules
 are source-ported, not execution-validated. Classification is not argument
 evaluation/scheduling and does not activate call morphing.
+
+`Compiler.gtHashValue` explicitly throws for ARM64 scalable-vector constants
+pending their representation support. Its native body remains in the residual
+tree as the deferred branch's reference.
+
+### D004: Separate local assertion application from global analysis
+
+Global morph's three assertion-application callsites use local mode, with no
+statement or block argument. They call `optLocalAssertionPropTree` rather than
+the mixed local/global native dispatcher. Local cast and comparison application
+retain their algorithms; the native arithmetic, division, bounds, ordered
+comparison, array-length, hardware-intrinsic and JTRUE cases make no changes in
+this mode. No optimization flag is disabled to obtain this boundary.
+
+The global VN/SSA-based dispatcher and its range-analysis dependencies remain
+unported. Their shared native bodies are retained in the residual tree. This
+mode split prevents an optional later phase from blocking required morphing,
+without adding success-shaped fallbacks on the active path.
 
 ## Implementation notes and parity findings
 

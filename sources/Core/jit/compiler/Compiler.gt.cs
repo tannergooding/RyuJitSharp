@@ -17465,8 +17465,7 @@ public partial class Compiler
 
             if ((vnStore is not null) && tree._vnPair.BothDefined() && sideEffectsSource._vnPair.BothDefined())
             {
-                NYI("TODO: Port once vnStore is ported");
-                // comma._vnPair = vnStore.VNPWithExc(tree._vnPair, vnStore.VNPExceptionSet(sideEffectsSource._vnPair));
+                comma._vnPair = vnStore.VNPWithExc(tree._vnPair, vnStore.VNPExceptionSet(sideEffectsSource._vnPair));
             }
             comma.SetMorphed(this);
             return comma;

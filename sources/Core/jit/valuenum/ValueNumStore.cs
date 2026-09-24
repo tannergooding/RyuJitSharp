@@ -27,10 +27,42 @@ public sealed partial class ValueNumStore
 
     public unsafe CORINFO_CLASS_HANDLE GetObjectType(ValueNum vn, out bool isExact, out bool isNonNull)
     {
-        // TODO: Port ValueNumStore.GetObjectType
-
         isNonNull = false;
         isExact = false;
+        if (TypeOfVN(vn) is not TYP_REF)
+        {
+            return null;
+        }
+
+        if (IsVNObjHandle(vn))
+        {
+            isNonNull = true;
+            isExact = true;
+            return _compiler.info.compCompHnd->getObjectType((CORINFO_OBJECT_HANDLE)CoercedConstantValue<nuint>(vn));
+        }
+
+        var app = new VNFuncApp();
+        if (!GetVNFunc(vn, ref app))
+        {
+            return null;
+        }
+
+        if (app.Func is VNF_CastClass or VNF_IsInstanceOf or VNF_JitNew)
+        {
+            if (IsVNTypeHandle(app.GetArg(0), out var handle))
+            {
+                isNonNull = app.Func is VNF_JitNew;
+                isExact = isNonNull;
+                return handle;
+            }
+        }
+
+        if (app.Func is VNF_ObjGetType)
+        {
+            isNonNull = true;
+            // RuntimeType need not be exact, for example under NativeAOT.
+            return _compiler.info.compCompHnd->getBuiltinClass(CLASSID_RUNTIME_TYPE);
+        }
 
         return null;
     }
