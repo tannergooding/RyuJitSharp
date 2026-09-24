@@ -23,10 +23,10 @@ public partial struct SplitTreeVisitor : IGenTreeVisitor<SplitTreeVisitor>
     private Statement _splitStmt;
     private GenTree _splitNode;
     private bool _early;
-    private List<UseInfo> _useStack;
+    private List<GenTreeUse> _useStack;
 
     private Statement? _firstStatement;
-    private UseInfo? _splitNodeUse;
+    private GenTreeUse? _splitNodeUse;
     private bool _madeChanges;
 
     public SplitTreeVisitor(Compiler compiler, BasicBlock bb, Statement stmt, GenTree splitNode, bool early)
@@ -49,7 +49,7 @@ public partial struct SplitTreeVisitor : IGenTreeVisitor<SplitTreeVisitor>
     {
         get
         {
-            if (_splitNodeUse is UseInfo info)
+            if (_splitNodeUse is GenTreeUse info)
             {
                 return ref info.GetUse(_splitStmt);
             }
@@ -117,26 +117,7 @@ public partial struct SplitTreeVisitor : IGenTreeVisitor<SplitTreeVisitor>
     public readonly Compiler.fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
     {
         assert(use.Oper is not GT_QMARK);
-
-        if (user is not null)
-        {
-            var index = 0;
-
-            foreach (ref var operand in user.UseEdges)
-            {
-                if (Unsafe.AreSame(ref operand, ref use))
-                {
-                    _useStack.Add(new UseInfo(user, index));
-                    return Compiler.fgWalkResult.WALK_CONTINUE;
-                }
-
-                index++;
-            }
-
-            throw new System.InvalidOperationException("The visited operand does not belong to its user.");
-        }
-
-        _useStack.Add(new UseInfo(null, -1));
+        _useStack.Add(GenTreeUse.FromUse(ref use, user));
         return Compiler.fgWalkResult.WALK_CONTINUE;
     }
 

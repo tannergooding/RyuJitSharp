@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit global-morph driver bookkeeping, then port the complete gtRemoveTreesAfterNoReturnCall visitor from oracle morph.cpp:14322 onward, a direct fgMorphStmts dependency. Driver tracing is complete: fgMorphBlocks -> fgMorphBlock -> fgMorphStmts -> fgMorphTree, whose const/leaf/simple-op/call branches form a larger recursive closure. Do not re-read the driver to rediscover it. MorphUnreachableInfo, lvSetMinOptsDoNotEnreg and fgPostGlobalMorphChecks are implemented and pass 83 Debug / 80 Release local/loop cases; consolidate their native retirement with driver activation. Local expansion is committed as ad0e72f and retired. fgMorphBlocks and the general tree-morph cycle remain unported; no new phase activation or unchanged-frontier recapture is claimed. Keep minopts execution ahead of optional optimization work and already recorded unrelated diagnostics.",
+    "nextAction": "Commit no-return statement repair, then port oracle morphblock.cpp's complete MorphInitBlockHelper/MorphCopyBlockHelper closure and fgMorphInitBlock/fgMorphCopyBlock wrappers. These missing block-store transforms are needed by global tree morph and fgMergeBlockReturn; fgConvertSyncReturnToLeave and fgGetFirstILBlock already exist. The block helper's constructor/Morph/PrepareDst start and public wrappers have been read; continue at PrepareDst around line 170. Reuse stable descriptor indices across lvaGrabTemp, not cached managed byrefs. Driver tracing is complete: fgMorphBlocks -> fgMorphBlock -> fgMorphStmts -> fgMorphTree, whose const/leaf/simple-op/call branches form a larger recursive closure. No-return repair and bookkeeping are complete and retired, with 167 Debug / 164 Release local/loop/use-edge cases passing. Local expansion is committed as ad0e72f and bookkeeping as cc79273. fgMorphBlocks remains inactive; no new phase activation or unchanged-frontier recapture is claimed.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -1141,7 +1141,21 @@
         "releaseTests": "artifacts\\global-morph-driver-support-release.trx",
         "coverage": ["DFS-indexed per-morph unreachability", "minopts enregistration flags with preserved existing reasons", "fully marked statement-tree postchecks"],
         "implemented": ["Compiler::MorphUnreachableInfo", "Compiler::lvSetMinOptsDoNotEnreg", "Compiler::fgPostGlobalMorphChecks"],
-        "residualRetirement": "Consolidate with the global-morph driver.",
+        "residualRetirement": "Completed with no-return statement repair.",
+        "globalMorphActive": false,
+        "nativeAotRecaptured": false
+      },
+      "globalMorphNoReturnRepair": {
+        "debugPassed": 167,
+        "releasePassed": 164,
+        "skipped": 0,
+        "newCases": 8,
+        "selection": ["LocalMorphTests", "NaturalLoopTests", "UseEdgeIteratorTests"],
+        "debugTests": "artifacts\\global-morph-noreturn-debug.trx",
+        "releaseTests": "artifacts\\global-morph-noreturn-release.trx",
+        "coverage": ["preceding ancestor/sibling effects in execution order", "reversed binary operands", "discarded pure siblings", "retained no-return arguments", "first non-returning argument selection", "already-rooted calls and unchanged returning calls", "statement links and existing splitting behavior"],
+        "owningUses": "GenTreeUse shares SplitTreeVisitor's owner/operand-slot representation rather than caching managed byrefs.",
+        "nativeDefinitionsRetired": ["Compiler::MorphUnreachableInfo", "Compiler::lvSetMinOptsDoNotEnreg", "Compiler::fgPostGlobalMorphChecks", "Compiler::gtRemoveTreesAfterNoReturnCall"],
         "globalMorphActive": false,
         "nativeAotRecaptured": false
       },
@@ -1648,6 +1662,11 @@
       "commit": "03f4d654e7661383f97d673c92d56180c55d2a42",
       "indexCommit": "d23f6a0e016c8f6fcbe88ac529154521d23590d5",
       "ref": "refs/porting/snapshots/native-ledger-global-local-expansion"
+    },
+    "globalMorphBookkeepingNativeResidual": {
+      "commit": "c017189571da133402680f5f8d429fd63d6f7860",
+      "indexCommit": "7c73962aaeea60751489206ff9ca1cb75d358183",
+      "ref": "refs/porting/snapshots/native-ledger-global-morph-bookkeeping"
     },
     "internalBlockPhaseNativeResidual": {
       "commit": "494ccbc0132fcf507b8133bffa2fef635d788858",

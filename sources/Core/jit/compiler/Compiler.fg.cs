@@ -14167,6 +14167,12 @@ public partial class Compiler
     // TODO: Port phase - fgMorphBlocks
     public PhaseStatus fgMorphBlocks() => PhaseStatus.MODIFIED_NOTHING;
 
+    internal bool gtRemoveTreesAfterNoReturnCall(BasicBlock block, Statement statement)
+    {
+        var visitor = new RemoveTreesAfterNoReturnCallVisitor(this, block, statement);
+        return visitor.WalkTree(ref statement.RootNodeRef, user: null) == WALK_ABORT;
+    }
+
 #if DEBUG
     internal void fgPostGlobalMorphChecks()
     {

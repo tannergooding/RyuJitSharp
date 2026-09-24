@@ -937,6 +937,101 @@ internal static unsafe class LocalMorphTests
     }
 #endif
 
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void NoReturnRepairExtractsOnlyEarlierSiblingEffects(bool reverse, bool firstHasEffects)
+    {
+        WithCompiler(compiler => {
+            GenTree first = firstHasEffects
+                ? compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, null)
+                : compiler.gtNewIconNode(TYP_INT, 1);
+            var second = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, null);
+            var argument = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, null);
+            var noReturn = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, null);
+            noReturn.IsNoReturn = true;
+            var callArgument = noReturn.Args.PushBack(NewCallArg.CreateForPrimitive(argument));
+            var later = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, null);
+            var nested = compiler.gtNewBinaryNode(GT_ADD, TYP_INT,
+                reverse ? noReturn : second, reverse ? second : noReturn);
+            nested.IsReverseOp = reverse;
+            var parent = compiler.gtNewBinaryNode(GT_ADD, TYP_INT,
+                reverse ? nested : first, reverse ? first : nested);
+            parent.IsReverseOp = reverse;
+            var root = compiler.gtNewCommaNode(TYP_INT, parent, later);
+            var statement = compiler.gtNewStmt(root);
+            var following = compiler.gtNewStmt(compiler.gtNewNothingNode());
+            var block = new BasicBlock(null, null);
+            compiler.fgInsertStmtAtEnd(block, statement);
+            compiler.fgInsertStmtAtEnd(block, following);
+
+            Assert.That(compiler.gtRemoveTreesAfterNoReturnCall(block, statement), Is.True);
+            Statement[] statements = [.. block.Statements];
+            Assert.That(statements.Length, Is.EqualTo(firstHasEffects ? 4 : 3));
+            if (firstHasEffects)
+            {
+                Assert.That(statements[0].RootNode, Is.SameAs(first));
+            }
+
+            Assert.That(statements[^3].RootNode, Is.SameAs(second));
+            Assert.That(statements[^2], Is.SameAs(statement));
+            Assert.That(statement.RootNode, Is.SameAs(noReturn));
+            Assert.That(callArgument.EarlyNode, Is.SameAs(argument));
+            Assert.That(statements[^1], Is.SameAs(following));
+            Assert.That(statements[0].PrevStmt, Is.SameAs(following));
+            Assert.That(following.PrevStmt, Is.SameAs(statement));
+            Assert.That(following.NextStmt, Is.Null);
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void NoReturnRepairSelectsTheFirstNonReturningArgument(bool outerIsNoReturn)
+    {
+        WithCompiler(compiler => {
+            var first = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, null);
+            var noReturn = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, null);
+            noReturn.IsNoReturn = true;
+            var later = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, null);
+            later.IsNoReturn = true;
+            var outer = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+            outer.IsNoReturn = outerIsNoReturn;
+            _ = outer.Args.PushBack(NewCallArg.CreateForPrimitive(first));
+            _ = outer.Args.PushBack(NewCallArg.CreateForPrimitive(noReturn));
+            _ = outer.Args.PushBack(NewCallArg.CreateForPrimitive(later));
+            var statement = compiler.gtNewStmt(outer);
+            var block = new BasicBlock(null, null);
+            compiler.fgInsertStmtAtEnd(block, statement);
+
+            Assert.That(compiler.gtRemoveTreesAfterNoReturnCall(block, statement), Is.True);
+            Statement[] statements = [.. block.Statements];
+            Assert.That(statements.Length, Is.EqualTo(2));
+            Assert.That(statements[0].RootNode, Is.SameAs(first));
+            Assert.That(statements[1], Is.SameAs(statement));
+            Assert.That(statement.RootNode, Is.SameAs(noReturn));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void NoReturnRepairPreservesAnAlreadyTopLevelCall(bool isNoReturn)
+    {
+        WithCompiler(compiler => {
+            var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+            call.IsNoReturn = isNoReturn;
+            var statement = compiler.gtNewStmt(call);
+            var block = new BasicBlock(null, null);
+            compiler.fgInsertStmtAtEnd(block, statement);
+
+            Assert.That(compiler.gtRemoveTreesAfterNoReturnCall(block, statement), Is.EqualTo(isNoReturn));
+            Assert.That(statement.RootNode, Is.SameAs(call));
+            Assert.That(block.FirstStmt, Is.SameAs(statement));
+            Assert.That(statement.PrevStmt, Is.SameAs(statement));
+            Assert.That(statement.NextStmt, Is.Null);
+        });
+    }
+
     private static void WithCompiler(Action<Compiler> action, bool minOpts = false)
     {
 #if DEBUG
