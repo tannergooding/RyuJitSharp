@@ -14,6 +14,22 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ArithmeticMorphTests
 {
+    [Test]
+    public static void FreshNodesHaveUndefinedValueNumbersInEveryConfiguration()
+    {
+        WithCompiler(compiler => {
+            var local = compiler.gtNewLclvNode(TYP_INT, 1);
+            var constant = compiler.gtNewIconNode(TYP_INT, 1);
+            var add = compiler.gtNewBinaryNode(GT_ADD, TYP_INT, local, constant);
+            GenTree[] nodes = [local, constant, add];
+            foreach (var node in nodes)
+            {
+                Assert.That(node._vnPair, Is.EqualTo(new ValueNumPair()));
+                Assert.That(node._vnPair.BothDefined, Is.False);
+            }
+        });
+    }
+
     [TestCase(8L, false, 3, GT_LCL_VAR)]
     [TestCase(-8L, false, 3, GT_NEG)]
     [TestCase(long.MinValue, false, 63, GT_LCL_VAR)]
@@ -224,6 +240,137 @@ internal static unsafe class ArithmeticMorphTests
 #if DEBUG
                 Assert.That(ret.Op1.TreeId, Is.EqualTo(field.TreeId));
 #endif
+            }
+        });
+    }
+
+    [TestCase(true, false, false, true)]
+    [TestCase(true, true, false, true)]
+    [TestCase(false, true, false, false)]
+    [TestCase(true, false, true, false)]
+    public static void ConstantReassociationPreservesCommaEffectsAndOverflowGuards(bool global, bool comma, bool overflow, bool fold)
+    {
+        WithCompiler(compiler => {
+            compiler.fgGlobalMorph = global;
+            var local = compiler.gtNewLclvNode(TYP_INT, 1);
+            var constant = compiler.gtNewIconNode(TYP_INT, int.MaxValue);
+            var inner = compiler.gtNewBinaryNode(GT_ADD, TYP_INT, local, constant);
+            if (overflow)
+            {
+                inner.Flags |= GTF_OVERFLOW | GTF_EXCEPT;
+            }
+
+            GenTree left = comma
+                ? compiler.gtNewCommaNode(TYP_INT, compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null), inner)
+                : inner;
+            var outer = compiler.gtNewBinaryNode(GT_ADD, TYP_INT, left, compiler.gtNewIconNode(TYP_INT, 1));
+            outer._vnPair.SetBoth(42);
+            var result = compiler.fgMorphCommutative(outer);
+            if (fold)
+            {
+                Assert.That(result, Is.SameAs(left));
+                Assert.That(constant.IconValue, Is.EqualTo((nint)int.MinValue));
+                Assert.That(result!._vnPair.Liberal, Is.EqualTo(42));
+                if (comma)
+                {
+                    Assert.That(result.Oper, Is.EqualTo(GT_COMMA));
+                    Assert.That(result.Op1.Oper, Is.EqualTo(GT_CALL));
+                    Assert.That(result.Flags & GTF_CALL, Is.EqualTo(GTF_CALL));
+                }
+            }
+            else
+            {
+                Assert.That(result, Is.Null);
+                Assert.That(constant.IconValue, Is.EqualTo((nint)int.MaxValue));
+            }
+        });
+    }
+
+    [TestCase(-1, 33, true, true)]
+    [TestCase(5, 27, true, true)]
+    [TestCase(5, 27, false, true)]
+    [TestCase(5, 26, true, false)]
+    public static void ConstantRotationMasksCountsAndRespectsValueNumberOwnership(int leftCount, int rightCount, bool global, bool rotate)
+    {
+        WithCompiler(compiler => {
+            compiler.fgGlobalMorph = global;
+            var left = compiler.gtNewBinaryNode(GT_LSH, TYP_INT,
+                compiler.gtNewLclvNode(TYP_INT, 1), compiler.gtNewIconNode(TYP_INT, leftCount));
+            var right = compiler.gtNewBinaryNode(GT_RSZ, TYP_INT,
+                compiler.gtNewLclvNode(TYP_INT, 1), compiler.gtNewIconNode(TYP_INT, rightCount));
+            var root = compiler.gtNewBinaryNode(GT_OR, TYP_INT, left, right);
+            root._vnPair.SetBoth(42);
+            var result = compiler.fgRecognizeAndMorphBitwiseRotation(root);
+            if (!rotate)
+            {
+                Assert.That(result, Is.Null);
+                return;
+            }
+
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result!.Oper, Is.EqualTo(GT_ROL));
+            Assert.That(result.AsOp().Op2.AsIntCon().IconValue, Is.EqualTo((nint)(leftCount & 31)));
+            Assert.That(ReferenceEquals(result, root), Is.EqualTo(global));
+            Assert.That(result._vnPair, Is.EqualTo(global ? new ValueNumPair(42, 42) : new ValueNumPair()));
+        });
+    }
+
+    [TestCase(31, false, true)]
+    [TestCase(31, true, true)]
+    [TestCase(15, false, false)]
+    public static void VariableRotationRequiresAllLowCountBits(int mask, bool rightRotate, bool rotate)
+    {
+        WithCompiler(compiler => {
+            var index = compiler.gtNewLclvNode(TYP_INT, 1);
+            var complement = compiler.gtNewBinaryNode(GT_ADD, TYP_INT,
+                compiler.gtNewUnaryNode(GT_NEG, TYP_INT, compiler.gtNewLclvNode(TYP_INT, 1)),
+                compiler.gtNewIconNode(TYP_INT, 32));
+            var maskedIndex = compiler.gtNewBinaryNode(GT_AND, TYP_INT, index, compiler.gtNewIconNode(TYP_INT, mask));
+            var maskedComplement = compiler.gtNewBinaryNode(GT_AND, TYP_INT, complement, compiler.gtNewIconNode(TYP_INT, mask));
+            var left = compiler.gtNewBinaryNode(GT_LSH, TYP_INT, compiler.gtNewLclvNode(TYP_INT, 1),
+                rightRotate ? maskedComplement : maskedIndex);
+            var right = compiler.gtNewBinaryNode(GT_RSZ, TYP_INT, compiler.gtNewLclvNode(TYP_INT, 1),
+                rightRotate ? maskedIndex : maskedComplement);
+            var root = compiler.gtNewBinaryNode(GT_OR, TYP_INT, left, right);
+            var result = compiler.fgRecognizeAndMorphBitwiseRotation(root);
+            if (rotate)
+            {
+                Assert.That(result, Is.SameAs(root));
+                Assert.That(root.Oper, Is.EqualTo(rightRotate ? GT_ROR : GT_ROL));
+                Assert.That(root.Op2.Oper, Is.EqualTo(GT_AND));
+                Assert.That(root.Op2.AsOp().Op1, Is.SameAs(index));
+                Assert.That(root.Op2.AsOp().Op2.AsIntCon().IconValue, Is.EqualTo((nint)31));
+            }
+            else
+            {
+                Assert.That(result, Is.Null);
+                Assert.That(root.Op1, Is.SameAs(left));
+                Assert.That(root.Op2, Is.SameAs(right));
+            }
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void RotationMayMergeThrowingReadsButNotVolatileReads(bool isVolatile)
+    {
+        WithCompiler(compiler => {
+            var flags = isVolatile ? GTF_IND_VOLATILE : GTF_EMPTY;
+            var first = compiler.gtNewIndir(TYP_INT, compiler.gtNewIconNode(TYP_I_IMPL, 0x1234), flags);
+            var second = compiler.gtNewIndir(TYP_INT, compiler.gtNewIconNode(TYP_I_IMPL, 0x1234), flags);
+            var left = compiler.gtNewBinaryNode(GT_LSH, TYP_INT, first, compiler.gtNewIconNode(TYP_INT, 5));
+            var right = compiler.gtNewBinaryNode(GT_RSZ, TYP_INT, second, compiler.gtNewIconNode(TYP_INT, 27));
+            var root = compiler.gtNewBinaryNode(GT_OR, TYP_INT, left, right);
+            var result = compiler.fgRecognizeAndMorphBitwiseRotation(root);
+            if (isVolatile)
+            {
+                Assert.That(result, Is.Null);
+            }
+            else
+            {
+                Assert.That(result, Is.SameAs(root));
+                Assert.That(root.Op1, Is.SameAs(first));
+                Assert.That(root.Flags & GTF_EXCEPT, Is.EqualTo(GTF_EXCEPT));
             }
         });
     }

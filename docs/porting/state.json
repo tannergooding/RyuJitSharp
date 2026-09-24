@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Continue required simple-operator support with fgMorphCommutative (oracle morph.cpp:6894) and rotation recognition (fgOperIsBitwiseRotationRoot at 12318 and fgRecognizeAndMorphBitwiseRotation at 12336); read these functions before implementing. fgOptimizeCommutativeArithmetic and fgOptimizeAddition are now read completely; addition calls fgMorphTree when converting constant subtraction to XOR, so the dispatcher/addition remain coupled to the recursive driver. Multiplication, bitwise AND/XOR, comma-throw predicates/propagation, returned-field finalization and constant metadata support are complete. The comparison, cast/narrowing, struct return, indirection and bitcast closures are also complete. fgMorphSmpOp (6972 through approximately 8441) has been read in full; fgMorphSmpOpOptional starts around 11235 and remains unread beyond its opening. Tail-call validation, dispatcher/result construction, x86 helper preparation/eligibility, argument removal and recursive loop conversion are complete. fgMorphPotentialTailCall and fgMorphTailCallViaHelpers are read and remain coupled to recursive fgMorphCall/fgMorphTree. The portable helper also needs getVirtMethodPointerTree (5715), a short wrapper around existing token/virtual-function helpers, already read. getLookupTree, getRuntimeLookupTree and getTokenHandleTree already exist in Compiler.cs. fgMorphArgs, fgTryMorphStructArg, fgMakeOutgoingStructArgCopy and EvalArgsToTemps are read but need recursive fgMorphTree and fgMorphCopyBlock. Nullable early slots, ABI setup, spill decisions, sorting, temporary scopes and promoted-field ABI mapping are reconciled. Reuse gtSetEvalOrder, fgMakeMultiUse and Globals.ForEachHbvBitSet. Incomplete dispatcher/call drafts remain outside the build as session files global-morph-tree.cs.draft and global-morph-call.cs.draft and protected blobs in localRecovery.globalMorphDrafts; restore only with a complete compilable closure, not Windows NYIs. Other dependencies include optAssertionProp and fgMorphHWIntrinsic; fgOptimizeHWIntrinsic was read only through about 9600. The assertion dispatcher at assertionprop.cpp:5909 and MorphCopyBlockHelper are already read; assertion application helpers remain, and copy morphing recursively morphs cloned addresses. fgExpandVirtualVtableCallTarget already exists. Existing TARGET_32BIT integral constant syntax defects are recorded as B153; new other-target paths are not execution-validated. No global phase activation or new codegen/phase parity is claimed; fgMorphBlocks remains inactive.",
+    "nextAction": "Read oracle morph.cpp::fgMorphSmpOpOptional starting at 11235, which is unread beyond its opening, and close its remaining required dependencies. fgMorphSmpOp (6972 through approximately 8441), fgOptimizeCommutativeArithmetic and fgOptimizeAddition are read completely. Addition calls fgMorphTree when converting constant subtraction to XOR, so it and the commutative dispatcher remain coupled to the recursive driver. Commutative constant reassociation and complete rotation recognition are now implemented; do not reread them. Fresh node VN initialization was corrected in the base GenTree constructor for Release (B155); the nonglobal rotation case exposed it. Multiplication, bitwise AND/XOR, comma-throw predicates/propagation, returned-field finalization and constant metadata support are complete. The comparison, cast/narrowing, struct return, indirection and bitcast closures are also complete. Tail-call validation, dispatcher/result construction, x86 helper preparation/eligibility, argument removal and recursive loop conversion are complete. fgMorphPotentialTailCall and fgMorphTailCallViaHelpers are read and remain coupled to recursive fgMorphCall/fgMorphTree. The portable helper also needs getVirtMethodPointerTree (5715), a short wrapper around existing token/virtual-function helpers, already read. getLookupTree, getRuntimeLookupTree and getTokenHandleTree already exist in Compiler.cs. fgMorphArgs, fgTryMorphStructArg, fgMakeOutgoingStructArgCopy and EvalArgsToTemps are read but need recursive fgMorphTree and fgMorphCopyBlock. Nullable early slots, ABI setup, spill decisions, sorting, temporary scopes and promoted-field ABI mapping are reconciled. Reuse gtSetEvalOrder, fgMakeMultiUse and Globals.ForEachHbvBitSet. Incomplete dispatcher/call drafts remain outside the build as session files global-morph-tree.cs.draft and global-morph-call.cs.draft and protected blobs in localRecovery.globalMorphDrafts; restore only with a complete compilable closure, not Windows NYIs. Other dependencies include optAssertionProp and fgMorphHWIntrinsic; fgOptimizeHWIntrinsic was read only through about 9600. The assertion dispatcher at assertionprop.cpp:5909 and MorphCopyBlockHelper are already read; assertion application helpers remain, and copy morphing recursively morphs cloned addresses. fgExpandVirtualVtableCallTarget already exists. Existing TARGET_32BIT integral constant syntax defects are recorded as B153; new other-target paths are not execution-validated. XOR rotation recognition has a source-level upstream concern (B156), intentionally not changed only in C#. No global phase activation or new codegen/phase parity is claimed; fgMorphBlocks remains inactive.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -1331,6 +1331,22 @@
         "globalMorphActive": false,
         "nativeAotRecaptured": false
       },
+      "rotationAndReassociation": {
+        "debugPassed": 405,
+        "releasePassed": 398,
+        "skipped": 0,
+        "newCases": 14,
+        "selection": ["ArithmeticMorphTests", "ComparisonMorphTests", "ScalarFoldingTests", "AssertionTests", "IntegralRangeTests", "TreeComparisonTests"],
+        "debugTests": "artifacts\\rotation-morph-debug.trx",
+        "releaseTests": "artifacts\\rotation-morph-release.trx",
+        "beforeReleaseTests": "artifacts\\rotation-morph-release-before.trx",
+        "originalReleaseFailures": 1,
+        "coverage": ["commutative constant wrapping and overflow guards", "comma effects and nonglobal VN restrictions", "constant rotation counts and explicit masking", "variable left/right rotations and overmask rejection", "faulting versus volatile reads", "global root reuse versus fresh nonglobal nodes", "fresh-node VN initialization in both configurations"],
+        "nativeDefinitionsRetired": ["Compiler::fgMorphCommutative", "Compiler::fgOperIsBitwiseRotationRoot", "Compiler::fgRecognizeAndMorphBitwiseRotation"],
+        "remaining": "Addition and the recursive morph closure remain. Variable long rotations on 32-bit targets retain the native rejection. B156 records an unconfirmed upstream XOR-rotation concern.",
+        "globalMorphActive": false,
+        "nativeAotRecaptured": false
+      },
       "nativeAotPublish": "passed-after-implicit-byref-retyping",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "all-twenty-minopts-implicit-byref-retyping-phase-sections-and-its-emitted-IR-equal; earlier-local-morph-gaps-remain-scoped-in-localMorphActivation",
@@ -1894,6 +1910,11 @@
       "commit": "32c27b360b6417fee5fa6d60202bda115cf94cdf",
       "indexCommit": "c86aa6c35fd9e896f2bc22f1198c94411e22c477",
       "ref": "refs/porting/snapshots/native-ledger-arithmetic"
+    },
+    "rotationMorphNativeResidual": {
+      "commit": "d7eb4fddfdb7fda2751a0979821feb92d7ac712e",
+      "indexCommit": "de9a3f98252174700b44db39e57f428a410f6c04",
+      "ref": "refs/porting/snapshots/native-ledger-rotations"
     },
     "globalMorphDrafts": {
       "treeBlob": "36908cd7d0294ece59d91854bbdbfcb05d83f228",

@@ -85,6 +85,7 @@ public partial class GenTree
         _type = type;
 
         _regNum = REG_NA;
+        _vnPair = new ValueNumPair();
 
 #if COUNT_AST_OPERS
         Interlocked.Increment(ref s_gtNodeCounts[oper]);
@@ -96,7 +97,6 @@ public partial class GenTree
 
         _useNum = -1;
         _treeId = compiler.compGenTreeID++;
-        _vnPair.SetBoth(ValueNumStore.NoVN);
 #endif
     }
 
