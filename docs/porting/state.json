@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Continue LowerArg/LowerArgsForCall and the Windows-x64 LowerPutArgStk dependency closure. Register-argument bitcasts, placement, containment and allocator eligibility are committed as 1dabb74. LSRA interval/reference identity, preference merging, local mapping, raw reference creation and compact native diagnostics are integrated separately from its unfinished constructor and allocation driver; provisional unused accessors were removed. LowerArgFieldList compatibility/packing/spilling is WIP: its single-field path passes, but complex packing and spilling still require cast, binary and local-store lowering in the incomplete LowerNode dispatcher. LowerPutArgStk's struct GT_BLK-to-GT_IND conversion needs approved whole-node replacement and complete LowerIndir/address-mode support. LowerCall, compiler throw-helper integration and stack-level activation remain unfinished. Keep incomplete dispatch/allocation algorithms uncommitted and retain their native bodies. Lowering.DoPhase rejects its unimplemented phase. Managed code size remains zero; no additional parity capture is claimed.",
+    "nextAction": "Continue LowerIndir and LowerPutArgStk for Windows x64, then LowerArg/LowerArgsForCall. Xarch TryCreateAddrMode and local-source interference checking now use the existing CodeGen.genCreateAddrMode implementation; LIR.Range.ReplaceNode plus metadata constructors update the owning use, links and by-ref address alias while retaining logical IDs. Remaining indirection dependencies are ContainCheckIndir, IsContainableLclAddr, TransformUnusedIndirection, Compiler.gtTypeForNullCheck/gtChangeOperToNullCheck and GenTreeIntConCommon.FitsInAddrBase. The native null-check helpers are in compiler.cpp:10489-10529, not gentree.cpp. Register argument support is committed as 1dabb74 and LSRA reference foundations as 88652b2. Field-list packing/spilling still needs cast, binary and local-store dispatch. The LSRA constructor/allocation driver, LowerCall, compiler throw-helper integration and stack-level activation remain unfinished. Keep incomplete dispatch/allocation algorithms uncommitted and retain their native bodies. Managed code size remains zero; no additional parity capture is claimed.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -101,6 +101,18 @@
         "releaseTests": "artifacts\\lsra-reference-commit-release.trx",
         "scope": "Exact staged-source export, excluding the unfinished LSRA constructor and allocator. Covers aversion/kill-set preference merging, physical register banks, reference range ends, canonical tracked-local mappings, raw reference identity and compact native diagnostic text.",
         "remaining": ["Complete LSRA constructor and register selector", "Reference association and interval building", "Minimal allocation and resolution", "Full interval/register/reference diagnostic printers"],
+        "nativeBodiesRetained": true
+      },
+      "addressLoweringSupport": {
+        "debugPassed": 87,
+        "releasePassed": 87,
+        "skipped": 0,
+        "newCases": 9,
+        "selection": ["AddressLoweringTests", "UseEdgeIteratorTests"],
+        "debugTests": "artifacts\\address-lowering-debug.trx",
+        "releaseTests": "artifacts\\address-lowering-release.trx",
+        "scope": "Base/index/scale/displacement folding, scaled-index-only addresses, owner and alias replacement with stable logical IDs, rejection of local interference and checked adds, and first/middle/last/singleton LIR replacement.",
+        "remaining": ["Indirection containment and unused-load transformation", "Stack argument lowering and call argument dispatch", "Lowering phase activation"],
         "nativeBodiesRetained": true
       },
       "rationalizationActivation": {

@@ -612,6 +612,13 @@ The reference-kind and physical-register discriminants select typed referents
 and mask fields instead of overlapping native union storage. AMD64 callee-save
 sets reuse the generated `typelist.h` register classification.
 
+LIR node replacement uses the existing metadata-preserving constructors with
+`NodeThreading.LIR`, followed by `LIR.Range.ReplaceNode` to transfer the owning
+use and range links. Address-mode lowering takes its address alias by reference,
+so replacing `GT_ADD` with `GT_LEA` preserves logical IDs without retaining the
+old managed node. Operands eliminated by the native transformation are removed
+in the same order.
+
 ### D003: Deferred non-Windows-x64-only paths
 
 **Status:** accepted scoped deferral; not a successful execution/parity result.
@@ -634,6 +641,10 @@ range checks; the shared direct-call lowering body remains in the native tree.
 `Lowering.IsContainableImmed` implements the xarch immediate and relocation
 rules. Other targets throw `NotImplementedException` pending their
 instruction-specific immediate checks; no non-xarch lowering is activated.
+
+`Lowering.TryCreateAddrMode` implements xarch address folding and interference
+checks. Other targets throw `NotImplementedException` pending their volatile,
+scaled-index and explicit-address-add handling.
 
 `LinearScan.calleeSaveRegs` currently supports AMD64. Other targets report NYI
 and terminate with `fatal(CORJIT_IMPLLIMITATION)` pending their callee-save sets.

@@ -363,7 +363,7 @@ public partial class Globals
 #endif
 
     [Conditional("DEBUG")]
-    public static void DISPNODE(GenTree tree)
+    public static void DISPNODE(GenTree? tree)
     {
 #if DEBUG
         var compiler = JitTls.Compiler;

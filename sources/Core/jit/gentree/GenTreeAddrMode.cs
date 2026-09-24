@@ -39,6 +39,15 @@ public sealed class GenTreeAddrMode : GenTreeOp
         _offset = offset;
     }
 
+    internal GenTreeAddrMode(var_types type, GenTree? baseAddress, GenTree? index, byte scale, int offset,
+        GenTree source, NodeThreading threading)
+        : base(GT_LEA, type, baseAddress, index, source, threading)
+    {
+        assert((baseAddress is not null) || (index is not null));
+        _scale = scale;
+        _offset = offset;
+    }
+
     public GenTree? BaseAddress
     {
         get

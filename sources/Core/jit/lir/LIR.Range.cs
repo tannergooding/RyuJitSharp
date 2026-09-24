@@ -585,6 +585,23 @@ public partial class LIR
             return new Range(range.FirstNode, range.LastNode);
         }
 
+        /// <summary>Replace a node's managed representation, updating its owning use and LIR links.</summary>
+        /// <remarks>The replacement must be unthreaded. Callers must also update any cached aliases.</remarks>
+        public void ReplaceNode(GenTree node, GenTree replacement)
+        {
+            assert(node != replacement);
+            assert((replacement.Prev is null) && (replacement.Next is null));
+
+            var hasUse = TryGetUse(node, out var use);
+            InsertAfter(node, replacement);
+            if (hasUse)
+            {
+                use.ReplaceWith(replacement);
+            }
+
+            Remove(node);
+        }
+
         /// <summary>Try to find the use for a given node.</summary>
         /// <param name="node">The node for which to find the corresponding use.</param>
         /// <param name="use">The use of the corresponding node, if any. Invalid if this method returns false.</param>
