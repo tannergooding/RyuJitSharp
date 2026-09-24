@@ -98,6 +98,11 @@ internal static class PortingCorpus
             return 17;
         }
 
+        if (ImplicitByRefArgument(new Triple { First = 1, Second = 2, Third = 3 }) != 6)
+        {
+            return 18;
+        }
+
         return 0;
     }
 
@@ -226,5 +231,15 @@ internal static class PortingCorpus
         var local = value;
         var address = (byte*)&local;
         return address + 3 - address;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static long ImplicitByRefArgument(Triple value) => value.First + value.Second + value.Third;
+
+    private struct Triple
+    {
+        public long First;
+        public long Second;
+        public long Third;
     }
 }

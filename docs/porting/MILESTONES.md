@@ -11,6 +11,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-23: Implicit-byref parameter preparation
+
+Struct parameters passed through pointers now receive their byref descriptor
+types before global morph. Promoted parameters keep their fields in a new
+struct temporary when worthwhile; otherwise their field annotations prepare
+global morph to access the incoming pointer directly. Retained promotion gets
+an entry copy, and field ownership and OSR/register annotations are updated.
+
+Rewriting those parameter accesses remains part of the upcoming global-morph
+work; this preparation does not yet provide managed execution.
+
 ## 2026-09-23: Active local morphing
 
 Local morph now simplifies indirect accesses to locals and promoted fields,

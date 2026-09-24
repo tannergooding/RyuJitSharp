@@ -15909,8 +15909,132 @@ public partial class Compiler
     // TODO: Port phase - fgPromoteStructs
     private PhaseStatus fgPromoteStructs() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port phase - fgRetypeImplicitByRefArgs
-    private PhaseStatus fgRetypeImplicitByRefArgs() => PhaseStatus.MODIFIED_NOTHING;
+    internal unsafe PhaseStatus fgRetypeImplicitByRefArgs()
+    {
+        var madeChanges = false;
+#if FEATURE_IMPLICIT_BYREFS
+        for (var lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+        {
+            ref var varDsc = ref lvaGetDesc(lclNum);
+
+            if (!lvaIsImplicitByRefLocal(lclNum))
+            {
+                continue;
+            }
+
+            madeChanges = true;
+
+            if (varDsc.lvPromoted)
+            {
+                // Move promotion to a struct temp before retyping the parameter.
+                // Temp allocation can replace the descriptor array.
+                var newLclNum = lvaGrabTemp(false, "Promoted implicit byref");
+                varDsc = ref lvaGetDesc(lclNum);
+                var layout = varDsc.Layout;
+                assert(layout is not null);
+                lvaSetStruct(newLclNum, layout, unsafeValueClsCheck: true);
+
+                ref var newVarDsc = ref lvaGetDesc(newLclNum);
+                newVarDsc.lvPromoted = true;
+                newVarDsc.lvFieldLclStart = varDsc.lvFieldLclStart;
+                newVarDsc.lvFieldCnt = varDsc.lvFieldCnt;
+                newVarDsc.lvContainsHoles = varDsc.lvContainsHoles;
+#if DEBUG
+                newVarDsc.lvKeepType = true;
+#endif
+                newVarDsc.SetAddressExposed(varDsc.IsAddressExposed, varDsc.AddrExposedReason);
+                newVarDsc.lvDoNotEnregister = varDsc.lvDoNotEnregister;
+                newVarDsc.lvSingleDef = varDsc.lvSingleDef;
+                newVarDsc.lvSingleDefRegCandidate = varDsc.lvSingleDefRegCandidate;
+                newVarDsc.lvSpillAtSingleDef = varDsc.lvSpillAtSingleDef;
+#if DEBUG
+                newVarDsc.DoNotEnregisterReason = varDsc.DoNotEnregisterReason;
+#endif
+                // Dependent promotion would only introduce an entry memcpy.
+                // Otherwise retain promotion only when non-call uses outnumber
+                // the fields that must be initialized from the incoming pointer.
+                var totalAppearances = varDsc.lvRefCnt(RCS_EARLY);
+                var callAppearances = (uint)varDsc.lvRefCntWtd(RCS_EARLY);
+                assert(totalAppearances >= callAppearances);
+                var nonCallAppearances = totalAppearances - callAppearances;
+                var undoPromotion = (lvaGetPromotionType(in newVarDsc) is PROMOTION_TYPE_DEPENDENT) ||
+                    (nonCallAppearances <= varDsc.lvFieldCnt);
+#if DEBUG
+                if (compStressCompile(STRESS_BYREF_PROMOTION, 25))
+                {
+                    undoPromotion = !undoPromotion;
+                    JITDUMP($"Stress -- changing byref undo promotion for V{lclNum:D2} to {(undoPromotion ? "" : "NOT")} undo\n");
+                }
+#endif
+                JITDUMP($"{(undoPromotion ? "Undoing" : "Keeping")} promotion of implicit by-ref V{lclNum:D2}: {(lvaGetPromotionType(in newVarDsc) is PROMOTION_TYPE_DEPENDENT ? "dependent;" : "")} total: {totalAppearances} non-call: {nonCallAppearances} fields: {varDsc.lvFieldCnt}\n");
+
+                if (!undoPromotion)
+                {
+                    assert((fgFirstBB is not null) && (fgFirstBB.bbPreds is null));
+                    var address = gtNewLclvNode(TYP_BYREF, lclNum);
+                    var data = varDsc.Type is TYP_STRUCT
+                        ? gtNewBlkIndir(address, layout)
+                        : gtNewIndir(varDsc.Type, address);
+                    var store = gtNewStoreLclVarNode(newLclNum, data);
+                    fgInsertStmtAtBeg(fgFirstBB, fgNewStmtFromTree(store));
+                }
+
+                var fieldLclStart = varDsc.lvFieldLclStart;
+                var fieldLclStop = fieldLclStart + varDsc.lvFieldCnt;
+
+                for (var fieldLclNum = fieldLclStart; fieldLclNum < fieldLclStop; fieldLclNum++)
+                {
+                    ref var fieldVarDsc = ref lvaGetDesc(fieldLclNum);
+
+                    if (undoPromotion)
+                    {
+                        // Global morph recognizes demoted fields through the
+                        // original parameter; kept fields belong to the temp.
+                        assert(fieldVarDsc.lvParentLcl == lclNum);
+                    }
+                    else
+                    {
+                        fieldVarDsc.lvParentLcl = newLclNum;
+                    }
+
+                    fieldVarDsc.lvIsParam = false;
+                    fieldVarDsc.lvIsRegArg = false;
+                    fieldVarDsc.lvIsMultiRegArg = false;
+
+                    if (fieldVarDsc.lvIsOSRLocal)
+                    {
+                        assert(opts.IsOSR);
+                        fieldVarDsc.lvIsOSRLocal = false;
+                        fieldVarDsc.lvIsOSRExposedLocal = false;
+                    }
+                }
+
+                // Until post-morph cleanup, these fields identify the replacement
+                // temp and tell global morph whether promotion was retained.
+                varDsc.lvFieldLclStart = newLclNum;
+                varDsc.lvFieldCnt = 0;
+                varDsc.lvPromoted = !undoPromotion;
+            }
+            else
+            {
+                // A nonzero field start is reserved for a formerly promoted arg.
+                assert(varDsc.lvFieldLclStart == 0);
+            }
+
+            varDsc.Type = TYP_BYREF;
+            // Taking the struct's address uses the pointer value, never the
+            // address of the pointer parameter itself.
+            varDsc.CleanAddressExposed();
+            varDsc.lvDoNotEnregister = false;
+#if DEBUG
+            varDsc.lvKeepType = true;
+            JITDUMP($"Changing the lvType for struct parameter V{lclNum:D2} to TYP_BYREF.\n");
+#endif
+        }
+#endif
+
+        return madeChanges ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
+    }
 
     /// <summary>Insert at the beginning, preserving leading phi definitions and the catch argument store.</summary>
     public void fgInsertStmtAtBeg(BasicBlock block, Statement stmt)

@@ -245,6 +245,9 @@ diagnostics with identical logical node IDs.
 `LocalAddressDifference` exercises pointer subtraction, optimized address
 propagation and cleanup of unread address temporaries. These cases compare
 minopts and optimized local morph without requiring managed code generation.
+`ImplicitByRefArgument` passes a three-long struct through the Windows-x64
+implicit-byref ABI and exercises parameter descriptor retyping before global
+morph.
 It is a standalone fixture, not a compiler coverage claim.
 
 Use `scripts\porting\Invoke-PortingCorpus.ps1` with `-CoreRoot`, `-Corpus`,

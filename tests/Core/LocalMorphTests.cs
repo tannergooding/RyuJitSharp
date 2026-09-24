@@ -589,6 +589,131 @@ internal static unsafe class LocalMorphTests
         });
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void ImplicitByRefRetypingChangesOnlyPointerParameters(bool implicitByRef)
+    {
+        WithCompiler(compiler => {
+            compiler.info.compArgsCount = 1;
+            ref var arg = ref compiler.lvaTable[0];
+            arg.Type = TYP_STRUCT;
+            arg.Layout = new ClassLayout(16);
+            arg.lvIsParam = true;
+            arg.IsImplicitByRef = implicitByRef;
+            arg.SetAddressExposed(true, AddressExposedReason.ESCAPE_ADDRESS);
+            arg.lvDoNotEnregister = true;
+            compiler.lvaTable[1].Type = TYP_INT;
+
+            var status = compiler.fgRetypeImplicitByRefArgs();
+
+            Assert.That(status, Is.EqualTo(implicitByRef ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING));
+            Assert.That(arg.Type, Is.EqualTo(implicitByRef ? TYP_BYREF : TYP_STRUCT));
+            Assert.That(arg.IsAddressExposed, Is.EqualTo(!implicitByRef));
+            Assert.That(arg.lvDoNotEnregister, Is.EqualTo(!implicitByRef));
+            Assert.That(arg.IsImplicitByRef, Is.EqualTo(implicitByRef));
+            Assert.That(compiler.lvaTable[1].Type, Is.EqualTo(TYP_INT));
+            Assert.That(compiler.lvaCount, Is.EqualTo(3));
+        }, minOpts: true);
+    }
+
+    [TestCase(false, 2, 0, false)]
+    [TestCase(false, 3, 0, true)]
+    [TestCase(false, 4, 2, false)]
+    [TestCase(true, 9, 0, false)]
+    public static void ImplicitByRefRetypingPreservesPromotionOwnership(bool dependent, int totalUses, int callUses, bool keep)
+    {
+        WithCompiler(compiler => {
+            compiler.info.compArgsCount = 1;
+            compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_OSR);
+            var originalTable = compiler.lvaTable;
+            var layout = new ClassLayout(16);
+            ref var arg = ref compiler.lvaTable[0];
+            arg.Type = TYP_STRUCT;
+            arg.Layout = layout;
+            arg.lvIsParam = true;
+            arg.IsImplicitByRef = true;
+            arg.lvPromoted = true;
+            arg.lvFieldLclStart = 1;
+            arg.lvFieldCnt = 2;
+            arg.lvContainsHoles = true;
+            arg.lvDoNotEnregister = dependent;
+            arg.SetAddressExposed(dependent, AddressExposedReason.ESCAPE_ADDRESS);
+            arg.lvSingleDef = true;
+            arg.lvSingleDefRegCandidate = true;
+            arg.lvSpillAtSingleDef = true;
+            arg.setLvRefCnt((ushort)totalUses, RCS_EARLY);
+            arg.setLvRefCntWtd(callUses, RCS_EARLY);
+
+            for (var i = 1; i < 3; i++)
+            {
+                ref var field = ref compiler.lvaTable[i];
+                field.Type = TYP_LONG;
+                field.lvIsStructField = true;
+                field.lvParentLcl = 0;
+                field.lvFldOffset = (byte)((i - 1) * 8);
+                field.lvIsParam = true;
+                field.lvIsRegArg = true;
+                field.lvIsMultiRegArg = true;
+                field.lvIsOSRLocal = true;
+                field.lvIsOSRExposedLocal = true;
+            }
+
+            var block = new BasicBlock(null, null);
+            compiler.fgFirstBB = block;
+            var status = compiler.fgRetypeImplicitByRefArgs();
+
+            Assert.That(status, Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            Assert.That(compiler.lvaTable, Is.Not.SameAs(originalTable));
+            Assert.That(compiler.lvaCount, Is.EqualTo(4));
+            ref var pointer = ref compiler.lvaTable[0];
+            Assert.That(pointer.Type, Is.EqualTo(TYP_BYREF));
+            Assert.That(pointer.lvPromoted, Is.EqualTo(keep));
+            Assert.That(pointer.lvFieldLclStart, Is.EqualTo(3));
+            Assert.That(pointer.lvFieldCnt, Is.Zero);
+            Assert.That(pointer.IsAddressExposed, Is.False);
+            Assert.That(pointer.lvDoNotEnregister, Is.False);
+            ref var temp = ref compiler.lvaTable[3];
+            Assert.That(temp.Layout, Is.SameAs(layout));
+            Assert.That(temp.lvPromoted, Is.True);
+            Assert.That(temp.lvFieldLclStart, Is.EqualTo(1));
+            Assert.That(temp.lvFieldCnt, Is.EqualTo(2));
+            Assert.That(temp.lvContainsHoles, Is.True);
+            Assert.That(temp.IsAddressExposed, Is.EqualTo(dependent));
+            Assert.That(temp.lvDoNotEnregister, Is.EqualTo(dependent));
+            Assert.That(temp.lvSingleDef && temp.lvSingleDefRegCandidate && temp.lvSpillAtSingleDef, Is.True);
+
+            for (var i = 1; i < 3; i++)
+            {
+                ref var field = ref compiler.lvaTable[i];
+                Assert.That(field.lvParentLcl, Is.EqualTo(keep ? 3 : 0));
+                Assert.That(field.lvIsParam || field.lvIsRegArg || field.lvIsMultiRegArg, Is.False);
+                Assert.That(field.lvIsOSRLocal || field.lvIsOSRExposedLocal, Is.False);
+            }
+
+            if (keep)
+            {
+                var stmt = block.FirstStmt ?? throw new InvalidOperationException("Missing promotion initializer.");
+                var store = stmt.RootNode.AsLclVarCommon();
+                Assert.That(store.LclNum, Is.EqualTo(3));
+                Assert.That(store.Data.Oper, Is.EqualTo(GT_BLK));
+                Assert.That(store.Data.AsBlk().Layout, Is.SameAs(layout));
+                Assert.That(store.Data.AsIndir().Addr.Type, Is.EqualTo(TYP_BYREF));
+                Assert.That(store.Data.AsIndir().Addr.AsLclVarCommon().LclNum, Is.Zero);
+                Assert.That(stmt.NextStmt, Is.Null);
+            }
+            else
+            {
+                Assert.That(block.FirstStmt, Is.Null);
+            }
+
+            compiler.fgMarkDemotedImplicitByRefArgs();
+            Assert.That(pointer.lvPromoted, Is.False);
+            Assert.That(pointer.lvFieldLclStart, Is.Zero);
+            Assert.That(compiler.lvaTable[1].lvParentLcl, Is.EqualTo(3));
+            Assert.That(compiler.lvaTable[2].lvParentLcl, Is.EqualTo(3));
+        });
+    }
+
     private static void WithCompiler(Action<Compiler> action, bool minOpts = false)
     {
 #if DEBUG

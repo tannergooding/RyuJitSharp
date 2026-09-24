@@ -12,10 +12,10 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port required implicit-byref retyping after active local morph, then advance global morph toward minopts/Tier-0-level code generation. Optional stack-allocation analysis and early optimized flow-graph cleanup remain outside this batch.",
+      "scope": "Advance required global morph toward minopts/Tier-0-level code generation, starting with local-reference expansion after active implicit-byref retyping. Optional stack-allocation analysis and early optimized flow-graph cleanup remain outside this batch.",
       "doneWhen": [
-        "Trace fgRetypeImplicitByRefArgs against the pinned oracle and port the complete function and required dependency closure.",
-        "Preserve argument ABI, local ownership, promotion state, address-exposure flags and diagnostic ordering.",
+        "Port complete fgMorphExpandImplicitByRefArg and fgMorphExpandLocal with their required normalization and ownership dependencies, then follow the required global-morph driver closure.",
+        "Preserve argument ABI, whole-node replacement ownership, last-use flags, promotion state and diagnostic ordering.",
         "Continue required local/global morph, lowering and code generation rather than filling optional adjacent optimization phases.",
         "Validate and retire complete definitions; commit coherent portions and publish execution milestones without stopping at them."
       ],
@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Finish the local-morph activation commit and milestone push, then start the fgRetypeImplicitByRefArgs stub in Compiler.fg.cs against the pinned oracle. B143 traversal, optimized assertions, deferred exposure and statement effects are active and retired from the residual ledger. New local-address store/subtraction cases match exact phase text and emitted IR in both configurations; minopts is 18/19 exact phases and optimized 15/18, with hardware import and B147 early CFG cleanup still divergent. B148 importer exception flags are fixed and recaptured. Do not recapture unchanged local morph or reopen its ownership design. Keep required implicit-byref/global morph ahead of B135/B142 diagnostics, B145 SIMD conversions and B147 optional early CFG cleanup. B149 unsigned checked multiplication is separately recorded.",
+    "nextAction": "Commit and publish the validated implicit-byref retyping batch, then port fgMorphExpandImplicitByRefArg and fgMorphExpandLocal from oracle morph.cpp:3343-3517. The retyping phase is complete; all twenty minopts 'Morph - ByRefs' sections and its emitted IR match native, and 74 Debug/Release local-morph plus inline-argument cases pass. Five new cases failed against the stub. Global morph remains a no-op, so access expansion is the next concrete closure, not more retyping tests or captures. Use source-based local replacement with NodeThreading.None and return the replacement to the owning morph caller; preserve native common/effect masks, identity and last-use semantics. Check existing normalization helpers before adding dependencies. Keep minopts execution ahead of B135/B142 diagnostics, B145 SIMD conversions and B147 optional early CFG cleanup; B149 unsigned checked multiplication is separately recorded.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -1094,9 +1094,32 @@
         "managedCodegen": false,
         "compilationResult": "Every selected managed method reaches Method code size: 0; successful corpus execution still uses native fallback."
       },
-      "nativeAotPublish": "passed-after-local-morph-activation",
+      "implicitByRefRetyping": {
+        "debugPassed": 74,
+        "releasePassed": 74,
+        "skipped": 0,
+        "originalStubFailures": 5,
+        "selection": ["LocalMorphTests", "InlineArgumentTests"],
+        "debugTests": "artifacts\\implicit-byref-debug.trx",
+        "releaseTests": "artifacts\\implicit-byref-release.trx",
+        "managedSource": "1a055d26d849bf27a1dbf4fec661505cdbfd2c36",
+        "managedBinary": "artifacts\\implicit-byref-jit\\RyuJitSharp.dll",
+        "nativeMinopts": "artifacts\\implicit-byref-native-minopts",
+        "managedMinopts": "artifacts\\implicit-byref-managed-minopts",
+        "phase": "Morph - ByRefs",
+        "methods": 20,
+        "exactPhaseSections": 20,
+        "exactEmittedIRSections": 1,
+        "newCaseWithExactPhaseAndIR": "ImplicitByRefArgument",
+        "coverage": ["nonpromoted pointer parameters", "descriptor-array replacement", "retained, dependent and unprofitable promotion", "entry initialization", "OSR/register field annotations", "post-morph annotation cleanup"],
+        "nativeDefinitionsRetired": ["Compiler::fgRetypeImplicitByRefArgs"],
+        "globalMorphActive": false,
+        "managedCodegen": false,
+        "compilationResult": "All twenty selected managed methods reach Method code size: 0; corpus execution still uses native fallback."
+      },
+      "nativeAotPublish": "passed-after-implicit-byref-retyping",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
-      "phaseDumpParity": "local-morph-minopts-18-of-19-and-optimized-15-of-18-exact-phase-sections; both-new-local-address-cases-have-exact-phase-and-emitted-IR; remaining-input-gaps-are-not-normalized",
+      "phaseDumpParity": "all-twenty-minopts-implicit-byref-retyping-phase-sections-and-its-emitted-IR-equal; earlier-local-morph-gaps-remain-scoped-in-localMorphActivation",
       "codegenParity": "not-available"
     }
   },
@@ -1584,6 +1607,15 @@
       "indexCommit": "eefb05679499249b76a3692ad4bdbba271edb5b4",
       "ref": "refs/porting/snapshots/native-ledger-local-morph"
     },
+    "implicitByRefRetypingManagedSource": {
+      "commit": "1a055d26d849bf27a1dbf4fec661505cdbfd2c36",
+      "ref": "refs/porting/snapshots/implicit-byref-retyping-source"
+    },
+    "implicitByRefRetypingNativeResidual": {
+      "commit": "bf9b5f06129dae982c44217c2bb3779628aa7944",
+      "indexCommit": "91a8d027671593672fdf7840d5bbcc96e53a81b3",
+      "ref": "refs/porting/snapshots/native-ledger-implicit-byref-retyping"
+    },
     "internalBlockPhaseNativeResidual": {
       "commit": "494ccbc0132fcf507b8133bffa2fef635d788858",
       "indexCommit": "343e35183b190e9bccb68af25de8c3b499e6bf1e",
@@ -1624,6 +1656,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "implicit-byref-retyping",
+      "native": ["src\\coreclr\\jit\\morph.cpp"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.fg.cs"],
+      "reconciledCommit": null,
+      "status": "Complete fgRetypeImplicitByRefArgs and existing fgMarkDemotedImplicitByRefArgs. Global-morph access expansion remains separate required work; the containing native file is not complete."
+    },
     {
       "area": "local-morph-activation",
       "native": ["src\\coreclr\\jit\\lclmorph.cpp", "src\\coreclr\\jit\\gentree.cpp"],
