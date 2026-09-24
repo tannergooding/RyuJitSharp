@@ -14,140 +14,25 @@ cover outstanding issues.
 
 ## 2026-09-24: Rationalization and linear IR
 
-Rationalization now runs after statement sequencing, preserving execution order
-while removing tree-only wrappers, unused reads and side-effect-free comma
-operands. Call arguments retain their evaluation order without keeping redundant
-tree ownership. Unsupported intrinsics can be rewritten back to managed calls,
-including struct return buffers and mask/vector conversions.
+Rationalization now converts sequenced expression trees into linear IR, removes
+tree-only wrappers and unused values, and preserves call-argument evaluation
+order. It includes Windows-x64 shuffle and mask rewrites, managed-call fallback
+for unsupported intrinsics, and incoming-parameter register mappings.
 
-The phase includes Windows-x64 shuffle and mask rewrites, side-effect and alias
-checks, and incoming-parameter register mappings. Instruction mask and broadcast
-metadata comes from the existing native-header generator. Linear IR dumps retain
-native sequence-label alignment for inserted IL-offset markers.
-
-The next execution boundary is scalar minopts lowering, register allocation and
-code emission. Earlier hardware-import and EH-funclet differences remain open;
-ARM64-specific rationalization and non-xarch shuffle construction remain deferred.
+Hardware-import and EH-funclet differences remain open. ARM64-specific
+rationalization and non-xarch shuffle construction remain deferred.
 
 ## 2026-09-24: Global morph and outgoing-call ABI
 
-Global morph now runs through the recursive tree, statement and block drivers.
-It prepares outgoing arguments and their temporary copies, transforms casts and
-tail calls, removes dead statements, folds constant branches and merges returns.
-Local assertion application is separated from the later VN/SSA-based global
-assertion phase, so optional range analysis no longer blocks morph integration.
-The remaining hardware-intrinsic import gap still affects the IR reaching morph;
-rationalization, lowering, register allocation and code generation remain ahead.
+Global morph now runs through trees, statements and blocks. It rewrites field
+and byref accesses, applies local assertions, simplifies scalar and vector
+expressions, and prepares Windows-x64 outgoing arguments. Eligible recursive
+tail calls become loops, while branch folding and return merging simplify
+control flow. Rewrites preserve evaluation order, exceptions and ABI requirements.
 
-Global morph now has transformations for local references, primitive and
-promoted-field block initialization, and removal of expressions after no-return
-calls while preserving earlier side effects. Literal construction and debug
-stress copies preserve native handle shapes, logical identity and operand
-ownership.
-Replacement support also retains store-specific node kinds and simple or
-composite SSA identities when retyping an existing local value.
-
-Indirection finalization turns in-range local-address accesses into field loads
-and stores, preserving partial definitions and volatile-access restrictions.
-Eligible promoted struct returns expose their fields, and equal-size memory
-bitcasts can avoid an extra conversion.
-
-Instance-field expansion constructs explicit null checks and address arithmetic,
-including late-bound field offsets, without evaluating effectful bases twice.
-TLS field expansion preserves module-index indirections, field annotations and
-logical node identity. Address-morph support also recognizes implicitly accessed
-byref fields and limits expression duplication by tree complexity.
-
-Non-null proofs use local facts, value numbers and predecessor-edge assertions,
-including conservative SSA values across PHIs. Field null-check delegation
-respects cumulative offsets and cannot move a fault past a store's side effects.
-
-Assertion application can remove proven null checks, classify scalar and GC-containing
-block-store barriers, and propagate per-element vector-mask facts through conservative
-SSA values. Zero-initialized struct return values become scalar zero operands when
-required by the return ABI, including Swift error returns. Statement updates preserve
-the current traversal and annotate invariant handle loads.
-
-Local assertion application now substitutes scalar and vector constants, propagates
-profitable local copies, and suppresses redundant zero stores without hiding integral
-loop initializers. Copies retain enregistration, synchronous-path and last-use
-constraints; global scalar replacements preserve the statement's forward traversal.
-
-Integral cast optimization now uses range proofs and expression narrowing to
-remove redundant conversions, retaining overflow checks and small-local
-normalization where required.
-
-Comparison morphing now canonicalizes bit tests, removes redundant widening
-casts and folds constant comparisons using signed and unsigned range proofs.
-These transformations retain checked arithmetic, observable evaluation and
-floating-point unordered behavior.
-
-Multiplication can reduce to shifts and scaled factors while retaining side
-effects, and floating-point and bitwise identities preserve signed-zero
-behavior. Always-throwing expressions can propagate without discarding earlier
-effects or confusing conditional throws with unconditional ones. Full-width
-returned fields can become whole-local reads and remain enregisterable.
-
-Constant reassociation and left-deep rearrangement preserve side effects,
-overflow checks and GC-pointer boundaries. Constant-division preparation keeps
-eligible divisors available to lowering without suppressing required exceptions.
-Repeated additions of the same local can become a multiplication, retaining
-checked arithmetic when present. Constant character reads from string literals
-can fold through the runtime's literal query without treating unavailable or
-out-of-range characters as successful reads.
-Complementary shifts can be recognized as rotations, with explicit
-count masking and restrictions on merging observable reads. Fresh IR nodes now
-start with undefined value numbers in Release as well as Debug.
-
-Remainder transformations can retain just the dividend's effects for division
-by one, mask unsigned power-of-two remainders, or expand to division, multiplication
-and subtraction. Expansion evaluates operands once in their original order,
-including reversed operands, and records the resulting SSA uses.
-
-Hardware-intrinsic constant reassociation preserves comma-expression effects
-and value numbers, distinguishes integral arithmetic from floating arithmetic,
-and allows bitwise reassociation across element-type reinterpretations.
-Operand ordering respects element-type and explicit-rounding restrictions,
-while constant preference preserves useful shuffle indices and mask identities.
-Geometric vector sequences can be precomputed or expressed as a single broadcast
-and multiply, retaining integral lane wraparound and floating signed zero.
-Floating reciprocal eligibility preserves the native normal-power-of-two rules,
-including the exclusion of positive and negative one. Vector square roots use
-the target's width-specific intrinsic without dropping operand effects.
-
-Outgoing calls can classify signature types into Windows-x64 argument registers
-and stack slots, account for shadow space, insert virtual-stub and ReadyToRun
-cells, and remove those cells before reclassification. Argument scheduling,
-including spill decisions and evaluation ordering, preserves stores, exceptions,
-nested calls, stack allocations and control-flow-guard checks. Struct-argument
-support maps promoted fields to ABI slots and scopes temporary reuse across
-nested calls. Fast-tail-call eligibility checks incoming stack space and whether
-struct arguments would retain the caller's frame, preserving rejection reasons
-and last-use rules.
-Owning-use references retain comma-expression effects when replacing argument
-values. Post-morph implicit-byref recognition retains the complete address and
-field offset needed to decide whether an outgoing struct copy can be omitted.
-
-Recursive fast-tail calls can be converted into loops while preserving argument
-evaluation before parameter overwrites, writable receiver state, required local
-initialization and profile flow.
-Generic-context reporting distinguishes receiver-based contexts from hidden
-method/type handles, retaining VM-required lifetimes, collectible-type lookup
-contexts and values needed by possible OSR continuations.
-
-Helper preparation builds dispatcher calls with correctly typed result storage,
-return-buffer forwarding and reusable return-address slots. The x86-specific
-helper path prepares explicit receiver null checks and its special stack
-arguments. Debug validation follows the tail-call result through stores and
-normalizing casts to the return.
-
-Call morphing can recognize managed replacements of runtime helpers through the
-inline root's helper map. Virtual method-pointer construction retains exact
-method and parent-type handles, their lookup order, and the receiver's effects.
-
-Cast-helper assertion application can eliminate proven casts while preserving
-argument evaluation and exception value numbers. Subtype proofs use runtime
-type comparisons, mapped class handles and predecessor assertions.
+VN/SSA-based global assertion propagation remains separate. Hardware-intrinsic
+import and the later lowering, register-allocation and code-generation phases
+remain unfinished.
 
 ## 2026-09-23: Implicit-byref parameter preparation
 
