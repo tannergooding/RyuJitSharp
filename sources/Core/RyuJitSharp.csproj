@@ -375,7 +375,7 @@
     
     <!-- FEATURE_PARTIAL_SIMD_CALLEE_SAVE: Whether SIMD registers are partially saved at calls -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_PARTIAL_SIMD_CALLEE_SAVE</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);FEATURE_PARTIAL_SIMD_CALLEE_SAVE</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' != 'true'">$(DefineConstants);FEATURE_PARTIAL_SIMD_CALLEE_SAVE</DefineConstants>
     
     <!-- FEATURE_REMAP_FUNCTION -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_REMAP_FUNCTION</DefineConstants>

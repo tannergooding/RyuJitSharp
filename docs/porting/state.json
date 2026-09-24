@@ -248,6 +248,15 @@
         "releaseTests": "artifacts\\backend-call-integration-release.trx",
         "scope": "Frozen uncommitted call integration includes memory-helper expansion and ordinary-call fallback, native next-node conventions, single-register struct returns and comparison containment. No lowering-driver activation or managed code generation."
       },
+      "partialSimdAbiGate": {
+        "debugPassed": 155,
+        "releasePassed": 146,
+        "skipped": 0,
+        "debugTests": "artifacts\\partial-simd-debug.trx",
+        "releaseTests": "artifacts\\partial-simd-release.trx",
+        "scope": "Corrected FEATURE_PARTIAL_SIMD_CALLEE_SAVE to match native targetamd64.h: enabled for Windows x64 and disabled for SysV x64. ARM64 remains enabled. Evaluated MSBuild properties match all three targets; Windows backend/LSRA consumers compile and pass the selected cases.",
+        "remaining": "The pending assignment packet must preserve native upper-vector getSpillWeight behavior with the Windows feature enabled. No allocation or codegen activation."
+      },
       "conditionLowering": {
         "debugPassed": 62,
         "releasePassed": 62,
