@@ -98,6 +98,14 @@ in its owning slot. Replacements preserve logical IDs, clear VNs and apply the
 native `SetOper`/`ChangeOper` flag policy. This does not support LIR replacement
 or activate the unfinished local-morph phase.
 
+Local-address assertions use a value-record key, a lookup-only dictionary and an
+insertion-ordered assertion list; dictionary enumeration is not observable.
+Loop-definition maps do expose their iteration order in diagnostics, so their
+managed specialization retains native bucket sizes, growth-before-overwrite,
+chain insertion and rehash order from `jithashtable.{h,cpp}`. It stores only keys
+because every native value in this particular map is `true`; this is not a
+general replacement for the native hash-table API.
+
 Identical-operand comparisons allocate fresh constants, as native does, rather
 than using the scalar-bashing replacement constructors. Comparisons and SELECTs
 copy the original sequencing links only outside global morph; callers still own

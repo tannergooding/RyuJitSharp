@@ -9,6 +9,7 @@ internal partial struct LocalAddressVisitor
 {
     private readonly Compiler _compiler;
     private readonly bool _sequenceLocals;
+    private readonly LocalEqualsLocalAddrAssertions? _lclAddrAssertions;
     private LocalSequencer _sequencer;
     private bool _stmtModified;
     private bool _stmtSideEffectsModified;
@@ -26,11 +27,13 @@ internal partial struct LocalAddressVisitor
         LclFld,
     }
 
-    internal LocalAddressVisitor(Compiler compiler, LocalSequencer? sequencer = null)
+    internal LocalAddressVisitor(Compiler compiler, LocalSequencer? sequencer = null,
+        LocalEqualsLocalAddrAssertions? assertions = null)
     {
         _compiler = compiler;
         _sequenceLocals = sequencer.HasValue;
         _sequencer = sequencer.GetValueOrDefault();
+        _lclAddrAssertions = assertions;
     }
 
     private readonly NodeThreading ReplacementThreading => _sequenceLocals ? NodeThreading.AllLocals : NodeThreading.None;
@@ -43,6 +46,172 @@ internal partial struct LocalAddressVisitor
         }
 
         use = replacement;
+    }
+
+    internal void EscapeValue(ref Value value, GenTree? user)
+    {
+        if (value.IsAddress)
+        {
+            EscapeAddress(ref value, user);
+        }
+        else
+        {
+            value.Consume();
+        }
+    }
+
+    internal unsafe void EscapeAddress(ref Value value, GenTree? user)
+    {
+        assert(value.IsAddress);
+        var lclNum = value.LclNum;
+        ref var varDsc = ref _compiler.lvaGetDesc(lclNum);
+        var defFlags = GTF_EMPTY;
+        var call = (user is not null) && user.Oper.IsCall ? user.AsCall() : null;
+        var escapeAddress = true;
+
+        if ((call is not null) && _compiler.IsValidLclAddr(lclNum, unchecked((int)value.Offset)))
+        {
+            var defSize = uint.MaxValue;
+            var retBuffer = call.Args.RetBufferArg;
+            assert(!call.Args.HasRetBuffer || (retBuffer is not null));
+
+            if ((retBuffer is not null) && (value.Node == retBuffer.Node))
+            {
+                // The local must not turn into an indirection during later morph.
+                var suitable = _compiler.opts.compJitOptimizeStructHiddenBuffer && varTypeIsStruct(varDsc.Type) &&
+                    !_compiler.lvaIsUnknownSizeLocal(lclNum) && !_compiler.lvaIsImplicitByRefLocal(lclNum) &&
+                    (!varDsc.lvIsStructField || !_compiler.lvaIsImplicitByRefLocal(varDsc.lvParentLcl));
+#if TARGET_X86
+                if (_compiler.lvaIsArgAccessedViaVarArgsCookie(lclNum))
+                {
+                    suitable = false;
+                }
+#endif
+                if (suitable)
+                {
+                    _compiler.lvaSetHiddenBufferStructArg(lclNum);
+                    call._callMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
+                    defSize = (uint)_compiler.typGetObjLayout(call.RetClsHnd).Size;
+                }
+            }
+            else if (call.IsAsync)
+            {
+                var resumedDef = call.Args.FindWellKnownArg(WellKnownArg.AsyncResumedDef);
+
+                if ((resumedDef is not null) && (value.Node == resumedDef.Node))
+                {
+                    defSize = TARGET_POINTER_SIZE;
+                }
+            }
+
+            if (defSize != uint.MaxValue)
+            {
+#if DEBUG
+                varDsc.IsDefinedViaAddress = true;
+#endif
+                escapeAddress = false;
+                defFlags = GTF_VAR_DEF;
+                _stmtSideEffectsModified |= (call.Flags & GTF_ASG) == 0;
+                call.Flags |= GTF_ASG;
+
+                if (!_compiler.IsEntireAccess(lclNum, value.Offset, new ValueSize(unchecked((int)defSize))))
+                {
+                    defFlags |= GTF_VAR_USEASG;
+                }
+            }
+        }
+
+        if (escapeAddress)
+        {
+            var exposedLclNum = varDsc.lvIsStructField ? varDsc.lvParentLcl : lclNum;
+
+            if (_lclAddrAssertions is not null)
+            {
+                _lclAddrAssertions.OnExposed(exposedLclNum);
+            }
+            else
+            {
+                _compiler.lvaSetVarAddrExposed(exposedLclNum, AddressExposedReason.ESCAPE_ADDRESS);
+            }
+        }
+
+#if TARGET_64BIT
+        // Match JIT64's extra storage for byref int32 arguments: some P/Invoke
+        // signatures incorrectly write a native-sized value through these addresses.
+        if ((call is not null) && !varDsc.lvIsParam && !varDsc.lvIsStructField &&
+            (varDsc.Type.ActualType is TYP_INT) && escapeAddress)
+        {
+            varDsc.lvQuirkToLong = true;
+            JITDUMP($"Adding a quirk for the storage size of V{value.LclNum:D2} of type {varDsc.Type.Name}\n");
+        }
+#endif
+        MorphLocalAddress(ref value.Use, lclNum, value.Offset);
+        value.Node.Flags |= defFlags;
+        value.Consume();
+    }
+
+    internal void ProcessIndirection(ref GenTree use, ref Value value, GenTree? user)
+    {
+        assert(value.IsAddress);
+        var node = use.AsIndir();
+        var lclNum = value.LclNum;
+        var offset = value.Offset;
+        ref var varDsc = ref _compiler.lvaGetDesc(lclNum);
+        var indirSize = node.ValueSize;
+
+        // A wide access can span promoted fields. Expose their parent as well,
+        // so dependent promotion retains the original contiguous storage.
+        if (indirSize.IsNull || _compiler.IsWideAccess(lclNum, offset, indirSize))
+        {
+            var exposedLclNum = varDsc.lvIsStructField ? varDsc.lvParentLcl : lclNum;
+
+            if (_lclAddrAssertions is not null)
+            {
+                _lclAddrAssertions.OnExposed(exposedLclNum);
+            }
+            else
+            {
+                _compiler.lvaSetVarAddrExposed(exposedLclNum, AddressExposedReason.WIDE_INDIR);
+            }
+
+            MorphLocalAddress(ref node.AddrRef, lclNum, offset);
+            node.Flags |= GTF_GLOB_REF;
+            _stmtSideEffectsModified = true;
+        }
+        else
+        {
+            MorphLocalIndir(ref use, lclNum, offset, user);
+        }
+
+        value.Consume();
+    }
+
+    internal void MorphLocalAddress(ref GenTree use, int lclNum, uint offset)
+    {
+        assert(use.Type is TYP_BYREF or TYP_I_IMPL);
+#if DEBUG
+        assert(_compiler.lvaGetDesc(lclNum).IsAddressExposed ||
+            ((_lclAddrAssertions is not null) && _lclAddrAssertions.IsMarkedForExposure(lclNum)) ||
+            _compiler.lvaGetDesc(lclNum).IsDefinedViaAddress);
+#endif
+        GenTree replacement;
+
+        if (_compiler.IsValidLclAddr(lclNum, unchecked((int)offset)))
+        {
+            replacement = new GenTreeLclFld(GT_LCL_ADDR, use.Type, lclNum, (ushort)offset,
+                data: null, layout: null, use, ReplacementThreading);
+        }
+        else
+        {
+            // An unrepresentable local offset remains explicit pointer arithmetic.
+            var address = _compiler.gtNewLclVarAddrNode(TYP_BYREF, lclNum);
+            var constant = _compiler.gtNewIconNode(TYP_I_IMPL, unchecked((nint)(nuint)offset));
+            replacement = new GenTreeOp(GT_ADD, use.Type, address, constant, use, ReplacementThreading);
+        }
+
+        replacement.Flags = GTF_EMPTY;
+        ReplaceNode(ref use, replacement);
+        _stmtModified = true;
     }
 
     private GenTreeLclVar MorphAddressToLocal(ref GenTree use, int lclNum)

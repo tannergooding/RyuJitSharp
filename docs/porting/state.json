@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Continue B143 with address escape/canonicalization and visitor traversal in native lclmorph.cpp:901-1678. MorphLocalIndir/SelectLocalIndirTransform and promoted-field transformations are implemented, including scalar casts, partial small stores, vector fields/halves and owner/alias updates. The vector element factories and immediate bounds-check helper are complete; do not restart their exploration. Source-based constructors explicitly support locals-only threading, and LocalSequencer.ReplaceNode transfers links/cursor before installing the replacement. MorphLocalAddress's debug precondition and escape/traversal paths reference the unported LocalEqualsLocalAddrAssertions (419-700); LoopDefinitions (180-376) also remains unported, while FlowGraphNaturalLoops is implemented. Resolve only the support required to activate the complete required visitor. fgLocalMorph remains a stub. Keep minopts execution first; defer unrelated B142/B135 diagnostics and B145 overflow failures in existing SIMD code/tests.",
+    "nextAction": "Implement LocalAddressVisitor traversal (native lclmorph.cpp:901-1452), its store/load assertion hooks (2246-2294), then fgLocalMorph (2380-2434) and its fgExposeUnpropagatedLocals dependency. EscapeValue/EscapeAddress/ProcessIndirection/MorphLocalAddress, all local transforms, LoopDefinitions and LocalEqualsLocalAddrAssertions are complete and validated; do not re-investigate them. Use the existing owning-slot Value, source-based replacement constructors and LocalSequencer.ReplaceNode; refresh cached node aliases after replacements. Traversal needs a value stack with ref access, statement context for root owning slots and owned sequencer state. SUB-to-constant needs an explicit locals-only constant replacement constructor, not a weakened unthreaded assertion. The loop-definition map preserves native hash bucket/growth/rehash order; do not replace it with dictionary enumeration. Consolidate native helper/visitor retirement after traversal/activation. fgLocalMorph remains a stub. Keep minopts execution first; defer B142/B135 diagnostics and B145 existing SIMD overflow failures.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -1056,6 +1056,20 @@
           "finding": "B145: overflow failures in unchanged SIMD mask/broadcast/folding code and test conversions; not fixed in this batch."
         }
       },
+      "localAddressEscapeSupport": {
+        "debugPassed": 218,
+        "releasePassed": 212,
+        "skipped": 0,
+        "selection": ["LocalMorphTests", "NaturalLoopTests", "AllocationLoweringTests", "ScalarFoldingTests"],
+        "debugTests": "artifacts\\local-address-escape-debug.trx",
+        "releaseTests": "artifacts\\local-address-escape-release.trx",
+        "coverage": ["escaped full-width unsigned offsets and owning uses", "wide accesses across promoted fields", "native collision/overwrite-growth iteration order", "exclusive nested-loop definition maps", "outgoing versus always-true assertions", "64-entry assertion reuse"],
+        "originalFullWidthOffsetFailures": 1,
+        "nativeDefinitionsRetired": [],
+        "residualRetirement": "Consolidate LoopDefinitions and LocalEqualsLocalAddrAssertions with the complete visitor and phase.",
+        "visitorActivated": false,
+        "nativeAotRecaptured": false
+      },
       "nativeAotPublish": "passed-after-heap-allocation-activation",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "all-seventeen-minopts-allocation-and-internal-block-phase-sections-and-all-emitted-post-phase-IR-sections-equal",
@@ -1577,6 +1591,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "local-address-assertions-and-loop-definitions",
+      "native": ["src\\coreclr\\jit\\lclmorph.cpp", "src\\coreclr\\jit\\jithashtable.h", "src\\coreclr\\jit\\jithashtable.cpp"],
+      "csharp": ["sources\\Core\\jit\\lclmorph\\LocalEqualsLocalAddrAssertions.cs", "sources\\Core\\jit\\lclmorph\\LoopDefinitions.cs"],
+      "reconciledCommit": null,
+      "status": "Complete local-address assertion bookkeeping and loop-definition collection. The local-number set specializes native JitHashTable ordering with its exact capacity schedule; the general hash-table API and the local-morph visitor/phase are not claimed complete."
+    },
     {
       "area": "local-indirection-vector-construction",
       "native": ["src\\coreclr\\jit\\gentree.cpp", "src\\coreclr\\jit\\hwintrinsic.cpp"],

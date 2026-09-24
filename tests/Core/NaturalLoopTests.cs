@@ -9,6 +9,7 @@ using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.var_types;
 using BitVecOps = RyuJitSharp.BitSetOps<RyuJitSharp.BitVecTraits, RyuJitSharp.BitVecTraits>;
 
 namespace RyuJitSharp.UnitTests;
@@ -313,6 +314,117 @@ internal static unsafe class NaturalLoopTests
         });
     }
 #endif
+
+    [Test]
+    public static void LocalDefinitionMapsPreserveNativeCollisionAndOverwriteGrowthOrder()
+    {
+        var map = new LoopDefinitions.LocalDefinitionsMap();
+
+        foreach (var key in new[] { 0, 23, 46, 9, 32, 55 })
+        {
+            map.Set(key);
+        }
+
+        var keys = new List<int>();
+        map.VisitKeys(keys.Add);
+        Assert.That(keys, Is.EqualTo([9, 0, 55, 46, 32, 23]));
+
+        map.Set(9);
+        keys.Clear();
+        map.VisitKeys(keys.Add);
+        Assert.That(keys, Is.EqualTo([23, 46, 0, 32, 55, 9]));
+    }
+
+    [Test]
+    public static void LoopDefinitionsVisitExclusiveChildMapsBeforeTheirParent()
+    {
+        WithCompiler(compiler => {
+            var blocks = Blocks(compiler, BBJ_ALWAYS, BBJ_COND, BBJ_COND, BBJ_COND, BBJ_ALWAYS, BBJ_RETURN);
+            _ = Jump(blocks[0], blocks[1]);
+            blocks[1].SetCond(Connect(blocks[1], blocks[2]), Connect(blocks[1], blocks[5]));
+            blocks[2].SetCond(Connect(blocks[2], blocks[2]), Connect(blocks[2], blocks[3]));
+            blocks[3].SetCond(Connect(blocks[3], blocks[3]), Connect(blocks[3], blocks[4]));
+            _ = Jump(blocks[4], blocks[1]);
+            compiler.lvaCount = 3;
+            compiler.lvaTable = new LclVarDsc[3];
+
+            for (var i = 0; i < 3; i++)
+            {
+                compiler.lvaTable[i].Type = TYP_INT;
+                var store = compiler.gtNewStoreLclVarNode(i, compiler.gtNewIconNode(TYP_INT, i));
+                compiler.fgInsertStmtAtEnd(blocks[i + 1], compiler.gtNewStmt(store));
+            }
+
+            var loops = Find(compiler);
+            var definitions = new LoopDefinitions(loops);
+            var locals = new List<int>();
+            definitions.VisitDefinedLocalNums(loops.GetLoopByIndex(0), locals.Add);
+            Assert.That(locals, Is.EqualTo([1, 2, 0]));
+
+            locals.Clear();
+            definitions.VisitDefinedLocalNums(loops.GetLoopByIndex(0), locals.Add);
+            Assert.That(locals, Is.EqualTo([1, 2, 0]));
+        });
+    }
+
+    [Test]
+    public static void LocalAddressAssertionsDistinguishOutgoingAndAlwaysTrueFacts()
+    {
+        WithCompiler(compiler => {
+            var blocks = Blocks(compiler, BBJ_ALWAYS, BBJ_RETURN);
+            _ = Jump(blocks[0], blocks[1]);
+            var assertions = CreateLocalAddressAssertions(compiler, Find(compiler));
+            assertions.Record(0, 1, 4);
+            assertions.Record(2, 1, 8);
+            assertions.EndBlock(blocks[0]);
+            assertions.StartBlock(blocks[1]);
+            Assert.That(assertions.CurrentAssertions, Is.EqualTo(3UL));
+            Assert.That(assertions.AlwaysAssertions, Is.EqualTo(3UL));
+
+            assertions.Clear(0);
+            assertions.Record(0, 1, 4);
+            Assert.That(assertions.CurrentAssertions, Is.EqualTo(3UL));
+            Assert.That(assertions.AlwaysAssertions, Is.EqualTo(2UL));
+            Assert.That(assertions.GetCurrentAssertion(0),
+                Is.EqualTo(new LocalEqualsLocalAddrAssertion(0, 1, 4)));
+        });
+    }
+
+    [Test]
+    public static void FullLocalAddressAssertionTablesReuseExistingFacts()
+    {
+        WithCompiler(compiler => {
+            _ = Blocks(compiler, BBJ_RETURN);
+            var assertions = CreateLocalAddressAssertions(compiler, Find(compiler));
+
+            for (uint i = 0; i < 64; i++)
+            {
+                assertions.Clear(0);
+                assertions.Record(0, 1, i);
+            }
+
+            Assert.That(assertions.CurrentAssertions, Is.EqualTo(1UL << 63));
+            assertions.Clear(0);
+            assertions.Record(0, 1, 64);
+            Assert.That(assertions.GetCurrentAssertion(0), Is.Null);
+            assertions.Record(0, 1, 17);
+            Assert.That(assertions.CurrentAssertions, Is.EqualTo(1UL << 17));
+
+            compiler.lvaTable[2].lvIsStructField = true;
+            compiler.lvaTable[2].lvParentLcl = 1;
+            assertions.OnExposed(1);
+            Assert.That(assertions.IsMarkedForExposure(2), Is.True);
+        });
+    }
+
+    private static LocalEqualsLocalAddrAssertions CreateLocalAddressAssertions(Compiler compiler, FlowGraphNaturalLoops loops)
+    {
+        compiler._dfsTree = loops.DfsTree;
+        compiler._loops = loops;
+        compiler.lvaCount = 3;
+        compiler.lvaTable = new LclVarDsc[3];
+        return new LocalEqualsLocalAddrAssertions(compiler, new LoopDefinitions(loops));
+    }
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgComputeDfs")]
     private static extern FlowGraphDfsTree ComputeDfs(Compiler compiler, bool useProfile);

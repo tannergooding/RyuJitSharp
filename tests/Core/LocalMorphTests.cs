@@ -392,6 +392,60 @@ internal static unsafe class LocalMorphTests
         }
     }
 
+    [TestCase(0u, GT_LCL_ADDR)]
+    [TestCase(uint.MaxValue, GT_ADD)]
+    public static void EscapedAddressesPreserveUnsignedOffsetsAndUpdateTheirOwners(uint offset, genTreeOps expectedOper)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable[0].Type = TYP_INT;
+            var address = compiler.gtNewLclVarAddrNode(TYP_BYREF, 0);
+            var constant = compiler.gtNewIconNode(TYP_I_IMPL, unchecked((nint)(nuint)offset));
+            var original = compiler.gtNewBinaryNode(GT_ADD, TYP_BYREF, address, constant);
+            var stmt = compiler.gtNewStmt(original);
+            var value = new LocalAddressVisitor.Value(stmt, ref stmt.RootNodeRef, owner: null);
+            value.Address(0, offset);
+            var visitor = new LocalAddressVisitor(compiler);
+            visitor.EscapeValue(ref value, user: null);
+            var result = stmt.RootNode;
+
+            Assert.That(result, Is.Not.SameAs(original));
+            Assert.That(result.Oper, Is.EqualTo(expectedOper));
+            Assert.That(result.Flags, Is.EqualTo(GTF_EMPTY));
+            Assert.That(compiler.lvaTable[0].IsAddressExposed, Is.True);
+
+            if (expectedOper is GT_ADD)
+            {
+                Assert.That(result.AsOp().Op2.AsIntCon().IconValue, Is.EqualTo(unchecked((nint)(nuint)offset)));
+            }
+#if DEBUG
+            Assert.That(result.TreeId, Is.EqualTo(original.TreeId));
+            Assert.That(value.IsConsumed, Is.True);
+#endif
+        });
+    }
+
+    [Test]
+    public static void WideAccessesExposeTheParentOfPromotedFields()
+    {
+        WithCompiler(compiler => {
+            InitializePromotedPair(compiler);
+            var address = compiler.gtNewLclVarAddrNode(TYP_BYREF, 1);
+            var indir = compiler.gtNewIndir(TYP_LONG, address);
+            var stmt = compiler.gtNewStmt(indir);
+            var value = new LocalAddressVisitor.Value(stmt, ref indir.AddrRef, indir);
+            value.Address(1, 0);
+            var visitor = new LocalAddressVisitor(compiler);
+            visitor.ProcessIndirection(ref stmt.RootNodeRef, ref value, user: null);
+
+            Assert.That(stmt.RootNode, Is.SameAs(indir));
+            Assert.That(indir.Addr, Is.Not.SameAs(address));
+            Assert.That(indir.Addr.AsLclFld().LclNum, Is.EqualTo(1));
+            Assert.That(compiler.lvaTable[0].IsAddressExposed, Is.True);
+            Assert.That(compiler.lvaTable[1].IsAddressExposed, Is.True);
+            Assert.That(indir.Flags & GTF_GLOB_REF, Is.EqualTo(GTF_GLOB_REF));
+        });
+    }
+
     [Test]
     public static void EarlyReferenceCountsSaturate()
     {

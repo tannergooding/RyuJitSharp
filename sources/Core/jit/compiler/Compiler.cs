@@ -2159,7 +2159,8 @@ public partial class Compiler
             return false;
         }
 
-        return ((uint)offset < ushort.MaxValue) && ((uint)offset < (uint)lvaLclExactSize(lclNum));
+        var unsignedOffset = unchecked((uint)offset);
+        return (unsignedOffset < ushort.MaxValue) && (unsignedOffset < (uint)lvaLclExactSize(lclNum));
     }
 
     /// <summary>One line log function.</summary>
