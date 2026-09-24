@@ -5,7 +5,7 @@
 
 namespace RyuJitSharp;
 
-internal partial struct LocalAddressVisitor
+internal partial struct LocalAddressVisitor : IGenTreeVisitor<LocalAddressVisitor>
 {
     private readonly Compiler _compiler;
     private readonly bool _sequenceLocals;

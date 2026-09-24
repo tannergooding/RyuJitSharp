@@ -11287,7 +11287,7 @@ public partial class Compiler
 
             var op = compiler.gtNewBinaryNode(oper, type, op1, op2);
 
-            if (varTypeIsIntegral(op.Type) && op1.MayThrow(compiler))
+            if (varTypeIsIntegral(op.Type) && op.MayThrow(compiler))
             {
                 // Special case: integer/long division may throw an exception
                 op.Flags |= GTF_EXCEPT;

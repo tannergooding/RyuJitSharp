@@ -3,13 +3,25 @@
 A newest-first history of what the port can do and how it has developed.
 
 The primary target is Windows x64. The port can import methods, expand inline
-calls, lower heap allocations and construct internal method entry/exit paths,
-but does not yet generate native code. Remaining work includes hardware-intrinsic
-import, later morphing phases and code generation.
+calls, lower heap allocations, simplify local accesses and construct internal
+method entry/exit paths, but does not yet generate native code. Remaining work
+includes hardware-intrinsic import, later morphing phases and code generation.
 
 The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
+
+## 2026-09-23: Active local morphing
+
+Local morph now simplifies indirect accesses to locals and promoted fields,
+tracks escaping addresses, updates early reference counts and rebuilds
+statement effects. Its optimized path propagates local addresses through
+control flow and avoids exposing locals when their address temporaries become
+unread.
+
+Whole-node replacement preserves logical identity and locals-only sequencing
+without changing CLR object types. Required implicit-byref retyping and global
+morphing remain ahead of lowering, register allocation and code generation.
 
 ## 2026-09-23: Required heap allocation lowering
 

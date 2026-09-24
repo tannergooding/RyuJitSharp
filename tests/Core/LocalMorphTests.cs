@@ -527,6 +527,68 @@ internal static unsafe class LocalMorphTests
         });
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void StatementTraversalRewritesIndirectLoadsAndRebuildsEffectsAndLocals(bool sequenceLocals)
+    {
+        WithCompiler(compiler => {
+            compiler.fgNodeThreading = sequenceLocals ? NodeThreading.AllLocals : NodeThreading.None;
+            compiler.lvaTable[0].Type = TYP_INT;
+            compiler.lvaTable[1].Type = TYP_INT;
+            var indir = compiler.gtNewIndir(TYP_INT, compiler.gtNewLclVarAddrNode(TYP_BYREF, 0));
+            var store = compiler.gtNewStoreLclVarNode(1, indir);
+            var stmt = compiler.gtNewStmt(store);
+            var visitor = new LocalAddressVisitor(compiler, sequenceLocals ? new LocalSequencer(compiler) : null);
+            visitor.VisitStmt(stmt);
+
+            Assert.That(visitor.MadeChanges, Is.True);
+            Assert.That(store.Data.Oper, Is.EqualTo(GT_LCL_VAR));
+            Assert.That(store.Data.AsLclVar().LclNum, Is.Zero);
+            Assert.That(store.Flags & GTF_EXCEPT, Is.EqualTo(GTF_EMPTY));
+            Assert.That(store.Flags & GTF_ASG, Is.EqualTo(GTF_ASG));
+            Assert.That(compiler.lvaTable[0].IsAddressExposed, Is.False);
+            Assert.That(compiler.lvaTable[0].lvRefCnt(RCS_EARLY), Is.EqualTo(1));
+
+            if (sequenceLocals)
+            {
+                Assert.That(stmt.TreeListBegin, Is.SameAs(store.Data));
+                Assert.That(stmt.TreeListEnd, Is.SameAs(store));
+                Assert.That(store.Data.Next, Is.SameAs(store));
+                Assert.That(store.Prev, Is.SameAs(store.Data));
+            }
+#if DEBUG
+            Assert.That(store.Data.TreeId, Is.EqualTo(indir.TreeId));
+#endif
+        }, minOpts: true);
+    }
+
+    [Test]
+    public static void AddressDifferencesReplaceSequencedRootsWithoutExposingTheLocal()
+    {
+        WithCompiler(compiler => {
+            compiler.fgNodeThreading = NodeThreading.AllLocals;
+            compiler.lvaTable[0].Type = TYP_INT;
+            var lhs = new GenTreeLclFld(GT_LCL_ADDR, TYP_BYREF, 0, 3);
+            var rhs = new GenTreeLclFld(GT_LCL_ADDR, TYP_BYREF, 0, 0);
+            var difference = compiler.gtNewBinaryNode(GT_SUB, TYP_BYREF, lhs, rhs);
+            difference._vnPair.SetBoth(42);
+            var stmt = compiler.gtNewStmt(difference);
+            var visitor = new LocalAddressVisitor(compiler, new LocalSequencer(compiler));
+            visitor.VisitStmt(stmt);
+
+            Assert.That(stmt.RootNode.Oper, Is.EqualTo(GT_CNS_INT));
+            Assert.That(stmt.RootNode.Type, Is.EqualTo(TYP_I_IMPL));
+            Assert.That(stmt.RootNode.AsIntCon().IconValue, Is.EqualTo((nint)3));
+            Assert.That(stmt.RootNode._vnPair.Liberal, Is.EqualTo(ValueNumStore.NoVN));
+            Assert.That(stmt.TreeListBegin, Is.Null);
+            Assert.That(stmt.TreeListEnd, Is.Null);
+            Assert.That(compiler.lvaTable[0].IsAddressExposed, Is.False);
+#if DEBUG
+            Assert.That(stmt.RootNode.TreeId, Is.EqualTo(difference.TreeId));
+#endif
+        });
+    }
+
     private static void WithCompiler(Action<Compiler> action, bool minOpts = false)
     {
 #if DEBUG

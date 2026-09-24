@@ -88,6 +88,16 @@ internal static class PortingCorpus
             return 15;
         }
 
+        if (LocalAddressStore(0x12340000) != 0x12340007)
+        {
+            return 16;
+        }
+
+        if (LocalAddressDifference(5) != 3)
+        {
+            return 17;
+        }
+
         return 0;
     }
 
@@ -200,4 +210,21 @@ internal static class PortingCorpus
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int InlineCandidate(int value) => value * 2;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static unsafe int LocalAddressStore(int value)
+    {
+        var local = value;
+        var address = (short*)&local;
+        *address = 7;
+        return local;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static unsafe long LocalAddressDifference(int value)
+    {
+        var local = value;
+        var address = (byte*)&local;
+        return address + 3 - address;
+    }
 }

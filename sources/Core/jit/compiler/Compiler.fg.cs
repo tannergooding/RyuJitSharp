@@ -15531,8 +15531,195 @@ public partial class Compiler
     // TODO: Port phase - fgForwardSub
     private PhaseStatus fgForwardSub() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port phase - fgLocalMorph
-    private PhaseStatus fgLocalMorph() => PhaseStatus.MODIFIED_NOTHING;
+#if DEBUG
+    private static ConfigMethodRange s_localAddrPropagationRange;
+#endif
+
+    private unsafe PhaseStatus fgLocalMorph()
+    {
+        bool madeChanges;
+
+        if (opts.OptimizationDisabled)
+        {
+            var visitor = new LocalAddressVisitor(this);
+
+            foreach (var block in Blocks)
+            {
+                visitor.VisitBlock(block);
+            }
+
+            madeChanges = visitor.MadeChanges;
+        }
+        else
+        {
+            _blockToEHPreds = null;
+            var dfs = _dfsTree;
+            assert(dfs is not null);
+            _loops = FlowGraphNaturalLoops.Find(dfs);
+            var loopDefs = new LoopDefinitions(_loops);
+            var assertions = new LocalEqualsLocalAddrAssertions(this, loopDefs);
+            var activeAssertions = assertions;
+#if DEBUG
+            s_localAddrPropagationRange.EnsureInit(JitConfig.JitEnableLocalAddrPropagationRange);
+
+            if (!s_localAddrPropagationRange.Contains(info.compMethodHash()))
+            {
+                activeAssertions = null;
+            }
+#endif
+            var visitor = new LocalAddressVisitor(this, new LocalSequencer(this), activeAssertions);
+
+            for (var i = dfs.PostOrderCount; i != 0; i--)
+            {
+                visitor.VisitBlock(dfs.GetPostOrder(i - 1));
+            }
+
+            madeChanges = visitor.MadeChanges;
+            madeChanges |= fgExposeUnpropagatedLocals(visitor.PropagatedAnyAddresses, assertions);
+        }
+
+        return madeChanges ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
+    }
+
+    private bool fgExposeUnpropagatedLocals(bool propagatedAny, LocalEqualsLocalAddrAssertions assertions)
+    {
+        if (!propagatedAny)
+        {
+            fgExposeLocalsInBitVec(assertions.GetLocalsToExpose());
+            return false;
+        }
+
+        var traits = new BitVecTraits(this, lvaCount);
+        var unreadLocals = assertions.GetLocalsWithAssertions();
+        var stores = new List<(Statement Statement, GenTreeLclVarCommon Tree)>();
+        var dfs = _dfsTree;
+        assert(dfs is not null);
+
+        for (var i = dfs.PostOrderCount; i != 0; i--)
+        {
+            foreach (var stmt in dfs.GetPostOrder(i - 1).Statements)
+            {
+                foreach (var local in stmt.LocalsTreeList)
+                {
+                    if (!BitVecOps.IsMember(traits, unreadLocals, local.LclNum))
+                    {
+                        continue;
+                    }
+
+                    if (local.Oper is GT_STORE_LCL_VAR or GT_STORE_LCL_FLD)
+                    {
+                        if ((local.Type is TYP_I_IMPL or TYP_BYREF) && ((local.Data.Flags & GTF_SIDE_EFFECT) == 0))
+                        {
+                            stores.Add((stmt, local));
+                        }
+                    }
+                    else
+                    {
+                        BitVecOps.RemoveElemD(traits, unreadLocals, local.LclNum);
+                    }
+                }
+            }
+        }
+
+        if (BitVecOps.IsEmpty(traits, unreadLocals))
+        {
+            JITDUMP("No destinations of propagated LCL_ADDR nodes are unread\n");
+            fgExposeLocalsInBitVec(assertions.GetLocalsToExpose());
+            return false;
+        }
+
+        var changed = false;
+
+        foreach (var store in stores)
+        {
+            assert(store.Tree.Type is TYP_I_IMPL or TYP_BYREF);
+
+            if (BitVecOps.IsMember(traits, unreadLocals, store.Tree.LclNum))
+            {
+#if DEBUG
+                JITDUMP($"V{store.Tree.LclNum:D2} is unread; removing store data of [{store.Tree.TreeId:D6}]\n");
+                DISPTREE(store.Tree);
+#endif
+                var data = store.Tree.Data;
+                var constant = new GenTreeIntCon(data.Type, 0, fields: null, data, NodeThreading.AllLocals);
+                constant._vnPair.SetBoth(ValueNumStore.NoVN);
+                store.Tree.DataRef = constant;
+                // Rebuild the entire list immediately; no transient link transfer
+                // is needed between this owner update and resequencing.
+                fgSequenceLocals(store.Statement);
+#if DEBUG
+                JITDUMP("\nResult:\n");
+                DISPTREE(store.Tree);
+                JITDUMP("\n");
+#endif
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            var exposedLocals = BitVecOps.MakeEmpty(traits);
+
+            for (var i = dfs.PostOrderCount; i != 0; i--)
+            {
+                foreach (var stmt in dfs.GetPostOrder(i - 1).Statements)
+                {
+                    foreach (var local in stmt.LocalsTreeList)
+                    {
+                        if (local.Oper is not GT_LCL_ADDR)
+                        {
+                            continue;
+                        }
+
+                        ref var varDsc = ref lvaGetDesc(local.LclNum);
+                        var exposedLclNum = varDsc.lvIsStructField ? varDsc.lvParentLcl : local.LclNum;
+                        BitVecOps.AddElemD(traits, exposedLocals, exposedLclNum);
+                    }
+                }
+            }
+
+            // Retbuf addresses are definitions, not necessarily exposures.
+            // Preserve native's intersection until that distinction is tracked here.
+            BitVecOps.IntersectionD(traits, exposedLocals, assertions.GetLocalsToExpose());
+#if DEBUG
+            void DumpVars(BitVec values, BitVec other)
+            {
+                var separator = "";
+
+                for (var lclNum = 0; lclNum < lvaCount; lclNum++)
+                {
+                    if (BitVecOps.IsMember(traits, values, lclNum))
+                    {
+                        JITDUMP($"{separator}V{lclNum:D2}");
+                        separator = " ";
+                    }
+                    else if (BitVecOps.IsMember(traits, other, lclNum))
+                    {
+                        JITDUMP($"{separator}   ");
+                        separator = " ";
+                    }
+                }
+            }
+
+            JITDUMP("Old exposed set: ");
+            DumpVars(assertions.GetLocalsToExpose(), exposedLocals);
+            JITDUMP("\nNew exposed set: ");
+            DumpVars(exposedLocals, assertions.GetLocalsToExpose());
+            JITDUMP("\n");
+#endif
+            fgExposeLocalsInBitVec(exposedLocals);
+        }
+
+        return changed;
+    }
+
+    private void fgExposeLocalsInBitVec(BitVec locals)
+    {
+        _ = BitVecOps.VisitBits(new BitVecTraits(this, lvaCount), locals, lclNum => {
+            lvaSetVarAddrExposed(lclNum, AddressExposedReason.ESCAPE_ADDRESS);
+            return true;
+        });
+    }
 
     /// <summary>Unpin locals whose every definition produces a non-movable value.</summary>
     private PhaseStatus fgUnpinNonMovableLocals()

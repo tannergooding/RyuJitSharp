@@ -12,10 +12,10 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Advance required local morph (B143) toward minopts/Tier-0-level code generation, then implicit-byref/global morph, lowering and code generation. B141 heap allocation lowering is active; optional stack-allocation analysis remains explicitly unsupported.",
+      "scope": "Port required implicit-byref retyping after active local morph, then advance global morph toward minopts/Tier-0-level code generation. Optional stack-allocation analysis and early optimized flow-graph cleanup remain outside this batch.",
       "doneWhen": [
-        "Trace lclmorph.cpp::fgLocalMorph against the managed stub and port its required local-address exposure and local-tree transformation dependencies.",
-        "Preserve local ownership, address-exposure flags, early reference counts and diagnostic ordering.",
+        "Trace fgRetypeImplicitByRefArgs against the pinned oracle and port the complete function and required dependency closure.",
+        "Preserve argument ABI, local ownership, promotion state, address-exposure flags and diagnostic ordering.",
         "Continue required local/global morph, lowering and code generation rather than filling optional adjacent optimization phases.",
         "Validate and retire complete definitions; commit coherent portions and publish execution milestones without stopping at them."
       ],
@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Implement LocalAddressVisitor traversal (native lclmorph.cpp:901-1452), its store/load assertion hooks (2246-2294), then fgLocalMorph (2380-2434) and its fgExposeUnpropagatedLocals dependency. EscapeValue/EscapeAddress/ProcessIndirection/MorphLocalAddress, all local transforms, LoopDefinitions and LocalEqualsLocalAddrAssertions are complete and validated; do not re-investigate them. Use the existing owning-slot Value, source-based replacement constructors and LocalSequencer.ReplaceNode; refresh cached node aliases after replacements. Traversal needs a value stack with ref access, statement context for root owning slots and owned sequencer state. SUB-to-constant needs an explicit locals-only constant replacement constructor, not a weakened unthreaded assertion. The loop-definition map preserves native hash bucket/growth/rehash order; do not replace it with dictionary enumeration. Consolidate native helper/visitor retirement after traversal/activation. fgLocalMorph remains a stub. Keep minopts execution first; defer B142/B135 diagnostics and B145 existing SIMD overflow failures.",
+    "nextAction": "Finish the local-morph activation commit and milestone push, then start the fgRetypeImplicitByRefArgs stub in Compiler.fg.cs against the pinned oracle. B143 traversal, optimized assertions, deferred exposure and statement effects are active and retired from the residual ledger. New local-address store/subtraction cases match exact phase text and emitted IR in both configurations; minopts is 18/19 exact phases and optimized 15/18, with hardware import and B147 early CFG cleanup still divergent. B148 importer exception flags are fixed and recaptured. Do not recapture unchanged local morph or reopen its ownership design. Keep required implicit-byref/global morph ahead of B135/B142 diagnostics, B145 SIMD conversions and B147 optional early CFG cleanup. B149 unsigned checked multiplication is separately recorded.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -1070,9 +1070,33 @@
         "visitorActivated": false,
         "nativeAotRecaptured": false
       },
-      "nativeAotPublish": "passed-after-heap-allocation-activation",
+      "localMorphActivation": {
+        "debugPassed": 256,
+        "releasePassed": 250,
+        "skipped": 0,
+        "selection": ["LocalMorphTests", "NaturalLoopTests", "ScalarFoldingTests", "AllocationLoweringTests", "ImporterEffectsTests"],
+        "debugTests": "artifacts\\local-morph-activation-debug.trx",
+        "releaseTests": "artifacts\\local-morph-activation-release.trx",
+        "managedSource": "a8840d47f2144343aa9078bad02218575d8eee6b",
+        "managedBinary": "artifacts\\local-morph-fixed-jit\\RyuJitSharp.dll",
+        "nativeMinopts": "artifacts\\local-morph-expanded-native-minopts",
+        "nativeOptimized": "artifacts\\local-morph-expanded-native-optimized",
+        "managedMinopts": "artifacts\\local-morph-fixed-managed-minopts",
+        "managedOptimized": "artifacts\\local-morph-fixed-managed-optimized",
+        "minopts": { "methods": 19, "exactPhaseSections": 18, "nativeEmittedIRSections": 4, "managedEmittedIRSections": 5, "exactEmittedIRSections": 4 },
+        "optimized": { "methods": 18, "exactPhaseSections": 15, "nativeEmittedIRSections": 4, "managedEmittedIRSections": 5, "exactEmittedIRSections": 4 },
+        "newCasesWithExactPhaseAndIR": ["LocalAddressStore", "LocalAddressDifference"],
+        "comparison": "Case-sensitive, preserving IDs, flags, whitespace and CR/LF. IR presence is compared as well as its content. Optimized captures disable object stack allocation.",
+        "remainingDifferences": ["FoldHardware has different input IR because intrinsic import is incomplete.", "Optimized Main and ManyReturns retain extra blocks from the unported early flow-graph update (B147)."],
+        "correctedCaptureFailure": "B148: arithmetic import queried the left operand instead of the new operation for exception effects. LocalAddressDifference failed before the correction.",
+        "nativeDefinitionsRetired": ["LoopDefinitions", "LocalEqualsLocalAddrAssertion", "AssertionKeyFuncs", "LocalEqualsLocalAddrAssertions", "LocalAddressVisitor", "Compiler::fgLocalMorph", "Compiler::fgExposeUnpropagatedLocals", "Compiler::fgExposeLocalsInBitVec", "Compiler::gtUpdateStmtSideEffects"],
+        "nativeDeclarationsRetired": 3,
+        "managedCodegen": false,
+        "compilationResult": "Every selected managed method reaches Method code size: 0; successful corpus execution still uses native fallback."
+      },
+      "nativeAotPublish": "passed-after-local-morph-activation",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
-      "phaseDumpParity": "all-seventeen-minopts-allocation-and-internal-block-phase-sections-and-all-emitted-post-phase-IR-sections-equal",
+      "phaseDumpParity": "local-morph-minopts-18-of-19-and-optimized-15-of-18-exact-phase-sections; both-new-local-address-cases-have-exact-phase-and-emitted-IR; remaining-input-gaps-are-not-normalized",
       "codegenParity": "not-available"
     }
   },
@@ -1551,6 +1575,15 @@
       "indexCommit": "70120f602b5e2d9dcf3a9020ce65f9ee521192db",
       "ref": "refs/porting/snapshots/native-ledger-local-indir"
     },
+    "localMorphManagedSource": {
+      "commit": "a8840d47f2144343aa9078bad02218575d8eee6b",
+      "ref": "refs/porting/snapshots/local-morph-activation-fixed-source"
+    },
+    "localMorphNativeResidual": {
+      "commit": "597027d403c686dc1153d31180811037f21962ae",
+      "indexCommit": "eefb05679499249b76a3692ad4bdbba271edb5b4",
+      "ref": "refs/porting/snapshots/native-ledger-local-morph"
+    },
     "internalBlockPhaseNativeResidual": {
       "commit": "494ccbc0132fcf507b8133bffa2fef635d788858",
       "indexCommit": "343e35183b190e9bccb68af25de8c3b499e6bf1e",
@@ -1592,11 +1625,18 @@
   },
   "sourceMap": [
     {
+      "area": "local-morph-activation",
+      "native": ["src\\coreclr\\jit\\lclmorph.cpp", "src\\coreclr\\jit\\gentree.cpp"],
+      "csharp": ["sources\\Core\\jit\\lclmorph\\LocalAddressVisitor.cs", "sources\\Core\\jit\\lclmorph\\LocalAddressVisitor.Traversal.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.cs", "sources\\Core\\jit\\compiler\\Compiler.UpdateSideEffectsWalker.cs"],
+      "reconciledCommit": null,
+      "status": "Complete local-address visitor, local-morph phase, deferred exposure helpers and statement-effect recomputation at the pinned target. Whole-node replacement is locals-only, not LIR. Other functions in the native files remain independently tracked."
+    },
+    {
       "area": "local-address-assertions-and-loop-definitions",
       "native": ["src\\coreclr\\jit\\lclmorph.cpp", "src\\coreclr\\jit\\jithashtable.h", "src\\coreclr\\jit\\jithashtable.cpp"],
       "csharp": ["sources\\Core\\jit\\lclmorph\\LocalEqualsLocalAddrAssertions.cs", "sources\\Core\\jit\\lclmorph\\LoopDefinitions.cs"],
       "reconciledCommit": null,
-      "status": "Complete local-address assertion bookkeeping and loop-definition collection. The local-number set specializes native JitHashTable ordering with its exact capacity schedule; the general hash-table API and the local-morph visitor/phase are not claimed complete."
+      "status": "Complete local-address assertion bookkeeping and loop-definition collection, now used by the active local-morph phase. The local-number set specializes native JitHashTable ordering with its exact capacity schedule; the general hash-table API is not claimed complete."
     },
     {
       "area": "local-indirection-vector-construction",

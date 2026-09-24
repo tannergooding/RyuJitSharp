@@ -17026,6 +17026,12 @@ public partial class Compiler
         return gtNewCommaNode(TYP_VOID, expr, gtNewNothingNode());
     }
 
+    public void gtUpdateStmtSideEffects(Statement stmt)
+    {
+        var walker = new UpdateSideEffectsWalker(this);
+        _ = walker.WalkTree(ref stmt.RootNodeRef, user: null);
+    }
+
     /// <summary>Update the side effects based on the node operation.</summary>
     /// <param name="tree">Tree to update the side effects on</param>
     /// <remarks>

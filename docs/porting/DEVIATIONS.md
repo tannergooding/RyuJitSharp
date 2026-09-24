@@ -95,8 +95,10 @@ locals-only threading; the existing unthreaded constructor contract is unchanged
 `LocalSequencer.ReplaceNode` transfers transient links and the append cursor,
 including root-sentinel self-links, before the visitor installs the replacement
 in its owning slot. Replacements preserve logical IDs, clear VNs and apply the
-native `SetOper`/`ChangeOper` flag policy. This does not support LIR replacement
-or activate the unfinished local-morph phase.
+native `SetOper`/`ChangeOper` flag policy. The complete local-morph traversal and
+phase now use this contract; it does not support LIR replacement. Deferred
+exposure cleanup replaces an unread store's data and immediately rebuilds the
+whole statement's locals list instead of transferring transient links.
 
 Local-address assertions use a value-record key, a lookup-only dictionary and an
 insertion-ordered assertion list; dictionary enumeration is not observable.
