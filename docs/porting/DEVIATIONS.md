@@ -44,6 +44,12 @@ C# helpers may replace native structure where appropriate. Examples include
 collection ordering, integer semantics, ownership, and native interop contracts.
 Larger algorithmic or architectural changes require separate approval.
 
+`ILLocation` stores the bitwise complement of its IL offset so that
+zero-initialized C# values, including locations embedded in `default(DebugInfo)`,
+represent the native invalid offset. Explicit offsets and source flags retain
+their original values through the public API. This avoids adding a validity
+field or incorrectly assigning compiler-generated statements to IL offset zero.
+
 Whole-node replacement instead of native cross-kind node bashing is an explicitly
 approved safety and idiomatic-C# deviation. Keep the managed type hierarchy;
 adapt callers to accept replacement nodes and update all owning uses, cached

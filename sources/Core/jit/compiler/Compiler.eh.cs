@@ -386,7 +386,7 @@ public partial class Compiler
     public void dispIncomingEHClause(ushort num, in CORINFO_EH_CLAUSE clause)
     {
         jitprintf($"EH clause #{num}:\n");
-        jitprintf($"  Flags:         0x{clause.Flags:x}");
+        jitprintf($"  Flags:         0x{(uint)clause.Flags:x}");
 
         // Note: the flags field is kind of weird. It should be compared for equality to determine the type of clause, even though it looks like a bitfield.
         // In particular, CORINFO_EH_CLAUSE_NONE is zero, so you can't use "&" to check it.

@@ -7,7 +7,8 @@ namespace RyuJitSharp;
 
 public readonly struct ILLocation
 {
-    private readonly IL_OFFSET _offset = BAD_IL_OFFSET;
+    // Complementing the offset makes default(ILLocation) invalid, like the native constructor.
+    private readonly IL_OFFSET _encodedOffset;
     private readonly ICorDebugInfo.SourceTypes _sourceTypes;
 
     public ILLocation()
@@ -16,7 +17,7 @@ public readonly struct ILLocation
 
     public ILLocation(IL_OFFSET offset, ICorDebugInfo.SourceTypes sourceTypes)
     {
-        _offset = offset;
+        _encodedOffset = ~offset;
         _sourceTypes = sourceTypes;
     }
 
@@ -26,9 +27,9 @@ public readonly struct ILLocation
     public bool IsCallInstruction
         => (_sourceTypes & ICorDebugInfo.CALL_INSTRUCTION) != 0;
 
-    public bool IsValid => _offset != BAD_IL_OFFSET;
+    public bool IsValid => _encodedOffset != 0;
 
-    public IL_OFFSET Offset => _offset;
+    public IL_OFFSET Offset => ~_encodedOffset;
 
     public ICorDebugInfo.SourceTypes SourceTypes => _sourceTypes;
 

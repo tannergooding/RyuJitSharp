@@ -228,6 +228,16 @@ public partial class Compiler
 
     public ref VarScopeDsc compEnterScopeList(int index) => ref info.compVarScopes[index];
 
+    public bool compMethodRequiresPInvokeFrame => info.compUnmanagedCallCountWithGCTransition > 0;
+
+#if PROFILING_SUPPORTED
+    // Match the VM's exclusion of IL stubs, including when hooks are stressed.
+    public unsafe bool compIsProfilerHookNeeded
+        => compProfilerHookNeeded || (opts.compJitELTHookEnabled && !opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB));
+#else
+    public bool compIsProfilerHookNeeded => false;
+#endif
+
     public int compNextEnterScopeIndex;
 
     /// <summary>List has the offsets where variables go out of scope, sorted by instr offset</summary>

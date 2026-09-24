@@ -11,6 +11,11 @@ First finish reconciling already ported code and the native residual tree with
 the pinned upstream `main` revision. Then reconcile and resume the preserved WIP.
 Only after that, start new phase porting, prioritizing required Windows-x64
 minopts transformations toward code generation over optional optimizations.
+The next execution goal is managed minopts/Tier-0-level code generation, not
+completion of every optimization dependency. Once that path emits and executes
+code, fill out Tier-1 optimizations and the remaining areas. Required shared
+functions still need complete implementations; optional neighboring phases do
+not become prerequisites merely because they are adjacent.
 Do not expand synchronization into implementing every currently unported phase:
 record those boundaries accurately and reconcile existing implementations.
 

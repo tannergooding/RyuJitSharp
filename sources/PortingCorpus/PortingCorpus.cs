@@ -2,13 +2,14 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
 namespace RyuJitSharp;
 
 internal static class PortingCorpus
 {
-    public static int Main()
+    public static unsafe int Main()
     {
         if (Add(4, 7) != 11)
         {
@@ -60,6 +61,33 @@ internal static class PortingCorpus
             return 10;
         }
 
+        if (SynchronizedReturn(5) != 6)
+        {
+            return 11;
+        }
+
+        if (GenericCatch<InvalidOperationException>(new InvalidOperationException()) != 17)
+        {
+            return 12;
+        }
+
+        if (OperatingSystem.IsWindows() && (PInvokeCall() == 0))
+        {
+            return 13;
+        }
+
+        delegate* unmanaged<int, int> reversePInvoke = &ReversePInvoke;
+
+        if (reversePInvoke(5) != 6)
+        {
+            return 14;
+        }
+
+        if ((ManyReturns(0) != 10) || (ManyReturns(4) != 50) || (ManyReturns(9) != 60))
+        {
+            return 15;
+        }
+
         return 0;
     }
 
@@ -106,6 +134,69 @@ internal static class PortingCorpus
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int FoldHardware(int value) => (Vector128.Create(3) + Vector128.Create(4)).ToScalar() + value;
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Synchronized)]
+    public static int SynchronizedReturn(int value) => value + 1;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int GenericCatch<TException>(Exception exception) where TException : Exception
+    {
+        try
+        {
+            throw exception;
+        }
+        catch (TException)
+        {
+            return 17;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static uint PInvokeCall() => GetCurrentProcessId();
+
+    [DllImport("kernel32.dll", ExactSpelling = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static extern uint GetCurrentProcessId();
+
+    [UnmanagedCallersOnly]
+    public static int ReversePInvoke(int value) => value + 1;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int ManyReturns(int value)
+    {
+        switch (value)
+        {
+            case 0:
+            {
+                return 10;
+            }
+
+            case 1:
+            {
+                return 20;
+            }
+
+            case 2:
+            {
+                return 30;
+            }
+
+            case 3:
+            {
+                return 40;
+            }
+
+            case 4:
+            {
+                return 50;
+            }
+
+            default:
+            {
+                return 60;
+            }
+        }
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int InlineCandidate(int value) => value * 2;

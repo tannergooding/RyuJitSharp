@@ -7,7 +7,8 @@ param(
     [string] $ManagedJit = "",
     [string] $ManagedSource = "",
     [string] $TypeName = "RyuJitSharp.PortingCorpus",
-    [string[]] $ExpectedMethods = @("Main", "Add", "Branch", "Locals", "Call", "InlineCaller", "IndirectCall", "FoldConstants", "FoldFloating", "FoldInteger", "FoldHardware"),
+    [string[]] $ExpectedMethods = @("Main", "Add", "Branch", "Locals", "Call", "InlineCaller", "IndirectCall", "FoldConstants", "FoldFloating", "FoldInteger", "FoldHardware",
+        "SynchronizedReturn", "GenericCatch", "PInvokeCall", "ReversePInvoke", "ManyReturns"),
     [ValidateRange(1, 3600)][int] $TimeoutSeconds = 120
 )
 
@@ -140,7 +141,7 @@ if ($methodHeaders.Count -ne $ExpectedMethods.Count) {
     throw "Expected $($ExpectedMethods.Count) selected compilation headers, got $($methodHeaders.Count); see $OutputDirectory"
 }
 foreach ($method in $ExpectedMethods) {
-    $pattern = $typePattern + [regex]::Escape($method) + '\('
+    $pattern = $typePattern + [regex]::Escape($method) + '(?:\[[^\r\n]*\])?\('
     if (@($methodHeaders | Where-Object { $_ -cmatch $pattern }).Count -ne 1) {
         throw "Expected exactly one compilation dump for $method; see $OutputDirectory"
     }

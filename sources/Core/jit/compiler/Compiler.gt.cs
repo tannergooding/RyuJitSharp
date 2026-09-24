@@ -2549,7 +2549,7 @@ public partial class Compiler
                 if (tree.Oper is GT_RUNTIMELOOKUP)
                 {
                     var runtimeLookup = tree.AsRuntimeLookup();
-                    jitprintf($" 0x{dspPtr(runtimeLookup.Handle):x}");
+                    jitprintf($" {FMT_PTR((void*)dspPtr(runtimeLookup.Handle))}");
 
                     switch (runtimeLookup.HandleType)
                     {

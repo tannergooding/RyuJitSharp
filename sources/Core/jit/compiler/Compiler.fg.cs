@@ -7750,7 +7750,7 @@ public partial class Compiler
                     var switchTargets = curBBdesc.SwitchTargets;
                     var cases = switchTargets.Cases;
                     var caseOffsets = switchTargets.CaseOffsets;
-                    var succs = switchTargets.Succs;
+                    var succs = new FlowEdge[caseOffsets.Length];
                     var numUnique = 0;
 
                     for (var i = 0; i < caseOffsets.Length; i++)
@@ -7775,6 +7775,7 @@ public partial class Compiler
                         }
                     }
 
+                    switchTargets.SetSuccs(succs);
                     switchTargets.SetSuccCount(numUnique);
 
                     // Default case of CEE_SWITCH (next block), is at end of cases[]
@@ -12956,8 +12957,515 @@ public partial class Compiler
         }
     }
 
-    // TODO: Port phase - fgAddInternal
-    public PhaseStatus fgAddInternal() => PhaseStatus.MODIFIED_NOTHING;
+    public unsafe bool fgCreateFiltersForGenericExceptions()
+    {
+        var madeChanges = false;
+
+        for (ushort ehNum = 0; ehNum < compHndBBtabCount; ehNum++)
+        {
+            ref var eh = ref ehGetDsc(ehNum);
+
+            if (eh.ebdHandlerType != EH_HANDLER_CATCH)
+            {
+                continue;
+            }
+
+            var resolvedToken = new CORINFO_RESOLVED_TOKEN {
+                tokenContext = impTokenLookupContextHandle,
+                tokenScope = info.compScopeHnd,
+                token = (int)eh.ebdTyp,
+                tokenType = CORINFO_TOKENKIND_Casting,
+            };
+            info.compCompHnd->resolveToken(&resolvedToken);
+
+            CORINFO_GENERICHANDLE_RESULT embedInfo;
+            info.compCompHnd->embedGenericHandle(&resolvedToken, true, info.compMethodHnd, &embedInfo);
+
+            if (!embedInfo.lookup.lookupKind.needsRuntimeLookup)
+            {
+                continue;
+            }
+
+            var handlerBb = eh.ebdHndBeg;
+            var filterBb = BasicBlock.New(this);
+            var firstStmt = handlerBb.FirstStmt;
+            assert(firstStmt is not null);
+
+            // CATCH_ARG must be evaluated before the runtime type lookup.
+            GenTree arg = new GenTree(GT_CATCH_ARG, TYP_REF) {
+                HasOrderingSideEffect = true,
+            };
+            var tempNum = lvaGrabTemp(shortLifetime: false, "SpillCatchArg");
+            lvaGetDesc(tempNum).Type = TYP_REF;
+            var argStore = gtNewTempStore(tempNum, arg);
+            arg = gtNewLclvNode(TYP_REF, tempNum);
+            fgInsertStmtAtBeg(filterBb, gtNewStmt(argStore, firstStmt.DebugInfo));
+
+            GenTree runtimeLookup;
+
+            if (embedInfo.lookup.runtimeLookup.indirections == CORINFO_USEHELPER)
+            {
+                assert(IsAot);
+                var ctxTree = getRuntimeContextTree(embedInfo.lookup.lookupKind.runtimeLookupKind);
+                runtimeLookup = gtNewRuntimeLookupHelperCallNode(embedInfo.lookup.runtimeLookup, ctxTree, null);
+            }
+            else
+            {
+                runtimeLookup = getTokenHandleTree(resolvedToken, parent: true);
+            }
+
+            var isInstOfT = gtNewHelperCallNode(TYP_INT, CORINFO_HELP_ISINSTANCEOF_EXCEPTION, runtimeLookup, arg);
+            var retFilt = gtNewUnaryNode(GT_RETFILT, TYP_INT, isInstOfT);
+
+            fgInsertBBbefore(handlerBb, filterBb);
+            var newEdge = fgAddRefPred(handlerBb, filterBb);
+            filterBb.SetKindAndTargetEdge(BBJ_EHFILTERRET, newEdge);
+            fgInsertStmtAtEnd(filterBb, gtNewStmt(retFilt, firstStmt.DebugInfo));
+
+            filterBb.CatchType = BBCT_FILTER;
+            filterBb.bbCodeOffs = handlerBb.bbCodeOffs;
+            filterBb.bbHndIndex = handlerBb.bbHndIndex;
+            filterBb.bbTryIndex = handlerBb.bbTryIndex;
+            filterBb.inheritWeightPercentage(handlerBb, 0);
+            filterBb.SetFlags(BBF_INTERNAL | BBF_DONT_REMOVE);
+
+            handlerBb.CatchType = BBCT_FILTER_HANDLER;
+            eh.ebdHandlerType = EH_HANDLER_FILTER;
+            eh.ebdFilter = filterBb;
+
+#if DEBUG
+            if (verbose)
+            {
+                JITDUMP($"EH{ehNum}: Adding EH filter block {FMT_BB(filterBb.bbNum)} in front of generic handler {FMT_BB(handlerBb.bbNum)}:\n");
+                fgDumpBlock(filterBb);
+            }
+#endif
+            madeChanges = true;
+        }
+
+        return madeChanges;
+    }
+
+    public void fgAddSyncMethodEnterExit()
+    {
+        assert((info.compFlags & CORINFO_FLG_SYNCH) != 0);
+        assert(!fgFuncletsCreated);
+        assert(fgPredsComputed);
+        assert(fgFirstBB is not null);
+
+        var tryBegBB = fgSplitBlockAtBeginning(fgFirstBB);
+        var tryLastBB = fgLastBB;
+        assert(tryLastBB is not null);
+        var faultBB = fgNewBBafter(BBJ_EHFAULTRET, tryLastBB, extendRegion: false);
+
+        assert(tryLastBB.Next == faultBB);
+        assert(faultBB.IsLast);
+        assert(faultBB == fgLastBB);
+        faultBB.bbRefs = 1;
+
+        // The wrapper is the least-nested EH region, after all user regions.
+        var XTnew = compHndBBtabCount;
+        var newEntryIndex = fgTryAddEHTableEntries(XTnew);
+
+        if (newEntryIndex < 0)
+        {
+            IMPL_LIMITATION("too many exception clauses");
+        }
+
+        ref var newEntry = ref compHndBBtab[newEntryIndex];
+        newEntry.ebdID = impInlineRoot.compEHID++;
+        newEntry.ebdHandlerType = EH_HANDLER_FAULT;
+        newEntry.ebdTryBeg = tryBegBB;
+        newEntry.ebdTryLast = tryLastBB;
+        newEntry.ebdHndBeg = faultBB;
+        newEntry.ebdHndLast = faultBB;
+        newEntry.ebdTyp = 0;
+        newEntry.ebdEnclosingTryIndex = EHblkDsc.NO_ENCLOSING_INDEX;
+        newEntry.ebdEnclosingHndIndex = EHblkDsc.NO_ENCLOSING_INDEX;
+        newEntry._ebdTryBegOffset = tryBegBB.bbCodeOffs;
+        newEntry._ebdTryEndOffset = tryLastBB.bbCodeOffsEnd;
+        newEntry._ebdFilterBegOffset = 0;
+        newEntry._ebdHndBegOffset = 0;
+        newEntry._ebdHndEndOffset = 0;
+
+        tryBegBB.SetFlags(BBF_DONT_REMOVE | BBF_IMPORTED);
+        faultBB.SetFlags(BBF_DONT_REMOVE | BBF_IMPORTED);
+        faultBB.CatchType = BBCT_FAULT;
+        tryBegBB.TryIndex = XTnew;
+        tryBegBB.clearHndIndex();
+        faultBB.clearTryIndex();
+        faultBB.HndIndex = XTnew;
+
+        for (var tmpBB = tryBegBB.Next; tmpBB != faultBB; tmpBB = tmpBB.Next)
+        {
+            assert(tmpBB is not null);
+
+            if (!tmpBB.hasTryIndex)
+            {
+                tmpBB.TryIndex = XTnew;
+            }
+        }
+
+        for (var XTnum = 0; XTnum < XTnew; XTnum++)
+        {
+            ref var entry = ref compHndBBtab[XTnum];
+
+            if (entry.ebdEnclosingTryIndex == EHblkDsc.NO_ENCLOSING_INDEX)
+            {
+                entry.ebdEnclosingTryIndex = XTnew;
+            }
+        }
+
+#if DEBUG
+        if (verbose)
+        {
+            JITDUMP($"Synchronized method - created additional EH descriptor EH#{XTnew} for try/fault wrapping monitor enter/exit\n");
+            fgDispBasicBlocks();
+            fgDispHandlerTab();
+        }
+
+        fgVerifyHandlerTab();
+#endif
+        // EnC reserves a frame-header slot, above PSP on ARM64. Use a full
+        // pointer-sized slot for the acquired byte so alignment is preserved.
+        var typeMonAcquired = TYP_I_IMPL;
+
+        if (lvaMonAcquired == BAD_VAR_NUM)
+        {
+            lvaMonAcquired = lvaGrabTemp(shortLifetime: true, "Synchronized method monitor acquired boolean");
+            lvaGetDesc(lvaMonAcquired).Type = typeMonAcquired;
+        }
+
+        if (opts.IsOSR)
+        {
+            lvaGetDesc(lvaMonAcquired).lvIsOSRLocal = true;
+        }
+        else
+        {
+            var initNode = gtNewStoreLclVarNode(lvaMonAcquired, gtNewZeroConNode(typeMonAcquired));
+            fgInsertStmtAtBeg(fgFirstBB, gtNewStmt(initNode));
+
+#if DEBUG
+            if (verbose)
+            {
+                jitprintf($"\nSynchronized method - Add 'acquired' initialization in first block {fgFirstBB.dspToString()}\n");
+                gtDispTree(initNode);
+                jitprintf("\n");
+            }
+#endif
+        }
+
+        // Keep handler uses from inhibiting enregistration of the original this.
+        // EnC cannot preserve an extra copy across transitions.
+        var lvaCopyThis = BAD_VAR_NUM;
+
+        if (opts.OptimizationEnabled && !info.compIsStatic)
+        {
+            lvaCopyThis = lvaGrabTemp(shortLifetime: true, "Synchronized method copy of this for handler");
+            lvaGetDesc(lvaCopyThis).Type = TYP_REF;
+            var thisNode = gtNewLclVarNode(TYP_UNDEF, info.compThisArg);
+            var initNode = gtNewStoreLclVarNode(lvaCopyThis, thisNode);
+            fgInsertStmtAtBeg(tryBegBB, gtNewStmt(initNode));
+        }
+
+        if (!opts.IsOSR)
+        {
+            _ = fgCreateMonitorTree(lvaMonAcquired, info.compThisArg, tryBegBB, enter: true);
+        }
+
+        _ = fgCreateMonitorTree(lvaMonAcquired, lvaCopyThis != BAD_VAR_NUM ? lvaCopyThis : info.compThisArg, faultBB, enter: false);
+
+        // Async versions already have their normal monitor exits from import.
+        if (!compIsAsyncVersion)
+        {
+            foreach (var block in Blocks)
+            {
+                if (block.Kind is BBJ_RETURN)
+                {
+                    _ = fgCreateMonitorTree(lvaMonAcquired, info.compThisArg, block, enter: false);
+                }
+            }
+        }
+    }
+
+    public GenTree fgCreateMonitorTree(int monitorAcquired, int thisVar, BasicBlock block, bool enter)
+    {
+        var varAddrNode = gtNewLclVarAddrNode(TYP_I_IMPL, monitorAcquired);
+        var target = info.compIsStatic ? fgGetCritSectOfStaticMethod() : gtNewLclvNode(TYP_REF, thisVar);
+        GenTree tree = gtNewHelperCallNode(TYP_VOID, enter ? CORINFO_HELP_MON_ENTER : CORINFO_HELP_MON_EXIT, target, varAddrNode);
+
+#if DEBUG
+        if (verbose)
+        {
+            jitprintf($"\nSynchronized method - Add monitor {(enter ? "enter" : "exit")} call to block {block.dspToString()}\n");
+            gtDispTree(tree);
+            jitprintf("\n");
+        }
+#endif
+        if (enter)
+        {
+            fgInsertStmtAtBeg(block, gtNewStmt(tree));
+        }
+        else if (block.Kind is BBJ_RETURN)
+        {
+            var lastStmt = block.LastStmt;
+            assert(lastStmt is not null);
+
+            if (lastStmt.RootNode.Oper is not GT_RETURN)
+            {
+                fgInsertStmtAtEnd(block, gtNewStmt(tree));
+                return tree;
+            }
+
+            var retNode = lastStmt.RootNode.AsUnOp();
+            var retExpr = retNode.Op1;
+
+            if (retExpr is not null)
+            {
+                // Evaluate the return value before releasing the monitor.
+                var tempInfo = fgMakeTemp(retExpr);
+                var lclVar = tempInfo.Load;
+                // TODO-1stClassStructs: remove after multi-reg copy propagation supports it.
+                lclVar.Flags |= retExpr.Flags & GTF_DONT_CSE;
+                retExpr = gtNewBinaryNode(GT_COMMA, lclVar.Type, tree, lclVar);
+                retExpr = gtNewBinaryNode(GT_COMMA, lclVar.Type, tempInfo.Store, retExpr);
+                retNode.Op1 = retExpr;
+                retNode.AddAllEffectsFlags(retExpr);
+            }
+            else
+            {
+                _ = fgNewStmtNearEnd(block, tree);
+            }
+        }
+        else
+        {
+            fgInsertStmtAtEnd(block, gtNewStmt(tree));
+        }
+
+        return tree;
+    }
+
+    public void fgConvertSyncReturnToLeave(BasicBlock block)
+    {
+        assert(!fgFuncletsCreated);
+        assert((info.compFlags & CORINFO_FLG_SYNCH) != 0);
+        assert(genReturnBB is not null);
+        assert(genReturnBB != block);
+        assert(fgReturnCount <= 1);
+        assert(block.Kind is BBJ_RETURN);
+        assert(!block.HasFlag(BBF_HAS_JMP));
+        assert(block.hasTryIndex);
+        assert(!block.hasHndIndex);
+        assert(compHndBBtabCount >= 1);
+
+        var tryIndex = block.TryIndex;
+        assert(tryIndex == compHndBBtabCount - 1);
+        ref var ehDsc = ref ehGetDsc(tryIndex);
+        assert(ehDsc.ebdEnclosingTryIndex == EHblkDsc.NO_ENCLOSING_INDEX);
+        assert(ehDsc.ebdEnclosingHndIndex == EHblkDsc.NO_ENCLOSING_INDEX);
+
+        var newEdge = fgAddRefPred(genReturnBB, block);
+        block.SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+
+#if DEBUG
+        if (verbose)
+        {
+            jitprintf($"Synchronized method - convert block {FMT_BB(block.bbNum)} to BBJ_ALWAYS [targets {FMT_BB(block.Target.bbNum)}]\n");
+        }
+#endif
+    }
+
+    public unsafe void fgAddReversePInvokeEnterExit()
+    {
+        assert(opts.IsReversePInvoke);
+        assert(fgFirstBB is not null);
+        lvaReversePInvokeFrameVar = lvaGrabTempWithImplicitUse(shortLifetime: false, "Reverse Pinvoke FrameVar");
+        lvaSetStruct(lvaReversePInvokeFrameVar, typGetBlkLayout(eeGetEEInfo().sizeOfReversePInvokeFrame), unsafeValueClsCheck: false);
+        var pInvokeFrameVar = gtNewLclVarAddrNode(TYP_I_IMPL, lvaReversePInvokeFrameVar);
+        GenTree tree;
+
+        if (opts.jitFlags->IsSet(JitFlags.JIT_FLAG_TRACK_TRANSITIONS))
+        {
+            // In an IL stub, the secret argument identifies the actual target method.
+            var stubArgument = info.compPublishStubParam
+                ? (GenTree)gtNewLclvNode(TYP_I_IMPL, lvaStubArgumentVar)
+                : gtNewIconNode(TYP_I_IMPL, 0);
+            tree = gtNewHelperCallNode(TYP_VOID, CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS,
+                pInvokeFrameVar, gtNewIconEmbMethHndNode(info.compMethodHnd), stubArgument);
+        }
+        else
+        {
+            tree = gtNewHelperCallNode(TYP_VOID, CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER, pInvokeFrameVar);
+        }
+
+        fgInsertStmtAtBeg(fgFirstBB, gtNewStmt(tree));
+
+#if DEBUG
+        if (verbose)
+        {
+            jitprintf($"\nReverse PInvoke method - Add reverse pinvoke enter in first basic block {fgFirstBB.dspToString()}\n");
+            gtDispTree(tree);
+            jitprintf("\n");
+        }
+#endif
+        tree = gtNewLclVarAddrNode(TYP_I_IMPL, lvaReversePInvokeFrameVar);
+        var reversePInvokeExitHelper = opts.jitFlags->IsSet(JitFlags.JIT_FLAG_TRACK_TRANSITIONS)
+            ? CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS
+            : CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT;
+        tree = gtNewHelperCallNode(TYP_VOID, reversePInvokeExitHelper, tree);
+        assert(genReturnBB is not null);
+        _ = fgNewStmtNearEnd(genReturnBB, tree);
+
+#if DEBUG
+        if (verbose)
+        {
+            jitprintf($"\nReverse PInvoke method - Add reverse pinvoke exit in return basic block {genReturnBB.dspToString()}\n");
+            gtDispTree(tree);
+            jitprintf("\n");
+        }
+#endif
+    }
+
+    public unsafe PhaseStatus fgAddInternal()
+    {
+        noway_assert(!compIsForInlining);
+        var madeChanges = fgCreateFiltersForGenericExceptions();
+        assert(fgFirstBB is not null);
+
+        // Preserve the original this for synchronization, generic context and
+        // precise type initialization when IL stores have been redirected.
+        if (!info.compIsStatic && (lvaArg0Var != info.compThisArg))
+        {
+#if !JIT32_GCENCODER
+            var lva0CopiedForGenericsCtxt = (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0;
+#else
+            var lva0CopiedForGenericsCtxt = false;
+#endif
+            noway_assert(lva0CopiedForGenericsCtxt || !lvaGetDesc(info.compThisArg).IsAddressExposed);
+            noway_assert(!lvaGetDesc(info.compThisArg).lvHasILStoreOp);
+            noway_assert(lvaGetDesc(lvaArg0Var).IsAddressExposed || lvaGetDesc(lvaArg0Var).lvHasILStoreOp || lva0CopiedForGenericsCtxt);
+
+            var store = gtNewStoreLclVarNode(lvaArg0Var, gtNewLclVarNode(TYP_UNDEF, info.compThisArg));
+            fgInsertStmtAtBeg(fgFirstBB, gtNewStmt(store));
+#if DEBUG
+            JITDUMP($"\nCopy \"this\" to lvaArg0Var in first basic block {fgFirstBB.dspToString()}\n");
+            if (verbose)
+            {
+                gtDispTree(store);
+            }
+            JITDUMP("\n");
+#endif
+            madeChanges = true;
+        }
+
+        var merger = new MergedReturns(this);
+
+        // Wrap user code before creating the shared return, which must remain
+        // outside the synchronized method's protecting EH region.
+        if ((info.compFlags & CORINFO_FLG_SYNCH) != 0)
+        {
+            fgAddSyncMethodEnterExit();
+        }
+
+        var lastBlockBeforeGenReturns = fgLastBB;
+        assert(lastBlockBeforeGenReturns is not null);
+
+        if (compIsProfilerHookNeeded || compMethodRequiresPInvokeFrame || opts.IsReversePInvoke || ((info.compFlags & CORINFO_FLG_SYNCH) != 0))
+        {
+            merger.SetMaxReturns(1);
+            var mergedReturn = merger.EagerCreate();
+            assert(mergedReturn == genReturnBB);
+        }
+        else
+        {
+            var stressMerging = compStressCompile(STRESS_MERGED_RETURNS, 50);
+
+            if ((compCodeOpt is SMALL_CODE) || stressMerging)
+            {
+                merger.SetMaxReturns(1);
+            }
+            else
+            {
+                var limit = MergedReturns.ReturnCountHardLimit;
+#if JIT32_GCENCODER
+                if (compIsAsync)
+                {
+                    // Reserve the extra epilog introduced by async transformation.
+                    limit--;
+                }
+#endif
+                merger.SetMaxReturns(limit);
+            }
+        }
+
+        for (var block = fgFirstBB; lastBlockBeforeGenReturns.Next != block; block = block.Next)
+        {
+            assert(block is not null);
+
+            if ((block.Kind is BBJ_RETURN) && !block.HasFlag(BBF_HAS_JMP))
+            {
+                merger.Record(block);
+            }
+        }
+
+        madeChanges |= merger.PlaceReturns();
+
+        if (compMethodRequiresPInvokeFrame)
+        {
+            if (!opts.ShouldUsePInvokeHelpers)
+            {
+                info.compLvFrameListRoot = lvaGrabTemp(shortLifetime: false, "Pinvoke FrameListRoot");
+                ref var rootVarDsc = ref lvaGetDesc(info.compLvFrameListRoot);
+                rootVarDsc.Type = TYP_I_IMPL;
+                rootVarDsc.lvImplicitlyReferenced = true;
+            }
+
+            lvaInlinedPInvokeFrameVar = lvaGrabTempWithImplicitUse(shortLifetime: false, "Pinvoke FrameVar");
+            lvaSetVarAddrExposed(lvaInlinedPInvokeFrameVar, AddressExposedReason.ESCAPE_ADDRESS);
+            var eeInfo = eeGetEEInfo();
+            var frameSize = info.compPublishStubParam ? eeInfo.inlinedCallFrameInfo.sizeWithSecretStubArg : eeInfo.inlinedCallFrameInfo.size;
+            lvaSetStruct(lvaInlinedPInvokeFrameVar, typGetBlkLayout(frameSize), unsafeValueClsCheck: false);
+        }
+
+        CORINFO_JUST_MY_CODE_HANDLE* pDbgHandle = null;
+        CORINFO_JUST_MY_CODE_HANDLE dbgHandle = null;
+#if !TARGET_WASM
+        if (opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB))
+        {
+            dbgHandle = info.compCompHnd->getJustMyCodeHandle(info.compMethodHnd, &pDbgHandle);
+        }
+#endif
+#pragma warning disable CA1508 // The EE writes pDbgHandle through the double pointer passed to getJustMyCodeHandle.
+        noway_assert((dbgHandle == null) || (pDbgHandle is null));
+
+        if ((dbgHandle != null) || (pDbgHandle is not null))
+        {
+            var embNode = gtNewIconEmbHndNode(dbgHandle, pDbgHandle, GTF_ICON_GLOBAL_PTR, info.compMethodHnd);
+            var guardCheckVal = gtNewIndir(TYP_INT, embNode);
+            var guardCheckCond = gtNewBinaryNode(GT_EQ, TYP_INT, guardCheckVal, gtNewZeroConNode(TYP_INT));
+            var callback = gtNewHelperCallNode(TYP_VOID, CORINFO_HELP_DBG_IS_JUST_MY_CODE);
+            var colon = gtNewColonNode(TYP_VOID, gtNewNothingNode(), callback);
+            fgInsertStmtAtBeg(fgFirstBB, gtNewStmt(gtNewQmarkNode(TYP_VOID, guardCheckCond, colon)));
+            madeChanges = true;
+        }
+#pragma warning restore CA1508
+
+        if (opts.IsReversePInvoke)
+        {
+            fgAddReversePInvokeEnterExit();
+            madeChanges = true;
+        }
+
+#if DEBUG
+        if (verbose)
+        {
+            jitprintf("\n*************** After fgAddInternal()\n");
+            fgDispBasicBlocks();
+            fgDispHandlerTab();
+        }
+#endif
+        return madeChanges ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
+    }
 
 #if SWIFT_SUPPORT
     // TODO: Port phase - fgAddSwiftErrorReturns

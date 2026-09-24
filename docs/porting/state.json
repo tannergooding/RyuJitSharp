@@ -12,27 +12,27 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete fgAddInternal and its return-merging, generic-filter, synchronized-method and reverse-P/Invoke prerequisites (B136), starting with complete shared return construction and MergedReturns.",
+      "scope": "Advance required allocation lowering (B141) toward minopts/Tier-0-level code generation, then the required local/global morph dependencies. B136 internal-block construction is complete.",
       "doneWhen": [
-        "Port and commit complete shared return-block construction and MergedReturns with native return-count, constant grouping, ordering and profile behavior.",
-        "Complete generic exception filters, synchronized method protection and reverse-P/Invoke entry/exit dependencies before activating fgAddInternal.",
-        "Preserve this-copy, P/Invoke frame locals, JustMyCode guards and diagnostics in the complete phase.",
-        "Validate and retire complete native definitions only; publish at the activated-phase milestone without treating intermediate commits as stopping points."
+        "Trace ObjectAllocator's required minopts path and port complete allocation-lowering functions with their genuine dependencies.",
+        "Replace the expanded Main's ALLOCOBJ with the native allocation helper and preserve call effects, ownership and diagnostics.",
+        "Continue required local/global morph, lowering and code generation rather than filling optional adjacent optimization phases.",
+        "Validate and retire complete definitions; commit coherent portions and publish execution milestones without stopping at them."
       ],
       "validation": [
-        "Use localized builds and existing return/CFG/EH tests for prerequisite portions; add focused cases for concrete defects and managed ownership adaptations.",
-        "After phase activation, recapture NativeAOT and compare actual post-inline phase output against the pinned oracle without claiming codegen parity."
+        "Reuse existing coverage and incremental builds. Add focused regression cases for actual failures, not a matrix for each helper.",
+        "Recapture at allocation/phase activation boundaries and compare actual IR against the pinned oracle. Native fallback remains distinct from managed code generation."
       ],
       "deferred": [
         "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
-        "General local assertion propagation, block morph and the full global-morph phase.",
+        "Optional general assertion propagation and optimization-only allocation analyses unless required by the active minopts dependency closure.",
         "Non-xarch hardware-intrinsic folding and hashBv bulk/set algebra and iterator APIs.",
         "The preexisting fgVerifyHandlerTab diagnostic stub and broader EH verification, outside the cleanup algorithm.",
         "Patchpoint code generation, metadata generation and actual OSR execution.",
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "MergedReturns and shared return construction are complete, including the insertion-point assertion correction (B137). Continue B136 with synchronized method protection, generic exception filters and reverse-P/Invoke entry/exit, then activate the complete fgAddInternal phase. Preserve B127/B129/B135 diagnostic gaps and the hardware-import frontier; root methods still require native fallback.",
+    "nextAction": "Read the pinned objectalloc.cpp constructor, DoPhase and MorphAllocations/MorphAllocObjNode path against sources/Core/jit/objectalloc/ObjectAllocator.cs, whose constructor, enable method and DoPhase are stubs. Determine the complete required allocation-lowering dependency closure, starting from the observed ALLOCOBJ-to-helper gap in Main, then implement it. B136 is validated: sixteen methods finish, fifteen raw phase sections and all five new-case post-phase IR sections match. Do not reopen B127/B129/B135 or unrelated optimization work; minopts code generation is the next execution goal, followed by Tier-1 and full-port coverage.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -961,9 +961,32 @@
         "phaseActivated": false,
         "nativeAotRecaptured": false
       },
-      "nativeAotPublish": "passed-after-inliner-activation",
+      "internalBlockPhase": {
+        "sourceSnapshot": "676c685f802d99b264172984110ec53bdd08cebd",
+        "targetedDebugPassed": 119,
+        "targetedReleasePassed": 108,
+        "fullDebugPassed": 1812,
+        "fullReleasePassed": 1606,
+        "skipped": 0,
+        "debugTests": "artifacts\\internal-blocks-all-debug.trx",
+        "releaseTests": "artifacts\\internal-blocks-all-release.trx",
+        "managedCapture": "artifacts\\internal-blocks-location-managed\\manifest.json",
+        "nativeCapture": "artifacts\\internal-blocks-complete-native\\manifest.json",
+        "comparison": "artifacts\\internal-blocks-phase-comparison.json",
+        "corpusMethods": 16,
+        "exactImportPrefixes": 14,
+        "exactPhaseSections": 15,
+        "postPhaseIRSectionsPresent": 6,
+        "exactPostPhaseIRSections": 5,
+        "newCasesWithExactIR": ["SynchronizedReturn", "GenericCatch", "PInvokeCall", "ReversePInvoke", "ManyReturns"],
+        "remainingDifferences": ["hardware-intrinsic import", "preexisting allocation-lowering gap in Main (B141)", "deferred-profile diagnostic text for the generic root (B135)"],
+        "nativeDefinitionsRetired": 9,
+        "nativeDeclarationsRetired": 7,
+        "codegenParity": "not-available"
+      },
+      "nativeAotPublish": "passed-after-internal-block-activation",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
-      "phaseDumpParity": "ten-of-eleven-import-prefixes-and-post-inline-IR-sections-equal-nine-inline-phase-sections-equal",
+      "phaseDumpParity": "fifteen-of-sixteen-internal-block-phase-sections-and-all-five-new-case-post-phase-IR-sections-equal",
       "codegenParity": "not-available"
     }
   },
@@ -1418,6 +1441,15 @@
     "inlinePhaseManagedSource": {
       "commit": "6cbd3a3fced61d39e3b4c049ebca952f15446058",
       "ref": "refs/porting/snapshots/inline-phase-source"
+    },
+    "internalBlockPhaseManagedSource": {
+      "commit": "676c685f802d99b264172984110ec53bdd08cebd",
+      "ref": "refs/porting/snapshots/internal-block-phase-source"
+    },
+    "internalBlockPhaseNativeResidual": {
+      "commit": "494ccbc0132fcf507b8133bffa2fef635d788858",
+      "indexCommit": "343e35183b190e9bccb68af25de8c3b499e6bf1e",
+      "ref": "refs/porting/snapshots/native-ledger-internal-blocks"
     },
     "mergedReturnsNativeResidual": {
       "commit": "7e9f97d593520b01a7025854f49e4719953e481d",

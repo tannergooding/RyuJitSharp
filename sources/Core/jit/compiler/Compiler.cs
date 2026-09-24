@@ -1331,6 +1331,27 @@ public partial class Compiler
         return getRuntimeLookupTree(lookup, compileTimeHandle);
     }
 
+    public unsafe GenTree getTokenHandleTree(in CORINFO_RESOLVED_TOKEN resolvedToken, bool parent)
+    {
+        CORINFO_GENERICHANDLE_RESULT embedInfo;
+
+        // These post-inline lookups belong to the root: EH and explicit tail calls
+        // prevent inlining, so the root method remains the correct token owner.
+        fixed (CORINFO_RESOLVED_TOKEN* pResolvedToken = &resolvedToken)
+        {
+            info.compCompHnd->embedGenericHandle(pResolvedToken, parent, info.compMethodHnd, &embedInfo);
+        }
+
+        var result = getLookupTree(embedInfo.lookup, gtTokenToIconFlags(resolvedToken.token), embedInfo.compileTimeHandle);
+
+        if (embedInfo.lookup.lookupKind.needsRuntimeLookup)
+        {
+            result = gtNewRuntimeLookup(result, embedInfo.compileTimeHandle, embedInfo.handleType);
+        }
+
+        return result;
+    }
+
     // getMaxVectorByteLength
     // The minimum simd size supported by System.Numeric.Vectors or System.Runtime.Intrinsic
     // Arm.AdvSimd:  16-byte Vector<T> and Vector128<T>

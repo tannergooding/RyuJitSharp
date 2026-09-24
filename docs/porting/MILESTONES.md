@@ -2,13 +2,27 @@
 
 A newest-first history of what the port can do and how it has developed.
 
-The primary target is Windows x64. The port can import methods and expand inline
-calls, but does not yet generate native code. Remaining work includes
-hardware-intrinsic import, later morphing phases and code generation.
+The primary target is Windows x64. The port can import methods, expand inline
+calls and construct internal method entry/exit paths, but does not yet generate
+native code. Remaining work includes hardware-intrinsic import, later morphing
+phases and code generation.
 
 The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
+
+## 2026-09-23: Internal method entry and exit
+
+The internal-block phase now constructs synchronized-method protection,
+runtime generic exception filters, P/Invoke frame locals and reverse-P/Invoke
+entry/exit calls. It also preserves redirected `this` arguments and adds
+JustMyCode guards.
+
+Return merging groups constant returns and constructs shared return locals,
+with general-return rewrites reserved for global morph. Compiler-generated
+statements retain unknown source locations rather than being attributed to
+the first IL instruction. Allocation lowering and later required morphing
+remain ahead on the path to minopts code generation.
 
 ## 2026-09-23: Active inlining and nested compilation
 

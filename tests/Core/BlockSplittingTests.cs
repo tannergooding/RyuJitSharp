@@ -15,6 +15,41 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class BlockSplittingTests
 {
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void LinksSwitchOffsetsIntoUniqueSuccessors(bool duplicateCase)
+    {
+        WithCompiler(compiler => {
+            var source = NewBlock(compiler, BBJ_SWITCH);
+            var first = NewBlock(compiler, BBJ_RETURN);
+            var second = NewBlock(compiler, BBJ_RETURN);
+            var third = NewBlock(compiler, BBJ_RETURN);
+            source.Next = first;
+            first.Next = second;
+            second.Next = third;
+            source.bbCodeOffs = 0;
+            first.bbCodeOffs = 1;
+            second.bbCodeOffs = 2;
+            third.bbCodeOffs = 3;
+            compiler.fgFirstBB = source;
+            compiler.fgLastBB = third;
+            compiler.fgPredsComputed = false;
+            compiler.info.compILCodeSize = 4;
+            var targets = new BBswtDesc([], [2, duplicateCase ? 2 : 3, 1], hasDefault: true);
+            source.SwitchTargets = targets;
+
+            compiler.fgLinkBasicBlocks();
+
+            Assert.That(targets.Succs.Length, Is.EqualTo(duplicateCase ? 2 : 3));
+            Assert.That(targets.Cases[0].DestinationBlock, Is.SameAs(second));
+            Assert.That(targets.Cases[1].DestinationBlock, Is.SameAs(duplicateCase ? second : third));
+            Assert.That(targets.DefaultCase.DestinationBlock, Is.SameAs(first));
+            Assert.That(targets.Cases[0].DupCount, Is.EqualTo(duplicateCase ? 2 : 1));
+            Assert.That(targets.Cases[0].Likelihood, Is.EqualTo(duplicateCase ? 2.0 / 3 : 1.0 / 3));
+            Assert.That(second.bbRefs, Is.EqualTo(duplicateCase ? 2 : 1));
+        });
+    }
+
     private static IEnumerable<TestCaseData> SplitCases()
     {
         BBKinds[] kinds = [

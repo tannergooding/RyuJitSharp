@@ -852,7 +852,7 @@ public partial class Compiler
             var objectDescriptionUtf8 = ((Span<byte>)(inlineObjectDecsriptionUtf8))[..(int)(actualLen)];
 
             objectDescriptionUtf8.ReplaceAny(SearchValues.Create((byte)('\n'), (byte)('\r')), (byte)(' '));
-            objectDescription = Encoding.UTF8.GetString(inlineObjectDecsriptionUtf8);
+            objectDescription = Encoding.UTF8.GetString(objectDescriptionUtf8);
         });
 
         if (!success)

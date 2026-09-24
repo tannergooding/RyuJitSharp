@@ -126,6 +126,8 @@ internal static unsafe class MergedReturnsTests
             var node = block.LastStmt?.RootNode ?? throw new InvalidOperationException();
 
             Assert.That(block, Is.SameAs(compiler.genReturnBB));
+            Assert.That(block.LastStmt.DebugInfo.Location.IsValid, Is.False);
+            Assert.That(block.LastStmt.DebugInfo.Location.Offset, Is.EqualTo(BAD_IL_OFFSET));
             Assert.That(node.Type, Is.EqualTo(expected));
             Assert.That(node.Flags & GTF_RET_MERGED, Is.EqualTo(GTF_RET_MERGED));
             Assert.That(compiler.fgReturnCount, Is.EqualTo(1));
