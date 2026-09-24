@@ -29,9 +29,13 @@ nested calls. Fast-tail-call eligibility checks incoming stack space and whether
 struct arguments would retain the caller's frame, preserving rejection reasons
 and last-use rules.
 
-Materializing argument temporaries, tail-call transformation and the recursive
-tree/block drivers remain unfinished; these foundations are not yet activated
-as a global-morph phase.
+Recursive fast-tail calls can be converted into loops while preserving argument
+evaluation before parameter overwrites, writable receiver state, required local
+initialization and profile flow.
+
+Materializing argument temporaries, selecting and transforming other tail calls,
+and the recursive tree/block drivers remain unfinished; these foundations are not
+yet activated as a global-morph phase.
 
 ## 2026-09-23: Implicit-byref parameter preparation
 

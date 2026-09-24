@@ -223,4 +223,212 @@ public partial class Compiler
         return true;
     }
 #endif
+
+    public static int fgGetArgParameterLclNum(GenTreeCall call, CallArg argument)
+    {
+        var number = 0;
+        foreach (var other in call.Args.Args)
+        {
+            if (other == argument)
+            {
+                break;
+            }
+
+            if (!other.IsArgAddedLate)
+            {
+                number++;
+            }
+        }
+
+        return number;
+    }
+
+    public void fgMorphRecursiveFastTailCallIntoLoop(BasicBlock block, GenTreeCall recursiveTailCall)
+    {
+        assert(recursiveTailCall.IsTailCallConvertibleToLoop);
+        var lastStatement = block.LastStmt;
+        assert(lastStatement is not null);
+        assert(recursiveTailCall == lastStatement.RootNode);
+        var callDebugInfo = lastStatement.DebugInfo;
+        var tempInsertionPoint = lastStatement;
+        var parameterInsertionPoint = lastStatement;
+
+        // Evaluate arguments that can read parameters before overwriting any
+        // parameter. For example, recurse(b, a) must first save both old values.
+        foreach (var argument in recursiveTailCall.Args.EarlyArgs)
+        {
+            var earlyNode = argument.EarlyNode;
+            assert(earlyNode is not null);
+            if (argument.LateNode is not null)
+            {
+                fgInsertStmtBefore(block, lastStatement, gtNewStmt(earlyNode, callDebugInfo));
+            }
+            else if (!argument.IsArgAddedLate)
+            {
+                var assignment = fgAssignRecursiveCallArgToCallerParam(earlyNode, argument,
+                    fgGetArgParameterLclNum(recursiveTailCall, argument), block, callDebugInfo,
+                    tempInsertionPoint, parameterInsertionPoint);
+                if ((tempInsertionPoint == lastStatement) && (assignment is not null))
+                {
+                    tempInsertionPoint = assignment;
+                }
+            }
+        }
+
+        foreach (var argument in recursiveTailCall.Args.LateArgs)
+        {
+            var lateNode = argument.LateNode;
+            assert(lateNode is not null);
+            if (!argument.IsArgAddedLate)
+            {
+                var assignment = fgAssignRecursiveCallArgToCallerParam(lateNode, argument,
+                    fgGetArgParameterLclNum(recursiveTailCall, argument), block, callDebugInfo,
+                    tempInsertionPoint, parameterInsertionPoint);
+                if ((tempInsertionPoint == lastStatement) && (assignment is not null))
+                {
+                    tempInsertionPoint = assignment;
+                }
+            }
+        }
+
+        // The scratch-block initialization of writable 'this' is outside the loop.
+        if (!info.compIsStatic && (lvaArg0Var != info.compThisArg))
+        {
+            var thisArgument = gtNewLclVarNode(TYP_UNDEF, info.compThisArg);
+            thisArgument.SetMorphed(this);
+            var store = gtNewStoreLclVarNode(lvaArg0Var, thisArgument);
+            store.SetMorphed(this);
+            fgInsertStmtBefore(block, parameterInsertionPoint, gtNewStmt(store, callDebugInfo));
+        }
+
+        // Re-entering IL skips the prolog. Liveness will remove any unnecessary
+        // initialization of user locals and GC-containing struct temporaries.
+        if (info.compInitMem || compSuppressedZeroInit)
+        {
+            for (var localNumber = 0; localNumber < lvaCount; localNumber++)
+            {
+#if FEATURE_FIXED_OUT_ARGS
+                if (localNumber == lvaOutgoingArgSpaceVar)
+                {
+                    continue;
+                }
+#endif
+                ref var variable = ref lvaGetDesc(localNumber);
+                if (variable.lvIsParam)
+                {
+                    continue;
+                }
+
+#if FEATURE_IMPLICIT_BYREFS
+                if (variable.lvPromoted)
+                {
+                    ref var firstField = ref lvaGetDesc(variable.lvFieldLclStart);
+                    if (firstField.lvParentLcl != localNumber)
+                    {
+                        // Undone implicit-byref promotion no longer uses this copy.
+#if DEBUG
+                        ref var parameter = ref lvaGetDesc(firstField.lvParentLcl);
+                        assert(parameter.IsImplicitByRef && !parameter.lvPromoted);
+                        assert(parameter.lvFieldLclStart == localNumber);
+#endif
+                        continue;
+                    }
+                }
+#endif
+                var localType = variable.Type;
+                var isUserLocal = localNumber < info.compLocalsCount;
+                var structWithGcFields = false;
+                if (localType is TYP_STRUCT)
+                {
+                    assert(variable.Layout is not null);
+                    structWithGcFields = variable.Layout.HasGCPtr;
+                }
+
+                if ((info.compInitMem && (isUserLocal || structWithGcFields)) || variable.lvSuppressedZeroInit)
+                {
+                    var zero = localType is TYP_STRUCT ? gtNewIconNode(TYP_INT, 0) : gtNewZeroConNode(localType);
+                    zero.SetMorphed(this);
+                    GenTree initialization = gtNewStoreLclVarNode(localNumber, zero);
+                    initialization.SetMorphed(this);
+                    initialization.Type = localType; // Preserve the native TODO-ASG zero-diff quirk.
+                    if (localType is TYP_STRUCT)
+                    {
+                        initialization = fgMorphInitBlock(initialization);
+                    }
+
+                    fgInsertStmtBefore(block, lastStatement, gtNewStmt(initialization, callDebugInfo));
+                }
+            }
+        }
+
+        fgRemoveStmt(block, lastStatement);
+        assert(!opts.IsOSR);
+        var entry = fgGetFirstILBlock();
+        assert(MethodHasRecursiveTailCall);
+        var edge = fgAddRefPred(entry, block);
+        block.SetKindAndTargetEdge(BBJ_ALWAYS, edge);
+
+        if (block.hasProfileWeight && entry.hasProfileWeight)
+        {
+            entry.increaseBBProfileWeight(block.bbWeight);
+#if DEBUG
+            JITDUMP($"Flow into entry BB {FMT_BB(entry.bbNum)} increased. Data {(fgPgoConsistent ? "is now" : "was already")} inconsistent.\n");
+#endif
+            fgPgoConsistent = false;
+        }
+
+        block.RemoveFlags(BBF_HAS_JMP);
+    }
+
+    public Statement? fgAssignRecursiveCallArgToCallerParam(GenTree argument, CallArg callArgument,
+        int parameterNumber, BasicBlock block, in DebugInfo debugInfo,
+        Statement tempInsertionPoint, Statement parameterInsertionPoint)
+    {
+        GenTree? argumentInTemp = null;
+        var needAssignment = true;
+        noway_assert(!varTypeIsStruct(argument.Type));
+
+        if (argument.Oper.IsCnsIntOrI || argument.Oper.IsCnsFltOrDbl)
+        {
+            argumentInTemp = argument;
+        }
+        else if (argument.Oper is GT_LCL_VAR)
+        {
+            var localNumber = argument.AsLclVar().LclNum;
+            ref var variable = ref lvaGetDesc(localNumber);
+            if (!variable.lvIsParam)
+            {
+                argumentInTemp = argument;
+            }
+            else if (localNumber == parameterNumber)
+            {
+                needAssignment = false;
+            }
+        }
+
+        Statement? assignment = null;
+        if (needAssignment)
+        {
+            if (argumentInTemp is null)
+            {
+                var temp = lvaGrabTemp(true, "arg temp");
+                lvaTable[temp].Type = argument.Type;
+                var store = gtNewStoreLclVarNode(temp, argument);
+                store.SetMorphed(this);
+                fgInsertStmtBefore(block, tempInsertionPoint, gtNewStmt(store, debugInfo));
+                argumentInTemp = gtNewLclvNode(argument.Type, temp);
+                argumentInTemp.SetMorphed(this);
+            }
+
+            // The already-morphed entry block is now an opaque join, so no
+            // assertion propagation is needed for these stores.
+            assert(lvaGetDesc(parameterNumber).lvIsParam);
+            var parameterStore = gtNewStoreLclVarNode(parameterNumber, argumentInTemp);
+            parameterStore.SetMorphed(this);
+            assignment = gtNewStmt(parameterStore, debugInfo);
+            fgInsertStmtBefore(block, parameterInsertionPoint, assignment);
+        }
+
+        return assignment;
+    }
 }
