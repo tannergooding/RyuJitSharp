@@ -248,6 +248,16 @@
         "releaseTests": "artifacts\\backend-call-integration-release.trx",
         "scope": "Frozen uncommitted call integration includes memory-helper expansion and ordinary-call fallback, native next-node conventions, single-register struct returns and comparison containment. No lowering-driver activation or managed code generation."
       },
+      "jumpKindGeneration": {
+        "scope": "emitJumpKind is generated from the pinned native emitjmps.h through the existing macro processor. Instruction flag generation is placed outside emitted raw-string templates and within GenerateInstruction.",
+        "validation": "The exact-index generator ran twice with 38 byte-identical outputs. Instruction enums, emitter/codegen information, instruction flags and jump kinds match maintained output after newline normalization.",
+        "debugPassed": 124,
+        "releasePassed": 124,
+        "skipped": 0,
+        "debugTests": "artifacts\\condition-commit-debug.trx",
+        "releaseTests": "artifacts\\condition-commit-release.trx",
+        "selection": "Committed comparison, instruction/flag metadata, bounds-check and array-metadata helpers, excluding incomplete traversal."
+      },
       "arrayMetadataLowering": {
         "debugPassed": 27,
         "releasePassed": 27,

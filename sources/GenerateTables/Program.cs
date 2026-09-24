@@ -25,6 +25,7 @@ internal static class Program
 
         GenerateCodeSeqSM();
         GenerateCompiler();
+        GenerateEmitJumpKind();
 
         GenerateGenTree();
         GenerateGenTreeGlobals();
@@ -967,6 +968,37 @@ public static partial class InlineObservationExtensions
 """);
     }
 
+    private static void GenerateEmitJumpKind()
+    {
+        var builder = ProcessMacroBasedFile(@"Inputs\emitjmps.h", "JMP_SMALL(", (builder, inputFile, line, prefix, parts) => {
+            if (parts.Length != 3)
+            {
+                throw new InvalidDataException($"Invalid jump mapping format: '{line}'");
+            }
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    EJ_{parts[0].Trim()},");
+        });
+
+        _ = Directory.CreateDirectory(@"Outputs\jit\instr");
+        File.WriteAllText(@"Outputs\jit\instr\emitJumpKind.generated.cs", $$"""
+// Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+global using static RyuJitSharp.emitJumpKind;
+
+namespace RyuJitSharp;
+
+public enum emitJumpKind
+{
+    EJ_NONE,
+{{builder}}
+    EJ_COUNT,
+}
+""");
+    }
+
     private static void GenerateInstruction()
     {
         var builder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
@@ -1058,6 +1090,14 @@ public enum instruction
             }
         });
 
+        var flagsBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
+            if (inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal))
+            {
+                var flags = string.Join(" | ", parts[^1].Split('|', StringSplitOptions.TrimEntries));
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {flags}, // INS_{parts[0].Trim()}");
+            }
+        });
+
         _ = Directory.CreateDirectory(@"Outputs\jit\emitxarch");
         File.WriteAllText(@"Outputs\jit\emitxarch\Emitter.InstructionInfo.generated.cs", $$"""
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
@@ -1090,14 +1130,6 @@ using System;
 
 namespace RyuJitSharp;
 
-        var flagsBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
-            if (inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal))
-            {
-                var flags = string.Join(" | ", parts[^1].Split('|', StringSplitOptions.TrimEntries));
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {flags}, // INS_{parts[0].Trim()}");
-            }
-        });
-
 public sealed partial class CodeGen
 {
 #if TARGET_XARCH
@@ -1111,6 +1143,26 @@ public sealed partial class CodeGen
 
     private static ReadOnlySpan<bool> s_evexCompatible => [
 {{evexBuilder}}
+    ];
+#endif
+}
+""");
+
+        File.WriteAllText(@"Outputs\jit\codegen\CodeGen.InstructionFlags.generated.cs", $$"""
+// Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+using System;
+
+namespace RyuJitSharp;
+
+public sealed partial class CodeGen
+{
+#if TARGET_XARCH
+    internal static ReadOnlySpan<insFlags> instInfo => [
+{{flagsBuilder}}
     ];
 #endif
 }
@@ -1146,26 +1198,6 @@ public sealed partial class CodeGen
             {
                 throw new InvalidDataException($"Invalid line format: '{line}'");
             }
-""");
-
-        File.WriteAllText(@"Outputs\jit\codegen\CodeGen.InstructionFlags.generated.cs", $$"""
-// Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
-//
-// Based on the RyuJIT compiler from dotnet/runtime.
-// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
-
-using System;
-
-namespace RyuJitSharp;
-
-public sealed partial class CodeGen
-{
-#if TARGET_XARCH
-    internal static ReadOnlySpan<insFlags> instInfo => [
-{{flagsBuilder}}
-    ];
-#endif
-}
 
             var flags = GetFlagsForPrefix(prefix);
             var type = GetTypeForFlags(flags);
