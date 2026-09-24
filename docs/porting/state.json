@@ -42,14 +42,23 @@
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
       "unsignedFlagAndDispatch": {
-        "debugPassed": 101,
-        "releasePassed": 101,
+        "debugPassed": 105,
+        "releasePassed": 105,
         "skipped": 0,
         "selection": ["FlagSupportTests", "LoweringDispatchTests", "ArithmeticLoweringTests", "CallTargetLoweringTests", "ReturnLoweringTests"],
-        "debugTests": "artifacts\\dispatch-expanded-debug.trx",
-        "releaseTests": "artifacts\\dispatch-expanded-release.trx",
-        "beforeFix": "Four new dispatch cases fail before condition/high-multiply wiring. Two false-assignment cases fail before correcting IsUnsigned; both true-assignment cases already pass.",
+        "debugTests": "artifacts\\atomic-dispatch-debug.trx",
+        "releaseTests": "artifacts\\atomic-dispatch-release.trx",
+        "beforeFix": "Four condition/high-multiply dispatch cases and four atomic-add cases fail before wiring. Two false-assignment cases fail before correcting IsUnsigned; both true-assignment cases already pass.",
         "scope": "B152 is corrected independently. Integration includes unfinished traversal and return/call support; it is not phase activation or machine-code parity."
+      },
+      "lirBlockSplitting": {
+        "debugPassed": 76,
+        "releasePassed": 73,
+        "skipped": 0,
+        "selection": ["LirBlockSplittingTests", "FlowGraphHelperTests", "FlagSupportTests"],
+        "debugTests": "artifacts\\block-split-commit-debug.trx",
+        "releaseTests": "artifacts\\block-split-commit-release.trx",
+        "scope": "Exact staged-source export, excluding unfinished backend packets. Covers LIR suffix ownership, root IL offsets, CFG edge/profile/EH transfer, empty splits and B169. Also independently validates the committed B152 flag correction."
       },
       "backendSupportIntegration": {
         "debugPassed": 167,

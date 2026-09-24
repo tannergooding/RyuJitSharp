@@ -116,7 +116,6 @@ public sealed class BBswtDesc : BBJumpTable
         bbsHasDefault = false;
 
         _caseCount--;
-        Cases[^1] = null!;
     }
 
     public void RemoveDominantCase()
