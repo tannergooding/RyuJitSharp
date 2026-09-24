@@ -7,6 +7,63 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
+    private GenTreeCC? LowerNodeCC(GenTree node, GenCondition condition)
+    {
+        var relop = node;
+        var first = node.Next;
+        var next = first;
+
+        // Only adjacent EQ/NE(value, 0) chains can be skipped: intervening
+        // instructions may overwrite flags, whose dataflow is not tracked.
+        while ((next is not null) && next.IsIntegralConst(0) &&
+            (next.Next is GenTreeOp compare) && (compare.Oper is GT_EQ or GT_NE) &&
+            (compare.Op1 == relop) && (compare.Op2 == next))
+        {
+            relop = compare;
+            next = relop.Next;
+            if (relop.Oper is GT_EQ)
+            {
+                condition = GenCondition.Reverse(condition);
+            }
+        }
+
+        GenTreeCC? cc = null;
+        if (next is not null)
+        {
+            if (next.Oper is GT_JTRUE)
+            {
+                if (next.AsUnOp().Op1 == relop)
+                {
+                    assert(relop.Oper.IsCompare);
+                    cc = new GenTreeCC(GT_JCC, next.Type, condition, next, NodeThreading.LIR) {
+                        Flags = next.Flags & GTF_COMMON_MASK,
+                    };
+                    cc._vnPair.SetBoth(ValueNumStore.NoVN);
+                    BlockRange().ReplaceNode(next, cc);
+                }
+            }
+            else if (BlockRange().TryGetUse(relop, out var use))
+            {
+                cc = CompilerInstance.gtNewCC(GT_SETCC, TYP_INT, condition);
+                BlockRange().InsertAfter(node, cc);
+                use.ReplaceWith(cc);
+            }
+        }
+
+        if (cc is not null)
+        {
+            node.Flags |= GTF_SET_FLAGS;
+        }
+
+        if (relop != node)
+        {
+            assert(first is not null);
+            BlockRange().Remove(first, relop);
+        }
+
+        return cc;
+    }
+
     private bool TryLowerConditionToFlagsNode(GenTree parent, GenTree condition, out GenCondition code,
         bool allowMultipleFlagsChecks = true)
     {

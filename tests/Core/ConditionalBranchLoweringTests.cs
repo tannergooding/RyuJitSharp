@@ -95,6 +95,112 @@ internal static unsafe class ConditionalBranchLoweringTests
         });
     }
 
+    [TestCase(0, false)]
+    [TestCase(1, false)]
+    [TestCase(2, false)]
+    [TestCase(0, true)]
+    [TestCase(1, true)]
+    [TestCase(2, true)]
+    public static void BooleanFlagProducerRemovesAdjacentZeroTests(int negations, bool branchUse)
+    {
+        WithCompiler(compiler => {
+            var left = compiler.gtNewLclvNode(TYP_INT, 0);
+            var right = compiler.gtNewIconNode(TYP_INT, 7);
+            var producer = new GenTreeOp(GT_NE, TYP_INT, left, right);
+            var block = NewBlock(left, right, producer);
+            GenTree value = producer;
+            for (var index = 0; index <= negations; index++)
+            {
+                var zero = compiler.gtNewIconNode(TYP_INT, 0);
+                var comparison = new GenTreeOp(index == negations ? GT_NE : GT_EQ, TYP_INT, value, zero);
+                block.InsertAtEnd(zero);
+                block.InsertAtEnd(comparison);
+                value = comparison;
+            }
+            var user = new GenTreeUnOp(branchUse ? GT_JTRUE : GT_NEG, branchUse ? TYP_VOID : TYP_INT, value);
+            user.Flags |= GTF_DONT_CSE;
+            user._vnPair.SetBoth(123);
+            block.InsertAtEnd(user);
+
+            var cc = LowerNodeCC(NewLowering(compiler, block), producer, new GenCondition(GenCondition.NE))
+                ?? throw new AssertionException("The condition-code consumer was not created.");
+
+            Assert.That(cc.Condition.Code, Is.EqualTo((negations % 2) == 0 ? GenCondition.NE : GenCondition.EQ));
+            Assert.That(producer.Next, Is.SameAs(cc));
+            Assert.That(producer.Flags & GTF_SET_FLAGS, Is.EqualTo(GTF_SET_FLAGS));
+            Assert.That(producer.Type, Is.EqualTo(TYP_INT));
+            Assert.That(producer.Oper, Is.EqualTo(GT_NE));
+            Assert.That(cc._vnPair.Liberal, Is.EqualTo(ValueNumStore.NoVN));
+            Assert.That(cc._vnPair.Conservative, Is.EqualTo(ValueNumStore.NoVN));
+            Assert.That(block.FirstNode, Is.SameAs(left));
+            if (branchUse)
+            {
+                Assert.That(cc.Oper, Is.EqualTo(GT_JCC));
+                Assert.That(block.LastNode, Is.SameAs(cc));
+                Assert.That(cc.Flags, Is.EqualTo(user.Flags & GTF_COMMON_MASK));
+                Assert.That(user.Prev is null && user.Next is null, Is.True);
+#if DEBUG
+                Assert.That(cc.TreeId, Is.EqualTo(user.TreeId));
+#endif
+            }
+            else
+            {
+                Assert.That(cc.Oper, Is.EqualTo(GT_SETCC));
+                Assert.That(cc.Type, Is.EqualTo(TYP_INT));
+                Assert.That(cc.Next, Is.SameAs(user));
+                Assert.That(user.Op1, Is.SameAs(cc));
+#if DEBUG
+                Assert.That(cc.TreeId, Is.Not.EqualTo(producer.TreeId));
+#endif
+            }
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void UnusedBooleanFlagProducerDoesNotCreateAConditionConsumer(bool negated)
+    {
+        WithCompiler(compiler => {
+            var producer = compiler.gtNewLclvNode(TYP_INT, 0);
+            var block = NewBlock(producer);
+            if (negated)
+            {
+                var zero = compiler.gtNewIconNode(TYP_INT, 0);
+                block.InsertAtEnd(zero);
+                block.InsertAtEnd(new GenTreeOp(GT_EQ, TYP_INT, producer, zero) { IsUnusedValue = true });
+            }
+
+            Assert.That(LowerNodeCC(NewLowering(compiler, block), producer, new GenCondition(GenCondition.NE)), Is.Null);
+
+            Assert.That(producer.Flags & GTF_SET_FLAGS, Is.EqualTo(GTF_EMPTY));
+            Assert.That(block.LastNode, Is.SameAs(producer));
+            Assert.That(producer.Next, Is.Null);
+        });
+    }
+
+    [Test]
+    public static void InterveningNodeKeepsZeroComparisonAndMaterializesFlagsAtTheProducer()
+    {
+        WithCompiler(compiler => {
+            var producer = compiler.gtNewLclvNode(TYP_INT, 0);
+            var intervening = new GenTree(GT_NOP, TYP_VOID);
+            var zero = compiler.gtNewIconNode(TYP_INT, 0);
+            var comparison = new GenTreeOp(GT_EQ, TYP_INT, producer, zero);
+            var branch = new GenTreeUnOp(GT_JTRUE, TYP_VOID, comparison);
+            var block = NewBlock(producer, intervening, zero, comparison, branch);
+
+            var cc = LowerNodeCC(NewLowering(compiler, block), producer, new GenCondition(GenCondition.NE));
+
+            Assert.That(cc, Is.Not.Null);
+            Assert.That(cc?.Oper, Is.EqualTo(GT_SETCC));
+            Assert.That(cc?.Next, Is.SameAs(intervening));
+            Assert.That(comparison.Op1, Is.SameAs(cc));
+            Assert.That(comparison.Op2, Is.SameAs(zero));
+            Assert.That(branch.Op1, Is.SameAs(comparison));
+            Assert.That(block.LastNode, Is.SameAs(branch));
+        });
+    }
+
     private static BasicBlock NewBlock(params GenTree[] nodes)
     {
         var block = new BasicBlock(null, null);
@@ -118,6 +224,9 @@ internal static unsafe class ConditionalBranchLoweringTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerJTrue")]
     private static extern GenTree? LowerJTrue(Lowering lowering, GenTreeUnOp branch);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerNodeCC")]
+    private static extern GenTreeCC? LowerNodeCC(Lowering lowering, GenTree node, GenCondition condition);
 
     private static void WithCompiler(Action<Compiler> action)
     {

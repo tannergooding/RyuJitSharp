@@ -20,6 +20,11 @@ selection. Floating comparisons retain native unordered/NaN handling and
 compound condition checks. Instruction flags and jump kinds come from the
 native header tables.
 
+Boolean flag producers can bypass adjacent zero-test and negation chains,
+feeding a conditional branch directly or materializing a boolean for other
+consumers. Branch replacement preserves logical identity; intervening
+instructions prevent unsafe reuse of flags.
+
 Array and string lengths, multidimensional lengths and lower bounds become
 loads at the runtime's native offsets, preserving null faults. Bounds checks
 use the native immediate and memory-operand containment rules.

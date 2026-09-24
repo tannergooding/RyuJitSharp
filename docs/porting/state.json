@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Generic LSRA definition/use construction is committed as ea9f5c8. Complete fixed-point/EH liveness is independently integrated (440 Debug/400 Release); backward rewriting and phase activation remain absent. Next review and integrate returned LinearScan.OperandAndCallUses.cs and its tests. LSRA worker collected through turn 64 now owns complete BuildBinaryUses/RMW use support in new partials. Liveness worker collected through turn 47 owns complete backward LIR liveness and immediate dead-store support; ILivenessPolicy.EliminateDeadCode and internal accessibility for unchanged TransformUnusedIndirection are authorized. Sol, collected through turn 48, owns complete hardware containment and canonical instruction input-size, embedded-broadcast and ternary-logic prerequisites. Parent ToScalar/property/seven tests are unvalidated and unwired pending real containment. Broad common block/call/LCLHEAP lowering remains validated but uncommitted pending its full dependency closure; retain native bodies and inactive drivers. Managed code size remains zero.",
+    "nextAction": "Generic LSRA definition/use construction is committed as ea9f5c8 and complete fixed-point/EH liveness as 2db6981. Parent completed native LowerNodeCC and its managed JTRUE replacement, independently passing 30 tests in each configuration; next continue hardware transformation helpers while awaiting real containment. LSRA worker collected through turn 64 owns the returned OperandAndCallUses/tests again: replace its reduced binary helper with complete BuildBinaryUses/RMW before integrating the combined packet; remove unary null-to-zero fallbacks. Record the pinned native op2/nonempty-candidate/no-EVEX branch's repeated op1 use as a suspected upstream defect without silently changing it. Liveness worker collected through turn 47 owns complete backward LIR liveness and immediate dead-store support; ILivenessPolicy.EliminateDeadCode and internal accessibility for unchanged TransformUnusedIndirection are authorized. Sol, collected through turn 48, owns complete hardware containment and canonical instruction input-size, embedded-broadcast and ternary-logic prerequisites. Parent ToScalar/property/seven tests remain unvalidated and unwired. Broad common block/call/LCLHEAP lowering remains validated but uncommitted pending its full dependency closure; retain native bodies and inactive drivers. Managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -41,6 +41,15 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "booleanFlagConsumers": {
+        "debugPassed": 30,
+        "releasePassed": 30,
+        "skipped": 0,
+        "selection": ["ConditionalBranchLoweringTests", "ConditionCodeTests", "ConditionNodeConstructionTests", "ConditionDescriptorTests"],
+        "debugTests": "artifacts\\flag-consumer-integration-debug.trx",
+        "releaseTests": "artifacts\\flag-consumer-integration-release.trx",
+        "scope": "Complete native LowerNodeCC, including adjacent EQ/NE-zero chain removal, condition reversal, whole-node JTRUE-to-JCC replacement, SETCC materialization and unused values. Nine new cases preserve branch logical identity, ChangeOper flags/VN semantics, and the intervening-instruction boundary. Hardware callers and the lowering phase remain separate."
+      },
       "livenessFixedPoint": {
         "debugPassed": 440,
         "releasePassed": 400,
