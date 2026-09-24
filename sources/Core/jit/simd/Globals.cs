@@ -191,6 +191,357 @@ public static partial class Globals
     }
 #endif
 
+#if FEATURE_SIMD
+    public static bool IsBinaryBitwiseOperation(genTreeOps oper)
+    {
+        return oper is GT_AND or GT_AND_NOT or GT_LSH or GT_OR or GT_OR_NOT or
+            GT_ROL or GT_ROR or GT_RSH or GT_RSZ or GT_XOR or GT_XOR_NOT;
+    }
+
+    public static T EvaluateBinaryScalarRSZ<T>(T arg0, T arg1) where T : unmanaged, IBinaryInteger<T>
+    {
+        var width = Unsafe.SizeOf<T>() * 8;
+#if TARGET_XARCH || TARGET_ARM64
+        // SIMD overshifts zero the lane rather than masking the count like scalar shifts.
+        if ((arg1 < T.Zero) || (arg1 >= T.CreateTruncating(width)))
+        {
+            return T.Zero;
+        }
+#else
+        arg1 &= T.CreateTruncating(width - 1);
+#endif
+
+        return arg0 >>> int.CreateTruncating(arg1);
+    }
+
+    public static T EvaluateBinaryScalar<T>(genTreeOps oper, T arg0, T arg1) where T : unmanaged, IBinaryInteger<T>
+    {
+        var width = Unsafe.SizeOf<T>() * 8;
+        switch (oper)
+        {
+            case GT_ADD:
+            {
+                return unchecked(arg0 + arg1);
+            }
+
+            case GT_DIV:
+            {
+                return unchecked(arg0 / arg1);
+            }
+
+            case GT_MUL:
+            {
+                return unchecked(arg0 * arg1);
+            }
+
+            case GT_SUB:
+            {
+                return unchecked(arg0 - arg1);
+            }
+
+            case GT_AND:
+            {
+                return arg0 & arg1;
+            }
+
+            case GT_AND_NOT:
+            {
+                return arg0 & ~arg1;
+            }
+
+            case GT_EQ:
+            {
+                return arg0 == arg1 ? T.AllBitsSet : T.Zero;
+            }
+
+            case GT_GT:
+            {
+                return arg0 > arg1 ? T.AllBitsSet : T.Zero;
+            }
+
+            case GT_GE:
+            {
+                return arg0 >= arg1 ? T.AllBitsSet : T.Zero;
+            }
+
+            case GT_LSH:
+            {
+#if TARGET_XARCH || TARGET_ARM64
+                if ((arg1 < T.Zero) || (arg1 >= T.CreateTruncating(width)))
+                {
+                    return T.Zero;
+                }
+#else
+                arg1 &= T.CreateTruncating(width - 1);
+#endif
+
+                return arg0 << int.CreateTruncating(arg1);
+            }
+
+            case GT_LT:
+            {
+                return arg0 < arg1 ? T.AllBitsSet : T.Zero;
+            }
+
+            case GT_LE:
+            {
+                return arg0 <= arg1 ? T.AllBitsSet : T.Zero;
+            }
+
+            case GT_NE:
+            {
+                return arg0 != arg1 ? T.AllBitsSet : T.Zero;
+            }
+
+            case GT_OR:
+            {
+                return arg0 | arg1;
+            }
+
+            case GT_OR_NOT:
+            {
+                return arg0 | ~arg1;
+            }
+
+            case GT_ROL:
+            {
+                // Normalize before using helpers that zero an over-wide shift.
+                arg1 &= T.CreateTruncating(width - 1);
+                return EvaluateBinaryScalar(GT_LSH, arg0, arg1) |
+                    EvaluateBinaryScalarRSZ(arg0, unchecked(T.CreateTruncating(width) - arg1));
+            }
+
+            case GT_ROR:
+            {
+                arg1 &= T.CreateTruncating(width - 1);
+                return EvaluateBinaryScalarRSZ(arg0, arg1) |
+                    EvaluateBinaryScalar(GT_LSH, arg0, unchecked(T.CreateTruncating(width) - arg1));
+            }
+
+            case GT_RSH:
+            {
+#if TARGET_XARCH || TARGET_ARM64
+                if ((arg1 < T.Zero) || (arg1 >= T.CreateTruncating(width)))
+                {
+                    // Two shifts give sign fill for signed lanes and zero for unsigned lanes.
+                    arg0 >>= width - 1;
+                    arg1 = T.One;
+                }
+#else
+                arg1 &= T.CreateTruncating(width - 1);
+#endif
+
+                return arg0 >> int.CreateTruncating(arg1);
+            }
+
+            case GT_RSZ:
+            {
+                return EvaluateBinaryScalarRSZ(arg0, arg1);
+            }
+
+            case GT_XOR:
+            {
+                return arg0 ^ arg1;
+            }
+
+            case GT_XOR_NOT:
+            {
+                return arg0 ^ ~arg1;
+            }
+        }
+
+        unreached();
+        return T.Zero;
+    }
+
+    public static float EvaluateBinaryScalar(genTreeOps oper, float arg0, float arg1)
+        => EvaluateBinaryFloatingScalar(oper, arg0, arg1);
+
+    public static double EvaluateBinaryScalar(genTreeOps oper, double arg0, double arg1)
+        => EvaluateBinaryFloatingScalar(oper, arg0, arg1);
+
+    private static T EvaluateBinaryFloatingScalar<T>(genTreeOps oper, T arg0, T arg1)
+        where T : unmanaged, IBinaryFloatingPointIeee754<T>
+    {
+        switch (oper)
+        {
+            case GT_ADD:
+            {
+                return arg0 + arg1;
+            }
+
+            case GT_DIV:
+            {
+                return arg0 / arg1;
+            }
+
+            case GT_MUL:
+            {
+                return arg0 * arg1;
+            }
+
+            case GT_SUB:
+            {
+                return arg0 - arg1;
+            }
+
+            case GT_EQ:
+            {
+                return arg0 == arg1 ? T.AllBitsSet : T.Zero;
+            }
+
+            case GT_GT:
+            {
+                return arg0 > arg1 ? T.AllBitsSet : T.Zero;
+            }
+
+            case GT_GE:
+            {
+                return arg0 >= arg1 ? T.AllBitsSet : T.Zero;
+            }
+
+            case GT_LT:
+            {
+                return arg0 < arg1 ? T.AllBitsSet : T.Zero;
+            }
+
+            case GT_LE:
+            {
+                return arg0 <= arg1 ? T.AllBitsSet : T.Zero;
+            }
+
+            case GT_NE:
+            {
+                return arg0 != arg1 ? T.AllBitsSet : T.Zero;
+            }
+        }
+
+        unreached();
+        return T.Zero;
+    }
+
+    public static void EvaluateBinarySimd(genTreeOps oper, bool scalar, var_types baseType,
+        Span<byte> result, ReadOnlySpan<byte> arg0, ReadOnlySpan<byte> arg1, int simdSize)
+    {
+        assert((result.Length == arg0.Length) && (result.Length == arg1.Length));
+        assert((simdSize >= 0) && (simdSize <= result.Length) && ((simdSize % baseType.Size) == 0));
+        if (scalar)
+        {
+#if TARGET_XARCH
+            arg0.CopyTo(result);
+#elif TARGET_ARM64
+            result.Clear();
+#endif
+        }
+
+        if (IsBinaryBitwiseOperation(oper))
+        {
+            baseType = baseType switch {
+                TYP_FLOAT => TYP_INT,
+                TYP_DOUBLE => TYP_LONG,
+                _ => baseType,
+            };
+        }
+
+        switch (baseType)
+        {
+            case TYP_FLOAT:
+            {
+                EvaluateBinaryFloatingSimd<float>(oper, scalar, result, arg0, arg1, simdSize);
+                break;
+            }
+
+            case TYP_DOUBLE:
+            {
+                EvaluateBinaryFloatingSimd<double>(oper, scalar, result, arg0, arg1, simdSize);
+                break;
+            }
+
+            case TYP_BYTE:
+            {
+                EvaluateBinaryIntegralSimd<sbyte>(oper, scalar, result, arg0, arg1, simdSize);
+                break;
+            }
+
+            case TYP_SHORT:
+            {
+                EvaluateBinaryIntegralSimd<short>(oper, scalar, result, arg0, arg1, simdSize);
+                break;
+            }
+
+            case TYP_INT:
+            {
+                EvaluateBinaryIntegralSimd<int>(oper, scalar, result, arg0, arg1, simdSize);
+                break;
+            }
+
+            case TYP_LONG:
+            {
+                EvaluateBinaryIntegralSimd<long>(oper, scalar, result, arg0, arg1, simdSize);
+                break;
+            }
+
+            case TYP_UBYTE:
+            {
+                EvaluateBinaryIntegralSimd<byte>(oper, scalar, result, arg0, arg1, simdSize);
+                break;
+            }
+
+            case TYP_USHORT:
+            {
+                EvaluateBinaryIntegralSimd<ushort>(oper, scalar, result, arg0, arg1, simdSize);
+                break;
+            }
+
+            case TYP_UINT:
+            {
+                EvaluateBinaryIntegralSimd<uint>(oper, scalar, result, arg0, arg1, simdSize);
+                break;
+            }
+
+            case TYP_ULONG:
+            {
+                EvaluateBinaryIntegralSimd<ulong>(oper, scalar, result, arg0, arg1, simdSize);
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+    }
+
+    private static void EvaluateBinaryIntegralSimd<T>(genTreeOps oper, bool scalar,
+        Span<byte> result, ReadOnlySpan<byte> arg0, ReadOnlySpan<byte> arg1, int simdSize)
+        where T : unmanaged, IBinaryInteger<T>
+    {
+        var input0 = MemoryMarshal.Cast<byte, T>(arg0);
+        var input1 = MemoryMarshal.Cast<byte, T>(arg1);
+        var output = MemoryMarshal.Cast<byte, T>(result);
+        var count = scalar ? 1 : simdSize / Unsafe.SizeOf<T>();
+        for (var index = 0; index < count; index++)
+        {
+            output[index] = EvaluateBinaryScalar(oper, input0[index], input1[index]);
+        }
+    }
+
+    private static void EvaluateBinaryFloatingSimd<T>(genTreeOps oper, bool scalar,
+        Span<byte> result, ReadOnlySpan<byte> arg0, ReadOnlySpan<byte> arg1, int simdSize)
+        where T : unmanaged, IBinaryFloatingPointIeee754<T>
+    {
+        var input0 = MemoryMarshal.Cast<byte, T>(arg0);
+        var input1 = MemoryMarshal.Cast<byte, T>(arg1);
+        var output = MemoryMarshal.Cast<byte, T>(result);
+        var count = scalar ? 1 : simdSize / Unsafe.SizeOf<T>();
+        for (var index = 0; index < count; index++)
+        {
+            output[index] = EvaluateBinaryFloatingScalar(oper, input0[index], input1[index]);
+        }
+    }
+#endif
+
 #if TARGET_XARCH
     // SSE2 Shuffle control byte to shuffle vector <W, Z, Y, X>
     // These correspond to shuffle immediate byte in shufps SSE2 instruction.

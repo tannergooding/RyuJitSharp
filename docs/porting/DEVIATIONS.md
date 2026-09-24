@@ -138,6 +138,13 @@ floating bitwise operations are reinterpreted before any floating load. The
 node wrapper copies back only active bytes, preserving inactive storage, while
 xarch scalar operations retain upper lanes from the input (B104).
 
+Binary evaluation uses the same bounded views, with an explicit evaluation
+width in place of the native template's default storage size. Generic integer
+and IEEE floating helpers retain wrapping arithmetic, exact comparison masks,
+unmasked SIMD overshifts and masked rotates. Floating bitwise operations never
+load floating values. Division retains native valid-input preconditions; no
+fallback value is introduced for invalid integer division (B105).
+
 Phi definitions own copied SSA-number arrays and expose readonly memory.
 Reaching-VN traversal uses a managed stack and membership set, preserving native
 push/pop order, conservative SSA lookup, duplicate suppression, cycles and early

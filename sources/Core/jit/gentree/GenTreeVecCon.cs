@@ -239,6 +239,35 @@ public sealed class GenTreeVecCon : GenTree
     }
 #endif
 
+    public void EvaluateBinaryInPlace(genTreeOps oper, bool scalar, var_types baseType, GenTreeVecCon other)
+    {
+        switch (Type)
+        {
+            case TYP_SIMD8:
+            case TYP_SIMD12:
+            case TYP_SIMD16:
+#if TARGET_XARCH
+            case TYP_SIMD32:
+            case TYP_SIMD64:
+#endif
+            {
+                simd_t result = default;
+                var activeValue = _simdVal.AsSpan<byte>()[..Type.Size];
+                var activeOther = other._simdVal.AsSpan<byte>()[..Type.Size];
+                var activeResult = result.AsSpan<byte>()[..Type.Size];
+                EvaluateBinarySimd(oper, scalar, baseType, activeResult, activeValue, activeOther, Type.Size);
+                activeResult.CopyTo(activeValue);
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+    }
+
     public bool TryEvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types baseType)
     {
         switch (Type)

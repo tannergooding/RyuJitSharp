@@ -13,6 +13,176 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class HardwareIntrinsicInitializationTests
 {
+    [TestCase(TYP_INT, GT_ADD, int.MaxValue, 1L, int.MinValue)]
+    [TestCase(TYP_UBYTE, GT_ADD, 255L, 1L, 0L)]
+    [TestCase(TYP_BYTE, GT_MUL, 127L, 2L, -2L)]
+    [TestCase(TYP_BYTE, GT_DIV, -128L, -1L, -128L)]
+    [TestCase(TYP_USHORT, GT_SUB, 0L, 1L, 65535L)]
+    [TestCase(TYP_LONG, GT_SUB, long.MinValue, 1L, long.MaxValue)]
+    [TestCase(TYP_INT, GT_AND_NOT, 12L, 10L, 4L)]
+    [TestCase(TYP_INT, GT_OR_NOT, 12L, 10L, -3L)]
+    [TestCase(TYP_INT, GT_XOR_NOT, 12L, 10L, -7L)]
+    [TestCase(TYP_INT, GT_LT, -1L, 0L, -1L)]
+    [TestCase(TYP_UINT, GT_LT, -1L, 0L, 0L)]
+    [TestCase(TYP_UBYTE, GT_EQ, 1L, 1L, 255L)]
+    [TestCase(TYP_LONG, GT_GT, -1L, 0L, 0L)]
+    [TestCase(TYP_ULONG, GT_GT, -1L, 0L, -1L)]
+    [TestCase(TYP_INT, GT_LSH, 1L, 32L, 0L)]
+    [TestCase(TYP_UINT, GT_LSH, 1L, -1L, 0L)]
+    [TestCase(TYP_LONG, GT_LSH, 1L, 0x100000000L, 0L)]
+    [TestCase(TYP_BYTE, GT_RSZ, -128L, 1L, 64L)]
+    [TestCase(TYP_SHORT, GT_RSZ, -32768L, 1L, 16384L)]
+    [TestCase(TYP_INT, GT_RSZ, -1L, 32L, 0L)]
+    [TestCase(TYP_LONG, GT_RSZ, -1L, -1L, 0L)]
+    [TestCase(TYP_INT, GT_RSH, -1L, 33L, -1L)]
+    [TestCase(TYP_UINT, GT_RSH, -1L, 32L, 0L)]
+    [TestCase(TYP_BYTE, GT_RSH, -128L, -1L, -1L)]
+    [TestCase(TYP_UBYTE, GT_ROL, 0x81L, -1L, 0xC0L)]
+    [TestCase(TYP_SHORT, GT_ROL, 1L, 16L, 1L)]
+    [TestCase(TYP_ULONG, GT_ROR, 1L, 1L, long.MinValue)]
+    public static void BinaryIntegerEvaluationPreservesLaneAndShiftSemantics(var_types type, genTreeOps oper,
+        long left, long right, long expected)
+    {
+        WithCompiler(_ => {
+            var node = new GenTreeVecCon(TYP_SIMD16);
+            var other = new GenTreeVecCon(TYP_SIMD16);
+            node.EvaluateBroadcastInPlace(type, left);
+            other.EvaluateBroadcastInPlace(type, right);
+            var originalOther = other.SimdVal;
+            node.EvaluateBinaryInPlace(oper, scalar: false, type, other);
+            for (var index = 0; index < 16 / type.Size; index++)
+            {
+                Assert.That(node.GetElementIntegral(type, index), Is.EqualTo(expected));
+            }
+
+            Assert.That(other.SimdVal, Is.EqualTo(originalOther));
+        });
+    }
+
+    [TestCase(TYP_SIMD8, false)]
+    [TestCase(TYP_SIMD12, false)]
+    [TestCase(TYP_SIMD16, false)]
+    [TestCase(TYP_SIMD32, false)]
+    [TestCase(TYP_SIMD64, false)]
+    [TestCase(TYP_SIMD16, true)]
+    public static void BinaryEvaluationPreservesScalarLanesPaddingAndAliasedInputs(var_types type, bool scalar)
+    {
+        WithCompiler(_ => {
+            var node = new GenTreeVecCon(type) {
+                SimdVal = simd64_t.AllBitsSet,
+            };
+            for (var index = 0; index < type.Size / sizeof(int); index++)
+            {
+                node.SimdVal.i32[index] = index + 1;
+            }
+
+            var before = node.SimdVal;
+            node.EvaluateBinaryInPlace(GT_ADD, scalar, TYP_INT, node);
+            for (var index = 0; index < type.Size / sizeof(int); index++)
+            {
+                var expected = scalar && (index != 0) ? before.i32[index] : before.i32[index] * 2;
+                Assert.That(node.SimdVal.i32[index], Is.EqualTo(expected));
+            }
+
+            Assert.That(node.SimdVal.AsSpan<byte>()[type.Size..].SequenceEqual(before.AsSpan<byte>()[type.Size..]), Is.True);
+        });
+    }
+
+    [TestCase(GT_EQ, double.NaN, 1.0, false)]
+    [TestCase(GT_NE, double.NaN, 1.0, true)]
+    [TestCase(GT_LT, double.NaN, 1.0, false)]
+    [TestCase(GT_GT, 2.0, 1.0, true)]
+    [TestCase(GT_GE, -0.0, 0.0, true)]
+    [TestCase(GT_LE, 0.0, -0.0, true)]
+    public static void BinaryFloatingComparisonsProduceExactLaneMasks(genTreeOps oper, double left, double right, bool expected)
+    {
+        WithCompiler(_ => {
+            var node = new GenTreeVecCon(TYP_SIMD16);
+            var other = new GenTreeVecCon(TYP_SIMD16);
+            node.EvaluateBroadcastInPlace(TYP_FLOAT, left);
+            other.EvaluateBroadcastInPlace(TYP_FLOAT, right);
+            node.EvaluateBinaryInPlace(oper, scalar: false, TYP_FLOAT, other);
+            Assert.That(node.SimdVal.u32[0], Is.EqualTo(expected ? uint.MaxValue : 0));
+            Assert.That(node.SimdVal.u32[3], Is.EqualTo(expected ? uint.MaxValue : 0));
+            node.EvaluateBroadcastInPlace(TYP_DOUBLE, left);
+            other.EvaluateBroadcastInPlace(TYP_DOUBLE, right);
+            node.EvaluateBinaryInPlace(oper, scalar: false, TYP_DOUBLE, other);
+            Assert.That(node.SimdVal.u64[0], Is.EqualTo(expected ? ulong.MaxValue : 0));
+            Assert.That(node.SimdVal.u64[1], Is.EqualTo(expected ? ulong.MaxValue : 0));
+        });
+    }
+
+    [TestCase(GT_ADD, -0.0, -0.0, -0.0)]
+    [TestCase(GT_MUL, -0.0, 1.0, -0.0)]
+    [TestCase(GT_SUB, 1.5, 0.5, 1.0)]
+    [TestCase(GT_DIV, 1.0, 0.0, double.PositiveInfinity)]
+    public static void BinaryFloatingArithmeticPreservesBits(genTreeOps oper, double left, double right, double expected)
+    {
+        WithCompiler(_ => {
+            var node = new GenTreeVecCon(TYP_SIMD16);
+            var other = new GenTreeVecCon(TYP_SIMD16);
+            node.EvaluateBroadcastInPlace(TYP_DOUBLE, left);
+            other.EvaluateBroadcastInPlace(TYP_DOUBLE, right);
+            node.EvaluateBinaryInPlace(oper, scalar: false, TYP_DOUBLE, other);
+            Assert.That(node.SimdVal.i64[0], Is.EqualTo(BitConverter.DoubleToInt64Bits(expected)));
+            node.EvaluateBroadcastInPlace(TYP_FLOAT, left);
+            other.EvaluateBroadcastInPlace(TYP_FLOAT, right);
+            node.EvaluateBinaryInPlace(oper, scalar: false, TYP_FLOAT, other);
+            Assert.That(node.SimdVal.i32[0], Is.EqualTo(BitConverter.SingleToInt32Bits((float)expected)));
+        });
+    }
+
+    [TestCase(TYP_FLOAT)]
+    [TestCase(TYP_DOUBLE)]
+    public static void BinaryFloatingBitwiseOperationsPreserveSignalingNaNBits(var_types type)
+    {
+        WithCompiler(_ => {
+            var node = new GenTreeVecCon(TYP_SIMD16);
+            var other = new GenTreeVecCon(TYP_SIMD16);
+            if (type == TYP_FLOAT)
+            {
+                node.SimdVal.u32[0] = 0x7F800123;
+                other.SimdVal.u32[0] = 0x80000000;
+            }
+            else
+            {
+                node.SimdVal.u64[0] = 0x7FF0000000000123;
+                other.SimdVal.u64[0] = 0x8000000000000000;
+            }
+
+            Assert.That(Globals.IsBinaryBitwiseOperation(GT_XOR), Is.True);
+            node.EvaluateBinaryInPlace(GT_XOR, scalar: false, type, other);
+            if (type == TYP_FLOAT)
+            {
+                Assert.That(node.SimdVal.u32[0], Is.EqualTo(0xFF800123u));
+            }
+            else
+            {
+                Assert.That(node.SimdVal.u64[0], Is.EqualTo(0xFFF0000000000123ul));
+            }
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void ExplicitBinaryEvaluationWidthDoesNotOverwriteOtherLanes(bool scalar)
+    {
+        simd64_t left = default;
+        simd64_t right = default;
+        var result = simd64_t.AllBitsSet;
+        left.i32[0] = 1;
+        left.i32[1] = 2;
+        left.i32[2] = 3;
+        right.i32[0] = 4;
+        right.i32[1] = 5;
+        Globals.EvaluateBinarySimd(GT_ADD, scalar, TYP_INT, result.AsSpan<byte>()[..16],
+            left.AsSpan<byte>()[..16], right.AsSpan<byte>()[..16], 8);
+        Assert.That(result.i32[0], Is.EqualTo(5));
+        Assert.That(result.i32[1], Is.EqualTo(scalar ? 2 : 7));
+        Assert.That(result.i32[2], Is.EqualTo(scalar ? 3 : -1));
+        Assert.That(result.i32[4], Is.EqualTo(-1));
+    }
+
     [TestCase(TYP_SIMD8, false)]
     [TestCase(TYP_SIMD12, false)]
     [TestCase(TYP_SIMD16, false)]
