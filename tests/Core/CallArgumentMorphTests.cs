@@ -20,6 +20,79 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class CallArgumentMorphTests
 {
+    [TestCase(0)]
+    [TestCase(2)]
+    public static void EffectiveUsesUpdateTheirOwningSlotWithoutDiscardingCommas(int depth)
+    {
+        WithCompiler(compiler => {
+            GenTree root = compiler.gtNewIconNode(TYP_INT, 1);
+            for (var index = 0; index < depth; index++)
+            {
+                root = compiler.gtNewCommaNode(TYP_INT, compiler.gtNewCallNode(TYP_VOID, CT_USER_FUNC, null), root);
+            }
+            var originalRoot = root;
+            var replacement = compiler.gtNewLclvNode(TYP_INT, 1);
+            ref var use = ref GenTree.EffectiveUse(ref root);
+            use = replacement;
+            Assert.That(root.EffectiveVal, Is.SameAs(replacement));
+            Assert.That(root, Is.SameAs(depth == 0 ? replacement : originalRoot));
+            if (depth != 0)
+            {
+                Assert.That(root.Flags & GTF_CALL, Is.EqualTo(GTF_CALL));
+            }
+        });
+    }
+
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void PostMorphImplicitByrefsPreserveAddressAndOffsetOutputs(bool load, bool implicitByref)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable[0].Type = TYP_BYREF;
+            compiler.lvaTable[0].lvIsParam = true;
+            compiler.lvaTable[0].IsImplicitByRef = implicitByref;
+            var local = compiler.gtNewLclvNode(TYP_BYREF, 0);
+            var address = compiler.gtNewBinaryNode(GT_ADD, TYP_BYREF,
+                compiler.gtNewBinaryNode(GT_ADD, TYP_BYREF, local, compiler.gtNewIconNode(TYP_I_IMPL, 8)),
+                compiler.gtNewIconNode(TYP_I_IMPL, 12));
+            GenTree node = load ? compiler.gtNewIndir(TYP_INT, address) : local;
+            GenTree? resultAddress = local;
+            long offset = 99;
+            var result = node.IsImplicitByrefParameterValuePostMorph(compiler, ref resultAddress, ref offset);
+            Assert.That(result, Is.SameAs(load && implicitByref ? local : null));
+            Assert.That(resultAddress, Is.SameAs(load ? address : local));
+            Assert.That(offset, Is.EqualTo(load ? 20 : 99));
+        });
+    }
+
+    [Test]
+    public static void PrimitiveIndirectionReplacementPreservesLogicalIdentityAndLoadFlags()
+    {
+        WithCompiler(compiler => {
+            var address = compiler.gtNewLclvNode(TYP_BYREF, 0);
+            var original = compiler.gtNewBlkIndir(address, new ClassLayout(8));
+            original.Flags |= GTF_IND_VOLATILE | GTF_IND_UNALIGNED;
+            original._vnPair.SetBoth(42);
+#if DEBUG
+            var nextId = compiler.compGenTreeID;
+#endif
+            var replacement = new GenTreeIndir(GT_IND, TYP_LONG, address, null, original, NodeThreading.None) {
+                Flags = original.Flags,
+            };
+            Assert.That(replacement.Oper, Is.EqualTo(GT_IND));
+            Assert.That(replacement.Addr, Is.SameAs(address));
+            Assert.That(replacement.Flags, Is.EqualTo(original.Flags));
+            Assert.That(replacement._vnPair.Liberal, Is.EqualTo(ValueNumStore.NoVN));
+            Assert.That(original.Oper, Is.EqualTo(GT_BLK));
+            Assert.That(original._vnPair.Liberal, Is.EqualTo(42));
+#if DEBUG
+            Assert.That(replacement.TreeId, Is.EqualTo(original.TreeId));
+            Assert.That(compiler.compGenTreeID, Is.EqualTo(nextId));
+#endif
+        });
+    }
+
     [Test]
     public static void HelperEquivalenceUsesTheInlineRootWithoutChangingFailedLookupOutputs()
     {

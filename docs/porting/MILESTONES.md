@@ -71,6 +71,9 @@ support maps promoted fields to ABI slots and scopes temporary reuse across
 nested calls. Fast-tail-call eligibility checks incoming stack space and whether
 struct arguments would retain the caller's frame, preserving rejection reasons
 and last-use rules.
+Owning-use references retain comma-expression effects when replacing argument
+values. Post-morph implicit-byref recognition retains the complete address and
+field offset needed to decide whether an outgoing struct copy can be omitted.
 
 Recursive fast-tail calls can be converted into loops while preserving argument
 evaluation before parameter overwrites, writable receiver state, required local

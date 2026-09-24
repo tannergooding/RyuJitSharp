@@ -144,6 +144,13 @@ phase now use this contract; it does not support LIR replacement. Deferred
 exposure cleanup replaces an unread store's data and immediately rebuilds the
 whole statement's locals list instead of transferring transient links.
 
+`GenTree.EffectiveUse` returns a managed reference to the actual owning slot,
+including through comma expressions. The post-morph implicit-byref query uses
+`ref` outputs so non-load rejection preserves both outputs, while rejected loads
+still publish their complete address and peeled offset as native does.
+Source-aware indirection construction preserves logical identity and clears
+value numbers; callers restore operator-specific flags when native uses `SetOper`.
+
 Local-address assertions use a value-record key, a lookup-only dictionary and an
 insertion-ordered assertion list; dictionary enumeration is not observable.
 Loop-definition maps do expose their iteration order in diagnostics, so their

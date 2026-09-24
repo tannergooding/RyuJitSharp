@@ -2863,13 +2863,13 @@ public partial class Compiler
         gtDispTree(stmt.RootNode);
     }
 
-    public void gtDispTree(GenTree tree, string msg = "", bool topOnly = false, bool isLIR = false)
+    public void gtDispTree(GenTree? tree, string msg = "", bool topOnly = false, bool isLIR = false)
     {
         var indentStack = new IndentStack(this);
         gtDispTree(tree, ref indentStack, msg, topOnly, isLIR);
     }
 
-    public unsafe void gtDispTree(GenTree tree, ref IndentStack indentStack, string msg = "", bool topOnly = false, bool isLIR = false)
+    public unsafe void gtDispTree(GenTree? tree, ref IndentStack indentStack, string msg = "", bool topOnly = false, bool isLIR = false)
     {
         if (tree is null)
         {

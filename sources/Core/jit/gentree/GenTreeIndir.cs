@@ -17,6 +17,12 @@ public class GenTreeIndir : GenTreeOp
         assert(oper.IsIndir);
     }
 
+    internal GenTreeIndir(genTreeOps oper, var_types type, GenTree addr, GenTree? data, GenTree source, NodeThreading threading)
+        : base(oper, type, addr, data, source, threading)
+    {
+        assert(oper.IsIndir);
+    }
+
     /// <summary>The address for the indirection.</summary>
     public GenTree Addr
     {

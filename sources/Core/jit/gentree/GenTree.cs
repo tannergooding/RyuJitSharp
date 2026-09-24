@@ -276,6 +276,16 @@ public partial class GenTree
         }
     }
 
+    public static ref GenTree EffectiveUse(ref GenTree use)
+    {
+        while (use.Oper is GT_COMMA)
+        {
+            use = ref use.AsOp().Op2Ref;
+        }
+
+        return ref use;
+    }
+
     public GenTree CommaStoreVal
     {
         get
@@ -533,6 +543,31 @@ public partial class GenTree
             return local;
         }
 #endif
+        return null;
+    }
+
+    /// <summary>Get the implicit-byref local and its complete address after morphing its accesses.</summary>
+    public GenTreeLclVar? IsImplicitByrefParameterValuePostMorph(Compiler compiler, ref GenTree? address, ref target_ssize_t offset)
+    {
+#if FEATURE_IMPLICIT_BYREFS && !TARGET_LOONGARCH64
+        if (!Oper.IsLoad)
+        {
+            return null;
+        }
+
+        var innerAddress = AsIndir().Addr;
+        address = innerAddress;
+        compiler.gtPeelOffsets(ref innerAddress, out offset);
+        if (innerAddress.Oper is GT_LCL_VAR)
+        {
+            var local = innerAddress.AsLclVar();
+            if (compiler.lvaIsImplicitByRefLocal(local.LclNum))
+            {
+                return local;
+            }
+        }
+#endif
+
         return null;
     }
 
