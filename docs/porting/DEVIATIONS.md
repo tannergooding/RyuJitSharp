@@ -192,6 +192,12 @@ poisoning first sets `GTF_REVERSE_OPS` and breaks nonbinary HWI traversal.
 Mask-zero construction now uses the existing zero-initialized mask constructor,
 matching the native factory (B111).
 
+Root class-initialization construction reuses the managed shared-cctor and
+ReadyToRun factories. Its nullable result retains their existing helper-rejection
+contract; zero-initialized resolved tokens use `default` instead of `memset`.
+Helper selection, argument ordering and generic-context reporting match native
+(B113).
+
 Phi definitions own copied SSA-number arrays and expose readonly memory.
 Reaching-VN traversal uses a managed stack and membership set, preserving native
 push/pop order, conservative SSA lookup, duplicate suppression, cycles and early

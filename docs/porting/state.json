@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Inline activation audit B112 found prerequisite phase stubs despite complete Windows-x64 expression folding. Port fgInitThisClass first, then the required hashBv storage and complete morph initialization; retain the early-transform/post-import gates before enabling fgInline. FoldHardware records the separate impHWIntrinsic stub boundary, not vector folding execution parity. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
+    "nextAction": "Root class-initialization construction is complete (B113). Port the required hashBv storage, then complete morph initialization; retain the early-transform/post-import gates in B112 before enabling fgInline. FoldHardware records the separate impHWIntrinsic stub boundary, not vector folding execution parity. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -723,6 +723,18 @@
         "vectorImporterDifference": "FoldHardware retains calls because impHWIntrinsic is still a stub; this capture does not exercise managed vector folding.",
         "codegenParity": "not-available"
       },
+      "rootClassInitialization": {
+        "managedSourceCommit": "c3b816f6aa0904b14ba5804720f577068b097c19",
+        "debugPassed": 29,
+        "releasePassed": 29,
+        "newCases": 13,
+        "skipped": 0,
+        "nativeDefinitionsRetired": 1,
+        "phaseActivated": false,
+        "nativeAotRecaptured": false,
+        "debugTests": "artifacts\\root-class-init-validated-debug.trx",
+        "releaseTests": "artifacts\\root-class-init-validated-release.trx"
+      },
       "nativeAotPublish": "passed-after-hwi-folding",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "six-of-eleven-import-prefixes-equal-four-inline-differences-and-one-vector-importer-gap",
@@ -1118,6 +1130,15 @@
       "commit": "ca14062ae61645e5c0d40875d7034d1fda7ffe81",
       "indexCommit": "867dc4fe0cfb294b019e98bb05f293a6d1840dbc",
       "ref": "refs/porting/snapshots/native-ledger-hwi-folding"
+    },
+    "rootClassInitializationManagedSource": {
+      "commit": "c3b816f6aa0904b14ba5804720f577068b097c19",
+      "ref": "refs/porting/snapshots/root-class-init-source"
+    },
+    "rootClassInitializationNativeResidual": {
+      "commit": "9ada34c69e9e12380589f48de902a3ef947147f4",
+      "indexCommit": "ed027937b88709d34fb4137934867772da4298a2",
+      "ref": "refs/porting/snapshots/native-ledger-root-class-init"
     }
   },
   "sourceMap": [

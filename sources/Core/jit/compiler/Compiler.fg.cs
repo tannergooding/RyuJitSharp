@@ -7055,6 +7055,81 @@ public partial class Compiler
         return ref Unsafe.NullRef<FlowEdge?>();
     }
 
+    public unsafe GenTree? fgInitThisClass()
+    {
+        noway_assert(!compIsForInlining);
+
+        CORINFO_LOOKUP_KIND kind;
+        info.compCompHnd->getLocationOfThisType(info.compMethodHnd, &kind);
+
+        if (!kind.needsRuntimeLookup)
+        {
+            return fgGetSharedCCtor(info.compClassHnd);
+        }
+        else
+        {
+#if FEATURE_READYTORUN
+            // Only NativeAOT understands CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE. Don't do this on CoreCLR.
+            if (IsNativeAot)
+            {
+                CORINFO_RESOLVED_TOKEN resolvedToken = default;
+
+                // A generic method on a non-generic type may not need a runtime lookup.
+                if ((info.compClassAttr & CORINFO_FLG_SHAREDINST) == 0)
+                {
+                    resolvedToken.hClass = info.compClassHnd;
+                    fgSetPreferredInitCctor();
+                    return impReadyToRunHelperToTree(resolvedToken, _preferredInitCctor, TYP_BYREF);
+                }
+
+                var ctxTree = getRuntimeContextTree(kind.runtimeLookupKind);
+
+                // A zero token requests the static base of the class owning the root method.
+                return impReadyToRunHelperToTree(resolvedToken, CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE,
+                    TYP_BYREF, ctxTree);
+            }
+#endif
+
+            // Conservatively report generic-context use for collectible shared generic code.
+            lvaGenericsContextInUse = true;
+
+            switch (kind.runtimeLookupKind)
+            {
+                case CORINFO_LOOKUP_THISOBJ:
+                {
+                    // The method descriptor selects the right point in the receiver's hierarchy.
+                    GenTree vtTree = gtNewLclvNode(TYP_REF, info.compThisArg);
+                    vtTree.Flags |= GTF_VAR_CONTEXT;
+                    vtTree = gtNewMethodTableLookup(vtTree);
+                    var methodHnd = gtNewIconEmbMethHndNode(info.compMethodHnd);
+
+                    return gtNewHelperCallNode(HelperInitClassRetType, CORINFO_HELP_INITINSTCLASS, vtTree, methodHnd);
+                }
+
+                case CORINFO_LOOKUP_CLASSPARAM:
+                {
+                    var vtTree = gtNewLclvNode(TYP_I_IMPL, info.compTypeCtxtArg);
+                    vtTree.Flags |= GTF_VAR_CONTEXT;
+                    return gtNewHelperCallNode(HelperInitClassRetType, CORINFO_HELP_INITCLASS, vtTree);
+                }
+
+                case CORINFO_LOOKUP_METHODPARAM:
+                {
+                    var methHndTree = gtNewLclvNode(TYP_I_IMPL, info.compTypeCtxtArg);
+                    methHndTree.Flags |= GTF_VAR_CONTEXT;
+                    return gtNewHelperCallNode(HelperInitClassRetType, CORINFO_HELP_INITINSTCLASS,
+                        gtNewIconNode(TYP_INT, 0), methHndTree);
+                }
+
+                default:
+                {
+                    NO_WAY("Unknown LOOKUP_KIND");
+                    return null;
+                }
+            }
+        }
+    }
+
     /// <summary>Get the shared class constructor call node.</summary>
     /// <param name="cls">The class handle</param>
     /// <returns>The call node corresponding to the shared class constructor helper.</returns>
