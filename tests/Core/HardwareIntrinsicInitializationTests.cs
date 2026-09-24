@@ -14,6 +14,71 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class HardwareIntrinsicInitializationTests
 {
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void HardwareReassociationPreservesCommaEffectsAndGlobalValueNumbers(bool comma, bool global)
+    {
+        WithCompiler(compiler => {
+            compiler.fgGlobalMorph = global;
+            var local = new GenTreeLclVar(TYP_SIMD16, 0);
+            var first = new GenTreeVecCon(TYP_SIMD16);
+            var second = new GenTreeVecCon(TYP_SIMD16);
+            first.EvaluateBroadcastInPlace(TYP_INT, 3L);
+            second.EvaluateBroadcastInPlace(TYP_INT, 4L);
+            var inner = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_X86Base_Add, TYP_INT, 16, local, first);
+            var effect = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+            GenTree operand = comma ? compiler.gtNewBinaryNode(GT_COMMA, TYP_SIMD16, effect, inner) : inner;
+            var outer = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_X86Base_Add, TYP_INT, 16, operand, second);
+            outer._vnPair.SetBoth(42);
+            var result = compiler.fgOptimizeHWIntrinsicAssociative(outer);
+            if (comma && !global)
+            {
+                Assert.That(result, Is.Null);
+                Assert.That(first.SimdVal.i32[0], Is.EqualTo(3));
+                return;
+            }
+
+            Assert.That(result, Is.SameAs(comma ? operand : outer));
+            Assert.That(result!._vnPair.Liberal, Is.EqualTo(42));
+            for (var lane = 0; lane < 4; lane++)
+            {
+                Assert.That(first.SimdVal.i32[lane], Is.EqualTo(7));
+            }
+            if (comma)
+            {
+                Assert.That(result.AsOp().Op1, Is.SameAs(effect));
+                Assert.That(result.AsOp().Op2, Is.SameAs(inner));
+                Assert.That(inner.GetOp(2), Is.SameAs(first));
+            }
+            else
+            {
+                Assert.That(outer.GetOp(1), Is.SameAs(local));
+                Assert.That(outer.GetOp(2), Is.SameAs(first));
+            }
+        });
+    }
+
+    [TestCase(NI_X86Base_Add, TYP_FLOAT, TYP_FLOAT, false)]
+    [TestCase(NI_X86Base_Add, TYP_INT, TYP_UINT, false)]
+    [TestCase(NI_X86Base_Or, TYP_INT, TYP_FLOAT, true)]
+    public static void HardwareReassociationRequiresMatchingIntegralArithmeticButNotBitwiseTypes(
+        NamedIntrinsic intrinsic, var_types innerType, var_types outerType, bool folds)
+    {
+        WithCompiler(compiler => {
+            var first = new GenTreeVecCon(TYP_SIMD16);
+            var second = new GenTreeVecCon(TYP_SIMD16);
+            first.EvaluateBroadcastInPlace(TYP_INT, 1L);
+            second.EvaluateBroadcastInPlace(TYP_INT, 2L);
+            var local = new GenTreeLclVar(TYP_SIMD16, 0);
+            var inner = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, intrinsic, innerType, 16, local, first);
+            var outer = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, intrinsic, outerType, 16, inner, second);
+            Assert.That(compiler.fgOptimizeHWIntrinsicAssociative(outer), folds ? Is.SameAs(outer) : Is.Null);
+            Assert.That(first.SimdVal.i32[0], Is.EqualTo(folds ? 3 : 1));
+        });
+    }
+
 #if DEBUG
     [TestCase(1)]
     [TestCase(2)]

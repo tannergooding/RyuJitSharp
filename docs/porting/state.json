@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Finish reading oracle morph.cpp::fgOptimizeHWIntrinsic from approximately 9601, then close the remaining required global-morph dependency group rather than reopening completed arithmetic helpers. fgMoveOpsLeft, constant-division eligibility, all three remainder transforms and optRecordSsaUses are complete. fgMorphSmpOp and fgMorphSmpOpOptional are fully read; optional SMP remains coupled to fgMorphCopyBlock. fgOptimizeCommutativeArithmetic and fgOptimizeAddition are fully read; addition recurses into fgMorphTree for subtraction-to-XOR. fgMorphHWIntrinsic, fgMorphHWIntrinsicRequired and fgMorphHWIntrinsicOptional are fully read through morph.cpp:12092. Native optional HWI is an identity function; required HWI depends on recursive morph and fgOptimizeHWIntrinsic. Other recursive dependencies already read: fgMorphPotentialTailCall, fgMorphTailCallViaHelpers, fgMorphArgs, fgTryMorphStructArg, fgMakeOutgoingStructArgCopy, EvalArgsToTemps, MorphCopyBlockHelper and optAssertionProp's dispatcher at assertionprop.cpp:5909. Assertion application helpers remain. getVirtMethodPointerTree (5715) is read and unported; its token/lookup/virtual-helper dependencies already exist. fgExpandVirtualVtableCallTarget, gtSetEvalOrder, fgMakeMultiUse and Globals.ForEachHbvBitSet also exist. Incomplete tree/call drafts remain outside the build and protected in localRecovery.globalMorphDrafts; restore only with a complete compilable closure, not Windows NYIs. TreeId is DEBUG-only, so interpolated JITDUMP calls that reference it also need DEBUG guards. Fresh Release nodes now initialize VNs correctly (B155). Existing TARGET_32BIT syntax defects (B153) and the potential upstream XOR-rotation issue (B156) remain deferred. fgMorphBlocks is inactive; no new phase/codegen parity is claimed.",
+    "nextAction": "Translate the mutually recursive HWI optimizer/required-morph group starting with fgOptimizeHWIntrinsic (oracle morph.cpp:9378-10286), whose complete body is now read. Its associative helper is implemented and retired. It calls fgMorphHWIntrinsicRequired; that and fgMorphHWIntrinsic/fgMorphHWIntrinsicOptional are fully read through 12092, and required HWI recurses into fgMorphTree. Native optional HWI is an identity function, not a placeholder. Keep incomplete integration code outside the build until the real recursive closure compiles. The complete 329-line global-morph-tree.cs.draft has now been read; its const/leaf/local helpers also recurse into fgMorphTree, and DoNotEnregisterReason.simdUserForcesDep must become SimdUserForcesDep. fgMorphSmpOp, fgMorphSmpOpOptional, fgOptimizeCommutativeArithmetic and fgOptimizeAddition are fully read; optional SMP needs fgMorphCopyBlock and addition recurses into fgMorphTree. All arithmetic/remainder helpers and optRecordSsaUses are complete. Other recursive dependencies already read: fgMorphPotentialTailCall, fgMorphTailCallViaHelpers, fgMorphArgs, fgTryMorphStructArg, fgMakeOutgoingStructArgCopy, EvalArgsToTemps, MorphCopyBlockHelper and optAssertionProp's dispatcher at assertionprop.cpp:5909. Assertion application helpers remain. getVirtMethodPointerTree (5715) is read and unported; its token/lookup/virtual-helper dependencies already exist. fgExpandVirtualVtableCallTarget, gtSetEvalOrder, fgMakeMultiUse and Globals.ForEachHbvBitSet also exist. Existing tree/call drafts are protected in localRecovery.globalMorphDrafts; do not replace missing Windows behavior with NYIs. TreeId is DEBUG-only. The new reassociation selection passes without running the known broader HWI checked-conversion failures (B145), which remain deferred. Existing TARGET_32BIT syntax defects (B153) and the potential upstream XOR-rotation issue (B156) remain deferred. fgMorphBlocks is inactive; no new phase/codegen parity is claimed.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -1375,6 +1375,20 @@
         "globalMorphActive": false,
         "nativeAotRecaptured": false
       },
+      "hardwareIntrinsicReassociation": {
+        "debugPassed": 329,
+        "releasePassed": 323,
+        "skipped": 0,
+        "newCases": 7,
+        "selection": ["HardwareReassociation", "ArithmeticMorphTests", "AssertionTests", "ScalarFoldingTests"],
+        "debugTests": "artifacts\\hardware-reassociation-debug.trx",
+        "releaseTests": "artifacts\\hardware-reassociation-release.trx",
+        "coverage": ["constant lane folding and native node reuse", "comma effect preservation and outer VN transfer", "nonglobal comma exclusion", "floating arithmetic exclusion", "integral element-type equality", "bitwise element-type reinterpretation"],
+        "nativeDefinitionsRetired": ["Compiler::fgOptimizeHWIntrinsicAssociative"],
+        "remaining": "The HWI optimizer/required-morph recursive group remains. Targets lacking the existing folding dispatcher explicitly terminate the reassociation folding path. Broader preexisting checked-conversion failures remain B145.",
+        "globalMorphActive": false,
+        "nativeAotRecaptured": false
+      },
       "nativeAotPublish": "passed-after-implicit-byref-retyping",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "all-twenty-minopts-implicit-byref-retyping-phase-sections-and-its-emitted-IR-equal; earlier-local-morph-gaps-remain-scoped-in-localMorphActivation",
@@ -1954,6 +1968,11 @@
       "indexCommit": "3406c13e8518a872406a7a5327551707ce098e93",
       "ref": "refs/porting/snapshots/native-ledger-remainders"
     },
+    "hardwareReassociationNativeResidual": {
+      "commit": "98bff30391c7c8d15ee78c682ec4557f6d94f175",
+      "indexCommit": "688915ec1e37ec8e2db21f0896f35cd68c5ec7d2",
+      "ref": "refs/porting/snapshots/native-ledger-hardware-reassociation"
+    },
     "globalMorphDrafts": {
       "treeBlob": "36908cd7d0294ece59d91854bbdbfcb05d83f228",
       "treeRef": "refs/porting/drafts/global-morph-tree",
@@ -2109,6 +2128,12 @@
       "area": "outgoing-call-abi-and-morph-support",
       "native": ["src\\coreclr\\jit\\morph.cpp", "src\\coreclr\\jit\\gentree.cpp", "src\\coreclr\\jit\\abi.cpp", "src\\coreclr\\jit\\compiler.hpp", "src\\coreclr\\jit\\target.h"],
       "csharp": ["sources\\Core\\jit\\gentree\\CallArgs.Morph.cs", "sources\\Core\\jit\\gentree\\CallArgs.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.CallSupport.cs", "sources\\Core\\jit\\compiler\\Compiler.SharedTempsScope.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.TailCalls.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.TailCallHelpers.cs", "sources\\Core\\jit\\compiler\\Compiler.TailCallIRValidatorVisitor.cs", "sources\\Core\\jit\\compiler\\Compiler.gt.cs", "sources\\Core\\jit\\gentree\\GenTree.cs", "sources\\Core\\jit\\gentree\\GenTreeCall.cs", "sources\\Core\\jit\\abi\\AbiPassingInformation.cs", "sources\\Core\\jit\\target\\Globals.cs"],
+      "reconciledCommit": null
+    },
+    {
+      "area": "hardware-intrinsic-morphing",
+      "native": ["src\\coreclr\\jit\\morph.cpp"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.fg.HardwareIntrinsics.cs"],
       "reconciledCommit": null
     },
     {

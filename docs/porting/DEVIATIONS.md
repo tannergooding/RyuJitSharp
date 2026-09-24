@@ -281,7 +281,9 @@ counts while retaining the native no-fold rule for zero BSF/BSR inputs. Native
 fallthrough becomes explicit `goto case`; operand-count invariants establish
 non-null operands without suppressing nullable analysis. Node reuse, conversion
 cancellation, side-effect ordering, morph marking and VN refresh are unchanged.
-Other-target dispatchers remain deferred (B111).
+Other-target dispatchers remain deferred (B111). Hardware-intrinsic constant
+reassociation (`fgOptimizeHWIntrinsicAssociative`) depends on that dispatcher;
+its folding path explicitly terminates compilation on targets without it.
 
 Managed debug destruction clears all use edges, unlike native's simple-node
 operand clearing. It must traverse those edges before poisoning type/flags:

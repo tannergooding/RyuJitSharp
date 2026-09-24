@@ -51,6 +51,10 @@ by one, mask unsigned power-of-two remainders, or expand to division, multiplica
 and subtraction. Expansion evaluates operands once in their original order,
 including reversed operands, and records the resulting SSA uses.
 
+Hardware-intrinsic constant reassociation preserves comma-expression effects
+and value numbers, distinguishes integral arithmetic from floating arithmetic,
+and allows bitwise reassociation across element-type reinterpretations.
+
 Outgoing calls can classify signature types into Windows-x64 argument registers
 and stack slots, account for shadow space, insert virtual-stub and ReadyToRun
 cells, and remove those cells before reclassification. Argument scheduling,
