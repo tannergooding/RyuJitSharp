@@ -2248,6 +2248,85 @@ public partial class GenTree
 
     public bool IsVectorBroadcast(var_types simdBaseType) => _oper.IsCnsVec && AsVecCon().IsBroadcast(simdBaseType);
 
+    public bool IsVectorPerElementMask(Compiler compiler, var_types simdBaseType, byte simdSize)
+    {
+#if FEATURE_SIMD
+        // Keep in sync with ValueNumStore.IsVectorPerElementMask.
+        var elementCount = GenTreeVecCon.ElementCount(simdSize, simdBaseType);
+        if (!varTypeIsSimd(Type) || (Type.Size != simdSize))
+        {
+            return false;
+        }
+
+        if (_oper.IsCnsVec)
+        {
+            return ElementsAreAllBitsSetOrZero(AsVecCon().SimdVal.AsSpan<byte>(), simdBaseType, elementCount);
+        }
+
+        if (_oper == GT_LCL_VAR)
+        {
+            return compiler.lvaGetDesc(AsLclVar().LclNum).IsVectorPerElementMask(simdBaseType);
+        }
+
+        if (!_oper.IsHWIntrinsic)
+        {
+            return false;
+        }
+
+        var intrinsic = AsHWIntrinsic();
+        var intrinsicId = intrinsic.HWIntrinsicId;
+        if (intrinsic.SimdSize != simdSize)
+        {
+            return false;
+        }
+
+        if (HWIntrinsicInfo.ReturnsPerElementMask(intrinsicId))
+        {
+            // A ushort mask also forms byte masks, but two byte masks can form 0x00FF,
+            // which is not a ushort mask. Only larger-to-smaller lane widths are safe.
+            return intrinsic.SimdBaseType.Size >= simdBaseType.Size;
+        }
+
+#if TARGET_ARM64
+        var oper = GenTreeHWIntrinsic.GetOperForHWIntrinsicId(intrinsicId, simdBaseType, out var isScalar);
+        // Some AdvSimd comparisons still lack the ReturnsPerElementMask annotation.
+        if (!isScalar && (oper is GT_EQ or GT_NE or GT_GT or GT_GE or GT_LT or GT_LE))
+        {
+            return intrinsic.SimdBaseType.Size >= simdBaseType.Size;
+        }
+#else
+        var oper = GenTreeHWIntrinsic.GetOperForHWIntrinsicId(intrinsicId, simdBaseType, out _);
+#endif
+
+        switch (oper)
+        {
+            case GT_AND:
+            case GT_AND_NOT:
+            case GT_OR:
+            case GT_OR_NOT:
+            case GT_XOR:
+            case GT_XOR_NOT:
+            {
+                return intrinsic.GetOp(1).IsVectorPerElementMask(compiler, simdBaseType, simdSize) &&
+                    intrinsic.GetOp(2).IsVectorPerElementMask(compiler, simdBaseType, simdSize);
+            }
+
+            case GT_NOT:
+            {
+                return intrinsic.GetOp(1).IsVectorPerElementMask(compiler, simdBaseType, simdSize);
+            }
+
+            default:
+            {
+                assert(!GenTreeHWIntrinsic.OperIsBitwiseHWIntrinsic(oper));
+                break;
+            }
+        }
+#endif
+
+        return false;
+    }
+
     public bool IsVectorNaN(var_types simdBaseType) => _oper.IsCnsVec && AsVecCon().IsNaN(simdBaseType);
 
     public bool IsVectorNegativeZero(var_types simdBaseType) => _oper.IsCnsVec && AsVecCon().IsNegativeZero(simdBaseType);

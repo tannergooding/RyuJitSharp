@@ -13,6 +13,70 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class HardwareIntrinsicInitializationTests
 {
+    [TestCase(TYP_BYTE)]
+    [TestCase(TYP_UBYTE)]
+    [TestCase(TYP_SHORT)]
+    [TestCase(TYP_USHORT)]
+    [TestCase(TYP_INT)]
+    [TestCase(TYP_UINT)]
+    [TestCase(TYP_LONG)]
+    [TestCase(TYP_ULONG)]
+    [TestCase(TYP_FLOAT)]
+    [TestCase(TYP_DOUBLE)]
+    public static void ConstantPerElementMaskRecognitionUsesRawLaneBits(var_types baseType)
+    {
+        WithCompiler(compiler => {
+            var value = new GenTreeVecCon(TYP_SIMD16) {
+                SimdVal = simd64_t.AllBitsSet,
+            };
+            value.SimdVal.AsSpan<byte>()[16..].Fill(0xA5);
+            value.SimdVal.AsSpan<byte>()[..baseType.Size].Clear();
+            Assert.That(value.IsVectorPerElementMask(compiler, baseType, 16), Is.True);
+            Assert.That(value.IsVectorPerElementMask(compiler, baseType, 8), Is.False);
+            value.SimdVal.u8[baseType.Size - 1] = 0x80;
+            Assert.That(value.IsVectorPerElementMask(compiler, baseType, 16), Is.False);
+            Assert.That(compiler.gtNewIconNode(TYP_INT, 0).IsVectorPerElementMask(compiler, baseType, 16), Is.False);
+        });
+    }
+
+    [TestCase(TYP_USHORT, TYP_BYTE, true)]
+    [TestCase(TYP_BYTE, TYP_USHORT, false)]
+    [TestCase(TYP_FLOAT, TYP_INT, true)]
+    [TestCase(TYP_INT, TYP_DOUBLE, false)]
+    [TestCase(TYP_DOUBLE, TYP_UBYTE, true)]
+    public static void LocalPerElementMaskRecognitionUsesAnnotatedWidth(var_types storedType, var_types queriedType, bool expected)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_SIMD16 }];
+            compiler.lvaCount = 1;
+            var local = new GenTreeLclVar(TYP_SIMD16, 0);
+            Assert.That(local.IsVectorPerElementMask(compiler, queriedType, 16), Is.False);
+            compiler.lvaGetDesc(0).SetIsVectorPerElementMask(storedType);
+            Assert.That(local.IsVectorPerElementMask(compiler, queriedType, 16), Is.EqualTo(expected));
+        });
+    }
+
+    [TestCase(NI_X86Base_And, true)]
+    [TestCase(NI_X86Base_AndNot, true)]
+    [TestCase(NI_X86Base_Or, true)]
+    [TestCase(NI_X86Base_Xor, true)]
+    [TestCase(NI_X86Base_Add, false)]
+    public static void IntrinsicPerElementMaskRecognitionRequiresCompatibleOperands(NamedIntrinsic id, bool expected)
+    {
+        WithCompiler(compiler => {
+            var zero = new GenTreeVecCon(TYP_SIMD16);
+            var comparison = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_X86Base_CompareEqual, TYP_USHORT, 16, zero, zero);
+            Assert.That(comparison.IsVectorPerElementMask(compiler, TYP_BYTE, 16), Is.True);
+            Assert.That(comparison.IsVectorPerElementMask(compiler, TYP_INT, 16), Is.False);
+            var expression = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, id, TYP_USHORT, 16, comparison, zero);
+            Assert.That(expression.IsVectorPerElementMask(compiler, TYP_USHORT, 16), Is.EqualTo(expected));
+            zero.SimdVal.u8[0] = 1;
+            Assert.That(expression.IsVectorPerElementMask(compiler, TYP_USHORT, 16), Is.False);
+            comparison.SimdSize = 32;
+            Assert.That(comparison.IsVectorPerElementMask(compiler, TYP_USHORT, 16), Is.False);
+        });
+    }
+
     [TestCase(TYP_SIMD8, TYP_UBYTE)]
     [TestCase(TYP_SIMD8, TYP_DOUBLE)]
     [TestCase(TYP_SIMD12, TYP_FLOAT)]

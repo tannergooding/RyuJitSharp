@@ -561,6 +561,23 @@ public static partial class Globals
         result.u64[0] = mask;
     }
 
+    public static bool ElementsAreAllBitsSetOrZero(ReadOnlySpan<byte> value, var_types baseType, int elementCount)
+    {
+        var elementSize = GetSimdElementSize(baseType);
+        assert((elementCount >= 0) && (elementCount <= value.Length / elementSize));
+        for (var index = 0; index < elementCount; index++)
+        {
+            var element = value.Slice(index * elementSize, elementSize);
+            var firstByte = element[0];
+            if ((firstByte is not (0 or byte.MaxValue)) || (element.IndexOfAnyExcept(firstByte) >= 0))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private static int GetSimdElementSize(var_types baseType)
     {
         switch (baseType)

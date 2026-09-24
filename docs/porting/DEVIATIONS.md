@@ -159,6 +159,12 @@ base/derived query implementations. Constant conversion creates a fresh typed
 mask through the existing managed constructor; the outer folding dispatcher
 remains responsible for morph and VN finalization (B107).
 
+Per-element mask recognition checks bounded raw byte lanes rather than separate
+native integer template instantiations. Only an entirely zero or entirely
+one lane qualifies, so floating signed zero and NaN payloads are not treated as
+numeric comparisons. Local and intrinsic mask-width compatibility is unchanged
+(B108).
+
 Phi definitions own copied SSA-number arrays and expose readonly memory.
 Reaching-VN traversal uses a managed stack and membership set, preserving native
 push/pop order, conservative SSA lookup, duplicate suppression, cycles and early
