@@ -2,6 +2,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
 
 namespace RyuJitSharp;
 
@@ -54,6 +55,11 @@ internal static class PortingCorpus
             return 9;
         }
 
+        if (FoldHardware(5) != 12)
+        {
+            return 10;
+        }
+
         return 0;
     }
 
@@ -97,6 +103,9 @@ internal static class PortingCorpus
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int FoldInteger(int value) => (value & 0xFF) + (value / 1) + (value * 0);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int FoldHardware(int value) => (Vector128.Create(3) + Vector128.Create(4)).ToScalar() + value;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int InlineCandidate(int value) => value * 2;

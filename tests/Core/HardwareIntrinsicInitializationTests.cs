@@ -14,6 +14,401 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class HardwareIntrinsicInitializationTests
 {
+#if DEBUG
+    [TestCase(1)]
+    [TestCase(2)]
+    [TestCase(3)]
+    [TestCase(4)]
+    public static void HardwareFoldingDestructionClearsUsesBeforePoisoningFlags(int count)
+    {
+        WithCompiler(compiler => {
+            var operands = new GenTree[count];
+            for (var index = 0; index < count; index++)
+            {
+                operands[index] = compiler.gtNewIconNode(TYP_INT, index);
+            }
+
+            var first = operands[0];
+            var tree = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_Vector_Create, TYP_INT, 16, operands);
+            var uses = tree.Operands;
+            Globals.DEBUG_DESTROY_NODE(tree);
+            Assert.That(tree.Oper, Is.EqualTo(GT_COUNT));
+            Assert.That(tree._operSave, Is.EqualTo(GT_HWINTRINSIC));
+            Assert.That(first.Oper, Is.EqualTo(GT_CNS_INT));
+            for (var index = 0; index < count; index++)
+            {
+                Assert.That(uses[index], Is.Null);
+            }
+        });
+    }
+#endif
+
+    [TestCase(1)]
+    [TestCase(4)]
+    public static void HardwareFoldingCreationRefreshesValueNumbersAndMorphState(int count)
+    {
+        WithCompiler(compiler => {
+            compiler.fgGlobalMorph = true;
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var operands = new GenTree[count];
+            for (var index = 0; index < count; index++)
+            {
+                operands[index] = compiler.gtNewIconNode(TYP_INT, index + 2);
+            }
+
+            var tree = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_Vector_Create, TYP_INT, 16, operands);
+            var result = compiler.gtFoldExpr(tree);
+            Assert.That(result.Oper, Is.EqualTo(GT_CNS_VEC));
+            for (var index = 0; index < 4; index++)
+            {
+                Assert.That(result.AsVecCon().SimdVal.i32[index], Is.EqualTo(count == 1 ? 2 : index + 2));
+            }
+
+            var expected = store.VNForGenericCon(TYP_SIMD16, result.AsVecCon().SimdVal.AsSpan<byte>()[..16]);
+            Assert.That(result._vnPair.Liberal, Is.EqualTo(expected));
+            Assert.That(result._vnPair.Conservative, Is.EqualTo(expected));
+            Assert.That(result.Flags & GTF_ALL_EFFECT, Is.EqualTo(GTF_EMPTY));
+#if DEBUG
+            Assert.That(result.WasMorphed, Is.True);
+#endif
+        });
+    }
+
+    [TestCase(NI_AVX2_LeadingZeroCount, false, 0L, 32)]
+    [TestCase(NI_AVX2_X64_LeadingZeroCount, true, 0L, 64)]
+    [TestCase(NI_AVX2_TrailingZeroCount, false, 0L, 32)]
+    [TestCase(NI_AVX2_X64_TrailingZeroCount, true, long.MinValue, 63)]
+    [TestCase(NI_X86Base_PopCount, false, -1L, 32)]
+    [TestCase(NI_X86Base_X64_PopCount, true, -1L, 64)]
+    [TestCase(NI_X86Base_BitScanForward, false, 0L, -1)]
+    [TestCase(NI_X86Base_X64_BitScanForward, true, long.MinValue, 63)]
+    [TestCase(NI_X86Base_BitScanReverse, false, int.MinValue, 31)]
+    [TestCase(NI_X86Base_X64_BitScanReverse, true, 0L, -1)]
+    public static void HardwareFoldingScalarBitsPreserveUndefinedZero(NamedIntrinsic id, bool wide, long value, int expected)
+    {
+        WithCompiler(compiler => {
+            var type = wide ? TYP_LONG : TYP_INT;
+            var operand = compiler.gtNewIconNode(type, (nint)value);
+            var tree = compiler.gtNewScalarHWIntrinsicNode(type, id, operand);
+            var result = compiler.gtFoldExpr(tree);
+            Assert.That(result, Is.SameAs(expected < 0 ? tree : operand));
+            if (expected >= 0)
+            {
+                Assert.That(result.AsIntConCommon().IntegralValue, Is.EqualTo(expected));
+            }
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void HardwareFoldingConversionCancellationRetainsUnderlyingNode(bool maskResult)
+    {
+        WithCompiler(compiler => {
+            var operand = new GenTreeLclVar(maskResult ? TYP_MASK : TYP_SIMD16, 0);
+            var inner = maskResult
+                ? compiler.gtNewSimdCvtMaskToVectorNode(TYP_SIMD16, operand, TYP_INT, 16)
+                : compiler.gtNewSimdCvtVectorToMaskNode(TYP_MASK, operand, TYP_INT, 16);
+            var outer = maskResult
+                ? compiler.gtNewSimdCvtVectorToMaskNode(TYP_MASK, inner, TYP_FLOAT, 16)
+                : compiler.gtNewSimdCvtMaskToVectorNode(TYP_SIMD16, inner, TYP_FLOAT, 16);
+            Assert.That(compiler.gtFoldExpr(outer), Is.SameAs(operand));
+        });
+    }
+
+    [TestCase(NI_X86Base_And, NI_AVX512_AndMask, false)]
+    [TestCase(NI_X86Base_Or, NI_AVX512_OrMask, false)]
+    [TestCase(NI_X86Base_Xor, NI_AVX512_XorMask, false)]
+    [TestCase(NI_X86Base_Xor, NI_AVX512_NotMask, true)]
+    public static void HardwareFoldingBitwiseConversionsKeepMaskGranularity(NamedIntrinsic id, NamedIntrinsic expected, bool complement)
+    {
+        WithCompiler(compiler => {
+            var left = new GenTreeLclVar(TYP_MASK, 0);
+            var right = new GenTreeLclVar(TYP_MASK, 1);
+            var leftVector = compiler.gtNewSimdCvtMaskToVectorNode(TYP_SIMD16, left, TYP_BYTE, 16);
+            var rightVector = complement
+                ? compiler.gtNewAllBitsSetConNode(TYP_SIMD16)
+                : compiler.gtNewSimdCvtMaskToVectorNode(TYP_SIMD16, right, TYP_UBYTE, 16);
+            var tree = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, id, TYP_INT, 16, leftVector, rightVector);
+            tree.Flags |= GTF_REVERSE_OPS;
+            var result = compiler.gtFoldExpr(tree);
+            Assert.That(result.IsConvertMaskToVector, Is.True);
+            Assert.That(result.AsHWIntrinsic().GetOp(1), Is.SameAs(tree));
+            Assert.That(tree.Type, Is.EqualTo(TYP_MASK));
+            Assert.That(tree.HWIntrinsicId, Is.EqualTo(expected));
+            Assert.That(tree.SimdBaseType, Is.EqualTo(TYP_BYTE));
+            Assert.That(tree.GetOp(1), Is.SameAs(left));
+            Assert.That(tree.Operands.Length, Is.EqualTo(complement ? 1 : 2));
+            if (complement)
+            {
+                Assert.That(tree.Flags & GTF_REVERSE_OPS, Is.EqualTo(GTF_EMPTY));
+            }
+            else
+            {
+                Assert.That(tree.GetOp(2), Is.SameAs(right));
+            }
+        });
+    }
+
+    [TestCase(NI_X86Base_ShiftLeftLogical, 1L, false)]
+    [TestCase(NI_X86Base_ShiftLeftLogical, 32L, false)]
+    [TestCase(NI_X86Base_ShiftLeftLogical, -1L, false)]
+    [TestCase(NI_AVX2_ShiftLeftLogicalVariable, 1L, true)]
+    public static void HardwareFoldingShiftsDistinguishUniformAndPerLaneCounts(NamedIntrinsic id, long count, bool variable)
+    {
+        WithCompiler(compiler => {
+            var value = new GenTreeVecCon(TYP_SIMD16);
+            value.EvaluateBroadcastInPlace(TYP_INT, 1L);
+            var shift = new GenTreeVecCon(TYP_SIMD16);
+            shift.SimdVal.i64[0] = count;
+            shift.SimdVal.i32[2] = 3;
+            shift.SimdVal.i32[3] = 4;
+            var tree = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, id, TYP_INT, 16, value, shift);
+            Assert.That(compiler.gtFoldExpr(tree), Is.SameAs(value));
+            int[] expected = variable ? [2, 1, 8, 16] : count == 1 ? [2, 2, 2, 2] : [0, 0, 0, 0];
+            for (var index = 0; index < expected.Length; index++)
+            {
+                Assert.That(value.SimdVal.i32[index], Is.EqualTo(expected[index]));
+            }
+        });
+    }
+
+    [TestCase(-1)]
+    [TestCase(0)]
+    [TestCase(3)]
+    [TestCase(4)]
+    public static void HardwareFoldingElementAccessPreservesBounds(int index)
+    {
+        WithCompiler(compiler => {
+            var value = new GenTreeVecCon(TYP_SIMD16);
+            value.EvaluateBroadcastInPlace(TYP_INT, 7L);
+            var position = compiler.gtNewIconNode(TYP_INT, index);
+            var replacement = compiler.gtNewIconNode(TYP_INT, 11);
+            var set = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_Vector_WithElement, TYP_INT, 16,
+                value, position, replacement);
+            var valid = (uint)index < 4;
+            Assert.That(compiler.gtFoldExpr(set), Is.SameAs(valid ? value : set));
+            var get = compiler.gtNewSimdHWIntrinsicNode(TYP_INT, NI_Vector_GetElement, TYP_INT, 16, value,
+                compiler.gtNewIconNode(TYP_INT, index));
+            var result = compiler.gtFoldExpr(get);
+            if (valid)
+            {
+                Assert.That(result.AsIntConCommon().IntegralValue, Is.EqualTo(11));
+                Assert.That(value.SimdVal.i32[(index + 1) % 4], Is.EqualTo(7));
+            }
+            else
+            {
+                Assert.That(result, Is.SameAs(get));
+                Assert.That(value.SimdVal.i32[0], Is.EqualTo(7));
+            }
+        });
+    }
+
+    [TestCase(NI_Vector_ToVector256, TYP_SIMD16, TYP_SIMD32)]
+    [TestCase(NI_Vector_ToVector512, TYP_SIMD16, TYP_SIMD64)]
+    [TestCase(NI_Vector_ToVector512, TYP_SIMD32, TYP_SIMD64)]
+    [TestCase(NI_Vector_GetUpper, TYP_SIMD32, TYP_SIMD16)]
+    [TestCase(NI_Vector_GetUpper, TYP_SIMD64, TYP_SIMD32)]
+    public static void HardwareFoldingResizeUsesCorrectStorage(NamedIntrinsic id, var_types inputType, var_types outputType)
+    {
+        WithCompiler(compiler => {
+            var value = new GenTreeVecCon(inputType);
+            for (var index = 0; index < 64; index++)
+            {
+                value.SimdVal.u8[index] = (byte)(index + 1);
+            }
+
+            var tree = compiler.gtNewSimdHWIntrinsicNode(outputType, id, TYP_INT, (byte)inputType.Size, value);
+            Assert.That(compiler.gtFoldExpr(tree), Is.SameAs(value));
+            Assert.That(value.Type, Is.EqualTo(outputType));
+            for (var index = 0; index < outputType.Size; index++)
+            {
+                var expected = id == NI_Vector_GetUpper ? index + outputType.Size + 1
+                    : index < inputType.Size ? index + 1 : 0;
+                Assert.That(value.SimdVal.u8[index], Is.EqualTo(expected));
+            }
+        });
+    }
+
+    [TestCase(NI_X86Base_Add, 0U, false)]
+    [TestCase(NI_X86Base_Add, 0x80000000U, true)]
+    [TestCase(NI_X86Base_Subtract, 0U, true)]
+    [TestCase(NI_X86Base_Subtract, 0x80000000U, false)]
+    [TestCase(NI_X86Base_Multiply, 0U, false)]
+    [TestCase(NI_X86Base_Multiply, 0x3F800000U, true)]
+    [TestCase(NI_X86Base_AddScalar, 0x80000000U, false)]
+    public static void HardwareFoldingFloatingIdentitiesRespectSignedZeroAndScalarLanes(NamedIntrinsic id, uint bits, bool folds)
+    {
+        WithCompiler(compiler => {
+            var variable = new GenTreeLclVar(TYP_SIMD16, 0);
+            var constant = new GenTreeVecCon(TYP_SIMD16);
+            constant.EvaluateBroadcastInPlace(TYP_UINT, (long)bits);
+            var tree = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, id, TYP_FLOAT, 16, variable, constant);
+            Assert.That(compiler.gtFoldExpr(tree), Is.SameAs(folds ? variable : tree));
+        });
+    }
+
+    [TestCase(NI_X86Base_Add)]
+    [TestCase(NI_X86Base_Multiply)]
+    [TestCase(NI_X86Base_CompareEqual)]
+    public static void HardwareFoldingNaNRetainsDiscardedCallEffects(NamedIntrinsic id)
+    {
+        WithCompiler(compiler => {
+            var call = compiler.gtNewCallNode(TYP_SIMD16, gtCallTypes.CT_USER_FUNC, null);
+            var constant = new GenTreeVecCon(TYP_SIMD16);
+            constant.EvaluateBroadcastInPlace(TYP_UINT, 0x7FC00001L);
+            var tree = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, id, TYP_FLOAT, 16, call, constant);
+            var result = compiler.gtFoldExpr(tree);
+            Assert.That(result.Oper, Is.EqualTo(GT_COMMA));
+            Assert.That(result.AsOp().Op1, Is.SameAs(call));
+            Assert.That(result.AsOp().Op2, Is.SameAs(constant));
+            Assert.That(result.Flags & GTF_CALL, Is.EqualTo(GTF_CALL));
+            Assert.That(constant.SimdVal.u32[0], Is.EqualTo(id == NI_X86Base_CompareEqual ? 0U : 0x7FC00001U));
+        });
+    }
+
+    [TestCase(FloatComparisonMode.OrderedFalseNonSignaling, false)]
+    [TestCase(FloatComparisonMode.UnorderedTrueNonSignaling, true)]
+    [TestCase(FloatComparisonMode.OrderedFalseSignaling, false)]
+    [TestCase(FloatComparisonMode.UnorderedTrueSignaling, true)]
+    public static void HardwareFoldingComparisonModesPreserveScalarUpperLanes(FloatComparisonMode mode, bool allBitsSet)
+    {
+        WithCompiler(compiler => {
+            var left = new GenTreeVecCon(TYP_SIMD16);
+            left.SimdVal.u32[1] = 0x80000000;
+            left.SimdVal.u32[2] = 0x7FA12345;
+            left.SimdVal.u32[3] = 0x3F800000;
+            var right = new GenTreeLclVar(TYP_SIMD16, 0);
+            var tree = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_AVX_CompareScalar, TYP_FLOAT, 16,
+                left, right, compiler.gtNewIconNode(TYP_INT, (byte)mode));
+            Assert.That(compiler.gtFoldExpr(tree), Is.SameAs(left));
+            Assert.That(left.SimdVal.u32[0], Is.EqualTo(allBitsSet ? uint.MaxValue : 0U));
+            Assert.That(left.SimdVal.u32[1], Is.EqualTo(0x80000000U));
+            Assert.That(left.SimdVal.u32[2], Is.EqualTo(0x7FA12345U));
+            Assert.That(left.SimdVal.u32[3], Is.EqualTo(0x3F800000U));
+            var unknown = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_AVX_CompareScalar, TYP_FLOAT, 16,
+                right, new GenTreeVecCon(TYP_SIMD16), compiler.gtNewIconNode(TYP_INT, (byte)mode));
+            Assert.That(compiler.gtFoldExpr(unknown), Is.SameAs(unknown));
+        });
+    }
+
+    [Test]
+    public static void HardwareFoldingMaskComparisonNormalizesAndRefreshesConstants()
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var left = new GenTreeVecCon(TYP_SIMD16);
+            var right = new GenTreeVecCon(TYP_SIMD16);
+            left.SimdVal.f32[1] = 1;
+            left.SimdVal.u32[2] = 0x7FC00000;
+            var tree = compiler.gtNewSimdHWIntrinsicNode(TYP_MASK, NI_AVX512_CompareMask, TYP_FLOAT, 16,
+                left, right, compiler.gtNewIconNode(TYP_INT, (byte)FloatComparisonMode.OrderedEqualNonSignaling));
+            var result = compiler.gtFoldExpr(tree);
+            Assert.That(tree.HWIntrinsicId, Is.EqualTo(NI_AVX512_CompareEqualMask));
+            Assert.That(tree.Operands.Length, Is.EqualTo(2));
+            Assert.That(result.AsMskCon().SimdMaskVal.RawBits, Is.EqualTo(9));
+            Assert.That(result._vnPair.Liberal, Is.EqualTo(store.VNForSimdMaskCon(result.AsMskCon().SimdMaskVal)));
+            Assert.That(result._vnPair.Conservative, Is.EqualTo(result._vnPair.Liberal));
+            Assert.That(result.Flags & GTF_ALL_EFFECT, Is.EqualTo(GTF_EMPTY));
+        });
+    }
+
+    [TestCase(TYP_FLOAT, 16, true)]
+    [TestCase(TYP_DOUBLE, 16, true)]
+    [TestCase(TYP_FLOAT, 64, true)]
+    [TestCase(TYP_DOUBLE, 64, false)]
+    public static void HardwareFoldingConstantComparisonModesUseActiveMaskBits(var_types baseType, byte size, bool isTrue)
+    {
+        WithCompiler(compiler => {
+            var type = size == 16 ? TYP_SIMD16 : TYP_SIMD64;
+            var mode = isTrue ? FloatComparisonMode.UnorderedTrueNonSignaling : FloatComparisonMode.OrderedFalseNonSignaling;
+            var tree = compiler.gtNewSimdHWIntrinsicNode(TYP_MASK, NI_AVX512_CompareMask, baseType, size,
+                new GenTreeLclVar(type, 0), new GenTreeLclVar(type, 1), compiler.gtNewIconNode(TYP_INT, (byte)mode));
+            var result = compiler.gtFoldExpr(tree);
+            Assert.That(result.AsMskCon().SimdMaskVal.RawBits, Is.EqualTo(isTrue ? (1L << (size / baseType.Size)) - 1 : 0));
+        });
+    }
+
+    [TestCase(false, false, false)]
+    [TestCase(false, true, false)]
+    [TestCase(true, false, false)]
+    [TestCase(true, true, false)]
+    [TestCase(false, true, true)]
+    [TestCase(true, false, true)]
+    public static void HardwareFoldingBlendRespectsMaskFormAndEffects(bool maskForm, bool allBitsSet, bool sideEffect)
+    {
+        WithCompiler(compiler => {
+            var kept = new GenTreeLclVar(TYP_SIMD16, 0);
+            GenTree discarded = sideEffect ? compiler.gtNewCallNode(TYP_SIMD16, gtCallTypes.CT_USER_FUNC, null)
+                : new GenTreeLclVar(TYP_SIMD16, 1);
+            GenTree condition;
+            if (maskForm)
+            {
+                condition = compiler.gtNewMskConNode(allBitsSet ? simdmask_t.AllBitsSet(4) : default);
+            }
+            else
+            {
+                condition = allBitsSet ? compiler.gtNewAllBitsSetConNode(TYP_SIMD16) : new GenTreeVecCon(TYP_SIMD16);
+            }
+
+            var id = maskForm ? NI_AVX512_BlendVariableMask : NI_X86Base_BlendVariable;
+            var tree = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, id, TYP_INT, 16,
+                allBitsSet ? discarded : kept, allBitsSet ? kept : discarded, condition);
+            Assert.That(compiler.gtFoldExpr(tree), Is.SameAs(sideEffect ? tree : kept));
+        });
+    }
+
+    [Test]
+    public static void HardwareFoldingMixedSelectCombinesBitsWithoutBooleanizingLanes()
+    {
+        WithCompiler(compiler => {
+            var condition = new GenTreeVecCon(TYP_SIMD16);
+            condition.EvaluateBroadcastInPlace(TYP_UINT, 0xF0F0F0F0L);
+            var left = new GenTreeVecCon(TYP_SIMD16);
+            left.EvaluateBroadcastInPlace(TYP_UINT, 0xAAAAAAAA);
+            var right = new GenTreeVecCon(TYP_SIMD16);
+            right.EvaluateBroadcastInPlace(TYP_UINT, 0x55555555L);
+            var tree = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_Vector_ConditionalSelect, TYP_UINT, 16,
+                condition, left, right);
+            Assert.That(compiler.gtFoldExpr(tree), Is.SameAs(left));
+            Assert.That(left.SimdVal.u32[0], Is.EqualTo(0xA5A5A5A5U));
+            Assert.That(left.SimdVal.u32[3], Is.EqualTo(0xA5A5A5A5U));
+        });
+    }
+
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void HardwareFoldingSelectHonorsDiscardedOperandEffects(bool allBitsSet, bool sideEffect)
+    {
+        WithCompiler(compiler => {
+            var condition = new GenTreeVecCon(TYP_SIMD16);
+            if (allBitsSet)
+            {
+                condition.SimdVal = simd64_t.AllBitsSet;
+            }
+
+            var kept = new GenTreeLclVar(TYP_SIMD16, 0);
+            GenTree discarded = sideEffect ? compiler.gtNewCallNode(TYP_SIMD16, gtCallTypes.CT_USER_FUNC, null)
+                : new GenTreeLclVar(TYP_SIMD16, 1);
+            var tree = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_Vector_ConditionalSelect, TYP_INT, 16,
+                condition, allBitsSet ? kept : discarded, allBitsSet ? discarded : kept);
+            var result = compiler.gtFoldExpr(tree);
+            if (sideEffect && !allBitsSet)
+            {
+                Assert.That(result.Oper, Is.EqualTo(GT_COMMA));
+                Assert.That(result.AsOp().Op1, Is.SameAs(discarded));
+                Assert.That(result.AsOp().Op2, Is.SameAs(kept));
+            }
+            else
+            {
+                Assert.That(result, Is.SameAs(sideEffect ? tree : kept));
+            }
+        });
+    }
+
     [TestCase(FloatComparisonMode.OrderedEqualNonSignaling, NI_X86Base_CompareEqual, NI_AVX_CompareEqual, NI_X86Base_CompareScalarEqual, NI_AVX512_CompareEqualMask)]
     [TestCase(FloatComparisonMode.OrderedGreaterThanSignaling, NI_X86Base_CompareGreaterThan, NI_AVX_CompareGreaterThan, NI_X86Base_CompareScalarGreaterThan, NI_AVX512_CompareGreaterThanMask)]
     [TestCase(FloatComparisonMode.OrderedGreaterThanOrEqualSignaling, NI_X86Base_CompareGreaterThanOrEqual, NI_AVX_CompareGreaterThanOrEqual, NI_X86Base_CompareScalarGreaterThanOrEqual, NI_AVX512_CompareGreaterThanOrEqualMask)]
@@ -955,6 +1350,9 @@ internal static unsafe class HardwareIntrinsicInitializationTests
 #endif
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitFlags flags = default;
+        compiler.opts.jitFlags = &flags;
+        compiler.opts.SetMinOpts(false);
         JitTls.Compiler = compiler;
 
         try

@@ -3683,7 +3683,13 @@ public partial class Compiler
             return gtFoldExprConditional(tree);
         }
 
-        // TODO: Port hardware-intrinsic folding.
+#if FEATURE_HW_INTRINSICS && TARGET_XARCH && FEATURE_MASKED_HW_INTRINSICS
+        if (tree.Oper.IsHWIntrinsic)
+        {
+            return gtFoldExprHWIntrinsic(tree.AsHWIntrinsic());
+        }
+#endif
+
         return tree;
     }
 
@@ -12877,6 +12883,13 @@ public partial class Compiler
         if (varTypeIsSimd(type))
         {
             return gtNewVconNode(type);
+        }
+#endif
+
+#if FEATURE_MASKED_HW_INTRINSICS
+        if (varTypeIsMask(type))
+        {
+            return gtNewMskConNode(default);
         }
 #endif
 

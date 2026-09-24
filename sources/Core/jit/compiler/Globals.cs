@@ -213,13 +213,14 @@ public partial class Globals
         // Save gtOper in case we want to find out what this node was
         tree._operSave = tree._oper;
 
-        tree._type = TYP_UNDEF;
-        tree.Flags |= ~GTF_NODE_MASK;
-
+        // Use-edge enumeration depends on the original flags and operand shape.
         foreach (ref var use in tree.UseEdges)
         {
             use = null;
         }
+
+        tree._type = TYP_UNDEF;
+        tree.Flags |= ~GTF_NODE_MASK;
 
         // Must do this last, because the "AsOp()" check above will fail otherwise.
         // Don't call SetOper, because GT_COUNT is not a valid value

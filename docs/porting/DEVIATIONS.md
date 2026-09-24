@@ -178,6 +178,20 @@ native enum. All 32 names/encodings and its byte representation were verified
 against the pinned header. The native mapping and signaling-mode normalization
 are unchanged (B110).
 
+The Windows-x64 HWI folding dispatcher reuses the fixed-width evaluators and
+element-access helpers. Scalar bit scans use framework leading/trailing-zero
+counts while retaining the native no-fold rule for zero BSF/BSR inputs. Native
+fallthrough becomes explicit `goto case`; operand-count invariants establish
+non-null operands without suppressing nullable analysis. Node reuse, conversion
+cancellation, side-effect ordering, morph marking and VN refresh are unchanged.
+Other-target dispatchers remain deferred (B111).
+
+Managed debug destruction clears all use edges, unlike native's simple-node
+operand clearing. It must traverse those edges before poisoning type/flags:
+poisoning first sets `GTF_REVERSE_OPS` and breaks nonbinary HWI traversal.
+Mask-zero construction now uses the existing zero-initialized mask constructor,
+matching the native factory (B111).
+
 Phi definitions own copied SSA-number arrays and expose readonly memory.
 Reaching-VN traversal uses a managed stack and membership set, preserving native
 push/pop order, conservative SSA lookup, duplicate suppression, cycles and early

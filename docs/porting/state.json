@@ -12,26 +12,26 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete xarch comparison-mode normalization and variable-shift metadata required by the full HWI folding dispatcher.",
+      "scope": "Port and activate the complete Windows-x64 HWI folding dispatcher using the completed evaluation, mask, conversion and metadata prerequisites.",
       "doneWhen": [
-        "Preserve all native comparison-mode mappings for vector, scalar and mask forms, including signaling/non-signaling equivalence.",
-        "Retain the original intrinsic for modes handled by the folding dispatcher or left unnormalized.",
-        "Distinguish per-lane variable shifts from uniform vector shift-count operands; keep dispatcher activation deferred until its complete closure is ready.",
+        "Preserve creation, unary/binary/ternary folding, conversion cancellation, scalar upper lanes and vector/mask identities.",
+        "Preserve native node reuse/replacement, side-effect ordering, morph marking and constant VN refresh.",
+        "Keep non-xarch dispatcher activation deferred rather than introducing partial target behavior.",
         "The selected Debug/Release checks pass and complete functions are committed with their native retirement and checkpoint."
       ],
       "validation": [
-        "Verify framework FloatComparisonMode names/encodings against native and cover every mapped mode pair plus unchanged modes and variable-shift IDs.",
+        "Cover dispatcher behavior in the existing HWI/scalar fixture and replay the old dispatcher to establish regression evidence.",
         "Run one HWI/scalar selection in Debug and Release.",
-        "No NativeAOT recapture or full suite for support-only changes unless the reachable frontier changes."
+        "Publish NativeAOT and recapture native/managed corpus with an HWI folding case before claiming the reachable behavior milestone."
       ],
       "deferred": [
         "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
         "General local assertion propagation, block morph and the full global-morph phase.",
-        "Hardware-intrinsic folding and fgInline activation.",
+        "Non-xarch hardware-intrinsic folding and fgInline activation.",
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "HWI evaluation/conversion, mask recognition, same-class reconfiguration and xarch comparison/shift metadata (B102-B110) are complete. Port the full HWI folding dispatcher, preserving existing equivalent vector queries and scalar element access rather than duplicating native wrappers. Recapture NativeAOT/corpus when activation changes reachable behavior; audit fgInline activation afterward. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
+    "nextAction": "Windows-x64 expression folding, including the full HWI dispatcher (B111), is complete. Audit fgInline activation against its remaining phase prerequisites; do not activate incomplete phases. The new FoldHardware corpus probe records the separate impHWIntrinsic stub boundary, not vector folding execution parity. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -693,9 +693,38 @@
         "debugTests": "artifacts\\hwi-comparison-debug.trx",
         "releaseTests": "artifacts\\hwi-comparison-release.trx"
       },
-      "nativeAotPublish": "passed-after-special-folding",
+      "hwiFoldingDispatcher": {
+        "managedSourceCommit": "da99c6ac3ff39e51ab441aa8ac84a0d5cf757caa",
+        "debugPassed": 462,
+        "releasePassed": 454,
+        "newDebugCases": 65,
+        "newReleaseCases": 61,
+        "skipped": 0,
+        "oldDispatcherFailures": 41,
+        "debugDestructionFailuresBeforeFix": 6,
+        "maskZeroFailuresBeforeFix": 1,
+        "nativeDefinitionsRetired": 1,
+        "dispatcherActivated": true,
+        "phaseActivated": false,
+        "nonXarchDispatcherDeferred": true,
+        "nativeAotRecaptured": true,
+        "nativeAotLibrary": "artifacts\\hwi-folding-native\\RyuJitSharp.dll",
+        "nativeAotSha256": "5F25A5818154547DACBF38286ED26E16925B89D8F12C986383A88A6F43C26F84",
+        "debugTests": "artifacts\\hwi-dispatch-validated-debug.trx",
+        "releaseTests": "artifacts\\hwi-dispatch-validated-release.trx",
+        "oldDispatcherTests": "artifacts\\hwi-dispatch-before.trx",
+        "nativeManifest": "artifacts\\hwi-folding-corpus-native\\manifest.json",
+        "managedManifest": "artifacts\\hwi-folding-corpus-managed\\manifest.json",
+        "comparison": "artifacts\\hwi-folding-comparison.json",
+        "corpusMethods": 11,
+        "exactImportPrefixes": ["Add", "Branch", "Locals", "FoldConstants", "FoldFloating", "FoldInteger"],
+        "inlineRelatedDifferences": ["Main", "Call", "InlineCaller", "IndirectCall"],
+        "vectorImporterDifference": "FoldHardware retains calls because impHWIntrinsic is still a stub; this capture does not exercise managed vector folding.",
+        "codegenParity": "not-available"
+      },
+      "nativeAotPublish": "passed-after-hwi-folding",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
-      "phaseDumpParity": "six-of-ten-import-prefixes-equal-remaining-inline-candidate-differences",
+      "phaseDumpParity": "six-of-eleven-import-prefixes-equal-four-inline-differences-and-one-vector-importer-gap",
       "codegenParity": "not-available"
     }
   },
@@ -746,16 +775,17 @@
       "The managed calli corpus case reaches imported CALL ind IR; it does not establish unmanaged calli conversion, NativeAOT fat-pointer execution, or codegen parity.",
       "Instrumented value-profile collection and constrained boxing order are source-reconciled but remain unexercised by the current corpus.",
       "The importer/intrinsic batches pass localized managed checks and a subsequent NativeAOT/native-host corpus capture. That corpus does not exercise Half expansion, helper-to-user conversion, generic Memmove, multidimensional stores, span spilling, runtime async expansions or non-x64 paths; no execution/codegen evidence is claimed for them. The new custom-awaiter-in-continuation optimization and its main-call hook remain unported; continuation-member descriptors and registration now exist, but layout and lowering remain unported.",
-      "Inline placeholder and candidate-diagnostic support has focused coverage for effects, node identity, nested substitution, block flags, byref retyping, constant branches and prior failures. Scalar constant folding is active, but nonconstant, conditional and HWI folding remain incomplete; successful EE-backed late devirtualization, multi-register struct repair and full inlining are not established.",
+      "Inline placeholder and candidate-diagnostic support has focused coverage for effects, node identity, nested substitution, block flags, byref retyping, constant branches and prior failures. Windows-x64 expression folding is active; successful EE-backed late devirtualization, multi-register struct repair and full inlining are not established.",
       "Inline argument/prelude/epilogue integration has focused coverage for live-edge substitution, pseudo-argument classification, struct-load faults, initialization, GC-local cleanup and null-check ordering. EE-backed cctor insertion and full inline-phase execution remain unexercised.",
       "Recursive-inline guards preserve exact-context rejection, depth-observation ordering, the implementation depth bound, and the 64-type generic-loading threshold in controlled EE tests. Implicit-byref demotion cleanup covers retained/undone/no promotion; global morph and end-to-end generic inlining remain unverified.",
       "Async inline-frame return helpers preserve cold resumption branches, caller context loads, frame-depth slot sharing, resumed-indicator propagation through retained fault handlers, and symbolic-offset cloning/dumps in focused IR/EE cases, including invocation through inline block splicing. Successful helper inlining, continuation layout and async lowering remain unverified.",
-      "Inline invocation rollback and failed-call cleanup have controlled EE coverage. Managed exception trapping and synthetic native SEH unwinding pass a Windows-x64 NativeAOT probe, but real EE-thrown failures and successful nested inline compilation remain unexercised. fgInline stays disabled pending expression folding and its remaining closure.",
+      "Inline invocation rollback and failed-call cleanup have controlled EE coverage. Managed exception trapping and synthetic native SEH unwinding pass a Windows-x64 NativeAOT probe, but real EE-thrown failures and successful nested inline compilation remain unexercised. Expression folding is complete on Windows x64; fgInline stays disabled pending its remaining phase-closure audit.",
       "Tree-form scalar folding preserves logical IDs and has exact native import-prefix coverage for six folds. Replacement requires unthreaded source nodes; value numbering, cached post-morph argument aliases and LIR replacement remain unsupported. The full inliner remains disabled.",
       "Floating constant-operand folding preserves native signed-zero and NaN rules, full-optimization gates, effects and JTRUE relop roots. Its four identity folds have exact import-prefix coverage; NaN/effect combinations have focused IR coverage, not codegen evidence. VN support and global-morph assertion closure remain incomplete.",
       "Integral ranges and tree-based non-negativity have focused cast/IR coverage and retain the existing corpus prefixes. VN-dependent non-negativity fails explicitly when tree facts are insufficient. Assertion generation, global morph, non-x64 execution and range-driven codegen are not established.",
-      "Non-HWI folding now covers integer identities, identical comparisons, conditional selection and nullable-box comparisons. FoldInteger has an exact import prefix for its mask-to-cast fold; Roslyn removes multiply-by-zero, while existing importer handling removes divide-by-one before this folding helper. Those identities, effect gates and conditional/nullable cases also have focused IR coverage. HWI folding and full inline/global-morph activation remain pending.",
-      "The ten-method corpus contains no EH or pinned-local cases and establishes neither full-phase nor codegen parity."
+      "Non-HWI folding covers integer identities, identical comparisons, conditional selection and nullable-box comparisons. FoldInteger has an exact import prefix for its mask-to-cast fold; Roslyn removes multiply-by-zero, while existing importer handling removes divide-by-one before this folding helper. Those identities, effect gates and conditional/nullable cases also have focused IR coverage. Full inline/global-morph activation remains pending.",
+      "The Windows-x64 HWI dispatcher has focused IR coverage, including conversion cancellation, mask rewrites, scalar upper lanes, uniform/per-lane shifts, bounds, comparison normalization, side effects and VN refresh. The eleven-method NativeAOT capture retains the six existing exact import prefixes; FoldHardware diverges because impHWIntrinsic still returns no imported intrinsic. Non-xarch folding and vector execution parity are not established.",
+      "The eleven-method corpus contains no EH or pinned-local cases and establishes neither full-phase nor codegen parity."
     ]
   },
   "localRecovery": {
@@ -1078,6 +1108,15 @@
       "commit": "6815149e3a62f57e85e1bf8cc2cc265bdee086ee",
       "indexCommit": "aca7f732f4411cefd69b74f13ca7da3936e7546b",
       "ref": "refs/porting/snapshots/native-ledger-hwi-comparison"
+    },
+    "hwiFoldingManagedSource": {
+      "commit": "da99c6ac3ff39e51ab441aa8ac84a0d5cf757caa",
+      "ref": "refs/porting/snapshots/hwi-folding-source"
+    },
+    "hwiFoldingNativeResidual": {
+      "commit": "ca14062ae61645e5c0d40875d7034d1fda7ffe81",
+      "indexCommit": "867dc4fe0cfb294b019e98bb05f293a6d1840dbc",
+      "ref": "refs/porting/snapshots/native-ledger-hwi-folding"
     }
   },
   "sourceMap": [
