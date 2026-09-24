@@ -232,7 +232,7 @@ The shared transformer receives its non-null original call at construction;
 CFG blocks remain nullable until their corresponding creation steps establish
 the native invariants. Fat-pointer expansion preserves the tagged two-word tuple,
 call cloning, argument placement and native 80/20 block versus 50/50 edge weights
-(B119/B121). The phase stays disabled pending complete guarded devirtualization.
+(B119/B121). B123 completes guarded devirtualization and activates the pass.
 The inferred-local type correction in B120 restores native behavior, rather than
 introducing a managed deviation.
 
@@ -241,6 +241,16 @@ ordinary expression cloning. Candidate metadata and return placeholders retain
 their native shared relationships until the caller repairs them. Vtable expansion
 interprets the EE's managed `int` offset outputs as native unsigned values before
 pointer-sized conversion and preserves 32-bit wrapping of their sum (B122).
+
+Owning-link lookup returns a `ref struct` containing the actual owning byref.
+The visitor records the parent and exact operand index, resolving that slot
+immediately after traversal: C# visitor callbacks cannot retain their input
+byref in visitor state. This preserves first-use selection even when multiple
+operands share a node or execution order differs from tree-walk order.
+GDV scouting replaces fixed-up return placeholders through their owning refs;
+candidate metadata remains shared only where native shares it. The exact-GDV
+fallback remains in the graph without incoming edges for later cleanup, and
+native metric guards are retained (B123/B124).
 
 Phi definitions own copied SSA-number arrays and expose readonly memory.
 Reaching-VN traversal uses a managed stack and membership set, preserving native

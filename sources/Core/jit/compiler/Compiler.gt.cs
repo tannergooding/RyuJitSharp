@@ -3657,6 +3657,13 @@ public partial class Compiler
     };
 #endif
 
+    public FindLinkData gtFindLink(Statement stmt, GenTree node)
+    {
+        var walker = new FindLinkWalker(node);
+        _ = walker.WalkTree(ref stmt.RootNodeRef, null);
+        return walker.GetResult(stmt);
+    }
+
     /// <summary>Check if a tree contains a node matching the specified predicate. Descend only into subtrees with the specified flags set on them (can be GTF_EMPTY to descend into all nodes).</summary>
     /// <param name="tree">The tree</param>
     /// <param name="predicate">Predicate that the call must match</param>

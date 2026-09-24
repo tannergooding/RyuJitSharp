@@ -16,11 +16,77 @@ using static RyuJitSharp.var_types;
 namespace RyuJitSharp.UnitTests;
 
 [NonParallelizable]
-internal static unsafe class IndirectCallTransformationTests
+internal static unsafe partial class IndirectCallTransformationTests
 {
     private static int s_chunkOffset;
     private static int s_slotOffset;
     private static bool s_relative;
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void OwningLinkIdentifiesTheFirstSharedOperand(bool reversed)
+    {
+        WithCompiler(compiler => {
+            var shared = compiler.gtNewIconNode(TYP_INT, 1);
+            var parent = compiler.gtNewBinaryNode(GT_ADD, TYP_INT, shared, shared);
+            if (reversed)
+            {
+                parent.Flags |= GTF_REVERSE_OPS;
+            }
+
+            var stmt = compiler.gtNewStmt(parent);
+            var link = compiler.gtFindLink(stmt, shared);
+            Assert.That(link.nodeToFind, Is.SameAs(shared));
+            Assert.That(link.parent, Is.SameAs(parent));
+            Assert.That(Unsafe.AreSame(ref link.result, ref parent.Op1Ref), Is.True);
+            var replacement = compiler.gtNewIconNode(TYP_INT, 2);
+            link.result = replacement;
+            Assert.That(parent.Op1, Is.SameAs(replacement));
+            Assert.That(parent.Op2, Is.SameAs(shared));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void OwningLinkDistinguishesRootFromMissingNode(bool present)
+    {
+        WithCompiler(compiler => {
+            var node = compiler.gtNewIconNode(TYP_INT, 1);
+            var stmt = compiler.gtNewStmt(present ? node : compiler.gtNewIconNode(TYP_INT, 2));
+            var link = compiler.gtFindLink(stmt, node);
+            Assert.That(link.parent, Is.Null);
+            Assert.That(Unsafe.IsNullRef(ref link.result), Is.EqualTo(!present));
+
+            if (present)
+            {
+                var replacement = compiler.gtNewIconNode(TYP_INT, 3);
+                link.result = replacement;
+                Assert.That(stmt.RootNode, Is.SameAs(replacement));
+            }
+        });
+    }
+
+    [Test]
+    public static void OwningCallLinksRetainDistinctArgumentAndControlSlots()
+    {
+        WithCompiler(compiler => {
+            var shared = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
+            var call = CreateFatCall(compiler, shared, TYP_VOID);
+            var arg = call.Args.PushBack(NewCallArg.CreateForPrimitive(shared));
+            var stmt = compiler.gtNewStmt(call);
+            var argumentLink = compiler.gtFindLink(stmt, shared);
+            Assert.That(argumentLink.parent, Is.SameAs(call));
+            Assert.That(Unsafe.AreSame(ref argumentLink.result, ref arg.EarlyNodeRef), Is.True);
+            var replacement = compiler.gtNewIconNode(TYP_I_IMPL, 0x2000);
+            argumentLink.result = replacement;
+
+            var controlLink = compiler.gtFindLink(stmt, shared);
+            Assert.That(Unsafe.AreSame(ref controlLink.result, ref call.ControlExprRef), Is.True);
+            controlLink.result = compiler.gtNewIconNode(TYP_I_IMPL, 0x3000);
+            Assert.That(argumentLink.result, Is.SameAs(replacement));
+            Assert.That(arg.EarlyNode, Is.SameAs(replacement));
+        });
+    }
 
     [TestCase(0, false)]
     [TestCase(1, false)]
@@ -435,6 +501,18 @@ internal static unsafe class IndirectCallTransformationTests
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.Base.runWithSPMIErrorTrap = &UnavailableClassName;
         vtable.Base.Base.getMethodVTableOffset = &GetMethodVTableOffset;
+        vtable.Base.Base.getMethodClass = &GetMethodClass;
+        vtable.Base.Base.getMethodAttribs = &GetMethodAttribs;
+        vtable.Base.Base.getMethodSig = &GetMethodSig;
+        vtable.Base.Base.isValueClass = &IsValueClass;
+        vtable.Base.Base.getExactClasses = &GetExactClasses;
+        vtable.Base.embedClassHandle = &EmbedClassHandle;
+        vtable.Base.getFunctionEntryPoint = &GetFunctionEntryPoint;
+        // The EE uses a one-byte bool; unmanaged managed callbacks require its
+        // blittable byte representation.
+        vtable.Base.getFunctionFixedEntryPoint =
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_STRUCT_*, bool, CORINFO_CONST_LOOKUP*, void>)
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_STRUCT_*, byte, CORINFO_CONST_LOOKUP*, void>)&GetFunctionFixedEntryPoint;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compHndBBtab = [];
@@ -442,6 +520,11 @@ internal static unsafe class IndirectCallTransformationTests
         compiler.lvaTable = [];
         compiler.info.compIsStatic = true;
         compiler.info.compCompHnd = &jitInfo;
+        CORINFO_METHOD_INFO methodInfo = default;
+        compiler.info.compMethodInfo = &methodInfo;
+        compiler.eeInfoInitialized = true;
+        compiler.eeInfo.offsetOfDelegateFirstTarget = 16;
+        compiler.eeInfo.offsetOfDelegateInstance = 8;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
 #if DEBUG
@@ -450,7 +533,14 @@ internal static unsafe class IndirectCallTransformationTests
         using var jitTls = new JitTls(&jitInfo);
 #endif
         var previousCompiler = JitTls.Compiler;
+        var previousConfig = JitConfig;
         JitTls.Compiler = compiler;
+        JitConfig = new JitConfigValues();
+        ChainLikelihood(ref JitConfig) = 101;
+        ChainStatements(ref JitConfig) = 1;
+#if DEBUG
+        PrintDevirtualizedMethods(ref JitConfig) = new JitConfigValues.MethodSet(null, null);
+#endif
 
         try
         {
@@ -462,6 +552,7 @@ internal static unsafe class IndirectCallTransformationTests
         }
         finally
         {
+            JitConfig = previousConfig;
             JitTls.Compiler = previousCompiler;
         }
     }

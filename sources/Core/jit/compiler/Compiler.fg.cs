@@ -11755,6 +11755,13 @@ public partial class Compiler
         }
     }
 
+    public void fgUnlinkStmt(BasicBlock block, Statement stmt)
+    {
+        fgRemoveStmt(block, stmt, isUnlink: true);
+        stmt.NextStmt = null;
+        stmt.PrevStmt = null;
+    }
+
     /// <summary>remove a statement from a block's statement list</summary>
     /// <param name="block">the block from which 'stmt' will be removed</param>
     /// <param name="stmt">the statement to be removed</param>
@@ -14226,8 +14233,50 @@ public partial class Compiler
     // TODO: Port phase - fgSsaBuild
     public PhaseStatus fgSsaBuild() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port phase - fgTransformIndirectCalls
-    public PhaseStatus fgTransformIndirectCalls() => PhaseStatus.MODIFIED_NOTHING;
+#if DEBUG
+    public void CheckNoTransformableIndirectCallsRemain()
+    {
+        assert(!MethodHasFatPointer);
+        var visitor = new CheckTransformableIndirectCallsVisitor();
+        foreach (var block in Blocks)
+        {
+            foreach (var stmt in block.Statements)
+            {
+                _ = visitor.WalkTree(ref stmt.RootNodeRef, null);
+            }
+        }
+    }
+#endif
+
+    public PhaseStatus fgTransformIndirectCalls()
+    {
+        var count = 0;
+        if (MethodHasFatPointer || MethodHasGuardedDevirtualization)
+        {
+            var transformer = new IndirectCallTransformer(this);
+            count = transformer.Run();
+            if (count > 0)
+            {
+                JITDUMP($"\n -- {count} calls transformed\n");
+            }
+            else
+            {
+                JITDUMP("\n -- no transforms done (?)\n");
+            }
+
+            MethodHasFatPointer = false;
+        }
+        else
+        {
+            JITDUMP("\n -- no candidates to transform\n");
+        }
+
+#if DEBUG
+        CheckNoTransformableIndirectCallsRemain();
+#endif
+
+        return count == 0 ? PhaseStatus.MODIFIED_NOTHING : PhaseStatus.MODIFIED_EVERYTHING;
+    }
 
     public PhaseStatus fgTransformPatchpoints()
     {

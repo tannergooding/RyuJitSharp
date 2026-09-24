@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Shared indirect-call spilling/CFG support and fat-pointer expansion (B119), plus candidate-call cloning and virtual-vtable targets (B122), are complete. Complete all GuardedDevirtualizationTransformer paths, outer dispatcher and Debug checking before activating fgTransformIndirectCalls. Post-import cleanup still gates fgInline (B112). B120 fixes inferred local normalization; B121 preserves native fat-pointer profile inconsistency. No new NativeAOT/corpus capture until phase activation. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
+    "nextAction": "Indirect-call transformation is complete and activated (B119/B122/B123). Continue with complete post-import cleanup, including EH and OSR paths, before enabling fgInline (B112). Do not activate a no-EH-only cleanup. B120 fixes inferred local normalization; B121/B124 preserve native profile/metric inconsistencies. B125 records an unrelated node-search pruning defect for a separate bounded fix. Replace checkpoint.activeBatch before the next batch; update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -836,7 +836,33 @@
         "releaseTests": "artifacts\\gdv-prerequisites-release.trx",
         "remaining": ["GuardedDevirtualizationTransformer", "outer dispatcher and phase"]
       },
-      "nativeAotPublish": "passed-after-patchpoint-transformation",
+      "indirectCallTransformation": {
+        "managedSourceCommit": "13618810c9f1234d2023774c65db4894d73df637",
+        "debugPassed": 138,
+        "releasePassed": 138,
+        "newCases": 36,
+        "skipped": 0,
+        "nativeDefinitionsRetired": 33,
+        "nativeFilesRetired": ["src\\coreclr\\jit\\indirectcalltransformer.cpp"],
+        "phaseActivated": true,
+        "nativeAotRecaptured": true,
+        "nativeAotLibrary": "artifacts\\indirect-call-native\\RyuJitSharp.dll",
+        "nativeAotSha256": "FC590AA71BEFEFF2D91B71B02FA1A74651590F5DA4ABD377A8B2ABFEDE62D6C1",
+        "debugTests": "artifacts\\gdv-transform-debug.trx",
+        "releaseTests": "artifacts\\gdv-transform-release.trx",
+        "nativeManifest": "artifacts\\morph-init-corpus-native\\manifest.json",
+        "managedManifest": "artifacts\\indirect-call-corpus-managed\\manifest.json",
+        "comparison": "artifacts\\indirect-call-comparison.json",
+        "corpusMethods": 11,
+        "outerMethodPhaseCompletions": 11,
+        "exactOuterMethodPhaseSections": 11,
+        "phaseComparisonScope": "First indirect-call phase section per selected compilation; native InlineCaller also compiles an inlinee.",
+        "corpusTransformations": 0,
+        "exactImportPrefixes": ["Add", "Branch", "Locals", "FoldConstants", "FoldFloating", "FoldInteger"],
+        "nativeTransformationParityEstablished": false,
+        "codegenParity": "not-available"
+      },
+      "nativeAotPublish": "passed-after-indirect-call-transformation",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "six-of-eleven-import-prefixes-equal-four-inline-differences-and-one-vector-importer-gap",
       "codegenParity": "not-available"
@@ -1285,6 +1311,15 @@
       "commit": "7a2c312d6e43a8acb2eb6fffbfd5e81ea2c27d5d",
       "indexCommit": "075b0d2164ac4c1ec0cf2630c35e3f060e123964",
       "ref": "refs/porting/snapshots/native-ledger-gdv-call-prerequisites"
+    },
+    "indirectCallTransformationManagedSource": {
+      "commit": "13618810c9f1234d2023774c65db4894d73df637",
+      "ref": "refs/porting/snapshots/indirect-call-transformation-source"
+    },
+    "indirectCallTransformationNativeResidual": {
+      "commit": "1d3e5b9755a2601370a2b95cd5a33398f1472d99",
+      "indexCommit": "08f6378bc56cdf0e3e13ef58254a2af5d7974ff9",
+      "ref": "refs/porting/snapshots/native-ledger-indirect-call-transformation"
     }
   },
   "sourceMap": [
@@ -1292,8 +1327,8 @@
       "area": "indirect-call-transformation",
       "native": ["src\\coreclr\\jit\\indirectcalltransformer.cpp"],
       "csharp": ["sources\\Core\\jit\\indirectcalltransformer", "sources\\Core\\jit\\compiler\\Compiler.fg.cs"],
-      "reconciledCommit": null,
-      "status": "Shared transformer and fat-pointer specialization ported; guarded devirtualization and phase activation remain (B119)."
+      "reconciledCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete shared, fat-pointer and guarded-devirtualization transformations, dispatcher, Debug checks and phase (B119/B122/B123)."
     },
     {
       "area": "compiler-driver",
