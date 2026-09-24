@@ -325,6 +325,8 @@ files under `sources\Core`; generating output does not integrate it automaticall
 Establish clean-baseline reproducibility before regenerating against new inputs.
 `NamedIntrinsic` uses the pinned `namedintrinsiclist.h` enum body as well as the
 hardware tables; validate the complete ordered enum, not just HWI row counts.
+The xarch instruction tuple table uses the same ordered instruction inputs as
+the instruction enum, preserving combined tuple flags for lowering and emission.
 Continue sharing native table definitions through these generators. Small tools
 for repetitive translation, provenance checks, inventories, or maintenance are
 appropriate when they reduce repeated work or mistakes. Keep their scope narrow
