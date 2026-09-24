@@ -12,6 +12,33 @@ continue. A milestone does not require a conversational stop. Pause for an
 explicit user request, an unresolved decision requiring approval, a publication
 conflict, or a blocker that cannot be safely resolved.
 
+## 2026-09-23: Windows-x64 HWI expression folding
+
+**Commits:** `2f9f9d8`, `f7676d0`.
+
+**Result:** Complete and wire the xarch HWI folding dispatcher, including
+comparison-mode normalization, conversion cancellation, mask rewrites,
+constant evaluation and one-constant identities. Preserve scalar upper lanes,
+signed-zero/NaN restrictions, effect ordering, node identity and morph/VN
+updates. Correct mask-zero construction and Debug destruction's premature
+flag poisoning. Three native definitions and the comparison enum retired.
+
+**Evidence:** 65 new Debug / 61 Release dispatcher cases; the combined
+HWI/scalar selection passes 462 Debug / 454 Release, zero skipped.
+Forty-one cases fail against the previous dispatcher. Six conversion cases
+exposed the Debug poisoning defect, and a false-mask comparison exposed the
+missing zero factory case. NativeAOT publication and an eleven-method corpus
+capture retain all six previously exact import prefixes.
+
+**Frontier:** `FoldHardware` records the existing vector-import boundary:
+`impHWIntrinsic` still leaves the Vector128 calls rather than importing HWI
+nodes. It therefore does not establish managed vector folding execution parity.
+The four inline-related dump differences remain. Non-xarch dispatchers, full
+inlining/global morph and codegen parity remain pending.
+
+**Next:** Audit `fgInline` activation against its remaining phase closure now
+that Windows-x64 expression folding is complete.
+
 ## 2026-09-23: HWI node and mask-analysis prerequisites
 
 **Commits:** `716025f`, `7f3d065`, `dd3e8b9`.
