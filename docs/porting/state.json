@@ -248,6 +248,18 @@
         "releaseTests": "artifacts\\backend-call-integration-release.trx",
         "scope": "Frozen uncommitted call integration includes memory-helper expansion and ordinary-call fallback, native next-node conventions, single-register struct returns and comparison containment. No lowering-driver activation or managed code generation."
       },
+      "scalarComparisonLoweringSupport": {
+        "debugPassed": 107,
+        "releasePassed": 107,
+        "skipped": 0,
+        "selection": ["InstructionFlagsTests", "FlagSupportTests", "CompareNodeLoweringTests", "ComparisonLoweringTests", "ComparisonContainmentTests", "ConditionCodeTests"],
+        "debugTests": "artifacts\\scalar-comparison-commit-debug.trx",
+        "releaseTests": "artifacts\\scalar-comparison-commit-release.trx",
+        "scope": "Exact-index validation of xarch comparison narrowing, AND/TEST/bit-test reductions, condition reversal and producer-flag reuse, with source-preserving constant replacement. Generated instruction flags retain all 1,137 instruction rows and 61 native flag declarations; node predicates share the existing intrinsic instruction lookup.",
+        "generation": "Repeated generation was deterministic; existing enum, codegen-info and tuple table contents were unchanged. Select/jump-kind generation is a separate unfinished packet.",
+        "remaining": ["Conditional jump and select lowering", "Division dispatch dependencies", "Complete node/phase traversal", "Allocation and machine-code emission"],
+        "nativeBodiesRetained": true
+      },
       "modifiedRegisterTrackingSupport": {
         "debugPassed": 16,
         "releasePassed": 16,
