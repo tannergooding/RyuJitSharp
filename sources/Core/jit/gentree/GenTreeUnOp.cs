@@ -67,7 +67,14 @@ public class GenTreeUnOp : GenTree
             assert(Oper.IsCompare || Oper.IsMul || (Oper is GT_ADD or GT_SUB or GT_CAST or GT_ADD_HI or GT_SUB_HI));
 #endif
 
-            Flags |= GTF_UNSIGNED;
+            if (value)
+            {
+                Flags |= GTF_UNSIGNED;
+            }
+            else
+            {
+                Flags &= ~GTF_UNSIGNED;
+            }
         }
     }
 

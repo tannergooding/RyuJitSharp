@@ -13,6 +13,25 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class FlagSupportTests
 {
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void UnsignedAssignmentPreservesOtherFlags(bool initial, bool value)
+    {
+        WithCompiler(compiler => {
+            var operand = compiler.gtNewLclvNode(TYP_INT, 0);
+            var node = new GenTreeOp(GT_MULHI, TYP_INT, operand, compiler.gtNewIconNode(TYP_INT, 7));
+            var flags = GenTreeFlags.GTF_DONT_CSE | GenTreeFlags.GTF_ORDER_SIDEEFF;
+            node.Flags = flags | (initial ? GenTreeFlags.GTF_UNSIGNED : GenTreeFlags.GTF_EMPTY);
+
+            node.IsUnsigned = value;
+
+            Assert.That(node.IsUnsigned, Is.EqualTo(value));
+            Assert.That(node.Flags, Is.EqualTo(flags | (value ? GenTreeFlags.GTF_UNSIGNED : GenTreeFlags.GTF_EMPTY)));
+        });
+    }
+
     [TestCase(GT_AND, true)]
     [TestCase(GT_OR, true)]
     [TestCase(GT_XOR, true)]

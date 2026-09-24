@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Comparison, bounds-check, array metadata and native jump-table generation packets are committed. Conditional select/branch lowering and shared condition-to-flags handling pass 62 standalone cases in each configuration; their combined traversal selection passes 96. Keep traversal and LoweringDispatchTests uncommitted until node/phase dependency closure. The comparison worker now owns complete return lowering and return-specific dependencies. Collect constant-division and repaired LSRA allocation/block-order packets when returned, verify their reported contracts, and refill useful lanes. Parent should close remaining scalar dispatcher dependencies and method-level PInvoke hooks, preserving native successor/revisit behavior. Drivers remain inactive and managed code size remains zero.",
+    "nextAction": "Scalar conditions, array metadata, intrinsic/division containment, the Windows partial-SIMD ABI gate and LSRA block sequencing are committed. Return/PInvoke-frame and shared temporary-use integration passes; traversal now handles native passthrough nodes and MULHI, exposing and correcting B152. Keep traversal and dependent backend packets uncommitted until closure. The calls worker owns optimized local-store lowering to unblock six signed-magic division cases; the division identity/flag/temporary repairs are returned but not yet fully validated. The comparison worker owns full switch lowering, LIR block splitting and default-case removal. The LSRA worker owns register lifetime helpers and Windows upper-vector spill weighting. Collect complete handoffs and refill these existing workers. Parent should close remaining scalar dispatch and method-level PInvoke dependencies. Initialized constant LCLHEAP above Int32.MaxValue requires reconciliation of the shared block-layout size contract; do not mask that gap. Drivers remain inactive and managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -41,6 +41,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "unsignedFlagAndDispatch": {
+        "debugPassed": 101,
+        "releasePassed": 101,
+        "skipped": 0,
+        "selection": ["FlagSupportTests", "LoweringDispatchTests", "ArithmeticLoweringTests", "CallTargetLoweringTests", "ReturnLoweringTests"],
+        "debugTests": "artifacts\\dispatch-expanded-debug.trx",
+        "releaseTests": "artifacts\\dispatch-expanded-release.trx",
+        "beforeFix": "Four new dispatch cases fail before condition/high-multiply wiring. Two false-assignment cases fail before correcting IsUnsigned; both true-assignment cases already pass.",
+        "scope": "B152 is corrected independently. Integration includes unfinished traversal and return/call support; it is not phase activation or machine-code parity."
+      },
       "backendSupportIntegration": {
         "debugPassed": 167,
         "releasePassed": 159,
