@@ -12,6 +12,30 @@ continue. A milestone does not require a conversational stop. Pause for an
 explicit user request, an unresolved decision requiring approval, a publication
 conflict, or a blocker that cannot be safely resolved.
 
+## 2026-09-23: Post-import cleanup and OSR entry repair
+
+**Commit:** `14891be`.
+
+**Result:** Complete post-import cleanup: inline return-spill refinement,
+unimported-block removal with predecessor repair, EH deletion and extent
+trimming, and normalized OSR entry flow through nested or mutually protecting
+tries. Removed blocks retain the links used by trimming. Zero-weight profiles
+preserve native `std::min` behavior rather than propagating a NaN likelihood.
+
+**Evidence:** Twenty-nine new cases; the related selection passes 132 Debug /
+132 Release, zero skipped. NativeAOT publication and the eleven-method corpus
+succeed. All eleven outer-method no-change post-import sections match native
+exactly, and the six exact import prefixes remain unchanged.
+
+**Frontier:** The corpus does not exercise cleanup's EH/OSR transformations;
+those are covered by constructed IR, not executed managed-JIT code. The existing
+`fgVerifyHandlerTab` diagnostic stub remains explicit (B127). Codegen parity
+and actual OSR execution remain unavailable.
+
+**Next:** The named B112 prerequisite phases are implemented. Complete
+`fgInline` and validate successful nested compilation before treating the
+inliner as active.
+
 ## 2026-09-23: Indirect-call transformation
 
 **Commits:** `d76a831`, `36016c0`, `e5e5b74`.
