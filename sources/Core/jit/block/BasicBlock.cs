@@ -252,71 +252,79 @@ public sealed partial class BasicBlock : LIR.Range
     // Use, def, live in/out information for the implicit memory variable.
     private MemoryKindSet _bitfield;
 
+    // Each native field is a set with one bit per MemoryKind.
+    private const int MemoryKindSetWidth = (int)MemoryKindCount;
+    private const MemoryKindSet MemoryKindSetMask = (1 << MemoryKindSetWidth) - 1;
+
     /// <summary>must be set for any MemoryKinds this block references</summary>
-    public MemoryKind bbMemoryUse
+    public MemoryKindSet bbMemoryUse
     {
         get
         {
-            return (MemoryKind)(_bitfield & 1);
+            return _bitfield & MemoryKindSetMask;
         }
 
         set
         {
-            _bitfield = (_bitfield & ~1) | ((int)(value) & 1);
+            _bitfield = (_bitfield & ~MemoryKindSetMask) | (value & MemoryKindSetMask);
         }
     }
 
     /// <summary>must be set for any MemoryKinds this block mutates</summary>
-    public MemoryKind bbMemoryDef
+    public MemoryKindSet bbMemoryDef
     {
         get
         {
-            return (MemoryKind)((_bitfield >>> 1) & 1);
+            return (_bitfield >>> MemoryKindSetWidth) & MemoryKindSetMask;
         }
 
         set
         {
-            _bitfield = (_bitfield & ~(1 << 1)) | (((int)(value) & 1) << 1);
+            _bitfield = (_bitfield & ~(MemoryKindSetMask << MemoryKindSetWidth)) |
+                ((value & MemoryKindSetMask) << MemoryKindSetWidth);
         }
     }
 
-    public MemoryKind bbMemoryLiveIn
+    public MemoryKindSet bbMemoryLiveIn
     {
         get
         {
-            return (MemoryKind)((_bitfield >>> 2) & 1);
+            return (_bitfield >>> (2 * MemoryKindSetWidth)) & MemoryKindSetMask;
         }
 
         set
         {
-            _bitfield = (_bitfield & ~(1 << 2)) | (((int)(value) & 1) << 2);
+            _bitfield = (_bitfield & ~(MemoryKindSetMask << (2 * MemoryKindSetWidth))) |
+                ((value & MemoryKindSetMask) << (2 * MemoryKindSetWidth));
         }
     }
 
-    public MemoryKind bbMemoryLiveOut
+    public MemoryKindSet bbMemoryLiveOut
     {
         get
         {
-            return (MemoryKind)((_bitfield >>> 3) & 1);
+            return (_bitfield >>> (3 * MemoryKindSetWidth)) & MemoryKindSetMask;
         }
 
         set
         {
-            _bitfield = (_bitfield & ~(1 << 3)) | (((int)(value) & 1) << 3);
+            _bitfield = (_bitfield & ~(MemoryKindSetMask << (3 * MemoryKindSetWidth))) |
+                ((value & MemoryKindSetMask) << (3 * MemoryKindSetWidth));
         }
     }
 
     /// <summary>If true, at some point the block does an operation that leaves memory in an unknown state. (E.g., unanalyzed call, store through unknown pointer...)</summary>
-    public MemoryKind bbMemoryHavoc
+    public MemoryKindSet bbMemoryHavoc
     {
         get
         {
-            return (MemoryKind)((_bitfield >>> 4) & 1);
+            return (_bitfield >>> (4 * MemoryKindSetWidth)) & MemoryKindSetMask;
         }
 
         set
         {
-            _bitfield = (_bitfield & ~(1 << 4)) | (((int)(value) & 1) << 4);
+            _bitfield = (_bitfield & ~(MemoryKindSetMask << (4 * MemoryKindSetWidth))) |
+                ((value & MemoryKindSetMask) << (4 * MemoryKindSetWidth));
         }
     }
 

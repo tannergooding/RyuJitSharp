@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Unsigned layout/value-size/segment and morph consumers are committed as 81a479f; integrate full-size LCLHEAP/block helpers next before wiring. Minimal LSRA traversal and native-shaped diagnostics now pass independent integration (115 Debug/93 Release), including B176 in the mapped loop, native physical-register fixture initialization, and an explicit EVEX traversal case; final focused runs pass 17 Debug/10 Release. LSRA worker collected through turn 56, unsigned worker through turn 44. Liveness Init/BasicBlock.InitVarSets and two-bit memory-kind packing are returned through turn 42; parent must adapt the seven test enum assignments identified in memory-sets-handoff.txt and validate the combined packet. Keep lowering/allocation drivers inactive: interval construction, dataflow, resolution and emission are still incomplete. Broad backend work remains uncommitted. Managed code size remains zero.",
+    "nextAction": "Unsigned layout/value-size/segment and morph consumers are committed as 81a479f; integrate full-size LCLHEAP/block helpers next before wiring. Minimal LSRA traversal/diagnostics are committed as d5189fc, including B176 and real native-equivalent register fixture preparation. LSRA worker collected through turn 56 now owns native identifyCandidates<false> and immediate frame-type prerequisites; keep its scope bounded and require approval for shared compiler/codegen edits. Unsigned worker collected through turn 44. Liveness Init/BasicBlock.InitVarSets and B177 two-bit memory masks now pass combined committed-source integration (138 cases/configuration), including compatibility updates to the returned tests; liveness worker collected through turn 42. Keep lowering/allocation drivers inactive: interval construction, dataflow, resolution and emission remain incomplete. Broad backend work remains uncommitted. Managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -41,6 +41,15 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "livenessInitialization": {
+        "debugPassed": 138,
+        "releasePassed": 138,
+        "skipped": 0,
+        "selection": ["BasicBlockMemorySetTests", "LivenessInitializationTests", "TrackedLocalSelectionTests", "BlockMorphTests", "BlockSplittingTests", "LirBlockSplittingTests"],
+        "debugTests": "artifacts\\liveness-init-memory-integration-debug.trx",
+        "releaseTests": "artifacts\\liveness-init-memory-integration-release.trx",
+        "scope": "Native Liveness.Init and BasicBlock.InitVarSets, plus B177's five two-bit memory-kind masks. Preserves tracked epoch/set sizing, independent block storage, havoc, memory SSA values, IR and unrelated flags. Dataflow and phase activation remain separate."
+      },
       "minimalAllocationTraversal": {
         "debugPassed": 115,
         "releasePassed": 93,
