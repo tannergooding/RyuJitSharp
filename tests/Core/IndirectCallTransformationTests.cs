@@ -18,6 +18,158 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class IndirectCallTransformationTests
 {
+    private static int s_chunkOffset;
+    private static int s_slotOffset;
+    private static bool s_relative;
+
+    [TestCase(0, false)]
+    [TestCase(1, false)]
+    [TestCase(2, false)]
+    [TestCase(0, true)]
+    public static void CandidateCloningPreservesInfoWithoutRetargetingPlaceholders(int guardedCandidates, bool noReturn)
+    {
+        WithCompiler(compiler => {
+            var call = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, (CORINFO_METHOD_STRUCT_*)0x1000);
+            call.IsNoReturn = noReturn;
+            call.RegNum = regNumber.REG_RAX;
+            var argument = compiler.gtNewBinaryNode(GT_ADD, TYP_INT,
+                compiler.gtNewIconNode(TYP_INT, 1), compiler.gtNewIconNode(TYP_INT, 2));
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(argument));
+            var info = new InlineCandidateInfo { preexistingSpillTemp = BAD_VAR_NUM };
+
+            if (guardedCandidates == 0)
+            {
+                call.SingleInlineCandidateInfo = info;
+            }
+            else
+            {
+                call.AddGdvCandidateInfo(compiler, info);
+                if (guardedCandidates == 2)
+                {
+                    call.AddGdvCandidateInfo(compiler, new InlineCandidateInfo { preexistingSpillTemp = BAD_VAR_NUM });
+                }
+            }
+
+            var retExpr = compiler.gtNewInlineCandidateReturnExpr(call, TYP_INT);
+            info.retExpr = retExpr;
+            var beforeNoReturnCount = compiler.optNoReturnCallCount;
+            var copy = compiler.gtCloneCandidateCall(call);
+
+            Assert.That(copy, Is.Not.SameAs(call));
+            Assert.That(copy.Flags, Is.EqualTo(call.Flags));
+            Assert.That(copy.RegNum, Is.EqualTo(call.RegNum));
+            Assert.That(copy.IsNoReturn, Is.EqualTo(noReturn));
+            Assert.That(compiler.optNoReturnCallCount, Is.EqualTo(beforeNoReturnCount + (noReturn ? 1 : 0)));
+            Assert.That(copy.InlineCandidatesCount, Is.EqualTo(Math.Max(guardedCandidates, 1)));
+            Assert.That(copy.IsGuardedDevirtualizationCandidate, Is.EqualTo(guardedCandidates != 0));
+            Assert.That(copy.Args.Head, Is.Not.SameAs(call.Args.Head));
+            var clonedArgument = (copy.Args.Head ?? throw new InvalidOperationException()).EarlyNode.AsOp();
+            Assert.That(clonedArgument, Is.Not.SameAs(argument));
+            Assert.That(clonedArgument.Op1, Is.Not.SameAs(argument.Op1));
+            Assert.That(clonedArgument.Op2, Is.Not.SameAs(argument.Op2));
+            Assert.That(info.retExpr, Is.SameAs(retExpr));
+            Assert.That(retExpr.InlineCandidate, Is.SameAs(call));
+
+            if (guardedCandidates == 0)
+            {
+                Assert.That(copy.SingleInlineCandidateInfo, Is.SameAs(info));
+            }
+            else
+            {
+                for (byte i = 0; i < guardedCandidates; i++)
+                {
+                    Assert.That(copy.GetGdvCandidateInfo(i), Is.SameAs(call.GetGdvCandidateInfo(i)));
+                }
+            }
+
+            copy.ClearInlineInfo();
+            Assert.That(call.InlineCandidatesCount, Is.EqualTo(Math.Max(guardedCandidates, 1)));
+            var ordinaryClone = compiler.gtCloneExpr(copy) ?? throw new InvalidOperationException();
+            Assert.That(ordinaryClone.AsCall().Args.Head, Is.Not.SameAs(copy.Args.Head));
+            Assert.That(ordinaryClone.AsCall().IsGuardedDevirtualizationCandidate, Is.False);
+        });
+    }
+
+    [TestCase(-1, 24, false, false)]
+    [TestCase(16, 24, false, false)]
+    [TestCase(16, 24, true, false)]
+    [TestCase(-1, 24, false, true)]
+    [TestCase(16, 24, false, true)]
+    [TestCase(16, 24, true, true)]
+    [TestCase(int.MaxValue - 7, 32, true, false)]
+    [TestCase(-16, 32, true, false)]
+    public static void VirtualTargetsPreserveChunkRelativeAndExceptionSemantics(int chunkOffset, int slotOffset,
+        bool relative, bool globalMorph)
+    {
+        WithCompiler(compiler => {
+            s_chunkOffset = chunkOffset;
+            s_slotOffset = slotOffset;
+            s_relative = relative;
+            compiler.fgGlobalMorph = globalMorph;
+            var local = AddLocal(compiler, TYP_REF);
+            var receiver = compiler.gtNewLclvNode(TYP_REF, local);
+            var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, (CORINFO_METHOD_STRUCT_*)0x1000);
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(receiver).WithWellKnownArg(WellKnownArg.ThisPointer));
+
+            var result = compiler.fgExpandVirtualVtableCallTarget(call);
+            GenTreeIndir methodTable;
+            GenTreeIndir target;
+
+            if (relative)
+            {
+                Assert.That(result.Oper, Is.EqualTo(GT_COMMA));
+                var outer = result.AsOp();
+                var firstStore = outer.Op1.AsLclVar();
+                methodTable = firstStore.Data.AsIndir();
+                var inner = outer.Op2.AsOp();
+                Assert.That(inner.Oper, Is.EqualTo(GT_COMMA));
+                var secondStore = inner.Op1.AsLclVar();
+                var address = secondStore.Data.AsOp();
+                Assert.That(address.Oper, Is.EqualTo(GT_ADD));
+                Assert.That(address.Op1.AsOp().Op1.AsLclVar().LclNum, Is.EqualTo(firstStore.LclNum));
+                Assert.That(address.Op1.AsOp().Op2.AsIntCon().IconValue,
+                    Is.EqualTo(unchecked((nint)(uint)(chunkOffset + slotOffset))));
+                var chunk = address.Op2.AsIndir();
+                Assert.That(chunk.Flags & (GTF_IND_NONFAULTING | GTF_IND_INVARIANT),
+                    Is.EqualTo(GTF_IND_NONFAULTING | GTF_IND_INVARIANT));
+                Assert.That(chunk.Addr.AsOp().Op1.AsLclVar().LclNum, Is.EqualTo(firstStore.LclNum));
+                Assert.That(chunk.Addr.AsOp().Op2.AsIntCon().IconValue, Is.EqualTo(unchecked((nint)(uint)chunkOffset)));
+                var finalAdd = inner.Op2.AsOp();
+                Assert.That(finalAdd.Oper, Is.EqualTo(GT_ADD));
+                target = finalAdd.Op1.AsIndir();
+                Assert.That(target.Addr.AsLclVar().LclNum, Is.EqualTo(secondStore.LclNum));
+                Assert.That(finalAdd.Op2.AsLclVar().LclNum, Is.EqualTo(secondStore.LclNum));
+                Assert.That(compiler.lvaCount, Is.EqualTo(3));
+            }
+            else
+            {
+                target = result.AsIndir();
+                var offset = target.Addr.AsOp();
+                Assert.That(offset.Oper, Is.EqualTo(GT_ADD));
+                Assert.That(offset.Op2.AsIntCon().IconValue, Is.EqualTo((nint)slotOffset));
+                methodTable = offset.Op1.AsIndir();
+
+                if (chunkOffset != CORINFO_VIRTUALCALL_NO_CHUNK)
+                {
+                    Assert.That(methodTable.Flags & (GTF_IND_NONFAULTING | GTF_IND_INVARIANT),
+                        Is.EqualTo(GTF_IND_NONFAULTING | GTF_IND_INVARIANT));
+                    var chunk = methodTable.Addr.AsOp();
+                    Assert.That(chunk.Oper, Is.EqualTo(GT_ADD));
+                    Assert.That(chunk.Op2.AsIntCon().IconValue, Is.EqualTo((nint)chunkOffset));
+                    methodTable = chunk.Op1.AsIndir();
+                }
+
+                Assert.That(compiler.lvaCount, Is.EqualTo(1));
+            }
+
+            Assert.That(target.Flags & (GTF_IND_NONFAULTING | GTF_IND_INVARIANT), Is.EqualTo(GTF_IND_NONFAULTING));
+            Assert.That(methodTable.Flags & GTF_EXCEPT, Is.EqualTo(globalMorph ? 0 : GTF_EXCEPT));
+            Assert.That(methodTable.Addr, Is.Not.SameAs(receiver));
+            Assert.That(methodTable.Addr.AsLclVar().LclNum, Is.EqualTo(local));
+            Assert.That(call.Args.ThisArg?.Node, Is.SameAs(receiver));
+        });
+    }
+
     [TestCase(false, false)]
     [TestCase(false, true)]
     [TestCase(true, false)]
@@ -282,6 +434,7 @@ internal static unsafe class IndirectCallTransformationTests
     {
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.Base.runWithSPMIErrorTrap = &UnavailableClassName;
+        vtable.Base.Base.getMethodVTableOffset = &GetMethodVTableOffset;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compHndBBtab = [];
@@ -317,5 +470,13 @@ internal static unsafe class IndirectCallTransformationTests
     private static byte UnavailableClassName(ICorJitInfo* self, delegate* unmanaged[Cdecl]<void*, void> callback, void* state)
     {
         return 0;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void GetMethodVTableOffset(ICorJitInfo* self, CORINFO_METHOD_STRUCT_* method, int* chunk, int* slot, bool* relative)
+    {
+        *chunk = s_chunkOffset;
+        *slot = s_slotOffset;
+        *relative = s_relative;
     }
 }

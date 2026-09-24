@@ -236,6 +236,12 @@ call cloning, argument placement and native 80/20 block versus 50/50 edge weight
 The inferred-local type correction in B120 restores native behavior, rather than
 introducing a managed deviation.
 
+Candidate cloning shares the existing managed `gtCloneCall` implementation with
+ordinary expression cloning. Candidate metadata and return placeholders retain
+their native shared relationships until the caller repairs them. Vtable expansion
+interprets the EE's managed `int` offset outputs as native unsigned values before
+pointer-sized conversion and preserves 32-bit wrapping of their sum (B122).
+
 Phi definitions own copied SSA-number arrays and expose readonly memory.
 Reaching-VN traversal uses a managed stack and membership set, preserving native
 push/pop order, conservative SSA lookup, duplicate suppression, cycles and early

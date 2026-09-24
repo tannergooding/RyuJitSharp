@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Shared indirect-call spilling/CFG support and fat-pointer expansion are complete (B119), but fgTransformIndirectCalls remains disabled. Complete candidate-call cloning and virtual-vtable call-target prerequisites, then all guarded-devirtualization paths before activating the phase. Post-import cleanup still gates fgInline (B112). B120 fixes inferred local normalization; B121 preserves native fat-pointer profile inconsistency. No new NativeAOT/corpus capture until phase activation. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
+    "nextAction": "Shared indirect-call spilling/CFG support and fat-pointer expansion (B119), plus candidate-call cloning and virtual-vtable targets (B122), are complete. Complete all GuardedDevirtualizationTransformer paths, outer dispatcher and Debug checking before activating fgTransformIndirectCalls. Post-import cleanup still gates fgInline (B112). B120 fixes inferred local normalization; B121 preserves native fat-pointer profile inconsistency. No new NativeAOT/corpus capture until phase activation. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -822,6 +822,20 @@
         "nativeExecutionParityEstablished": false,
         "remaining": ["GuardedDevirtualizationTransformer", "gtCloneCandidateCall", "fgExpandVirtualVtableCallTarget", "outer dispatcher and phase"]
       },
+      "gdvCallPrerequisites": {
+        "managedSourceCommit": "e18e207cea4461cc02d618fcaef8652de8f351f4",
+        "debugPassed": 102,
+        "releasePassed": 102,
+        "newCases": 12,
+        "skipped": 0,
+        "nativeDefinitionsRetired": 2,
+        "sharedCloneBodyUnchanged": true,
+        "phaseActivated": false,
+        "nativeAotRecaptured": false,
+        "debugTests": "artifacts\\gdv-prerequisites-debug.trx",
+        "releaseTests": "artifacts\\gdv-prerequisites-release.trx",
+        "remaining": ["GuardedDevirtualizationTransformer", "outer dispatcher and phase"]
+      },
       "nativeAotPublish": "passed-after-patchpoint-transformation",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "six-of-eleven-import-prefixes-equal-four-inline-differences-and-one-vector-importer-gap",
@@ -1262,6 +1276,15 @@
       "commit": "2250c881668afc2c9da1df86ed5dc710f5362281",
       "indexCommit": "19e92150d10f514ce9c11025d647821ffb97cd84",
       "ref": "refs/porting/snapshots/native-ledger-indirect-call-support"
+    },
+    "gdvCallPrerequisitesManagedSource": {
+      "commit": "e18e207cea4461cc02d618fcaef8652de8f351f4",
+      "ref": "refs/porting/snapshots/gdv-call-prerequisites-source"
+    },
+    "gdvCallPrerequisitesNativeResidual": {
+      "commit": "7a2c312d6e43a8acb2eb6fffbfd5e81ea2c27d5d",
+      "indexCommit": "075b0d2164ac4c1ec0cf2630c35e3f060e123964",
+      "ref": "refs/porting/snapshots/native-ledger-gdv-call-prerequisites"
     }
   },
   "sourceMap": [

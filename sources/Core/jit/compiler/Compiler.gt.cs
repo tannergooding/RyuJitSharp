@@ -739,71 +739,6 @@ public partial class Compiler
             return copy;
         }
 
-        static GenTreeCall gtCloneCall(Compiler compiler, GenTreeCall tree)
-        {
-            var copy = new GenTreeCall(tree.Type);
-
-            copy._args.InternalCopyFrom(compiler, tree._args);
-
-#if DEBUG || TARGET_WASM
-            // The call sig comes from the EE and doesn't change throughout the compilation process, meaning
-            // we only really need one physical copy of it. Therefore a shallow pointer copy will suffice.
-            // (Note that this still holds even if the tree we are cloning was created by an inlinee compiler,
-            // because the inlinee still uses the inliner's memory allocator anyway.)
-            copy._callSig = tree._callSig;
-#endif
-            // TailCallInfo or AsyncInfo or UnmgdCallConv
-            copy._anonymous1 = tree._anonymous1;
-
-#if FEATURE_MULTIREG_RET
-            copy._returnTypeDesc = tree._returnTypeDesc;
-            copy.CopyOtherRegs(tree);
-#endif
-
-            copy._callMoreFlags = tree._callMoreFlags;
-
-            // _callType and _returnType
-            copy._bitfield = tree._bitfield;
-
-            copy._inlineInfoCount = tree._inlineInfoCount;
-            copy._retClsHnd = tree._retClsHnd;
-
-            // StubCallStubAddr or InitCldHnd or CastHelperILOffset
-            copy._anonymous2 = tree._anonymous2;
-
-            // InlineCandidateInfo or InlineCandidateInfoList or HandleHistogramProfileCandidateInfo
-            copy._anonymous3 = tree._anonymous3;
-
-            // CompileTimeHelperArgumentHandle or DirectCallAddress
-            copy._anonymous4 = tree._anonymous4;
-
-            copy._callCookie = tree._callCookie;
-
-            copy._lateDevirtualizationInfo = tree._lateDevirtualizationInfo;
-            copy._controlExpr = compiler.gtCloneExpr(tree._controlExpr);
-            copy._callMethHnd = tree._callMethHnd;
-
-#if FEATURE_READYTORUN
-            copy._entryPoint = tree._entryPoint;
-#endif
-
-#if DEBUG
-            copy._callDebugFlags = tree._callDebugFlags;
-            copy._inlineObservation = tree._inlineObservation;
-            copy._rawILOffset = tree._rawILOffset;
-#endif
-
-            copy._inlineContext = tree._inlineContext;
-
-            // We keep track of the number of no return calls, so if we've cloned one of these, update the tracking.
-            if (tree.IsNoReturn)
-            {
-                assert(copy.IsNoReturn);
-                compiler.setMethodHasNoReturnCalls();
-            }
-            return copy;
-        }
-
         static GenTree gtCloneLeaf(Compiler compiler, GenTree tree)
         {
             var oper = tree.Oper;
@@ -1325,6 +1260,86 @@ public partial class Compiler
 
             return copy;
         }
+    }
+
+    private static unsafe GenTreeCall gtCloneCall(Compiler compiler, GenTreeCall tree)
+    {
+        var copy = new GenTreeCall(tree.Type);
+
+        copy._args.InternalCopyFrom(compiler, tree._args);
+
+#if DEBUG || TARGET_WASM
+        // The call sig comes from the EE and doesn't change throughout the compilation process, meaning
+        // we only really need one physical copy of it. Therefore a shallow pointer copy will suffice.
+        // (Note that this still holds even if the tree we are cloning was created by an inlinee compiler,
+        // because the inlinee still uses the inliner's memory allocator anyway.)
+        copy._callSig = tree._callSig;
+#endif
+        // TailCallInfo or AsyncInfo or UnmgdCallConv
+        copy._anonymous1 = tree._anonymous1;
+
+#if FEATURE_MULTIREG_RET
+        copy._returnTypeDesc = tree._returnTypeDesc;
+        copy.CopyOtherRegs(tree);
+#endif
+
+        copy._callMoreFlags = tree._callMoreFlags;
+
+        // _callType and _returnType
+        copy._bitfield = tree._bitfield;
+
+        copy._inlineInfoCount = tree._inlineInfoCount;
+        copy._retClsHnd = tree._retClsHnd;
+
+        // StubCallStubAddr or InitCldHnd or CastHelperILOffset
+        copy._anonymous2 = tree._anonymous2;
+
+        // InlineCandidateInfo or InlineCandidateInfoList or HandleHistogramProfileCandidateInfo
+        copy._anonymous3 = tree._anonymous3;
+
+        // CompileTimeHelperArgumentHandle or DirectCallAddress
+        copy._anonymous4 = tree._anonymous4;
+
+        copy._callCookie = tree._callCookie;
+
+        copy._lateDevirtualizationInfo = tree._lateDevirtualizationInfo;
+        copy._controlExpr = compiler.gtCloneExpr(tree._controlExpr);
+        copy._callMethHnd = tree._callMethHnd;
+
+#if FEATURE_READYTORUN
+        copy._entryPoint = tree._entryPoint;
+#endif
+
+#if DEBUG
+        copy._callDebugFlags = tree._callDebugFlags;
+        copy._inlineObservation = tree._inlineObservation;
+        copy._rawILOffset = tree._rawILOffset;
+#endif
+
+        copy._inlineContext = tree._inlineContext;
+
+        // We keep track of the number of no return calls, so if we've cloned one of these, update the tracking.
+        if (tree.IsNoReturn)
+        {
+            assert(copy.IsNoReturn);
+            compiler.setMethodHasNoReturnCalls();
+        }
+        return copy;
+    }
+
+    /// <summary>Clone a candidate call; the caller must repair candidate and return-placeholder relationships.</summary>
+    public GenTreeCall gtCloneCandidateCall(GenTreeCall call)
+    {
+        assert(call.IsInlineCandidate || call.IsGuardedDevirtualizationCandidate);
+        var result = gtCloneCall(this, call);
+        result.Flags |= call.Flags;
+
+#if DEBUG
+        result._debugFlags |= call._debugFlags & ~GTF_DEBUG_NODE_MASK;
+#endif
+
+        result.CopyReg(call);
+        return result;
     }
 
     public unsafe GenTreeFieldAddr gtCloneFieldAddr(GenTreeFieldAddr fieldAddr)

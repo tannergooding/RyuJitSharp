@@ -7055,6 +7055,80 @@ public partial class Compiler
         return ref Unsafe.NullRef<FlowEdge?>();
     }
 
+    /// <summary>Expand a virtual call target using the same lookup shape as LowerVirtualVtableCall.</summary>
+    public unsafe GenTree fgExpandVirtualVtableCallTarget(GenTreeCall call)
+    {
+#if DEBUG
+        JITDUMP($"Expanding virtual call target for {call.TreeId}.{call.Oper.Name}:\n");
+#endif
+        noway_assert(call._callType is CT_USER_FUNC);
+        assert(call.Args.HasThisPointer);
+        var thisPtr = call.Args.ThisArg.Node;
+        assert(thisPtr.Oper.IsLocal);
+        thisPtr = gtClone(thisPtr, true);
+        noway_assert(thisPtr is not null);
+
+        int vtabOffsOfIndirection;
+        int vtabOffsAfterIndirection;
+        bool isRelative;
+        info.compCompHnd->getMethodVTableOffset(call._callMethHnd, &vtabOffsOfIndirection, &vtabOffsAfterIndirection, &isRelative);
+
+        var vtab = gtNewMethodTableLookup(thisPtr);
+        if (fgGlobalMorph)
+        {
+            // Native retains this zero-diff quirk only during global morph.
+            vtab.Flags &= ~GTF_EXCEPT;
+        }
+
+        GenTree result;
+        if (vtabOffsOfIndirection != CORINFO_VIRTUALCALL_NO_CHUNK)
+        {
+            if (isRelative)
+            {
+                // Each relative entry is based on its own address:
+                // var1 = vtab; var2 = var1 + chunk + slot + [var1 + chunk];
+                // result = [var2] + var2.
+                var varNum1 = lvaGrabTemp(true, "var1 - vtab");
+                var varNum2 = lvaGrabTemp(true, "var2 - relative");
+                var storeVar1 = gtNewTempStore(varNum1, vtab);
+                GenTree tmpTree1 = gtNewBinaryNode(GT_ADD, TYP_I_IMPL, gtNewLclvNode(TYP_I_IMPL, varNum1),
+                    gtNewIconNode(TYP_I_IMPL, unchecked((nint)(uint)vtabOffsOfIndirection)));
+                tmpTree1 = gtNewIndir(TYP_I_IMPL, tmpTree1, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+                // EE offsets are native unsigned values represented by managed ints.
+                var tmpTree2 = gtNewBinaryNode(GT_ADD, TYP_I_IMPL, gtNewLclvNode(TYP_I_IMPL, varNum1),
+                    gtNewIconNode(TYP_I_IMPL, unchecked((nint)(uint)(vtabOffsOfIndirection + vtabOffsAfterIndirection))));
+                tmpTree2 = gtNewBinaryNode(GT_ADD, TYP_I_IMPL, tmpTree2, tmpTree1);
+                var storeVar2 = gtNewTempStore(varNum2, tmpTree2);
+
+                result = gtNewIndir(TYP_I_IMPL, gtNewLclvNode(TYP_I_IMPL, varNum2), GTF_IND_NONFAULTING);
+                result = gtNewBinaryNode(GT_ADD, TYP_I_IMPL, result, gtNewLclvNode(TYP_I_IMPL, varNum2));
+                var commaTree = gtNewBinaryNode(GT_COMMA, TYP_I_IMPL, storeVar2, result);
+                result = gtNewBinaryNode(GT_COMMA, TYP_I_IMPL, storeVar1, commaTree);
+            }
+            else
+            {
+                result = gtNewBinaryNode(GT_ADD, TYP_I_IMPL, vtab,
+                    gtNewIconNode(TYP_I_IMPL, unchecked((nint)(uint)vtabOffsOfIndirection)));
+                result = gtNewIndir(TYP_I_IMPL, result, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+            }
+        }
+        else
+        {
+            result = vtab;
+            assert(!isRelative);
+        }
+
+        if (!isRelative)
+        {
+            result = gtNewBinaryNode(GT_ADD, TYP_I_IMPL, result,
+                gtNewIconNode(TYP_I_IMPL, unchecked((nint)(uint)vtabOffsAfterIndirection)));
+            result = gtNewIndir(TYP_I_IMPL, result, GTF_IND_NONFAULTING);
+        }
+
+        return result;
+    }
+
     public unsafe GenTree? fgInitThisClass()
     {
         noway_assert(!compIsForInlining);
