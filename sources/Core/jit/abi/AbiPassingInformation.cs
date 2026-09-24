@@ -36,6 +36,44 @@ public struct AbiPassingInformation
 
     public bool HasExactlyOneStackSegment => (NumSegments == 1) && Segments[0].IsPassedOnStack;
 
+    public bool HasAnyRegisterSegment
+    {
+        get
+        {
+            foreach (ref readonly var segment in Segments)
+            {
+                if (segment.IsPassedInRegister)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    public bool IsSplitAcrossRegistersAndStack
+    {
+        get
+        {
+            if (NumSegments < 2)
+            {
+                return false;
+            }
+
+            var firstInRegister = Segments[0].IsPassedInRegister;
+            for (var i = 1; i < NumSegments; i++)
+            {
+                if (firstInRegister != Segments[i].IsPassedInRegister)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
     /// <summary>Check if the argument is passed by (implicit) reference.</summary>
     /// <remarks>If true, a single pointer-sized segment is expected.</remarks>
     public readonly bool IsPassedByReference => _passedByRef;

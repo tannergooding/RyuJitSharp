@@ -10,6 +10,415 @@ namespace RyuJitSharp;
 
 public partial struct CallArgs
 {
+    public void SetNeedsTemp(CallArg argument)
+    {
+        argument.NeedTmp = true;
+        _flags |= Flags.NeedsTemps;
+    }
+
+    /// <summary>Decide which argument values must be evaluated before late argument placement.</summary>
+    public void ArgsComplete(Compiler compiler, GenTreeCall call)
+    {
+        var argumentCount = CountArgs();
+        GenTree? previousExceptionTree = null;
+        var previousExceptionFlags = ExceptionSetFlags.None;
+
+        foreach (var argument in Args)
+        {
+            var node = argument.EarlyNode;
+            assert(node is not null);
+            var canEvaluateToTemp = true;
+#if !FEATURE_FIXED_OUT_ARGS
+            if (!argument.AbiInfo.HasAnyRegisterSegment)
+            {
+                canEvaluateToTemp = false;
+            }
+#endif
+            if ((node.Flags & GTF_ASG) != 0)
+            {
+                if (!node.IsValue)
+                {
+                    // Outgoing struct copies may already have an early setup store.
+                    assert(argument.NeedTmp);
+                }
+                else if (canEvaluateToTemp && (argumentCount > 1))
+                {
+                    SetNeedsTemp(argument);
+                }
+
+                // In "a, a = 5, a", the first read must precede the store.
+                foreach (var previous in Args)
+                {
+                    if (previous == argument)
+                    {
+                        break;
+                    }
+#if !FEATURE_FIXED_OUT_ARGS
+                    if (!previous.AbiInfo.HasAnyRegisterSegment)
+                    {
+                        continue;
+                    }
+#endif
+                    if ((previous.EarlyNode is null) || previous.NeedTmp)
+                    {
+                        continue;
+                    }
+
+                    if (((previous.EarlyNode.Flags & GTF_ALL_EFFECT) != 0) ||
+                        compiler.gtMayHaveStoreInterference(node, previous.EarlyNode))
+                    {
+                        SetNeedsTemp(previous);
+                    }
+                }
+            }
+
+            var treatLikeCall = (node.Flags & GTF_CALL) != 0;
+            var exceptionFlags = ExceptionSetFlags.None;
+#if FEATURE_FIXED_OUT_ARGS
+            // Debug inline throws use helpers and can overwrite the outgoing stack area.
+            if (!treatLikeCall && ((node.Flags & GTF_EXCEPT) != 0) &&
+                (argumentCount > 1) && compiler.opts.compDbgCode)
+            {
+                exceptionFlags = compiler.gtCollectExceptions(node);
+                if ((exceptionFlags & (ExceptionSetFlags.IndexOutOfRangeException | ExceptionSetFlags.OverflowException)) !=
+                    ExceptionSetFlags.None)
+                {
+                    foreach (var other in Args)
+                    {
+                        if (other == argument)
+                        {
+                            continue;
+                        }
+
+                        if (!other.AbiInfo.HasAnyRegisterSegment)
+                        {
+                            treatLikeCall = true;
+                            break;
+                        }
+                    }
+                }
+            }
+#endif
+            if (treatLikeCall)
+            {
+                if (canEvaluateToTemp)
+                {
+                    if (argumentCount > 1)
+                    {
+                        SetNeedsTemp(argument);
+                    }
+                    else if (varTypeIsFloating(node.Type) && (node.Oper is GT_CALL))
+                    {
+                        SetNeedsTemp(argument);
+                    }
+                }
+
+                foreach (var previous in Args)
+                {
+                    if (previous == argument)
+                    {
+                        break;
+                    }
+#if !FEATURE_FIXED_OUT_ARGS
+                    if (!previous.AbiInfo.HasAnyRegisterSegment)
+                    {
+                        continue;
+                    }
+#endif
+                    if ((previous.EarlyNode is GenTree previousNode) && ((previousNode.Flags & GTF_ALL_EFFECT) != 0))
+                    {
+                        SetNeedsTemp(previous);
+                    }
+#if FEATURE_FIXED_OUT_ARGS
+                    else if (!previous.AbiInfo.HasAnyRegisterSegment)
+                    {
+                        previous.NeedPlace = true;
+                    }
+#if FEATURE_ARG_SPLIT
+                    else if (previous.AbiInfo.IsSplitAcrossRegistersAndStack)
+                    {
+                        previous.NeedPlace = true;
+                    }
+#endif
+#endif
+                }
+            }
+            else if ((node.Flags & GTF_EXCEPT) != 0)
+            {
+                if (previousExceptionTree is not null)
+                {
+                    if (previousExceptionFlags is ExceptionSetFlags.None)
+                    {
+                        previousExceptionFlags = compiler.gtCollectExceptions(previousExceptionTree);
+                    }
+                    if (exceptionFlags is ExceptionSetFlags.None)
+                    {
+                        exceptionFlags = compiler.gtCollectExceptions(node);
+                    }
+
+                    var exactlyOneKnown = uint.IsPow2((uint)exceptionFlags) &&
+                        ((exceptionFlags & ExceptionSetFlags.UnknownException) == ExceptionSetFlags.None);
+                    if (!exactlyOneKnown || (exceptionFlags != previousExceptionFlags))
+                    {
+#if DEBUG
+                        JITDUMP($"Exception set for arg [{node.TreeId:D6}] interferes with previous tree " +
+                            $"[{previousExceptionTree.TreeId:D6}]; must evaluate previous trees with exceptions to temps\n");
+#endif
+                        // Unspilled throwing predecessors can only share the previous
+                        // tree's single exception; all interfere with this different set.
+                        foreach (var previous in Args)
+                        {
+                            if (previous == argument)
+                            {
+                                break;
+                            }
+#if !FEATURE_FIXED_OUT_ARGS
+                            if (!previous.AbiInfo.HasAnyRegisterSegment)
+                            {
+                                continue;
+                            }
+#endif
+                            if ((previous.EarlyNode is GenTree previousNode) && ((previousNode.Flags & GTF_EXCEPT) != 0))
+                            {
+                                SetNeedsTemp(previous);
+                            }
+                        }
+                    }
+                }
+
+                previousExceptionTree = node;
+                previousExceptionFlags = exceptionFlags;
+            }
+        }
+
+#if TARGET_WASM
+        var hasRelevantStackArgs = compiler.compLocallocUsed;
+#elif FEATURE_FIXED_OUT_ARGS
+        var hasRelevantStackArgs = HasStackArgs && compiler.compLocallocUsed;
+#else
+        var hasRelevantStackArgs = HasStackArgs;
+#endif
+        if (hasRelevantStackArgs)
+        {
+            foreach (var argument in EarlyArgs)
+            {
+                var node = argument.EarlyNode;
+                assert(!compiler.gtTreeContainsOper(node, GT_QMARK));
+                if (!argument.NeedTmp && argument.AbiInfo.HasAnyRegisterSegment)
+                {
+#if !FEATURE_FIXED_OUT_ARGS
+                    if (((node.Flags & GTF_EXCEPT) != 0) ||
+                        (compiler.compLocallocUsed && compiler.gtTreeContainsOper(node, GT_LCLHEAP)))
+#else
+                    if (compiler.compLocallocUsed && compiler.gtTreeContainsOper(node, GT_LCLHEAP))
+#endif
+                    {
+                        SetNeedsTemp(argument);
+                        continue;
+                    }
+                }
+            }
+        }
+
+        if (compiler.opts.IsCFGEnabled && (call.IsVirtual || call.IsDelegateInvoke))
+        {
+            // CFG target validation null-checks 'this' before late argument placement.
+            assert(HasThisPointer);
+            SetNeedsTemp(ThisArg);
+            foreach (var argument in EarlyArgs)
+            {
+                if ((argument.EarlyNode.Flags & GTF_ALL_EFFECT) != 0)
+                {
+                    SetNeedsTemp(argument);
+                }
+            }
+        }
+
+        _flags |= Flags.ArgsComplete;
+    }
+
+    /// <summary>Order calls, spilled values, cost-ranked expressions, locals and integer constants for late placement.</summary>
+    public readonly void SortArgs(Compiler compiler, GenTreeCall call, Span<CallArg> sortedArgs)
+    {
+        assert(AreArgsComplete);
+        JITDUMP("\nSorting the arguments:\n");
+        var argumentCount = 0;
+        foreach (var argument in Args)
+        {
+            sortedArgs[argumentCount++] = argument;
+        }
+
+#if HAS_FIXED_REGISTER_SET
+        assert(argumentCount > 0);
+        var beginning = 0;
+        var end = argumentCount - 1;
+        var remaining = argumentCount;
+
+        // Match the native partition swaps, including their ordering within each group.
+        var current = argumentCount;
+        do
+        {
+            current--;
+            var argument = sortedArgs[current];
+            if (!argument.Processed)
+            {
+                var node = argument.EarlyNode;
+                assert(node is not null);
+                if (node.Oper is GT_CNS_INT)
+                {
+                    noway_assert(current <= end);
+                    argument.Processed = true;
+                    if (current != end)
+                    {
+                        sortedArgs[current] = sortedArgs[end];
+                        sortedArgs[end] = argument;
+                    }
+
+                    end--;
+                    remaining--;
+                }
+            }
+        }
+        while (current > 0);
+
+        if (remaining > 0)
+        {
+            for (current = beginning; current <= end; current++)
+            {
+                var argument = sortedArgs[current];
+                if (!argument.Processed)
+                {
+                    var node = argument.EarlyNode;
+                    assert(node is not null);
+                    if ((node.Flags & GTF_CALL) != 0)
+                    {
+                        argument.Processed = true;
+                        if (current != beginning)
+                        {
+                            sortedArgs[current] = sortedArgs[beginning];
+                            sortedArgs[beginning] = argument;
+                        }
+
+                        beginning++;
+                        remaining--;
+                    }
+                }
+            }
+        }
+
+        if (remaining > 0)
+        {
+            for (current = beginning; current <= end; current++)
+            {
+                var argument = sortedArgs[current];
+                if (!argument.Processed && argument.NeedTmp)
+                {
+                    argument.Processed = true;
+                    if (current != beginning)
+                    {
+                        sortedArgs[current] = sortedArgs[beginning];
+                        sortedArgs[beginning] = argument;
+                    }
+
+                    beginning++;
+                    remaining--;
+                }
+            }
+        }
+
+        if (remaining > 0)
+        {
+            current = end + 1;
+            do
+            {
+                current--;
+                var argument = sortedArgs[current];
+                if (!argument.Processed)
+                {
+                    var node = argument.EarlyNode;
+                    assert(node is not null);
+                    if ((node.Type is not TYP_STRUCT) && (node.Oper is GT_LCL_VAR or GT_LCL_FLD))
+                    {
+                        noway_assert(current <= end);
+                        argument.Processed = true;
+                        if (current != end)
+                        {
+                            sortedArgs[current] = sortedArgs[end];
+                            sortedArgs[end] = argument;
+                        }
+
+                        end--;
+                        remaining--;
+                    }
+                }
+            }
+            while (current > beginning);
+        }
+
+        var costsPrepared = false;
+        while (remaining > 0)
+        {
+            CallArg? expensiveArgument = null;
+            var expensiveIndex = -1;
+            var expensiveCost = 0;
+
+            for (current = beginning; current <= end; current++)
+            {
+                var argument = sortedArgs[current];
+                if (!argument.Processed)
+                {
+                    var node = argument.EarlyNode;
+                    assert(node is not null);
+                    assert(((node.Oper is not GT_LCL_VAR and not GT_LCL_FLD) || (node.Type is TYP_STRUCT)) &&
+                        (node.Oper is not GT_CNS_INT));
+                    if (remaining == 1)
+                    {
+                        expensiveIndex = current;
+                        expensiveArgument = argument;
+                        assert(beginning == end);
+                        break;
+                    }
+                    else if (compiler.opts.OptimizationEnabled)
+                    {
+                        if (!costsPrepared)
+                        {
+                            compiler.gtPrepareCost(node);
+                        }
+                        if (node.CostEx > expensiveCost)
+                        {
+                            expensiveCost = node.CostEx;
+                            expensiveIndex = current;
+                            expensiveArgument = argument;
+                        }
+                    }
+                    else
+                    {
+                        // Native selects the last remaining expression when costs are unavailable.
+                        expensiveIndex = current;
+                        expensiveArgument = argument;
+                    }
+                }
+            }
+
+            noway_assert(expensiveIndex != -1);
+            assert(expensiveArgument is not null);
+            expensiveArgument.Processed = true;
+            if (expensiveIndex != beginning)
+            {
+                sortedArgs[expensiveIndex] = sortedArgs[beginning];
+                sortedArgs[beginning] = expensiveArgument;
+            }
+
+            beginning++;
+            remaining--;
+            costsPrepared = true;
+        }
+
+        assert(beginning == end + 1);
+        assert(remaining == 0);
+#endif
+    }
+
     public unsafe void AddFinalArgsAndDetermineAbiInfo(Compiler compiler, GenTreeCall call)
     {
         assert(Unsafe.AreSame(ref call.Args, ref this));

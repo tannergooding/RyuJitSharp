@@ -228,7 +228,223 @@ internal static unsafe class CallArgumentMorphTests
         });
     }
 
-    private static void WithCompiler(Action<Compiler> action)
+    [Test]
+    public static void StoresSpillOnlyInterferingEarlierValues()
+    {
+        WithCompiler(compiler => {
+            var call = compiler.gtNewCallNode(TYP_VOID, CT_USER_FUNC, null);
+            var constant = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, 5)));
+            var read = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclvNode(TYP_INT, 0)));
+            var unrelated = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclvNode(TYP_INT, 1)));
+            var store = compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, 10));
+            var value = compiler.gtNewBinaryNode(GT_COMMA, TYP_INT, store, compiler.gtNewLclvNode(TYP_INT, 0));
+            var assignment = call.Args.PushBack(NewCallArg.CreateForPrimitive(value));
+            var last = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclvNode(TYP_INT, 0)));
+
+            call.Args.AddFinalArgsAndDetermineAbiInfo(compiler, call);
+            call.Args.ArgsComplete(compiler, call);
+            Assert.That(call.Args.AreArgsComplete, Is.True);
+            Assert.That(call.Args.NeedsTemps, Is.True);
+            Assert.That(constant.NeedTmp, Is.False);
+            Assert.That(read.NeedTmp, Is.True);
+            Assert.That(unrelated.NeedTmp, Is.False);
+            Assert.That(assignment.NeedTmp, Is.True);
+            Assert.That(last.NeedTmp, Is.False);
+        });
+    }
+
+    [Test]
+    public static void NestedCallsPreserveEarlierEffectsAndDeferStackPlacement()
+    {
+        WithCompiler(compiler => {
+            var call = compiler.gtNewCallNode(TYP_VOID, CT_USER_FUNC, null);
+            var local = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclvNode(TYP_INT, 0)));
+            var read = call.Args.PushBack(NewCallArg.CreateForPrimitive(
+                compiler.gtNewIndir(TYP_INT, compiler.gtNewLclvNode(TYP_BYREF, 1))));
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, 2)));
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, 3)));
+            var stack = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, 4)));
+            var nested = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewCallNode(TYP_INT, CT_USER_FUNC, null)));
+
+            call.Args.AddFinalArgsAndDetermineAbiInfo(compiler, call);
+            call.Args.ArgsComplete(compiler, call);
+            Assert.That(local.NeedTmp, Is.False);
+            Assert.That(read.NeedTmp, Is.True);
+            Assert.That(stack.NeedTmp, Is.False);
+            Assert.That(stack.NeedPlace, Is.True);
+            Assert.That(nested.NeedTmp, Is.True);
+        });
+    }
+
+    [TestCase(TYP_INT, false)]
+    [TestCase(TYP_FLOAT, true)]
+    public static void SingleFloatingCallArgumentsStillRequireTemps(var_types type, bool needsTemp)
+    {
+        WithCompiler(compiler => {
+            var call = compiler.gtNewCallNode(TYP_VOID, CT_USER_FUNC, null);
+            var argument = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewCallNode(type, CT_USER_FUNC, null)));
+            call.Args.AddFinalArgsAndDetermineAbiInfo(compiler, call);
+            call.Args.ArgsComplete(compiler, call);
+            Assert.That(argument.NeedTmp, Is.EqualTo(needsTemp));
+            Assert.That(call.Args.NeedsTemps, Is.EqualTo(needsTemp));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void DifferentExceptionsPreserveAllEarlierThrowingArguments(bool different)
+    {
+        WithCompiler(compiler => {
+            var call = compiler.gtNewCallNode(TYP_VOID, CT_USER_FUNC, null);
+            var first = call.Args.PushBack(NewCallArg.CreateForPrimitive(
+                compiler.gtNewIndir(TYP_INT, compiler.gtNewLclvNode(TYP_BYREF, 0))));
+            var second = call.Args.PushBack(NewCallArg.CreateForPrimitive(
+                compiler.gtNewIndir(TYP_INT, compiler.gtNewLclvNode(TYP_BYREF, 1))));
+            var lastNode = different
+                ? (GenTree)NewOverflowingAdd(compiler)
+                : compiler.gtNewIndir(TYP_INT, compiler.gtNewLclvNode(TYP_BYREF, 2));
+            var last = call.Args.PushBack(NewCallArg.CreateForPrimitive(lastNode));
+
+            call.Args.AddFinalArgsAndDetermineAbiInfo(compiler, call);
+            call.Args.ArgsComplete(compiler, call);
+            Assert.That(first.NeedTmp, Is.EqualTo(different));
+            Assert.That(second.NeedTmp, Is.EqualTo(different));
+            Assert.That(last.NeedTmp, Is.False);
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void DebugInlineThrowsRespectOutgoingStackArguments(bool debugCode)
+    {
+        WithCompiler(compiler => {
+            compiler.opts.compDbgCode = debugCode;
+            var call = compiler.gtNewCallNode(TYP_VOID, CT_USER_FUNC, null);
+            var throwing = call.Args.PushBack(NewCallArg.CreateForPrimitive(NewOverflowingAdd(compiler)));
+            for (var i = 0; i < 4; i++)
+            {
+                _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, i)));
+            }
+
+            call.Args.AddFinalArgsAndDetermineAbiInfo(compiler, call);
+            call.Args.ArgsComplete(compiler, call);
+            Assert.That(throwing.NeedTmp, Is.EqualTo(debugCode));
+        });
+    }
+
+    [TestCase(1, false)]
+    [TestCase(5, true)]
+    public static void LocallocArgumentsPrecedeStackPlacement(int count, bool needsTemp)
+    {
+        WithCompiler(compiler => {
+            compiler.compLocallocUsed = true;
+            var call = compiler.gtNewCallNode(TYP_VOID, CT_USER_FUNC, null);
+            var allocation = compiler.gtNewUnaryNode(GT_LCLHEAP, TYP_I_IMPL, compiler.gtNewIconNode(TYP_I_IMPL, 32));
+            var argument = call.Args.PushBack(NewCallArg.CreateForPrimitive(allocation));
+            for (var i = 1; i < count; i++)
+            {
+                _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, i)));
+            }
+
+            call.Args.AddFinalArgsAndDetermineAbiInfo(compiler, call);
+            call.Args.ArgsComplete(compiler, call);
+            Assert.That(argument.NeedTmp, Is.EqualTo(needsTemp));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void ControlFlowGuardDefersTargetNullChecksUntilAfterArgumentEffects(bool enabled)
+    {
+        WithCompiler(compiler => {
+            if (enabled)
+            {
+                compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_ENABLE_CFG);
+            }
+
+            var call = compiler.gtNewCallNode(TYP_VOID, CT_USER_FUNC, null);
+            call._callMoreFlags |= GTF_CALL_M_DELEGATE_INV;
+            var receiver = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclvNode(TYP_REF, 0))
+                .WithWellKnownArg(WellKnownArg.ThisPointer));
+            var effect = call.Args.PushBack(NewCallArg.CreateForPrimitive(
+                compiler.gtNewIndir(TYP_INT, compiler.gtNewLclvNode(TYP_BYREF, 1))));
+            var constant = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, 2)));
+            call.Args.AddFinalArgsAndDetermineAbiInfo(compiler, call);
+            call.Args.ArgsComplete(compiler, call);
+            Assert.That(receiver.NeedTmp, Is.EqualTo(enabled));
+            Assert.That(effect.NeedTmp, Is.EqualTo(enabled));
+            Assert.That(constant.NeedTmp, Is.False);
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void SortingPreservesNativePartitionsAndMinOptsSelection(bool minOpts)
+    {
+        WithCompiler(compiler => {
+            var call = compiler.gtNewCallNode(TYP_VOID, CT_USER_FUNC, null);
+            var firstConstant = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, 1)));
+            var firstLocal = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclvNode(TYP_INT, 0)));
+            var multiply = compiler.gtNewBinaryNode(GT_MUL, TYP_INT,
+                compiler.gtNewBinaryNode(GT_MUL, TYP_INT,
+                    compiler.gtNewLclvNode(TYP_INT, 0), compiler.gtNewLclvNode(TYP_INT, 1)),
+                compiler.gtNewBinaryNode(GT_MUL, TYP_INT,
+                    compiler.gtNewLclvNode(TYP_INT, 1), compiler.gtNewLclvNode(TYP_INT, 2)));
+            var expensive = call.Args.PushBack(NewCallArg.CreateForPrimitive(multiply));
+            var nested = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewCallNode(TYP_INT, CT_USER_FUNC, null)));
+            var temporary = call.Args.PushBack(NewCallArg.CreateForPrimitive(
+                compiler.gtNewUnaryNode(GT_NEG, TYP_INT, compiler.gtNewLclvNode(TYP_INT, 1))));
+            var lastConstant = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, 2)));
+            var lastLocal = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclvNode(TYP_INT, 1)));
+            var cheap = call.Args.PushBack(NewCallArg.CreateForPrimitive(
+                compiler.gtNewUnaryNode(GT_NEG, TYP_INT, compiler.gtNewLclvNode(TYP_INT, 2))));
+            CallArg[] original = [.. call.Args.Args];
+            call.Args.AddFinalArgsAndDetermineAbiInfo(compiler, call);
+            call.Args.SetNeedsTemp(temporary);
+            call.Args.ArgsComplete(compiler, call);
+
+            var sorted = new CallArg[original.Length];
+            call.Args.SortArgs(compiler, call, sorted);
+            CallArg[] expected = [
+                nested, temporary, minOpts ? cheap : expensive, minOpts ? expensive : cheap,
+                lastLocal, firstLocal, firstConstant, lastConstant,
+            ];
+            Assert.That(sorted, Is.EqualTo(expected));
+            Assert.That(sorted, Is.All.Matches<CallArg>(argument => argument.Processed));
+            Assert.That((CallArg[])[.. call.Args.Args], Is.EqualTo(original));
+            Assert.That(call.Args.LateHead, Is.Null);
+        }, minOpts);
+    }
+
+    [TestCase(1)]
+    [TestCase(4)]
+    public static void AllConstantSortingHandlesTheExhaustedEndPartition(int count)
+    {
+        WithCompiler(compiler => {
+            var call = compiler.gtNewCallNode(TYP_VOID, CT_USER_FUNC, null);
+            for (var i = 0; i < count; i++)
+            {
+                _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, i)));
+            }
+
+            CallArg[] original = [.. call.Args.Args];
+            call.Args.AddFinalArgsAndDetermineAbiInfo(compiler, call);
+            call.Args.ArgsComplete(compiler, call);
+            var sorted = new CallArg[count];
+            call.Args.SortArgs(compiler, call, sorted);
+            Assert.That(sorted, Is.EqualTo(original));
+        });
+    }
+
+    private static GenTreeOp NewOverflowingAdd(Compiler compiler)
+    {
+        var node = compiler.gtNewBinaryNode(GT_ADD, TYP_INT,
+            compiler.gtNewLclvNode(TYP_INT, 0), compiler.gtNewLclvNode(TYP_INT, 1));
+        node.Flags |= GTF_OVERFLOW | GTF_EXCEPT;
+        return node;
+    }
+
+    private static void WithCompiler(Action<Compiler> action, bool minOpts = false)
     {
 #if DEBUG
         using var tls = new JitTls(null);
@@ -237,9 +453,9 @@ internal static unsafe class CallArgumentMorphTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
-        compiler.lvaTable = new LclVarDsc[1];
-        compiler.lvaCount = 1;
+        compiler.opts.SetMinOpts(minOpts);
+        compiler.lvaTable = new LclVarDsc[3];
+        compiler.lvaCount = 3;
         compiler.virtualStubParamInfo = new Compiler.VirtualStubParamInfo();
         JitTls.Compiler = compiler;
 

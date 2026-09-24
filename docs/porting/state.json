@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Continue required call-argument morphing: read oracle morph.cpp::CallArgs::ArgsComplete from line 743, then close argument scheduling/evaluation dependencies before integrating fgMorphArgs. Outgoing argument ABI classification, final VSD/R2R argument insertion/reset, stack sizing, safepoint classification, local-definition flags, string literals and DEBUG morph-stress copies now build and pass focused Debug/Release coverage. The incomplete dispatcher and fgMorphCall drafts are preserved outside the build as session files global-morph-tree.cs.draft and global-morph-call.cs.draft and protected Git blobs in localRecovery.globalMorphDrafts; restore only with a complete compilable closure. Their remaining dependencies include optAssertionProp, fgMorphSmpOp, fgMorphHWIntrinsic, fgMorphPotentialTailCall, fgMorphArgs and SharedTempsScope. Native fgMorphSmpOp was read through line 7630; next unread line is 7631. The native assertion dispatcher at assertionprop.cpp:5909 and MorphCopyBlockHelper are already read; assertion application helpers are missing, and copy morphing recursively morphs cloned addresses. fgExpandVirtualVtableCallTarget already exists in Compiler.fg.cs. No global phase activation or new codegen/phase parity is claimed; fgMorphBlocks remains inactive.",
+    "nextAction": "Continue required call-argument morphing at oracle morph.cpp::fgMorphArgs, line 2037, and fgMakeOutgoingStructArgCopy at 2565. CallArgs::ArgsComplete and SortArgs are now complete, with native exception/store ordering, CFG/localloc constraints and partition permutations. EvalArgsToTemps (1394-1589) has been read in full; its scalar/field-list spilling is straightforward, but struct stores call fgMorphCopyBlock, which remains in the recursive tree-morph closure. gtPrepareCost now delegates to the already-ported gtSetEvalOrder; do not re-port the cost machinery. The incomplete dispatcher and fgMorphCall drafts remain outside the build as session files global-morph-tree.cs.draft and global-morph-call.cs.draft and protected Git blobs in localRecovery.globalMorphDrafts; restore only with a complete compilable closure. Remaining dependencies include optAssertionProp, fgMorphSmpOp, fgMorphHWIntrinsic, fgMorphPotentialTailCall, fgMorphArgs and SharedTempsScope. Native fgMorphSmpOp was read through line 7630; next unread line is 7631. The assertion dispatcher at assertionprop.cpp:5909 and MorphCopyBlockHelper are already read; assertion application helpers are missing, and copy morphing recursively morphs cloned addresses. fgExpandVirtualVtableCallTarget already exists in Compiler.fg.cs. No global phase activation or new codegen/phase parity is claimed; fgMorphBlocks remains inactive.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -1190,6 +1190,20 @@
         "globalMorphActive": false,
         "nativeAotRecaptured": false
       },
+      "callArgumentOrdering": {
+        "debugPassed": 182,
+        "releasePassed": 177,
+        "skipped": 0,
+        "newCases": 16,
+        "selection": ["CallArgumentMorphTests", "MorphTreeSupportTests", "UseEdgeIteratorTests", "IndirectCallTransformationTests"],
+        "debugTests": "artifacts\\call-arg-order-debug.trx",
+        "releaseTests": "artifacts\\call-arg-order-release.trx",
+        "coverage": ["store/read interference", "nested-call effects and deferred stack placement", "single floating call spills", "equal and different exception sets", "debug inline throws", "localloc stack constraints", "CFG target-null-check ordering", "exact native constant/local/call/temp partition permutations", "optimized cost selection and minopts last-expression selection"],
+        "nativeDefinitionsRetired": ["CallArgs::ArgsComplete", "CallArgs::SortArgs", "CallArgs::SetNeedsTemp", "Compiler::gtPrepareCost", "ABIPassingInformation::HasAnyRegisterSegment", "ABIPassingInformation::IsSplitAcrossRegistersAndStack"],
+        "remaining": "EvalArgsToTemps and fgMorphArgs remain unported. Temporary materialization needs struct-copy morphing; sorting and spill decisions alone do not activate call or global morph.",
+        "globalMorphActive": false,
+        "nativeAotRecaptured": false
+      },
       "nativeAotPublish": "passed-after-implicit-byref-retyping",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "all-twenty-minopts-implicit-byref-retyping-phase-sections-and-its-emitted-IR-equal; earlier-local-morph-gaps-remain-scoped-in-localMorphActivation",
@@ -1708,6 +1722,11 @@
       "commit": "b63de7301a4ffb24157fe68b524fdfd5b7476935",
       "indexCommit": "0519348645cbb4383f64386c589bfc6b8c7e27ad",
       "ref": "refs/porting/snapshots/native-ledger-call-morph-support"
+    },
+    "callArgumentOrderNativeResidual": {
+      "commit": "560f196a0d973ac829525e60f4b7380339922ebe",
+      "indexCommit": "0413121c1ac7d93e0a1b43eb560e3edc10ea13c4",
+      "ref": "refs/porting/snapshots/native-ledger-call-argument-order"
     },
     "globalMorphDrafts": {
       "treeBlob": "36908cd7d0294ece59d91854bbdbfcb05d83f228",

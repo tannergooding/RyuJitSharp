@@ -13634,6 +13634,8 @@ public partial class Compiler
         return level;
     }
 
+    public void gtPrepareCost(GenTree tree) => _ = gtSetEvalOrder(tree);
+
     /// <summary>Given a tree, figure out the order in which its sub-operands should be evaluated.</summary>
     /// <param name="tree"></param>
     /// <returns>Returns the Sethi 'complexity' estimate for this tree (the higher the number, the higher is the tree's resources requirement).</returns>
