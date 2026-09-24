@@ -28,6 +28,11 @@ Integral cast optimization now uses range proofs and expression narrowing to
 remove redundant conversions, retaining overflow checks and small-local
 normalization where required.
 
+Comparison morphing now canonicalizes bit tests, removes redundant widening
+casts and folds constant comparisons using signed and unsigned range proofs.
+These transformations retain checked arithmetic, observable evaluation and
+floating-point unordered behavior.
+
 Outgoing calls can classify signature types into Windows-x64 argument registers
 and stack slots, account for shadow space, insert virtual-stub and ReadyToRun
 cells, and remove those cells before reclassification. Argument scheduling,

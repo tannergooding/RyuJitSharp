@@ -67,6 +67,12 @@ preserving its logical ID. The caller consumes the returned local in place of
 the indirection. Promoted struct returns instead replace their owning use with
 a field-list node; they do not retag the original local into a different CLR type.
 
+Comparison morphing installs replacement constants in their owning operands,
+preserving logical node IDs without changing existing aliases into other node
+kinds. Range-proven constant results allocate fresh nodes, matching native.
+Relational operator swaps preserve value numbers; comparison reversal retains
+the native unordered-floating flag behavior.
+
 Integer narrowing takes its owning use by reference so that a 32-bit target can
 replace a long constant with an integer constant through the existing
 identity-preserving replacement helper. Its probe pass does not mutate the IR.
