@@ -33,6 +33,12 @@ Recursive fast-tail calls can be converted into loops while preserving argument
 evaluation before parameter overwrites, writable receiver state, required local
 initialization and profile flow.
 
+Helper preparation builds dispatcher calls with correctly typed result storage,
+return-buffer forwarding and reusable return-address slots. The x86-specific
+helper path prepares explicit receiver null checks and its special stack
+arguments. Debug validation follows the tail-call result through stores and
+normalizing casts to the return.
+
 Materializing argument temporaries, selecting and transforming other tail calls,
 and the recursive tree/block drivers remain unfinished; these foundations are not
 yet activated as a global-morph phase.

@@ -378,6 +378,50 @@ public partial struct CallArgs
         return callArg;
     }
 
+    public void Remove(CallArg argument)
+    {
+        assert(((_flags & Flags.HasAddedFinalArgs) == 0) && !AreArgsComplete);
+        ref var slot = ref _head;
+        while (slot is not null)
+        {
+            if (slot == argument)
+            {
+                slot = argument.Next;
+                RemovedWellKnownArg(argument.WellKnownArg);
+                return;
+            }
+
+            slot = ref slot.NextRef;
+        }
+
+        assert(false, "Did not find arg to remove in CallArgs::Remove");
+    }
+
+    private void RemovedWellKnownArg(WellKnownArg argument)
+    {
+        switch (argument)
+        {
+            case WellKnownArg.ThisPointer:
+            {
+                assert(FindWellKnownArg(argument) is null);
+                _flags &= ~Flags.HasThisPointer;
+                break;
+            }
+
+            case WellKnownArg.RetBuffer:
+            {
+                assert(FindWellKnownArg(argument) is null);
+                _flags &= ~Flags.HasRetBuffer;
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
+        }
+    }
+
     /// <summary>Reverse the specified subrange of arguments.</summary>
     /// <param name="index">The index of the sublist to reverse.</param>
     /// <param name="count">The length of the sublist to reverse.</param>

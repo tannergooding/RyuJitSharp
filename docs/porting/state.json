@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Continue the required call/tree-morph closure with tail-call IR validation and helper transformations. fgMorphPotentialTailCall (oracle morph.cpp:4454-5052), fgValidateIRForTailCall (5068-5227) and fgCanTailCallViaJitHelper (15743) have been read in full. The latter two can be ported independently; fgCastNeeded already exists in Compiler.fg.cs, and the validator should use the existing IGenTreeVisitor execution-order traversal. Next unread helper bodies are fgMorphTailCallViaHelpers (5263) and fgMorphTailCallViaJitHelper (5765). Recursive fast-tail-call loop conversion, parameter assignment and mapping are complete, alongside fast eligibility, ABI setup, spill decisions, sorting, shared temporary scopes and promoted-field ABI mapping. Native fgMorphArgs (2037), fgTryMorphStructArg, fgMakeOutgoingStructArgCopy (2565) and EvalArgsToTemps (1394-1589) have been read in full. Their integration needs recursive fgMorphTree and fgMorphCopyBlock; nullable early argument slots are reconciled. Reuse gtSetEvalOrder and Globals.ForEachHbvBitSet. The incomplete dispatcher and fgMorphCall drafts remain outside the build as session files global-morph-tree.cs.draft and global-morph-call.cs.draft and protected Git blobs in localRecovery.globalMorphDrafts; restore only with a complete compilable closure. fgMorphPotentialTailCall needs helper transformations and recursive fgMorphCall/fgMorphTree, so do not replace its Windows behavior with NYIs. Remaining dependencies also include optAssertionProp, fgMorphSmpOp and fgMorphHWIntrinsic. Native fgMorphSmpOp was read through line 7630; next unread line is 7631. The assertion dispatcher at assertionprop.cpp:5909 and MorphCopyBlockHelper are already read; assertion application helpers are missing, and copy morphing recursively morphs cloned addresses. fgExpandVirtualVtableCallTarget already exists in Compiler.fg.cs. No global phase activation or new codegen/phase parity is claimed; fgMorphBlocks remains inactive.",
+    "nextAction": "Resume the required tree-morph closure at oracle morph.cpp::fgMorphSmpOp, next unread line 7631. Tail-call validation, dispatcher/result construction, x86 helper preparation and helper eligibility are complete, as are argument removal and recursive loop conversion. fgMorphPotentialTailCall (4454-5052) and fgMorphTailCallViaHelpers (5263-5447) have been read in full; both remain coupled to recursive fgMorphCall/fgMorphTree. The portable helper also needs getVirtMethodPointerTree (5689), a short unported wrapper around the existing getTokenHandleTree and gtNewVirtualFunctionLookupHelperCallNode. getLookupTree, getRuntimeLookupTree and getTokenHandleTree are already implemented in Compiler.cs; do not re-port them from residual duplicates. Native fgMorphArgs (2037), fgTryMorphStructArg, fgMakeOutgoingStructArgCopy (2565) and EvalArgsToTemps (1394-1589) have been read in full. Their integration needs recursive fgMorphTree and fgMorphCopyBlock; nullable early argument slots, ABI setup, spill decisions, sorting, shared temporary scopes and promoted-field ABI mapping are reconciled. Reuse gtSetEvalOrder and Globals.ForEachHbvBitSet. The incomplete dispatcher and fgMorphCall drafts remain outside the build as session files global-morph-tree.cs.draft and global-morph-call.cs.draft and protected Git blobs in localRecovery.globalMorphDrafts; restore only with a complete compilable closure, not Windows NYIs. Remaining dependencies also include optAssertionProp and fgMorphHWIntrinsic. The assertion dispatcher at assertionprop.cpp:5909 and MorphCopyBlockHelper are already read; assertion application helpers are missing, and copy morphing recursively morphs cloned addresses. fgExpandVirtualVtableCallTarget already exists in Compiler.fg.cs. No global phase activation or new codegen/phase parity is claimed; fgMorphBlocks remains inactive.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -1260,6 +1260,21 @@
         "globalMorphActive": false,
         "nativeAotRecaptured": false
       },
+      "tailCallHelperPreparation": {
+        "debugPassed": 119,
+        "releasePassed": 114,
+        "skipped": 0,
+        "newDebugCases": 9,
+        "newReleaseCases": 6,
+        "selection": ["TailCallMorphTests", "CallArgumentMorphTests", "BlockMorphTests"],
+        "debugTests": "artifacts\\tailcall-helpers-debug.trx",
+        "releaseTests": "artifacts\\tailcall-helpers-release.trx",
+        "coverage": ["dispatcher argument order and return-address slot reuse", "real small return types and incoming return-buffer forwarding", "receiver null checks and single evaluation", "x86 helper stack suffix construction", "well-known argument removal", "result forwarding across blocks and normalization casts", "assertion callbacks reject unrelated return values"],
+        "nativeDefinitionsRetired": ["Compiler::fgValidateIRForTailCall", "Compiler::fgCanTailCallViaJitHelper", "Compiler::fgCreateCallDispatcherAndGetResult", "Compiler::fgMorphTailCallViaJitHelper", "CallArgs::Remove", "CallArgs::RemovedWellKnownArg"],
+        "remaining": "Portable store-arguments transformation and tail-call selection still require recursive morphing. x86 helper IR construction is exercised on the Windows-x64 test host, not as x86 execution.",
+        "globalMorphActive": false,
+        "nativeAotRecaptured": false
+      },
       "nativeAotPublish": "passed-after-implicit-byref-retyping",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "all-twenty-minopts-implicit-byref-retyping-phase-sections-and-its-emitted-IR-equal; earlier-local-morph-gaps-remain-scoped-in-localMorphActivation",
@@ -1799,6 +1814,11 @@
       "indexCommit": "c75035d26bf3a049570710d33cb91151877d07ba",
       "ref": "refs/porting/snapshots/native-ledger-recursive-tailcall"
     },
+    "tailCallHelpersNativeResidual": {
+      "commit": "067476a383d3ed9bc98f322bb85e0af968c24df2",
+      "indexCommit": "00aa156ccc33cae8cc814afebb03baf314d4c535",
+      "ref": "refs/porting/snapshots/native-ledger-tailcall-helpers"
+    },
     "globalMorphDrafts": {
       "treeBlob": "36908cd7d0294ece59d91854bbdbfcb05d83f228",
       "treeRef": "refs/porting/drafts/global-morph-tree",
@@ -1953,7 +1973,7 @@
     {
       "area": "outgoing-call-abi-and-morph-support",
       "native": ["src\\coreclr\\jit\\morph.cpp", "src\\coreclr\\jit\\gentree.cpp", "src\\coreclr\\jit\\abi.cpp", "src\\coreclr\\jit\\compiler.hpp", "src\\coreclr\\jit\\target.h"],
-      "csharp": ["sources\\Core\\jit\\gentree\\CallArgs.Morph.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.CallSupport.cs", "sources\\Core\\jit\\compiler\\Compiler.SharedTempsScope.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.TailCalls.cs", "sources\\Core\\jit\\compiler\\Compiler.gt.cs", "sources\\Core\\jit\\gentree\\GenTree.cs", "sources\\Core\\jit\\gentree\\GenTreeCall.cs", "sources\\Core\\jit\\abi\\AbiPassingInformation.cs", "sources\\Core\\jit\\target\\Globals.cs"],
+      "csharp": ["sources\\Core\\jit\\gentree\\CallArgs.Morph.cs", "sources\\Core\\jit\\gentree\\CallArgs.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.CallSupport.cs", "sources\\Core\\jit\\compiler\\Compiler.SharedTempsScope.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.TailCalls.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.TailCallHelpers.cs", "sources\\Core\\jit\\compiler\\Compiler.TailCallIRValidatorVisitor.cs", "sources\\Core\\jit\\compiler\\Compiler.gt.cs", "sources\\Core\\jit\\gentree\\GenTree.cs", "sources\\Core\\jit\\gentree\\GenTreeCall.cs", "sources\\Core\\jit\\abi\\AbiPassingInformation.cs", "sources\\Core\\jit\\target\\Globals.cs"],
       "reconciledCommit": null
     },
     {

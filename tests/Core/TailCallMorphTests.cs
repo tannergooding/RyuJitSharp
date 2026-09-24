@@ -3,11 +3,13 @@
 using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.GenTreeCallFlags;
+using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.var_types;
 
@@ -165,6 +167,184 @@ internal static unsafe class TailCallMorphTests
         });
     }
 
+    [TestCase(TYP_VOID)]
+    [TestCase(TYP_BYTE)]
+    public static void DispatcherPreservesReturnStorageAndArgumentOrder(var_types returnType)
+    {
+        WithCompiler((compiler, entry, block) => {
+            var call = compiler.gtNewCallNode(returnType.ActualType, gtCallTypes.CT_USER_FUNC, null);
+            call._returnType = returnType;
+            MorphStatement(compiler) = compiler.gtNewStmt(call);
+            var result = compiler.fgCreateCallDispatcherAndGetResult(call,
+                (CORINFO_METHOD_STRUCT_*)0x1234, (CORINFO_METHOD_STRUCT_*)0x5678);
+            var dispatcher = returnType is TYP_VOID ? result.AsCall() : result.AsOp().Op1.AsCall();
+            var arguments = dispatcher.Args.Args.ToArray();
+
+            Assert.That((nuint)dispatcher._callMethHnd, Is.EqualTo((nuint)0x5678));
+            Assert.That(arguments.Length, Is.EqualTo(3));
+            Assert.That(arguments[0].Node.AsLclVarCommon().LclNum, Is.EqualTo(compiler.lvaRetAddrVar));
+            Assert.That((nuint)arguments[1].Node.AsFptrVal().FptrMethod, Is.EqualTo((nuint)0x1234));
+            Assert.That(compiler.lvaGetDesc(compiler.lvaRetAddrVar).Type, Is.EqualTo(TYP_I_IMPL));
+            Assert.That(compiler.lvaGetDesc(compiler.lvaRetAddrVar).IsAddressExposed, Is.True);
+            if (returnType is TYP_VOID)
+            {
+                Assert.That(arguments[2].Node.AsIntCon().IconValue, Is.EqualTo((nint)0));
+            }
+            else
+            {
+                var returnLocal = arguments[2].Node.AsLclVarCommon().LclNum;
+                Assert.That(compiler.lvaGetDesc(returnLocal).Type, Is.EqualTo(TYP_BYTE));
+                Assert.That(compiler.lvaGetDesc(returnLocal).IsAddressExposed, Is.True);
+                Assert.That(result.AsOp().Op2.AsLclVar().LclNum, Is.EqualTo(returnLocal));
+                Assert.That(result.Type, Is.EqualTo(TYP_INT));
+            }
+
+            var previousReturnAddress = compiler.lvaRetAddrVar;
+            _ = compiler.fgCreateCallDispatcherAndGetResult(call, null, null);
+            Assert.That(compiler.lvaRetAddrVar, Is.EqualTo(previousReturnAddress));
+        });
+    }
+
+    [Test]
+    public static void DispatcherTransfersIncomingReturnBufferWithoutAllocatingResultStorage()
+    {
+        WithCompiler((compiler, entry, block) => {
+            compiler.info.compRetBuffArg = 0;
+            compiler.lvaTable[0].Type = TYP_BYREF;
+            var call = compiler.gtNewCallNode(TYP_BYREF, gtCallTypes.CT_USER_FUNC, null);
+            var buffer = compiler.gtNewLclvNode(TYP_BYREF, 0);
+            var bufferArgument = call.Args.PushBack(NewCallArg.CreateForPrimitive(buffer).WithWellKnownArg(WellKnownArg.RetBuffer));
+            MorphStatement(compiler) = compiler.gtNewStmt(call);
+            var result = compiler.fgCreateCallDispatcherAndGetResult(call, null, null);
+            var arguments = result.AsOp().Op1.AsCall().Args.Args.ToArray();
+
+            Assert.That(arguments[2].Node, Is.SameAs(buffer));
+            Assert.That(result.AsOp().Op2, Is.Not.SameAs(buffer));
+            Assert.That(result.AsOp().Op2.AsLclVar().LclNum, Is.Zero);
+            Assert.That(compiler.lvaCount, Is.EqualTo(3));
+            Assert.That(call.Args.HasRetBuffer, Is.True);
+            call.Args.Remove(bufferArgument);
+            Assert.That(call.Args.HasRetBuffer, Is.False);
+            Assert.That(call.Args.IsEmpty, Is.True);
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void JitHelperMovesReceiverAndBuildsStackSuffix(bool sideEffects)
+    {
+        WithCompiler((compiler, entry, block) => {
+            compiler.lvaParameterStackSize = 3 * REGSIZE_BYTES;
+            compiler.lvaTable[0].Type = TYP_REF;
+            var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+            call.Flags |= GTF_CALL_NULLCHECK | GTF_CALL_POP_ARGS;
+            GenTree receiver = sideEffects
+                ? compiler.gtNewCallNode(TYP_REF, gtCallTypes.CT_USER_FUNC, null)
+                : compiler.gtNewLclvNode(TYP_REF, 0);
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(receiver).WithWellKnownArg(WellKnownArg.ThisPointer));
+            var userArgument = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, 42)));
+            compiler.fgMorphTailCallViaJitHelper(call);
+
+            var arguments = call.Args.Args.ToArray();
+            Assert.That(arguments.Length, Is.EqualTo(6));
+            Assert.That(arguments[1], Is.SameAs(userArgument));
+            Assert.That(arguments[2..].Select(argument => argument.WellKnownArg),
+                Is.All.EqualTo(WellKnownArg.X86TailCallSpecialArg));
+            Assert.That(arguments[2..].Select(argument => argument.Node.AsIntCon().IconValue),
+                Is.EqualTo((nint[])[3, 9, 8, 7]));
+            Assert.That(call.Args.HasThisPointer, Is.False);
+            Assert.That(call.Args.IsVarArgs, Is.True);
+            Assert.That(call.NeedsNullCheck, Is.False);
+            Assert.That(call.Flags & GTF_CALL_POP_ARGS, Is.EqualTo(GTF_EMPTY));
+            var movedReceiver = arguments[0].Node.AsOp();
+            if (sideEffects)
+            {
+                var setup = movedReceiver.Op1.AsOp();
+                Assert.That(setup.Op1.AsLclVar().Data, Is.SameAs(receiver));
+                Assert.That(setup.Op2.Oper, Is.EqualTo(GT_NULLCHECK));
+                Assert.That(movedReceiver.Op2.AsLclVar().LclNum, Is.EqualTo(2));
+                Assert.That(compiler.lvaCount, Is.EqualTo(3));
+            }
+            else
+            {
+                Assert.That(movedReceiver.Op1.Oper, Is.EqualTo(GT_NULLCHECK));
+                Assert.That(movedReceiver.Op2.AsLclVar().LclNum, Is.Zero);
+                Assert.That(compiler.lvaCount, Is.EqualTo(2));
+            }
+        });
+    }
+
+    [Test]
+    public static void WindowsX64DoesNotSelectX86JitHelper()
+    {
+        WithCompiler((compiler, entry, block) =>
+            Assert.That(compiler.fgCanTailCallViaJitHelper(NewRecursiveCall(compiler)), Is.False));
+    }
+
+#if DEBUG
+    private static int s_assertionCount;
+
+    [Test]
+    public static void TailCallValidationRejectsAnUnrelatedReturnValue()
+    {
+        WithCompiler((compiler, entry, block) => {
+            var call = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, null);
+            var first = compiler.gtNewStmt(compiler.gtNewStoreLclVarNode(0, call));
+            compiler.fgInsertStmtAtEnd(block, first);
+            compiler.fgInsertStmtAtEnd(block, compiler.gtNewStmt(compiler.gtNewUnaryNode(GT_RETURN, TYP_INT,
+                compiler.gtNewLclvNode(TYP_INT, 1))));
+            compiler.compCurBB = block;
+            compiler.compCurStmt = first;
+
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.doAssert = &RecordAssertion;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            using var tls = new JitTls(&jitInfo);
+            s_assertionCount = 0;
+            compiler.fgValidateIRForTailCall(call);
+            Assert.That(s_assertionCount, Is.EqualTo(2));
+        });
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int RecordAssertion(ICorJitInfo* jitInfo, byte* file, int line, byte* expression)
+    {
+        s_assertionCount++;
+        return 0;
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void TailCallValidationFollowsForwardedResultsAcrossBlocks(bool normalize)
+    {
+        WithCompiler((compiler, entry, block) => {
+            var call = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, null);
+            call._returnType = TYP_UBYTE;
+            GenTree value = normalize ? compiler.gtNewCastNode(TYP_INT, call, false, TYP_UBYTE) : call;
+            var first = compiler.gtNewStmt(compiler.gtNewStoreLclVarNode(0, value));
+            compiler.fgInsertStmtAtEnd(entry, first);
+            entry.SetKindAndTargetEdge(BBJ_ALWAYS, compiler.fgAddRefPred(block, entry));
+            compiler.fgInsertStmtAtEnd(block, compiler.gtNewStmt(compiler.gtNewStoreLclVarNode(1,
+                compiler.gtNewLclvNode(TYP_INT, 0))));
+            compiler.fgInsertStmtAtEnd(block, compiler.gtNewStmt(compiler.gtNewBinaryNode(GT_COMMA, TYP_VOID,
+                compiler.gtNewNothingNode(), compiler.gtNewNothingNode())));
+            var returnStatement = compiler.gtNewStmt(compiler.gtNewUnaryNode(GT_RETURN, TYP_INT,
+                compiler.gtNewLclvNode(TYP_INT, 1)));
+            compiler.fgInsertStmtAtEnd(block, returnStatement);
+            compiler.compCurBB = entry;
+            compiler.compCurStmt = first;
+            compiler.fgValidateIRForTailCall(call);
+
+            Assert.That(entry.FirstStmt, Is.SameAs(first));
+            Assert.That(block.LastStmt, Is.SameAs(returnStatement));
+            Assert.That(first.RootNode.AsLclVar().Data, Is.SameAs(value));
+        });
+    }
+#endif
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "fgMorphStmt")]
+    private static extern ref Statement? MorphStatement(Compiler compiler);
+
     private static GenTreeCall NewRecursiveCall(Compiler compiler)
     {
         var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
@@ -194,6 +374,7 @@ internal static unsafe class TailCallMorphTests
         ];
         compiler.lvaCount = 2;
         compiler.lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
+        compiler.lvaRetAddrVar = BAD_VAR_NUM;
         compiler.MethodHasRecursiveTailCall = true;
         compiler.fgGlobalMorph = true;
         compiler.fgPredsComputed = true;
