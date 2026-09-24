@@ -16,6 +16,17 @@ public sealed class GenTreeStoreInd : GenTreeIndir
     {
     }
 
+    internal GenTreeStoreInd(var_types type, GenTree addr, GenTree data, GenTree source, NodeThreading threading)
+        : base(GT_STOREIND, type, addr, data, source, threading)
+    {
+#if !CPU_LOAD_STORE_ARCH
+        if (source is GenTreeStoreInd store)
+        {
+            _rmwStatus = store._rmwStatus;
+        }
+#endif
+    }
+
 #if CPU_LOAD_STORE_ARCH
     public RmwStatus RmwStatus => STOREIND_RMW_STATUS_UNKNOWN;
 #else

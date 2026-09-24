@@ -150,6 +150,9 @@ including through comma expressions. The post-morph implicit-byref query uses
 still publish their complete address and peeled offset as native does.
 Source-aware indirection construction preserves logical identity and clears
 value numbers; callers restore operator-specific flags when native uses `SetOper`.
+Store-indirection replacements use `GenTreeStoreInd`, not its indirection base.
+Value retyping can explicitly retain simple or composite SSA identity when the
+local number is unchanged; local-address conversion still discards that identity.
 
 Local-address assertions use a value-record key, a lookup-only dictionary and an
 insertion-ordered assertion list; dictionary enumeration is not observable.

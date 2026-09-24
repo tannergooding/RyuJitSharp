@@ -18,6 +18,8 @@ promoted-field block initialization, and removal of expressions after no-return
 calls while preserving earlier side effects. Literal construction and debug
 stress copies preserve native handle shapes, logical identity and operand
 ownership.
+Replacement support also retains store-specific node kinds and simple or
+composite SSA identities when retyping an existing local value.
 
 Indirection finalization turns in-range local-address accesses into field loads
 and stores, preserving partial definitions and volatile-access restrictions.

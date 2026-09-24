@@ -58,6 +58,12 @@ public abstract class GenTreeLclVarCommon : GenTreeUnOp
 
     public bool HasSsaName => SsaNum != SsaConfig.RESERVED_SSA_NUM;
 
+    internal void CopySsaIdentityFrom(GenTreeLclVarCommon source)
+    {
+        assert(_lclNum == source._lclNum);
+        _ssaNum = source._ssaNum;
+    }
+
     public int LclNum
     {
         get

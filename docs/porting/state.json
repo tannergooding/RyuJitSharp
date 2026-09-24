@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Continue with MorphCopyBlockHelper and fgMorphCopyBlock (oracle morphblock.cpp:583-1530), reusing the existing MorphInitBlockHelper and its descriptor-by-index lifetime policy. The protected global-morph-args.cs.draft now contains fgMorphArgs, fgTryMorphStructArg, fgMakeOutgoingStructArgCopy and CallArgs.EvalArgsToTemps. Combined Debug/Release probes reach optAssertionProp, fgMorphSmpOp and fgMorphCopyBlock; these incomplete diagnostic builds are not validation or phase parity. The session global-morph-draft-probe.targets imports all four draft files. EffectiveUse, post-morph implicit-byref recognition and source-aware indirection construction are implemented; only the two native queries are retired. Argument drafts replace block loads and copy-elided locals wholesale, updating owning slots. EvalArgsToTemps uses InlineArray32<CallArg> for small sorted tables and retains native late-list order. GenTree.MayThrow, SoleFieldOrThis, CallArg.Dump(), regNumber.Name and Stack.Push are the existing managed APIs. gtDispTree accepts null, matching its existing NULL diagnostic path. Tree/call/hardware drafts are unchanged: call includes both tail-call transformations. Tail EE boundaries pin managed fields; eeGetCallInfo is retained despite the unused result. Keep the drivers outside the regular build until the real closure compiles; do not add Windows NYIs or stubs. fgMorphSmpOp, fgMorphSmpOpOptional, fgOptimizeCommutativeArithmetic, fgOptimizeAddition and optAssertionProp's dispatcher at assertionprop.cpp:5909 have been read; assertion application helpers remain. B145's remaining conversions, TARGET_32BIT syntax defects (B153) and potential upstream XOR-rotation issue (B156) remain deferred. fgMorphBlocks is inactive; no new phase/codegen parity is claimed.",
+    "nextAction": "Continue the two remaining recursive-morph entry points: fgMorphSmpOp (oracle morph.cpp:6972-8470), with fgMorphSmpOpOptional (11237-11495), fgOptimizeCommutativeArithmetic (10472) and fgOptimizeAddition (10540); and optAssertionProp (assertionprop.cpp:5909), whose application helpers at 3846-5997 remain except LclVarTypeCheck. The new protected global-morph-copy-block.cs.draft contains the complete MorphCopyBlockHelper and fgMorphCopyBlock, reusing MorphInitBlockHelper and descriptor-by-index access. Both Debug and Release joint probes report only optAssertionProp and fgMorphSmpOp; these are incomplete diagnostic builds, not successful validation. The session global-morph-draft-probe.targets imports five drafts. The args draft has fgMorphArgs, fgTryMorphStructArg, fgMakeOutgoingStructArgCopy and EvalArgsToTemps. GenTreeStoreInd's source-aware constructor preserves its managed kind; CopySsaIdentityFrom retains simple/composite SSA for same-local value retyping, not address conversion. Only these support APIs are active and tested; no copy-block native definitions have been retired. Whole-node replacements update source/store owners and cached local aliases. Use AsUnOp for unary and store-local nodes: AsOp asserts binary, unlike native. StructType is DEBUG-only; regNumber.Name, GenTree.MayThrow, SoleFieldOrThis and Stack.Push are existing APIs. gtDispTree's null annotations now match its existing NULL diagnostic path. Tail EE pinning and the unused-result eeGetCallInfo query are preserved. Keep drivers outside the normal build until the complete closure compiles; do not insert stubs or Windows NYIs. B145's remaining conversions, TARGET_32BIT syntax defects (B153) and potential upstream XOR-rotation issue (B156) remain deferred. fgMorphBlocks is inactive; no new phase/codegen parity is claimed.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -49,6 +49,21 @@
         "skipped": 0,
         "sourceCheck": "Canonical tokens, comments, directives and literals preserved across nine preprocessor configurations, allowing only switch-section scope blocks.",
         "functionalWipIncluded": false,
+        "nativeAotRecaptured": false
+      },
+      "copyBlockReplacementSupport": {
+        "debugPassed": 183,
+        "releasePassed": 180,
+        "skipped": 0,
+        "newCases": 3,
+        "selection": ["BlockMorphTests", "CallArgumentMorphTests", "LocalMorphTests"],
+        "debugTests": "artifacts\\copy-block-ownership-debug.trx",
+        "releaseTests": "artifacts\\copy-block-ownership-release.trx",
+        "coverage": ["simple and composite SSA identity transfer", "typed STOREIND replacement with logical identity and effect flags"],
+        "nativeDefinitionsRetired": [],
+        "draftProbeConfigurations": ["Debug", "Release"],
+        "remainingDraftDependencies": ["optAssertionProp", "fgMorphSmpOp"],
+        "globalMorphActive": false,
         "nativeAotRecaptured": false
       },
       "structArgumentOwnershipSupport": {
@@ -2077,7 +2092,9 @@
       "hardwareRef": "refs/porting/drafts/global-morph-hardware",
       "argsBlob": "c5d9ebf957061c1293f59e5bca1ee88667a55854",
       "argsRef": "refs/porting/drafts/global-morph-args",
-      "status": "Incomplete local integration drafts with Debug/Release dependency diagnostics, not successfully compiled or validated; session files carry matching .cs.draft names. Hardware has all four functions, call has fgMorphCall plus both tail-call transformations, and args has both struct-argument transformations, fgMorphArgs and EvalArgsToTemps."
+      "copyBlockBlob": "5713f5f4b970077b05d0adfa338b316826a1b344",
+      "copyBlockRef": "refs/porting/drafts/global-morph-copy-block",
+      "status": "Incomplete local integration drafts with Debug/Release dependency diagnostics, not successfully compiled or validated; session files carry matching .cs.draft names. Hardware has four functions, call has fgMorphCall plus both tail-call transformations, args has both struct-argument transformations, fgMorphArgs and EvalArgsToTemps, and copy-block has the complete helper class and driver."
     },
     "internalBlockPhaseNativeResidual": {
       "commit": "494ccbc0132fcf507b8133bffa2fef635d788858",

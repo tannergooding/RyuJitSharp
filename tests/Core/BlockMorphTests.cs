@@ -14,6 +14,74 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class BlockMorphTests
 {
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void ValueRetypingCanPreserveSimpleAndCompositeSsaIdentity(bool composite)
+    {
+        WithCompiler(compiler => {
+            SetPromotedDestination(compiler);
+            var original = compiler.gtNewLclvNode(TYP_STRUCT, 0);
+            if (composite)
+            {
+                original.SetSsaNum(compiler, 0, 7);
+                original.SetSsaNum(compiler, 1, 9);
+            }
+            else
+            {
+                original.SsaNum = 7;
+            }
+
+            var replacement = new GenTreeLclFld(GT_LCL_FLD, TYP_LONG, 0, 0, null, null, original, NodeThreading.None);
+            Assert.That(replacement.HasSsaIdentity, Is.False);
+            replacement.CopySsaIdentityFrom(original);
+            Assert.That(replacement.HasSsaIdentity, Is.True);
+            Assert.That(replacement.HasCompositeSsaName, Is.EqualTo(composite));
+            if (composite)
+            {
+                Assert.That(replacement.GetSsaNum(compiler, 0), Is.EqualTo(7));
+                Assert.That(replacement.GetSsaNum(compiler, 1), Is.EqualTo(9));
+            }
+            else
+            {
+                Assert.That(replacement.SsaNum, Is.EqualTo(7));
+            }
+        });
+    }
+
+    [Test]
+    public static void PrimitiveStoreReplacementRetainsItsManagedKindAndLogicalIdentity()
+    {
+        WithCompiler(compiler => {
+            var address = compiler.gtNewLclvNode(TYP_BYREF, 1);
+            var value = compiler.gtNewLclvNode(TYP_LONG, 2);
+            compiler.lvaTable[2].Type = TYP_LONG;
+            var layout = new ClassLayout(8);
+            var blockValue = compiler.gtNewLclFldNode(TYP_STRUCT, 2, 0, layout);
+            var original = compiler.gtNewStoreBlkNode(address, blockValue, layout);
+            original.Flags |= GTF_IND_VOLATILE | GTF_IND_UNALIGNED | GTF_IND_TGT_NOT_HEAP;
+            original._vnPair.SetBoth(42);
+#if DEBUG
+            var nextId = compiler.compGenTreeID;
+#endif
+            var replacement = new GenTreeStoreInd(TYP_LONG, address, value, original, NodeThreading.None) {
+                Flags = original.Flags,
+            };
+            Assert.That(replacement.AsStoreInd(), Is.SameAs(replacement));
+            Assert.That(replacement.Addr, Is.SameAs(address));
+            Assert.That(replacement.Data, Is.SameAs(value));
+            Assert.That(replacement.Flags, Is.EqualTo(original.Flags));
+            Assert.That(replacement._vnPair.Liberal, Is.EqualTo(ValueNumStore.NoVN));
+            Assert.That(original.Oper, Is.EqualTo(GT_STORE_BLK));
+            Assert.That(original.Data, Is.SameAs(blockValue));
+            Assert.That(original._vnPair.Liberal, Is.EqualTo(42));
+#if DEBUG
+            Assert.That(replacement.Oper.StructType, Is.EqualTo(replacement.GetType()));
+            Assert.That(replacement.TreeId, Is.EqualTo(original.TreeId));
+            Assert.That(compiler.compGenTreeID, Is.EqualTo(nextId));
+#endif
+        });
+    }
+
     [TestCase(TYP_BYTE, 0x80, -128L)]
     [TestCase(TYP_UBYTE, 0x80, 128L)]
     [TestCase(TYP_SHORT, 0x80, -32640L)]
