@@ -73,6 +73,17 @@ kinds. Range-proven constant results allocate fresh nodes, matching native.
 Relational operator swaps preserve value numbers; comparison reversal retains
 the native unordered-floating flag behavior.
 
+Arithmetic binary-to-unary rewrites use replacement constructors that preserve
+logical IDs, common flags and value numbers. Returned local-field reads become
+whole-local replacements with native `SetOper` value-number clearing. Comma-throw
+propagation installs its retyped zero in the comma's operand slot. These remain
+tree-form contracts, not general LIR replacement support.
+
+Constant field-sequence annotations are mutable metadata, allowing negation
+motion to clear an annotation without replacing the constant. `SetValueTruncating`
+accepts a `long` instead of a native signed-integer template; its int-width
+truncation and long-width preservation are unchanged.
+
 Integer narrowing takes its owning use by reference so that a 32-bit target can
 replace a long constant with an integer constant through the existing
 identity-preserving replacement helper. Its probe pass does not mutate the IR.

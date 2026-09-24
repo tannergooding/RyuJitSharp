@@ -33,6 +33,12 @@ casts and folds constant comparisons using signed and unsigned range proofs.
 These transformations retain checked arithmetic, observable evaluation and
 floating-point unordered behavior.
 
+Multiplication can reduce to shifts and scaled factors while retaining side
+effects, and floating-point and bitwise identities preserve signed-zero
+behavior. Always-throwing expressions can propagate without discarding earlier
+effects or confusing conditional throws with unconditional ones. Full-width
+returned fields can become whole-local reads and remain enregisterable.
+
 Outgoing calls can classify signature types into Windows-x64 argument registers
 and stack slots, account for shadow space, insert virtual-stub and ReadyToRun
 cells, and remove those cells before reclassification. Argument scheduling,

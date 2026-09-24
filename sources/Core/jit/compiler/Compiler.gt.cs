@@ -8560,6 +8560,14 @@ public partial class Compiler
         return new GenTreeIntCon(type, value);
     }
 
+    public GenTreeIntCon gtNewIconNodeWithVN(Compiler compiler, var_types type, nint value)
+    {
+        assert(type.ActualType == type);
+        var constant = gtNewIconNode(type, value);
+        compiler.fgUpdateConstTreeValueNumber(constant);
+        return constant;
+    }
+
     public GenTreeIntCon gtNewIconNode(nint value, FieldSeq? fields)
     {
         return new GenTreeIntCon(TYP_I_IMPL, value, fields);

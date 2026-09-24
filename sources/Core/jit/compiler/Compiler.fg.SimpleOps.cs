@@ -196,6 +196,103 @@ public partial class Compiler
         return store;
     }
 
+    public static bool fgIsThrow(GenTree tree)
+    {
+        if (tree.Oper is not GT_CALL)
+        {
+            return false;
+        }
+
+        var call = tree.AsCall();
+        if (call.IsHelperCall() && call.HelperNum.AlwaysThrow)
+        {
+            assert(call.IsNoReturn);
+            noway_assert((call.Flags & GTF_EXCEPT) != 0);
+            return true;
+        }
+
+        return false;
+    }
+
+    public bool fgIsCommaThrow(GenTree tree, bool forFolding = false)
+    {
+        if (forFolding && compStressCompile(STRESS_FOLD, 50))
+        {
+            return false;
+        }
+
+        return (tree.Oper is GT_COMMA) &&
+            ((tree.Flags & (GTF_CALL | GTF_EXCEPT)) == (GTF_CALL | GTF_EXCEPT)) &&
+            fgIsThrow(tree.AsOp().Op1);
+    }
+
+    public GenTree? fgPropagateCommaThrow(GenTree parent, GenTreeOp commaThrow, GenTreeFlags precedingSideEffects)
+    {
+        assert(fgGlobalMorph);
+        assert(fgIsCommaThrow(commaThrow));
+        if ((commaThrow.Flags & GTF_COLON_COND) == 0)
+        {
+            fgRemoveRestOfBlock = true;
+        }
+
+        if ((precedingSideEffects & GTF_ALL_EFFECT) == 0)
+        {
+            if (parent.Type is TYP_VOID)
+            {
+                return commaThrow.Op1;
+            }
+
+            if (parent.Type.ActualType != commaThrow.Type.ActualType)
+            {
+                commaThrow.Op2 = commaThrow.Op2.BashToZeroConst(parent.Type.ActualType);
+                commaThrow.ChangeType(parent.Type.ActualType);
+            }
+
+            return commaThrow;
+        }
+
+        return null;
+    }
+
+    public GenTree fgMorphRetInd(GenTreeUnOp ret)
+    {
+        assert(ret.Oper is GT_RETURN or GT_SWIFT_ERROR_RET);
+#if SWIFT_SUPPORT
+        var value = ret.Oper is GT_SWIFT_ERROR_RET ? ret.AsOp().Op2 : ret.Op1;
+#else
+        var value = ret.Op1;
+#endif
+        assert(value.Oper is GT_LCL_FLD);
+        var field = value.AsLclFld();
+        var localNumber = field.LclNum;
+        if (fgGlobalMorph && varTypeIsStruct(field.Type) && !lvaIsImplicitByRefLocal(localNumber))
+        {
+            ref var descriptor = ref lvaGetDesc(localNumber);
+            var fieldSize = field.Size;
+            var localSize = lvaLclExactSize(localNumber);
+            assert(fieldSize <= localSize);
+#if TARGET_64BIT
+            var canFold = fieldSize == localSize;
+#else
+            // Long/double bitcasts are not supported on 32-bit targets.
+            var canFold = (fieldSize == localSize) && (localSize <= REGSIZE_BYTES);
+#endif
+            if (canFold)
+            {
+                // Lowering handles differing return types. Keep the whole local
+                // enregisterable instead of exposing it through a field access.
+                assert(field.LclOffs == 0);
+                return new GenTreeLclVar(GT_LCL_VAR, descriptor.Type, localNumber, data: null, field, NodeThreading.None);
+            }
+            else if (!descriptor.lvDoNotEnregister)
+            {
+                lvaSetVarDoNotEnregister(localNumber, DoNotEnregisterReason.BlockOpRet);
+            }
+        }
+
+        return field;
+    }
+
     public GenTree? fgOptimizeBitCast(GenTreeUnOp bitCast)
     {
         if (opts.OptimizationDisabled)

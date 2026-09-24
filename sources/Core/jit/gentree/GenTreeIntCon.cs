@@ -20,7 +20,7 @@ public sealed class GenTreeIntCon : GenTreeIntConCommon
     // this type into three subtypes.
 
     // If this constant represents the offset of one or more fields, "gtFieldSeq" represents that sequence of fields.
-    private readonly FieldSeq? _fieldSeq;
+    private FieldSeq? _fieldSeq;
 
 #if DEBUG
     // If the value represents target address (for a field or call), holds the handle of the field (or call).
@@ -61,7 +61,18 @@ public sealed class GenTreeIntCon : GenTreeIntConCommon
         }
     }
 
-    public FieldSeq? FieldSeq => _fieldSeq;
+    public FieldSeq? FieldSeq
+    {
+        get
+        {
+            return _fieldSeq;
+        }
+
+        set
+        {
+            _fieldSeq = value;
+        }
+    }
 
 #if TARGET_64BIT
     public new bool FitsInI32 => Globals.FitsInI32(_value.Icon);

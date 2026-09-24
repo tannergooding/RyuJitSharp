@@ -118,6 +118,19 @@ public abstract class GenTreeIntConCommon : GenTree
         }
     }
 
+    /// <summary>Set the value, truncating to int unless the node has long type. Lowering's small types intentionally use int width.</summary>
+    public void SetValueTruncating(long value)
+    {
+        if (Type is TYP_LONG)
+        {
+            LngValue = value;
+        }
+        else
+        {
+            IconValue = unchecked((int)value);
+        }
+    }
+
     /// <summary>can this immediate value be folded for op?</summary>
     /// <param name="comp">Compiler instance</param>
     /// <param name="op">Tree operator</param>
