@@ -7,7 +7,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CallArg
 {
-    private GenTree _earlyNode;
+    private GenTree? _earlyNode;
     private GenTree? _lateNode;
     private CallArg? _next;
     private CallArg? _lateNext;
@@ -46,7 +46,8 @@ public sealed partial class CallArg
 
     public ref AbiPassingInformation AbiInfo => ref _abiInfo;
 
-    public GenTree EarlyNode
+    /// <summary>The early argument evaluation, or null when evaluation has moved entirely to the late node.</summary>
+    public GenTree? EarlyNode
     {
         get
         {
@@ -140,7 +141,15 @@ public sealed partial class CallArg
     // Get the real argument node, i.e. not a setup or placeholder node.
     // This is the same as GetEarlyNode() until morph.
     // After lowering, this is a PUTARG_* node.
-    public GenTree Node => (_lateNode is null) ? _earlyNode : _lateNode;
+    public GenTree Node
+    {
+        get
+        {
+            var node = _lateNode ?? _earlyNode;
+            assert(node is not null);
+            return node;
+        }
+    }
 
 #nullable disable
     public ref GenTree NodeRef => ref ((_lateNode is null) ? ref _earlyNode : ref _lateNode);

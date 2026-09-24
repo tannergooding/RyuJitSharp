@@ -280,6 +280,10 @@ It restores the enclosing temporary stack before releasing its own locals back
 to the pool, including on exception unwinding. `Stack<int>` enumeration preserves
 the native top-down release order.
 
+`CallArg.EarlyNode` is nullable, matching native argument placement: a late-only
+argument has no early evaluation. The effective `Node` remains non-null, and
+pre-morph consumers retain their early-node invariant through assertions.
+
 Morph initialization composes `gtNewStmt` and `fgInsertStmtAtBeg`, exactly as the
 native `fgNewStmtAtBeg` wrapper does. An EE request to use the class-init helper
 establishes the required non-null tree invariant. Entry insertion order and phase

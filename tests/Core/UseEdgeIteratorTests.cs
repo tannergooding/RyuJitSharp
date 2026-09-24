@@ -872,11 +872,11 @@ internal static unsafe class UseEdgeIteratorTests
             }
             else
             {
-                first.EarlyNodeRef = null;
-                third.EarlyNodeRef = null;
+                first.EarlyNode = null;
+                third.EarlyNode = null;
             }
 
-            second.EarlyNodeRef = null;
+            second.EarlyNode = null;
 
             if (late)
             {
@@ -898,6 +898,57 @@ internal static unsafe class UseEdgeIteratorTests
             }
 
             AssertEdges(call, [.. expected]);
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void CallCloningPreservesAbsentEarlyNodesAndLateOrder(bool keepSetup)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }];
+            compiler.lvaCount = 1;
+            var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+            var first = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, 1)));
+            var second = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, 2)));
+            first.LateNode = first.EarlyNode;
+            first.EarlyNode = keepSetup ? compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, 3)) : null;
+            second.LateNode = second.EarlyNode;
+            second.EarlyNode = null;
+            LateHead(ref call.Args) = second;
+            second.LateNext = first;
+
+            CallArgs copy = default;
+            copy.InternalCopyFrom(compiler, call.Args);
+            CallArg[] arguments = [.. copy.Args];
+            CallArg[] lateArguments = [.. copy.LateArgs];
+            CallArg[] earlyArguments = [.. copy.EarlyArgs];
+            CallArg[] expectedEarly = keepSetup ? [arguments[0]] : [];
+            Assert.That(lateArguments, Is.EqualTo((CallArg[])[arguments[1], arguments[0]]));
+            Assert.That(earlyArguments, Is.EqualTo(expectedEarly));
+            Assert.That(arguments[1].EarlyNode, Is.Null);
+            if (keepSetup)
+            {
+                Assert.That(arguments[0].EarlyNode?.Oper, Is.EqualTo(GT_STORE_LCL_VAR));
+                Assert.That(arguments[0].EarlyNode, Is.Not.SameAs(first.EarlyNode));
+            }
+            else
+            {
+                Assert.That(arguments[0].EarlyNode, Is.Null);
+            }
+
+            for (var i = 0; i < arguments.Length; i++)
+            {
+                Assert.That(arguments[i].Node, Is.SameAs(arguments[i].LateNode));
+                Assert.That(arguments[i].Node, Is.Not.SameAs(i == 0 ? first.Node : second.Node));
+                Assert.That(arguments[i].Node.AsIntCon().IconValue, Is.EqualTo((nint)(i + 1)));
+            }
+
+            var replacement = compiler.gtNewIconNode(TYP_INT, 4);
+            arguments[1].NodeRef = replacement;
+            Assert.That(arguments[1].LateNode, Is.SameAs(replacement));
+            Assert.That(arguments[1].EarlyNode, Is.Null);
+            Assert.That(second.Node.AsIntCon().IconValue, Is.EqualTo((nint)2));
         });
     }
 

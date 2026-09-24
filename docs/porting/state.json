@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Continue the required call/tree-morph closure. SharedTempsScope, FieldsMatchAbi and fgMorphLclToFieldList are complete, alongside outgoing ABI classification, spill decisions and sorting. Native fgMorphArgs (2037), fgTryMorphStructArg, fgMakeOutgoingStructArgCopy (2565) and EvalArgsToTemps (1394-1589) have been read in full. Their integration needs recursive fgMorphTree and fgMorphCopyBlock; materializing late arguments also requires reconciling CallArg.EarlyNode's non-nullable declaration with native null early slots. Reuse the already-ported gtSetEvalOrder and Globals.ForEachHbvBitSet rather than re-porting cost or hash-vector traversal machinery. The incomplete dispatcher and fgMorphCall drafts remain outside the build as session files global-morph-tree.cs.draft and global-morph-call.cs.draft and protected Git blobs in localRecovery.globalMorphDrafts; restore only with a complete compilable closure. Remaining dependencies include optAssertionProp, fgMorphSmpOp, fgMorphHWIntrinsic and fgMorphPotentialTailCall. Native fgMorphSmpOp was read through line 7630; next unread line is 7631. The assertion dispatcher at assertionprop.cpp:5909 and MorphCopyBlockHelper are already read; assertion application helpers are missing, and copy morphing recursively morphs cloned addresses. fgExpandVirtualVtableCallTarget already exists in Compiler.fg.cs. No global phase activation or new codegen/phase parity is claimed; fgMorphBlocks remains inactive.",
+    "nextAction": "Continue the required call/tree-morph closure with fgCanFastTailCall and its byref frame-escape checks, read in full at oracle morph.cpp:4121-4430. SharedTempsScope, FieldsMatchAbi and fgMorphLclToFieldList are complete, alongside outgoing ABI classification, spill decisions and sorting. CallArg.EarlyNode now correctly permits absent early slots; existing pre-morph consumers assert their non-null invariant, and clone/late-order coverage passes. Native fgMorphArgs (2037), fgTryMorphStructArg, fgMakeOutgoingStructArgCopy (2565) and EvalArgsToTemps (1394-1589) have been read in full. Their integration needs recursive fgMorphTree and fgMorphCopyBlock. Reuse the already-ported gtSetEvalOrder and Globals.ForEachHbvBitSet rather than re-porting cost or hash-vector traversal machinery. The incomplete dispatcher and fgMorphCall drafts remain outside the build as session files global-morph-tree.cs.draft and global-morph-call.cs.draft and protected Git blobs in localRecovery.globalMorphDrafts; restore only with a complete compilable closure. Remaining dependencies include optAssertionProp, fgMorphSmpOp, fgMorphHWIntrinsic and fgMorphPotentialTailCall. Native fgMorphSmpOp was read through line 7630; next unread line is 7631. The assertion dispatcher at assertionprop.cpp:5909 and MorphCopyBlockHelper are already read; assertion application helpers are missing, and copy morphing recursively morphs cloned addresses. fgExpandVirtualVtableCallTarget already exists in Compiler.fg.cs. No global phase activation or new codegen/phase parity is claimed; fgMorphBlocks remains inactive.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -1215,6 +1215,19 @@
         "coverage": ["nested shared-temporary scope restoration including exception unwinding", "promoted-field ABI offsets and rounded stack slots", "field-list descriptor order and owning replacement contract"],
         "nativeDefinitionsRetired": ["SharedTempsScope", "Compiler::FieldsMatchAbi", "Compiler::fgMorphLclToFieldList", "ABIPassingInformation::HasAnyStackSegment", "ABIPassingInformation::HasExactlyOneRegisterSegment", "ABIPassingInformation::CountRegsAndStackSlots"],
         "remaining": "Struct-argument canonicalization and copy creation remain coupled to recursive tree/block-copy morphing.",
+        "globalMorphActive": false,
+        "nativeAotRecaptured": false
+      },
+      "earlyArgumentContract": {
+        "debugPassed": 447,
+        "releasePassed": 442,
+        "skipped": 0,
+        "newCases": 2,
+        "selection": ["CallArgumentMorphTests", "UseEdgeIteratorTests", "IndirectCallTransformationTests", "ScalarFoldingTests", "TreeComparisonTests", "LocalMorphTests"],
+        "debugTests": "artifacts\\early-argument-contract-debug.trx",
+        "releaseTests": "artifacts\\early-argument-contract-release.trx",
+        "coverage": ["nullable early slots through the public property", "mixed setup/late-only argument cloning", "late-order and effective-node ownership", "existing importer, traversal and folding consumers"],
+        "remaining": "Argument materialization remains unported; this reconciles its required IR contract rather than activating it.",
         "globalMorphActive": false,
         "nativeAotRecaptured": false
       },

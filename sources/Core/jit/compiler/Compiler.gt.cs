@@ -7906,6 +7906,7 @@ public partial class Compiler
                 var callArg = call.Args.GetArgByIndex(0);
                 assert(callArg is not null);
 
+                assert(callArg.EarlyNode is not null);
                 var hClass = gtGetHelperArgClassHandle(callArg.EarlyNode);
 
                 if (hClass != NO_CLASS_HANDLE)
@@ -15896,6 +15897,7 @@ public partial class Compiler
             // We ignore late args - they don't bring any noticeable benefits according to asmdiffs/tpdiff
             foreach (var arg in call.Args.EarlyArgs)
             {
+                assert(arg.EarlyNode is not null);
                 gtSetEvalOrderMinOpts(arg.EarlyNode);
             }
 

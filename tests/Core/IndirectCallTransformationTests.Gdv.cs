@@ -95,7 +95,7 @@ internal static unsafe partial class IndirectCallTransformationTests
             Assert.That(direct.IsVirtual, Is.False);
             Assert.That(direct.Flags & GTF_CALL_NULLCHECK, Is.EqualTo(GTF_CALL_NULLCHECK));
             Assert.That(direct.IsInlineCandidate, Is.EqualTo(inlineable));
-            Assert.That(direct.Args.ThisArg?.EarlyNode.AsLclVar().LclNum, Is.EqualTo(receiverStore.LclNum));
+            Assert.That(direct.Args.ThisArg?.EarlyNode?.AsLclVar().LclNum, Is.EqualTo(receiverStore.LclNum));
             var fallbackStmt = cold.FirstStmt ?? throw new InvalidOperationException();
             Assert.That(GetCall(fallbackStmt), Is.SameAs(call));
             Assert.That(call.IsVirtual, Is.True);

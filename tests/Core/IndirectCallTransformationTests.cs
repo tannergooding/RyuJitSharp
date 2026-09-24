@@ -129,7 +129,7 @@ internal static unsafe partial class IndirectCallTransformationTests
             Assert.That(copy.InlineCandidatesCount, Is.EqualTo(Math.Max(guardedCandidates, 1)));
             Assert.That(copy.IsGuardedDevirtualizationCandidate, Is.EqualTo(guardedCandidates != 0));
             Assert.That(copy.Args.Head, Is.Not.SameAs(call.Args.Head));
-            var clonedArgument = (copy.Args.Head ?? throw new InvalidOperationException()).EarlyNode.AsOp();
+            var clonedArgument = (copy.Args.Head?.EarlyNode ?? throw new InvalidOperationException()).AsOp();
             Assert.That(clonedArgument, Is.Not.SameAs(argument));
             Assert.That(clonedArgument.Op1, Is.Not.SameAs(argument.Op1));
             Assert.That(clonedArgument.Op2, Is.Not.SameAs(argument.Op2));
@@ -350,7 +350,7 @@ internal static unsafe partial class IndirectCallTransformationTests
             AssertTupleLoad(target, pointerLocal);
             var hidden = fatCall.Args.FindWellKnownArg(WellKnownArg.InstParam) ?? throw new InvalidOperationException();
             Assert.That(hidden, Is.SameAs(fatCall.Args.Head));
-            var hiddenLoad = hidden.EarlyNode.AsIndir();
+            var hiddenLoad = (hidden.EarlyNode ?? throw new InvalidOperationException()).AsIndir();
             Assert.That(hiddenLoad.Flags & (GTF_IND_NONFAULTING | GTF_IND_INVARIANT),
                 Is.EqualTo(GTF_IND_NONFAULTING | GTF_IND_INVARIANT));
             var offset = hiddenLoad.Addr.AsOp();
@@ -433,8 +433,8 @@ internal static unsafe partial class IndirectCallTransformationTests
                 Is.EqualTo(new GenTree[] { read, effect, lookup }));
             Assert.That(spills.All(s => s.DebugInfo.Equals(debugInfo)), Is.True);
             Assert.That(call.Args.Head?.EarlyNode, Is.SameAs(invariant));
-            Assert.That(readArg.EarlyNode.AsLclVar().LclNum, Is.EqualTo(local + 1));
-            Assert.That(effectArg.EarlyNode.AsLclVar().LclNum, Is.EqualTo(local + 2));
+            Assert.That(readArg.EarlyNode?.AsLclVar().LclNum, Is.EqualTo(local + 1));
+            Assert.That(effectArg.EarlyNode?.AsLclVar().LclNum, Is.EqualTo(local + 2));
             Assert.That(call.ControlExpr?.AsLclVar().LclNum, Is.EqualTo(local + 3));
             Assert.That(compiler.lvaCount, Is.EqualTo(4));
             if (referenceArgument)

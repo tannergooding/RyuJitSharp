@@ -3240,6 +3240,7 @@ public partial class Compiler
         assert(call.Args.HasThisPointer);
 
         var thisArg = call.Args.ThisArg;
+        assert(thisArg.EarlyNode is not null);
         var thisObj = thisArg.EarlyNode.EffectiveVal;
 
         var objClass = gtGetClassHandle(thisObj, out var isExact, out var objIsNonNull);
@@ -13288,6 +13289,7 @@ public partial class Compiler
         var callArg = call.Args.GetArgByIndex(0);
         assert(callArg is not null);
         maybeFieldTokenNode = callArg.EarlyNode;
+        assert(maybeFieldTokenNode is not null);
 
         if (maybeFieldTokenNode.Oper is GT_IND)
         {
@@ -13987,6 +13989,7 @@ public partial class Compiler
         {
             foreach (var arg in additionalCallArgs.Args)
             {
+                assert(arg.EarlyNode is not null);
                 if (hasVisibleSideEffects(arg.EarlyNode.Flags))
                 {
                     return false;
@@ -17284,6 +17287,7 @@ public partial class Compiler
         foreach (var arg in call.Args.Args)
         {
             var argNode = arg.EarlyNode;
+            assert(argNode is not null);
 
             // We should not be passing gc typed args to an unmanaged call.
             if (varTypeIsGC(argNode.Type))
@@ -17601,6 +17605,7 @@ public partial class Compiler
                         assert(iciCall.Args.HasRetBuffer);
 
                         var dest = gtCloneExpr(iciCall.Args.RetBufferArg.EarlyNode);
+                        assert(dest is not null);
 
                         if (fgNeedReturnSpillTemp)
                         {
@@ -19789,6 +19794,7 @@ public partial class Compiler
         assert(call.Args.HasThisPointer);
 
         var thisArg = call.Args.ThisArg;
+        assert(thisArg.EarlyNode is not null);
         var thisObj = thisArg.EarlyNode.EffectiveVal;
 
 #if DEBUG
@@ -23741,6 +23747,7 @@ public partial class Compiler
             if (thisArg is not null)
             {
                 var thisNode = thisArg.EarlyNode;
+                assert(thisNode is not null);
 
                 if (thisNode.Oper is GT_LCL_VAR)
                 {
@@ -24001,6 +24008,7 @@ public partial class Compiler
                         if (thisArg is not null)
                         {
                             var thisNode = thisArg.EarlyNode;
+                            assert(thisNode is not null);
 
                             if (thisNode.Oper is GT_LCL_VAR)
                             {

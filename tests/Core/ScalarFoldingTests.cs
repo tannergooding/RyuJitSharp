@@ -503,7 +503,7 @@ internal static unsafe class ScalarFoldingTests
                 compiler.gtNewIconNode(TYP_INT, 1), compiler.gtNewIconNode(TYP_INT, 2));
             var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
             var arg = call.Args.PushBack(NewCallArg.CreateForPrimitive(expression));
-            call.ReplaceOperand(ref arg.EarlyNodeRef, compiler.gtFoldExpr(arg.EarlyNode));
+            call.ReplaceOperand(ref arg.EarlyNodeRef, compiler.gtFoldExpr(arg.EarlyNode ?? throw new InvalidOperationException()));
             Assert.That(call.Args.Head, Is.SameAs(arg));
             Assert.That(arg.Node, Is.Not.SameAs(expression));
             Assert.That(arg.Node.AsIntCon().IconValue, Is.EqualTo((nint)3));

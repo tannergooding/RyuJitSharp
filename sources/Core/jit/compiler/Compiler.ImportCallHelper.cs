@@ -2148,6 +2148,7 @@ public partial class Compiler
                                 var arg = call.Args.GetArgByIndex(0);
                                 assert(arg is not null);
 
+                                assert(arg.EarlyNode is not null);
                                 op1 = compiler.gtNewHelperCallNode(TYP_REF, CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, arg.EarlyNode);
 
                                 retNode = op1;
@@ -4153,6 +4154,7 @@ public partial class Compiler
                 {
                     assert(call.Args.HasThisPointer);
                     var callObj = call.Args.ThisArg.EarlyNode;
+                    assert(callObj is not null);
 
                     if ((call.IsVirtual || ((call.Flags & GTF_CALL_NULLCHECK) is not 0)) && compiler.impInlineIsGuaranteedThisDerefBeforeAnySideEffects(additionalTree: null, call.Args, callObj, compiler.impInlineInfo.inlArgInfo))
                     {

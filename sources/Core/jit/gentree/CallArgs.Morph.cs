@@ -203,6 +203,7 @@ public partial struct CallArgs
             foreach (var argument in EarlyArgs)
             {
                 var node = argument.EarlyNode;
+                assert(node is not null);
                 assert(!compiler.gtTreeContainsOper(node, GT_QMARK));
                 if (!argument.NeedTmp && argument.AbiInfo.HasAnyRegisterSegment)
                 {
@@ -227,6 +228,7 @@ public partial struct CallArgs
             SetNeedsTemp(ThisArg);
             foreach (var argument in EarlyArgs)
             {
+                assert(argument.EarlyNode is not null);
                 if ((argument.EarlyNode.Flags & GTF_ALL_EFFECT) != 0)
                 {
                     SetNeedsTemp(argument);
