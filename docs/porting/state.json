@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Continue field-list packing/spilling dependencies: LowerCast (lowerxarch.cpp:616-1100), arithmetic node dispatch and local-store dispatch. Xarch cast/binary containment, read-modify-write recognition and register-optional selection are complete; B163 corrects the inverted floating nonzero predicate. LowerArg/LowerArgsForCall are validated WIP in Lowering.CallArguments.cs (33 call/stack cases in Debug and Release), including early/late ownership, tail-call stack area and argument legalization. Do not commit that dispatcher until the field-list dependency closure is complete. FEATURE_ARG_SPLIT is absent on AMD64; non-xarch argument lowering, x86 IJW special-copy handling and Wasm post-processing remain explicit NYIs in that WIP. Native TryLowerAndOrToCCMP immediately returns false in minopts, but its caller's canUseApxEvexEncoding/config evaluation still records ISA dependencies and must be preserved if extracting a complete minopts arithmetic mode. Indirection/stack support is committed as 44fc2e1. The LSRA constructor/allocation driver, LowerCall, compiler throw-helper integration and stack-level activation remain unfinished. Keep incomplete dispatch/allocation algorithms uncommitted and retain their native bodies. Managed code size remains zero; no additional parity capture is claimed.",
+    "nextAction": "Port common block-store lowering in lower.cpp:12202 and its LowerInitBlockStore/LowerCopyBlockStore dependencies around 10143-10340. These are shared native functions, not lowerxarch.cpp functions. LowerStoreLocCommonMinOpts and floating-store retyping are now implemented as WIP; primitive field-list spilling, signed-zero/NaN bit preservation and replacement owner/SSA/VN identity pass in Debug and Release. Struct-to-STORE_BLK still reaches unported dispatch. Preserve GC pointer atomicity, GC-safe helper selection, native thresholds and replacement-returning aliases. Larger copies require helper-call lowering, and GC copies also require decomposition or bulk write barriers; do not introduce a reduced fallback. B164 corrects SetOper-equivalent stack-argument replacement losing VNs. Lowering.CastExpansion.cs contains the AMD64 LowerCast body; integral dispatch is exercised by field packing, but floating expansion still requires HWINTRINSIC/select closure. LowerArg/LowerArgsForCall, field lists and traversal remain WIP. Optimized arithmetic/local-store modes and nonprimary paths remain explicit NYIs. Complete support packets include 44fc2e1 and f60b986. LowerCall, full lowering/LSRA drivers, throw-helper/stack-level activation and emission remain unfinished. Do not activate or commit incomplete dispatchers; retain native bodies. Managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -149,6 +149,29 @@
         "standaloneReleaseTests": "artifacts\\operand-containment-commit-release.trx",
         "standaloneScope": "Exact staged-source export excludes unfinished backend dispatch and the four uncommitted call argument cases.",
         "remaining": ["Cast expansion and arithmetic dispatch", "Field-list packing/spilling and local-store dispatch", "Call/node/block lowering activation", "Allocation and emission"],
+        "nativeBodiesRetained": true
+      },
+      "fieldPackingWip": {
+        "debugPassed": 128,
+        "releasePassed": 127,
+        "skipped": 0,
+        "selection": ["CallLoweringTests", "CastLoweringTests", "BinaryLoweringTests", "LocalMorphTests"],
+        "debugTests": "artifacts\\local-lowering-dependencies-debug.trx",
+        "releaseTests": "artifacts\\local-lowering-dependencies-release.trx",
+        "scope": "Uncommitted call/field-list/traversal integration: early/late argument owners, tail-call placement, two integer fields packed through unsigned casts/shifts/OR, and dependent SIMD12 widening restricted by parent size and field count.",
+        "remaining": ["Field-list spilling through LowerStoreLocCommon", "Floating cast expansion dependencies and validation", "Complete node/call/block dispatch", "Phase activation and allocation"],
+        "nativeBodiesRetained": true
+      },
+      "localStoreWip": {
+        "debugPassed": 64,
+        "releasePassed": 64,
+        "skipped": 0,
+        "selection": ["LocalStoreLoweringTests", "CallLoweringTests", "CastLoweringTests", "BinaryLoweringTests", "StackArgumentLoweringTests"],
+        "debugTests": "artifacts\\local-store-integration-debug.trx",
+        "releaseTests": "artifacts\\local-store-integration-release.trx",
+        "beforeFix": "artifacts\\setoper-vn-before.trx: block-source stack argument loses its original value number; local-source case passes",
+        "scope": "WIP common local-store integration covers primitive field-list spills, floating constant bits, candidate-local exclusion and replacement SSA/VN/owner identity. Includes B164 stack-argument correction; no backend activation.",
+        "remaining": ["Block-store lowering and helper-call closure", "Floating cast HWINTRINSIC/select lowering", "Complete node/call/block dispatch", "Phase activation and allocation"],
         "nativeBodiesRetained": true
       },
       "rationalizationActivation": {

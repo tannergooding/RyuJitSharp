@@ -118,6 +118,7 @@ internal static unsafe class StackArgumentLoweringTests
                 };
             }
             var originalFlags = source.Flags;
+            source._vnPair.SetBoth(123);
             var argument = new GenTreePutArgStk(var_types.TYP_VOID, source, null, 0, 8, false);
             block.InsertAtEnd(source);
             block.InsertAtEnd(argument);
@@ -136,6 +137,7 @@ internal static unsafe class StackArgumentLoweringTests
                 Assert.That(argument.Data.Oper, Is.EqualTo(genTreeOps.GT_IND));
                 Assert.That(argument.Data, Is.Not.SameAs(source));
                 Assert.That(argument.Data.Flags, Is.EqualTo(originalFlags));
+                Assert.That(argument.Data._vnPair.Conservative, Is.EqualTo(123));
                 Assert.That(argument.Data.AsIndir().Addr, Is.SameAs(block.FirstNode));
                 Assert.That(argument.Prev, Is.SameAs(argument.Data));
                 Assert.That(argument.Data.Next, Is.SameAs(argument));
