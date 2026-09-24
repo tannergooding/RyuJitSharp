@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Translate the mutually recursive HWI optimizer/required-morph group starting with fgOptimizeHWIntrinsic (oracle morph.cpp:9378-10286), whose complete body is now read. Its associative helper is implemented and retired. It calls fgMorphHWIntrinsicRequired; that and fgMorphHWIntrinsic/fgMorphHWIntrinsicOptional are fully read through 12092, and required HWI recurses into fgMorphTree. Native optional HWI is an identity function, not a placeholder. Keep incomplete integration code outside the build until the real recursive closure compiles. The complete 329-line global-morph-tree.cs.draft has now been read; its const/leaf/local helpers also recurse into fgMorphTree, and DoNotEnregisterReason.simdUserForcesDep must become SimdUserForcesDep. fgMorphSmpOp, fgMorphSmpOpOptional, fgOptimizeCommutativeArithmetic and fgOptimizeAddition are fully read; optional SMP needs fgMorphCopyBlock and addition recurses into fgMorphTree. All arithmetic/remainder helpers and optRecordSsaUses are complete. Other recursive dependencies already read: fgMorphPotentialTailCall, fgMorphTailCallViaHelpers, fgMorphArgs, fgTryMorphStructArg, fgMakeOutgoingStructArgCopy, EvalArgsToTemps, MorphCopyBlockHelper and optAssertionProp's dispatcher at assertionprop.cpp:5909. Assertion application helpers remain. getVirtMethodPointerTree (5715) is read and unported; its token/lookup/virtual-helper dependencies already exist. fgExpandVirtualVtableCallTarget, gtSetEvalOrder, fgMakeMultiUse and Globals.ForEachHbvBitSet also exist. Existing tree/call drafts are protected in localRecovery.globalMorphDrafts; do not replace missing Windows behavior with NYIs. TreeId is DEBUG-only. The new reassociation selection passes without running the known broader HWI checked-conversion failures (B145), which remain deferred. Existing TARGET_32BIT syntax defects (B153) and the potential upstream XOR-rotation issue (B156) remain deferred. fgMorphBlocks is inactive; no new phase/codegen parity is claimed.",
+    "nextAction": "Translate fgOptimizeHWIntrinsic (oracle morph.cpp:9378-10286), whose complete body is read, into the protected global-morph-hardware.cs.draft alongside the three newly drafted fgMorphHWIntrinsic/Required/Optional functions. This is an uncompiled integration draft, not an active implementation. Associative optimization, commutativity, constant preference, immediate metadata and geometric-sequence construction are now implemented and retired. Compiler owns GetLookupTypeForCmpOp/GetHWIntrinsicIdForCmpOp/GetHWIntrinsicIdForBinOp in C#, rather than GenTreeHWIntrinsic; the draft uses those existing instance APIs. Native optional HWI is an identity function. The required HWI group recurses into fgMorphTree; keep drafts outside the build until the real closure compiles. The complete 329-line global-morph-tree.cs.draft is read; its const/leaf/local helpers also recurse into fgMorphTree, and DoNotEnregisterReason.simdUserForcesDep must become SimdUserForcesDep. fgMorphSmpOp, fgMorphSmpOpOptional, fgOptimizeCommutativeArithmetic and fgOptimizeAddition are fully read; optional SMP needs fgMorphCopyBlock and addition recurses into fgMorphTree. All arithmetic/remainder helpers and optRecordSsaUses are complete. Other recursive dependencies already read: fgMorphPotentialTailCall, fgMorphTailCallViaHelpers, fgMorphArgs, fgTryMorphStructArg, fgMakeOutgoingStructArgCopy, EvalArgsToTemps, MorphCopyBlockHelper and optAssertionProp's dispatcher at assertionprop.cpp:5909. Assertion application helpers remain. getVirtMethodPointerTree (5715) is read and unported; its token/lookup/virtual-helper dependencies already exist. Existing tree/call/hardware drafts are protected in localRecovery.globalMorphDrafts; do not replace missing Windows behavior with NYIs. TreeId is DEBUG-only. B145 is partially corrected: SetElementIntegral now truncates all narrow lanes, but other mask/broadcast/folding conversion failures remain deferred. Existing TARGET_32BIT syntax defects (B153) and the potential upstream XOR-rotation issue (B156) remain deferred. fgMorphBlocks is inactive; no new phase/codegen parity is claimed.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -49,6 +49,22 @@
         "skipped": 0,
         "sourceCheck": "Canonical tokens, comments, directives and literals preserved across nine preprocessor configurations, allowing only switch-section scope blocks.",
         "functionalWipIncluded": false,
+        "nativeAotRecaptured": false
+      },
+      "hardwareMorphSupport": {
+        "debugPassed": 358,
+        "releasePassed": 352,
+        "skipped": 0,
+        "newCases": 25,
+        "selection": ["HardwareMorph", "HardwareReassociation", "LaneIdentityQueries", "ArithmeticMorphTests", "AssertionTests", "ScalarFoldingTests"],
+        "debugTests": "artifacts\\hardware-morph-support-debug.trx",
+        "releaseTests": "artifacts\\hardware-morph-support-release.trx",
+        "regressionBefore": "artifacts\\geometric-sequence-before.trx",
+        "regressionsFailingBefore": 6,
+        "coverage": ["intrinsic element-type and operand-count commutativity", "target immediate metadata", "floating-zero constant-propagation exclusion", "shuffle index identity and user-call restrictions", "bitwise complement constants", "signed/unsigned geometric sequences across all integral lane widths", "floating signed-zero sequence lanes", "single evaluation of unknown initial values", "native truncation in integral lane writes"],
+        "nativeDefinitionsRetired": ["GenTree::isCommutativeHWIntrinsic (including non-HWI fallback)", "GenTreeHWIntrinsic::ShouldConstantProp", "Compiler::gtNewSimdCreateGeometricSequenceNode", "HWIntrinsicInfo::IsCommutative", "HWIntrinsicInfo::IsMaybeCommutative", "HWIntrinsicInfo::CanBenefitFromConstantProp", "HWIntrinsicInfo::HasImmediateOperand"],
+        "remaining": "Recursive HWI and global-morph integration remain. Other-target predicate branches are source-ported only. B145 mask/broadcast/folding conversions remain outside this selection.",
+        "globalMorphActive": false,
         "nativeAotRecaptured": false
       },
       "debugBuild": "passed-after-integral-ranges",
@@ -1973,11 +1989,18 @@
       "indexCommit": "688915ec1e37ec8e2db21f0896f35cd68c5ec7d2",
       "ref": "refs/porting/snapshots/native-ledger-hardware-reassociation"
     },
+    "hardwareMorphSupportNativeResidual": {
+      "commit": "a0ffcacf15564ff2d3e0877caa60188a83f8362d",
+      "indexCommit": "b0bbbbfba00cd1a98834e4165f261bcbef4df11b",
+      "ref": "refs/porting/snapshots/native-ledger-hardware-morph-support"
+    },
     "globalMorphDrafts": {
       "treeBlob": "36908cd7d0294ece59d91854bbdbfcb05d83f228",
       "treeRef": "refs/porting/drafts/global-morph-tree",
       "callBlob": "8a3297b113e87ea1c7006e7a923ee6bdbe3375cf",
       "callRef": "refs/porting/drafts/global-morph-call",
+      "hardwareBlob": "0e6606e79dca79dfb04989f63d685d7b0517f555",
+      "hardwareRef": "refs/porting/drafts/global-morph-hardware",
       "status": "Incomplete local integration drafts, not compiled or validated; session files carry matching .cs.draft names."
     },
     "internalBlockPhaseNativeResidual": {
@@ -2132,8 +2155,8 @@
     },
     {
       "area": "hardware-intrinsic-morphing",
-      "native": ["src\\coreclr\\jit\\morph.cpp"],
-      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.fg.HardwareIntrinsics.cs"],
+      "native": ["src\\coreclr\\jit\\morph.cpp", "src\\coreclr\\jit\\gentree.cpp", "src\\coreclr\\jit\\gentree.h", "src\\coreclr\\jit\\hwintrinsic.h"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.fg.HardwareIntrinsics.cs", "sources\\Core\\jit\\compiler\\Compiler.gt.cs", "sources\\Core\\jit\\gentree\\GenTree.cs", "sources\\Core\\jit\\gentree\\GenTreeHWIntrinsic.Operations.cs", "sources\\Core\\jit\\gentree\\GenTreeVecCon.cs", "sources\\Core\\jit\\hwintrinsic\\HWIntrinsicInfo.cs"],
       "reconciledCommit": null
     },
     {

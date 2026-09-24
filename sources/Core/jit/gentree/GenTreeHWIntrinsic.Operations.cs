@@ -8,6 +8,76 @@ namespace RyuJitSharp;
 
 public sealed partial class GenTreeHWIntrinsic
 {
+    public bool ShouldConstantProp(GenTree operand, GenTreeVecCon constant)
+    {
+        var id = HWIntrinsicId;
+        assert(HWIntrinsicInfo.CanBenefitFromConstantProp(id));
+        var baseType = SimdBaseType;
+        switch (id)
+        {
+            case NI_Vector_op_Equality:
+            case NI_Vector_op_Inequality:
+#if TARGET_XARCH
+            case NI_AVX512_CompareEqualMask:
+            case NI_AVX512_CompareNotEqualMask:
+#endif
+            {
+                // Floating equality must treat positive and negative zero alike.
+                return constant.IsZero && !varTypeIsFloating(baseType);
+            }
+
+#if TARGET_ARM64
+            case NI_AdvSimd_CompareEqual:
+            case NI_AdvSimd_Arm64_CompareEqual:
+            case NI_AdvSimd_Arm64_CompareEqualScalar:
+            {
+                return constant.IsZero;
+            }
+
+            case NI_AdvSimd_CompareGreaterThan:
+            case NI_AdvSimd_CompareGreaterThanOrEqual:
+            case NI_AdvSimd_Arm64_CompareGreaterThan:
+            case NI_AdvSimd_Arm64_CompareGreaterThanOrEqual:
+            case NI_AdvSimd_Arm64_CompareGreaterThanScalar:
+            case NI_AdvSimd_Arm64_CompareGreaterThanOrEqualScalar:
+            {
+                return constant.IsZero && !varTypeIsUnsigned(baseType);
+            }
+#endif
+
+#if TARGET_XARCH
+            case NI_X86Base_Insert:
+            {
+                return (baseType is TYP_FLOAT) && constant.IsZero;
+            }
+#endif
+
+            case NI_Vector_Shuffle:
+            case NI_Vector_ShuffleNative:
+            case NI_Vector_ShuffleNativeFallback:
+            {
+                // Constant indices can avoid lowering the shuffle to a user call.
+                assert(Operands.Length == 2);
+                return IsUserCall && (operand == GetOp(2));
+            }
+
+#if TARGET_XARCH
+            case NI_X86Base_Xor:
+            case NI_AVX_Xor:
+            case NI_AVX2_Xor:
+            case NI_AVX512_Xor:
+            {
+                assert(Operands.Length == 2);
+                return constant.IsVectorAllBitsSet;
+            }
+#endif
+            default:
+            {
+                return false;
+            }
+        }
+    }
+
     public static bool OperIsBitwiseHWIntrinsic(genTreeOps oper)
     {
         return oper is GT_AND or GT_AND_NOT or GT_NOT or GT_OR or GT_OR_NOT or GT_XOR or GT_XOR_NOT;

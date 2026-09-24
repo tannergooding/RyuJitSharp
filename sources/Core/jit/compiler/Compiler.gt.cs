@@ -9891,6 +9891,57 @@ public partial class Compiler
 #endif
     }
 
+    public GenTree gtNewSimdCreateGeometricSequenceNode(
+        var_types type, GenTree op1, GenTree op2, var_types simdBaseType, byte simdSize)
+    {
+        assert(varTypeIsSimd(type));
+        assert(GetSimdTypeForSize(simdSize) == type);
+        assert(varTypeIsArithmetic(simdBaseType));
+        assert(op2.Oper.IsConst);
+
+        var constant = gtNewVconNode(type);
+        var count = GenTreeVecCon.ElementCount(simdSize, simdBaseType);
+        var isPartial = !op1.Oper.IsConst;
+        if (varTypeIsIntegral(simdBaseType))
+        {
+            var initial = isPartial ? 1UL : unchecked((ulong)op1.AsIntConCommon().IntegralValue);
+            var multiplier = unchecked((ulong)op2.AsIntConCommon().IntegralValue);
+            for (var index = 0; index < count; index++)
+            {
+                constant.SetElementIntegral(simdBaseType, index, unchecked((long)initial));
+                initial = unchecked(initial * multiplier);
+            }
+        }
+        else if (simdBaseType is TYP_FLOAT)
+        {
+            var initial = isPartial ? 1.0f : (float)op1.AsDblCon().DconVal;
+            var multiplier = (float)op2.AsDblCon().DconVal;
+            for (var index = 0; index < count; index++)
+            {
+                constant.SetElementFloating(simdBaseType, index, initial * MathF.Pow(multiplier, index));
+            }
+        }
+        else
+        {
+            assert(simdBaseType is TYP_DOUBLE);
+            var initial = isPartial ? 1.0 : op1.AsDblCon().DconVal;
+            var multiplier = op2.AsDblCon().DconVal;
+            for (var index = 0; index < count; index++)
+            {
+                constant.SetElementFloating(simdBaseType, index, initial * Math.Pow(multiplier, index));
+            }
+        }
+
+        GenTree result = constant;
+        if (isPartial)
+        {
+            var initial = gtNewSimdCreateBroadcastNode(type, op1, simdBaseType, simdSize);
+            result = gtNewSimdBinOpNode(GT_MUL, type, result, initial, simdBaseType, simdSize);
+        }
+
+        return result;
+    }
+
     public GenTree gtNewSimdCmpOpNode(genTreeOps op, var_types type, GenTree op1, GenTree op2, var_types simdBaseType, byte simdSize)
     {
         assert(varTypeIsSimd(type));

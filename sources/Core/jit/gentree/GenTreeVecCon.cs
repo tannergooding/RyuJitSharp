@@ -702,37 +702,37 @@ public sealed class GenTreeVecCon : GenTree
         {
             case TYP_BYTE:
             {
-                _simdVal.AsSpan<sbyte>()[..elementCount][index] = (sbyte)(value);
+                _simdVal.AsSpan<sbyte>()[..elementCount][index] = unchecked((sbyte)value);
                 break;
             }
 
             case TYP_UBYTE:
             {
-                _simdVal.AsSpan<byte>()[..elementCount][index] = (byte)(value);
+                _simdVal.AsSpan<byte>()[..elementCount][index] = unchecked((byte)value);
                 break;
             }
 
             case TYP_SHORT:
             {
-                _simdVal.AsSpan<short>()[..elementCount][index] = (short)(value);
+                _simdVal.AsSpan<short>()[..elementCount][index] = unchecked((short)value);
                 break;
             }
 
             case TYP_USHORT:
             {
-                _simdVal.AsSpan<ushort>()[..elementCount][index] = (ushort)(value);
+                _simdVal.AsSpan<ushort>()[..elementCount][index] = unchecked((ushort)value);
                 break;
             }
 
             case TYP_INT:
             {
-                _simdVal.AsSpan<int>()[..elementCount][index] = (int)(value);
+                _simdVal.AsSpan<int>()[..elementCount][index] = unchecked((int)value);
                 break;
             }
 
             case TYP_UINT:
             {
-                _simdVal.AsSpan<uint>()[..elementCount][index] = (uint)(value);
+                _simdVal.AsSpan<uint>()[..elementCount][index] = unchecked((uint)value);
                 break;
             }
 

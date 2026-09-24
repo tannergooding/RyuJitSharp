@@ -750,6 +750,65 @@ public partial class GenTree
         }
     }
 
+    public bool IsCommutativeHWIntrinsic
+    {
+        get
+        {
+#if FEATURE_HW_INTRINSICS
+            assert(Oper.IsHWIntrinsic);
+            var node = AsHWIntrinsic();
+            var id = node.HWIntrinsicId;
+            if (HWIntrinsicInfo.IsCommutative(id))
+            {
+                return true;
+            }
+
+            if (HWIntrinsicInfo.IsMaybeCommutative(id))
+            {
+                switch (id)
+                {
+#if TARGET_XARCH
+                    case NI_X86Base_MultiplyAddAdjacent:
+                    case NI_AVX2_MultiplyAddAdjacent:
+                    case NI_AVX512_MultiplyAddAdjacent:
+                    {
+                        return !varTypeIsShort(node.SimdBaseType);
+                    }
+
+                    case NI_X86Base_Max:
+                    case NI_X86Base_Min:
+                    case NI_AVX512_Max:
+                    case NI_AVX512_Min:
+                    {
+                        return !varTypeIsFloating(node.SimdBaseType);
+                    }
+
+                    case NI_AVX_Max:
+                    case NI_AVX_Min:
+                    {
+                        return false;
+                    }
+
+                    case NI_AVX512_Add:
+                    case NI_AVX512_Multiply:
+                    case NI_AVX2_MultiplyNoFlags:
+                    case NI_AVX2_X64_MultiplyNoFlags:
+                    {
+                        return node.Operands.Length == 2;
+                    }
+#endif
+                    default:
+                    {
+                        unreached();
+                        break;
+                    }
+                }
+            }
+#endif
+            return false;
+        }
+    }
+
 #if FEATURE_SIMD
     public bool IsVectorAllBitsSet => _oper.IsCnsVec && AsVecCon().IsAllBitsSet;
 

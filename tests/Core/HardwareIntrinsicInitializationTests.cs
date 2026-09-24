@@ -14,6 +14,140 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class HardwareIntrinsicInitializationTests
 {
+    [TestCase(NI_X86Base_Shuffle, true)]
+    [TestCase(NI_X86Base_Add, false)]
+    public static void HardwareMorphImmediateOperandsUseTheTargetMetadata(NamedIntrinsic id, bool immediate)
+    {
+        Assert.That(HWIntrinsicInfo.HasImmediateOperand(id), Is.EqualTo(immediate));
+    }
+
+    [TestCase(TYP_BYTE)]
+    [TestCase(TYP_UBYTE)]
+    [TestCase(TYP_SHORT)]
+    [TestCase(TYP_USHORT)]
+    [TestCase(TYP_INT)]
+    [TestCase(TYP_UINT)]
+    [TestCase(TYP_LONG)]
+    [TestCase(TYP_ULONG)]
+    public static void HardwareMorphGeometricSequencesWrapIntegralLanes(var_types type)
+    {
+        WithCompiler(compiler => {
+            var initial = compiler.gtNewIconNode(type.ActualType, -3);
+            var multiplier = compiler.gtNewIconNode(type.ActualType, 100003);
+            var result = compiler.gtNewSimdCreateGeometricSequenceNode(TYP_SIMD64, initial, multiplier, type, 64);
+            Assert.That(result.Oper, Is.EqualTo(GT_CNS_VEC));
+            var value = -3L;
+            for (var lane = 0; lane < GenTreeVecCon.ElementCount(64, type); lane++)
+            {
+                var expected = type switch {
+                    TYP_BYTE => unchecked((sbyte)value),
+                    TYP_UBYTE => unchecked((byte)value),
+                    TYP_SHORT => unchecked((short)value),
+                    TYP_USHORT => unchecked((ushort)value),
+                    TYP_INT => unchecked((int)value),
+                    TYP_UINT => unchecked((uint)value),
+                    _ => value,
+                };
+                Assert.That(result.AsVecCon().GetElementIntegral(type, lane), Is.EqualTo(expected));
+                value = unchecked(value * 100003);
+            }
+        });
+    }
+
+    [TestCase(TYP_FLOAT)]
+    [TestCase(TYP_DOUBLE)]
+    public static void HardwareMorphGeometricSequencesPreserveAlternatingSignedZero(var_types type)
+    {
+        WithCompiler(compiler => {
+            var result = compiler.gtNewSimdCreateGeometricSequenceNode(TYP_SIMD16,
+                compiler.gtNewDconNode(type, -0.0), compiler.gtNewDconNode(type, -2.0), type, 16);
+            for (var lane = 0; lane < GenTreeVecCon.ElementCount(16, type); lane++)
+            {
+                var value = result.AsVecCon().GetElementFloating(type, lane);
+                Assert.That(BitConverter.DoubleToInt64Bits(value), Is.EqualTo((lane & 1) == 0 ? long.MinValue : 0L));
+            }
+        });
+    }
+
+    [Test]
+    public static void HardwareMorphGeometricSequenceBroadcastsAnUnknownInitialValueOnce()
+    {
+        WithCompiler(compiler => {
+            var initial = compiler.gtNewCallNode(TYP_FLOAT, gtCallTypes.CT_USER_FUNC, null);
+            var result = compiler.gtNewSimdCreateGeometricSequenceNode(TYP_SIMD16, initial,
+                compiler.gtNewDconNode(TYP_FLOAT, 2.0), TYP_FLOAT, 16).AsHWIntrinsic();
+            Assert.That(result.GetOperForHWIntrinsicId(out _), Is.EqualTo(GT_MUL));
+            var powers = result.GetOp(1).AsVecCon();
+            for (var lane = 0; lane < 4; lane++)
+            {
+                Assert.That(powers.SimdVal.f32[lane], Is.EqualTo((float)(1 << lane)));
+            }
+            var broadcast = result.GetOp(2).AsHWIntrinsic();
+            Assert.That(broadcast.HWIntrinsicId, Is.EqualTo(NI_Vector_Create));
+            Assert.That(broadcast.Operands.Length, Is.EqualTo(1));
+            Assert.That(broadcast.GetOp(1), Is.SameAs(initial));
+            Assert.That(result.Flags & GTF_CALL, Is.EqualTo(GTF_CALL));
+        });
+    }
+
+    [TestCase(NI_X86Base_Add, TYP_INT, 2, true)]
+    [TestCase(NI_X86Base_MultiplyAddAdjacent, TYP_SHORT, 2, false)]
+    [TestCase(NI_X86Base_MultiplyAddAdjacent, TYP_UBYTE, 2, true)]
+    [TestCase(NI_X86Base_Max, TYP_INT, 2, true)]
+    [TestCase(NI_X86Base_Max, TYP_FLOAT, 2, false)]
+    [TestCase(NI_AVX512_Add, TYP_FLOAT, 2, true)]
+    [TestCase(NI_AVX512_Add, TYP_FLOAT, 3, false)]
+    public static void HardwareMorphCommutativityRespectsElementTypeAndExplicitRounding(
+        NamedIntrinsic id, var_types type, int count, bool commutative)
+    {
+        WithCompiler(compiler => {
+            var first = new GenTreeLclVar(TYP_SIMD16, 0);
+            var second = new GenTreeLclVar(TYP_SIMD16, 1);
+            GenTree[] operands = count == 2 ? [first, second] : [first, second, compiler.gtNewIconNode(TYP_INT, 0)];
+            var tree = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, id, type, 16, operands);
+            Assert.That(tree.IsCommutativeHWIntrinsic, Is.EqualTo(commutative));
+        });
+    }
+
+    [TestCase(NI_Vector_op_Equality, TYP_INT, true)]
+    [TestCase(NI_Vector_op_Equality, TYP_FLOAT, false)]
+    [TestCase(NI_AVX512_CompareNotEqualMask, TYP_INT, true)]
+    [TestCase(NI_AVX512_CompareNotEqualMask, TYP_FLOAT, false)]
+    public static void HardwareMorphConstantPreferenceDistinguishesFloatingZero(NamedIntrinsic id, var_types type, bool preferred)
+    {
+        WithCompiler(compiler => {
+            var local = new GenTreeLclVar(TYP_SIMD16, 0);
+            var constant = new GenTreeVecCon(TYP_SIMD16);
+            var resultType = id is NI_Vector_op_Equality ? TYP_INT : TYP_MASK;
+            var tree = compiler.gtNewSimdHWIntrinsicNode(resultType, id, type, 16, local, constant);
+            Assert.That(tree.ShouldConstantProp(constant, constant), Is.EqualTo(preferred));
+            constant.SimdVal.u32[0] = 1;
+            Assert.That(tree.ShouldConstantProp(constant, constant), Is.False);
+        });
+    }
+
+    [Test]
+    public static void HardwareMorphConstantPreferenceKeepsOnlyShuffleIndicesAndRecognizedComplements()
+    {
+        WithCompiler(compiler => {
+            var source = new GenTreeLclVar(TYP_SIMD16, 0);
+            var indices = new GenTreeLclVar(TYP_SIMD16, 1);
+            var constant = new GenTreeVecCon(TYP_SIMD16);
+            var shuffle = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_Vector_Shuffle, TYP_INT, 16, source, indices);
+            shuffle.Flags &= ~GTF_HW_USER_CALL;
+            Assert.That(shuffle.ShouldConstantProp(indices, constant), Is.False);
+            shuffle.Flags |= GTF_HW_USER_CALL;
+            Assert.That(shuffle.ShouldConstantProp(indices, constant), Is.True);
+            Assert.That(shuffle.ShouldConstantProp(source, constant), Is.False);
+
+            var xor = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_X86Base_Xor, TYP_INT, 16, source, constant);
+            Assert.That(xor.ShouldConstantProp(constant, constant), Is.False);
+            constant.SimdVal.u64[0] = ulong.MaxValue;
+            constant.SimdVal.u64[1] = ulong.MaxValue;
+            Assert.That(xor.ShouldConstantProp(constant, constant), Is.True);
+        });
+    }
+
     [TestCase(false, false)]
     [TestCase(false, true)]
     [TestCase(true, false)]

@@ -54,6 +54,10 @@ including reversed operands, and records the resulting SSA uses.
 Hardware-intrinsic constant reassociation preserves comma-expression effects
 and value numbers, distinguishes integral arithmetic from floating arithmetic,
 and allows bitwise reassociation across element-type reinterpretations.
+Operand ordering respects element-type and explicit-rounding restrictions,
+while constant preference preserves useful shuffle indices and mask identities.
+Geometric vector sequences can be precomputed or expressed as a single broadcast
+and multiply, retaining integral lane wraparound and floating signed zero.
 
 Outgoing calls can classify signature types into Windows-x64 argument registers
 and stack slots, account for shadow space, insert virtual-stub and ReadyToRun

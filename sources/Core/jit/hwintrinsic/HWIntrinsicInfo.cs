@@ -231,6 +231,31 @@ public readonly partial struct HWIntrinsicInfo
 
     public static bool HasSpecialSideEffect(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_SpecialSideEffectMask) != 0;
 
+    public static bool IsCommutative(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_Commutative) != 0;
+
+    public static bool IsMaybeCommutative(NamedIntrinsic id)
+    {
+#if TARGET_XARCH
+        return (lookupFlags(id) & HW_Flag_MaybeCommutative) != 0;
+#else
+        _ = lookupFlags(id);
+        return false;
+#endif
+    }
+
+    public static bool CanBenefitFromConstantProp(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_CanBenefitFromConstantProp) != 0;
+
+    public static bool HasImmediateOperand(NamedIntrinsic id)
+    {
+#if TARGET_ARM64 || TARGET_WASM
+        return (lookupFlags(id) & HW_Flag_HasImmediateOperand) != 0;
+#elif TARGET_XARCH
+        return lookupCategory(id) == HW_Category_IMM;
+#else
+        return false;
+#endif
+    }
+
     public static bool HasSpecialSideEffect_Barrier(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_SpecialSideEffect_Barrier) != 0;
 
     public static bool IsInvalidNodeId(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_InvalidNodeId) != 0;
