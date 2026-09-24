@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Block/indirect-store traversal plus nonlocal-jump dispatch and layout fixes pass 499 Debug/489 Release integration cases. Parameter-register mapping is independently validated with rationalization/register-eligibility consumers (18 per configuration), preserving native unsigned mapping offsets. Parent next integrates returned TryRemoveCast/TryFoldLirConst and implements optimized shift/rotate TryFoldBinop. Calls worker is collected through turn 39 and now owns TryLowerBitwiseOpToBitOp/TryLowerAndNegativeOne. Collect LSRA since turn 50 (minimal loop and Debug RegisterScore propagation; hold kill/copy commit until repaired) and accounting since turn 36 (lvaComputeRefCounts and default-aware writable single-definition reason). B170 unsigned layout sizes still block full LCLHEAP. Keep incomplete scalar/method drivers inactive and broad lowering uncommitted. Managed code size remains zero.",
+    "nextAction": "Reference accounting and backend lifetime predicates pass standalone integration (120 Debug/118 Release); parameter mappings and layout-slot fixes are committed. Cast/shift/rotate folding is integrated and passes 83 cases/configuration; bitwise helpers are returned but not integrated. Calls worker collected through turn 40 now investigates the complete B170 unsigned layout-size contract before shared edits. Accounting worker collected through turn 36 now owns non-enregisterable-local marking and local sorting/tracking. LSRA collected through turn 52: kill/copy/score support independently passes 96 Debug/81 Release and is ready for commit, but HOLD minimal traversal. Parent found missing location-transition freeing, copy-register reuse, previousLocation updates, wrong stress/ref ordering and approximate diagnostics; worker must repair with failing regressions before proceeding to interval building. Keep lowering/allocation drivers inactive and broad backend work uncommitted. Managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -41,6 +41,25 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "localReferenceAccounting": {
+        "debugPassed": 120,
+        "releasePassed": 118,
+        "skipped": 0,
+        "selection": ["LocalReferenceAccountingTests", "LocalMorphTests", "RegisterEligibilityTests", "ParameterLocalMappingTests"],
+        "debugTests": "artifacts\\ref-count-integration-debug.trx",
+        "releaseTests": "artifacts\\ref-count-integration-release.trx",
+        "scope": "Committed-source export plus complete Windows-x64 reference accounting, backend lifetime predicates and B172. Tree/LIR weights, implicit references, EH eligibility, zero initialization and descriptor value semantics; no phase activation."
+      },
+      "constantFoldingDispatch": {
+        "debugPassed": 83,
+        "releasePassed": 83,
+        "skipped": 0,
+        "selection": ["LoweringDispatchTests", "CastRemovalTests", "CastLoweringTests"],
+        "debugTests": "artifacts\\fold-dispatch-debug.trx",
+        "releaseTests": "artifacts\\fold-dispatch-release.trx",
+        "beforeFix": "artifacts\\fold-dispatch-before.trx: 12 of 13 new traversal cases fail before wiring; the minopts cast case already passes.",
+        "scope": "Uncommitted lowering integration reuses compiler folding through identity-preserving unthreaded probes and owning LIR replacement. Constant shift/rotate evaluation, zero identities, flags exclusions and original-successor traversal are exercised."
+      },
       "parameterRegisterLocals": {
         "debugPassed": 18,
         "releasePassed": 18,

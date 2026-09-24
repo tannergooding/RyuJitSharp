@@ -1002,7 +1002,22 @@ public partial struct LclVarDsc
         }
     }
 
-    public readonly byte lvSingleDefDisqualifyReason => (byte)('H');
+    // XOR encoding gives zero-initialized descriptors the native default 'H'
+    // while retaining every possible byte value, including zero.
+    private byte _singleDefDisqualifyReason;
+
+    public byte lvSingleDefDisqualifyReason
+    {
+        readonly get
+        {
+            return (byte)(_singleDefDisqualifyReason ^ 'H');
+        }
+
+        set
+        {
+            _singleDefDisqualifyReason = (byte)(value ^ 'H');
+        }
+    }
 #endif
 
     /// <summary>The index of the local var representing the first field in the promoted struct local.</summary>

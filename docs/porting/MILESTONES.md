@@ -49,6 +49,11 @@ Incoming parameter registers are mapped to independently promoted fields,
 preserving ABI segment order and existing rationalization mappings. Stack-only
 and dependently promoted parameters do not acquire register mappings.
 
+Local-reference accounting now handles both expression trees and linear IR,
+including weighted uses, implicit parameter and P/Invoke references, EH
+definition costs, and single-definition eligibility. Minopts retains the
+native implicit-reference fast path.
+
 ## 2026-09-24: Rationalization and linear IR
 
 Rationalization now converts sequenced expression trees into linear IR, removes
