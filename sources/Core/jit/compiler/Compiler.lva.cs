@@ -2312,6 +2312,19 @@ public partial class Compiler
         return false;
     }
 
+    /// <summary>Whether the local is an implicit-byref parameter or one of its dependently promoted fields.</summary>
+    /// <remarks>Only meaningful before these locals have been morphed into explicit indirections.</remarks>
+    public bool lvaIsLocalImplicitlyAccessedByRef(int lclNum)
+    {
+        ref var variable = ref lvaGetDesc(lclNum);
+        if (variable.lvIsStructField)
+        {
+            return lvaIsImplicitByRefLocal(variable.lvParentLcl);
+        }
+
+        return lvaIsImplicitByRefLocal(lclNum);
+    }
+
     /// <summary>Return the exact width of local variable "varNum" -- the number of bytes you'd need to copy in order to overwrite the value.</summary>
     /// <param name="varNum"></param>
     /// <returns></returns>

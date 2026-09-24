@@ -1,6 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
@@ -15,6 +16,88 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class MorphTreeSupportTests
 {
+    [TestCase(0u, 1, true)]
+    [TestCase(4u, 5, true)]
+    [TestCase(5u, 5, false)]
+    public static void TreeComplexityStopsOnlyAfterExceedingTheLimit(uint limit, int visited, bool exceeds)
+    {
+        WithCompiler(compiler => {
+            var first = compiler.gtNewIconNode(TYP_INT, 1);
+            var second = compiler.gtNewIconNode(TYP_INT, 2);
+            var third = compiler.gtNewIconNode(TYP_INT, 3);
+            var left = compiler.gtNewBinaryNode(GT_ADD, TYP_INT, first, second);
+            var root = compiler.gtNewBinaryNode(GT_ADD, TYP_INT, left, third);
+            List<GenTree> visits = [];
+
+            Assert.That(compiler.gtComplexityExceeds(root, limit, node => {
+                visits.Add(node);
+                return 1;
+            }), Is.EqualTo(exceeds));
+            GenTree[] order = [root, left, first, second, third];
+            Assert.That(visits, Is.EqualTo(order[..visited]));
+            Assert.That(root.Op1, Is.SameAs(left));
+        });
+    }
+
+    [TestCase(0, false)]
+    [TestCase(3, false)]
+    [TestCase(0x3FFFFFFF, false)]
+    [TestCase(0, true)]
+    public static void TlsExpansionPreservesIdentityAndNativeModuleIndexArithmetic(int module, bool indirect)
+    {
+        WithCompiler(compiler => {
+            TlsQuery query = new() { Module = module, Indirect = indirect };
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.getFieldThreadLocalStoreID = &GetFieldThreadLocalStoreId;
+            vtable.Base.Base.isFieldStatic = &IsStaticField;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
+            var field = new GenTreeFieldAddr(TYP_I_IMPL, null, (CORINFO_FIELD_STRUCT_*)&query, -4) {
+                Flags = GTF_FLD_TLS | GTF_DONT_CSE | GTF_COLON_COND | GTF_ORDER_SIDEEFF,
+                _vnPair = new ValueNumPair(123, 456),
+            };
+#if DEBUG
+            var nextId = compiler.compGenTreeID;
+#endif
+            var result = compiler.fgMorphExpandTlsFieldAddr(field);
+            Assert.That(query.Queries, Is.EqualTo(1));
+            Assert.That(result.Oper, Is.EqualTo(GT_ADD));
+            Assert.That(result.Type, Is.EqualTo(TYP_I_IMPL));
+            Assert.That(result.Flags, Is.EqualTo(field.Flags & GTF_COMMON_MASK));
+            Assert.That(result._vnPair, Is.EqualTo(new ValueNumPair()));
+            Assert.That(field.Oper, Is.EqualTo(GT_FIELD_ADDR));
+            Assert.That(field._vnPair, Is.EqualTo(new ValueNumPair(123, 456)));
+            Assert.That(result.Op2.AsIntCon().IconValue, Is.EqualTo((nint)(-4)));
+            Assert.That(result.Op2.AsIntCon().FieldSeq,
+                Is.SameAs(compiler.FieldSeqStore.Create(field.FldHnd, -4, FieldSeq.FieldKind.SimpleStatic)));
+#if DEBUG
+            Assert.That(result.TreeId, Is.EqualTo(field.TreeId));
+            Assert.That(compiler.compGenTreeID - nextId, Is.EqualTo(indirect ? 9 : module != 0 ? 6 : 4));
+#endif
+            var tls = result.Op1.AsIndir().Addr;
+            if (indirect || (module != 0))
+            {
+                var dll = tls.AsOp().Op2;
+                tls = tls.AsOp().Op1;
+                if (indirect)
+                {
+                    Assert.That(dll.Oper, Is.EqualTo(GT_MUL));
+                    Assert.That(dll.AsOp().Op1.AsIndir().Addr.AsIntCon().IconValue, Is.EqualTo((nint)0x123400));
+                    Assert.That(dll.AsOp().Op2.AsIntCon().IconValue, Is.EqualTo((nint)4));
+                }
+                else
+                {
+                    Assert.That(dll.AsIntCon().IconValue, Is.EqualTo(unchecked((nint)((uint)module * 4))));
+                }
+            }
+            Assert.That(tls.Oper, Is.EqualTo(GT_IND));
+            Assert.That(tls.Flags & (GTF_IND_NONFAULTING | GTF_IND_INVARIANT),
+                Is.EqualTo(GTF_IND_NONFAULTING | GTF_IND_INVARIANT));
+            Assert.That(tls.AsIndir().Addr.AsIntCon().IconHandleFlag, Is.EqualTo(GTF_ICON_TLS_HDL));
+            Assert.That(tls.AsIndir().Addr.AsIntCon().IconValue, Is.EqualTo((nint)0x2C));
+        });
+    }
+
     [TestCase(2L, 1, 0xD800)]
     [TestCase(0x100000002L, 1, 0)]
     [TestCase(0L, 0, 0)]
@@ -324,6 +407,25 @@ internal static unsafe class MorphTreeSupportTests
         }
         return query->ResultLength;
     }
+
+    private struct TlsQuery
+    {
+        public int Module;
+        public bool Indirect;
+        public int Queries;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int GetFieldThreadLocalStoreId(ICorJitInfo* jitInfo, CORINFO_FIELD_STRUCT_* field, void** indirection)
+    {
+        var query = (TlsQuery*)field;
+        query->Queries++;
+        *indirection = query->Indirect ? (void*)0x123400 : null;
+        return query->Module;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte IsStaticField(ICorJitInfo* jitInfo, CORINFO_FIELD_STRUCT_* field) => 1;
 
     private static void WithCompiler(Action<Compiler> action)
     {

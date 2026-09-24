@@ -3681,6 +3681,42 @@ public partial class Compiler
         return findNodeVisitor.Result;
     }
 
+    public bool gtComplexityExceeds(GenTree tree, uint limit, Func<GenTree, uint> getComplexity)
+    {
+        assert(tree is not null);
+        var visitor = new ComplexityVisitor(limit, getComplexity);
+        return visitor.WalkTree(ref tree, null) is WALK_ABORT;
+    }
+
+    private struct ComplexityVisitor : IGenTreeVisitor<ComplexityVisitor>
+    {
+        public static bool DoPreOrder => true;
+
+        private readonly GenTreeStack _ancestors;
+        private readonly uint _limit;
+        private readonly Func<GenTree, uint> _getComplexity;
+        private uint _complexity;
+
+        public ComplexityVisitor(uint limit, Func<GenTree, uint> getComplexity)
+        {
+            _ancestors = [];
+            _limit = limit;
+            _getComplexity = getComplexity;
+            _complexity = 0;
+        }
+
+        public fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
+        {
+            _complexity = unchecked(_complexity + _getComplexity(use));
+            return _complexity > _limit ? WALK_ABORT : WALK_CONTINUE;
+        }
+
+        public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
+
+        public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
+            => IGenTreeVisitor<ComplexityVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+    }
+
     public GenTree gtFoldExpr(GenTree tree)
     {
         assert(!optValnumCSE_phase);

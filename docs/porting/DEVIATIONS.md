@@ -84,6 +84,13 @@ new multiplication's operand slot. The constant retains the left subtree's
 logical ID and native node-mask flags, clears VNs, and does not mutate aliases
 of the original subtree into a different managed kind.
 
+TLS field-address expansion returns an identity-preserving binary ADD instead
+of retagging the unary `GenTreeFieldAddr`. It retains native common flags and
+clears VNs, without prematurely inheriting the newly constructed children's
+effects. The field driver consumes the returned owner; old aliases remain
+field nodes. Module-index arithmetic explicitly reinterprets the EE's managed
+`int` as native `unsigned` before multiplication and pointer-width widening.
+
 Constant field-sequence annotations are mutable metadata, allowing negation
 motion to clear an annotation without replacing the constant. `SetValueTruncating`
 accepts a `long` instead of a native signed-integer template; its int-width

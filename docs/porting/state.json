@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Close the remaining dependencies of the seven protected global-morph drafts. Begin with fgMorphIntoHelperCall and fgMorphCastIntoHelper (oracle morph.cpp:108-254), using the existing source-aware GenTreeCall constructor and replacing the native identity assertion with returned ownership. Then port fgMorphExpandCast, fgMorphFieldAddr, fgMorphIndexAddr and fgMarkAddrModeForFieldAddr; the latter needs optAssertionIsNonNull (assertionprop.cpp:5207) and its VN/reaching-assertion closure, not a local-only stub. optAssertionProp (5909) and its application helpers still remain except LclVarTypeCheck. global-morph-simple.cs.draft now contains the complete initial fgMorphSmpOp translation and MarkColonCondVisitor; global-morph-simple-optional.cs.draft has its optional dispatcher, commutative dispatcher and addition optimizer. Joint Debug/Release probes report eight diagnostics for six missing entry points: optAssertionProp, fgMorphIntoHelperCall, fgMorphFieldAddr, fgMorphIndexAddr, fgMorphExpandCast and fgMarkAddrModeForFieldAddr. These incomplete builds do not validate the drafts. fgMorphReduceAddOps and gtFoldIndirConst are live, tested and retired from the residual tree. Keep the drivers outside the normal build until the real dependency closure compiles; no stubs or Windows NYIs. Preserve whole-node owning uses and aliases, use AsUnOp for unary/store-local nodes, keep the tail EE pinning and unused-result eeGetCallInfo query, and preserve native diagnostic layout. B145, B153 and B156 remain deferred. fgMorphBlocks is inactive; no new phase/codegen parity is claimed.",
+    "nextAction": "Close assertion application and non-null proof, the two remaining entry points in the nine protected global-morph drafts. Begin with optAssertionIsNonNull and optAssertionVNIsNonNull (oracle assertionprop.cpp:5207 onward), including their real VN/reaching-assertion dependencies rather than a local-only stub. Then port optAssertionProp (5909) and its application helpers; LclVarTypeCheck is already live. The new casts draft contains fgCastRequiresHelper, both helper-call conversions and fgMorphExpandCast. The new addresses draft contains fgMarkAddrModeForFieldAddr, fgMorphFieldAddr and fgMorphIndexAddr, including minopts compact indexing and optimized evaluation order. Joint Debug/Release probes now report four diagnostics for optAssertionProp and optAssertionIsNonNull only; these incomplete builds do not validate the drafts. Field expansion, field-temp selection, implicit-byref access recognition and tree-complexity traversal are live, tested and retired. Keep recursive drivers outside the normal build until the real dependency closure compiles; no stubs or Windows NYIs. Preserve whole-node owning uses, common flags and explicit VN update policies, use AsUnOp for unary/store-local nodes, keep tail EE pinning and the unused-result eeGetCallInfo query, and preserve native diagnostic layout. The optional arithmetic draft now uses HasOverflowCheckEx for arbitrary operators. B145, B153 and B156 remain deferred. fgMorphBlocks is inactive; no new phase/codegen parity is claimed.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -49,6 +49,22 @@
         "skipped": 0,
         "sourceCheck": "Canonical tokens, comments, directives and literals preserved across nine preprocessor configurations, allowing only switch-section scope blocks.",
         "functionalWipIncluded": false,
+        "nativeAotRecaptured": false
+      },
+      "fieldAddressSupport": {
+        "debugPassed": 114,
+        "releasePassed": 108,
+        "skipped": 0,
+        "newCases": 19,
+        "selection": ["MorphTreeSupportTests", "LocalMorphTests"],
+        "debugTests": "artifacts\\field-address-support-debug.trx",
+        "releaseTests": "artifacts\\field-address-support-release.trx",
+        "nativeDefinitionsRetired": ["Compiler::fgGetFieldMorphingTemp", "Compiler::fgMorphExpandInstanceField", "Compiler::fgMorphExpandTlsFieldAddr", "Compiler::lvaIsLocalImplicitlyAccessedByRef", "Compiler::gtComplexityExceeds"],
+        "coverage": ["instance null-check ordering, field annotations and unsigned offsets", "single evaluation of effectful bases and zero-offset temp freshness", "late-bound field-offset ordering", "TLS direct/indirect module indices, unsigned multiplication and signed field offsets", "replacement identity, common flags and VN clearing", "implicit-byref promoted fields", "strict complexity limit and preorder early termination"],
+        "draftProbeConfigurations": ["Debug", "Release"],
+        "remainingDraftDependencies": ["optAssertionProp", "optAssertionIsNonNull"],
+        "draftProbesSucceeded": false,
+        "globalMorphActive": false,
         "nativeAotRecaptured": false
       },
       "simplePreorderSupport": {
@@ -2104,6 +2120,11 @@
       "indexCommit": "b8b4c334dd3018a3cf447ace984fd66540cac3e7",
       "ref": "refs/porting/snapshots/native-ledger-simple-preorder"
     },
+    "fieldAddressNativeResidual": {
+      "commit": "0d80c633b431c220210eb7126f9b2d6d4abd2c44",
+      "indexCommit": "cb9d2856b6816f1189339ccf942aeaf1eccc1316",
+      "ref": "refs/porting/snapshots/native-ledger-field-address-support"
+    },
     "globalMorphDrafts": {
       "treeBlob": "36908cd7d0294ece59d91854bbdbfcb05d83f228",
       "treeRef": "refs/porting/drafts/global-morph-tree",
@@ -2115,11 +2136,15 @@
       "argsRef": "refs/porting/drafts/global-morph-args",
       "copyBlockBlob": "5713f5f4b970077b05d0adfa338b316826a1b344",
       "copyBlockRef": "refs/porting/drafts/global-morph-copy-block",
-      "simpleOptionalBlob": "5f4559b1c8a97d7ab57b774c8e52b80d92dd41be",
+      "simpleOptionalBlob": "1df4c1c43e6a75504987275b337d65bb7a190109",
       "simpleOptionalRef": "refs/porting/drafts/global-morph-simple-optional",
       "simpleBlob": "8cd1f21850a796843fe99b020af3656fa448656c",
       "simpleRef": "refs/porting/drafts/global-morph-simple",
-      "status": "Seven incomplete local integration drafts with Debug/Release dependency diagnostics, not successfully compiled or validated; session files carry matching .cs.draft names. Hardware has four functions, call has fgMorphCall plus both tail-call transformations, args has both struct-argument transformations, fgMorphArgs and EvalArgsToTemps, copy-block has the complete helper class and driver, simple-optional has both arithmetic optimizers and the optional dispatcher, and simple has the full initial required dispatcher plus conditional-execution marking."
+      "castsBlob": "88f6173efde0b6d1b7a4485bfd76fb7d4d1861c9",
+      "castsRef": "refs/porting/drafts/global-morph-casts",
+      "addressesBlob": "3aba98d236238bf1f8ecbcbd83a0fa0334aac18d",
+      "addressesRef": "refs/porting/drafts/global-morph-addresses",
+      "status": "Nine incomplete local integration drafts with Debug/Release dependency diagnostics, not successfully compiled or validated; session files carry matching .cs.draft names. Hardware has four functions, call has fgMorphCall plus both tail-call transformations, args has both struct-argument transformations, fgMorphArgs and EvalArgsToTemps, copy-block has the complete helper class and driver, simple-optional has both arithmetic optimizers and the optional dispatcher, simple has the full initial required dispatcher plus conditional-execution marking, casts has the helper predicate/conversions and cast expansion, and addresses has the field/index drivers and null-check marking."
     },
     "internalBlockPhaseNativeResidual": {
       "commit": "494ccbc0132fcf507b8133bffa2fef635d788858",

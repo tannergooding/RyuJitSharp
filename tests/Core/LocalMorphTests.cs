@@ -2,6 +2,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.GenTreeFlags;
@@ -15,6 +16,127 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class LocalMorphTests
 {
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void ImplicitByRefAccessIncludesPromotedFields(bool implicitByRef, bool field)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable[0].Type = TYP_STRUCT;
+            compiler.lvaTable[0].lvIsParam = true;
+            compiler.lvaTable[0].IsImplicitByRef = implicitByRef;
+            compiler.lvaTable[1].Type = TYP_INT;
+            compiler.lvaTable[1].lvIsStructField = true;
+            compiler.lvaTable[1].lvParentLcl = 0;
+
+            Assert.That(compiler.lvaIsLocalImplicitlyAccessedByRef(field ? 1 : 0), Is.EqualTo(implicitByRef));
+            Assert.That(compiler.lvaIsLocalImplicitlyAccessedByRef(2), Is.False);
+        });
+    }
+
+    [TestCase(8, false, false)]
+    [TestCase(8, true, false)]
+    [TestCase(8, false, true)]
+    [TestCase(-1, false, false)]
+    [TestCase(0, false, false)]
+    public static void InstanceFieldExpansionPreservesNullChecksAndFieldIdentity(int offset, bool nonfaulting, bool overlaps)
+    {
+        WithInstanceFieldCompiler(compiler => {
+            compiler.lvaTable[0].Type = TYP_REF;
+            var obj = compiler.gtNewLclvNode(TYP_REF, 0);
+            var field = new GenTreeFieldAddr(TYP_BYREF, obj, (CORINFO_FIELD_STRUCT_*)4, offset) {
+                Flags = nonfaulting ? GTF_FLD_TGT_NONFAULTING : GTF_EMPTY,
+                MayOverlap = overlaps,
+            };
+
+            var result = compiler.fgMorphExpandInstanceField(field);
+            Assert.That(compiler.lvaCount, Is.EqualTo(3));
+            Assert.That(field.FldObj, Is.SameAs(obj));
+            var address = result;
+            if (!nonfaulting)
+            {
+                Assert.That(result.Oper, Is.EqualTo(GT_COMMA));
+                var check = result.AsOp().Op1;
+                Assert.That(check.Oper, Is.EqualTo(GT_NULLCHECK));
+                Assert.That(check.AsIndir().Addr.AsLclVar().LclNum, Is.Zero);
+                Assert.That(check.HasOrderingSideEffect, Is.True);
+                address = result.AsOp().Op2;
+            }
+            if (offset != 0)
+            {
+                Assert.That(address.Oper, Is.EqualTo(GT_ADD));
+                Assert.That(address.Type, Is.EqualTo(TYP_BYREF));
+                Assert.That(address.HasOrderingSideEffect, Is.EqualTo(!nonfaulting));
+                var constant = address.AsOp().Op2.AsIntCon();
+                Assert.That(constant.IconValue, Is.EqualTo(unchecked((nint)(uint)offset)));
+                Assert.That(constant.FieldSeq, overlaps ? Is.Null :
+                    Is.SameAs(compiler.FieldSeqStore.Create(field.FldHnd, unchecked((nint)(uint)offset), FieldSeq.FieldKind.Instance)));
+                address = address.AsOp().Op1;
+            }
+            Assert.That(address.AsLclVar().LclNum, Is.Zero);
+            Assert.That(address.Type, Is.EqualTo(TYP_REF));
+        });
+    }
+
+    [TestCase(0)]
+    [TestCase(8)]
+    public static void EffectfulFieldBasesAreStoredOnceWithTheNativeTempReuseRule(int offset)
+    {
+        WithInstanceFieldCompiler(compiler => {
+            compiler.lvaTable[0].Type = TYP_REF;
+            compiler.lvaTable[2].Type = TYP_INT;
+            for (var i = 0; i < (int)TYP_COUNT; i++)
+            {
+                BigOffsetMorphingTemps(compiler)[i] = BAD_VAR_NUM;
+            }
+            for (var i = 0; i < 2; i++)
+            {
+                var obj = compiler.gtNewBinaryNode(GT_COMMA, TYP_REF,
+                    compiler.gtNewStoreLclVarNode(2, compiler.gtNewIconNode(TYP_INT, i)),
+                    compiler.gtNewLclvNode(TYP_REF, 0));
+                var field = new GenTreeFieldAddr(TYP_BYREF, obj, (CORINFO_FIELD_STRUCT_*)4, offset);
+                var result = compiler.fgMorphExpandInstanceField(field).AsOp();
+                var setup = result.Op1.AsOp();
+                var store = setup.Op1.AsLclVar();
+                var temp = offset == 0 ? 3 + i : 3;
+
+                Assert.That(store.Oper, Is.EqualTo(GT_STORE_LCL_VAR));
+                Assert.That(store.Data, Is.SameAs(obj));
+                Assert.That(store.LclNum, Is.EqualTo(temp));
+                Assert.That(setup.Op2.AsIndir().Addr.AsLclVar().LclNum, Is.EqualTo(temp));
+                var address = offset == 0 ? result.Op2 : result.Op2.AsOp().Op1;
+                Assert.That(address.AsLclVar().LclNum, Is.EqualTo(temp));
+                Assert.That(compiler.lvaCount, Is.EqualTo(temp + 1));
+            }
+        });
+    }
+
+    [Test]
+    public static void LateBoundFieldOffsetsRemainOrderedAfterTheNullCheck()
+    {
+        WithInstanceFieldCompiler(compiler => {
+            compiler.lvaTable[0].Type = TYP_REF;
+            var field = new GenTreeFieldAddr(TYP_BYREF, compiler.gtNewLclvNode(TYP_REF, 0), (CORINFO_FIELD_STRUCT_*)4, 8) {
+                FieldLookup = new CORINFO_CONST_LOOKUP { accessType = InfoAccessType.IAT_PVALUE, addr = (void*)0x123400 },
+            };
+
+            var result = compiler.fgMorphExpandInstanceField(field).AsOp();
+            Assert.That(result.Op1.Oper, Is.EqualTo(GT_NULLCHECK));
+            var address = result.Op2.AsOp();
+            Assert.That(address.HasOrderingSideEffect, Is.True);
+            Assert.That(address.Op2.AsIntCon().IconValue, Is.EqualTo((nint)8));
+            var variableOffset = address.Op1.AsOp();
+            Assert.That(variableOffset.HasOrderingSideEffect, Is.True);
+            Assert.That(variableOffset.Op1.AsLclVar().LclNum, Is.Zero);
+            var lookup = variableOffset.Op2.AsIndir().Addr.AsIntCon();
+            Assert.That(lookup.IconValue, Is.EqualTo((nint)0x123400));
+#if DEBUG
+            Assert.That(lookup.TargetHandle, Is.EqualTo((nint)field.FldHnd));
+#endif
+        });
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void ValuesKeepTheExactOwningSlotForSharedOperands(bool reversed)
@@ -1029,6 +1151,23 @@ internal static unsafe class LocalMorphTests
             Assert.That(block.FirstStmt, Is.SameAs(statement));
             Assert.That(statement.PrevStmt, Is.SameAs(statement));
             Assert.That(statement.NextStmt, Is.Null);
+        });
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "fgBigOffsetMorphingTemps")]
+    private static extern ref InlineArrayTypCount<int> BigOffsetMorphingTemps(Compiler compiler);
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte IsInstanceField(ICorJitInfo* jitInfo, CORINFO_FIELD_STRUCT_* field) => 0;
+
+    private static void WithInstanceFieldCompiler(Action<Compiler> action)
+    {
+        WithCompiler(compiler => {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.isFieldStatic = &IsInstanceField;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
+            action(compiler);
         });
     }
 

@@ -26,6 +26,12 @@ and stores, preserving partial definitions and volatile-access restrictions.
 Eligible promoted struct returns expose their fields, and equal-size memory
 bitcasts can avoid an extra conversion.
 
+Instance-field expansion constructs explicit null checks and address arithmetic,
+including late-bound field offsets, without evaluating effectful bases twice.
+TLS field expansion preserves module-index indirections, field annotations and
+logical node identity. Address-morph support also recognizes implicitly accessed
+byref fields and limits expression duplication by tree complexity.
+
 Integral cast optimization now uses range proofs and expression narrowing to
 remove redundant conversions, retaining overflow checks and small-local
 normalization where required.
