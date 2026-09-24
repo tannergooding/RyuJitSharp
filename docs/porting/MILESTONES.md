@@ -72,8 +72,13 @@ Per-block liveness generation follows depth-first graph order and collects
 local and memory use/definition sets, including promoted fields, address-exposed
 locals, P/Invoke frame roots and definitions that occur at calls rather than
 argument evaluation. Expression-tree and linear-IR policies retain their
-different partial-store and conditional-definition rules. Inter-block
-propagation and the complete liveness and allocation drivers remain unfinished.
+different partial-store and conditional-definition rules.
+
+Inter-block liveness now propagates local and memory state to a fixed point,
+including exception-handler edges, filter bypass and second-pass handler flow.
+It preserves argument and generic-context lifetimes and identifies locals that
+need initialization. Backward death marking, dead-store rewriting and the
+complete liveness and allocation drivers remain unfinished.
 
 Register kills and GC-specific spills now preserve live values and advance
 fixed-register constraints. Temporary copy-register allocation retains the

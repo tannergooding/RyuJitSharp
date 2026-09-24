@@ -664,6 +664,11 @@ zero elements, even though the same representation also denotes uninitialized
 storage in nonempty environments; canonical assignment distinguishes those
 cases rather than bypassing liveness for zero-local methods.
 
+Handler-liveness marking has internal access to the descriptor's existing raw
+handler-live bit. The checked public getter and underlying flag storage are
+unchanged, so marking can reset untracked locals without weakening consumer
+invariants or adding duplicate state.
+
 LIR node replacement uses the existing metadata-preserving constructors with
 `NodeThreading.LIR`, followed by `LIR.Range.ReplaceNode` to transfer the owning
 use and range links. Address-mode lowering takes its address alias by reference,

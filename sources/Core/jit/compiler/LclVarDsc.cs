@@ -298,7 +298,7 @@ public partial struct LclVarDsc
     }
 
     /// <summary>The variable is live in or out of an exception handler.</summary>
-    private bool _lvLiveInOutOfHandler
+    internal bool _lvLiveInOutOfHandler
     {
         readonly get
         {
