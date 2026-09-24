@@ -41,6 +41,24 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "byteSwapContainment": {
+        "debugPassed": 29,
+        "releasePassed": 29,
+        "skipped": 0,
+        "selection": ["IntrinsicContainmentTests"],
+        "debugTests": "artifacts\\bswap-containment-debug.trx",
+        "releaseTests": "artifacts\\bswap-containment-release.trx",
+        "scope": "Standalone scalar intrinsic/byte-swap containment, preserving native optimization and ISA gates and distinguishing 16-bit from wider loads."
+      },
+      "asyncLoweringIntegration": {
+        "debugPassed": 71,
+        "releasePassed": 71,
+        "skipped": 0,
+        "selection": ["LoweringDispatchTests", "IntrinsicContainmentTests"],
+        "debugTests": "artifacts\\async-dispatch-debug.trx",
+        "releaseTests": "artifacts\\async-dispatch-release.trx",
+        "scope": "Uncommitted traversal integration relocates continuation reads next to their async calls and makes suspend returns terminate LIR and CFG flow, preserving required operands and profile accounting. No phase activation."
+      },
       "magicDivisorSupport": {
         "debugPassed": 65,
         "releasePassed": 65,

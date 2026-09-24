@@ -3,14 +3,46 @@
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.CORINFO_InstructionSet;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.NamedIntrinsic;
+using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class IntrinsicContainmentTests
 {
+    [TestCase(GT_BSWAP, TYP_INT, TYP_INT, false, true, false)]
+    [TestCase(GT_BSWAP, TYP_INT, TYP_INT, true, false, false)]
+    [TestCase(GT_BSWAP, TYP_INT, TYP_INT, true, true, true)]
+    [TestCase(GT_BSWAP, TYP_LONG, TYP_LONG, true, true, true)]
+    [TestCase(GT_BSWAP16, TYP_INT, TYP_USHORT, true, true, true)]
+    [TestCase(GT_BSWAP16, TYP_INT, TYP_INT, true, true, false)]
+    public static void ByteSwapContainmentRequiresOptimizationIsaAndMatchingLoadWidth(
+        genTreeOps oper, var_types type, var_types loadType, bool optimized, bool supported, bool contained)
+    {
+        WithCompiler(compiler => {
+            if (supported)
+            {
+                compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_AVX2);
+                compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_AVX2);
+                compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_AVX2);
+            }
+            var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1234);
+            var operand = new GenTreeIndir(GT_IND, loadType, address);
+            var operation = new GenTreeUnOp(oper, type, operand);
+            var block = NewBlock(operand, operation);
+            block.InsertBefore(operand, address);
+
+            LowerBswapOp(NewLowering(compiler, block), operation);
+
+            Assert.That(operand.IsContained, Is.EqualTo(contained));
+            Assert.That(operand.Type, Is.EqualTo(loadType));
+            Assert.That(operation.Op1, Is.SameAs(operand));
+        }, minOpts: !optimized);
+    }
+
     [Test]
     public static void MathConstantsPreserveBitsAndDistinguishPositiveZero(
         [Values(NI_System_Math_Ceiling, NI_System_Math_Floor, NI_System_Math_Truncate,
@@ -86,7 +118,10 @@ internal static unsafe class IntrinsicContainmentTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainCheckIntrinsic")]
     private static extern void ContainCheckIntrinsic(Lowering lowering, GenTreeIntrinsic node);
 
-    private static void WithCompiler(Action<Compiler> action)
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerBswapOp")]
+    private static extern void LowerBswapOp(Lowering lowering, GenTreeUnOp node);
+
+    private static void WithCompiler(Action<Compiler> action, bool minOpts = true)
     {
 #if DEBUG
         using var tls = new JitTls(null);
@@ -95,7 +130,7 @@ internal static unsafe class IntrinsicContainmentTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.opts.SetMinOpts(minOpts);
         compiler.opts.compFlags = CLFLG_REGVAR;
         compiler.fgNodeThreading = NodeThreading.LIR;
         compiler.lvaTable = [new LclVarDsc()];

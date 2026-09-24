@@ -7,6 +7,25 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
+#if FEATURE_HW_INTRINSICS && TARGET_XARCH
+    private void LowerBswapOp(GenTreeUnOp node)
+    {
+        assert(node.Oper is GT_BSWAP or GT_BSWAP16);
+        if (!CompilerInstance.opts.OptimizationEnabled ||
+            !CompilerInstance.compOpportunisticallyDependsOn(InstructionSet_AVX2))
+        {
+            return;
+        }
+
+        var operand = node.Op1;
+        var swapSize = node.Oper is GT_BSWAP16 ? 2 : node.Type.Size;
+        if ((swapSize == operand.Type.Size) && IsContainableMemoryOp(operand) && IsSafeToContainMem(node, operand))
+        {
+            MakeSrcContained(node, operand);
+        }
+    }
+#endif
+
     private void ContainCheckIntrinsic(GenTreeIntrinsic node)
     {
 #if TARGET_XARCH
