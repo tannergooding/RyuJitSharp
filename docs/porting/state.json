@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Assignment/minimal-per-reference allocation/lifetime support is committed after passing all existing LinearScan consumers (87 Debug/72 Release), including repaired pending-free verification and Windows upper-vector spills. The LSRA worker now owns the full native allocateRegistersMinimal loop; its returned kill/GC-kill/copy packet still needs parent integration. Byte-swap containment is committed; async continuation/suspend-return traversal passes 71 cases with existing scalar dispatch/intrinsic consumers. Division/switch/local-store integration passes 234 Debug/230 Release. Parent should integrate returned complete indirect-store/coalescing and block/JMP/CheckBlock packets, switch dispatch to complete helpers and remove temporary forwarding wrappers. The calls worker now owns TryRemoveCast and its LIR folding contract; the comparison worker owns lvaComputeRefCounts and required accounting helpers. Keep DoPhase inactive until scalar node and method-driver closure, including B170's unsigned block-layout size contract. Keep unfinished backend packets uncommitted; collect and refill existing workers. Managed code size remains zero.",
+    "nextAction": "Complete indirect-store/coalescing and block/JMP/CheckBlock helpers are integrated into the stable backend snapshot; 483 Debug/473 Release lowering cases pass, and obsolete MinOpts forwarding wrappers are removed. Slot-count truncation/rounding and no-GC slot queries are corrected independently; B170 still requires unsigned layout sizes before full LCLHEAP dispatch. Continue scalar node and method-driver closure without activating DoPhase. Collect existing workers: LSRA since turn 50 (minimal loop and Debug RegisterScore propagation; hold kill/copy commit until repaired), calls since turn 38 (TryRemoveCast and LIR folding ownership), accounting since turn 36 (lvaComputeRefCounts and default-aware writable single-definition reason). Assignment/lifetime foundations are committed; broad lowering remains uncommitted. Managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -41,6 +41,25 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "layoutSlots": {
+        "debugPassed": 12,
+        "releasePassed": 12,
+        "skipped": 0,
+        "selection": ["ClassLayoutTests"],
+        "debugTests": "artifacts\\layout-slots-debug.trx",
+        "releaseTests": "artifacts\\layout-slots-release.trx",
+        "beforeFix": "artifacts\\layout-slots-before.trx: six failures covering 16-bit slot-count overflow, signed rounding overflow and missing no-GC storage handling.",
+        "scope": "Committed-source export plus layout fixes. Preserves large slot counts and GC classifications; unsigned byte sizes above Int32.MaxValue remain unresolved under B170."
+      },
+      "blockStoreTraversalIntegration": {
+        "debugPassed": 483,
+        "releasePassed": 473,
+        "skipped": 0,
+        "selection": "LoweringTests, LoweringDispatchTests, CoalescingTests and IntrinsicContainmentTests",
+        "debugTests": "artifacts\\block-store-integration-debug.trx",
+        "releaseTests": "artifacts\\block-store-integration-release.trx",
+        "scope": "Stable uncommitted backend integration adds full indirect-store coalescing, block traversal, JMP lowering and Debug validation to division/switch/call/scalar consumers. Phase drivers remain inactive."
+      },
       "lsraAssignmentAndLifetime": {
         "debugPassed": 87,
         "releasePassed": 72,

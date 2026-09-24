@@ -129,7 +129,8 @@ public sealed class ClassLayout
         }
     }
 
-    public ushort SlotCount => (ushort)(roundUp(_size, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE);
+    // Round in unsigned arithmetic so sizes near Int32.MaxValue do not overflow.
+    public int SlotCount => (int)(((uint)_size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE);
 
     public int Size => _size;
 
@@ -578,6 +579,12 @@ public sealed class ClassLayout
     internal CorInfoGCType GetGCPtr(int slot)
     {
         assert(slot < SlotCount);
+
+        if (GCPtrCount == 0)
+        {
+            return TYPE_GC_NONE;
+        }
+
         var gcPtrs = _gcPtrs ?? (ReadOnlySpan<CorInfoGCType>)(_inlineGCPtrs);
         return gcPtrs[slot];
     }
