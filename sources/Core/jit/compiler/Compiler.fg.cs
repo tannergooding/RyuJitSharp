@@ -14167,6 +14167,21 @@ public partial class Compiler
     // TODO: Port phase - fgMorphBlocks
     public PhaseStatus fgMorphBlocks() => PhaseStatus.MODIFIED_NOTHING;
 
+#if DEBUG
+    internal void fgPostGlobalMorphChecks()
+    {
+        var visitor = new PostGlobalMorphChecksVisitor();
+
+        foreach (var block in Blocks)
+        {
+            foreach (var statement in block.Statements)
+            {
+                _ = visitor.WalkTree(ref statement.RootNodeRef, user: null);
+            }
+        }
+    }
+#endif
+
     public unsafe PhaseStatus fgMorphInit()
     {
         var madeChanges = false;

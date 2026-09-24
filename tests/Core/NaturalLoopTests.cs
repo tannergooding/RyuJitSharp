@@ -417,6 +417,32 @@ internal static unsafe class NaturalLoopTests
         });
     }
 
+    [Test]
+    public static void MorphReachabilityUsesStableDfsNumbers()
+    {
+        WithCompiler(compiler => {
+            var blocks = Blocks(compiler, BBJ_ALWAYS, BBJ_ALWAYS, BBJ_RETURN);
+            _ = Jump(blocks[0], blocks[1]);
+            _ = Jump(blocks[1], blocks[2]);
+            compiler._dfsTree = ComputeDfs(compiler, false);
+            var unreachable = new Compiler.MorphUnreachableInfo(compiler);
+
+            foreach (var block in blocks)
+            {
+                Assert.That(unreachable.IsUnreachable(block), Is.False);
+            }
+
+            unreachable.SetUnreachable(blocks[0]);
+            unreachable.SetUnreachable(blocks[0]);
+            Assert.That(unreachable.IsUnreachable(blocks[0]), Is.True);
+            Assert.That(unreachable.IsUnreachable(blocks[1]), Is.False);
+            Assert.That(unreachable.IsUnreachable(blocks[2]), Is.False);
+            unreachable.SetUnreachable(blocks[2]);
+            Assert.That(unreachable.IsUnreachable(blocks[2]), Is.True);
+            Assert.That(new Compiler.MorphUnreachableInfo(compiler).IsUnreachable(blocks[0]), Is.False);
+        });
+    }
+
     private static LocalEqualsLocalAddrAssertions CreateLocalAddressAssertions(Compiler compiler, FlowGraphNaturalLoops loops)
     {
         compiler._dfsTree = loops.DfsTree;

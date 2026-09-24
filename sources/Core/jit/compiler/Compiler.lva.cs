@@ -2552,6 +2552,17 @@ public partial class Compiler
         lvaSetVarDoNotEnregister(varNum, DoNotEnregisterReason.HiddenBufferStructArg);
     }
 
+    internal void lvSetMinOptsDoNotEnreg()
+    {
+        JITDUMP("compEnregLocals() is false, setting doNotEnreg flag for all locals.");
+        assert(!compEnregLocals);
+
+        for (var lclNum = 0; lclNum < lvaCount; lclNum++)
+        {
+            lvaSetVarDoNotEnregister(lclNum, DoNotEnregisterReason.NoRegVars);
+        }
+    }
+
     /// <summary>Record that the local var "varNum" should not be enregistered (for one of several reasons.)</summary>
     /// <param name="varNum"></param>
     /// <param name="reason"></param>

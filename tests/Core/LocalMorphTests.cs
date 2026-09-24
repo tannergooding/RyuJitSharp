@@ -895,6 +895,48 @@ internal static unsafe class LocalMorphTests
         });
     }
 
+    [Test]
+    public static void MinOptsEnregistrationSetupPreservesExistingReasonsAndIgnoresUnusedCapacity()
+    {
+        WithCompiler(compiler => {
+            compiler.lvaCount = 2;
+            compiler.lvaTable[0].Type = TYP_INT;
+            compiler.lvaTable[1].Type = TYP_INT;
+            compiler.lvaTable[0].SetAddressExposed(true, AddressExposedReason.ESCAPE_ADDRESS);
+            compiler.lvaSetVarDoNotEnregister(0, DoNotEnregisterReason.AddrExposed);
+
+            compiler.lvSetMinOptsDoNotEnreg();
+
+            Assert.That(compiler.lvaTable[0].lvDoNotEnregister, Is.True);
+            Assert.That(compiler.lvaTable[1].lvDoNotEnregister, Is.True);
+            Assert.That(compiler.lvaTable[2].lvDoNotEnregister, Is.False);
+#if DEBUG
+            Assert.That(compiler.lvaTable[0].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.AddrExposed));
+            Assert.That(compiler.lvaTable[1].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.NoRegVars));
+#endif
+        }, minOpts: true);
+    }
+
+#if DEBUG
+    [Test]
+    public static void PostMorphChecksVisitFullyMarkedStatementTrees()
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable[0].Type = TYP_INT;
+            var value = compiler.gtNewBinaryNode(GT_ADD, TYP_INT,
+                compiler.gtNewIconNode(TYP_INT, 1), compiler.gtNewIconNode(TYP_INT, 2));
+            var store = compiler.gtNewStoreLclVarNode(0, value);
+            var block = new BasicBlock(null, null);
+            compiler.fgFirstBB = block;
+            compiler.fgInsertStmtAtEnd(block, compiler.gtNewStmt(store));
+            compiler.fgGlobalMorph = true;
+            store.SetMorphed(compiler, doChilren: true);
+            compiler.fgGlobalMorph = false;
+            compiler.fgPostGlobalMorphChecks();
+        });
+    }
+#endif
+
     private static void WithCompiler(Action<Compiler> action, bool minOpts = false)
     {
 #if DEBUG

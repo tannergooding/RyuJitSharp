@@ -12,9 +12,9 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Advance required global morph toward minopts/Tier-0-level code generation, starting with local-reference expansion after active implicit-byref retyping. Optional stack-allocation analysis and early optimized flow-graph cleanup remain outside this batch.",
+      "scope": "Advance required global morph toward minopts/Tier-0-level code generation through its statement/block transformations and tree-morph dependencies. Local-reference expansion and driver bookkeeping are implemented. Optional stack-allocation analysis and early optimized flow-graph cleanup remain outside this batch.",
       "doneWhen": [
-        "Port complete fgMorphExpandImplicitByRefArg and fgMorphExpandLocal with their required normalization and ownership dependencies, then follow the required global-morph driver closure.",
+        "Port complete required fgMorphBlocks, fgMorphStmts and fgMorphTree dependency closures, beginning with no-return-call statement repair.",
         "Preserve argument ABI, whole-node replacement ownership, last-use flags, promotion state and diagnostic ordering.",
         "Continue required local/global morph, lowering and code generation rather than filling optional adjacent optimization phases.",
         "Validate and retire complete definitions; commit coherent portions and publish execution milestones without stopping at them."
@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit the completed global-local-expansion helper batch, then read oracle morph.cpp::fgMorphBlocks and follow its direct driver/tree-morph dependencies. fgMorphExpandImplicitByRefArg, fgMorphExpandLocal, fgMorphExpandStackArgForVarArgs and lvaIsArgAccessedViaVarArgsCookie are complete and retired; 239 Debug / 235 Release local/inline/scalar cases pass. No phase activation or unchanged-frontier recapture is claimed for these helpers. The owning tree-morph caller must install the returned expansion and morph it further. fgMorphBlocks remains a no-op; build the complete required closure rather than reopening local/byref ownership, normalization or tests. Required retyping is published as cce82f2 and local morph as 15544e6. Keep minopts execution ahead of B135/B142 diagnostics, B145 SIMD conversions and B147 optional early CFG cleanup; B149 unsigned checked multiplication is separately recorded.",
+    "nextAction": "Commit global-morph driver bookkeeping, then port the complete gtRemoveTreesAfterNoReturnCall visitor from oracle morph.cpp:14322 onward, a direct fgMorphStmts dependency. Driver tracing is complete: fgMorphBlocks -> fgMorphBlock -> fgMorphStmts -> fgMorphTree, whose const/leaf/simple-op/call branches form a larger recursive closure. Do not re-read the driver to rediscover it. MorphUnreachableInfo, lvSetMinOptsDoNotEnreg and fgPostGlobalMorphChecks are implemented and pass 83 Debug / 80 Release local/loop cases; consolidate their native retirement with driver activation. Local expansion is committed as ad0e72f and retired. fgMorphBlocks and the general tree-morph cycle remain unported; no new phase activation or unchanged-frontier recapture is claimed. Keep minopts execution ahead of optional optimization work and already recorded unrelated diagnostics.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -1129,6 +1129,19 @@
         "nativeDefinitionsRetired": ["Compiler::fgMorphExpandImplicitByRefArg", "Compiler::fgMorphExpandLocal", "Compiler::fgMorphExpandStackArgForVarArgs", "Compiler::lvaIsArgAccessedViaVarArgsCookie"],
         "nativeDeclarationsRetired": 4,
         "x86ExecutionValidated": false,
+        "globalMorphActive": false,
+        "nativeAotRecaptured": false
+      },
+      "globalMorphDriverSupport": {
+        "debugPassed": 83,
+        "releasePassed": 80,
+        "skipped": 0,
+        "selection": ["LocalMorphTests", "NaturalLoopTests"],
+        "debugTests": "artifacts\\global-morph-driver-support-debug.trx",
+        "releaseTests": "artifacts\\global-morph-driver-support-release.trx",
+        "coverage": ["DFS-indexed per-morph unreachability", "minopts enregistration flags with preserved existing reasons", "fully marked statement-tree postchecks"],
+        "implemented": ["Compiler::MorphUnreachableInfo", "Compiler::lvSetMinOptsDoNotEnreg", "Compiler::fgPostGlobalMorphChecks"],
+        "residualRetirement": "Consolidate with the global-morph driver.",
         "globalMorphActive": false,
         "nativeAotRecaptured": false
       },
