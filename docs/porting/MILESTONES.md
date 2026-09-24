@@ -12,6 +12,34 @@ continue. A milestone does not require a conversational stop. Pause for an
 explicit user request, an unresolved decision requiring approval, a publication
 conflict, or a blocker that cannot be safely resolved.
 
+## 2026-09-23: Indirect-call transformation
+
+**Commits:** `d76a831`, `36016c0`, `e5e5b74`.
+
+**Result:** Complete fat-pointer expansion and guarded devirtualization, including
+class, method and delegate guards; multiple and exact guesses; return-placeholder
+repair; and chained hot paths with cold-path bypass and profile repair. Shared
+spilling preserves evaluation order and owning uses. Candidate cloning and
+absolute/relative vtable targets are available, and the full indirect-call phase
+is active. The native `indirectcalltransformer.cpp` is retired.
+
+**Evidence:** Sixty new cases across the three commits; the combined related
+selection passes 138 Debug / 138 Release, zero skipped. NativeAOT publication
+and the eleven-method corpus succeed, retaining six exact import prefixes.
+The outer-method no-candidate phase sections match native exactly for all eleven
+methods; native `InlineCaller` also compiles an inlinee, which is not counted as
+another outer-method comparison.
+
+**Frontier:** The corpus has no fat-pointer/GDV candidates, so expansion is
+established by constructed IR and controlled EE cases, not native execution
+parity. Native profile and metric inconsistencies remain deliberately unchanged
+(B121/B124). The required inferred-local normalization defect is fixed (B120);
+an unrelated node-search pruning defect is recorded for later work (B125).
+Post-import cleanup still gates inliner activation, and codegen remains unavailable.
+
+**Next:** Complete post-import cleanup, including EH and OSR handling, before
+activating the inliner.
+
 ## 2026-09-23: Patchpoint transformation
 
 **Commit:** `2b0f3d2`.
