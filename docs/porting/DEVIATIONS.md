@@ -650,6 +650,12 @@ uses consume those entries in native order; local uses retain their owning node.
 Interval creation reuses the canonical diagnostic formatter rather than a
 separate managed representation of the same dump.
 
+The common operand-use builder accepts `GenTreeUnOp` and obtains a second
+operand only from `GenTreeOp`. Native `GenTreeOp` represents both shapes;
+requiring the managed binary subclass would exclude valid unary callers.
+Target-preference outputs use a value tuple instead of two native output
+pointers, preserving their initialization and update rules.
+
 `identifyCandidatesMinimal` represents the complete native
 `identifyCandidates<false>` specialization, including EH exception/finally
 sets. Optimized candidate selection remains separate. Its diagnostic set

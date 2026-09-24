@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Generic references are committed as ea9f5c8, fixed-point/EH liveness as 2db6981 and LowerNodeCC as 20ac93a. Complete LowerFusedMultiplyOp now independently passes 35 tests in each configuration with condition-consumer coverage. Next port LowerHWIntrinsicCC against the canonical IsContainableHWIntrinsicOp(node, operand, out bool supportsRegOptional) contract requested from Sol. LSRA worker collected through turn 64 owns the returned OperandAndCallUses/tests again: replace its reduced binary helper with complete BuildBinaryUses/RMW before integrating the combined packet; remove unary null-to-zero fallbacks. Record the pinned native op2/nonempty-candidate/no-EVEX branch's repeated op1 use as a suspected upstream defect without silently changing it. Liveness worker collected through turn 47 owns complete backward LIR liveness and immediate dead-store support; ILivenessPolicy.EliminateDeadCode and internal accessibility for unchanged TransformUnusedIndirection are authorized. Sol, collected through turn 48, owns complete hardware containment and canonical instruction input-size, embedded-broadcast and ternary-logic prerequisites. Parent ToScalar/property/seven tests remain unvalidated and unwired. Broad common block/call/LCLHEAP lowering remains validated but uncommitted pending its full dependency closure; retain native bodies and inactive drivers. Managed code size remains zero.",
+    "nextAction": "Parent independently integrated complete operand/address/call-argument and binary/RMW use construction (137 Debug/114 Release), including unary-node support and B183's preserved upstream candidate issue. Next integrate six-file backward-LIR packet from artifacts\\liveness-backward-lir-handoff.txt; parent added nonparallel test isolation and BAD_VAR_NUM return-buffer fixture initialization. Liveness worker collected through turn 48 now owns complete explicit LIR-mode InterBlock/Run orchestration, without phase activation. LSRA worker collected through turn 66 owns BuildDefsWithKills/call definitions and immediate internal-register support; canonical buildBinaryUses now accepts GenTreeUnOp. LowerFusedMultiplyOp is committed as 03162ea. Parent LowerHWIntrinsicCC/seven tests and ToScalar/property/seven tests are written but unvalidated pending real containment. Sol, collected through turn 48, owns complete containment and canonical input-size, embedded-broadcast and ternary-logic prerequisites; expected containment query signature has been sent. Broad block/call/LCLHEAP lowering remains validated but uncommitted pending full dependency closure. Retain native bodies and inactive drivers; managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -41,6 +41,15 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "operandAndRmwUses": {
+        "debugPassed": 137,
+        "releasePassed": 114,
+        "skipped": 0,
+        "selection": ["LinearScan*"],
+        "debugTests": "artifacts\\operand-rmw-parent-debug.trx",
+        "releaseTests": "artifacts\\operand-rmw-parent-release.trx",
+        "scope": "Complete operand/address/call-argument uses, delay-free support, BuildBinaryUses and xarch RMW preference/classification. Parent integration preserves native unary support via GenTreeUnOp; a direct BSWAP regression covers the managed class split. B183 remains native-faithful pending reachability investigation. Instruction-specific definitions, complete reference streams and allocation activation remain separate."
+      },
       "fusedMultiplyLowering": {
         "debugPassed": 35,
         "releasePassed": 35,

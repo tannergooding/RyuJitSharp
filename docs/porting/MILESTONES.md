@@ -107,9 +107,13 @@ pool when needed.
 Definition and use construction now connects temporary values and tracked
 locals to allocation intervals, including target preferences, delayed frees
 and register-optional upper-vector restores. New intervals emit the native
-creation diagnostics before their references are attached. Operand and
-instruction-specific builders are still needed to prepare complete reference
-streams for allocation.
+creation diagnostics before their references are attached.
+
+Operand-use construction handles contained addresses, call-argument registers
+and binary read-modify-write operations. It preserves destination preferences
+and delayed operand lifetimes, including memory-address registers that must
+survive the operation. Remaining instruction-specific builders still prevent
+preparing complete reference streams for allocation.
 
 ## 2026-09-24: Rationalization and linear IR
 
