@@ -13,6 +13,7 @@ public sealed partial class LinearScan : IRegAlloc
 {
     private readonly Compiler _compiler;
 
+    // Native upper register-number bound, not the length of the compact register-index map.
     private int _availableRegCount;
     private readonly bool _evexIsSupported;
     private readonly bool _apxIsSupported;

@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Local marking is committed as 809163e and validated against the twenty-method native-host corpus; fatal-result recovery is 9695c1f. Tracked-local selection and corrected bitset traits are independently integrated (292 Debug/287 Release); worker collected through turn 40. B170's unsigned packet is HOLD after review found MorphInitBlockHelper still narrows arbitrary unsigned block sizes to int; its worker now owns complete init/copy morph size propagation and regression coverage before parent integration. Keep full LCLHEAP unwired. LSRA returned through turn 54 includes buildPhysRegRecords and repaired location/free/copy transitions; its worker is replacing approximate interval/ref/variable-ref dumps with the native diagnostic closure. HOLD traversal commit until that closure is complete. Keep lowering/allocation inactive and broad backend work uncommitted. Managed code size remains zero.",
+    "nextAction": "Local marking is committed as 809163e; fatal-result recovery is 9695c1f; tracked-local selection and corrected bitset traits are fb993ea. The liveness worker, collected through turn 40, now owns native Init and immediate variable-set prerequisites without driver activation. B170 unsigned sizes and the corrected init/copy morph packet are returned through turn 44 (363 worker cases/configuration), awaiting parent integration; keep full LCLHEAP unwired. LSRA diagnostics/loop repairs are returned through turn 55, with ownership acknowledged through turn 56. Parent corrected B176 after a real EVEX case exposed register-number versus map-index confusion. Physical-register setup/lifetime integration passes 98 Debug/83 Release, excluding held traversal. Finish reviewing and validating the complete loop and diagnostics before committing them. Keep lowering/allocation inactive and broad backend work uncommitted. Managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -41,6 +41,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "physicalRegisterInitialization": {
+        "debugPassed": 98,
+        "releasePassed": 83,
+        "skipped": 0,
+        "selection": "All committed-source LinearScan tests plus physical-register setup; excludes the held minimal traversal.",
+        "debugTests": "artifacts\\physical-register-fixed-debug.trx",
+        "releaseTests": "artifacts\\physical-register-fixed-release.trx",
+        "beforeFix": "artifacts\\physical-register-integration-{debug,release}.trx: EVEX-enabled physical-record initialization throws IndexOutOfRangeException; the original worker fixture enabled no EVEX support.",
+        "scope": "Native consecutive physical-register initialization and encoding order, plus B176 mapped-register bound correction in reset and free verification. The existing fixture now explicitly covers both legacy and EVEX support."
+      },
       "trackedLocalSelection": {
         "debugPassed": 292,
         "releasePassed": 287,

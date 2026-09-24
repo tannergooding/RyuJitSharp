@@ -119,7 +119,7 @@ public sealed partial class LinearScan
         _registersWithConstants = RBM_NONE;
         clearAllNextIntervalRef();
         clearAllSpillCost();
-        for (var index = 0; index < _availableRegCount; index++)
+        for (var index = 0; (int)_regIndices[index] < _availableRegCount; index++)
         {
             var register = getRegisterRecord(_regIndices[index]);
             assert((register.assignedInterval is null) || register.assignedInterval.isConstant);
@@ -177,7 +177,7 @@ public sealed partial class LinearScan
     private void verifyFreeRegisters(regMaskTP registersToFree)
     {
 #if DEBUG
-        for (var index = 0; index < _availableRegCount; index++)
+        for (var index = 0; (int)_regIndices[index] < _availableRegCount; index++)
         {
             var register = _regIndices[index];
             var regRecord = getRegisterRecord(register);
