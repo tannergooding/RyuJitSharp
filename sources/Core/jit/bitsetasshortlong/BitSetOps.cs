@@ -43,7 +43,7 @@ public struct BitSetOps<TEnv, TBitSetTraits>
     {
         if (MaybeUninit(lhs))
         {
-            assert(!MaybeUninit(rhs));
+            assert(!MaybeUninit(rhs) || (TBitSetTraits.GetSize(env) == 0));
             lhs = MakeCopy(env, rhs);
         }
         else

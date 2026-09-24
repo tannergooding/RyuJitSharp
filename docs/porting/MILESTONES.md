@@ -66,7 +66,14 @@ tie-breaking rules, preserving early-liveness and address-exposure policies.
 It maintains tracked indices, reverse mappings and correctly sized local
 bitsets. Liveness initialization rebuilds each block's local sets at the new
 tracking epoch and clears memory use/def/live sets while retaining memory-havoc
-and SSA state. The complete liveness and allocation drivers remain unfinished.
+and SSA state.
+
+Per-block liveness generation follows depth-first graph order and collects
+local and memory use/definition sets, including promoted fields, address-exposed
+locals, P/Invoke frame roots and definitions that occur at calls rather than
+argument evaluation. Expression-tree and linear-IR policies retain their
+different partial-store and conditional-definition rules. Inter-block
+propagation and the complete liveness and allocation drivers remain unfinished.
 
 Register kills and GC-specific spills now preserve live values and advance
 fixed-register constraints. Temporary copy-register allocation retains the

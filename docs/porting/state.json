@@ -12,7 +12,7 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Advance Windows-x64 scalar minopts lowering, stack-level/throw-helper preparation, LSRA allocation and codegen initialization. Rationalization is committed and published as 619127a. Keep three disjoint implementation lanes moving: LSRA allocation, call/PInvoke lowering, and comparison/condition dependencies. The coordinator owns shared contracts and integrates returned packets. Collect handoffs on completion, record validation and commit state, and refill useful independent lanes without waiting for user reminders. Reuse workers with retained context; do not leave completed handoffs idle behind integration or mark unvalidated packets complete. Validate stable packet exports when in-flight shared-tree edits would otherwise block them; do not duplicate worker investigations.",
+      "scope": "Advance Windows-x64 scalar minopts lowering, stack-level/throw-helper preparation, LSRA allocation and codegen initialization. Rationalization is committed and published as 619127a. Keep three disjoint implementation lanes moving: LSRA reference construction, hardware-intrinsic containment, and liveness analysis. The coordinator owns block/call integration and shared contracts. Collect handoffs on completion, record validation and commit state, and refill useful independent lanes without waiting for user reminders. Reuse workers with retained context; do not leave completed handoffs idle behind integration or mark unvalidated packets complete. Validate stable packet exports when in-flight shared-tree edits would otherwise block them; do not duplicate worker investigations.",
       "doneWhen": [
         "Integrate complete required lowering and stack-level helpers, including outgoing frame space and exception-helper construction, without activating an incomplete node dispatcher.",
         "Port LSRA interval/reference foundations and native minimal-allocation dependencies; retain incomplete native bodies and do not invent a reduced allocator.",
@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "B178 unary initialization classification is committed as 3d78cf7. Candidate/frame preparation now includes the complete minopts EH prepass and native AMD64 frame decisions; its committed-source integration passes 199 Debug/177 Release. LSRA worker collected through turn 60 now owns the next complete generic BuildDef/use reference-construction prerequisite closure, not a reduced xarch BuildNode dispatcher. Liveness worker collected through turn 43 has authorization for three ILivenessPolicy defaults, complete lvaDispVarSet overloads, unary ret-buffer unwrapping and zero-sized BitSetOps.Assign; it continues complete per-block/per-node/MarkUseDef generation, excluding inter-block solving/DCE. Unsigned worker remains collected through turn 44 and idle. Parent completed native common block/scalar/call-result dispatch, generalized store coalescing, full LCLHEAP wiring and B179 helper unwrapping. The owned backend integration snapshot passes 596 Debug/586 Release, including actual helper arguments for sizes above Int32.MaxValue. Next close/review the remaining call/range/stack-level dependency packet before committing or activating the broad lowering driver; block GC-copy/decomposition paths still need integration review. Keep lowering/allocation inactive and native bodies retained: per-node references, dataflow, resolution and emission remain unfinished. Managed code size remains zero.",
+    "nextAction": "B178 is committed as 3d78cf7 and candidate/frame preparation as 995c61f. Complete per-block/per-node/MarkUseDef liveness generation plus B180/B181 now passes independent integration (369 Debug/342 Release), including the required CallArgs.PushLateBack support. Liveness worker collected through turn 45 owns complete DoLiveVarAnalysis/PerBlockAnalysis/MarkMustInitAndEHVars and authorized canonical EH-only successor, handler-union, diagnostic and raw descriptor-flag support; InterBlockLocalVarLiveness remains absent because its backward walkers/rewriting are not yet ported. LSRA worker collected through turn 62 is repairing the held generic BuildDef/use packet: xarch optional upper-vector restores and canonical interval diagnostics are corrected; exact multi-register type rules still need final handoff. Sol, last collected through turn 44, now owns full xarch HW-intrinsic containment and immediate/memory prerequisites in new partials, not the transformation dispatcher. Parent completed common block/scalar/call-result dispatch, coalescing, full LCLHEAP wiring, B179 zero-helper unwrapping and B182 INIT_VAL traversal. Broad snapshot passes 596 Debug/586 Release; final GC-copy/wrapper traversal additions separately pass 30 Debug/24 Release, covering 128-byte bulk-helper boundary, nullchecks and volatile mixed-layout decomposition. Next close remaining call/range/stack-level and hardware transformation dependencies before committing/activating broad lowering. Keep allocation/lowering drivers inactive and native bodies retained. Managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -41,6 +41,15 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "livenessUseDefGeneration": {
+        "debugPassed": 369,
+        "releasePassed": 342,
+        "skipped": 0,
+        "selection": ["Liveness*", "TrackedLocalSelectionTests", "BasicBlockMemorySetTests", "BitVecTests", "UseEdgeIteratorTests", "FlowGraphDfsTests", "LocalReferenceAccountingTests", "LinearScan*"],
+        "debugTests": "artifacts\\liveness-use-def-integration-debug.trx",
+        "releaseTests": "artifacts\\liveness-use-def-integration-release.trx",
+        "scope": "Complete per-block/per-node local and memory use-def generation, MarkUseDef, physical call definitions and variable-set diagnostics across LIR, fully threaded HIR and early-local policies. Canonical zero-sized bitset assignment and unary ret-buffer unwrapping are included; independent integration also requires CallArgs.PushLateBack. No inter-block solver, backward death/DCE walk or phase activation."
+      },
       "candidateFramePreparation": {
         "debugPassed": 199,
         "releasePassed": 177,
@@ -60,9 +69,11 @@
         "selection": ["*Lowering*", "*StoreCoalescingTests", "CallPlacementTests", "ClassLayoutTests", "BlockMorphTests", "RationalizationTests"],
         "debugTests": "artifacts\\block-lowering-integration-debug.trx",
         "releaseTests": "artifacts\\block-lowering-integration-release.trx",
+        "finalGcAndTraversalDebugTests": "artifacts\\block-gc-traversal-debug.trx",
+        "finalGcAndTraversalReleaseTests": "artifacts\\block-gc-traversal-release.trx",
         "snapshot": "artifacts\\block-lowering-integration",
         "failingBefore": ["artifacts\\block-common-before.trx", "artifacts\\block-helper-before.trx", "artifacts\\init-value-before.trx"],
-        "scope": "Whole-node block-to-scalar conversion, struct call stores, common block coalescing, full local-heap dispatch, and actual large memset/memzero/memcpy argument lowering including volatile barriers. Seven common-dispatch and two raw-zero helper regressions fail before their respective fixes. Broad call/range/stack-level dependencies remain uncommitted; these are constructed-LIR checks, not active-phase or machine-code parity."
+        "scope": "Whole-node block-to-scalar conversion, struct call stores, common block coalescing, full local-heap dispatch, and actual large memset/memzero/memcpy argument lowering including volatile barriers. Seven common-dispatch and two raw-zero helper regressions fail before their fixes. Final additional checks pass 30 Debug/24 Release: whole-block INIT_VAL traversal (two failing-before cases), GC bulk-copy helper selection at 128 bytes, implicit nullchecks before argument placement, and volatile GC/non-GC run decomposition. Broad call/range/stack-level and hardware transformation dependencies remain uncommitted; these are constructed-LIR checks, not active-phase or machine-code parity."
       },
       "livenessInitialization": {
         "debugPassed": 138,

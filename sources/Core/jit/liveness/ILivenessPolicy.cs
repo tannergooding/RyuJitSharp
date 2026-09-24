@@ -9,5 +9,11 @@ public interface ILivenessPolicy
 {
     static virtual bool IsEarly => false;
 
+    static virtual bool IsLIR => false;
+
+    static virtual bool SsaLiveness => false;
+
+    static virtual bool ComputeMemoryLiveness => false;
+
     static virtual bool TrackAddressExposedLocals => false;
 }

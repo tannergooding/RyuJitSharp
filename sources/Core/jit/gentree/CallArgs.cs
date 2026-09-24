@@ -364,6 +364,17 @@ public partial struct CallArgs
         return slot;
     }
 
+    /// <summary>Append an argument to the late argument list after the call has been morphed.</summary>
+    public void PushLateBack(CallArg arg)
+    {
+        ref var slot = ref _lateHead;
+        while (slot is not null)
+        {
+            slot = ref slot.LateNextRef;
+        }
+        slot = arg;
+    }
+
     /// <summary>Create a new argument at the front of the argument list.</summary>
     /// <param name="arg">The argument to add.</param>
     /// <returns>The created representative for the argument.</returns>

@@ -117,7 +117,7 @@ public partial class Compiler
             case GT_PUTARG_REG:
             case GT_PUTARG_STK:
             {
-                node = node.AsOp().Op1;
+                node = node.AsUnOp().Op1;
                 break;
             }
 

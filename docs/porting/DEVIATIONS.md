@@ -651,6 +651,13 @@ conversion scans local descriptors in local-number order rather than allocating
 native's temporary byte-per-local array; printed local names and order are
 unchanged.
 
+Liveness policies use static interface members in place of native template
+traits. Per-block scratch and stored sets retain independent managed storage.
+An empty bitset span is a valid initialized set when its trait environment has
+zero elements, even though the same representation also denotes uninitialized
+storage in nonempty environments; canonical assignment distinguishes those
+cases rather than bypassing liveness for zero-local methods.
+
 LIR node replacement uses the existing metadata-preserving constructors with
 `NodeThreading.LIR`, followed by `LIR.Range.ReplaceNode` to transfer the owning
 use and range links. Address-mode lowering takes its address alias by reference,
