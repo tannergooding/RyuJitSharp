@@ -2108,7 +2108,6 @@ public partial class Compiler
     {
         var printFlags = true; // always true..
         var msgLength = 35;
-        var prev = null as GenTree;
 
         if (tree._seqNum is not 0)
         {
@@ -2126,37 +2125,9 @@ public partial class Compiler
         }
         else
         {
-            prev = tree;
-
-            var hasSeqNum = true;
-            var dotNum = 0;
-
-            do
-            {
-                dotNum++;
-                prev = prev.Prev;
-
-                if ((prev is null) || (prev == tree))
-                {
-                    hasSeqNum = false;
-                    break;
-                }
-            }
-            while (prev._seqNum is 0);
-
-            // If we have an indent stack, don't add additional characters,
-            // as it will mess up the alignment.
-            var displayDotNum = hasSeqNum && (indentStack.Depth == 0);
-
-            if (displayDotNum)
-            {
-                assert(prev is not null);
-                jitprintf($"N{prev._seqNum:D3}.{dotNum:D2} ");
-            }
-            else
-            {
-                jitprintf("     ");
-            }
+            // An empty indentation stack is still present. Native only prints
+            // fractional sequence numbers when no indentation stack is supplied.
+            jitprintf("     ");
 
             if (tree._costsInitialized)
             {
@@ -2164,15 +2135,7 @@ public partial class Compiler
             }
             else
             {
-                if (displayDotNum)
-                {
-                    // Do better alignment in this case
-                    jitprintf("       ");
-                }
-                else
-                {
-                    jitprintf("          ");
-                }
+                jitprintf("          ");
             }
         }
 

@@ -12,11 +12,11 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Advance required global morph toward minopts/Tier-0-level code generation through its statement/block transformations and tree-morph dependencies. Local-reference expansion and driver bookkeeping are implemented. Optional stack-allocation analysis and early optimized flow-graph cleanup remain outside this batch.",
+      "scope": "Finish the in-progress Windows-x64 rationalization closure, including statement sequencing and hardware rewrites, then advance the scalar minopts path through lowering, LSRA and code generation. Global morph is committed and published. Use bounded Sol/Luna packets for independent backend work; keep shared contracts and integration coordinated.",
       "doneWhen": [
-        "Port complete required fgMorphBlocks, fgMorphStmts and fgMorphTree dependency closures, beginning with no-return-call statement repair.",
-        "Preserve argument ABI, whole-node replacement ownership, last-use flags, promotion state and diagnostic ordering.",
-        "Continue required local/global morph, lowering and code generation rather than filling optional adjacent optimization phases.",
+        "Complete Rationalizer.DoPhase and its started Windows-x64 dependencies, preserving LIR ownership, execution order, argument ABI and parameter-register mapping.",
+        "Resolve rationalization-specific failures and dump differences; distinguish earlier importer and EH-funclet gaps from this phase.",
+        "Select separable lowering, LSRA and code-generation packets for executable scalar minopts methods rather than filling optional neighboring phases.",
         "Validate and retire complete definitions; commit coherent portions and publish execution milestones without stopping at them."
       ],
       "validation": [
@@ -26,13 +26,14 @@
       "deferred": [
         "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
         "Optional general assertion propagation and optimization-only allocation analyses unless required by the active minopts dependency closure.",
+        "Full EH-funclet and hardware-import parity are subsequent execution-capability packets, not gates on the first scalar minopts backend path.",
         "Non-xarch hardware-intrinsic folding and hashBv bulk/set algebra and iterator APIs.",
         "The preexisting fgVerifyHandlerTab diagnostic stub and broader EH verification, outside the cleanup algorithm.",
         "Patchpoint code generation, metadata generation and actual OSR execution.",
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Continue the required post-morph pipeline toward minopts code generation, starting with Rationalizer.DoPhase and its preserved native WIP. Global morph is active: all twenty existing minopts corpus methods complete the phase, with nineteen exact native phase sections and resulting IR; FoldHardware differs at import because of the existing HWI importer gap. Managed code size remains zero. Do not pursue optional global assertion/range analysis: all three local morph application sites now use the explicit local dispatcher, and mixed-mode native bodies remain in the residual tree. The nine former morph drafts are normal source and must not also be included through the old probe target. Validate whole phases or substantial runnable sections, not individual helpers. Preserve the native rationalize.cpp unstaged deletion while reconciling the remaining WIP.",
+    "nextAction": "Commit the validated rationalization boundary separately from backend WIP, then integrate the bounded Sol lowering/stack-level and Luna LSRA packets. Rationalization completes twenty minopts phase sections with seventeen exact resulting IR sections; remaining differences are earlier hardware import and EH-funclet ordering. Shared IRegAlloc contracts and backend activation belong to the coordinator. Lowering traversal, interval allocation/resolution, code emission and metadata remain required before scalar managed execution. Do not activate incomplete drivers or make optional optimization/EH/HWI parity prerequisites. The native call-rewrite deletion is reconciled and protected with its original index distinction in localRecovery.rationalizationNativeBeforeRetirement.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -40,6 +41,29 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "rationalizationActivation": {
+        "debugPassed": 152,
+        "releasePassed": 144,
+        "skipped": 0,
+        "newCases": 6,
+        "selection": ["RationalizationTests", "UseEdgeIteratorTests", "FlowGraphHelperTests", "MorphTreeSupportTests"],
+        "debugTests": "artifacts\\rationalization-boundary-debug.trx",
+        "releaseTests": "artifacts\\rationalization-boundary-release.trx",
+        "nativeAotBuild": "artifacts\\rationalization-publish.log",
+        "managedCapture": "artifacts\\rationalization-dump-managed-minopts",
+        "nativeCapture": "artifacts\\implicit-byref-native-minopts",
+        "phaseComparison": "artifacts\\rationalization-phase-comparison.json",
+        "methodsCompleted": 20,
+        "exactPhaseMatches": 20,
+        "exactIRMatches": 17,
+        "unmatchedMethods": ["FoldHardware: preexisting hardware-intrinsic import", "SynchronizedReturn: preceding EH-funclet block ordering", "GenericCatch: preceding EH-funclet block ordering"],
+        "managedCodeSize": 0,
+        "hardwareReview": "All 256 ternary controls match native use flags; broadcast checks retain tuple and per-instruction EVEX/ISA restrictions.",
+        "nativeDefinitionsRetired": ["Rationalizer parameter tracking and rewriting", "Rationalizer debug sanity checks", "SideEffectSet", "Compiler::fgGetFirstNode", "Compiler::FindParameterRegisterLocalMappingByRegister", "GenTree::NodeOrContainedOperandsMayThrow", "GenTree::OperRequiresGlobRefFlag", "GenTree::OperEffects"],
+        "nativeBodiesRetained": ["Mixed-target hardware rationalization and shuffle construction", "ARM64 mask reductions and SubLshDiv rewriting"],
+        "deviations": ["D002 managed ancestor and ABI mapping storage", "D002 generated instruction metadata and mandatory dump indentation stack", "D003 non-xarch hardware paths"],
+        "optimizedParameterMapping": "Source-reconciled; the minopts capture does not exercise optimized parameter remapping."
+      },
       "globalMorphActivation": {
         "debugPassed": 217,
         "releasePassed": 210,
@@ -1646,6 +1670,10 @@
     ]
   },
   "localRecovery": {
+    "rationalizationNativeBeforeRetirement": {
+      "commit": "44527aecc86b8323408eb795d6c70dff2f65f921",
+      "ref": "refs/porting/snapshots/rationalization-boundary"
+    },
     "scalarFoldingBeforeLayoutCleanup": {
       "commit": "7aebd76569b1a96d141746b6f5edb96caa694fdf",
       "ref": "refs/porting/snapshots/scalar-folding-before-style-cleanup"

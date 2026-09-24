@@ -7,4 +7,14 @@ namespace RyuJitSharp;
 
 public struct ParameterRegisterLocalMapping
 {
+    public AbiPassingSegment RegisterSegment;
+    public int LclNum;
+    public int Offset;
+
+    public ParameterRegisterLocalMapping(AbiPassingSegment segment, int lclNum, int offset)
+    {
+        RegisterSegment = segment;
+        LclNum = lclNum;
+        Offset = offset;
+    }
 }

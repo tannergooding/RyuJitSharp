@@ -1080,6 +1080,16 @@ public sealed partial class BasicBlock : LIR.Range
         return (bbFlags & flag) != 0;
     }
 
+    public void MakeLir(GenTree? firstNode, GenTree? lastNode)
+    {
+        assert(!IsLIR);
+        assert((firstNode is null) == (lastNode is null));
+        assert((firstNode == lastNode) || ((firstNode is not null) && (lastNode is not null) && firstNode.Precedes(lastNode)));
+        _firstNode = firstNode;
+        _lastNode = lastNode;
+        SetFlags(BBF_IS_LIR);
+    }
+
     /// <summary>Whether control could flow from this block to an EH successor.</summary>
     public bool HasPotentialEHSuccs(Compiler comp)
     {

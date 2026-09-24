@@ -417,14 +417,13 @@ public partial class GenTree
             if (value)
             {
                 _flags |= GTF_CONTAINED;
+                assert(IsContained);
             }
             else
             {
                 _flags &= ~GTF_CONTAINED;
                 IsRegOptional = false;
             }
-
-            assert(IsContained == value);
         }
     }
 

@@ -43,6 +43,21 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
     /// <summary>Does this HWI node have memory load or store semantics?</summary>
     public bool IsMemoryLoadOrStore => IsMemoryLoad() || IsMemoryStore(out _);
 
+    public bool IsBroadcastScalar
+    {
+        get
+        {
+#if TARGET_XARCH
+            return HWIntrinsicId is NI_X86Base_LoadAndDuplicateToVector128 or NI_X86Base_MoveAndDuplicate or
+                NI_AVX_BroadcastScalarToVector128 or NI_AVX_BroadcastScalarToVector256 or
+                NI_AVX2_BroadcastScalarToVector128 or NI_AVX2_BroadcastScalarToVector256 or
+                NI_AVX512_BroadcastScalarToVector512;
+#else
+            return false;
+#endif
+        }
+    }
+
     /// <summary>Does this node have memory store or barrier semantics?</summary>
     public bool IsMemoryStoreOrBarrier
     {

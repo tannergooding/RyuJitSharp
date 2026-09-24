@@ -19,6 +19,19 @@ not become prerequisites merely because they are adjacent.
 Do not expand synchronization into implementing every currently unported phase:
 record those boundaries accurately and reconcile existing implementations.
 
+The central execution path is rationalization, lowering, LSRA, then code
+generation and emission. Start with executable scalar minopts methods; add
+calls, GC reporting and EH as their required backend support becomes available.
+Finish dependency closures already in progress, but do not make complete parity
+in optional optimizations or unrelated corpus features a prerequisite for the
+next backend stage. Keep those differences explicit rather than hiding them.
+
+Use a few Sol/Luna subagents for bounded translation and reconciliation packets
+that benefit from separate context or parallel implementation. Keep dependency
+selection, shared contracts, integration and parity review under the coordinating
+agent. Assign concrete file ownership and completion boundaries; reconcile shared
+interfaces explicitly instead of serializing all work or duplicating exploration.
+
 Work in substantial dependency-coherent batches during both synchronization and
 new porting. Use source spot checks and localized incremental builds between
 milestones, not exhaustive new fixtures or repeated full validation per helper.

@@ -23308,7 +23308,7 @@ public partial class Compiler
         return intrinsic;
     }
 
-    private bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa)
+    internal bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa)
     {
         _ = compExactlyDependsOn(isa);
         return opts.compSupportsISA.HasInstructionSet(isa);

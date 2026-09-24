@@ -56,9 +56,9 @@ public partial class Compiler
                 }
             }
 
-            if (tree.Oper.IsUnary && (tree.AsOp().Op1 is not null))
+            if (tree.Oper.IsUnary && (tree.AsUnOp().Op1 is not null))
             {
-                expectedPrevTree = tree.AsOp().Op1;
+                expectedPrevTree = tree.AsUnOp().Op1;
             }
             else if (tree.Oper.IsBinary && (tree.AsOp().Op1 is not null))
             {

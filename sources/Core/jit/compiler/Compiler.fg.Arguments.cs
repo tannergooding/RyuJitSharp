@@ -10,7 +10,7 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    private GenTreeCall fgMorphArgs(GenTreeCall call)
+    internal GenTreeCall fgMorphArgs(GenTreeCall call)
     {
         var flagsSummary = GTF_EMPTY;
         var remorphing = call.Args.AreArgsComplete;

@@ -61,6 +61,8 @@ public interface ICodeGen
 #endif
 
 #if TARGET_XARCH
+    bool IsEmbeddedBroadcastEnabled(instruction ins, GenTree operand);
+
     regMask SRBM_ALLMASK { get; }
 
     regMask SRBM_MSK_CALLEE_TRASH { get; }

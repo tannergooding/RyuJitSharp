@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 namespace RyuJitSharp;
 
-public sealed class CodeGen : ICodeGen
+public sealed partial class CodeGen : ICodeGen
 {
 #if LATE_DISASM
     private Disassembler _cgDisasm;

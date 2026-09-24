@@ -579,6 +579,23 @@ Where native hashes a `ClassLayout` address, it uses stable managed reference
 identity instead; the hash is not printed and is used only to detect tree
 changes for diagnostics.
 
+Rationalization uses insertion-ordered lists for parameter uses and incoming
+register mappings, preserving native bottom-up iteration. A mapping stores its
+classified ABI segment by value rather than holding a native pointer into the
+parameter's ABI storage. Ancestor access uses the existing managed stack's
+struct enumerator, without copying or reversing the traversal stack.
+
+Xarch ternary intrinsic input-use flags are computed from the control byte's
+truth table; they agree with the native decomposition table for all 256 controls.
+Mask sizes, broadcast tuple compatibility and EVEX instruction flags are generated
+from the existing native instruction headers. Broadcast eligibility currently
+reads the compiler's EVEX capability directly, retaining per-instruction ISA
+restrictions, until the emitter's corresponding state is implemented.
+
+Tree dump callers always supply an indentation stack. An empty stack still
+corresponds to a non-null native stack, so it must not trigger the fractional
+sequence labels reserved for native calls without a stack.
+
 ### D003: Deferred non-Windows-x64-only paths
 
 **Status:** accepted scoped deferral; not a successful execution/parity result.
@@ -625,6 +642,14 @@ evaluation/scheduling and does not activate call morphing.
 `Compiler.gtHashValue` explicitly throws for ARM64 scalable-vector constants
 pending their representation support. Its native body remains in the residual
 tree as the deferred branch's reference.
+
+`Rationalizer.RewriteHWIntrinsic`, scalar intrinsic handling in `RewriteNode`,
+and `RewriteSubLshDiv` explicitly throw for their unported ARM64 mask-reduction
+and arithmetic rewrites. Non-xarch constant/variable shuffle factories and
+target-specific hardware immediate/MSB rationalization paths likewise throw.
+`GenTree.GetIntegralVectorConstElement` defers ARM64 scalable-vector storage.
+The mixed-target native hardware bodies remain in the residual tree; this
+batch establishes Windows-x64 rationalization, not other-target execution.
 
 ### D004: Separate local assertion application from global analysis
 

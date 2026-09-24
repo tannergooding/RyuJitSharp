@@ -10806,7 +10806,7 @@ public partial class Compiler
         return new FlowGraphDfsTree(this, postOrder, preOrderIndex, hasCycle, useProfile);
     }
 
-    private List<BasicBlock> fgGetAllSuccessors(BasicBlock block, bool useProfile = false)
+    internal List<BasicBlock> fgGetAllSuccessors(BasicBlock block, bool useProfile = false)
     {
         var successors = new List<BasicBlock>();
 
@@ -11964,7 +11964,7 @@ public partial class Compiler
     /// <param name="isLIR">whether the sequencing is being done for LIR. If so, the GTF_REVERSE_OPS flag will be cleared on all nodes.</param>
     /// <returns>The first node to execute in the sequenced tree.</returns>
     /// <remarks>Also sets the sequence numbers for dumps. The last and first node of the resulting "range" will have their "gtNext" and "gtPrev" links set to "null".</remarks>
-    private GenTree fgSetTreeSeq(GenTree tree, bool isLIR = false)
+    internal GenTree fgSetTreeSeq(GenTree tree, bool isLIR = false)
     {
 #if DEBUG
         if (isLIR)
@@ -15290,8 +15290,49 @@ public partial class Compiler
     // TODO: Port phase - fgSearchImprovedLayout
     public PhaseStatus fgSearchImprovedLayout() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port phase - fgSetBlockOrder
-    public PhaseStatus fgSetBlockOrder() => PhaseStatus.MODIFIED_NOTHING;
+    public PhaseStatus fgSetBlockOrder()
+    {
+        JITDUMP("*************** In fgSetBlockOrder()\n");
+#if DEBUG
+        BasicBlock.s_nMaxTrees = 0;
+#endif
+        if (fgHasCycleWithoutGCSafePoint())
+        {
+#if TARGET_WASM
+            JITDUMP("NOTE: Method requires GC polls -- Wasm does not insert these yet\n");
+#else
+            JITDUMP("Marking method as fully interruptible\n");
+            assert(codeGen is not null);
+            codeGen.Interruptible = true;
+#endif
+        }
+
+        foreach (var block in Blocks)
+        {
+            fgSetBlockOrder(block);
+        }
+#if DEBUG
+        JITDUMP($"The biggest BB has {BasicBlock.s_nMaxTrees,4} tree nodes\n");
+#endif
+        return PhaseStatus.MODIFIED_EVERYTHING;
+    }
+
+    public void fgSetBlockOrder(BasicBlock block)
+    {
+        foreach (var statement in block.Statements)
+        {
+            fgSetStmtSeq(statement);
+            if (statement.NextStmt is null)
+            {
+                noway_assert(block.LastStmt == statement);
+                break;
+            }
+
+            assert(statement.PrevStmt is not null);
+            assert(statement == block.FirstStmt ? statement.PrevStmt.NextStmt is null : statement.PrevStmt.NextStmt == statement);
+            assert(statement.NextStmt.PrevStmt == statement);
+        }
+    }
 
     // TODO: Port phase - fgSsaBuild
     public PhaseStatus fgSsaBuild() => PhaseStatus.MODIFIED_NOTHING;

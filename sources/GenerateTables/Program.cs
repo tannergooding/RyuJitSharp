@@ -1005,6 +1005,80 @@ public enum instruction
     INS_count = INS_none,
 }
 """);
+
+        var maskBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
+            if (!inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            var maskSize = 0;
+            foreach (var flag in parts[^1].Split('|', StringSplitOptions.TrimEntries))
+            {
+                if (flag.StartsWith("KMask_Base", StringComparison.Ordinal))
+                {
+                    maskSize = int.Parse(flag.AsSpan("KMask_Base".Length), CultureInfo.InvariantCulture);
+                    if (maskSize is not 1 and not 2 and not 4 and not 8 and not 16)
+                    {
+                        throw new InvalidDataException($"Unexpected mask size: '{line}'");
+                    }
+                }
+            }
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {maskSize}, // INS_{parts[0].Trim()}");
+        });
+
+        var broadcastBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
+            if (!inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            var tupleType = parts[^2].Trim();
+            var supportsBroadcast = tupleType is "INS_TT_FULL" or "INS_TT_HALF";
+            var flags = parts[^1].Split('|', StringSplitOptions.TrimEntries);
+            if (supportsBroadcast && Array.Exists(flags, flag => flag is "Encoding_EVEX_APX_ONLY" or "INS_FLAGS_HasNDD" or "INS_FLAGS_HasNF"))
+            {
+                throw new InvalidDataException($"APX broadcast metadata needs explicit support: '{line}'");
+            }
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {(supportsBroadcast ? "true" : "false")}, // INS_{parts[0].Trim()}");
+        });
+
+        var evexBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
+            if (inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal))
+            {
+                var supportsEvex = parts[^1].Split('|', StringSplitOptions.TrimEntries).Contains("Encoding_EVEX");
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {(supportsEvex ? "true" : "false")}, // INS_{parts[0].Trim()}");
+            }
+        });
+
+        _ = Directory.CreateDirectory(@"Outputs\jit\codegen");
+        File.WriteAllText(@"Outputs\jit\codegen\CodeGen.InstructionInfo.generated.cs", $$"""
+// Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+using System;
+
+namespace RyuJitSharp;
+
+public sealed partial class CodeGen
+{
+#if TARGET_XARCH
+    private static ReadOnlySpan<byte> s_kMaskBaseSizes => [
+{{maskBuilder}}
+    ];
+
+    private static ReadOnlySpan<bool> s_broadcastCompatible => [
+{{broadcastBuilder}}
+    ];
+
+    private static ReadOnlySpan<bool> s_evexCompatible => [
+{{evexBuilder}}
+    ];
+#endif
+}
+""");
     }
 
     private static void GenerateJitConfigValues()

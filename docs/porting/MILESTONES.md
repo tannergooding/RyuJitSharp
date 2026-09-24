@@ -4,12 +4,30 @@ A newest-first history of what the port can do and how it has developed.
 
 The primary target is Windows x64. The port can import methods, expand inline
 calls, lower heap allocations, simplify local accesses and construct internal
-method entry/exit paths, but does not yet generate native code. Remaining work
-includes hardware-intrinsic import, rationalization, lowering and code generation.
+method entry/exit paths, and rationalize expression trees into linear IR, but does
+not yet generate native code. Remaining work includes hardware-intrinsic import,
+lowering, register allocation and code generation.
 
 The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
+
+## 2026-09-24: Rationalization and linear IR
+
+Rationalization now runs after statement sequencing, preserving execution order
+while removing tree-only wrappers, unused reads and side-effect-free comma
+operands. Call arguments retain their evaluation order without keeping redundant
+tree ownership. Unsupported intrinsics can be rewritten back to managed calls,
+including struct return buffers and mask/vector conversions.
+
+The phase includes Windows-x64 shuffle and mask rewrites, side-effect and alias
+checks, and incoming-parameter register mappings. Instruction mask and broadcast
+metadata comes from the existing native-header generator. Linear IR dumps retain
+native sequence-label alignment for inserted IL-offset markers.
+
+The next execution boundary is scalar minopts lowering, register allocation and
+code emission. Earlier hardware-import and EH-funclet differences remain open;
+ARM64-specific rationalization and non-xarch shuffle construction remain deferred.
 
 ## 2026-09-24: Global morph and outgoing-call ABI
 

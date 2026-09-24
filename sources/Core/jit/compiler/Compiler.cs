@@ -197,7 +197,7 @@ public partial class Compiler
     /// <summary>Register allocator</summary>
     private IRegAlloc? _regAlloc;
 
-    public Stack<ParameterRegisterLocalMapping>? _paramRegLocalMappings;
+    public List<ParameterRegisterLocalMapping>? _paramRegLocalMappings;
 
     public CORINFO_ASYNC_INFO asyncInfo;
 
@@ -2532,7 +2532,7 @@ public partial class Compiler
     ///   <para>If the size of the struct is already known call <see cref="structMightRepresentSimdType" /> to determine if this api needs to be called.</para>
     ///   <para>The type handle passed here can only be used in a subset of JIT-EE calls since it may be called by promotion during AOT of a method that does not version with SPC. See CORINFO_TYPE_LAYOUT_NODE for the contract on the supported JIT-EE calls.</para>
     /// </remarks>
-    private unsafe var_types getBaseTypeAndSizeOfSimdType(CORINFO_CLASS_HANDLE typeHnd, out int sizeBytes)
+    internal unsafe var_types getBaseTypeAndSizeOfSimdType(CORINFO_CLASS_HANDLE typeHnd, out int sizeBytes)
     {
         sizeBytes = 0;
 
