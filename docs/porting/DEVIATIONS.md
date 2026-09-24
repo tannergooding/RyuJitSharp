@@ -226,6 +226,16 @@ binary node factories preserve `GT_PATCHPOINT`/`GT_PATCHPOINT_FORCED` shapes and
 call flags; shared-counter lifetime, branch layout and probabilities are unchanged
 (B118). This does not supply patchpoint code generation or OSR metadata.
 
+Indirect-call spilling keeps managed byrefs to owning use slots and compares
+them with `Unsafe.AreSame`, preserving native spill order while replacing nodes.
+The shared transformer receives its non-null original call at construction;
+CFG blocks remain nullable until their corresponding creation steps establish
+the native invariants. Fat-pointer expansion preserves the tagged two-word tuple,
+call cloning, argument placement and native 80/20 block versus 50/50 edge weights
+(B119/B121). The phase stays disabled pending complete guarded devirtualization.
+The inferred-local type correction in B120 restores native behavior, rather than
+introducing a managed deviation.
+
 Phi definitions own copied SSA-number arrays and expose readonly memory.
 Reaching-VN traversal uses a managed stack and membership set, preserving native
 push/pop order, conservative SSA lookup, duplicate suppression, cycles and early

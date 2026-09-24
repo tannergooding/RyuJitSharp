@@ -12,28 +12,28 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port regular and partial-compilation patchpoint transformation, preserving native counter sharing, CFG shape, profile weights and IR.",
+      "scope": "Port indirect-call transformation in dependency-coherent batches: shared spilling/CFG support and fat-pointer expansion, then guarded devirtualization and phase activation.",
       "doneWhen": [
-        "Complete PatchpointTransformer and fgTransformPatchpoints, including both patchpoint kinds and method eligibility gates.",
-        "Reuse existing block splitting, EH extension, edge, statement and local factories.",
-        "Keep fgInline disabled until the remaining B112 prerequisites are complete.",
-        "Validate shared counters, counter initialization, branch probabilities, partial-compilation replacement and gating; retire complete native functions and commit."
+        "Complete shared Transformer and FatPointerCallTransformer, preserving evaluation order, owning uses, EH boundaries, native weights and hidden-argument placement.",
+        "Complete guarded devirtualization, including multiple/exact guesses, return placeholders and chained calls, with its required cloning and call-target helpers.",
+        "Keep fgTransformIndirectCalls disabled until both specializations are complete; keep fgInline disabled until all remaining B112 prerequisites are complete.",
+        "Validate and commit complete dependency-coherent portions; retire only completed native definitions."
       ],
       "validation": [
-        "Cover multiple regular patchpoints, negative/zero/positive initial counters and forced patchpoints without counter allocation.",
-        "Run related Debug/Release flow-graph cases; extend only for concrete failures.",
-        "Recapture NativeAOT/corpus after phase activation; explicitly retain the Tier0/OSR codegen frontier."
+        "Cover fat-pointer void/value calls, generic virtual lookup spilling, side-effect order, cloned ownership, tuple loads and CFG/profile shape.",
+        "Cover guarded call checks, fallback, return repair and chaining with focused constructed IR and controlled EE cases in Debug and Release.",
+        "Recapture NativeAOT/corpus only after phase activation; do not claim executed fat-pointer/GDV or codegen parity from native fallback."
       ],
       "deferred": [
         "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
         "General local assertion propagation, block morph and the full global-morph phase.",
         "Non-xarch hardware-intrinsic folding, hashBv bulk/set algebra and iterator APIs, and fgInline activation.",
-        "Indirect-call transformation and post-import cleanup, which still gate successful inline-phase activation.",
+        "Post-import cleanup, which still gates successful inline-phase activation.",
         "Patchpoint code generation, metadata generation and actual OSR execution.",
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Patchpoint transformation is complete (B118). Continue with indirect-call transformation and post-import cleanup before enabling fgInline (B112). Actual patchpoint metadata/codegen and OSR execution remain unavailable. B117 records native single-arm qmark likelihood behavior retained by the port. Hash-vector bulk/set algebra and iterator APIs remain native (B115). FoldHardware records the separate impHWIntrinsic stub boundary, not vector folding execution parity. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
+    "nextAction": "Shared indirect-call spilling/CFG support and fat-pointer expansion are complete (B119), but fgTransformIndirectCalls remains disabled. Complete candidate-call cloning and virtual-vtable call-target prerequisites, then all guarded-devirtualization paths before activating the phase. Post-import cleanup still gates fgInline (B112). B120 fixes inferred local normalization; B121 preserves native fat-pointer profile inconsistency. No new NativeAOT/corpus capture until phase activation. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -807,6 +807,21 @@
         "osrExecutionEstablished": false,
         "codegenParity": "not-available"
       },
+      "indirectCallSupport": {
+        "managedSourceCommit": "8cb16e0edce449537af8aee3c3c6030b8f2c600d",
+        "debugPassed": 90,
+        "releasePassed": 90,
+        "newCases": 12,
+        "normalizationRegressionFailuresBeforeFix": 4,
+        "skipped": 0,
+        "nativeDefinitionsRetired": 23,
+        "phaseActivated": false,
+        "nativeAotRecaptured": false,
+        "debugTests": "artifacts\\indirect-support-debug.trx",
+        "releaseTests": "artifacts\\indirect-support-release.trx",
+        "nativeExecutionParityEstablished": false,
+        "remaining": ["GuardedDevirtualizationTransformer", "gtCloneCandidateCall", "fgExpandVirtualVtableCallTarget", "outer dispatcher and phase"]
+      },
       "nativeAotPublish": "passed-after-patchpoint-transformation",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "six-of-eleven-import-prefixes-equal-four-inline-differences-and-one-vector-importer-gap",
@@ -1238,9 +1253,25 @@
       "commit": "8494ea29bcc33f92776b78df0dc36d3ebf60465e",
       "indexCommit": "f2c688c5de079bfcee36d417ffa7660e7ccf6da4",
       "ref": "refs/porting/snapshots/native-ledger-patchpoint-transformation"
+    },
+    "indirectCallSupportManagedSource": {
+      "commit": "8cb16e0edce449537af8aee3c3c6030b8f2c600d",
+      "ref": "refs/porting/snapshots/indirect-call-support-source"
+    },
+    "indirectCallSupportNativeResidual": {
+      "commit": "2250c881668afc2c9da1df86ed5dc710f5362281",
+      "indexCommit": "19e92150d10f514ce9c11025d647821ffb97cd84",
+      "ref": "refs/porting/snapshots/native-ledger-indirect-call-support"
     }
   },
   "sourceMap": [
+    {
+      "area": "indirect-call-transformation",
+      "native": ["src\\coreclr\\jit\\indirectcalltransformer.cpp"],
+      "csharp": ["sources\\Core\\jit\\indirectcalltransformer", "sources\\Core\\jit\\compiler\\Compiler.fg.cs"],
+      "reconciledCommit": null,
+      "status": "Shared transformer and fat-pointer specialization ported; guarded devirtualization and phase activation remain (B119)."
+    },
     {
       "area": "compiler-driver",
       "native": ["src\\coreclr\\jit\\compiler.cpp", "src\\coreclr\\jit\\compiler.h", "src\\coreclr\\jit\\compiler.hpp"],

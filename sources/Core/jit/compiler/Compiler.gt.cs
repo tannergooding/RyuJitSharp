@@ -8657,7 +8657,7 @@ public partial class Compiler
         {
             type = varDsc.Type;
 
-            if (varDsc.lvNormalizeOnLoad)
+            if (!varDsc.lvNormalizeOnLoad)
             {
                 type = type.ActualType;
             }
@@ -12497,6 +12497,13 @@ public partial class Compiler
         return gtNewSimdHWIntrinsicNode(type, NI_Vector_WithUpper, simdBaseType, simdSize, op1, op2);
     }
 #endif
+
+    public Statement gtCloneStmt(Statement stmt)
+    {
+        var exprClone = gtCloneExpr(stmt.RootNode);
+        assert(exprClone is not null);
+        return gtNewStmt(exprClone, stmt.DebugInfo);
+    }
 
     public Statement gtNewStmt(GenTree expr)
     {
