@@ -25,6 +25,11 @@ feeding a conditional branch directly or materializing a boolean for other
 consumers. Branch replacement preserves logical identity; intervening
 instructions prevent unsafe reuse of flags.
 
+Fused multiply helpers fold scalar negations and contained vector sign masks
+into the native add/subtract and negated variants. They preserve scalar
+upper-lane behavior and interpret vector sign masks using the operation's
+floating-point type rather than the bitwise operand's type.
+
 Array and string lengths, multidimensional lengths and lower bounds become
 loads at the runtime's native offsets, preserving null faults. Bounds checks
 use the native immediate and memory-operand containment rules.
