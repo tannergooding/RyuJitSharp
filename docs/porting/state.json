@@ -12,26 +12,27 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port and activate the complete Windows-x64 HWI folding dispatcher using the completed evaluation, mask, conversion and metadata prerequisites.",
+      "scope": "Port root class-initialization construction needed by morph initialization, without activating the incomplete inliner.",
       "doneWhen": [
-        "Preserve creation, unary/binary/ternary folding, conversion cancellation, scalar upper lanes and vector/mask identities.",
-        "Preserve native node reuse/replacement, side-effect ordering, morph marking and constant VN refresh.",
-        "Keep non-xarch dispatcher activation deferred rather than introducing partial target behavior.",
-        "The selected Debug/Release checks pass and complete functions are committed with their native retirement and checkpoint."
+        "Complete fgInitThisClass for direct and runtime-context lookups, including the NativeAOT-specific ReadyToRun helper paths.",
+        "Reuse existing shared-cctor, runtime-context and helper construction, preserving argument order and generic-context reporting.",
+        "Keep fgInline and fgMorphInit disabled until their remaining prerequisites are complete.",
+        "Validate focused controlled-EE cases in Debug and Release, retire complete native functions, and commit the documented batch."
       ],
       "validation": [
-        "Cover dispatcher behavior in the existing HWI/scalar fixture and replay the old dispatcher to establish regression evidence.",
-        "Run one HWI/scalar selection in Debug and Release.",
-        "Publish NativeAOT and recapture native/managed corpus with an HWI folding case before claiming the reachable behavior milestone."
+        "Cover direct/shared class lookup and all three CoreCLR generic-context forms, plus NativeAOT helper/token selection.",
+        "Run the smallest related Debug/Release selection.",
+        "Recapture NativeAOT/corpus when a completed phase is activated, not for unreachable helper-only changes."
       ],
       "deferred": [
         "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
         "General local assertion propagation, block morph and the full global-morph phase.",
-        "Non-xarch hardware-intrinsic folding and fgInline activation.",
+        "Non-xarch hardware-intrinsic folding, hashBv storage and fgInline/fgMorphInit activation.",
+        "Early qmark expansion, patchpoint/indirect-call transformation and post-import cleanup, which still gate successful inline-phase activation.",
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Windows-x64 expression folding, including the full HWI dispatcher (B111), is complete. Audit fgInline activation against its remaining phase prerequisites; do not activate incomplete phases. The new FoldHardware corpus probe records the separate impHWIntrinsic stub boundary, not vector folding execution parity. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
+    "nextAction": "Inline activation audit B112 found prerequisite phase stubs despite complete Windows-x64 expression folding. Port fgInitThisClass first, then the required hashBv storage and complete morph initialization; retain the early-transform/post-import gates before enabling fgInline. FoldHardware records the separate impHWIntrinsic stub boundary, not vector folding execution parity. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
