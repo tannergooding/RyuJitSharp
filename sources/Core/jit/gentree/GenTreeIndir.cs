@@ -171,7 +171,7 @@ public class GenTreeIndir : GenTreeOp
         }
     }
 
-    public int Size => ValueSize.ExactSize;
+    public uint Size => ValueSize.ExactSize;
 
     public ValueSize ValueSize
     {

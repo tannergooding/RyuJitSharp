@@ -292,6 +292,35 @@ internal static unsafe class BlockMorphTests
         });
     }
 
+    [TestCase(false, 0x8000_0000u, false)]
+    [TestCase(false, 0xffff_fff0u, true)]
+    [TestCase(true, 0x8000_0000u, false)]
+    [TestCase(true, 0xffff_fff0u, true)]
+    public static void LargeUnsignedBlockMorphKeepsFullLayoutAndBlockStore(bool copy, uint size, bool minOpts)
+    {
+        WithCompiler(compiler => {
+            var layout = new ClassLayout(size);
+            var destination = compiler.gtNewLclvNode(TYP_BYREF, 1);
+            GenTree source;
+            if (copy)
+            {
+                var sourceAddress = compiler.gtNewLclvNode(TYP_BYREF, 2);
+                source = new GenTreeBlk(TYP_STRUCT, sourceAddress, layout);
+            }
+            else
+            {
+                source = compiler.gtNewIconNode(TYP_INT, 0);
+            }
+            var store = compiler.gtNewStoreBlkNode(destination, source, layout);
+            var result = copy ? compiler.fgMorphCopyBlock(store) : compiler.fgMorphInitBlock(store);
+
+            Assert.That(result, Is.SameAs(store));
+            Assert.That(store.Layout.Size, Is.EqualTo(size));
+            Assert.That(store.Data, Is.SameAs(source));
+            Assert.That(store.Size, Is.EqualTo(size));
+        }, minOpts);
+    }
+
     private static void SetPromotedDestination(Compiler compiler)
     {
         ref var destination = ref compiler.lvaTable[0];
@@ -311,7 +340,7 @@ internal static unsafe class BlockMorphTests
         }
     }
 
-    private static void WithCompiler(Action<Compiler> action)
+    private static void WithCompiler(Action<Compiler> action, bool minOpts = false)
     {
 #if DEBUG
         using var tls = new JitTls(null);
@@ -320,7 +349,7 @@ internal static unsafe class BlockMorphTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.opts.SetMinOpts(minOpts);
         compiler.lvaTable = new LclVarDsc[3];
         compiler.lvaCount = 3;
         compiler.lvaRefCountState = RCS_EARLY;

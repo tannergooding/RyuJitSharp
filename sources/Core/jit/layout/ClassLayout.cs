@@ -19,7 +19,7 @@ public sealed class ClassLayout
 
     // Size of the layout in bytes (as reported by ICorJitInfo.getClassSize/getHeapClassSize for non "block" layouts).
     // For "block" layouts this may be 0 due to 0 being a valid size for cpblk/initblk.
-    private readonly int _size;
+    private readonly uint _size;
 
     private int _bitfield;
 
@@ -40,7 +40,7 @@ public sealed class ClassLayout
     private string _shortName;
 #endif
 
-    public ClassLayout(int size)
+    public ClassLayout(uint size)
     {
         _size = size;
         _type = TYP_STRUCT;
@@ -59,7 +59,11 @@ public sealed class ClassLayout
 #endif
     }
 
-    public unsafe ClassLayout(CORINFO_CLASS_HANDLE classHandle, bool isValueClass, int size, var_types type, string className, string shortClassName)
+    public ClassLayout(int size) : this(checked((uint)size))
+    {
+    }
+
+    public unsafe ClassLayout(CORINFO_CLASS_HANDLE classHandle, bool isValueClass, uint size, var_types type, string className, string shortClassName)
     {
         assert(size != 0);
         _classHandle = classHandle;
@@ -130,9 +134,11 @@ public sealed class ClassLayout
     }
 
     // Round in unsigned arithmetic so sizes near Int32.MaxValue do not overflow.
-    public int SlotCount => (int)(((uint)_size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE);
+    // Native roundUp widens to size_t on 64-bit hosts, then narrows back to unsigned.
+    // Rounding sizes in the last pointer-width interval of UINT_MAX therefore wraps to zero.
+    public int SlotCount => (int)(unchecked(_size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE);
 
-    public int Size => _size;
+    public uint Size => _size;
 
     public unsafe int GetAlignmentRequirement(Compiler compiler)
     {
@@ -250,7 +256,7 @@ public sealed class ClassLayout
         var shortClassName = "";
 #endif
 
-        var layout = new ClassLayout(classHandle, isValueClass, size, type, className, shortClassName);
+        var layout = new ClassLayout(classHandle, isValueClass, unchecked((uint)size), type, className, shortClassName);
 
         if (layout._size < TARGET_POINTER_SIZE)
         {
@@ -307,16 +313,11 @@ public sealed class ClassLayout
 #endif
         };
 
-        if (builder._gcPtrCount <= 0)
-        {
-            var slotCount = newLayout.SlotCount;
-            newLayout._gcPtrs = (slotCount != 0) ? new CorInfoGCType[newLayout.SlotCount] : [];
-        }
-        else if (newLayout.SlotCount <= TARGET_POINTER_SIZE)
+        if (builder._gcPtrCount > 0 && newLayout.SlotCount <= TARGET_POINTER_SIZE)
         {
             builder._gcPtrs.CopyTo(newLayout._inlineGCPtrs);
         }
-        else
+        else if (builder._gcPtrCount > 0)
         {
             newLayout._gcPtrs = builder._gcPtrs;
         }
@@ -433,7 +434,7 @@ public sealed class ClassLayout
         {
             if (_size > 0)
             {
-                var segment = new SegmentList.Segment(0, Size);
+                var segment = new SegmentList.Segment(0u, Size);
                 nonPadding.Add(segment);
             }
 
@@ -447,7 +448,7 @@ public sealed class ClassLayout
 
         if (result != GetTypeLayoutResult.Success)
         {
-            var segment = new SegmentList.Segment(0, Size);
+            var segment = new SegmentList.Segment(0u, Size);
             nonPadding.Add(segment);
         }
         else
@@ -461,7 +462,8 @@ public sealed class ClassLayout
 
                 if ((node.type is not CORINFO_TYPE_VALUECLASS) || (node.simdTypeHnd != NO_CLASS_HANDLE) || node.hasSignificantPadding)
                 {
-                    var segment = new SegmentList.Segment(node.offset, node.offset + node.size);
+                    var segment = new SegmentList.Segment(unchecked((uint)node.offset),
+                        unchecked((uint)(node.offset + node.size)));
                     nonPadding.Add(segment);
                 }
             }
@@ -499,13 +501,13 @@ public sealed class ClassLayout
 
         foreach (var nonPadding in GetNonPadding(compiler))
         {
-            if ((nonPadding.End <= offset) || (nonPadding.Start >= end))
+            if ((nonPadding.End <= (uint)offset) || (nonPadding.Start >= (uint)end))
             {
                 continue;
             }
 
-            var start = nonPadding.Start <= offset ? 0 : (nonPadding.Start - offset);
-            var segmentEnd = nonPadding.End >= end ? size : (nonPadding.End - offset);
+            var start = nonPadding.Start <= (uint)offset ? 0u : (nonPadding.Start - (uint)offset);
+            var segmentEnd = nonPadding.End >= (uint)end ? (uint)size : (nonPadding.End - (uint)offset);
 
             builder.RemovePadding(new SegmentList.Segment(start, segmentEnd));
         }

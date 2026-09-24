@@ -51,8 +51,11 @@ public sealed partial class Lowering
             {
                 // A copy helper could kill outgoing arguments that have already been set up.
                 // A local's stack slot can be read through its padding; an arbitrary address cannot.
-                var loadSize = srcIsLocal ? roundUp(layout.Size, TARGET_POINTER_SIZE) : layout.Size;
-                putArgStk.ArgLoadSize = loadSize;
+                var loadSize = srcIsLocal
+                    ? unchecked((uint)(((ulong)layout.Size + (TARGET_POINTER_SIZE - 1)) &
+                        ~(ulong)(TARGET_POINTER_SIZE - 1)))
+                    : layout.Size;
+                putArgStk.ArgLoadSize = checked((int)loadSize);
                 if (!layout.HasGCPtr)
                 {
 #if TARGET_X86

@@ -40,7 +40,7 @@ public ref struct WinX64Classifier
         assert(_intRegs.Count == _fltRegs.Count);
 
         var passedByRef = false;
-        int typeSize = type.Size;
+        var typeSize = (uint)type.Size;
 
         if (type is TYP_STRUCT)
         {
@@ -48,7 +48,7 @@ public ref struct WinX64Classifier
             typeSize = structLayout.Size;
         }
 
-        if ((typeSize > TARGET_POINTER_SIZE) || !int.IsPow2(typeSize))
+        if ((typeSize > TARGET_POINTER_SIZE) || !uint.IsPow2(typeSize))
         {
             passedByRef = true;
             typeSize = TARGET_POINTER_SIZE;
@@ -59,14 +59,14 @@ public ref struct WinX64Classifier
         if (_intRegs.Count > 0)
         {
             var reg = varTypeUsesFloatArgReg(type) ? _fltRegs.Peek() : _intRegs.Peek();
-            segment = AbiPassingSegment.InRegister(reg, 0, typeSize);
+            segment = AbiPassingSegment.InRegister(reg, 0, (int)typeSize);
 
             _ = _intRegs.Dequeue();
             _ = _fltRegs.Dequeue();
         }
         else
         {
-            segment = AbiPassingSegment.OnStack(_stackArgSize, 0, typeSize);
+            segment = AbiPassingSegment.OnStack(_stackArgSize, 0, (int)typeSize);
             _stackArgSize += TARGET_POINTER_SIZE;
         }
         return AbiPassingInformation.FromSegment(comp, passedByRef, segment);

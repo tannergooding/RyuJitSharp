@@ -229,7 +229,7 @@ public sealed partial class SegmentList : IEnumerable<SegmentList.Segment>
     /// <summary>Binary search the ends of segments stored.</summary>
     /// <param name="offset">The offset to search for</param>
     /// <returns>Index of the first entry with an equal 'End' offset, or bitwise complement of first entry with a higher 'End' offset.</returns>
-    private int BinarySearchEnd(int offset)
+    private int BinarySearchEnd(uint offset)
     {
         var segments = CollectionsMarshal.AsSpan(_segments);
 

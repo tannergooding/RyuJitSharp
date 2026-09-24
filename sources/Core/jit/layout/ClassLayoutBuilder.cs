@@ -9,7 +9,7 @@ public struct ClassLayoutBuilder
 {
     private Compiler _compiler;
     internal CorInfoGCType[]? _gcPtrs;
-    internal int _size;
+    internal uint _size;
     internal int _gcPtrCount;
     internal SegmentList? _nonPadding;
 
@@ -18,10 +18,14 @@ public struct ClassLayoutBuilder
     internal string _shortName = "UNNAMED";
 #endif
 
-    public ClassLayoutBuilder(Compiler compiler, int size)
+    public ClassLayoutBuilder(Compiler compiler, uint size)
     {
         _compiler = compiler;
         _size = size;
+    }
+
+    public ClassLayoutBuilder(Compiler compiler, int size) : this(compiler, checked((uint)size))
+    {
     }
 
     /// <summary>check if an array of the specified length would exceed the specified maximum byte size for its payload.</summary>
@@ -61,7 +65,7 @@ public struct ClassLayoutBuilder
         if (type == TYP_STRUCT)
         {
             elementLayout = compiler.typGetObjLayout(elemClsHnd);
-            elementSize = elementLayout.Size;
+            elementSize = checked((int)elementLayout.Size);
         }
         else
         {
@@ -163,12 +167,13 @@ public struct ClassLayoutBuilder
     /// <param name="layout">Layout to get information from.</param>
     public void CopyPaddingFrom(int offset, ClassLayout layout)
     {
-        var addedSegment = new SegmentList.Segment(offset, offset + layout.Size);
+        var addedSegment = new SegmentList.Segment(checked((uint)offset), checked((uint)offset + layout.Size));
         AddPadding(addedSegment);
 
         foreach (var nonPadding in layout.GetNonPadding(_compiler))
         {
-            var removedSegment = new SegmentList.Segment(offset + nonPadding.Start, offset + nonPadding.End);
+            var removedSegment = new SegmentList.Segment(checked((uint)offset + nonPadding.Start),
+                checked((uint)offset + nonPadding.End));
             RemovePadding(removedSegment);
         }
     }
@@ -238,7 +243,7 @@ public struct ClassLayoutBuilder
             nonPadding = [];
             _nonPadding = nonPadding;
 
-            var segment = new SegmentList.Segment(0, _size);
+            var segment = new SegmentList.Segment(0u, _size);
             nonPadding.Add(segment);
         }
         return nonPadding;

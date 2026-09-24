@@ -54,5 +54,5 @@ public sealed partial class GenTreeBlk : GenTreeIndir
         }
     }
 
-    public new int Size => _layout.Size;
+    public new uint Size => _layout.Size;
 }

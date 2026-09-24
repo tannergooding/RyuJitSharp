@@ -21,6 +21,11 @@ in `sources/Core/jit/gentree/GenTree.cs`. Native allocation counts/bytes are not
 expected to match. Compiler decisions, traversal order, logical node IDs,
 generated code, and diagnostics other than those statistics still must match.
 
+Custom layouts with no GC pointers do not allocate unused per-slot GC arrays,
+including layouts whose unsigned byte sizes exceed `Int32.MaxValue`. Native
+allocates zero-filled storage for large no-GC layouts; managed queries use the
+same zero-GC-count early return without materializing that storage.
+
 Each inline attempt constructs a fresh managed `Compiler` and updates the
 inliner's `InlineeCompiler` reference. Native reuses storage but invokes its
 constructor again with placement-new; retaining the managed instance instead

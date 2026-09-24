@@ -70,7 +70,7 @@ public sealed class GenTreeLclFld : GenTreeLclVarCommon
         }
     }
 
-    public int Size => ValueSize.ExactSize;
+    public uint Size => ValueSize.ExactSize;
 
     public ValueSize ValueSize
     {

@@ -2465,9 +2465,15 @@ public partial class Compiler
     }
 
     public ClassLayout typGetBlkLayout(int blockSize)
-        => typGetCustomLayout(new ClassLayoutBuilder(this, blockSize));
+        => typGetBlkLayout(checked((uint)blockSize));
 
     public int typGetBlkLayoutNum(int blockSize)
+        => typGetBlkLayoutNum(checked((uint)blockSize));
+
+    public ClassLayout typGetBlkLayout(uint blockSize)
+        => typGetCustomLayout(new ClassLayoutBuilder(this, blockSize));
+
+    public int typGetBlkLayoutNum(uint blockSize)
         => typGetCustomLayoutNum(new ClassLayoutBuilder(this, blockSize));
 
     public ClassLayout typGetCustomLayout(ClassLayoutBuilder builder)

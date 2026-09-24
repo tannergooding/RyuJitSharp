@@ -1427,7 +1427,7 @@ public partial struct LclVarDsc
         get
         {
             assert(!varTypeHasUnknownSize(Type));
-            return lvValueSize.ExactSize;
+            return checked((int)lvValueSize.ExactSize);
         }
     }
 

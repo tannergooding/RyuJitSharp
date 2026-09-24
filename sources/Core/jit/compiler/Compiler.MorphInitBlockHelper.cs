@@ -13,7 +13,7 @@ public partial class Compiler
         protected readonly bool _initBlock;
         protected GenTree _store;
         protected GenTree _src;
-        protected int _blockSize;
+        protected uint _blockSize;
         protected ClassLayout? _blockLayout;
         protected int _dstLclNum = BAD_VAR_NUM;
         protected GenTreeLclVarCommon? _dstLclNode;
@@ -126,7 +126,7 @@ public partial class Compiler
             }
             else
             {
-                _blockSize = _store.Type.Size;
+                _blockSize = (uint)_store.Type.Size;
             }
 
             assert(_blockSize != 0);

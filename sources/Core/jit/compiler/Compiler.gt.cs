@@ -45,8 +45,8 @@ public partial class Compiler
         }
         else if (fieldSize.IsExact && storeSize.IsExact)
         {
-            var storeEndOffset = offset + storeSize.ExactSize;
-            var fieldEndOffset = fieldOffset + fieldSize.ExactSize;
+            var storeEndOffset = offset + (nint)storeSize.ExactSize;
+            var fieldEndOffset = fieldOffset + (nint)fieldSize.ExactSize;
 
             if ((fieldOffset < storeEndOffset) && (offset < fieldEndOffset))
             {

@@ -1669,7 +1669,7 @@ public partial class Compiler
         if (elemType is TYP_STRUCT)
         {
             assert(elemLayout is not null);
-            arrayElemSize = elemLayout.Size;
+            arrayElemSize = checked((int)elemLayout.Size);
         }
 
         var val = null as GenTree;

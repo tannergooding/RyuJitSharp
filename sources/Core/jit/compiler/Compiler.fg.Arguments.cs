@@ -220,7 +220,7 @@ public partial class Compiler
             if (node.Oper.IsLoad)
             {
                 var lastLoadSize = structSize % TARGET_POINTER_SIZE;
-                if ((lastLoadSize != 0) && !int.IsPow2(lastLoadSize))
+                if ((lastLoadSize != 0) && !uint.IsPow2(lastLoadSize))
                 {
                     // Unlike local slots, a non-local tail cannot be overread.
                     return false;

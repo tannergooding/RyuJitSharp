@@ -527,7 +527,7 @@ internal static unsafe class UseEdgeIteratorTests
     private struct DefinitionVisitor(Compiler compiler, bool abort) : ILocalDefVisitor
     {
         public readonly List<int> Locals = [];
-        public readonly List<(GenTree Node, int Local, int Index, bool Entire, int Offset, int Size, int ValueOffset, int StoreSize)> Definitions = [];
+        public readonly List<(GenTree Node, int Local, int Index, bool Entire, int Offset, uint Size, int ValueOffset, uint StoreSize)> Definitions = [];
 
         public readonly GenTree.VisitResult Visit<TDef>(TDef def) where TDef : struct, ILocalDef
         {

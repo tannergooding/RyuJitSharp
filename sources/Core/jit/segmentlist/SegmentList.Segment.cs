@@ -9,13 +9,17 @@ public partial class SegmentList
 {
     public struct Segment
     {
-        public int Start;
-        public int End;
+        public uint Start;
+        public uint End;
 
-        public Segment(int start, int end)
+        public Segment(uint start, uint end)
         {
             Start = start;
             End = end;
+        }
+
+        public Segment(int start, int end) : this(checked((uint)start), checked((uint)end))
+        {
         }
 
         /// <summary>Check if this segment contains another segment.</summary>
@@ -63,8 +67,8 @@ public partial class SegmentList
         /// <param name="other">The other segment.</param>
         public void Merge(Segment other)
         {
-            Start = int.Min(Start, other.Start);
-            End = int.Max(End, other.End);
+            Start = uint.Min(Start, other.Start);
+            End = uint.Max(End, other.End);
         }
     }
 }

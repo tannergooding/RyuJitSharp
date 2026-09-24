@@ -15,9 +15,14 @@ public readonly partial struct ValueSize : IEquatable<ValueSize>
     private readonly Kind _kind;
 
     /// <summary>The size field is used when the kind is Exact, otherwise the size field is zero.</summary>
-    private readonly int _size;
+    private readonly uint _size;
 
     public ValueSize(int size)
+    {
+        _size = checked((uint)size);
+    }
+
+    public ValueSize(uint size)
     {
         _size = size;
     }
@@ -33,7 +38,7 @@ public readonly partial struct ValueSize : IEquatable<ValueSize>
 
     public static ValueSize Vector => new ValueSize(Kind.Vector);
 
-    public int ExactSize
+    public uint ExactSize
     {
         get
         {
