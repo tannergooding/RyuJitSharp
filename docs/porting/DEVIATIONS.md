@@ -625,6 +625,10 @@ The native constructor remains in the residual tree.
 NYI and terminate with `fatal(CORJIT_IMPLLIMITATION)` pending their call-target
 range checks; the shared direct-call lowering body remains in the native tree.
 
+`Lowering.IsContainableImmed` implements the xarch immediate and relocation
+rules. Other targets throw `NotImplementedException` pending their
+instruction-specific immediate checks; no non-xarch lowering is activated.
+
 Current target-sync additions under `TARGET_WASM` are
 `Compiler.fgWasmRepairTryEntries` and `Compiler.fgWasmSpillRefs` in
 `Compiler.fg.cs`. They throw `NotImplementedException` rather than returning a

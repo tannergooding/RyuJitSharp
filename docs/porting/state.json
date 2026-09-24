@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Continue LowerArg/LowerArgsForCall and their register/stack/field-list dependencies after direct-call/frame support commit 6a838b7. InsertBitCastIfNecessary needs TryRemoveBitCast and ContainCheckBitCast; LowerArgFieldList needs compatibility checking, register packing and spilling fields to a local. B160 fixes the copied GenTreeFieldList.Uses getter: cloning previously lost every field, and lowering needs canonical Clear/Reverse mutations. The regression fails before the fix; the integrated selection passes 220 Debug and 212 Release cases afterward. LowerCall and phase activation remain unfinished. The partial LowerRange dispatcher, containment helpers, compiler throw helpers, stack-level phase and LSRA reference state remain WIP. Lowering.DoPhase rejects its unimplemented phase rather than reporting a successful no-op. Keep incomplete dispatch/allocation algorithms uncommitted and retain their native bodies. Managed code size remains zero; no additional parity capture is claimed.",
+    "nextAction": "Continue the scalar backend dependency closure. Register-argument bitcasts, placement, containment and allocator eligibility are implemented and independently validated without the unfinished backend files. LowerArgFieldList compatibility/packing/spilling is WIP: its single-field path passes, but complex packing and spilling still require cast, binary and local-store lowering in the incomplete LowerNode dispatcher. LowerArg, LowerArgsForCall, LowerPutArgStk and LowerCall remain unported. Before integrating LSRA reference/interval state, reconcile its native diagnostics and remove unused provisional accessors; its constructor and allocation driver remain incomplete. Compiler throw helpers and stack-level preparation remain WIP. Keep incomplete dispatch/allocation algorithms uncommitted and retain their native bodies. Lowering.DoPhase rejects its unimplemented phase. Managed code size remains zero; no additional parity capture is claimed.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -74,6 +74,21 @@
         "releaseTests": "artifacts\\scalar-backend-field-list-release.trx",
         "selection": "callLoweringSupport selection plus TreeComparisonTests",
         "backlog": "B160"
+      },
+      "registerArgumentSupport": {
+        "debugPassed": 233,
+        "releasePassed": 225,
+        "skipped": 0,
+        "newCases": 13,
+        "selection": "fieldListOwnership selection plus RegisterEligibilityTests",
+        "debugTests": "artifacts\\backend-support-commit-debug.trx",
+        "releaseTests": "artifacts\\backend-support-commit-release.trx",
+        "scope": "Exact staged-source export, excluding unfinished field-list, traversal, stack-level and LSRA state files. Covers ABI-padding exclusion, signed zero and NaN payloads, owning argument updates, local containment, struct configuration/GC restrictions and canonical reference-weight updates.",
+        "wipSelection": "CallLoweringTests and RegisterEligibilityTests: 24 passed in each configuration, including the uncommitted single-field argument case",
+        "wipDebugTests": "artifacts\\argument-containment-debug.trx",
+        "wipReleaseTests": "artifacts\\argument-containment-release.trx",
+        "remaining": ["Field-list packing/spilling dispatch dependencies", "LowerArg, LowerArgsForCall and LowerPutArgStk", "LowerCall and required call paths", "Backend driver activation, allocation and emission"],
+        "nativeBodiesRetained": true
       },
       "rationalizationActivation": {
         "debugPassed": 152,

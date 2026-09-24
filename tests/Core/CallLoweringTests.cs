@@ -146,6 +146,91 @@ internal static unsafe class CallLoweringTests
         });
     }
 
+    [TestCase(int.MinValue, false)]
+    [TestCase(0x7FC12345, false)]
+    [TestCase(int.MinValue, true)]
+    public static void RegisterArgumentsReinterpretOnlyValueBits(int bits, bool minOpts)
+    {
+        WithCompiler(compiler => {
+            compiler.opts.SetMinOpts(minOpts);
+            var block = new BasicBlock(null, null);
+            block.MakeLir(null, null);
+            var lowering = new Lowering(compiler, new LinearScan(compiler));
+            LoweringBlock(lowering) = block;
+            var call = new GenTreeCall(var_types.TYP_VOID);
+            var value = new GenTreeDblCon(var_types.TYP_FLOAT, BitConverter.Int32BitsToSingle(bits));
+            var arg = call.Args.PushBack(NewCallArg.CreateForPrimitive(value));
+            block.InsertAtEnd(value);
+            block.InsertAtEnd(call);
+            var segment = AbiPassingSegment.InRegister(regNumber.REG_RCX, 0, 8);
+
+            InsertPutArgReg(lowering, ref arg.NodeRef, in segment);
+
+            var putArg = arg.Node;
+            Assert.That(putArg.Oper, Is.EqualTo(genTreeOps.GT_PUTARG_REG));
+            Assert.That(putArg.Type, Is.EqualTo(var_types.TYP_INT));
+            Assert.That(putArg.RegNum, Is.EqualTo(regNumber.REG_RCX));
+            Assert.That(putArg.Next, Is.SameAs(call));
+            Assert.That(call.Prev, Is.SameAs(putArg));
+            var operand = putArg.AsUnOp().Op1;
+            if (minOpts)
+            {
+                Assert.That(operand.Oper, Is.EqualTo(genTreeOps.GT_BITCAST));
+                Assert.That(operand.AsUnOp().Op1, Is.SameAs(value));
+                Assert.That(block.FirstNode, Is.SameAs(value));
+                Assert.That(value.Next, Is.SameAs(operand));
+            }
+            else
+            {
+                Assert.That(operand.Oper, Is.EqualTo(genTreeOps.GT_CNS_INT));
+                Assert.That(operand.AsIntCon().IconValue, Is.EqualTo((nint)bits));
+                Assert.That(block.FirstNode, Is.SameAs(operand));
+                Assert.That(value.Next, Is.Null);
+                Assert.That(value.Prev, Is.Null);
+            }
+            Assert.That(operand.Next, Is.SameAs(putArg));
+            Assert.That(putArg.Prev, Is.SameAs(operand));
+        });
+    }
+
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void LocalBitcastsUseAllocatorContainmentRules(bool enregisterLocals, bool doNotEnregister)
+    {
+        WithCompiler(compiler => {
+            compiler.opts.compFlags = enregisterLocals ? Globals.CLFLG_REGVAR : 0;
+            compiler.lvaTable = new LclVarDsc[1];
+            compiler.lvaCount = 1;
+            compiler.lvaTable[0].Type = var_types.TYP_FLOAT;
+            compiler.lvaTable[0].lvDoNotEnregister = doNotEnregister;
+            var block = new BasicBlock(null, null);
+            block.MakeLir(null, null);
+            var lowering = new Lowering(compiler, new LinearScan(compiler));
+            LoweringBlock(lowering) = block;
+            var value = compiler.gtNewLclvNode(var_types.TYP_FLOAT, 0);
+            var bitcast = compiler.gtNewBitCastNode(var_types.TYP_INT, value);
+            block.InsertAtEnd(value);
+            block.InsertAtEnd(bitcast);
+
+            ContainCheckBitCast(lowering, bitcast);
+
+            var contained = !enregisterLocals || doNotEnregister;
+            Assert.That(value.IsContained, Is.EqualTo(contained));
+            Assert.That(value.IsRegOptional, Is.EqualTo(!contained));
+        });
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_block")]
+    private static extern ref BasicBlock? LoweringBlock(Lowering lowering);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "InsertPutArgReg")]
+    private static extern void InsertPutArgReg(Lowering lowering, ref GenTree argNode, in AbiPassingSegment registerSegment);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainCheckBitCast")]
+    private static extern void ContainCheckBitCast(Lowering lowering, GenTreeUnOp node);
+
     private static GenTree? InvokeLowerDirectCall(Lowering lowering, GenTreeCall call)
     {
         var method = typeof(Lowering).GetMethod("LowerDirectCall", BindingFlags.Instance | BindingFlags.NonPublic)
@@ -167,6 +252,8 @@ internal static unsafe class CallLoweringTests
 #endif
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitFlags flags = default;
+        compiler.opts.jitFlags = &flags;
         JitTls.Compiler = compiler;
         try
         {

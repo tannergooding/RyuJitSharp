@@ -7,14 +7,16 @@ using System.IO;
 
 namespace RyuJitSharp;
 
-public sealed class LinearScan : IRegAlloc
+public sealed partial class LinearScan : IRegAlloc
 {
     private Compiler _compiler;
+    private readonly bool _enregisterLocalVars;
 
     public LinearScan(Compiler compiler)
     {
         // TODO: Port LinearScan.ctor
         _compiler = compiler;
+        _enregisterLocalVars = compiler.compEnregLocals;
     }
 
     // TODO: Port LinearScan.DoRegisterAllocation

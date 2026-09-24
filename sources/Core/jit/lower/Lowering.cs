@@ -22,6 +22,13 @@ public sealed partial class Lowering : Phase
         assert(_regAlloc is not null);
     }
 
+    private BasicBlock BlockRange()
+    {
+        assert(_block is not null);
+        assert(_block.IsLIR);
+        return _block;
+    }
+
     public void FinalizeOutgoingArgSpace()
     {
 #if FEATURE_FIXED_OUT_ARGS

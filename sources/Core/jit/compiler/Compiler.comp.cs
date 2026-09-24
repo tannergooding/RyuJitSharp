@@ -326,6 +326,8 @@ public partial class Compiler
 
     public bool compEnregLocals => (opts.compFlags & CLFLG_REGVAR) != 0;
 
+    public bool compEnregStructLocals => JitConfig.JitEnregStructLocals != 0;
+
     public unsafe bool compIsAsync => opts.jitFlags->IsSet(JitFlags.JIT_FLAG_ASYNC);
 
     public unsafe bool compIsAsyncVersion => (info.compMethodInfo->options & CORINFO_ASYNC_VERSION) != 0;

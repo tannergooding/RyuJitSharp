@@ -11,6 +11,12 @@ public interface IRegAlloc
 {
     PhaseStatus DoRegisterAllocation();
 
+    bool IsContainableMemoryOp(GenTree node);
+
+    bool IsRegCandidate(in LclVarDsc varDsc);
+
+    bool WillEnregisterLocalVars();
+
 #if TRACK_LSRA_STATS
     void dumpLsraStatsCsv(StreamWriter streamWriter);
 #endif
