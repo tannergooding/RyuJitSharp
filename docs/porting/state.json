@@ -41,6 +41,15 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "scalarFoldingHelpers": {
+        "debugPassed": 37,
+        "releasePassed": 37,
+        "skipped": 0,
+        "selection": ["CastRemovalTests", "CastLoweringTests", "BitwiseLoweringTests"],
+        "debugTests": "artifacts\\scalar-folding-helpers-debug.trx",
+        "releaseTests": "artifacts\\scalar-folding-helpers-release.trx",
+        "scope": "Standalone helper closure excluding incomplete traversal: source-preserving cast construction, compiler-backed LIR constant folding, native TryFoldBinop/TryRemoveCast and bit-operation/all-ones-mask rewrites. Dispatcher coverage is recorded separately under constantFoldingDispatch."
+      },
       "localEnregistrationAndBitwise": {
         "debugPassed": 65,
         "releasePassed": 64,

@@ -22,6 +22,12 @@ public sealed class GenTreeCast : GenTreeUnOp
         Flags |= (fromUnsigned ? GTF_UNSIGNED : GTF_EMPTY);
     }
 
+    internal GenTreeCast(var_types type, GenTree op, var_types castType, GenTree source, NodeThreading threading)
+        : base(GT_CAST, type, op, source, threading)
+    {
+        _castType = castType;
+    }
+
     public GenTree CastOp => Op1;
 
     public bool IsZeroExtending

@@ -24,6 +24,11 @@ Array and string lengths, multidimensional lengths and lower bounds become
 loads at the runtime's native offsets, preserving null faults. Bounds checks
 use the native immediate and memory-operand containment rules.
 
+Scalar lowering helpers fold constant casts, shifts and rotates while preserving
+linear-IR ownership and condition-flag dependencies. Variable single-bit masks
+can become bit-set, bit-clear or bit-invert operations, and redundant all-ones
+masks can be removed.
+
 These are backend building blocks, not an active lowering phase. Remaining
 node and phase integration, register allocation and emission still prevent
 native-code generation.
