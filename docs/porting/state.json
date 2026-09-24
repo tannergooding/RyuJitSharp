@@ -12,17 +12,17 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete one-constant integer/comparison folding and conditional folding, including nullable-box comparisons and conditional-execution flag cleanup. Wire the binary/conditional dispatcher while leaving hardware-intrinsic folding explicit as remaining work.",
+      "scope": "Complete fixed-width HWI Create/CreateScalar/CreateScalarUnsafe constant recognition and lane assembly as prerequisites for the HWI folding dispatcher.",
       "doneWhen": [
-        "Complete gtFoldExprBinary, gtFoldExprSpecial, gtFoldExprCompare, gtFoldExprConditional and gtFoldBoxNullable with native gates, effects and node identities.",
-        "Zero-extension folds run complete morph finalization, and eliminated QMARKs clear conditional flags only above nested COLONs.",
-        "Debug/Release selected checks and refreshed native/managed import comparisons establish the changed reachable folding paths.",
+        "Recognize the three native creation IDs, broadcast or fill individual lanes and retain native output mutation on rejection.",
+        "Preserve integer truncation, float rounding, signed zero, NaN bits and scalar upper-lane policy.",
+        "Reuse the maximum-width SIMD storage; do not activate the incomplete HWI folding dispatcher.",
         "The selected Debug/Release checks pass and complete functions are committed with their native retirement and checkpoint."
       ],
       "validation": [
-        "One combined scalar-folding/assertion selection in Debug and Release, adding focused coverage for integer identities, effect gates, conditional flags and nullable boxing.",
-        "Publish NativeAOT and recapture the small corpus because importer-visible folding now changes.",
-        "No full-suite expansion unless a concrete failure requires it."
+        "Extend existing HWI initialization coverage for scalar/vector creation, individual lane order, partial constants and noncreation rejection.",
+        "Run one HWI/scalar selection in Debug and Release.",
+        "No NativeAOT recapture or full suite for support-only changes unless the reachable frontier changes."
       ],
       "deferred": [
         "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
@@ -31,7 +31,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Non-HWI expression folding is complete (B101). Continue the hardware-intrinsic folding dependency closure, then audit fgInline activation against the remaining prerequisites; general local propagation and block/global morph remain unported. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
+    "nextAction": "Non-HWI expression folding (B101) and fixed-width HWI creation constants (B102) are complete. Continue HWI operation classification/effective-operation recognition and vector evaluation before wiring the HWI folding dispatcher, then audit fgInline activation. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -573,6 +573,19 @@
         "debugTests": "artifacts\\special-folding-debug.trx",
         "releaseTests": "artifacts\\special-folding-release.trx"
       },
+      "vectorCreationConstants": {
+        "managedSourceCommit": "e66c3e781a30a6f262790a731e42ba3ea8d83f57",
+        "debugPassed": 192,
+        "releasePassed": 188,
+        "newCasesPerConfiguration": 18,
+        "skipped": 0,
+        "nativeDefinitionsRetired": 2,
+        "nativeAotRecaptured": false,
+        "phaseActivated": false,
+        "decomposedLong32BitExercised": false,
+        "debugTests": "artifacts\\vector-create-debug.trx",
+        "releaseTests": "artifacts\\vector-create-release.trx"
+      },
       "nativeAotPublish": "passed-after-special-folding",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "six-of-ten-import-prefixes-equal-remaining-inline-candidate-differences",
@@ -877,6 +890,15 @@
       "commit": "6cc436b030dc2b175624f51cf1987b5ceaf4b302",
       "indexCommit": "40544cc40ecf48eaa46620749cfc505a16ab6b91",
       "ref": "refs/porting/snapshots/native-ledger-special-folding"
+    },
+    "vectorCreateManagedSource": {
+      "commit": "e66c3e781a30a6f262790a731e42ba3ea8d83f57",
+      "ref": "refs/porting/snapshots/vector-create-source"
+    },
+    "vectorCreateNativeResidual": {
+      "commit": "3a856ab4ccc8fdd3ad217336d7be85d0a1335c8b",
+      "indexCommit": "33d130b853287b47e417e2e8e153a0439622b756",
+      "ref": "refs/porting/snapshots/native-ledger-vector-create"
     }
   },
   "sourceMap": [

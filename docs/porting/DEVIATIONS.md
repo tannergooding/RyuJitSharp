@@ -125,6 +125,12 @@ are lazy managed dictionaries; failed embedded-handle lookup leaves its `ref`
 output unchanged. Unknown compile-time class handles do not overwrite an
 existing mapping, matching the pinned native guard (B100).
 
+HWI creation-constant helpers accept the existing maximum-width `simd_t` by
+reference instead of templating over native SIMD storage structs. They preserve
+native lane order, full output zeroing for creation candidates and untouched
+output for other intrinsic IDs. Nonconstant lanes stay zero, while recognized
+lanes are populated even when the whole creation cannot fold (B102).
+
 Phi definitions own copied SSA-number arrays and expose readonly memory.
 Reaching-VN traversal uses a managed stack and membership set, preserving native
 push/pop order, conservative SSA lookup, duplicate suppression, cycles and early

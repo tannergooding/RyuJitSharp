@@ -86,6 +86,159 @@ public sealed class GenTreeVecCon : GenTree
         return simdSize / simdBaseType.Size;
     }
 
+#if FEATURE_HW_INTRINSICS
+    public static bool IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic node, ref simd_t simdVal)
+    {
+        var intrinsic = node.HWIntrinsicId;
+        var simdBaseType = node.SimdBaseType;
+        var simdSize = node.SimdSize;
+        var argCount = node.Operands.Length;
+        var constantCount = 0;
+
+        switch (intrinsic)
+        {
+            case NI_Vector_Create:
+            case NI_Vector_CreateScalar:
+            case NI_Vector_CreateScalarUnsafe:
+            {
+                simdVal = default;
+                if ((argCount == 1) && HandleArgForHWIntrinsicCreate(node.GetOp(1), 0, ref simdVal, simdBaseType))
+                {
+                    // Native chooses a broadcast for CreateScalarUnsafe; CreateScalar leaves upper lanes zero.
+                    if (intrinsic != NI_Vector_CreateScalar)
+                    {
+                        for (var index = 1; index < ElementCount(simdSize, simdBaseType); index++)
+                        {
+                            _ = HandleArgForHWIntrinsicCreate(node.GetOp(1), index, ref simdVal, simdBaseType);
+                        }
+                    }
+
+                    constantCount = 1;
+                }
+                else
+                {
+                    for (var index = 1; index <= argCount; index++)
+                    {
+                        if (HandleArgForHWIntrinsicCreate(node.GetOp(index), index - 1, ref simdVal, simdBaseType))
+                        {
+                            constantCount++;
+                        }
+                    }
+                }
+
+                assert((argCount == 1) || (argCount == ElementCount(simdSize, simdBaseType)));
+                return argCount == constantCount;
+            }
+
+            default:
+            {
+                return false;
+            }
+        }
+    }
+
+    public static bool HandleArgForHWIntrinsicCreate(GenTree arg, int argIndex, ref simd_t simdVal, var_types baseType)
+    {
+        switch (baseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+            {
+                if (arg.Oper.IsCnsIntOrI)
+                {
+                    simdVal.i8[argIndex] = unchecked((sbyte)arg.AsIntCon().IconValue);
+                    return true;
+                }
+
+                assert(simdVal.i8[argIndex] == 0);
+                break;
+            }
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+            {
+                if (arg.Oper.IsCnsIntOrI)
+                {
+                    simdVal.i16[argIndex] = unchecked((short)arg.AsIntCon().IconValue);
+                    return true;
+                }
+
+                assert(simdVal.i16[argIndex] == 0);
+                break;
+            }
+
+            case TYP_INT:
+            case TYP_UINT:
+            {
+                if (arg.Oper.IsCnsIntOrI)
+                {
+                    simdVal.i32[argIndex] = unchecked((int)arg.AsIntCon().IconValue);
+                    return true;
+                }
+
+                assert(simdVal.i32[argIndex] == 0);
+                break;
+            }
+
+            case TYP_LONG:
+            case TYP_ULONG:
+            {
+                if (arg.Oper.IsIntegralConst)
+                {
+                    simdVal.i64[argIndex] = arg.AsIntConCommon().IntegralValue;
+                    return true;
+                }
+#if !TARGET_64BIT
+                else if ((arg.Oper == GT_LONG) && arg.AsOp().Op1.Oper.IsCnsIntOrI && arg.AsOp().Op2.Oper.IsCnsIntOrI)
+                {
+                    var value = (long)arg.AsOp().Op2.AsIntCon().IconValue;
+                    value <<= 32;
+                    value |= unchecked((uint)arg.AsOp().Op1.AsIntCon().IconValue);
+                    simdVal.i64[argIndex] = value;
+                    return true;
+                }
+#endif
+
+                assert(simdVal.i64[argIndex] == 0);
+                break;
+            }
+
+            case TYP_FLOAT:
+            {
+                if (arg.Oper.IsCnsFltOrDbl)
+                {
+                    simdVal.f32[argIndex] = (float)arg.AsDblCon().DconVal;
+                    return true;
+                }
+
+                // Test the bits so a negative zero is not mistaken for an untouched lane.
+                assert(simdVal.i32[argIndex] == 0);
+                break;
+            }
+
+            case TYP_DOUBLE:
+            {
+                if (arg.Oper.IsCnsFltOrDbl)
+                {
+                    simdVal.f64[argIndex] = arg.AsDblCon().DconVal;
+                    return true;
+                }
+
+                assert(simdVal.i64[argIndex] == 0);
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+
+        return false;
+    }
+#endif
+
     /// <summary>Evaluates this constant using a broadcast</summary>
     /// <param name="simdBaseType">the base type of the constant being checked</param>
     /// <param name="scalar">the value to broadcast as part of the evaluation</param>
