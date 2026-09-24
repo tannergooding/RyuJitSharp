@@ -12,6 +12,29 @@ continue. A milestone does not require a conversational stop. Pause for an
 explicit user request, an unresolved decision requiring approval, a publication
 conflict, or a blocker that cannot be safely resolved.
 
+## 2026-09-23: Qmark expansion
+
+**Commit:** `2a53751`.
+
+**Result:** Complete early and late top-level qmark expansion, including nested
+arms, local/field writeback, comma splitting, throwing arms, EH extension and
+profile propagation. Complete throwing-block conversion with ordered callfinally
+unpairing. Seven native definitions retired.
+
+**Evidence:** Seventeen new CFG cases; the qmark/block-splitting selection passes
+60 Debug / 60 Release, zero skipped. NativeAOT publication and the eleven-method
+corpus succeed; all early-expansion invocations make no changes in this corpus,
+and the six exact import prefixes remain unchanged.
+
+**Frontier:** Constructed IR cases establish expansion behavior; the corpus does
+not yet establish native parity for actual qmark transformations. Native
+true-only likelihood behavior is preserved and recorded for later investigation
+(B117). Patchpoint/indirect-call transformations and post-import cleanup remain
+the prerequisites to inliner activation.
+
+**Next:** Port patchpoint transformation, then indirect-call transformation and
+post-import cleanup.
+
 ## 2026-09-23: Morph initialization
 
 **Commits:** `99515ae`, `6d69f5e`, `b8b331a`.
