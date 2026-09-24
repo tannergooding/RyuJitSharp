@@ -67,6 +67,12 @@ preserving its logical ID. The caller consumes the returned local in place of
 the indirection. Promoted struct returns instead replace their owning use with
 a field-list node; they do not retag the original local into a different CLR type.
 
+Integer narrowing takes its owning use by reference so that a 32-bit target can
+replace a long constant with an integer constant through the existing
+identity-preserving replacement helper. Its probe pass does not mutate the IR.
+Cast target types remain mutable metadata within `GenTreeCast`, allowing native
+cast cancellation without changing the node's CLR type.
+
 Scalar constant folding now uses replacement constructors that copy base
 metadata and the logical tree ID without allocating another ID. Operation-specific
 flags are cleared using the native node mask. The source must be unthreaded;

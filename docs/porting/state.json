@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Continue the required simple-operator closure with optNarrowTree at oracle optimizer.cpp:3157, then fgOptimizeCast and fgOptimizeCastOnStore (morph.cpp:8555 and 8662), which have been read in full. optNarrowTree is not yet read or implemented; preserve its probe/apply contract and adapt owning uses if narrowing replaces managed node kinds. fgMorphSmpOp (6972 through approximately 8441) is now read in full; it ends before the separately defined optimization helpers, not at 11235. fgTryReplaceStructLocalWithFields, fgMorphFinalizeIndir and fgOptimizeBitCast are complete. The next unread morph.cpp line is 8771, inside fgOptimizeRelationalComparison; arithmetic/optional helpers also remain. Tail-call validation, dispatcher/result construction, x86 helper preparation/eligibility, argument removal and recursive loop conversion are complete. fgMorphPotentialTailCall and fgMorphTailCallViaHelpers have been read in full and remain coupled to recursive fgMorphCall/fgMorphTree. The portable helper also needs getVirtMethodPointerTree (5715), a short unported wrapper around existing token/virtual-function helpers. getLookupTree, getRuntimeLookupTree and getTokenHandleTree already exist in Compiler.cs. fgMorphArgs, fgTryMorphStructArg, fgMakeOutgoingStructArgCopy and EvalArgsToTemps are read but need recursive fgMorphTree and fgMorphCopyBlock. Nullable early argument slots, ABI setup, spill decisions, sorting, shared temporary scopes and promoted-field ABI mapping are reconciled. Reuse gtSetEvalOrder and Globals.ForEachHbvBitSet. Incomplete dispatcher/call drafts remain outside the build as session files global-morph-tree.cs.draft and global-morph-call.cs.draft and protected blobs in localRecovery.globalMorphDrafts; restore only with a complete compilable closure, not Windows NYIs. Other dependencies include optAssertionProp and fgMorphHWIntrinsic. The assertion dispatcher at assertionprop.cpp:5909 and MorphCopyBlockHelper are already read; assertion application helpers remain, and copy morphing recursively morphs cloned addresses. fgExpandVirtualVtableCallTarget already exists. No global phase activation or new codegen/phase parity is claimed; fgMorphBlocks remains inactive.",
+    "nextAction": "Continue the required simple-operator closure at oracle morph.cpp::fgOptimizeRelationalComparison, next unread line 8771 (function starts at 8763). Resolve its fgPushConstantsRight and other dependencies as a coherent comparison/arithmetic portion. fgMorphSmpOp (6972 through approximately 8441) has been read in full; it ends before the separately defined optimization helpers, not at 11235. optNarrowTree (optimizer.cpp:3157-3521), fgOptimizeCast and fgOptimizeCastOnStore are now complete, preserving probe/apply behavior and owning-use updates. GenTreeCast.CastType is mutable metadata within the existing node kind; narrowing takes ref GenTree for 32-bit long-constant replacement. Struct return replacement, indirection finalization and bitcast optimization are also complete. Tail-call validation, dispatcher/result construction, x86 helper preparation/eligibility, argument removal and recursive loop conversion are complete. fgMorphPotentialTailCall and fgMorphTailCallViaHelpers are read and remain coupled to recursive fgMorphCall/fgMorphTree. The portable helper also needs getVirtMethodPointerTree (5715), a short wrapper around existing token/virtual-function helpers. getLookupTree, getRuntimeLookupTree and getTokenHandleTree already exist in Compiler.cs. fgMorphArgs, fgTryMorphStructArg, fgMakeOutgoingStructArgCopy and EvalArgsToTemps are read but need recursive fgMorphTree and fgMorphCopyBlock. Nullable early slots, ABI setup, spill decisions, sorting, temporary scopes and promoted-field ABI mapping are reconciled. Reuse gtSetEvalOrder and Globals.ForEachHbvBitSet. Incomplete dispatcher/call drafts remain outside the build as session files global-morph-tree.cs.draft and global-morph-call.cs.draft and protected blobs in localRecovery.globalMorphDrafts; restore only with a complete compilable closure, not Windows NYIs. Other dependencies include optAssertionProp and fgMorphHWIntrinsic. The assertion dispatcher at assertionprop.cpp:5909 and MorphCopyBlockHelper are already read; assertion application helpers remain, and copy morphing recursively morphs cloned addresses. fgExpandVirtualVtableCallTarget already exists. No global phase activation or new codegen/phase parity is claimed; fgMorphBlocks remains inactive.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -1289,6 +1289,20 @@
         "globalMorphActive": false,
         "nativeAotRecaptured": false
       },
+      "castNarrowing": {
+        "debugPassed": 243,
+        "releasePassed": 233,
+        "skipped": 0,
+        "newCases": 18,
+        "selection": ["NarrowingTests", "IntegralRangeTests", "MorphTreeSupportTests", "ScalarFoldingTests"],
+        "debugTests": "artifacts\\cast-narrowing-debug.trx",
+        "releaseTests": "artifacts\\cast-narrowing-release.trx",
+        "coverage": ["signed/unsigned constant masks and truncation", "non-mutating failed probes", "AND bounding operands and owner updates", "checked versus unchecked arithmetic", "comma side effects and value numbers", "unsigned widening matched by actual type", "range-proven overflow removal and zero extension", "small-store address-exposure and normalization guards"],
+        "nativeDefinitionsRetired": ["Compiler::optNarrowTree", "Compiler::fgOptimizeCast", "Compiler::fgOptimizeCastOnStore"],
+        "remaining": "Comparison/arithmetic helpers and the recursive morph closure remain. The 32-bit long-constant replacement path is source-ported, not execution-validated.",
+        "globalMorphActive": false,
+        "nativeAotRecaptured": false
+      },
       "nativeAotPublish": "passed-after-implicit-byref-retyping",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "all-twenty-minopts-implicit-byref-retyping-phase-sections-and-its-emitted-IR-equal; earlier-local-morph-gaps-remain-scoped-in-localMorphActivation",
@@ -1838,6 +1852,11 @@
       "indexCommit": "85565aa2d07c42a1fba0c5272d9dd9559b433c4b",
       "ref": "refs/porting/snapshots/native-ledger-simple-morph"
     },
+    "castNarrowingNativeResidual": {
+      "commit": "55cd841accd8fdcaffb840d2ff4482961ee9ca85",
+      "indexCommit": "ac05e114731e31fcb8e31c58e864bdffeef8c287",
+      "ref": "refs/porting/snapshots/native-ledger-cast-narrowing"
+    },
     "globalMorphDrafts": {
       "treeBlob": "36908cd7d0294ece59d91854bbdbfcb05d83f228",
       "treeRef": "refs/porting/drafts/global-morph-tree",
@@ -1997,8 +2016,8 @@
     },
     {
       "area": "simple-operator-morphing",
-      "native": ["src\\coreclr\\jit\\morph.cpp"],
-      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.fg.SimpleOps.cs"],
+      "native": ["src\\coreclr\\jit\\morph.cpp", "src\\coreclr\\jit\\optimizer.cpp"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.fg.SimpleOps.cs", "sources\\Core\\jit\\compiler\\Compiler.opt.Narrowing.cs", "sources\\Core\\jit\\gentree\\GenTreeCast.cs"],
       "reconciledCommit": null
     },
     {

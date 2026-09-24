@@ -7,7 +7,7 @@ namespace RyuJitSharp;
 
 public sealed class GenTreeCast : GenTreeUnOp
 {
-    private readonly var_types _castType;
+    private var_types _castType;
 
     public GenTreeCast(var_types type, GenTree op, bool fromUnsigned, var_types castType)
         : base(GT_CAST, type, op)
@@ -24,5 +24,16 @@ public sealed class GenTreeCast : GenTreeUnOp
 
     public GenTree CastOp => Op1;
 
-    public var_types CastType => _castType;
+    public var_types CastType
+    {
+        get
+        {
+            return _castType;
+        }
+
+        set
+        {
+            _castType = value;
+        }
+    }
 }

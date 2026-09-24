@@ -24,6 +24,10 @@ and stores, preserving partial definitions and volatile-access restrictions.
 Eligible promoted struct returns expose their fields, and equal-size memory
 bitcasts can avoid an extra conversion.
 
+Integral cast optimization now uses range proofs and expression narrowing to
+remove redundant conversions, retaining overflow checks and small-local
+normalization where required.
+
 Outgoing calls can classify signature types into Windows-x64 argument registers
 and stack slots, account for shadow space, insert virtual-stub and ReadyToRun
 cells, and remove those cells before reclassification. Argument scheduling,
