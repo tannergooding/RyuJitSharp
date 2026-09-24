@@ -163,6 +163,20 @@ a later catch-all commit. Keep incomplete work uncommitted. Recovery snapshots
 remain useful for artifacts and saved WIP, but supplement rather than replace
 regular commits. Local commits do not authorize pushing or opening a PR.
 
+Keep artifact retention bounded as well. Retain the current native/managed
+comparison baseline, active worker snapshots, saved-WIP recovery material and
+reproducers for unresolved defects. Remove completed temporary build exports
+after their code and validation checkpoint are committed; do not touch another
+worker's active snapshot or shared build outputs.
+
+Superseded session sources, patches, manifests and diagnostic evidence may be
+compacted into `port-history.zip` in the session's artifact directory. Verify
+the archived bytes before removing loose originals. Discard obsolete rebuildable
+binaries rather than archiving every build. Historical build paths in older
+records are not guaranteed to remain live; preserve their source/revision and
+build instructions, while keeping current checkpoint inputs directly available.
+The milestone journal remains the capability history, not an artifact inventory.
+
 For upstream synchronization, obtain the changed-file/commit inventory first.
 Classify each affected ported area, generator input, JIT/EE interface, and relevant
 native dependency. Save classifications and unresolved symbols once, rather than
