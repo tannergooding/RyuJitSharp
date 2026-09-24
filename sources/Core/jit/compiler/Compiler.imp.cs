@@ -1788,10 +1788,288 @@ public partial class Compiler
         return result || block.HasFlag(BBF_BACKWARD_JUMP);
     }
 
-    public unsafe byte impBoxPatternMatch(in CORINFO_RESOLVED_TOKEN resolvedToken, byte* codeAddr, byte* codeEndp, BoxPatterns opts)
+    /// <summary>Match and import common box idioms, returning the number of following IL bytes consumed, or -1.</summary>
+    public unsafe int impBoxPatternMatch(in CORINFO_RESOLVED_TOKEN resolvedToken, byte* codeAddr, byte* codeEndp, BoxPatterns opts)
     {
-        // TODO: Port Compiler.impBoxPatternMatch
-        return 0;
+        if (codeAddr >= codeEndp)
+        {
+            return -1;
+        }
+
+        switch ((OPCODE)codeAddr[0])
+        {
+            case CEE_UNBOX_ANY:
+            {
+                if (codeAddr + 1 + sizeof(int) <= codeEndp)
+                {
+                    if (opts is BoxPatterns.MakeInlineObservation)
+                    {
+                        assert(compInlineResult is not null);
+                        compInlineResult.Note(InlineObservation.CALLEE_FOLDABLE_BOX);
+                        return 1 + sizeof(int);
+                    }
+
+                    impResolveToken(codeAddr + 1, out var unboxResolvedToken, CORINFO_TOKENKIND_Class);
+                    var compare = info.compCompHnd->compareTypesForEquality(unboxResolvedToken.hClass, resolvedToken.hClass);
+                    var optimize = false;
+
+                    if (compare is TypeCompareState.Must)
+                    {
+                        optimize = true;
+                    }
+                    else if (compare is TypeCompareState.MustNot)
+                    {
+                        // Enums and their integral underlying types can be interchanged.
+                        var typ = info.compCompHnd->getTypeForPrimitiveValueClass(unboxResolvedToken.hClass);
+
+                        if ((typ is >= CORINFO_TYPE_BYTE and <= CORINFO_TYPE_ULONG) &&
+                            (info.compCompHnd->getTypeForPrimitiveValueClass(resolvedToken.hClass) == typ))
+                        {
+                            optimize = true;
+                        }
+                        else if (!eeIsSharedInst(unboxResolvedToken.hClass) &&
+                                 (info.compCompHnd->isNullableType(resolvedToken.hClass) is TypeCompareState.Must) &&
+                                 (info.compCompHnd->getTypeForBox(resolvedToken.hClass) == unboxResolvedToken.hClass))
+                        {
+                            impLoadNullableFields(impPopStack().val, resolvedToken.hClass, out var hasValueFldTree, out var valueFldTree);
+
+                            // Unboxing an empty nullable to T must still throw.
+                            var fallback = gtNewHelperCallNode(TYP_VOID, CORINFO_HELP_THROWNULLREF);
+                            var cond = gtNewBinaryNode(GT_EQ, TYP_INT, hasValueFldTree, gtNewIconNode(TYP_INT, 0));
+                            var colon = gtNewColonNode(TYP_VOID, fallback, gtNewNothingNode());
+                            var qmark = gtNewQmarkNode(TYP_VOID, cond, colon);
+                            _ = impAppendTree(qmark, CHECK_SPILL_ALL, impCurStmtDI);
+                            impPushOnStack(valueFldTree, new typeInfo(valueFldTree.Type));
+                            optimize = true;
+                        }
+                        else if (!eeIsSharedInst(resolvedToken.hClass) &&
+                                 (info.compCompHnd->isNullableType(unboxResolvedToken.hClass) is TypeCompareState.Must) &&
+                                 (info.compCompHnd->getTypeForBox(unboxResolvedToken.hClass) == resolvedToken.hClass))
+                        {
+                            var result = impStoreNullableFields(unboxResolvedToken.hClass, impPopStack().val);
+                            impPushOnStack(result, new typeInfo(result.Type));
+                            optimize = true;
+                        }
+                    }
+
+                    if (optimize)
+                    {
+                        JITDUMP("\n Importing BOX; UNBOX.ANY as NOP\n");
+                        return 1 + sizeof(int);
+                    }
+                }
+
+                break;
+            }
+
+            case CEE_BRTRUE:
+            case CEE_BRTRUE_S:
+            case CEE_BRFALSE:
+            case CEE_BRFALSE_S:
+            {
+                if (codeAddr + (((OPCODE)codeAddr[0] >= CEE_BRFALSE) ? 5 : 2) <= codeEndp)
+                {
+                    if (opts is BoxPatterns.MakeInlineObservation)
+                    {
+                        assert(compInlineResult is not null);
+                        compInlineResult.Note(InlineObservation.CALLEE_FOLDABLE_BOX);
+                        return 0;
+                    }
+
+                    if ((opts is BoxPatterns.IsByRefLike) || (info.compCompHnd->getBoxHelper(resolvedToken.hClass) is CORINFO_HELP_BOX))
+                    {
+                        JITDUMP("\n Importing BOX; BR_TRUE/FALSE as constant\n");
+                        impSpillSideEffects(spillGlobEffects: false, CHECK_SPILL_ALL, "spilling side-effects");
+                        _ = impPopStack();
+                        impPushOnStack(gtNewTrue(), new typeInfo(TYP_INT));
+                        return 0;
+                    }
+                }
+
+                break;
+            }
+
+            case CEE_ISINST:
+            {
+                if (codeAddr + 1 + sizeof(int) + 1 <= codeEndp)
+                {
+                    // This fold does not contribute an inline observation.
+                    if ((opts is BoxPatterns.None) && (info.compCompHnd->getBoxHelper(resolvedToken.hClass) is CORINFO_HELP_BOX))
+                    {
+                        impResolveToken(codeAddr + 1, out var isInstTok, CORINFO_TOKENKIND_Casting);
+
+                        if (info.compCompHnd->compareTypesForCast(resolvedToken.hClass, isInstTok.hClass) is TypeCompareState.MustNot)
+                        {
+                            JITDUMP("\n Importing BOX; ISINST; as null\n");
+                            impSpillSideEffects(spillGlobEffects: false, CHECK_SPILL_ALL, "spilling side-effects");
+                            _ = impPopStack();
+                            impPushOnStack(gtNewNull(), new typeInfo(TYP_REF));
+                            return 1 + sizeof(int);
+                        }
+                    }
+
+                    var nextCodeAddr = codeAddr + 1 + sizeof(int);
+                    var nextOpcode = impGetNonPrefixOpcode(nextCodeAddr, codeEndp);
+
+                    switch (nextOpcode)
+                    {
+                        case CEE_BRTRUE:
+                        case CEE_BRTRUE_S:
+                        case CEE_BRFALSE:
+                        case CEE_BRFALSE_S:
+                        case CEE_LDNULL:
+                        {
+                            var returnToken = 1 + sizeof(int);
+
+                            if (nextOpcode is CEE_LDNULL)
+                            {
+                                // The non-branch form consumes isinst; ldnull; cgt.un.
+                                returnToken = 4 + sizeof(int);
+
+                                if ((opts is BoxPatterns.IsByRefLike) || (impGetNonPrefixOpcode(nextCodeAddr + 1, codeEndp) is not CEE_CGT_UN))
+                                {
+                                    break;
+                                }
+                            }
+
+                            if (opts is BoxPatterns.MakeInlineObservation)
+                            {
+                                assert(compInlineResult is not null);
+                                compInlineResult.Note(InlineObservation.CALLEE_FOLDABLE_BOX);
+                                return returnToken;
+                            }
+
+                            // Byref-like boxes must be elided, but are otherwise treated
+                            // like ordinary boxes when determining the constant.
+                            var foldAsHelper = (opts is BoxPatterns.IsByRefLike)
+                                ? CORINFO_HELP_BOX
+                                : info.compCompHnd->getBoxHelper(resolvedToken.hClass);
+
+                            if (foldAsHelper is CORINFO_HELP_BOX)
+                            {
+                                impResolveToken(codeAddr + 1, out var isInstResolvedToken, CORINFO_TOKENKIND_Casting);
+                                var castResult = info.compCompHnd->compareTypesForCast(resolvedToken.hClass, isInstResolvedToken.hClass);
+
+                                if (castResult is not TypeCompareState.May)
+                                {
+                                    JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as constant\n");
+                                    impSpillSideEffects(spillGlobEffects: false, CHECK_SPILL_ALL, "spilling side-effects");
+                                    _ = impPopStack();
+                                    impPushOnStack(gtNewIconNode(TYP_INT, (castResult is TypeCompareState.Must) ? 1 : 0), new typeInfo(TYP_INT));
+                                    return returnToken;
+                                }
+                            }
+                            else if ((foldAsHelper is CORINFO_HELP_BOX_NULLABLE) && ((impStackTop().val.Flags & GTF_SIDE_EFFECT) == 0))
+                            {
+                                impResolveToken(codeAddr + 1, out var isInstResolvedToken, CORINFO_TOKENKIND_Casting);
+                                var nullableCls = resolvedToken.hClass;
+                                var underlyingCls = info.compCompHnd->getTypeForBox(nullableCls);
+                                var castResult = info.compCompHnd->compareTypesForCast(underlyingCls, isInstResolvedToken.hClass);
+
+                                if (castResult is TypeCompareState.Must)
+                                {
+                                    // hasValue is at offset zero. Preserve any volatile
+                                    // or unaligned flags when exposing the struct address.
+                                    var objToBox = impPopStack().val;
+                                    objToBox = impGetNodeAddr(objToBox, CHECK_SPILL_ALL, GTF_IND_MUST_PRESERVE_FLAGS, out var indirFlags);
+                                    impPushOnStack(gtNewIndir(TYP_UBYTE, objToBox, indirFlags), new typeInfo(TYP_INT));
+                                    JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as nullableVT.hasValue\n");
+                                    return returnToken;
+                                }
+                                else if (castResult is TypeCompareState.MustNot)
+                                {
+                                    _ = impPopStack();
+                                    impPushOnStack(gtNewIconNode(TYP_INT, 0), new typeInfo(TYP_INT));
+                                    JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as constant (false)\n");
+                                    return returnToken;
+                                }
+                            }
+
+                            break;
+                        }
+
+                        case CEE_UNBOX_ANY:
+                        {
+                            if (opts is BoxPatterns.MakeInlineObservation)
+                            {
+                                assert(compInlineResult is not null);
+                                compInlineResult.Note(InlineObservation.CALLEE_FOLDABLE_BOX);
+                                return 2 + (sizeof(int) * 2);
+                            }
+
+                            impResolveToken(codeAddr + 1, out var isinstResolvedToken, CORINFO_TOKENKIND_Class);
+
+                            if (info.compCompHnd->compareTypesForEquality(isinstResolvedToken.hClass, resolvedToken.hClass) is TypeCompareState.Must)
+                            {
+                                impResolveToken(nextCodeAddr + 1, out var unboxResolvedToken, CORINFO_TOKENKIND_Class);
+
+                                if (info.compCompHnd->compareTypesForEquality(unboxResolvedToken.hClass, resolvedToken.hClass) is TypeCompareState.Must)
+                                {
+                                    JITDUMP("\n Importing BOX; ISINST, UNBOX.ANY as NOP\n");
+                                    return 2 + (sizeof(int) * 2);
+                                }
+                            }
+
+                            break;
+                        }
+                    }
+                }
+
+                break;
+            }
+        }
+
+        return -1;
+    }
+
+    public unsafe GenTree impStoreNullableFields(CORINFO_CLASS_HANDLE nullableCls, GenTree value)
+    {
+        assert(info.compCompHnd->isNullableType(nullableCls) is TypeCompareState.Must);
+        var valueFldHnd = info.compCompHnd->getFieldInClass(nullableCls, 1);
+        var valueOffset = info.compCompHnd->getFieldOffset(valueFldHnd);
+        var resultTmp = lvaGrabTemp(shortLifetime: true, "Nullable<T> tmp");
+        lvaSetStruct(resultTmp, nullableCls, unsafeValueClsCheck: false);
+
+        var valueStructCls = NO_CLASS_HANDLE;
+        var corFldType = info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
+        var valueType = TypeHandleToVarType(corFldType, valueStructCls, out var layout);
+
+        // Nullable<T>.hasValue is always at offset zero.
+        var hasValueStore = gtNewStoreLclFldNode(TYP_UBYTE, resultTmp, 0, gtNewIconNode(TYP_INT, 1));
+        GenTree valueStore = gtNewStoreLclFldNode(valueType, resultTmp, (ushort)valueOffset, value, layout);
+
+        if (varTypeIsStruct(valueStore.Type))
+        {
+            valueStore = impStoreStruct(valueStore, CHECK_SPILL_ALL);
+        }
+
+        _ = impAppendTree(hasValueStore, CHECK_SPILL_ALL, impCurStmtDI);
+        _ = impAppendTree(valueStore, CHECK_SPILL_ALL, impCurStmtDI);
+        return gtNewLclvNode(TYP_STRUCT, resultTmp);
+    }
+
+    public unsafe void impLoadNullableFields(GenTree nullableObj, CORINFO_CLASS_HANDLE nullableCls, out GenTree hasValueFld, out GenTree valueFld)
+    {
+        assert(info.compCompHnd->isNullableType(nullableCls) is TypeCompareState.Must);
+        var valueFldHnd = info.compCompHnd->getFieldInClass(nullableCls, 1);
+        var valueStructCls = NO_CLASS_HANDLE;
+        var corFldType = info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
+        var valueType = TypeHandleToVarType(corFldType, valueStructCls, out var valueLayout);
+        var valueOffset = info.compCompHnd->getFieldOffset(valueFldHnd);
+        int objTmp;
+
+        if (nullableObj.Oper is not GT_LCL_VAR)
+        {
+            objTmp = lvaGrabTemp(shortLifetime: true, "Nullable<T> tmp");
+            impStoreToTemp(objTmp, nullableObj, CHECK_SPILL_ALL);
+        }
+        else
+        {
+            objTmp = nullableObj.AsLclVarCommon().LclNum;
+        }
+
+        hasValueFld = gtNewLclFldNode(TYP_UBYTE, objTmp, 0);
+        valueFld = gtNewLclFldNode(valueType, objTmp, (ushort)valueOffset, valueLayout);
     }
 
     /// <summary>basic legality checks using information from a call to see if the call qualifies as an inline pinvoke.</summary>
@@ -10073,7 +10351,7 @@ public partial class Compiler
                     if (matched >= 0)
                     {
                         // Skip the matched IL instructions
-                        sz += matched;
+                        sz += (byte)matched;
                         break;
                     }
 

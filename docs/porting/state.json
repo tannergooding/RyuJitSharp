@@ -899,6 +899,19 @@
         "nativeAotRecaptured": false,
         "remaining": ["fgInline activation and nested-compilation validation", "shared EE text logging (B129)"]
       },
+      "boxingPatterns": {
+        "managedSourceCommit": "6cbd3a3fced61d39e3b4c049ebca952f15446058",
+        "newCases": 20,
+        "debugPassed": 20,
+        "releasePassed": 20,
+        "skipped": 0,
+        "nativeDefinitionsRetired": 3,
+        "debugTests": "artifacts\\inline-phase-debug.trx",
+        "releaseTests": "artifacts\\inline-phase-release.trx",
+        "beforeFixCapture": "artifacts\\inline-phase-nested-corpus-managed\\manifest.json",
+        "beforeFixFailure": "Scalar<int>.Add reached unbox.any with an unboxed int because the box matcher returned false success.",
+        "nullableConversionCasesExecuted": false
+      },
       "nativeAotPublish": "passed-after-post-import-cleanup",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "six-of-eleven-import-prefixes-equal-four-inline-differences-and-one-vector-importer-gap",
@@ -1352,6 +1365,11 @@
     "indirectCallTransformationManagedSource": {
       "commit": "13618810c9f1234d2023774c65db4894d73df637",
       "ref": "refs/porting/snapshots/indirect-call-transformation-source"
+    },
+    "inlineBoxNativeResidual": {
+      "commit": "c636fad980a1a595434aef412b35632cd6138d27",
+      "indexCommit": "4e99029276c25f08ccc764553e0eb3d9f831187d",
+      "ref": "refs/porting/snapshots/native-ledger-inline-box"
     },
     "inlineReportingManagedSource": {
       "commit": "12c94323a2dcb05a450514d3a439c3c0fd25a0b0",
