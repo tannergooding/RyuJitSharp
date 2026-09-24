@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Reference accounting and backend lifetime predicates pass standalone integration (120 Debug/118 Release); parameter mappings and layout-slot fixes are committed. Cast/shift/rotate folding is integrated and passes 83 cases/configuration; bitwise helpers are returned but not integrated. Calls worker collected through turn 40 now investigates the complete B170 unsigned layout-size contract before shared edits. Accounting worker collected through turn 36 now owns non-enregisterable-local marking and local sorting/tracking. LSRA collected through turn 52: kill/copy/score support independently passes 96 Debug/81 Release and is ready for commit, but HOLD minimal traversal. Parent found missing location-transition freeing, copy-register reuse, previousLocation updates, wrong stress/ref ordering and approximate diagnostics; worker must repair with failing regressions before proceeding to interval building. Keep lowering/allocation drivers inactive and broad backend work uncommitted. Managed code size remains zero.",
+    "nextAction": "Reference accounting, parameter mappings, layout-slot fixes and kill/copy/score support are committed. Parent is closing standalone bitwise/folding helpers (37 cases/configuration) and local enregistration preparation (combined helper/accounting selection: 65 Debug/64 Release). Cast/shift/rotate dispatch passes 83 integration cases/configuration; full binary optimization still needs BMI/conditional-compare dependencies. Calls worker collected through turn 41 is authorized to implement B170 unsigned layout/ValueSize/block contracts and required consumers, including full-size helper arguments; parent must avoid those shared files. Accounting worker collected through turn 37 now owns current Liveness.SelectTrackedLocals policies/comparers, not obsolete lvaSortByRefCount. LSRA collected through turn 52 is repairing missing minimal-loop location/free/copy transitions, stress/reference ordering and diagnostic fidelity; HOLD traversal commit and interval-builder work until repaired. Keep lowering/allocation drivers inactive and broad backend work uncommitted. Managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -41,6 +41,15 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "localEnregistrationAndBitwise": {
+        "debugPassed": 65,
+        "releasePassed": 64,
+        "skipped": 0,
+        "selection": ["BitwiseLoweringTests", "BinaryLoweringTests", "LocalEnregistrationTests", "LocalReferenceAccountingTests", "RegisterEligibilityTests"],
+        "debugTests": "artifacts\\bitwise-enregistration-debug.trx",
+        "releaseTests": "artifacts\\bitwise-enregistration-release.trx",
+        "scope": "Committed-source export plus complete scalar bitwise helpers and native local DNER preparation. Preserves EH eligibility, existing reasons and struct-promotion/type gates. Driver activation is separate."
+      },
       "registerKillsAndCopies": {
         "debugPassed": 96,
         "releasePassed": 81,
