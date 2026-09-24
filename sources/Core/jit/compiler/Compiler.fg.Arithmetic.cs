@@ -9,6 +9,92 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    public void fgMoveOpsLeft(GenTree tree)
+    {
+        GenTree right;
+        genTreeOps operation;
+        do
+        {
+            var left = tree.AsOp().Op1;
+            right = tree.AsOp().Op2;
+            operation = tree.Oper;
+            noway_assert(operation.IsCommutative);
+            noway_assert(operation is GT_ADD or GT_XOR or GT_OR or GT_AND or GT_MUL);
+            noway_assert(!varTypeIsFloating(tree.Type) || !opts.genFPorder);
+            noway_assert(operation == right.Oper);
+            if (tree.HasOverflowCheckEx || right.HasOverflowCheckEx)
+            {
+                return;
+            }
+
+            if ((operation is GT_MUL) && ((right.Flags & GTF_MUL_64RSLT) != 0))
+            {
+                return;
+            }
+
+            if (tree.IsPartOfAddressMode)
+            {
+                return;
+            }
+
+            var first = right.AsOp().Op1;
+            var second = right.AsOp().Op2;
+            // Boolean optimization can OR GC pointers into an int result.
+            if (varTypeIsGC(first.Type) != varTypeIsGC(right.Type))
+            {
+                break;
+            }
+
+            // Splitting ref + (offset + offset) could expose an out-of-object
+            // intermediate byref to a GC in fully interruptible code.
+            if (varTypeIsGC(left.Type) && (right.Type is TYP_I_IMPL))
+            {
+                assert(varTypeIsGC(tree.Type) && (operation is GT_ADD));
+                break;
+            }
+
+            var newLeft = right.AsOp();
+            newLeft.Op1 = left;
+            newLeft.Op2 = first;
+            noway_assert((newLeft.Flags &
+                ~(GTF_MAKE_CSE | GTF_DONT_CSE | GTF_REVERSE_OPS | GTF_NODE_MASK | GTF_ALL_EFFECT | GTF_UNSIGNED)) == 0);
+            newLeft.Flags = (newLeft.Flags & (GTF_NODE_MASK | GTF_DONT_CSE)) |
+                ((left.Flags | first.Flags) & GTF_ALL_EFFECT);
+            if (varTypeIsGC(left.Type))
+            {
+                noway_assert(
+                    (varTypeIsGC(tree.Type) && (right.Type is TYP_I_IMPL) && (operation is GT_ADD)) ||
+                    (varTypeIsI(tree.Type) && (right.Type is TYP_I_IMPL) && (operation is GT_OR)));
+                newLeft.Type = tree.Type;
+            }
+            else if (varTypeIsGC(second.Type))
+            {
+                noway_assert((left.Type is TYP_I_IMPL) && (first.Type is TYP_I_IMPL));
+                newLeft.Type = TYP_I_IMPL;
+            }
+
+            // Commutativity preserves the old VN only when the exchanged
+            // operands have the same defined liberal number.
+            if ((vnStore is not null) &&
+                ((left._vnPair.Liberal == ValueNumStore.NoVN) ||
+                 (second._vnPair.Liberal == ValueNumStore.NoVN) ||
+                 (second._vnPair.Liberal != left._vnPair.Liberal)))
+            {
+                newLeft._vnPair.SetBoth(vnStore.VNForExpr(null, newLeft.Type));
+            }
+
+            tree.AsOp().Op1 = newLeft;
+            tree.AsOp().Op2 = second;
+            if ((first.Oper == operation) && !first.HasOverflowCheckEx)
+            {
+                fgMoveOpsLeft(newLeft);
+            }
+
+            right = second;
+        }
+        while ((right.Oper == operation) && !right.HasOverflowCheckEx);
+    }
+
     public GenTreeOp? fgMorphCommutative(GenTreeOp tree)
     {
         assert(varTypeIsIntegralOrI(tree.Type));

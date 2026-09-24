@@ -375,10 +375,121 @@ internal static unsafe class ArithmeticMorphTests
         });
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void LeftDeepReassociationRecomputesEffectsAndPreservesOnlyValidNumbers(bool sameNumber)
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var first = compiler.gtNewLclvNode(TYP_INT, 1);
+            var second = compiler.gtNewLclvNode(TYP_INT, 1);
+            var last = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, null);
+            first._vnPair.SetBoth(store.VNForIntCon(1));
+            last._vnPair.SetBoth(store.VNForIntCon(sameNumber ? 1 : 2));
+            var inner = compiler.gtNewBinaryNode(GT_ADD, TYP_INT, second, last);
+            inner.Flags |= GTF_DONT_CSE | GTF_UNSIGNED;
+            var oldNumber = store.VNForIntCon(42);
+            inner._vnPair.SetBoth(oldNumber);
+            var root = compiler.gtNewBinaryNode(GT_ADD, TYP_INT, first, inner);
+            compiler.fgMoveOpsLeft(root);
+            Assert.That(root.Op1, Is.SameAs(inner));
+            Assert.That(root.Op2, Is.SameAs(last));
+            Assert.That(inner.Op1, Is.SameAs(first));
+            Assert.That(inner.Op2, Is.SameAs(second));
+            Assert.That(inner.Flags & (GTF_CALL | GTF_DONT_CSE | GTF_UNSIGNED), Is.EqualTo(GTF_DONT_CSE));
+            Assert.That(root.Flags & GTF_CALL, Is.EqualTo(GTF_CALL));
+            Assert.That(inner._vnPair.Liberal == oldNumber, Is.EqualTo(sameNumber));
+            Assert.That(inner._vnPair.BothDefined, Is.True);
+        });
+    }
+
+    [TestCase(GTF_OVERFLOW)]
+    [TestCase(GTF_ADDRMODE_NO_CSE)]
+    public static void LeftDeepReassociationRetainsCheckedAndAddressModeTrees(GenTreeFlags flags)
+    {
+        WithCompiler(compiler => {
+            var inner = compiler.gtNewBinaryNode(GT_ADD, TYP_INT,
+                compiler.gtNewLclvNode(TYP_INT, 1), compiler.gtNewIconNode(TYP_INT, 1));
+            var root = compiler.gtNewBinaryNode(GT_ADD, TYP_INT, compiler.gtNewLclvNode(TYP_INT, 1), inner);
+            root.Flags |= flags;
+            compiler.fgMoveOpsLeft(root);
+            Assert.That(root.Op2, Is.SameAs(inner));
+            Assert.That(inner.Op2.IsIntegralConst(1), Is.True);
+        });
+    }
+
+    [Test]
+    public static void LeftDeepReassociationDoesNotExposeAnIntermediateByref()
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable[0] = new LclVarDsc { Type = TYP_REF };
+            var reference = compiler.gtNewLclvNode(TYP_REF, 0);
+            var offsets = compiler.gtNewBinaryNode(GT_ADD, TYP_I_IMPL,
+                compiler.gtNewIconNode(TYP_I_IMPL, -1), compiler.gtNewIconNode(TYP_I_IMPL, 2));
+            var root = compiler.gtNewBinaryNode(GT_ADD, TYP_BYREF, reference, offsets);
+            compiler.fgMoveOpsLeft(root);
+            Assert.That(root.Op1, Is.SameAs(reference));
+            Assert.That(root.Op2, Is.SameAs(offsets));
+            Assert.That(offsets.Type, Is.EqualTo(TYP_I_IMPL));
+        });
+    }
+
+    [TestCase(GT_DIV, TYP_INT, 0L, false)]
+    [TestCase(GT_DIV, TYP_INT, -1L, false)]
+    [TestCase(GT_DIV, TYP_INT, -8L, true)]
+    [TestCase(GT_DIV, TYP_INT, -3L, true)]
+    [TestCase(GT_MOD, TYP_INT, -5L, true)]
+    [TestCase(GT_DIV, TYP_LONG, long.MinValue, true)]
+    [TestCase(GT_UDIV, TYP_INT, -2147483648L, true)]
+    [TestCase(GT_UMOD, TYP_INT, -1L, true)]
+    public static void ConstantDivisionEligibilityRetainsThrowingCases(genTreeOps operation, var_types type, long divisor, bool eligible)
+    {
+        WithCompiler(compiler => {
+            var numerator = compiler.gtNewLclvNode(type, type is TYP_LONG ? 0 : 1);
+            var denominator = compiler.gtNewIconNode(type, (nint)divisor);
+            var division = compiler.gtNewBinaryNode(operation, type, numerator, denominator);
+            Assert.That(division.UsesDivideByConstOptimized(compiler), Is.EqualTo(eligible));
+            division.CheckDivideByConstOptimized(compiler);
+            Assert.That(denominator.Flags & GTF_DONT_CSE, Is.EqualTo(eligible ? GTF_DONT_CSE : GTF_EMPTY));
+        });
+    }
+
+    [Test]
+    public static void MinOptsDoesNotPrepareConstantDivision()
+    {
+        WithCompiler(compiler => {
+            var constant = compiler.gtNewIconNode(TYP_INT, 8);
+            var division = compiler.gtNewBinaryNode(GT_DIV, TYP_INT, compiler.gtNewLclvNode(TYP_INT, 1), constant);
+            Assert.That(division.UsesDivideByConstOptimized(compiler), Is.False);
+            division.CheckDivideByConstOptimized(compiler);
+            Assert.That(constant.Flags & GTF_DONT_CSE, Is.EqualTo(GTF_EMPTY));
+        }, minOpts: true);
+    }
+
+    [Test]
+    public static void ConstantDivisionUsesValueNumbersWithoutMarkingNonliteralDivisors()
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var numerator = compiler.gtNewUnaryNode(GT_NEG, TYP_INT, compiler.gtNewLclvNode(TYP_INT, 1));
+            var denominator = compiler.gtNewLclvNode(TYP_INT, 1);
+            denominator._vnPair.SetBoth(store.VNForIntCon(-3));
+            var division = compiler.gtNewBinaryNode(GT_DIV, TYP_INT, numerator, denominator);
+            Assert.That(division.UsesDivideByConstOptimized(compiler), Is.True);
+            division.CheckDivideByConstOptimized(compiler);
+            Assert.That(denominator.Flags & GTF_DONT_CSE, Is.EqualTo(GTF_EMPTY));
+
+            division.Op1 = compiler.gtNewIconNode(TYP_INT, 5);
+            Assert.That(division.UsesDivideByConstOptimized(compiler), Is.False);
+        });
+    }
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static byte IsFieldStatic(ICorJitInfo* info, CORINFO_FIELD_STRUCT_* handle) => 1;
 
-    private static void WithCompiler(Action<Compiler> action)
+    private static void WithCompiler(Action<Compiler> action, bool minOpts = false)
     {
 #if DEBUG
         using var tls = new JitTls(null);
@@ -387,7 +498,7 @@ internal static unsafe class ArithmeticMorphTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.opts.SetMinOpts(minOpts);
         compiler.opts.compFlags |= CLFLG_TREETRANS;
         compiler.fgGlobalMorph = true;
         compiler.lvaTable = [

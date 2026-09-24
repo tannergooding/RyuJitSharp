@@ -39,8 +39,10 @@ behavior. Always-throwing expressions can propagate without discarding earlier
 effects or confusing conditional throws with unconditional ones. Full-width
 returned fields can become whole-local reads and remain enregisterable.
 
-Constant reassociation preserves comma-expression side effects and overflow
-checks. Complementary shifts can be recognized as rotations, with explicit
+Constant reassociation and left-deep rearrangement preserve side effects,
+overflow checks and GC-pointer boundaries. Constant-division preparation keeps
+eligible divisors available to lowering without suppressing required exceptions.
+Complementary shifts can be recognized as rotations, with explicit
 count masking and restrictions on merging observable reads. Fresh IR nodes now
 start with undefined value numbers in Release as well as Debug.
 

@@ -131,6 +131,123 @@ public class GenTreeOp : GenTreeUnOp
         return true;
     }
 
+    public bool UsesDivideByConstOptimized(Compiler compiler)
+    {
+        if (!compiler.opts.OptimizationEnabled || (Oper is not GT_DIV and not GT_MOD and not GT_UDIV and not GT_UMOD))
+        {
+            return false;
+        }
+
+#if TARGET_ARM64
+        if (Oper is GT_MOD or GT_UMOD)
+        {
+            return false;
+        }
+#endif
+        var isSigned = Oper is GT_DIV or GT_MOD;
+        var dividend = Op1.EffectiveVal;
+        var divisor = Op2.EffectiveVal;
+#if !TARGET_64BIT
+        if (dividend.Oper is GT_LONG)
+        {
+            return false;
+        }
+#endif
+        // Constant operands should fold earlier; remaining pairs may throw.
+        if (dividend.Oper.IsCnsIntOrI)
+        {
+            return false;
+        }
+
+        nint divisorValue;
+        if (divisor.Oper.IsCnsIntOrI)
+        {
+            divisorValue = divisor.AsIntCon().IconValue;
+        }
+        else if ((compiler.vnStore is not null) && compiler.vnStore.IsVNConstant(divisor._vnPair.Liberal))
+        {
+            divisorValue = compiler.vnStore.CoercedConstantValue<nint>(divisor._vnPair.Liberal);
+        }
+        else
+        {
+            return false;
+        }
+
+        if (divisorValue == 0)
+        {
+            return false;
+        }
+        else if (isSigned)
+        {
+            // Preserve the minimum-value / -1 overflow exception.
+            if (divisorValue == -1)
+            {
+                return false;
+            }
+
+            var magnitude = unchecked((nuint)(divisorValue >= 0 ? divisorValue : -divisorValue));
+            if (nuint.IsPow2(magnitude))
+            {
+                return true;
+            }
+        }
+        else
+        {
+            // Int constants are sign-extended in native-sized storage.
+            if (Type is TYP_INT)
+            {
+                divisorValue &= unchecked((nint)uint.MaxValue);
+            }
+
+            if (nuint.IsPow2(unchecked((nuint)divisorValue)))
+            {
+                return true;
+            }
+        }
+
+        if (Oper is GT_DIV or GT_UDIV)
+        {
+            if (isSigned)
+            {
+                if (((Type is TYP_INT) && (divisorValue == int.MinValue))
+#if TARGET_64BIT
+                    || ((Type is TYP_LONG) && (divisorValue == long.MinValue))
+#endif
+                )
+                {
+                    return true;
+                }
+            }
+            else if (((Type is TYP_INT) && (unchecked((uint)divisorValue) > (uint.MaxValue / 2))) ||
+                ((Type is TYP_LONG) && (unchecked((ulong)divisorValue) > (ulong.MaxValue / 2))))
+            {
+                return true;
+            }
+        }
+
+#if TARGET_XARCH || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+        // Reciprocal multiplication also handles negative magic divisors.
+        // ARM32 has no GT_MULHI support for this path.
+        if (!compiler.opts.MinOpts && (!isSigned || (divisorValue >= 3) || (divisorValue <= -3)))
+        {
+            return true;
+        }
+#endif
+        return false;
+    }
+
+    public void CheckDivideByConstOptimized(Compiler compiler)
+    {
+        if (UsesDivideByConstOptimized(compiler))
+        {
+            var divisor = Op2.EffectiveVal;
+            if (divisor.Oper is GT_CNS_INT)
+            {
+                divisor.Flags |= GTF_DONT_CSE;
+            }
+        }
+    }
+
     public void ReverseRelop()
     {
         _oper = _oper.ReverseRelop;
