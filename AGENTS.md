@@ -52,3 +52,13 @@ checkpoint, and load only the relevant sections of the
   before expanding scope, accepting output differences, changing ABI/ownership
   contracts, or making substantial design changes. Do not push or open a PR
   without explicit authorization.
+- After context recovery, resume the concrete operation in `checkpoint.nextAction`;
+  do not restart planning or reopen settled scope and validation decisions.
+  Keep that cursor specific: the failing command or symbol, the unanswered
+  question, and the next completion boundary.
+- Bound investigations to blockers of the active batch. Stop when the question
+  is answered; record nonblocking discrepancies briefly and continue. Repeated
+  reads or checks without an implementation decision require narrowing the
+  investigation, not expanding the process. Reuse established validation and
+  consolidate ledger/evidence maintenance across coherent portions rather than
+  restarting a test-and-documentation cycle for each helper.
