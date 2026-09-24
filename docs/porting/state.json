@@ -12,7 +12,7 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Advance Windows-x64 scalar minopts lowering, stack-level/throw-helper preparation, LSRA state and codegen initialization. Rationalization is committed and published as 619127a. The lowering, LSRA and codegen foundation packets have returned; integrate and validate their shared contracts before activating any backend driver.",
+      "scope": "Advance Windows-x64 scalar minopts lowering, stack-level/throw-helper preparation, LSRA state and codegen initialization. Rationalization is committed and published as 619127a. Keep disjoint required implementation packets active concurrently: coordinator owns block/local lowering and shared interfaces, with workers on LSRA construction and call targets. Validate stable packets independently when in-flight shared-tree edits would otherwise block their integration.",
       "doneWhen": [
         "Integrate complete required lowering and stack-level helpers, including outgoing frame space and exception-helper construction, without activating an incomplete node dispatcher.",
         "Port LSRA interval/reference foundations and native minimal-allocation dependencies; retain incomplete native bodies and do not invent a reduced allocator.",
@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Port common block-store lowering in lower.cpp:12202 and its LowerInitBlockStore/LowerCopyBlockStore dependencies around 10143-10340. These are shared native functions, not lowerxarch.cpp functions. LowerStoreLocCommonMinOpts and floating-store retyping are now implemented as WIP; primitive field-list spilling, signed-zero/NaN bits and replacement owner/SSA identity pass in Debug and Release. Important correction to earlier recovery notes: native SetOper defaults to CLEAR_VN (gentree.h:2104, compiler.hpp:2016-2019), and BashToConst calls it. Replacements must clear VNs unless the native call explicitly preserves them; full flag retention does not imply VN retention. B164 and the tests now enforce that native contract. Struct-to-STORE_BLK still reaches unported dispatch. Preserve GC pointer atomicity, GC-safe helper selection, native thresholds and replacement-returning aliases. Larger copies require helper-call lowering, and GC copies also require decomposition or bulk write barriers; do not introduce a reduced fallback. Lowering.CastExpansion.cs contains the AMD64 LowerCast body; integral dispatch is exercised by field packing, but floating expansion still requires HWINTRINSIC/select closure. LowerArg/LowerArgsForCall, field lists and traversal remain WIP. Optimized arithmetic/local-store modes and nonprimary paths remain explicit NYIs. Complete support packets include 44fc2e1 and f60b986. LowerCall, full lowering/LSRA drivers, throw-helper/stack-level activation and emission remain unfinished. Do not activate or commit incomplete dispatchers; retain native bodies. Managed code size remains zero.",
+    "nextAction": "Continue the parent-owned scalar store-indirection closure: LowerStoreIndirCommon (lower.cpp:11311), LowerStoreIndir (lowerxarch.cpp:82) and ContainCheckStoreIndir (7620). GCInfo.WriteBarriers.cs and LowerRMWMemOp have been added as WIP; validate their new coverage before committing. Hardware store containment also needs the native instruction tuple metadata, which is not yet generated in this port; preserve the existing native-table generator approach. Block/local stores, helper-call conversion and GC-copy decomposition are now translated in Lowering.Blocks/BlockHelpers/Locals.cs, but helper paths still need GT_CALL and decomposed stores need GT_ADD/GT_STOREIND dispatch. Small block init/copy, GC-safe zero loops and local-to-block replacement passed the prior Debug selection; the expanded integration is pending the concurrent LSRA and call-target packets. Receive the workers' full results and integrate shared contracts without rereading their investigations. Spill temporary lifecycle passed exact-index Debug/Release validation independently of WIP. Important: native SetOper defaults to CLEAR_VN (gentree.h:2104, compiler.hpp:2016-2019), including BashToConst; B164 corrects earlier recovery notes that incorrectly claimed preservation. Call target worker owns the new Lowering.CallTargets.cs and CallTargetLoweringTests.cs; LSRA worker owns constructor/interval state and LinearScanConstructionTests.cs. Parent updated real CodeGen/live-JitFlags fixtures rather than accepting a test-only constructor fallback. LowerCall, full lowering/LSRA drivers, floating HWINTRINSIC/select closure, stack-level activation and emission remain unfinished. Do not activate or commit incomplete dispatchers; retain native bodies. Managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -172,6 +172,17 @@
         "beforeFix": "artifacts\\native-vn-clearing-before.trx: five cases fail with incorrect VN retention, two unchanged-node cases pass",
         "scope": "WIP common local-store integration covers primitive field-list spills, floating constant bits, candidate-local exclusion and replacement SSA/owner identity. VNs clear for native SetOper/BashToConst transformations and remain on unchanged nodes. The earlier setoper-vn-before and local-store-integration results used an incorrect preservation expectation and are superseded; no backend activation.",
         "remaining": ["Block-store lowering and helper-call closure", "Floating cast HWINTRINSIC/select lowering", "Complete node/call/block dispatch", "Phase activation and allocation"],
+        "nativeBodiesRetained": true
+      },
+      "spillTemporarySupport": {
+        "debugPassed": 2,
+        "releasePassed": 2,
+        "skipped": 0,
+        "selection": ["SpillTemporaryTests"],
+        "debugTests": "artifacts\\spill-temporary-commit-debug.trx",
+        "releaseTests": "artifacts\\spill-temporary-commit-release.trx",
+        "scope": "Exact staged-source export, independent of concurrent backend WIP. Covers normalized types, native numbering, acquisition from shared-size slots and release/reuse ordering.",
+        "remaining": ["Spill-tree allocation and unspill paths", "LSRA integration", "Machine-code emission"],
         "nativeBodiesRetained": true
       },
       "rationalizationActivation": {
