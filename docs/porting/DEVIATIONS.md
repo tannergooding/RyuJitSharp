@@ -596,6 +596,13 @@ Tree dump callers always supply an indentation stack. An empty stack still
 corresponds to a non-null native stack, so it must not trigger the fractional
 sequence labels reserved for native calls without a stack.
 
+Code generation owns the canonical mutable `GCInfo`, `RegSet` and disassembler
+values. Their collaborators use managed owner references and ref-returning
+accessors instead of copying state represented by native pointers/references.
+GC descriptor unions use typed storage selected by their native discriminants;
+spill/GC descriptor links remain managed references. Disassembler streams reuse
+the existing managed text-output types.
+
 ### D003: Deferred non-Windows-x64-only paths
 
 **Status:** accepted scoped deferral; not a successful execution/parity result.
@@ -605,6 +612,11 @@ with NYI while remaining compilable. Record the affected symbol, target predicat
 and missing behavior when introducing such a deferral. Windows-x64 behavior
 within the function must not be replaced by stubs. Verify that the selected
 failure path cannot continue as if implemented in Debug or Release.
+
+`RegSet` initializes Swift callee-saved masks under `SWIFT_SUPPORT`, as native
+does. Its non-AMD64 Swift path reports NYI and then terminates with
+`fatal(CORJIT_IMPLLIMITATION)` until the ARM64 target masks are available.
+The native constructor remains in the residual tree.
 
 Current target-sync additions under `TARGET_WASM` are
 `Compiler.fgWasmRepairTryEntries` and `Compiler.fgWasmSpillRefs` in

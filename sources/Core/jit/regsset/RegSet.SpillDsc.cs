@@ -5,13 +5,12 @@
 
 namespace RyuJitSharp;
 
-public partial struct GCInfo
+public partial struct RegSet
 {
-    public sealed class varPtrDsc
+    private sealed class SpillDsc
     {
-        public varPtrDsc? vpdNext;
-        public uint vpdVarNum;
-        public uint vpdBegOfs;
-        public uint vpdEndOfs;
+        public SpillDsc? spillNext;
+        public GenTree? spillTree;
+        public TempDsc? spillTemp;
     }
 }

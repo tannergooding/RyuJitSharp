@@ -30,6 +30,17 @@ public sealed partial class CodeGen : ICodeGen
 
     private NodeInternalRegisters _internalRegisters;
 
+#if !TARGET_X86
+    private int _stkArgVarNum;
+#endif
+
+    private regMaskTP _calleeRegArgMaskLiveIn;
+
+#if DEBUG
+    private int _genTrnslLocalVarCount;
+    private uint _genCurDispOffset;
+#endif
+
 #if TARGET_AMD64
     private regMask _srbmAllFloat;
     private regMask _srbmAllInt;
@@ -52,13 +63,52 @@ public sealed partial class CodeGen : ICodeGen
     public CodeGen(Compiler compiler)
     {
         _compiler = compiler;
-        _cgEmitter = new Emitter();
+        _gcInfo = new GCInfo(this);
+        _regSet = new RegSet(this);
+        _internalRegisters = new NodeInternalRegisters();
+
+#if !TARGET_X86
+        _stkArgVarNum = BAD_VAR_NUM;
+#endif
+
+        _cgEmitter = new Emitter(this);
+        _calleeRegArgMaskLiveIn = RBM_NONE;
+
+#if DEBUG
+        _verbose = compiler.verbose;
+#endif
+
+        _regSet.tmpInit();
+
+#if LATE_DISASM
+        _cgDisasm.disInit(compiler);
+#endif
+
+#if DEBUG
+        _genTrnslLocalVarCount = 0;
+
+#if HAS_FIXED_REGISTER_SET
+        compiler.compCalleeRegsPushed = unchecked((int)INVALID_POINT_CD);
+#endif
+
+#if TARGET_XARCH
+        compiler.compCalleeFPRegsSavedMask = unchecked((regMask)(-1));
+#endif
+#endif
+
+        compiler.genCallSite2DebugInfoMap = null;
+        Interruptible = false;
+
+#if DEBUG
+        _genInterruptibleUsed = false;
+        _genCurDispOffset = uint.MaxValue;
+#endif
     }
 
     public Compiler Compiler => _compiler;
 
 #if LATE_DISASM
-    public Disassembler Disassembler => _cgDisasm;
+    public ref Disassembler Disassembler => ref _cgDisasm;
 #endif
 
     public Emitter Emitter => _cgEmitter;
@@ -254,6 +304,11 @@ public sealed partial class CodeGen : ICodeGen
         {
             _cgFramePointerRequired.Value = value;
         }
+    }
+
+    public void ResetWritePhaseForFramePointerRequired()
+    {
+        _cgFramePointerRequired.ResetWritePhase();
     }
 
     public bool IsFramePointerUsed

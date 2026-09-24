@@ -16,7 +16,7 @@ public struct PhasedVar<T>
     private bool _initialized;
 
     /// <summary>false if we are in the (initial) "write" phase.</summary>
-    /// <remarks>Once the value is read, this changes to true, and can't be changed back.</remarks>
+    /// <remarks>Reading the value enters this phase until explicitly reset.</remarks>
     private bool _readPhase;
 #endif
 
@@ -68,6 +68,17 @@ public struct PhasedVar<T>
 #if DEBUG
         assert(_initialized);
         _readPhase = true;
+#endif
+    }
+
+#if DEBUG
+    public void ResetWritePhase()
+#else
+    public readonly void ResetWritePhase()
+#endif
+    {
+#if DEBUG
+        _readPhase = false;
 #endif
     }
 }

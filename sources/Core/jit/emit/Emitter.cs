@@ -12,9 +12,16 @@ public partial class Emitter
 {
     protected Compiler? _compiler;
 
-    protected GCInfo gcInfo;
+    protected ref GCInfo gcInfo => ref codeGen.GCInfo;
 
-    protected CodeGen? codeGen;
+    protected CodeGen codeGen;
+
+    public Emitter(CodeGen codeGen)
+    {
+        this.codeGen = codeGen;
+    }
+
+    public ref GCInfo GCInfo => ref codeGen.GCInfo;
 
     private int _debugInfoSize;
 
@@ -331,7 +338,7 @@ public partial class Emitter
     {
         _compiler = comp;
         emitCmpHandle = cmpHandle;
-        _debugInfoSize = sizeof(instrDescDebugInfo);
+        _debugInfoSize = sizeof(instrDescDebugInfo*);
 
 #if !DEBUG
         if (!comp.opts.disAsm)

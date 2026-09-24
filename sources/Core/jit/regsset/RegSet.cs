@@ -10,6 +10,85 @@ namespace RyuJitSharp;
 
 public partial struct RegSet
 {
+    private readonly CodeGen _codeGen;
+    private SpillDsc?[] _rsSpillDesc;
+    private SpillDsc? _rsSpillFree;
+    private bool _rsNeededSpillReg;
+
+    public regMaskTP rsMaskResvd;
+
+#if SWIFT_SUPPORT
+    private regMaskTP _rsAllCalleeSavedMask;
+    private regMaskTP _rsIntCalleeSavedMask;
+#endif
+
+#if TARGET_ARMARCH || TARGET_LOONGARCH64
+    private regMaskTP _rsMaskCalleeSaved;
+#endif
+
+#if TARGET_ARM
+    public regMaskTP rsMaskPreSpillRegArg;
+    public regMaskTP rsMaskPreSpillAlign;
+#endif
+
+#if DEBUG
+    private bool _rsModifiedRegsMaskInitialized;
+#endif
+
+    public RegSet(CodeGen codeGen)
+    {
+        this = default;
+        _codeGen = codeGen;
+        _rsSpillDesc = new SpillDsc?[(int)REG_COUNT];
+        rsSpillInit();
+        rsMaskResvd = RBM_NONE;
+
+#if SWIFT_SUPPORT
+#if TARGET_AMD64
+        _rsIntCalleeSavedMask = new regMaskTP(SRBM_INT_CALLEE_SAVED);
+        _rsAllCalleeSavedMask = new regMaskTP(SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED, SRBM_MSK_CALLEE_SAVED);
+#else
+        NYI("RegSet Swift callee-saved register masks outside AMD64");
+        fatal(CORJIT_IMPLLIMITATION);
+#endif
+#endif
+
+#if TARGET_ARMARCH || TARGET_LOONGARCH64
+        _rsMaskCalleeSaved = RBM_NONE;
+#endif
+
+#if TARGET_ARM
+        rsMaskPreSpillRegArg = RBM_NONE;
+        rsMaskPreSpillAlign = RBM_NONE;
+#endif
+
+#if DEBUG
+        _rsModifiedRegsMaskInitialized = false;
+#endif
+    }
+
+    public readonly Compiler Compiler => _codeGen.Compiler;
+
+    public readonly ref GCInfo GCInfo => ref _codeGen.GCInfo;
+
+    private void rsSpillInit()
+    {
+        Array.Clear(_rsSpillDesc);
+        _rsNeededSpillReg = false;
+        _rsSpillFree = null;
+    }
+
+    public void tmpInit()
+    {
+        tmpCount = 0;
+        tmpSize = -1;
+#if DEBUG
+        tmpGetCount = 0;
+#endif
+        tmpFree = default;
+        tmpUsed = default;
+    }
+
     private int tmpCount;
     private int tmpSize;
 

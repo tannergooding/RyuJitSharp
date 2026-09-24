@@ -12,12 +12,12 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Finish the in-progress Windows-x64 rationalization closure, including statement sequencing and hardware rewrites, then advance the scalar minopts path through lowering, LSRA and code generation. Global morph is committed and published. Use bounded Sol/Luna packets for independent backend work; keep shared contracts and integration coordinated.",
+      "scope": "Advance Windows-x64 scalar minopts lowering, stack-level/throw-helper preparation, LSRA state and codegen initialization. Rationalization is committed and published as 619127a. The lowering, LSRA and codegen foundation packets have returned; integrate and validate their shared contracts before activating any backend driver.",
       "doneWhen": [
-        "Complete Rationalizer.DoPhase and its started Windows-x64 dependencies, preserving LIR ownership, execution order, argument ABI and parameter-register mapping.",
-        "Resolve rationalization-specific failures and dump differences; distinguish earlier importer and EH-funclet gaps from this phase.",
-        "Select separable lowering, LSRA and code-generation packets for executable scalar minopts methods rather than filling optional neighboring phases.",
-        "Validate and retire complete definitions; commit coherent portions and publish execution milestones without stopping at them."
+        "Integrate complete required lowering and stack-level helpers, including outgoing frame space and exception-helper construction, without activating an incomplete node dispatcher.",
+        "Port LSRA interval/reference foundations and native minimal-allocation dependencies; retain incomplete native bodies and do not invent a reduced allocator.",
+        "Establish canonical managed ownership of codegen, GC and register-set state; build toward actual scalar emission with correct leaf metadata.",
+        "Validate and commit coherent complete portions; publish execution milestones on the existing branch without force pushing or changing targets."
       ],
       "validation": [
         "Reuse existing coverage and incremental builds. Add focused regression cases for actual failures, not a matrix for each helper.",
@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit the validated rationalization boundary separately from backend WIP, then integrate the bounded Sol lowering/stack-level and Luna LSRA packets. Rationalization completes twenty minopts phase sections with seventeen exact resulting IR sections; remaining differences are earlier hardware import and EH-funclet ordering. Shared IRegAlloc contracts and backend activation belong to the coordinator. Lowering traversal, interval allocation/resolution, code emission and metadata remain required before scalar managed execution. Do not activate incomplete drivers or make optional optimization/EH/HWI parity prerequisites. The native call-rewrite deletion is reconciled and protected with its original index distinction in localRecovery.rationalizationNativeBeforeRetirement.",
+    "nextAction": "Commit the validated canonical codegen/GC/register/disassembler initialization closure, then the corrected single-type register-mask helpers and generated native register-mask table. LSRA reference-state and lowering/stack-level packets remain uncommitted WIP: review them against complete native functions, then complete call lowering required by throw-helper generation. Debug-only lowering diagnostics are now guarded in Release. SingleTypeRegSet must alias regMask, not the full regMaskTP; generated masks preserve predicate-bank overlap and zero-valued pseudo-registers. The integrated selection passes 167 Debug and 159 Release cases. LowerRange still explicitly rejects GT_CALL and other required operators, while allocator and lowering drivers remain unactivated. Do not retire or commit incomplete drivers. Managed code size remains zero; no additional parity capture is claimed.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -41,6 +41,18 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "backendSupportIntegration": {
+        "debugPassed": 167,
+        "releasePassed": 159,
+        "skipped": 0,
+        "initializationCases": 4,
+        "registerMaskCases": 11,
+        "selection": ["BackendInitializationTests", "RegisterMaskTests", "RationalizationTests", "UseEdgeIteratorTests", "FlowGraphHelperTests", "MorphTreeSupportTests"],
+        "debugTests": "artifacts\\scalar-backend-boundary-debug.trx",
+        "releaseTests": "artifacts\\scalar-backend-boundary-release.trx",
+        "scope": "Integration coverage includes uncommitted lowering/LSRA support; no backend driver activation or managed code generation.",
+        "nativeBodiesRetained": ["CodeGen and RegSet constructors", "GCInfo initialization and descriptors", "DisAssembler::disInit", "Lowering and LSRA drivers"]
+      },
       "rationalizationActivation": {
         "debugPassed": 152,
         "releasePassed": 144,

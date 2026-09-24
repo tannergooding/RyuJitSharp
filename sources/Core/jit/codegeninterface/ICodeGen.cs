@@ -10,7 +10,7 @@ public interface ICodeGen
     Compiler Compiler { get; }
 
 #if LATE_DISASM
-    Disassembler Disassembler { get; }
+    ref Disassembler Disassembler { get; }
 #endif
 
     Emitter Emitter { get; }
@@ -89,6 +89,8 @@ public interface ICodeGen
     bool genCreateAddrMode(GenTreeOp addr, bool fold, int naturalMul, out bool rev, out GenTree? rv1, out GenTree? rv2, out int mul, out nint cns);
 
     unsafe void genGenerateCode(out void* codePtr, out int nativeSizeOfCode);
+
+    void ResetWritePhaseForFramePointerRequired();
 
     regNumber GetFramePointerReg(int funcletIndex);
 
