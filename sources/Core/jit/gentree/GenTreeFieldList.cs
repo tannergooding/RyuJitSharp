@@ -26,7 +26,7 @@ public sealed partial class GenTreeFieldList : GenTree
         }
     }
 
-    public UseList Uses => _uses;
+    public ref UseList Uses => ref _uses;
 
     /// <summary>Check if 2 FIELD_LIST nodes are equal.</summary>
     /// <param name="list1">The first FIELD_LIST node</param>

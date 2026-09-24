@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Continue LowerArg/LowerArgsForCall and their register/stack/field-list dependencies. Canonical backend initialization and native single-type masks are committed as 0f59359 and 53b6864. The direct-call target, argument-placement legalization and outgoing-area support closure is validated: LowerDirectCall preserves native access kinds, helper/function lookups, ReadyToRun cells and target metadata; LegalizeArgPlacement preserves ordering across interfering calls. The current selection passes 177 Debug and 169 Release cases, including ten call/frame-support cases. This is support code, not LowerCall or phase activation. The partial LowerRange dispatcher, containment helpers, compiler throw helpers, stack-level phase and LSRA reference state remain WIP. Lowering.DoPhase now rejects its unimplemented phase instead of reporting a successful no-op. Keep incomplete dispatch/allocation algorithms uncommitted and retain their native bodies. Managed code size remains zero; no additional parity capture is claimed.",
+    "nextAction": "Continue LowerArg/LowerArgsForCall and their register/stack/field-list dependencies after direct-call/frame support commit 6a838b7. InsertBitCastIfNecessary needs TryRemoveBitCast and ContainCheckBitCast; LowerArgFieldList needs compatibility checking, register packing and spilling fields to a local. B160 fixes the copied GenTreeFieldList.Uses getter: cloning previously lost every field, and lowering needs canonical Clear/Reverse mutations. The regression fails before the fix; the integrated selection passes 220 Debug and 212 Release cases afterward. LowerCall and phase activation remain unfinished. The partial LowerRange dispatcher, containment helpers, compiler throw helpers, stack-level phase and LSRA reference state remain WIP. Lowering.DoPhase rejects its unimplemented phase rather than reporting a successful no-op. Keep incomplete dispatch/allocation algorithms uncommitted and retain their native bodies. Managed code size remains zero; no additional parity capture is claimed.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -63,6 +63,17 @@
         "releaseTests": "artifacts\\scalar-backend-call-release.trx",
         "scope": "Direct-call target shapes, ReadyToRun tailcall cell reuse, argument-placement ordering and marks, outgoing-area maximum and four-extra-slot frame-pointer threshold.",
         "remaining": ["LowerArg and field-list/register/stack argument lowering", "LowerCall and required indirect/virtual/unmanaged/CFG/tailcall paths", "Node/block lowering driver", "LSRA build/allocation/resolution", "Machine-code emission"]
+      },
+      "fieldListOwnership": {
+        "debugPassed": 220,
+        "releasePassed": 212,
+        "skipped": 0,
+        "regression": "TreeComparisonTests.FieldListCloningPreservesFieldsAndIndependentListOwnership",
+        "beforeFix": "artifacts\\field-list-ownership-before.trx: one executed case fails because cloning produces an empty field list",
+        "debugTests": "artifacts\\scalar-backend-field-list-debug.trx",
+        "releaseTests": "artifacts\\scalar-backend-field-list-release.trx",
+        "selection": "callLoweringSupport selection plus TreeComparisonTests",
+        "backlog": "B160"
       },
       "rationalizationActivation": {
         "debugPassed": 152,

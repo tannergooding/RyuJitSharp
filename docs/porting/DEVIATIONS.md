@@ -603,6 +603,9 @@ GC descriptor unions use typed storage selected by their native discriminants;
 spill/GC descriptor links remain managed references. Disassembler streams reuse
 the existing managed text-output types.
 
+`GenTreeFieldList.Uses` likewise returns its mutable list by reference, so
+cloning and lowering update the owning node rather than a discarded copy.
+
 ### D003: Deferred non-Windows-x64-only paths
 
 **Status:** accepted scoped deferral; not a successful execution/parity result.

@@ -320,6 +320,28 @@ internal static unsafe class TreeComparisonTests
         });
     }
 
+    [Test]
+    public static void FieldListCloningPreservesFieldsAndIndependentListOwnership()
+    {
+        WithCompiler(compiler => {
+            var original = new GenTreeFieldList();
+            original.AddField(compiler, compiler.gtNewIconNode(TYP_INT, 11), 0, TYP_INT);
+            original.AddField(compiler, compiler.gtNewDconNode(TYP_DOUBLE, 23), 8, TYP_DOUBLE);
+
+            var clone = compiler.gtCloneExpr(original).AsFieldList();
+            Assert.That(GenTree.Compare(original, clone), Is.True);
+            var originalHead = original.Uses.Head ?? throw new InvalidOperationException();
+            var clonedHead = clone.Uses.Head ?? throw new InvalidOperationException();
+            Assert.That(clonedHead, Is.Not.SameAs(originalHead));
+            Assert.That(clonedHead.Node, Is.Not.SameAs(originalHead.Node));
+            Assert.That(clonedHead.Next, Is.Not.SameAs(originalHead.Next));
+
+            clone.Uses.Clear();
+            Assert.That(clone.Uses.Head, Is.Null);
+            Assert.That(original.Uses.Head, Is.SameAs(originalHead));
+        });
+    }
+
     private static void WithCompiler(Action<Compiler> action)
     {
 #if DEBUG
