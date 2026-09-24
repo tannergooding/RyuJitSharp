@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "The frozen backend integration snapshot now passes 349 Debug and 340 Release cases, including LSRA constructor/selection/reference/maps/diagnostics, memory and struct calls, PInvoke call sites, and comparison reduction/containment. Statistics tests are genuinely enabled; repaired fixtures preserve native optimization, threading and block-table preconditions. Commit dependency-coherent portions without the incomplete traversal. The GenTreeCC constructor defect is independently validated: six regressions fail before the condition assignment and pass afterward in both configurations. Next integrate method-level PInvoke frames, generated instruction flags and node flag predicates, then complete comparison lowering and register assignment. RegSet/emitter tracking is being validated in a separate worker-owned snapshot. Keep collecting handoffs and refilling independent lanes without reminders. Parent owns shared contracts; drivers remain inactive and managed code size remains zero.",
+    "nextAction": "Scalar comparison lowering and generated instruction flags are committed as 6e9d852 after exact-index Debug/Release validation. Modified-register tracking and emitter group queries are committed as a8303a7. Comparison, bounds-check and xarch negation dispatch are integrated into the unfinished traversal; their combined selection passes 126 cases in each configuration, including 13 cases that previously failed at missing dispatch. Keep traversal and its integration tests uncommitted until dependency closure. Next close array-length and return lowering, then integrate the shared condition-to-flags helper and LowerJTrue with the select worker's handoff. Collect constant-division and repaired LSRA allocation/block-order packets when returned, verify their reported contracts, and refill useful lanes. Drivers remain inactive and managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -247,6 +247,15 @@
         "debugTests": "artifacts\\backend-call-integration-debug.trx",
         "releaseTests": "artifacts\\backend-call-integration-release.trx",
         "scope": "Frozen uncommitted call integration includes memory-helper expansion and ordinary-call fallback, native next-node conventions, single-register struct returns and comparison containment. No lowering-driver activation or managed code generation."
+      },
+      "scalarDispatchIntegration": {
+        "debugPassed": 126,
+        "releasePassed": 126,
+        "skipped": 0,
+        "debugTests": "artifacts\\dispatch-debug.trx",
+        "releaseTests": "artifacts\\dispatch-release.trx",
+        "scope": "Comparison/flag metadata coverage plus bounds-check containment and 14 range-dispatch cases. Before wiring comparison and bounds checks and preserving native xarch NEG behavior, 13 dispatch cases failed and the existing NOT case passed.",
+        "remaining": "Traversal remains incomplete and uncommitted; this is helper integration, not phase activation."
       },
       "scalarComparisonLoweringSupport": {
         "debugPassed": 107,
