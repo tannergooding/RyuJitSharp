@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Local marking is active and validated against the twenty-method native-host corpus; fatal-result recovery is committed as 9695c1f. Scalar folding/bitwise helpers and enregistration preparation are committed through e1dd9b1. Collect and independently integrate B170's unsigned layout/ValueSize/block packet, returned through worker turn 43 with 314 selected cases/configuration; keep full LCLHEAP unwired until integration. Tracked-local selection is returned through turn 39; its worker now owns the required TrackedVarBitSetTraits element/word-count correction and consumer validation. LSRA returned through turn 54 includes buildPhysRegRecords and the repaired location/free/copy transitions; the worker is now replacing approximate interval/ref/variable-ref dumps with the native diagnostic closure. HOLD traversal commit until that closure is complete. Keep lowering/allocation inactive and broad backend work uncommitted. Managed code size remains zero.",
+    "nextAction": "Local marking is committed as 809163e and validated against the twenty-method native-host corpus; fatal-result recovery is 9695c1f. Tracked-local selection and corrected bitset traits are independently integrated (292 Debug/287 Release); worker collected through turn 40. B170's unsigned packet is HOLD after review found MorphInitBlockHelper still narrows arbitrary unsigned block sizes to int; its worker now owns complete init/copy morph size propagation and regression coverage before parent integration. Keep full LCLHEAP unwired. LSRA returned through turn 54 includes buildPhysRegRecords and repaired location/free/copy transitions; its worker is replacing approximate interval/ref/variable-ref dumps with the native diagnostic closure. HOLD traversal commit until that closure is complete. Keep lowering/allocation inactive and broad backend work uncommitted. Managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -41,6 +41,15 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "trackedLocalSelection": {
+        "debugPassed": 292,
+        "releasePassed": 287,
+        "skipped": 0,
+        "selection": ["TrackedLocalSelectionTests", "LocalReferenceAccountingTests", "BitVecTests", "BlockMorphTests", "AssertionTests", "NaturalLoopTests"],
+        "debugTests": "artifacts\\tracked-selection-integration-debug.trx",
+        "releaseTests": "artifacts\\tracked-selection-integration-release.trx",
+        "scope": "Committed-source export plus native SelectTrackedLocals, both comparers, native-order sorting and B174 bitset dimension correction. Includes newly active local marking; no liveness or allocation driver activation."
+      },
       "localMarkingPhase": {
         "debugPassed": 167,
         "releasePassed": 160,

@@ -517,6 +517,12 @@ compilation with `CORJIT_SKIPPED`; it does not finish the phase or run allocatio
 This preserves the temporary native-fallback boundary in G001, not a successful
 managed backend.
 
+Liveness template policies use a static-interface generic parameter. The
+tracked-local reverse-map array's length supplies its allocation capacity rather
+than storing a second size field. Sorting retains native pivot and comparison
+order because tolerance-based profile-weight comparisons can make that order
+observable; it is not replaced with framework sorting.
+
 `GenTreeCall` stores its tailcall, async-call, and unmanaged-call-convention
 variants separately. The native union cannot be reproduced with explicit
 overlapping fields because async debug information contains managed references.

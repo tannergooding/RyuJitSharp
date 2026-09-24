@@ -61,6 +61,11 @@ native implicit-reference fast path. The local-marking phase now initializes
 these counts, diagnostic slot numbers and generic-context lifetimes before
 rationalization.
 
+Tracked-local selection now applies native eligibility, reference-weight and
+tie-breaking rules, preserving early-liveness and address-exposure policies.
+It maintains tracked indices, reverse mappings and correctly sized local
+bitsets. The complete liveness and allocation drivers remain unfinished.
+
 Register kills and GC-specific spills now preserve live values and advance
 fixed-register constraints. Temporary copy-register allocation retains the
 interval's primary assignment and reports the native selection heuristic.
