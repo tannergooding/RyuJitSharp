@@ -12,6 +12,27 @@ continue. A milestone does not require a conversational stop. Pause for an
 explicit user request, an unresolved decision requiring approval, a publication
 conflict, or a blocker that cannot be safely resolved.
 
+## 2026-09-23: Mask evaluation and vector conversion
+
+**Commit:** `a07c607`.
+
+**Result:** Fixed-width mask unary/binary evaluation and mask/vector conversions
+are complete. Corrected `simdmask_t.AllBitsSet`, which ignored its element count
+and always set only 32 bits. Preserved native eight-bit minimum mask operations,
+all-true normalization and non-normalized conversion results. Ten complete
+Windows-x64 definitions retired.
+
+**Evidence:** Five cases reproduce the storage defect before correction.
+Twenty-eight new cases pass; the combined HWI/scalar selection passes 337 Debug /
+333 Release, zero skipped, including bit ordering, inactive storage, aliased
+operands and raw floating lane bits.
+
+**Frontier:** HWI folding remains inactive. ARM64 predicate policies are
+source-ported but unexercised; scalable evaluation remains pending. No new
+NativeAOT/corpus capture or phase/codegen parity claim.
+
+**Next:** Remaining HWI construction and constant-evaluation prerequisites.
+
 ## 2026-09-23: Fixed-width vector evaluation
 
 **Commits:** `a7448a3`, `f500c0a`.
