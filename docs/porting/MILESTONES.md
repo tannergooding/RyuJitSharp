@@ -54,6 +54,10 @@ including weighted uses, implicit parameter and P/Invoke references, EH
 definition costs, and single-definition eligibility. Minopts retains the
 native implicit-reference fast path.
 
+Register kills and GC-specific spills now preserve live values and advance
+fixed-register constraints. Temporary copy-register allocation retains the
+interval's primary assignment and reports the native selection heuristic.
+
 ## 2026-09-24: Rationalization and linear IR
 
 Rationalization now converts sequenced expression trees into linear IR, removes

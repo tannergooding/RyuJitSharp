@@ -7,7 +7,11 @@ namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
-    private regNumber allocateRegMinimal(Interval currentInterval, RefPosition refPosition)
+    private regNumber allocateRegMinimal(Interval currentInterval, RefPosition refPosition) =>
+        allocateRegMinimal(currentInterval, refPosition, out _);
+
+    private regNumber allocateRegMinimal(
+        Interval currentInterval, RefPosition refPosition, out RegisterScore selectionScore)
     {
         assert(!_enregisterLocalVars);
         if (_enregisterLocalVars)
@@ -15,7 +19,7 @@ public sealed partial class LinearScan
             throw new FatalJitException("Minimal register allocation requires locals to remain un-enregistered.");
         }
 
-        var foundRegBit = selectMinimal(currentInterval, refPosition);
+        var foundRegBit = selectMinimal(currentInterval, refPosition, out selectionScore);
         if (foundRegBit == SRBM_NONE)
         {
             return REG_NA;

@@ -41,6 +41,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "registerKillsAndCopies": {
+        "debugPassed": 96,
+        "releasePassed": 81,
+        "skipped": 0,
+        "selection": "All LinearScan tests in the committed-source export plus the kill/copy packet; deliberately excludes the incomplete minimal-allocation traversal.",
+        "debugTests": "artifacts\\lsra-kill-copy-integration-debug.trx",
+        "releaseTests": "artifacts\\lsra-kill-copy-integration-release.trx",
+        "scope": "Kill-list construction, low/high mask-bank processing, GC-specific spills and minimal copy-register ownership/restoration. Selector score plumbing preserves native copy-event heuristic output.",
+        "remaining": "Minimal traversal still requires location-transition/freeing and diagnostic repairs; its passing worker tests do not establish native completeness."
+      },
       "localReferenceAccounting": {
         "debugPassed": 120,
         "releasePassed": 118,

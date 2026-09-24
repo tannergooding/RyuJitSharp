@@ -194,6 +194,13 @@ public sealed partial class LinearScan
 
         internal SingleTypeRegSet selectMinimal(Interval currentInterval, RefPosition refPosition)
         {
+            return selectMinimal(currentInterval, refPosition, out _);
+        }
+
+        internal SingleTypeRegSet selectMinimal(
+            Interval currentInterval, RefPosition refPosition, out RegisterScore selectionScore)
+        {
+            selectionScore = RegisterScore.NONE;
 #if DEBUG
             if (VERBOSE)
             {
@@ -300,6 +307,10 @@ public sealed partial class LinearScan
             {
                 _candidates = _freeCandidates;
                 try_REG_ORDER();
+                if (_found)
+                {
+                    selectionScore = RegisterScore.REG_ORDER;
+                }
             }
 
 #if DEBUG && TRACK_LSRA_STATS
@@ -318,6 +329,10 @@ public sealed partial class LinearScan
                 }
 
                 try_REG_NUM();
+                if (_found)
+                {
+                    selectionScore = RegisterScore.REG_NUM;
+                }
 #if DEBUG && TRACK_LSRA_STATS
                 if (_found)
                 {
@@ -891,6 +906,10 @@ public sealed partial class LinearScan
 
     internal SingleTypeRegSet selectMinimal(Interval currentInterval, RefPosition refPosition) =>
         _regSelector.selectMinimal(currentInterval, refPosition);
+
+    private SingleTypeRegSet selectMinimal(
+        Interval currentInterval, RefPosition refPosition, out RegisterScore selectionScore) =>
+        _regSelector.selectMinimal(currentInterval, refPosition, out selectionScore);
 
 #if DEBUG
     private static string getScoreName(RegisterScore score) => score switch
