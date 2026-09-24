@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Scalar conditions, array metadata, intrinsic/division containment, the Windows partial-SIMD ABI gate and LSRA block sequencing are committed. Return/PInvoke-frame and shared temporary-use integration passes; traversal now handles native passthrough nodes and MULHI, exposing and correcting B152. Keep traversal and dependent backend packets uncommitted until closure. The calls worker owns optimized local-store lowering to unblock six signed-magic division cases; the division identity/flag/temporary repairs are returned but not yet fully validated. The comparison worker owns full switch lowering, LIR block splitting and default-case removal. The LSRA worker owns register lifetime helpers and Windows upper-vector spill weighting. Collect complete handoffs and refill these existing workers. Parent should close remaining scalar dispatch and method-level PInvoke dependencies. Initialized constant LCLHEAP above Int32.MaxValue requires reconciliation of the shared block-layout size contract; do not mask that gap. Drivers remain inactive and managed code size remains zero.",
+    "nextAction": "LIR block splitting/default-case preservation and standalone magic-divisor helpers are now validated independently of backend WIP. Returned optimized local-store support closes the six signed-magic failures; integrated division/switch/local-store/return/call-target coverage passes 234 Debug and 230 Release. Traversal wires division, switch, MULHI, native passthroughs and XADD-to-LOCKADD; the obsolete local-store MinOpts forwarding wrapper is removed. Parent also corrected checked signed reinterpretation of unsigned magic constants, with two regressions failing before the fix. Keep dependent traversal/backend packets uncommitted until closure. The calls worker owns optimized indirect-store/coalescing support. The comparison worker owns LowerBlock, CheckBlock and LowerJmpMethod, without phase activation. The LSRA worker owns lifetime repairs (reversed pending-free verifier mask and missing native allocation events), then kill/GC-kill/copy helpers; hold assignment/lifetime commits for those repairs. Collect complete handoffs and refill existing workers. Parent should close remaining scalar dispatch and method-level PInvoke dependencies. B170 blocks initialized constant LCLHEAP above Int32.MaxValue; do not mask or narrow that contract. Drivers remain inactive and managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -41,6 +41,25 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "magicDivisorSupport": {
+        "debugPassed": 65,
+        "releasePassed": 65,
+        "skipped": 0,
+        "selection": ["MagicDivideTests", "FlagSupportTests"],
+        "debugTests": "artifacts\\magic-divide-commit-debug.trx",
+        "releaseTests": "artifacts\\magic-divide-commit-release.trx",
+        "scope": "Committed-source export plus the standalone magic-divisor packet. Covers native signed/unsigned 32/64-bit algorithms, small-divisor tables, non-table divisors and reduced numerator widths."
+      },
+      "divisionSwitchIntegration": {
+        "debugPassed": 234,
+        "releasePassed": 230,
+        "skipped": 0,
+        "selection": ["DivisionLoweringTests", "ConstantDivisionLoweringTests", "DivisionOwnershipTests", "MagicDivideTests", "SwitchLoweringTests", "SwitchBitTestLoweringTests", "LirBlockSplittingTests", "LocalStoreLoweringTests", "LocalStoreCoalescingTests", "LoweringDispatchTests", "ReturnLoweringTests", "CallTargetLoweringTests"],
+        "debugTests": "artifacts\\division-switch-integration-debug.trx",
+        "releaseTests": "artifacts\\division-switch-integration-release.trx",
+        "beforeFix": "artifacts\\division-preshift-before.trx: two even-divisor lowering cases fail with checked signed reinterpretation of the unsigned magic constant.",
+        "scope": "Stable integration snapshot, including uncommitted backend dependencies. The six signed-magic failures are resolved by complete optimized local-store lowering. New range tests cover division owner replacement and continued lowering of switch guards and inserted switch blocks."
+      },
       "unsignedFlagAndDispatch": {
         "debugPassed": 105,
         "releasePassed": 105,
