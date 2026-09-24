@@ -12,6 +12,7 @@ public sealed class GenTreeCC : GenTree
     public GenTreeCC(genTreeOps oper, var_types type, GenCondition condition)
         : base(oper, type)
     {
+        _condition = condition;
         assert(oper.IsCC);
     }
 

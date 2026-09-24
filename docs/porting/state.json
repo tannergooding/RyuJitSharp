@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Continue frozen backend integration in artifacts\\backend-integration-snapshot. Memory-call specialization, struct returns and comparison containment are wired into the inactive traversal; their combined 77 cases pass Debug/Release. Comparison containment also passes 26 cases per configuration in an exact-index export without backend WIP. Collect and integrate LSRA allocation diagnostics and selector fixture repairs, PInvoke call-site lowering, comparison reduction, and the GenTreeCC condition fix; rerun the combined selection and commit dependency-coherent portions. Current lanes advance minimal register allocation, method-level PInvoke frames, and generated instruction flags. Parent owns call dispatch/shared contracts and keeps native driver activation gated. Managed code size remains zero. Preserve native SetOper/BashToConst VN clearing and the documented B165 safe map-copy deviation.",
+    "nextAction": "The frozen backend integration snapshot now passes 349 Debug and 340 Release cases, including LSRA constructor/selection/reference/maps/diagnostics, memory and struct calls, PInvoke call sites, and comparison reduction/containment. Statistics tests are genuinely enabled; repaired fixtures preserve native optimization, threading and block-table preconditions. Commit dependency-coherent portions without the incomplete traversal. The GenTreeCC constructor defect is independently validated: six regressions fail before the condition assignment and pass afterward in both configurations. Next integrate method-level PInvoke frames, generated instruction flags and node flag predicates, then complete comparison lowering and register assignment. RegSet/emitter tracking is being validated in a separate worker-owned snapshot. Keep collecting handoffs and refilling independent lanes without reminders. Parent owns shared contracts; drivers remain inactive and managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -247,6 +247,24 @@
         "debugTests": "artifacts\\backend-call-integration-debug.trx",
         "releaseTests": "artifacts\\backend-call-integration-release.trx",
         "scope": "Frozen uncommitted call integration includes memory-helper expansion and ordinary-call fallback, native next-node conventions, single-register struct returns and comparison containment. No lowering-driver activation or managed code generation."
+      },
+      "conditionCodeSupport": {
+        "debugPassed": 6,
+        "releasePassed": 6,
+        "skipped": 0,
+        "selection": ["ConditionCodeTests"],
+        "beforeFix": "artifacts\\condition-code-before.trx: all six cases fail when GenTreeCC discards its supplied condition",
+        "debugTests": "artifacts\\condition-code-commit-debug.trx",
+        "releaseTests": "artifacts\\condition-code-commit-release.trx",
+        "scope": "Exact-index validation of native condition initialization and canonical gtNewCC allocation, including JCC/SETCC condition reversal and independent node ownership."
+      },
+      "backendIntegratedSnapshot": {
+        "debugPassed": 349,
+        "releasePassed": 340,
+        "skipped": 0,
+        "debugTests": "artifacts\\backend-snapshot-debug.trx",
+        "releaseTests": "artifacts\\backend-snapshot-release.trx",
+        "scope": "Frozen returned lowering/LSRA support, including executed Debug-only allocation event/statistics cases. PInvoke frames, new instruction flags, full comparison lowering and register assignment are not included. No driver activation or managed emission."
       },
       "rationalizationActivation": {
         "debugPassed": 152,
