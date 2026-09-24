@@ -19,6 +19,22 @@ public partial class Compiler
     public bool IsEntireAccess(int lclNum, uint offset, ValueSize accessSize)
         => (lvaLclValueSize(lclNum) == accessSize) && (offset == 0);
 
+    /// <summary>Whether an access overflows the local; an inexact access is wide unless it covers the entire local.</summary>
+    public bool IsWideAccess(int lclNum, uint offset, ValueSize accessSize)
+    {
+        assert(!accessSize.IsNull);
+
+        if (accessSize.IsExact)
+        {
+            // Widen the sum so overflow cannot hide a wide access. Its extent
+            // must fit in 16 bits and its last byte must be a valid local address.
+            var extent = (ulong)offset + (uint)accessSize.ExactSize;
+            return (extent > ushort.MaxValue) || !IsValidLclAddr(lclNum, (int)extent - 1);
+        }
+
+        return !IsEntireAccess(lclNum, offset, accessSize);
+    }
+
     public int lvaGetFieldLocal(in LclVarDsc varDsc, uint fldOffset)
     {
         noway_assert(varTypeIsStruct(varDsc.Type));
@@ -2484,6 +2500,32 @@ public partial class Compiler
         }
 
         lvaSetVarDoNotEnregister(varNum, DoNotEnregisterReason.AddrExposed);
+    }
+
+    /// <summary>Mark a struct return buffer as defined through its address without making it address-exposed.</summary>
+    /// <remarks>The callee only writes its result to this address; it does not capture the address.</remarks>
+    public void lvaSetHiddenBufferStructArg(int varNum)
+    {
+        ref var varDsc = ref lvaGetDesc(varNum);
+
+#if DEBUG
+        varDsc.IsDefinedViaAddress = true;
+#endif
+        if (varDsc.lvPromoted)
+        {
+            noway_assert(varTypeIsStruct(varDsc.Type));
+
+            for (var i = varDsc.lvFieldLclStart; i < varDsc.lvFieldLclStart + varDsc.lvFieldCnt; i++)
+            {
+                noway_assert(lvaTable[i].lvIsStructField);
+#if DEBUG
+                lvaTable[i].IsDefinedViaAddress = true;
+#endif
+                lvaSetVarDoNotEnregister(i, DoNotEnregisterReason.HiddenBufferStructArg);
+            }
+        }
+
+        lvaSetVarDoNotEnregister(varNum, DoNotEnregisterReason.HiddenBufferStructArg);
     }
 
     /// <summary>Record that the local var "varNum" should not be enregistered (for one of several reasons.)</summary>

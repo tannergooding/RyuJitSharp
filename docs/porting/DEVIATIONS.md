@@ -85,6 +85,14 @@ heap. This is a staged implementation limitation, not completion of the native
 phase or an accepted dump/codegen difference. The complete native phase and
 combined allocation traversal remain in the residual ledger.
 
+Local-address values retain their owning statement/operand slot rather than a
+native `GenTree**`. Unary and binary operands use direct slot identifiers;
+special-node operands use an ordinal in the owner's stable operand list. This
+keeps managed references GC-safe and distinguishes two slots containing the
+same node. The owner must not restructure its operand list before consuming
+its child values. This support does not yet activate local morph or implement
+replacement of nodes in the locals-only threaded list.
+
 Identical-operand comparisons allocate fresh constants, as native does, rather
 than using the scalar-bashing replacement constructors. Comparisons and SELECTs
 copy the original sequencing links only outside global morph; callers still own

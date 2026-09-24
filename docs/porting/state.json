@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Resume at native lclmorph.cpp:2380, Compiler::fgLocalMorph, versus the stub in Compiler.fg.cs:15535. Follow the required local-address-exposure/local-tree transformation closure and implement coherent complete helpers toward phase activation. Allocation lowering is verified: all seventeen minopts allocation and internal-block phase sections, allocation IR and six internal-block IR sections match native. The heap path is deliberately staged; stack allocation fails explicitly and its full native phase/traversal remain in the ledger. Do not re-open allocation construction, optional escape analysis, B142 string-quote diagnostics, B135 profile text or hardware import while advancing required minopts phases.",
+    "nextAction": "Continue B143 with native LocalAddressVisitor node transformations in lclmorph.cpp:1652-2245, then its pre/post-order traversal. Value owning-slot tracking, IsWideAccess, hidden return-buffer marking and UpdateEarlyRefCount are implemented and validated; do not restart their exploration. Whole-node replacement must update Value.Use/owners and preserve logical IDs, VN-clearing and flag masks. Existing base replacement constructors require unthreaded sources; local-only sequencing on the optimized path still needs an explicit ownership solution, not a weakened assertion. LocalEqualsLocalAddrAssertions (419-700) and LoopDefinitions (180-376) remain unported; FlowGraphNaturalLoops is already implemented. fgLocalMorph remains a stub. Keep minopts execution first and do not reopen B141 allocation construction, optional escape analysis or unrelated B142/B135 diagnostics.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -1012,6 +1012,18 @@
         "completeNativePhasePorted": false,
         "codegenParity": "not-available"
       },
+      "localAddressSupport": {
+        "debugPassed": 13,
+        "releasePassed": 13,
+        "skipped": 0,
+        "debugTests": "artifacts\\local-morph-support-debug.trx",
+        "releaseTests": "artifacts\\local-morph-support-release.trx",
+        "coverage": ["exact owning slots including shared operands", "unsigned offset overflow", "last-byte and ushort extent bounds", "hidden return buffers and promoted fields", "early reference count saturation"],
+        "nativeDefinitionsRetired": ["Compiler::IsWideAccess", "Compiler::lvaSetHiddenBufferStructArg"],
+        "nativeDeclarationsRetired": 2,
+        "visitorActivated": false,
+        "nativeAotRecaptured": false
+      },
       "nativeAotPublish": "passed-after-heap-allocation-activation",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "all-seventeen-minopts-allocation-and-internal-block-phase-sections-and-all-emitted-post-phase-IR-sections-equal",
@@ -1482,6 +1494,11 @@
       "commit": "b7709a20349c682efc7564b397dafc0ee464d36f",
       "indexCommit": "dfbd51d1ef1f3325a7b1f416043006d551cae44b",
       "ref": "refs/porting/snapshots/native-ledger-heap-allocation"
+    },
+    "localAccessNativeResidual": {
+      "commit": "aea94e70a57c864b105885dec62e51e855aa9504",
+      "indexCommit": "c741ee9922f591734a1d5590a290ab525d01d53f",
+      "ref": "refs/porting/snapshots/native-ledger-local-access"
     },
     "internalBlockPhaseNativeResidual": {
       "commit": "494ccbc0132fcf507b8133bffa2fef635d788858",
