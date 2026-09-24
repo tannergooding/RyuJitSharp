@@ -99,7 +99,6 @@ public sealed partial class Lowering
                 {
                     var indir = new GenTreeIndir(GT_IND, regType, src.AsBlk().Addr, null, src, NodeThreading.LIR) {
                         Flags = src.Flags,
-                        _vnPair = src._vnPair,
                     };
                     BlockRange().ReplaceNode(src, indir);
                     src = indir;

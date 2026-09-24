@@ -137,7 +137,7 @@ internal static unsafe class StackArgumentLoweringTests
                 Assert.That(argument.Data.Oper, Is.EqualTo(genTreeOps.GT_IND));
                 Assert.That(argument.Data, Is.Not.SameAs(source));
                 Assert.That(argument.Data.Flags, Is.EqualTo(originalFlags));
-                Assert.That(argument.Data._vnPair.Conservative, Is.EqualTo(123));
+                Assert.That(argument.Data._vnPair.Conservative, Is.EqualTo(ValueNumStore.NoVN));
                 Assert.That(argument.Data.AsIndir().Addr, Is.SameAs(block.FirstNode));
                 Assert.That(argument.Prev, Is.SameAs(argument.Data));
                 Assert.That(argument.Data.Next, Is.SameAs(argument));

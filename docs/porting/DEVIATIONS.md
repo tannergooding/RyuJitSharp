@@ -622,10 +622,10 @@ in the same order.
 Unused-load conversion likewise replaces indirection nodes and returns the
 current node to its caller. The constructors retain the nonfaulting flag that
 native `ChangeOper` preserves. Stack-argument `GT_BLK` to `GT_IND` conversion
-preserves all flags and value numbers, matching native `SetOper`, and rewrites
-the owning LIR use before lowering the new indirection. That conversion restores
-the value-number pair explicitly because the shared indirection constructor
-otherwise follows `ChangeOper`'s clearing policy.
+preserves all flags and clears value numbers, matching native `SetOper` with its
+default `CLEAR_VN` argument, and rewrites the owning LIR use before lowering the
+new indirection. `BashToConst` also calls `SetOper`; retyped floating constants
+must clear VNs even when their metadata-preserving constructor copies them.
 
 ### D003: Deferred non-Windows-x64-only paths
 
