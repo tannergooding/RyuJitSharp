@@ -12,6 +12,29 @@ continue. A milestone does not require a conversational stop. Pause for an
 explicit user request, an unresolved decision requiring approval, a publication
 conflict, or a blocker that cannot be safely resolved.
 
+## 2026-09-23: HWI node and mask-analysis prerequisites
+
+**Commits:** `716025f`, `7f3d065`, `dd3e8b9`.
+
+**Result:** Vector-to-mask construction and constant conversion folding,
+conversion recognition, sequential sign-bit extraction, per-element mask
+analysis and same-class HWI reconfiguration are complete. Existing local facts
+and operation metadata are reused. Seventeen complete Windows-x64 native
+definitions retired.
+
+**Evidence:** 34 new cases; the latest combined HWI/scalar selection passes
+371 Debug / 367 Release, zero skipped. Covers fresh conversion results,
+unchanged inputs, mask-width compatibility, recursive expressions, operand
+growth/shrinkage and caller-owned side-effect flags.
+
+**Frontier:** These helpers do not activate the full HWI folding dispatcher.
+Cross-kind changes still require whole-node replacement. ARM64 fixed-width
+branches are source-ported only; scalable conversion folding is explicitly NYI.
+No new NativeAOT/corpus or codegen parity claim.
+
+**Next:** Full HWI folding, including remaining metadata dependencies and
+reachable-behavior validation before dispatcher activation.
+
 ## 2026-09-23: Mask evaluation and vector conversion
 
 **Commit:** `a07c607`.
