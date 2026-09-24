@@ -13,6 +13,137 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class HardwareIntrinsicInitializationTests
 {
+    [TestCase(TYP_SIMD8, false)]
+    [TestCase(TYP_SIMD12, false)]
+    [TestCase(TYP_SIMD16, false)]
+    [TestCase(TYP_SIMD32, false)]
+    [TestCase(TYP_SIMD64, false)]
+    [TestCase(TYP_SIMD16, true)]
+    public static void UnaryEvaluationPreservesUpperLanesAndInactiveStorage(var_types type, bool scalar)
+    {
+        WithCompiler(_ => {
+            var node = new GenTreeVecCon(type) {
+                SimdVal = simd64_t.AllBitsSet,
+            };
+            for (var index = 0; index < type.Size / sizeof(int); index++)
+            {
+                node.SimdVal.i32[index] = int.MinValue + index;
+            }
+
+            var before = node.SimdVal;
+            Assert.That(node.TryEvaluateUnaryInPlace(GT_NEG, scalar, TYP_INT), Is.True);
+            for (var index = 0; index < type.Size / sizeof(int); index++)
+            {
+                var expected = scalar && (index != 0) ? before.i32[index] : unchecked(-before.i32[index]);
+                Assert.That(node.SimdVal.i32[index], Is.EqualTo(expected));
+            }
+
+            Assert.That(node.SimdVal.AsSpan<byte>()[type.Size..].SequenceEqual(before.AsSpan<byte>()[type.Size..]), Is.True);
+        });
+    }
+
+    [TestCase(TYP_BYTE, -128L, -128L)]
+    [TestCase(TYP_UBYTE, 1L, 255L)]
+    [TestCase(TYP_SHORT, -32768L, -32768L)]
+    [TestCase(TYP_USHORT, 1L, 65535L)]
+    [TestCase(TYP_INT, -2147483648L, -2147483648L)]
+    [TestCase(TYP_UINT, 1L, 4294967295L)]
+    [TestCase(TYP_LONG, long.MinValue, long.MinValue)]
+    [TestCase(TYP_ULONG, 1L, -1L)]
+    public static void UnaryIntegerNegationWrapsAtLaneWidth(var_types type, long input, long expected)
+    {
+        WithCompiler(_ => {
+            var node = new GenTreeVecCon(TYP_SIMD16);
+            node.EvaluateBroadcastInPlace(type, input);
+            Assert.That(node.TryEvaluateUnaryInPlace(GT_NEG, scalar: false, type), Is.True);
+            Assert.That(node.GetElementIntegral(type, 0), Is.EqualTo(expected));
+            Assert.That(node.GetElementIntegral(type, (16 / type.Size) - 1), Is.EqualTo(expected));
+        });
+    }
+
+    [TestCase(TYP_INT, 0L, 32L)]
+    [TestCase(TYP_UINT, 0x40000000L, 1L)]
+    [TestCase(TYP_INT, -1L, 0L)]
+    [TestCase(TYP_LONG, 0L, 64L)]
+    [TestCase(TYP_ULONG, 1L, 63L)]
+    [TestCase(TYP_LONG, long.MinValue, 0L)]
+    public static void UnaryLeadingZeroCountUsesTheLaneWidth(var_types type, long input, long expected)
+    {
+        WithCompiler(_ => {
+            var node = new GenTreeVecCon(TYP_SIMD16);
+            node.EvaluateBroadcastInPlace(type, input);
+            Assert.That(node.TryEvaluateUnaryInPlace(GT_LZCNT, scalar: false, type), Is.True);
+            Assert.That(node.GetElementIntegral(type, 0), Is.EqualTo(expected));
+        });
+    }
+
+    [TestCase(TYP_FLOAT, GT_NOT)]
+    [TestCase(TYP_DOUBLE, GT_NOT)]
+    [TestCase(TYP_FLOAT, GT_LZCNT)]
+    [TestCase(TYP_DOUBLE, GT_LZCNT)]
+    public static void UnaryFloatingBitwiseOperationsDoNotQuietSignalingNaNs(var_types type, genTreeOps oper)
+    {
+        WithCompiler(_ => {
+            var node = new GenTreeVecCon(TYP_SIMD16);
+            if (type == TYP_FLOAT)
+            {
+                node.SimdVal.u32[0] = 0x7F800123;
+                node.SimdVal.u32[1] = 0x80000000;
+            }
+            else
+            {
+                node.SimdVal.u64[0] = 0x7FF0000000000123;
+                node.SimdVal.u64[1] = 0x8000000000000000;
+            }
+
+            var before = node.SimdVal;
+            Assert.That(Globals.IsUnaryBitwiseOperation(oper), Is.True);
+            Assert.That(node.TryEvaluateUnaryInPlace(oper, scalar: true, type), Is.True);
+            if (type == TYP_FLOAT)
+            {
+                Assert.That(node.SimdVal.u32[0], Is.EqualTo(oper == GT_NOT ? ~before.u32[0] : 1u));
+            }
+            else
+            {
+                Assert.That(node.SimdVal.u64[0], Is.EqualTo(oper == GT_NOT ? ~before.u64[0] : 1ul));
+            }
+
+            Assert.That(node.SimdVal.AsSpan<byte>()[type.Size..16].SequenceEqual(before.AsSpan<byte>()[type.Size..16]), Is.True);
+        });
+    }
+
+    [TestCase(TYP_FLOAT)]
+    [TestCase(TYP_DOUBLE)]
+    public static void UnaryFloatingNegationPreservesPayloadsAndSignedZero(var_types type)
+    {
+        WithCompiler(_ => {
+            var node = new GenTreeVecCon(TYP_SIMD16);
+            if (type == TYP_FLOAT)
+            {
+                node.SimdVal.u32[0] = 0x7F800123;
+                node.SimdVal.u32[1] = 0x80000000;
+            }
+            else
+            {
+                node.SimdVal.u64[0] = 0x7FF0000000000123;
+                node.SimdVal.u64[1] = 0x8000000000000000;
+            }
+
+            Assert.That(Globals.IsUnaryBitwiseOperation(GT_NEG), Is.False);
+            Assert.That(node.TryEvaluateUnaryInPlace(GT_NEG, scalar: false, type), Is.True);
+            if (type == TYP_FLOAT)
+            {
+                Assert.That(node.SimdVal.u32[0], Is.EqualTo(0xFF800123u));
+                Assert.That(node.SimdVal.u32[1], Is.Zero);
+            }
+            else
+            {
+                Assert.That(node.SimdVal.u64[0], Is.EqualTo(0xFFF0000000000123ul));
+                Assert.That(node.SimdVal.u64[1], Is.Zero);
+            }
+        });
+    }
+
     [TestCase(NI_AVX2_And, TYP_INT, GT_AND, false)]
     [TestCase(NI_AVX512_NotMask, TYP_INT, GT_NOT, false)]
     [TestCase(NI_X86Base_Xor, TYP_FLOAT, GT_XOR, false)]

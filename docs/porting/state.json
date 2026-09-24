@@ -12,15 +12,15 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete HWI intrinsic-to-operator classification, effective NEG/NOT recognition, bitwise classification and vector lane zero/one queries.",
+      "scope": "Complete fixed-width vector unary evaluation, including scalar NEG/NOT/LZCNT helpers, bitwise floating dispatch and the GenTreeVecCon in-place wrapper.",
       "doneWhen": [
-        "Preserve all native mapping cases, target guards, base-type gates and scalar flags.",
-        "Recognize integral zero subtraction and all-bits-set/negative-zero XOR patterns without widening floating subtraction.",
-        "Preserve bitwise positive-zero tests versus numeric one tests; do not activate the incomplete HWI folding dispatcher.",
+        "Preserve integer wraparound and restrict LZCNT to 32/64-bit lanes.",
+        "Preserve signed zero and NaN bits; route floating bitwise operations through integral lanes before extracting floating values.",
+        "Retain xarch scalar upper lanes and inactive storage; keep scalable ARM64 evaluation explicitly NYI and do not activate the HWI dispatcher.",
         "The selected Debug/Release checks pass and complete functions are committed with their native retirement and checkpoint."
       ],
       "validation": [
-        "Extend existing HWI initialization coverage for operation families, scalar flags, effective patterns and lane predicates.",
+        "Extend existing HWI coverage for width/signedness, bitwise floating data, scalar upper lanes and inactive padding.",
         "Run one HWI/scalar selection in Debug and Release.",
         "No NativeAOT recapture or full suite for support-only changes unless the reachable frontier changes."
       ],
@@ -31,7 +31,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Non-HWI expression folding (B101), fixed-width HWI creation constants (B102) and HWI operation classification (B103) are complete. Continue vector unary/binary evaluation and remaining construction prerequisites before wiring the HWI folding dispatcher, then audit fgInline activation. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
+    "nextAction": "Non-HWI expression folding (B101), HWI creation/classification (B102/B103) and fixed-width vector unary evaluation (B104) are complete. Continue vector binary evaluation and remaining construction/mask prerequisites before wiring the HWI folding dispatcher, then audit fgInline activation. Replace checkpoint.activeBatch before editing. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -600,6 +600,19 @@
         "debugTests": "artifacts\\hwi-operations-debug.trx",
         "releaseTests": "artifacts\\hwi-operations-release.trx"
       },
+      "vectorUnaryEvaluation": {
+        "managedSourceCommit": "84bb1dbe1288677aa8c05ef92ac8e144f474267a",
+        "debugPassed": 262,
+        "releasePassed": 258,
+        "newCasesPerConfiguration": 26,
+        "skipped": 0,
+        "nativeDefinitionsRetired": 8,
+        "nativeAotRecaptured": false,
+        "phaseActivated": false,
+        "nonX64ExecutionEstablished": false,
+        "debugTests": "artifacts\\vector-unary-debug.trx",
+        "releaseTests": "artifacts\\vector-unary-release.trx"
+      },
       "nativeAotPublish": "passed-after-special-folding",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "six-of-ten-import-prefixes-equal-remaining-inline-candidate-differences",
@@ -922,6 +935,15 @@
       "commit": "01308c82c20ab7bd196e10c5dee2fc0285a0f9ca",
       "indexCommit": "a1ed71d056dce1a16e58f0d7f247b19243fa2ca6",
       "ref": "refs/porting/snapshots/native-ledger-hwi-operations"
+    },
+    "vectorUnaryManagedSource": {
+      "commit": "84bb1dbe1288677aa8c05ef92ac8e144f474267a",
+      "ref": "refs/porting/snapshots/vector-unary-source"
+    },
+    "vectorUnaryNativeResidual": {
+      "commit": "e7ad8d74b7721c24003031ece48e619bbead33cf",
+      "indexCommit": "66ad786e079fce26768bcbf1f022e572ea488df8",
+      "ref": "refs/porting/snapshots/native-ledger-vector-unary"
     }
   },
   "sourceMap": [
@@ -977,6 +999,12 @@
       "area": "assertion-representation-and-tables",
       "native": ["src\\coreclr\\jit\\assertionprop.cpp", "src\\coreclr\\jit\\compiler.h", "src\\coreclr\\jit\\compiler.hpp", "src\\coreclr\\jit\\valuenum.h"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.AssertionDsc.cs", "sources\\Core\\jit\\compiler\\Compiler.ap.cs", "sources\\Core\\jit\\compiler\\Compiler.opt.cs", "sources\\Core\\jit\\valuenum\\ValueNumStore.cs"],
+      "reconciledCommit": null
+    },
+    {
+      "area": "vector-constant-evaluation",
+      "native": ["src\\coreclr\\jit\\simd.h", "src\\coreclr\\jit\\gentree.cpp"],
+      "csharp": ["sources\\Core\\jit\\simd\\Globals.cs", "sources\\Core\\jit\\gentree\\GenTreeVecCon.cs"],
       "reconciledCommit": null
     },
     {

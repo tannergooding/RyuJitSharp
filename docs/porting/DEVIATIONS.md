@@ -131,6 +131,13 @@ native lane order, full output zeroing for creation candidates and untouched
 output for other intrinsic IDs. Nonconstant lanes stay zero, while recognized
 lanes are populated even when the whole creation cannot fold (B102).
 
+Vector unary evaluation uses bounded byte spans and typed `MemoryMarshal.Cast`
+views instead of native template storage and per-lane `memcpy`. Integral lanes
+use generic-math operations; floating arithmetic has separate overloads, and
+floating bitwise operations are reinterpreted before any floating load. The
+node wrapper copies back only active bytes, preserving inactive storage, while
+xarch scalar operations retain upper lanes from the input (B104).
+
 Phi definitions own copied SSA-number arrays and expose readonly memory.
 Reaching-VN traversal uses a managed stack and membership set, preserving native
 push/pop order, conservative SSA lookup, duplicate suppression, cycles and early

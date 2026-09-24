@@ -239,6 +239,43 @@ public sealed class GenTreeVecCon : GenTree
     }
 #endif
 
+    public bool TryEvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types baseType)
+    {
+        switch (Type)
+        {
+            case TYP_SIMD8:
+            case TYP_SIMD12:
+            case TYP_SIMD16:
+#if TARGET_XARCH
+            case TYP_SIMD32:
+            case TYP_SIMD64:
+#endif
+            {
+                simd_t result = default;
+                var activeValue = _simdVal.AsSpan<byte>()[..Type.Size];
+                var activeResult = result.AsSpan<byte>()[..Type.Size];
+                EvaluateUnarySimd(oper, scalar, baseType, activeResult, activeValue);
+                activeResult.CopyTo(activeValue);
+                return true;
+            }
+
+#if TARGET_ARM64
+            case TYP_SIMD:
+            {
+                NYI("ARM64 scalable vector unary evaluation");
+                fatal(CORJIT_IMPLLIMITATION);
+                return false;
+            }
+#endif
+
+            default:
+            {
+                unreached();
+                return false;
+            }
+        }
+    }
+
     /// <summary>Evaluates this constant using a broadcast</summary>
     /// <param name="simdBaseType">the base type of the constant being checked</param>
     /// <param name="scalar">the value to broadcast as part of the evaluation</param>
