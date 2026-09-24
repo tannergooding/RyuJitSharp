@@ -248,6 +248,16 @@
         "releaseTests": "artifacts\\backend-call-integration-release.trx",
         "scope": "Frozen uncommitted call integration includes memory-helper expansion and ordinary-call fallback, native next-node conventions, single-register struct returns and comparison containment. No lowering-driver activation or managed code generation."
       },
+      "lsraBlockSequencing": {
+        "debugPassed": 81,
+        "releasePassed": 72,
+        "skipped": 0,
+        "debugTests": "artifacts\\block-order-debug.trx",
+        "releaseTests": "artifacts\\block-order-release.trx",
+        "scope": "Native minopts layout order, optimized loop-aware reverse postorder, backward collection of unreachable blocks, critical/EH edge metadata and block statistics initialization. Covers unreachable blocks preceding a reachable layout tail and uses native padded weight formatting.",
+        "selection": "Four block-order cases with existing LSRA constructor/selection/reference/map/diagnostic and register/emitter state tests under the corrected Windows partial-SIMD feature gate.",
+        "remaining": "Allocation traversal and reference building are inactive. Register assignment and lifetime helpers remain separate pending packets."
+      },
       "scalarMathContainment": {
         "scope": "Complete xarch ContainCheckIntrinsic and ContainCheckDivOrMod/LowerDivOrMod. Scalar math containment distinguishes positive zero from negative zero and retains NaN bits; integral division uses native memory/register-optional rules.",
         "intrinsicCases": 23,
