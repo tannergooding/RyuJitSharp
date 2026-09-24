@@ -9,6 +9,66 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    public void fgMarkAddrModeForFieldAddr(GenTreeIndir indirection)
+    {
+        var address = indirection.Addr;
+        target_ssize_t totalOffset = 0;
+        var storeWithEffects = indirection.Oper.IsStore && ((indirection.Data.Flags & GTF_SIDE_EFFECT) != 0);
+        while (true)
+        {
+            while ((address.Oper is GT_ADD) && !address.HasOverflowCheck)
+            {
+                var offset = address.AsOp().Op2;
+                if (!offset.Oper.IsCnsIntOrI || (offset.Type is not TYP_I_IMPL) || offset.IsIconHandle())
+                {
+                    break;
+                }
+                if (!CheckedOps.TryAdd(totalOffset, unchecked((target_ssize_t)offset.AsIntCon().IconValue), out totalOffset))
+                {
+                    return;
+                }
+                address = address.AsOp().Op1;
+            }
+            if ((address.Oper is not GT_FIELD_ADDR) || !address.AsFieldAddr().IsInstance)
+            {
+                return;
+            }
+
+            var field = address.AsFieldAddr();
+#if TARGET_64BIT
+            target_ssize_t fieldOffset = unchecked((uint)field.FldOffset);
+#else
+            if (field.FldOffset < 0)
+            {
+                return;
+            }
+            target_ssize_t fieldOffset = field.FldOffset;
+#endif
+            if (!CheckedOps.TryAdd(totalOffset, fieldOffset, out totalOffset))
+            {
+                return;
+            }
+
+            var obj = field.FldObj;
+            if (fgAddrCouldBeNull(obj))
+            {
+                var elidable = (totalOffset >= 0) && !fgIsBigOffset(unchecked((nint)totalOffset));
+                var baseNonNull = optLocalAssertionProp && optAssertionIsNonNull(obj, apLocal);
+                if (!elidable || (storeWithEffects && !baseNonNull))
+                {
+                    // The explicit check is a barrier. In particular, a store's
+                    // value effects must not precede a check on its address.
+                    indirection.HasOrderingSideEffect = true;
+                    return;
+                }
+
+                field.Flags |= GTF_FLD_TGT_NONFAULTING;
+                indirection.Flags &= ~GTF_IND_NONFAULTING;
+            }
+            address = obj;
+        }
+    }
+
     public int fgGetFieldMorphingTemp(GenTreeFieldAddr field)
     {
         assert(field.IsInstance);

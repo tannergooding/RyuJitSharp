@@ -32,6 +32,10 @@ TLS field expansion preserves module-index indirections, field annotations and
 logical node identity. Address-morph support also recognizes implicitly accessed
 byref fields and limits expression duplication by tree complexity.
 
+Non-null proofs use local facts, value numbers and predecessor-edge assertions,
+including conservative SSA values across PHIs. Field null-check delegation
+respects cumulative offsets and cannot move a fault past a store's side effects.
+
 Integral cast optimization now uses range proofs and expression narrowing to
 remove redundant conversions, retaining overflow checks and small-local
 normalization where required.

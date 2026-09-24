@@ -22,6 +22,207 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class AssertionTests
 {
+    [TestCase(-1, false)]
+    [TestCase(0, true)]
+    [TestCase(4095, true)]
+    [TestCase(4096, false)]
+    public static void LocalNonNullProofFollowsEffectiveValuesWithinTheNullGuard(int offset, bool expected)
+    {
+        WithCompiler(compiler => {
+            MaxUncheckedOffset(compiler) = 4095;
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_REF }, new LclVarDsc { Type = TYP_REF }];
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            var assertions = BitOps.MakeEmpty(traits);
+            var assertion = compiler.optAddAssertion(AssertionDsc.CreateLclNonNullAssertion(compiler, 0));
+            BitOps.AddElemD(traits, assertions, assertion - 1);
+            var local = compiler.gtNewLclvNode(TYP_REF, 0);
+            var comma = compiler.gtNewBinaryNode(GT_COMMA, TYP_REF, compiler.gtNewNothingNode(), local);
+            var address = compiler.gtNewBinaryNode(GT_ADD, TYP_BYREF, comma, compiler.gtNewIconNode(TYP_I_IMPL, offset));
+
+            Assert.That(compiler.optAssertionIsNonNull(address, assertions), Is.EqualTo(expected));
+            Assert.That(compiler.optAssertionIsNonNull(local, null), Is.False);
+            Assert.That(compiler.optAssertionIsNonNull(compiler.gtNewLclvNode(TYP_REF, 1), assertions), Is.False);
+        });
+    }
+
+    [TestCase(-1, false)]
+    [TestCase(0, true)]
+    [TestCase(4095, true)]
+    [TestCase(4096, false)]
+    public static void KnownNonNullValuesRespectPointerCastsAndNullGuardOffsets(int offset, bool expected)
+    {
+        WithCompiler(compiler => {
+            MaxUncheckedOffset(compiler) = 4095;
+            var store = new ValueNumStore(compiler);
+            var handle = store.VNForHandle(0x1000, GTF_ICON_OBJ_HDL);
+            var cast = store.VNForFuncNoFolding(TYP_I_IMPL, VNFunc.VNF_Cast, handle, store.VNForCastOper(TYP_I_IMPL, false));
+            var address = store.VNForFuncNoFolding(TYP_BYREF, VNFunc.VNF_ADD, cast, store.VNForLongCon(offset));
+            var peeled = address;
+            store.PeelOffsets(ref peeled, out var displacement);
+
+            Assert.That(peeled, Is.EqualTo(handle));
+            Assert.That(displacement, Is.EqualTo(offset));
+            Assert.That(store.IsKnownNonNull(address), Is.EqualTo(expected));
+            Assert.That(store.IsKnownNonNull(ValueNumStore.NoVN), Is.False);
+            Assert.That(store.IsKnownNonNull(ValueNumStore.VNForNull()), Is.False);
+            Assert.That(store.IsKnownNonNull(store.VNForIntCon(123)), Is.False);
+            var load = store.VNForFunc(TYP_REF, VNFunc.VNF_InvariantNonNullLoad, handle);
+            Assert.That(store.IsKnownNonNull(load), Is.True);
+        });
+    }
+
+    [TestCase(-1, false)]
+    [TestCase(0, true)]
+    [TestCase(4095, true)]
+    [TestCase(4096, false)]
+    public static void NonNullAssertionsOnlyReuseSafeBasesButStillRecognizeFullAddresses(int offset, bool expected)
+    {
+        WithCompiler(compiler => {
+            MaxUncheckedOffset(compiler) = 4095;
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            var baseVN = store.VNForExpr(null, TYP_REF);
+            var address = store.VNForFuncNoFolding(TYP_BYREF, VNFunc.VNF_ADD, baseVN, store.VNForLongCon(offset));
+            var assertions = BitOps.MakeEmpty(traits);
+            var baseAssertion = compiler.optAddAssertion(AssertionDsc.CreateVNNonNullAssertion(compiler, baseVN));
+            BitOps.AddElemD(traits, assertions, baseAssertion - 1);
+
+            Assert.That(compiler.optAssertionVNIsNonNull(address, assertions, budget: 0), Is.EqualTo(expected));
+            var addressAssertion = compiler.optAddAssertion(AssertionDsc.CreateVNNonNullAssertion(compiler, address));
+            BitOps.AddElemD(traits, assertions, addressAssertion - 1);
+            Assert.That(compiler.optAssertionVNIsNonNull(address, assertions, budget: 0), Is.True);
+            Assert.That(compiler.optAssertionVNIsNonNull(ValueNumStore.NoVN, assertions), Is.False);
+        }, local: false);
+    }
+
+    [Test]
+    public static void GlobalTreeNonNullProofUsesNormalConservativeValues()
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_REF }, new LclVarDsc { Type = TYP_INT }];
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var handle = store.VNForHandle(0x1000, GTF_ICON_OBJ_HDL);
+            var unknown = store.VNForExpr(null, TYP_REF);
+            var exception = store.VNForFunc(TYP_REF, VNFunc.VNF_OverflowExc, ValueNumStore.VNForVoid());
+            var local = compiler.gtNewLclvNode(TYP_REF, 0);
+            local._vnPair = new(handle, store.VNWithExc(unknown, store.VNExcSetSingleton(exception)));
+            Assert.That(compiler.optAssertionIsNonNull(local, null), Is.False);
+
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            var assertions = BitOps.MakeEmpty(traits);
+            var index = compiler.optAddAssertion(AssertionDsc.CreateVNNonNullAssertion(compiler, unknown));
+            BitOps.AddElemD(traits, assertions, index - 1);
+            Assert.That(compiler.optAssertionIsNonNull(local, assertions), Is.True);
+            var constant = compiler.gtNewIconHandleNode(0x1000, GTF_ICON_OBJ_HDL);
+            constant._vnPair.SetBoth(handle);
+            Assert.That(compiler.optAssertionIsNonNull(constant, null), Is.True);
+        }, local: false);
+    }
+
+    [TestCase(0, false)]
+    [TestCase(1, false)]
+    [TestCase(2, true)]
+    public static void PhiNonNullProofUsesSsaDefinitionsAndTheCorrectPredecessorEdge(int trueFacts, bool expected)
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_REF }, new LclVarDsc { Type = TYP_INT }];
+            ref var definitions = ref compiler.lvaTable[0].lvPerSsaData;
+            var argumentSsa = definitions.AllocSsaNum();
+            var phiSsa = definitions.AllocSsaNum();
+            var unknown = store.VNForExpr(null, TYP_REF);
+            definitions.GetSsaDef(argumentSsa)._vnPair = new(store.VNForHandle(0x1000, GTF_ICON_OBJ_HDL), unknown);
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            var assertions = BitOps.MakeEmpty(traits);
+            var index = compiler.optAddAssertion(AssertionDsc.CreateVNNonNullAssertion(compiler, unknown));
+            BitOps.AddElemD(traits, assertions, index - 1);
+#if DEBUG
+            compiler.fgSafeBasicBlockCreation = true;
+#endif
+            var entry = BasicBlock.New(compiler, BBKinds.BBJ_COND);
+            var join = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            var other = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            var stale = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            compiler.fgFirstBB = entry;
+            entry.SetCond(new FlowEdge(entry, join, null), new FlowEdge(entry, other, null));
+            join.bbPreds = entry.TrueEdge;
+            entry.bbAssertionOut = assertions;
+            if (trueFacts != 0)
+            {
+                var outgoing = new nint[compiler.fgBBNumMax + 1][];
+                outgoing[entry.bbNum] = trueFacts == 2 ? assertions : BitOps.MakeEmpty(traits);
+                JtrueAssertionOut(compiler) = outgoing;
+            }
+
+            var argument = new GenTreePhiArg(TYP_REF, 0, argumentSsa, entry);
+            var firstUse = new GenTreePhi.Use(argument);
+            var phi = new GenTreePhi(TYP_REF) { FirstUse = firstUse };
+            var definition = compiler.gtNewStoreLclVarNode(0, phi);
+            definition.SsaNum = phiSsa;
+            definitions.GetSsaDef(phiSsa) = new LclSsaVarDsc(join, definition);
+            var phiVN = store.VNForPhiDef(TYP_REF, 0, phiSsa, [argumentSsa]);
+
+            Assert.That(store.IsKnownNonNull(phiVN), Is.False);
+            Assert.That(compiler.optAssertionVNIsNonNull(phiVN, null, budget: 0), Is.False);
+            Assert.That(compiler.optAssertionVNIsNonNull(phiVN, null, budget: 1), Is.EqualTo(expected));
+            Assert.That(argument._vnPair, Is.EqualTo(new ValueNumPair()));
+            Assert.That(compiler.optGetEdgeAssertions(other, entry), Is.SameAs(assertions));
+            Assert.That(BitOps.IsEmpty(traits, compiler.optGetEdgeAssertions(stale, entry)), Is.True);
+
+            firstUse.Next = new GenTreePhi.Use(new GenTreePhiArg(TYP_REF, 0, argumentSsa, stale));
+            Assert.That(compiler.optVisitReachingAssertions(phiVN, static (_, _) => Compiler.AssertVisit.Continue),
+                Is.EqualTo(Compiler.AssertVisit.Continue));
+            stale.bbPreds = new FlowEdge(entry, stale, null);
+            Assert.That(compiler.optVisitReachingAssertions(phiVN, static (_, _) => Compiler.AssertVisit.Continue),
+                Is.EqualTo(Compiler.AssertVisit.Abort));
+            firstUse.Next = null;
+            join.bbPreds = new FlowEdge(stale, join, join.bbPreds);
+            Assert.That(compiler.optVisitReachingAssertions(phiVN, static (_, _) => Compiler.AssertVisit.Continue),
+                Is.EqualTo(Compiler.AssertVisit.Abort));
+
+            definitions.GetSsaDef(argumentSsa)._vnPair.Conservative = store.VNForHandle(0x2000, GTF_ICON_OBJ_HDL);
+            Assert.That(store.IsKnownNonNull(phiVN), Is.True);
+        }, local: false);
+    }
+
+    [TestCase(0L, false, false, true, false)]
+    [TestCase(4087L, false, false, true, false)]
+    [TestCase(4088L, false, false, false, true)]
+    [TestCase(-9L, false, false, false, true)]
+    [TestCase(0L, true, false, false, true)]
+    [TestCase(0L, true, true, true, false)]
+    [TestCase(long.MaxValue, false, false, false, false)]
+    public static void FieldNullCheckMarkingPreservesStoreEffectsAndOffsetBoundaries(
+        long displacement, bool effectfulStore, bool nonNull, bool elided, bool ordered)
+    {
+        WithCompiler(compiler => {
+            MaxUncheckedOffset(compiler) = 4095;
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_REF }, new LclVarDsc { Type = TYP_INT }];
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            compiler.apLocal = BitOps.MakeEmpty(traits);
+            if (nonNull)
+            {
+                var index = compiler.optAddAssertion(AssertionDsc.CreateLclNonNullAssertion(compiler, 0));
+                BitOps.AddElemD(traits, compiler.apLocal, index - 1);
+            }
+            var field = new GenTreeFieldAddr(TYP_BYREF, compiler.gtNewLclvNode(TYP_REF, 0), (CORINFO_FIELD_STRUCT_*)4, 8);
+            var address = compiler.gtNewBinaryNode(GT_ADD, TYP_BYREF, field, compiler.gtNewIconNode(TYP_I_IMPL, (nint)displacement));
+            var indirection = effectfulStore
+                ? compiler.gtNewStoreIndNode(TYP_INT, address, compiler.gtNewStoreLclVarNode(1, compiler.gtNewIconNode(TYP_INT, 1)))
+                : compiler.gtNewIndir(TYP_INT, address);
+            indirection.Flags |= GTF_IND_NONFAULTING;
+
+            compiler.fgMarkAddrModeForFieldAddr(indirection);
+            Assert.That((field.Flags & GTF_FLD_TGT_NONFAULTING) != 0, Is.EqualTo(elided));
+            Assert.That((indirection.Flags & GTF_IND_NONFAULTING) == 0, Is.EqualTo(elided));
+            Assert.That(indirection.HasOrderingSideEffect, Is.EqualTo(ordered));
+            Assert.That(indirection.Addr, Is.SameAs(address));
+        });
+    }
+
     [TestCase(FieldSeq.FieldKind.SharedStatic, false)]
     [TestCase(FieldSeq.FieldKind.SimpleStaticKnownAddress, true)]
     public static void TreeConstantMetadataRegistersOnlyKnownStaticAddresses(FieldSeq.FieldKind kind, bool registered)
@@ -1239,6 +1440,12 @@ internal static unsafe class AssertionTests
         });
     }
 #endif
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compMaxUncheckedOffsetForNullObject")]
+    private static extern ref int MaxUncheckedOffset(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "bbJtrueAssertionOut")]
+    private static extern ref nint[][]? JtrueAssertionOut(Compiler compiler);
 
     private static AssertionDsc IntAssertion(Compiler compiler, nint value)
         => AssertionDsc.CreateConstLclVarAssertion(compiler, 0, ValueNumStore.NoVN, value, ValueNumStore.NoVN, true);

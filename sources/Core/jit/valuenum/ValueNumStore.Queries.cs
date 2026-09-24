@@ -110,6 +110,91 @@ public sealed partial class ValueNumStore
         };
     }
 
+    public void PeelOffsets(ref ValueNum vn, out target_ssize_t offset)
+    {
+#if DEBUG
+        var type = TypeOfVN(vn);
+        assert(type is TYP_I_IMPL or TYP_REF or TYP_BYREF);
+#endif
+        offset = 0;
+        var app = new VNFuncApp();
+        while (GetVNFunc(vn, ref app) && app.FuncIs(VNF_ADD, VNF_Cast))
+        {
+            if (app.FuncIs(VNF_Cast))
+            {
+                if (TypeOfVN(vn) is TYP_I_IMPL)
+                {
+                    GetCastOperFromVN(app.GetArg(1), out var castToType, out _);
+                    if (varTypeIsI(castToType) && varTypeIsI(TypeOfVN(app.GetArg(0))))
+                    {
+                        vn = app.GetArg(0);
+                        continue;
+                    }
+                }
+
+                break;
+            }
+
+            // Handles and the null reference are bases, not offsets.
+            if (IsVNConstantNonHandle(app.GetArg(0)) && (app.GetArg(0) != VNForNull()))
+            {
+                offset = unchecked(offset + (target_ssize_t)GetConstantInt64(app.GetArg(0)));
+                vn = app.GetArg(1);
+            }
+            else if (IsVNConstantNonHandle(app.GetArg(1)) && (app.GetArg(1) != VNForNull()))
+            {
+                offset = unchecked(offset + (target_ssize_t)GetConstantInt64(app.GetArg(1)));
+                vn = app.GetArg(0);
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+
+    public bool IsKnownNonNull(ValueNum vn)
+    {
+        if (vn == NoVN)
+        {
+            return false;
+        }
+
+        var type = TypeOfVN(vn);
+        if (type is not (TYP_I_IMPL or TYP_REF or TYP_BYREF))
+        {
+            return false;
+        }
+
+        PeelOffsets(ref vn, out var offset);
+        if ((offset < 0) || _compiler.fgIsBigOffset(unchecked((nint)offset)))
+        {
+            return false;
+        }
+
+        return VNVisitReachingVNs(vn, VisitKnownNonNull) is VNVisit.Continue;
+    }
+
+    private VNVisit VisitKnownNonNull(ValueNum vn)
+    {
+        if (vn != NoVN)
+        {
+            if (IsVNHandle(vn))
+            {
+                assert(CoercedConstantValue<nuint>(vn) != 0);
+                return VNVisit.Continue;
+            }
+
+            var app = new VNFuncApp();
+            if (GetVNFunc(vn, ref app) && ((VNFuncExtensions.GetAttributes(app.Func) & VNFOA_KnownNonNull) != 0))
+            {
+                return VNVisit.Continue;
+            }
+        }
+
+        return VNVisit.Abort;
+    }
+
     public long GetConstantInt64(ValueNum vn)
     {
         assert(IsVNConstant(vn));

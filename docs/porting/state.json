@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Close assertion application and non-null proof, the two remaining entry points in the nine protected global-morph drafts. Begin with optAssertionIsNonNull and optAssertionVNIsNonNull (oracle assertionprop.cpp:5207 onward), including their real VN/reaching-assertion dependencies rather than a local-only stub. Then port optAssertionProp (5909) and its application helpers; LclVarTypeCheck is already live. The new casts draft contains fgCastRequiresHelper, both helper-call conversions and fgMorphExpandCast. The new addresses draft contains fgMarkAddrModeForFieldAddr, fgMorphFieldAddr and fgMorphIndexAddr, including minopts compact indexing and optimized evaluation order. Joint Debug/Release probes now report four diagnostics for optAssertionProp and optAssertionIsNonNull only; these incomplete builds do not validate the drafts. Field expansion, field-temp selection, implicit-byref access recognition and tree-complexity traversal are live, tested and retired. Keep recursive drivers outside the normal build until the real dependency closure compiles; no stubs or Windows NYIs. Preserve whole-node owning uses, common flags and explicit VN update policies, use AsUnOp for unary/store-local nodes, keep tail EE pinning and the unused-result eeGetCallInfo query, and preserve native diagnostic layout. The optional arithmetic draft now uses HasOverflowCheckEx for arbitrary operators. B145, B153 and B156 remain deferred. fgMorphBlocks is inactive; no new phase/codegen parity is claimed.",
+    "nextAction": "Port optAssertionProp (oracle assertionprop.cpp:5909) and its real application-helper closure. It is now the only unresolved entry point in the nine protected global-morph drafts: joint Debug/Release probes report three diagnostics at tree, copy-block and simple-driver call sites. LclVarTypeCheck and the complete non-null proof closure are live; most other assertion application helpers remain unported, so this is not a one-function completion estimate. Non-null tree/VN queries, offset peeling, PHI-reaching assertions, edge selection and field null-check marking are live, tested and retired. The addresses draft now contains only fgMorphFieldAddr and fgMorphIndexAddr. The casts draft contains the helper predicate/conversions and cast expansion. Keep recursive drivers outside the normal build until the real dependency closure compiles; no stubs or Windows NYIs. Preserve whole-node owning uses, common flags and explicit VN update policies, use AsUnOp for unary/store-local nodes, keep tail EE pinning and the unused-result eeGetCallInfo query, and preserve native diagnostic layout. The optional arithmetic draft uses HasOverflowCheckEx for arbitrary operators. B145, B153 and B156 remain deferred. fgMorphBlocks is inactive; incomplete draft probes are not successful validation or phase/codegen parity.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -49,6 +49,23 @@
         "skipped": 0,
         "sourceCheck": "Canonical tokens, comments, directives and literals preserved across nine preprocessor configurations, allowing only switch-section scope blocks.",
         "functionalWipIncluded": false,
+        "nativeAotRecaptured": false
+      },
+      "nonNullAssertionSupport": {
+        "debugPassed": 238,
+        "releasePassed": 230,
+        "skipped": 0,
+        "newCases": 23,
+        "selection": ["AssertionTests", "LocalMorphTests", "MorphTreeSupportTests"],
+        "debugTests": "artifacts\\nonnull-assertion-support-debug.trx",
+        "releaseTests": "artifacts\\nonnull-assertion-support-release.trx",
+        "nativeDefinitionsRetired": ["Compiler::optAssertionIsNonNull", "Compiler::optAssertionVNIsNonNull", "Compiler::optGetEdgeAssertions", "Compiler::optVisitReachingAssertions", "Compiler::fgMarkAddrModeForFieldAddr", "ValueNumStore::IsKnownNonNull", "ValueNumStore::PeelOffsets"],
+        "nativeTypesRetired": ["Compiler::AssertVisit"],
+        "coverage": ["local and conservative-normal VN facts", "safe pointer offsets, GC casts and full-address assertions", "PHI definition VNs without argument back-patching", "recursion budgets, stale edges and mismatched predecessor coverage", "unreachable PHI arguments", "field fault delegation, store effects and signed offset overflow"],
+        "draftProbeConfigurations": ["Debug", "Release"],
+        "remainingDraftDependencies": ["optAssertionProp"],
+        "draftProbesSucceeded": false,
+        "globalMorphActive": false,
         "nativeAotRecaptured": false
       },
       "fieldAddressSupport": {
@@ -2125,6 +2142,11 @@
       "indexCommit": "cb9d2856b6816f1189339ccf942aeaf1eccc1316",
       "ref": "refs/porting/snapshots/native-ledger-field-address-support"
     },
+    "nonNullAssertionNativeResidual": {
+      "commit": "501cb204e8d2a5c77fe41649c72a0822af909cdb",
+      "indexCommit": "cbef691b2ba9397b4d8dde136c8a91771971ad56",
+      "ref": "refs/porting/snapshots/native-ledger-nonnull-assertion-support"
+    },
     "globalMorphDrafts": {
       "treeBlob": "36908cd7d0294ece59d91854bbdbfcb05d83f228",
       "treeRef": "refs/porting/drafts/global-morph-tree",
@@ -2142,9 +2164,9 @@
       "simpleRef": "refs/porting/drafts/global-morph-simple",
       "castsBlob": "88f6173efde0b6d1b7a4485bfd76fb7d4d1861c9",
       "castsRef": "refs/porting/drafts/global-morph-casts",
-      "addressesBlob": "3aba98d236238bf1f8ecbcbd83a0fa0334aac18d",
+      "addressesBlob": "3fb12374315e93a7fb9679757392f62f5185bdcc",
       "addressesRef": "refs/porting/drafts/global-morph-addresses",
-      "status": "Nine incomplete local integration drafts with Debug/Release dependency diagnostics, not successfully compiled or validated; session files carry matching .cs.draft names. Hardware has four functions, call has fgMorphCall plus both tail-call transformations, args has both struct-argument transformations, fgMorphArgs and EvalArgsToTemps, copy-block has the complete helper class and driver, simple-optional has both arithmetic optimizers and the optional dispatcher, simple has the full initial required dispatcher plus conditional-execution marking, casts has the helper predicate/conversions and cast expansion, and addresses has the field/index drivers and null-check marking."
+      "status": "Nine incomplete local integration drafts with Debug/Release dependency diagnostics, not successfully compiled or validated; session files carry matching .cs.draft names. Hardware has four functions, call has fgMorphCall plus both tail-call transformations, args has both struct-argument transformations, fgMorphArgs and EvalArgsToTemps, copy-block has the complete helper class and driver, simple-optional has both arithmetic optimizers and the optional dispatcher, simple has the full initial required dispatcher plus conditional-execution marking, casts has the helper predicate/conversions and cast expansion, and addresses has the field/index drivers."
     },
     "internalBlockPhaseNativeResidual": {
       "commit": "494ccbc0132fcf507b8133bffa2fef635d788858",
