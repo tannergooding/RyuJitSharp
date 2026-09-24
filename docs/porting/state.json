@@ -12,28 +12,28 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port indirect-call transformation in dependency-coherent batches: shared spilling/CFG support and fat-pointer expansion, then guarded devirtualization and phase activation.",
+      "scope": "Port complete post-import cleanup and its EH trimming helpers, including return-spill refinement, unimported block removal and OSR step-block construction.",
       "doneWhen": [
-        "Complete shared Transformer and FatPointerCallTransformer, preserving evaluation order, owning uses, EH boundaries, native weights and hidden-argument placement.",
-        "Complete guarded devirtualization, including multiple/exact guesses, return placeholders and chained calls, with its required cloning and call-target helpers.",
-        "Keep fgTransformIndirectCalls disabled until both specializations are complete; keep fgInline disabled until all remaining B112 prerequisites are complete.",
+        "Preserve retained links when unlinking unimported blocks, predecessor multiplicities, return counts and EH descriptor iteration after removal.",
+        "Complete OSR region start/end trimming, normalized replacement entries, mutually protecting tries and nested step-block routing.",
+        "Preserve profile and zero-weight behavior and native phase-result/completion-flag semantics. Keep fgInline disabled pending its own activation batch.",
         "Validate and commit complete dependency-coherent portions; retire only completed native definitions."
       ],
       "validation": [
-        "Cover fat-pointer void/value calls, generic virtual lookup spilling, side-effect order, cloned ownership, tuple loads and CFG/profile shape.",
-        "Cover guarded call checks, fallback, return repair and chaining with focused constructed IR and controlled EE cases in Debug and Release.",
-        "Recapture NativeAOT/corpus only after phase activation; do not claim executed fat-pointer/GDV or codegen parity from native fallback."
+        "Cover unimported CFG removal, EH removal/end trimming and OSR start trimming/step blocks with focused constructed IR in Debug and Release.",
+        "Cover early exits, inline return-spill class refinement and profile-zero corner cases without disabling assertions.",
+        "Recapture NativeAOT/corpus after activation; distinguish no-op phase integration from exercised EH/OSR transformations and codegen parity."
       ],
       "deferred": [
         "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
         "General local assertion propagation, block morph and the full global-morph phase.",
         "Non-xarch hardware-intrinsic folding, hashBv bulk/set algebra and iterator APIs, and fgInline activation.",
-        "Post-import cleanup, which still gates successful inline-phase activation.",
+        "The preexisting fgVerifyHandlerTab diagnostic stub and broader EH verification, outside the cleanup algorithm.",
         "Patchpoint code generation, metadata generation and actual OSR execution.",
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Indirect-call transformation is complete and activated (B119/B122/B123). Continue with complete post-import cleanup, including EH and OSR paths, before enabling fgInline (B112). Do not activate a no-EH-only cleanup. B120 fixes inferred local normalization; B121/B124 preserve native profile/metric inconsistencies. B125 records an unrelated node-search pruning defect for a separate bounded fix. Replace checkpoint.activeBatch before the next batch; update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
+    "nextAction": "Post-import cleanup is complete, including EH and OSR paths (B126). Port and validate complete fgInline with successful nested compilation now that B112's named prerequisite phases are implemented. Keep the preexisting fgVerifyHandlerTab diagnostic stub explicit (B127); do not claim full EH verification. B125 remains a separate node-search pruning fix. Replace checkpoint.activeBatch before the next batch; update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -862,7 +862,32 @@
         "nativeTransformationParityEstablished": false,
         "codegenParity": "not-available"
       },
-      "nativeAotPublish": "passed-after-indirect-call-transformation",
+      "postImportCleanup": {
+        "managedSourceCommit": "e3f0e2776239f0264c2a647c54053b9d13c38c9c",
+        "debugPassed": 132,
+        "releasePassed": 132,
+        "newCases": 29,
+        "skipped": 0,
+        "nativeDefinitionsRetired": 4,
+        "phaseActivated": true,
+        "nativeAotRecaptured": true,
+        "nativeAotLibrary": "artifacts\\post-import-native\\RyuJitSharp.dll",
+        "nativeAotSha256": "69C5FF4A642128E0DDFBEE589C4E7F14499201D4EF3BDC27748F95093D43B0E1",
+        "debugTests": "artifacts\\post-import-debug.trx",
+        "releaseTests": "artifacts\\post-import-release.trx",
+        "nativeManifest": "artifacts\\morph-init-corpus-native\\manifest.json",
+        "managedManifest": "artifacts\\post-import-corpus-managed\\manifest.json",
+        "comparison": "artifacts\\post-import-comparison.json",
+        "phaseComparison": "artifacts\\post-import-phase-comparison.json",
+        "corpusMethods": 11,
+        "exactOuterMethodPhaseSections": 11,
+        "corpusTransformations": 0,
+        "exactImportPrefixes": ["Add", "Branch", "Locals", "FoldConstants", "FoldFloating", "FoldInteger"],
+        "nativeTransformationParityEstablished": false,
+        "remainingDiagnostic": "fgVerifyHandlerTab (B127)",
+        "codegenParity": "not-available"
+      },
+      "nativeAotPublish": "passed-after-post-import-cleanup",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "six-of-eleven-import-prefixes-equal-four-inline-differences-and-one-vector-importer-gap",
       "codegenParity": "not-available"
@@ -1316,6 +1341,15 @@
       "commit": "13618810c9f1234d2023774c65db4894d73df637",
       "ref": "refs/porting/snapshots/indirect-call-transformation-source"
     },
+    "postImportCleanupManagedSource": {
+      "commit": "e3f0e2776239f0264c2a647c54053b9d13c38c9c",
+      "ref": "refs/porting/snapshots/post-import-cleanup-source"
+    },
+    "postImportCleanupNativeResidual": {
+      "commit": "17e7fa6c23659d1e0122b3210359b19ddaccb5b8",
+      "indexCommit": "256fb9eecb7bb0cf9a9df4945f57a47a95da7f9e",
+      "ref": "refs/porting/snapshots/native-ledger-post-import-cleanup"
+    },
     "indirectCallTransformationNativeResidual": {
       "commit": "1d3e5b9755a2601370a2b95cd5a33398f1472d99",
       "indexCommit": "08f6378bc56cdf0e3e13ef58254a2af5d7974ff9",
@@ -1323,6 +1357,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "post-import-cleanup",
+      "native": ["src\\coreclr\\jit\\fgopt.cpp", "src\\coreclr\\jit\\jiteh.cpp"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.fg.cs", "sources\\Core\\jit\\compiler\\Compiler.eh.cs"],
+      "reconciledCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete fgPostImportationCleanup and ehCanDeleteEmptyBlock/fgSetTryBeg/fgSkipRmvdBlocks (B126), not the remaining functions in these native files or fgVerifyHandlerTab (B127)."
+    },
     {
       "area": "indirect-call-transformation",
       "native": ["src\\coreclr\\jit\\indirectcalltransformer.cpp"],

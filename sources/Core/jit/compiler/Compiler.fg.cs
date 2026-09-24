@@ -11976,6 +11976,15 @@ public partial class Compiler
         return new SetTreeSeqVisitor(this, tree, isLIR).Sequence();
     }
 
+    public void fgSetTryBeg(ref EHblkDsc handlerTab, BasicBlock newTryBeg)
+    {
+        if (handlerTab.ebdTryBeg != newTryBeg)
+        {
+            handlerTab.ebdTryBeg = newTryBeg;
+            JITDUMP($"EH#{ehGetIndex(handlerTab)}: New first block of try: {FMT_BB(newTryBeg.bbNum)}\n");
+        }
+    }
+
     public void fgSetTryEnd(ref EHblkDsc handlerTab, BasicBlock newTryLast)
     {
         // Check if we are going to change the existing value of endTryLast
@@ -13566,8 +13575,380 @@ public partial class Compiler
         return madeChanges ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
     }
 
-    // TODO: Port phase - fgPostImportationCleanup
-    public PhaseStatus fgPostImportationCleanup() => PhaseStatus.MODIFIED_NOTHING;
+    /// <summary>Refine inline return spills and remove unimported blocks, repairing EH extents and OSR entry flow.</summary>
+    public unsafe PhaseStatus fgPostImportationCleanup()
+    {
+        if (compDonotInline)
+        {
+            return PhaseStatus.MODIFIED_NOTHING;
+        }
+
+        if (compIsForInlining && fgNeedReturnSpillTemp)
+        {
+            var retExprClassHnd = impInlineInfo.retExprClassHnd;
+
+            if (retExprClassHnd is not null)
+            {
+                ref var returnSpillVarDsc = ref lvaGetDesc(lvaInlineeReturnSpillTemp);
+
+                if ((returnSpillVarDsc.Type is TYP_REF)
+                    && (returnSpillVarDsc.lvSingleDef || lvaInlineeReturnSpillTempFreshlyCreated))
+                {
+                    lvaUpdateClass(lvaInlineeReturnSpillTemp, retExprClassHnd,
+                        impInlineInfo.retExprClassHndIsExact, singleDefOnly: false);
+                }
+            }
+        }
+
+        var removedBlks = 0;
+        BasicBlock? nxt;
+
+        for (var cur = fgFirstBB; cur is not null; cur = nxt)
+        {
+            nxt = cur.Next;
+
+            if (!cur.HasFlag(BBF_IMPORTED))
+            {
+                noway_assert(cur.IsEmpty);
+
+                if (ehCanDeleteEmptyBlock(cur))
+                {
+                    JITDUMP($"{FMT_BB(cur.bbNum)} was not imported, marking as removed ({removedBlks})\n");
+
+                    foreach (var succ in cur.Succs)
+                    {
+                        fgRemoveAllRefPreds(succ, cur);
+                    }
+
+                    cur.SetFlags(BBF_REMOVED);
+                    removedBlks++;
+
+                    if (cur.Kind is BBJ_RETURN)
+                    {
+                        fgReturnCount--;
+                    }
+
+                    // EH trimming below follows the removed blocks' retained Next/Prev links.
+                    fgUnlinkBlockForRemoval(cur);
+                }
+                else
+                {
+                    cur.SetFlags(BBF_IMPORTED);
+                }
+            }
+        }
+
+        if (removedBlks == 0)
+        {
+            if (!opts.IsOSR)
+            {
+                return PhaseStatus.MODIFIED_NOTHING;
+            }
+
+            assert(fgOSREntryBB is not null);
+
+            if (!fgOSREntryBB.hasTryIndex)
+            {
+                return PhaseStatus.MODIFIED_NOTHING;
+            }
+        }
+
+        var delCnt = 0;
+
+        // The EH table is ordered from inner to outer regions.
+        for (ushort XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+        {
+        AGAIN:
+            ref var HBtab = ref compHndBBtab[XTnum];
+
+            if (HBtab.ebdTryBeg.HasFlag(BBF_REMOVED))
+            {
+                var removeTryRegion = true;
+
+                if (opts.IsOSR)
+                {
+                    var oldTryEntry = HBtab.ebdTryBeg;
+                    var tryEntryPrev = oldTryEntry.Prev;
+                    assert(tryEntryPrev is not null);
+
+                    while (tryEntryPrev.HasFlag(BBF_REMOVED))
+                    {
+                        tryEntryPrev = tryEntryPrev.Prev;
+                        // The unremovable scratch block guarantees a surviving predecessor.
+                        assert(tryEntryPrev is not null);
+                    }
+
+                    var newTryEntry = tryEntryPrev.Next;
+                    var updateTryEntry = false;
+
+                    if ((newTryEntry is not null) && bbInTryRegions(XTnum, newTryEntry))
+                    {
+                        if (bbIsTryBeg(newTryEntry))
+                        {
+                            fgSkipRmvdBlocks(ref HBtab);
+                            ref var HBinner = ref ehGetBlockTryDsc(newTryEntry);
+                            assert(HBinner.ebdTryBeg == newTryEntry);
+
+                            // Mutually protecting regions must continue to share their entry.
+                            if (HBtab.ebdTryLast != HBinner.ebdTryLast)
+                            {
+                                updateTryEntry = true;
+                            }
+                        }
+                        else if (bbIsHandlerBeg(newTryEntry))
+                        {
+                            updateTryEntry = true;
+                        }
+
+                        if (updateTryEntry)
+                        {
+                            // The old entry is unreachable, so no incoming edges need redirecting.
+                            newTryEntry = BasicBlock.New(this);
+                            newTryEntry.SetFlags(BBF_IMPORTED | BBF_INTERNAL);
+                            newTryEntry.bbRefs = 0;
+                            assert(!oldTryEntry.hasHndIndex);
+                            newTryEntry.TryIndex = XTnum;
+                            newTryEntry.clearHndIndex();
+                            fgInsertBBafter(tryEntryPrev, newTryEntry);
+                            assert(newTryEntry.Next is not null);
+
+                            // An out-of-order handler cannot be a plausible fallthrough target.
+                            if (bbIsHandlerBeg(newTryEntry.Next))
+                            {
+                                newTryEntry.SetKindAndTargetEdge(BBJ_THROW, null);
+                            }
+                            else
+                            {
+                                var newEdge = fgAddRefPred(newTryEntry.Next, newTryEntry);
+                                newTryEntry.SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+                            }
+
+                            JITDUMP($"OSR: changing start of try region #{XTnum + delCnt} from {FMT_BB(oldTryEntry.bbNum)} to new {FMT_BB(newTryEntry.bbNum)}\n");
+                        }
+                        else
+                        {
+                            JITDUMP($"OSR: changing start of try region #{XTnum + delCnt} from {FMT_BB(oldTryEntry.bbNum)} to {FMT_BB(newTryEntry.bbNum)}\n");
+                        }
+
+                        fgSetTryBeg(ref HBtab, newTryEntry);
+                        HBtab.ebdTryBeg.SetFlags(BBF_DONT_REMOVE);
+                        removeTryRegion = false;
+                    }
+                }
+
+                if (removeTryRegion)
+                {
+                    JITDUMP($"Try region #{XTnum + delCnt} ({FMT_BB(HBtab.ebdTryBeg.bbNum)} -- {FMT_BB(HBtab.ebdTryLast.bbNum)}) not imported, removing try from the EH table\n");
+                    delCnt++;
+                    fgRemoveEHTableEntry(XTnum);
+
+                    if (XTnum < compHndBBtabCount)
+                    {
+                        goto AGAIN;
+                    }
+
+                    break;
+                }
+            }
+
+            assert(HBtab.ebdTryBeg.HasFlag(BBF_IMPORTED));
+            assert(HBtab.ebdTryBeg.HasFlag(BBF_DONT_REMOVE));
+            assert(HBtab.ebdHndBeg.HasFlag(BBF_IMPORTED));
+            assert(HBtab.ebdHndBeg.HasFlag(BBF_DONT_REMOVE));
+
+            if (HBtab.HasFilter)
+            {
+                assert(HBtab.ebdFilter is not null);
+                assert(HBtab.ebdFilter.HasFlag(BBF_IMPORTED));
+                assert(HBtab.ebdFilter.HasFlag(BBF_DONT_REMOVE));
+            }
+
+            fgSkipRmvdBlocks(ref HBtab);
+        }
+
+        var addedBlocks = 0;
+        var addedTemps = false;
+
+        if (opts.IsOSR)
+        {
+            assert(fgOSREntryBB is not null);
+            var osrEntry = fgOSREntryBB;
+            var entryJumpTarget = osrEntry;
+
+            if (osrEntry.hasTryIndex)
+            {
+                ref var enclosingTry = ref ehGetBlockTryDsc(osrEntry);
+                var tryEntry = enclosingTry.ebdTryBeg;
+                var inNestedTry = enclosingTry.ebdEnclosingTryIndex != EHblkDsc.NO_ENCLOSING_INDEX;
+                var osrEntryMidTry = osrEntry != tryEntry;
+
+                if (inNestedTry || osrEntryMidTry)
+                {
+                    JITDUMP($"OSR Entry point at IL offset 0x{info.compILEntry:x} ({FMT_BB(osrEntry.bbNum)}) is {(osrEntryMidTry ? "within " : "at the start of ")}{(inNestedTry ? "nested" : "")} try region EH#{osrEntry.TryIndex}\n");
+
+                    // Zero at method entry, one after reaching the OSR entry: normal loop
+                    // entries must run the try body rather than follow the OSR stepping path.
+                    var entryStateVar = lvaGrabTemp(false, "OSR entry state var");
+                    lvaTable[entryStateVar].Type = TYP_INT;
+                    addedTemps = true;
+                    assert(fgFirstBB is not null);
+                    var firstBB = fgFirstBB;
+                    var initEntryState = gtNewTempStore(entryStateVar, gtNewZeroConNode(TYP_INT));
+                    fgInsertStmtAtBeg(firstBB, gtNewStmt(initEntryState));
+                    var setEntryState = gtNewTempStore(entryStateVar, gtNewOneConNode(TYP_INT));
+                    fgInsertStmtAtBeg(osrEntry, gtNewStmt(setEntryState));
+
+                    void addConditionalFlow(BasicBlock fromBlock, BasicBlock toBlock)
+                    {
+                        var newBlock = fgSplitBlockAtBeginning(fromBlock);
+                        newBlock.inheritWeight(fromBlock);
+                        fromBlock.SetFlags(BBF_INTERNAL);
+                        newBlock.RemoveFlags(BBF_DONT_REMOVE);
+                        addedBlocks++;
+                        var normalTryEntryEdge = fromBlock.TargetEdge;
+                        var entryStateLcl = gtNewLclvNode(TYP_INT, entryStateVar);
+                        var compareEntryStateToZero = gtNewBinaryNode(GT_EQ, TYP_INT, entryStateLcl, gtNewZeroConNode(TYP_INT));
+                        var jumpIfEntryStateZero = gtNewUnaryNode(GT_JTRUE, TYP_VOID, compareEntryStateToZero);
+                        fgInsertStmtAtBeg(fromBlock, gtNewStmt(jumpIfEntryStateZero));
+                        var osrTryEntryEdge = fgAddRefPred(toBlock, fromBlock);
+                        fromBlock.SetCond(osrTryEntryEdge, normalTryEntryEdge);
+
+                        if (fgHaveProfileWeights)
+                        {
+                            var entryWeight = firstBB.bbWeight;
+                            JITDUMP($"Updating block weight for now-reachable try entry {FMT_BB(fromBlock.bbNum)} via {FMT_BB(firstBB.bbNum)}\n");
+                            fromBlock.increaseBBProfileWeight(entryWeight);
+                            var fromWeight = fromBlock.bbWeight;
+
+                            // std::min(1.0, NaN) keeps 1.0 when both profile weights are zero.
+                            var fromToLikelihood = double.MinNumber(1.0, entryWeight / fromWeight);
+                            osrTryEntryEdge.Likelihood = fromToLikelihood;
+                            normalTryEntryEdge.Likelihood = 1.0 - fromToLikelihood;
+                        }
+                        else
+                        {
+                            osrTryEntryEdge.Likelihood = 0.9;
+                            normalTryEntryEdge.Likelihood = 0.1;
+                        }
+
+                        entryJumpTarget = fromBlock;
+                    }
+
+                    if (osrEntryMidTry)
+                    {
+                        addConditionalFlow(tryEntry, osrEntry);
+                    }
+
+                    while (enclosingTry.ebdEnclosingTryIndex != EHblkDsc.NO_ENCLOSING_INDEX)
+                    {
+                        ref var nextTry = ref ehGetDsc(enclosingTry.ebdEnclosingTryIndex);
+                        var nextTryEntry = nextTry.ebdTryBeg;
+
+                        if (nextTryEntry != tryEntry)
+                        {
+                            addConditionalFlow(nextTryEntry, tryEntry);
+                        }
+
+                        enclosingTry = ref nextTry;
+                        tryEntry = nextTryEntry;
+                    }
+
+                    assert(firstBB.Target == osrEntry);
+                    assert(firstBB.Kind is BBJ_ALWAYS);
+
+                    if (entryJumpTarget != osrEntry)
+                    {
+                        fgRedirectEdge(ref firstBB.TargetEdgeRef, entryJumpTarget);
+                        JITDUMP($"OSR: redirecting flow from method entry {FMT_BB(firstBB.bbNum)} to OSR entry {FMT_BB(fgOSREntryBB.bbNum)} via step blocks.\n");
+                    }
+                    else
+                    {
+                        JITDUMP($"OSR: leaving direct flow from method entry {FMT_BB(firstBB.bbNum)} to OSR entry {FMT_BB(fgOSREntryBB.bbNum)}, no step blocks needed.\n");
+                    }
+                }
+                else
+                {
+                    JITDUMP($"OSR Entry point at IL offset 0x{info.compILEntry:x} ({FMT_BB(osrEntry.bbNum)}) is start of an un-nested try region, no step blocks needed.\n");
+                    assert(entryJumpTarget == osrEntry);
+                    assert(fgOSREntryBB == osrEntry);
+                }
+            }
+            else
+            {
+                JITDUMP($"OSR Entry point at IL offset 0x{info.compILEntry:x} ({FMT_BB(osrEntry.bbNum)}) is not in a try region, no step blocks needed.\n");
+                assert(entryJumpTarget == osrEntry);
+                assert(fgOSREntryBB == osrEntry);
+            }
+        }
+
+#if DEBUG
+        fgVerifyHandlerTab();
+#endif
+
+        var madeChanges = (addedBlocks > 0) || (delCnt > 0) || (removedBlks > 0) || addedTemps;
+        compPostImportationCleanupDone = true;
+        return madeChanges ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
+    }
+
+    // Removed blocks retain their links, but no live block points to them. Find a
+    // surviving end sentinel before walking forward from each region's beginning.
+    private void fgSkipRmvdBlocks(ref EHblkDsc handlerTab)
+    {
+        BasicBlock? bLast = null;
+        var bEnd = handlerTab.ebdTryLast.Next;
+
+        while ((bEnd is not null) && bEnd.HasFlag(BBF_REMOVED))
+        {
+            bEnd = bEnd.Next;
+        }
+
+        var block = handlerTab.ebdTryBeg;
+
+        while (block is not null)
+        {
+            if (!block.HasFlag(BBF_REMOVED))
+            {
+                bLast = block;
+            }
+
+            block = block.Next;
+
+            if (block == bEnd)
+            {
+                break;
+            }
+        }
+
+        assert(bLast is not null);
+        fgSetTryEnd(ref handlerTab, bLast);
+        bLast = null;
+        bEnd = handlerTab.ebdHndLast.Next;
+
+        while ((bEnd is not null) && bEnd.HasFlag(BBF_REMOVED))
+        {
+            bEnd = bEnd.Next;
+        }
+
+        block = handlerTab.ebdHndBeg;
+
+        while (block is not null)
+        {
+            if (!block.HasFlag(BBF_REMOVED))
+            {
+                bLast = block;
+            }
+
+            block = block.Next;
+
+            if (block == bEnd)
+            {
+                break;
+            }
+        }
+
+        assert(bLast is not null);
+        fgSetHndEnd(ref handlerTab, bLast);
+    }
 
     // TODO: Port phase - fgPostInlineNoReturnCleanup
     public PhaseStatus fgPostInlineNoReturnCleanup() => PhaseStatus.MODIFIED_NOTHING;

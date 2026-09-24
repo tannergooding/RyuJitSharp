@@ -226,6 +226,15 @@ binary node factories preserve `GT_PATCHPOINT`/`GT_PATCHPOINT_FORCED` shapes and
 call flags; shared-counter lifetime, branch layout and probabilities are unchanged
 (B118). This does not supply patchpoint code generation or OSR metadata.
 
+Post-import cleanup uses byrefs to EH table entries, retaining the native
+inner-to-outer traversal and retry of a slot after descriptor removal.
+Unlinked blocks retain their links for region trimming. The OSR conditional-flow
+lambda is a local function, and statement creation uses the existing insertion
+helpers. `double.MinNumber(1.0, ratio)` preserves native `std::min` when both
+profile weights are zero: the resulting NaN ratio selects 1.0, not NaN.
+The early-return completion-flag behavior is unchanged (B126). The preexisting
+`fgVerifyHandlerTab` diagnostic stub remains a separate gap (B127).
+
 Indirect-call spilling keeps managed byrefs to owning use slots and compares
 them with `Unsafe.AreSame`, preserving native spill order while replacing nodes.
 The shared transformer receives its non-null original call at construction;

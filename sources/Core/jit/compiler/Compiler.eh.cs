@@ -746,6 +746,14 @@ public partial class Compiler
         ehUpdateLastBlocks(block, bPrev);
     }
 
+    public bool ehCanDeleteEmptyBlock(BasicBlock block)
+    {
+        assert(block.IsEmpty);
+
+        // Native normalization of multiple regions ending at one block is currently disabled.
+        return true;
+    }
+
     /// <summary>The 'last' block of one or more EH regions might have changed. Update the EH table.</summary>
     /// <param name="oldLast">Search for this block as the 'last' block of one or more EH regions.</param>
     /// <param name="newLast">If 'oldLast' is found to be the 'last' block of an EH region, replace it by 'newLast'.</param>
