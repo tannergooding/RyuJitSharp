@@ -203,6 +203,66 @@ public partial class Compiler
 
     public bool lvaGenericsContextInUse;
 
+    public unsafe bool lvaKeepAliveAndReportThis()
+    {
+        if (info.compIsStatic || (lvaTable[0].Type is not TYP_REF))
+        {
+            return false;
+        }
+
+        var genericsContextIsThis = (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0;
+#if JIT32_GCENCODER
+        if ((info.compFlags & CORINFO_FLG_SYNCH) != 0)
+        {
+            return true;
+        }
+
+        if (genericsContextIsThis)
+        {
+            if (opts.compDbgCode)
+            {
+                return true;
+            }
+
+            if (lvaGenericsContextInUse)
+            {
+                JITDUMP("Reporting this as generic context\n");
+                return true;
+            }
+        }
+#else
+        if (genericsContextIsThis)
+        {
+            // Collectible types need a live context for lookups. Patchpoints
+            // also retain it for a possible OSR continuation.
+            var mustKeep = (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_KEEP_ALIVE) != 0;
+            var hasPatchpoint = MethodHasPatchpoint;
+            if (lvaGenericsContextInUse || mustKeep || hasPatchpoint)
+            {
+                JITDUMP($"Reporting this as generic context: {(mustKeep ? "must keep" : hasPatchpoint ? "patchpoints" : "referenced")}\n");
+                return true;
+            }
+        }
+#endif
+
+        return false;
+    }
+
+    public unsafe bool lvaReportParamTypeArg()
+    {
+        if ((info.compMethodInfo->options & (CORINFO_GENERICS_CTXT_FROM_METHODDESC | CORINFO_GENERICS_CTXT_FROM_METHODTABLE)) != 0)
+        {
+            assert(info.compTypeCtxtArg != BAD_VAR_NUM);
+
+            // This includes VM-required lifetime (such as generic catch types),
+            // collectible lookup contexts, and possible OSR continuations.
+            return ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_KEEP_ALIVE) != 0)
+                || lvaGenericsContextInUse || MethodHasPatchpoint;
+        }
+
+        return false;
+    }
+
     public int lvaCachedGenericContextArgOffs;
 
 #if JIT32_GCENCODER

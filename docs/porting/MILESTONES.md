@@ -75,6 +75,9 @@ and last-use rules.
 Recursive fast-tail calls can be converted into loops while preserving argument
 evaluation before parameter overwrites, writable receiver state, required local
 initialization and profile flow.
+Generic-context reporting distinguishes receiver-based contexts from hidden
+method/type handles, retaining VM-required lifetimes, collectible-type lookup
+contexts and values needed by possible OSR continuations.
 
 Helper preparation builds dispatcher calls with correctly typed result storage,
 return-buffer forwarding and reusable return-address slots. The x86-specific

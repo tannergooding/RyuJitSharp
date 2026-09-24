@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Close the actual remaining global-morph dependencies, using the session global-morph-draft-probe.targets to compile the three protected tree/call/hardware drafts together without adding stubs. The combined probe now reports exactly four missing entry points: optAssertionProp, fgMorphSmpOp, fgMorphPotentialTailCall and fgMorphArgs. All four hardware functions are translated. Compiler owns GetLookupTypeForCmpOp/GetHWIntrinsicIdForCmpOp/GetHWIntrinsicIdForBinOp in C#; DoNotEnregisterReason.simdUserForcesDep is the correct existing enum spelling. Floating prerequisites, helper equivalence and getVirtMethodPointerTree are implemented and retired. The virtual-pointer wrapper omits native's unused call-info parameter. fgMorphPotentialTailCall (oracle morph.cpp:4454-5053) is fully read and ready to translate using the existing fast-tailcall, recursive-tailcall and helper-preparation functions; it still needs fgMorphTailCallViaHelpers and recurses through the call/tree drafts. fgMorphSmpOp, fgMorphSmpOpOptional, fgOptimizeCommutativeArithmetic and fgOptimizeAddition are fully read; optional SMP needs fgMorphCopyBlock and addition recurses into fgMorphTree. Other already-read dependencies: fgMorphArgs, fgTryMorphStructArg, fgMakeOutgoingStructArgCopy, EvalArgsToTemps, MorphCopyBlockHelper and optAssertionProp's dispatcher at assertionprop.cpp:5909. Assertion application helpers remain. Keep drafts outside the build until the real closure compiles; do not replace missing Windows behavior with NYIs. TreeId is DEBUG-only. B145's remaining mask/broadcast/folding conversions, TARGET_32BIT syntax defects (B153) and the potential upstream XOR-rotation issue (B156) remain deferred. fgMorphBlocks is inactive; no new phase/codegen parity is claimed.",
+    "nextAction": "Continue the argument-morph closure: fgMorphArgs (oracle morph.cpp:2037-2175) is fully read and depends on fgTryMorphStructArg (2194), fgMakeOutgoingStructArgCopy (2565), and CallArgs::EvalArgsToTemps (1394). The protected call draft now contains complete translations of fgMorphCall, fgMorphPotentialTailCall and fgMorphTailCallViaHelpers. Both Debug and Release combined probes report exactly three missing entry points: optAssertionProp, fgMorphSmpOp and fgMorphArgs. These diagnostics do not validate the drafts or their deeper closures. Use the session global-morph-draft-probe.targets without adding stubs. The four-function hardware draft is unchanged. Compiler owns the intrinsic comparison/binop lookup APIs; DoNotEnregisterReason.simdUserForcesDep is the correct spelling; printTreeId, hasProfileWeight, Type.ActualType and gtNewCommaNode are the existing managed APIs. Generic-context lifetime predicates are implemented and retired. Tail-call drafts pin managed token/signature and entrypoint fields at EE boundaries; failures use null-terminated UTF-8 reasons. getVirtMethodPointerTree omits the unused native call-info parameter, but the caller's eeGetCallInfo query is retained. fgMorphSmpOp, fgMorphSmpOpOptional, fgOptimizeCommutativeArithmetic, fgOptimizeAddition, MorphCopyBlockHelper and optAssertionProp's dispatcher at assertionprop.cpp:5909 are fully read; assertion application helpers remain. Keep drafts outside the build until the real closure compiles; do not replace missing Windows behavior with NYIs. TreeId is DEBUG-only. B145's remaining mask/broadcast/folding conversions, TARGET_32BIT syntax defects (B153) and the potential upstream XOR-rotation issue (B156) remain deferred. fgMorphBlocks is inactive; no new phase/codegen parity is claimed.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -49,6 +49,20 @@
         "skipped": 0,
         "sourceCheck": "Canonical tokens, comments, directives and literals preserved across nine preprocessor configurations, allowing only switch-section scope blocks.",
         "functionalWipIncluded": false,
+        "nativeAotRecaptured": false
+      },
+      "tailCallContextSupport": {
+        "debugPassed": 113,
+        "releasePassed": 108,
+        "skipped": 0,
+        "newCases": 4,
+        "selection": ["CallArgumentMorphTests", "ImporterCallTests", "TailCallMorphTests"],
+        "debugTests": "artifacts\\tailcall-context-debug.trx",
+        "releaseTests": "artifacts\\tailcall-context-release.trx",
+        "nativeDefinitionsRetired": ["Compiler::lvaKeepAliveAndReportThis", "Compiler::lvaReportParamTypeArg"],
+        "draftProbeConfigurations": ["Debug", "Release"],
+        "remainingDraftDependencies": ["optAssertionProp", "fgMorphSmpOp", "fgMorphArgs"],
+        "globalMorphActive": false,
         "nativeAotRecaptured": false
       },
       "callIdentitySupport": {
@@ -2031,14 +2045,19 @@
       "indexCommit": "bd4e5dd872324d5734a77eea3a790418a7bdfdd6",
       "ref": "refs/porting/snapshots/native-ledger-call-identity"
     },
+    "tailCallContextNativeResidual": {
+      "commit": "406013f6ca0082f55b617307f111f3e20999896c",
+      "indexCommit": "fef0ed1c3dfaaa0a1f05dcc1a2a7dc86d6b0143a",
+      "ref": "refs/porting/snapshots/native-ledger-tailcall-context"
+    },
     "globalMorphDrafts": {
       "treeBlob": "36908cd7d0294ece59d91854bbdbfcb05d83f228",
       "treeRef": "refs/porting/drafts/global-morph-tree",
-      "callBlob": "0f82e708f47c7b56896a2ac393efbc9eec32af1f",
+      "callBlob": "5260c03cf8bf7dd59203ca64428c720f9c839103",
       "callRef": "refs/porting/drafts/global-morph-call",
       "hardwareBlob": "6668a35bb930acf25fd8f2ac0c0bd53d0ee2e39e",
       "hardwareRef": "refs/porting/drafts/global-morph-hardware",
-      "status": "Incomplete local integration drafts with dependency diagnostics, not successfully compiled or validated; session files carry matching .cs.draft names. The hardware draft now contains the complete four-function translation."
+      "status": "Incomplete local integration drafts with Debug/Release dependency diagnostics, not successfully compiled or validated; session files carry matching .cs.draft names. Hardware has all four functions, and call has fgMorphCall plus both tail-call transformations."
     },
     "internalBlockPhaseNativeResidual": {
       "commit": "494ccbc0132fcf507b8133bffa2fef635d788858",

@@ -18,6 +18,38 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class TailCallMorphTests
 {
+    [TestCase((CorInfoOptions)0)]
+    [TestCase(CorInfoOptions.CORINFO_GENERICS_CTXT_FROM_THIS)]
+    [TestCase(CorInfoOptions.CORINFO_GENERICS_CTXT_FROM_METHODDESC)]
+    [TestCase(CorInfoOptions.CORINFO_GENERICS_CTXT_FROM_METHODTABLE)]
+    public static void GenericContextReportingRetainsVmLookupAndPatchpointLifetimes(CorInfoOptions source)
+    {
+        WithCompiler((compiler, _, _) => {
+            CORINFO_METHOD_INFO method = default;
+            compiler.info.compMethodInfo = &method;
+            compiler.info.compIsStatic = false;
+            compiler.info.compTypeCtxtArg = 1;
+            compiler.lvaTable[0].Type = TYP_REF;
+            var fromThis = source == CorInfoOptions.CORINFO_GENERICS_CTXT_FROM_THIS;
+
+            for (var mode = 0; mode < 4; mode++)
+            {
+                method.options = source | (mode == 1 ? CorInfoOptions.CORINFO_GENERICS_CTXT_KEEP_ALIVE : 0);
+                compiler.lvaGenericsContextInUse = mode == 2;
+                compiler.MethodHasPatchpoint = mode == 3;
+                var report = (source != 0) && (mode != 0);
+                Assert.That(compiler.lvaKeepAliveAndReportThis(), Is.EqualTo(report && fromThis));
+                Assert.That(compiler.lvaReportParamTypeArg(), Is.EqualTo(report && !fromThis));
+            }
+
+            compiler.info.compIsStatic = true;
+            Assert.That(compiler.lvaKeepAliveAndReportThis(), Is.False);
+            compiler.info.compIsStatic = false;
+            compiler.lvaTable[0].Type = TYP_BYREF;
+            Assert.That(compiler.lvaKeepAliveAndReportThis(), Is.False);
+        });
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void RecursiveArgumentsAreSavedBeforeParametersAreOverwritten(bool late)
