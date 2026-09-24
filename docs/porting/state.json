@@ -12,28 +12,28 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port complete post-import cleanup and its EH trimming helpers, including return-spill refinement, unimported block removal and OSR step-block construction.",
+      "scope": "Complete inliner activation, first restoring missing InlineResult scope-exit reporting, then porting fgInline and validating successful nested compilation.",
       "doneWhen": [
-        "Preserve retained links when unlinking unimported blocks, predecessor multiplicities, return counts and EH descriptor iteration after removal.",
-        "Complete OSR region start/end trimming, normalized replacement entries, mutually protecting tries and nested step-block routing.",
-        "Preserve profile and zero-weight behavior and native phase-result/completion-flag semantics. Keep fgInline disabled pending its own activation batch.",
+        "Port complete InlineResult.Report and map native destructor scopes to deterministic disposal at every production construction site.",
+        "Port complete fgInline traversal, candidate expansion, placeholder substitution, diagnostics and metrics without bypassing prerequisite phases.",
+        "Validate successful nested compilation and precisely bound remaining native dump differences before claiming activation.",
         "Validate and commit complete dependency-coherent portions; retire only completed native definitions."
       ],
       "validation": [
-        "Cover unimported CFG removal, EH removal/end trimming and OSR start trimming/step blocks with focused constructed IR in Debug and Release.",
-        "Cover early exits, inline return-spill class refinement and profile-zero corner cases without disabling assertions.",
-        "Recapture NativeAOT/corpus after activation; distinguish no-op phase integration from exercised EH/OSR transformations and codegen parity."
+        "Cover decision reporting, suppression, NOINLINE propagation and deterministic scope exit with controlled EE callbacks in Debug and Release.",
+        "Cover disabled/unchanged inline phases, failure repair, comma cleanup and successful nested compilation.",
+        "Recapture NativeAOT/corpus after activation; compare import prefixes and inlining phase results without claiming codegen parity."
       ],
       "deferred": [
         "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
         "General local assertion propagation, block morph and the full global-morph phase.",
-        "Non-xarch hardware-intrinsic folding, hashBv bulk/set algebra and iterator APIs, and fgInline activation.",
+        "Non-xarch hardware-intrinsic folding and hashBv bulk/set algebra and iterator APIs.",
         "The preexisting fgVerifyHandlerTab diagnostic stub and broader EH verification, outside the cleanup algorithm.",
         "Patchpoint code generation, metadata generation and actual OSR execution.",
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Post-import cleanup is complete, including EH and OSR paths (B126). Port and validate complete fgInline with successful nested compilation now that B112's named prerequisite phases are implemented. Keep the preexisting fgVerifyHandlerTab diagnostic stub explicit (B127); do not claim full EH verification. B125 remains a separate node-search pruning fix. Replace checkpoint.activeBatch before the next batch; update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
+    "nextAction": "Post-import cleanup (B126) and deterministic inline decision reporting (B128) are complete. Continue the active batch with complete fgInline and successful nested-compilation validation. Keep preexisting fgVerifyHandlerTab and vlogf diagnostic gaps explicit (B127/B129); B125 remains a separate node-search pruning fix. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -887,6 +887,18 @@
         "remainingDiagnostic": "fgVerifyHandlerTab (B127)",
         "codegenParity": "not-available"
       },
+      "inlineDecisionReporting": {
+        "managedSourceCommit": "12c94323a2dcb05a450514d3a439c3c0fd25a0b0",
+        "debugPassed": 178,
+        "releasePassed": 152,
+        "newCases": 11,
+        "skipped": 0,
+        "nativeDefinitionsRetired": 2,
+        "debugTests": "artifacts\\inline-report-debug.trx",
+        "releaseTests": "artifacts\\inline-report-release.trx",
+        "nativeAotRecaptured": false,
+        "remaining": ["fgInline activation and nested-compilation validation", "shared EE text logging (B129)"]
+      },
       "nativeAotPublish": "passed-after-post-import-cleanup",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "six-of-eleven-import-prefixes-equal-four-inline-differences-and-one-vector-importer-gap",
@@ -1340,6 +1352,15 @@
     "indirectCallTransformationManagedSource": {
       "commit": "13618810c9f1234d2023774c65db4894d73df637",
       "ref": "refs/porting/snapshots/indirect-call-transformation-source"
+    },
+    "inlineReportingManagedSource": {
+      "commit": "12c94323a2dcb05a450514d3a439c3c0fd25a0b0",
+      "ref": "refs/porting/snapshots/inline-reporting-source"
+    },
+    "inlineReportingNativeResidual": {
+      "commit": "7fecf142b2e2f298cb407c39d74f0ac378e42125",
+      "indexCommit": "1ac7e3748f1d69184556555a5dad6aabb831ae9f",
+      "ref": "refs/porting/snapshots/native-ledger-inline-reporting"
     },
     "postImportCleanupManagedSource": {
       "commit": "e3f0e2776239f0264c2a647c54053b9d13c38c9c",

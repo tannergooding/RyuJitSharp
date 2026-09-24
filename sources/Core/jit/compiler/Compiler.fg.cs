@@ -1876,7 +1876,7 @@ public partial class Compiler
             return;
         }
 
-        var inlineResult = new InlineResult(this, call, stmt: null, nameof(fgNoteNonInlineCandidate), doNotReport: true);
+        using var inlineResult = new InlineResult(this, call, stmt: null, nameof(fgNoteNonInlineCandidate), doNotReport: true);
         var currentObservation = InlineObservation.CALLSITE_NOT_CANDIDATE;
 
         // Recover the reason left behind when this call was rejected.

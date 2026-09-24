@@ -1220,7 +1220,7 @@ public partial class Compiler
         {
             // We're AOT compiling the root method.
             // We also will analyze it as a potential inline candidate.
-            var prejitResult = new InlineResult(this, info.compMethodHnd, "prejit");
+            using var prejitResult = new InlineResult(this, info.compMethodHnd, "prejit");
 
             // Profile data allows us to avoid early "too many IL bytes" outs.
             prejitResult.NoteBool(InlineObservation.CALLSITE_HAS_PROFILE_WEIGHTS, fgHaveSufficientProfileWeights);

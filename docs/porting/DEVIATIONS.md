@@ -226,6 +226,14 @@ binary node factories preserve `GT_PATCHPOINT`/`GT_PATCHPOINT_FORCED` shapes and
 call flags; shared-counter lifetime, branch layout and probabilities are unchanged
 (B118). This does not supply patchpoint code generation or OSR metadata.
 
+`InlineResult` implements `IDisposable`; production owners use lexical `using`
+scopes to replace the native destructor's decision reporting, including early
+returns, loop continues and unwinding. Reporting retains native suppression,
+Debug failure observations, permanent NOINLINE propagation and structured EE
+notifications. UTF-8 reason strings use the existing scoped marshaling helper
+(B128). The shared `vlogf` EE text-logging stub is still unimplemented (B129);
+this is not an accepted diagnostic-output difference.
+
 Post-import cleanup uses byrefs to EH table entries, retaining the native
 inner-to-outer traversal and retry of a slot after descriptor removal.
 Unlinked blocks retain their links for region trimming. The OSR conditional-flow

@@ -14458,7 +14458,7 @@ public partial class Compiler
                     callee = gdvCandidate.guardedMethodHandle;
                 }
 
-                var inlineResult = new InlineResult(this, call, stmt: null, "impMarkInlineCandidate for GDV", doNotReport: false, callee: callee);
+                using var inlineResult = new InlineResult(this, call, stmt: null, "impMarkInlineCandidate for GDV", doNotReport: false, callee: callee);
 
                 // Do the actual evaluation
                 impMarkInlineCandidateHelper(call, candidateId, exactContextHnd, callInfo, inlinersContext, inlineResult);
@@ -14496,7 +14496,7 @@ public partial class Compiler
             var candidatesCount = call.InlineCandidatesCount;
             assert(candidatesCount <= 1);
 
-            var inlineResult = new InlineResult(this, call, null, "impMarkInlineCandidate");
+            using var inlineResult = new InlineResult(this, call, null, "impMarkInlineCandidate");
             impMarkInlineCandidateHelper(call, 0, exactContextHnd, callInfo, inlinersContext, inlineResult);
         }
     }

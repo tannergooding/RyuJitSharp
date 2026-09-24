@@ -3,9 +3,11 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
+
 namespace RyuJitSharp;
 
-public sealed class InlineResult
+public sealed class InlineResult : IDisposable
 {
     private Compiler _rootCompiler;
 
@@ -109,6 +111,72 @@ public sealed class InlineResult
         if (!_doNotReport)
         {
             _rootCompiler.info.compCompHnd->beginInlining(_caller, _callee);
+        }
+    }
+
+    public void Dispose() => Report();
+
+    /// <summary>Dump and report the inline decision, optionally recording a permanent runtime rejection.</summary>
+    public unsafe void Report()
+    {
+#if DEBUG
+        if (IsFailure && (_call is not null))
+        {
+            assert(((_call.Flags & GTF_CALL_INLINE_CANDIDATE) == 0) || _call.IsGuardedDevirtualizationCandidate);
+
+            if (_call._inlineObservation is InlineObservation.CALLEE_UNUSED_INITIAL)
+            {
+                _call._inlineObservation = _policy.Observation;
+            }
+        }
+#endif
+
+        if (_doNotReport)
+        {
+            return;
+        }
+
+        _doNotReport = true;
+
+#if DEBUG
+        var callee = "(null)";
+
+        if (_rootCompiler.verbose || _rootCompiler.fgPrintInlinedMethods)
+        {
+            var caller = _caller is null ? "n/a" : _rootCompiler.eeGetMethodFullName(_caller);
+            callee = _callee is null ? "n/a" : _rootCompiler.eeGetMethodFullName(_callee);
+            JITDUMP($"INLINER: during '{_description}' result '{ResultString}' reason '{ReasonString}' for '{caller}' calling '{callee}'\n");
+        }
+#endif
+
+        if (IsNever && _policy.PropagateNeverToRuntime() && (_callee is not null))
+        {
+            var observation = _policy.Observation;
+
+            if (observation is not InlineObservation.CALLEE_IS_NOINLINE)
+            {
+#if DEBUG
+                JITDUMP($"\nINLINER: Marking {callee} as NOINLINE (observation {observation.String})\n");
+#endif
+                _rootCompiler.info.compCompHnd->setMethodAttribs(_callee, CORINFO_FLG_BAD_INLINEE);
+            }
+            else
+            {
+#if DEBUG
+                JITDUMP($"\nINLINER: Not marking {callee} NOINLINE because it's already marked as such\n");
+#endif
+            }
+        }
+
+        if (IsDecided || _reportFailureAsVmFailure || (_successResult != INLINE_PASS))
+        {
+            _rootCompiler.JITLOG(LL_INFO100000, $"INLINER: during '{_description}' result '{ResultString}' reason '{ReasonString}'\n");
+            using var reason = new MarshaledUtf8String(ReasonString);
+
+            fixed (byte* reasonPtr = reason)
+            {
+                _rootCompiler.info.compCompHnd->reportInliningDecision(_caller, _callee, Result, reasonPtr);
+            }
         }
     }
 

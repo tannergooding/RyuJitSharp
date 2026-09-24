@@ -201,10 +201,18 @@ internal static unsafe class InlineInvocationTests
                 ?? throw new InvalidOperationException("Missing current morph statement.");
             morphStatement.SetValue(compiler, statement);
             compiler.fgInsertStmtAtEnd(compiler.compCurBB, statement);
-            var result = new InlineResult(compiler, call, null, "inline invocation", doNotReport: true);
+            using var result = new InlineResult(compiler, call, null, "inline invocation", doNotReport: true);
             result.NoteBool(InlineObservation.CALLEE_IS_FORCE_INLINE, false);
             result.NoteInt(InlineObservation.CALLEE_IL_CODE_SIZE, 1);
-            action(compiler, call, result);
+            try
+            {
+                action(compiler, call, result);
+            }
+            finally
+            {
+                // Direct-helper cases stop before fgMorphCallInline revokes candidacy.
+                call.Flags &= ~GTF_CALL_INLINE_CANDIDATE;
+            }
         }
         finally
         {

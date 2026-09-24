@@ -34,7 +34,7 @@ internal static class ExtendedDefaultPolicyTests
         call.SetIsAsync(default);
         call.SingleInlineCandidateInfo = new InlineCandidateInfo { asyncStressIndex = 2 };
 
-        var result = new InlineResult(compiler, call, null, "async candidate", doNotReport: true,
+        using var result = new InlineResult(compiler, call, null, "async candidate", doNotReport: true,
             callee: (CORINFO_METHOD_STRUCT_*)explicitCallee);
         result.Policy.NoteBool(InlineObservation.CALLEE_IS_ASYNC, true);
         var calleeField = typeof(InlineResult).GetField("_callee", BindingFlags.Instance | BindingFlags.NonPublic)
