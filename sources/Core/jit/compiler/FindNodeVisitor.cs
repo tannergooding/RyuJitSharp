@@ -21,6 +21,7 @@ public struct FindNodeVisitor : IGenTreeVisitor<FindNodeVisitor>
     {
         _ancestors = [];
         _predicate = predicate;
+        _requiredFlagsToDescendIntoTree = requiredFlagsToDescendIntoTree;
     }
 
     public readonly GenTree? Result => _result;

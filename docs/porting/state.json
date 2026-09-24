@@ -12,15 +12,16 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Restore flag-filtered node-search pruning (B125), then select the next dependency-coherent global-morph prerequisite.",
+      "scope": "Complete fgAddInternal and its return-merging, generic-filter, synchronized-method and reverse-P/Invoke prerequisites (B136), starting with complete shared return construction and MergedReturns.",
       "doneWhen": [
-        "Restore the constructor's required-flags field assignment without changing root checks or zero-mask callers.",
-        "Cover root versus descendant pruning with focused regressions and commit the bounded correction.",
-        "Identify the next unimplemented global-morph boundary from the pinned oracle and record its prerequisites before expanding that scope."
+        "Port and commit complete shared return-block construction and MergedReturns with native return-count, constant grouping, ordering and profile behavior.",
+        "Complete generic exception filters, synchronized method protection and reverse-P/Invoke entry/exit dependencies before activating fgAddInternal.",
+        "Preserve this-copy, P/Invoke frame locals, JustMyCode guards and diagnostics in the complete phase.",
+        "Validate and retire complete native definitions only; publish at the activated-phase milestone without treating intermediate commits as stopping points."
       ],
       "validation": [
-        "Run flag-filtered node-search cases before and after the fix in Debug and Release.",
-        "Use the smallest related traversal/folding selection; recapture only if the executed corpus frontier changes."
+        "Use localized builds and existing return/CFG/EH tests for prerequisite portions; add focused cases for concrete defects and managed ownership adaptations.",
+        "After phase activation, recapture NativeAOT and compare actual post-inline phase output against the pinned oracle without claiming codegen parity."
       ],
       "deferred": [
         "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
@@ -31,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Inliner activation and its reporting, boxing, range-selection and per-attempt compiler prerequisites are complete (B128/B130-B134). Record and publish this milestone, then address the bounded B125 search-pruning defect before selecting the next global-morph dependency. Preserve B127/B129/B135 diagnostic gaps and the hardware-import frontier; do not claim codegen parity or stop merely because the milestone was pushed.",
+    "nextAction": "The active inliner milestone is published and B125 node-search pruning is corrected. Continue B136 from native MergedReturns/shared return construction, then complete the remaining fgAddInternal prerequisites before phase activation. Preserve B127/B129/B135 diagnostic gaps and the hardware-import frontier; root methods still require native fallback.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -936,6 +937,17 @@
         "remainingDifferences": ["hardware-intrinsic import", "inlinee profile-check diagnostics (B135)"],
         "fgInlineResidualStatus": "Already absent before this batch; no new retirement.",
         "codegenParity": "not-available"
+      },
+      "nodeSearchPruning": {
+        "debugPassed": 65,
+        "releasePassed": 65,
+        "newCases": 8,
+        "debugCasesFailingBeforeFix": 3,
+        "skipped": 0,
+        "beforeTests": "artifacts\\node-search-before.trx",
+        "debugTests": "artifacts\\node-search-debug.trx",
+        "releaseTests": "artifacts\\node-search-release.trx",
+        "nativeAotRecaptured": false
       },
       "nativeAotPublish": "passed-after-inliner-activation",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
