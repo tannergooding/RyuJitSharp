@@ -13487,8 +13487,136 @@ public partial class Compiler
     }
 #endif
 
-    // TODO: Port phase - fgInline
-    public PhaseStatus fgInline() => PhaseStatus.MODIFIED_NOTHING;
+    /// <summary>Expand top-level inline candidates and substitute their return placeholders in statement order.</summary>
+    public unsafe PhaseStatus fgInline()
+    {
+        if (!opts.OptEnabled(CLFLG_INLINING))
+        {
+            return PhaseStatus.MODIFIED_NOTHING;
+        }
+
+#if DEBUG
+        fgPrintInlinedMethods = JitConfig.JitPrintInlinedMethods.contains(
+            info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args);
+#endif
+
+        if (fgPgoConsistent)
+        {
+            Metrics.ProfileConsistentBeforeInline++;
+        }
+
+        if (!fgHaveProfileWeights)
+        {
+            JITDUMP("INLINER: no pgo data\n");
+        }
+        else
+        {
+            JITDUMP($"INLINER: pgo source is {compPgoSourceName}; pgo data is {(fgPgoConsistent ? "" : "not ")}consistent; {(fgHaveTrustedProfileWeights ? "" : "not ")}trusted; {(fgHaveSufficientProfileWeights ? "" : "not ")}sufficient\n");
+        }
+
+        noway_assert(fgFirstBB is not null);
+
+#if DEBUG
+        if (compAsyncInliningStress())
+        {
+            fgAsyncStressPrepare(1);
+        }
+#endif
+
+        var block = fgFirstBB;
+        var walker = new SubstitutePlaceholdersAndDevirtualizeWalker(this);
+        var madeChanges = false;
+
+        do
+        {
+            compCurBB = block;
+            var stmt = block.FirstStmt;
+
+            while (stmt is not null)
+            {
+                // Preorder substitutes placeholders recursively; postorder exploits the
+                // resulting types and values. Newly inserted candidates are visited first.
+                stmt = walker.WalkStatement(stmt);
+                var expr = stmt.RootNode;
+
+                if (expr.Oper is GT_CALL)
+                {
+                    var call = expr.AsCall();
+
+                    // GDV-only calls also have placeholders that must be repaired.
+                    if (call.IsInlineCandidate || call.IsGuardedDevirtualizationCandidate)
+                    {
+                        using var inlineResult = new InlineResult(this, call, stmt, nameof(fgInline));
+                        fgMorphStmt = stmt;
+                        fgMorphCallInline(call, inlineResult);
+                        madeChanges = true;
+
+                        if (stmt.RootNode.IsNothingNode)
+                        {
+                            fgRemoveStmt(block, stmt);
+                            continue;
+                        }
+                    }
+                }
+
+                if ((expr.Oper is GT_COMMA) && (expr.AsOp().Op1.Oper is GT_CALL)
+                    && (expr.AsOp().Op2.Oper is GT_NOP))
+                {
+                    madeChanges = true;
+                    stmt.RootNode = expr.AsOp().Op1;
+                }
+
+#if DEBUG
+                var findNonInlineCandidate = new FindNonInlineCandidateVisitor(this, stmt);
+                _ = findNonInlineCandidate.WalkTree(ref stmt.RootNodeRef, null);
+#endif
+                stmt = stmt.NextStmt;
+            }
+
+            block = block.Next;
+        }
+        while (block is not null);
+
+        madeChanges |= walker.MadeChanges;
+
+#if DEBUG
+        block = fgFirstBB;
+        noway_assert(block is not null);
+
+        do
+        {
+            var checkInlineCandidates = new DebugCheckInlineCandidatesVisitor();
+
+            foreach (var stmt in block.Statements)
+            {
+                _ = checkInlineCandidates.WalkTree(ref stmt.RootNodeRef, null);
+            }
+
+            block = block.Next;
+        }
+        while (block is not null);
+
+        fgVerifyHandlerTab();
+
+        if (verbose || fgPrintInlinedMethods)
+        {
+            JITDUMP("**************** Inline Tree");
+            jitprintf("\n");
+            assert(_inlineStrategy is not null);
+            _inlineStrategy.Dump(verbose || (JitConfig.JitPrintInlinedMethodsVerbose != 0));
+        }
+#endif
+
+        if (fgPgoConsistent)
+        {
+            Metrics.ProfileConsistentAfterInline++;
+        }
+
+        assert(_inlineStrategy is not null);
+        Metrics.InlineCount = _inlineStrategy.InlineCount;
+        Metrics.InlineAttempt = _inlineStrategy.ImportCount;
+        return madeChanges ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
+    }
 
     // TODO: Port phase - fgInsertGCPolls
     public PhaseStatus fgInsertGCPolls() => PhaseStatus.MODIFIED_NOTHING;

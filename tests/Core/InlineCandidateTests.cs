@@ -13,6 +13,7 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class InlineCandidateTests
 {
     private static readonly List<nuint> s_reportedCallees = [];
+    private static readonly List<nuint> s_decidedCallees = [];
 
     [TestCase(true, false, false, false, false, 1, true)]
     [TestCase(true, false, false, false, true, 1, true)]
@@ -42,10 +43,12 @@ internal static unsafe class InlineCandidateTests
         var context = new InlineContext(compiler._inlineStrategy);
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.Base.beginInlining = &BeginInlining;
+        vtable.Base.Base.reportInliningDecision = &ReportInliningDecision;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
         compiler.info.compCompHnd = &jitInfo;
         JitTls.Compiler = compiler;
         s_reportedCallees.Clear();
+        s_decidedCallees.Clear();
 
         try
         {
@@ -91,6 +94,7 @@ internal static unsafe class InlineCandidateTests
                 Assert.That(call.IsInlineCandidate, Is.False);
                 Assert.That(call.InlineCandidatesCount, Is.EqualTo(expectedRetention ? candidateCount : 0));
                 Assert.That(s_reportedCallees, Is.EqualTo(expectedCallees));
+                Assert.That(s_decidedCallees, Is.EqualTo(expectedCallees));
             });
         }
         finally
@@ -104,5 +108,11 @@ internal static unsafe class InlineCandidateTests
     private static void BeginInlining(ICorJitInfo* self, CORINFO_METHOD_STRUCT_* caller, CORINFO_METHOD_STRUCT_* callee)
     {
         s_reportedCallees.Add((nuint)callee);
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void ReportInliningDecision(ICorJitInfo* self, CORINFO_METHOD_STRUCT_* caller, CORINFO_METHOD_STRUCT_* callee, CorInfoInline result, byte* reason)
+    {
+        s_decidedCallees.Add((nuint)callee);
     }
 }

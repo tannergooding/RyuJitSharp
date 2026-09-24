@@ -12,17 +12,15 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete inliner activation, first restoring missing InlineResult scope-exit reporting, then porting fgInline and validating successful nested compilation.",
+      "scope": "Restore flag-filtered node-search pruning (B125), then select the next dependency-coherent global-morph prerequisite.",
       "doneWhen": [
-        "Port complete InlineResult.Report and map native destructor scopes to deterministic disposal at every production construction site.",
-        "Port complete fgInline traversal, candidate expansion, placeholder substitution, diagnostics and metrics without bypassing prerequisite phases.",
-        "Validate successful nested compilation and precisely bound remaining native dump differences before claiming activation.",
-        "Validate and commit complete dependency-coherent portions; retire only completed native definitions."
+        "Restore the constructor's required-flags field assignment without changing root checks or zero-mask callers.",
+        "Cover root versus descendant pruning with focused regressions and commit the bounded correction.",
+        "Identify the next unimplemented global-morph boundary from the pinned oracle and record its prerequisites before expanding that scope."
       ],
       "validation": [
-        "Cover decision reporting, suppression, NOINLINE propagation and deterministic scope exit with controlled EE callbacks in Debug and Release.",
-        "Cover disabled/unchanged inline phases, failure repair, comma cleanup and successful nested compilation.",
-        "Recapture NativeAOT/corpus after activation; compare import prefixes and inlining phase results without claiming codegen parity."
+        "Run flag-filtered node-search cases before and after the fix in Debug and Release.",
+        "Use the smallest related traversal/folding selection; recapture only if the executed corpus frontier changes."
       ],
       "deferred": [
         "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
@@ -33,7 +31,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Post-import cleanup (B126) and deterministic inline decision reporting (B128) are complete. Continue the active batch with complete fgInline and successful nested-compilation validation. Keep preexisting fgVerifyHandlerTab and vlogf diagnostic gaps explicit (B127/B129); B125 remains a separate node-search pruning fix. Update MILESTONES.md and push at validated milestones, then continue without a conversational stop.",
+    "nextAction": "Inliner activation and its reporting, boxing, range-selection and per-attempt compiler prerequisites are complete (B128/B130-B134). Record and publish this milestone, then address the bounded B125 search-pruning defect before selecting the next global-morph dependency. Preserve B127/B129/B135 diagnostic gaps and the hardware-import frontier; do not claim codegen parity or stop merely because the milestone was pushed.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -897,7 +895,7 @@
         "debugTests": "artifacts\\inline-report-debug.trx",
         "releaseTests": "artifacts\\inline-report-release.trx",
         "nativeAotRecaptured": false,
-        "remaining": ["fgInline activation and nested-compilation validation", "shared EE text logging (B129)"]
+        "remaining": ["shared EE text logging (B129)"]
       },
       "boxingPatterns": {
         "managedSourceCommit": "6cbd3a3fced61d39e3b4c049ebca952f15446058",
@@ -912,9 +910,36 @@
         "beforeFixFailure": "Scalar<int>.Add reached unbox.any with an unboxed int because the box matcher returned false success.",
         "nullableConversionCasesExecuted": false
       },
-      "nativeAotPublish": "passed-after-post-import-cleanup",
+      "inlinePhaseActivation": {
+        "managedSourceCommit": "6cbd3a3fced61d39e3b4c049ebca952f15446058",
+        "debugPassed": 336,
+        "releasePassed": 281,
+        "skipped": 0,
+        "newPhaseCases": 4,
+        "newDebugRangeCases": 4,
+        "rangeCasesFailingBeforeFix": 3,
+        "debugTests": "artifacts\\inline-phase-debug.trx",
+        "releaseTests": "artifacts\\inline-phase-release.trx",
+        "rangeBeforeTests": "artifacts\\inline-range-before.trx",
+        "nativeAotLibrary": "artifacts\\inline-phase-complete-native\\RyuJitSharp.dll",
+        "nativeAotLibrarySha256": "FF46A315C5AC71D84D997743A15AC57939D66CB718D08FE225F16530FFE8C96A",
+        "nativeCapture": "artifacts\\inline-phase-box-corpus-native\\manifest.json",
+        "managedCapture": "artifacts\\inline-phase-complete-corpus-managed\\manifest.json",
+        "comparison": "artifacts\\inline-phase-complete-comparison.json",
+        "phaseComparison": "artifacts\\inline-phase-complete-phase-comparison.json",
+        "corpusMethods": 11,
+        "exactImportPrefixes": 10,
+        "exactOuterInlinePhaseSections": 9,
+        "exactPostInlineIRSections": 10,
+        "scalarSuccessfulInlines": 1,
+        "hardwareFallbackSuccessfulInlines": 43,
+        "remainingDifferences": ["hardware-intrinsic import", "inlinee profile-check diagnostics (B135)"],
+        "fgInlineResidualStatus": "Already absent before this batch; no new retirement.",
+        "codegenParity": "not-available"
+      },
+      "nativeAotPublish": "passed-after-inliner-activation",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
-      "phaseDumpParity": "six-of-eleven-import-prefixes-equal-four-inline-differences-and-one-vector-importer-gap",
+      "phaseDumpParity": "ten-of-eleven-import-prefixes-and-post-inline-IR-sections-equal-nine-inline-phase-sections-equal",
       "codegenParity": "not-available"
     }
   },
@@ -1366,6 +1391,10 @@
       "commit": "13618810c9f1234d2023774c65db4894d73df637",
       "ref": "refs/porting/snapshots/indirect-call-transformation-source"
     },
+    "inlinePhaseManagedSource": {
+      "commit": "6cbd3a3fced61d39e3b4c049ebca952f15446058",
+      "ref": "refs/porting/snapshots/inline-phase-source"
+    },
     "inlineBoxNativeResidual": {
       "commit": "c636fad980a1a595434aef412b35632cd6138d27",
       "indexCommit": "4e99029276c25f08ccc764553e0eb3d9f831187d",
@@ -1396,6 +1425,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "inline-phase-and-boxing-patterns",
+      "native": ["src\\coreclr\\jit\\fginline.cpp", "src\\coreclr\\jit\\compiler.cpp", "src\\coreclr\\jit\\importer.cpp", "src\\coreclr\\jit\\phase.h"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.fg.cs", "sources\\Core\\jit\\compiler\\Compiler.comp.cs", "sources\\Core\\jit\\compiler\\Globals.cs", "sources\\Core\\jit\\compiler\\Compiler.imp.cs"],
+      "reconciledCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete inline phase, signed boxing-pattern matching, nullable field helpers and native per-attempt/result/phase-wrapper contracts (B130-B134). Hardware import, full global morph and codegen remain incomplete; B135 bounds the remaining scalar inline diagnostic difference."
+    },
     {
       "area": "post-import-cleanup",
       "native": ["src\\coreclr\\jit\\fgopt.cpp", "src\\coreclr\\jit\\jiteh.cpp"],

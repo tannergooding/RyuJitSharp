@@ -311,22 +311,11 @@ public partial class Globals
 
                 try
                 {
-                    if (inlineInfo is not null)
-                    {
-                        var inlinerCompiler = inlineInfo.InlinerCompiler;
-                        compiler = inlinerCompiler.InlineeCompiler;
+                    // Native placement-new reconstructs every attempt, even when reusing
+                    // the inlinee's storage. A managed compiler must likewise start fresh.
+                    compiler = new Compiler(methodHandle, jitInfo, methodInfo, inlineInfo);
 
-                        if (compiler is null)
-                        {
-                            // Lazily create the inlinee compiler object
-                            compiler = new Compiler(methodHandle, jitInfo, methodInfo, inlineInfo);
-                            inlinerCompiler.InlineeCompiler = compiler;
-                        }
-                    }
-                    else
-                    {
-                        compiler = new Compiler(methodHandle, jitInfo, methodInfo, inlineInfo);
-                    }
+                    inlineInfo?.InlinerCompiler.InlineeCompiler = compiler;
 
 #if MEASURE_CLRAPI_CALLS
                     var wrapCLR = WrapICorJitInfo.makeOne(pParam->pAlloc, pComp, compHnd);

@@ -12,6 +12,60 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ConfigMethodRangeTests
 {
+    [TestCase(0, false)]
+    [TestCase(1, true)]
+    [TestCase(2, false)]
+    [TestCase(3, true)]
+    public static void InlineDisableRangePreservesUnsetAndCachedSelection(int selection, bool expected)
+    {
+        using var jitTls = new JitTls(null);
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        compiler.info.compFullName = "InlineRange";
+        var strategy = (InlineStrategy)RuntimeHelpers.GetUninitializedObject(typeof(InlineStrategy));
+        var compilerField = typeof(InlineStrategy).GetField("_compiler", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException();
+        compilerField.SetValue(strategy, compiler);
+        var rangeField = typeof(InlineStrategy).GetField("s_inlingDisabledRange", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException();
+        var configField = typeof(JitConfigValues).GetField("_jitNoInlineRange", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException();
+        var previousRange = rangeField.GetValue(null);
+        var previousConfig = Globals.JitConfig;
+        var hash = unchecked((uint)compiler.info.compMethodHash());
+        var text = selection switch {
+            0 => null,
+            1 => $"{hash:x8}",
+            2 => $"{unchecked(hash + 1):x8}",
+            _ => "",
+        };
+        var bytes = text is null ? null : Encoding.ASCII.GetBytes(text + '\0');
+
+        try
+        {
+            rangeField.SetValue(null, default(ConfigMethodRange));
+            fixed (byte* pointer = bytes)
+            {
+                object config = previousConfig;
+                configField.SetValue(config, System.Reflection.Pointer.Box(pointer, typeof(byte*)));
+                Globals.JitConfig = (JitConfigValues)config;
+
+                for (var attempt = 0; attempt < 3; attempt++)
+                {
+                    Assert.That(strategy.IsInliningDisabled(), Is.EqualTo(expected), $"attempt {attempt}");
+                }
+
+                configField.SetValue(config, System.Reflection.Pointer.Box(null, typeof(byte*)));
+                Globals.JitConfig = (JitConfigValues)config;
+                Assert.That(strategy.IsInliningDisabled(), Is.False);
+            }
+        }
+        finally
+        {
+            Globals.JitConfig = previousConfig;
+            rangeField.SetValue(null, previousRange);
+        }
+    }
+
     [TestCase(null, -1, true)]
     [TestCase("", int.MinValue, true)]
     [TestCase("0", 0, true)]

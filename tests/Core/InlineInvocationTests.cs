@@ -19,6 +19,68 @@ internal static unsafe class InlineInvocationTests
 {
     private static bool s_executeCallback;
     private static int s_traps;
+    private static int s_reports;
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void InlinePhaseRepairsFailedCallsAndRemovesObsoleteStatements(bool returnsValue)
+    {
+        WithCompiler((compiler, call, result) => {
+            var block = compiler.compCurBB ?? throw new InvalidOperationException();
+            compiler.fgFirstBB = compiler.fgLastBB = block;
+            compiler.fgPgoConsistent = true;
+            compiler.lvaCount = 512;
+            Array.Resize(ref compiler.lvaTable, compiler.lvaCount);
+            call.Type = call._returnType = returnsValue ? TYP_INT : TYP_VOID;
+            Statement? consumer = null;
+            if (returnsValue)
+            {
+                var placeholder = compiler.gtNewInlineCandidateReturnExpr(call, TYP_INT);
+                (call.SingleInlineCandidateInfo ?? throw new InvalidOperationException()).retExpr = placeholder;
+                consumer = compiler.gtNewStmt(compiler.gtNewStoreLclVarNode(0, placeholder));
+                compiler.fgInsertStmtAtEnd(block, consumer);
+            }
+
+            Assert.That(compiler.fgInline(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            Assert.That(call.IsInlineCandidate, Is.False);
+            Assert.That(s_reports, Is.EqualTo(1));
+            Assert.That(compiler.Metrics.ProfileConsistentBeforeInline, Is.EqualTo(1));
+            Assert.That(compiler.Metrics.ProfileConsistentAfterInline, Is.EqualTo(1));
+            Assert.That(compiler.Metrics.InlineCount, Is.Zero);
+            Assert.That(compiler.Metrics.InlineAttempt, Is.Zero);
+            if (consumer is not null)
+            {
+                Assert.That(block.FirstStmt, Is.SameAs(consumer));
+                Assert.That(consumer.RootNode.Data, Is.SameAs(call));
+            }
+            else
+            {
+                Assert.That((block.FirstStmt ?? throw new InvalidOperationException()).RootNode, Is.SameAs(call));
+            }
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void InlinePhaseHonorsGateAndCleansCommaCall(bool enabled)
+    {
+        WithCompiler((compiler, call, result) => {
+            var block = compiler.compCurBB ?? throw new InvalidOperationException();
+            compiler.fgFirstBB = compiler.fgLastBB = block;
+            var stmt = block.FirstStmt ?? throw new InvalidOperationException();
+            call.Flags &= ~GTF_CALL_INLINE_CANDIDATE;
+            stmt.RootNode = compiler.gtNewCommaNode(TYP_VOID, call, compiler.gtNewNothingNode());
+            var original = stmt.RootNode;
+            if (!enabled)
+            {
+                compiler.opts.compFlags &= ~CLFLG_INLINING;
+            }
+
+            Assert.That(compiler.fgInline(), Is.EqualTo(enabled ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING));
+            Assert.That(stmt.RootNode, Is.SameAs(enabled ? call : original));
+            Assert.That(s_reports, Is.Zero);
+        });
+    }
 
     [TestCase("locals", InlineObservation.CALLSITE_TOO_MANY_LOCALS)]
     [TestCase("virtual", InlineObservation.CALLSITE_IS_VIRTUAL)]
@@ -162,6 +224,8 @@ internal static unsafe class InlineInvocationTests
         SetField(typeof(JitConfigValues), config, "_jitMaxLocalsToTrack", 512);
 #if DEBUG
         SetField(typeof(JitConfigValues), config, "_jitInlineLimit", -1);
+        SetField(typeof(JitConfigValues), config, "_jitEnableLateDevirtualization", 1);
+        SetField(typeof(JitConfigValues), config, "_jitPrintInlinedMethods", new JitConfigValues.MethodSet(null, null));
 #endif
         JitConfig = (JitConfigValues)config;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -173,11 +237,15 @@ internal static unsafe class InlineInvocationTests
         compiler.lvaCount = 1;
         compiler.fgBBNumMax = 7;
         compiler.info.compMethodHnd = (CORINFO_METHOD_STRUCT_*)0x100;
+        CORINFO_METHOD_INFO methodInfo = default;
+        compiler.info.compMethodInfo = &methodInfo;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(false);
         compiler.opts.compFlags = CLFLG_INLINING;
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.Base.Base.beginInlining = &BeginInlining;
+        vtable.Base.Base.reportInliningDecision = &ReportInlining;
         vtable.Base.Base.haveSameMethodDefinition =
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_STRUCT_*, CORINFO_METHOD_STRUCT_*, byte>)&HaveSameDefinition;
         vtable.Base.Base.runWithErrorTrap =
@@ -187,6 +255,7 @@ internal static unsafe class InlineInvocationTests
         JitTls.Compiler = compiler;
         s_executeCallback = false;
         s_traps = 0;
+        s_reports = 0;
 
         try
         {
@@ -221,8 +290,19 @@ internal static unsafe class InlineInvocationTests
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void BeginInlining(ICorJitInfo* self, CORINFO_METHOD_STRUCT_* caller, CORINFO_METHOD_STRUCT_* callee)
+    {
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void ReportInlining(ICorJitInfo* self, CORINFO_METHOD_STRUCT_* caller, CORINFO_METHOD_STRUCT_* callee, CorInfoInline result, byte* reason)
+    {
+        s_reports++;
+    }
+
     private static void SetField([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)] Type type,
-        object instance, string name, int value)
+        object instance, string name, object value)
     {
         var field = type.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException($"Missing {name}.");

@@ -287,16 +287,15 @@ public sealed class InlineStrategy
     public unsafe bool IsInliningDisabled()
     {
 #if DEBUG
+        var pNoInlineRangeUtf8 = JitConfig.JitNoInlineRange;
+
+        if (pNoInlineRangeUtf8 is null)
+        {
+            return false;
+        }
+
         if (!s_inlingDisabledRange.IsInit)
         {
-            var pNoInlineRangeUtf8 = JitConfig.JitNoInlineRange;
-
-            if (pNoInlineRangeUtf8 is null)
-            {
-                s_inlingDisabledRange.EnsureInit(null, 0);
-                return false;
-            }
-
             // If we have a config string we have at least one entry.  Count
             // number of spaces in our config string to see if there are
             // more. Number of ranges we need is 2x that value.

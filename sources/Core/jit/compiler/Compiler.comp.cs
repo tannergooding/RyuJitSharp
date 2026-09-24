@@ -1110,7 +1110,7 @@ public partial class Compiler
 
         if (compIsForInlining)
         {
-            JITLOG(LL_INFO100000, $"\nINLINER impTokenLookupContextHandle for {eeGetMethodFullName(info.compMethodHnd)} == 0x{FMT_DSP_PTR(impTokenLookupContextHandle)}.\n");
+            JITLOG(LL_INFO100000, $"\nINLINER impTokenLookupContextHandle for {eeGetMethodFullName(info.compMethodHnd)} is 0x{FMT_DSP_PTR(impTokenLookupContextHandle)}.\n");
         }
 #endif
 
@@ -1472,8 +1472,9 @@ public partial class Compiler
 #endif
             }
 
-            // TODO-PORT: This needs to return CORJIT_OK once codegen actually occurs
-            return CORJIT_SKIPPED;
+            // Inlinees return imported IR, not generated code. Root compilations must
+            // still be skipped until codegen and its required metadata are available.
+            return compiler.compIsForInlining ? CORJIT_OK : CORJIT_SKIPPED;
         }
     }
 
@@ -3220,7 +3221,10 @@ public partial class Compiler
             return;
         }
 
-        DoPhase(this, PHASE_EARLY_QMARK_EXPANSION, () => fgExpandQmarkNodes(/*early*/ true));
+        // Native ActionPhase discards lambda results and reports changes.
+        DoPhase(this, PHASE_EARLY_QMARK_EXPANSION, () => {
+            _ = fgExpandQmarkNodes(early: true);
+        });
 
         // If instrumenting, add block and class probes.
         if (jitFlags->IsSet(JitFlags.JIT_FLAG_BBINSTR))
@@ -3321,7 +3325,9 @@ public partial class Compiler
         if (opts.OptimizationEnabled)
         {
             // Tail merge
-            DoPhase(this, PHASE_HEAD_TAIL_MERGE, () => fgHeadTailMerge(true));
+            DoPhase(this, PHASE_HEAD_TAIL_MERGE, () => {
+                _ = fgHeadTailMerge(true);
+            });
 
             // Run an early flow graph simplification pass
             DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, fgUpdateFlowGraphPhase);
@@ -3423,7 +3429,9 @@ public partial class Compiler
             DoPhase(this, PHASE_OPTIMIZE_FLOW, optOptimizeFlow);
 
             // Second pass of tail merge
-            DoPhase(this, PHASE_HEAD_TAIL_MERGE2, () => fgHeadTailMerge(false));
+            DoPhase(this, PHASE_HEAD_TAIL_MERGE2, () => {
+                _ = fgHeadTailMerge(false);
+            });
 
             // Compute DFS tree and remove all unreachable blocks.
             DoPhase(this, PHASE_DFS_BLOCKS3, fgDfsBlocksAndRemove);
