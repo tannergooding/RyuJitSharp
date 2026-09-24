@@ -2062,7 +2062,7 @@ public partial class Compiler
 
         var typeName = getClassNameFromMetadata(clsHnd, out var namespaceName);
 
-        if (namespaceName.Equals("System.Runtime.InteropServices", StringComparison.Ordinal))
+        if (!namespaceName.Equals("System.Runtime.InteropServices", StringComparison.Ordinal))
         {
             return false;
         }

@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Finish integrated Debug/Release validation of returned constructor/selector, reference association/maps, calls/arithmetic/CFG and parent store/RMW lowering. The store/LSRA Debug subset executed 151 cases with 148 passing; its two scalar-extraction failures exposed the now-fixed IsContainableHWIntrinsic stub, and the remaining native diagnostic expectation was corrected. Call tests had nint expectation mismatches and missing getEEInfo metadata; Sol returned repairs. Current workers: Luna completes selectMinimal/def-use conflicts; Sol returned memmove/memset specialization; Astra found existing Compiler.GetReturnTypeForStruct and returned classification tests exposing an inverted namespace check in isNativePrimitiveStructType (Compiler.cs:2065), still to fix and validate. Parent owns shared contracts and dispatch; GT_CALL is wired but unsupported helper/tailcall/pinvoke/struct-return paths remain explicit. Containment traversal supports implemented nodes only. Keep all partial drivers inactive. B165 documents the authorized counted map copy instead of the native unused function's oversized byte copy. Before handing workers their next edits, preserve coherent source snapshots for validation. Native SetOper/BashToConst CLEAR_VN remains the contract. Managed code size remains zero.",
+    "nextAction": "Validate the frozen returned backend packets in artifacts/backend-integration-snapshot, applying integration repairs to both real source and that snapshot. It contains constructor/17 selector heuristics/selectMinimal, reference association/maps, ordinary calls/arithmetic/CFG/memory helpers and parent store/RMW lowering. Scalar extraction now has native intrinsic containability (e35a976); the reference diagnostic expectation and call metadata fixtures were repaired. Fix remaining test diagnostics, run Debug/Release, then commit dependency-coherent portions without incomplete drivers. Compiler.GetReturnTypeForStruct already existed; its native-primitive namespace predicate is now corrected, with five before-failures and 29 passing cases in each configuration. Current workers: Luna closes allocation diagnostics omitted from selection; Sol ports memcmp specialization; Astra ports LowerCallStruct. Parent owns existing call dispatch/shared contracts. All drivers remain inactive; managed code size remains zero. Preserve native SetOper/BashToConst VN clearing and the documented B165 safe map-copy deviation.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -216,6 +216,17 @@
         "scope": "Exact staged-source export ports native intrinsic-containment eligibility and node invariance. Full Debug HWI selection passes 336 and retains the same 33 B145 overflow failures as a freshly rebuilt baseline (334 pass plus the two new regressions fail before the fix).",
         "baselineTests": "artifacts\\intrinsic-containment-baseline-full.trx",
         "fullDebugTests": "artifacts\\intrinsic-containment-commit-debug.trx",
+        "nativeBodiesRetained": true
+      },
+      "structReturnClassificationSupport": {
+        "debugPassed": 29,
+        "releasePassed": 29,
+        "skipped": 0,
+        "selection": ["StructReturnClassificationTests"],
+        "debugTests": "artifacts\\struct-return-commit-debug.trx",
+        "releaseTests": "artifacts\\struct-return-commit-release.trx",
+        "beforeFix": "artifacts\\struct-return-before.trx: five metadata-identity cases fail and 24 other classification cases pass",
+        "scope": "Existing return classification is retained; only the inverted intrinsic-namespace predicate changes. Isolated validation covers native Windows-x64 sizes, GC layouts, supplied-size queries, member-call conventions, exact intrinsic identity and ReturnTypeDesc integration.",
         "nativeBodiesRetained": true
       },
       "rationalizationActivation": {
