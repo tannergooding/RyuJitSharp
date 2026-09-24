@@ -2205,6 +2205,30 @@ public partial class Compiler
 #endif
     }
 
+    internal bool lvaIsArgAccessedViaVarArgsCookie(int lclNum)
+    {
+#if TARGET_X86
+        if (!info.compIsVarArgs)
+        {
+            return false;
+        }
+
+        ref var varDsc = ref lvaGetDesc(lclNum);
+
+        if (!varDsc.lvIsParam || (lclNum == lvaVarargsHandleArg))
+        {
+            return false;
+        }
+
+        ref readonly var abiInfo = ref lvaGetParameterAbiInfo(lclNum);
+        assert(abiInfo.HasExactlyOneStackSegment ||
+            ((abiInfo.NumSegments == 1) && abiInfo.Segments[0].IsPassedInRegister));
+        return abiInfo.HasExactlyOneStackSegment;
+#else
+        return false;
+#endif
+    }
+
     /// <summary>Is the local an "implicit byref" parameter?</summary>
     /// <param name="lclNum">The local in question</param>
     /// <returns>Whether "lclNum" refers to an implicit byref.</returns>

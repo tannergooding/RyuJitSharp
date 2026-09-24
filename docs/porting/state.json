@@ -32,7 +32,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit and publish the validated implicit-byref retyping batch, then port fgMorphExpandImplicitByRefArg and fgMorphExpandLocal from oracle morph.cpp:3343-3517. The retyping phase is complete; all twenty minopts 'Morph - ByRefs' sections and its emitted IR match native, and 74 Debug/Release local-morph plus inline-argument cases pass. Five new cases failed against the stub. Global morph remains a no-op, so access expansion is the next concrete closure, not more retyping tests or captures. Use source-based local replacement with NodeThreading.None and return the replacement to the owning morph caller; preserve native common/effect masks, identity and last-use semantics. Check existing normalization helpers before adding dependencies. Keep minopts execution ahead of B135/B142 diagnostics, B145 SIMD conversions and B147 optional early CFG cleanup; B149 unsigned checked multiplication is separately recorded.",
+    "nextAction": "Commit the completed global-local-expansion helper batch, then read oracle morph.cpp::fgMorphBlocks and follow its direct driver/tree-morph dependencies. fgMorphExpandImplicitByRefArg, fgMorphExpandLocal, fgMorphExpandStackArgForVarArgs and lvaIsArgAccessedViaVarArgsCookie are complete and retired; 239 Debug / 235 Release local/inline/scalar cases pass. No phase activation or unchanged-frontier recapture is claimed for these helpers. The owning tree-morph caller must install the returned expansion and morph it further. fgMorphBlocks remains a no-op; build the complete required closure rather than reopening local/byref ownership, normalization or tests. Required retyping is published as cce82f2 and local morph as 15544e6. Keep minopts execution ahead of B135/B142 diagnostics, B145 SIMD conversions and B147 optional early CFG cleanup; B149 unsigned checked multiplication is separately recorded.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -1117,6 +1117,21 @@
         "managedCodegen": false,
         "compilationResult": "All twenty selected managed methods reach Method code size: 0; corpus execution still uses native fallback."
       },
+      "globalLocalExpansion": {
+        "debugPassed": 239,
+        "releasePassed": 235,
+        "skipped": 0,
+        "newCases": 12,
+        "selection": ["LocalMorphTests", "InlineArgumentTests", "ScalarFoldingTests"],
+        "debugTests": "artifacts\\global-local-expansion-debug.trx",
+        "releaseTests": "artifacts\\global-local-expansion-release.trx",
+        "coverage": ["scalar/struct loads and stores and addresses", "owning replacement and logical pointer identity", "VN/SSA resets and effect masks", "kept promotion and already-expanded pointers", "composed promoted-field offsets", "whole-parent versus field last-use masks", "normalization gating and redundant-cast avoidance"],
+        "nativeDefinitionsRetired": ["Compiler::fgMorphExpandImplicitByRefArg", "Compiler::fgMorphExpandLocal", "Compiler::fgMorphExpandStackArgForVarArgs", "Compiler::lvaIsArgAccessedViaVarArgsCookie"],
+        "nativeDeclarationsRetired": 4,
+        "x86ExecutionValidated": false,
+        "globalMorphActive": false,
+        "nativeAotRecaptured": false
+      },
       "nativeAotPublish": "passed-after-implicit-byref-retyping",
       "nativeOracleBuild": "passed-at-source-and-target-with-matching-core-root",
       "phaseDumpParity": "all-twenty-minopts-implicit-byref-retyping-phase-sections-and-its-emitted-IR-equal; earlier-local-morph-gaps-remain-scoped-in-localMorphActivation",
@@ -1616,6 +1631,11 @@
       "indexCommit": "91a8d027671593672fdf7840d5bbcc96e53a81b3",
       "ref": "refs/porting/snapshots/native-ledger-implicit-byref-retyping"
     },
+    "globalLocalExpansionNativeResidual": {
+      "commit": "03f4d654e7661383f97d673c92d56180c55d2a42",
+      "indexCommit": "d23f6a0e016c8f6fcbe88ac529154521d23590d5",
+      "ref": "refs/porting/snapshots/native-ledger-global-local-expansion"
+    },
     "internalBlockPhaseNativeResidual": {
       "commit": "494ccbc0132fcf507b8133bffa2fef635d788858",
       "indexCommit": "343e35183b190e9bccb68af25de8c3b499e6bf1e",
@@ -1657,11 +1677,18 @@
   },
   "sourceMap": [
     {
+      "area": "global-morph-local-expansion",
+      "native": ["src\\coreclr\\jit\\morph.cpp", "src\\coreclr\\jit\\lclvars.cpp"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.fg.cs", "sources\\Core\\jit\\compiler\\Compiler.lva.cs"],
+      "reconciledCommit": null,
+      "status": "Complete local expansion and varargs-cookie classification helpers, not an active global-morph phase. Implicit-byref accesses replace the source with a same-ID unthreaded pointer node and return the expanded root to its owner. x86 conditional paths are translated but execution is not validated."
+    },
+    {
       "area": "implicit-byref-retyping",
       "native": ["src\\coreclr\\jit\\morph.cpp"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.fg.cs"],
       "reconciledCommit": null,
-      "status": "Complete fgRetypeImplicitByRefArgs and existing fgMarkDemotedImplicitByRefArgs. Global-morph access expansion remains separate required work; the containing native file is not complete."
+      "status": "Complete fgRetypeImplicitByRefArgs and existing fgMarkDemotedImplicitByRefArgs. Global-morph access expansion is tracked separately; the containing native file is not complete."
     },
     {
       "area": "local-morph-activation",

@@ -714,6 +714,187 @@ internal static unsafe class LocalMorphTests
         });
     }
 
+    [TestCase(GT_LCL_VAR, GT_BLK)]
+    [TestCase(GT_STORE_LCL_VAR, GT_STORE_BLK)]
+    [TestCase(GT_LCL_FLD, GT_IND)]
+    [TestCase(GT_STORE_LCL_FLD, GT_STOREIND)]
+    [TestCase(GT_LCL_ADDR, GT_ADD)]
+    public static void ImplicitByRefExpansionReplacesOwnersAndPreservesPointerIdentity(genTreeOps oper, genTreeOps expectedOper)
+    {
+        WithCompiler(compiler => {
+            var layout = new ClassLayout(16);
+            ref var arg = ref compiler.lvaTable[0];
+            arg.Type = TYP_STRUCT;
+            arg.Layout = layout;
+            arg.lvIsParam = true;
+            arg.IsImplicitByRef = true;
+            compiler.lvaTable[2].Type = TYP_STRUCT;
+            compiler.lvaTable[2].Layout = layout;
+            var structValue = compiler.gtNewLclvNode(TYP_STRUCT, 2);
+            var scalarValue = compiler.gtNewIconNode(TYP_INT, 42);
+            GenTreeLclVarCommon local = oper switch {
+                GT_LCL_VAR => compiler.gtNewLclvNode(TYP_STRUCT, 0),
+                GT_STORE_LCL_VAR => compiler.gtNewStoreLclVarNode(0, structValue),
+                GT_LCL_FLD => new GenTreeLclFld(GT_LCL_FLD, TYP_INT, 0, 4),
+                GT_STORE_LCL_FLD => new GenTreeLclFld(TYP_INT, 0, 4, scalarValue, layout: null),
+                GT_LCL_ADDR => new GenTreeLclFld(GT_LCL_ADDR, TYP_BYREF, 0, 4),
+                _ => throw new ArgumentOutOfRangeException(nameof(oper)),
+            };
+            local.Flags |= GTF_VAR_DEATH | GTF_GLOB_REF;
+            local._vnPair.SetBoth(42);
+            local.SsaNum = 9;
+            var statement = compiler.gtNewStmt(local);
+            arg.Type = TYP_BYREF;
+            compiler.fgGlobalMorph = true;
+
+            statement.RootNodeRef = compiler.fgMorphExpandLocal(local) ??
+                throw new InvalidOperationException("Missing implicit-byref expansion.");
+
+            var result = statement.RootNode;
+            Assert.That(result, Is.Not.SameAs(local));
+            Assert.That(result.Oper, Is.EqualTo(expectedOper));
+            var address = result.Oper is GT_ADD ? result : result.AsIndir().Addr;
+            var pointer = address.Oper is GT_ADD ? address.AsOp().Op1 : address;
+            Assert.That(pointer.Oper, Is.EqualTo(GT_LCL_VAR));
+            Assert.That(pointer.Type, Is.EqualTo(TYP_BYREF));
+            Assert.That(pointer.AsLclVarCommon().LclNum, Is.Zero);
+            Assert.That(pointer.AsLclVarCommon().HasSsaName, Is.False);
+            Assert.That(pointer.Flags & GTF_ALL_EFFECT, Is.EqualTo(GTF_EMPTY));
+            Assert.That(pointer.Flags & GTF_VAR_DEATH, Is.EqualTo(GTF_VAR_DEATH));
+            Assert.That(pointer._vnPair.Liberal, Is.EqualTo(ValueNumStore.NoVN));
+#if DEBUG
+            Assert.That(pointer.TreeId, Is.EqualTo(local.TreeId));
+#endif
+            if (address.Oper is GT_ADD)
+            {
+                Assert.That(address.AsOp().Op2.AsIntCon().IconValue, Is.EqualTo((nint)4));
+            }
+
+            if (result.Oper.IsIndir)
+            {
+                Assert.That(result.Flags & GTF_GLOB_REF, Is.EqualTo(GTF_GLOB_REF));
+            }
+
+            if (oper.IsLocalStore)
+            {
+                Assert.That(result.AsIndir().Data, Is.SameAs(local.Data));
+                Assert.That(result.Flags & GTF_ASG, Is.EqualTo(GTF_ASG));
+            }
+
+            if (result.Oper.IsBlk)
+            {
+                Assert.That(result.AsBlk().Layout, Is.SameAs(layout));
+            }
+        });
+    }
+
+    [Test]
+    public static void ImplicitByRefExpansionRecognizesPointersAndKeptPromotion()
+    {
+        WithCompiler(compiler => {
+            ref var arg = ref compiler.lvaTable[0];
+            arg.Type = TYP_STRUCT;
+            arg.Layout = new ClassLayout(16);
+            arg.lvIsParam = true;
+            arg.IsImplicitByRef = true;
+            var original = compiler.gtNewLclvNode(TYP_STRUCT, 0);
+            arg.Type = TYP_BYREF;
+            var pointer = compiler.gtNewLclvNode(TYP_BYREF, 0);
+            Assert.That(compiler.fgMorphExpandLocal(original), Is.Null);
+            compiler.fgGlobalMorph = true;
+            Assert.That(compiler.fgMorphExpandLocal(pointer), Is.Null);
+
+            arg.lvPromoted = true;
+            arg.lvFieldLclStart = 2;
+            compiler.lvaTable[2].Type = TYP_STRUCT;
+            compiler.lvaTable[2].Layout = arg.Layout;
+            original.SsaNum = 9;
+            Assert.That(compiler.fgMorphExpandLocal(original), Is.SameAs(original));
+            Assert.That(original.LclNum, Is.EqualTo(2));
+            Assert.That(original.Type, Is.EqualTo(TYP_STRUCT));
+            Assert.That(original.HasSsaName, Is.False);
+        });
+    }
+
+    [Test]
+    public static void ImplicitByRefFieldExpansionCombinesOffsetsWithoutClaimingParentDeath()
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable[0].Type = TYP_BYREF;
+            compiler.lvaTable[0].lvIsParam = true;
+            compiler.lvaTable[0].IsImplicitByRef = true;
+            compiler.lvaTable[1].Type = TYP_LONG;
+            compiler.lvaTable[1].lvIsStructField = true;
+            compiler.lvaTable[1].lvParentLcl = 0;
+            compiler.lvaTable[1].lvFldOffset = 8;
+            compiler.fgGlobalMorph = true;
+            var field = new GenTreeLclFld(GT_LCL_FLD, TYP_INT, 1, 4) { Flags = GTF_VAR_DEATH };
+            var expanded = compiler.fgMorphExpandLocal(field) ??
+                throw new InvalidOperationException("Missing field expansion.");
+            var address = expanded.AsIndir().Addr.AsOp();
+            Assert.That(address.Oper, Is.EqualTo(GT_ADD));
+            Assert.That(address.Op2.AsIntCon().IconValue, Is.EqualTo((nint)12));
+            Assert.That(address.Op1.AsLclVarCommon().LclNum, Is.Zero);
+            Assert.That(address.Op1.Flags & GTF_VAR_DEATH, Is.EqualTo(GTF_EMPTY));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void DemotedImplicitByRefDeathRequiresEveryField(bool allFieldsDying)
+    {
+        WithCompiler(compiler => {
+            var layout = new ClassLayout(16);
+            compiler.lvaTable[0].Type = TYP_STRUCT;
+            compiler.lvaTable[0].Layout = layout;
+            compiler.lvaTable[0].lvIsParam = true;
+            compiler.lvaTable[0].IsImplicitByRef = true;
+            compiler.lvaTable[0].lvFieldLclStart = 2;
+            compiler.lvaTable[2].Type = TYP_STRUCT;
+            compiler.lvaTable[2].Layout = layout;
+            compiler.lvaTable[2].lvPromoted = true;
+            compiler.lvaTable[2].lvFieldCnt = 2;
+            var local = compiler.gtNewLclvNode(TYP_STRUCT, 0);
+            compiler.lvaTable[0].Type = TYP_BYREF;
+            local.Flags = allFieldsDying ? compiler.lvaTable[2].AllFieldDeathFlags : GTF_VAR_DEATH;
+            var expanded = compiler.fgMorphExpandImplicitByRefArg(local) ??
+                throw new InvalidOperationException("Missing demoted-parameter expansion.");
+            Assert.That((expanded.AsIndir().Addr.Flags & GTF_VAR_DEATH) != 0, Is.EqualTo(allFieldsDying));
+        });
+    }
+
+    [TestCase(false, false)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void LocalStoreExpansionNormalizesOnlyUnaliasedGlobalMorphStores(bool globalMorph, bool exposed)
+    {
+        WithCompiler(compiler => {
+            compiler.fgGlobalMorph = globalMorph;
+            compiler.lvaTable[0].Type = TYP_BYTE;
+            compiler.lvaTable[0].SetAddressExposed(exposed, AddressExposedReason.ESCAPE_ADDRESS);
+            var value = compiler.gtNewIconNode(TYP_INT, 300);
+            var store = compiler.gtNewStoreLclVarNode(0, value);
+            var expanded = compiler.fgMorphExpandLocal(store);
+
+            if (globalMorph && !exposed)
+            {
+                Assert.That(expanded, Is.SameAs(store));
+                Assert.That(store.Type, Is.EqualTo(TYP_INT));
+                Assert.That(store.Data.Oper, Is.EqualTo(GT_CAST));
+                Assert.That(store.Data.AsCast().CastType, Is.EqualTo(TYP_BYTE));
+                Assert.That(store.Data.AsCast().Op1, Is.SameAs(value));
+                var cast = store.Data;
+                Assert.That(compiler.fgMorphExpandLocal(store), Is.Null);
+                Assert.That(store.Data, Is.SameAs(cast));
+            }
+            else
+            {
+                Assert.That(expanded, Is.Null);
+                Assert.That(store.Data, Is.SameAs(value));
+            }
+        });
+    }
+
     private static void WithCompiler(Action<Compiler> action, bool minOpts = false)
     {
 #if DEBUG

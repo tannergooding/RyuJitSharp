@@ -15909,6 +15909,190 @@ public partial class Compiler
     // TODO: Port phase - fgPromoteStructs
     private PhaseStatus fgPromoteStructs() => PhaseStatus.MODIFIED_NOTHING;
 
+#if TARGET_X86
+    private GenTree? fgMorphExpandStackArgForVarArgs(GenTreeLclVarCommon local)
+    {
+        if (!lvaIsArgAccessedViaVarArgsCookie(local.LclNum))
+        {
+            return null;
+        }
+
+        ref readonly var abiInfo = ref lvaGetParameterAbiInfo(local.LclNum);
+        assert(abiInfo.HasExactlyOneStackSegment);
+        var baseAddress = gtNewLclvNode(TYP_I_IMPL, lvaVarargsBaseOfStkArgs);
+        var offset = (nint)abiInfo.Segments[0].StackOffset - local.LclOffs;
+        var address = gtNewBinaryNode(GT_SUB, TYP_I_IMPL, baseAddress, gtNewIconNode(TYP_I_IMPL, offset));
+
+        if (local.Type is TYP_STRUCT)
+        {
+            var layout = local.GetLayout(this);
+            assert(layout is not null);
+            return local.Oper.IsLocalStore
+                ? gtNewStoreBlkNode(address, local.Data, layout)
+                : gtNewBlkIndir(address, layout);
+        }
+
+        if (local.Oper.IsLocalStore)
+        {
+            return gtNewStoreIndNode(local.Type, address, local.Data);
+        }
+
+        return local.Oper.IsLocalRead ? gtNewIndir(local.Type, address) : address;
+    }
+#endif
+
+    internal GenTree? fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon local)
+    {
+        var lclNum = local.LclNum;
+        ref var varDsc = ref lvaGetDesc(lclNum);
+        var fieldOffset = 0;
+        int newLclNum;
+        var isStillLastUse = false;
+        assert(lvaIsImplicitByRefLocal(lclNum) ||
+            (varDsc.lvIsStructField && lvaIsImplicitByRefLocal(varDsc.lvParentLcl)));
+
+        if (lvaIsImplicitByRefLocal(lclNum))
+        {
+            // SIMD field coalescing may revisit an already-expanded pointer.
+            if ((local.Oper is GT_LCL_VAR) && (local.Type is TYP_BYREF))
+            {
+                return null;
+            }
+
+            if (varDsc.lvPromoted)
+            {
+                assert(varDsc.lvFieldLclStart != 0);
+                local.LclNum = varDsc.lvFieldLclStart;
+                return local;
+            }
+
+            newLclNum = lclNum;
+
+            if (varDsc.lvFieldLclStart != 0)
+            {
+                var allFieldsDying = lvaGetDesc(varDsc.lvFieldLclStart).AllFieldDeathFlags;
+                isStillLastUse = (local.Flags & allFieldsDying) == allFieldsDying;
+            }
+            else
+            {
+                isStillLastUse = (local.Flags & GTF_VAR_DEATH) != 0;
+            }
+        }
+        else
+        {
+            // A field's death does not imply that its whole parent is dying.
+            newLclNum = varDsc.lvParentLcl;
+            fieldOffset = varDsc.lvFldOffset;
+        }
+
+        var data = local.Oper.IsLocalStore ? local.Data : null;
+        var isLoad = local.Oper.IsLocalRead;
+        var offset = local.LclOffs + fieldOffset;
+        var type = local.Type;
+        var layout = type is TYP_STRUCT ? local.GetLayout(this) : null;
+        JITDUMP("\nRewriting an implicit by-ref parameter reference:\n");
+        DISPTREE(local);
+
+        var pointer = new GenTreeLclVar(GT_LCL_VAR, TYP_BYREF, newLclNum, data: null, local, NodeThreading.None);
+        pointer.Flags &= GTF_COMMON_MASK & ~GTF_ALL_EFFECT;
+
+        if (isStillLastUse)
+        {
+            pointer.Flags |= GTF_VAR_DEATH;
+        }
+
+        GenTree address = pointer;
+
+        if (offset != 0)
+        {
+            address = gtNewBinaryNode(GT_ADD, TYP_BYREF, address, gtNewIconNode(TYP_I_IMPL, offset));
+        }
+
+        // Retyping loses the original struct's exposure state, so these loads
+        // and stores conservatively retain the factories' global-reference flags.
+        GenTree result;
+
+        if (data is not null)
+        {
+            if (type is TYP_STRUCT)
+            {
+                assert(layout is not null);
+                result = gtNewStoreBlkNode(address, data, layout);
+            }
+            else
+            {
+                result = gtNewStoreIndNode(type, address, data);
+            }
+        }
+        else if (isLoad)
+        {
+            if (type is TYP_STRUCT)
+            {
+                assert(layout is not null);
+                result = gtNewBlkIndir(address, layout);
+            }
+            else
+            {
+                result = gtNewIndir(type, address);
+            }
+        }
+        else
+        {
+            result = address;
+        }
+
+        JITDUMP("Transformed into:\n");
+        DISPTREE(result);
+        JITDUMP("\n");
+        return result;
+    }
+
+    internal GenTree? fgMorphExpandLocal(GenTreeLclVarCommon local)
+    {
+        GenTree? expandedTree = null;
+#if TARGET_X86
+        expandedTree = fgMorphExpandStackArgForVarArgs(local);
+#elif FEATURE_IMPLICIT_BYREFS
+        if (fgGlobalMorph)
+        {
+            ref var varDsc = ref lvaGetDesc(local.LclNum);
+
+            if (varDsc.IsImplicitByRef || (varDsc.lvIsStructField && lvaIsImplicitByRefLocal(varDsc.lvParentLcl)))
+            {
+                expandedTree = fgMorphExpandImplicitByRefArg(local);
+            }
+        }
+#endif
+        if (expandedTree is not null)
+        {
+            return expandedTree;
+        }
+
+        if (fgGlobalMorph && (local.Oper is GT_STORE_LCL_VAR) && genActualTypeIsInt(local.Type))
+        {
+            ref var varDsc = ref lvaGetDesc(local.LclNum);
+
+            if (varDsc.lvNormalizeOnStore)
+            {
+                var value = local.Data;
+#if TARGET_64BIT
+                noway_assert(genActualTypeIsInt(value.Type));
+#else
+                noway_assert(genActualTypeIsInt(value.Type) || (value.Type is TYP_BYREF));
+#endif
+                local.Type = TYP_INT;
+
+                if (fgCastNeeded(value, varDsc.Type))
+                {
+                    local.DataRef = gtNewCastNode(TYP_INT, value, fromUnsigned: false, varDsc.Type);
+                    return local;
+                }
+            }
+        }
+
+        return null;
+    }
+
     internal unsafe PhaseStatus fgRetypeImplicitByRefArgs()
     {
         var madeChanges = false;
