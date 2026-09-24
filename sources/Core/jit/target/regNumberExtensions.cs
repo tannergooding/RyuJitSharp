@@ -9,6 +9,15 @@ public static partial class regNumberExtensions
 {
     extension(regNumber regNum)
     {
+        public regMask SingleTypeMask
+        {
+            get
+            {
+                assert((uint)regNum < (uint)s_masks.Length);
+                return s_masks[(int)regNum];
+            }
+        }
+
 #if HAS_FIXED_REGISTER_SET
         public bool IsFltReg => regNum is >= REG_FP_FIRST and <= REG_FP_LAST;
 

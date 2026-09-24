@@ -2040,6 +2040,16 @@ public enum regNumber : byte
             _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {sname}, // REG_{name}");
         }, includeRegAlias: false);
 
+        var masksBuilder = ProcessRegister((builder, inputFile, line, prefix, parts) => {
+            if (parts.Length is not 4 and not 5)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var name = parts[0].AsSpan().Trim();
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        SRBM_{name}, // REG_{name}");
+        }, includeRegAlias: false);
+
         _ = Directory.CreateDirectory(@"Outputs\jit\target");
 
         File.WriteAllText(@"Outputs\jit\target\regNumberExtensions.generated.cs", $$"""
@@ -2056,6 +2066,9 @@ public static partial class regNumberExtensions
 {
     private static readonly string[] s_names = [
 {{builder}}    ];
+
+    private static ReadOnlySpan<regMask> s_masks => [
+{{masksBuilder}}    ];
 }
 """);
     }
