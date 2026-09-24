@@ -12,6 +12,29 @@ continue. A milestone does not require a conversational stop. Pause for an
 explicit user request, an unresolved decision requiring approval, a publication
 conflict, or a blocker that cannot be safely resolved.
 
+## 2026-09-23: Non-HWI expression folding
+
+**Commit:** `1ff2dd7`.
+
+**Result:** Binary folding now includes integer identities and masks, identical
+comparisons, conditional selection and nullable-box comparisons. Effect/order
+gates, fresh comparison IDs, morph completion and nested conditional flags follow
+native behavior. Five complete functions and one visitor retired.
+
+**Evidence:** 254 Debug / 248 Release selected cases passed, zero skipped;
+45 cases fail against the previous dispatcher. Refreshed NativeAOT/native
+captures contain exactly ten methods with six identical import prefixes.
+The new `FoldInteger` prefix includes the mask-to-zero-extension fold;
+the five previously matching prefixes remain exact.
+
+**Frontier:** Four inline-candidate diagnostic/processing differences remain.
+Conditional and nullable-box paths have focused IR coverage, not corpus or
+codegen parity. Hardware-intrinsic folding and full inline/global-morph
+activation remain pending.
+
+**Next:** Complete the HWI folding dependency closure, then reassess inline
+activation against its remaining prerequisites.
+
 ## 2026-09-23: VN-backed constant and overflow folding
 
 **Commit:** `741ad12`.
