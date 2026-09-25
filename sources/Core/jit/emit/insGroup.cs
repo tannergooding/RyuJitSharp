@@ -8,4 +8,9 @@ namespace RyuJitSharp;
 public sealed partial class insGroup
 {
     public InsGroupFlags igFlags;
+
+    public bool endsWithAlignInstr()
+    {
+        return (igFlags & InsGroupFlags.HasAlign) != 0;
+    }
 }

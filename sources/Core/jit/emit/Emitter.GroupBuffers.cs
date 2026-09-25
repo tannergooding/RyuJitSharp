@@ -79,6 +79,37 @@ public partial class Emitter
         return emitLastIns is not null;
     }
 
+    private bool emitCurIGnonEmpty()
+    {
+        return (emitCurIG is not null) && (emitCurIGfreeNext > 0);
+    }
+
+    private void emitNxtIG(bool extend = false)
+    {
+        _ = emitSavIG(extend);
+        assert(_compiler is not null);
+
+        if (!extend)
+        {
+            VarSetOps.Assign(_compiler, ref emitInitGCrefVars, emitThisGCrefVars);
+            emitInitGCrefRegs = emitThisGCrefRegs;
+            emitInitByrefRegs = emitThisByrefRegs;
+        }
+
+        emitNewIG();
+        assert(emitCurIG is not null);
+
+        if (extend)
+        {
+            emitCurIG.igFlags |= InsGroupFlags.Extend;
+        }
+
+        emitForceNewIG = false;
+#if DEBUG
+        emitCurIG.lastGeneratedBlock = null;
+#endif
+    }
+
     private insGroup emitSavIG(bool emitAdd)
     {
 #if !TARGET_AMD64 || EMITTER_STATS
