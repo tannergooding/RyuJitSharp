@@ -28,7 +28,7 @@ public partial class Compiler
 
     public int eeVarsCount;
 
-    public VarResultInfo? eeVars;
+    public unsafe ICorDebugInfo.NativeVarInfo* eeVars;
 
     public unsafe CorInfoReloc eeGetRelocTypeHint(void* target)
     {

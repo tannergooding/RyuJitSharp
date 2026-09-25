@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete native empty-block optimization and its EH/removal emptiness contracts, preserving catch-return behavior in statement and LIR modes. Scope reporting is collected for the next integration batch; switch optimization remains worker-owned.",
+      "scope": "Complete native variable scope reporting and EE publication, including native buffer ownership, range coalescing and Debug diagnostics. The switch optimization packet is collected and frozen for the next integration batch.",
       "doneWhen": [
-        "Port complete fgOptimizeEmptyBlock, preserving init/OSR/profile guards and catch-return EH boundaries.",
-        "Update required EH/removal assertions to native BasicBlock.isEmpty and lower inserted LIR no-ops through the existing Lowering instance.",
+        "Port complete genSetScopeInfo overloads and variable-range reporting, preserving local ordering, filtered locations and call-return records.",
+        "Replace placeholder EE storage with NativeVarInfo and preserve allocation, publication, ownership transfer and native diagnostics.",
         "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Validate EmptyBlockOptimizationTests, FlowGraphCompactionTests, FlowGraphBranchThreadingTests and BlockSplittingTests in Debug/Release before committing.",
+        "Validate ScopeReportingTests, VariableLiveKeeperTests, CodeGenInitializationTests, CodeGenCallInstructionTests and EmitterLocationTests in Debug/Release before committing.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Empty-block optimization is integrated and validated (emptyBlockOptimization). Integrate the collected three-file artifacts\\scope-reporting-packet (87f10c61 through turn 6); its handoff.txt specifies native reporting/EE functions. Replace placeholder Compiler.eeVars with ICorDebugInfo.NativeVarInfo*, reuse existing counts, centralize siInit's layout assertion via checkICodeDebugInfo, validate scope/keeper/location/call tests in Debug/Release and commit. Switch optimization worker a7f6ecaf remains outstanding; collect after notification. General genCall orchestration, full fgUpdateFlowGraph and production emission remain separate.",
+    "nextAction": "Scope reporting is integrated and validated (scopeReporting). Integrate the collected three-file artifacts\\switch-optimization-packet (a7f6ecaf through turn 28): Compiler.SwitchOptimization.cs, BasicBlock.UniquePredecessor.cs and SwitchOptimizationTests.cs. Update fgLeadsToEmptyBlockCycle to native isEmpty, validate the 47 AMD64 cases with compaction/empty-block/branch-threading tests in Debug/Release, update evidence and commit. No outstanding worker handoffs. General genCall orchestration, full fgUpdateFlowGraph and production emission remain separate.",
     "handoff": {
-      "status": "empty-block-validated-scope-collected-switch-in-flight",
+      "status": "scope-reporting-validated-switch-collected",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn 24; stack arguments committed b46e045. b6e1f160-b3d7-4126-bf91-39bc8de2e495 collected through turn 4; empty-block packet integrated and validated. 87f10c61-b152-4bdc-a27e-1ecfad4f6342 collected through turn 6; three-file scope-reporting packet is frozen and parent-owned. a7f6ecaf-b706-4be6-83c3-c83235b7452f collected through turn 26 and actively owns only artifacts\\switch-optimization-packet (fgOptimizeSwitchBranches/fgFoldCondToReturnBlock). No uncollected earlier packets. No worker shared edits, builds, phase activation or publication; no app-native child sessions.",
+      "workerPackets": "4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn 24; stack arguments committed b46e045. b6e1f160-b3d7-4126-bf91-39bc8de2e495 collected through turn 4; empty-block packet committed 5aa4742. 87f10c61-b152-4bdc-a27e-1ecfad4f6342 collected through turn 6; scope reporting integrated and validated. a7f6ecaf-b706-4be6-83c3-c83235b7452f collected through turn 28; artifacts\\switch-optimization-packet is frozen and parent-owned. All workers idle; no outstanding handoffs. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -58,6 +58,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "scopeReporting": {
+        "debugPassed": 115,
+        "releasePassed": 104,
+        "skipped": 0,
+        "selection": ["ScopeReportingTests", "VariableLiveKeeperTests", "CodeGenInitializationTests", "CodeGenCallInstructionTests", "EmitterLocationTests"],
+        "debugTests": "artifacts\\scope-reporting-debug.trx",
+        "releaseTests": "artifacts\\scope-reporting-release.trx",
+        "coverage": "22 Debug/19 Release scope cases: disabled/empty reporting, EE allocation/free/publication ownership, argument entry ranges, invalid-location barriers, prolog/body coalescing, gaps and changed homes, mapped/special local ordering, filtered call returns, final emitter offsets, unsigned wraparound, whole-location copying and native diagnostics. Reflection fixtures retain trimming analysis; mm0 follows native register names.",
+        "remaining": "Complete Windows-AMD64 scope reporting and EE variable publication, including centralized layout assertion. Publication is not reachable through production emission yet; genGenerateCode still explicitly skips and managed machine-code size remains zero. Existing funcletCreation.nativeHost remains the execution frontier."
+      },
       "emptyBlockOptimization": {
         "debugPassed": 200,
         "releasePassed": 200,
@@ -3696,6 +3706,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "variable-scope-reporting",
+      "native": ["src\\coreclr\\jit\\scopeinfo.cpp:1555-1585,1919-2173", "src\\coreclr\\jit\\codegen.h:777-791", "src\\coreclr\\jit\\ee_il_dll.cpp:639-703,832-990"],
+      "csharp": ["sources\\Core\\jit\\scopeinfo\\CodeGen.ScopeReporting.cs", "sources\\Core\\jit\\ee_il_dll\\Compiler.ScopeReporting.cs", "sources\\Core\\jit\\compiler\\Compiler.ee.cs", "sources\\Core\\jit\\scopeinfo\\CodeGen.ScopeInitialization.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete Windows-AMD64 genSetScopeInfo overloads, genSetScopeInfoUsingVariableRanges, checkICodeDebugInfo and EE allocation/record/publication/diagnostics. NativeVarInfo pointer transfers ownership to the EE; shared dumpSiVarLoc retains native formatting. No production emission activation."
+    },
     {
       "area": "empty-block-optimization",
       "native": ["src\\coreclr\\jit\\fgopt.cpp:1433-1613"],

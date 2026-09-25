@@ -3,8 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System.Runtime.CompilerServices;
-
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
@@ -14,8 +12,7 @@ public sealed partial class CodeGen
 
     private void siInit()
     {
-        // siVarLoc uses the EE's enum and storage directly, so only its enclosing size can differ.
-        assert(Unsafe.SizeOf<siVarLoc>() == Unsafe.SizeOf<ICorDebugInfo.VarLoc>());
+        checkICodeDebugInfo();
         assert(_compiler.opts.compScopeInfo);
 
         if (_compiler.info.compVarScopesCount > 0)

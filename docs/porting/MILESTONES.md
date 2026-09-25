@@ -14,6 +14,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Variable scope reporting
+
+Variable locations now coalesce across prolog and body ranges, retain argument
+entry visibility and append call-return locations using finalized emitter
+offsets. Hidden variables, invalid locations and Debug diagnostics follow the
+native reporting rules.
+
+The EE receives native-layout records with explicit allocation and ownership
+transfer, including release of buffers made empty by filtering. Production
+emission still awaits its remaining generation, encoding and metadata dependencies.
+
 ## 2026-09-25: Empty-block optimization
 
 Empty-block optimization now preserves init and OSR entries, profile bookkeeping
