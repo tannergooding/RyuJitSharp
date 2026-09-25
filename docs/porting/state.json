@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete AMD64 indirect reads and indexed addresses, including SIMD12 loads, TLS handles, bounds branches and internal-register ownership. Preserve address mutation, evaluation order and GC liveness; keep production emission skipped.",
+      "scope": "Complete AMD64 explicit LEA, null-check and bounds-check generation, including the reverse address/register emitter forms. Preserve operand ordering, native compare width/direction and shared throw targets; keep production emission skipped.",
       "doneWhen": [
-        "Port complete AMD64 genCodeForIndir, genCodeForIndexAddr and genLoadIndTypeSimd12.",
-        "Close emitInsLoadInd, the SIMD address-immediate wrapper and NodeInternalRegisters.GetSingle, including native Debug extraction behavior. Preserve D005/D006 rejection before mutation.",
+        "Port complete AMD64 genLeaInstruction, genCodeForNullCheck and genRangeCheck.",
+        "Close complete emitIns_AR_R and emitIns_ARX_R, including instruction options and stack-depth effects. Preserve D005/D006 rejection before mutation.",
         "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Reuse localStores.selection, adding indirect/TLS/SIMD12 reads, index scaling/widening and bounds/GC/internal-register checks.",
+        "Validate address/check nodes and the existing indirect-read, binary/address recording, jump, spill and lifetime tests in Debug/Release; keep unrelated cumulative checks at their recorded passing baseline.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,9 +32,9 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Indirect reads and indexed addresses are complete and validated (indirectReads). Continue with explicit address and check nodes: genLeaInstruction at codegenxarch.cpp:6312, genCodeForNullCheck at 4514 and genRangeCheck at 4410, including complete emitIns_AR_R at emitxarch.cpp:9351. Preserve native operand ordering, widths, contained-index comparison reversal, failure targets and GC lifetimes; reuse existing recording and shared throw blocks with pre-mutation D005/D006 guards. Retain write-barrier-backed stores until their full call/GC closure is ready. Production emission remains skipped until node/block/encoding/metadata support is complete.",
+    "nextAction": "Explicit LEA, null checks and bounds checks are complete and validated (addressChecks). Continue scalar comparison generation: genCodeForCompare at codegenxarch.cpp:1433, genCompareFloat at 6342, genCompareInt at 6407, genCanAvoidEmittingCompareAgainstZero at 6564 and genTryFindFlagsConsumer at 6620. Close inst_SETCC at 1716 and required condition/flag helpers, including emitter IsRedundantCmp at emitxarch.cpp:1518, AreFlagsSetToZeroCmp at 1591 and AreFlagsSetForSignJumpOpt at 1659. Preserve unsigned/NaN conditions, narrowing, native flag-reuse and mutable consumer-condition contracts. Retain D005 pre-mutation rejection and the explicit production emission skip.",
     "handoff": {
-      "status": "indirect-read-generation-validated",
+      "status": "address-check-generation-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
       "workerPackets": "All files and follow-ups from 4c9a8661-6e45-4e43-960d-7f3a779cdcde are collected through turn 8, frozen and integrated, including CodeGen.MultiRegisterStores.cs, CodeGen.StoreFromSource.cs and CodeGenMultiRegisterStoreTests.cs. Root Debug/Release validation passes. Both it and a7f6ecaf-b706-4be6-83c3-c83235b7452f are idle with no outstanding assignment or unread handoff. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "addressChecks": {
+        "debugPassed": 361,
+        "releasePassed": 341,
+        "skipped": 0,
+        "selection": ["CodeGenAddressCheckTests", "CodeGenIndirectLoadTests", "CodeGenBinaryTests", "EmitterAddressInstructionTests", "EmitterBinaryOperandTests", "EmitterMemoryOperandTests", "EmitterJumpInstructionTests", "CodeGenSpillVariableTests", "CodeGenLocalLoadTests"],
+        "debugTests": "artifacts\\address-check-debug.trx",
+        "releaseTests": "artifacts\\address-check-release.trx",
+        "coverage": "Explicit LEA base/index forms, scales/displacements and GC results; 32/64-bit faulting null comparisons; zero-index TEST, reversed immediate-index CMP, register and memory lengths, exact shared bounds target, memory XCHG/unary formats and pre-consumption D005/D006 rejection with reusable operands. Native emitAdjustStackDepthPushPop is genuinely empty under AMD64 FEATURE_FIXED_OUT_ARGS (emitxarch.h:812-818).",
+        "remaining": "Reuses funcletCreation.nativeHost; no production reachability change or runtime parity claim. Unrelated cumulative dependencies retain indirectReads validation. Managed code size remains zero; scalar comparisons, calls, write-barrier stores, remaining node/block generation, encoding and metadata publication remain."
+      },
       "indirectReads": {
         "debugPassed": 2031,
         "releasePassed": 1936,
@@ -3531,6 +3541,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "explicit-address-and-check-generation",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:4410-4481,4514-4521,6312-6333", "src\\coreclr\\jit\\emitxarch.cpp:9351-9355,9500-9549", "src\\coreclr\\jit\\emitxarch.h:812-818"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.AddressChecks.cs", "sources\\Core\\jit\\emitxarch\\Emitter.AddressStores.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 genLeaInstruction, genCodeForNullCheck, genRangeCheck, emitIns_AR_R and emitIns_ARX_R. Preserves operand order, address GC results, comparison direction/width, shared throw kinds, read/write formats and APX options. Native fixed-out-args stack adjustment is empty. D005/D006 rejection precedes mutation; production emission remains skipped."
+    },
     {
       "area": "indirect-read-and-indexed-address-generation",
       "native": ["src\\coreclr\\jit\\codegenxarch.cpp:5179-5307", "src\\coreclr\\jit\\simdcodegenxarch.cpp:111-157", "src\\coreclr\\jit\\emitxarch.cpp:6280-6312,9736-9754", "src\\coreclr\\jit\\codegencommon.cpp:173-185"],

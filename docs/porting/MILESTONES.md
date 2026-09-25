@@ -14,6 +14,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Explicit addresses and runtime checks
+
+Explicit address generation now handles base, scaled-index and combined forms
+with native operand consumption and GC result tracking. Null checks record the
+faulting memory comparison rather than materializing a result.
+
+Bounds checks preserve the zero-index shortcut, immediate-index comparison
+reversal, comparison widths and shared exception targets. Address-destination
+recording retains read/write formats and instruction options. Comparisons,
+calls, write-barrier stores and the remaining block/encoding/metadata closure
+still keep production emission explicitly skipped.
+
 ## 2026-09-25: Indirect reads and indexed addresses
 
 Indirect reads now preserve native narrow-load extension, TLS segment access
