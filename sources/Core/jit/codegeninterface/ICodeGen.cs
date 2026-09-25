@@ -96,6 +96,8 @@ public interface ICodeGen
 
     unsafe void genGenerateCode(out void* codePtr, out int nativeSizeOfCode);
 
+    instruction ins_Store(var_types dstType, bool aligned = false);
+
     void initializeVariableLiveKeeper();
 
     CodeGen.VariableLiveKeeper getVariableLiveKeeper();

@@ -39,6 +39,7 @@ internal static class Program
         GenerateInlineObservation();
         GenerateInlineObservationExtensions();
         GenerateInstruction();
+        GenerateInstructionFormats();
 
         GenerateJitConfigValues();
         GenerateJitMetadata();
@@ -1198,6 +1199,139 @@ public sealed partial class CodeGen
     ];
 #endif
 }
+""");
+    }
+
+    private static void GenerateInstructionFormats()
+    {
+        const string formatInput = @"Inputs\emitfmtsxarch.h";
+        var lines = File.ReadAllLines(formatInput);
+        var firstFormat = Array.FindIndex(lines, line => line.TrimStart().StartsWith("IF_DEF(", StringComparison.Ordinal));
+        var lastFormat = Array.FindLastIndex(lines, line => line.TrimStart().StartsWith("IF_DEF(", StringComparison.Ordinal));
+        if (firstFormat < 0)
+        {
+            throw new InvalidDataException($"No instruction formats in '{formatInput}'.");
+        }
+
+        // The native header also contains DEFINE_ID_OPS/DEFINE_IS_OPS include modes.
+        // Process the format-list region, retaining any conditional paths within it.
+        var formatLines = lines.AsSpan(firstFormat, lastFormat - firstFormat + 1);
+        var formatBuilder = ProcessMacroBasedFile(formatInput, formatLines, ["IF_DEF("],
+            (builder, inputFile, line, prefix, parts) =>
+            {
+                if (parts.Length != 3)
+                {
+                    throw new InvalidDataException($"Invalid line format: '{line}'");
+                }
+
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        IF_{parts[0].Trim()},");
+            });
+        var operandBuilder = ProcessMacroBasedFile(formatInput, formatLines, ["IF_DEF("],
+            (builder, inputFile, line, prefix, parts) => _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                $"        (byte)ID_OP_{parts[2].Trim()}, // IF_{parts[0].Trim()}"));
+        var schedulingBuilder = ProcessMacroBasedFile(formatInput, formatLines, ["IF_DEF("],
+            (builder, inputFile, line, prefix, parts) =>
+            {
+                var flags = string.Join(" | ", parts[1].Split('|', StringSplitOptions.TrimEntries));
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {flags}, // IF_{parts[0].Trim()}");
+            });
+        var updateModeBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) =>
+        {
+            if (inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal))
+            {
+                _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                    $"        (byte){parts[2].Trim()}, // INS_{parts[0].Trim()}");
+            }
+        });
+
+        _ = Directory.CreateDirectory(@"Outputs\jit\emit");
+        File.WriteAllText(@"Outputs\jit\emit\Emitter.InstructionFormats.generated.cs", $$"""
+// Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+using System;
+
+namespace RyuJitSharp;
+
+public partial class Emitter
+{
+    public enum insFormat : uint
+    {
+#if TARGET_XARCH
+{{formatBuilder}}#endif
+        IF_COUNT,
+    }
+
+#if TARGET_XARCH
+    internal static ReadOnlySpan<byte> emitFmtToOps => [
+{{operandBuilder}}    ];
+
+    private static ReadOnlySpan<IS_INFO> emitFmtToSchedInfo => [
+{{schedulingBuilder}}    ];
+#endif
+}
+""");
+
+        _ = Directory.CreateDirectory(@"Outputs\jit\emitxarch");
+        File.WriteAllText(@"Outputs\jit\emitxarch\Emitter.InstructionUpdateModes.generated.cs", $$"""
+// Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+using System;
+
+namespace RyuJitSharp;
+
+public partial class Emitter
+{
+#if TARGET_XARCH
+    internal static ReadOnlySpan<byte> emitInsModeFmtTab => [
+{{updateModeBuilder}}
+    ];
+#endif
+}
+""");
+
+        GenerateNativeEnum(formatInput, "ID_OPS", @"Outputs\jit\emit\ID_OPS.generated.cs", isFlags: false);
+        GenerateNativeEnum(formatInput, "IS_INFO", @"Outputs\jit\emit\IS_INFO.generated.cs", isFlags: true);
+        GenerateNativeEnum(@"Inputs\instr.h", "insUpdateModes",
+            @"Outputs\jit\instr\insUpdateModes.generated.cs", isFlags: false);
+    }
+
+    private static void GenerateNativeEnum(string inputFile, string enumName, string outputFile, bool isFlags)
+    {
+        var input = File.ReadAllText(inputFile);
+        var match = Regex.Match(input, $@"enum\s+{Regex.Escape(enumName)}\s*\{{(?<body>.*?)\}};", RegexOptions.Singleline);
+        if (!match.Success)
+        {
+            throw new InvalidDataException($"Could not find enum '{enumName}' in '{inputFile}'.");
+        }
+
+        var builder = new StringBuilder();
+        foreach (var line in match.Groups["body"].Value.Split('\n'))
+        {
+            if (!string.IsNullOrWhiteSpace(line))
+            {
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    {line.Trim()}");
+            }
+        }
+
+        File.WriteAllText(outputFile, $$"""
+// Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+global using static RyuJitSharp.{{enumName}};
+{{(isFlags ? "\nusing System;\n" : "")}}
+namespace RyuJitSharp;
+
+{{(isFlags ? "[Flags]\n" : "")}}public enum {{enumName}}
+{
+{{builder}}}
 """);
     }
 

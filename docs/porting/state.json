@@ -12,15 +12,15 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Close the emitter-location and variable-live-range dependencies of TreeLifeUpdater's code-generation mode. Preserve native location cookies, range coalescing, variable homes and diagnostics; keep instruction emission and local spill stores unactivated.",
+      "scope": "Close stack-local instruction metadata prerequisites for genSpillVar: native instruction formats/update modes, descriptor local-address encoding and Windows-AMD64 store selection/alignment. Actual store recording additionally needs full instruction-size/prefix/diagnostic closure and remains unactivated.",
       "doneWhen": [
-        "Implement required native emitLocation capture/comparison/offset support against managed descriptor groups without estimating away final instruction sizes.",
-        "Port VariableLiveKeeper and its required Windows-AMD64 variable-location/range support, with explicit unsupported modes rather than empty reporting.",
-        "Validate actual locations and variable-range transitions with the current emitter selection in Debug and Release.",
-        "Commit the coherent support boundary before integrating TreeLifeUpdater; retain the explicit production emission skip."
+        "Generate native instruction formats and instruction update modes through the existing table generator, with inputs and maintained outputs together.",
+        "Port complete local-address packing/decoding and format selection/accessors without changing native limits, widths or logical descriptor sizes.",
+        "Port native AMD64 ins_Store and isSIMDTypeLocalAligned using existing type-size tables and frame-address helpers.",
+        "Validate focused address/format/store metadata behavior and deterministic generator output; commit before the remaining store-size and TreeLifeUpdater closure."
       ],
       "validation": [
-        "Run focused emitter-location and variable-range tests with the current emitter/register-life selection in Debug and Release.",
+        "Run focused address/format/store-selection checks and the existing descriptor/allocation/location selection in Debug and Release. Review deterministic isolated table generation.",
         "Reuse the exact allocation-activation capture; republish only if reachable production behavior changes. B145 remains deferred."
       ],
       "deferred": [
@@ -33,11 +33,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Emitter locations and VariableLiveKeeper are integrated and validated (227 Debug/213 Release); all worker packets are frozen and collected. Continue the TreeLifeUpdater dependency closure at genSpillVar (codegenlinear.cpp:1034-1121): determine and port its real local-store instruction path, then the complete lifetime updater. Do not repeat the completed location/live-range investigation. Initialize the keeper in native genInitialize order when that driver is ported, not in the CodeGen constructor. Production genGenerateCode remains explicitly skipped.",
+    "nextAction": "Stack-local address/format/store-selection metadata is integrated and validated (333 Debug/320 Release); all workers are frozen and collected. Next close the size/prefix dependencies of emitInsSizeSVCalcDisp and emitInsSizeSV in pinned emitxarch.cpp, including actual opcode lookup and EVEX displacement compression. genSpillVar's true-store path is inst_TT_RV -> emitIns_S_R, plus emitStoreSimd12ToLclOffset -> emitIns_S_R_I. These entrypoints remain absent; do not fake sizes or install a reduced store. Reuse the now-ported formats, local-address storage, CodeGen.ins_Store, SIMD local alignment and existing var_types.EmitSize/EmitActualSize/lvaFrameAddress. Then return to the complete TreeLifeUpdater codegen mode. Production emission remains explicitly skipped.",
     "handoff": {
-      "status": "variable-live-ranges-integrated",
+      "status": "stack-local-instruction-metadata-integrated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All packets from descriptor/diagnostic workers and task worker 87f10c61-b152-4bdc-a27e-1ecfad4f6342 are frozen, collected and integrated. No outstanding worker edits or app-native child sessions.",
+      "workerPackets": "All descriptor/diagnostic, live-range and instruction-format packets are collected, frozen and integrated. No pending worker edits or app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -61,6 +61,19 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "stackLocalMetadata": {
+        "debugPassed": 333,
+        "releasePassed": 320,
+        "skipped": 0,
+        "selection": ["CodeGenLabelTests", "CodeGenStoreSelectionTests", "EmitterInitializationTests", "EmitterInstructionGroupTests", "EmitterDescriptorSchemaTests", "EmitterGroupBufferTests", "EmitterGroupDiagnosticsTests", "EmitterInstructionAllocationTests", "EmitterMethodInitializationTests", "EmitterLocationTests", "EmitterLocalAddressTests", "EmitterInstructionFormatTests", "VariableLiveKeeperTests", "RegisterTrackingTests", "CompilerRegallocFrameTests", "LoweringPhaseTests"],
+        "debugTests": "artifacts\\stack-local-metadata-debug.trx",
+        "releaseTests": "artifacts\\stack-local-metadata-release.trx",
+        "source": "Combined root builds after all sources and generated tables were frozen.",
+        "coverage": "Four exact native 32-bit local-address tags and boundary rejection codes; descriptor address aliases across group saving; integer/FP/SIMD/mask store opcodes; SIMD frame alignment and return-address bias; all xarch format ordinals, update modes, register/memory scheduling queries and APX NDD format paths.",
+        "generator": "Two isolated runs produced 44 byte-identical outputs; 39 existing outputs are unchanged after newline normalization. Inputs emitfmtsxarch.h and instr.h exactly match the pinned oracle. Independent comparison verifies 120 formats and 1137 conditional instruction/update entries.",
+        "generatorEvidence": ["artifacts\\instruction-formats-generator-comparison.log", "artifacts\\instruction-formats-native-comparison.log"],
+        "remaining": "Actual stack-store entrypoints, full instruction sizing and production emission remain unported. No new runtime parity claim."
+      },
       "emitterLocationsAndLiveRanges": {
         "debugPassed": 227,
         "releasePassed": 213,
@@ -3242,6 +3255,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "stack-local-instruction-metadata",
+      "native": ["src\\coreclr\\jit\\emit.cpp:767-857", "src\\coreclr\\jit\\emit.h:416-445,611-620,700-773,1390-1510,2038-2047", "src\\coreclr\\jit\\emitfmtsxarch.h", "src\\coreclr\\jit\\emitxarch.cpp:4060-4135", "src\\coreclr\\jit\\instr.cpp:2464-2603", "src\\coreclr\\jit\\compiler.h:10872-10924", "src\\coreclr\\jit\\simd.cpp:66-102"],
+      "csharp": ["sources\\Core\\jit\\emit\\emitLclVarAddr.cs", "sources\\Core\\jit\\emit\\Emitter.instrDesc.Address.cs", "sources\\Core\\jit\\emit\\Emitter.instrDesc.Formats.cs", "sources\\Core\\jit\\emit\\Emitter.InstructionFormats.cs", "sources\\Core\\jit\\emit\\Emitter.InstructionFormats.generated.cs", "sources\\Core\\jit\\emitxarch\\Emitter.InstructionUpdateModes.generated.cs", "sources\\Core\\jit\\instr\\CodeGen.StoreSelection.cs", "sources\\Core\\jit\\simd\\Compiler.LocalAlignment.cs", "sources\\GenerateTables\\Program.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete local-address packing/decoding with native limits; stack-local descriptor address variant; xarch format/update/scheduling metadata and AMD64 APX NDD selection; xarch ins_Store and SIMD local-alignment policy. Other descriptor address variants and stack-store size/prefix/encoding entrypoints remain unported. Production emission stays explicitly skipped."
+    },
     {
       "area": "emitter-locations-and-variable-live-ranges",
       "native": ["src\\coreclr\\jit\\emit.cpp:28-107,7832-7857,9500-9552", "src\\coreclr\\jit\\emit.h:129-223,3963-3993", "src\\coreclr\\jit\\scopeinfo.cpp", "src\\coreclr\\jit\\codegeninterface.h"],

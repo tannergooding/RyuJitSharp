@@ -828,6 +828,13 @@ coalescing and separate prolog/body collections. Variable homes retain the
 existing `ICorDebugInfo.VarLoc` EE layout. These representation changes do not
 authorize different debug ranges or generated offsets.
 
+Stack-local descriptor addresses retain the native packed 32-bit representation
+and tagged limits. The descriptor exposes its managed address storage by
+reference; adding the local-address variant does not change its native logical
+size or pretend that the remaining union variants are implemented. Instruction
+format storage retains the native seven-bit width; generated operand,
+scheduling and update-mode tables use the pinned header inputs.
+
 ### D003: Deferred non-Windows-x64-only paths
 
 **Status:** accepted scoped deferral; not a successful execution/parity result.

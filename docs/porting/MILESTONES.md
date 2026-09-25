@@ -14,6 +14,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Stack-local instruction metadata
+
+Instruction descriptors now retain native stack-local address encodings,
+including spill temporaries and large local numbers/offsets, with the same
+implementation limits. Generated instruction formats, update modes and scheduling
+metadata preserve native ordering and APX new-destination selection.
+Store-opcode selection distinguishes integer, floating-point, vector and mask
+registers; vector alignment uses the actual frame base and stack bias.
+
+This supplies metadata needed by local spill stores. Complete instruction sizing,
+prefix selection, recording and encoding still precede store and tree-lifetime
+activation; managed code emission remains zero.
+
 ## 2026-09-25: Emitter locations and variable live ranges
 
 Captured code locations now retain group identity and native instruction/offset
