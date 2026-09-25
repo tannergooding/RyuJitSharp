@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete AMD64 explicit LEA, null-check and bounds-check generation, including the reverse address/register emitter forms. Preserve operand ordering, native compare width/direction and shared throw targets; keep production emission skipped.",
+      "scope": "Complete AMD64 scalar integer/floating comparison generation and Boolean condition materialization, including native flag reuse and consumer-condition updates. Preserve all native mode predicates and keep production emission skipped.",
       "doneWhen": [
-        "Port complete AMD64 genLeaInstruction, genCodeForNullCheck and genRangeCheck.",
-        "Close complete emitIns_AR_R and emitIns_ARX_R, including instruction options and stack-depth effects. Preserve D005/D006 rejection before mutation.",
+        "Port complete genCodeForCompare, genCompareFloat, genCompareInt, inst_SETCC and their condition/consumer helpers.",
+        "Close emitter flag-reuse queries without simplified fallbacks, preserving widths, instruction effects and producer/consumer ordering. Preserve D005 rejection before mutation.",
         "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Validate address/check nodes and the existing indirect-read, binary/address recording, jump, spill and lifetime tests in Debug/Release; keep unrelated cumulative checks at their recorded passing baseline.",
+        "Validate focused comparisons/flags and existing register/binary recording, jump, spill and lifetime dependencies in Debug/Release; keep unrelated cumulative checks at their recorded passing baseline.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Explicit LEA, null checks and bounds checks are complete and validated (addressChecks). Continue scalar comparison generation: genCodeForCompare at codegenxarch.cpp:1433, genCompareFloat at 6342, genCompareInt at 6407, genCanAvoidEmittingCompareAgainstZero at 6564 and genTryFindFlagsConsumer at 6620. Close inst_SETCC at 1716 and required condition/flag helpers, including emitter IsRedundantCmp at emitxarch.cpp:1518, AreFlagsSetToZeroCmp at 1591 and AreFlagsSetForSignJumpOpt at 1659. Preserve unsigned/NaN conditions, narrowing, native flag-reuse and mutable consumer-condition contracts. Retain D005 pre-mutation rejection and the explicit production emission skip.",
+    "nextAction": "Scalar comparisons, Boolean materialization and native flag reuse are complete and validated (scalarComparisons). Continue conditional selection and branch generation: genCodeForSelect at codegenxarch.cpp:1566 with JumpKindToCmov at 1487, genCodeForJTrue at 1461, genCodeForJcc at codegenlinear.cpp:2644 and genCodeForSetcc at 2694. Reuse GenConditionDesc, inst_SETCC, generated reverse jumps and BasicBlock.CanRemoveJumpToTarget. Preserve contained-register conflicts, floating AND/OR conditions and hot/cold fallthrough decisions. Close full required helpers, retain D005 pre-mutation rejection and keep production emission explicitly skipped.",
     "handoff": {
-      "status": "address-check-generation-validated",
+      "status": "scalar-comparison-generation-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All files and follow-ups from 4c9a8661-6e45-4e43-960d-7f3a779cdcde are collected through turn 8, frozen and integrated, including CodeGen.MultiRegisterStores.cs, CodeGen.StoreFromSource.cs and CodeGenMultiRegisterStoreTests.cs. Root Debug/Release validation passes. Both it and a7f6ecaf-b706-4be6-83c3-c83235b7452f are idle with no outstanding assignment or unread handoff. No app-native child sessions.",
+      "workerPackets": "All files and follow-ups from 4c9a8661-6e45-4e43-960d-7f3a779cdcde are collected through turn 11, frozen and integrated, including the latest Emitter.FlagQueries.cs and EmitterFlagQueryTests.cs. Root Debug/Release validation passes. Both it and a7f6ecaf-b706-4be6-83c3-c83235b7452f are idle with no outstanding assignment or unread handoff. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -60,6 +60,23 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "scalarComparisons": {
+        "debugPassed": 2146,
+        "releasePassed": 2047,
+        "skipped": 0,
+        "selection": "indirectReads.selection plus CodeGenAddressCheckTests, CodeGenComparisonTests, EmitterFlagQueryTests and EmitterLabelTests (deduplicated). Cumulative selection rerun because the shared CodeGenBinaryTests fixture now initializes the cached integer-register mask.",
+        "debugTests": "artifacts\\comparison-integrated-debug.trx",
+        "releaseTests": "artifacts\\comparison-integrated-release.trx",
+        "coverage": "Signed/unsigned compares, byte TEST masks, mixed-width register BT indices, native optimization predicates and sign shifts, single/double floating compares and NaN conditions, short-circuit label identity/coldness, byte versus widened/APX-ZU Boolean results, flag-consumer ownership updates and conservative traversal barriers. Emitter queries cover minopts asymmetry, bounded searches, implicit writes, widths, condition predicates and valid recorded shift counts. D005 rejects before Boolean/label mutation. Native comparison helpers retain caller-owned operand consumption.",
+        "generator": {
+          "input": "sources\\GenerateTables\\Inputs\\emitjmps.h",
+          "output": "sources\\Core\\jit\\emitxarch\\Emitter.JumpInstructions.generated.cs",
+          "reproduce": "From the workspace root, create an isolated artifacts\\comparison-tables directory and copy sources\\GenerateTables\\Inputs into it. Run dotnet run --project <workspace>\\sources\\GenerateTables\\GenerateTables.csproj --no-restore -c Debug with that isolated directory as cwd. Copy Outputs\\jit\\emitxarch\\Emitter.JumpInstructions.generated.cs to the corresponding sources\\Core path.",
+          "verified": "All 40 JMP_SMALL rows, including the existing reversal column, match the pinned oracle after whitespace normalization. Generated output matches copied source bytes; reviewed output adds only the reverse-jump mapping. Input data itself is unchanged.",
+          "log": "artifacts\\comparison-tables.log"
+        },
+        "remaining": "Reuses funcletCreation.nativeHost. No production reachability change or new runtime parity claim; managed code size remains zero. Conditional selection/branches, calls, write-barrier stores, other node/block generation, final encoding and runtime metadata publication remain."
+      },
       "addressChecks": {
         "debugPassed": 361,
         "releasePassed": 341,
@@ -3541,6 +3558,22 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "scalar-comparison-and-condition-generation",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:1433,1716,6342,6407,6564,6620", "src\\coreclr\\jit\\instr.cpp:614-708", "src\\coreclr\\jit\\codegencommon.cpp:1192-1220", "src\\coreclr\\jit\\emitxarch.cpp:5024-5049"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.Comparisons.cs", "sources\\Core\\jit\\codegenxarch\\CodeGen.Conditions.cs", "sources\\Core\\jit\\instr\\CodeGen.SetCondition.cs", "sources\\Core\\jit\\codegencommon\\CodeGen.Labels.cs", "sources\\Core\\jit\\emitxarch\\Emitter.JumpInstructions.cs", "sources\\GenerateTables\\Program.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 scalar comparison, inst_SETCC/inst_SET and temporary-label closure, including all native optimization predicates. Native mutable condition pointers become a returned owning node plus condition value, with updates written to that same node. Reverse jumps are generated from the existing emitjmps.h reversal column. D005 rejects before mutation; production emission remains skipped."
+    },
+    {
+      "area": "comparison-flag-reuse-queries",
+      "native": ["src\\coreclr\\jit\\emitxarch.cpp:825-829,841-845,857-861,873-923,1326-1332,1518-1574,1591-1642,1659-1702"],
+      "csharp": ["sources\\Core\\jit\\emitxarch\\Emitter.FlagQueries.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 IsRedundantCmp, AreFlagsSetToZeroCmp, AreFlagsSetForSignJumpOpt and required helpers. Preserves native minopts asymmetry, 32-instruction bound, implicit writes, widths, consumer conditions and shift formats/counts. Queries remain mutation-free; no alternate always-false implementation."
+    },
     {
       "area": "explicit-address-and-check-generation",
       "native": ["src\\coreclr\\jit\\codegenxarch.cpp:4410-4481,4514-4521,6312-6333", "src\\coreclr\\jit\\emitxarch.cpp:9351-9355,9500-9549", "src\\coreclr\\jit\\emitxarch.h:812-818"],

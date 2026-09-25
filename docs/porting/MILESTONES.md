@@ -14,6 +14,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Scalar comparisons and Boolean results
+
+Integer and floating comparisons now retain native signed/unsigned conditions,
+test-mask narrowing, bit-index widths and sign-comparison shortcuts. Floating
+conditions preserve operand swaps, unordered results and the same-register NaN
+check.
+
+Boolean materialization uses native short-circuit labels, byte widening and
+optional APX zero-upper instructions. Flag reuse retains instruction-history
+bounds, width and flag-effect checks, including updates to the owning condition
+consumer. Conditional selection and branches, calls, write-barrier stores and
+the remaining block/encoding/metadata closure still keep production emission
+explicitly skipped.
+
 ## 2026-09-25: Explicit addresses and runtime checks
 
 Explicit address generation now handles base, scaled-index and combined forms

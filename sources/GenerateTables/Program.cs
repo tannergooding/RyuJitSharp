@@ -1072,6 +1072,15 @@ public enum emitJumpKind
             _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        INS_{parts[2].Trim()}, // EJ_{parts[0].Trim()}");
         });
 
+        var reverseBuilder = ProcessMacroBasedFile(@"Inputs\emitjmps.h", "JMP_SMALL(", (builder, inputFile, line, prefix, parts) => {
+            if (parts.Length != 3)
+            {
+                throw new InvalidDataException($"Invalid jump mapping format: '{line}'");
+            }
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        EJ_{parts[1].Trim()}, // EJ_{parts[0].Trim()}");
+        });
+
         _ = Directory.CreateDirectory(@"Outputs\jit\emitxarch");
         File.WriteAllText(@"Outputs\jit\emitxarch\Emitter.JumpInstructions.generated.cs", $$"""
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
@@ -1091,6 +1100,10 @@ public partial class Emitter
 {{instructionBuilder}}
         INS_call, // EJ_COUNT
     ];
+
+    private static ReadOnlySpan<emitJumpKind> emitReverseJumpKinds => [
+        EJ_NONE,
+{{reverseBuilder}}    ];
 #endif
 }
 """);

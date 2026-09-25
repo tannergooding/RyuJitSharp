@@ -361,9 +361,14 @@ internal static class CodeGenBinaryTests
             compiler.lvaDoneFrameLayout = Compiler.INITIAL_FRAME_LAYOUT;
             codeGen.RegSet.rsClearRegsModified();
             compiler.lvaDoneFrameLayout = Compiler.FINAL_FRAME_LAYOUT;
+            AllIntRegisters(compiler) = SRBM_ALLINT_INIT;
+            codeGen.CopyRegisterInfo();
             action(compiler, codeGen);
         });
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllInt")]
+    private static extern ref regMask AllIntRegisters(Compiler compiler);
 
     internal static BasicBlock PrepareThrowTarget(Compiler compiler, SpecialCodeKind kind = SCK_OVERFLOW)
     {

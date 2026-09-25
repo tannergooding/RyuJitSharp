@@ -63,5 +63,57 @@ public partial class Emitter
 
         INS_call, // EJ_COUNT
     ];
+
+    private static ReadOnlySpan<emitJumpKind> emitReverseJumpKinds => [
+        EJ_NONE,
+#if TARGET_XARCH
+        EJ_jmp, // EJ_jmp
+        EJ_jno, // EJ_jo
+        EJ_jo, // EJ_jno
+        EJ_jae, // EJ_jb
+        EJ_jb, // EJ_jae
+        EJ_jne, // EJ_je
+        EJ_je, // EJ_jne
+        EJ_ja, // EJ_jbe
+        EJ_jbe, // EJ_ja
+        EJ_jns, // EJ_js
+        EJ_js, // EJ_jns
+        EJ_jnp, // EJ_jp
+        EJ_jp, // EJ_jnp
+        EJ_jge, // EJ_jl
+        EJ_jl, // EJ_jge
+        EJ_jg, // EJ_jle
+        EJ_jle, // EJ_jg
+#elif TARGET_ARMARCH
+        EJ_jmp, // EJ_jmp
+        EJ_ne, // EJ_eq
+        EJ_eq, // EJ_ne
+        EJ_lo, // EJ_hs
+        EJ_hs, // EJ_lo
+        EJ_pl, // EJ_mi
+        EJ_mi, // EJ_pl
+        EJ_vc, // EJ_vs
+        EJ_vs, // EJ_vc
+        EJ_ls, // EJ_hi
+        EJ_hi, // EJ_ls
+        EJ_lt, // EJ_ge
+        EJ_ge, // EJ_lt
+        EJ_le, // EJ_gt
+        EJ_gt, // EJ_le
+#elif TARGET_LOONGARCH64
+        EJ_jmp, // EJ_jmp
+        EJ_ne, // EJ_eq
+        EJ_eq, // EJ_ne
+#elif TARGET_RISCV64
+        EJ_jmp, // EJ_jmp
+        EJ_ne, // EJ_eq
+        EJ_eq, // EJ_ne
+#elif TARGET_WASM
+        EJ_br, // EJ_jmp
+        EJ_br_if, // EJ_jmpif
+#else
+#error Unsupported or unset target architecture
+#endif
+    ];
 #endif
 }
