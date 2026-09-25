@@ -7,6 +7,14 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class RegisterMaskTests
 {
+    [TestCase(regNumber.REG_NA, "NA")]
+    [TestCase(regNumber.REG_STK, "STK")]
+    [TestCase(regNumber.REG_RAX, "rax")]
+    public static void RegisterNamesIncludeNativeSentinels(regNumber reg, string expected)
+    {
+        Assert.That(reg.Name, Is.EqualTo(expected));
+    }
+
     [TestCase(regNumber.REG_RAX, regMask.SRBM_RAX, var_types.TYP_INT)]
     [TestCase(regNumber.REG_R31, regMask.SRBM_R31, var_types.TYP_INT)]
     [TestCase(regNumber.REG_XMM0, regMask.SRBM_XMM0, var_types.TYP_FLOAT)]

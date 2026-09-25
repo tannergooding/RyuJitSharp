@@ -12,16 +12,16 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Finish the current Windows-x64 lowering dependency batch and prepare a fresh-session handoff at the next validated, dependency-coherent commit boundary. Parent owns common/hardware integration, traversal and post-lowering liveness. Current worker packets are complete binary/CCMP lowering, fast-tailcall lowering and canonical branch threading. Collect and validate these handoffs without starting additional packets. Preserve unfinished work and inactive drivers; pause before phase activation or native-host recapture.",
+      "scope": "Activate complete Windows-x64 Lowering.DoPhase orchestration for backendRequiresLocalVarLifetimes == false, rejecting lifetime-enabled cleanup before mutation. Move the unfinished register-allocation frontier to explicit CORJIT_SKIPPED, then capture native-host minopts lowering against the pinned oracle.",
       "doneWhen": [
-        "Integrate complete required lowering and stack-level helpers, including outgoing frame space and exception-helper construction, without activating an incomplete node dispatcher.",
-        "Port LSRA interval/reference foundations and native minimal-allocation dependencies; retain incomplete native bodies and do not invent a reduced allocator.",
-        "Establish canonical managed ownership of codegen, GC and register-set state; build toward actual scalar emission with correct leaf metadata.",
-        "Validate and commit coherent complete portions, record the exact remaining frontier and handoff cursor, then notify the user and pause for a fresh session."
+        "Preserve P/Invoke prolog insertion, enregistration marking, block traversal, reference recounting, DFS reachability removal and invalidation in the supported native mode.",
+        "Reject unsupported lifetime-enabled lowering before mutation and unfinished allocation with the established explicit skip result.",
+        "Publish a local NativeAOT binary, capture native and managed minopts phase output, and resolve lowering-specific failures without claiming fallback as managed execution.",
+        "Commit the validated activation and evidence, then continue to the next required scalar minopts backend dependency."
       ],
       "validation": [
-        "Reuse existing coverage and incremental builds. Add focused regression cases for actual failures, not a matrix for each helper.",
-        "Recapture at allocation/phase activation boundaries and compare actual IR against the pinned oracle. Native fallback remains distinct from managed code generation."
+        "Run focused lowering orchestration, traversal, flowgraph and allocation-frontier regression coverage in Debug and Release, expanding for observed failures.",
+        "Publish Debug win-x64 NativeAOT and run Invoke-PortingCorpus.ps1 with MinOpts on the prepared native host; compare actual lowering phase output and retain exact method counts/results."
       ],
       "deferred": [
         "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
@@ -33,12 +33,12 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Paused for the requested fresh-session handoff. Resume from the current HEAD of tannergooding-ryujit-port-continuity, not the older published tip. Common/hardware lowering, complete binary/CCMP and Windows-AMD64 fast-tailcall dependencies are integrated; root validation is 1144 Debug/1129 Release. Post-lowering liveness and canonical empty-block branch threading are committed as 47cfa9c. Next implement native Lowering.DoPhase orchestration for the complete backendRequiresLocalVarLifetimes == false mode, with explicit pre-mutation rejection of the still-unported lifetime-enabled cleanup mode, as permitted by the porting contract. Preserve P/Invoke prolog, enregistration marking, block traversal, reference recounting, DFS reachability removal and DFS invalidation. Non-Wasm AfterLowerBlocks is empty; fgRemoveBlocksOutsideDfsTree currently needs access from Lowering. Before activation, change the unfinished allocation frontier from its generic FatalJitException to the established explicit skip contract. Then publish a local NativeAOT binary and recapture the minopts corpus against the pinned oracle. Full fgUpdateFlowGraph still needs compaction, empty-block/switch cleanup and optional tail-duplication helpers; do not add success-shaped substitutes. No phase was activated at this handoff, no new native-host parity capture was made, and managed code size remains zero.",
+    "nextAction": "Lowering activation is validated: 20/20 minopts methods finish lowering and stack preparation, 17/20 exact lowering phase and IR matches, 20 explicit allocation skips, managed code size zero. Commit this activation, then resume the required scalar minopts LSRA dependency closure from LinearScan.DoRegisterAllocation and its interval-building/allocation/resolution callsites at the pinned oracle. Do not activate a reduced allocator. Keep lifetime-enabled lowering/full fgUpdateFlowGraph deferred and retain mixed-mode native bodies. No future push or PR is authorized.",
     "handoff": {
-      "status": "paused-at-validated-commit-boundary",
-      "branch": "tannergooding-ryujit-port-continuity",
+      "status": "lowering-activation-validated",
+      "branch": "tannergooding-ryujit-backend-continuation",
       "workerPackets": "All returned, integrated and frozen; no pending assignments or child-session dependencies.",
-      "preserve": "Keep Lowering.DoPhase and allocation inactive until the next complete mode and failure frontier are ready. Keep the pinned oracle and residual native tree unchanged.",
+      "preserve": "Activate only the complete no-local-lifetimes lowering mode; keep allocation explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
         "fgCanCompactBlock and fgCompactBlock",
@@ -50,7 +50,9 @@
       ],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
       "nativeFlowGraphSource": "src/coreclr/jit/fgopt.cpp:4373-4902",
-      "executionBoundary": "Existing native-host evidence still ends at local marking/rationalization. Constructed-IR lowering tests and native fallback are not managed code-generation parity."
+      "executionBoundary": "Native-host evidence now reaches complete no-local-lifetimes lowering and stack preparation for twenty minopts methods. Allocation explicitly skips; managed code size remains zero.",
+      "publishedHandoffCommit": "b6d5c71c338d84b6c120766b52ea577a4df735c8",
+      "publication": "Verified origin/main at the completed handoff commit. This replacement session has not published changes; its app diff base is now main."
     },
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
@@ -59,6 +61,31 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "loweringActivation": {
+        "debugPassed": 984,
+        "releasePassed": 966,
+        "skipped": 0,
+        "selection": ["*Lowering*", "FlowGraph*", "LinearScanConstructionTests", "BlockDisplayTests", "StackArgument*", "CallPlacement*", "RegisterMaskTests"],
+        "debugTests": "artifacts\\lowering-activation-debug.trx",
+        "releaseTests": "artifacts\\lowering-activation-release.trx",
+        "nativeAotBuild": "artifacts\\lowering-publish.log",
+        "managedJit": "artifacts\\lowering-phase-jit\\RyuJitSharp.dll",
+        "nativeCapture": "artifacts\\lowering-native-minopts",
+        "managedCapture": "artifacts\\lowering-managed-final-minopts",
+        "sourceSnapshot": "artifacts\\lowering-activation-source.patch",
+        "phaseComparison": "artifacts\\lowering-phase-comparison.json",
+        "comparisonCommand": ".\\artifacts\\Compare-Lowering.ps1 -ManagedDirectory lowering-managed-final-minopts",
+        "comparisonRule": "Exact ordinal comparison preserving CR/LF, IDs and diagnostics. Lowering phase is Starting PHASE through before Finishing PHASE; resulting IR is Trees after through before In fgDebugCheckBBlist. Stack phase uses the same boundaries; all twenty report no changes.",
+        "methodsCompleted": 20,
+        "exactPhaseMatches": 17,
+        "exactIRMatches": 17,
+        "exactStackPhaseMatches": 20,
+        "unmatchedMethods": ["FoldHardware: preexisting hardware import", "SynchronizedReturn: preceding EH-funclet block ordering", "GenericCatch: preceding EH-funclet block ordering"],
+        "allocationSkips": 20,
+        "managedCodeSize": 0,
+        "nativeBodiesRetained": ["Lowering::DoPhase lifetime-enabled cleanup", "all allocation/emission drivers"],
+        "scope": "Complete Windows-x64 no-local-lifetimes lowering orchestration, pre-mutation lifetime-mode rejection, explicit allocation skip and B191-B194 corrections. No generated-code or full-pipeline parity claim."
+      },
       "postLowerFlowGraphSupport": {
         "debugPassed": 98,
         "releasePassed": 93,
@@ -3069,6 +3096,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "lowering-phase-activation",
+      "native": ["src\\coreclr\\jit\\lower.cpp:8949-9055", "src\\coreclr\\jit\\fgbasic.cpp:5077-5232", "src\\coreclr\\jit\\utils.cpp:132-150"],
+      "csharp": ["sources\\Core\\jit\\lower\\Lowering.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.cs", "sources\\Core\\jit\\target\\regNumberExtensions.cs"],
+      "reconciledCommit": null,
+      "status": "Complete DoPhase specialization for backendRequiresLocalVarLifetimes == false on Windows x64. The unsupported lifetime-enabled cleanup mode rejects before mutation; native mixed-mode body retained. Final-block removal preserves a nullable successor; register names preserve REG_NA. Allocation is explicitly skipped after lowering and stack preparation."
+    },
     {
       "area": "global-morph-local-expansion",
       "native": ["src\\coreclr\\jit\\morph.cpp", "src\\coreclr\\jit\\lclvars.cpp"],

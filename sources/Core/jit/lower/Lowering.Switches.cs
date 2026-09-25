@@ -62,8 +62,9 @@ public sealed partial class Lowering
             minimumTableCases++;
         }
 
-        var defaultCondition = new GenTreeOp(GT_GT, TYP_INT, compiler.gtNewLclvNode(indexType, indexNumber),
-            compiler.gtNewIconNode(indexType.ActualType, jumpCount - 2)) {
+        // Match Windows native argument construction order and dump-visible IDs.
+        var defaultLimit = compiler.gtNewIconNode(indexType.ActualType, jumpCount - 2);
+        var defaultCondition = new GenTreeOp(GT_GT, TYP_INT, compiler.gtNewLclvNode(indexType, indexNumber), defaultLimit) {
             IsUnsigned = true,
         };
         var defaultJump = new GenTreeUnOp(GT_JTRUE, TYP_VOID, defaultCondition) {
@@ -170,8 +171,8 @@ public sealed partial class Lowering
                     current.Kind = BBJ_COND;
                     current.bbFalseEdge = null;
                     newEdge.Likelihood = adjustedLikelihood;
-                    var condition = new GenTreeOp(GT_EQ, TYP_INT, compiler.gtNewLclvNode(indexType, indexNumber),
-                        compiler.gtNewIconNode(indexType.ActualType, index));
+                    var caseValue = compiler.gtNewIconNode(indexType.ActualType, index);
+                    var condition = new GenTreeOp(GT_EQ, TYP_INT, compiler.gtNewLclvNode(indexType, indexNumber), caseValue);
                     var jump = new GenTreeUnOp(GT_JTRUE, TYP_VOID, condition);
                     current.InsertAtEnd(LIR.SeqTree(compiler, jump));
                 }

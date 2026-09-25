@@ -285,7 +285,12 @@ public sealed partial class LinearScan : IRegAlloc
 #endif
     }
 
-    public PhaseStatus DoRegisterAllocation() => throw new FatalJitException("LinearScan.DoRegisterAllocation is not implemented.");
+    public PhaseStatus DoRegisterAllocation()
+    {
+        const string message = "LinearScan.DoRegisterAllocation is not implemented.";
+        JITDUMP($"\nCOMPILATION FAILED: {message}\n");
+        throw new FatalJitException(CORJIT_SKIPPED, message);
+    }
 
 #if TRACK_LSRA_STATS
     public void dumpLsraStatsCsv(StreamWriter streamWriter)

@@ -33,6 +33,11 @@ public static partial class regNumberExtensions
         {
             get
             {
+                if (regNum is REG_NA)
+                {
+                    return "NA";
+                }
+
                 assert(s_names.Length == (int)(REG_COUNT));
                 return s_names[(int)(regNum)];
             }

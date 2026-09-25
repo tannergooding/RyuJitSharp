@@ -103,8 +103,62 @@ public sealed partial class Lowering : Phase
 
     protected override PhaseStatus DoPhase()
     {
-        const string message = "Lowering.DoPhase requires the remaining node and block lowering dependencies.";
+#if WINDOWS_AMD64_ABI
+        var compiler = CompilerInstance;
+        if (compiler.backendRequiresLocalVarLifetimes())
+        {
+            const string message = "Lowering.DoPhase requires lifetime-enabled flowgraph cleanup.";
+            JITDUMP($"\nCOMPILATION FAILED: {message}\n");
+            throw new FatalJitException(CORJIT_SKIPPED, message);
+        }
+
+        // Insert the one-time prolog even if all P/Invoke calls were eliminated.
+        // Epilogs are inserted at the appropriate sites during block lowering.
+        if (compiler.compMethodRequiresPInvokeFrame)
+        {
+            InsertPInvokeMethodProlog();
+        }
+
+        // Containment needs to know which locals cannot be enregistered.
+        if (!compiler.compEnregLocals)
+        {
+            compiler.lvSetMinOptsDoNotEnreg();
+        }
+        else
+        {
+            compiler.lvSetVarsDoNotEnreg();
+        }
+
+        if (compiler.opts.OptimizationEnabled && !compiler.opts.IsOSR)
+        {
+            MapParameterRegisterLocals();
+        }
+
+        foreach (var block in compiler.Blocks)
+        {
+            compiler.compCurBB = block;
+            LowerBlock(block);
+        }
+
+        // Native AfterLowerBlocks is empty outside Wasm.
+#if DEBUG
+        JITDUMP("Lower has completed modifying nodes.\n");
+        if (compiler.verbose)
+        {
+            compiler.fgDispBasicBlocks(true);
+        }
+#endif
+
+        compiler.lvaComputeRefCounts(isRecompute: true, setSlotNumbers: false);
+
+        compiler._dfsTree ??= compiler.fgComputeDfs();
+        _ = compiler.fgRemoveBlocksOutsideDfsTree();
+        compiler.fgInvalidateDfsTree();
+        return PhaseStatus.MODIFIED_EVERYTHING;
+#else
+        const string message = "Lowering.DoPhase outside Windows AMD64 is not ported.";
         JITDUMP($"\nCOMPILATION FAILED: {message}\n");
         throw new FatalJitException(CORJIT_SKIPPED, message);
+#endif
     }
 }

@@ -35,6 +35,7 @@ public sealed partial class Lowering
             var secretArg = compiler.gtNewStoreLclFldNode(TYP_I_IMPL, compiler.lvaInlinedPInvokeFrameVar,
                 checked((ushort)frameInfo.offsetOfSecretStubArg), value);
             firstBlockRange.InsertBefore(insertionPoint, LIR.SeqTree(compiler, secretArg));
+            DISPTREERANGE(firstBlockRange, secretArg);
         }
 
         if (compiler.opts.ShouldUsePInvokeHelpers)
@@ -42,7 +43,7 @@ public sealed partial class Lowering
             return;
         }
 
-        var frameAddress = compiler.gtNewLclVarAddrNode(TYP_BYREF, compiler.lvaInlinedPInvokeFrameVar);
+        var frameAddress = compiler.gtNewLclVarAddrNode(TYP_I_IMPL, compiler.lvaInlinedPInvokeFrameVar);
         var helper = compiler.gtNewHelperCallNode(TYP_I_IMPL, CORINFO_HELP_INIT_PINVOKE_FRAME);
         _ = helper.Args.PushBack(NewCallArg.CreateForPrimitive(frameAddress).WithWellKnownArg(WellKnownArg.PInvokeFrame));
 
@@ -54,16 +55,19 @@ public sealed partial class Lowering
         var rootStore = compiler.gtNewStoreLclVarNode(rootLocal, helper);
         var morphedStore = compiler.fgMorphTree(rootStore);
         firstBlockRange.InsertBefore(insertionPoint, LIR.SeqTree(compiler, morphedStore));
+        DISPTREERANGE(firstBlockRange, morphedStore);
 
         var stackPointer = new GenTreePhysReg(REG_SPBASE, TYP_I_IMPL);
         var stackPointerStore = compiler.gtNewStoreLclFldNode(TYP_I_IMPL, compiler.lvaInlinedPInvokeFrameVar,
             checked((ushort)frameInfo.offsetOfCallSiteSP), stackPointer);
         firstBlockRange.InsertBefore(insertionPoint, LIR.SeqTree(compiler, stackPointerStore));
+        DISPTREERANGE(firstBlockRange, stackPointerStore);
 
         var framePointer = new GenTreePhysReg(REG_FPBASE, TYP_I_IMPL);
         var framePointerStore = compiler.gtNewStoreLclFldNode(TYP_I_IMPL, compiler.lvaInlinedPInvokeFrameVar,
             checked((ushort)frameInfo.offsetOfCalleeSavedFP), framePointer);
         firstBlockRange.InsertBefore(insertionPoint, LIR.SeqTree(compiler, framePointerStore));
+        DISPTREERANGE(firstBlockRange, framePointerStore);
 
 #if USE_PER_FRAME_PINVOKE_INIT
         if (compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB))
@@ -72,6 +76,7 @@ public sealed partial class Lowering
             var link = CreateFrameLinkUpdate(FrameLinkAction.PushFrame);
             firstBlockRange.InsertBefore(insertionPoint, LIR.SeqTree(compiler, link));
             ContainCheckStoreIndir(link);
+            DISPTREERANGE(firstBlockRange, link);
         }
 #endif
     }

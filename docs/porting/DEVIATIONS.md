@@ -517,10 +517,14 @@ boundary without broadening the native recovery policy (B061).
 `FatalJitException` carries the native `CorJitResult` exception payload. The
 compilation boundary reports and returns that result instead of collapsing
 skipped, invalid-code and implementation-limit failures into internal errors.
-The unfinished lowering driver explicitly reports its limitation and rejects
-compilation with `CORJIT_SKIPPED`; it does not finish the phase or run allocation.
-This preserves the temporary native-fallback boundary in G001, not a successful
-managed backend.
+Lowering is active for the complete native mode where
+`backendRequiresLocalVarLifetimes()` is false. The lifetime-enabled cleanup mode
+rejects compilation with `CORJIT_SKIPPED` before P/Invoke or IR mutation, pending
+the full `fgUpdateFlowGraph` dependency closure. The mixed-mode native body stays
+in the residual tree. Non-Wasm `AfterLowerBlocks` is genuinely empty.
+The unfinished allocation driver now explicitly reports `CORJIT_SKIPPED` after
+lowering and stack preparation. This preserves the temporary native-fallback
+boundary in G001, not a successful managed backend.
 
 Liveness template policies use a static-interface generic parameter. The
 tracked-local reverse-map array's length supplies its allocation capacity rather

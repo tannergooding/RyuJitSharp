@@ -95,7 +95,7 @@ public sealed partial class Lowering
             assert(control.Type is not TYP_VOID);
             if (control.Oper.IsIndir && IsSafeToContainMem(call, control))
             {
-                control.ClearRegNum();
+                control.RegNum = REG_NA;
                 MakeSrcContained(call, control);
             }
         }

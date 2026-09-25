@@ -4,13 +4,32 @@ A newest-first history of what the port can do and how it has developed.
 
 The primary target is Windows x64. The port can import methods, expand inline
 calls, lower heap allocations, simplify local accesses and construct internal
-method entry/exit paths, and rationalize expression trees into linear IR, but does
-not yet generate native code. Remaining work includes hardware-intrinsic import,
-lowering, register allocation and code generation.
+method entry/exit paths, rationalize expression trees into linear IR, and lower
+minopts methods for Windows x64, but does not yet generate native code. Remaining
+work includes hardware-intrinsic import, lifetime-enabled lowering cleanup,
+register allocation and code generation.
 
 The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
+
+## 2026-09-24: Minopts lowering activation
+
+The compiler now runs lowering through P/Invoke method preparation, local
+enregistration marking, block traversal and unreachable-block removal in the
+native mode that does not require local-variable lifetimes. Stack and exception
+helper preparation follow it; unfinished allocation explicitly declines
+compilation rather than reporting an internal error.
+
+All twenty corpus methods reach allocation. Seventeen lowering phase sections
+and their resulting IR match the pinned native compiler exactly. The remaining
+differences originate in hardware import and EH-funclet ordering before
+lowering. P/Invoke frame types, switch node creation order and register/local
+diagnostics retain native behavior.
+
+Lifetime-enabled lowering still rejects before mutation until full flowgraph
+cleanup is available. Register allocation, code emission and metadata remain
+required for managed execution; the corpus continues through native fallback.
 
 ## 2026-09-24: Windows-x64 lowering integration
 

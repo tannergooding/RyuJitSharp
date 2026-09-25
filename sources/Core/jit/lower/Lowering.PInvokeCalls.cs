@@ -35,8 +35,8 @@ public sealed partial class Lowering
         assert(state is 0 or 1);
         var compiler = CompilerInstance;
         var thread = compiler.gtNewLclvNode(TYP_I_IMPL, compiler.info.compLvFrameListRoot);
-        var address = new GenTreeAddrMode(TYP_I_IMPL, thread, null, 1, compiler.eeGetEEInfo().offsetOfGCState);
         var value = new GenTreeIntCon(TYP_BYTE, state);
+        var address = new GenTreeAddrMode(TYP_I_IMPL, thread, null, 1, compiler.eeGetEEInfo().offsetOfGCState);
         return new GenTreeStoreInd(TYP_BYTE, address, value);
     }
 
@@ -48,7 +48,7 @@ public sealed partial class Lowering
         var address = new GenTreeAddrMode(TYP_I_IMPL, thread, null, 1, info.offsetOfThreadFrame);
         assert(action is FrameLinkAction.PushFrame or FrameLinkAction.PopFrame);
         var value = action is FrameLinkAction.PushFrame
-            ? compiler.gtNewLclVarAddrNode(TYP_BYREF, compiler.lvaInlinedPInvokeFrameVar)
+            ? compiler.gtNewLclVarAddrNode(TYP_I_IMPL, compiler.lvaInlinedPInvokeFrameVar)
             : compiler.gtNewLclFldNode(TYP_I_IMPL, compiler.lvaInlinedPInvokeFrameVar,
                 checked((ushort)info.inlinedCallFrameInfo.offsetOfFrameLink));
         return compiler.gtNewStoreIndNode(TYP_I_IMPL, address, value);

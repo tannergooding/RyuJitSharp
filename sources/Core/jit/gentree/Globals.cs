@@ -49,7 +49,7 @@ public partial class Globals
 
     public const string LONGEST_COMMON_LCL_VAR_DISPLAY = "V99 PInvokeFrame";
 
-    public const int LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH = 16;
+    public const int LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH = 17;
 
     /// <summary>Return 1-based AssertionIndex from 0-based int index.</summary>
     /// <param name="index">0-based index</param>

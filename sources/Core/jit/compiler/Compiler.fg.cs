@@ -10213,16 +10213,16 @@ public partial class Compiler
     /// <summary>Remove a basic block. The block must be either unreachable or empty.</summary>
     /// <param name="block">the block to remove</param>
     /// <param name="unreachable">indicates whether removal is because block is unreachable or empty</param>
-    /// <returns>The block after the block, or blocks, removed.</returns>
+    /// <returns>The block after the block, or blocks, removed, or null at the end of the block list.</returns>
     /// <remarks>If the block is a non-retless BBJ_CALLFINALLY then the paired BBJ_CALLFINALLYRET is also removed.</remarks>
-    public BasicBlock fgRemoveBlock(BasicBlock block, bool unreachable)
+    public BasicBlock? fgRemoveBlock(BasicBlock block, bool unreachable)
     {
         assert(block is not null);
 
         // We shouldn't churn the flowgraph after doing hot/cold splitting
         assert(fgFirstColdBlock is null);
 
-        JITDUMP($"fgRemoveBlock {block.bbNum}, unreachable={dspBool(unreachable)}\n");
+        JITDUMP($"fgRemoveBlock {FMT_BB(block.bbNum)}, unreachable={dspBool(unreachable)}\n");
 
         var bPrev = block.Prev;
         var bNext = block.Next;
@@ -10379,7 +10379,6 @@ public partial class Compiler
             ehUpdateForDeletedBlock(block);
         }
 
-        assert(bNext is not null);
         return bNext;
     }
 
@@ -15159,7 +15158,7 @@ public partial class Compiler
         }
     }
 
-    private bool fgRemoveBlocksOutsideDfsTree()
+    internal bool fgRemoveBlocksOutsideDfsTree()
     {
         var dfsTree = _dfsTree;
         assert(dfsTree is not null);

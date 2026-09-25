@@ -126,6 +126,9 @@ internal static unsafe class PInvokeCallLoweringTests
                     var store = node.AsStoreInd();
                     if (store.Addr.Oper is GT_LEA && store.Addr.AsAddrMode().Offset == 8)
                     {
+#if DEBUG
+                        Assert.That(store.Data.TreeId, Is.LessThan(store.Addr.TreeId));
+#endif
                         if (beforeCall)
                         {
                             Assert.That(store.Data.AsIntCon().IconValue, Is.EqualTo((nint)0));

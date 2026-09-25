@@ -1759,7 +1759,7 @@ public partial class Compiler
 
         if (padForBiggestDisp && (name.Length < LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH))
         {
-            jitprintf(new string(' ', int.Max(0, LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH - name.Length) + 1));
+            jitprintf(new string(' ', LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH - name.Length));
         }
     }
 
