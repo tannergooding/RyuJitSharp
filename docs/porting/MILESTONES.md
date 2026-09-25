@@ -28,10 +28,14 @@ limits, forced GC-region boundaries and stress-mode splitting. Operand sizes,
 GC classification, relocation flags and backward descriptor links are initialized
 with the native rules.
 
-Basic, jump and alignment descriptor layouts are established. Method-emitter
-startup, additional descriptor families, per-node generation and final encoding
-remain ahead. This support does not activate
-production emission or change the zero-byte managed execution boundary.
+Method-emitter startup now creates the initial prolog and body groups and resets
+locations, counters, GC-register state and stack-depth tracking. Allocation runs
+through this startup path.
+
+Basic, jump and alignment descriptor layouts are established. Additional
+descriptor families, tree-lifetime updates, per-node generation and final
+encoding remain ahead. This support does not activate production emission or
+change the zero-byte managed execution boundary.
 
 ## 2026-09-25: Code-generation preparation
 

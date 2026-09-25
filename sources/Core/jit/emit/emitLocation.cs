@@ -7,4 +7,32 @@ namespace RyuJitSharp;
 
 public struct emitLocation
 {
+    private insGroup? ig;
+    private uint codePos;
+
+    public emitLocation(insGroup? group)
+    {
+        ig = group;
+        codePos = 0;
+    }
+
+    public void Init()
+    {
+        this = default;
+    }
+
+    public readonly insGroup? GetIG()
+    {
+        return ig;
+    }
+
+    public readonly bool IsOffsetZero()
+    {
+        return codePos == 0;
+    }
+
+    public readonly bool Valid()
+    {
+        return ig is not null;
+    }
 }

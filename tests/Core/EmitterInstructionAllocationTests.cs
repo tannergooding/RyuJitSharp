@@ -299,28 +299,17 @@ internal static unsafe class EmitterInstructionAllocationTests
         var emitter = new CodeGen(compiler).Emitter;
         emitter.emitBegCG(compiler, default);
         emitter.Init();
-        var group = AllocateGroup(emitter);
-        FirstGroup(emitter) = group;
-        LastGroup(emitter) = group;
-        Prepare(emitter, group);
+        emitter.emitBegFN(false
+#if DEBUG
+            , false
+#endif
+            );
 
         return emitter;
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitAllocIG")]
-    private static extern insGroup AllocateGroup(Emitter emitter);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGenIG")]
-    private static extern void Prepare(Emitter emitter, insGroup group);
-
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitNxtIG")]
     private static extern void NextGroup(Emitter emitter, bool extend);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIGlist")]
-    private static extern ref insGroup? FirstGroup(Emitter emitter);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIGlast")]
-    private static extern ref insGroup? LastGroup(Emitter emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeNext")]
     private static extern ref nuint Used(Emitter emitter);

@@ -12,15 +12,15 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port complete Windows-AMD64 emitAllocAnyInstr and emitNxtIG with the basic/small/jump/alignment allocation wrappers and required operand/GC/relocation accessors. Preserve the native >= buffer boundary, instruction-count limit, stress splitting, forced no-GC transitions and backward descriptor sizes.",
+      "scope": "Port complete Windows-AMD64 emitBegFN and its required emitLocation initialization, reusing committed descriptor storage/allocation and group construction. Preserve initial prolog/body groups, location/counter/GC resets and stack-depth state.",
       "doneWhen": [
-        "Port complete emitAllocAnyInstr/emitNxtIG and the required native allocation wrappers without alternate buffer thresholds or silent unsupported-family fallbacks.",
-        "Preserve attributes, GC classification, relocation policy, debug records/block mapping and previous-descriptor links.",
-        "Exercise actual allocation boundaries, overflow/forced extension transitions and operand attributes in Debug and Release with the committed storage coverage.",
-        "Commit the validated allocation packet while retaining the explicit production emission skip."
+        "Port complete emitBegFN and the location-state initialization it calls; do not introduce unrelated data-section behavior.",
+        "Preserve native prolog/body group identities, flags, links, weights and reset state.",
+        "Validate startup and subsequent actual descriptor allocation in Debug and Release with the current emitter selection.",
+        "Commit the validated startup packet while retaining the explicit production emission skip."
       ],
       "validation": [
-        "Run focused allocation/overflow checks with the descriptor/group-storage and prior emitter/register-life selection in Debug and Release.",
+        "Run focused method-start and location checks with the descriptor/allocation/group-storage and prior emitter/register-life selection in Debug and Release.",
         "Reuse the exact allocation-activation capture; republish only if reachable production behavior changes. B145 remains deferred."
       ],
       "deferred": [
@@ -33,9 +33,9 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Descriptor storage is committed at 613ed66; allocation/overflow transitions and required operand/GC/relocation accessors are complete and validated with 156 Debug/144 Release cases, zero skipped. Continue with complete emitBegFN (emit.cpp:1324 onward), reading its remaining initialization body and implementing only its required location/data-state closure. Reuse the existing Init, emitAllocIG, emitNewIG, emitGenIG and typed storage; do not restart descriptor design. Additional descriptor families, TreeLifeUpdater, final frame layout, node generation and metadata remain. Keep genGenerateCode explicitly skipped and do not push/open a PR.",
+    "nextAction": "Emitter startup and required location state are complete and validated (184 Debug/172 Release). Continue with TreeLifeUpdater in pinned treelifeupdater.h/.cpp: establish the complete code-generation mode and required live-range/GC transitions, reusing CodeGen.RegisterLife.cs and GCInfo.RegisterState.cs. No managed TreeLifeUpdater symbol currently exists. Keep native modes explicit and preserve owner/LIR identity. Additional descriptor families, final frame layout, per-node generation, encoding and metadata remain; genGenerateCode must stay explicitly skipped until its full required closure is ready. No push or PR.",
     "handoff": {
-      "status": "descriptor-allocation-validated",
+      "status": "emitter-startup-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
       "workerPackets": "Both retained task workers are idle and frozen. Descriptor and group-diagnostic handoffs are fully integrated and validated. No outstanding worker or app-native child-session dependencies.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
@@ -61,6 +61,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "emitterStartup": {
+        "debugPassed": 184,
+        "releasePassed": 172,
+        "skipped": 0,
+        "selection": ["CodeGenLabelTests", "EmitterInitializationTests", "EmitterInstructionGroupTests", "EmitterDescriptorSchemaTests", "EmitterGroupBufferTests", "EmitterGroupDiagnosticsTests", "EmitterInstructionAllocationTests", "EmitterMethodInitializationTests", "RegisterTrackingTests", "CompilerRegallocFrameTests", "LoweringPhaseTests"],
+        "debugTests": "artifacts\\emitter-startup-debug.trx",
+        "releaseTests": "artifacts\\emitter-startup-release.trx",
+        "coverage": "Initial prolog/body group numbering, flags, links, weights and stack state; scalar/GC counter resets; saved location invalidation; replacement of prior groups. Allocation/overflow/stress tests now enter through actual emitBegFN rather than manually seeding groups.",
+        "executionEvidence": "Support-only change. Production code generation still explicitly skips; managed emitted code remains zero."
+      },
       "descriptorAllocation": {
         "debugPassed": 156,
         "releasePassed": 144,
@@ -3221,6 +3231,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "emitter-method-startup",
+      "native": ["src\\coreclr\\jit\\emit.cpp:1324-1473", "src\\coreclr\\jit\\emit.h:129-223"],
+      "csharp": ["sources\\Core\\jit\\emit\\Emitter.MethodInitialization.cs", "sources\\Core\\jit\\emit\\emitLocation.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 emitBegFN without optional EMITTER_STATS, reusing group/descriptor primitives. Location constructor, Init, GetIG, IsOffsetZero and Valid preserve native state; capture, offset lookup, equality and other location operations remain unported. Other targets/statistics reject before mutation. This does not activate production emission."
+    },
     {
       "area": "emitter-descriptor-allocation",
       "native": ["src\\coreclr\\jit\\emit.cpp:1709-1853,2742-2749,10014-10051", "src\\coreclr\\jit\\emit.h:549-580,1291-1364,1982-1998,3094-3099,3268-3284,3382-3389,4021-4072", "src\\coreclr\\jit\\instr.h:675-690"],
