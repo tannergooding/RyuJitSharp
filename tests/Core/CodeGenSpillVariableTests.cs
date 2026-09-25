@@ -199,7 +199,7 @@ internal static unsafe class CodeGenSpillVariableTests
         });
     }
 
-    private static void WithCompiler(var_types type, regNumber reg, Action<Compiler, CodeGen, GenTree> action)
+    internal static void WithCompiler(var_types type, regNumber reg, Action<Compiler, CodeGen, GenTree> action)
     {
 #if DEBUG
         using var tls = new JitTls(null);

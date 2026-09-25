@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete the remaining Windows-AMD64 stack-local instruction recording and real spill-store dependencies, using integrated native prefix/size/compression support. Keep production emission inactive until its full required closure is ready.",
+      "scope": "Complete native TreeLifeUpdater with its existing code-generation and local-address handling predicates. Reuse real local spilling, register-life and variable-range support without activating incomplete production code generation.",
       "doneWhen": [
-        "Close complete native emitIns_S_R and emitIns_S_R_I recording dependencies, including required diagnostics and instruction options.",
-        "Wire inst_TT_RV, SIMD12 local stores and genSpillVar only with real instruction recording, preserving native GC and register-life transitions.",
-        "Validate a dependency-coherent packet in Debug and Release and commit before continuing tree-lifetime code generation."
+        "Port the complete tracked/promoted/field/call-definition liveness updates, native diagnostics and duplicate-tree/epoch behavior.",
+        "Preserve GC/register/range ordering and actual spill recording in code-generation mode; non-code-generation mode must not require codegen state.",
+        "Validate the integrated lifetime and spill boundary in Debug and Release and commit before following the next code-generation dependency."
       ],
       "validation": [
-        "Reuse the integrated prefix/size/displacement and emitter metadata selection; extend only for the actual store-recording closure.",
+        "Reuse the integrated emitter/spill selection and relevant liveness-call tests; add focused lifetime transitions and exact diagnostics, not a new infrastructure layer.",
         "Reuse the exact allocation-activation capture; republish only if reachable production behavior changes. B145 remains deferred."
       ],
       "deferred": [
@@ -32,9 +32,9 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Stack-store recording, constant/displacement descriptors, inst_TT_RV, SIMD12 local stores and complete AMD64 genSpillVar are integrated and validated (664 Debug/653 Release, zero skipped). Resume the complete native TreeLifeUpdater code-generation mode using the real genSpillVar dependency: compare its existing managed phase specialization with the pinned native dispatcher, preserve all local/register/GC/live-range transitions, and validate before activating any production caller. D005 records the DEBUG opts.dspCode==false recording specialization; full emitDispIns remains required before enabling diagnostic recording. Keep genGenerateCode explicitly skipped until its entire required closure is ready. All worker packets are collected/frozen; no worker is outstanding.",
+    "nextAction": "Complete TreeLifeUpdater is integrated with both native ForCodeGen and GeneralLclAddrHandling predicates (689 Debug/677 Release, zero skipped). Resume CodeGen::genInitialize and its required initialization closure at the pinned native source: wire the established TreeLifeUpdater and VariableLiveKeeper at their native initialization callsites, preserving emitter/GC/register/stack setup order. There was no earlier managed TreeLifeUpdater specialization. Do not activate genGenerateCode or invent reduced per-node emission before all required dependencies are ready. D005 instruction-disassembly rejection remains; all workers are collected/frozen.",
     "handoff": {
-      "status": "stack-store-recording-and-spills-validated",
+      "status": "tree-life-updater-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
       "workerPackets": "All prefix, opcode-comparison and constant/displacement packets are fully collected, frozen and integrated. Constant worker b6e1f160-b3d7-4126-bf91-39bc8de2e495 returned four new files without shared allocation/schema edits. No active or unread workers; no app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "treeLifeUpdater": {
+        "debugPassed": 689,
+        "releasePassed": 677,
+        "skipped": 0,
+        "selection": "stackStoreRecordingAndSpills.selection plus TreeLifeUpdaterTests and LivenessCallDefinitionTests; combine FullyQualifiedName filters in one dotnet test tests\\Core\\RyuJitSharp.UnitTests.csproj --no-restore run per configuration.",
+        "debugTests": "artifacts\\tree-life-debug.trx",
+        "releaseTests": "artifacts\\tree-life-release.trx",
+        "coverage": "Native born/dead priority, partial definitions, duplicate-tree suppression, register births before range opening, real spills preserving local liveness, call async-resumed and retbuf definitions, promoted memory/whole-multireg deaths, per-field deaths/spill signaling, analysis mode without codegen state and exact independent local/GC liveness snapshots.",
+        "remaining": "Support is not yet reachable from production genInitialize/genGenerateCode. The established allocation capture remains the execution frontier; managed emitted code is zero."
+      },
       "stackStoreRecordingAndSpills": {
         "debugPassed": 664,
         "releasePassed": 653,
@@ -3280,6 +3290,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "tree-life-updater",
+      "native": ["src\\coreclr\\jit\\treelifeupdater.h", "src\\coreclr\\jit\\treelifeupdater.cpp:11-411"],
+      "csharp": ["sources\\Core\\jit\\treelifeupdater\\TreeLifeUpdater.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete constructor, scalar/promoted/field updates, dispatcher, life-bit changes and Debug deltas. Native template booleans are explicit constructor/call arguments; codegen mode reuses real spill, register-life, GC-state and live-range helpers. Analysis mode does not require codegen state. Production initialization/callers remain unported; no emission activation."
+    },
     {
       "area": "stack-store-recording-and-local-spills",
       "native": ["src\\coreclr\\jit\\emitxarch.cpp:5824-5924,7150,7525,7636-7768,9407,10514-10612,11232", "src\\coreclr\\jit\\emit.cpp:1611-1631,2757-2821", "src\\coreclr\\jit\\emit.h:932-1007,2343-2380,3113-3149", "src\\coreclr\\jit\\emitinl.h", "src\\coreclr\\jit\\emitxarch.h:513-526", "src\\coreclr\\jit\\instr.h:267-334", "src\\coreclr\\jit\\instr.cpp:966-1008", "src\\coreclr\\jit\\codegenlinear.cpp:1034-1121"],

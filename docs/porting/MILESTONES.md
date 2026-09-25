@@ -14,6 +14,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Tree-lifetime updates
+
+Tree-driven liveness now follows native birth, death and partial-definition
+rules for tracked locals, promoted fields, indirect accesses and call-defined
+locals. Code-generation mode updates register and stack-GC state, records real
+local spills and reports variable locations in native order. Per-field updates
+support separately consumed multi-register values without treating every field
+as born or dead together.
+
+Both native mode predicates are preserved, including analysis without codegen
+state and the two local-address handling modes. Duplicate-tree suppression and
+liveness-delta diagnostics are retained. Code-generation initialization and
+per-node emission remain ahead; production emission is still explicitly skipped.
+
 ## 2026-09-25: Stack-store recording and local spills
 
 Windows-x64 local spills now record real instruction descriptors, including the
