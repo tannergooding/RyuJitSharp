@@ -18,4 +18,10 @@ public static partial class Globals
     public static bool EA_IS_DSP_RELOC(emitAttr attr) => (attr & EA_DSP_RELOC_FLG) != 0;
 
     public static bool EA_IS_CNS_RELOC(emitAttr attr) => (attr & EA_CNS_RELOC_FLG) != 0;
+
+    public static bool EA_IS_CNS_SEC_RELOC(emitAttr attr) => (attr & EA_CNS_SEC_RELOC) != 0;
+
+    public static bool EA_IS_CNS_TLSGD_RELOC(emitAttr attr) => (attr & EA_CNS_TLSGD_RELOC) != 0;
+
+    public static bool EA_IS_RELOC(emitAttr attr) => EA_IS_DSP_RELOC(attr) || EA_IS_CNS_RELOC(attr);
 }

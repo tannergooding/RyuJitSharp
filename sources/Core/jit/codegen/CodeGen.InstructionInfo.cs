@@ -8,6 +8,12 @@ namespace RyuJitSharp;
 public sealed partial class CodeGen
 {
 #if TARGET_XARCH
+    public static bool instIsFP(instruction ins)
+    {
+        assert((uint)ins < (uint)instInfo.Length);
+        return (instInfo[(int)ins] & INS_FLAGS_X87Instr) != 0;
+    }
+
     public static int instKMaskBaseSize(instruction ins)
     {
         assert((uint)ins < (uint)s_kMaskBaseSizes.Length);

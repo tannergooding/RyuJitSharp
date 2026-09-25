@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete native register consumption/production and their required copy/reload/spill closure for Windows AMD64. Add real register/register and register/immediate recording under D005 as an independent emitter dependency; retain native scalar/multireg liveness and GC ownership. Keep production emission skipped.",
+      "scope": "Complete AMD64 integer immediate materialization: instGen_Set_Reg_To_Imm/Zero, native relocation-hint selection, immediate-address recording, DATA16 recording and complete address-mode instruction sizing. Keep the mixed integer/floating/SIMD constant-node dispatcher deferred until all of its dependencies are ported. Production emission stays skipped.",
       "doneWhen": [
-        "Port complete genConsumeReg/genConsumeRegs/genProduceReg and required copy/reload/spill functions, preserving consumption order, local homes, multireg fields, temporary ownership and register GC transitions.",
-        "Integrate complete AMD64 emitIns_R_R and emitIns_R_I dependency closures with actual descriptors, encoding sizes and pre-mutation rejection of unported optional disassembly.",
-        "Validate the integrated dependency closure in Debug/Release and commit coherent completed portions before moving to per-node generation."
+        "Port complete AMD64 instGen_Set_Reg_To_Imm/Zero and relocation-hint helpers without reducing zero, relocatable, section-relative or TLS descriptor cases.",
+        "Integrate complete emitIns_R_AI, emitIns_Data16 and emitInsSizeAM dependencies, retaining D005 and native address/prefix/displacement rules.",
+        "Validate focused immediate/relocation tests and existing recording dependencies in Debug/Release, then commit the coherent closure."
       ],
       "validation": [
-        "Reuse funcletCreation.selection, adding focused register-recording and register consume/produce/spill cases at the closure boundary rather than after each helper.",
+        "Reuse registerValues.selection, adding focused immediate-materialization and address-recording cases at the closure boundary.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Port the complete AMD64 CodeGen.instGen_Set_Reg_To_Imm starting at codegenxarch.cpp:215 and its constant-materialization consumers as the next node-generation dependency. Register consume/produce/copy/reload/spill and register/stack instruction recording are complete and validated. Do not activate a reduced block loop or genGenerateCode. Reuse funcletCreation.nativeHost until reachable production behavior changes.",
+    "nextAction": "Continue the complete genSetRegToConst dependency closure with native emitIns_SIMD_R_R_R at emitxarch.cpp:9658 and emitIns_SIMD_R_R_R_I at 9804, preserving legacy/VEX/EVEX operand policies and D005. Integer immediate/zero materialization and complete address-mode sizing/recording are validated. Floating/SIMD constant-data materialization and their shared dispatcher remain; do not activate a partial dispatcher, block loop or genGenerateCode.",
     "handoff": {
-      "status": "register-consume-produce-validated",
+      "status": "immediate-materialization-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Register-recording worker a7f6ecaf-b706-4be6-83c3-c83235b7452f is fully collected, frozen and integrated, including its test-fixture follow-ups. All older packets remain integrated. No active or unread workers; no app-native child sessions.",
+      "workerPackets": "Both register-recording and immediate-address packets from a7f6ecaf-b706-4be6-83c3-c83235b7452f are fully collected, frozen and integrated, including fixture/style follow-ups. No active or unread workers; no app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "immediateMaterialization": {
+        "debugPassed": 1104,
+        "releasePassed": 1065,
+        "skipped": 0,
+        "selection": "registerValues.selection plus CodeGenImmediateTests, EmitterAddressInstructionTests, AddressLoweringTests and RegisterTrackingTests.",
+        "debugTests": "artifacts\\immediates-integrated-debug.trx",
+        "releaseTests": "artifacts\\immediates-integrated-release.trx",
+        "coverage": "Zero and signed/unsigned-width immediate values, original relocation eligibility versus output relocation flags, VM hint calls and mismatch guard, section-relative MOV, TLS DATA16/LEA ordering, GC attributes, full-width debug handles and register-use tracking. Complete address-mode sizing cases include base/index/SIB combinations, displacements and compression, multi-byte prefixes, VSIB, compact/large call displacement storage, native immediate widths and pre-mutation D005 rejection.",
+        "remaining": "No production emission activation or new native-host parity claim. Reuses funcletCreation.nativeHost because these helpers remain below the explicit emission skip. genSetRegToConst's floating/SIMD/mask branches and constant-data storage, production block/node generation, encoding and final runtime metadata remain."
+      },
       "registerValues": {
         "debugPassed": 991,
         "releasePassed": 958,
@@ -3396,6 +3406,22 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "integer-immediate-materialization",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:215-265,11576-11600", "src\\coreclr\\jit\\instr.cpp:498-507,2937-2958", "src\\coreclr\\jit\\instr.h:688-690"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.ImmediateValues.cs", "sources\\Core\\jit\\codegen\\CodeGen.InstructionInfo.cs", "sources\\Core\\jit\\instr\\Globals.Attributes.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 instGen_Set_Reg_To_Imm/Zero, relocation-hint and PC-relative eligibility helpers, plus native x87 metadata predicate and relocation-attribute predicates. Reuses eeGetRelocTypeHint and register-use tracking. Original relocation attributes govern LEA selection independently of stripping output relocation flags; section constants and TLS prefixes retain native ordering. No partial genSetRegToConst implementation or emission activation."
+    },
+    {
+      "area": "address-instruction-recording-and-sizing",
+      "native": ["src\\coreclr\\jit\\emitxarch.cpp:4012-4025,5458-5765,5929-5938,9314-9350", "src\\coreclr\\jit\\emit.h:2484-2526"],
+      "csharp": ["sources\\Core\\jit\\emitxarch\\Emitter.AddressInstructions.cs", "sources\\Core\\jit\\emitxarch\\Emitter.AddressInstructionSizes.cs", "sources\\Core\\jit\\emitxarch\\Emitter.instrDesc.AddressContexts.cs", "sources\\Core\\jit\\emitxarch\\Emitter.CallDisplacements.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 emitIns_R_AI/emitIns_Data16 under D005 and both full emitInsSizeAM overloads, including base/index addressing rather than an immediate-only specialization. Reuses opcode, prefix, compression and descriptor allocation. Windows-AMD64 instrDescCGCA retains its native 72-byte logical size and call-displacement payload; the unported System-V logical layout rejects explicitly. Final encoding and call-record allocation remain separate dependencies."
+    },
     {
       "area": "register-values-and-spill-ownership",
       "native": ["src\\coreclr\\jit\\codegenlinear.cpp:1154-1843,2129-2346", "src\\coreclr\\jit\\codegencommon.cpp:1140-1151,8248-8429", "src\\coreclr\\jit\\regset.cpp:291-446,494-570,997-1026", "src\\coreclr\\jit\\instr.cpp:736-780,890-899,2046-2449", "src\\coreclr\\jit\\gentree.h:10294-10404", "src\\coreclr\\jit\\gentree.cpp:1072-1107", "src\\coreclr\\jit\\codegen.h:1377-1384"],

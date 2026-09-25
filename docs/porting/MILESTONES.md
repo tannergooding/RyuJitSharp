@@ -14,6 +14,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Immediate values and address-mode sizing
+
+Integer-immediate support now chooses native zeroing, MOV or PC-relative LEA
+forms without letting incidental address placement change instruction selection.
+It preserves relocation hints, section-relative constants, TLS relaxation
+prefixes and register-use tracking.
+
+Address-mode recording and sizing cover base/index combinations, SIB bytes,
+compressed displacements and instruction prefixes. Floating/SIMD constant-data
+materialization, node generation and final encoding remain; production emission
+is still explicitly skipped.
+
 ## 2026-09-25: Register values, copies and reloads
 
 Code-generation support now consumes and produces register values in native
