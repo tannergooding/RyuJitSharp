@@ -1115,6 +1115,11 @@ Return generation and profiler leave/tailcall callbacks also reject unsupported
 disassembly before operand consumption or callback-state changes. Debug
 stack-pointer checks retain the same guard before recording comparisons,
 breakpoints or continuation labels.
+Register-argument generation and placement reject before consuming operands or
+changing ABI-register GC state. Return traps reject before consuming the flag
+or extracting their helper-call temporary. These guards are in
+`codegencommon/CodeGen.CallArguments.cs`, `codegenxarch/CodeGen.RegisterArguments.cs`
+and `codegenxarch/CodeGen.ReturnTraps.cs`.
 
 ### D006: Shared throw-helper blocks before inline helper calls
 

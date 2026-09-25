@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete Windows-AMD64 return generation with native field-list handling, return GC state, profiler leave/tailcall callbacks, caller-relative frame offsets and Debug stack checks. Register-argument placement is being prepared independently in a staged worker packet.",
+      "scope": "Complete Windows-AMD64 register-argument generation/placement and return traps using the existing instruction recording, helper calls and GC lifetimes. Independently stage complete flowgraph compaction without activating fgUpdateFlowGraph.",
       "doneWhen": [
-        "Port complete genReturn, isStructReturn, genStructReturn and genMarkReturnGCInfo for Windows AMD64, preserving void/filter/async distinctions.",
-        "Complete profiler callbacks, stack checks and caller-SP-relative offsets; repair the directly required native frame-delta translation defects without changing upstream behavior.",
+        "Port complete Windows-AMD64 genPutArgReg, genCallPlaceRegArgs and getCallArgIntRegister, including fast-tailcall roots and varargs duplication.",
+        "Port complete genCodeForReturnTrap, preserving comparison width, helper temporary selection and continuation roots.",
         "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Validate return ABI moves and GC roots, callback/frame forms, async ordering, root-only stack checks, EnC/localloc/OSR offsets and D005 in Debug/Release before committing.",
+        "Validate argument moves/aliases/copy operands, late ordering, stack exclusions, tailcall roots, all FP varargs registers, return-trap register/memory flags and direct/indirect helper forms, plus D005 in Debug/Release before committing.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Return generation is complete and validated (returnGeneration). Collect worker 4c9a8661-6e45-4e43-960d-7f3a779cdcde after its completion notification. Its artifacts\\register-argument-packet is the staging location for CodeGen.CallArguments.cs, CodeGen.RegisterArguments.cs and CodeGenRegisterArgumentTests.cs, implementing complete genCallPlaceRegArgs/genPutArgReg. Integrate into codegencommon, codegenxarch and tests\\Core, validate Debug/Release and commit the coherent argument packet. Do not treat staged files as compiled. Also collect a7f6ecaf-b706-4be6-83c3-c83235b7452f's read-only recommendation for an independent earlier-phase flowgraph packet and assign bounded implementation ownership if feasible. Production emission remains skipped.",
+    "nextAction": "Register arguments and return traps are integrated and validated (callArguments). Continue at complete Windows-AMD64 genCallInstruction (codegenxarch.cpp:6017), identifying its required call-node dependency closure rather than activating a reduced dispatcher. Worker a7f6ecaf-b706-4be6-83c3-c83235b7452f is implementing complete fgCanCompactBlock, fgCanCompactInitBlock, fgCompactBlock and fgChangeEhfBlock, staged under artifacts\\flowgraph-compaction-packet. Collect its next handoff after notification, integrate Compiler.FlowGraphCompaction.cs and FlowGraphCompactionTests.cs, validate Debug/Release with BlockSplittingTests and FlowGraphBranchThreadingTests, and commit that independent packet. Production emission remains skipped.",
     "handoff": {
-      "status": "return-generation-validated-register-arguments-in-flight",
+      "status": "register-arguments-return-traps-validated-compaction-in-flight",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Earlier packets from 4c9a8661-6e45-4e43-960d-7f3a779cdcde are collected through turn 22 and integrated. The worker now owns complete Windows-AMD64 genCallPlaceRegArgs/genPutArgReg and focused tests, staged only under artifacts\\register-argument-packet to avoid racing parent builds. New handoff is outstanding; no worker commits/builds authorized. a7f6ecaf-b706-4be6-83c3-c83235b7452f is independently scoping one earlier-phase flowgraph packet, prioritizing fgOptimizeSwitchBranches or compaction, read-only with no implementation yet. No app-native child sessions.",
+      "workerPackets": "Worker 4c9a8661-6e45-4e43-960d-7f3a779cdcde is collected through turn 23; its register-argument packet is integrated and validated, and it is idle. Worker a7f6ecaf-b706-4be6-83c3-c83235b7452f is collected through turn 25; its dependency report led to the active four-function flowgraph-compaction packet. It owns only two staged files under artifacts\\flowgraph-compaction-packet; no shared files, phase activation, builds, commits or publication. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "callArguments": {
+        "debugPassed": 215,
+        "releasePassed": 195,
+        "skipped": 0,
+        "selection": ["CodeGenRegisterArgumentTests", "CodeGenReturnTrapTests", "CodeGenReturnTests", "CodeGenHelperCallTests", "EmitterCallInstructionTests"],
+        "debugTests": "artifacts\\call-arguments-debug.trx",
+        "releaseTests": "artifacts\\call-arguments-release.trx",
+        "coverage": "Scalar/GC/floating argument moves and aliases, copy operands, clobber-sensitive late ordering, unconsumed stack/early arguments, normal versus fast-tailcall GC lifetimes, all four FP varargs registers, 32-bit register/local return-trap comparisons, direct/indirect stop-for-GC calls using the assigned integer temporary, continuation GC roots and Debug-only temporary removal. D005 rejects before consumption, temporary selection or recording.",
+        "remaining": "Complete Windows-AMD64 branches; FEATURE_MULTIREG_ARGS is disabled for this target. Other targets explicitly reject. The nonexistent CodeGenConsumeRegisterTests selector contributed no cases; selection lists only executed classes. Reuses funcletCreation.nativeHost because production reachability is unchanged. Stack arguments, general call nodes, remaining node/block generation, encoding and metadata publication remain; managed code size is zero."
+      },
       "returnGeneration": {
         "debugPassed": 218,
         "releasePassed": 203,
@@ -3648,6 +3658,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "register-arguments-and-return-traps",
+      "native": ["src\\coreclr\\jit\\codegencommon.cpp:7845-7924", "src\\coreclr\\jit\\codegenxarch.cpp:1778-1801,8036-8054", "src\\coreclr\\jit\\compiler.hpp:3097-3119"],
+      "csharp": ["sources\\Core\\jit\\codegencommon\\CodeGen.CallArguments.cs", "sources\\Core\\jit\\codegenxarch\\CodeGen.RegisterArguments.cs", "sources\\Core\\jit\\codegenxarch\\CodeGen.ReturnTraps.cs", "sources\\Core\\jit\\compiler\\Compiler.ArgumentRegisters.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete Windows-AMD64 genCallPlaceRegArgs, genPutArgReg, getCallArgIntRegister and genCodeForReturnTrap. Reuses native consume/produce, call, compare and label recording. Managed putarg/return-trap unary nodes use GenTreeUnOp. Preserves varargs duplication, fast-tailcall roots, integer-temporary filtering and D005. No production emission activation."
+    },
     {
       "area": "return-generation",
       "native": ["src\\coreclr\\jit\\codegencommon.cpp:genReturn,genStructReturn,isStructReturn,genMarkReturnGCInfo,genStackPointerCheck", "src\\coreclr\\jit\\codegenxarch.cpp:genProfilingLeaveCallback and AMD64 frame-delta helpers", "src\\coreclr\\jit\\lclvars.cpp:Compiler::lvaToCallerSPRelativeOffset", "src\\coreclr\\jit\\codegen.h:CodeGen::genFramePointerReg"],

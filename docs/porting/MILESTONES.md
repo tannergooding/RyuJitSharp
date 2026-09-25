@@ -14,6 +14,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Register arguments and return traps
+
+Register arguments now retain native consumption order, ABI moves and fast-tailcall
+GC lifetimes. Windows varargs duplicate floating-point arguments into the matching
+integer registers after placement, including arguments evaluated early.
+
+Return traps compare the thread's flag and conditionally invoke the GC helper
+using the assigned integer temporary, preserving roots at the continuation.
+Stack arguments, general calls, remaining node/block generation, encoding and
+metadata publication still prevent production machine-code emission.
+
 ## 2026-09-25: Return values and profiler leave callbacks
 
 Return generation now moves scalar and field-list values into their ABI registers
