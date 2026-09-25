@@ -17,11 +17,13 @@ public partial class LIR
         public struct Enumerator : IEnumerator<GenTree>
         {
             private readonly GenTree? _node;
+            private readonly GenTree? _endExclusive;
             private GenTree? _current;
 
-            public Enumerator(GenTree? node)
+            public Enumerator(GenTree? node, GenTree? endExclusive = null)
             {
                 _node = node;
+                _endExclusive = endExclusive;
             }
 
 #nullable disable
@@ -45,7 +47,7 @@ public partial class LIR
 
                 var succeeded = false;
 
-                if (current is not null)
+                if ((current is not null) && (current != _endExclusive))
                 {
                     _current = current;
                     succeeded = true;

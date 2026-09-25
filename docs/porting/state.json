@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Explicit non-early LIR Run/InterBlock orchestration is independently integrated (501 Debug/470 Release), including actual backward analysis and the native repeat predicate; production phases remain inactive. Astra (read through turn 50) now owns complete LowerHWIntrinsicCreate/WithElement plus canonical LastNode and lowering insertion/replacement helpers in new partials. LSRA worker is read through turn 68 and owns complete BuildKills prerequisites/definitions, including verification of Windows-x64 multireg return gates. Sol turn 49 returned complete containment and generated ternary metadata; integrate its constructor auxiliary-type initialization and resolve test target-symbol discovery before validating/committing. Parent repaired nine hardware draft compilation errors; ToScalar/CC/FMA pass 32 Debug cases against real working containment. GetElement and NormalizeIndexToNativeSized are drafted but need coverage; full hardware dispatcher remains missing. Close remaining transformations and broad lowering dependencies without stubs or partial dispatch. Retain native bodies and inactive drivers; managed code size remains zero.",
+    "nextAction": "LIR orchestration is committed aeadd64; canonical test-symbol propagation and restored assertion paths are committed 4f6faaf. Parent complete LowerHWIntrinsic and rounding predicate now wire real transformations and containment into pending traversal, not DoPhase. Construction/scalar/element/CC/FMA/containment integration passes 226 Debug/226 Release after B185's range-endpoint fix (four failing-before cases). Parent is reconciling canonical binary-selector operand predicates for elided floating scalars and LIR vector reinterprets; then run all Dot and comparison/ternary cases and review/commit complete dependency packets. Astra is read through turn 56: Create/WithElement/helpers and Dot are returned, awaiting shared selector/range integration. Sol is read through turn 51 and owns full CmpOp/CndSel/TernaryLogic. LSRA worker is read through turn 71 and now owns canonical per-node kill masks and helper/write-barrier prerequisites to restore BuildKills' native Debug assertion; candidate-state integration remains parent-owned. Preserve native bodies and inactive drivers; managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -41,6 +41,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "lirRangeEnumeration": {
+        "debugPassed": 382,
+        "releasePassed": 374,
+        "skipped": 0,
+        "selection": ["Lir*", "UseEdgeIterator*", "Rationalization*", "Liveness*", "SideEffect*", "AddressLowering*"],
+        "debugTests": "artifacts\\lir-range-integration-debug.trx",
+        "releaseTests": "artifacts\\lir-range-integration-release.trx",
+        "failingBefore": "artifacts\\lir-range-before.trx",
+        "scope": "Canonical forward/reverse ReadOnlyRange endpoints, matching native end/rend sentinels. Four of six data-driven cases fail against the old enumerators. Covers subranges, whole/empty ranges, reset and stable exhaustion. Working-tree construction and hardware dispatch also pass 226 cases per configuration after this fix, without activating the compiler phase."
+      },
       "livenessOrchestrationLir": {
         "debugPassed": 501,
         "releasePassed": 470,

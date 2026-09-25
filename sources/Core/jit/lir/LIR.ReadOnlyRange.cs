@@ -70,9 +70,9 @@ public partial class LIR
         /// <summary>Returns the last node in the range.</summary>
         public GenTree? LastNode => _lastNode;
 
-        public Enumerator GetEnumerator() => new Enumerator(_firstNode);
+        public Enumerator GetEnumerator() => new Enumerator(_firstNode, _lastNode?.Next);
 
-        public ReverseEnumerator GetReverseEnumerator() => new ReverseEnumerator(_lastNode);
+        public ReverseEnumerator GetReverseEnumerator() => new ReverseEnumerator(_lastNode, _firstNode?.Prev);
 
 #if DEBUG
         /// <summary>Indicates whether or not this range contains a given node.</summary>
