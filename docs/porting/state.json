@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "LIR orchestration is committed aeadd64; canonical test-symbol propagation and restored assertion paths are committed 4f6faaf. Parent complete LowerHWIntrinsic and rounding predicate now wire real transformations and containment into pending traversal, not DoPhase. Construction/scalar/element/CC/FMA/containment integration passes 226 Debug/226 Release after B185's range-endpoint fix (four failing-before cases). Parent is reconciling canonical binary-selector operand predicates for elided floating scalars and LIR vector reinterprets; then run all Dot and comparison/ternary cases and review/commit complete dependency packets. Astra is read through turn 56: Create/WithElement/helpers and Dot are returned, awaiting shared selector/range integration. Sol is read through turn 51 and owns full CmpOp/CndSel/TernaryLogic. LSRA worker is read through turn 71 and now owns canonical per-node kill masks and helper/write-barrier prerequisites to restore BuildKills' native Debug assertion; candidate-state integration remains parent-owned. Preserve native bodies and inactive drivers; managed code size remains zero.",
+    "nextAction": "Canonical SIMD binary/comparison selector contracts are reconciled (B186); stable-source coverage passes 63 Debug/63 Release. Complete common/hardware lowering integration passes 868 Debug/858 Release with actual recursive dispatch. The old call-target test incorrectly expected containment beyond the inserted store/load range; it now checks the native boundary, and all materialization consumers share ReplaceWithLclVar. Review returned hardware source/native mappings, generator output and dispatcher-specific ownership/rounding cases before committing the complete dependency closure. Astra is read through turn 57 and Sol through turn 55; construction, Dot, containment, comparisons, selection and ternary packets are returned. LSRA worker is read through turn 72: kill-set/helper/write-barrier closure is returned, pending parent shared-interface/candidate-state integration and independent validation. Preserve native bodies and inactive drivers; managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -41,6 +41,24 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "hardwareSelectorContracts": {
+        "debugPassed": 63,
+        "releasePassed": 63,
+        "skipped": 0,
+        "selection": ["LirSelectorsConsumeElidedOperandsAtTheInstructionWidth", "HardwareMorph*", "RationalizationTests"],
+        "debugTests": "artifacts\\hardware-selector-integration-debug.trx",
+        "releaseTests": "artifacts\\hardware-selector-integration-release.trx",
+        "failingBefore": "artifacts\\hardware-selector-before.trx",
+        "scope": "Canonical binary/comparison operand predicates for elided floating scalars and LIR SIMD reinterprets, including ARM64 vector-versus-scalar multiply classification. Four cases fail before the fix. Execution validation is Windows x64; no ARM64 execution or emitted-code parity is claimed."
+      },
+      "commonHardwareLoweringIntegration": {
+        "debugPassed": 868,
+        "releasePassed": 858,
+        "skipped": 0,
+        "debugTests": "artifacts\\hardware-full-lowering-debug.trx",
+        "releaseTests": "artifacts\\hardware-full-lowering-release.trx",
+        "scope": "Isolated HEAD-plus-working-source integration, excluding in-flight LSRA partials. Includes common lowering, actual hardware transformation/containment dispatch, Dot, comparisons, selection and ternary logic. The call-target boundary expectation and native-integer CFG zero assertion are corrected. Pending source review/commit; production DoPhase remains inactive and these constructed-IR checks are not managed code-generation or native-host parity."
+      },
       "lirRangeEnumeration": {
         "debugPassed": 382,
         "releasePassed": 374,

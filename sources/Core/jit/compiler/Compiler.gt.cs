@@ -5988,11 +5988,19 @@ public partial class Compiler
     {
         var simdType = GetSimdTypeForSize(simdSize);
 
+        // Lowering can elide SIMD reinterprets and floating CreateScalarUnsafe nodes.
+        // Their register contents still supply the consumer's full vector width.
+        bool IsFullVectorOperand(GenTree operand)
+        {
+            return (operand.Type == simdType) ||
+                ((fgNodeThreading is NodeThreading.LIR) && varTypeIsSimd(operand.Type));
+        }
+
         assert(varTypeIsArithmetic(simdBaseType));
         assert(varTypeIsSimd(simdType));
 
         assert(op1 is not null);
-        assert(op1.Type == simdType);
+        assert(IsFullVectorOperand(op1) || varTypeIsFloating(op1.Type));
         assert(op2 is not null);
 
 #if TARGET_XARCH
@@ -6018,7 +6026,7 @@ public partial class Compiler
         {
             case GT_ADD:
             {
-                assert(op2.Type == simdType);
+                assert(IsFullVectorOperand(op2) || varTypeIsFloating(op2.Type));
 
 #if TARGET_XARCH
                 if (simdSize is 64)
@@ -6061,7 +6069,7 @@ public partial class Compiler
             case GT_AND:
             {
                 assert(!isScalar);
-                assert(op2.Type == simdType);
+                assert(IsFullVectorOperand(op2) || varTypeIsFloating(op2.Type));
 
 #if TARGET_XARCH
                 if (simdSize is 64)
@@ -6093,7 +6101,7 @@ public partial class Compiler
             case GT_AND_NOT:
             {
                 assert(!isScalar);
-                assert(op2.Type == simdType);
+                assert(IsFullVectorOperand(op2) || varTypeIsFloating(op2.Type));
 
                 if (fgNodeThreading is not NodeThreading.LIR)
                 {
@@ -6140,7 +6148,7 @@ public partial class Compiler
 #else
                 assert(varTypeIsFloating(simdBaseType));
 #endif
-                assert(op2.Type == simdType);
+                assert(IsFullVectorOperand(op2) || varTypeIsFloating(op2.Type));
 
 #if TARGET_XARCH
                 if (varTypeIsFloating(simdBaseType))
@@ -6174,7 +6182,7 @@ public partial class Compiler
             case GT_LSH:
             {
                 assert(!isScalar);
-                assert((op2.Type == simdType) || varTypeIsInt(op2.Type));
+                assert(IsFullVectorOperand(op2) || varTypeIsInt(op2.Type));
                 assert(varTypeIsIntegral(simdBaseType));
 
 #if TARGET_XARCH
@@ -6226,7 +6234,7 @@ public partial class Compiler
             case GT_MUL:
             {
 #if TARGET_XARCH
-                assert(op2.Type == simdType);
+                assert(IsFullVectorOperand(op2) || varTypeIsFloating(op2.Type));
 
                 if (simdSize is 64)
                 {
@@ -6273,11 +6281,11 @@ public partial class Compiler
                 }
                 else if (simdBaseType is TYP_DOUBLE)
                 {
-                    id = (op2.Type == simdType) ? NI_AdvSimd_Arm64_Multiply : NI_AdvSimd_Arm64_MultiplyByScalar;
+                    id = IsFullVectorOperand(op2) ? NI_AdvSimd_Arm64_Multiply : NI_AdvSimd_Arm64_MultiplyByScalar;
                 }
                 else if (!varTypeIsLong(simdBaseType))
                 {
-                    id = (op2.Type == simdType) ? NI_AdvSimd_Multiply : NI_AdvSimd_MultiplyByScalar;
+                    id = IsFullVectorOperand(op2) ? NI_AdvSimd_Multiply : NI_AdvSimd_MultiplyByScalar;
                 }
 #endif
                 break;
@@ -6286,7 +6294,7 @@ public partial class Compiler
             case GT_OR:
             {
                 assert(!isScalar);
-                assert(op2.Type == simdType);
+                assert(IsFullVectorOperand(op2) || varTypeIsFloating(op2.Type));
 
 #if TARGET_XARCH
                 if (simdSize is 64)
@@ -6318,7 +6326,7 @@ public partial class Compiler
             case GT_ROL:
             {
                 assert(!isScalar);
-                assert((op2.Type == simdType) || varTypeIsInt(op2.Type));
+                assert(IsFullVectorOperand(op2) || varTypeIsInt(op2.Type));
                 assert(varTypeIsIntegral(simdBaseType));
 
 #if TARGET_XARCH
@@ -6333,7 +6341,7 @@ public partial class Compiler
             case GT_ROR:
             {
                 assert(!isScalar);
-                assert((op2.Type == simdType) || varTypeIsInt(op2.Type));
+                assert(IsFullVectorOperand(op2) || varTypeIsInt(op2.Type));
                 assert(varTypeIsIntegral(simdBaseType));
 
 #if TARGET_XARCH
@@ -6348,7 +6356,7 @@ public partial class Compiler
             case GT_RSH:
             {
                 assert(!isScalar);
-                assert((op2.Type == simdType) || varTypeIsInt(op2.Type));
+                assert(IsFullVectorOperand(op2) || varTypeIsInt(op2.Type));
                 assert(varTypeIsIntegral(simdBaseType));
 
 #if TARGET_XARCH
@@ -6403,7 +6411,7 @@ public partial class Compiler
             case GT_RSZ:
             {
                 assert(!isScalar);
-                assert((op2.Type == simdType) || varTypeIsInt(op2.Type));
+                assert(IsFullVectorOperand(op2) || varTypeIsInt(op2.Type));
                 assert(varTypeIsIntegral(simdBaseType));
 
 #if TARGET_XARCH
@@ -6454,7 +6462,7 @@ public partial class Compiler
 
             case GT_SUB:
             {
-                assert(op2.Type == simdType);
+                assert(IsFullVectorOperand(op2) || varTypeIsFloating(op2.Type));
 
 #if TARGET_XARCH
                 if (simdSize is 64)
@@ -6497,7 +6505,7 @@ public partial class Compiler
             case GT_XOR:
             {
                 assert(!isScalar);
-                assert(op2.Type == simdType);
+                assert(IsFullVectorOperand(op2) || varTypeIsFloating(op2.Type));
 
 #if TARGET_XARCH
                 if (simdSize is 64)
@@ -6551,11 +6559,19 @@ public partial class Compiler
         var simdType = GetSimdTypeForSize(simdSize);
         assert(varTypeIsMask(type) || (type == simdType));
 
+        // LIR reinterprets and elided floating scalars are consumed at the node's
+        // register width; containment independently checks the memory-access size.
+        bool IsFullVectorOperand(GenTree operand)
+        {
+            return (operand.Type == simdType) ||
+                ((fgNodeThreading is NodeThreading.LIR) && varTypeUsesFloatReg(operand.Type));
+        }
+
         assert(varTypeIsArithmetic(simdBaseType));
         assert(varTypeIsSimd(simdType));
 
         assert(op1 is not null);
-        assert(op1.Type == simdType);
+        assert(IsFullVectorOperand(op1));
         assert(op2 is not null);
 
 #if TARGET_XARCH
@@ -6609,7 +6625,7 @@ public partial class Compiler
         {
             case GT_EQ:
             {
-                assert(op2.Type == simdType);
+                assert(IsFullVectorOperand(op2));
 
 #if TARGET_XARCH
                 if (varTypeIsMask(type))
@@ -6647,7 +6663,7 @@ public partial class Compiler
 
             case GT_GE:
             {
-                assert(op2.Type == simdType);
+                assert(IsFullVectorOperand(op2));
 
 #if TARGET_XARCH
                 if (varTypeIsMask(type))
@@ -6689,7 +6705,7 @@ public partial class Compiler
 
             case GT_GT:
             {
-                assert(op2.Type == simdType);
+                assert(IsFullVectorOperand(op2));
 
 #if TARGET_XARCH
                 if (varTypeIsMask(type))
@@ -6745,7 +6761,7 @@ public partial class Compiler
 
             case GT_LE:
             {
-                assert(op2.Type == simdType);
+                assert(IsFullVectorOperand(op2));
 
 #if TARGET_XARCH
                 if (varTypeIsMask(type))
@@ -6787,7 +6803,7 @@ public partial class Compiler
 
             case GT_LT:
             {
-                assert(op2.Type == simdType);
+                assert(IsFullVectorOperand(op2));
 
                 // !GE
 
@@ -6845,7 +6861,7 @@ public partial class Compiler
 
             case GT_NE:
             {
-                assert(op2.Type == simdType);
+                assert(IsFullVectorOperand(op2));
 
 #if TARGET_XARCH
                 if (varTypeIsMask(type))

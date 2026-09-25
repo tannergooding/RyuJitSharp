@@ -14,6 +14,28 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class HardwareIntrinsicInitializationTests
 {
+    [TestCase(TYP_SIMD16, false)]
+    [TestCase(TYP_SIMD16, true)]
+    [TestCase(TYP_FLOAT, false)]
+    [TestCase(TYP_FLOAT, true)]
+    [TestCase(TYP_SIMD32, false)]
+    [TestCase(TYP_SIMD32, true)]
+    public static void LirSelectorsConsumeElidedOperandsAtTheInstructionWidth(var_types operandType, bool comparison)
+    {
+        WithCompiler(compiler => {
+            compiler.fgNodeThreading = NodeThreading.LIR;
+            var left = new GenTreeLclVar(operandType, 0);
+            var right = new GenTreeLclVar(operandType, 1);
+            var intrinsic = comparison
+                ? compiler.GetHWIntrinsicIdForCmpOp(GT_EQ, TYP_SIMD16, left, right, TYP_FLOAT, 16, false)
+                : compiler.GetHWIntrinsicIdForBinOp(GT_ADD, left, right, TYP_FLOAT, 16, false);
+
+            Assert.That(intrinsic, Is.EqualTo(comparison ? NI_X86Base_CompareEqual : NI_X86Base_Add));
+            Assert.That(left.Type, Is.EqualTo(operandType));
+            Assert.That(right.Type, Is.EqualTo(operandType));
+        });
+    }
+
     [TestCase(NI_Vector_ToScalar)]
     [TestCase(NI_X86Base_Extract)]
     public static void ScalarExtractionIntrinsicsCanBeContainedByStores(NamedIntrinsic intrinsicId)
