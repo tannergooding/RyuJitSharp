@@ -13,6 +13,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-24: Register-resolution support
+
+Register writeback and copy/reload insertion now preserve indexed results,
+owning LIR uses and native insertion order. Spill accounting tracks peak
+concurrent temporary requirements by normalized stack-home type, retaining
+distinct GC and non-GC homes and avoiding double-counting upper-vector saves.
+Final local marking preserves dependent struct fields, unused-local
+initialization policy and frame-pointer selection.
+
+Tuple diagnostics now include reference positions and final register
+assignments as well as the pre-allocation view. The resolution traversal and
+its checked-build verification remain before allocation can become active;
+these support routines do not yet advance the native-code execution boundary.
+
 ## 2026-09-24: Interval construction without enregistered locals
 
 The complete native interval-building mode for stack-resident locals now

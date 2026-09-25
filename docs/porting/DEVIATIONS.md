@@ -681,11 +681,21 @@ no work in this mode. Incoming parameter-register liveness and all temporary
 references remain required and are preserved. The mixed-mode native body is
 retained for optimized allocation.
 
-`tupleStyleDumpPre` and its operand/node formatters specialize the existing
-`LSRA_DUMP_PRE` predicate, preserving the complete pre-allocation dump. The
-reference-position and post-allocation modes remain required before activating
-the allocation driver. Node sequence numbers retain their native unsigned
-display through the bit representation of the existing managed integer field.
+`tupleStyleDump` preserves all native PRE, REFPOS and POST modes using managed
+strings and a reference-list index in place of the native character buffer and
+iterator. `tupleStyleDumpPre` retains the explicit pre-allocation callsite.
+Node sequence numbers retain their native unsigned display through the bit
+representation of the existing managed integer field.
+
+Copy/reload insertion updates the existing LIR owning use and places a newly
+allocated node immediately after its source, matching the pinned implementation
+rather than its stale before-parent description (B200). A second multireg result
+reuses the existing copy/reload node.
+
+Spill accounting retains native unsigned counters and normalized temporary
+types, using the existing `RegSet` preallocation rather than introducing another
+spill allocator. Final local stack-home marking preserves native dependent-field,
+reference-count, initialization and frame-pointer predicates.
 
 Internal-register definitions, call definitions and kill references retain
 native location ordering, register preferences and upper-vector save rules.
@@ -811,6 +821,11 @@ throw outside AMD64, pending target-specific interval/reference requirements.
 `CodeGen.genGetGSCookieTempRegs` implements the native xarch selector and
 explicitly rejects other targets. Swift conditional code is translated but is
 not enabled or execution-validated by the Windows-x64 configuration.
+
+`LinearScan.writeRegisters` and `insertCopyOrReload` currently support Windows
+AMD64, explicitly rejecting other target/ABI configurations. `Compiler.raMarkStkVars`
+likewise rejects non-AMD64 targets; their double-alignment frame policy remains
+unported. These routines do not activate register resolution or emission.
 
 Current target-sync additions under `TARGET_WASM` are
 `Compiler.fgWasmRepairTryEntries` and `Compiler.fgWasmSpillRefs` in

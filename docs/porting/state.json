@@ -12,15 +12,15 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete Windows-AMD64 buildIntervals<false> orchestration with local variables not enregistered, the complete node-reference entrypoint and required pre-LSRA diagnostics. Preserve native block and parameter accounting, location/kill ordering and register masks. Keep allocation inactive until resolution and its driver are complete.",
+      "scope": "Complete Windows-AMD64 register-resolution support: register writeback, copy/reload insertion, spill accounting and tuple diagnostics. Preserve native multireg, LIR ownership, spill and diagnostic contracts. Keep allocation inactive while preparing resolveRegisters<false> and its full required closure.",
       "doneWhen": [
-        "Port full Windows-AMD64 buildRefPositionsForNode, including Debug source-count and register-stress contracts.",
-        "Integrate the complete native buildIntervals<false> specialization, rejecting local-enregistration mode before mutation and retaining mixed-mode native bodies.",
-        "Preserve pre-LSRA tuple dumps through the complete LSRA_DUMP_PRE specialization and existing interval/reference formatters.",
-        "Validate real multi-block interval construction and the existing LinearScan selection in Debug and Release; commit the packet before activating allocation."
+        "Port complete native writeRegisters and insertCopyOrReload with required multireg and owning-use support.",
+        "Port complete initMaxSpill, updateMaxSpill and recordMaxSpill with native temporary preallocation, plus raMarkStkVars for resolution's final stack-home marking.",
+        "Complete tuple diagnostics for PRE, REFPOS and POST without changing existing PRE output.",
+        "Validate spill/copy/writeback behavior and exact diagnostics with existing LinearScan coverage in Debug and Release; commit the coherent support packet before activating resolution."
       ],
       "validation": [
-        "Use focused multi-node/multi-block cases for complete interval construction, parameter-live masks, GS-cookie/frame-poison kills, mode rejection and exact pre-LSRA diagnostics, plus existing LinearScan coverage.",
+        "Use focused register writeback/copy/reload and spill-accounting cases, exact tuple diagnostics and existing LinearScan coverage.",
         "Reuse the lowering capture at 7372483 while allocation remains inactive. The broader HWI Debug selection's existing B145 failures are recorded, not part of this dependency packet."
       ],
       "deferred": [
@@ -33,11 +33,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Interval construction is complete and validated for Windows-AMD64 buildIntervals<false>. Next port resolveRegisters<false> (lsra.cpp:7811) with its writeRegisters, updateMaxSpill and insertCopyOrReload dependency closure, then complete the allocation driver (lsra.cpp:1336) and required REFPOS/POST diagnostics. Reuse the existing minimal allocation traversal; retain native mixed-mode bodies and reject unsupported optimized modes before mutation. Keep production allocation explicitly skipped until this closure is complete. B145's 33 preexisting Debug SIMD/folding failures remain deferred; no unchanged-frontier capture, push or PR.",
+    "nextAction": "Register-resolution support is complete and validated. Next port the full resolveRegisters<false> traversal (lsra.cpp:7811), including its required no-local-enregistration verifyFinalAllocation mode (lsra.cpp:11876), then the allocation driver (lsra.cpp:1336). Reuse completed register writeback, copy/reload insertion, spill accounting, stack-home marking and tuple diagnostics. Local upper-vector intervals and interblock resolution moves are absent in this mode; temporary upper-vector saves remain required. Retain native mixed-mode bodies and reject unsupported modes before mutation. Keep production allocation explicitly skipped until this closure is complete, then preserve an explicit unfinished emission boundary and use the NativeAOT/native-host workflow. B145 remains deferred; no unchanged-frontier capture, push or PR.",
     "handoff": {
-      "status": "interval-construction-validated",
+      "status": "resolution-support-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Both retained task workers have returned and frozen their node-reference entrypoint and pre-LSRA diagnostic files. All handoffs are read and integrated; no outstanding worker assignment or app-native child-session dependency.",
+      "workerPackets": "Both retained task workers have returned and frozen their files. All handoffs and the indexed-call writeback follow-up are read and integrated. Windows AMD64 has FEATURE_MULTIREG_RET=0 and MAX_RET_REG_COUNT=1; async/Swift busy refs do not create indexed call destinations. No pending worker assignments or app-native child-session dependencies.",
       "preserve": "Activate only the complete no-local-lifetimes lowering mode; keep allocation explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -61,6 +61,15 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "registerResolutionSupport": {
+        "debugPassed": 443,
+        "releasePassed": 393,
+        "skipped": 0,
+        "selection": ["LinearScan*", "SpillTemporaryTests", "RegisterAllocationStackHomeTests", "ParameterLocalMappingTests"],
+        "debugTests": "artifacts\\lsra-resolution-support-debug.trx",
+        "releaseTests": "artifacts\\lsra-resolution-support-release.trx",
+        "scope": "Windows-AMD64 register writeback, indexed copy/reload grouping and LIR owning-use replacement; normalized concurrent spill accounting and RegSet preallocation; dependent/unused/register local stack-home marking; complete PRE/REFPOS/POST tuple diagnostics. Allocation and resolution drivers remain inactive; no new runtime parity claim."
+      },
       "minimalIntervalConstruction": {
         "debugPassed": 397,
         "releasePassed": 359,
@@ -3143,11 +3152,18 @@
   },
   "sourceMap": [
     {
+      "area": "lsra-register-resolution-support",
+      "native": ["src\\coreclr\\jit\\lsra.cpp:126-172,793-823,7270-7412,7642-7805,10612-11080", "src\\coreclr\\jit\\regalloc.cpp:205-316"],
+      "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.RegisterWriteback.cs", "sources\\Core\\jit\\lsra\\LinearScan.SpillAccounting.cs", "sources\\Core\\jit\\lsra\\LinearScan.IntervalDiagnostics.cs", "sources\\Core\\jit\\compiler\\Compiler.RegisterAllocation.cs"],
+      "reconciledCommit": null,
+      "status": "Windows-AMD64 writeback and copy/reload insertion, complete spill accounting, local stack-home marking and all tuple-dump modes. Reuses existing RegSet temporary storage; native copy/reload executable placement is preserved despite its stale description (B200). Other-target writeback/insertion and non-AMD64 stack-home marking reject explicitly. Resolution traversal, final allocation verification and production allocation remain incomplete."
+    },
+    {
       "area": "lsra-minimal-interval-construction",
       "native": ["src\\coreclr\\jit\\lsrabuild.cpp:1580-1889,2080-2794", "src\\coreclr\\jit\\lsra.cpp:550-581,10612-10994", "src\\coreclr\\jit\\codegencommon.cpp:2978-3020", "src\\coreclr\\jit\\compiler.h:12131", "src\\coreclr\\jit\\lclvars.cpp:1159-1177"],
       "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.MinimalIntervalConstruction.cs", "sources\\Core\\jit\\lsra\\LinearScan.NodeReferences.cs", "sources\\Core\\jit\\lsra\\LinearScan.IntervalDiagnostics.cs", "sources\\Core\\jit\\lsra\\LinearScan.SelectorHelpers.cs", "sources\\Core\\jit\\codegen\\CodeGen.cs", "sources\\Core\\jit\\codegeninterface\\ICodeGen.cs", "sources\\Core\\jit\\compiler\\Compiler.comp.cs", "sources\\Core\\jit\\compiler\\Compiler.lva.cs"],
       "reconciledCommit": null,
-      "status": "Complete AMD64 buildIntervals<false>, node-reference entrypoint and PRE-only tuple diagnostics. Shared GS-cookie selection is on CodeGen and exposes existing incoming-register-mask storage; frame-poison and Swift parameter queries retain native predicates. Enregistered-local mode rejects before interval mutation; other-target interval/reference paths explicitly throw. Native mixed-mode bodies remain. Allocation driver, resolution and REFPOS/POST diagnostics remain inactive or incomplete."
+      "status": "Complete AMD64 buildIntervals<false> and node-reference entrypoint. Shared GS-cookie selection is on CodeGen and exposes existing incoming-register-mask storage; frame-poison and Swift parameter queries retain native predicates. Enregistered-local mode rejects before interval mutation; other-target interval/reference paths explicitly throw. Native mixed-mode bodies remain. All tuple modes are now mapped with resolution support; allocation driver and resolution remain inactive and incomplete."
     },
     {
       "area": "lsra-node-reference-construction",
