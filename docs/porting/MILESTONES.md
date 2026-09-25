@@ -14,6 +14,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Atomic instruction generation
+
+Windows-x64 atomic generation now records locked additions, exchanges,
+compare-exchanges and bitwise retry loops with native instruction selection,
+operand ordering, small-result extension and GC lifetimes. Full memory barriers
+and the required unary/immediate memory instructions are implemented.
+
+Indirect-address liveness now handles atomic nodes through their common operand
+layout rather than an invalid managed-class cast. Production generation remains
+unavailable; descriptor recording is not machine-code execution.
+
 ## 2026-09-25: Local heap generation and stack probing
 
 Windows-x64 local heap generation now handles constant and dynamic sizes,

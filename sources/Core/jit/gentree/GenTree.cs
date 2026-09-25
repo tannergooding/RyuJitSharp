@@ -349,7 +349,10 @@ public partial class GenTree
         {
             if (_oper.IsIndir)
             {
-                return AsIndir().Addr;
+                // Atomic operators use GenTreeOp, but share the address operand with GenTreeIndir.
+                var addr = ((GenTreeOp)this).Op1;
+                assert(varTypeIsI(addr.Type));
+                return addr;
             }
             else if (_oper.IsArrMetadata)
             {

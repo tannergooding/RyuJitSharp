@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Local heap is validated at localHeapGeneration; all worker packets are integrated. Resume remaining node-generation closure: genLockedInstructions/genCodeForCmpXchg at pinned codegenxarch.cpp:4269/4366 and genCodeForStoreBlk at3092 with its init/copy/memmove dependencies. genCodeForTreeNode at1810 is absent and will use these dependencies. Assign productive bounded lanes after the local-heap commit, keeping shared integration in the parent. Production genGenerateCode remains skipped.",
+    "nextAction": "Atomic generation and shared indirect-address liveness are validated at atomicGeneration. Integrate the frozen artifacts\\block-memory-generation-packet files at the destinations in handoff.txt, run the block-memory and companion Debug/Release selectors, and commit the complete closure. Worker87f10c61 is collected through turn10 and idle. Then continue complete genCodeForTreeNode dispatch dependencies at pinned codegenxarch.cpp:1810; production genGenerateCode remains skipped.",
     "handoff": {
-      "status": "local-heap-validated-remaining-node-generators-next",
+      "status": "atomics-validated-block-memory-packet-ready",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn26; JMP/GC/shadow-space packet committed de6bbb5. 87f10c61-b152-4bdc-a27e-1ecfad4f6342 through turn8; local-heap/immediate-only emitter/probing packet integrated and validated. b6e1f160-b3d7-4126-bf91-39bc8de2e495 through turn6; graph diagnostics e1f0f90. a7f6ecaf-b706-4be6-83c3-c83235b7452f through turn29; cleanup2f55f04. All idle and all packets integrated. No app-native child sessions.",
+      "workerPackets": "4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn26; JMP/GC/shadow-space packet committed de6bbb5. 87f10c61-b152-4bdc-a27e-1ecfad4f6342 through turn10; local heap committed4a3828e; frozen block-memory packet is ready for parent integration, semantic compilation and tests. b6e1f160-b3d7-4126-bf91-39bc8de2e495 through turn6; graph diagnostics e1f0f90. a7f6ecaf-b706-4be6-83c3-c83235b7452f through turn29; cleanup2f55f04. All idle. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -52,6 +52,17 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "atomicGeneration": {
+        "debugPassed": 207,
+        "releasePassed": 187,
+        "skipped": 0,
+        "selection": "CodeGenAtomicTests, EmitterMemoryOperandTests, EmitterMemoryImmediateInstructionTests, CodeGenBinaryTests, TreeLifeUpdaterTests and CodeGenLifeTransitionTests",
+        "debugTests": "artifacts\\atomics-debug.trx",
+        "releaseTests": "artifacts\\atomics-release.trx",
+        "regressionBefore": "artifacts\\atomic-liveness-before.trx: one executed XADD failure reproduces B226 with the correct GenTreeOp representation.",
+        "coverage": "LOCKADD immediate/register forms; XADD/XCHG locks and small result extensions; used/unused bitwise atomic loops and address GC lifetimes; CMPXCHG accumulator and GC result; barriers; unary/immediate memory descriptors; D005 pre-consumption rejection; indirect and atomic local-address liveness in both native handling modes.",
+        "remaining": "Complete Windows-AMD64 atomic generators, full-barrier recording, emitIns_AR and emitIns_I_AR. Shared address access no longer requires a false CLR GenTreeIndir identity. Production generation is still skipped; reuses funcletCreation.nativeHost and makes no machine-code execution claim."
+      },
       "localHeapGeneration": {
         "debugPassed": 118,
         "releasePassed": 109,
@@ -3775,6 +3786,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "atomic-generation",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:4220-4407,11549", "src\\coreclr\\jit\\emitxarch.cpp:8179,9246", "src\\coreclr\\jit\\treelifeupdater.cpp:TreeLifeUpdater::UpdateLife"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.Atomics.cs", "sources\\Core\\jit\\emitxarch\\Emitter.MemoryUnaryImmediate.cs", "sources\\Core\\jit\\gentree\\GenTree.cs:IndirOrArrMetaDataAddr", "sources\\Core\\jit\\treelifeupdater\\TreeLifeUpdater.cs:UpdateLife"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete Windows-AMD64 locked arithmetic, exchange and compare-exchange, memory barriers and required unary/immediate memory recorders. B226 fixes shared address access for atomic GenTreeOp nodes without changing their hierarchy. Other targets explicitly reject; production generation remains skipped."
+    },
     {
       "area": "local-heap-generation",
       "native": ["src\\coreclr\\jit\\codegenxarch.cpp:2513,2550,2572,2618,2831", "src\\coreclr\\jit\\instr.cpp:869", "src\\coreclr\\jit\\emitxarch.cpp:7374", "src\\coreclr\\jit\\codegencommon.cpp:213"],

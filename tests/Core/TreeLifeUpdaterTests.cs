@@ -126,9 +126,19 @@ internal static unsafe class TreeLifeUpdaterTests
         });
     }
 
-    [TestCase(false)]
-    [TestCase(true)]
-    public static void LocalAddressModesChooseTheNativeDefinitionNodeWithoutCodegenState(bool general)
+    [TestCase(GT_IND, false)]
+    [TestCase(GT_IND, true)]
+    [TestCase(GT_LOCKADD, false)]
+    [TestCase(GT_LOCKADD, true)]
+    [TestCase(GT_XADD, false)]
+    [TestCase(GT_XADD, true)]
+    [TestCase(GT_XCHG, false)]
+    [TestCase(GT_XCHG, true)]
+    [TestCase(GT_XAND, false)]
+    [TestCase(GT_XAND, true)]
+    [TestCase(GT_XORR, false)]
+    [TestCase(GT_XORR, true)]
+    public static void LocalAddressModesChooseTheNativeDefinitionNodeWithoutCodegenState(genTreeOps oper, bool general)
     {
         WithCompiler((compiler, _) =>
         {
@@ -138,7 +148,9 @@ internal static unsafe class TreeLifeUpdaterTests
             address.Flags |= GTF_VAR_DEF;
             updater.UpdateLife(address, general);
             Assert.That(VarSetOps.IsMember(compiler, compiler.compCurLife, 0), Is.EqualTo(general));
-            var indir = new GenTreeIndir(GT_IND, TYP_REF, address);
+            GenTree indir = oper == GT_IND
+                ? new GenTreeIndir(oper, TYP_REF, address)
+                : new GenTreeOp(oper, TYP_INT, address, compiler.gtNewIconNode(TYP_INT, 1));
             updater.UpdateLife(indir, general);
 
             Assert.That(VarSetOps.IsMember(compiler, compiler.compCurLife, 0), Is.True);

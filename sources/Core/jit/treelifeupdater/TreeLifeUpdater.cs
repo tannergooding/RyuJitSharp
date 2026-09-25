@@ -285,9 +285,9 @@ public sealed class TreeLifeUpdater
         {
             UpdateLifeVar(tree, tree.AsLclVarCommon());
         }
-        else if (!generalLclAddrHandling && tree.Oper.IsIndir && (tree.AsIndir().Addr.Oper == GT_LCL_ADDR))
+        else if (!generalLclAddrHandling && tree.Oper.IsIndir && (tree.IndirOrArrMetaDataAddr.Oper == GT_LCL_ADDR))
         {
-            UpdateLifeVar(tree, tree.AsIndir().Addr.AsLclVarCommon());
+            UpdateLifeVar(tree, tree.IndirOrArrMetaDataAddr.AsLclVarCommon());
         }
         else if (tree.Oper == GT_CALL)
         {
