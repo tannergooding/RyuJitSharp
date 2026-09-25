@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete AMD64 integer-to-integer and integer/floating scalar casts, including overflow descriptors, widening/narrowing and unsigned-long floating conversion. Preserve numeric behavior, operand lifetimes and native ISA predicates; keep production emission skipped.",
+      "scope": "Complete AMD64 finite checks and native intrinsic dispatch, including scalar math, immediate operand recording and SIMD upper save/restore closure. Preserve numeric bits, ISA predicates, shared exceptions and lifetimes; keep production emission skipped.",
       "doneWhen": [
-        "Port complete GenIntCastDesc, genIntCastOverflowCheck, genIntToIntCast and AMD64 genCodeForCast dispatch.",
-        "Port complete genFloatToFloatCast and genIntToFloatCast with full conversion/shift/internal-register helpers. Preserve D005/D006 rejection before mutation.",
+        "Port complete AMD64 genCkfinite, genIntrinsicRoundOp and genIntrinsic.",
+        "Close inst_RV_RV_TT_IV and complete genSimdUpperSave/genSimdUpperRestore instead of omitting their native intrinsic cases. Preserve D005/D006 rejection before mutation.",
         "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Validate focused cast boundaries and existing comparison, operand recording, shift, label and internal-register dependencies in Debug/Release; retain scalarComparisons as the unrelated cumulative baseline.",
+        "Validate finite-check masks, scalar math immediates, contained/spilled sources, upper-lane preservation and operand-recording dependencies in Debug/Release; retain scalarCasts as the unrelated dependency baseline.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Scalar casts and AMD64 genCodeForCast dispatch are complete and validated (scalarCasts). Continue native genCkfinite at codegenxarch.cpp:7089, preserving exponent extraction, ArithmeticException target and result lifetime; use existing shared throws and reject D005/D006 before consumption or temporary extraction. Xarch floating-to-integer casts are deliberately unreachable in genCodeForCast because lowering converts them to hardware intrinsics; do not invent a scalar float-to-int path. Then continue remaining scalar node/block generation dependencies. Keep production emission skipped until encoding and metadata publication are complete.",
+    "nextAction": "Finite checks and complete AMD64 intrinsic dispatch are validated (intrinsicGeneration), including scalar rounding/sqrt/abs, immediate operand recording and upper-lane save/restore. Continue genTableBasedSwitch at codegenxarch.cpp:4147 and genJumpTable at 4178, closing their native table-data recording helpers before validating and committing. Then close genCodeForSwap at 5632. Xarch floating-to-integer casts require lowered hardware intrinsics, not a new scalar conversion path. Keep production emission skipped until remaining node/block generation, encoding and metadata publication are complete.",
     "handoff": {
-      "status": "scalar-cast-generation-validated",
+      "status": "finite-intrinsic-generation-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All files and follow-ups from 4c9a8661-6e45-4e43-960d-7f3a779cdcde are collected through turn 15, frozen and integrated, including FloatingCasts, FloatingConversions, NodeInternalRegisters.Extract and CodeGenFloatingCastTests. Root Debug/Release validation passes. Both it and a7f6ecaf-b706-4be6-83c3-c83235b7452f are idle with no outstanding assignment or unread handoff. No app-native child sessions.",
+      "workerPackets": "All files and follow-ups from 4c9a8661-6e45-4e43-960d-7f3a779cdcde are collected through turn 16, frozen and integrated, including CodeGen.UpperLanes.cs and CodeGenUpperLaneTests.cs. Root Debug/Release validation passes. Both it and a7f6ecaf-b706-4be6-83c3-c83235b7452f are idle with no outstanding assignment or unread handoff. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "intrinsicGeneration": {
+        "debugPassed": 797,
+        "releasePassed": 755,
+        "skipped": 0,
+        "selection": "scalarCasts.selection plus CodeGenIntrinsicTests, CodeGenUpperLaneTests, CodeGenUnaryTests, EmitterSimdRegisterInstructionTests and EmitterUnaryInstructionTests.",
+        "debugTests": "artifacts\\intrinsic-generation-debug.trx",
+        "releaseTests": "artifacts\\intrinsic-generation-release.trx",
+        "coverage": "Float/double exponent extraction and arithmetic-exception targets, aliased/distinct finite results, scalar round/ceiling/floor/truncate immediates and sqrt/abs dispatch, legacy/VEX register/local/indirect/constant/spill sources, signed-zero data, commutative RMW aliases and native insert-opcode fallback. Upper-lane tests cover SIMD32 register/stack halves, full SIMD64 homes, copies/reloads, liveness and VEX/EVEX recording. D005/D006 reject before mutation; Release removes only native Debug checks.",
+        "remaining": "Reuses funcletCreation.nativeHost; production reachability is unchanged and managed code size remains zero. Table switches, remaining node/block generation, calls, write-barrier stores, final encoding and metadata publication remain. Native SIMD upper-save/restore operands are local SIMD values; no nonlocal mode was omitted."
+      },
       "scalarCasts": {
         "debugPassed": 547,
         "releasePassed": 524,
@@ -3578,6 +3588,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "finite-check-and-intrinsic-generation",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:7089-7199,7384-7507", "src\\coreclr\\jit\\simdcodegenxarch.cpp:348-388,405-441", "src\\coreclr\\jit\\instr.cpp:1637-1735", "src\\coreclr\\jit\\emitxarch.cpp:9770-9789"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.Intrinsics.cs", "sources\\Core\\jit\\simdcodegenxarch\\CodeGen.UpperLanes.cs", "sources\\Core\\jit\\instr\\CodeGen.MemoryOperands.cs", "sources\\Core\\jit\\emitxarch\\Emitter.SimdMemoryInstructions.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 genCkfinite, genIntrinsicRoundOp, genIntrinsic, genSimdUpperSave/genSimdUpperRestore, inst_RV_RV_TT_IV and emitIns_SIMD_R_R_C_I. Reuses native-faithful bitwise generation for abs. Preserves exponent bits, shared exception target, rounding immediates, source forms, SIMD widths/homes and lifetime ordering. D005/D006 guards precede mutation; non-AMD64 generation rejects. Production emission remains skipped."
+    },
     {
       "area": "scalar-cast-generation",
       "native": ["src\\coreclr\\jit\\codegen.h:858-939", "src\\coreclr\\jit\\codegenlinear.cpp:2375-2595", "src\\coreclr\\jit\\codegenxarch.cpp:6746-7072", "src\\coreclr\\jit\\instr.cpp:1006-1040,2732-2795", "src\\coreclr\\jit\\codegencommon.cpp:146-158"],

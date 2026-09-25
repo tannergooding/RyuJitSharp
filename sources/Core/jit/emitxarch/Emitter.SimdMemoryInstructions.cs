@@ -145,6 +145,26 @@ public partial class Emitter
 #endif
     }
 
+    public unsafe void emitIns_SIMD_R_R_C_I(instruction ins, emitAttr attr, regNumber targetReg,
+        regNumber op1Reg, CORINFO_FIELD_STRUCT_* field, int offset, int immediate, insOpts options)
+    {
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD field-immediate recording requires AMD64.");
+#else
+        RequireSupportedInstructionRecording();
+        if (UseSimdEncoding())
+        {
+            emitIns_R_R_C_I(ins, attr, targetReg, op1Reg, field, offset, immediate, options);
+        }
+        else
+        {
+            assert(options == INS_OPTS_NONE);
+            _ = emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, canSkip: true);
+            emitIns_R_C_I(ins, attr, targetReg, field, offset, immediate);
+        }
+#endif
+    }
+
     public void emitIns_SIMD_R_R_S_I(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg,
         int varx, int offs, int ival, insOpts instOptions)
     {

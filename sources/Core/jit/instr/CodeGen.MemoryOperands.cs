@@ -305,6 +305,77 @@ public sealed partial class CodeGen
 #endif
     }
 
+    public unsafe void inst_RV_RV_TT_IV(instruction ins, emitAttr size, regNumber targetReg,
+        regNumber op1Reg, GenTree op2, sbyte immediate, bool isRMW, insOpts options)
+    {
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD register/operand/immediate generation requires AMD64.");
+#else
+        Emitter.RequireSupportedInstructionRecording();
+        noway_assert(Emitter.emitVerifyEncodable(ins, EA_SIZE(size), op1Reg));
+#if FEATURE_HW_INTRINSICS
+        if (IsEmbeddedBroadcastEnabled(ins, op2))
+        {
+            options = AddEmbBroadcastMode(options);
+        }
+        else if ((options == INS_OPTS_NONE) && !Emitter.IsVexEncodableInstruction(ins))
+        {
+            ins = ins switch
+            {
+                INS_vinsertf64x2 => INS_vinsertf32x4,
+                INS_vinserti64x2 => INS_vinserti32x4,
+                _ => ins,
+            };
+        }
+#endif
+
+        var descriptor = genOperandDesc(ins, op2);
+        switch (descriptor.GetKind())
+        {
+            case OperandKind.ClsVar:
+            {
+                Emitter.emitIns_SIMD_R_R_C_I(ins, size, targetReg, op1Reg,
+                    descriptor.GetFieldHnd(), 0, immediate, options);
+                break;
+            }
+
+            case OperandKind.Local:
+            {
+                Emitter.emitIns_SIMD_R_R_S_I(ins, size, targetReg, op1Reg,
+                    descriptor.GetVarNum(), descriptor.GetLclOffset(), immediate, options);
+                break;
+            }
+
+            case OperandKind.Indir:
+            {
+                Emitter.emitIns_SIMD_R_R_A_I(ins, size, targetReg, op1Reg,
+                    descriptor.GetIndirForm(), immediate, options);
+                break;
+            }
+
+            case OperandKind.Reg:
+            {
+                var op2Reg = descriptor.GetReg();
+                if ((op1Reg != targetReg) && (op2Reg == targetReg) && isRMW)
+                {
+                    // Noncommutative operations prevent this alias through delay-free allocation.
+                    op2Reg = op1Reg;
+                    op1Reg = targetReg;
+                }
+
+                Emitter.emitIns_SIMD_R_R_R_I(ins, size, targetReg, op1Reg, op2Reg, immediate, options);
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+#endif
+    }
+
 #if TARGET_XARCH && FEATURE_HW_INTRINSICS
     public static insOpts AddEmbBroadcastMode(insOpts options)
     {

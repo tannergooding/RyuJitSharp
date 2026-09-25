@@ -14,6 +14,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Finite checks and intrinsic generation
+
+Finite checks now test the floating exponent and preserve the original value,
+including signed zero, while targeting the native arithmetic-exception block.
+Scalar rounding, ceiling, floor, truncation, square root and absolute value
+generation retain native instruction choices, rounding modes and operand forms.
+
+Intrinsic dispatch also handles upper-lane preservation: SIMD32 saves retain
+their register or upper-stack-half representation, while SIMD64 uses its full
+stack home. Table switches, calls, write-barrier stores and remaining node/block,
+encoding and metadata work still prevent production machine-code emission.
+
 ## 2026-09-25: Scalar cast generation
 
 Integer casts now preserve checked signed/unsigned ranges, truncation and
