@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete Windows-AMD64 emitEndCodeGen and its instruction-issuing/allocation dependencies. Instruction, GC and constant-data output are validated; retain the top-level emission skip until remaining runtime metadata is complete.",
+      "scope": "Complete Windows-AMD64 machine-code generation and emission phase orchestration, reusing the validated final emitter driver. Retain the top-level emission skip until remaining runtime metadata is complete.",
       "doneWhen": [
-        "Port complete native emitEndCodeGen and emitIssue1Instr with their required Windows-AMD64 allocation, group-state, fixup and finalization support.",
-        "Preserve frame/GC initialization, stable argument-tracking storage, writable aliases, hot/cold regions and data-chunk allocation contracts.",
-        "Validate driver bytes, offsets, GC records and allocation callbacks in Debug/Release and commit; keep production emission skipped until all remaining runtime metadata is ready."
+        "Port complete native genGenerateMachineCode and genEmitMachineCode and their required Windows-AMD64 support.",
+        "Preserve preparation, body generation, prolog/epilog materialization, scope finalization, jump binding, unwind reservation and emission ordering.",
+        "Validate phase orchestration and commit a coherent packet; bound genEmitUnwindDebugGCandEH dependencies before activating genGenerateCode."
       ],
       "validation": [
-        "Run focused emission-driver regressions in Debug/Release, extending instructionDispatchOutput and existing group/binding/allocation coverage.",
+        "Run focused generation/emission phase regressions in Debug/Release, extending finalInstructionEmission and existing codegen preparation/body/prolog coverage.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Instruction-output dispatch and canonical diagnostics are complete at740Debug/710Release, zero skipped. Continue with native emitEndCodeGen at emit.cpp:6797 and emitIssue1Instr at4457. Parent owns driver/shared integration and builds; reuse bounded workers for noninterfering dependencies after the completed instruction batch is committed. Reuse existing byte/GC/data/diagnostic helpers and generated native instruction names. Preserve emitSyncThisObjReg initialization at7048-7072, full/simple stack-tracking selection and stable/pinned argument storage throughout issuing. Do not invent a writable-alias reset for data output; B236 records the native question. Keep genGenerateCode CORJIT_SKIPPED and managed code size zero until complete driver/allocation/remaining GC-EH-debug metadata closure; no unchanged-frontier native-host recapture is needed.",
+    "nextAction": "Final instruction emission/allocation/costs are validated at790Debug/736Release. Continue with native CodeGen::genGenerateMachineCode (codegencommon.cpp:2221-2445) and genEmitMachineCode (2450-2611), then bound genEmitUnwindDebugGCandEH (2616-2722) dependencies before activating genGenerateCode (2151). Parent owns phase integration and builds; reuse workers for concrete noninterfering metadata/support functions. Reuse Emitter.EmissionDriver.cs, pinned table ownership, current byte/GC/data/prolog/unwind helpers and generated cost metadata. Preserve native writable-alias behavior (B236); optional non-Debug late-disassembly alignment scoring explicitly rejects missing placement metadata (B237). Keep production CORJIT_SKIPPED and managed code size zero until required runtime publication is complete.",
     "handoff": {
-      "status": "instruction-output-validated",
+      "status": "final-instruction-emission-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All current packets are frozen, validated and collected: constant data d62fc6a5-a4dd-40be-8b42-5de1405b22b7 through turn48; call/stack GC and dispatcher call tests 942a496f-db30-4389-a403-265f28fdb23c through turn36; instruction/GC diagnostics and canonical mnemonic generation 6a004941-37d2-4a3d-b2f4-0d1a35021099 through turn10. All are idle with no unread handoffs. Parent integrated native helper visibility, descriptor layouts, signed-mask and signed-alias fixes and Release diagnostic coverage. No app-native child-session coordination.",
+      "workerPackets": "All driver packets are frozen, integrated and collected: d62fc6a5-a4dd-40be-8b42-5de1405b22b7 executable allocation through turn51; 942a496f-db30-4389-a403-265f28fdb23c execution characteristics/costs through turn44; 6a004941-37d2-4a3d-b2f4-0d1a35021099 driver tests through turn15. All are idle with no unread handoffs. Parent supplied the complete emission driver, canonical generated cost tables, fixture repairs, native diagnostic routing and explicit B237 rejection. No app-native child-session coordination.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -52,6 +52,20 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "finalInstructionEmission": {
+        "debugPassed": 790,
+        "releasePassed": 736,
+        "skipped": 0,
+        "selection": "instructionDispatchOutput.selection plus EmitterEmissionDriverTests, CompilerCodeAllocationTests and EmitterExecutionCostTests; join each class with FullyQualifiedName~ and |.",
+        "debugTests": "artifacts\\emission-driver-expanded-debug.trx",
+        "releaseTests": "artifacts\\emission-driver-expanded-release.trx",
+        "focusedDebugPassed": 50,
+        "focusedReleasePassed": 26,
+        "coverage": "Saved prolog/body groups, per-instruction shrink accounting and forward patches, actual versus allocated code size, hot/cold writable aliases, aligned data chunks and logical gaps, REF/BYREF frame and register lifetime ends before trailing padding, full/simple and inline/large argument tracking, forced compacting GC across EE allocation, unsigned allocation payloads and Debug fake splitting. Fast/disassembly/verbose loops retain bytes and metrics. Memory-format classification runs in both configurations; execution-cost APIs/tests follow native DEBUG || LATE_DISASM guards and LATE_DISASM is not enabled in the current Release build.",
+        "generation": "GenerateTables emits both cost spans from the existing instrsxarch.h latency/throughput fields. All1137source rows align with canonical mnemonic order; TARGET_X86 excludes two rows for1135AMD64 entries. Input matches the pinned oracle modulo line endings. Reproduce by copying Inputs into an isolated working directory and running dotnet run --project <absolute GenerateTables.csproj> --configuration Release --no-restore there; copy only Outputs\\jit\\emitxarch\\Emitter.ExecutionInfo.generated.cs. The isolated artifacts\\emission-cost-tables directory is removed after review.",
+        "ownership": "Emitter-owned pinned GC arrays retain data chunks, logical offsets, frame offsets and large argument tables. Inline argument storage is fixed for the complete issuing interval; EE buffers remain runtime-owned. See D002.",
+        "remaining": "Production genGenerateCode remains explicitly skipped; managed native-code size remains zero. Complete generation/emission phase orchestration and remaining GC/EH/debug publication before activation. Reuse funcletCreation.nativeHost while reachability is unchanged; this evidence is not executing-JIT parity."
+      },
       "instructionDispatchOutput": {
         "debugPassed": 740,
         "releasePassed": 710,
@@ -3948,6 +3962,29 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "final-instruction-emission-and-costs",
+      "native": [
+        "src\\coreclr\\jit\\emit.cpp:1511-1565,4457-4549,6797-7787",
+        "src\\coreclr\\jit\\ee_il_dll.cpp:1166-1298",
+        "src\\coreclr\\jit\\emitxarch.cpp:7583-7600,19851-19906,19919-21114",
+        "src\\coreclr\\jit\\emit.h:PERFSCORE_*",
+        "src\\coreclr\\jit\\instrsxarch.h"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\emit\\Emitter.EmissionDriver.cs",
+        "sources\\Core\\jit\\ee_il_dll\\Compiler.CodeAllocation.cs",
+        "sources\\Core\\jit\\emit\\Emitter.ExecutionCost.cs",
+        "sources\\Core\\jit\\emitxarch\\Emitter.ExecutionCharacteristics.cs",
+        "sources\\Core\\jit\\emitxarch\\Emitter.ExecutionMemory.cs",
+        "sources\\Core\\jit\\emitxarch\\Emitter.ExecutionInfo.generated.cs",
+        "sources\\Core\\jit\\emitxarch\\Emitter.PrefixInstructionQueries.cs",
+        "sources\\GenerateTables\\Program.cs"
+      ],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete Windows-AMD64 final instruction driver and allocation, memory classification and native instruction execution-cost algorithm for the normal Debug configuration. Generated metadata preserves native enum order. Pointer tables retain stable managed ownership; EE-owned buffers and native patch arithmetic are unchanged. B237 records the explicitly unsupported non-Debug late-disassembly alignment combination. Debug/Release coverage passes; generation/emission phase orchestration, runtime metadata and production activation remain."
+    },
     {
       "area": "instruction-output-gc-and-diagnostics",
       "native": [

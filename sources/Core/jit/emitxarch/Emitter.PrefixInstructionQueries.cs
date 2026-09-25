@@ -16,6 +16,12 @@ public partial class Emitter
     private static bool IsBMIInstruction(instruction ins) =>
         ins >= FIRST_BMI_INSTRUCTION && ins <= LAST_BMI_INSTRUCTION;
 
+    private static bool IsJccInstruction(instruction ins) =>
+        ((ins >= INS_jo) && (ins <= INS_jg)) || ((ins >= INS_l_jo) && (ins <= INS_l_jg));
+
+    private static bool IsJmpInstruction(instruction ins) =>
+        ins is INS_i_jmp or INS_jmp or INS_l_jmp or INS_tail_i_jmp;
+
     private static bool IsKMOVInstruction(instruction ins) => ins is
         INS_kmovb_gpr or INS_kmovw_gpr or INS_kmovd_gpr or INS_kmovq_gpr or
         INS_kmovb_msk or INS_kmovw_msk or INS_kmovd_msk or INS_kmovq_msk;

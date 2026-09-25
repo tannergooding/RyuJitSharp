@@ -15,6 +15,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Final instruction emission and executable allocation
+
+Saved Windows-x64 instruction groups can now be issued into EE-allocated hot
+and cold code buffers, with writable aliases and aligned constant-data sections.
+The driver preserves per-instruction size corrections, forward-branch fixups,
+GC lifetime boundaries and unused-buffer padding. Managed tracking tables stay
+stable across allocation callbacks and garbage collections.
+
+Instruction performance scoring uses the native width- and memory-sensitive
+algorithms and generated latency/throughput metadata. Generation/emission phase
+orchestration and the remaining runtime metadata still precede production
+activation; standalone emission is not yet managed JIT execution.
+
 ## 2026-09-25: Instruction dispatch and GC/data output
 
 Recorded Windows-x64 instructions now have a complete byte-output dispatcher.

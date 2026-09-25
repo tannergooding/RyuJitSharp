@@ -64,6 +64,13 @@ reversal and append order without copying CLR objects into unmanaged storage.
 Actual emitted-code patch addresses remain native pointers; they are not
 narrowed to managed descriptor offsets.
 
+Final emission retains pinned managed arrays for native-pointer data-chunk,
+logical-offset, frame-offset and large argument-tracking tables. Their owners
+remain attached to the emitter, preserving compilation lifetime across EE
+callbacks and subsequent emitter queries. Inline argument storage is pinned
+throughout instruction issue. Executable and writable code/data buffers remain
+EE-owned; this does not change their allocation or relocation contract.
+
 Basic-block label cookies hold managed instruction-group references rather than
 native `void*` values. They identify those same groups without fabricating
 unmanaged addresses or pinning managed objects.

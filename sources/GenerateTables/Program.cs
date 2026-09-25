@@ -1220,7 +1220,43 @@ public sealed partial class CodeGen
             }
         });
 
+        var latencyBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
+            if (inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal))
+            {
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        PERFSCORE_LATENCY_{parts[^4].Trim()}, // INS_{parts[0].Trim()}");
+            }
+        });
+
+        var throughputBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
+            if (inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal))
+            {
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        PERFSCORE_THROUGHPUT_{parts[^3].Trim()}, // INS_{parts[0].Trim()}");
+            }
+        });
+
         _ = Directory.CreateDirectory(@"Outputs\jit\emitxarch");
+        File.WriteAllText(@"Outputs\jit\emitxarch\Emitter.ExecutionInfo.generated.cs", $$"""
+// Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+using System;
+
+namespace RyuJitSharp;
+
+public partial class Emitter
+{
+#if TARGET_AMD64 && (DEBUG || LATE_DISASM)
+    private static ReadOnlySpan<float> insLatencyInfos => [
+{{latencyBuilder}}    ];
+
+    private static ReadOnlySpan<float> insThroughputInfos => [
+{{throughputBuilder}}    ];
+#endif
+}
+""");
+
         File.WriteAllText(@"Outputs\jit\emitxarch\Emitter.InstructionInfo.generated.cs", $$"""
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 //
