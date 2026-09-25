@@ -12,7 +12,8 @@ public partial class Emitter
 {
     public unsafe byte emitOutputByte(byte* dst, long val)
     {
-        *(dst + writeableOffset) = unchecked((byte)val);
+        // Checked pointer arithmetic rejects valid negative writable-alias offsets.
+        *unchecked(dst + writeableOffset) = unchecked((byte)val);
 #if DEBUG && TARGET_AMD64
         assert(((val & 0xFF00000000L) == 0) || ((val & -0x100000000L) == -0x100000000L));
 #endif
@@ -21,7 +22,7 @@ public partial class Emitter
 
     public unsafe byte emitOutputWord(byte* dst, long val)
     {
-        Unsafe.WriteUnaligned(dst + writeableOffset, unchecked((short)val));
+        Unsafe.WriteUnaligned(unchecked(dst + writeableOffset), unchecked((short)val));
 #if DEBUG && TARGET_AMD64
         assert(((val & 0xFF00000000L) == 0) || ((val & -0x100000000L) == -0x100000000L));
 #endif
@@ -30,7 +31,7 @@ public partial class Emitter
 
     public unsafe byte emitOutputLong(byte* dst, long val)
     {
-        Unsafe.WriteUnaligned(dst + writeableOffset, unchecked((int)val));
+        Unsafe.WriteUnaligned(unchecked(dst + writeableOffset), unchecked((int)val));
 #if DEBUG && TARGET_AMD64
         assert(((val & 0xFF00000000L) == 0) || ((val & -0x100000000L) == -0x100000000L));
 #endif
@@ -40,9 +41,9 @@ public partial class Emitter
     public unsafe byte emitOutputSizeT(byte* dst, long val)
     {
 #if TARGET_64BIT
-        Unsafe.WriteUnaligned(dst + writeableOffset, val);
+        Unsafe.WriteUnaligned(unchecked(dst + writeableOffset), val);
 #else
-        Unsafe.WriteUnaligned(dst + writeableOffset, unchecked((int)val));
+        Unsafe.WriteUnaligned(unchecked(dst + writeableOffset), unchecked((int)val));
 #endif
         return TARGET_POINTER_SIZE;
     }
@@ -51,7 +52,7 @@ public partial class Emitter
         [CallerArgumentExpression(nameof(relocType))] string relocTypeName = "")
     {
         assert(_compiler is not null);
-        var locationRW = (byte*)location + writeableOffset;
+        var locationRW = unchecked((byte*)location + writeableOffset);
         JITDUMP($"recordRelocation: {FMT_PTR((void*)dspPtr(location))} (rw: {FMT_PTR((void*)dspPtr(locationRW))}) => {FMT_PTR((void*)dspPtr(target))}, type {(uint)relocType} ({relocTypeName.Replace("CorInfoReloc.", "CorInfoReloc::", StringComparison.Ordinal)}), delta {addlDelta}\n");
 
         // Unmatched AltJITs retain late-disassembly records without notifying the VM.

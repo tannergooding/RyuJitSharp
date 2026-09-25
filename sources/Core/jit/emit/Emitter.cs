@@ -281,7 +281,7 @@ public partial class Emitter
     private bool emitContTrkPtrLcls;
 
     /// <summary>Cache of currently live varPtrs (stkOffs -> varPtrDsc)</summary>
-    private GCInfo.varPtrDsc[]? emitGCrFrameLiveTab;
+    private GCInfo.varPtrDsc?[]? emitGCrFrameLiveTab;
 
     private int emitArgFrameOffsMin;
 

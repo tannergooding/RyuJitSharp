@@ -13,7 +13,7 @@ public partial class Emitter
     private const int AM_DISP_MIN = -((1 << (AM_DISP_BITS - 1)) - 1);
     private const int AM_DISP_MAX = (1 << (AM_DISP_BITS - 1)) - 1;
 
-    private struct CnsVal
+    public struct CnsVal
     {
         public nint cnsVal;
         public bool cnsReloc;

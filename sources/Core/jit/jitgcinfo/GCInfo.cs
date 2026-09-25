@@ -37,8 +37,8 @@ public partial struct GCInfo
 
     public readonly ref RegSet RegSet => ref _codeGen.RegSet;
 
-    private varPtrDsc? gcVarPtrList;
-    private varPtrDsc? gcVarPtrLast;
+    internal varPtrDsc? gcVarPtrList;
+    internal varPtrDsc? gcVarPtrLast;
     private regPtrDsc? gcRegPtrList;
     private regPtrDsc? gcRegPtrLast;
     private uint gcPtrArgCnt;

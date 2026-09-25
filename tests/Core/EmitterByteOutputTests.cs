@@ -12,21 +12,26 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class EmitterByteOutputTests
 {
-    [TestCase(1, -1L, "FF")]
-    [TestCase(2, -2L, "FEFF")]
-    [TestCase(2, 0x12345678L, "7856")]
-    [TestCase(4, 0xFEDCBA98L, "98BADCFE")]
-    [TestCase(8, 0x123456789ABCDEFL, "EFCDAB8967452301")]
-    [TestCase(8, -1L, "FFFFFFFFFFFFFFFF")]
-    public static void IntegerOutputUsesUnalignedWritableAliasAndNativeTruncation(int width, long value, string hex)
+    [TestCase(1, -1L, "FF", 16)]
+    [TestCase(2, -2L, "FEFF", 16)]
+    [TestCase(2, 0x12345678L, "7856", 16)]
+    [TestCase(4, 0xFEDCBA98L, "98BADCFE", 16)]
+    [TestCase(8, 0x123456789ABCDEFL, "EFCDAB8967452301", 16)]
+    [TestCase(8, -1L, "FFFFFFFFFFFFFFFF", 16)]
+    [TestCase(1, -1L, "FF", -16)]
+    [TestCase(2, -2L, "FEFF", -16)]
+    [TestCase(4, 0xFEDCBA98L, "98BADCFE", -16)]
+    [TestCase(8, -1L, "FFFFFFFFFFFFFFFF", -16)]
+    public static void IntegerOutputUsesUnalignedWritableAliasAndNativeTruncation(int width, long value, string hex, int aliasOffset)
     {
         CodeGenBinaryTests.WithCodeGen((_, codeGen) =>
         {
             var emitter = codeGen.Emitter;
             var buffer = stackalloc byte[40];
             new Span<byte>(buffer, 40).Fill(0xA5);
-            emitter.writeableOffset = 16;
-            var dst = buffer + 3;
+            emitter.writeableOffset = aliasOffset;
+            var dst = buffer + (aliasOffset < 0 ? 19 : 3);
+            var writableIndex = (int)(dst - buffer) + aliasOffset;
             var count = width switch
             {
                 1 => emitter.emitOutputByte(dst, value),
@@ -36,10 +41,10 @@ internal static unsafe class EmitterByteOutputTests
             };
 
             Assert.That(count, Is.EqualTo(width));
-            Assert.That(new ReadOnlySpan<byte>(buffer + 19, count).ToArray(), Is.EqualTo(Convert.FromHexString(hex)));
+            Assert.That(new ReadOnlySpan<byte>(buffer + writableIndex, count).ToArray(), Is.EqualTo(Convert.FromHexString(hex)));
             for (var i = 0; i < 40; i++)
             {
-                if ((i < 19) || (i >= 19 + count))
+                if ((i < writableIndex) || (i >= writableIndex + count))
                 {
                     Assert.That(buffer[i], Is.EqualTo(0xA5));
                 }
@@ -110,9 +115,9 @@ internal static unsafe class EmitterByteOutputTests
         });
     }
 
-    [TestCase(false)]
-    [TestCase(true)]
-    public static void RelocationUsesExecutableAndWritableLocationsAndHonorsMatchedVm(bool matched)
+    [Test]
+    public static void RelocationUsesExecutableAndWritableLocationsAndHonorsMatchedVm(
+        [Values(false, true)] bool matched, [Values(-16, 16)] int aliasOffset)
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
@@ -122,24 +127,25 @@ internal static unsafe class EmitterByteOutputTests
             compiler.info.compMatchedVM = matched;
             var emitter = codeGen.Emitter;
             emitter.emitCmpHandle = &context.JitInfo;
-            emitter.writeableOffset = 16;
+            emitter.writeableOffset = aliasOffset;
             var buffer = stackalloc byte[32];
+            var location = buffer + (aliasOffset < 0 ? 16 : 0);
 #if LATE_DISASM
             codeGen.Disassembler.disInit(compiler);
             compiler.opts.doLateDisasm = true;
 #endif
 
-            emitter.emitRecordRelocation(buffer, buffer + 24, CorInfoReloc.RELATIVE32, -4);
+            emitter.emitRecordRelocation(location, buffer + 24, CorInfoReloc.RELATIVE32, -4);
 
             Assert.That(context.Calls, Is.EqualTo(matched ? 1 : 0));
 #if LATE_DISASM
             var relocations = Relocations(ref codeGen.Disassembler) ?? throw new AssertionException("Missing relocation map.");
-            Assert.That(relocations[(nuint)buffer], Is.EqualTo((nuint)(buffer + 24)));
+            Assert.That(relocations[(nuint)location], Is.EqualTo((nuint)(buffer + 24)));
 #endif
             if (matched)
             {
-                Assert.That((nuint)context.Location, Is.EqualTo((nuint)buffer));
-                Assert.That((nuint)context.WritableLocation, Is.EqualTo((nuint)(buffer + 16)));
+                Assert.That((nuint)context.Location, Is.EqualTo((nuint)location));
+                Assert.That((nuint)context.WritableLocation, Is.EqualTo((nuint)(buffer + (aliasOffset < 0 ? 0 : 16))));
                 Assert.That((nuint)context.Target, Is.EqualTo((nuint)(buffer + 24)));
                 Assert.That(context.Type, Is.EqualTo(CorInfoReloc.RELATIVE32));
                 Assert.That(context.Delta, Is.EqualTo(-4));

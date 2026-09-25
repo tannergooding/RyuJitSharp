@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete Windows-AMD64 memory-operand, stack/static and branch machine-byte output with required GC/relocation helpers. Register/immediate encoding and unwind publication are validated; production emission remains explicitly unavailable.",
+      "scope": "Complete Windows-AMD64 instruction-output dispatch, required GC call/stack accounting and constant-data publication. Memory and branch byte output are validated; production emission remains explicitly unavailable.",
       "doneWhen": [
-        "Port complete native emitOutputAM/SV/CV and emitOutputLJ with NOP/alignment support, preserving all required Windows-AMD64 encoding paths.",
-        "Preserve frame addressing, relocations, instruction sizes, GC transitions and hot/cold branch contracts without a reduced scalar alternate implementation.",
-        "Validate exact bytes and side effects in Debug/Release and commit; leave production emission skipped until dispatcher, allocation and runtime metadata closure is complete."
+        "Port complete native emitOutputInstr with required call and stack-GC support; preserve format dispatch, instruction sizes and native GC ordering.",
+        "Port complete native constant-data output with data chunk, target and relocation contracts intact.",
+        "Validate bytes, GC records and data output in Debug/Release and commit; leave production emission skipped until executable allocation and runtime metadata closure is complete."
       ],
       "validation": [
-        "Run focused address/stack/static/branch byte-output regressions in Debug/Release, extending with directly coupled recording, prefix and placement tests.",
+        "Run focused instruction-dispatch, call/stack-GC and constant-data output regressions in Debug/Release, extending the established encoding tests.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Byte/prefix/register/immediate output and Windows-AMD64 unwind publication are validated (216 Debug/205 Release, zero skipped). Commit this coherent batch before starting the next closure: emitOutputAM at emitxarch.cpp:14018-15059, parallel emitOutputSV/CV at15060-16071 and emitOutputLJ at17384-18027 with NOP/alignment support at13760-14000. Parent owns shared addressing/GC helpers and integration; workers must report exact dependencies before duplicating shared support. B231 retains the missing invalid-format emitDispIns diagnostic limitation. Production genGenerateCode remains CORJIT_SKIPPED and managed code size zero until the complete driver/allocation/metadata closure exists.",
+    "nextAction": "Memory/branch output is complete and validated at635Debug/609Release, zero skipped. Continue with complete emitOutputInstr at emitxarch.cpp:18028, required emitRecordGCcall at emit.cpp:9051 and emitStackPush/PushN/Pop/KillArgs at10194/10226/10250/10470, plus independent emitOutputDataSec at8439. Parent owns dispatcher/shared integration and builds; assign bounded workers only after the completed memory batch is committed. Reuse the existing canonical byte/prefix/AM/SV/CV/LJ/tuple/GC helpers. B231 instruction-display diagnostics remain a dependency, not a silent stub. Native emitEndCodeGen initializes emitSyncThisObjReg at7048-7072; preserve that initialization when porting the driver. Production genGenerateCode remains CORJIT_SKIPPED and managed code size zero until full driver/allocation/metadata closure.",
     "handoff": {
-      "status": "byte-encoding-and-unwind-publication-validated",
+      "status": "memory-and-branch-output-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Both packets are collected and integrated: d62fc6a5-a4dd-40be-8b42-5de1405b22b7 through turn33 (unwind publication) and 942a496f-db30-4389-a403-265f28fdb23c through turn25 (register/immediate encoding, GC updates and descriptor allocation). Both are idle with no unread handoffs. Parent fixed the legacy-SSE fixture's inherited EVEX setting and retained native relocation diagnostic labels. Profiling worker 6a004941 remains idle through turn2. Reuse workers only after committing this validated batch; no app-native child-session coordination.",
+      "workerPackets": "Both memory packets are collected, frozen and integrated: d62fc6a5-a4dd-40be-8b42-5de1405b22b7 through turn45 (SV/CV/data lookup/canonical memory operand size) and 942a496f-db30-4389-a403-265f28fdb23c through turn30 (LJ/padding/grouped GC death). Parent integrated AM/stack-GC support, fixed signed pointer arithmetic in primitive output, and corrected mixed-tuple test recording to use the native three-operand API. Both workers are idle with no unread handoffs. Profiling worker 6a004941 remains idle through turn2. No app-native child-session coordination.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -52,6 +52,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "memoryAndBranchByteOutput": {
+        "debugPassed": 635,
+        "releasePassed": 609,
+        "skipped": 0,
+        "selection": "EmitterAddressOutputTests, EmitterStackGCOutputTests, EmitterMemoryOutputTests, EmitterBranchOutputTests, EmitterByteOutputTests, EmitterAddressInstructionTests, EmitterLocalAddressTests, EmitterStaticFieldInstructionTests, EmitterConstantDataTests, EmitterCallInstructionTests, EmitterJumpInstructionTests, EmitterJumpDistanceBindingTests, EmitterLoopAlignmentAdjustmentTests, EmitterLoopAlignmentRecordingTests, EmitterStackStoreTests, EmitterRegisterOutputTests, EmitterPrologEpilogTests and EmitterInstructionGroupTests",
+        "debugTests": "artifacts\\memory-output-debug.trx",
+        "releaseTests": "artifacts\\memory-output-release.trx",
+        "coverage": "Exact base/index/SIB and displacement-boundary bytes, operand widths, legacy/VEX/EVEX/APX forms, compressed displacement, indirect tailcall REX.W sizing, immediate-dependent relocation deltas, hot/cold branches and patch sites, label lea/mov ownership, all NOP sizes, stack local/temp/GC stores, tuple memory widths, negative static-data displacements and signed writable aliases. GC stack records preserve lifetimes, offsets and outgoing-argument policies. B233's six negative-alias regression cases fail before the primitive fix (artifacts\\negative-alias-before.trx); B234 covers GC-typed negative spill-temp numbers.",
+        "remaining": "Instruction dispatch, output driver, executable allocation and remaining GC/EH/debug publication are still required. B231 tracks native invalid-format instruction-display diagnostics. Reuse funcletCreation.nativeHost because production reachability is unchanged; byte-level validation is not executing-JIT parity."
+      },
       "byteEncodingAndUnwindPublication": {
         "debugPassed": 216,
         "releasePassed": 205,
@@ -3926,6 +3936,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "windows-amd64-memory-and-branch-byte-output",
+      "native": ["src\\coreclr\\jit\\emitxarch.cpp:13760-16065,17384-17723", "src\\coreclr\\jit\\emit.cpp:emitGCvarLiveSet,emitGCvarDeadSet,emitGCregDeadUpdMask,emitGCvarLiveUpd,emitGCvarDeadUpd,emitDataOffsetToPtr", "src\\coreclr\\jit\\emit.h:4329-4461", "src\\coreclr\\jit\\emitxarch.cpp:HasRegularWideForm,insEncodeRegSIB,insSSval,AddEvexVPrimePrefix"],
+      "csharp": ["sources\\Core\\jit\\emitxarch\\Emitter.AddressOutput.cs", "sources\\Core\\jit\\emitxarch\\Emitter.AddressOutputHelpers.cs", "sources\\Core\\jit\\emitxarch\\Emitter.StackOutput.cs", "sources\\Core\\jit\\emitxarch\\Emitter.StaticOutput.cs", "sources\\Core\\jit\\emitxarch\\Emitter.MemoryOperandSize.cs", "sources\\Core\\jit\\emitxarch\\Emitter.DataOffsetLookup.cs", "sources\\Core\\jit\\emitxarch\\Emitter.BranchOutput.cs", "sources\\Core\\jit\\emitxarch\\Emitter.PaddingOutput.cs", "sources\\Core\\jit\\emit\\Emitter.StackGCOutput.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Windows-AMD64 AM/SV/CV/LJ and padding output, stack-GC lifetimes, grouped register deaths and constant-data lookup. Managed label-mov destinations use the descriptor's scalar address union because bound targets already occupy separate managed fields; native instrDescLbl requires separate destination storage to avoid its union overlap. B231 retains invalid-format diagnostic limitations. Production dispatch/allocation/metadata closure remains unavailable."
+    },
     {
       "area": "windows-amd64-register-byte-output",
       "native": ["src\\coreclr\\jit\\emitxarch.cpp:3120-3715,16072-17376", "src\\coreclr\\jit\\emit.cpp:9268-9323,9366-9440,9592-9640,9700-9733,10561-10601", "src\\coreclr\\jit\\emit.h:emitCurCodeOffs", "src\\coreclr\\jit\\gcinfo.cpp:gcRegPtrAllocDsc", "src\\coreclr\\jit\\disasm.cpp:disRecordRelocation,GetRelocationMap"],

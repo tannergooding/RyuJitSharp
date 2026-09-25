@@ -14,6 +14,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Memory and branch byte encoding
+
+Windows-x64 byte output now covers indirect memory, stack locals and spill temps,
+static fields and constant data, including SIMD/APX addressing and compressed
+displacements. GC stack lifetimes and outgoing pointer arguments retain their
+native code offsets and tracking rules.
+
+Label branches and calls, label-address loads and stores, and alignment padding
+now have byte-output support. Relocations preserve immediate-width adjustments,
+hot/cold targets and writable aliases on either side of executable memory.
+Instruction dispatch, the final emission driver, executable allocation and
+remaining runtime metadata still precede production activation; managed native
+code size remains zero.
+
 ## 2026-09-25: Register byte encoding and unwind publication
 
 Windows-x64 register and immediate instructions now have byte-output support,
