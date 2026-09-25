@@ -14,6 +14,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Local stores, bitcasts and multi-register results
+
+Local variable and field stores now preserve native stack/register homes,
+contained bitcasts, constant reuse and lifetime updates. Zero rematerialization
+retains the distinction between positive and negative floating zero. SIMD12
+stores write exactly twelve bytes, including the zero-vector shortcut.
+
+Multi-register intrinsic results are consumed and assigned one field at a time,
+preserving copy/reload ordering, narrow field stores, write-through homes and
+GC liveness. The native-unsupported Windows x64 multi-register SIMD return case
+rejects before consumption. Remaining node/block generators, final encoding and
+runtime metadata publication still keep production emission explicitly skipped.
+
 ## 2026-09-25: Local reads and addresses
 
 Local address and load generation now preserve stack offsets, GC result kinds,

@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete AMD64 local-read/address generation and SIMD12 field loads, preserving register-candidate/spill predicates, normalized types, extension flags, stack alignment and lifetime/GC ordering. Keep production emission skipped.",
+      "scope": "Complete AMD64 local variable/field stores, bitcasts, SIMD12 stores and multi-register source handling, preserving normalized types, constant reuse, stack/register homes and lifetime/GC ordering. Keep production emission skipped.",
       "doneWhen": [
-        "Port complete AMD64 genCodeForLclAddr, genCodeForLclFld and genCodeForLclVar with native candidate/spill and extension behavior.",
-        "Close genLoadLclTypeSimd12, genEmitLoadLclTypeSimd12 and the full SIMD stack-immediate recording wrapper; preserve D005 rejection before mutation.",
+        "Port complete AMD64 genCodeForStoreLclFld, genCodeForStoreLclVar, genUpdateLifeStore and multi-register store closure.",
+        "Close bitcast generation, SIMD12 stores, store recording and extended-move selection; preserve D005 rejection before mutation.",
         "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Reuse integerDivision.selection, adding focused local-address, scalar/GC/SIMD loads, no-extension and candidate/spill predicate checks.",
+        "Reuse localLoads.selection, adding local-store, bitcast, SIMD12, multi-register and lifetime-order checks.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Local reads and addresses are complete and validated (localLoads). Continue with AMD64 local stores at codegenxarch.cpp:5004-5181: genCodeForStoreLclFld and genCodeForStoreLclVar, including contained bitcasts, SIMD12, constant reuse and full multi-register source handling. Required roots are genBitCast (codegencommon.cpp:8612), genStoreLclTypeSimd12 (simdcodegenxarch.cpp:170), emitInsStoreLcl (emitxarch.cpp:6463), genMultiRegStoreToLocal (codegencommon.cpp:8049) and genUpdateLifeStore (not yet located/ported). Reuse existing emitStoreSimd12ToLclOffset and consumption/production helpers. Preserve D005 before mutation and retain native mixed-mode bodies. Validate and commit the coherent closure; production emission remains skipped until node/block/encoding/metadata support is complete.",
+    "nextAction": "Local stores, bitcasts and Windows-AMD64 multi-register stores are complete and validated (localStores). Continue with indirect reads and indexed address generation: genCodeForIndir at codegenxarch.cpp:5271-5307 and genCodeForIndexAddr at 5179-5263. Read complete genLoadIndTypeSimd12 and emitInsLoadInd dependencies; preserve TLS handle loads, no-extension flags, bounded-read SIMD12 composition, index widening/scaling, bounds-check branches and base-register GC lifetime. Reuse current operand recording and shared throw blocks; apply D005/D006 before mutation as appropriate. Retain write-barrier-backed stores until their complete call/GC closure is ready. Production emission remains skipped until node/block/encoding/metadata support is complete.",
     "handoff": {
-      "status": "local-load-generation-validated",
+      "status": "local-store-generation-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Division packet committed as fbbeded. All worker files and follow-ups are collected and integrated. Both 4c9a8661-6e45-4e43-960d-7f3a779cdcde and a7f6ecaf-b706-4be6-83c3-c83235b7452f are idle with no outstanding assignment or unread handoff. Parent handles the local-load packet directly. No app-native child sessions.",
+      "workerPackets": "All files and follow-ups from 4c9a8661-6e45-4e43-960d-7f3a779cdcde are collected through turn 8, frozen and integrated, including CodeGen.MultiRegisterStores.cs, CodeGen.StoreFromSource.cs and CodeGenMultiRegisterStoreTests.cs. Root Debug/Release validation passes. Both it and a7f6ecaf-b706-4be6-83c3-c83235b7452f are idle with no outstanding assignment or unread handoff. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "localStores": {
+        "debugPassed": 2000,
+        "releasePassed": 1906,
+        "skipped": 0,
+        "selection": "localLoads.selection plus CodeGenLocalStoreTests and CodeGenMultiRegisterStoreTests.",
+        "debugTests": "artifacts\\local-store-integrated-debug.trx",
+        "releaseTests": "artifacts\\local-store-integrated-release.trx",
+        "coverage": "Stack/register local and field stores, contained immediate and bitcast selection, Debug IL-offset metadata including BAD_IL_OFFSET, integer/positive-floating zero rematerialization versus negative-zero copies, SIMD12 fields and locals with zero fast paths, GC transfer into tracked homes and full extended/source-class move/store selection. Multi-register intrinsic results cover ordered offsets, promoted register/stack homes, dead/write-through fields, copy/reload interleaving, spill ownership and D005 rejection. The native-unsupported Windows SIMD-return assembly case rejects before consumption. Existing indexed source-type contracts are unchanged: native Windows targetamd64.h:46-56 disables FEATURE_MULTIREG_RET, and native GetRegTypeByIndex itself rejects struct-local queries requiring a Compiler.",
+        "remaining": "Reuses funcletCreation.nativeHost; no production reachability change or new runtime parity claim. Managed machine-code size remains zero. Indirect reads, indexed addresses, remaining node/block generation, final encoding and runtime metadata publication remain. B216 records an unrelated preexisting non-AMD64 register-copy guard defect; no other-target compilation claim."
+      },
       "localLoads": {
         "debugPassed": 1942,
         "releasePassed": 1850,
@@ -3511,6 +3521,22 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "local-store-and-bitcast-generation",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:5004-5171", "src\\coreclr\\jit\\codegen.h:1128-1139", "src\\coreclr\\jit\\codegencommon.cpp:8612-8650", "src\\coreclr\\jit\\simdcodegenxarch.cpp:170-200,229-248", "src\\coreclr\\jit\\emitxarch.cpp:6463-6480", "src\\coreclr\\jit\\instr.cpp:787-808,890-899,1903-2033"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.LocalStores.cs", "sources\\Core\\jit\\codegencommon\\CodeGen.BitCast.cs", "sources\\Core\\jit\\emitxarch\\Emitter.LocalStores.cs", "sources\\Core\\jit\\instr\\CodeGen.ExtendedMoves.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 local variable/field stores, genUpdateLifeStore, genBitCast/genCodeForBitCast, SIMD12 stores, emitInsStoreLcl and extending-move selection/recording. Store-local recording inlines the native inst_set_SV_var Debug metadata update for its asserted local-variable input. SIMD12 retains the zero-source shortcut, unlike the existing general emitter spill-store helper. D005 guards precede consumption and reused-zero mutation; production emission remains skipped."
+    },
+    {
+      "area": "multi-register-local-stores",
+      "native": ["src\\coreclr\\jit\\codegencommon.cpp:8049-8231", "src\\coreclr\\jit\\codegenxarch.cpp:2279-2372", "src\\coreclr\\jit\\instr.cpp:2615-2701"],
+      "csharp": ["sources\\Core\\jit\\codegencommon\\CodeGen.MultiRegisterStores.cs", "sources\\Core\\jit\\instr\\CodeGen.StoreFromSource.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete Windows-AMD64 genMultiRegStoreToLocal and AMD64 ins_StoreFromSrc with indexed consumption/definition, narrow field and write-through stores, register/stack home updates and native lifetime ordering. The Windows genMultiRegStoreToSIMDLocal arm is unsupported by native and rejects before mutation; System-V and other targets remain explicit NYIs. D005 rejection is pre-consumption. Production emission remains skipped."
+    },
     {
       "area": "local-read-and-address-generation",
       "native": ["src\\coreclr\\jit\\codegenxarch.cpp:4908-4995", "src\\coreclr\\jit\\simdcodegenxarch.cpp:213-218,259-269", "src\\coreclr\\jit\\gentree.h:2266-2270", "src\\coreclr\\jit\\emitxarch.cpp:9842-9861"],
