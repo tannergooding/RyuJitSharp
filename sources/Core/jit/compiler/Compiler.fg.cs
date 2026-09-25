@@ -3775,7 +3775,7 @@ public partial class Compiler
         // Build vector of blocks in order.
         fgBBOrder ??= [];
 
-        fgBBOrder.Capacity = fgBBcount;
+        _ = fgBBOrder.EnsureCapacity(fgBBcount);
         fgBBOrder.Clear();
 
         var ibcColWidth = 0;
@@ -15460,8 +15460,12 @@ public partial class Compiler
         return count == 0 ? PhaseStatus.MODIFIED_NOTHING : PhaseStatus.MODIFIED_EVERYTHING;
     }
 
-    // TODO: Port phase - fgUpdateFlowGraphPhase
-    public PhaseStatus fgUpdateFlowGraphPhase() => PhaseStatus.MODIFIED_NOTHING;
+    public PhaseStatus fgUpdateFlowGraphPhase()
+    {
+        var madeChanges = fgUpdateFlowGraph(doTailDuplication: false, isPhase: true);
+
+        return madeChanges ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
+    }
 
     // TODO: Port phase - fgValueNumber
     public PhaseStatus fgValueNumber() => PhaseStatus.MODIFIED_NOTHING;

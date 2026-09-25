@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete remaining flowgraph cleanup helpers: return-comparison normalization, conditional-tail duplication and forward-substitution folding with their required local predicates and block creation. Parent integration only; no full phase activation yet.",
+      "scope": "Integrate frozen Windows-AMD64 JMP argument placement and its GC-interruptibility/shadow-space dependencies, followed by the separately frozen local-heap/probing packet. Full fgUpdateFlowGraph and diagnostics are validated.",
       "doneWhen": [
-        "Port complete fgDedupReturnComparison, fgOptimizeUncondBranchToSimpleCond, fgFoldSimpleCondByForwardSub and required predicates/block creation.",
-        "Preserve EH/profile and statement ordering, whole-node replacement identity, and mode-specific threading after constant folds.",
-        "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
+        "Integrate complete genJmpPlaceArgs/genJmpPlaceVarArgs, register-home helpers, emitDisableGC/emitEnableGC and shadow-space mapping.",
+        "Validate the JMP packet and commit before integrating the complete genLclHeap/immediate-only emitter/probing packet.",
+        "Validate each integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Validate FlowGraphCleanupTests, SwitchOptimizationTests, EmptyBlockOptimizationTests, FlowGraphCompactionTests and FlowGraphBranchThreadingTests in Debug/Release before committing.",
+        "Validate CodeGenJmpArgumentTests, EmitterGCInterruptibilityTests and AbiShadowSpaceTests with existing calls/arguments/labels; then CodeGenLocalHeapTests and EmitterImmediateOnlyTests with their frame/register dependencies.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,15 +32,13 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "General call orchestration and remaining flowgraph helpers are validated (callOrchestration/flowgraphCleanup). Port the complete fgUpdateFlowGraph driver at pinned fgopt.cpp:4373-4902, reusing committed compaction, empty/switch cleanup, return normalization and tail-duplication helpers. Inspect its current stub and callsites before activation; preserve all native optional-mode predicates rather than substituting a reduced pass. Validate the integrated driver and any newly reachable paths in Debug/Release, then determine whether the production native-host frontier changed. All worker packets are integrated; production genGenerateCode remains explicitly skipped.",
+    "nextAction": "Integrate the frozen artifacts\\jmp-generation-packet from worker4c9a8661 (collected through turn26). Make AbiPassingInformation partial, copy the complete packet, validate Debug/Release and commit. Then integrate artifacts\\local-heap-generation-packet from worker87f10c61 (through turn8); make NodeInternalRegisters partial, remove the obsolete Count comment, validate and commit. All handoffs collected; workers idle. Full graph update is validated at flowgraphUpdate; optimized early phases complete19/19 before preexisting B223 in global morph. Production genGenerateCode remains skipped.",
     "handoff": {
-      "status": "call-and-flowgraph-helpers-validated-full-flowgraph-driver-next",
+      "status": "flowgraph-driver-validated-jmp-and-local-heap-packets-frozen",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn 24; stack arguments committed b46e045. b6e1f160-b3d7-4126-bf91-39bc8de2e495 collected through turn 4; empty-block packet committed 5aa4742. 87f10c61-b152-4bdc-a27e-1ecfad4f6342 collected through turn 6; scope reporting committed 00fe311. a7f6ecaf-b706-4be6-83c3-c83235b7452f collected through turn 29; switch optimization committed fa5e508 and remaining cleanup packet integrated and validated. All workers idle and all handoffs integrated. General calls committed 0019e58. No app-native child sessions.",
+      "workerPackets": "4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn26; frozen JMP argument/GC-interruptibility/shadow-space packet. 87f10c61-b152-4bdc-a27e-1ecfad4f6342 through turn8; frozen local-heap/immediate-only emitter/probing packet. b6e1f160-b3d7-4126-bf91-39bc8de2e495 through turn6; corrected graph diagnostics integrated and validated. a7f6ecaf-b706-4be6-83c3-c83235b7452f through turn29; cleanup integrated2f55f04. All idle; integrate returned packets before assigning new lanes. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
-      "remainingOptimizedFlowGraph": [
-        "fgUpdateFlowGraph"
-      ],
+      "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
       "nativeFlowGraphSource": "src/coreclr/jit/fgopt.cpp:4373-4902",
       "executionBoundary": "The fresh funclet-managed-minopts capture completes allocation and explicitly skips emission for twenty methods. Funclet phase bodies and resulting graph dumps are exact for all twenty; full sections including post-phase checks retain B135 differences for SynchronizedReturn and GenericCatch. Allocation phase bodies, REFPOS and POST tuples are exact for nineteen methods, with only FoldHardware differing. Disabled alignment bodies remain exact for twenty. Managed code size is zero.",
@@ -54,6 +52,30 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "flowgraphUpdate": {
+        "debugPassed": 318,
+        "releasePassed": 278,
+        "skipped": 0,
+        "selection": "FlowGraphUpdateTests, FlowGraphUpdateChecksTests, FlowGraphCleanupTests, SwitchOptimizationTests, EmptyBlockOptimizationTests, FlowGraphCompactionTests and FlowGraphBranchThreadingTests",
+        "debugTests": "artifacts\\flowgraph-update-debug.trx",
+        "releaseTests": "artifacts\\flowgraph-update-release.trx",
+        "regressionBefore": "artifacts\\flowgraph-dump-before.trx: one executed failure reproduces B222 after graph compaction.",
+        "coverage": "Complete fixed-point driver and phase status; statement/LIR reversal, join-free movement, EH endpoint repair, likelihoods, protected/unreachable/self-loop removal, optional return normalization and conditional-cycle tail-duplication termination, OSR profile invalidation and Debug postconditions. Native non-shrinking diagnostic reservation restored.",
+        "nativeHost": {
+          "publishLog": "artifacts\\flowgraph-update-fixed-publish.log",
+          "nativeDirectory": "artifacts\\flowgraph-update-native-optimized",
+          "managedDirectory": "artifacts\\flowgraph-update-managed-fixed-optimized",
+          "baselineDirectory": "artifacts\\flowgraph-update-baseline-optimized",
+          "source": "2f55f04 plus artifacts\\flowgraph-update-fixed-source.patch SHA256 4BE55D59214BC887BA72D6A0817514974C9F6802ED7049DAB512284EDCFDC79C",
+          "reproduction": "Publish Debug win-x64 NativeLib=Shared using README's environmental-tools command, with Installer PATH set before vcvars64. Run Invoke-PortingCorpus.ps1 -DisableObjectStackAllocation against the pinned Core_Root and existing Release corpus, then artifacts\\Compare-FlowGraphUpdate.ps1. Run the existing funclet-jit baseline with the same settings to reproduce the independent later assertion.",
+          "completedEarlyPhases": 19,
+          "phaseBodiesAndStatusExact": 18,
+          "postPhaseGraphTextExact": 17,
+          "exitCode": -1073740286,
+          "timedOut": false,
+          "remaining": "All19 early phases complete. FoldHardware has existing importer/graph differences; Main retains B142 string quotes. Graph text comparison includes empty output for unchanged phases. The corpus later fails in ImplicitByRefArgument global morph at B223, reproduced with the old funclet binary; no successful full optimized run or generated-code parity is claimed. Minopts skips this phase and retains funcletCreation.nativeHost."
+        }
+      },
       "flowgraphCleanup": {
         "debugPassed": 255,
         "releasePassed": 255,
@@ -3733,6 +3755,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "full-flowgraph-update",
+      "native": ["src\\coreclr\\jit\\fgopt.cpp:4291-4298,4373-4902", "src\\coreclr\\jit\\fgdiagnostic.cpp:62-145", "src\\coreclr\\jit\\jiteh.cpp:677-700"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.FlowGraphUpdate.cs", "sources\\Core\\jit\\compiler\\Compiler.FlowGraphUpdateChecks.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.cs:fgUpdateFlowGraphPhase,fgDispBasicBlocks"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete fixed-point driver, optional tail-duplication pair guard, EH-end predicates and Debug update checks; optimized phase wrapper active. B222 restores native reserve behavior in graph dumps. Independent fgVerifyHandlerTab diagnostic stub remains deferred."
+    },
     {
       "area": "remaining-flowgraph-cleanup-helpers",
       "native": ["src\\coreclr\\jit\\fgopt.cpp:1943-2004,2025-2234,2250-2428,4311-4356", "src\\coreclr\\jit\\fgbasic.cpp:5654-5668"],

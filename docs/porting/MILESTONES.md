@@ -14,6 +14,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Full flowgraph update
+
+Flowgraph update now runs the native fixed-point cleanup driver, combining
+branch reversal and threading, switch simplification, block compaction and
+unreachable-block removal. Optional tail duplication is bounded across
+conditional cycles. EH endpoints, edge likelihoods and OSR profile accounting
+follow native ordering, and the optimized phase entrypoints are active.
+
+The first native-host capture exposed and corrected a graph-dump buffer bug
+after compaction. All nineteen optimized corpus methods complete the early
+update phase; remaining differences come from existing string diagnostics and
+hardware import. A preexisting implicit-byref global-morph assertion still
+prevents the optimized corpus from completing. Minopts bypasses this phase,
+and production emission remains explicitly unavailable.
+
 ## 2026-09-25: Remaining flowgraph cleanup helpers
 
 Comparison returns can now normalize into conditional returns for shared cleanup.

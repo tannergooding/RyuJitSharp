@@ -649,7 +649,7 @@ internal static unsafe class FlowGraphCleanupTests
         return block;
     }
 
-    private static void WithCompiler(NodeThreading threading, Action<Compiler> action, bool minopts = false)
+    internal static void WithCompiler(NodeThreading threading, Action<Compiler> action, bool minopts = false)
     {
 #if DEBUG
         using var tls = new JitTls(null);
