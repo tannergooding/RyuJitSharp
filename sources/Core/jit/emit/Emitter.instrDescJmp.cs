@@ -15,6 +15,10 @@ public partial class Emitter
         public insGroup? idjIG;
         public unsafe byte* idjAddr;
 
+        // Native iiaBBlabel occupies the address union. Managed references cannot
+        // overlap that union's scalar fields, so retain the target separately.
+        public BasicBlock? idjTarget;
+
         public uint idjOffs
         {
             get

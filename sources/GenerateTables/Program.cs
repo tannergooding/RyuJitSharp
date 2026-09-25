@@ -1062,6 +1062,38 @@ public enum emitJumpKind
     EJ_COUNT,
 }
 """);
+
+        var instructionBuilder = ProcessMacroBasedFile(@"Inputs\emitjmps.h", "JMP_SMALL(", (builder, inputFile, line, prefix, parts) => {
+            if (parts.Length != 3)
+            {
+                throw new InvalidDataException($"Invalid jump mapping format: '{line}'");
+            }
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        INS_{parts[2].Trim()}, // EJ_{parts[0].Trim()}");
+        });
+
+        _ = Directory.CreateDirectory(@"Outputs\jit\emitxarch");
+        File.WriteAllText(@"Outputs\jit\emitxarch\Emitter.JumpInstructions.generated.cs", $$"""
+// Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+using System;
+
+namespace RyuJitSharp;
+
+public partial class Emitter
+{
+#if TARGET_AMD64
+    private static ReadOnlySpan<instruction> emitJumpKindInstructions => [
+        INS_nop, // EJ_NONE
+{{instructionBuilder}}
+        INS_call, // EJ_COUNT
+    ];
+#endif
+}
+""");
     }
 
     private static void GenerateInstruction()

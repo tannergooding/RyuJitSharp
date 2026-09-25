@@ -1013,7 +1013,8 @@ overloads, `emitIns_Nop`, `emitIns_R_R_I`, `emitIns_R_R_R`,
 `emitIns_R_ARX`, `emitIns_BASE_R_R_I`, `emitIns_R_A`, `emitIns_R_A_I`,
 `emitIns_R_C_I`, `emitIns_R_S_I`, `emitIns_R_R_A`, `emitIns_R_R_A_I`,
 `emitIns_R_R_C_I`, `emitIns_R_R_S_I`, `emitIns_SIMD_R_R_I`,
-`emitIns_SIMD_R_R_A` and `emitIns_SIMD_R_R_S`
+`emitIns_SIMD_R_R_A`, `emitIns_SIMD_R_R_S`, `emitIns_R_AR`,
+`emitIns_BASE_R_R_RM` and `emitIns_J`
 record complete native descriptors and sizes. Their `dispIns` path
 preserves sanity, stack-depth, logical-size and conditional statistics checks.
 In Debug, these entrypoints reject requested
@@ -1027,11 +1028,14 @@ Binary memory dispatch rejects before extracting spill ownership or allocating
 constant data, and byte-swap generation rejects before consuming its operand.
 Shift generation, shared operand classification and register/memory wrappers
 likewise reject before consumption, spill extraction or constant allocation.
+Binary arithmetic and shared throw-helper jumps reject before operand
+consumption, target lookup or jump-list mutation.
 
 Native roots are `emitxarch.cpp:5929,5945,5962,6019,7168,7798,8090,9314,9407,10574,10609`
 and `7042,8134,8506,8546,8686,8929,9626,9658,9804,10422`,
 plus `6159,6495,8574,10400,10640`,
-`6921,7012,9465,10439,8244,8264,8299,8344,8382,8606,8637,8709,9571,9598,9708`
+`6921,7012,9465,10439,8244,8264,8299,8344,8382,8606,8637,8709,9571,9598,9708`,
+`9309,10470,10703`
 and `emit.cpp:1611`;
 the managed specialization is in
 `emitxarch/Emitter.StackStores.cs`, `Emitter.StackLoads.cs`,
@@ -1041,14 +1045,33 @@ the managed specialization is in
 `Emitter.UnaryInstructions.cs`, `Emitter.BinaryInstructions.cs`,
 `Emitter.MemoryOperands.cs`, `Emitter.StackOperands.cs`,
 `Emitter.ShiftInstructions.cs`, `Emitter.MemoryImmediateInstructions.cs` and
-`Emitter.SimdMemoryInstructions.cs`.
+`Emitter.SimdMemoryInstructions.cs`, `Emitter.BinaryDestinations.cs` and
+`Emitter.JumpInstructions.cs`.
 The caller guards are in `emit/Emitter.SimdConstants.cs` and
 `codegenxarch/CodeGen.Constants.cs`, `CodeGen.Unary.cs` and
 `CodeGen.ByteSwap.cs`, `CodeGen.Shifts.cs` and
-`instr/CodeGen.MemoryOperands.cs`. The pre-mutation rejection is
+`instr/CodeGen.MemoryOperands.cs`, `codegenxarch/CodeGen.Binary.cs` and
+`codegencommon/CodeGen.ArithmeticSupport.cs`. The pre-mutation rejection is
 covered for every recording entrypoint. Retain the mixed-mode
 native bodies until full disassembly is ported. This does not activate production
 emission or waive future `jitdump`/`jitdisasm` parity.
+
+### D006: Shared throw-helper blocks before inline helper calls
+
+**Status:** temporary specialization along the existing native
+`fgUseThrowHelperBlocks()` predicate, not an accepted output difference.
+
+`genJumpToSharedThrowHlpBlk` implements the complete Windows-AMD64 shared-block
+arm of native `genJumpToThrowHlpBlk` (`codegencommon.cpp`), including explicit
+targets, exception-target lookup and Debug consistency checks. `genCheckOverflow`
+uses this explicit specialization. Binary arithmetic rejects checked operations
+before operand consumption when the native predicate is false; unchecked
+arithmetic does not require shared throw blocks.
+
+The false arm emits an inline helper call and remains unported. It fails with
+`CORJIT_SKIPPED`, rather than omitting the throw or recording a partial arithmetic
+sequence. Retain the mixed-mode native body until inline call generation and
+its branch/label closure are complete. Production emission is still skipped.
 
 ## Implementation notes and parity findings
 

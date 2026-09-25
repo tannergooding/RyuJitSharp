@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete AMD64 scalar shift/rotate and read-modify-write shift generation, including native immediate shortcuts, BMI2, flag-setting and RCX constraints. Close operand descriptors and the complete shared memory/immediate recording dependencies instead of specializing to register-only shifts. Keep production emission skipped.",
+      "scope": "Complete AMD64 binary arithmetic and branch recording, including scalar floating operations, APX NDD, GC transitions and overflow checks using the existing shared throw-helper-block mode. Explicitly reject inline helper-call mode before node mutation until full call generation is ported. Keep production emission skipped.",
       "doneWhen": [
-        "Port complete genCodeForShift, genCodeForShiftRMW, genMapShiftInsToShiftByConstantIns, OperandDesc/genOperandDesc and inst_RV_TT_IV/inst_RV_RV_TT with embedded-broadcast and encoding-selection helpers.",
-        "Port both emitInsRMW overloads, emitIns_BASE_R_R_I, emitIns_R_ARX and required register/memory/immediate plus SIMD recording wrappers under D005.",
+        "Port complete genCodeForBinary, genIsSameLocalVar, genCheckOverflow and the full fgUseThrowHelperBlocks == true arm of genJumpToThrowHlpBlk with explicit pre-mutation rejection of the unported inline-helper mode.",
+        "Port inst_JMP, emitIns_J and required jump descriptor/region/short-jump helpers, emitIns_R_AR and emitIns_BASE_R_R_RM under D005.",
         "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Reuse binaryMemoryAndByteSwap.selection, adding shift/rotate, operand descriptor and required recording cases.",
+        "Reuse shiftGeneration.selection, adding arithmetic, overflow-target, jump-recording and unsupported-mode mutation checks.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Shift/rotate and shared operand recording are complete and validated (shiftGeneration), including all retained worker files. Next close complete AMD64 genCodeForBinary (codegenxarch.cpp:946) and required overflow/throw-helper branch generation, starting with genCheckOverflow (codegencommon.cpp:2079). Read whole native bodies and establish missing branch-recording dependencies; reuse emitInsBinary, operand wrappers, consume/produce, existing labels and prepared throw blocks. Do not omit overflow, floating or APX paths or activate production emission before its complete closure.",
+    "nextAction": "Binary arithmetic, shared overflow branches and jump recording are complete and validated (binaryArithmetic). Continue with complete AMD64 integer multiplication: genCodeForMul at codegenxarch.cpp:1187 and genCodeForMulHi at 687. Read the full bodies and required emitter wrappers, preserve immediate/LEA choices, implicit register-pair constraints, signed/unsigned overflow, APX and high-half results. Reuse existing operand/memory recording and genCheckOverflow; apply D006 before operand mutation on any path requiring unported inline throw calls. Production emission must remain skipped until the full node/block/encoding/metadata closure is ready.",
     "handoff": {
-      "status": "shift-generation-validated",
+      "status": "binary-arithmetic-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All files and follow-ups from a7f6ecaf-b706-4be6-83c3-c83235b7452f and 4c9a8661-6e45-4e43-960d-7f3a779cdcde are collected, frozen and integrated. Both workers are idle with no outstanding assignment or unread handoff. Root Debug/Release validation passes. No app-native child sessions.",
+      "workerPackets": "All files and every follow-up from 4c9a8661-6e45-4e43-960d-7f3a779cdcde are collected, frozen and integrated, including generator changes and compile fixes. Both it and a7f6ecaf-b706-4be6-83c3-c83235b7452f are idle with no outstanding assignment or unread handoff. Root Debug/Release validation passes. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -60,6 +60,24 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "binaryArithmetic": {
+        "debugPassed": 1872,
+        "releasePassed": 1784,
+        "skipped": 0,
+        "selection": "shiftGeneration.selection plus CodeGenBinaryTests and EmitterJumpInstructionTests.",
+        "debugTests": "artifacts\\arithmetic-integrated-debug.trx",
+        "releaseTests": "artifacts\\arithmetic-integrated-release.trx",
+        "coverage": "Integer and scalar floating arithmetic, aliased/distinct destinations, LEA versus flag-setting sequences, INC/DEC, contained first operands and signed-zero data, explicit APX configuration, VEX source swaps, pointer-root transitions and signed/unsigned overflow before result spilling. Shared throw targets preserve explicit/lookup identity; D006 rejects inline throws before consumption and leaves nodes reusable while unchecked arithmetic remains supported. Jump cases cover generated opcode mapping including EJ_COUNT -> INS_call, allocation/list ordering, offsets, backward short-distance thresholds, cold regions, relocation, call/finally/removable metadata and D005 rejection.",
+        "generator": {
+          "input": "sources\\GenerateTables\\Inputs\\emitjmps.h",
+          "change": "GenerateEmitJumpKind also emits the jump-kind instruction map; native table input and all 46 preexisting generated files remain unchanged.",
+          "mappings": 19,
+          "buildLog": "artifacts\\jump-table-generation\\build.log",
+          "runLog": "artifacts\\jump-table-generation\\run.log",
+          "reproduction": "Build GenerateTables, copy its Inputs into an isolated workspace, run the built generator from that workspace and compare Outputs\\jit\\emitxarch\\Emitter.JumpInstructions.generated.cs with the maintained mapping. The generator deletes its working directory's Outputs subtree."
+        },
+        "remaining": "Reuses funcletCreation.nativeHost; no production reachability change or new runtime parity claim. Managed machine-code size remains zero. Inline helper calls, remaining node/block generation, final encoding and runtime metadata publication remain."
+      },
       "shiftGeneration": {
         "debugPassed": 1760,
         "releasePassed": 1680,
@@ -3463,6 +3481,22 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "binary-arithmetic-and-shared-overflow",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:946-1139,1752", "src\\coreclr\\jit\\codegencommon.cpp:863,2000-2070,2079"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.Binary.cs", "sources\\Core\\jit\\codegencommon\\CodeGen.ArithmeticSupport.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 genCodeForBinary, genIsSameLocalVar, inst_JMP and genCheckOverflow using explicit genJumpToSharedThrowHlpBlk. D006 preserves the full native shared-block arm and rejects inline-helper mode before arithmetic mutation; mixed-mode native body remains. Scalar floating, APX, flags, GC and spill ordering are retained."
+    },
+    {
+      "area": "jump-recording-and-binary-destinations",
+      "native": ["src\\coreclr\\jit\\emitxarch.cpp:5017-5038,9309,10470,10688,10703", "src\\coreclr\\jit\\emit.cpp:1634", "src\\coreclr\\jit\\compiler.hpp:3714", "src\\coreclr\\jit\\flowgraph.cpp:648", "src\\coreclr\\jit\\emitjmps.h"],
+      "csharp": ["sources\\Core\\jit\\emitxarch\\Emitter.JumpInstructions.cs", "sources\\Core\\jit\\emitxarch\\Emitter.JumpInstructions.generated.cs", "sources\\Core\\jit\\emitxarch\\Emitter.BinaryDestinations.cs", "sources\\Core\\jit\\emit\\Emitter.instrDescJmp.cs", "sources\\Core\\jit\\flowgraph\\Compiler.Regions.cs", "sources\\GenerateTables\\Program.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 jump recording, short-size selection, hot/cold region helpers, generated jump-kind opcode mapping, emitIns_R_AR and emitIns_BASE_R_R_RM. Managed idjTarget stores the native iiaBBlabel reference outside the unmanaged union under D002, retaining logical descriptor size 48. D005 guards precede recording. Jump binding, removal and final encoding remain separate."
+    },
     {
       "area": "shift-and-rotate-generation",
       "native": ["src\\coreclr\\jit\\codegenxarch.cpp:4614-4733,4809-4899"],

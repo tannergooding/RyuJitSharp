@@ -14,7 +14,7 @@ public partial class Emitter
 
     private static bool isMaskReg(regNumber reg) => reg >= REG_K0 && reg <= REG_K7;
 
-    private static bool IsExtendedReg(regNumber reg)
+    internal static bool IsExtendedReg(regNumber reg)
     {
 #if TARGET_AMD64
         return (reg >= REG_R8 && reg <= REG_R31) || (reg >= REG_XMM8 && reg <= REG_XMM31);

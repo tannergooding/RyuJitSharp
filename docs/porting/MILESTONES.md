@@ -14,6 +14,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Binary arithmetic and overflow branches
+
+Binary arithmetic generation now preserves native operand selection, scalar
+floating-point register order, LEA and increment/decrement shortcuts, APX
+destinations and GC-root transitions. Checked arithmetic branches to the
+prepared shared throw-helper block before producing or spilling its result.
+Inline throw-helper calls remain explicitly unsupported.
+
+Jump recording retains target identity, hot/cold-region restrictions, backward
+short-jump estimates, relocation and removable-jump metadata. Jump opcodes are
+generated from the existing native table input. Final instruction encoding,
+remaining node and block generators, and runtime metadata publication are still
+required; production emission remains explicitly skipped.
+
 ## 2026-09-25: Scalar shifts, rotates and memory operands
 
 Shift and rotate generation now preserves native ADD/LEA shortcuts, flag-setting
