@@ -14,6 +14,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Complete prolog and epilog materialization
+
+Windows-x64 root and funclet prologs and epilogs now replace their reserved
+instruction groups. Frame setup, callee-save restoration, argument homes,
+GC boundaries and parameter scopes retain native ordering, including localloc,
+EnC, varargs and tailcalls.
+
+OSR support reconstructs inherited frames and reloads live locals; profiling
+entry preserves incoming arguments around the helper callback. Final group
+offsets are recomputed after materialization. Machine-code encoding, executable
+allocation and remaining runtime metadata publication are still required;
+production emission remains explicitly unavailable.
+
 ## 2026-09-25: Prolog frame setup, unwind recording and argument homes
 
 Windows-x64 prolog support now allocates and probes stack frames, establishes

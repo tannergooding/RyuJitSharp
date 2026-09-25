@@ -121,7 +121,7 @@ internal static unsafe class CodeGenFrameFinalizationTests
         });
     }
 
-    private sealed class EntryAllocator(Action<BasicBlock> record) : IRegAlloc
+    internal sealed class EntryAllocator(Action<BasicBlock> record) : IRegAlloc
     {
         public PhaseStatus DoRegisterAllocation() => throw new NotSupportedException();
 

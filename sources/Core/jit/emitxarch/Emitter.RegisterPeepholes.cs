@@ -47,7 +47,7 @@ public partial class Emitter
             // Active groups use the recording buffer; saved groups use their snapshot.
             var previousIndex = id.StorageIndex - 1;
             instrDesc previous;
-            if (ig == emitCurIG)
+            if ((ig == emitCurIG) && emitCurIGnonEmpty())
             {
                 assert(emitCurIGfreeBase is not null);
                 previous = emitCurIGfreeBase[previousIndex];

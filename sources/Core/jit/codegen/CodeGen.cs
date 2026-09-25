@@ -204,13 +204,15 @@ public sealed partial class CodeGen : ICodeGen
     /// <summary>return the offset from SP to the frame pointer.</summary>
     /// <remarks>
     ///   <para>This number is going to be positive, since SP must be at the lowest address.</para>
-    ///   <para>There must be a frame pointer to call this property!</para>
+    ///   <para>Except on AMD64, this requires a frame pointer.</para>
     /// </remarks>
     public int genSPtoFPdelta
     {
         get
         {
+#if !TARGET_AMD64
             assert(Debugger.IsAttached || IsFramePointerUsed);
+#endif
             int delta;
 
 #if TARGET_X86 || TARGET_ARM
