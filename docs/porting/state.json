@@ -12,16 +12,15 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Activate complete Windows-x64 Lowering.DoPhase orchestration for backendRequiresLocalVarLifetimes == false, rejecting lifetime-enabled cleanup before mutation. Move the unfinished register-allocation frontier to explicit CORJIT_SKIPPED, then capture native-host minopts lowering against the pinned oracle.",
+      "scope": "Port complete Windows-x64 call and memory LSRA reference builders required by the native BuildNode dispatcher: calls, register/stack arguments, block stores, indirections, comparisons and local-heap allocation. Keep allocation inactive until the dispatcher, interval construction and resolution are complete.",
       "doneWhen": [
-        "Preserve P/Invoke prolog insertion, enregistration marking, block traversal, reference recounting, DFS reachability removal and invalidation in the supported native mode.",
-        "Reject unsupported lifetime-enabled lowering before mutation and unfinished allocation with the established explicit skip result.",
-        "Publish a local NativeAOT binary, capture native and managed minopts phase output, and resolve lowering-specific failures without claiming fallback as managed execution.",
-        "Commit the validated activation and evidence, then continue to the next required scalar minopts backend dependency."
+        "Integrate complete native call, argument, block-store, indirection, comparison and local-heap reference-building functions for Windows x64.",
+        "Preserve ABI register constraints, async/Swift continuation lifetimes, APX/EVEX restrictions, internal temporaries and kill/definition ordering.",
+        "Validate integrated builders in Debug and Release and commit the dependency-coherent packet with its exact remaining activation cursor."
       ],
       "validation": [
-        "Run focused lowering orchestration, traversal, flowgraph and allocation-frontier regression coverage in Debug and Release, expanding for observed failures.",
-        "Publish Debug win-x64 NativeAOT and run Invoke-PortingCorpus.ps1 with MinOpts on the prepared native host; compare actual lowering phase output and retain exact method counts/results."
+        "Run new focused call/memory reference tests and existing LinearScan reference, definition and register-selection coverage in Debug and Release.",
+        "Reuse the lowering capture at 7372483; inactive reference builders do not change the native-host frontier and do not justify recapture."
       ],
       "deferred": [
         "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
@@ -33,9 +32,9 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Lowering activation is validated: 20/20 minopts methods finish lowering and stack preparation, 17/20 exact lowering phase and IR matches, 20 explicit allocation skips, managed code size zero. Commit this activation, then resume the required scalar minopts LSRA dependency closure from LinearScan.DoRegisterAllocation and its interval-building/allocation/resolution callsites at the pinned oracle. Do not activate a reduced allocator. Keep lifetime-enabled lowering/full fgUpdateFlowGraph deferred and retain mixed-mode native bodies. No future push or PR is authorized.",
+    "nextAction": "Scalar LSRA reference builders and encoding restrictions are validated. Next port BuildCall/BuildPutArgReg and async/Swift busy-register handling, BuildBlockStore/BuildPutArgStk, and BuildIndir/BuildCmp/BuildCmpOperands/BuildLclHeap. Native sources are lsraxarch.cpp:1207-1846,3041-3152 and lsrabuild.cpp:4473-4770. Reuse existing operand, call-def and kill primitives; complete missing EE page-size access for local-heap requirements. Validate and commit this packet before the remaining local-store/return/hardware builders and BuildNode/interval-building/resolution closure. Allocation remains explicitly skipped; no reduced allocator or fresh unchanged-frontier capture. No push or PR is authorized.",
     "handoff": {
-      "status": "lowering-activation-validated",
+      "status": "scalar-reference-builders-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
       "workerPackets": "All returned, integrated and frozen; no pending assignments or child-session dependencies.",
       "preserve": "Activate only the complete no-local-lifetimes lowering mode; keep allocation explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
@@ -61,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "scalarReferenceBuilders": {
+        "debugPassed": 214,
+        "releasePassed": 190,
+        "skipped": 0,
+        "selection": ["LinearScan*"],
+        "debugTests": "artifacts\\lsra-scalar-debug.trx",
+        "releaseTests": "artifacts\\lsra-scalar-release.trx",
+        "newFocusedCases": 66,
+        "scope": "Complete Windows-AMD64 scalar arithmetic, cast, scalar intrinsic and select reference builders, simple-node references, APX/EVEX candidate restrictions and AVX-usage flags. Covers contained RMW shifts, fixed RCX/RAX/RDX uses and kills, unsigned casts, internal floating temporaries and shared-interval select lifetimes. Allocation remains inactive; no new runtime parity claim."
+      },
       "loweringActivation": {
         "debugPassed": 984,
         "releasePassed": 966,
@@ -3096,6 +3105,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "lsra-scalar-reference-builders",
+      "native": ["src\\coreclr\\jit\\lsraxarch.cpp:932-1197", "src\\coreclr\\jit\\lsraxarch.cpp:1858-2014", "src\\coreclr\\jit\\lsraxarch.cpp:2979-3030", "src\\coreclr\\jit\\lsraxarch.cpp:3163-3430", "src\\coreclr\\jit\\lsrabuild.cpp:3913-3934", "src\\coreclr\\jit\\lsrabuild.cpp:4215-4232", "src\\coreclr\\jit\\lsra.cpp:262-269", "src\\coreclr\\jit\\lsra.cpp:475-487"],
+      "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.ScalarArithmetic.cs", "sources\\Core\\jit\\lsra\\LinearScan.ScalarConversions.cs", "sources\\Core\\jit\\lsra\\LinearScan.EncodingCandidates.cs"],
+      "reconciledCommit": null,
+      "status": "Complete Windows-AMD64 shift/rotate, multiply, division/remainder, cast, scalar intrinsic and select reference builders with simple-node, APX/EVEX candidate and AVX-usage support. Native reference ordering, fixed registers, preferences and delay-free lifetimes are preserved. BuildNode, interval orchestration and resolution remain incomplete; allocation is not activated."
+    },
     {
       "area": "lowering-phase-activation",
       "native": ["src\\coreclr\\jit\\lower.cpp:8949-9055", "src\\coreclr\\jit\\fgbasic.cpp:5077-5232", "src\\coreclr\\jit\\utils.cpp:132-150"],

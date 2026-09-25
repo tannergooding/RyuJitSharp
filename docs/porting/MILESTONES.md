@@ -13,6 +13,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-24: Scalar register-allocation constraints
+
+Register-reference construction now covers shifts and rotates, multiplication,
+division and remainder, casts, scalar math intrinsics and conditional selection.
+These builders preserve native fixed-register requirements, kill ordering,
+operand preferences and delayed register release, including the APX/EVEX
+encoding restrictions and floating-point temporary rules.
+
+The allocation phase remains inactive. The remaining node builders, interval
+construction and register resolution must be complete before it can replace
+the explicit native-fallback boundary.
+
 ## 2026-09-24: Minopts lowering activation
 
 The compiler now runs lowering through P/Invoke method preparation, local
