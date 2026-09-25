@@ -14,6 +14,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Emitter locations and variable live ranges
+
+Captured code locations now retain group identity and native instruction/offset
+cookies. Final offset lookup accounts for changed instruction sizes rather than
+using stale estimates. Variable live ranges preserve native coalescing,
+zero-length ranges, IL-local filtering, prolog/body separation and diagnostics.
+Windows-x64 variable homes use the existing EE location layout.
+
+These are prerequisites for tree-lifetime updates and eventual debug-scope
+reporting. Spill stores, per-node generation and scope-emission orchestration
+remain unported; production emission is still explicitly skipped.
+
 ## 2026-09-25: Instruction descriptor storage
 
 Instruction groups can now save their descriptor data and entry GC state for

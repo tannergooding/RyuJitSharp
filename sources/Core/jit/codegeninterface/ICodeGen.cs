@@ -96,6 +96,18 @@ public interface ICodeGen
 
     unsafe void genGenerateCode(out void* codePtr, out int nativeSizeOfCode);
 
+    void initializeVariableLiveKeeper();
+
+    CodeGen.VariableLiveKeeper getVariableLiveKeeper();
+
+    CodeGen.siVarLoc getSiVarLoc(in LclVarDsc varDsc, int offset, int stackLevel);
+
+    uint getCurrentStackLevel();
+
+#if DEBUG
+    void dumpSiVarLoc(in CodeGen.siVarLoc varLoc);
+#endif
+
     void genUpdateVarReg(ref LclVarDsc local, GenTree tree);
 
     void genUpdateVarReg(ref LclVarDsc local, GenTree tree, byte registerIndex);

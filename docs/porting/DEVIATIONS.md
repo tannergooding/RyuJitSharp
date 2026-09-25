@@ -820,6 +820,14 @@ default `CLEAR_VN` argument, and rewrites the owning LIR use before lowering the
 new indirection. `BashToConst` also calls `SetOper`; retyped floating constants
 must clear VNs even when their metadata-preserving constructor copies them.
 
+Emitter locations pair a typed group reference with the unchanged native
+instruction/estimated-offset cookie. Final offset lookup walks saved descriptor
+objects when instruction sizes change; descriptor-storage sizes are not machine
+code sizes. Variable live ranges use managed ordered storage with native
+coalescing and separate prolog/body collections. Variable homes retain the
+existing `ICorDebugInfo.VarLoc` EE layout. These representation changes do not
+authorize different debug ranges or generated offsets.
+
 ### D003: Deferred non-Windows-x64-only paths
 
 **Status:** accepted scoped deferral; not a successful execution/parity result.

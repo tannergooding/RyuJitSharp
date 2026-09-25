@@ -12,15 +12,15 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port complete Windows-AMD64 emitBegFN and its required emitLocation initialization, reusing committed descriptor storage/allocation and group construction. Preserve initial prolog/body groups, location/counter/GC resets and stack-depth state.",
+      "scope": "Close the emitter-location and variable-live-range dependencies of TreeLifeUpdater's code-generation mode. Preserve native location cookies, range coalescing, variable homes and diagnostics; keep instruction emission and local spill stores unactivated.",
       "doneWhen": [
-        "Port complete emitBegFN and the location-state initialization it calls; do not introduce unrelated data-section behavior.",
-        "Preserve native prolog/body group identities, flags, links, weights and reset state.",
-        "Validate startup and subsequent actual descriptor allocation in Debug and Release with the current emitter selection.",
-        "Commit the validated startup packet while retaining the explicit production emission skip."
+        "Implement required native emitLocation capture/comparison/offset support against managed descriptor groups without estimating away final instruction sizes.",
+        "Port VariableLiveKeeper and its required Windows-AMD64 variable-location/range support, with explicit unsupported modes rather than empty reporting.",
+        "Validate actual locations and variable-range transitions with the current emitter selection in Debug and Release.",
+        "Commit the coherent support boundary before integrating TreeLifeUpdater; retain the explicit production emission skip."
       ],
       "validation": [
-        "Run focused method-start and location checks with the descriptor/allocation/group-storage and prior emitter/register-life selection in Debug and Release.",
+        "Run focused emitter-location and variable-range tests with the current emitter/register-life selection in Debug and Release.",
         "Reuse the exact allocation-activation capture; republish only if reachable production behavior changes. B145 remains deferred."
       ],
       "deferred": [
@@ -33,11 +33,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Emitter startup and required location state are complete and validated (184 Debug/172 Release). Continue with TreeLifeUpdater in pinned treelifeupdater.h/.cpp: establish the complete code-generation mode and required live-range/GC transitions, reusing CodeGen.RegisterLife.cs and GCInfo.RegisterState.cs. No managed TreeLifeUpdater symbol currently exists. Keep native modes explicit and preserve owner/LIR identity. Additional descriptor families, final frame layout, per-node generation, encoding and metadata remain; genGenerateCode must stay explicitly skipped until its full required closure is ready. No push or PR.",
+    "nextAction": "Emitter locations and VariableLiveKeeper are integrated and validated (227 Debug/213 Release); all worker packets are frozen and collected. Continue the TreeLifeUpdater dependency closure at genSpillVar (codegenlinear.cpp:1034-1121): determine and port its real local-store instruction path, then the complete lifetime updater. Do not repeat the completed location/live-range investigation. Initialize the keeper in native genInitialize order when that driver is ported, not in the CodeGen constructor. Production genGenerateCode remains explicitly skipped.",
     "handoff": {
-      "status": "emitter-startup-validated",
+      "status": "variable-live-ranges-integrated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Both retained task workers are idle and frozen. Descriptor and group-diagnostic handoffs are fully integrated and validated. No outstanding worker or app-native child-session dependencies.",
+      "workerPackets": "All packets from descriptor/diagnostic workers and task worker 87f10c61-b152-4bdc-a27e-1ecfad4f6342 are frozen, collected and integrated. No outstanding worker edits or app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -61,6 +61,17 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "emitterLocationsAndLiveRanges": {
+        "debugPassed": 227,
+        "releasePassed": 213,
+        "skipped": 0,
+        "selection": ["CodeGenLabelTests", "EmitterInitializationTests", "EmitterInstructionGroupTests", "EmitterDescriptorSchemaTests", "EmitterGroupBufferTests", "EmitterGroupDiagnosticsTests", "EmitterInstructionAllocationTests", "EmitterMethodInitializationTests", "EmitterLocationTests", "VariableLiveKeeperTests", "RegisterTrackingTests", "CompilerRegallocFrameTests", "LoweringPhaseTests"],
+        "debugTests": "artifacts\\emitter-live-ranges-debug.trx",
+        "releaseTests": "artifacts\\emitter-live-ranges-release.trx",
+        "source": "Combined root builds after source freeze, including ICodeGen integration. No stale snapshot DLL was reused.",
+        "coverage": "Native cookie widths, cross-group location checks, final-size offset lookup, unsigned arithmetic and Debug text; Windows-AMD64 variable homes, adjacent range coalescing, zero-length ranges, IL-local filtering and separate prolog/body storage.",
+        "remaining": "Native initialization callsite belongs to unported genInitialize; scope emission, spill stores and tree-lifetime code generation remain. Production emission still explicitly skips; this is not an execution/parity result."
+      },
       "emitterStartup": {
         "debugPassed": 184,
         "releasePassed": 172,
@@ -3232,12 +3243,20 @@
   },
   "sourceMap": [
     {
+      "area": "emitter-locations-and-variable-live-ranges",
+      "native": ["src\\coreclr\\jit\\emit.cpp:28-107,7832-7857,9500-9552", "src\\coreclr\\jit\\emit.h:129-223,3963-3993", "src\\coreclr\\jit\\scopeinfo.cpp", "src\\coreclr\\jit\\codegeninterface.h"],
+      "csharp": ["sources\\Core\\jit\\emit\\emitLocation.cs", "sources\\Core\\jit\\emit\\Emitter.Locations.cs", "sources\\Core\\jit\\emit\\Globals.CodePositions.cs", "sources\\Core\\jit\\scopeinfo\\CodeGen.SiVarLoc.cs", "sources\\Core\\jit\\scopeinfo\\CodeGen.VariableLiveKeeper.cs", "sources\\Core\\jit\\scopeinfo\\CodeGen.VariableLiveKeeper.Ranges.cs", "sources\\Core\\jit\\scopeinfo\\CodeGen.VariableLiveKeeper.Diagnostics.cs", "sources\\Core\\jit\\codegeninterface\\ICodeGen.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete emitLocation operations, cookie encoding/decoding and final code-offset lookup; VariableLiveKeeper range operations and AMD64 variable homes/diagnostics through the boundary preceding checkICodeDebugInfo. Typed group identity replaces native group pointers; existing ICorDebugInfo.VarLoc retains EE layout. siInit, scope emission and genInitialize callsite remain unported; production emission is not activated."
+    },
+    {
       "area": "emitter-method-startup",
       "native": ["src\\coreclr\\jit\\emit.cpp:1324-1473", "src\\coreclr\\jit\\emit.h:129-223"],
       "csharp": ["sources\\Core\\jit\\emit\\Emitter.MethodInitialization.cs", "sources\\Core\\jit\\emit\\emitLocation.cs"],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Complete AMD64 emitBegFN without optional EMITTER_STATS, reusing group/descriptor primitives. Location constructor, Init, GetIG, IsOffsetZero and Valid preserve native state; capture, offset lookup, equality and other location operations remain unported. Other targets/statistics reject before mutation. This does not activate production emission."
+      "status": "Complete AMD64 emitBegFN without optional EMITTER_STATS, reusing group/descriptor primitives. Location operations are tracked in emitter-locations-and-variable-live-ranges. Other targets/statistics reject before mutation. This does not activate production emission."
     },
     {
       "area": "emitter-descriptor-allocation",
