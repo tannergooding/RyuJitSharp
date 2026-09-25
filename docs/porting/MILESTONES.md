@@ -14,6 +14,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Block-entry locations and emitter labels
+
+Code-generation support now restores live-in local locations and rehomes debug
+ranges across block boundaries, including skipped call-finally tails. Emitter
+labels preserve GC snapshots and instruction-group boundaries; inline labels
+retain the current GC state.
+
+Labels reached after a GC-capable call insert native padding when the return
+address would otherwise describe conflicting liveness. This includes loop
+alignment bookkeeping and the required zero-operand instruction recording.
+Block scopes, per-node generation and final emission remain unintegrated.
+
 ## 2026-09-25: Whole-live-set transitions
 
 Block-boundary liveness can now transfer registers and GC roots between locals,

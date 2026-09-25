@@ -462,7 +462,7 @@ public sealed partial class BasicBlock : LIR.Range
         }
     }
 
-    public unsafe void* bbEmitCookie;
+    public insGroup? bbEmitCookie;
 
 #if MEASURE_BLOCK_SIZE
     public static nint s_Size;

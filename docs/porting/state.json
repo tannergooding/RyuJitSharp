@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete whole-live-set transitions for code-generation block boundaries: compUpdateLife, compChangeLife and the codegen live-set wrapper. Preserve both native mode predicates, set ownership, death-before-birth ordering, register/GC masks and half-open variable ranges.",
+      "scope": "Complete native block-entry location restoration and emitter label state, including inline/temporary labels, cold-region cookies, GC-capable-call separation and required zero-operand instruction recording. Keep production block generation gated.",
       "doneWhen": [
-        "Port complete native whole-live-set updates, including unchanged-set and register transitions without a tree in diagnostics.",
-        "Reuse bank-aware register masks and existing variable-range APIs without activating incomplete block generation.",
-        "Validate ownership, shared-register transfer, GC state and diagnostic ordering in Debug/Release, then commit before continuing per-block dependencies."
+        "Restore live-in candidate locations using LSRA maps and preserve the previous reported block's live ranges across skipped call-finally tails.",
+        "Implement full Windows-AMD64 label/inline-label GC-state and instruction-group transitions, including call-return padding, loop-alignment predecessor repair and owned liveness sets.",
+        "Validate integrated location/label behavior and zero-operand sizes in Debug/Release; update evidence and commit before continuing block-generation dependencies."
       ],
       "validation": [
-        "Reuse codegenInitialization.selection and add focused whole-live-set transitions, alias ownership and exact diagnostics.",
+        "Reuse wholeLiveSetTransitions.selection plus existing LSRA variable-map checks; add focused call/label GC-state, range-rehoming and zero-operand recording cases at the completed packet boundary.",
         "Reuse the exact allocation-activation capture; republish only if reachable production behavior changes. B145 remains deferred."
       ],
       "deferred": [
@@ -32,9 +32,9 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Whole-live-set transitions are complete and validated (721 Debug/708 Release). Resume the block-entry dependency packet: native LinearScan::recordVarLocationsAtStartOfBB at lsra.cpp:1450, emitter::emitAddLabel at emit.cpp:2851 and CodeGen::genLogLabel at codegencommon.cpp:1223 are absent from managed code. Complete their required location-map/label/GC-state closure and relevant cold-region helpers before returning to genCodeForBlock (codegenlinear.cpp:225 onward). Do not introduce a reduced block loop: per-node emission, scope/debug mapping, funclet and final encoding dependencies remain. Keep production genGenerateCode explicitly skipped; all workers are collected/frozen.",
+    "nextAction": "Block-entry location restoration, emitter labels and zero-operand recording are complete (772 Debug/756 Release). Continue with block debug-scope lifecycle: siBeginBlock, siOpenScopesForNonTrackedVars and siEndBlock at scopeinfo.cpp:1610-1787, then required IL mapping support (genIPmappingAdd, not yet ported). Reuse existing scope cursors and VariableLiveKeeper; retain the native funclet-region and untracked-local predicates. These are dependencies of genCodeForBlock at codegenlinear.cpp:237, whose complete body still requires genEmitStartBlock, funclet prolog reservation and per-node generation. Do not activate a reduced block loop or genGenerateCode. General enregistered-local candidate construction remains unsupported; the restored-location helper now has its native candidate/current-life fields for that future producer.",
     "handoff": {
-      "status": "block-life-transitions-validated",
+      "status": "block-entry-state-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
       "workerPackets": "All prefix, opcode-comparison and constant/displacement packets are fully collected, frozen and integrated. Constant worker b6e1f160-b3d7-4126-bf91-39bc8de2e495 returned four new files without shared allocation/schema edits. No active or unread workers; no app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "blockEntryState": {
+        "debugPassed": 772,
+        "releasePassed": 756,
+        "skipped": 0,
+        "selection": "wholeLiveSetTransitions.selection plus LinearScanVariableMapTests, LinearScanBlockLocationTests, EmitterLabelTests and EmitterZeroOperandTests.",
+        "debugTests": "artifacts\\block-entry-debug.trx",
+        "releaseTests": "artifacts\\block-entry-release.trx",
+        "coverage": "Location restoration and range rehoming across ordinary/call-finally blocks, candidacy/live-in intersection, unchanged register/GC ownership, no-enregistration early return, owned label GC snapshots, inline-label state retention, cold cookies, all three GC-state changes after calls, no-GC/unlabeled/unchanged exclusions, loop-alignment predecessor repair, zero-operand/prefix/NOP sizes and pre-mutation D005 rejection.",
+        "remaining": "No production block/node generation or machine-code emission activation. Call-state tests construct recorded descriptors; they do not establish call recording, encoding or execution. General candidate construction remains unported. Existing native-host evidence is unchanged."
+      },
       "wholeLiveSetTransitions": {
         "debugPassed": 721,
         "releasePassed": 708,
@@ -3310,6 +3320,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "block-entry-locations-and-labels",
+      "native": ["src\\coreclr\\jit\\lsra.cpp:1450-1515", "src\\coreclr\\jit\\emit.cpp:2851-2950,9040-9043", "src\\coreclr\\jit\\emit.h:1774-1786,3006-3009", "src\\coreclr\\jit\\emitxarch.cpp:5945-6043", "src\\coreclr\\jit\\codegencommon.cpp:1223-1270"],
+      "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.BlockLocations.cs", "sources\\Core\\jit\\compiler\\IRegAlloc.cs", "sources\\Core\\jit\\emit\\Emitter.Labels.cs", "sources\\Core\\jit\\emitxarch\\Emitter.ZeroOperandInstructions.cs", "sources\\Core\\jit\\emitxarch\\Emitter.instrDesc.PrefixContexts.cs", "sources\\Core\\jit\\codegencommon\\CodeGen.Labels.cs", "sources\\Core\\jit\\block\\BasicBlock.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete native location restoration; regular/inline/temporary labels; cold cookie and no-GC-call metadata; required zero-operand recording under D005. Managed group references replace native label cookies (D002). Candidate/current-life fields retain native ownership; optimized candidate production is still unported. No genCodeForBlock activation."
+    },
     {
       "area": "whole-live-set-transitions",
       "native": ["src\\coreclr\\jit\\compiler.hpp:3689-3707", "src\\coreclr\\jit\\codegencommon.cpp:782-785,1000-1133"],

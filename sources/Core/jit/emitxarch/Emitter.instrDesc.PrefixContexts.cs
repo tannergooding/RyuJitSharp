@@ -12,6 +12,18 @@ public partial class Emitter
     {
         private byte _idCustomBits;
 
+        public bool idIsNoGC()
+        {
+            assert(!IsSimdInstruction(idIns()));
+            return (_idCustomBits & 4) != 0;
+        }
+
+        public void idSetIsNoGC(bool value)
+        {
+            assert(!IsSimdInstruction(idIns()));
+            _idCustomBits = (byte)((_idCustomBits & ~4) | (value ? 4 : 0));
+        }
+
         public bool idIsEvexbContextSet() => (_idCustomBits & 0x30) != 0;
 
         public uint idGetEvexbContext() => (uint)(_idCustomBits >> 4) & 3;

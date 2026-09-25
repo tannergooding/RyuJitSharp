@@ -17,6 +17,8 @@ public interface IRegAlloc
 
     bool WillEnregisterLocalVars();
 
+    void recordVarLocationsAtStartOfBB(BasicBlock block);
+
 #if TRACK_LSRA_STATS
     void dumpLsraStatsCsv(StreamWriter streamWriter);
 #endif

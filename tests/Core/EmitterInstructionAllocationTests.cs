@@ -279,7 +279,7 @@ internal static unsafe class EmitterInstructionAllocationTests
     private static extern ref byte* StressNames(ref JitConfigValues config);
 #endif
 
-    private static Emitter.instrDesc Allocate(Emitter emitter, emitAttr attr, bool small = false)
+    internal static Emitter.instrDesc Allocate(Emitter emitter, emitAttr attr, bool small = false)
     {
         var allocator = typeof(Emitter).GetMethod(small ? "emitNewInstrSmall" : "emitNewInstr",
             BindingFlags.Instance | BindingFlags.NonPublic)!;

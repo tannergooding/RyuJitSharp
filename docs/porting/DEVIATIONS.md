@@ -58,6 +58,10 @@ reversal and append order without copying CLR objects into unmanaged storage.
 Actual emitted-code patch addresses remain native pointers; they are not
 narrowed to managed descriptor offsets.
 
+Basic-block label cookies hold managed instruction-group references rather than
+native `void*` values. They identify those same groups without fabricating
+unmanaged addresses or pinning managed objects.
+
 Constant/displacement descriptor families retain native pointer-sized payloads
 and logical sizes. Managed inheritance and ref aliases provide the shared first
 constant slot used by native descriptor casts without depending on CLR object
@@ -983,16 +987,18 @@ without adding success-shaped fallbacks on the active path.
 **Status:** temporary implementation boundary along the existing native Debug
 `opts.dspCode` predicate, not an accepted diagnostic difference.
 
-Windows-AMD64 `emitIns_S_R` and `emitIns_S_R_I` record complete native descriptors
-and sizes. Their `dispIns` path preserves sanity, stack-depth, logical-size and
-conditional statistics checks. In Debug, both entrypoints reject requested
+Windows-AMD64 `emitIns_S_R`, `emitIns_S_R_I`, both `emitIns` overloads and
+`emitIns_Nop` record complete native descriptors and sizes. Their `dispIns` path
+preserves sanity, stack-depth, logical-size and conditional statistics checks.
+In Debug, these entrypoints reject requested
 instruction disassembly with `CORJIT_SKIPPED` before move elision or descriptor
 allocation; the native `emitDispIns` body remains unported. Release retains the
 native absence of that immediate-disassembly call.
 
-Native roots are `emitxarch.cpp:9407,10574` and `emit.cpp:1611`; the managed
-specialization is in `emitxarch/Emitter.StackStores.cs`. The pre-mutation
-rejection is covered for both recording entrypoints. Retain the mixed-mode
+Native roots are `emitxarch.cpp:5945,5962,6019,9407,10574` and `emit.cpp:1611`;
+the managed specialization is in `emitxarch/Emitter.StackStores.cs` and
+`emitxarch/Emitter.ZeroOperandInstructions.cs`. The pre-mutation rejection is
+covered for every recording entrypoint. Retain the mixed-mode
 native bodies until full disassembly is ported. This does not activate production
 emission or waive future `jitdump`/`jitdisasm` parity.
 

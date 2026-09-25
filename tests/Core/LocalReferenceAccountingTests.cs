@@ -427,6 +427,8 @@ internal static unsafe class LocalReferenceAccountingTests
 
         public bool IsRegCandidate(in LclVarDsc local) => throw new NotSupportedException();
 
+        public void recordVarLocationsAtStartOfBB(BasicBlock block) => throw new NotSupportedException();
+
         public void dumpLsraStatsCsv(System.IO.StreamWriter writer) => throw new NotSupportedException();
     }
 

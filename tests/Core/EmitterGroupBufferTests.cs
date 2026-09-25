@@ -320,7 +320,7 @@ internal static unsafe class EmitterGroupBufferTests
         return emitter;
     }
 
-    private sealed class DescriptorFactory : Emitter
+    internal sealed class DescriptorFactory : Emitter
     {
         public DescriptorFactory(CodeGen codeGen) : base(codeGen)
         {
@@ -375,6 +375,12 @@ internal static unsafe class EmitterGroupBufferTests
         public static instrDesc? FirstAlign(Emitter emitter) => Aligns(emitter);
         public static instrDesc? LastAlign(Emitter emitter) => AlignLast(emitter);
         public static instrDesc? LastAlignGroup(Emitter emitter) => AlignLastGroup(emitter);
+        public static insGroup? AlignmentLoopHead(Emitter emitter) => AlignLastGroup(emitter)?.idaLoopHeadPredIG;
+        public static void SetAlignmentLoopHead(Emitter emitter, insGroup predecessor)
+        {
+            AlignLastGroup(emitter) = new instrDescAlign { idaLoopHeadPredIG = predecessor };
+        }
+
         public static instrDesc? PendingAlign(Emitter emitter) => PendingAligns(emitter);
         public static instrDesc? NextAlign(instrDesc descriptor) => ((instrDescAlign)descriptor).idaNext;
 
