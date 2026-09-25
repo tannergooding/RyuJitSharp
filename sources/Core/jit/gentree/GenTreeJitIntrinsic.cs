@@ -28,6 +28,7 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
     {
         assert(oper.IsHWIntrinsic);
         _otherReg = REG_NA;
+        _auxiliaryType = TYP_UNKNOWN;
         _simdBaseType = simdBaseType;
         _simdSize = simdSize;
     }
@@ -94,6 +95,12 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
             _simdBaseType = value;
         }
     }
+
+    public var_types SimdBaseTypeAsVarType => _simdBaseType switch {
+        TYP_UINT => TYP_INT,
+        TYP_ULONG => TYP_LONG,
+        _ => _simdBaseType,
+    };
 
     /// <summary>simd vector size in bytes, use 0 for scalar intrinsics</summary>
     public byte SimdSize

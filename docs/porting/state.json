@@ -41,6 +41,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "hardwareTypeMetadata": {
+        "debugPassed": 67,
+        "releasePassed": 67,
+        "skipped": 0,
+        "selection": ["IntrinsicTypeMetadataPreservesUnsignedElementIdentity", "LirSelectorsConsumeElidedOperandsAtTheInstructionWidth", "HardwareMorph*", "RationalizationTests"],
+        "debugTests": "artifacts\\hardware-type-metadata-debug.trx",
+        "releaseTests": "artifacts\\hardware-type-metadata-release.trx",
+        "failingBefore": "artifacts\\hardware-auxiliary-type-before.trx",
+        "scope": "Native TYP_UNKNOWN auxiliary default and signed register-type view for UINT/ULONG, retaining the original SIMD element type. Four metadata cases fail without the constructor initialization. Stable-source export excludes pending lowering."
+      },
       "definitionAndKillConstruction": {
         "debugPassed": 154,
         "releasePassed": 130,

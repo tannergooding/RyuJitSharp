@@ -14,6 +14,25 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class HardwareIntrinsicInitializationTests
 {
+    [TestCase(TYP_UINT, TYP_INT)]
+    [TestCase(TYP_ULONG, TYP_LONG)]
+    [TestCase(TYP_UBYTE, TYP_UBYTE)]
+    [TestCase(TYP_FLOAT, TYP_FLOAT)]
+    public static void IntrinsicTypeMetadataPreservesUnsignedElementIdentity(var_types baseType, var_types registerType)
+    {
+        WithCompiler(compiler => {
+            var operand = new GenTreeLclVar(TYP_SIMD16, 0);
+            var node = compiler.gtNewSimdHWIntrinsicNode(baseType.ActualType, NI_Vector_ToScalar, baseType, 16, operand);
+
+            Assert.That(node.AuxiliaryType, Is.EqualTo(TYP_UNKNOWN));
+            Assert.That(node.SimdBaseType, Is.EqualTo(baseType));
+            Assert.That(node.SimdBaseTypeAsVarType, Is.EqualTo(registerType));
+            node.AuxiliaryType = TYP_LONG;
+            Assert.That(node.AuxiliaryType, Is.EqualTo(TYP_LONG));
+            Assert.That(node.SimdBaseType, Is.EqualTo(baseType));
+        });
+    }
+
     [TestCase(TYP_SIMD16, false)]
     [TestCase(TYP_SIMD16, true)]
     [TestCase(TYP_FLOAT, false)]
