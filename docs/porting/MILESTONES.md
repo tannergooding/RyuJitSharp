@@ -14,6 +14,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Windows-x64 block generation
+
+The block driver now traverses the root function and EH funclets, restores
+register locations and GC roots, generates LIR nodes, and records IL and rich
+debug locations. Block exits preserve EH return-address boundaries, hot/cold
+jumps, GS-cookie checks, frame poisoning and epilog reservations.
+
+Loop alignment now records native padding descriptors and backedge relationships.
+Integration also corrected a missing alignment opcode initialization. Final frame
+layout, prolog/epilog materialization, jump binding, encoding and runtime metadata
+publication still precede production emission; managed native-code size remains
+zero.
+
 ## 2026-09-25: Windows-x64 node dispatch
 
 The complete Windows-x64 node dispatcher now connects lowered LIR nodes to the

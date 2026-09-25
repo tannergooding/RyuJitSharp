@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete Windows-AMD64 node dispatch and its native block-driver dependency closure. Hardware generation and node dispatch are integrated; production emission remains explicitly unavailable.",
+      "scope": "Complete Windows-AMD64 block-driver closure, then final-offset debug publication and machine-generation dependencies. The block driver is validated; production emission remains explicitly unavailable.",
       "doneWhen": [
         "Preserve complete native genCodeForTreeNode dispatch, reuse-before-containment, operand consumption, GC boundaries and pending-call label behavior.",
         "Port complete Windows-AMD64 genCodeForBBlist and its required support without substituting a reduced block loop; retain explicit production emission rejection until encoding and publication are implemented.",
         "Validate each integrated closure in Debug/Release and commit; retain production activation, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Run CodeGenNodeDispatchTests with comparison, scalar, call, hardware, atomic and GC-interruptibility cases in Debug/Release; extend the selection with focused block-driver coverage when implemented.",
+        "Run the blockGeneration selection in Debug/Release, then focused IP/rich debug publication tests before committing their independent packet.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Complete Windows-AMD64 genCodeForTreeNode is implemented and validated at nodeDispatch. Read complete native genCodeForBBlist in codegenlinear.cpp:142 onward and its immediate support; the managed symbol is absent. Implement the complete block driver and required helpers, preserving LIR traversal/numbering, block GC state, labels, EH transfers, debug mappings and epilog decisions. Validate and commit this closure before proceeding to genGenerateCode (codegencommon.cpp:2151), final encoding and publication. Do not activate production emission until the complete required closure is ready; managed native-code size remains zero.",
+    "nextAction": "Block generation is validated at blockGeneration. Collect d62fc6a5-a4dd-40be-8b42-5de1405b22b7's IP/rich publication validation: it is fixing the missing SPMI EE callback in the rich-file fixture and running both configurations. Commit that dependency-coherent packet only after successful execution. Native genGenerateCode and genGenerateMachineCode (codegencommon.cpp:2151 onward) have been read through their main dependencies; genFinalizeFrame is absent and is the next parent implementation boundary. Prolog/epilog materialization, jump removal/binding, loop adjustment, encoding and required runtime publication remain missing. Keep production genGenerateCode CORJIT_SKIPPED and managed native-code size zero.",
     "handoff": {
-      "status": "node-dispatch-validated-block-driver-next",
+      "status": "block-driver-validated-debug-publication-integrating",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All packets integrated and validated. 4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn27 (AVX/FMA/Permute); 87f10c61-b152-4bdc-a27e-1ecfad4f6342 through turn14 (Base/X86Base/mask clearing); b6e1f160-b3d7-4126-bf91-39bc8de2e495 through turn9 (multioperand SIMD, gather and mask-store emitter); a7f6ecaf-b706-4be6-83c3-c83235b7452f through turn29 (earlier cleanup). All idle. No unread handoffs or app-native child sessions.",
+      "workerPackets": "Exit/frame-poisoning and loop-recording files from now-unavailable workers 87f10c61-b152-4bdc-a27e-1ecfad4f6342 and b6e1f160-b3d7-4126-bf91-39bc8de2e495 were recovered, compared with native and validated by the parent; their latest handoffs were not collected. New worker d62fc6a5-a4dd-40be-8b42-5de1405b22b7 (GPT-6 Sol) is collected through turn5 and is now validating its IP/rich publication packet after a missing callback aborted the Debug rich-file test. Parent driver tests pass independently. No app-native child-session coordination.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -52,6 +52,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "blockGeneration": {
+        "debugPassed": 225,
+        "releasePassed": 209,
+        "skipped": 0,
+        "selection": "CodeGenBlockDriverTests, EmitterLoopAlignmentRecordingTests, CodeGenExitAndPoisonTests, CodeGenNodeDispatchTests, CodeGenInitializationTests, CodeGenLifeTransitionTests, CodeGenLabelTests, CodeGenIPMappingTests, LinearScanBlockLocationTests, EmitterPlaceholderTests, CodeGenEHTransferTests and EmitterInstructionAllocationTests",
+        "debugTests": "artifacts\\block-driver-debug.trx",
+        "releaseTests": "artifacts\\block-driver-release.trx",
+        "coverage": "Windows-AMD64 block traversal, GC-root reconstruction, LIR dispatch and unused values, rich/IL recording, call-finally continuation skipping, hot/cold and EH-boundary jumps, unreachable breakpoints, return-root epilog reservation, signed cookie immediates, indirect relocatable cookies, rounded stack-home poisoning thresholds, alignment capacity and backedge ordering, B228 opcode initialization, D005 and matched/unmatched D007 preflight.",
+        "remaining": "The complete supported-mode block driver is not yet called by production genGenerateCode. Optional native emitter-test injection is explicitly rejected under D007. Final frame layout, prolog/epilog generation, jump binding, alignment adjustment, final encoding, executable allocation and metadata publication remain ahead of activation. funcletCreation.nativeHost remains the unchanged execution frontier."
+      },
       "nodeDispatch": {
         "debugPassed": 219,
         "releasePassed": 210,
@@ -3856,6 +3866,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "windows-amd64-block-generation",
+      "native": ["src\\coreclr\\jit\\codegenlinear.cpp:142-970", "src\\coreclr\\jit\\codegencommon.cpp:1947-1985,7178,8503-8608", "src\\coreclr\\jit\\codegenxarch.cpp:94-148", "src\\coreclr\\jit\\compiler.h:13520-13542", "src\\coreclr\\jit\\emit.cpp:148-210,5742-5940,6140-6268", "src\\coreclr\\jit\\emit.h:emitNewInstrAlign", "src\\coreclr\\jit\\regset.cpp:rsSpillEnd,tmpEnd"],
+      "csharp": ["sources\\Core\\jit\\codegenlinear\\CodeGen.BlockDriver.cs", "sources\\Core\\jit\\codegenlinear\\CodeGen.BlockEnd.cs", "sources\\Core\\jit\\codegencommon\\CodeGen.ExitCode.cs", "sources\\Core\\jit\\codegencommon\\CodeGen.FramePoisoning.cs", "sources\\Core\\jit\\codegencommon\\CodeGen.IPMappings.cs", "sources\\Core\\jit\\codegenxarch\\CodeGen.GSCookieChecks.cs", "sources\\Core\\jit\\compiler\\FuncInfoDsc.cs", "sources\\Core\\jit\\emit\\Emitter.LoopAlignmentRecording.cs", "sources\\Core\\jit\\emit\\insGroup.LoopAlignment.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete Windows-AMD64 supported-mode driver and exit/alignment recording closure, reusing native label, liveness, scope, funclet and placeholder helpers. D005 and D007 fail before mutation. Final alignment, encoding and runtime publication are not activated."
+    },
     {
       "area": "windows-amd64-node-dispatch",
       "native": ["src\\coreclr\\jit\\codegenxarch.cpp:1810-2270"],

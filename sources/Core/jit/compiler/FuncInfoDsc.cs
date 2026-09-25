@@ -40,4 +40,24 @@ public struct FuncInfoDsc
         assert(funKind == FuncKind.FUNC_HANDLER);
         return descriptor.ebdHndBeg;
     }
+
+    public readonly BasicBlock GetLastBlock(Compiler compiler)
+    {
+        if (funKind == FuncKind.FUNC_ROOT)
+        {
+            return compiler.fgLastBBInMainFunction();
+        }
+
+        ref var descriptor = ref GetEHDesc(compiler);
+        if (funKind == FuncKind.FUNC_FILTER)
+        {
+            assert(descriptor.HasFilter);
+            return descriptor.BBFilterLast;
+        }
+
+        assert(funKind == FuncKind.FUNC_HANDLER);
+        return descriptor.ebdHndLast;
+    }
+
+    public readonly BasicBlockRangeList Blocks(Compiler compiler) => new(GetStartBlock(compiler), GetLastBlock(compiler));
 }

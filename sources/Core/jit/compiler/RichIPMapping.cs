@@ -7,4 +7,6 @@ namespace RyuJitSharp;
 
 public struct RichIPMapping
 {
+    public emitLocation nativeLoc;
+    public DebugInfo debugInfo;
 }

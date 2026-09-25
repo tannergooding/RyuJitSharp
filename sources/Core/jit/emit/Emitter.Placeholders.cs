@@ -134,7 +134,7 @@ public partial class Emitter
     }
 
 #if TARGET_AMD64
-    private bool emitIsLastInsCall()
+    internal bool emitIsLastInsCall()
     {
         return (emitLastIns is not null) && (emitLastIns.idIns() == INS_call);
     }

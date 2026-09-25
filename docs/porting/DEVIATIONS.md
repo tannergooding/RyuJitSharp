@@ -1144,6 +1144,20 @@ are removed. Shared-block construction and inline calls use the same native
 other targets explicitly reject throw generation. Production emission remains
 skipped pending the remaining backend closure.
 
+### D007: Block generation without optional emitter-test injection
+
+**Status:** temporary implementation boundary along the existing native Debug
+`JitEmitUnitTests` method-set and non-null `JitEmitUnitTestsSections` predicates,
+not an accepted output difference.
+
+Windows-AMD64 block generation rejects the matched emitter-test payload mode with
+`CORJIT_SKIPPED` before changing labels, GC state, or instruction groups. Ordinary
+block generation follows the complete native driver. The optional native
+`genEmitterUnitTests` dispatcher and its synthetic instruction payloads remain
+unported; unmatched methods and null section selections do not require them.
+D005 separately rejects immediate instruction disassembly. Neither boundary
+authorizes silent omission of requested diagnostics or payload instructions.
+
 ## Implementation notes and parity findings
 
 ### R001: Temporary serialization for debugging

@@ -77,8 +77,12 @@ internal static unsafe class EmitterInstructionAllocationTests
         var emitter = CreateEmitter(out _);
         var allocator = typeof(Emitter).GetMethod(method, BindingFlags.Instance | BindingFlags.NonPublic)!;
         var descriptor = (Emitter.instrDesc)allocator.Invoke(emitter, null)!;
-        descriptor.idIns(instruction);
+        if (instruction != INS_align)
+        {
+            descriptor.idIns(instruction);
+        }
 
+        Assert.That(descriptor.idIns(), Is.EqualTo(instruction));
         Assert.That(descriptor.NativeLogicalSize, Is.EqualTo(size));
         Assert.That(descriptor.StorageSize, Is.EqualTo((nuint)(size + Prefix(emitter))));
         Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_1BYTE));

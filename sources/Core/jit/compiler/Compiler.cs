@@ -199,6 +199,18 @@ public partial class Compiler
     /// <summary>Register allocator</summary>
     private IRegAlloc? _regAlloc;
 
+    internal IRegAlloc? RegisterAllocator => _regAlloc;
+
+    public ReadOnlySpan<FuncInfoDsc> Funcs
+    {
+        get
+        {
+            assert(fgFuncletsCreated);
+            assert(compFuncInfoCount > 0);
+            return compFuncInfos.AsSpan(0, compFuncInfoCount);
+        }
+    }
+
     public List<ParameterRegisterLocalMapping>? _paramRegLocalMappings;
 
     public CORINFO_ASYNC_INFO asyncInfo;

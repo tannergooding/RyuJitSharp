@@ -162,7 +162,10 @@ public partial class Emitter
 #if FEATURE_LOOP_ALIGN
     private instrDescAlign emitNewInstrAlign()
     {
-        return emitAllocInstrAlign();
+        var id = emitAllocInstrAlign();
+        id.idIns(instruction.INS_align);
+
+        return id;
     }
 #endif
 }

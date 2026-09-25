@@ -12,7 +12,22 @@ public partial struct RegSet
         rsSpillChk();
     }
 
-    private readonly void rsSpillChk()
+    public readonly void rsSpillEnd()
+    {
+        rsSpillChk();
+    }
+
+    public readonly void tmpEnd()
+    {
+#if DEBUG
+        if (Compiler.verbose && (tmpCount > 0))
+        {
+            jitprintf($"{tmpCount} tmps used\n");
+        }
+#endif
+    }
+
+    public readonly void rsSpillChk()
     {
 #if DEBUG
         assert(tmpGetCount == 0);

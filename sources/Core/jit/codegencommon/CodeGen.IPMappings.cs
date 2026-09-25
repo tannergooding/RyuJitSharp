@@ -7,6 +7,16 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+    public void genAddRichIPMappingHere(in DebugInfo di)
+    {
+        var mapping = new RichIPMapping
+        {
+            nativeLoc = new emitLocation(Emitter),
+            debugInfo = di,
+        };
+        _ = _compiler.genRichIPmappings.AddLast(mapping);
+    }
+
     public void genIPmappingAdd(IPmappingDscKind kind, in DebugInfo di, bool isLabel)
     {
         if (!_compiler.opts.compDbgInfo)
