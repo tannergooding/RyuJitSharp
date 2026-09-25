@@ -265,6 +265,8 @@ existing deviation entries rather than maintaining competing descriptions.
 
 | B224 | Port defect / epilog ABI register-mask check | `CodeGen.CallTargets.cs` converts `segment.RegisterMask` directly with `regMaskTP.CreateFromRegNum` when checking registers trashed by an epilog. The ABI mask is relative to its integer/float/mask bank, whereas `regMaskTP` keeps integer and floating bits at their native register positions in one lower word. Floating arguments can therefore test unrelated integer bits. | Reconcile the epilog diagnostic with native register bits, retaining the ABI mask's existing enumeration contract for other consumers. | Identified while integrating JMP argument placement, whose new register accounting uses `segment.Register.SingleTypeMask`. Existing epilog diagnostic repair is deferred; no unrelated generated-code change. |
 
+| B225 | Upstream question / immediate-only opcode table | Native `emitIns_I` includes `INS_jge` (`emitxarch.cpp:7374`), but `instrsxarch.h` declares `jge` with `INST0`, outside the MI opcode-table prefix used by `insCodeMI`. | Establish whether this case is reachable and resolve upstream before changing the opcode selection. | Pinned switch and table behavior preserved. Local heap generation uses `INS_push_hide`, not this case; no successful `jge` immediate path is claimed. |
+
 Larger module decomposition and broad unit-test infrastructure belong to the
 post-port phase. Add concrete candidates here as evidence appears, rather than
 preemptively planning a redesign of every compiler subsystem.

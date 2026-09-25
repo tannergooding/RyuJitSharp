@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Integrate frozen Windows-AMD64 local-heap generation, stack probing/adjustment and immediate-only emitter recording. JMP argument placement and GC-interruptibility dependencies are validated.",
+      "scope": "Continue remaining Windows-AMD64 node-generation dependencies toward complete genCodeForTreeNode dispatch, starting with atomic and block-memory generators. Local heap, JMP arguments and graph update are integrated and validated.",
       "doneWhen": [
-        "Integrate complete genLclHeap and native constant/dynamic stack adjustment/probing with complete emitIns_I and inst_IV.",
-        "Add NodeInternalRegisters.Count through its dedicated partial and preserve the native immediate/probing contracts.",
+        "Port complete genLockedInstructions/genCodeForCmpXchg and their required memory-ordering/emitter dependencies.",
+        "Port complete genCodeForStoreBlk and required init/copy/memmove generators in a bounded independent lane.",
         "Validate each integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Validate CodeGenLocalHeapTests and EmitterImmediateOnlyTests with existing shift, return, frame and register dependencies in Debug/Release.",
+        "Validate new atomics and block-memory cases with existing operand consumption, memory instruction recording, GC and register dependencies in Debug/Release.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Integrate artifacts\\local-heap-generation-packet from worker87f10c61 (collected through turn8); make NodeInternalRegisters partial, remove the obsolete Count comment, validate Debug/Release and commit. JMP placement/GC boundaries are validated at jmpArguments. Record the packet's native INS_jge/MI-table discrepancy without inventing a fallback. All handoffs collected; workers idle while returned packets are integrated. Continue remaining node/block generation after this dependency boundary; production genGenerateCode remains skipped.",
+    "nextAction": "Local heap is validated at localHeapGeneration; all worker packets are integrated. Resume remaining node-generation closure: genLockedInstructions/genCodeForCmpXchg at pinned codegenxarch.cpp:4269/4366 and genCodeForStoreBlk at3092 with its init/copy/memmove dependencies. genCodeForTreeNode at1810 is absent and will use these dependencies. Assign productive bounded lanes after the local-heap commit, keeping shared integration in the parent. Production genGenerateCode remains skipped.",
     "handoff": {
-      "status": "jmp-arguments-validated-local-heap-packet-frozen",
+      "status": "local-heap-validated-remaining-node-generators-next",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn26; JMP/GC/shadow-space packet integrated and validated. 87f10c61-b152-4bdc-a27e-1ecfad4f6342 through turn8; frozen local-heap/immediate-only emitter/probing packet pending integration. b6e1f160-b3d7-4126-bf91-39bc8de2e495 through turn6; graph diagnostics committed e1f0f90. a7f6ecaf-b706-4be6-83c3-c83235b7452f through turn29; cleanup2f55f04. All idle; integrate returned packets before assigning new lanes. No app-native child sessions.",
+      "workerPackets": "4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn26; JMP/GC/shadow-space packet committed de6bbb5. 87f10c61-b152-4bdc-a27e-1ecfad4f6342 through turn8; local-heap/immediate-only emitter/probing packet integrated and validated. b6e1f160-b3d7-4126-bf91-39bc8de2e495 through turn6; graph diagnostics e1f0f90. a7f6ecaf-b706-4be6-83c3-c83235b7452f through turn29; cleanup2f55f04. All idle and all packets integrated. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -52,6 +52,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "localHeapGeneration": {
+        "debugPassed": 118,
+        "releasePassed": 109,
+        "skipped": 0,
+        "selection": "CodeGenLocalHeapTests, EmitterImmediateOnlyTests, CodeGenShiftTests and CodeGenReturnTests",
+        "debugTests": "artifacts\\local-heap-debug.trx",
+        "releaseTests": "artifacts\\local-heap-release.trx",
+        "coverage": "Constant/dynamic allocation, uint32 alignment to4GiB, init/uninit widths, outgoing-area shortcuts and restoration, carry clamp and probe order, exact-page final touches, GC state, Debug SP checks, internal-register mask counts, immediate descriptor formats/widths and relocation.",
+        "remaining": "Complete Windows-AMD64 genLclHeap and four adjustment/probing helpers, inst_IV, emitIns_I and NodeInternalRegisters.Count. B225 retains the native jge/MI-table inconsistency. Relocatable constants obey native full-descriptor sanity rules; small IF_CNS relocation is not a supported Debug input. Reuses funcletCreation.nativeHost because production reachability is unchanged; managed native-code size remains zero."
+      },
       "jmpArguments": {
         "debugPassed": 127,
         "releasePassed": 120,
@@ -3765,6 +3775,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "local-heap-generation",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:2513,2550,2572,2618,2831", "src\\coreclr\\jit\\instr.cpp:869", "src\\coreclr\\jit\\emitxarch.cpp:7374", "src\\coreclr\\jit\\codegencommon.cpp:213"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.LocalHeap.cs", "sources\\Core\\jit\\emitxarch\\Emitter.ImmediateOnlyInstructions.cs", "sources\\Core\\jit\\codegeninterface\\NodeInternalRegisters.Count.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete Windows-AMD64 local allocation and constant/dynamic probing, immediate-only instruction recording and masked internal-register counts. Preserves separate lowered constant initialization, native widths and no-op AMD64 push/pop depth accounting. Other targets reject; production generation remains skipped."
+    },
     {
       "area": "jmp-argument-placement",
       "native": ["src\\coreclr\\jit\\codegencommon.cpp:3294-3349,7933-8035", "src\\coreclr\\jit\\codegenxarch.cpp:6232-6309", "src\\coreclr\\jit\\compiler.hpp:3121-3143", "src\\coreclr\\jit\\emit.cpp:10847-10942", "src\\coreclr\\jit\\targetamd64.cpp:225-248"],

@@ -7,7 +7,7 @@ using System.Numerics;
 
 namespace RyuJitSharp;
 
-public struct NodeInternalRegisters
+public partial struct NodeInternalRegisters
 {
     private NodeInternalRegistersTable _table;
 
@@ -80,7 +80,6 @@ public struct NodeInternalRegisters
         return regMask;
     }
 
-    // unsigned Count(GenTree* tree, regMaskTP mask = static_cast<regMaskTP>(-1));
 #else  // !HAS_FIXED_REGISTER_SET
     // void Add(GenTree* tree, regNumber reg);
     // InternalRegs* GetAll(GenTree* tree);

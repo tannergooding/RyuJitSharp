@@ -14,6 +14,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Local heap generation and stack probing
+
+Windows-x64 local heap generation now handles constant and dynamic sizes,
+initialized allocations, outgoing argument space and aligned result addresses.
+Page probes retain native ordering, including overflow clamping and final
+touches at exact-page boundaries. Dynamic initialization uses the native
+zero-push loop; constant initialization remains a separate lowered block store.
+
+Immediate-only instruction recording and internal-register counting complete
+the supporting closure. These paths remain below the production emission
+boundary; machine-code encoding and execution are still pending.
+
 ## 2026-09-25: JMP argument placement and GC boundaries
 
 JMP argument preparation now spills allocated register homes before restoring
