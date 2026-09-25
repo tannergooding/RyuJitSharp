@@ -1120,6 +1120,8 @@ changing ABI-register GC state. Return traps reject before consuming the flag
 or extracting their helper-call temporary. These guards are in
 `codegencommon/CodeGen.CallArguments.cs`, `codegenxarch/CodeGen.RegisterArguments.cs`
 and `codegenxarch/CodeGen.ReturnTraps.cs`.
+Call-target instruction generation in `codegenxarch/CodeGen.CallInstructions.cs`
+rejects before target consumption, TLS prefix recording or signature capture.
 
 ### D006: Shared throw-helper blocks before inline helper calls
 

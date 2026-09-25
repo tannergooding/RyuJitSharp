@@ -14,6 +14,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Call-target instruction generation
+
+Call instructions now preserve direct, register, memory and indirection-cell
+targets, GC return classification and async continuation metadata. Fast tailcalls
+retain their already-consumed targets and epilog register checks; NativeAOT TLS
+calls retain the linker's prefix sequence and sentinel.
+
+This completes control-transfer recording, not general call orchestration.
+Stack-argument generation, remaining node/block generation, encoding and metadata
+publication still prevent production machine-code emission.
+
 ## 2026-09-25: Register arguments and return traps
 
 Register arguments now retain native consumption order, ABI moves and fast-tailcall

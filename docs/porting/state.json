@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete Windows-AMD64 register-argument generation/placement and return traps using the existing instruction recording, helper calls and GC lifetimes. Independently stage complete flowgraph compaction without activating fgUpdateFlowGraph.",
+      "scope": "Complete Windows-AMD64 genCallInstruction and its call-target, indirection-cell and epilog-register verification dependencies. Independently stage stack-argument generation and flowgraph compaction without phase activation.",
       "doneWhen": [
-        "Port complete Windows-AMD64 genPutArgReg, genCallPlaceRegArgs and getCallArgIntRegister, including fast-tailcall roots and varargs duplication.",
-        "Port complete genCodeForReturnTrap, preserving comparison width, helper temporary selection and continuation roots.",
+        "Port complete genCallInstruction, getCallTarget, getCallIndirectionCellReg and Debug genCheckTailCallEpilogRegisters.",
+        "Preserve return GC classification, direct/register/memory/cell calls, fast-tailcall consumption boundaries, NativeAOT TLS prefixes and diagnostic signatures.",
         "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Validate argument moves/aliases/copy operands, late ordering, stack exclusions, tailcall roots, all FP varargs registers, return-trap register/memory flags and direct/indirect helper forms, plus D005 in Debug/Release before committing.",
+        "Validate CodeGenCallInstructionTests with CodeGenRegisterArgumentTests, CodeGenReturnTrapTests, CodeGenHelperCallTests and EmitterCallInstructionTests in Debug/Release before committing.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Register arguments and return traps are integrated and validated (callArguments). Continue at complete Windows-AMD64 genCallInstruction (codegenxarch.cpp:6017), identifying its required call-node dependency closure rather than activating a reduced dispatcher. Worker a7f6ecaf-b706-4be6-83c3-c83235b7452f is implementing complete fgCanCompactBlock, fgCanCompactInitBlock, fgCompactBlock and fgChangeEhfBlock, staged under artifacts\\flowgraph-compaction-packet. Collect its next handoff after notification, integrate Compiler.FlowGraphCompaction.cs and FlowGraphCompactionTests.cs, validate Debug/Release with BlockSplittingTests and FlowGraphBranchThreadingTests, and commit that independent packet. Production emission remains skipped.",
+    "nextAction": "Call-target instruction generation is complete and validated (callInstructions). Integrate the collected flowgraph-compaction packet from artifacts\\flowgraph-compaction-packet. Required parent dependency: complete BasicBlock.isEmpty from block.cpp:1016-1040 and update the call-finally-pair assertion to use it rather than the inherited LIR-range IsEmpty. Record the preserved native target-only-phi loss (fgopt.cpp:945-963), validate FlowGraphCompactionTests with BlockSplittingTests and FlowGraphBranchThreadingTests in Debug/Release and commit. Worker 4c9a8661-6e45-4e43-960d-7f3a779cdcde still stages genPutArgStk/genPutStructArgStk and dependencies under artifacts\\stack-argument-packet; collect after notification. General genCall orchestration, production dispatch and final emission remain separate.",
     "handoff": {
-      "status": "register-arguments-return-traps-validated-compaction-in-flight",
+      "status": "call-instructions-validated-compaction-collected-stack-arguments-in-flight",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Worker 4c9a8661-6e45-4e43-960d-7f3a779cdcde is collected through turn 23; its register-argument packet is integrated and validated, and it is idle. Worker a7f6ecaf-b706-4be6-83c3-c83235b7452f is collected through turn 25; its dependency report led to the active four-function flowgraph-compaction packet. It owns only two staged files under artifacts\\flowgraph-compaction-packet; no shared files, phase activation, builds, commits or publication. No app-native child sessions.",
+      "workerPackets": "Worker 4c9a8661-6e45-4e43-960d-7f3a779cdcde is collected through turn 23; register arguments are committed in 1ccc023, and its active ownership is the staged stack-argument generation/tests packet. Worker a7f6ecaf-b706-4be6-83c3-c83235b7452f is collected through turn 26; its two-file compaction packet is frozen and parent-owned for integration, with 77 pending cases and the BasicBlock.isEmpty prerequisite. No shared worker edits, phase activation, builds, commits or publication. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "callInstructions": {
+        "debugPassed": 199,
+        "releasePassed": 178,
+        "skipped": 0,
+        "selection": ["CodeGenCallInstructionTests", "CodeGenRegisterArgumentTests", "CodeGenReturnTrapTests", "CodeGenHelperCallTests", "EmitterCallInstructionTests"],
+        "debugTests": "artifacts\\call-instructions-debug.trx",
+        "releaseTests": "artifacts\\call-instructions-release.trx",
+        "coverage": "Direct user/helper calls and tail jumps; used/unused reference/byref returns, async continuation metadata and GC snapshots; register and base/index/absolute memory targets, target consumption before normal calls versus earlier tailcall consumption; virtual/R2R indirection cells; CFG helper exclusions; NativeAOT TLS prefixes/sentinel/no-safepoint; signature and method-handle diagnostics; cookie/secret-stub epilog register choices and pre-mutation D005.",
+        "remaining": "Complete Windows-AMD64 genCallInstruction plus target/cell selection and Debug epilog checks. Reuses existing GS-cookie masks. General genCall orchestration, stack arguments, node/block dispatch, final encoding and metadata publication remain. Reuses funcletCreation.nativeHost because production reachability is unchanged; managed code size is zero."
+      },
       "callArguments": {
         "debugPassed": 215,
         "releasePassed": 195,
@@ -3658,6 +3668,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "call-target-instruction-generation",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:6017-6228", "src\\coreclr\\jit\\codegencommon.cpp:2936-2961,6149-6210"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.CallInstructions.cs", "sources\\Core\\jit\\codegencommon\\CodeGen.CallTargets.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete Windows-AMD64 genCallInstruction, getCallTarget, getCallIndirectionCellReg and Debug genCheckTailCallEpilogRegisters. Reuses native call recording, GC capture, consume helpers and GS-cookie selection. Managed signature boxes retain diagnostic data. D005 guards before mutation; production emission remains skipped."
+    },
     {
       "area": "register-arguments-and-return-traps",
       "native": ["src\\coreclr\\jit\\codegencommon.cpp:7845-7924", "src\\coreclr\\jit\\codegenxarch.cpp:1778-1801,8036-8054", "src\\coreclr\\jit\\compiler.hpp:3097-3119"],
