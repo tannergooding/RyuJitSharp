@@ -23,6 +23,7 @@ public partial class Emitter
         internal const int Small = 8;
         internal const int Full = Small + 8;
         internal const int Jump = 48;
+        internal const int Label = Jump + 8;
 #if DEBUG
         internal const int Align = 48;
 #else

@@ -4,8 +4,10 @@ using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.GCInfo.GCtype;
+using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
+using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -92,6 +94,87 @@ internal static unsafe class EmitterStackGCOutputTests
         });
     }
 
+    [TestCase(0)]
+    [TestCase(1)]
+    public static void VariableSetUpdatesPreserveOffsetKindsAndInvalidateCachedLiveness(int flag)
+    {
+        WithEmitter((compiler, codeGen, buffer) =>
+        {
+            var emitter = codeGen.Emitter;
+            var offsets = stackalloc int[1];
+            offsets[0] = -16 | flag;
+            TrackedOffsets(emitter) = offsets;
+            TrackedCount(emitter) = 1;
+            CurrentVariableSet(emitter) = false;
+            var live = VarSetOps.MakeSingleton(compiler, 0);
+
+            UpdateVariables(emitter, live, buffer + 2);
+            var first = VarPtrList(ref codeGen.GCInfo) ?? throw new AssertionException("Missing tracked lifetime.");
+            Assert.That(first.vpdBegOfs, Is.EqualTo(2));
+            Assert.That(first.vpdVarNum, Is.EqualTo(unchecked((uint)(-16 | flag))));
+            Assert.That(CurrentVariableSet(emitter), Is.True);
+            UpdateVariables(emitter, live, buffer + 3);
+            Assert.That(first.vpdNext, Is.Null);
+
+            Dead(emitter, -16, buffer + 5);
+            Assert.That(CurrentVariableSet(emitter), Is.False);
+            UpdateVariables(emitter, live, buffer + 9);
+            var second = first.vpdNext ?? throw new AssertionException("Missing restored lifetime.");
+            Assert.That(first.vpdEndOfs, Is.EqualTo(5));
+            Assert.That(second.vpdBegOfs, Is.EqualTo(9));
+            Assert.That(second.vpdVarNum, Is.EqualTo(first.vpdVarNum));
+
+            UpdateVariables(emitter, VarSetOps.MakeEmpty(compiler), buffer + 16);
+            Assert.That(second.vpdEndOfs, Is.EqualTo(16));
+            Assert.That(LiveTable(emitter)[0], Is.Null);
+            Assert.That(CurrentVariableSet(emitter), Is.True);
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void RegisterSetUpdatesOrderDeathsAndKindChangesByRegister(bool fullMap)
+    {
+        WithEmitter((_, codeGen, buffer) =>
+        {
+            var emitter = codeGen.Emitter;
+            emitter.emitFullGCinfo = fullMap;
+            SyncThisRegister(emitter) = REG_NA;
+            ReferenceRegisters(emitter) = SRBM_RAX | SRBM_RDX;
+            ByrefRegisters(emitter) = SRBM_RCX;
+
+            UpdateRegisters(emitter, GCT_GCREF, new regMaskTP(SRBM_RCX | SRBM_R8), buffer + 9);
+
+            Assert.That(ReferenceRegisters(emitter), Is.EqualTo(SRBM_RCX | SRBM_R8));
+            Assert.That(ByrefRegisters(emitter), Is.EqualTo(SRBM_NONE));
+            var record = RegPtrList(ref codeGen.GCInfo);
+            if (!fullMap)
+            {
+                Assert.That(record, Is.Null);
+                return;
+            }
+
+            (regMask add, regMask del, GCInfo.GCtype kind)[] expected =
+            [
+                (SRBM_NONE, SRBM_RAX, GCT_GCREF),
+                (SRBM_NONE, SRBM_RCX, GCT_BYREF),
+                (SRBM_RCX, SRBM_NONE, GCT_GCREF),
+                (SRBM_NONE, SRBM_RDX, GCT_GCREF),
+                (SRBM_R8, SRBM_NONE, GCT_GCREF),
+            ];
+            foreach (var (add, del, kind) in expected)
+            {
+                record = record ?? throw new AssertionException("Missing register transition.");
+                Assert.That(record.rpdOffs, Is.EqualTo(9));
+                Assert.That(record.rpdGCtype, Is.EqualTo(kind));
+                Assert.That(record.rpdCompiler.rpdAdd, Is.EqualTo(add));
+                Assert.That(record.rpdCompiler.rpdDel, Is.EqualTo(del));
+                record = record.rpdNext;
+            }
+            Assert.That(record, Is.Null);
+        });
+    }
+
     private delegate void TestBody(Compiler compiler, CodeGen codeGen, byte* buffer);
 
     private static void WithEmitter(TestBody body)
@@ -171,4 +254,25 @@ internal static unsafe class EmitterStackGCOutputTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "gcRegPtrList")]
     private static extern ref GCInfo.regPtrDsc? RegPtrList(ref GCInfo info);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitUpdateLiveGCvars")]
+    private static extern void UpdateVariables(Emitter emitter, nint[] variables, byte* address);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitUpdateLiveGCregs")]
+    private static extern void UpdateRegisters(Emitter emitter, GCInfo.GCtype type, regMaskTP registers, byte* address);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitGCrFrameOffsTab")]
+    private static extern ref int* TrackedOffsets(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitTrkVarCnt")]
+    private static extern ref int TrackedCount(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitThisGCrefRegs")]
+    private static extern ref regMask ReferenceRegisters(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitThisByrefRegs")]
+    private static extern ref regMask ByrefRegisters(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitSyncThisObjReg")]
+    private static extern ref regNumber SyncThisRegister(Emitter emitter);
 }

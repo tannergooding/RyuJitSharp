@@ -6,13 +6,28 @@ The primary target is Windows x64. The port can import methods, expand inline
 calls, lower heap allocations, simplify local accesses and construct internal
 method entry/exit paths, rationalize expression trees into linear IR, and lower
 minopts methods, create EH funclets and allocate registers with stack-resident
-locals for Windows x64, but does not yet generate native code. Remaining
+locals for Windows x64, but production compilation still stops before
+native-code emission. Remaining
 work includes hardware-intrinsic import, lifetime-enabled lowering cleanup,
 optimized register allocation and code generation.
 
 The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
+
+## 2026-09-25: Instruction dispatch and GC/data output
+
+Recorded Windows-x64 instructions now have a complete byte-output dispatcher.
+Calls preserve stack-variable deaths at the call start and register transitions
+at the call end, with compact and full GC records, byref returns and async
+continuations. Removed jumps and loop-alignment compensation retain their
+native byte and descriptor behavior.
+
+Constant-data output covers raw data, absolute and relative label tables, and
+async resume records. Instruction and GC diagnostics accompany byte output.
+The final emission driver, executable allocation and remaining runtime metadata
+still precede production activation; these capabilities do not yet establish
+managed execution or whole-method codegen parity.
 
 ## 2026-09-25: Memory and branch byte encoding
 

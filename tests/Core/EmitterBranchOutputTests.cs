@@ -317,8 +317,9 @@ internal static unsafe class EmitterBranchOutputTests
         });
     }
 
-    [Test]
-    public static void LabelMovToStackPreservesLocalTargetAndDescriptorAfterRelocation()
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void LabelMovToStackPreservesLocalTargetAndDescriptorAfterRelocation(bool dispatch)
     {
         WithEmitter((compiler, emitter) =>
         {
@@ -348,7 +349,15 @@ internal static unsafe class EmitterBranchOutputTests
 #if DEBUG
             emitter.emitIssuing = true;
 #endif
-            var end = emitter.emitOutputLJ(source, buffer + 3, descriptor);
+            var end = buffer + 3;
+            if (dispatch)
+            {
+                Assert.That(emitter.emitOutputInstr(source, descriptor, &end), Is.EqualTo((nuint)56));
+            }
+            else
+            {
+                end = emitter.emitOutputLJ(source, end, descriptor);
+            }
 
             Assert.That(new ReadOnlySpan<byte>(buffer + 3, (int)(end - (buffer + 3))).ToArray(),
                 Is.EqualTo(Convert.FromHexString("48C745F000000000")));
@@ -437,7 +446,7 @@ internal static unsafe class EmitterBranchOutputTests
     {
         public static instrDesc LabelMov(insGroup source, insGroup target, int local, uint offset)
         {
-            var descriptor = new instrDescJmp();
+            var descriptor = new instrDescLbl();
             descriptor.idIns(INS_mov);
             descriptor.idInsFmt(IF_SWR_LABEL);
             descriptor.idOpSize(EA_8BYTE);

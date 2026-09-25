@@ -325,6 +325,9 @@ public partial class Emitter
 
                 default:
                 {
+#if DEBUG
+                    emitDispIns(id, false, false, false);
+#endif
                     throw new FatalJitException(
                         $"Unexpected GC reference static instruction format {id.idInsFmt()} for {ins}.");
                 }

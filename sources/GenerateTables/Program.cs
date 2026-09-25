@@ -1148,6 +1148,42 @@ public enum instruction
 }
 """);
 
+        var nameBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
+            if (!inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            var name = parts[1].Trim();
+            if (!name.StartsWith('"', StringComparison.Ordinal)
+                || !name.EndsWith('"', StringComparison.Ordinal))
+            {
+                throw new InvalidDataException($"Unexpected xarch instruction name: '{line}'");
+            }
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {name}, // INS_{parts[0].Trim()}");
+        });
+
+        _ = Directory.CreateDirectory(@"Outputs\jit\instr");
+        File.WriteAllText(@"Outputs\jit\instr\CodeGen.InstructionNames.generated.cs", $$"""
+// Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+using System;
+
+namespace RyuJitSharp;
+
+public sealed partial class CodeGen
+{
+#if TARGET_XARCH
+    private static readonly string[] s_insNames = [
+{{nameBuilder}}    ];
+#endif
+}
+""");
+
         var maskBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
             if (!inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal))
             {

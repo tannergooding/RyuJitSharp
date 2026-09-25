@@ -12,7 +12,7 @@ public partial class Emitter
 
     private bool TakesVexPrefix(instruction ins) => IsVexEncodableInstruction(ins) && ins != INS_vzeroupper;
 
-    private bool TakesEvexPrefix(instrDesc id)
+    internal bool TakesEvexPrefix(instrDesc id)
     {
 #if !TARGET_AMD64
         throw new FatalJitException(CORJIT_SKIPPED, "EVEX prefix decisions require AMD64.");

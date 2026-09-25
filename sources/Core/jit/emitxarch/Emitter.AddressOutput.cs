@@ -744,6 +744,9 @@ public partial class Emitter
 
                 default:
                 {
+#if DEBUG
+                    emitDispIns(id, false, false, false);
+#endif
                     assert(false, "unexpected GC ref instruction format");
                     break;
                 }
