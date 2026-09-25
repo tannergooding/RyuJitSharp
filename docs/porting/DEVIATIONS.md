@@ -1009,7 +1009,11 @@ overloads, `emitIns_Nop`, `emitIns_R_R_I`, `emitIns_R_R_R`,
 `emitIns_R_R_R_I`, `emitIns_SIMD_R_R_R`, `emitIns_SIMD_R_R_R_I`,
 `emitIns_R_C`, `emitIns_R_R_C`, `emitIns_SIMD_R_R_C`, `emitIns_R` and
 `emitIns_BASE_R_R`, `emitInsBinary`, `emitHandleMemOp`, `emitIns_S`,
-`emitIns_S_I` and `emitIns_R_R_S`
+`emitIns_S_I`, `emitIns_R_R_S`, both `emitInsRMW` overloads,
+`emitIns_R_ARX`, `emitIns_BASE_R_R_I`, `emitIns_R_A`, `emitIns_R_A_I`,
+`emitIns_R_C_I`, `emitIns_R_S_I`, `emitIns_R_R_A`, `emitIns_R_R_A_I`,
+`emitIns_R_R_C_I`, `emitIns_R_R_S_I`, `emitIns_SIMD_R_R_I`,
+`emitIns_SIMD_R_R_A` and `emitIns_SIMD_R_R_S`
 record complete native descriptors and sizes. Their `dispIns` path
 preserves sanity, stack-depth, logical-size and conditional statistics checks.
 In Debug, these entrypoints reject requested
@@ -1021,20 +1025,27 @@ data or changing TLS-related GC state. Unary node generation and floating
 sign-mask generation also reject before operand consumption or lifetime changes.
 Binary memory dispatch rejects before extracting spill ownership or allocating
 constant data, and byte-swap generation rejects before consuming its operand.
+Shift generation, shared operand classification and register/memory wrappers
+likewise reject before consumption, spill extraction or constant allocation.
 
 Native roots are `emitxarch.cpp:5929,5945,5962,6019,7168,7798,8090,9314,9407,10574,10609`
 and `7042,8134,8506,8546,8686,8929,9626,9658,9804,10422`,
-plus `6159,6495,8574,10400,10640` and `emit.cpp:1611`;
+plus `6159,6495,8574,10400,10640`,
+`6921,7012,9465,10439,8244,8264,8299,8344,8382,8606,8637,8709,9571,9598,9708`
+and `emit.cpp:1611`;
 the managed specialization is in
 `emitxarch/Emitter.StackStores.cs`, `Emitter.StackLoads.cs`,
 `Emitter.RegisterInstructions.cs`, `Emitter.RegisterMoves.cs`, `Emitter.AddressInstructions.cs`,
 `Emitter.ZeroOperandInstructions.cs`, `Emitter.MultiRegisterInstructions.cs` and
 `Emitter.SimdRegisterInstructions.cs`, `Emitter.StaticFieldInstructions.cs` and
 `Emitter.UnaryInstructions.cs`, `Emitter.BinaryInstructions.cs`,
-`Emitter.MemoryOperands.cs` and `Emitter.StackOperands.cs`.
+`Emitter.MemoryOperands.cs`, `Emitter.StackOperands.cs`,
+`Emitter.ShiftInstructions.cs`, `Emitter.MemoryImmediateInstructions.cs` and
+`Emitter.SimdMemoryInstructions.cs`.
 The caller guards are in `emit/Emitter.SimdConstants.cs` and
 `codegenxarch/CodeGen.Constants.cs`, `CodeGen.Unary.cs` and
-`CodeGen.ByteSwap.cs`. The pre-mutation rejection is
+`CodeGen.ByteSwap.cs`, `CodeGen.Shifts.cs` and
+`instr/CodeGen.MemoryOperands.cs`. The pre-mutation rejection is
 covered for every recording entrypoint. Retain the mixed-mode
 native bodies until full disassembly is ported. This does not activate production
 emission or waive future `jitdump`/`jitdisasm` parity.

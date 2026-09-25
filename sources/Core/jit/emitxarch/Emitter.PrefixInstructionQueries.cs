@@ -47,7 +47,7 @@ public partial class Emitter
 #endif
     }
 
-    private bool IsVexEncodableInstruction(instruction ins)
+    internal bool IsVexEncodableInstruction(instruction ins)
     {
         if (!UseVexEncodings)
         {

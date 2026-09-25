@@ -14,6 +14,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Scalar shifts, rotates and memory operands
+
+Shift and rotate generation now preserves native ADD/LEA shortcuts, flag-setting
+requirements, BMI2 forms, RCX count moves and memory read-modify-write operations.
+Shared operand classification handles stack locals, spill temporaries, indirect
+addresses, scalar/vector constants and contained broadcasts without narrowing
+the native dispatchers to register-only operands.
+
+The supporting emitter records complete memory/immediate and SIMD forms,
+including legacy copies and EVEX/APX options. Node and block generation, final
+encoding and runtime metadata publication remain incomplete; production
+emission is still explicitly skipped.
+
 ## 2026-09-25: Binary memory operands and byte swaps
 
 Binary instruction recording now handles registers, immediates, local and

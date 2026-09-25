@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete AMD64 binary operand recording for register, immediate, stack/local, spill-temp and indirect-memory operands, including APX NDD and implicit register pairs. Close all required memory/stack helpers and then complete byte-swap node generation and normalization. Keep production emission skipped.",
+      "scope": "Complete AMD64 scalar shift/rotate and read-modify-write shift generation, including native immediate shortcuts, BMI2, flag-setting and RCX constraints. Close operand descriptors and the complete shared memory/immediate recording dependencies instead of specializing to register-only shifts. Keep production emission skipped.",
       "doneWhen": [
-        "Port whole emitInsBinary, emitHandleMemOp, emitIns_S, emitIns_S_I and emitIns_R_R_S with all required descriptor/encoding dependencies under D005.",
-        "Port getSpillTempDsc ownership, inst_RV/inst_RV_IV, complete genCodeForBswap and genCanOmitNormalizationForBswap16. Retain contained MOVBE/APX and spill-temp paths rather than a register-only specialization.",
-        "Validate the integrated closure in Debug/Release and commit; retain remaining node dispatch, final encoding and runtime metadata publication explicitly."
+        "Port complete genCodeForShift, genCodeForShiftRMW, genMapShiftInsToShiftByConstantIns, OperandDesc/genOperandDesc and inst_RV_TT_IV/inst_RV_RV_TT with embedded-broadcast and encoding-selection helpers.",
+        "Port both emitInsRMW overloads, emitIns_BASE_R_R_I, emitIns_R_ARX and required register/memory/immediate plus SIMD recording wrappers under D005.",
+        "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Reuse unaryGeneration.selection, adding memory/stack operand recording, spill ownership and byte-swap generation cases.",
+        "Reuse binaryMemoryAndByteSwap.selection, adding shift/rotate, operand descriptor and required recording cases.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Binary-memory recording and byte-swap generation are complete and validated (binaryMemoryAndByteSwap). Continue with complete AMD64 genCodeForShift (codegenxarch.cpp:4614) and genCodeForShiftRMW (4858), retaining immediate LEA/ADD shortcuts, BMI2, RCX moves, memory operands and flag-setting behavior. Close genMapShiftInsToShiftByConstantIns, emitInsRMW, emitIns_BASE_R_R_I, emitIns_R_ARX and inst_RV_TT_IV/inst_RV_RV_TT as required rather than limiting shifts to register operands. Establish the complete dependency boundary before translation; reuse existing recording and spill ownership. Production emission remains explicitly skipped.",
+    "nextAction": "Shift/rotate and shared operand recording are complete and validated (shiftGeneration), including all retained worker files. Next close complete AMD64 genCodeForBinary (codegenxarch.cpp:946) and required overflow/throw-helper branch generation, starting with genCheckOverflow (codegencommon.cpp:2079). Read whole native bodies and establish missing branch-recording dependencies; reuse emitInsBinary, operand wrappers, consume/produce, existing labels and prepared throw blocks. Do not omit overflow, floating or APX paths or activate production emission before its complete closure.",
     "handoff": {
-      "status": "binary-memory-and-byte-swap-validated",
+      "status": "shift-generation-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All memory-address and stack-recording files from a7f6ecaf-b706-4be6-83c3-c83235b7452f are collected and integrated. Worker is idle with no outstanding assignment or unread handoff. All current packet tests pass in Debug/Release. No app-native child sessions.",
+      "workerPackets": "All files and follow-ups from a7f6ecaf-b706-4be6-83c3-c83235b7452f and 4c9a8661-6e45-4e43-960d-7f3a779cdcde are collected, frozen and integrated. Both workers are idle with no outstanding assignment or unread handoff. Root Debug/Release validation passes. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "shiftGeneration": {
+        "debugPassed": 1760,
+        "releasePassed": 1680,
+        "skipped": 0,
+        "selection": "binaryMemoryAndByteSwap.selection plus CodeGenShiftTests, CodeGenOperandTests, EmitterShiftInstructionTests and EmitterMemoryImmediateInstructionTests.",
+        "debugTests": "artifacts\\shifts-integrated-debug.trx",
+        "releaseTests": "artifacts\\shifts-integrated-release.trx",
+        "coverage": "Native immediate shift shortcuts versus flag-setting paths, BMI2 register/local sources, RCX count moves, RORX count conversion and full-width immediate descriptors, RMW shifts/rotates and opcode mapping. Operand descriptors preserve indirect-node identity, unsigned local offsets, spill extraction/reuse, relocation flags, signed-zero data, scalar vector reads, mask data, broadcasts and legacy operand swaps. Complete emitter wrappers cover address/stack/field forms, legacy copies, immediate widths, SIMD and EVEX/APX descriptors and pre-mutation D005 rejection. Small integral embedded broadcasts remain excluded by the existing native lowering predicate; no alternate small data-section behavior is introduced. B215 records the preserved native NDD address-format distinction.",
+        "remaining": "Reuses funcletCreation.nativeHost. No new production reachability or runtime parity claim; emission still explicitly skips and managed machine-code size remains zero. Remaining node/block generation, final encoding and runtime metadata publication are required."
+      },
       "binaryMemoryAndByteSwap": {
         "debugPassed": 1460,
         "releasePassed": 1400,
@@ -3453,6 +3463,30 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "shift-and-rotate-generation",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:4614-4733,4809-4899"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.Shifts.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 genCodeForShift, genCodeForShiftRMW and genMapShiftInsToShiftByConstantIns. Retains ADD/LEA shortcuts, BMI2 and RCX forms, flag-setting constraints, contained/spill operands and native consume/produce ordering. The separate x86 long-shift generator and production node dispatch remain unported."
+    },
+    {
+      "area": "instruction-operand-descriptors-and-wrappers",
+      "native": ["src\\coreclr\\jit\\codegen.h:1481-1626", "src\\coreclr\\jit\\instr.cpp:1063-1237,1380-1450,1487-1493,1513-1618", "src\\coreclr\\jit\\codegencommon.cpp:7286-7292"],
+      "csharp": ["sources\\Core\\jit\\codegen\\CodeGen.OperandDesc.cs", "sources\\Core\\jit\\instr\\CodeGen.MemoryOperands.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 genOperandDesc, inst_RV_TT_IV and inst_RV_RV_TT, plus OperandDesc, indirForm and AddEmbBroadcastMode. Reuses existing embedded-broadcast eligibility. Managed typed fields replace the pointer union under D002; existing indirections retain identity and temporary forms own managed nodes. D005 guards precede spill extraction, constants and caller mutation."
+    },
+    {
+      "area": "shift-and-memory-immediate-recording",
+      "native": ["src\\coreclr\\jit\\emitxarch.cpp:573,5786,6921,7012,9465,10439", "src\\coreclr\\jit\\emitxarch.cpp:1719,8244,8264,8299,8344,8382,8606,8637,8709,9571,9598,9708"],
+      "csharp": ["sources\\Core\\jit\\emitxarch\\Emitter.ShiftInstructions.cs", "sources\\Core\\jit\\emitxarch\\Emitter.MemoryImmediateInstructions.cs", "sources\\Core\\jit\\emitxarch\\Emitter.SimdMemoryInstructions.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 RMW overloads, address LEA and immediate-shift recording, register/address/stack/field immediate forms and SIMD wrappers, including required immediate static-field sizing and classification. Preserves legacy copies, relocations, EVEX/APX and D005 guards. B215 retains the native missing-NDD format-selection argument. No final byte encoding or production activation."
+    },
     {
       "area": "binary-memory-operand-recording",
       "native": ["src\\coreclr\\jit\\emitxarch.cpp:6056,6159,6495-6891,8574,10400,10640", "src\\coreclr\\jit\\emitxarch.h:836", "src\\coreclr\\jit\\emitinl.h:31"],
