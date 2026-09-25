@@ -14,6 +14,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Stack argument generation
+
+Stack arguments now support scalar and SIMD stores, field lists and all native
+struct-copy modes: unrolling, repeated byte moves and partial repeated moves
+with individually recorded GC slots. Fast tailcalls select incoming argument
+homes; ordinary calls use the outgoing area.
+
+Copies preserve native load sizes, remainder widths and the threshold for
+repeated non-GC runs. General call orchestration, remaining node/block generation,
+encoding and metadata publication still prevent production machine-code emission.
+
 ## 2026-09-25: Flowgraph block compaction
 
 Block compaction now merges statement and linear-IR blocks while retaining

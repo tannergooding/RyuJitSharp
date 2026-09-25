@@ -1122,6 +1122,9 @@ or extracting their helper-call temporary. These guards are in
 and `codegenxarch/CodeGen.ReturnTraps.cs`.
 Call-target instruction generation in `codegenxarch/CodeGen.CallInstructions.cs`
 rejects before target consumption, TLS prefix recording or signature capture.
+Stack-argument entrypoints in `codegenxarch/CodeGen.StackArguments.cs` reject
+before changing the active argument home, consuming operands or selecting
+struct-copy temporaries.
 
 ### D006: Shared throw-helper blocks before inline helper calls
 

@@ -32,6 +32,7 @@ public sealed partial class CodeGen : ICodeGen
 
 #if !TARGET_X86
     private int _stkArgVarNum;
+    private int _stkArgOffset;
 #endif
 
     private regMaskTP _calleeRegArgMaskLiveIn;

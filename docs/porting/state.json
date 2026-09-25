@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Integrate complete IL/LIR flowgraph compaction, its mode-specific BasicBlock.isEmpty dependency and native finally-return edge transfer. Next integrate the collected Windows-AMD64 stack-argument packet. Three reused workers independently stage switch optimization, empty-block optimization and scope reporting.",
+      "scope": "Complete Windows-AMD64 stack-argument generation and its native field-list, SIMD and three struct-copy modes. Reuse the existing argument-home field rather than duplicating native state. Independently integrate the collected empty-block optimization packet next; switch optimization and scope reporting remain worker-owned.",
       "doneWhen": [
-        "Integrate complete fgCanCompactBlock, fgCanCompactInitBlock, fgCompactBlock, fgChangeEhfBlock and BasicBlock.isEmpty, preserving native phi ordering and outgoing edge identity.",
-        "Preserve EH boundaries, profiles, IL offsets, block flags and liveness; record rather than fix the upstream phi-only-target splice defect.",
+        "Port complete genPutArgStk and genPutStructArgStk with field-list, SIMD, unroll, rep and partial-rep dependencies.",
+        "Preserve incoming/outgoing homes, scalar actual widths, field widths, GC slot recording, copy load sizes and native non-GC-run thresholds.",
         "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Validate FlowGraphCompactionTests with BlockSplittingTests and FlowGraphBranchThreadingTests in Debug/Release before committing.",
+        "Validate CodeGenStackArgumentTests with CodeGenRegisterArgumentTests, CodeGenCallInstructionTests, EmitterStackStoreTests and CodeGenLocalStoreTests in Debug/Release before committing.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,9 +32,9 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Compaction is integrated and validated (flowgraphCompaction), with B220 preserved and B221 fixed. Integrate artifacts\\stack-argument-packet (collected through turn 24): add int m_stkArgVarNum = BAD_VAR_NUM and int m_stkArgOffset, move its source/tests into project includes, validate all three struct-copy modes and commit. Workers a7f6ecaf, b6e1f160 and 87f10c61 own independent staged switch, empty-block and scope-reporting packets; collect each after notification. Production dispatch and final emission remain separate.",
+    "nextAction": "Stack arguments are integrated and validated (stackArguments), reusing existing _stkArgVarNum and adding only _stkArgOffset. Integrate collected artifacts\\empty-block-optimization-packet (b6e1f160 through turn 4): update native emptiness assertions in ehCanDeleteEmptyBlock and fgRemoveBlock to block.isEmpty(), integrate its two files, validate EmptyBlockOptimizationTests with compaction/branch-threading/EH tests and commit. Switch and scope-reporting workers remain outstanding; collect each after notification. General genCall orchestration, production dispatch and final emission remain separate.",
     "handoff": {
-      "status": "compaction-validated-stack-arguments-collected-three-independent-workers",
+      "status": "stack-arguments-validated-empty-block-collected-switch-scope-in-flight",
       "branch": "tannergooding-ryujit-backend-continuation",
       "workerPackets": "All previous handoffs collected: 4c9a8661-6e45-4e43-960d-7f3a779cdcde through turn 24 (stack arguments frozen, parent-owned); a7f6ecaf-b706-4be6-83c3-c83235b7452f through turn 26 (compaction parent-owned). Reused a7f6ecaf now owns artifacts\\switch-optimization-packet (fgOptimizeSwitchBranches/fgFoldCondToReturnBlock), b6e1f160-b3d7-4126-bf91-39bc8de2e495 owns artifacts\\empty-block-optimization-packet (fgOptimizeEmptyBlock), and 87f10c61-b152-4bdc-a27e-1ecfad4f6342 owns artifacts\\scope-reporting-packet (genSetScopeInfo overloads/ranges and checkICodeDebugInfo). Their earlier descriptor/live-range/opcode work is resolved. Workers stage new files only; no shared edits, builds, phase activation or publication. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
@@ -59,6 +59,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "stackArguments": {
+        "debugPassed": 143,
+        "releasePassed": 128,
+        "skipped": 0,
+        "selection": ["CodeGenStackArgumentTests", "CodeGenRegisterArgumentTests", "CodeGenCallInstructionTests", "EmitterStackStoreTests", "CodeGenLocalStoreTests"],
+        "debugTests": "artifacts\\stack-arguments-debug.trx",
+        "releaseTests": "artifacts\\stack-arguments-release.trx",
+        "coverage": "Scalar actual-width and GC stores, contained immediates, incoming/outgoing argument areas, SIMD8/16/32/64 stores, mixed field lists with SIMD12, local/indirect unrolled sizes and 16/8/4/2/1-byte chunks, rep-copy destination/source preparation, stack byte counts, partial-rep three/four-slot threshold and reference/byref stores, context reset and pre-mutation D005.",
+        "remaining": "Complete Windows-AMD64 genPutArgStk/genPutStructArgStk and required field-list, source-address, unroll, rep and partial-rep support. Existing _stkArgVarNum is reused; _stkArgOffset supplies the missing native companion. General call orchestration and production dispatch/encoding/metadata remain; managed code size is zero."
+      },
       "flowgraphCompaction": {
         "debugPassed": 140,
         "releasePassed": 140,
@@ -3677,6 +3687,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "stack-argument-generation",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:3434-3445,3733-3942,4016-4095,7523-7548,7941-8025,8119-8236", "src\\coreclr\\jit\\codegenlinear.cpp:1867-1985", "src\\coreclr\\jit\\codegencommon.cpp:6413-6443"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.StackArguments.cs", "sources\\Core\\jit\\codegen\\CodeGen.cs:_stkArgVarNum,_stkArgOffset"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete Windows-AMD64 stack-argument entrypoints and dependencies, including all three struct-copy modes and incoming homes for fast tailcalls. Existing managed argument-home state is reused. Native x86 push branches remain target-exclusive; unsupported targets reject. D005 before mutation; no production activation."
+    },
     {
       "area": "flowgraph-compaction",
       "native": ["src\\coreclr\\jit\\fgopt.cpp:769-1181", "src\\coreclr\\jit\\fgbasic.cpp:240-254", "src\\coreclr\\jit\\block.cpp:1016-1040"],
