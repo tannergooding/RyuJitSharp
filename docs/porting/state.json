@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Close complete AMD64 helper-call recording as the first dependency batch for indirect stores and GC write barriers. Preserve helper lookup, indirect-target choices, current GC snapshots, call descriptors and managed return-value diagnostics; keep production emission skipped.",
+      "scope": "Complete Windows-AMD64 indirect stores, including GC write barriers, RMW operations, SIMD12 and contained hardware extraction/narrowing stores. Reuse the committed helper-call closure; preserve native consumption, memory width and GC update ordering.",
       "doneWhen": [
-        "Port complete AMD64 genEmitHelperCall and genEmitCallWithCurrentGC with the native EmitCallParams contract.",
-        "Complete emitIns_Call and its recording dependencies for all AMD64 call forms; preserve D005 before helper/GC/descriptor mutation and retain final encoding separately.",
+        "Port complete genCodeForStoreInd and genStoreIndTypeSimd12, native write-barrier dispatch and store RMW predicates.",
+        "Complete emitInsStoreInd and required immediate-address wrappers for all Windows-AMD64 store forms, retaining D005 before mutation.",
         "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Validate direct/indirect helper selection, register kill contracts, GC snapshots, call-form descriptors and return-value diagnostics in Debug/Release before a dependency-coherent local commit.",
+        "Validate ordinary/barrier stores, RMW operand ordering, scalar/SIMD widths, signed imm8 extraction, byte-swap/APX choices and local/indirect lifetime changes in Debug/Release before committing.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Helper-call recording is complete (helperCalls): genEmitHelperCall, current-GC/MRV capture and all Windows-AMD64 emitIns_Call forms are integrated. Continue complete genCodeForStoreInd at codegenxarch.cpp:5315-5622. Reuse the new helper-call closure and existing write-barrier classification; finish genGCWriteBarrier, the AMD64 genEmitOptimizedGCWriteBarrier branch and required SIMD12/RMW/narrowing memory recording rather than introducing a non-GC-only store specialization. Keep D006 inline throws gated until their complete caller is ported. Production emission remains skipped until node/block generation, encoding and metadata publication are complete.",
+    "nextAction": "The complete indirect-store closure is integrated and validated (indirectStores), including GC barriers, RMW, SIMD12 and contained extraction/narrowing stores. Continue native genJumpToThrowHlpBlk in codegencommon.cpp from the current shared-only implementation in CodeGen.ArithmeticSupport.cs: use the committed helper-call closure to finish inline throws and all required stack/label paths before removing D006 guards. Keep production emission skipped until remaining node/block generation, general calls, encoding and metadata publication are complete.",
     "handoff": {
-      "status": "helper-call-recording-validated",
+      "status": "indirect-store-generation-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All helper-call packets and follow-ups from 4c9a8661-6e45-4e43-960d-7f3a779cdcde are collected through turn 20, frozen and integrated. The emitter uses concrete CodeGen, so no ICodeGen additions are required. Native no-GC classification reuses CorInfoHelpFuncExtensions.IsNoGC rather than a duplicate table. Both this worker and a7f6ecaf-b706-4be6-83c3-c83235b7452f are idle with no assignment or unread handoff. No app-native child sessions.",
+      "workerPackets": "All packets and follow-ups from 4c9a8661-6e45-4e43-960d-7f3a779cdcde are collected through turn 22, frozen and integrated, including emitInsStoreInd, emitIns_A_R_I and EmitterIndirectStoreTests. Root Debug/Release store validation passes. Both this worker and a7f6ecaf-b706-4be6-83c3-c83235b7452f are idle with no assignment or unread handoff. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "indirectStores": {
+        "debugPassed": 501,
+        "releasePassed": 475,
+        "skipped": 0,
+        "selection": ["CodeGenIndirectStoreTests", "EmitterIndirectStoreTests", "CodeGenShiftTests", "CodeGenLocalStoreTests", "CodeGenIndirectLoadTests", "CodeGenHelperCallTests", "EmitterCallInstructionTests", "EmitterStackStoreTests", "EmitterAddressInstructionTests", "EmitterInstructionSizeTests"],
+        "debugTests": "artifacts\\indirect-store-debug.trx",
+        "releaseTests": "artifacts\\indirect-store-release.trx",
+        "coverage": "Scalar widths and consumption, checked/unchecked write-barrier callbacks and ordered argument copies, null/non-heap barrier exclusions, both RMW destination operands and unary/binary/shift/rotate instructions, byte-swap APX selection for data/base/index registers, all SIMD12 address forms with zero/nonzero sources and legacy/VEX recording, intrinsic narrowing attributes and signed imm8 rewriting with VEX-compatible extraction fallback. Emitter cases cover GC attributes, truncation, displacement boundaries, masked stores, explicit immediate-wrapper sources and local store lifetime/GC-root changes after recording. D005 preserves operands, addresses, constants and write-barrier diagnostics.",
+        "remaining": "Reuses funcletCreation.nativeHost while support remains below the explicit emission skip. RMW local-address fixtures use the native zero-field-offset eligibility contract. The AMD64 optimized write-barrier branch genuinely returns false; standard helpers are emitted. General call-node generation, remaining node/block generation, final encoding and metadata publication remain; managed code size is zero."
+      },
       "helperCalls": {
         "debugPassed": 380,
         "releasePassed": 361,
@@ -3618,6 +3628,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "indirect-store-generation",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:5315-5624,5697-5780", "src\\coreclr\\jit\\simdcodegenxarch.cpp:40-99", "src\\coreclr\\jit\\codegencommon.cpp:3029-3036", "src\\coreclr\\jit\\emitxarch.cpp:6323-6452,9440-9453", "src\\coreclr\\jit\\gentree.h:GenTreeStoreInd RMW predicates"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.IndirectStores.cs", "sources\\Core\\jit\\simdcodegenxarch\\CodeGen.IndirectStores.cs", "sources\\Core\\jit\\codegen\\CodeGen.WriteBarriers.cs", "sources\\Core\\jit\\emitxarch\\Emitter.IndirectStores.cs", "sources\\Core\\jit\\gentree\\GenTreeStoreInd.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete Windows-AMD64 genCodeForStoreInd, SIMD12 store splitting, standard write-barrier calls and the native optimized-barrier predicate, plus full indirect-store/immediate-address recording. Reuses existing RMW and call helpers. Preserves signed imm8 mutation, native local-store lifetime ordering and D005; final encoding and production emission remain separate."
+    },
     {
       "area": "helper-call-recording",
       "native": ["src\\coreclr\\jit\\codegenxarch.cpp:8485-8552,11614-11703", "src\\coreclr\\jit\\codegencommon.cpp:1790-1943", "src\\coreclr\\jit\\emitxarch.cpp:10961-11225,2947-2971", "src\\coreclr\\jit\\emit.cpp:2836-2844,3646-3798,10723-10823", "src\\coreclr\\jit\\emitinl.h:230-591", "src\\coreclr\\jit\\emit.h:454-498", "src\\coreclr\\jit\\disasm.cpp:871-891,1425-1442"],

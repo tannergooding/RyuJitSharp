@@ -14,6 +14,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Indirect stores and GC write barriers
+
+Indirect stores now cover scalar values, read-modify-write operations, contained
+byte swaps and hardware-intrinsic extraction/narrowing. GC stores preserve fixed
+write-barrier argument registers and native checked/unchecked helper selection;
+null and known non-heap stores avoid the barrier.
+
+SIMD12 stores write eight bytes followed by four without overwriting padding.
+Local-address stores update the store's lifetime after recording, and extraction
+immediates retain the emitter's signed-byte representation. General call-node
+generation, remaining node/block generation, final encoding and metadata
+publication still prevent production machine-code emission.
+
 ## 2026-09-25: Helper-call and call-instruction recording
 
 Helper calls now retain native direct, memory-indirect and register-materialized

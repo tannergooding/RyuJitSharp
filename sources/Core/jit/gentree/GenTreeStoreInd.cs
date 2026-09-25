@@ -30,6 +30,12 @@ public sealed class GenTreeStoreInd : GenTreeIndir
 #if CPU_LOAD_STORE_ARCH
     public RmwStatus RmwStatus => STOREIND_RMW_STATUS_UNKNOWN;
 #else
+    public bool IsRMWMemoryOp => _rmwStatus is STOREIND_RMW_DST_IS_OP1 or STOREIND_RMW_DST_IS_OP2;
+
+    public bool IsRMWDstOp1 => _rmwStatus is STOREIND_RMW_DST_IS_OP1;
+
+    public bool IsRMWDstOp2 => _rmwStatus is STOREIND_RMW_DST_IS_OP2;
+
     public RmwStatus RmwStatus
     {
         get

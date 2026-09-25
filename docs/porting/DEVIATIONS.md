@@ -1055,6 +1055,9 @@ Register swaps reject before changing local register homes or GC classifications
 Helper calls and current-GC call generation reject before helper lookup or GC
 parameter capture. Call-instruction recording rejects before descriptor allocation,
 GC-state updates or late-disassembly target registration.
+Indirect stores reject before operand consumption, write-barrier selection,
+SIMD12 address advancement or extraction-immediate rewriting. Their emitter
+entrypoints reject before recording or updating a local-address store's lifetime.
 
 Native roots are `emitxarch.cpp:5929,5945,5962,6019,7168,7798,8090,9314,9407,10574,10609`
 and `7042,8134,8506,8546,8686,8929,9626,9658,9804,10422`,
@@ -1098,6 +1101,11 @@ Register-swap guards are in `codegenxarch/CodeGen.RegisterSwaps.cs`.
 Call guards are in `codegenxarch/CodeGen.HelperCalls.cs`,
 `codegencommon/CodeGen.CallGC.cs` and `emitxarch/Emitter.CallInstructions.cs`
 (`codegenxarch.cpp:8485`, `codegencommon.cpp:1790`, `emitxarch.cpp:10961`).
+Indirect-store guards are in `codegenxarch/CodeGen.IndirectStores.cs`,
+`simdcodegenxarch/CodeGen.IndirectStores.cs`, `codegen/CodeGen.WriteBarriers.cs`
+and `emitxarch/Emitter.IndirectStores.cs`
+(`codegenxarch.cpp:5315`, `simdcodegenxarch.cpp:40`,
+`codegencommon.cpp:3029`, `emitxarch.cpp:6323,9440`).
 The pre-mutation rejection is
 covered for every recording entrypoint. Retain the mixed-mode
 native bodies until full disassembly is ported. This does not activate production
