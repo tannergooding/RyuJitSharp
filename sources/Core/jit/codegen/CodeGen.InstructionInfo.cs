@@ -22,31 +22,8 @@ public sealed partial class CodeGen
     public bool IsEmbeddedBroadcastEnabled(instruction ins, GenTree operand)
     {
 #if FEATURE_HW_INTRINSICS
-        if (!Compiler.canUseEvexEncoding() || !s_broadcastCompatible[(int)ins])
-        {
-            return false;
-        }
-
-        bool evexEncodable;
-        if (s_evexCompatible[(int)ins])
-        {
-            evexEncodable = (ins < INS_vpdpwsud) || (ins > INS_vpdpbuuds) ||
-                Compiler.compSupportsHWIntrinsic(InstructionSet_AVXVNNIINT_V512);
-        }
-        else
-        {
-            evexEncodable = ins switch {
-                INS_aesdec or INS_aesdeclast or INS_aesenc or INS_aesenclast or INS_pclmulqdq =>
-                    Compiler.compSupportsHWIntrinsic(InstructionSet_AES_V512),
-                INS_vpdpbusd or INS_vpdpwssd or INS_vpdpbusds or INS_vpdpwssds =>
-                    Compiler.compSupportsHWIntrinsic(InstructionSet_AVX512v3),
-                INS_vpmadd52huq or INS_vpmadd52luq =>
-                    Compiler.compSupportsHWIntrinsic(InstructionSet_AVX512v2),
-                _ => false,
-            };
-        }
-
-        return evexEncodable && operand.IsContained && operand.Oper.IsHWIntrinsic &&
+        return Emitter.UseEvexEncodings && instIsEmbeddedBroadcastCompatible(ins) &&
+            operand.IsContained && operand.Oper.IsHWIntrinsic &&
             operand.AsHWIntrinsic().IsBroadcastScalar;
 #else
         return false;

@@ -606,10 +606,16 @@ struct enumerator, without copying or reversing the traversal stack.
 
 Xarch ternary intrinsic input-use flags are computed from the control byte's
 truth table; they agree with the native decomposition table for all 256 controls.
+The complete decomposition table is also generated from the pinned native
+rows. Each constant word stores three seven-bit operation/use pairs, preserving
+native step and operand order without a managed object table.
 Mask sizes, broadcast tuple compatibility and EVEX instruction flags are generated
-from the existing native instruction headers. Broadcast eligibility currently
-reads the compiler's EVEX capability directly, retaining per-instruction ISA
-restrictions, until the emitter's corresponding state is implemented.
+from the existing native instruction headers. Encoding eligibility uses the
+emitter's vector/promoted EVEX modes and per-instruction ISA restrictions.
+Embedded broadcast additionally requires vector EVEX, a compatible tuple and a
+contained scalar-broadcast operand. The temporary compiler-capability query and
+its duplicate broadcast/EVEX boolean tables have been replaced by these shared
+native queries.
 
 Tree dump callers always supply an indentation stack. An empty stack still
 corresponds to a non-null native stack, so it must not trigger the fractional

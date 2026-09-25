@@ -79,7 +79,6 @@ public partial class Emitter
 
         set
         {
-            assert(!value || UseEvexEncodings);
             _usePromotedEvexEncodings = value;
         }
     }

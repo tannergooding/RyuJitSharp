@@ -34,6 +34,7 @@ internal static class Program
 
         GenerateHandleKindIndex();
         GenerateHWIntrinsicInfo();
+        GenerateTernaryLogicInfo();
 
         GenerateInlineObservation();
         GenerateInlineObservationExtensions();
@@ -872,6 +873,68 @@ public partial struct HWIntrinsicInfo
 """);
     }
 
+    private static void GenerateTernaryLogicInfo()
+    {
+        string[] kinds = [
+            "None", "Select", "True", "False", "Not", "And", "Nand", "Or",
+            "Nor", "Xor", "Xnor", "Cond", "Major", "Minor",
+        ];
+        string[] uses = ["None", "A", "B", "AB", "C", "AC", "BC", "ABC"];
+        var entries = new StringBuilder();
+        var count = 0;
+
+        foreach (var line in File.ReadLines(@"Inputs\ternarylogic.inc"))
+        {
+            var tokens = Regex.Matches(line, @"TernaryLogic(?:OperKind|UseFlags)::([A-Za-z]+)");
+            if (tokens.Count == 0)
+            {
+                continue;
+            }
+            if (tokens.Count != 6)
+            {
+                throw new InvalidDataException($"Malformed ternary-logic entry: {line}");
+            }
+
+            uint packed = 0;
+            for (var index = 0; index < 3; index++)
+            {
+                var kind = Array.IndexOf(kinds, tokens[2 * index].Groups[1].Value);
+                var use = Array.IndexOf(uses, tokens[(2 * index) + 1].Groups[1].Value);
+                if ((kind < 0) || (use < 0))
+                {
+                    throw new InvalidDataException($"Unknown ternary-logic operation: {line}");
+                }
+
+                var entry = (uint)kind | ((uint)use << 4);
+                packed |= entry << (7 * index);
+            }
+
+            _ = entries.AppendLine(CultureInfo.InvariantCulture, $"        0x{packed:X6}u, // 0x{count:X2}");
+            count++;
+        }
+
+        if (count != 256)
+        {
+            throw new InvalidDataException($"Expected 256 native ternary-logic entries; found {count}.");
+        }
+
+        _ = Directory.CreateDirectory(@"Outputs\jit\hwintrinsic");
+        File.WriteAllText(@"Outputs\jit\hwintrinsic\TernaryLogicInfo.generated.cs", $$"""
+// Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+namespace RyuJitSharp;
+
+public readonly partial struct TernaryLogicInfo
+{
+    private static System.ReadOnlySpan<uint> PackedEntries => [
+{{entries}}    ];
+}
+""");
+    }
+
     private static void GenerateInlineObservation()
     {
         var builder = ProcessMacroBasedFile(@"Inputs\inline.def", "INLINE_OBSERVATION(", (builder, inputFile, line, prefix, parts) => {
@@ -1059,30 +1122,6 @@ public enum instruction
             _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {maskSize}, // INS_{parts[0].Trim()}");
         });
 
-        var broadcastBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
-            if (!inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal))
-            {
-                return;
-            }
-
-            var tupleType = parts[^2].Trim();
-            var supportsBroadcast = tupleType is "INS_TT_FULL" or "INS_TT_HALF";
-            var flags = parts[^1].Split('|', StringSplitOptions.TrimEntries);
-            if (supportsBroadcast && Array.Exists(flags, flag => flag is "Encoding_EVEX_APX_ONLY" or "INS_FLAGS_HasNDD" or "INS_FLAGS_HasNF"))
-            {
-                throw new InvalidDataException($"APX broadcast metadata needs explicit support: '{line}'");
-            }
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {(supportsBroadcast ? "true" : "false")}, // INS_{parts[0].Trim()}");
-        });
-
-        var evexBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
-            if (inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal))
-            {
-                var supportsEvex = parts[^1].Split('|', StringSplitOptions.TrimEntries).Contains("Encoding_EVEX");
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {(supportsEvex ? "true" : "false")}, // INS_{parts[0].Trim()}");
-            }
-        });
-
         var tupleBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
             if (inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal))
             {
@@ -1137,13 +1176,6 @@ public sealed partial class CodeGen
 {{maskBuilder}}
     ];
 
-    private static ReadOnlySpan<bool> s_broadcastCompatible => [
-{{broadcastBuilder}}
-    ];
-
-    private static ReadOnlySpan<bool> s_evexCompatible => [
-{{evexBuilder}}
-    ];
 #endif
 }
 """);

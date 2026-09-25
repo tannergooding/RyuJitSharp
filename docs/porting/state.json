@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "SIMD selector contracts are committed 8cd305d. Common/hardware lowering integration passes 868 Debug/858 Release with actual recursive dispatch; 21 additional direct dispatcher cases pass in each configuration. All 39 generated outputs reproduce maintained files and the 256 ternary rows match the pinned hwintrinsic.cpp table in order. Finish hardware metadata/default regression coverage and source review before committing the complete lowering closure. Astra is read through turn 57 and Sol through turn 55; their returned packets are parent-owned. LSRA worker is read through turn 73; definition/kill closure now uses ICodeGen, the canonical compiler GC-kill query and no synthetic candidate-initialization pass. Stable-source LSRA/write-barrier coverage passes 154 Debug/130 Release. Optimized candidate production remains separate; minopts does not use its local preference sets. Preserve native bodies and inactive drivers; managed code size remains zero.",
+    "nextAction": "SIMD selectors are committed 8cd305d, allocation definitions/kills 5f83737 and intrinsic type metadata 78c140a. Shared encoding/ternary metadata passes 25 Debug/25 Release on stable source; all 39 generated outputs match and all 256 native ternary rows match in order. Current working-tree lowering integration passes 903 Debug/893 Release, including direct rounding/elision/ownership cases and signed/wide register extraction. Finish returned hardware/common lowering source review and commit its coherent closure, then close the native DoPhase/AfterLowerBlocks prerequisites before activation. Astra is read through turn 57, Sol through turn 55 and the LSRA worker through turn 73; returned packets are parent-owned and workers are idle. Optimized candidate production remains separate; no synthetic initialization pass was retained. Preserve native bodies and inactive drivers; managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -41,6 +41,18 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "hardwareEncodingMetadata": {
+        "debugPassed": 25,
+        "releasePassed": 25,
+        "skipped": 0,
+        "selection": ["IntrinsicInputSize*", "TernaryLogicInfo*", "IntrinsicEncoding*", "Rationalization*"],
+        "debugTests": "artifacts\\hardware-containment-metadata-debug.trx",
+        "releaseTests": "artifacts\\hardware-containment-metadata-release.trx",
+        "failingBefore": "artifacts\\emitter-broadcast-state-before.trx",
+        "generatedOutputsMatched": 39,
+        "nativeTernaryRowsMatchedInOrder": 256,
+        "scope": "Stable-source instruction input sizes, canonical EVEX/broadcast eligibility, independent promoted encoding, instruction-specific ISA requirements and generated ternary decomposition. All 256 controls and operand permutations are checked. The old broadcast query fails the disabled-emitter case. Duplicate broadcast/EVEX boolean arrays are removed."
+      },
       "hardwareTypeMetadata": {
         "debugPassed": 67,
         "releasePassed": 67,
@@ -82,12 +94,12 @@
         "scope": "Canonical binary/comparison operand predicates for elided floating scalars and LIR SIMD reinterprets, including ARM64 vector-versus-scalar multiply classification. Four cases fail before the fix. Execution validation is Windows x64; no ARM64 execution or emitted-code parity is claimed."
       },
       "commonHardwareLoweringIntegration": {
-        "debugPassed": 868,
-        "releasePassed": 858,
+        "debugPassed": 903,
+        "releasePassed": 893,
         "skipped": 0,
         "debugTests": "artifacts\\hardware-full-lowering-debug.trx",
         "releaseTests": "artifacts\\hardware-full-lowering-release.trx",
-        "scope": "Isolated HEAD-plus-working-source integration, excluding in-flight LSRA partials. Includes common lowering, actual hardware transformation/containment dispatch, Dot, comparisons, selection and ternary logic. The call-target boundary expectation and native-integer CFG zero assertion are corrected. Pending source review/commit; production DoPhase remains inactive and these constructed-IR checks are not managed code-generation or native-host parity."
+        "scope": "Current working-tree integration, including common lowering, actual hardware transformation/containment dispatch, Dot, comparisons, selection and ternary logic. Direct cases cover rounding, ABI/gather elision boundaries, double-NOT continuation, signed/wide extraction and encoding metadata. The call-target boundary expectation and native-integer CFG zero assertion are corrected. Pending complete lowering source review/commit; production DoPhase remains inactive and these constructed-IR checks are not managed code-generation or native-host parity."
       },
       "lirRangeEnumeration": {
         "debugPassed": 382,

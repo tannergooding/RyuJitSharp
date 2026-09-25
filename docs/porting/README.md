@@ -345,6 +345,10 @@ Establish clean-baseline reproducibility before regenerating against new inputs.
 hardware tables; validate the complete ordered enum, not just HWI row counts.
 The xarch instruction tuple table uses the same ordered instruction inputs as
 the instruction enum, preserving combined tuple flags for lowering and emission.
+`Inputs\ternarylogic.inc` contains the 256 ordered initializer rows extracted
+from the pinned `hwintrinsic.cpp` ternary decomposition table. Preserve all
+operation/use pairs and row order when refreshing it; the generator packs each
+row into the managed lookup table.
 Continue sharing native table definitions through these generators. Small tools
 for repetitive translation, provenance checks, inventories, or maintenance are
 appropriate when they reduce repeated work or mistakes. Keep their scope narrow
