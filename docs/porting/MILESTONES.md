@@ -101,6 +101,10 @@ code removal changes block-entry lifetimes, including handler keepalive and
 initialization requirements. Compiler phase activation, expression-tree
 liveness orchestration and the allocation driver remain unfinished.
 
+Post-lowering analysis now has its compiler entrypoint. Empty-block branch
+threading preserves exception-region boundaries, loop cycles, edge likelihoods
+and profile weights. The general flowgraph-cleanup pass remains unfinished.
+
 Register kills and GC-specific spills now preserve live values and advance
 fixed-register constraints. Temporary copy-register allocation retains the
 interval's primary assignment and reports the native selection heuristic.

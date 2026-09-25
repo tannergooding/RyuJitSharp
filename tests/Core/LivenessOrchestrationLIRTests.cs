@@ -67,7 +67,7 @@ internal static unsafe class LivenessOrchestrationLIRTests
             var epoch = compiler.CurLVEpoch;
             compiler.fgStmtRemoved = true;
 
-            new Liveness<PostLowerPolicy>(compiler).RunLIR();
+            compiler.fgPostLowerLiveness();
 
             Assert.That(compiler.fgBBVarSetsInited, Is.True);
             Assert.That(compiler.fgLocalVarLivenessDone, Is.True);
@@ -146,8 +146,7 @@ internal static unsafe class LivenessOrchestrationLIRTests
     {
         WithCompiler(2, minopts, compiler => {
             var (blocks, firstStore, secondStore, lastUse) = DeadChain(compiler);
-            var liveness = new Liveness<PostLowerPolicy>(compiler);
-            liveness.RunLIR();
+            compiler.fgPostLowerLiveness();
 
             foreach (var block in blocks)
             {
@@ -164,7 +163,7 @@ internal static unsafe class LivenessOrchestrationLIRTests
             Assert.That(compiler.lvaTable[0].lvRefCnt(), Is.EqualTo(3));
             Assert.That(compiler.lvaTable[1].lvRefCnt(), Is.EqualTo(3));
 
-            liveness.RunLIR();
+            compiler.fgPostLowerLiveness();
             Assert.That(compiler.fgStmtRemoved, Is.False);
         });
     }

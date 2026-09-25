@@ -706,6 +706,11 @@ backward analysis and repeat condition are unchanged; expression-tree and
 early-liveness orchestration remain separate, rather than silently entering
 an incomplete generic driver.
 
+`Compiler.fgPostLowerLiveness` selects the native post-lowering policy through
+that LIR driver: dead-code elimination is enabled, while SSA, memory liveness,
+early mode and address-exposed-local tracking remain disabled. This entrypoint
+does not itself activate the lowering phase.
+
 LIR node replacement uses the existing metadata-preserving constructors with
 `NodeThreading.LIR`, followed by `LIR.Range.ReplaceNode` to transfer the owning
 use and range links. Address-mode lowering takes its address alias by reference,

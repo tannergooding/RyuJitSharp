@@ -12,12 +12,12 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Advance Windows-x64 scalar minopts lowering, stack-level/throw-helper preparation, LSRA allocation and codegen initialization. Rationalization is committed and published as 619127a. Keep three disjoint implementation lanes moving: LSRA reference construction, hardware-intrinsic containment, and liveness analysis. The coordinator owns block/call integration and shared contracts. Collect handoffs on completion, record validation and commit state, and refill useful independent lanes without waiting for user reminders. Reuse workers with retained context; do not leave completed handoffs idle behind integration or mark unvalidated packets complete. Validate stable packet exports when in-flight shared-tree edits would otherwise block them; do not duplicate worker investigations.",
+      "scope": "Finish the current Windows-x64 lowering dependency batch and prepare a fresh-session handoff at the next validated, dependency-coherent commit boundary. Parent owns common/hardware integration, traversal and post-lowering liveness. Current worker packets are complete binary/CCMP lowering, fast-tailcall lowering and canonical branch threading. Collect and validate these handoffs without starting additional packets. Preserve unfinished work and inactive drivers; pause before phase activation or native-host recapture.",
       "doneWhen": [
         "Integrate complete required lowering and stack-level helpers, including outgoing frame space and exception-helper construction, without activating an incomplete node dispatcher.",
         "Port LSRA interval/reference foundations and native minimal-allocation dependencies; retain incomplete native bodies and do not invent a reduced allocator.",
         "Establish canonical managed ownership of codegen, GC and register-set state; build toward actual scalar emission with correct leaf metadata.",
-        "Validate and commit coherent complete portions; publish execution milestones on the existing branch without force pushing or changing targets."
+        "Validate and commit coherent complete portions, record the exact remaining frontier and handoff cursor, then notify the user and pause for a fresh session."
       ],
       "validation": [
         "Reuse existing coverage and incremental builds. Add focused regression cases for actual failures, not a matrix for each helper.",
@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "SIMD selectors are committed 8cd305d, allocation definitions/kills 5f83737 and intrinsic type metadata 78c140a. Shared encoding/ternary metadata passes 25 Debug/25 Release on stable source; all 39 generated outputs match and all 256 native ternary rows match in order. Current working-tree lowering integration passes 903 Debug/893 Release, including direct rounding/elision/ownership cases and signed/wide register extraction. Finish returned hardware/common lowering source review and commit its coherent closure, then close the native DoPhase/AfterLowerBlocks prerequisites before activation. Astra is read through turn 57, Sol through turn 55 and the LSRA worker through turn 73; returned packets are parent-owned and workers are idle. Optimized candidate production remains separate; no synthetic initialization pass was retained. Preserve native bodies and inactive drivers; managed code size remains zero.",
+    "nextAction": "All current worker packets are returned and frozen. Root common/hardware, binary/CCMP, fast-tailcall, liveness and flowgraph integration passes 1144 Debug/1129 Release. Commit the independently validated post-lowering policy and canonical branch-threading packet, then the complete common/hardware lowering dependency closure and its related docs. Native LowerNode passthrough, optimized bitwise pretransforms and byte-swap dispatch are restored; the RMW operator range now includes bitwise/shift/rotate operators. Fast tailcalls are wired without reserving ordinary outgoing argument space. The remaining JIT-helper tailcall rejection is Windows-x86-only by native morph eligibility. fgUpdateFlowGraph still needs broader canonical helpers, so phase activation must use the documented native no-local-lifetimes specialization or complete those dependencies first. Non-Wasm AfterLowerBlocks is empty. Persist the exact handoff and pause before phase activation. Allocation and emission remain inactive; managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -41,6 +41,24 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "postLowerFlowGraphSupport": {
+        "debugPassed": 98,
+        "releasePassed": 93,
+        "skipped": 0,
+        "selection": ["FlowGraph*", "LivenessOrchestrationLIRTests"],
+        "debugTests": "artifacts\\post-lower-flowgraph-debug.trx",
+        "releaseTests": "artifacts\\post-lower-flowgraph-release.trx",
+        "scope": "Stable-source post-lowering liveness entrypoint and complete native empty-block branch threading/cycle detection. Includes existing flowgraph helpers and DFS consumers, HIR/LIR, EH/cycle guards, edge merging/likelihood and profile clamping. Compiler remains unsealed; no warning suppression or phase activation."
+      },
+      "postLowerLivenessPolicy": {
+        "debugPassed": 27,
+        "releasePassed": 25,
+        "skipped": 0,
+        "selection": ["LivenessOrchestrationLIRTests"],
+        "debugTests": "artifacts\\post-lower-policy-debug.trx",
+        "releaseTests": "artifacts\\post-lower-policy-release.trx",
+        "scope": "Stable-source Compiler.fgPostLowerLiveness adapter selects native non-SSA, non-memory, non-early LIR with dead-code elimination and without address-exposed tracking. Existing empty/local-bearing and repeated dead-store cases now exercise the compiler entrypoint. No phase activation."
+      },
       "hardwareEncodingMetadata": {
         "debugPassed": 25,
         "releasePassed": 25,
