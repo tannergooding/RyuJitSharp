@@ -663,6 +663,18 @@ conversion scans local descriptors in local-number order rather than allocating
 native's temporary byte-per-local array; printed local names and order are
 unchanged.
 
+Internal-register definitions, call definitions and kill references retain
+native location ordering, register preferences and upper-vector save rules.
+Write-barrier classification is exposed through `ICodeGen`, matching the native
+codegen interface rather than requiring a concrete implementation. The compiler
+owns the shared GC-reference kill query.
+
+Floating-point preference sets and local upper-vector intervals belong to
+optimized candidate selection, which remains unported. There is no separate
+kill-state initialization phase or second candidate scan. The minopts
+specialization does not produce those local sets; upper-vector saves for
+temporary values remain supported.
+
 Liveness policies use static interface members in place of native template
 traits. Per-block scratch and stored sets retain independent managed storage.
 An empty bitset span is a valid initialized set when its trait environment has

@@ -126,6 +126,12 @@ and delayed operand lifetimes, including memory-address registers that must
 survive the operation. Remaining instruction-specific builders still prevent
 preparing complete reference streams for allocation.
 
+Internal-register temporaries now receive matching definition/use references,
+and call results are defined after their register kills. Kill construction
+accounts for helper-specific clobbers, write barriers, unmanaged transitions
+and live upper-vector values. Register preferences avoid clobbered registers
+without changing the native treatment of write-through locals.
+
 ## 2026-09-24: Rationalization and linear IR
 
 Rationalization now converts sequenced expression trees into linear IR, removes

@@ -90,6 +90,10 @@ public interface ICodeGen
 
     unsafe void genGenerateCode(out void* codePtr, out int nativeSizeOfCode);
 
+    bool genUseOptimizedWriteBarriers(GCInfo.WriteBarrierForm writeBarrierForm);
+
+    CorInfoHelpFunc genWriteBarrierHelperForWriteBarrierForm(GCInfo.WriteBarrierForm writeBarrierForm);
+
     void ResetWritePhaseForFramePointerRequired();
 
     regNumber GetFramePointerReg(int funcletIndex);

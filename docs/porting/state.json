@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Canonical SIMD binary/comparison selector contracts are reconciled (B186); stable-source coverage passes 63 Debug/63 Release. Complete common/hardware lowering integration passes 868 Debug/858 Release with actual recursive dispatch. The old call-target test incorrectly expected containment beyond the inserted store/load range; it now checks the native boundary, and all materialization consumers share ReplaceWithLclVar. Review returned hardware source/native mappings, generator output and dispatcher-specific ownership/rounding cases before committing the complete dependency closure. Astra is read through turn 57 and Sol through turn 55; construction, Dot, containment, comparisons, selection and ternary packets are returned. LSRA worker is read through turn 72: kill-set/helper/write-barrier closure is returned, pending parent shared-interface/candidate-state integration and independent validation. Preserve native bodies and inactive drivers; managed code size remains zero.",
+    "nextAction": "SIMD selector contracts are committed 8cd305d. Common/hardware lowering integration passes 868 Debug/858 Release with actual recursive dispatch; 21 additional direct dispatcher cases pass in each configuration. All 39 generated outputs reproduce maintained files and the 256 ternary rows match the pinned hwintrinsic.cpp table in order. Finish hardware metadata/default regression coverage and source review before committing the complete lowering closure. Astra is read through turn 57 and Sol through turn 55; their returned packets are parent-owned. LSRA worker is read through turn 73; definition/kill closure now uses ICodeGen, the canonical compiler GC-kill query and no synthetic candidate-initialization pass. Stable-source LSRA/write-barrier coverage passes 154 Debug/130 Release. Optimized candidate production remains separate; minopts does not use its local preference sets. Preserve native bodies and inactive drivers; managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -41,6 +41,26 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "definitionAndKillConstruction": {
+        "debugPassed": 154,
+        "releasePassed": 130,
+        "skipped": 0,
+        "selection": ["LinearScan*", "WriteBarrier*"],
+        "debugTests": "artifacts\\definition-kill-stable-debug.trx",
+        "releaseTests": "artifacts\\definition-kill-stable-release.trx",
+        "scope": "Stable-source internal definitions/uses, call definitions, def-with-kills, helper and per-node kill masks, GC kills, register preferences and upper-vector saves. Native Debug kill-mask consistency assertion is retained. Write-barrier consumers use ICodeGen; Compiler owns killGCRefs. Synthetic candidate-state initialization and its duplicate vector count were removed. Optimized candidate selection remains unported; its constructed test explicitly supplies prepared candidate state. No allocation-driver activation."
+      },
+      "hardwareDispatcherBoundaries": {
+        "debugPassed": 21,
+        "releasePassed": 21,
+        "skipped": 0,
+        "debugTests": "artifacts\\hardware-dispatch-direct-debug.trx",
+        "releaseTests": "artifacts\\hardware-dispatch-direct-release.trx",
+        "scope": "Native rounding arity and containment bypass, floating-scalar elision versus ABI consumers, width-changing reinterpretation versus AVX2 gather indices, NOT/AND operand ownership, and double-NOT saved-continuation repair. Constructed LIR only; compiler lowering remains inactive.",
+        "generatedOutputsMatched": 39,
+        "nativeTernaryRowsMatchedInOrder": 256,
+        "generatorWorkspace": "artifacts\\ternary-table-review-8cd305d"
+      },
       "hardwareSelectorContracts": {
         "debugPassed": 63,
         "releasePassed": 63,
