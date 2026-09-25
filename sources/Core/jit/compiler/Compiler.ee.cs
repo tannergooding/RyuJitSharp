@@ -218,6 +218,8 @@ public partial class Compiler
         return ref eeInfo;
     }
 
+    public nuint eeGetPageSize() => unchecked((nuint)eeGetEEInfo().osPageSize);
+
     public unsafe ref CORINFO_ASYNC_INFO eeGetAsyncInfo()
     {
         if (!asyncInfoInitialized)

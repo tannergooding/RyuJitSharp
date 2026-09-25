@@ -13,6 +13,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-24: Call and memory register-allocation constraints
+
+Reference construction now models calls, register and stack arguments, write
+barriers, block initialization and copies, indirections, comparisons and local
+stack allocation. Calls preserve ABI returns, varargs register duplication,
+tailcall target restrictions and async-continuation lifetimes. Memory operations
+retain their native internal-register counts, SIMD widths and fixed-register
+requirements.
+
+Block sizing retains the unsigned native range, and local stack allocation uses
+the target page size reported by the EE. Local-store, return and hardware-intrinsic
+builders, node dispatch, interval construction and resolution remain before
+allocation can become active.
+
 ## 2026-09-24: Scalar register-allocation constraints
 
 Register-reference construction now covers shifts and rotates, multiplication,

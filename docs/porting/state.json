@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port complete Windows-x64 call and memory LSRA reference builders required by the native BuildNode dispatcher: calls, register/stack arguments, block stores, indirections, comparisons and local-heap allocation. Keep allocation inactive until the dispatcher, interval construction and resolution are complete.",
+      "scope": "Complete Windows-x64 node-level LSRA reference construction: local stores and returns, hardware intrinsics, local containment/candidate classification and the full native BuildNode dispatcher. Keep allocation inactive until interval construction and resolution are complete.",
       "doneWhen": [
-        "Integrate complete native call, argument, block-store, indirection, comparison and local-heap reference-building functions for Windows x64.",
-        "Preserve ABI register constraints, async/Swift continuation lifetimes, APX/EVEX restrictions, internal temporaries and kill/definition ordering.",
+        "Port the remaining local-store, return and hardware-intrinsic builders, preserving native candidate, multireg, ABI and encoding contracts.",
+        "Integrate full native BuildNode dispatch and build-state reset, including contained/candidate local classification and register-destination counts.",
         "Validate integrated builders in Debug and Release and commit the dependency-coherent packet with its exact remaining activation cursor."
       ],
       "validation": [
-        "Run new focused call/memory reference tests and existing LinearScan reference, definition and register-selection coverage in Debug and Release.",
+        "Run focused local/return/hardware and dispatcher reference tests plus existing LinearScan coverage in Debug and Release.",
         "Reuse the lowering capture at 7372483; inactive reference builders do not change the native-host frontier and do not justify recapture."
       ],
       "deferred": [
@@ -32,9 +32,9 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Scalar LSRA reference builders and encoding restrictions are validated. Next port BuildCall/BuildPutArgReg and async/Swift busy-register handling, BuildBlockStore/BuildPutArgStk, and BuildIndir/BuildCmp/BuildCmpOperands/BuildLclHeap. Native sources are lsraxarch.cpp:1207-1846,3041-3152 and lsrabuild.cpp:4473-4770. Reuse existing operand, call-def and kill primitives; complete missing EE page-size access for local-heap requirements. Validate and commit this packet before the remaining local-store/return/hardware builders and BuildNode/interval-building/resolution closure. Allocation remains explicitly skipped; no reduced allocator or fresh unchanged-frontier capture. No push or PR is authorized.",
+    "nextAction": "Call/memory LSRA reference construction is validated. Next complete BuildStoreLocDef/BuildStoreLoc/BuildReturn (lsrabuild.cpp:3946-4460), BuildHWIntrinsic (lsraxarch.cpp:2031-2975), and full BuildNode (lsraxarch.cpp:45-702). Parent integration also needs clearBuildState (lsra.h:1938), checkContainedOrCandidateLclVar and its multireg candidate helper (lsrabuild.cpp:1206-1299), and GenTree.GetRegisterDstCount (gentree.cpp:860-902). Reuse the committed scalar/call/memory builders. Commit the complete node-reference packet before interval-building/resolution orchestration; allocation remains explicitly skipped. No reduced dispatcher, unchanged-frontier capture, push or PR.",
     "handoff": {
-      "status": "scalar-reference-builders-validated",
+      "status": "call-memory-reference-builders-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
       "workerPackets": "All returned, integrated and frozen; no pending assignments or child-session dependencies.",
       "preserve": "Activate only the complete no-local-lifetimes lowering mode; keep allocation explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "callMemoryReferenceBuilders": {
+        "debugPassed": 292,
+        "releasePassed": 268,
+        "skipped": 0,
+        "selection": ["LinearScan*"],
+        "debugTests": "artifacts\\lsra-call-memory-debug.trx",
+        "releaseTests": "artifacts\\lsra-call-memory-release.trx",
+        "newFocusedCases": 78,
+        "scope": "Complete Windows-AMD64 call, register/stack argument, write-barrier, block-store, indirection, comparison and local-heap reference builders. Covers fixed-register order, varargs mirrors, async continuation, GS-cookie tailcall target exclusions, vzeroupper, GC/SIMD temporary selection, APX/EVEX addresses, unsigned block sizes and target-page boundaries. Swift code is translated but SWIFT_SUPPORT is disabled in this Windows configuration. Allocation remains inactive; no new runtime parity claim."
+      },
       "scalarReferenceBuilders": {
         "debugPassed": 214,
         "releasePassed": 190,
@@ -3105,6 +3115,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "lsra-call-memory-reference-builders",
+      "native": ["src\\coreclr\\jit\\lsraxarch.cpp:1207-1846", "src\\coreclr\\jit\\lsraxarch.cpp:3041-3152", "src\\coreclr\\jit\\lsrabuild.cpp:4473-4770", "src\\coreclr\\jit\\compiler.h:9658-9661,10543-10569", "src\\coreclr\\jit\\compiler.hpp:3097-3116", "src\\coreclr\\jit\\gentree.cpp:1920-1997", "src\\coreclr\\jit\\codegencommon.cpp:2978-2995"],
+      "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.Calls.cs", "sources\\Core\\jit\\lsra\\LinearScan.BlockAndStackArguments.cs", "sources\\Core\\jit\\lsra\\LinearScan.MemoryAndComparisons.cs", "sources\\Core\\jit\\compiler\\Compiler.cs", "sources\\Core\\jit\\compiler\\Compiler.ee.cs"],
+      "reconciledCommit": null,
+      "status": "Complete Windows-AMD64 call and memory reference builders, unsigned SIMD-width input and native-sized EE page-size access. The call file currently houses native NeedsVzeroupper, varargs-register mapping and the complete fast-tailcall-only GS-cookie selector branch (B196). The non-tailcall cookie selector remains a codegen dependency. Local/return/hardware builders and BuildNode/interval orchestration/resolution remain incomplete; allocation is not activated."
+    },
     {
       "area": "lsra-scalar-reference-builders",
       "native": ["src\\coreclr\\jit\\lsraxarch.cpp:932-1197", "src\\coreclr\\jit\\lsraxarch.cpp:1858-2014", "src\\coreclr\\jit\\lsraxarch.cpp:2979-3030", "src\\coreclr\\jit\\lsraxarch.cpp:3163-3430", "src\\coreclr\\jit\\lsrabuild.cpp:3913-3934", "src\\coreclr\\jit\\lsrabuild.cpp:4215-4232", "src\\coreclr\\jit\\lsra.cpp:262-269", "src\\coreclr\\jit\\lsra.cpp:475-487"],

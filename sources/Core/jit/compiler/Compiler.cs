@@ -2299,9 +2299,9 @@ public partial class Compiler
         assert(size > 0);
 
 #if FEATURE_SIMD
-        if (roundDownSimdSize(size) > 0)
+        if (roundDownSimdSize((uint)size) > 0)
         {
-            return GetSimdTypeForSize(roundDownSimdSize(size));
+            return GetSimdTypeForSize(roundDownSimdSize((uint)size));
         }
 #endif
 
@@ -2336,7 +2336,7 @@ public partial class Compiler
     /// <summary>rounds the given size down to the nearest SIMD size available on the target.</summary>
     /// <param name="size">size of the data to process with SIMD</param>
     /// <returns></returns>
-    public int roundDownSimdSize(int size)
+    public int roundDownSimdSize(uint size)
     {
 #if FEATURE_HW_INTRINSICS && TARGET_XARCH
         var maxSize = GetPreferredVectorByteLength();
@@ -2344,24 +2344,14 @@ public partial class Compiler
 
         if (size >= maxSize)
         {
-            size = maxSize;
+            return maxSize;
         }
-        else if (size >= YMM_REGSIZE_BYTES)
+
+        if ((size >= YMM_REGSIZE_BYTES) && (maxSize >= YMM_REGSIZE_BYTES))
         {
-            if (maxSize >= YMM_REGSIZE_BYTES)
-            {
-                size = YMM_REGSIZE_BYTES;
-            }
+            return YMM_REGSIZE_BYTES;
         }
-        else if (size >= XMM_REGSIZE_BYTES)
-        {
-            size = XMM_REGSIZE_BYTES;
-        }
-        else
-        {
-            size = 0;
-        }
-        return size;
+        return (size >= XMM_REGSIZE_BYTES) ? XMM_REGSIZE_BYTES : 0;
 #elif TARGET_ARM64 || TARGET_WASM
         assert(GetMaxVectorByteLength() is FP_REGSIZE_BYTES);
         return (size >= FP_REGSIZE_BYTES) ? FP_REGSIZE_BYTES : 0;
