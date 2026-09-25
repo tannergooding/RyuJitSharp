@@ -12,10 +12,10 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Continue Windows-AMD64 node and block generation toward genCodeForTreeNode dispatch. Atomic and block-memory generation are integrated and validated; identify the remaining dispatcher dependencies and implement native exception-transfer generation.",
+      "scope": "Continue Windows-AMD64 node generation toward genCodeForTreeNode dispatch. Atomic, block-memory, scalar value, conditional-compare and EH-transfer packets are integrated. Complete the async/resume/nonlocal-transfer node dependencies next.",
       "doneWhen": [
-        "Compare the complete native genCodeForTreeNode dispatcher with existing managed generators and complete its next required scalar dependency closure.",
-        "Implement complete genCallFinally/genEHCatchRet and strictly required local-label relocation recording.",
+        "Implement complete genReturnSuspend/genCodeForAsyncContinuation and async resume bookkeeping with their required dependencies.",
+        "Implement complete Windows-AMD64 genNonLocalJmp/genAsyncResumeInfo/genFtnEntry using existing instruction and label recording.",
         "Validate each integrated closure in Debug/Release and commit; retain production activation, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "ScalarNodes validation covers complete bit modification, saturating increment, physical/catch register values, constant reuse and APX CCMP generation. Integrate the frozen artifacts\\eh-transfer-generation-packet files using handoff.txt, validate EH transfers with existing label and GC cases in Debug/Release, and commit. Worker87f10c61 is collected through turn11 and idle. Complete genCodeForTreeNode was inspected through its end: remaining managed dependencies include async continuation/resume/suspend/nonlocal-jump generators, hardware-intrinsic generation and patchpoints; do not substitute a reduced dispatcher. Production genGenerateCode remains skipped.",
+    "nextAction": "EH transfers are validated at ehTransfers and all returned packets are integrated. Resume async node closure at pinned codegencommon.cpp:7528(genReturnSuspend),7636(genCodeForAsyncContinuation), codegenlinear.cpp:998(genRecordAsyncResume), and codegenxarch.cpp:4171/4195/4208(genNonLocalJmp/genAsyncResumeInfo/genFtnEntry). Read their complete bodies and strictly required dependencies, implement and validate Debug/Release before committing. Full genCodeForTreeNode also still requires hardware generation and patchpoints(codegencommon.cpp:7560); do not substitute a reduced dispatcher. Production genGenerateCode remains skipped.",
     "handoff": {
-      "status": "scalar-nodes-validated-eh-transfer-packet-ready",
+      "status": "eh-transfers-validated-async-node-closure-next",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn26; JMP/GC/shadow-space packet committed de6bbb5. 87f10c61-b152-4bdc-a27e-1ecfad4f6342 through turn11; local heap4a3828e and block memory694a902 integrated; EH-transfer packet frozen and awaiting parent integration. b6e1f160-b3d7-4126-bf91-39bc8de2e495 through turn6; graph diagnostics e1f0f90. a7f6ecaf-b706-4be6-83c3-c83235b7452f through turn29; cleanup2f55f04. All idle. No app-native child sessions.",
+      "workerPackets": "4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn26; JMP/GC/shadow-space packet committed de6bbb5. 87f10c61-b152-4bdc-a27e-1ecfad4f6342 through turn11; local heap4a3828e, block memory694a902 and EH-transfer packet integrated and validated. b6e1f160-b3d7-4126-bf91-39bc8de2e495 through turn6; graph diagnostics e1f0f90. a7f6ecaf-b706-4be6-83c3-c83235b7452f through turn29; cleanup2f55f04. All idle and all packets integrated. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -52,6 +52,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "ehTransfers": {
+        "debugPassed": 116,
+        "releasePassed": 105,
+        "skipped": 0,
+        "selection": "CodeGenEHTransferTests, EmitterJumpInstructionTests, EmitterGCInterruptibilityTests and EmitterLabelTests",
+        "debugTests": "artifacts\\eh-transfers-debug.trx",
+        "releaseTests": "artifacts\\eh-transfers-release.trx",
+        "coverage": "Retless finally-call breakpoint boundaries; returning finally adjacency and configured hot/cold separation; nested no-GC requests; call/continuation GC boundaries; catchret RAX RIP-relative relocation regardless of global relocation mode; Debug descriptor annotations and D005 rejection.",
+        "remaining": "Complete Windows-AMD64 genCallFinally/genEHCatchRet reuse existing label instruction recording. Production emission is still skipped, so this is descriptor/GC behavior evidence rather than unwind or machine-code execution parity."
+      },
       "scalarNodes": {
         "debugPassed": 174,
         "releasePassed": 169,
@@ -3806,6 +3816,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "eh-transfer-generation",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:151-211"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.EHTransfers.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete Windows-AMD64 finally calls and catch-return address generation, preserving native EH/hot-cold predicates and GC boundaries. Existing label emitter reused; production generation remains skipped."
+    },
     {
       "area": "scalar-node-and-conditional-compare-generation",
       "native": ["src\\coreclr\\jit\\codegenxarch.cpp:670-684,1148-1179,1529-1557,4492-4503,8560-8578,8596-8639", "src\\coreclr\\jit\\codegenlinear.cpp:2352-2367", "src\\coreclr\\jit\\codegencommon.cpp:8698-8717"],

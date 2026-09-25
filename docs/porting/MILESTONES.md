@@ -14,6 +14,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Exception-transfer generation
+
+Finally calls now preserve native continuation selection and GC-reporting
+boundaries. Retless calls add an unreachable breakpoint only where needed to
+keep the return address in the correct EH region. Catch returns record the
+relocatable target address in the ABI return register.
+
+These block-generation paths reuse the existing label emitter. Final encoding,
+unwind publication and production execution remain pending.
+
 ## 2026-09-25: Scalar value and conditional-compare generation
 
 Saturating increments and bit modifications now preserve native carry and
