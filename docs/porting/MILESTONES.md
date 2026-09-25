@@ -14,6 +14,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Async resume-table recording
+
+Async resume tables now retain native entry sizes, alignment and state offsets,
+obtain the resume stub from the EE, and capture instruction-location cookies for
+diagnostic addresses. Removed states remain invalid, while recorded locations
+track later instruction-size changes instead of freezing estimated offsets.
+
+Address generation reuses constant-data references. Final absolute pointers,
+relocations and runtime resume execution still depend on production emission.
+
 ## 2026-09-25: Async and patchpoint transfers
 
 Suspension returns now transfer the continuation and clear GC-bearing result

@@ -12,10 +12,10 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Continue Windows-AMD64 node generation toward genCodeForTreeNode dispatch. Atomic, block-memory, scalar value, conditional-compare and EH-transfer packets are integrated. Complete the async/resume/nonlocal-transfer node dependencies next.",
+      "scope": "Complete Windows-xarch hardware-intrinsic generation, the remaining node-generator dependency before complete Windows-AMD64 genCodeForTreeNode integration. Async transfers and resume-table recording are integrated; production emission remains explicitly unavailable.",
       "doneWhen": [
-        "Implement complete genReturnSuspend/genCodeForAsyncContinuation and async resume bookkeeping with their required dependencies.",
-        "Implement complete Windows-AMD64 genNonLocalJmp/genAsyncResumeInfo/genFtnEntry using existing instruction and label recording.",
+        "Port complete native hardware-intrinsic generation functions and strictly required emitter support, preserving table-driven and family-specific paths.",
+        "Integrate complete Windows-AMD64 genCodeForTreeNode only after its reachable dependency closure is present; retain explicit production emission rejection until encoding and publication are implemented.",
         "Validate each integrated closure in Debug/Release and commit; retain production activation, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Async/patchpoint transfers and unary/bound-label recording are validated at asyncTransfers. Integrate the frozen artifacts\\async-resume-generation-packet (CodeGen.AsyncResumeInfo.cs, Emitter.AsyncResumeTable.cs, AsyncResumeGenerationTests.cs), follow handoff.txt, and run Debug/Release with existing data-section and async-transfer cases before committing. Worker87f10c61 is collected through turn12 and idle. Full genCodeForTreeNode still requires hardware generation; preserve its complete native dispatcher rather than a reduced substitute. Production genGenerateCode remains skipped.",
+    "nextAction": "Async resume registration/location/address generation is validated at asyncResumeGeneration; all returned worker packets are integrated. Begin native hardware generation at hwintrinsiccodegenxarch.cpp:378(genHWIntrinsic), with complete family roots1940(genBaseIntrinsic),2576(genX86BaseIntrinsic),2913(genAvxFamilyIntrinsic),3946(genFmaIntrinsic),4150(genXCNTIntrinsic),4194(genX86SerializeIntrinsic). Inspect complete functions and required shared helpers; use bounded independent family lanes while retaining dispatcher integration in the parent. Windows-x64 does not define SWIFT_SUPPORT, so Swift-only generator roots are not a missing Windows dependency. Production genGenerateCode remains skipped.",
     "handoff": {
-      "status": "async-transfers-validated-resume-table-packet-ready",
+      "status": "async-resume-validated-hardware-generation-next",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn26; JMP/GC/shadow-space packet committed de6bbb5. 87f10c61-b152-4bdc-a27e-1ecfad4f6342 through turn12; local heap4a3828e, block memory694a902 and EH transfersb4548fe integrated; async-resume packet frozen and awaiting parent integration. b6e1f160-b3d7-4126-bf91-39bc8de2e495 through turn6; graph diagnostics e1f0f90. a7f6ecaf-b706-4be6-83c3-c83235b7452f through turn29; cleanup2f55f04. All idle. No app-native child sessions.",
+      "workerPackets": "4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn26; JMP/GC/shadow-space packet committed de6bbb5. 87f10c61-b152-4bdc-a27e-1ecfad4f6342 through turn12; local heap4a3828e, block memory694a902, EH transfersb4548fe and async-resume packet integrated and validated. b6e1f160-b3d7-4126-bf91-39bc8de2e495 through turn6; graph diagnostics e1f0f90. a7f6ecaf-b706-4be6-83c3-c83235b7452f through turn29; cleanup2f55f04. All idle and all packets integrated. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -52,6 +52,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "asyncResumeGeneration": {
+        "debugPassed": 90,
+        "releasePassed": 87,
+        "skipped": 0,
+        "selection": "AsyncResumeGenerationTests, CodeGenAsyncTransferTests, EmitterConstantDataTests and EmitterLocationTests",
+        "debugTests": "artifacts\\async-resume-debug.trx",
+        "releaseTests": "artifacts\\async-resume-release.trx",
+        "coverage": "Native two-pointer layout and alignment; table counts including zero; data section ordering and open-section preservation; EE stub and per-CodeGen caching; native-width state conversions and encoded data offsets; instruction-location capture, replacement and later size changes; invalid removed states; D005 preflight.",
+        "remaining": "Complete registration, location capture and address generation for async resume tables. Entries eventually contain absolute Resume/DiagnosticIP pointers, not relative32 offsets. No final pointers or relocation records are fabricated here; emitOutputRdata, executable allocation and production generation remain deferred."
+      },
       "asyncTransfers": {
         "debugPassed": 248,
         "releasePassed": 229,
@@ -3826,6 +3836,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "async-resume-table-generation",
+      "native": ["src\\coreclr\\jit\\codegenlinear.cpp:998", "src\\coreclr\\jit\\codegenxarch.cpp:4195", "src\\coreclr\\jit\\codegencommon.cpp:6103,6129", "src\\coreclr\\jit\\emit.cpp:7982"],
+      "csharp": ["sources\\Core\\jit\\codegencommon\\CodeGen.AsyncResumeInfo.cs", "sources\\Core\\jit\\emit\\Emitter.AsyncResumeTable.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete Windows-AMD64 resume-table registration, native EE stub lookup, state-address generation and instruction-location recording. Final absolute-pointer table materialization and relocations remain behind the production-emission boundary."
+    },
     {
       "area": "async-and-patchpoint-transfer-generation",
       "native": ["src\\coreclr\\jit\\codegencommon.cpp:7528-7549,7560-7603,7636-7647", "src\\coreclr\\jit\\codegenxarch.cpp:4171-4175,4208-4212", "src\\coreclr\\jit\\instr.cpp:1259-1295", "src\\coreclr\\jit\\emitxarch.cpp:7431-7501,9191-9237", "src\\coreclr\\jit\\emit.cpp:2385-2389"],
