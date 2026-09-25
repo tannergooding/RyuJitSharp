@@ -12,15 +12,15 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port complete AMD64 emitter prolog/epilog placeholder creation and the four codegen reservation wrappers. Preserve native group transitions, GC snapshots, funclet mappings, call-return padding and epilog no-GC reset. Funclet descriptor production and final placeholder expansion remain separate dependencies.",
+      "scope": "Activate complete Windows-AMD64 fgCreateFunclets with native handler relocation, required loop-head prolog blocks, ordered descriptor/clause maps and current-funclet selection. Replace unused native descriptor/map pointers with owned managed arrays under D002; port the common descriptor header, leaving unwind/location payloads for their actual consumers.",
       "doneWhen": [
-        "Port emitCreatePlaceholderIG at emit.cpp:2090-2260 for every native placeholder kind, including AMD64 pre-epilog padding and the complete last/non-last branches.",
-        "Wire genReserveProlog, genReserveEpilog, genReserveFuncletProlog and genReserveFuncletEpilog to real placeholders; retain the existing no-emitter-statistics storage boundary.",
-        "Validate group ownership, snapshot aliasing, ordering, estimated offsets, last-instruction invalidation, funclet mappings and conditional GC reset in Debug/Release, then commit."
+        "Port fgCreateFunclets, fgCreateFuncletPrologBlocks and fgInsertFuncletPrologBlock (flowgraph.cpp:3003-3262), with complete handler-range relocation (fgbasic.cpp:5323-5548) and required predecessor classification.",
+        "Preserve clause ordering, filter-before-handler indices, ref identity, enclosing EH range ends, backedges and profile weights. Wire genUpdateCurrentFunclet through real descriptor lookups.",
+        "Validate Debug/Release, republish a local NativeAOT library and compare the native-host funclet/allocation frontier; record concrete defects and commit the coherent phase."
       ],
       "validation": [
-        "Reuse blockScopesAndMappings.selection and add focused EmitterPlaceholderTests through the codegen reservation entrypoints.",
-        "Reuse the scope-mapping native-host capture: this packet remains below the explicit emission skip and does not change reachable production behavior. B145 remains deferred."
+        "Reuse prologEpilogPlaceholders.selection with focused root/filter/shared-try ordering and loop-head split cases; reuse existing flowgraph/exceptional predecessor coverage.",
+        "Refresh native-host minopts evidence because fgCreateFunclets is on the production path. Preserve exact phase diagnostics and explicit emission skips; native fallback is not managed execution."
       ],
       "deferred": [
         "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
@@ -32,9 +32,9 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Prolog/epilog placeholder creation and all four reservation wrappers are complete (822 Debug/804 Release). Continue with genUpdateCurrentFunclet at codegencommon.cpp:2133 and its complete function-index helpers at compiler.hpp:813-871/GetStartBlock at compiler.h:13500. FuncInfoDsc is currently empty and compFuncInfos is an unused native pointer; inspect the native descriptor producer before choosing the required storage closure. Preserve existing EH indices/filter-before-handler ordering, not fabricated funclet metadata. genEmitStartBlock at codegenlinear.cpp:985 is genuinely empty for non-Wasm. Full genCodeForBlock, node generation, placeholder expansion, encoding and final metadata remain; keep emission explicitly skipped.",
+    "nextAction": "Funclet creation/current-function selection is integrated and validated (900 Debug/871 Release). Fresh native-host evidence is in funcletCreation.nativeHost: 20/20 funclet bodies/result graphs and 19/20 allocation sections. Continue required scalar codegen dependencies, beginning with full genConsumeReg overloads/genConsumeRegs and genProduceReg (codegenlinear.cpp:1502,1573,1691,2161), following their copy/reload/spill and register-recording dependencies as one coherent closure. Required register/immediate and register/register emitter roots are emitxarch.cpp:7168 and 8090. genCodeForBlock at codegenlinear.cpp:237 and genEmitEndBlock at 701 still require per-node generation, exits/jumps/calls, alignment recording and debug support; genEmitStartBlock at 985 is genuinely empty for non-Wasm. Keep genGenerateCode explicitly skipped until its complete closure is ready. Do not revisit the established B135 diagnostic difference or manufacture unwind metadata.",
     "handoff": {
-      "status": "prolog-epilog-placeholders-validated",
+      "status": "funclet-creation-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
       "workerPackets": "All prefix, opcode-comparison and constant/displacement packets are fully collected, frozen and integrated. Constant worker b6e1f160-b3d7-4126-bf91-39bc8de2e495 returned four new files without shared allocation/schema edits. No active or unread workers; no app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
@@ -49,7 +49,7 @@
       ],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
       "nativeFlowGraphSource": "src/coreclr/jit/fgopt.cpp:4373-4902",
-      "executionBoundary": "The integrated native-host capture completes allocation and explicitly skips emission for twenty minopts methods. Full allocation phase bodies, REFPOS and POST tuples are byte-exact for seventeen methods; FoldHardware, SynchronizedReturn and GenericCatch retain existing hardware-import/EH-order differences. Disabled loop-alignment bodies are exact for all twenty. Managed code size remains zero.",
+      "executionBoundary": "The fresh funclet-managed-minopts capture completes allocation and explicitly skips emission for twenty methods. Funclet phase bodies and resulting graph dumps are exact for all twenty; full sections including post-phase checks retain B135 differences for SynchronizedReturn and GenericCatch. Allocation phase bodies, REFPOS and POST tuples are exact for nineteen methods, with only FoldHardware differing. Disabled alignment bodies remain exact for twenty. Managed code size is zero.",
       "publishedHandoffCommit": "b6d5c71c338d84b6c120766b52ea577a4df735c8",
       "publication": "Verified origin/main at the completed handoff commit. This replacement session has not published changes; its app diff base is now main."
     },
@@ -60,6 +60,35 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "funcletCreation": {
+        "debugPassed": 900,
+        "releasePassed": 871,
+        "skipped": 0,
+        "selection": "prologEpilogPlaceholders.selection plus FuncletCreationTests, BlockSplittingTests and ExceptionalPredecessorTests.",
+        "debugTests": "artifacts\\funclets-debug.trx",
+        "releaseTests": "artifacts\\funclets-release.trx",
+        "coverage": "Root-only metadata, same-try/filter ordering and clause maps, by-reference function descriptors, codegen current-function selection, real finally backedge/prolog splitting with incoming profile weights, enclosing try/handler shared-end repair and existing edge/EH consumers.",
+        "nativeHost": {
+          "publishLog": "artifacts\\funclet-publish.log",
+          "managedDirectory": "artifacts\\funclet-managed-minopts",
+          "nativeDirectory": "artifacts\\lowering-native-minopts",
+          "source": "623c0d9c267714f5e352bd980a7ad0d8f0186e2e plus artifacts\\funclet-source.patch SHA256 45BFED60AD128C0A7994A3EB884C9AB6A195E882D6A95347902828ED517665D7",
+          "reproduction": "Publish the current Debug win-x64 NativeLib=Shared using the established Visual C++ environment, then run scripts\\porting\\Invoke-PortingCorpus.ps1 -MinOpts with the pinned prepared Core_Root and Release corpus. Run artifacts\\Compare-Allocation.ps1 and artifacts\\Compare-Funclets.ps1 with -ManagedDirectory funclet-managed-minopts.",
+          "methods": 20,
+          "unexpectedHeaders": 0,
+          "exitCode": 0,
+          "timedOut": false,
+          "funcletBodyExact": 20,
+          "funcletBodyAndGraphExact": 20,
+          "funcletsIncludingPostPhaseChecksExact": 18,
+          "allocationExact": 19,
+          "referencePositionsExact": 19,
+          "assignmentsExact": 19,
+          "disabledAlignmentExact": 20,
+          "explicitEmissionSkips": 20,
+          "remaining": "Pinned native/corpus binary hashes match the baseline manifest. Only FoldHardware retains allocation differences. SynchronizedReturn and GenericCatch have identical funclet bodies and graphs but retain B135's deferred-profile-check text difference. Comparisons use raw ordinal strings, with body, graph and post-phase-check scopes reported separately. Native fallback is expected; no managed machine-code execution or unwind/debug metadata parity is claimed."
+        }
+      },
       "prologEpilogPlaceholders": {
         "debugPassed": 822,
         "releasePassed": 804,
@@ -3357,6 +3386,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "funclet-creation-and-current-function-selection",
+      "native": ["src\\coreclr\\jit\\flowgraph.cpp:3003-3262", "src\\coreclr\\jit\\fgbasic.cpp:584-588,5032-5066,5323-5548", "src\\coreclr\\jit\\jiteh.cpp:661-665,1095-1109,4277-4395", "src\\coreclr\\jit\\compiler.hpp:813-871", "src\\coreclr\\jit\\compiler.h:1800-1828,13490-13518", "src\\coreclr\\jit\\codegencommon.cpp:2133-2142"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.Funclets.cs", "sources\\Core\\jit\\compiler\\Compiler.FuncletRelocation.cs", "sources\\Core\\jit\\compiler\\FuncInfoDsc.cs", "sources\\Core\\jit\\compiler\\FuncKind.cs", "sources\\Core\\jit\\compiler\\Compiler.comp.cs", "sources\\Core\\jit\\codegencommon\\CodeGen.Funclets.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete active AMD64 fgCreateFunclets, loop-head prolog insertion, handler relocation/unlinking, predecessor classification and current-function accessors/selection. Other-target phase entry rejects before mutation. D002 owned arrays preserve table order and by-reference metadata access; only common FuncInfoDsc metadata is implemented, not unwind/location payloads. Shared bbIsFuncletBeg reuses bbIsHandlerBeg in both configurations. Native filter-head omission is retained (B210); the preexisting fgVerifyHandlerTab stub remains deferred. Emission stays explicitly skipped."
+    },
     {
       "area": "prolog-epilog-placeholder-reservations",
       "native": ["src\\coreclr\\jit\\emit.cpp:2090-2260", "src\\coreclr\\jit\\emit.h:404", "src\\coreclr\\jit\\emitxarch.cpp:3722-3741", "src\\coreclr\\jit\\codegencommon.cpp:4849-4915"],

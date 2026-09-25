@@ -769,9 +769,19 @@ Morph-time `fgSetOptions` and its frame/GC setters now establish the native
 frame-pointer and interruptibility policy before allocation. Register-mask bank
 selection, physical-register availability aliases and block-boundary constant
 reset defects found during activation are corrected (B202-B205), not accepted
-output differences. The complete allocation-phase body is byte-exact for
-seventeen of twenty minopts corpus methods; the three inherited hardware-import
-and EH-order mismatches remain outside this activation packet.
+output differences. Allocation activation initially matched seventeen of twenty
+minopts corpus methods. Complete Windows-AMD64 `fgCreateFunclets` subsequently
+removed both EH-order mismatches; nineteen allocation-phase bodies now match,
+with hardware import remaining.
+
+Funclet creation retains native handler relocation, shared-try clause ordering,
+filter-before-handler indices and loop-head prolog insertion. Compiler-owned
+managed arrays replace the unused descriptor and clause-map pointers under D002;
+ref-returning accessors retain descriptor identity. Only the common function
+descriptor metadata is needed here; unwind/location payloads and final emission
+remain unported. All twenty funclet phase bodies and resulting graphs match
+native. The full sections including post-phase checks retain two B135 diagnostic
+differences, which are not accepted output exceptions.
 
 Internal-register definitions, call definitions and kill references retain
 native location ordering, register preferences and upper-vector save rules.

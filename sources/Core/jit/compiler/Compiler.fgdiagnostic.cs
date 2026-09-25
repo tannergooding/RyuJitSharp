@@ -363,14 +363,6 @@ public partial class Compiler
         }
     }
 
-    private bool bbIsFuncletBeg(BasicBlock block)
-    {
-        assert(fgFuncletsCreated);
-        ref var ehDsc = ref ehGetBlockHndDsc(block);
-        return !Unsafe.IsNullRef(in ehDsc) &&
-               ((block == ehDsc.ebdHndBeg) || (ehDsc.HasFilter && (block == ehDsc.ebdFilter)));
-    }
-
     private bool fgTrysContiguous()
     {
 #if TARGET_WASM

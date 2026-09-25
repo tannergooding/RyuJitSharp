@@ -243,6 +243,8 @@ existing deviation entries rather than maintaining competing descriptions.
 
 | B209 | Port defect / sorted scope cursors | `compEnterScopeList` and `compExitScopeList` ignored their sorted index arrays, exposing descriptor input order to debug basic-block creation and codegen scope opening. | Dereference the appropriate permutation in each accessor; sorting comparators must compare raw descriptors rather than consulting the permutation being sorted. | Corrected. The cursor-order/ref-identity regression fails before the fix; unordered-scope basic-block and IL-gap coverage exercise both consumers. The minopts native-host corpus has debug code disabled and does not establish scope parity. |
 
+| B210 | Upstream question / filter-entry loops | Native `fgCreateFuncletPrologBlocks` checks handler heads for backedges but explicitly omits filter heads, noting this might be a bug and questioning whether the entry exception object makes such a loop illegal. | Preserve the pinned behavior; establish legal IL and native behavior separately before changing filter prolog placement. | Recorded while porting the complete funclet-creation phase. No executable defect is established and no managed-only change is made. |
+
 Larger module decomposition and broad unit-test infrastructure belong to the
 post-port phase. Add concrete candidates here as evidence appears, rather than
 preemptively planning a redesign of every compiler subsystem.

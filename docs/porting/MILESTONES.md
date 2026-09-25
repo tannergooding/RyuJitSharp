@@ -5,14 +5,27 @@ A newest-first history of what the port can do and how it has developed.
 The primary target is Windows x64. The port can import methods, expand inline
 calls, lower heap allocations, simplify local accesses and construct internal
 method entry/exit paths, rationalize expression trees into linear IR, and lower
-minopts methods and allocate registers with stack-resident locals for Windows
-x64, but does not yet generate native code. Remaining
+minopts methods, create EH funclets and allocate registers with stack-resident
+locals for Windows x64, but does not yet generate native code. Remaining
 work includes hardware-intrinsic import, lifetime-enabled lowering cleanup,
 optimized register allocation and code generation.
 
 The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
+
+## 2026-09-25: Native EH funclet creation
+
+The funclet-creation phase now relocates handlers, keeps filters adjacent to
+their handlers and orders funclets consistently with the runtime's EH clauses.
+Handler-entry loops receive separate prolog blocks so backedges do not repeat
+the prolog. Code generation can select the resulting function descriptors.
+
+This removes the two EH-order differences in the minopts allocation corpus:
+allocation dumps now match native for nineteen of twenty methods. Funclet phase
+bodies and resulting graphs match for all twenty; two post-phase profile-check
+diagnostics still differ. Hardware import remains the allocation mismatch.
+Machine-code emission and final unwind metadata remain unimplemented.
 
 ## 2026-09-25: Prolog and epilog reservations
 

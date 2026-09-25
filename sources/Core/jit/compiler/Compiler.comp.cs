@@ -26,15 +26,15 @@ public partial class Compiler
 
     // Things that MAY belong either in CodeGen or CodeGenContext
 
-    public unsafe FuncInfoDsc* compFuncInfos;
+    public FuncInfoDsc[] compFuncInfos = [];
 
     public ushort compCurrFuncIdx;
 
     public ushort compFuncInfoCount;
 
-    public unsafe ushort* compVMClauseOrderToEHTabOrder;
+    public ushort[]? compVMClauseOrderToEHTabOrder;
 
-    public unsafe ushort* compEHTabOrderToVMClauseOrder;
+    public ushort[]? compEHTabOrderToVMClauseOrder;
 
     /// <summary>current live variables</summary>
     public VARSET_TP compCurLife = [];
