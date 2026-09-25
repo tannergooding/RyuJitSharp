@@ -1014,7 +1014,7 @@ overloads, `emitIns_Nop`, `emitIns_R_R_I`, `emitIns_R_R_R`,
 `emitIns_R_C_I`, `emitIns_R_S_I`, `emitIns_R_R_A`, `emitIns_R_R_A_I`,
 `emitIns_R_R_C_I`, `emitIns_R_R_S_I`, `emitIns_SIMD_R_R_I`,
 `emitIns_SIMD_R_R_A`, `emitIns_SIMD_R_R_S`, `emitIns_R_AR`,
-`emitIns_BASE_R_R_RM` and `emitIns_J`
+`emitIns_BASE_R_R_RM`, `emitIns_J` and `emitIns_SIMD_R_R_S_I`
 record complete native descriptors and sizes. Their `dispIns` path
 preserves sanity, stack-depth, logical-size and conditional statistics checks.
 In Debug, these entrypoints reject requested
@@ -1030,12 +1030,14 @@ Shift generation, shared operand classification and register/memory wrappers
 likewise reject before consumption, spill extraction or constant allocation.
 Binary arithmetic, multiplication, division and shared throw-helper jumps reject
 before operand consumption, target lookup or jump-list mutation.
+Local reads and addresses, including SIMD12 loads, likewise reject before
+recording their first instruction or producing register/lifetime state.
 
 Native roots are `emitxarch.cpp:5929,5945,5962,6019,7168,7798,8090,9314,9407,10574,10609`
 and `7042,8134,8506,8546,8686,8929,9626,9658,9804,10422`,
 plus `6159,6495,8574,10400,10640`,
 `6921,7012,9465,10439,8244,8264,8299,8344,8382,8606,8637,8709,9571,9598,9708`,
-`9309,10470,10703`
+`9309,10470,10703,9842`
 and `emit.cpp:1611`;
 the managed specialization is in
 `emitxarch/Emitter.StackStores.cs`, `Emitter.StackLoads.cs`,
@@ -1051,7 +1053,7 @@ The caller guards are in `emit/Emitter.SimdConstants.cs` and
 `codegenxarch/CodeGen.Constants.cs`, `CodeGen.Unary.cs` and
 `CodeGen.ByteSwap.cs`, `CodeGen.Shifts.cs` and
 `instr/CodeGen.MemoryOperands.cs`, `codegenxarch/CodeGen.Binary.cs`,
-`CodeGen.Multiplication.cs`, `CodeGen.Division.cs` and
+`CodeGen.Multiplication.cs`, `CodeGen.Division.cs`, `CodeGen.LocalLoads.cs` and
 `codegencommon/CodeGen.ArithmeticSupport.cs`. The pre-mutation rejection is
 covered for every recording entrypoint. Retain the mixed-mode
 native bodies until full disassembly is ported. This does not activate production

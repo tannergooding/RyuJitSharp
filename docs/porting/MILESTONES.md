@@ -14,6 +14,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Local reads and addresses
+
+Local address and load generation now preserve stack offsets, GC result kinds,
+narrow signed/unsigned extension and aligned SIMD loads. Register candidates,
+multi-register locals and deferred spill reloads retain their native
+load-at-use behavior.
+
+SIMD12 field loads read the lower eight bytes and insert the final float without
+overreading adjacent data, clearing the unused fourth lane. Local stores and
+other node/block generators, final encoding and runtime metadata publication
+remain; production emission is still explicitly skipped.
+
 ## 2026-09-25: Integer division and remainder
 
 Division and remainder generation now preserve the native signed and unsigned

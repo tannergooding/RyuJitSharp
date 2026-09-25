@@ -7,6 +7,18 @@ namespace RyuJitSharp;
 
 public partial class GenTree
 {
+#if TARGET_XARCH
+    public bool DontExtend
+    {
+        get
+        {
+            assert(varTypeIsSmall(Type) || ((Flags & GTF_DONT_EXTEND) == 0));
+
+            return (Flags & GTF_DONT_EXTEND) != 0;
+        }
+    }
+#endif
+
 #if DEBUG
     internal int UseNum
     {

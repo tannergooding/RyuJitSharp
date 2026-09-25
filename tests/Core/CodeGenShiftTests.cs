@@ -283,5 +283,5 @@ internal static unsafe class CodeGenShiftTests
     private static extern ref List<Emitter.instrDesc>? CurrentDescriptors(Emitter emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGetInsCns")]
-    private static extern nint InstructionConstant(Emitter emitter, Emitter.instrDesc descriptor);
+    internal static extern nint InstructionConstant(Emitter emitter, Emitter.instrDesc descriptor);
 }
