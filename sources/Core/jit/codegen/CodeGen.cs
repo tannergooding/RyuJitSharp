@@ -115,6 +115,32 @@ public sealed partial class CodeGen : ICodeGen
 
     public ref GCInfo GCInfo => ref _gcInfo;
 
+    public ref regMaskTP CalleeRegArgMaskLiveIn => ref _calleeRegArgMaskLiveIn;
+
+    public regMaskTP genGetGSCookieTempRegs(bool tailCall, GenTreeCall? tailCallNode)
+    {
+#if TARGET_AMD64
+        if (tailCall)
+        {
+            if ((tailCallNode is not null) &&
+                (tailCallNode.Args.FindWellKnownArg(WellKnownArg.SecretStubParam) is not null))
+            {
+                return RBM_R11;
+            }
+
+            // Argument registers and indirection-cell registers must survive the tailcall cookie check.
+            return RBM_R10;
+        }
+
+        return RBM_R9;
+#elif TARGET_X86
+        return tailCall || _compiler.compIsAsync ? RBM_ESI : RBM_ECX;
+#else
+        NYI("CodeGen.genGetGSCookieTempRegs outside xarch");
+        throw new FatalJitException("CodeGen.genGetGSCookieTempRegs outside xarch.");
+#endif
+    }
+
     /// <summary>return the offset from Caller-SP to the frame pointer.</summary>
     /// <remarks>
     ///   <para>This number is going to be negative, since the Caller-SP is at a higher address than the frame pointer.</para>

@@ -230,6 +230,17 @@ public partial class Compiler
 
     public bool compMethodRequiresPInvokeFrame => info.compUnmanagedCallCountWithGCTransition > 0;
 
+    public bool compShouldPoisonFrame()
+    {
+#if FEATURE_ON_STACK_REPLACEMENT
+        if (opts.IsOSR)
+        {
+            return false;
+        }
+#endif
+        return !info.compInitMem && opts.compDbgCode;
+    }
+
 #if PROFILING_SUPPORTED
     // Match the VM's exclusion of IL stubs, including when hooks are stressed.
     public unsafe bool compIsProfilerHookNeeded

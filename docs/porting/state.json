@@ -12,15 +12,16 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete Windows-x64 node-level LSRA reference construction: local stores and returns, hardware intrinsics, local containment/candidate classification and the full native BuildNode dispatcher. Keep allocation inactive until interval construction and resolution are complete.",
+      "scope": "Complete Windows-AMD64 buildIntervals<false> orchestration with local variables not enregistered, the complete node-reference entrypoint and required pre-LSRA diagnostics. Preserve native block and parameter accounting, location/kill ordering and register masks. Keep allocation inactive until resolution and its driver are complete.",
       "doneWhen": [
-        "Port the remaining local-store, return and hardware-intrinsic builders, preserving native candidate, multireg, ABI and encoding contracts.",
-        "Integrate full native BuildNode dispatch and build-state reset, including contained/candidate local classification and register-destination counts.",
-        "Validate integrated builders in Debug and Release and commit the dependency-coherent packet with its exact remaining activation cursor."
+        "Port full Windows-AMD64 buildRefPositionsForNode, including Debug source-count and register-stress contracts.",
+        "Integrate the complete native buildIntervals<false> specialization, rejecting local-enregistration mode before mutation and retaining mixed-mode native bodies.",
+        "Preserve pre-LSRA tuple dumps through the complete LSRA_DUMP_PRE specialization and existing interval/reference formatters.",
+        "Validate real multi-block interval construction and the existing LinearScan selection in Debug and Release; commit the packet before activating allocation."
       ],
       "validation": [
-        "Run focused local/return/hardware and dispatcher reference tests plus existing LinearScan coverage in Debug and Release.",
-        "Reuse the lowering capture at 7372483; inactive reference builders do not change the native-host frontier and do not justify recapture."
+        "Use focused multi-node/multi-block cases for complete interval construction, parameter-live masks, GS-cookie/frame-poison kills, mode rejection and exact pre-LSRA diagnostics, plus existing LinearScan coverage.",
+        "Reuse the lowering capture at 7372483 while allocation remains inactive. The broader HWI Debug selection's existing B145 failures are recorded, not part of this dependency packet."
       ],
       "deferred": [
         "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
@@ -32,11 +33,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Complete Windows-AMD64 node-reference construction is validated. Next port buildRefPositionsForNode (lsrabuild.cpp:1706) and the buildIntervals orchestration (lsrabuild.cpp:2080), reusing the completed node builders and existing minopts candidate/block/reference support. Establish the complete native no-local-lifetimes mode and its required block-boundary helpers before committing the interval-construction packet; retain native mixed-mode bodies for unported optimized paths. Allocation and resolution remain incomplete and explicitly skipped. B145's 33 preexisting Debug SIMD/folding failures remain deferred; no reduced allocator, unchanged-frontier capture, push or PR.",
+    "nextAction": "Interval construction is complete and validated for Windows-AMD64 buildIntervals<false>. Next port resolveRegisters<false> (lsra.cpp:7811) with its writeRegisters, updateMaxSpill and insertCopyOrReload dependency closure, then complete the allocation driver (lsra.cpp:1336) and required REFPOS/POST diagnostics. Reuse the existing minimal allocation traversal; retain native mixed-mode bodies and reject unsupported optimized modes before mutation. Keep production allocation explicitly skipped until this closure is complete. B145's 33 preexisting Debug SIMD/folding failures remain deferred; no unchanged-frontier capture, push or PR.",
     "handoff": {
-      "status": "node-reference-builders-validated",
+      "status": "interval-construction-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All returned, integrated and frozen; no pending assignments or child-session dependencies.",
+      "workerPackets": "Both retained task workers have returned and frozen their node-reference entrypoint and pre-LSRA diagnostic files. All handoffs are read and integrated; no outstanding worker assignment or app-native child-session dependency.",
       "preserve": "Activate only the complete no-local-lifetimes lowering mode; keep allocation explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -60,6 +61,15 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "minimalIntervalConstruction": {
+        "debugPassed": 397,
+        "releasePassed": 359,
+        "skipped": 0,
+        "selection": ["LinearScan*", "ParameterLocalMappingTests"],
+        "debugTests": "artifacts\\lsra-interval-debug.trx",
+        "releaseTests": "artifacts\\lsra-interval-release.trx",
+        "scope": "Complete Windows-AMD64 buildIntervals<false>, buildRefPositionsForNode and LSRA_DUMP_PRE specialization. Covers incoming mapped-parameter liveness and physical XMM mask positions, block/node/cold locations, GS-cookie and frame-poison ordering, OSR poisoning suppression, mode rejection, register stress and exact PRE dump formatting including unsigned sequence numbers. Allocation remains inactive; no new runtime parity claim."
+      },
       "nodeReferenceBuilders": {
         "debugPassed": 366,
         "releasePassed": 342,
@@ -3133,6 +3143,13 @@
   },
   "sourceMap": [
     {
+      "area": "lsra-minimal-interval-construction",
+      "native": ["src\\coreclr\\jit\\lsrabuild.cpp:1580-1889,2080-2794", "src\\coreclr\\jit\\lsra.cpp:550-581,10612-10994", "src\\coreclr\\jit\\codegencommon.cpp:2978-3020", "src\\coreclr\\jit\\compiler.h:12131", "src\\coreclr\\jit\\lclvars.cpp:1159-1177"],
+      "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.MinimalIntervalConstruction.cs", "sources\\Core\\jit\\lsra\\LinearScan.NodeReferences.cs", "sources\\Core\\jit\\lsra\\LinearScan.IntervalDiagnostics.cs", "sources\\Core\\jit\\lsra\\LinearScan.SelectorHelpers.cs", "sources\\Core\\jit\\codegen\\CodeGen.cs", "sources\\Core\\jit\\codegeninterface\\ICodeGen.cs", "sources\\Core\\jit\\compiler\\Compiler.comp.cs", "sources\\Core\\jit\\compiler\\Compiler.lva.cs"],
+      "reconciledCommit": null,
+      "status": "Complete AMD64 buildIntervals<false>, node-reference entrypoint and PRE-only tuple diagnostics. Shared GS-cookie selection is on CodeGen and exposes existing incoming-register-mask storage; frame-poison and Swift parameter queries retain native predicates. Enregistered-local mode rejects before interval mutation; other-target interval/reference paths explicitly throw. Native mixed-mode bodies remain. Allocation driver, resolution and REFPOS/POST diagnostics remain inactive or incomplete."
+    },
+    {
       "area": "lsra-node-reference-construction",
       "native": ["src\\coreclr\\jit\\lsraxarch.cpp:45-702,2031-2975", "src\\coreclr\\jit\\lsrabuild.cpp:1206-1299,3946-4405", "src\\coreclr\\jit\\lsra.h:1938", "src\\coreclr\\jit\\gentree.cpp:860-902,22896-22915", "src\\coreclr\\jit\\hwintrinsic.h:876-902", "src\\coreclr\\jit\\simd.cpp:114-130"],
       "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.NodeBuilding.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalStoresAndReturns.cs", "sources\\Core\\jit\\lsra\\LinearScan.HardwareIntrinsics.cs", "sources\\Core\\jit\\gentree\\GenTree.cs", "sources\\Core\\jit\\gentree\\GenTree.EmbeddedMasking.cs", "sources\\Core\\jit\\hwintrinsic\\HWIntrinsicInfo.cs", "sources\\Core\\jit\\hwintrinsic\\HWIntrinsicInfo.Instructions.cs", "sources\\Core\\jit\\compiler\\Compiler.lva.cs"],
@@ -3144,7 +3161,7 @@
       "native": ["src\\coreclr\\jit\\lsraxarch.cpp:1207-1846", "src\\coreclr\\jit\\lsraxarch.cpp:3041-3152", "src\\coreclr\\jit\\lsrabuild.cpp:4473-4770", "src\\coreclr\\jit\\compiler.h:9658-9661,10543-10569", "src\\coreclr\\jit\\compiler.hpp:3097-3116", "src\\coreclr\\jit\\gentree.cpp:1920-1997", "src\\coreclr\\jit\\codegencommon.cpp:2978-2995"],
       "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.Calls.cs", "sources\\Core\\jit\\lsra\\LinearScan.BlockAndStackArguments.cs", "sources\\Core\\jit\\lsra\\LinearScan.MemoryAndComparisons.cs", "sources\\Core\\jit\\compiler\\Compiler.cs", "sources\\Core\\jit\\compiler\\Compiler.ee.cs"],
       "reconciledCommit": null,
-      "status": "Complete Windows-AMD64 call and memory reference builders, unsigned SIMD-width input and native-sized EE page-size access. The call file currently houses native NeedsVzeroupper, varargs-register mapping and the complete fast-tailcall-only GS-cookie selector branch (B196). The non-tailcall cookie selector remains a codegen dependency. Node dispatch is integrated; interval orchestration/resolution remain incomplete and allocation is not activated."
+      "status": "Complete Windows-AMD64 call and memory reference builders, unsigned SIMD-width input and native-sized EE page-size access. The call file currently houses native NeedsVzeroupper and varargs-register mapping (B196). GS-cookie selection now uses the complete canonical CodeGen query mapped with interval construction. Node dispatch and no-local-enregistration interval construction are integrated; resolution remains incomplete and allocation is not activated."
     },
     {
       "area": "lsra-scalar-reference-builders",

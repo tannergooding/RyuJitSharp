@@ -17,6 +17,8 @@ public interface ICodeGen
 
     ref GCInfo GCInfo { get; }
 
+    ref regMaskTP CalleeRegArgMaskLiveIn { get; }
+
     int genCallerSPtoFPdelta { get; }
 
     int genCallerSPtoInitialSPdelta { get; }
@@ -99,4 +101,6 @@ public interface ICodeGen
     regNumber GetFramePointerReg(int funcletIndex);
 
     regNumber GetStackPointerReg(int funcletIndex);
+
+    regMaskTP genGetGSCookieTempRegs(bool tailCall, GenTreeCall? tailCallNode);
 }

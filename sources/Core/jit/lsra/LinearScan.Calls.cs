@@ -63,11 +63,8 @@ public sealed partial class LinearScan
                 ctrlExprCandidates = _rbmIntCalleeTrash;
                 if (_compiler.NeedsGSSecurityCookie)
                 {
-                    // Tailcalls use R10 for the GS cookie unless the secret stub parameter occupies it.
-                    var cookieTemp = call.Args.FindWellKnownArg(WellKnownArg.SecretStubParam) is null
-                        ? SRBM_R10
-                        : SRBM_R11;
-                    ctrlExprCandidates &= ~cookieTemp;
+                    assert(_compiler.codeGen is not null);
+                    ctrlExprCandidates &= ~_compiler.codeGen.genGetGSCookieTempRegs(true, call).IntRegSet;
                 }
             }
 

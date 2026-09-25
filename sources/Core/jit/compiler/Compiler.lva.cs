@@ -1570,6 +1570,26 @@ public partial class Compiler
     }
 #endif
 
+    public bool lvaHasAnySwiftStackParamToReassemble()
+    {
+#if SWIFT_SUPPORT
+        if (info.compCallConv != CorInfoCallConvExtension.Swift)
+        {
+            return false;
+        }
+
+        for (var localNumber = 0; localNumber < info.compArgsCount; localNumber++)
+        {
+            ref readonly var abiInfo = ref lvaGetParameterAbiInfo(localNumber);
+            if (abiInfo.HasAnyStackSegment && !abiInfo.HasExactlyOneStackSegment)
+            {
+                return true;
+            }
+        }
+#endif
+        return false;
+    }
+
     public bool lvaHaveManyLocals(float percent = 1.0f)
     {
         assert((percent >= 0.0) && (percent <= 1.0));

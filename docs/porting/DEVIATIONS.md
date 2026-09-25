@@ -673,6 +673,20 @@ conversion scans local descriptors in local-number order rather than allocating
 native's temporary byte-per-local array; printed local names and order are
 unchanged.
 
+`buildIntervalsMinimal` implements the complete AMD64 `buildIntervals<false>`
+specialization and rejects enregistered-local mode before mutation. Candidate
+selection leaves no local candidates, so native initial-parameter definitions,
+parameter preferences, local zero initialization and interval validation have
+no work in this mode. Incoming parameter-register liveness and all temporary
+references remain required and are preserved. The mixed-mode native body is
+retained for optimized allocation.
+
+`tupleStyleDumpPre` and its operand/node formatters specialize the existing
+`LSRA_DUMP_PRE` predicate, preserving the complete pre-allocation dump. The
+reference-position and post-allocation modes remain required before activating
+the allocation driver. Node sequence numbers retain their native unsigned
+display through the bit representation of the existing managed integer field.
+
 Internal-register definitions, call definitions and kill references retain
 native location ordering, register preferences and upper-vector save rules.
 Write-barrier classification is exposed through `ICodeGen`, matching the native
@@ -789,8 +803,14 @@ The interval/reference support does not activate register allocation.
 `LinearScan.buildNode`, `buildStoreLoc`, `buildMultiRegStoreLoc` and `buildReturn`
 implement AMD64 node dispatch, local stores and ABI return constraints. Other
 targets report NYI and throw `FatalJitException`, pending their target-specific
-dispatch and register constraints. Node-reference construction does not activate
-the unfinished interval-building and allocation drivers.
+dispatch and register constraints. Node-reference and interval construction
+do not activate the unfinished allocation driver.
+
+`LinearScan.buildIntervalsMinimal` and `buildRefPositionsForNode` explicitly
+throw outside AMD64, pending target-specific interval/reference requirements.
+`CodeGen.genGetGSCookieTempRegs` implements the native xarch selector and
+explicitly rejects other targets. Swift conditional code is translated but is
+not enabled or execution-validated by the Windows-x64 configuration.
 
 Current target-sync additions under `TARGET_WASM` are
 `Compiler.fgWasmRepairTryEntries` and `Compiler.fgWasmSpillRefs` in

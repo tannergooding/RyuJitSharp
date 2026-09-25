@@ -13,6 +13,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-24: Interval construction without enregistered locals
+
+The complete native interval-building mode for stack-resident locals now
+connects block sequencing, incoming parameter-register liveness and node
+references. It preserves block and node locations, cold-code boundaries,
+frame-poison and security-cookie kills, and physical register masks. The
+node-reference entrypoint also retains checked-build register-stress contracts
+and pre-allocation tuple diagnostics.
+
+This completes interval construction for the initial minopts backend path.
+Register resolution and the allocation driver remain before activation;
+the compiler still explicitly declines compilation at allocation and does
+not generate native code.
+
 ## 2026-09-24: Complete Windows-x64 node-reference construction
 
 The native node dispatcher now connects scalar, call, memory, local-store,

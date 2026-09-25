@@ -4,7 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
-#if DEBUG && TARGET_AMD64
+#if DEBUG
 using System.Numerics;
 #endif
 
@@ -26,6 +26,28 @@ public sealed partial class LinearScan
         };
 
 #if DEBUG
+    private SingleTypeRegSet getConstrainedRegMask(
+        RefPosition? refPosition, RegisterType registerType, SingleTypeRegSet actualMask,
+        SingleTypeRegSet constraintMask, uint minimumCount)
+    {
+        var newMask = actualMask & constraintMask;
+        if ((uint)BitOperations.PopCount(unchecked((ulong)newMask)) < minimumCount)
+        {
+            return actualMask;
+        }
+
+        if ((refPosition is not null) && !refPosition.RegOptional())
+        {
+            var busyRegs = getRegSetForType(_regsBusyUntilKill | _regsInUseThisLocation, registerType);
+            if ((newMask & ~busyRegs) == SRBM_NONE)
+            {
+                return actualMask;
+            }
+        }
+
+        return newMask;
+    }
+
     private SingleTypeRegSet stressLimitRegs(RefPosition refPosition, RegisterType registerType, SingleTypeRegSet mask)
     {
 #if TARGET_AMD64
@@ -62,17 +84,8 @@ public sealed partial class LinearScan
 
         if (constrainedMask != mask)
         {
-            var restrictedMask = mask & constrainedMask;
-            var minimumCount = refPosition.minRegCandidateCount;
-            var restrictedCount = (uint)BitOperations.PopCount(unchecked((ulong)restrictedMask));
-            if (restrictedCount >= minimumCount)
-            {
-                var busyRegs = getRegSetForType(_regsBusyUntilKill | _regsInUseThisLocation, registerType);
-                if (refPosition.RegOptional() || (restrictedMask & ~busyRegs) != SRBM_NONE)
-                {
-                    mask = restrictedMask;
-                }
-            }
+            mask = getConstrainedRegMask(
+                refPosition, registerType, mask, constrainedMask, refPosition.minRegCandidateCount);
         }
 
         if (refPosition.isFixedRegRef)
