@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete AMD64 conditional selection, Boolean/flag branches and SETCC nodes, including register-conflict masks and condition-combination branches. Preserve fallthrough and hot/cold boundaries; keep production emission skipped.",
+      "scope": "Complete AMD64 integer-to-integer and integer/floating scalar casts, including overflow descriptors, widening/narrowing and unsigned-long floating conversion. Preserve numeric behavior, operand lifetimes and native ISA predicates; keep production emission skipped.",
       "doneWhen": [
-        "Port complete genCodeForSelect, JumpKindToCmov, genCodeForJTrue, genCodeForJcc, inst_JCC and genCodeForSetcc.",
-        "Close recursive contained-register masks and complete inst_RV_TT/inst_RV_RV recording. Preserve native register conflicts, AND/OR conditions and D005 rejection before mutation.",
+        "Port complete GenIntCastDesc, genIntCastOverflowCheck, genIntToIntCast and AMD64 genCodeForCast dispatch.",
+        "Port complete genFloatToFloatCast and genIntToFloatCast with full conversion/shift/internal-register helpers. Preserve D005/D006 rejection before mutation.",
         "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Validate focused conditional selection/branch cases and existing comparison, binary recording, jump, label and operand-consumption dependencies in Debug/Release; retain scalarComparisons as the unrelated cumulative baseline.",
+        "Validate focused cast boundaries and existing comparison, operand recording, shift, label and internal-register dependencies in Debug/Release; retain scalarComparisons as the unrelated cumulative baseline.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Conditional selection, JTRUE/JCC/SETCC nodes and register/operand recording are complete and validated (conditionalControl). Continue scalar cast generation, first complete native genIntCastOverflowCheck at codegenxarch.cpp:6746 and genIntToIntCast at 6814 with their full GenIntCastDesc closure. Then close genFloatToFloatCast at 6902 and genIntToFloatCast at 6963 as dependencies permit. Preserve signed/unsigned overflow, width/extension choices, floating rounding and source lifetime order. Reuse existing operand recording and shared throw helpers; reject D005 and unsupported D006 modes before mutation. Keep production emission skipped until remaining node/block generation, encoding and metadata publication are complete.",
+    "nextAction": "Scalar casts and AMD64 genCodeForCast dispatch are complete and validated (scalarCasts). Continue native genCkfinite at codegenxarch.cpp:7089, preserving exponent extraction, ArithmeticException target and result lifetime; use existing shared throws and reject D005/D006 before consumption or temporary extraction. Xarch floating-to-integer casts are deliberately unreachable in genCodeForCast because lowering converts them to hardware intrinsics; do not invent a scalar float-to-int path. Then continue remaining scalar node/block generation dependencies. Keep production emission skipped until encoding and metadata publication are complete.",
     "handoff": {
-      "status": "conditional-control-generation-validated",
+      "status": "scalar-cast-generation-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All files and follow-ups from 4c9a8661-6e45-4e43-960d-7f3a779cdcde are collected through turn 11, frozen and integrated, including the latest Emitter.FlagQueries.cs and EmitterFlagQueryTests.cs. Root Debug/Release validation passes. Both it and a7f6ecaf-b706-4be6-83c3-c83235b7452f are idle with no outstanding assignment or unread handoff. No app-native child sessions.",
+      "workerPackets": "All files and follow-ups from 4c9a8661-6e45-4e43-960d-7f3a779cdcde are collected through turn 15, frozen and integrated, including FloatingCasts, FloatingConversions, NodeInternalRegisters.Extract and CodeGenFloatingCastTests. Root Debug/Release validation passes. Both it and a7f6ecaf-b706-4be6-83c3-c83235b7452f are idle with no outstanding assignment or unread handoff. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "scalarCasts": {
+        "debugPassed": 547,
+        "releasePassed": 524,
+        "skipped": 0,
+        "selection": ["CodeGenIntegerCastTests", "CodeGenFloatingCastTests", "CodeGenBinaryTests", "CodeGenOperandTests", "CodeGenShiftTests", "CodeGenComparisonTests", "EmitterBinaryOperandTests", "EmitterMemoryOperandTests", "EmitterRegisterInstructionTests", "EmitterJumpInstructionTests", "EmitterLabelTests", "CodeGenIndirectLoadTests"],
+        "debugTests": "artifacts\\scalar-cast-debug.trx",
+        "releaseTests": "artifacts\\scalar-cast-release.trx",
+        "coverage": "Checked signed/unsigned range descriptors, exact small bounds and branch targets, mandatory unsigned widening, aliased accumulator shortcuts, narrow contained loads, spill actual-type extension, managed unary cast dispatch, legacy/VEX/EVEX floating conversion, unsigned-long rounding fixup and labels, EGPR-compatible temporary selection, destructive Extract in both configurations and pre-mutation D005/D006 rejection. Checked casts with no actual overflow check remain usable without shared throws.",
+        "remaining": "Reuses scalarComparisons for unrelated cumulative dependencies and funcletCreation.nativeHost for unchanged reachability. No new execution parity claim; managed code size remains zero. Xarch float-to-int uses lowered hardware intrinsics, not scalar cast generation. Finite checks, calls, write-barrier stores, remaining node/block generation, encoding and metadata publication remain."
+      },
       "conditionalControl": {
         "debugPassed": 305,
         "releasePassed": 289,
@@ -3568,6 +3578,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "scalar-cast-generation",
+      "native": ["src\\coreclr\\jit\\codegen.h:858-939", "src\\coreclr\\jit\\codegenlinear.cpp:2375-2595", "src\\coreclr\\jit\\codegenxarch.cpp:6746-7072", "src\\coreclr\\jit\\instr.cpp:1006-1040,2732-2795", "src\\coreclr\\jit\\codegencommon.cpp:146-158"],
+      "csharp": ["sources\\Core\\jit\\codegenlinear\\CodeGen.Casts.cs", "sources\\Core\\jit\\codegenlinear\\CodeGen.GenIntCastDesc.cs", "sources\\Core\\jit\\codegenxarch\\CodeGen.IntegerCasts.cs", "sources\\Core\\jit\\codegenxarch\\CodeGen.FloatingCasts.cs", "sources\\Core\\jit\\instr\\CodeGen.FloatingConversions.cs", "sources\\Core\\jit\\codegeninterface\\NodeInternalRegisters.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 GenIntCastDesc, genCodeForCast, genIntCastOverflowCheck, genIntToIntCast, genFloatToFloatCast, genIntToFloatCast, ins_FloatConv, inst_RV_SH and destructive internal-register Extract. Cast dispatch accepts managed GenTreeCast; readonly descriptor Check/Extend properties replace native methods that share enum names. Preserves widths, range decisions, unsigned-long rounding, ISA predicates and lifetimes. D005/D006 fail closed before mutation; other cast targets explicitly reject. Production emission remains skipped."
+    },
     {
       "area": "conditional-selection-and-branch-generation",
       "native": ["src\\coreclr\\jit\\codegenxarch.cpp:1461-1516,1566-1657", "src\\coreclr\\jit\\codegenlinear.cpp:2644-2700", "src\\coreclr\\jit\\gentree.cpp:1048-1061", "src\\coreclr\\jit\\instr.cpp:825-842,1308-1351"],

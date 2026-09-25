@@ -14,6 +14,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Scalar cast generation
+
+Integer casts now preserve checked signed/unsigned ranges, truncation and
+extension widths, including contained loads and already-extended spill values.
+Floating casts retain legacy/VEX/EVEX instruction selection and the native
+unsigned-long rounding sequence rather than approximating it with an offset.
+
+Cast dispatch uses the managed unary node representation. Floating-to-integer
+casts still require the hardware-intrinsic path selected by xarch lowering.
+Finite checks, calls, write-barrier stores and the remaining node/block, encoding
+and metadata closure keep production emission explicitly skipped.
+
 ## 2026-09-25: Conditional selection and branches
 
 Conditional moves now preserve destination/source conflicts, including registers

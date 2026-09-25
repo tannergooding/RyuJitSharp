@@ -1043,6 +1043,8 @@ rewriting a flag consumer or creating a short-circuit label.
 Conditional selection, Boolean/flag branches and SETCC nodes reject before
 consuming operands or creating branch labels. `inst_RV_TT` rejects before
 classifying operands, extracting spill ownership or allocating constant data.
+Integer and floating casts reject before consumption, overflow-check temporary
+extraction or label creation. Shift-immediate recording follows the same guard.
 
 Native roots are `emitxarch.cpp:5929,5945,5962,6019,7168,7798,8090,9314,9407,10574,10609`
 and `7042,8134,8506,8546,8686,8929,9626,9658,9804,10422`,
@@ -1075,6 +1077,8 @@ Comparison guards are in `codegenxarch/CodeGen.Comparisons.cs`,
 Conditional control-flow guards are in `codegenxarch/CodeGen.ConditionalSelection.cs`
 and `codegenlinear/CodeGen.ConditionalBranches.cs`; register/operand recording
 uses `instr/CodeGen.MemoryOperands.cs`.
+Cast guards are in `codegenxarch/CodeGen.IntegerCasts.cs`,
+`CodeGen.FloatingCasts.cs` and `instr/CodeGen.FloatingConversions.cs`.
 The pre-mutation rejection is
 covered for every recording entrypoint. Retain the mixed-mode
 native bodies until full disassembly is ported. This does not activate production
@@ -1095,6 +1099,8 @@ Indexed address generation applies the same pre-consumption guard only when
 bounds checking is required; unchecked indexed addresses remain supported.
 Explicit bounds-check nodes likewise reject the inline-call mode before
 consuming either comparison operand.
+Integer casts apply the guard only when `GenIntCastDesc` requires an actual
+overflow check. Checked widening conversions that need no check remain supported.
 
 The false arm emits an inline helper call and remains unported. It fails with
 `CORJIT_SKIPPED`, rather than omitting the throw or recording a partial arithmetic

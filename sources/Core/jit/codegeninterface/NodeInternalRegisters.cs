@@ -24,7 +24,27 @@ public struct NodeInternalRegisters
         _table[tree] = existing | registers;
     }
 
-    // regNumber Extract(GenTree* tree, regMaskTP mask = static_cast<regMaskTP>(-1));
+    public readonly regNumber Extract(GenTree tree) => Extract(tree, ~RBM_NONE);
+
+    public readonly regNumber Extract(GenTree tree, regMaskTP mask)
+    {
+        assert(_table.ContainsKey(tree));
+        var registers = _table[tree];
+        var available = registers & mask;
+        assert(available != RBM_NONE);
+        var lower = (ulong)available.Lower;
+#if HAS_MORE_THAN_64_REGISTERS
+        var result = (regNumber)(lower != 0
+            ? BitOperations.TrailingZeroCount(lower)
+            : 64 + BitOperations.TrailingZeroCount((ulong)available.Upper));
+#else
+        var result = (regNumber)BitOperations.TrailingZeroCount(lower);
+#endif
+        _table[tree] = registers ^ regMaskTP.CreateFromRegNum(result, result.SingleTypeMask);
+
+        return result;
+    }
+
     public readonly regNumber GetSingle(GenTree tree) => GetSingle(tree, ~RBM_NONE);
 
     public readonly regNumber GetSingle(GenTree tree, regMaskTP mask)
