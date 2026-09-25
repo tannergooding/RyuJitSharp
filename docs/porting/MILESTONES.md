@@ -14,6 +14,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Conditional selection and branches
+
+Conditional moves now preserve destination/source conflicts, including registers
+inside contained memory addresses, and the two-part conditions needed for
+floating comparisons. Boolean and flag branches retain native short-circuit
+sequences and cannot fall through across the hot/cold code boundary.
+
+SETCC nodes publish their register results through the existing lifetime path.
+Scalar casts, calls, write-barrier stores and the remaining node/block, encoding
+and metadata closure still keep production emission explicitly skipped.
+
 ## 2026-09-25: Scalar comparisons and Boolean results
 
 Integer and floating comparisons now retain native signed/unsigned conditions,

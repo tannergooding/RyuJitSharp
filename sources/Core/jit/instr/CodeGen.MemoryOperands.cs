@@ -189,6 +189,61 @@ public sealed partial class CodeGen
 #endif
     }
 
+    public unsafe void inst_RV_TT(instruction ins, emitAttr size, regNumber op1Reg, GenTree op2)
+    {
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Register/operand instruction generation requires AMD64.");
+#else
+        Emitter.RequireSupportedInstructionRecording();
+        var descriptor = genOperandDesc(ins, op2);
+        switch (descriptor.GetKind())
+        {
+            case OperandKind.ClsVar:
+            {
+                Emitter.emitIns_R_C(ins, size, op1Reg, descriptor.GetFieldHnd(), 0);
+                break;
+            }
+
+            case OperandKind.Local:
+            {
+                Emitter.emitIns_R_S(ins, size, op1Reg, descriptor.GetVarNum(), descriptor.GetLclOffset());
+                break;
+            }
+
+            case OperandKind.Indir:
+            {
+                Emitter.emitIns_R_A(ins, size, op1Reg, descriptor.GetIndirForm());
+                break;
+            }
+
+            case OperandKind.Imm:
+            {
+                Emitter.emitIns_R_I(ins, descriptor.GetEmitAttrForImmediate(size), op1Reg, descriptor.GetImmediate());
+                break;
+            }
+
+            case OperandKind.Reg:
+            {
+                if (Emitter.IsMovInstruction(ins))
+                {
+                    _ = Emitter.emitIns_Mov(ins, size, op1Reg, descriptor.GetReg(), canSkip: true);
+                }
+                else
+                {
+                    Emitter.emitIns_R_R(ins, size, op1Reg, descriptor.GetReg());
+                }
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+#endif
+    }
+
     public unsafe void inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg,
         GenTree operand, int value, insOpts options)
     {

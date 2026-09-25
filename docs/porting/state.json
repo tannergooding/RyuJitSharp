@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete AMD64 scalar integer/floating comparison generation and Boolean condition materialization, including native flag reuse and consumer-condition updates. Preserve all native mode predicates and keep production emission skipped.",
+      "scope": "Complete AMD64 conditional selection, Boolean/flag branches and SETCC nodes, including register-conflict masks and condition-combination branches. Preserve fallthrough and hot/cold boundaries; keep production emission skipped.",
       "doneWhen": [
-        "Port complete genCodeForCompare, genCompareFloat, genCompareInt, inst_SETCC and their condition/consumer helpers.",
-        "Close emitter flag-reuse queries without simplified fallbacks, preserving widths, instruction effects and producer/consumer ordering. Preserve D005 rejection before mutation.",
+        "Port complete genCodeForSelect, JumpKindToCmov, genCodeForJTrue, genCodeForJcc, inst_JCC and genCodeForSetcc.",
+        "Close recursive contained-register masks and complete inst_RV_TT/inst_RV_RV recording. Preserve native register conflicts, AND/OR conditions and D005 rejection before mutation.",
         "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Validate focused comparisons/flags and existing register/binary recording, jump, spill and lifetime dependencies in Debug/Release; keep unrelated cumulative checks at their recorded passing baseline.",
+        "Validate focused conditional selection/branch cases and existing comparison, binary recording, jump, label and operand-consumption dependencies in Debug/Release; retain scalarComparisons as the unrelated cumulative baseline.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,9 +32,9 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Scalar comparisons, Boolean materialization and native flag reuse are complete and validated (scalarComparisons). Continue conditional selection and branch generation: genCodeForSelect at codegenxarch.cpp:1566 with JumpKindToCmov at 1487, genCodeForJTrue at 1461, genCodeForJcc at codegenlinear.cpp:2644 and genCodeForSetcc at 2694. Reuse GenConditionDesc, inst_SETCC, generated reverse jumps and BasicBlock.CanRemoveJumpToTarget. Preserve contained-register conflicts, floating AND/OR conditions and hot/cold fallthrough decisions. Close full required helpers, retain D005 pre-mutation rejection and keep production emission explicitly skipped.",
+    "nextAction": "Conditional selection, JTRUE/JCC/SETCC nodes and register/operand recording are complete and validated (conditionalControl). Continue scalar cast generation, first complete native genIntCastOverflowCheck at codegenxarch.cpp:6746 and genIntToIntCast at 6814 with their full GenIntCastDesc closure. Then close genFloatToFloatCast at 6902 and genIntToFloatCast at 6963 as dependencies permit. Preserve signed/unsigned overflow, width/extension choices, floating rounding and source lifetime order. Reuse existing operand recording and shared throw helpers; reject D005 and unsupported D006 modes before mutation. Keep production emission skipped until remaining node/block generation, encoding and metadata publication are complete.",
     "handoff": {
-      "status": "scalar-comparison-generation-validated",
+      "status": "conditional-control-generation-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
       "workerPackets": "All files and follow-ups from 4c9a8661-6e45-4e43-960d-7f3a779cdcde are collected through turn 11, frozen and integrated, including the latest Emitter.FlagQueries.cs and EmitterFlagQueryTests.cs. Root Debug/Release validation passes. Both it and a7f6ecaf-b706-4be6-83c3-c83235b7452f are idle with no outstanding assignment or unread handoff. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "conditionalControl": {
+        "debugPassed": 305,
+        "releasePassed": 289,
+        "skipped": 0,
+        "selection": ["CodeGenConditionalTests", "CodeGenComparisonTests", "EmitterFlagQueryTests", "EmitterBinaryOperandTests", "EmitterMemoryOperandTests", "EmitterJumpInstructionTests", "EmitterLabelTests", "CodeGenAddressCheckTests"],
+        "debugTests": "artifacts\\conditional-control-debug.trx",
+        "releaseTests": "artifacts\\conditional-control-release.trx",
+        "coverage": "Aliased/distinct conditional results, explicit Boolean consumption, floating AND/OR cmov sequences, recursive contained-address conflicts, JTRUE fallthrough versus non-next/cold boundaries, JCC OR/AND label targets, SETCC result GC invalidation, native conditional-move mappings and pre-consumption D005 rejection/retry. genCodeForJTrue accepts the managed GenTreeUnOp representation used by importer and lowering.",
+        "remaining": "Reuses scalarComparisons for unrelated cumulative dependencies and funcletCreation.nativeHost for the unchanged runtime frontier. No new execution parity claim; managed code size remains zero. Scalar casts, calls, write-barrier stores, remaining node/block generation, final encoding and metadata publication remain."
+      },
       "scalarComparisons": {
         "debugPassed": 2146,
         "releasePassed": 2047,
@@ -3558,6 +3568,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "conditional-selection-and-branch-generation",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:1461-1516,1566-1657", "src\\coreclr\\jit\\codegenlinear.cpp:2644-2700", "src\\coreclr\\jit\\gentree.cpp:1048-1061", "src\\coreclr\\jit\\instr.cpp:825-842,1308-1351"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.ConditionalSelection.cs", "sources\\Core\\jit\\codegenlinear\\CodeGen.ConditionalBranches.cs", "sources\\Core\\jit\\gentree\\GenTree.CodeGen.cs", "sources\\Core\\jit\\instr\\CodeGen.RegisterOperands.cs", "sources\\Core\\jit\\instr\\CodeGen.MemoryOperands.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 genCodeForSelect, JumpKindToCmov, genCodeForJTrue, genCodeForJcc, inst_JCC, genCodeForSetcc, contained-register-mask recursion and inst_RV_TT/inst_RV_RV. JTRUE uses the managed unary node type; conditional register/contained-address conflicts, AND/OR conditions and hot/cold fallthrough remain native-faithful. D005 rejects before mutation; production emission remains skipped."
+    },
     {
       "area": "scalar-comparison-and-condition-generation",
       "native": ["src\\coreclr\\jit\\codegenxarch.cpp:1433,1716,6342,6407,6564,6620", "src\\coreclr\\jit\\instr.cpp:614-708", "src\\coreclr\\jit\\codegencommon.cpp:1192-1220", "src\\coreclr\\jit\\emitxarch.cpp:5024-5049"],

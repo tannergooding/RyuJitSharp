@@ -34,6 +34,25 @@ public partial class GenTree
     }
 #endif
 
+    public regMaskTP ContainedRegMask
+    {
+        get
+        {
+            if (!IsContained)
+            {
+                return IsUsedFromReg ? RegMask : RBM_NONE;
+            }
+
+            var mask = RBM_NONE;
+            foreach (var operand in Operands)
+            {
+                mask |= operand.ContainedRegMask;
+            }
+
+            return mask;
+        }
+    }
+
     public regMaskTP RegMask
     {
         get
