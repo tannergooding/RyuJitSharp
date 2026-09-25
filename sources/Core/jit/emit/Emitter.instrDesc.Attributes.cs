@@ -17,6 +17,19 @@ public partial class Emitter
         private regNumber _idReg2;
         private bool _idCnsReloc;
         private bool _idDspReloc;
+        private bool _idBound;
+
+        public bool idIsBound()
+        {
+            assert(!IsSimdInstruction(idIns()));
+            return _idBound;
+        }
+
+        public void idSetIsBound()
+        {
+            assert(!IsSimdInstruction(idIns()));
+            _idBound = true;
+        }
 
         public emitAttr idOpSize()
         {

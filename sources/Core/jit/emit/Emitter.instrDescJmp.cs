@@ -17,7 +17,9 @@ public partial class Emitter
 
         // Native iiaBBlabel occupies the address union. Managed references cannot
         // overlap that union's scalar fields, so retain the target separately.
+        // Native stores these targets in a union, distinguished by idIsBound().
         public BasicBlock? idjTarget;
+        public insGroup? idjTargetIG;
 
         public uint idjOffs
         {

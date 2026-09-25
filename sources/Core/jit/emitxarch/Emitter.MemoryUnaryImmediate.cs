@@ -9,6 +9,64 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    public unsafe void emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs)
+    {
+#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
+        throw new FatalJitException(CORJIT_SKIPPED, "Single static-field instruction recording requires Windows AMD64.");
+#else
+        RequireSupportedInstructionRecording();
+        if (!jitStaticFldIsGlobAddr(fldHnd))
+        {
+            attr |= EA_DSP_RELOC_FLG;
+        }
+
+        uint size;
+        instrDesc id;
+        if ((attr & EA_OFFSET_FLG) != 0)
+        {
+            assert(ins == INS_push);
+            size = 1 + TARGET_POINTER_SIZE;
+            id = emitNewInstrDsp(EA_1BYTE, offs);
+            id.idIns(ins);
+            id.idInsFmt(IF_MRD_OFF);
+        }
+        else
+        {
+            var format = emitInsModeFormat(ins, IF_MRD);
+            id = emitNewInstrDsp(attr, offs);
+            id.idIns(ins);
+            id.idInsFmt(format);
+            size = emitInsSizeCV(id, insCodeMR(ins));
+        }
+        if (TakesRexWPrefix(id))
+        {
+            size += emitGetRexPrefixSize(id, ins);
+        }
+
+        id.idAddr().iiaFieldHnd = fldHnd;
+        id.idCodeSize(size);
+        dispIns(id);
+        emitCurIGsize = unchecked(emitCurIGsize + (int)size);
+#endif
+    }
+
+    public void emitIns_A(instruction ins, emitAttr attr, GenTreeIndir indir)
+    {
+#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
+        throw new FatalJitException(CORJIT_SKIPPED, "Single indirect instruction recording requires Windows AMD64.");
+#else
+        RequireSupportedInstructionRecording();
+        var id = emitNewInstrAmd(attr, indir.Offset);
+        var format = emitInsModeFormat(ins, IF_ARD);
+        id.idIns(ins);
+        emitHandleMemOp(indir, id, format, ins);
+        var size = emitInsSizeAM(id, insCodeMR(ins));
+        id.idCodeSize(size);
+        dispIns(id);
+        emitCurIGsize = unchecked(emitCurIGsize + (int)size);
+#endif
+    }
+
     public void emitIns_AR(instruction ins, emitAttr attr, regNumber baseReg, int offs, insOpts instOptions = INS_OPTS_NONE)
     {
 #if !TARGET_AMD64 || !WINDOWS_AMD64_ABI

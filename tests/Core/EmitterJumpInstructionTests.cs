@@ -358,6 +358,7 @@ internal static class EmitterJumpInstructionTests
     internal abstract class JumpView(CodeGen codeGen) : Emitter(codeGen)
     {
         public static BasicBlock? Target(instrDesc id) => ((instrDescJmp)id).idjTarget;
+        public static insGroup? TargetGroup(instrDesc id) => ((instrDescJmp)id).idjTargetIG;
         public static insGroup? Group(instrDesc id) => ((instrDescJmp)id).idjIG;
         public static uint Offset(instrDesc id) => ((instrDescJmp)id).idjOffs;
         public static bool IsShort(instrDesc id) => ((instrDescJmp)id).idjShort;

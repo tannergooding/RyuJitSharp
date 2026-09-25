@@ -28,15 +28,15 @@
         "Full EH-funclet and hardware-import parity are subsequent execution-capability packets, not gates on the first scalar minopts backend path.",
         "Non-xarch hardware-intrinsic folding and hashBv bulk/set algebra and iterator APIs.",
         "The preexisting fgVerifyHandlerTab diagnostic stub and broader EH verification, outside the cleanup algorithm.",
-        "Patchpoint code generation, metadata generation and actual OSR execution.",
+        "Patchpoint metadata generation and actual OSR execution; node generation support does not activate either.",
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "EH transfers are validated at ehTransfers and all returned packets are integrated. Resume async node closure at pinned codegencommon.cpp:7528(genReturnSuspend),7636(genCodeForAsyncContinuation), codegenlinear.cpp:998(genRecordAsyncResume), and codegenxarch.cpp:4171/4195/4208(genNonLocalJmp/genAsyncResumeInfo/genFtnEntry). Read their complete bodies and strictly required dependencies, implement and validate Debug/Release before committing. Full genCodeForTreeNode also still requires hardware generation and patchpoints(codegencommon.cpp:7560); do not substitute a reduced dispatcher. Production genGenerateCode remains skipped.",
+    "nextAction": "Async/patchpoint transfers and unary/bound-label recording are validated at asyncTransfers. Integrate the frozen artifacts\\async-resume-generation-packet (CodeGen.AsyncResumeInfo.cs, Emitter.AsyncResumeTable.cs, AsyncResumeGenerationTests.cs), follow handoff.txt, and run Debug/Release with existing data-section and async-transfer cases before committing. Worker87f10c61 is collected through turn12 and idle. Full genCodeForTreeNode still requires hardware generation; preserve its complete native dispatcher rather than a reduced substitute. Production genGenerateCode remains skipped.",
     "handoff": {
-      "status": "eh-transfers-validated-async-node-closure-next",
+      "status": "async-transfers-validated-resume-table-packet-ready",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn26; JMP/GC/shadow-space packet committed de6bbb5. 87f10c61-b152-4bdc-a27e-1ecfad4f6342 through turn11; local heap4a3828e, block memory694a902 and EH-transfer packet integrated and validated. b6e1f160-b3d7-4126-bf91-39bc8de2e495 through turn6; graph diagnostics e1f0f90. a7f6ecaf-b706-4be6-83c3-c83235b7452f through turn29; cleanup2f55f04. All idle and all packets integrated. No app-native child sessions.",
+      "workerPackets": "4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn26; JMP/GC/shadow-space packet committed de6bbb5. 87f10c61-b152-4bdc-a27e-1ecfad4f6342 through turn12; local heap4a3828e, block memory694a902 and EH transfersb4548fe integrated; async-resume packet frozen and awaiting parent integration. b6e1f160-b3d7-4126-bf91-39bc8de2e495 through turn6; graph diagnostics e1f0f90. a7f6ecaf-b706-4be6-83c3-c83235b7452f through turn29; cleanup2f55f04. All idle. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -52,6 +52,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "asyncTransfers": {
+        "debugPassed": 248,
+        "releasePassed": 229,
+        "skipped": 0,
+        "selection": "CodeGenAsyncTransferTests, CodeGenReturnTests, CodeGenHelperCallTests, EmitterJumpInstructionTests, EmitterMemoryOperandTests and CodeGenAtomicTests",
+        "debugTests": "artifacts\\async-transfers-debug.trx",
+        "releaseTests": "artifacts\\async-transfers-release.trx",
+        "coverage": "Suspension return GC clearing and continuation roots; continuation register elision; register/local/indirect nonlocal jumps; all five native unary operand kinds; prolog-bound label relocation; regular/forced patchpoint helper selection and non-epilog jump encoding.",
+        "remaining": "Complete Windows-AMD64 genReturnSuspend, genCodeForAsyncContinuation, genNonLocalJmp, genFtnEntry and genPatchpoint with inst_TT, emitIns_C/emitIns_A and bound instruction-group LEA recording. Managed typed group targets preserve the native bound-label distinction without placing GC references in an explicit-layout union. Async table recording and final materialization remain separate; production is still skipped."
+      },
       "ehTransfers": {
         "debugPassed": 116,
         "releasePassed": 105,
@@ -3816,6 +3826,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "async-and-patchpoint-transfer-generation",
+      "native": ["src\\coreclr\\jit\\codegencommon.cpp:7528-7549,7560-7603,7636-7647", "src\\coreclr\\jit\\codegenxarch.cpp:4171-4175,4208-4212", "src\\coreclr\\jit\\instr.cpp:1259-1295", "src\\coreclr\\jit\\emitxarch.cpp:7431-7501,9191-9237", "src\\coreclr\\jit\\emit.cpp:2385-2389"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.AsyncTransfers.cs", "sources\\Core\\jit\\instr\\CodeGen.MemoryOperands.cs:inst_TT", "sources\\Core\\jit\\emitxarch\\Emitter.MemoryUnaryImmediate.cs", "sources\\Core\\jit\\emitxarch\\Emitter.GroupLabelAddresses.cs", "sources\\Core\\jit\\emit\\Emitter.instrDescJmp.cs:idjTargetIG"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete Windows-AMD64 suspension returns, continuation reads, nonlocal jumps, function-entry addresses and patchpoint helper transfers, including required unary operands and bound-label support. Patchpoint metadata, OSR execution, final encoding and production activation remain deferred."
+    },
     {
       "area": "eh-transfer-generation",
       "native": ["src\\coreclr\\jit\\codegenxarch.cpp:151-211"],

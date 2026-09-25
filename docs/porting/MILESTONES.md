@@ -14,6 +14,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Async and patchpoint transfers
+
+Suspension returns now transfer the continuation and clear GC-bearing result
+registers. Continuation reads, nonlocal jumps and function-entry addresses
+preserve native register and label behavior. Unary instruction operands cover
+registers, locals, indirect memory, constants and static data.
+
+Regular and forced patchpoint nodes now call their matching helpers and use the
+non-epilog indirect jump required by the Windows unwinder. Bound label references
+retain typed instruction-group targets. This is generation support, not
+patchpoint metadata, OSR execution or production emission.
+
 ## 2026-09-25: Exception-transfer generation
 
 Finally calls now preserve native continuation selection and GC-reporting

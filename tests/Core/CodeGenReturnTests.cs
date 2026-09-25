@@ -289,7 +289,7 @@ internal static unsafe class CodeGenReturnTests
         compiler.compProfilerMethHndIndirected = indirect;
     }
 
-    private static void WithReturn(var_types type, Action<Compiler, CodeGen> action)
+    internal static void WithReturn(var_types type, Action<Compiler, CodeGen> action)
     {
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {

@@ -189,6 +189,54 @@ public sealed partial class CodeGen
 #endif
     }
 
+    public unsafe void inst_TT(instruction ins, emitAttr size, GenTree op1)
+    {
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Single-operand instruction generation requires AMD64.");
+#else
+        Emitter.RequireSupportedInstructionRecording();
+        var descriptor = genOperandDesc(ins, op1);
+        switch (descriptor.GetKind())
+        {
+            case OperandKind.ClsVar:
+            {
+                Emitter.emitIns_C(ins, size, descriptor.GetFieldHnd(), 0);
+                break;
+            }
+
+            case OperandKind.Local:
+            {
+                Emitter.emitIns_S(ins, size, descriptor.GetVarNum(), descriptor.GetLclOffset());
+                break;
+            }
+
+            case OperandKind.Indir:
+            {
+                Emitter.emitIns_A(ins, size, descriptor.GetIndirForm());
+                break;
+            }
+
+            case OperandKind.Imm:
+            {
+                Emitter.emitIns_I(ins, descriptor.GetEmitAttrForImmediate(size), descriptor.GetImmediate());
+                break;
+            }
+
+            case OperandKind.Reg:
+            {
+                Emitter.emitIns_R(ins, size, descriptor.GetReg());
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+#endif
+    }
+
     public unsafe void inst_RV_TT(instruction ins, emitAttr size, regNumber op1Reg, GenTree op2)
     {
 #if !TARGET_AMD64
