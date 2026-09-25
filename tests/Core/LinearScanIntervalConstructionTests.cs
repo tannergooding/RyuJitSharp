@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.BasicBlockFlags;
+using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.LsraGlobals;
 using static RyuJitSharp.genTreeOps;
@@ -17,12 +18,127 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LinearScanIntervalConstructionTests
 {
+    [TestCase(false)]
+#if DEBUG
+    [TestCase(true)]
+#endif
+    public static void ConstructedIntervalsAllocateAndResolveWithNativeSpillPolicy(bool stressSpills)
+    {
+        WithAllocator((compiler, allocator) => {
+            var returnType = new ReturnTypeDesc();
+            returnType.InitializeReturnType(compiler, TYP_INT, null, CorInfoCallConvExtension.Managed);
+            compiler.compRetTypeDesc = returnType;
+            var block = CreateBlocks(compiler, BBJ_RETURN)[0];
+            var left = compiler.gtNewIconNode(TYP_INT, 3);
+            var right = compiler.gtNewIconNode(TYP_INT, 5);
+            var add = new GenTreeOp(GT_ADD, TYP_INT, left, right);
+            var ret = new GenTreeUnOp(GT_RETURN, TYP_INT, add);
+            block.InsertAtEnd(left);
+            block.InsertAtEnd(right);
+            block.InsertAtEnd(add);
+            block.InsertAtEnd(ret);
+#if DEBUG
+            if (stressSpills)
+            {
+                StressMask(allocator) = 0xc00;
+            }
+#endif
+
+            InitMaxSpill(allocator);
+            BuildIntervals(allocator);
+            allocator.initVarRegMaps();
+            AllocateRegisters(allocator);
+            AllocationPassComplete(allocator) = true;
+            ResolveRegisters(allocator);
+
+            Assert.That(left.RegNum, Is.Not.EqualTo(REG_NA));
+            Assert.That(right.RegNum, Is.Not.EqualTo(REG_NA));
+            Assert.That(add.RegNum, Is.Not.EqualTo(REG_NA));
+            var spillCount = 0;
+            var reloadCount = 0;
+            foreach (var node in block)
+            {
+                if ((node.Flags & GTF_SPILL) != 0)
+                {
+                    spillCount++;
+                    Assert.That(node.IsReuseRegVal, Is.False);
+                }
+                if (node.Oper is GT_RELOAD)
+                {
+                    reloadCount++;
+                }
+            }
+            Assert.That(spillCount > 0, Is.EqualTo(stressSpills));
+            Assert.That(reloadCount > 0, Is.EqualTo(stressSpills));
+            Assert.That(compiler.codeGen!.RegSet.HasComputedTmpSize, Is.True);
+            Assert.That(compiler.codeGen.RegSet.tmpTotalSize > 0, Is.EqualTo(stressSpills));
+        });
+    }
+
+    [TestCase(TYP_FLOAT)]
+    [TestCase(TYP_DOUBLE)]
+    public static void ResolutionRecordsInternalRegistersWithoutOverwritingFloatingResults(var_types type)
+    {
+        WithAllocator((compiler, allocator) => {
+            var returnType = new ReturnTypeDesc();
+            returnType.InitializeReturnType(compiler, type, null, CorInfoCallConvExtension.Managed);
+            compiler.compRetTypeDesc = returnType;
+            var block = CreateBlocks(compiler, BBJ_RETURN)[0];
+            var value = compiler.gtNewDconNode(type, 3.5);
+            var finite = new GenTreeUnOp(GT_CKFINITE, type, value);
+            var ret = new GenTreeUnOp(GT_RETURN, type, finite);
+            block.InsertAtEnd(value);
+            block.InsertAtEnd(finite);
+            block.InsertAtEnd(ret);
+
+            InitMaxSpill(allocator);
+            BuildIntervals(allocator);
+            allocator.initVarRegMaps();
+            AllocateRegisters(allocator);
+            AllocationPassComplete(allocator) = true;
+            ResolveRegisters(allocator);
+
+            var internalRegisters = compiler.codeGen!.InternalRegisters.GetAll(finite);
+            Assert.That(internalRegisters.IsEmpty, Is.False);
+            Assert.That((internalRegisters & new regMaskTP(SRBM_ALLFLOAT_INIT)).IsEmpty, Is.True);
+            Assert.That(finite.RegNum, Is.EqualTo(REG_XMM0));
+            Assert.That(compiler.codeGen.InternalRegisters.GetAll(value).IsEmpty, Is.True);
+        });
+    }
+
+    [Test]
+    public static void EnregisteredModeRejectsBeforeRegisterResolution()
+    {
+        WithAllocator((compiler, allocator) => {
+            _ = Assert.Throws<FatalJitException>(() => ResolveRegisters(allocator));
+            Assert.That(compiler.codeGen!.RegSet.HasComputedTmpSize, Is.False);
+        }, enregister: true);
+    }
+
+    [Test]
+    public static void InternalRegistersAccumulateBothMaskBanksForTheOwningNode()
+    {
+        WithAllocator((compiler, allocator) => {
+            var first = compiler.gtNewIconNode(TYP_INT, 1);
+            var second = compiler.gtNewIconNode(TYP_INT, 1);
+            ref var registers = ref compiler.codeGen!.InternalRegisters;
+            var maskRegister = regMaskTP.CreateFromRegNum(REG_K1, genSingleTypeRegMask(REG_K1));
+            registers.Add(first, RBM_RAX);
+            registers.Add(first, maskRegister);
+            registers.Add(second, RBM_RDX);
+
+            Assert.That(registers.GetAll(first), Is.EqualTo(RBM_RAX | maskRegister));
+            Assert.That(registers.GetAll(second), Is.EqualTo(RBM_RDX));
+        });
+    }
+
     [Test]
     public static void MinimalIntervalsRetainBlockLocationsAndStackLocalLoads()
     {
         WithAllocator((compiler, allocator) => {
-            compiler.lvaTable = [new() { Type = TYP_INT, lvLRACandidate = true }];
+            compiler.lvaTable = [new() { Type = TYP_INT, lvLRACandidate = true, lvOnFrame = true }];
             compiler.lvaCount = 1;
+            compiler.lvaTable[0].setLvRefCnt(2);
             var returnType = new ReturnTypeDesc();
             returnType.InitializeReturnType(compiler, TYP_INT, null, CorInfoCallConvExtension.Managed);
             compiler.compRetTypeDesc = returnType;
@@ -58,6 +174,14 @@ internal static unsafe class LinearScanIntervalConstructionTests
             Assert.That(ActualRegistersMask(allocator).IsSet(REG_R15), Is.True);
             Assert.That(ActualRegistersMask(allocator).IsSet(REG_R16), Is.False);
             Assert.That(compiler.compCurBB, Is.SameAs(blocks[1]));
+
+            allocator.initVarRegMaps();
+            AllocateRegisters(allocator);
+            AllocationPassComplete(allocator) = true;
+            ResolveRegisters(allocator);
+            Assert.That(compiler.lvaTable[0].lvOnFrame, Is.True);
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
+            Assert.That(load.RegNum, Is.EqualTo(REG_INTRET));
         });
     }
 
@@ -81,6 +205,12 @@ internal static unsafe class LinearScanIntervalConstructionTests
             Assert.That(boundaries[1].nodeLocation, Is.EqualTo(4));
             Assert.That(ActualRegistersMask(allocator).IsSet(REG_XMM0), Is.EqualTo(floating));
             Assert.That(ActualRegistersMask(allocator).IsSet(REG_K0), Is.False);
+
+            allocator.initVarRegMaps();
+            AllocateRegisters(allocator);
+            AllocationPassComplete(allocator) = true;
+            ResolveRegisters(allocator);
+            Assert.That(value.RegNum, Is.Not.EqualTo(REG_NA));
         });
     }
 
@@ -264,6 +394,23 @@ internal static unsafe class LinearScanIntervalConstructionTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildIntervalsMinimal")]
     private static extern void BuildIntervals(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "initMaxSpill")]
+    private static extern void InitMaxSpill(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "allocateRegistersMinimal")]
+    private static extern void AllocateRegisters(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "resolveRegistersMinimal")]
+    private static extern void ResolveRegisters(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_allocationPassComplete")]
+    private static extern ref bool AllocationPassComplete(LinearScan allocator);
+
+#if DEBUG
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
+    private static extern ref int StressMask(LinearScan allocator);
+#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_firstColdLocation")]
     private static extern ref uint FirstColdLocation(LinearScan allocator);

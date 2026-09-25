@@ -207,11 +207,11 @@ public sealed partial class LinearScan
         dumpRefPositionShort(refPosition);
         if (_allocationPassComplete || (selectionScore is RegisterScore.NONE))
         {
-            jitprintf($"Copy     {register.Name.ToUpperInvariant(),-4} ");
+            jitprintf($"Copy     {register.Name,-4} ");
         }
         else
         {
-            jitprintf($"{getScoreName(selectionScore),-5}(C) {register.Name.ToUpperInvariant(),-4} ");
+            jitprintf($"{getScoreName(selectionScore),-5}(C) {register.Name,-4} ");
         }
     }
 #else

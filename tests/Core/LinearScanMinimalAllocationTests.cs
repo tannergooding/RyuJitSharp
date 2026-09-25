@@ -103,7 +103,7 @@ internal static unsafe class LinearScanMinimalAllocationTests
 
             var output = Capture(() => UnassignPhysReg(allocator, register, interval.registerType));
 
-            Assert.That(output, Does.Contain("Spill    RAX "));
+            Assert.That(output, Does.Contain("Spill    rax "));
             Assert.That(definition.spillAfter, Is.True);
             Assert.That(interval.isSpilled, Is.True);
             Assert.That(register.assignedInterval, Is.Null);

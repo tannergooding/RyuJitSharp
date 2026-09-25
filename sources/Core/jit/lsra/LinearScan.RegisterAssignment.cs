@@ -361,7 +361,7 @@ public sealed partial class LinearScan
             regMaskTP.CreateFromRegNum(register.regNum, genSingleTypeRegMask(register.regNum));
         dumpAllocationRegisterTitleIfNeeded();
         dumpRefPositionShort(_activeRefPosition);
-        jitprintf($"Spill    {register.regNum.Name.ToUpperInvariant(),-4} ");
+        jitprintf($"Spill    {register.regNum.Name,-4} ");
         dumpAllocationRegisterRecords();
     }
 
@@ -371,7 +371,7 @@ public sealed partial class LinearScan
         _allocationDumpRegisters |= regMaskTP.CreateFromRegNum(register, genSingleTypeRegMask(register));
         dumpAllocationRegisterTitleIfNeeded();
         dumpRefPositionShort(_activeRefPosition);
-        jitprintf($"{(spilled ? "SRstr" : "Restr")}    {register.Name.ToUpperInvariant(),-4} ");
+        jitprintf($"{(spilled ? "SRstr" : "Restr")}    {register.Name,-4} ");
         dumpAllocationRegisterRecords();
     }
 #endif

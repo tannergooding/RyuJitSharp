@@ -697,6 +697,22 @@ types, using the existing `RegSet` preallocation rather than introducing another
 spill allocator. Final local stack-home marking preserves native dependent-field,
 reference-count, initialization and frame-pointer predicates.
 
+`resolveRegistersMinimal` specializes native `resolveRegisters<false>`, with
+an explicit rejection of enregistered-local mode before mutation. Tree temps
+still require full spills at upper-vector save references; local upper-half
+save/restore intervals and interblock local-resolution moves cannot arise
+after `identifyCandidates<false>`. The full mixed-mode native body is retained.
+Resolution reuses existing spill accounting and copy/reload insertion, writes
+internal-register masks to the owning codegen table, and finalizes local homes.
+
+`verifyFinalAllocationMinimal` specializes the checked-build final-allocation
+replay for the same no-enregistered-local mode. It rejects unsupported local
+resolution and resolution blocks before resetting assignments, then preserves
+physical-register, copy/move, spill/reload and GC-kill checks. Allocation-table
+diagnostics share native block-row formatting, node-location widths and register
+name casing; the earlier translation mismatches are corrected, not accepted
+differences (B201).
+
 Internal-register definitions, call definitions and kill references retain
 native location ordering, register preferences and upper-vector save rules.
 Write-barrier classification is exposed through `ICodeGen`, matching the native
@@ -826,6 +842,11 @@ not enabled or execution-validated by the Windows-x64 configuration.
 AMD64, explicitly rejecting other target/ABI configurations. `Compiler.raMarkStkVars`
 likewise rejects non-AMD64 targets; their double-alignment frame policy remains
 unported. These routines do not activate register resolution or emission.
+
+`LinearScan.resolveRegistersMinimal` and the generic
+`GenTree.SetRegSpillFlagByIdx` dispatcher explicitly reject non-Windows-AMD64
+targets. Indexed call-result spill storage is not available in this ABI;
+hardware and scalar-local multireg flags use their existing packed storage.
 
 Current target-sync additions under `TARGET_WASM` are
 `Compiler.fgWasmRepairTryEntries` and `Compiler.fgWasmSpillRefs` in

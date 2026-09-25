@@ -184,7 +184,7 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
 
             var output = Capture(() => AllocateRegistersMinimal(allocator));
 
-            Assert.That(output, Does.Contain("ORDER(A) RAX "));
+            Assert.That(output, Does.Contain("ORDER(A) rax "));
         });
     }
 
@@ -208,7 +208,7 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
 
             var output = Capture(() => AllocateRegistersMinimal(allocator));
 
-            Assert.That(output, Does.Contain("ORDER(R) RAX "));
+            Assert.That(output, Does.Contain("ORDER(R) rax "));
         });
     }
 #endif

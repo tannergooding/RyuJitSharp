@@ -68,6 +68,8 @@ public sealed partial class LinearScan
     private int _allocationDumpRefPositionWidth;
     private int _allocationDumpShortRefPositionWidth;
     private int _allocationDumpTableIndent;
+    private int _allocationDumpBbNumWidth;
+    private int _allocationDumpPredBbNumWidth;
     private int _allocationDumpRowsSinceTitle;
     private string _allocationDumpColumnSeparator = "";
     private string _allocationDumpLine = "";
@@ -171,13 +173,7 @@ public sealed partial class LinearScan
 
         var intervalNumberWidth = getDecimalWidth((uint)intervals.Count);
         _allocationDumpRegColumnWidth = Math.Max(4, intervalNumberWidth + 2);
-        var maximumLocation = _maxNodeLocation;
-        foreach (var reference in refPositions)
-        {
-            maximumLocation = Math.Max(maximumLocation, reference.nodeLocation);
-        }
-
-        maximumLocation = Math.Max(1, maximumLocation);
+        var maximumLocation = Math.Max(1, _maxNodeLocation);
         var referenceCount = (uint)Math.Max(1, refPositions.Count);
         _allocationDumpNodeLocationWidth = getDecimalWidth(maximumLocation);
         _allocationDumpRefPositionWidth = getDecimalWidth(referenceCount);
@@ -185,6 +181,10 @@ public sealed partial class LinearScan
             _allocationDumpNodeLocationWidth + 2 + _allocationDumpRefPositionWidth + 1 +
             _allocationDumpRegColumnWidth + 1 + 7;
         _allocationDumpTableIndent = 9 + _allocationDumpShortRefPositionWidth + 14;
+        _allocationDumpBbNumWidth = getDecimalWidth((uint)Math.Max(1, _compiler.fgBBNumMax));
+        _allocationDumpPredBbNumWidth = _allocationDumpTableIndent -
+            (_allocationDumpNodeLocationWidth + 2 + _allocationDumpRefPositionWidth + 1) -
+            _allocationDumpBbNumWidth - 9 - 9;
         _allocationDumpLine = _compiler.ShouldDumpAsciiTrees ? "-" : "─";
         _allocationDumpMiddleBox = _compiler.ShouldDumpAsciiTrees ? "+" : "┼";
         _allocationDumpRightBox = _compiler.ShouldDumpAsciiTrees ? "+" : "┤";
@@ -366,7 +366,57 @@ public sealed partial class LinearScan
         jitprintf(text.PadRight(_allocationDumpTableIndent));
     }
 
-    private void dumpRefPositionShort(RefPosition? refPosition)
+    private void dumpAllocationLocation(LsraLocation location, uint referenceNumber)
+    {
+        jitprintf(
+            location.ToString(CultureInfo.InvariantCulture).PadLeft(_allocationDumpNodeLocationWidth) +
+            ".#" +
+            referenceNumber.ToString(CultureInfo.InvariantCulture).PadRight(_allocationDumpRefPositionWidth) +
+            " ");
+    }
+
+    private void dumpAllocationNewBlock(BasicBlock? block, LsraLocation location, RefPosition reference)
+    {
+        if (!VERBOSE)
+        {
+            return;
+        }
+
+        if ((block is not null) && (block != _compiler.fgFirstBB))
+        {
+            dumpAllocationRegisterTitle();
+        }
+
+        if (reference.refType is RefType.RefTypeDummyDef)
+        {
+            dumpRefPositionShort(null);
+            jitprintf("DDefs    " + new string(' ', _allocationDumpRegColumnWidth));
+            return;
+        }
+
+        jitprintf(new string(' ', 9));
+        dumpAllocationLocation(location, reference.rpNum);
+        if (block is null)
+        {
+            jitprintf("END".PadRight(_allocationDumpRegColumnWidth) +
+                new string(' ', 17 + _allocationDumpRegColumnWidth));
+        }
+        else if (_allocationDumpPredBbNumWidth < _allocationDumpBbNumWidth)
+        {
+            jitprintf("BB" + block.bbNum.ToString(CultureInfo.InvariantCulture)
+                .PadRight(_allocationDumpShortRefPositionWidth - 2));
+        }
+        else
+        {
+            var blockInfo = _blockInfo;
+            assert(blockInfo is not null);
+            var predecessor = block == _compiler.fgFirstBB ? 0 : blockInfo[block.bbNum].predBBNum;
+            jitprintf("BB" + block.bbNum.ToString(CultureInfo.InvariantCulture).PadRight(_allocationDumpBbNumWidth) +
+                " PredBB" + predecessor.ToString(CultureInfo.InvariantCulture).PadRight(_allocationDumpPredBbNumWidth));
+        }
+    }
+
+    private void dumpRefPositionShort(RefPosition? refPosition, BasicBlock? block = null)
     {
         if ((refPosition is null) || ReferenceEquals(refPosition, _lastAllocationDumpRefPosition))
         {
@@ -375,6 +425,12 @@ public sealed partial class LinearScan
         }
 
         _lastAllocationDumpRefPosition = refPosition;
+        if (refPosition.refType is RefType.RefTypeBB)
+        {
+            dumpAllocationNewBlock(block, refPosition.nodeLocation, refPosition);
+            return;
+        }
+
         if (refPosition.buildNode is not null)
         {
             jitprintf($"[{refPosition.buildNode.TreeId:D6}] ");
@@ -384,11 +440,7 @@ public sealed partial class LinearScan
             jitprintf(new string(' ', 9));
         }
 
-        jitprintf(
-            refPosition.nodeLocation.ToString(CultureInfo.InvariantCulture).PadLeft(_allocationDumpNodeLocationWidth) +
-            ".#" +
-            refPosition.rpNum.ToString(CultureInfo.InvariantCulture).PadRight(_allocationDumpRefPositionWidth) +
-            " ");
+        dumpAllocationLocation(refPosition.nodeLocation, refPosition.rpNum);
 
         if (refPosition.isIntervalRef())
         {

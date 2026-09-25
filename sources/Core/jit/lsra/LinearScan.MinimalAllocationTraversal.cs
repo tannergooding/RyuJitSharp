@@ -671,28 +671,13 @@ public sealed partial class LinearScan
             return;
         }
 
-        if ((block is not null) && !ReferenceEquals(block, _compiler.fgFirstBB))
-        {
-            dumpAllocationRegisterTitle();
-        }
-
         if (refPosition.refType is RefType.RefTypeDummyDef)
         {
-            dumpRefPositionShort(refPosition);
-            jitprintf("DDefs    ");
-            dumpAllocationRegisterRecords();
-            return;
-        }
-
-        dumpRefPositionShort(refPosition);
-        if (block is null)
-        {
-            jitprintf("END               ");
+            dumpAllocationNewBlock(block, location, refPosition);
         }
         else
         {
-            var predBlockNumber = _blockInfo![checked((int)block.bbNum)].predBBNum;
-            jitprintf($"BB{block.bbNum:D2} <- BB{predBlockNumber:D2}");
+            dumpRefPositionShort(refPosition, block);
         }
 
         dumpAllocationRegisterRecords();
@@ -725,13 +710,13 @@ public sealed partial class LinearScan
             case MinimalAllocationEvent.KEPT_ALLOCATION:
             {
                 dumpRefPositionShort(refPosition);
-                jitprintf($"Keep     {register.Name.ToUpperInvariant(),-4} ");
+                jitprintf($"Keep     {register.Name,-4} ");
                 break;
             }
             case MinimalAllocationEvent.RELOAD:
             {
                 dumpRefPositionShort(refPosition);
-                jitprintf($"ReLod    {register.Name.ToUpperInvariant(),-4} ");
+                jitprintf($"ReLod    {register.Name,-4} ");
                 dumpAllocationRegisterRecords();
                 break;
             }
@@ -744,14 +729,14 @@ public sealed partial class LinearScan
             case MinimalAllocationEvent.MOVE_REG:
             {
                 dumpRefPositionShort(refPosition);
-                jitprintf($"Move     {register.Name.ToUpperInvariant(),-4} ");
+                jitprintf($"Move     {register.Name,-4} ");
                 dumpAllocationRegisterRecords();
                 break;
             }
             case MinimalAllocationEvent.NEEDS_NEW_REG:
             {
                 dumpRefPositionShort(refPosition);
-                jitprintf($"Free  {register.Name.ToUpperInvariant(),-4} ");
+                jitprintf($"Free  {register.Name,-4} ");
                 dumpAllocationRegisterRecords();
                 break;
             }
@@ -762,12 +747,12 @@ public sealed partial class LinearScan
                 if (_allocationPassComplete || (selectionScore is RegisterScore.NONE))
                 {
                     var action = allocationEvent is MinimalAllocationEvent.ALLOC_REG ? "Alloc" : "Reuse";
-                    jitprintf($"{action,-8} {register.Name.ToUpperInvariant(),-4} ");
+                    jitprintf($"{action,-8} {register.Name,-4} ");
                 }
                 else
                 {
                     var action = allocationEvent is MinimalAllocationEvent.ALLOC_REG ? "A" : "R";
-                    jitprintf($"{getScoreName(selectionScore),-5}({action}) {register.Name.ToUpperInvariant(),-4} ");
+                    jitprintf($"{getScoreName(selectionScore),-5}({action}) {register.Name,-4} ");
                 }
 
                 break;

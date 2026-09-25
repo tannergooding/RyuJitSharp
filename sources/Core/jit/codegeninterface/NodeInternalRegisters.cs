@@ -15,7 +15,13 @@ public struct NodeInternalRegisters
     }
 
 #if HAS_FIXED_REGISTER_SET
-    // void Add(GenTree* tree, regMaskTP reg);
+    public readonly void Add(GenTree tree, regMaskTP registers)
+    {
+        assert(registers != RBM_NONE);
+        _ = _table.TryGetValue(tree, out var existing);
+        _table[tree] = existing | registers;
+    }
+
     // regNumber Extract(GenTree* tree, regMaskTP mask = static_cast<regMaskTP>(-1));
     // regNumber GetSingle(GenTree* tree, regMaskTP mask = static_cast<regMaskTP>(-1));
 

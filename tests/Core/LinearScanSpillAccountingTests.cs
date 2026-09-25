@@ -3,6 +3,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.regMask;
@@ -12,6 +13,29 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LinearScanSpillAccountingTests
 {
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void GenericSpillFlagDispatchPreservesIndependentRegisterBits(bool hardware)
+    {
+        WithAllocator((compiler, allocator) => {
+            GenTree tree = hardware
+                ? new GenTreeHWIntrinsic(TYP_STRUCT, NI_X86Base_X64_BigMul, TYP_LONG, 0,
+                    compiler.gtNewIconNode(TYP_LONG, 3), compiler.gtNewIconNode(TYP_LONG, 5))
+                : new GenTreeLclVar(TYP_STRUCT, 0);
+            tree.SetRegSpillFlagByIdx(GTF_SPILL, 1);
+            tree.SetRegSpillFlagByIdx(GTF_SPILLED, 0);
+
+            var first = hardware
+                ? tree.AsHWIntrinsic().GetRegSpillFlagByIdx(0)
+                : tree.AsLclVar().GetRegSpillFlagByIdx(0);
+            var second = hardware
+                ? tree.AsHWIntrinsic().GetRegSpillFlagByIdx(1)
+                : tree.AsLclVar().GetRegSpillFlagByIdx(1);
+            Assert.That(first, Is.EqualTo(GTF_SPILLED));
+            Assert.That(second, Is.EqualTo(GTF_SPILL));
+        });
+    }
+
     [TestCase(TYP_BYTE, TYP_INT)]
     [TestCase(TYP_INT, TYP_INT)]
     [TestCase(TYP_LONG, TYP_LONG)]

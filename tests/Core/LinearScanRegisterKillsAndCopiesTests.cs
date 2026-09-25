@@ -76,7 +76,7 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
             Assert.That(GetFreeCandidates(allocator, SRBM_RAX, TYP_INT), Is.EqualTo(SRBM_RAX));
 #if DEBUG
             Assert.That(output, Does.Contain("None     "));
-            Assert.That(output, Does.Contain("RAX"));
+            Assert.That(output, Does.Contain("rax"));
 #endif
         });
     }
@@ -237,7 +237,7 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
             Assert.That(primaryRegister.assignedInterval, Is.SameAs(interval));
             Assert.That(copyRegister.assignedInterval, Is.SameAs(interval));
 #if DEBUG
-            Assert.That(output, Does.Contain("Copy     RBX "));
+            Assert.That(output, Does.Contain("Copy     rbx "));
 #else
             Assert.That(output, Is.Empty);
 #endif
@@ -268,8 +268,8 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
             });
 
 #if DEBUG
-            Assert.That(output, Does.Contain("ORDER(C) RBX "));
-            Assert.That(output, Does.Not.Contain("Copy     RBX "));
+            Assert.That(output, Does.Contain("ORDER(C) rbx "));
+            Assert.That(output, Does.Not.Contain("Copy     rbx "));
 #else
             Assert.That(output, Is.Empty);
 #endif

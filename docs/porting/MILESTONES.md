@@ -13,6 +13,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-24: Minimal register resolution and verification
+
+Register resolution now connects interval construction and minimal allocation
+to final node assignments, internal-register masks, copy/reload insertion and
+stack-home preparation. It preserves full spills for temporary vectors and
+optional memory uses. Checked-build verification replays physical assignments,
+spills, reloads, copies and GC kills in native reference order.
+
+This completes resolution for the initial stack-resident-local backend path.
+The production allocation driver remains to be activated before the emission
+boundary can advance; the compiler still does not generate native code.
+
 ## 2026-09-24: Register-resolution support
 
 Register writeback and copy/reload insertion now preserve indexed results,
