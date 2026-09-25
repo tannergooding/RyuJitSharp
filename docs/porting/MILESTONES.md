@@ -14,6 +14,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Final frame layout and redundant-jump removal
+
+Windows-x64 frame finalization now restores entry locations, accounts for local
+initialization, selects homing scratch registers and separates integer pushes
+from floating-register saves. Final layout preserves argument homes, spill
+temps, security-cookie ordering, async contexts and OSR frame reuse.
+
+Redundant jumps to the next instruction group can now be removed while preserving
+descriptor identity, cumulative offsets and the return-address NOP before an
+epilog. Prolog/epilog materialization, distance binding, alignment adjustment,
+encoding and runtime metadata remain ahead of production emission.
+
 ## 2026-09-25: Native debug-map publication
 
 IP mapping publication now preserves native duplicate-offset selection, label

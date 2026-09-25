@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Block driver is committed as 7a2c17c; IP/rich publication is validated at debugPublication. Parent is validating complete genCheckUseBlockInit and parameter-homing candidates in CodeGen.FrameInitialization.cs before genFinalizeFrame (native codegencommon.cpp:4925-5186). Worker d62fc6a5-a4dd-40be-8b42-5de1405b22b7 owns complete lvaAssignFrameOffsets and its Windows-AMD64 closure (lclvars.cpp:4302 onward); worker 942a496f-db30-4389-a403-265f28fdb23c owns emitRemoveJumpToNextInst (emit.cpp:4696). Collect and validate each packet before committing. Native genGenerateCode/genGenerateMachineCode have been read; prolog/epilog materialization, jump binding, loop adjustment, encoding and required runtime publication remain ahead. Keep production genGenerateCode CORJIT_SKIPPED and managed native-code size zero.",
+    "nextAction": "Frame initialization/finalization, complete Windows-AMD64 lvaAssignFrameOffsets and redundant-jump removal are integrated and validated (305 Debug/279 Release, zero skipped). Continue with genGeneratePrologsAndEpilogs and its required Windows-AMD64 prolog/epilog closure; reuse the two collected GPT-6 Sol workers for independent emitJumpDistBind and emitLoopAlignAdjustments lanes. Preserve native ordering: finalize frame, begin emission, generate blocks, materialize prologs/epilogs, remove redundant jumps, bind distances, adjust alignment. Encoding and required runtime publication remain ahead; keep production genGenerateCode CORJIT_SKIPPED and managed native-code size zero.",
     "handoff": {
-      "status": "debug-publication-validated-frame-and-jump-closure-active",
+      "status": "frame-and-jump-closure-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Exit/frame-poisoning and loop-recording files from now-unavailable workers 87f10c61-b152-4bdc-a27e-1ecfad4f6342 and b6e1f160-b3d7-4126-bf91-39bc8de2e495 were recovered and validated by the parent, without their latest handoffs. d62fc6a5-a4dd-40be-8b42-5de1405b22b7 (GPT-6 Sol) is collected through turn6 with IP/rich publication passing 17 Debug/15 Release; reused for final frame layout. 942a496f-db30-4389-a403-265f28fdb23c (GPT-6 Sol) owns redundant jump removal. Parent owns frame initialization and genFinalizeFrame integration. No app-native child-session coordination.",
+      "workerPackets": "Both GPT-6 Sol packets are frozen, collected and integrated: d62fc6a5-a4dd-40be-8b42-5de1405b22b7 through turn13 (final frame layout), and 942a496f-db30-4389-a403-265f28fdb23c through turn6 (jump removal and diagnostic closure). Parent frame initialization/finalization and combined dependency validation are complete. Power-outage recovery preserved the committed and uncommitted work. No unread handoffs or app-native child-session coordination.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -52,6 +52,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "frameAndJumpFinalization": {
+        "debugPassed": 305,
+        "releasePassed": 279,
+        "skipped": 0,
+        "selection": "CodeGenFrameInitializationTests, CodeGenFrameFinalizationTests, SpillTemporaryTests, CompilerFinalFrameLayoutTests, EmitterJumpRemovalTests, CompilerRegallocFrameTests, CodeGenInitializationTests, CodeGenBlockDriverTests, EmitterGroupDiagnosticsTests, EmitterGroupBufferTests, EmitterInstructionGroupTests, EmitterInstructionGroupPhaseTests, EmitterJumpInstructionTests, EmitterLabelTests, EmitterLocationTests, EmitterLoopAlignmentRecordingTests, EmitterPlaceholderTests and LinearScanBlockLocationTests",
+        "debugTests": "artifacts\\frame-jump-debug.trx",
+        "releaseTests": "artifacts\\frame-jump-release.trx",
+        "coverage": "Native four-byte initialization accounting, GC spill temps, entry-location restoration, homing scratch banks, PInvoke/EnC saves, integer/floating separation, final argument/local/temp offsets, outgoing space, alignment, async and OSR reuse. Jump list head/middle removal, descriptor identity, cumulative group offsets, call-before-epilog NOP sizing and verbose group validation.",
+        "remaining": "Prolog/epilog materialization, distance binding, final alignment adjustment, encoding and required runtime metadata precede activation. Production reachability is unchanged; reuse funcletCreation.nativeHost rather than treating descriptor tests as executable-code parity."
+      },
       "debugPublication": {
         "debugPassed": 17,
         "releasePassed": 15,
@@ -3876,6 +3886,20 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "windows-amd64-frame-finalization",
+      "native": ["src\\coreclr\\jit\\codegencommon.cpp:3715,3847,4925-5186", "src\\coreclr\\jit\\lclvars.cpp:4302-6277", "src\\coreclr\\jit\\compiler.cpp:10454-10481"],
+      "csharp": ["sources\\Core\\jit\\codegencommon\\CodeGen.FrameInitialization.cs", "sources\\Core\\jit\\codegencommon\\CodeGen.FrameFinalization.cs", "sources\\Core\\jit\\codegencommon\\CodeGen.FrameLayoutHelpers.cs", "sources\\Core\\jit\\compiler\\Compiler.FinalFrameLayout.cs", "sources\\Core\\jit\\compiler\\Compiler.FinalFrameLayout.Locals.cs", "sources\\Core\\jit\\patchpointinfo\\PatchpointInfo.FrameLayout.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete Windows-AMD64 initialization accounting, parameter-homing candidates, genFinalizeFrame and lvaAssignFrameOffsets dependency closure. Other targets explicitly reject; production genGenerateCode remains skipped."
+    },
+    {
+      "area": "redundant-jump-removal",
+      "native": ["src\\coreclr\\jit\\emit.cpp:emitRemoveJumpToNextInst,emitDispJumpList,emitCheckIGList"],
+      "csharp": ["sources\\Core\\jit\\emit\\Emitter.JumpRemoval.cs", "sources\\Core\\jit\\emit\\Emitter.GroupDiagnostics.cs", "sources\\Core\\jit\\emit\\Emitter.GroupValidation.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete AMD64 jump removal, cumulative offset adjustment and required Debug diagnostics/validation. Descriptor storage survives removal and retains the native call-before-epilog NOP rule. Distance binding and final alignment remain separate."
+    },
     {
       "area": "native-debug-map-publication",
       "native": ["src\\coreclr\\jit\\codegencommon.cpp:6801-7168", "src\\coreclr\\jit\\ee_il_dll.cpp:998-1063"],
