@@ -1051,6 +1051,7 @@ reject before constant allocation, spill extraction or instruction recording.
 Jump tables and table-switch dispatch reject before table allocation, operand
 consumption or internal-register extraction; label addresses reject before
 instruction allocation and jump-list mutation.
+Register swaps reject before changing local register homes or GC classifications.
 
 Native roots are `emitxarch.cpp:5929,5945,5962,6019,7168,7798,8090,9314,9407,10574,10609`
 and `7042,8134,8506,8546,8686,8929,9626,9658,9804,10422`,
@@ -1090,6 +1091,7 @@ Intrinsic guards are in `codegenxarch/CodeGen.Intrinsics.cs`,
 and `emitxarch/Emitter.SimdMemoryInstructions.cs`.
 Table-switch guards are in `codegenxarch/CodeGen.Switches.cs`,
 `codegencommon/CodeGen.JumpTables.cs` and `emitxarch/Emitter.JumpInstructions.cs`.
+Register-swap guards are in `codegenxarch/CodeGen.RegisterSwaps.cs`.
 The pre-mutation rejection is
 covered for every recording entrypoint. Retain the mixed-mode
 native bodies until full disassembly is ported. This does not activate production

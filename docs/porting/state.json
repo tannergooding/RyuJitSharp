@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete AMD64 table-switch generation, jump-table materialization and basic-block label address recording. Reuse existing managed block-table storage and preserve offsets, ordering, relocations and lifetimes; keep production emission skipped.",
+      "scope": "Complete AMD64 local-register swap generation. Preserve local home ownership, XCHG GC attributes and register root classifications without adding consumption, production or live-range notifications absent from native; keep production emission skipped.",
       "doneWhen": [
-        "Port complete AMD64 genTableBasedSwitch, genJumpTable and genEmitJumpTable.",
-        "Close the BasicBlock overload of emitIns_R_L with native descriptor sizing, relocation and catch-return diagnostics. Preserve D005 rejection before mutation.",
+        "Port complete AMD64 genCodeForSwap with existing register move and local/GC helpers.",
+        "Preserve native integer-register-only assertions and D005 rejection before modifying local homes.",
         "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Validate ordered and duplicate table targets, relative/absolute layouts, first-block-relative dispatch, label descriptors and pre-mutation rejection in Debug/Release; retain intrinsicGeneration as the unrelated dependency baseline.",
+        "Validate integer/ref/byref pairs, local and node register ownership, unchanged unrelated roots and pre-mutation rejection in Debug/Release; retain intrinsicGeneration as the unrelated dependency baseline.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,9 +32,9 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Table-based switches, jump-table materialization and BasicBlock label address recording are complete and validated (tableSwitches). Continue complete native genCodeForSwap at codegenxarch.cpp:5632, retaining local-register ownership, GC classes and live-range updates, and close its required dependencies before validating and committing. Then continue remaining scalar memory/call node generation. The insGroup overload of emitIns_R_L remains unported for future function-entry addressing; do not conflate it with the completed BasicBlock overload. Keep production emission skipped until remaining node/block generation, encoding and metadata publication are complete.",
+    "nextAction": "Register swaps are complete and validated (registerSwaps): native updates local register homes and GC classes without consuming or producing operands or issuing separate live-range notifications. Continue complete genCodeForStoreInd at codegenxarch.cpp:5315. Close its GC write-barrier/helper-call and memory-recording dependencies rather than introducing a non-GC-only store implementation; preserve RMW, narrowing, ownership and ordering paths. genEmitHelperCall begins at codegenxarch.cpp:8485. The insGroup emitIns_R_L overload remains unported for future function-entry addressing. Keep production emission skipped until remaining node/block generation, encoding and metadata publication are complete.",
     "handoff": {
-      "status": "table-switch-generation-validated",
+      "status": "register-swap-generation-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
       "workerPackets": "All files and follow-ups from 4c9a8661-6e45-4e43-960d-7f3a779cdcde are collected through turn 16, frozen and integrated, including CodeGen.UpperLanes.cs and CodeGenUpperLaneTests.cs. Root Debug/Release validation passes. Both it and a7f6ecaf-b706-4be6-83c3-c83235b7452f are idle with no outstanding assignment or unread handoff. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "registerSwaps": {
+        "debugPassed": 149,
+        "releasePassed": 143,
+        "skipped": 0,
+        "selection": ["CodeGenSwapTests", "CodeGenRegisterValueTests", "RegisterTrackingTests", "EmitterRegisterInstructionTests"],
+        "debugTests": "artifacts\\register-swap-debug.trx",
+        "releaseTests": "artifacts\\register-swap-release.trx",
+        "coverage": "All int/long/ref/byref pairings, swapped local homes with unchanged operand register identities, 64-bit XCHG and native GC-transition attributes, exact GC/byref destination sets, preserved unrelated roots and no operand consumption. D005 rejects before local-home or GC mutation. Native genCodeForSwap does not issue live-range notifications or produce a result; no extra updates were invented.",
+        "remaining": "Reuses intrinsicGeneration/tableSwitches for other dependencies and funcletCreation.nativeHost for unchanged reachability. Indirect/write-barrier stores, calls, remaining node/block generation, encoding and metadata publication remain; managed code size is zero."
+      },
       "tableSwitches": {
         "debugPassed": 266,
         "releasePassed": 258,
@@ -3598,6 +3608,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "register-swap-generation",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:5632-5687"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.RegisterSwaps.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 genCodeForSwap, including local-home writes, pointer-size XCHG, conditional GC attribute and exact GC class reassignment. Retains native integer-register-only assertion and absence of consume/produce/live-range calls. D005 rejects before mutation; production emission remains skipped."
+    },
     {
       "area": "table-switch-generation",
       "native": ["src\\coreclr\\jit\\codegenxarch.cpp:4147-4163,4178-4187", "src\\coreclr\\jit\\codegencommon.cpp:6065-6097", "src\\coreclr\\jit\\emitxarch.cpp:9132-9179", "src\\coreclr\\jit\\emit.h:2004-2008"],

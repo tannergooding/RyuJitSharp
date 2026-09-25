@@ -14,6 +14,15 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Register swap generation
+
+Register swaps now exchange local homes and update GC-reference/byref ownership
+without consuming the still-live operands. Native XCHG attributes distinguish
+GC-to-non-GC swaps while preserving unrelated roots.
+
+Indirect stores and write barriers, calls, remaining node/block generation,
+encoding and metadata publication remain before production emission.
+
 ## 2026-09-25: Table-based switch generation
 
 Switch tables now preserve case order, duplicate targets and native alignment.
