@@ -275,6 +275,10 @@ existing deviation entries rather than maintaining competing descriptions.
 
 | B230 | Port bug / saved-current instruction traversal | Managed `emitPrevID` selected the recording buffer whenever its group equaled `emitCurIG`. Prolog/epilog materialization leaves the saved final group current after clearing that buffer, so final backward validation indexed an empty list. Native descriptors remain addressable after saving. | Use the active buffer only while it contains the current group's recording; otherwise use the group's saved descriptor snapshot. | Corrected with prolog/epilog materialization; the two-epilog integration regression exercises saved-current backward traversal. |
 
+| B231 | Port prerequisite / invalid instruction-format diagnostics | Native `emitOutputR` and `emitOutputRI` print `emitDispIns(id, false, false, false)` before asserting on three invalid-format paths (`emitxarch.cpp:16360,17233,17269`). The general managed instruction-display API is not yet ported. | Retain the invariant failures and restore the preceding native descriptor dump when instruction display is ported; do not treat byte-output tests as full dump parity. | Open; valid descriptor output does not enter these paths. Production emission remains unavailable. |
+
+| B232 | Port bug / prefix mutation during opcode composition | A C# compound assignment such as `code |= insEncodeReg012(..., &code)` reads `code` before the helper adds REX bits, then overwrites that mutation. Register push/pop and immediate output therefore lost the R9 prefix. | Evaluate the register-encoding helper first, then combine its returned bits with the updated opcode. | Corrected across the new opcode-register, MI and mov-immediate output paths; exact R9 push/pop/add/mov byte regressions retain the prefix. |
+
 Larger module decomposition and broad unit-test infrastructure belong to the
 post-port phase. Add concrete candidates here as evidence appears, rather than
 preemptively planning a redesign of every compiler subsystem.

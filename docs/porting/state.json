@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete Windows-AMD64 byte-output/prefix and register/immediate encoding support, with independent unwind reservation/publication. Root and funclet prolog/epilog materialization is validated; production emission remains explicitly unavailable.",
+      "scope": "Complete Windows-AMD64 memory-operand, stack/static and branch machine-byte output with required GC/relocation helpers. Register/immediate encoding and unwind publication are validated; production emission remains explicitly unavailable.",
       "doneWhen": [
-        "Port complete native byte-output, prefix and register/immediate encoding functions without a reduced scalar alternate implementation.",
-        "Preserve Windows-AMD64 unwind reservation and publication contracts, including root/funclet and hot/cold records.",
-        "Validate byte sequences and EE ownership/offset contracts in Debug/Release and commit; leave production emission skipped until remaining address/jump encoding and allocation/metadata closure is complete."
+        "Port complete native emitOutputAM/SV/CV and emitOutputLJ with NOP/alignment support, preserving all required Windows-AMD64 encoding paths.",
+        "Preserve frame addressing, relocations, instruction sizes, GC transitions and hot/cold branch contracts without a reduced scalar alternate implementation.",
+        "Validate exact bytes and side effects in Debug/Release and commit; leave production emission skipped until dispatcher, allocation and runtime metadata closure is complete."
       ],
       "validation": [
-        "Run focused byte-encoding and unwind publication regressions in Debug/Release, extending with directly coupled emitter recording and prolog/unwind tests.",
+        "Run focused address/stack/static/branch byte-output regressions in Debug/Release, extending with directly coupled recording, prefix and placement tests.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Prolog/epilog materialization is complete and validated (298 Debug/281 Release, zero skipped); finalize its coherent commit before implementation of the next packet. Next port emitter byte-output and prefix helpers required by emitOutputR/RR/RRR/RI/IV (emitxarch.cpp:16072-17383), while a separate lane ports Windows-AMD64 unwindReserve/unwindEmit and complete support (unwindamd64.cpp:696-1000). Establish existing helper/EE APIs first, then implement complete native functions and validate byte sequences and runtime records. Keep production genGenerateCode CORJIT_SKIPPED and managed native-code size zero.",
+    "nextAction": "Byte/prefix/register/immediate output and Windows-AMD64 unwind publication are validated (216 Debug/205 Release, zero skipped). Commit this coherent batch before starting the next closure: emitOutputAM at emitxarch.cpp:14018-15059, parallel emitOutputSV/CV at15060-16071 and emitOutputLJ at17384-18027 with NOP/alignment support at13760-14000. Parent owns shared addressing/GC helpers and integration; workers must report exact dependencies before duplicating shared support. B231 retains the missing invalid-format emitDispIns diagnostic limitation. Production genGenerateCode remains CORJIT_SKIPPED and managed code size zero until the complete driver/allocation/metadata closure exists.",
     "handoff": {
-      "status": "prolog-epilog-materialization-validated",
+      "status": "byte-encoding-and-unwind-publication-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All three GPT-6 Sol packets are collected and integrated: d62fc6a5-a4dd-40be-8b42-5de1405b22b7 through turn27 (epilog/funclets), 942a496f-db30-4389-a403-265f28fdb23c through turn17 (OSR/initial registers), and 6a004941-37d2-4a3d-b2f4-0d1a35021099 through turn2 (profiling). All are idle with no unread handoffs. Reuse only for concrete next-batch lanes after committing materialization; no app-native child-session coordination.",
+      "workerPackets": "Both packets are collected and integrated: d62fc6a5-a4dd-40be-8b42-5de1405b22b7 through turn33 (unwind publication) and 942a496f-db30-4389-a403-265f28fdb23c through turn25 (register/immediate encoding, GC updates and descriptor allocation). Both are idle with no unread handoffs. Parent fixed the legacy-SSE fixture's inherited EVEX setting and retained native relocation diagnostic labels. Profiling worker 6a004941 remains idle through turn2. Reuse workers only after committing this validated batch; no app-native child-session coordination.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -52,6 +52,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "byteEncodingAndUnwindPublication": {
+        "debugPassed": 216,
+        "releasePassed": 205,
+        "skipped": 0,
+        "selection": "EmitterByteOutputTests, UnwindPublicationTests, EmitterRegisterOutputTests, EmitterRegisterInstructionTests, EmitterSimdRegisterInstructionTests, CodeGenPrologTests, EmitterPrologEpilogTests, UnwindPrologRecordingTests and EmitterInstructionGroupTests",
+        "debugTests": "artifacts\\byte-output-debug.trx",
+        "releaseTests": "artifacts\\byte-output-release.trx",
+        "coverage": "Unaligned/truncating writes through writable aliases, legacy/REX/REX2/VEX/EVEX/APX prefix extraction, opcode/map packing, short VEX selection, exact scalar/SIMD register and immediate bytes, R9 prefix preservation, section-relative/direct/relative relocations and matched-VM/late-disassembly behavior. GC register births/deaths retain issued offsets. Root/funclet hot/cold unwind reservation/publication retains header bytes, range rebasing, fake splitting and synchronous EE consumption of pinned storage.",
+        "remaining": "Memory/stack/static/branch encoding, output dispatch, executable allocation and remaining GC/EH/debug publication are still required. B231 tracks missing invalid-format instruction-display diagnostics. Reuse funcletCreation.nativeHost because production reachability is unchanged; byte tests do not establish executable-code parity."
+      },
       "prologEpilogMaterialization": {
         "debugPassed": 298,
         "releasePassed": 281,
@@ -3917,6 +3927,20 @@
   },
   "sourceMap": [
     {
+      "area": "windows-amd64-register-byte-output",
+      "native": ["src\\coreclr\\jit\\emitxarch.cpp:3120-3715,16072-17376", "src\\coreclr\\jit\\emit.cpp:9268-9323,9366-9440,9592-9640,9700-9733,10561-10601", "src\\coreclr\\jit\\emit.h:emitCurCodeOffs", "src\\coreclr\\jit\\gcinfo.cpp:gcRegPtrAllocDsc", "src\\coreclr\\jit\\disasm.cpp:disRecordRelocation,GetRelocationMap"],
+      "csharp": ["sources\\Core\\jit\\emit\\Emitter.ByteOutput.cs", "sources\\Core\\jit\\emitxarch\\Emitter.PrefixExtraction.cs", "sources\\Core\\jit\\emitxarch\\Emitter.PrefixOutput.cs", "sources\\Core\\jit\\emitxarch\\Emitter.RegisterOutput.cs", "sources\\Core\\jit\\emitxarch\\Emitter.ImmediateOutput.cs", "sources\\Core\\jit\\emitxarch\\Emitter.RegisterOutputEncoding.cs", "sources\\Core\\jit\\emitxarch\\Emitter.RegisterOutputGC.cs", "sources\\Core\\jit\\jitgcinfo\\GCInfo.RegisterOutputAllocation.cs", "sources\\Core\\jit\\disasm\\Disassembler.Relocations.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete valid Windows-AMD64 emitOutputR/RR/RRR/RI/IV paths, prefix extraction/output, primitive writes and required register-GC/relocation support. B232 fixes compound-assignment prefix loss. B231 records the unported preceding display on invalid-format assertions; no production emission or full dump parity claim."
+    },
+    {
+      "area": "windows-amd64-unwind-publication",
+      "native": ["src\\coreclr\\jit\\unwindamd64.cpp:533-685,696-1001", "src\\coreclr\\jit\\ee_il_dll.cpp:1299-1353"],
+      "csharp": ["sources\\Core\\jit\\unwindamd64\\Compiler.UnwindPublication.cs", "sources\\Core\\jit\\unwindamd64\\Compiler.UnwindPublicationDiagnostics.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete Windows-AMD64 unwind reservation/publication, header prepending, root/funclet hot/cold range selection and rebasing, EE wrappers and unwind diagnostics. Managed unwind bytes are pinned for synchronous EE consumption. Production invocation awaits the complete emission driver."
+    },
+    {
       "area": "windows-amd64-prolog-epilog-materialization",
       "native": ["src\\coreclr\\jit\\codegencommon.cpp:genFnProlog,genGeneratePrologsAndEpilogs", "src\\coreclr\\jit\\codegenxarch.cpp:genFnEpilog,genPopCalleeSavedRegisters,genCaptureFuncletPrologEpilogInfo,genFuncletProlog,genFuncletEpilog", "src\\coreclr\\jit\\emit.cpp:emitGeneratePrologEpilog,emitBegProlog,emitEndProlog,emitBegPrologEpilog,emitEndPrologEpilog,emitRecomputeIGoffsets", "src\\coreclr\\jit\\scopeinfo.cpp:psiGetVarStackOffset,psiBegProlog,psiEndProlog", "src\\coreclr\\jit\\compiler.cpp:compJitHaltMethod"],
       "csharp": ["sources\\Core\\jit\\codegencommon\\CodeGen.Prolog.cs", "sources\\Core\\jit\\codegenxarch\\CodeGen.Epilog.cs", "sources\\Core\\jit\\codegenxarch\\CodeGen.FuncletPrologEpilog.cs", "sources\\Core\\jit\\emit\\Emitter.PrologEpilog.cs", "sources\\Core\\jit\\scopeinfo\\CodeGen.PrologScopes.cs", "sources\\Core\\jit\\compiler\\Compiler.PrologDiagnostics.cs"],
@@ -3942,7 +3966,7 @@
       "native": ["src\\coreclr\\jit\\unwindamd64.cpp:135-505", "src\\coreclr\\jit\\unwind.cpp:49-123,426-435"],
       "csharp": ["sources\\Core\\jit\\unwindamd64\\"],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
-      "status": "Complete Windows-AMD64 prolog/epilog recording boundaries, pushes, stack allocation, frame-register setup and integer/vector save encodings with function locations and native unwind storage. Unwind reservation and publication remain pending."
+      "status": "Complete Windows-AMD64 prolog/epilog recording boundaries, pushes, stack allocation, frame-register setup and integer/vector save encodings with function locations and native unwind storage. Reservation and publication support is integrated; production invocation awaits the emission driver."
     },
     {
       "area": "windows-amd64-parameter-homing",

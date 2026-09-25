@@ -14,6 +14,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Register byte encoding and unwind publication
+
+Windows-x64 register and immediate instructions now have byte-output support,
+including legacy, REX/REX2, VEX and EVEX/APX encodings. Writes use the runtime's
+writable code alias, relocations preserve their executable locations, and GC
+register changes retain native ordering and code offsets.
+
+Unwind records can now be reserved and published for root methods and funclets,
+including hot/cold splits. Memory-operand and branch encoding, the final emission
+driver, executable allocation and remaining runtime metadata still precede
+production activation. These byte-level capabilities do not yet make the port
+an executing JIT.
+
 ## 2026-09-25: Complete prolog and epilog materialization
 
 Windows-x64 root and funclet prologs and epilogs now replace their reserved
