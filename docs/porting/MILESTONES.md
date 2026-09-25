@@ -14,6 +14,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Stack-store recording and local spills
+
+Windows-x64 local spills now record real instruction descriptors, including the
+two stores needed for SIMD12 values. Spills preserve stack-home normalization,
+register death, GC-root transitions and the ordering of variable live-range
+updates. Constant and displacement descriptors retain native width, compact
+encodings and logical sizes; redundant stack moves respect native side effects
+and GC-region boundaries.
+
+Recording currently supports the native no-instruction-disassembly mode.
+Requested Debug instruction disassembly rejects before allocation rather than
+silently losing output. Tree-lifetime code generation and final instruction
+encoding remain ahead; production emission is still explicitly skipped.
+
 ## 2026-09-25: Instruction prefixes and stack sizing
 
 Windows-x64 instruction sizing now accounts for legacy, VEX, EVEX and APX

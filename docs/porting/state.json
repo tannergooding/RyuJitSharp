@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Prefix/opcode/stack-size/compression support is integrated (421 Debug/408 Release); all worker packets are collected and frozen. Resume complete emitIns_S_R at pinned emitxarch.cpp:10574 and emitIns_S_R_I at 9407, identifying only their remaining recording/options/diagnostic dependencies; size/prefix and tuple compression are no longer blockers. True-store closure is inst_TT_RV -> emitIns_S_R, plus emitStoreSimd12ToLclOffset -> emitIns_S_R_I, then genSpillVar and complete TreeLifeUpdater codegen mode. Do not substitute fake instruction sizes or no-op diagnostics. Production emission remains explicitly skipped.",
+    "nextAction": "Stack-store recording, constant/displacement descriptors, inst_TT_RV, SIMD12 local stores and complete AMD64 genSpillVar are integrated and validated (664 Debug/653 Release, zero skipped). Resume the complete native TreeLifeUpdater code-generation mode using the real genSpillVar dependency: compare its existing managed phase specialization with the pinned native dispatcher, preserve all local/register/GC/live-range transitions, and validate before activating any production caller. D005 records the DEBUG opts.dspCode==false recording specialization; full emitDispIns remains required before enabling diagnostic recording. Keep genGenerateCode explicitly skipped until its entire required closure is ready. All worker packets are collected/frozen; no worker is outstanding.",
     "handoff": {
-      "status": "instruction-prefix-opcode-size-integrated",
+      "status": "stack-store-recording-and-spills-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All prefix/descriptor and independent opcode native-comparison packets are collected, frozen and integrated. No pending worker edits or unread handoffs; no app-native child sessions.",
+      "workerPackets": "All prefix, opcode-comparison and constant/displacement packets are fully collected, frozen and integrated. Constant worker b6e1f160-b3d7-4126-bf91-39bc8de2e495 returned four new files without shared allocation/schema edits. No active or unread workers; no app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -60,6 +60,18 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "stackStoreRecordingAndSpills": {
+        "debugPassed": 664,
+        "releasePassed": 653,
+        "skipped": 0,
+        "selection": "stackLocalMetadata.selection plus EmitterOpcodeTests, EmitterPrefixTests, EmitterInstructionSizeTests, EmitterStackMoveElisionTests, EmitterStackStoreTests, EmitterConstantDescriptorTests and CodeGenSpillVariableTests; combine FullyQualifiedName filters in one dotnet test tests\\Core\\RyuJitSharp.UnitTests.csproj --no-restore run per configuration.",
+        "debugTests": "artifacts\\stack-store-spill-debug.trx",
+        "releaseTests": "artifacts\\stack-store-spill-release.trx",
+        "coverage": "Native small/full-width constants and displacements, descriptor aliases/logical sizes and saved groups; complete move-elision and GC-region gates; real stack-register/immediate descriptors and sizes; embedded masks; SIMD12 store pair; ordinary and narrow OSR stack homes; EH/single-def/write-through spill predicates; register death, GC stack roots, bank-aware masks and post-store live-range changes.",
+        "maskRegression": "artifacts\\spill-raw-mask-before.trx: substituting new regMaskTP(varDsc.lvRegMask) for genGetRegMask(in varDsc) fails the K1 spill by clearing an unrelated RCX GC temporary; the other eleven store cases pass. Final integrated runs restore the bank-aware helper.",
+        "modeBoundary": "D005: Debug opts.dspCode requests reject with CORJIT_SKIPPED before recording mutation. Native no-disassembly checks and conditional statistics are retained; full emitDispIns remains unported.",
+        "remaining": "No production emission activation or new native-host capture. TreeLifeUpdater code-generation mode and final encoding remain; managed emitted code is zero."
+      },
       "instructionPrefixesAndSizes": {
         "debugPassed": 421,
         "releasePassed": 408,
@@ -3268,6 +3280,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "stack-store-recording-and-local-spills",
+      "native": ["src\\coreclr\\jit\\emitxarch.cpp:5824-5924,7150,7525,7636-7768,9407,10514-10612,11232", "src\\coreclr\\jit\\emit.cpp:1611-1631,2757-2821", "src\\coreclr\\jit\\emit.h:932-1007,2343-2380,3113-3149", "src\\coreclr\\jit\\emitinl.h", "src\\coreclr\\jit\\emitxarch.h:513-526", "src\\coreclr\\jit\\instr.h:267-334", "src\\coreclr\\jit\\instr.cpp:966-1008", "src\\coreclr\\jit\\codegenlinear.cpp:1034-1121"],
+      "csharp": ["sources\\Core\\jit\\emit\\Emitter.instrDesc.Constants.cs", "sources\\Core\\jit\\emit\\Emitter.ConstantAllocation.cs", "sources\\Core\\jit\\emitxarch\\Emitter.ConstantAccess.cs", "sources\\Core\\jit\\emitxarch\\Emitter.StackMoveElision.cs", "sources\\Core\\jit\\emitxarch\\Emitter.InstructionOptions.cs", "sources\\Core\\jit\\emitxarch\\Emitter.StackStores.cs", "sources\\Core\\jit\\instr\\insOpts.cs", "sources\\Core\\jit\\instr\\CodeGen.StoreSelection.cs", "sources\\Core\\jit\\codegenlinear\\CodeGen.SpillVariables.cs", "sources\\Core\\jit\\codegeninterface\\ICodeGen.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 constant/displacement descriptor families and allocation/access, move classification/elision, stack-register/immediate recording in native no-disassembly mode (D005), SIMD12 local stores, inst_TT_RV and genSpillVar. Reuses bank-aware masks (B208). Full instruction disassembly and final encoding remain unported; mixed-mode native sources are retained and production emission remains explicitly skipped."
+    },
     {
       "area": "instruction-prefix-opcode-and-stack-size",
       "native": ["src\\coreclr\\jit\\emitxarch.cpp:2013-2247,2523-2710,2837-2910,3093-3108,3746-3979,4208-4619,5144-5151,5304-5434,17733-18011", "src\\coreclr\\jit\\emitxarch.h:189-235,373,498-504,1298-1302", "src\\coreclr\\jit\\emit.h:624-635,1800-1924", "src\\coreclr\\jit\\compiler.h:11063-11131", "src\\coreclr\\jit\\instr.h:676"],

@@ -98,6 +98,10 @@ public interface ICodeGen
 
     instruction ins_Store(var_types dstType, bool aligned = false);
 
+    void inst_TT_RV(instruction ins, emitAttr size, GenTree tree, regNumber reg);
+
+    void genSpillVar(GenTree tree);
+
     void initializeVariableLiveKeeper();
 
     CodeGen.VariableLiveKeeper getVariableLiveKeeper();

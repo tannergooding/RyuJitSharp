@@ -58,6 +58,11 @@ reversal and append order without copying CLR objects into unmanaged storage.
 Actual emitted-code patch addresses remain native pointers; they are not
 narrowed to managed descriptor offsets.
 
+Constant/displacement descriptor families retain native pointer-sized payloads
+and logical sizes. Managed inheritance and ref aliases provide the shared first
+constant slot used by native descriptor casts without depending on CLR object
+layout.
+
 The descriptor's pointer-sized, reference-free address union overlays packed
 local addresses, xarch address modes and additional register fields. Explicit
 layout preserves their native aliasing; custom EVEX/APX context bits retain
@@ -972,6 +977,24 @@ The global VN/SSA-based dispatcher and its range-analysis dependencies remain
 unported. Their shared native bodies are retained in the residual tree. This
 mode split prevents an optional later phase from blocking required morphing,
 without adding success-shaped fallbacks on the active path.
+
+### D005: Instruction recording without optional disassembly
+
+**Status:** temporary implementation boundary along the existing native Debug
+`opts.dspCode` predicate, not an accepted diagnostic difference.
+
+Windows-AMD64 `emitIns_S_R` and `emitIns_S_R_I` record complete native descriptors
+and sizes. Their `dispIns` path preserves sanity, stack-depth, logical-size and
+conditional statistics checks. In Debug, both entrypoints reject requested
+instruction disassembly with `CORJIT_SKIPPED` before move elision or descriptor
+allocation; the native `emitDispIns` body remains unported. Release retains the
+native absence of that immediate-disassembly call.
+
+Native roots are `emitxarch.cpp:9407,10574` and `emit.cpp:1611`; the managed
+specialization is in `emitxarch/Emitter.StackStores.cs`. The pre-mutation
+rejection is covered for both recording entrypoints. Retain the mixed-mode
+native bodies until full disassembly is ported. This does not activate production
+emission or waive future `jitdump`/`jitdisasm` parity.
 
 ## Implementation notes and parity findings
 
