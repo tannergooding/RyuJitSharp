@@ -254,6 +254,8 @@ existing deviation entries rather than maintaining competing descriptions.
 
 | B217 | Upstream question / contained local-address load lifetime | Native `emitInsLoadInd` updates the contained `GT_LCL_ADDR` after recording a load (`emitxarch.cpp:6292-6298`). Its TODO questions updating the indirection instead, as the store counterpart does for a GC-hole fix. | Preserve the pinned call and establish a concrete native lifetime/GC repro before changing the node used for the update. | Recorded during indirect-load generation. No executable defect is established and no managed-only algorithm change is made. |
 
+| B218 | Upstream question / absolute indirect-call assertion | Native `emitIns_Call` (`emitxarch.cpp:11129-11143`) checks `params.addr` for signed-32-bit encodability in the no-base/no-index address-mode branch, although that call form requires `params.addr == nullptr` and carries the address in `params.disp`. | Confirm the intended assertion operand upstream; preserve the pinned code until a correction is approved. | The vacuous native assertion is retained. Relocation selection still tests the actual displacement; no executable defect or managed-only behavior change is established. |
+
 Larger module decomposition and broad unit-test infrastructure belong to the
 post-port phase. Add concrete candidates here as evidence appears, rather than
 preemptively planning a redesign of every compiler subsystem.

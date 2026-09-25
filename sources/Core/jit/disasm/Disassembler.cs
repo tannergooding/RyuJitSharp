@@ -9,7 +9,7 @@ using System.IO;
 
 namespace RyuJitSharp;
 
-public struct Disassembler
+public partial struct Disassembler
 {
     private Compiler? _compiler;
     private bool _hasName;

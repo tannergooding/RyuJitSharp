@@ -14,6 +14,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Helper-call and call-instruction recording
+
+Helper calls now retain native direct, memory-indirect and register-materialized
+target selection. Call recording preserves GC snapshots, helper-specific register
+kills, tail-jump prefixes, relocation choices and small/large descriptor layouts.
+Managed return-value diagnostics retain root IL locations and register or
+return-buffer homes.
+
+This supplies the helper-call dependency for GC write barriers. Indirect stores,
+general call-node generation, remaining node/block generation, final encoding
+and metadata publication still prevent production machine-code emission.
+
 ## 2026-09-25: Register swap generation
 
 Register swaps now exchange local homes and update GC-reference/byref ownership

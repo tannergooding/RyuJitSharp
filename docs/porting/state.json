@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete AMD64 local-register swap generation. Preserve local home ownership, XCHG GC attributes and register root classifications without adding consumption, production or live-range notifications absent from native; keep production emission skipped.",
+      "scope": "Close complete AMD64 helper-call recording as the first dependency batch for indirect stores and GC write barriers. Preserve helper lookup, indirect-target choices, current GC snapshots, call descriptors and managed return-value diagnostics; keep production emission skipped.",
       "doneWhen": [
-        "Port complete AMD64 genCodeForSwap with existing register move and local/GC helpers.",
-        "Preserve native integer-register-only assertions and D005 rejection before modifying local homes.",
+        "Port complete AMD64 genEmitHelperCall and genEmitCallWithCurrentGC with the native EmitCallParams contract.",
+        "Complete emitIns_Call and its recording dependencies for all AMD64 call forms; preserve D005 before helper/GC/descriptor mutation and retain final encoding separately.",
         "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Validate integer/ref/byref pairs, local and node register ownership, unchanged unrelated roots and pre-mutation rejection in Debug/Release; retain intrinsicGeneration as the unrelated dependency baseline.",
+        "Validate direct/indirect helper selection, register kill contracts, GC snapshots, call-form descriptors and return-value diagnostics in Debug/Release before a dependency-coherent local commit.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Register swaps are complete and validated (registerSwaps): native updates local register homes and GC classes without consuming or producing operands or issuing separate live-range notifications. Continue complete genCodeForStoreInd at codegenxarch.cpp:5315. Close its GC write-barrier/helper-call and memory-recording dependencies rather than introducing a non-GC-only store implementation; preserve RMW, narrowing, ownership and ordering paths. genEmitHelperCall begins at codegenxarch.cpp:8485. The insGroup emitIns_R_L overload remains unported for future function-entry addressing. Keep production emission skipped until remaining node/block generation, encoding and metadata publication are complete.",
+    "nextAction": "Helper-call recording is complete (helperCalls): genEmitHelperCall, current-GC/MRV capture and all Windows-AMD64 emitIns_Call forms are integrated. Continue complete genCodeForStoreInd at codegenxarch.cpp:5315-5622. Reuse the new helper-call closure and existing write-barrier classification; finish genGCWriteBarrier, the AMD64 genEmitOptimizedGCWriteBarrier branch and required SIMD12/RMW/narrowing memory recording rather than introducing a non-GC-only store specialization. Keep D006 inline throws gated until their complete caller is ported. Production emission remains skipped until node/block generation, encoding and metadata publication are complete.",
     "handoff": {
-      "status": "register-swap-generation-validated",
+      "status": "helper-call-recording-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All files and follow-ups from 4c9a8661-6e45-4e43-960d-7f3a779cdcde are collected through turn 16, frozen and integrated, including CodeGen.UpperLanes.cs and CodeGenUpperLaneTests.cs. Root Debug/Release validation passes. Both it and a7f6ecaf-b706-4be6-83c3-c83235b7452f are idle with no outstanding assignment or unread handoff. No app-native child sessions.",
+      "workerPackets": "All helper-call packets and follow-ups from 4c9a8661-6e45-4e43-960d-7f3a779cdcde are collected through turn 20, frozen and integrated. The emitter uses concrete CodeGen, so no ICodeGen additions are required. Native no-GC classification reuses CorInfoHelpFuncExtensions.IsNoGC rather than a duplicate table. Both this worker and a7f6ecaf-b706-4be6-83c3-c83235b7452f are idle with no assignment or unread handoff. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "helperCalls": {
+        "debugPassed": 380,
+        "releasePassed": 361,
+        "skipped": 0,
+        "selection": ["CodeGenHelperCallTests", "EmitterCallInstructionTests", "EmitterInstructionSizeTests", "EmitterAddressInstructionTests", "EmitterGroupBufferTests", "EmitterInstructionAllocationTests", "CodeGenInitializationTests", "CodeGenImmediateTests", "EmitterPrefixTests"],
+        "debugTests": "artifacts\\helper-call-debug.trx",
+        "releaseTests": "artifacts\\helper-call-release.trx",
+        "coverage": "Direct, absolute-indirect, register and memory call forms, tail-jump prefixes and APX registers; signed displacement/argument boundaries; helper lookup and default/explicit materialization targets; bit-preserving negative addresses; small/large logical descriptor sizes, GC copy ownership and return-register updates; no-GC helper kill masks using the existing shared property table; lazy late-disassembly target maps; root IL return locations, register/retbuf diagnostics and native eligibility gates. D005 rejects before lookup, GC capture or recording.",
+        "remaining": "Windows AMD64 only; other call targets reject before mutation. Reuses funcletCreation.nativeHost because support remains below the emission skip. Indirect stores/write barriers, general call-node generation, remaining node/block generation, final encoding and metadata publication remain; managed code size is zero. B218 preserves the native absolute-address assertion operand."
+      },
       "registerSwaps": {
         "debugPassed": 149,
         "releasePassed": 143,
@@ -3608,6 +3618,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "helper-call-recording",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:8485-8552,11614-11703", "src\\coreclr\\jit\\codegencommon.cpp:1790-1943", "src\\coreclr\\jit\\emitxarch.cpp:10961-11225,2947-2971", "src\\coreclr\\jit\\emit.cpp:2836-2844,3646-3798,10723-10823", "src\\coreclr\\jit\\emitinl.h:230-591", "src\\coreclr\\jit\\emit.h:454-498", "src\\coreclr\\jit\\disasm.cpp:871-891,1425-1442"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.HelperCalls.cs", "sources\\Core\\jit\\codegencommon\\CodeGen.CallGC.cs", "sources\\Core\\jit\\emit\\EmitCallParams.cs", "sources\\Core\\jit\\emit\\EmitCallType.cs", "sources\\Core\\jit\\emitxarch\\Emitter.CallAllocation.cs", "sources\\Core\\jit\\emitxarch\\Emitter.CallGC.cs", "sources\\Core\\jit\\emitxarch\\Emitter.CallInstructions.cs", "sources\\Core\\jit\\emitxarch\\Emitter.instrDesc.CallAddress.cs", "sources\\Core\\jit\\emitxarch\\Emitter.AddressInstructionSizes.cs", "sources\\Core\\jit\\disasm\\Disassembler.CallRecords.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete Windows-AMD64 helper/current-GC call generation and call instruction recording closure. Reuses shared helper properties and existing managed descriptor/bitset ownership. Retains B218 and D005, rejects other call targets before mutation and leaves final encoding and production emission separate."
+    },
     {
       "area": "register-swap-generation",
       "native": ["src\\coreclr\\jit\\codegenxarch.cpp:5632-5687"],

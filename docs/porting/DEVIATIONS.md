@@ -1052,6 +1052,9 @@ Jump tables and table-switch dispatch reject before table allocation, operand
 consumption or internal-register extraction; label addresses reject before
 instruction allocation and jump-list mutation.
 Register swaps reject before changing local register homes or GC classifications.
+Helper calls and current-GC call generation reject before helper lookup or GC
+parameter capture. Call-instruction recording rejects before descriptor allocation,
+GC-state updates or late-disassembly target registration.
 
 Native roots are `emitxarch.cpp:5929,5945,5962,6019,7168,7798,8090,9314,9407,10574,10609`
 and `7042,8134,8506,8546,8686,8929,9626,9658,9804,10422`,
@@ -1092,6 +1095,9 @@ and `emitxarch/Emitter.SimdMemoryInstructions.cs`.
 Table-switch guards are in `codegenxarch/CodeGen.Switches.cs`,
 `codegencommon/CodeGen.JumpTables.cs` and `emitxarch/Emitter.JumpInstructions.cs`.
 Register-swap guards are in `codegenxarch/CodeGen.RegisterSwaps.cs`.
+Call guards are in `codegenxarch/CodeGen.HelperCalls.cs`,
+`codegencommon/CodeGen.CallGC.cs` and `emitxarch/Emitter.CallInstructions.cs`
+(`codegenxarch.cpp:8485`, `codegencommon.cpp:1790`, `emitxarch.cpp:10961`).
 The pre-mutation rejection is
 covered for every recording entrypoint. Retain the mixed-mode
 native bodies until full disassembly is ported. This does not activate production

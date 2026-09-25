@@ -149,6 +149,12 @@ public partial class Emitter
                 return size;
             }
 
+            if ((ins is INS_call or INS_tail_i_jmp) && id.idIsCallRegPtr())
+            {
+                assert(dsp == 0);
+                return size;
+            }
+
             if (baseRegisterRequiresSibByte(reg))
             {
                 size++;
