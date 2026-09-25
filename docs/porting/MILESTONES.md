@@ -14,6 +14,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Remaining flowgraph cleanup helpers
+
+Comparison returns can now normalize into conditional returns for shared cleanup.
+Small conditional tails can be duplicated when their local-value information
+makes that profitable; forward substitution then folds constant comparisons,
+including small-local truncation.
+
+The helpers retain EH extents, profile likelihood provenance, debug locations and
+statement ownership. Compaction, empty/switch cleanup and these optional helpers
+are ready for integration into the full flowgraph-update driver, which remains
+unported.
+
 ## 2026-09-25: General call generation
 
 General calls now connect argument placement, null checks, P/Invoke GC boundaries,

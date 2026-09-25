@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete Windows-AMD64 general call orchestration, pending return labels and required ABI/GC/SIMD support. Reuse one resolved graph worker for the remaining optimization helpers; parent owns all integration.",
+      "scope": "Complete remaining flowgraph cleanup helpers: return-comparison normalization, conditional-tail duplication and forward-substitution folding with their required local predicates and block creation. Parent integration only; no full phase activation yet.",
       "doneWhen": [
-        "Port complete genCall, argument/null-check ordering, tailcall target consumption, pre-call GC boundaries, pending labels and return-register production.",
-        "Reuse the existing LSRA vzeroupper classification through GenTreeCall and preserve the native Windows alignment no-op; validate the required SIMD12 upper-clear helper.",
+        "Port complete fgDedupReturnComparison, fgOptimizeUncondBranchToSimpleCond, fgFoldSimpleCondByForwardSub and required predicates/block creation.",
+        "Preserve EH/profile and statement ordering, whole-node replacement identity, and mode-specific threading after constant folds.",
         "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Validate CodeGenCallTests, CodeGenCallInstructionTests, CodeGenRegisterArgumentTests, LinearScanCallBuildingTests, ScopeReportingTests and EmitterLabelTests in Debug/Release before committing.",
+        "Validate FlowGraphCleanupTests, SwitchOptimizationTests, EmptyBlockOptimizationTests, FlowGraphCompactionTests and FlowGraphBranchThreadingTests in Debug/Release before committing.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,16 +32,13 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "General call orchestration is validated (callOrchestration). Integrate collected artifacts\\flowgraph-cleanup-packet\\Compiler.FlowGraphCleanup.cs and FlowGraphCleanupTests.cs (a7f6ecaf through turn 29). Includes three remaining optimization roots, tail-duplication predicates and fgNewBBFromTreeAfter; worker reports no shared declarations missing. Validate the 60 new AMD64 cases with switch/compaction/empty-block/branch-threading tests in Debug/Release, update evidence and commit before examining the full fgUpdateFlowGraph closure. Production genGenerateCode remains explicitly skipped.",
+    "nextAction": "General call orchestration and remaining flowgraph helpers are validated (callOrchestration/flowgraphCleanup). Port the complete fgUpdateFlowGraph driver at pinned fgopt.cpp:4373-4902, reusing committed compaction, empty/switch cleanup, return normalization and tail-duplication helpers. Inspect its current stub and callsites before activation; preserve all native optional-mode predicates rather than substituting a reduced pass. Validate the integrated driver and any newly reachable paths in Debug/Release, then determine whether the production native-host frontier changed. All worker packets are integrated; production genGenerateCode remains explicitly skipped.",
     "handoff": {
-      "status": "call-orchestration-validated-flowgraph-helper-packet-collected",
+      "status": "call-and-flowgraph-helpers-validated-full-flowgraph-driver-next",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn 24; stack arguments committed b46e045. b6e1f160-b3d7-4126-bf91-39bc8de2e495 collected through turn 4; empty-block packet committed 5aa4742. 87f10c61-b152-4bdc-a27e-1ecfad4f6342 collected through turn 6; scope reporting committed 00fe311. a7f6ecaf-b706-4be6-83c3-c83235b7452f collected through turn 29; switch optimization committed fa5e508; flowgraph-cleanup-packet is frozen and parent-owned. No outstanding handoffs; no app-native child sessions.",
+      "workerPackets": "4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn 24; stack arguments committed b46e045. b6e1f160-b3d7-4126-bf91-39bc8de2e495 collected through turn 4; empty-block packet committed 5aa4742. 87f10c61-b152-4bdc-a27e-1ecfad4f6342 collected through turn 6; scope reporting committed 00fe311. a7f6ecaf-b706-4be6-83c3-c83235b7452f collected through turn 29; switch optimization committed fa5e508 and remaining cleanup packet integrated and validated. All workers idle and all handoffs integrated. General calls committed 0019e58. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
-        "fgDedupReturnComparison",
-        "fgOptimizeUncondBranchToSimpleCond",
-        "fgFoldSimpleCondByForwardSub",
         "fgUpdateFlowGraph"
       ],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -57,6 +54,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "flowgraphCleanup": {
+        "debugPassed": 255,
+        "releasePassed": 255,
+        "skipped": 0,
+        "selection": ["FlowGraphCleanupTests", "SwitchOptimizationTests", "EmptyBlockOptimizationTests", "FlowGraphCompactionTests", "FlowGraphBranchThreadingTests"],
+        "debugTests": "artifacts\\flowgraph-cleanup-debug.trx",
+        "releaseTests": "artifacts\\flowgraph-cleanup-release.trx",
+        "coverage": "60 new AMD64 cases: comparison-return normalization with false/true lexical order, EH extent and debug locations; cloned non-phi tails, edge likelihood provenance and profile debits; join/shape/local-information guards; constant substitution on either side, signed/unsigned small-local truncation, mismatched-store refusals and surviving statement threading when folding is disabled.",
+        "remaining": "Complete fgDedupReturnComparison, fgOptimizeUncondBranchToSimpleCond, fgFoldSimpleCondByForwardSub, tail-duplication predicates and fgNewBBFromTreeAfter. Full fgUpdateFlowGraph orchestration remains unported. No production reachability change; managed machine-code size remains zero."
+      },
       "callOrchestration": {
         "debugPassed": 326,
         "releasePassed": 301,
@@ -3726,6 +3733,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "remaining-flowgraph-cleanup-helpers",
+      "native": ["src\\coreclr\\jit\\fgopt.cpp:1943-2004,2025-2234,2250-2428,4311-4356", "src\\coreclr\\jit\\fgbasic.cpp:5654-5668"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.FlowGraphCleanup.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete return-comparison normalization, conditional tail duplication, local forward substitution and required predicates/block creation. Existing constant folders require detached threading; surviving statements restore their AllTrees/AllLocals links. No full flowgraph phase activation."
+    },
     {
       "area": "general-call-orchestration",
       "native": ["src\\coreclr\\jit\\codegenxarch.cpp:5776-6006,7571-7642", "src\\coreclr\\jit\\codegencommon.cpp:1155-1158,6211-6242", "src\\coreclr\\jit\\gentree.cpp:1920-2000", "src\\coreclr\\jit\\simdcodegenxarch.cpp:452-462"],
