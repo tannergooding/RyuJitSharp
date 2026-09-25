@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete AMD64 integer multiplication and high-half multiplication, preserving immediate/LEA forms, implicit register pairs, BMI2, APX and signed/unsigned overflow. Reuse full operand recording and D006 shared throw-helper mode; keep production emission skipped.",
+      "scope": "Complete AMD64 integer division and remainder generation, preserving implicit-register preparation, signed/unsigned operation, memory operands and GC transitions. Reuse existing operand recording and keep production emission skipped.",
       "doneWhen": [
-        "Port complete AMD64 genCodeForMul and genCodeForMulHi, preserving operand order, implicit-register setup, immediate and contained memory forms, BMI2 high-half results and consume/produce ordering.",
-        "Close native three-operand IMUL opcode selection and encoding-layout assertions; apply D005 and D006 before mutation.",
+        "Port complete AMD64 genCodeForDivMod, preserving dividend copying, zero/sign extension, quotient/remainder selection and consume/produce ordering.",
+        "Reuse existing register-copy and recording helpers and preserve D005 rejection before mutation.",
         "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Reuse binaryArithmetic.selection, adding integer multiplication, high-half, immediate-register mapping and unsupported-mode mutation cases.",
+        "Reuse integerMultiplication.selection, adding focused signed/unsigned division, remainder, memory and implicit-register/GC checks.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Integer multiplication and high-half generation are complete and validated (integerMultiplication). Continue with complete AMD64 genCodeForDivMod at codegenxarch.cpp:862-930: preserve dividend copying, signed/unsigned high-half preparation, implicit quotient/remainder registers and GC invalidation. Reuse existing memory recording, genCopyRegIfNeeded and zero-register generation. Apply D005 before operand consumption, validate relevant signed/unsigned and contained-memory cases, then commit the coherent division/remainder batch. Production emission must remain skipped until the full node/block/encoding/metadata closure is ready.",
+    "nextAction": "Integer division/remainder generation is complete and validated (integerDivision). Continue with complete AMD64 local-read/address generation: genCodeForLclAddr, genCodeForLclFld and genCodeForLclVar at codegenxarch.cpp:4908-4995. Read their full bodies and required load helpers, preserving normalized types, stack/register homes, SIMD12 handling and lifetime/GC ordering. Reuse existing stack recording and unspill machinery; do not reduce the native dispatchers to scalar-only fragments. Apply D005 before mutation, validate and commit the coherent closure. Production emission must remain skipped until the full node/block/encoding/metadata closure is ready.",
     "handoff": {
-      "status": "integer-multiplication-validated",
+      "status": "integer-division-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Arithmetic packet committed as c2ee1cf. All worker files and follow-ups are collected and integrated. Both 4c9a8661-6e45-4e43-960d-7f3a779cdcde and a7f6ecaf-b706-4be6-83c3-c83235b7452f are idle with no outstanding assignment or unread handoff. Parent handles the bounded multiplication packet directly. No app-native child sessions.",
+      "workerPackets": "Multiplication packet committed as 598d532. All worker files and follow-ups are collected and integrated. Both 4c9a8661-6e45-4e43-960d-7f3a779cdcde and a7f6ecaf-b706-4be6-83c3-c83235b7452f are idle with no outstanding assignment or unread handoff. Parent handles the bounded division packet directly. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "integerDivision": {
+        "debugPassed": 1921,
+        "releasePassed": 1830,
+        "skipped": 0,
+        "selection": "integerMultiplication.selection plus CodeGenDivisionTests.",
+        "debugTests": "artifacts\\division-integrated-debug.trx",
+        "releaseTests": "artifacts\\division-integrated-release.trx",
+        "coverage": "Signed/unsigned 32/64-bit DIV/MOD, RAX dividend copies, CDQ/CQO and positive-constant zero-extension boundaries, quotient/remainder source selection, elided matching-register copies, RDX GC invalidation, contained locals, real spill divisors, result spilling after division and D005 rejection before consumption.",
+        "remaining": "Reuses funcletCreation.nativeHost. No production reachability change or new runtime parity claim; managed machine-code size remains zero. Local access, other node/block generation, final encoding and runtime metadata publication remain."
+      },
       "integerMultiplication": {
         "debugPassed": 1907,
         "releasePassed": 1817,
@@ -3491,6 +3501,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "integer-division-generation",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:862-930"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.Division.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 genCodeForDivMod, preserving native signed/unsigned dividend preparation, implicit quotient/remainder registers, RDX GC invalidation, memory operands and consume/produce ordering. Reuses full register-copy, zeroing and binary recording helpers. D005 rejects before mutation; non-AMD64 generation explicitly rejects. Production emission remains skipped."
+    },
     {
       "area": "integer-multiplication-generation",
       "native": ["src\\coreclr\\jit\\codegenxarch.cpp:687-774,1187-1297", "src\\coreclr\\jit\\emitinl.h:41-92"],

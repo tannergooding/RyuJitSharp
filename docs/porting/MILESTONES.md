@@ -14,6 +14,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Integer division and remainder
+
+Division and remainder generation now preserve the native signed and unsigned
+instructions, 32/64-bit dividend preparation, implicit quotient/remainder
+registers and GC-state updates. Register, local and spilled divisors use the
+existing operand recorder, with result spilling after the divide.
+
+Local access and other node generators, block generation, final encoding and
+runtime metadata publication remain incomplete; production emission is still
+explicitly skipped.
+
 ## 2026-09-25: Integer multiplication and high-half results
 
 Integer multiplication generation now preserves native immediate forms, LEA
