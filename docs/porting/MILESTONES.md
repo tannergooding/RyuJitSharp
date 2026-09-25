@@ -14,6 +14,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: JMP argument placement and GC boundaries
+
+JMP argument preparation now spills allocated register homes before restoring
+ABI registers, avoiding register cycles and preserving the homes expected by
+other blocks. Profiler callbacks observe the intermediate stack roots. Windows
+varargs restore both integer and floating register views from caller shadow
+space, with unknown arguments isolated in native no-GC instruction groups.
+
+Nested GC-disable requests, deferred group boundaries and debugger sequence-point
+padding are implemented. These are generation dependencies, not final transfer
+encoding; production emission remains unavailable.
+
 ## 2026-09-25: Full flowgraph update
 
 Flowgraph update now runs the native fixed-point cleanup driver, combining

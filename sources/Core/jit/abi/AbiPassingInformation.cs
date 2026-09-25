@@ -8,7 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace RyuJitSharp;
 
-public struct AbiPassingInformation
+public partial struct AbiPassingInformation
 {
     private readonly AbiPassingSegment[]? _segments;
     private AbiPassingSegment _singleSegment;
