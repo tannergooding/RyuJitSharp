@@ -681,6 +681,13 @@ in-place bashing leaves the cached address valid; the managed replacement
 detaches the old object. Both local and indirect dead-store paths preserve
 reverse traversal rather than revisiting detached nodes or stopping early.
 
+`RunLIR` and `InterBlockLocalVarLivenessLIR` explicitly specialize native
+liveness orchestration for non-early linear IR. Both reject incompatible
+policies before diagnostics or compiler mutation. The native phase sequence,
+backward analysis and repeat condition are unchanged; expression-tree and
+early-liveness orchestration remain separate, rather than silently entering
+an incomplete generic driver.
+
 LIR node replacement uses the existing metadata-preserving constructors with
 `NodeThreading.LIR`, followed by `LIR.Range.ReplaceNode` to transfer the owning
 use and range links. Address-mode lowering takes its address alias by reference,

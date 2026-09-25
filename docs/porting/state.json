@@ -33,7 +33,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Complete operand/address/call-argument and binary/RMW uses are committed as 41507d9. Parent independently integrated the full six-file backward-LIR packet (474 Debug/445 Release), including nonparallel test isolation and BAD_VAR_NUM return-buffer fixture initialization; four negative-control cursor cases are confirmed. Next collect explicit LIR-mode InterBlock/Run orchestration from liveness worker (read through turn 48), without activating production phases. LSRA worker (read through turn 66) owns BuildDefsWithKills/call definitions and immediate internal-register support; canonical buildBinaryUses accepts GenTreeUnOp. LowerFusedMultiplyOp is committed as 03162ea. Parent LowerHWIntrinsicCC/seven tests and ToScalar/property/seven tests are written but unvalidated pending real containment. Sol (read through turn 48) owns complete containment and canonical input-size, embedded-broadcast and ternary-logic prerequisites; expected query signature has been sent. Resume those hardware helpers when containment is available, then complete remaining transformation/call/range/stack-level closure before broad lowering commit/activation. Retain native bodies and inactive drivers; managed code size remains zero.",
+    "nextAction": "Explicit non-early LIR Run/InterBlock orchestration is independently integrated (501 Debug/470 Release), including actual backward analysis and the native repeat predicate; production phases remain inactive. Astra (read through turn 50) now owns complete LowerHWIntrinsicCreate/WithElement plus canonical LastNode and lowering insertion/replacement helpers in new partials. LSRA worker is read through turn 68 and owns complete BuildKills prerequisites/definitions, including verification of Windows-x64 multireg return gates. Sol turn 49 returned complete containment and generated ternary metadata; integrate its constructor auxiliary-type initialization and resolve test target-symbol discovery before validating/committing. Parent repaired nine hardware draft compilation errors; ToScalar/CC/FMA pass 32 Debug cases against real working containment. GetElement and NormalizeIndexToNativeSized are drafted but need coverage; full hardware dispatcher remains missing. Close remaining transformations and broad lowering dependencies without stubs or partial dispatch. Retain native bodies and inactive drivers; managed code size remains zero.",
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -41,6 +41,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "livenessOrchestrationLir": {
+        "debugPassed": 501,
+        "releasePassed": 470,
+        "skipped": 0,
+        "selection": ["Liveness*", "BitVecTests", "AddressLoweringTests", "LirBlockSplittingTests", "UseEdgeIteratorTests", "LinearScan*", "ConditionalBranchLoweringTests"],
+        "debugTests": "artifacts\\liveness-orchestration-parent-debug.trx",
+        "releaseTests": "artifacts\\liveness-orchestration-parent-release.trx",
+        "failingBefore": "artifacts\\comparison-integration-results\\liveness-orchestration-solver-only-negative.trx",
+        "scope": "Complete native Run/InterBlock specialization for non-early LIR, including initialization, use/def generation, fixed point, EH initialization/keepalive, actual backward DCE, native AND repeat predicate, diagnostics and phase markers. Four selected cases fail with the backward call removed. Incompatible policies reject before mutation. Compiler activation and HIR/early orchestration remain separate; these are constructed-IR checks, not emitted-code parity."
+      },
       "backwardLirLiveness": {
         "debugPassed": 474,
         "releasePassed": 445,

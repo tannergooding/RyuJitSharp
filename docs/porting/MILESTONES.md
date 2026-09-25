@@ -93,8 +93,13 @@ Backward linear-IR analysis now marks local and promoted-field last uses,
 accounts for call-time definitions and P/Invoke frame roots, and removes dead
 stores and values when the policy permits it. It retains required faults,
 side effects and explicit GC initialization. Traversal follows replacement
-nodes when unused loads become null checks. The complete liveness and
-allocation drivers remain unfinished.
+nodes when unused loads become null checks.
+
+The linear-IR liveness driver now combines initialization, use/def generation,
+fixed-point propagation and backward analysis. It repeats analysis when dead
+code removal changes block-entry lifetimes, including handler keepalive and
+initialization requirements. Compiler phase activation, expression-tree
+liveness orchestration and the allocation driver remain unfinished.
 
 Register kills and GC-specific spills now preserve live values and advance
 fixed-register constraints. Temporary copy-register allocation retains the
