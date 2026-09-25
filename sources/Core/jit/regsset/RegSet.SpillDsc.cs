@@ -7,7 +7,7 @@ namespace RyuJitSharp;
 
 public partial struct RegSet
 {
-    private sealed class SpillDsc
+    internal sealed class SpillDsc
     {
         public SpillDsc? spillNext;
         public GenTree? spillTree;

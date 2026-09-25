@@ -14,6 +14,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Binary memory operands and byte swaps
+
+Binary instruction recording now handles registers, immediates, local and
+indirect memory, and spill temporaries, preserving native operand direction,
+implicit register pairs and APX non-destructive destinations. Spill descriptors
+are removed by node identity and their temporary storage is returned in native
+order.
+
+Byte-swap generation supports register and contained-memory operands, including
+MOVBE/APX selection and the native adjacent-cast rule for omitting 16-bit
+normalization. Remaining node and block generators, final encoding and runtime
+metadata publication are still required; production emission remains explicitly
+skipped.
+
 ## 2026-09-25: Unary operations and floating sign masks
 
 Unary node generation now consumes operands, records integer negation or

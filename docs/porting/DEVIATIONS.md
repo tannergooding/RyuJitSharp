@@ -1008,7 +1008,8 @@ Windows-AMD64 `emitIns_S_R`, `emitIns_S_R_I`, `emitIns_R_S`, `emitIns_R_I`,
 overloads, `emitIns_Nop`, `emitIns_R_R_I`, `emitIns_R_R_R`,
 `emitIns_R_R_R_I`, `emitIns_SIMD_R_R_R`, `emitIns_SIMD_R_R_R_I`,
 `emitIns_R_C`, `emitIns_R_R_C`, `emitIns_SIMD_R_R_C`, `emitIns_R` and
-`emitIns_BASE_R_R`
+`emitIns_BASE_R_R`, `emitInsBinary`, `emitHandleMemOp`, `emitIns_S`,
+`emitIns_S_I` and `emitIns_R_R_S`
 record complete native descriptors and sizes. Their `dispIns` path
 preserves sanity, stack-depth, logical-size and conditional statistics checks.
 In Debug, these entrypoints reject requested
@@ -1018,17 +1019,22 @@ native absence of that immediate-disassembly call. The constant-materialization
 and compressed-load callers apply the same guard before allocating constant
 data or changing TLS-related GC state. Unary node generation and floating
 sign-mask generation also reject before operand consumption or lifetime changes.
+Binary memory dispatch rejects before extracting spill ownership or allocating
+constant data, and byte-swap generation rejects before consuming its operand.
 
 Native roots are `emitxarch.cpp:5929,5945,5962,6019,7168,7798,8090,9314,9407,10574,10609`
-and `7042,8134,8506,8546,8686,8929,9626,9658,9804,10422`, plus `emit.cpp:1611`;
+and `7042,8134,8506,8546,8686,8929,9626,9658,9804,10422`,
+plus `6159,6495,8574,10400,10640` and `emit.cpp:1611`;
 the managed specialization is in
 `emitxarch/Emitter.StackStores.cs`, `Emitter.StackLoads.cs`,
 `Emitter.RegisterInstructions.cs`, `Emitter.RegisterMoves.cs`, `Emitter.AddressInstructions.cs`,
 `Emitter.ZeroOperandInstructions.cs`, `Emitter.MultiRegisterInstructions.cs` and
 `Emitter.SimdRegisterInstructions.cs`, `Emitter.StaticFieldInstructions.cs` and
-`Emitter.UnaryInstructions.cs`.
+`Emitter.UnaryInstructions.cs`, `Emitter.BinaryInstructions.cs`,
+`Emitter.MemoryOperands.cs` and `Emitter.StackOperands.cs`.
 The caller guards are in `emit/Emitter.SimdConstants.cs` and
-`codegenxarch/CodeGen.Constants.cs` and `CodeGen.Unary.cs`. The pre-mutation rejection is
+`codegenxarch/CodeGen.Constants.cs`, `CodeGen.Unary.cs` and
+`CodeGen.ByteSwap.cs`. The pre-mutation rejection is
 covered for every recording entrypoint. Retain the mixed-mode
 native bodies until full disassembly is ported. This does not activate production
 emission or waive future `jitdump`/`jitdisasm` parity.

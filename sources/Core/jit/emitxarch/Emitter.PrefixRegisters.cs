@@ -23,7 +23,7 @@ public partial class Emitter
 #endif
     }
 
-    private bool IsExtendedGPReg(regNumber reg)
+    internal bool IsExtendedGPReg(regNumber reg)
     {
 #if TARGET_AMD64
         if (reg > REG_STK)

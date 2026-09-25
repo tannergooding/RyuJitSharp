@@ -7,7 +7,7 @@ namespace RyuJitSharp;
 
 public partial struct RegSet
 {
-    private readonly SpillDsc? rsGetSpillInfo(GenTree tree, regNumber reg, out SpillDsc? previous)
+    internal readonly SpillDsc? rsGetSpillInfo(GenTree tree, regNumber reg, out SpillDsc? previous)
     {
         previous = null;
         var descriptor = _rsSpillDesc[(int)reg];
@@ -115,7 +115,7 @@ public partial struct RegSet
 #endif
     }
 
-    private TempDsc rsGetSpillTempWord(regNumber reg, SpillDsc descriptor, SpillDsc? previous)
+    internal TempDsc rsGetSpillTempWord(regNumber reg, SpillDsc descriptor, SpillDsc? previous)
     {
         assert((previous is null) || ReferenceEquals(previous.spillNext, descriptor));
 

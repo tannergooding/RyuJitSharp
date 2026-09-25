@@ -7,6 +7,15 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+    public TempDsc getSpillTempDsc(GenTree tree)
+    {
+        assert((tree.Flags & GTF_SPILLED) != 0);
+        var spill = _regSet.rsGetSpillInfo(tree, tree.RegNum, out var previous);
+        assert(spill is not null);
+
+        return _regSet.rsGetSpillTempWord(tree.RegNum, spill, previous);
+    }
+
     public void spillReg(var_types type, TempDsc temp, regNumber reg)
     {
 #if TARGET_AMD64

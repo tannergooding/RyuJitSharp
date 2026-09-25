@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete AMD64 unary negation/complement node generation and floating sign-bit operations, including native opcode selection and complete single-register/APX unary recording. Reuse constant materialization and existing consume/produce lifetimes. Keep production emission skipped; byte swapping waits for complete contained-memory operand recording.",
+      "scope": "Complete AMD64 binary operand recording for register, immediate, stack/local, spill-temp and indirect-memory operands, including APX NDD and implicit register pairs. Close all required memory/stack helpers and then complete byte-swap node generation and normalization. Keep production emission skipped.",
       "doneWhen": [
-        "Port complete AMD64 emitIns_R and emitIns_BASE_R_R with all native branches and required descriptor/sizing helpers under D005.",
-        "Port complete genGetInsForOper and its floating opcode dependency, genIntrinsicBitwiseOp (NEG and ABS), and genCodeForNegNot with native consume/produce and GC/lifetime ordering.",
-        "Validate Debug/Release and commit the integrated unary closure. Do not substitute a reduced genCodeForTreeNode or register-only genCodeForBswap."
+        "Port whole emitInsBinary, emitHandleMemOp, emitIns_S, emitIns_S_I and emitIns_R_R_S with all required descriptor/encoding dependencies under D005.",
+        "Port getSpillTempDsc ownership, inst_RV/inst_RV_IV, complete genCodeForBswap and genCanOmitNormalizationForBswap16. Retain contained MOVBE/APX and spill-temp paths rather than a register-only specialization.",
+        "Validate the integrated closure in Debug/Release and commit; retain remaining node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Reuse constantMaterialization.selection, adding single-register recording and unary node-generation regressions.",
+        "Reuse unaryGeneration.selection, adding memory/stack operand recording, spill ownership and byte-swap generation cases.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Unary generation is complete and validated. Resume by tracing and closing complete emitInsBinary/contained-memory operand recording needed by genCodeForBswap (codegenxarch.cpp:607). Reuse completed register, stack, static-field and address-sizing surfaces; do not implement a register-only byte-swap generator or reduced genCodeForTreeNode. The next completion boundary is the required general memory descriptor/recording closure, followed by full byte-swap generation and its native normalization decision. Production emission remains explicitly skipped.",
+    "nextAction": "Binary-memory recording and byte-swap generation are complete and validated (binaryMemoryAndByteSwap). Continue with complete AMD64 genCodeForShift (codegenxarch.cpp:4614) and genCodeForShiftRMW (4858), retaining immediate LEA/ADD shortcuts, BMI2, RCX moves, memory operands and flag-setting behavior. Close genMapShiftInsToShiftByConstantIns, emitInsRMW, emitIns_BASE_R_R_I, emitIns_R_ARX and inst_RV_TT_IV/inst_RV_RV_TT as required rather than limiting shifts to register operands. Establish the complete dependency boundary before translation; reuse existing recording and spill ownership. Production emission remains explicitly skipped.",
     "handoff": {
-      "status": "unary-node-generation-validated",
+      "status": "binary-memory-and-byte-swap-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All single-register/APX unary recording files and source-map replies from a7f6ecaf-b706-4be6-83c3-c83235b7452f are integrated. The worker is idle with no unread handoff or outstanding assignment. No app-native child sessions.",
+      "workerPackets": "All memory-address and stack-recording files from a7f6ecaf-b706-4be6-83c3-c83235b7452f are collected and integrated. Worker is idle with no outstanding assignment or unread handoff. All current packet tests pass in Debug/Release. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "binaryMemoryAndByteSwap": {
+        "debugPassed": 1460,
+        "releasePassed": 1400,
+        "skipped": 0,
+        "selection": "unaryGeneration.selection plus EmitterBinaryOperandTests and EmitterMemoryOperandTests.",
+        "debugTests": "artifacts\\binary-memory-integrated-debug.trx",
+        "releaseTests": "artifacts\\binary-memory-integrated-release.trx",
+        "coverage": "Complete binary register/immediate/local/indirect/spill dispatch, memory destinations, APX NDD, implicit register pairs, local-address folding and stack descriptor formats. Address mapping preserves segment prefixes, handle relocations and scale encodings. Spill extraction removes the matching descriptor by identity and returns storage in native order. Byte swaps cover aliased/distinct registers, MOVBE/APX address selection, contained narrow loads, real spilled operands and adjacent unchecked narrowing-cast normalization. D005 guards reject before spill extraction, constant allocation and operand consumption.",
+        "remaining": "Reuses funcletCreation.nativeHost. Production emission still skips and managed machine-code size remains zero; no new runtime parity claim. Remaining node/block generators, final encoding and GC/EH/unwind/debug metadata publication are required."
+      },
       "unaryGeneration": {
         "debugPassed": 1376,
         "releasePassed": 1320,
@@ -3443,6 +3453,22 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "binary-memory-operand-recording",
+      "native": ["src\\coreclr\\jit\\emitxarch.cpp:6056,6159,6495-6891,8574,10400,10640", "src\\coreclr\\jit\\emitxarch.h:836", "src\\coreclr\\jit\\emitinl.h:31"],
+      "csharp": ["sources\\Core\\jit\\emitxarch\\Emitter.BinaryInstructions.cs", "sources\\Core\\jit\\emitxarch\\Emitter.MemoryOperands.cs", "sources\\Core\\jit\\emitxarch\\Emitter.StackOperands.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 emitInsBinary, emitHandleMemOp, emitIns_R_R_S, emitIns_S and emitIns_S_I, including stack/local/spill and indirect memory, immediate sources, implicit register pairs and APX NDD. Native memory-format mapping and scale encoding are retained. D005 guards precede mutation. Descriptor recording is not final encoding; mixed-mode native bodies remain."
+    },
+    {
+      "area": "byte-swap-generation-and-spill-extraction",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:607-667", "src\\coreclr\\jit\\codegencommon.cpp:1168-1180,8663-8683", "src\\coreclr\\jit\\instr.cpp:715-731,906-959"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.ByteSwap.cs", "sources\\Core\\jit\\codegencommon\\CodeGen.ByteSwapNormalization.cs", "sources\\Core\\jit\\codegencommon\\CodeGen.SpillRegisters.cs", "sources\\Core\\jit\\instr\\CodeGen.RegisterOperands.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 genCodeForBswap and register instruction wrappers, shared genCanOmitNormalizationForBswap16 and getSpillTempDsc. Preserves contained MOVBE/APX, adjacent unchecked narrowing-use normalization, consume/produce and spill ownership ordering. Production node dispatch and instruction encoding remain separate."
+    },
     {
       "area": "unary-node-generation-and-operation-selection",
       "native": ["src\\coreclr\\jit\\codegenxarch.cpp:576-597,4523-4597,7323-7367", "src\\coreclr\\jit\\instr.cpp:2705-2720"],
