@@ -12,15 +12,15 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete Windows-AMD64 machine-code generation and emission phase orchestration, reusing the validated final emitter driver. Retain the top-level emission skip until remaining runtime metadata is complete.",
+      "scope": "Complete the Windows-AMD64 GC encoder and required final runtime-metadata publication, reusing validated generation/emission phase bodies. Retain the top-level emission skip until the complete metadata closure is ready.",
       "doneWhen": [
-        "Port complete native genGenerateMachineCode and genEmitMachineCode and their required Windows-AMD64 support.",
-        "Preserve preparation, body generation, prolog/epilog materialization, scope finalization, jump binding, unwind reservation and emission ordering.",
-        "Validate phase orchestration and commit a coherent packet; bound genEmitUnwindDebugGCandEH dependencies before activating genGenerateCode."
+        "Port native GC encoding types, metadata/slot collection, complete Build/Emit algorithms and JIT header/liveness-table construction; preserve full and partial interruptibility rather than introducing a reduced encoder.",
+        "Complete genCreateAndStoreGCInfoX64 and final unwind/debug/GC/EH orchestration, including spill/temp cleanup and explicit treatment of requested late-disassembly/raw-hex modes.",
+        "Commit validated dependency-coherent portions. Activate genGenerateCode only after all required publication contracts are implemented, then publish locally and run the established native-host comparison."
       ],
       "validation": [
-        "Run focused generation/emission phase regressions in Debug/Release, extending finalInstructionEmission and existing codegen preparation/body/prolog coverage.",
-        "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
+        "Use focused Debug/Release GC encoding, exact-byte and EE-publication regressions, including slot ordering, transition boundaries, native integer widths and callback ownership.",
+        "Reuse generationEmissionPhases and funcletCreation.nativeHost while production reachability is unchanged; activation requires a fresh local NativeAOT binary and native-host dump/code/metadata comparison."
       ],
       "deferred": [
         "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Final instruction emission/allocation/costs are validated at790Debug/736Release. Continue with native CodeGen::genGenerateMachineCode (codegencommon.cpp:2221-2445) and genEmitMachineCode (2450-2611), then bound genEmitUnwindDebugGCandEH (2616-2722) dependencies before activating genGenerateCode (2151). Parent owns phase integration and builds; reuse workers for concrete noninterfering metadata/support functions. Reuse Emitter.EmissionDriver.cs, pinned table ownership, current byte/GC/data/prolog/unwind helpers and generated cost metadata. Preserve native writable-alias behavior (B236); optional non-Debug late-disassembly alignment scoring explicitly rejects missing placement metadata (B237). Keep production CORJIT_SKIPPED and managed code size zero until required runtime publication is complete.",
+    "nextAction": "Generation/emission phase bodies, EH publication, BitStreamWriter and LSRA summary are integrated at991Debug/920Release. Begin the complete Windows-AMD64 GcInfoEncoder: native inc/gcinfoencoder.h:327-550 and gcinfo/gcinfoencoder.cpp:447-2433; Build starts914. First settle shared native encoding types/fields, then parallelize noninterfering encoder support, JIT GC table construction (gcencode.cpp:3866 onward) and late-disassembly support. Reuse BitStreamWriter, existing GC lifetime records and EE allocation interfaces. Required remaining entrypoints are genCreateAndStoreGCInfoX64 (codegenxarch.cpp:8384-8490), genEmitUnwindDebugGCandEH (codegencommon.cpp:2616-2722), rsSpillDone (regset.cpp:963) and tmpDone (compiler.hpp:3404). Disassembler.disAsmCode and late-disassembly opening/cleanup are also missing; do not silently skip requested output. D008/B238 explicitly reject unported CSE metrics. Keep genGenerateCode skipped and managed code size zero until complete runtime publication is ready.",
     "handoff": {
-      "status": "final-instruction-emission-validated",
+      "status": "generation-emission-phases-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All driver packets are frozen, integrated and collected: d62fc6a5-a4dd-40be-8b42-5de1405b22b7 executable allocation through turn51; 942a496f-db30-4389-a403-265f28fdb23c execution characteristics/costs through turn44; 6a004941-37d2-4a3d-b2f4-0d1a35021099 driver tests through turn15. All are idle with no unread handoffs. Parent supplied the complete emission driver, canonical generated cost tables, fixture repairs, native diagnostic routing and explicit B237 rejection. No app-native child-session coordination.",
+      "workerPackets": "All current packets are frozen, integrated and collected: d62fc6a5-a4dd-40be-8b42-5de1405b22b7 EH publication through turn54; 942a496f-db30-4389-a403-265f28fdb23c BitStreamWriter through turn46; 6a004941-37d2-4a3d-b2f4-0d1a35021099 LSRA summary/phase tests through turn19. All are idle with no unread handoffs. Parent supplied phase integration, shared interfaces, fixture/analyzer integration, D008 and expanded validation. No app-native child-session coordination.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -52,6 +52,17 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "generationEmissionPhases": {
+        "debugPassed": 991,
+        "releasePassed": 920,
+        "skipped": 0,
+        "selection": "finalInstructionEmission.selection plus CodeGenEmissionPhaseTests, CodeGenEHReportingTests, GcInfoBitStreamWriterTests, CodeGenPrologTests, CodeGenFrameFinalizationTests, CompilerFinalFrameLayoutTests, CodeGenBlockDriverTests, CodeGenInitializationTests, UnwindPublicationTests, CodeGenIPMappingPublicationTests, CodeGenRichDebugInfoPublicationTests, ScopeReportingTests and LocalReferenceAccountingTests; join each class with FullyQualifiedName~ and |.",
+        "debugTests": "artifacts\\codegen-phases-expanded-debug.trx",
+        "releaseTests": "artifacts\\codegen-phases-expanded-release.trx",
+        "coverage": "Real void-return generation from a post-allocation fixture through preparation, final frame, block labels, body, materialized prolog/epilog and binding. Saved-group emission reserves unwind before EE allocation and publishes exact bytes, executable/writable pointers and native sizes. Forced fallback and D008 metrics rejection precede allocation; metrics rejection preserves size/pointer outputs. LSRA summary includes weighted entry/original blocks and excludes resolution blocks. EH clauses retain VM order, same-try identity, filters/kinds and final numeric/diffable offsets. Bitstream tests cover exact bytes, word/block crossings and variable-length signed/unsigned boundaries.",
+        "ownership": "CodeGen output locations are borrowed for synchronous invocation; output fields are pinned across emission callbacks. EH clauses use stable descriptor indices and scoped pinned publication payloads. Bitstream blocks are managed ordered storage under D002.",
+        "remaining": "genGenerateCode remains explicitly skipped and managed native-code size remains zero. Full GC encoder/header/liveness construction, final metadata orchestration and late-disassembly support remain. Reuse funcletCreation.nativeHost; no fresh capture or whole-pipeline parity claim."
+      },
       "finalInstructionEmission": {
         "debugPassed": 790,
         "releasePassed": 736,
@@ -3962,6 +3973,41 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "generation-emission-phases-and-eh-publication",
+      "native": [
+        "src\\coreclr\\jit\\codegencommon.cpp:2221-2611,genReportEH,genReportEHClauses",
+        "src\\coreclr\\jit\\emit.cpp:emitComputeCodeSizes,emitEndFN,emitOffsetToLabel",
+        "src\\coreclr\\jit\\ee_il_dll.cpp:eeSetEHcount,eeSetEHinfo,dispOutgoingEHClause",
+        "src\\coreclr\\jit\\jiteh.cpp:ehEmitCookie,ehCodeOffset",
+        "src\\coreclr\\jit\\lsra.cpp:10254-10293"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\codegencommon\\CodeGen.GenerationPhases.cs",
+        "sources\\Core\\jit\\codegencommon\\CodeGen.EHReporting.cs",
+        "sources\\Core\\jit\\emit\\Emitter.CodeSizes.cs",
+        "sources\\Core\\jit\\emit\\Emitter.EHOffsetLabels.cs",
+        "sources\\Core\\jit\\ee_il_dll\\Compiler.EHPublication.cs",
+        "sources\\Core\\jit\\jiteh\\Compiler.EHCodeOffset.cs",
+        "sources\\Core\\jit\\lsra\\LinearScan.StatisticsSummary.cs"
+      ],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete Windows-AMD64 generation phase, ordinary emission mode and EH publication. Debug CSE metrics reject before emission mutation (D008/B238). Native code-size calculation, empty emitter end hook and LSRA statistics summary are implemented. Generation/emission and metadata support pass Debug/Release tests; production remains gated on the remaining final metadata closure."
+    },
+    {
+      "area": "gc-encoding-bitstream",
+      "native": [
+        "src\\coreclr\\inc\\gcinfoencoder.h:193-299",
+        "src\\coreclr\\gcinfo\\gcinfoencoder.cpp:867-904,2436-2615"
+      ],
+      "csharp": [
+        "sources\\Core\\gcinfo\\BitStreamWriter.cs"
+      ],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete little-endian 64-bit bitstream writer, size calculation, copy/disposal and variable-length encodings, using managed 128-byte blocks. Exact-byte and boundary tests pass; the containing GC encoder remains unported."
+    },
     {
       "area": "final-instruction-emission-and-costs",
       "native": [

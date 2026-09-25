@@ -15,6 +15,8 @@ public partial struct RegSet
     private SpillDsc? _rsSpillFree;
     private bool _rsNeededSpillReg;
 
+    internal readonly bool NeededSpillReg => _rsNeededSpillReg;
+
     public regMaskTP rsMaskResvd;
 
 #if SWIFT_SUPPORT

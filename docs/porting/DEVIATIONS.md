@@ -873,6 +873,13 @@ size or pretend that the remaining union variants are implemented. Instruction
 format storage retains the native seven-bit width; generated operand,
 scheduling and update-mode tables use the pinned header inputs.
 
+Outgoing EH clauses retain a stable descriptor-table index instead of a native
+descriptor pointer. VM-order sorting preserves that identity for same-try
+classification; unmanaged clause payloads are pinned only during publication.
+GC bitstream storage uses ordered managed 128-byte blocks instead of native
+linked allocations, preserving least-significant-bit-first 64-bit packing,
+variable-length encodings and the exact byte count.
+
 ### D003: Deferred non-Windows-x64-only paths
 
 **Status:** accepted scoped deferral; not a successful execution/parity result.
@@ -1164,6 +1171,18 @@ block generation follows the complete native driver. The optional native
 unported; unmatched methods and null section selections do not require them.
 D005 separately rejects immediate instruction disassembly. Neither boundary
 authorizes silent omission of requested diagnostics or payload instructions.
+
+### D008: Machine-code emission without optional CSE metrics
+
+**Status:** temporary implementation boundary along the existing native Debug
+`opts.dspMetrics` predicate, not an accepted output difference.
+
+Windows-AMD64 `genEmitMachineCode` rejects this diagnostic mode with
+`CORJIT_SKIPPED` before code-size publication, unwind reservation or EE allocation.
+The complete ordinary emission path is implemented. Native `optGetCSEheuristic`
+constructs a policy even when none exists yet; its policy hierarchy and
+`DumpMetrics` implementations remain unported (B238). Returning null or printing
+invented empty metrics would not preserve the native behavior.
 
 ## Implementation notes and parity findings
 

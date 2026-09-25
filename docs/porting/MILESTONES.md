@@ -15,6 +15,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Generation phases and EH publication
+
+The Windows-x64 generation and emission phase bodies now connect frame
+finalization, instruction recording, prolog/epilog materialization, jump binding,
+unwind reservation and final byte output in native order. Forced fallback occurs
+before runtime allocation. EH publication preserves VM clause ordering,
+same-try identity, final code offsets and outgoing diagnostics.
+
+The GC encoder's bitstream foundation preserves native fixed-width and
+variable-length encodings. Full GC metadata construction and final metadata
+orchestration, including late disassembly, still precede production activation.
+The top-level generation boundary remains explicitly skipped; these phase bodies
+do not yet constitute an executing managed JIT.
+
 ## 2026-09-25: Final instruction emission and executable allocation
 
 Saved Windows-x64 instruction groups can now be issued into EE-allocated hot

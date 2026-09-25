@@ -430,6 +430,8 @@ internal static unsafe class LocalReferenceAccountingTests
         public void recordVarLocationsAtStartOfBB(BasicBlock block) => throw new NotSupportedException();
 
         public void dumpLsraStatsCsv(System.IO.StreamWriter writer) => throw new NotSupportedException();
+
+        public void dumpLsraStatsSummary(System.IO.StreamWriter writer) => throw new NotSupportedException();
     }
 
     private static void WithCompiler(bool minopts, Action<Compiler> action, bool debugCode = false)

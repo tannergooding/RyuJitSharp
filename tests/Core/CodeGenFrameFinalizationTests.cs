@@ -135,6 +135,8 @@ internal static unsafe class CodeGenFrameFinalizationTests
 
 #if TRACK_LSRA_STATS
         public void dumpLsraStatsCsv(System.IO.StreamWriter writer) => throw new NotSupportedException();
+
+        public void dumpLsraStatsSummary(System.IO.StreamWriter writer) => throw new NotSupportedException();
 #endif
     }
 
