@@ -39,6 +39,47 @@ public partial class Emitter
     private static uint emitTotalIGjmps;
 #endif
 
+    public void emitIns_R_L(instruction ins, emitAttr attr, BasicBlock dst, regNumber reg)
+    {
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Basic-block label address recording requires AMD64.");
+#else
+        RequireSupportedInstructionRecording();
+        assert(_compiler is not null);
+        assert(ins == INS_lea);
+        assert(dst.HasFlag(BBF_HAS_LABEL));
+        var id = emitNewInstrJmp();
+        id.idIns(ins);
+        id.idReg1(reg);
+        id.idInsFmt(IF_RWR_LABEL);
+        id.idOpSize(EA_SIZE(attr));
+        id.idjTarget = dst;
+        id.idjShort = false;
+        id.idjKeepLong = true;
+        id.idjIG = emitCurIG;
+        id.idjOffs = unchecked((uint)emitCurIGsize);
+        id.idjNext = emitCurIGjmpList;
+        emitCurIGjmpList = id;
+#if DEBUG
+        assert(_compiler.compCurBB is not null);
+        if (_compiler.compCurBB.Kind == BBJ_EHCATCHRET)
+        {
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            debugInfo.idCatchRet = true;
+        }
+#endif
+#if EMITTER_STATS
+        emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
+#endif
+        id.idSetRelocFlags(attr);
+        var size = emitInsSizeAM(id, insCodeRM(ins));
+        id.idCodeSize(size);
+        dispIns(id);
+        emitCurIGsize = unchecked(emitCurIGsize + (int)size);
+#endif
+    }
+
     public void emitIns_J(instruction ins, BasicBlock dst, bool keepShort = false, bool isRemovableJmpCandidate = false)
     {
 #if !TARGET_AMD64

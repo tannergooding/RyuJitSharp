@@ -14,6 +14,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Table-based switch generation
+
+Switch tables now preserve case order, duplicate targets and native alignment.
+Dispatch loads a 32-bit entry and adds the first basic block's address, rather
+than treating the entry as an offset from the table itself.
+
+Basic-block address instructions retain relocation flags, long label references
+and catch-return diagnostics. This records tables and instructions; final label
+binding, encoding and publication are still required before managed execution.
+
 ## 2026-09-25: Finite checks and intrinsic generation
 
 Finite checks now test the floating exponent and preserve the original value,

@@ -91,5 +91,11 @@ public partial class Emitter
         {
             _idDspReloc = value;
         }
+
+        public void idSetRelocFlags(emitAttr attr)
+        {
+            _idCnsReloc = EA_IS_CNS_RELOC(attr);
+            _idDspReloc = EA_IS_DSP_RELOC(attr);
+        }
     }
 }

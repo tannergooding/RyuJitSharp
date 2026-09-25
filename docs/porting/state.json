@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete AMD64 finite checks and native intrinsic dispatch, including scalar math, immediate operand recording and SIMD upper save/restore closure. Preserve numeric bits, ISA predicates, shared exceptions and lifetimes; keep production emission skipped.",
+      "scope": "Complete AMD64 table-switch generation, jump-table materialization and basic-block label address recording. Reuse existing managed block-table storage and preserve offsets, ordering, relocations and lifetimes; keep production emission skipped.",
       "doneWhen": [
-        "Port complete AMD64 genCkfinite, genIntrinsicRoundOp and genIntrinsic.",
-        "Close inst_RV_RV_TT_IV and complete genSimdUpperSave/genSimdUpperRestore instead of omitting their native intrinsic cases. Preserve D005/D006 rejection before mutation.",
+        "Port complete AMD64 genTableBasedSwitch, genJumpTable and genEmitJumpTable.",
+        "Close the BasicBlock overload of emitIns_R_L with native descriptor sizing, relocation and catch-return diagnostics. Preserve D005 rejection before mutation.",
         "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Validate finite-check masks, scalar math immediates, contained/spilled sources, upper-lane preservation and operand-recording dependencies in Debug/Release; retain scalarCasts as the unrelated dependency baseline.",
+        "Validate ordered and duplicate table targets, relative/absolute layouts, first-block-relative dispatch, label descriptors and pre-mutation rejection in Debug/Release; retain intrinsicGeneration as the unrelated dependency baseline.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,9 +32,9 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Finite checks and complete AMD64 intrinsic dispatch are validated (intrinsicGeneration), including scalar rounding/sqrt/abs, immediate operand recording and upper-lane save/restore. Continue genTableBasedSwitch at codegenxarch.cpp:4147 and genJumpTable at 4178, closing their native table-data recording helpers before validating and committing. Then close genCodeForSwap at 5632. Xarch floating-to-integer casts require lowered hardware intrinsics, not a new scalar conversion path. Keep production emission skipped until remaining node/block generation, encoding and metadata publication are complete.",
+    "nextAction": "Table-based switches, jump-table materialization and BasicBlock label address recording are complete and validated (tableSwitches). Continue complete native genCodeForSwap at codegenxarch.cpp:5632, retaining local-register ownership, GC classes and live-range updates, and close its required dependencies before validating and committing. Then continue remaining scalar memory/call node generation. The insGroup overload of emitIns_R_L remains unported for future function-entry addressing; do not conflate it with the completed BasicBlock overload. Keep production emission skipped until remaining node/block generation, encoding and metadata publication are complete.",
     "handoff": {
-      "status": "finite-intrinsic-generation-validated",
+      "status": "table-switch-generation-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
       "workerPackets": "All files and follow-ups from 4c9a8661-6e45-4e43-960d-7f3a779cdcde are collected through turn 16, frozen and integrated, including CodeGen.UpperLanes.cs and CodeGenUpperLaneTests.cs. Root Debug/Release validation passes. Both it and a7f6ecaf-b706-4be6-83c3-c83235b7452f are idle with no outstanding assignment or unread handoff. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "tableSwitches": {
+        "debugPassed": 266,
+        "releasePassed": 258,
+        "skipped": 0,
+        "selection": ["CodeGenSwitchTests", "EmitterJumpInstructionTests", "EmitterConstantDataTests", "EmitterAddressInstructionTests", "EmitterInstructionSizeTests", "CodeGenLabelTests"],
+        "debugTests": "artifacts\\table-switch-debug.trx",
+        "releaseTests": "artifacts\\table-switch-release.trx",
+        "coverage": "Relative/absolute table alignment, ordered duplicate case identity, pseudo-field address materialization, non-GC result production and unsigned 32-bit dispatch offsets relative to the first block. Label descriptors preserve long references, jump-list identity/order, offsets, catch-return diagnostics and reloc flags; nonrelocatable addressing retains its extra SIB byte. D005 rejects before table allocation, consumption or descriptor mutation.",
+        "remaining": "Reuses existing emitBBTableDataGenBeg/emitDataGenData/emitDataGenEnd and managed block-array storage. Label binding, table-byte output, the insGroup emitIns_R_L overload, remaining node/block generation, final encoding and metadata publication remain. Reuses funcletCreation.nativeHost; no reachability or execution-parity change, managed code size remains zero."
+      },
       "intrinsicGeneration": {
         "debugPassed": 797,
         "releasePassed": 755,
@@ -3588,6 +3598,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "table-switch-generation",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:4147-4163,4178-4187", "src\\coreclr\\jit\\codegencommon.cpp:6065-6097", "src\\coreclr\\jit\\emitxarch.cpp:9132-9179", "src\\coreclr\\jit\\emit.h:2004-2008"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.Switches.cs", "sources\\Core\\jit\\codegencommon\\CodeGen.JumpTables.cs", "sources\\Core\\jit\\emitxarch\\Emitter.JumpInstructions.cs", "sources\\Core\\jit\\emit\\Emitter.instrDesc.Attributes.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 genTableBasedSwitch/genJumpTable, genEmitJumpTable and BasicBlock emitIns_R_L; complete idSetRelocFlags. Reuses existing managed table storage and idjTarget reference under D002. Preserves diagnostic text, case order, first-block-relative offsets, relocation and lifetime contracts. The separate insGroup overload and final binding/encoding remain unported; D005 guards precede mutation."
+    },
     {
       "area": "finite-check-and-intrinsic-generation",
       "native": ["src\\coreclr\\jit\\codegenxarch.cpp:7089-7199,7384-7507", "src\\coreclr\\jit\\simdcodegenxarch.cpp:348-388,405-441", "src\\coreclr\\jit\\instr.cpp:1637-1735", "src\\coreclr\\jit\\emitxarch.cpp:9770-9789"],
