@@ -77,7 +77,7 @@ public sealed partial class LinearScan
             srcCount += buildOperandUses(ctrlExpr, ctrlExprCandidates);
         }
 
-        if (callNeedsVzeroupper(call))
+        if (call.NeedsVzeroupper(_compiler))
         {
             var codeGen = _compiler.codeGen
                 ?? throw new FatalJitException("Call reference building requires initialized codegen state.");
@@ -143,66 +143,6 @@ public sealed partial class LinearScan
         REG_XMM3 => REG_R9,
         _ => throw new FatalJitException("Windows x64 varargs requires an XMM0-XMM3 argument register."),
     };
-
-    private bool callNeedsVzeroupper(GenTreeCall call)
-    {
-        if (!_compiler.canUseVexEncoding())
-        {
-            return false;
-        }
-
-        var needsVzeroupper = false;
-        var checkSignature = false;
-        switch (call._callType)
-        {
-            case CT_USER_FUNC:
-            case CT_INDIRECT:
-            {
-                if (call.IsPInvoke)
-                {
-                    needsVzeroupper = true;
-                }
-                else if (call.IsSpecialIntrinsic())
-                {
-                    checkSignature = true;
-                }
-                break;
-            }
-
-            case CT_HELPER:
-            {
-                var helper = call.HelperNum;
-                needsVzeroupper = helper is CORINFO_HELP_BULK_WRITEBARRIER or CORINFO_HELP_BULK_WRITEBARRIER_SMALL;
-                checkSignature = !needsVzeroupper &&
-                    helper is not CORINFO_HELP_DBL2INT_OVF and not CORINFO_HELP_DBL2LNG_OVF and
-                        not CORINFO_HELP_DBL2UINT_OVF and not CORINFO_HELP_DBL2ULNG_OVF;
-                break;
-            }
-
-            default:
-            {
-                throw new FatalJitException("Unsupported call kind in vzeroupper classification.");
-            }
-        }
-
-        if (checkSignature)
-        {
-            needsVzeroupper = varTypeUsesFloatReg(call.Type);
-            if (!needsVzeroupper)
-            {
-                foreach (var arg in call.Args.Args)
-                {
-                    if (varTypeUsesFloatReg(arg.SignatureType))
-                    {
-                        needsVzeroupper = true;
-                        break;
-                    }
-                }
-            }
-        }
-
-        return needsVzeroupper;
-    }
 #endif
 
     private int buildPutArgReg(GenTreeUnOp node)

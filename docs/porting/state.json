@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete native switch optimization and conditional-to-boolean-return folding with their unique-predecessor and native-emptiness dependencies. No full flowgraph-update activation.",
+      "scope": "Complete Windows-AMD64 general call orchestration, pending return labels and required ABI/GC/SIMD support. Reuse one resolved graph worker for the remaining optimization helpers; parent owns all integration.",
       "doneWhen": [
-        "Port complete fgOptimizeSwitchBranches, fgFoldCondToReturnBlock and BasicBlock.GetUniquePred, preserving edge/profile/EH and node identity contracts.",
-        "Use native block emptiness in cycle detection and branch-threading assertions; retain whole-node replacements and live statement/LIR aliases.",
+        "Port complete genCall, argument/null-check ordering, tailcall target consumption, pre-call GC boundaries, pending labels and return-register production.",
+        "Reuse the existing LSRA vzeroupper classification through GenTreeCall and preserve the native Windows alignment no-op; validate the required SIMD12 upper-clear helper.",
         "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Validate SwitchOptimizationTests, EmptyBlockOptimizationTests, FlowGraphCompactionTests and FlowGraphBranchThreadingTests in Debug/Release before committing.",
+        "Validate CodeGenCallTests, CodeGenCallInstructionTests, CodeGenRegisterArgumentTests, LinearScanCallBuildingTests, ScopeReportingTests and EmitterLabelTests in Debug/Release before committing.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Scope reporting and switch optimization are integrated and validated (scopeReporting/switchOptimization). Continue complete Windows-AMD64 genCall orchestration at codegenxarch.cpp:5776, reusing committed register/stack argument generation, call-transfer recording and GC capture. Production genGenerateCode remains explicitly skipped. The remaining independent fgUpdateFlowGraph prerequisites are fgDedupReturnComparison, fgOptimizeUncondBranchToSimpleCond and fgFoldSimpleCondByForwardSub; reuse a resolved graph worker for a bounded packet while keeping phase integration in the parent. All previous worker handoffs are collected.",
+    "nextAction": "General call orchestration is validated (callOrchestration). Integrate collected artifacts\\flowgraph-cleanup-packet\\Compiler.FlowGraphCleanup.cs and FlowGraphCleanupTests.cs (a7f6ecaf through turn 29). Includes three remaining optimization roots, tail-duplication predicates and fgNewBBFromTreeAfter; worker reports no shared declarations missing. Validate the 60 new AMD64 cases with switch/compaction/empty-block/branch-threading tests in Debug/Release, update evidence and commit before examining the full fgUpdateFlowGraph closure. Production genGenerateCode remains explicitly skipped.",
     "handoff": {
-      "status": "scope-and-switch-validated-call-orchestration-next",
+      "status": "call-orchestration-validated-flowgraph-helper-packet-collected",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn 24; stack arguments committed b46e045. b6e1f160-b3d7-4126-bf91-39bc8de2e495 collected through turn 4; empty-block packet committed 5aa4742. 87f10c61-b152-4bdc-a27e-1ecfad4f6342 collected through turn 6; scope reporting committed 00fe311. a7f6ecaf-b706-4be6-83c3-c83235b7452f collected through turn 28; switch optimization integrated and validated. All workers idle; no outstanding handoffs. No app-native child sessions.",
+      "workerPackets": "4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn 24; stack arguments committed b46e045. b6e1f160-b3d7-4126-bf91-39bc8de2e495 collected through turn 4; empty-block packet committed 5aa4742. 87f10c61-b152-4bdc-a27e-1ecfad4f6342 collected through turn 6; scope reporting committed 00fe311. a7f6ecaf-b706-4be6-83c3-c83235b7452f collected through turn 29; switch optimization committed fa5e508; flowgraph-cleanup-packet is frozen and parent-owned. No outstanding handoffs; no app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgDedupReturnComparison",
@@ -57,6 +57,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "callOrchestration": {
+        "debugPassed": 326,
+        "releasePassed": 301,
+        "skipped": 0,
+        "selection": ["CodeGenCallTests", "CodeGenCallInstructionTests", "CodeGenRegisterArgumentTests", "LinearScanCallBuildingTests", "ScopeReportingTests", "EmitterLabelTests", "CodeGenBinaryTests", "CodeGenShiftTests", "EmitterCallInstructionTests"],
+        "debugTests": "artifacts\\call-orchestration-debug.trx",
+        "releaseTests": "artifacts\\call-orchestration-release.trx",
+        "coverage": "32 Debug/31 Release new cases: argument placement before null checks, fast-tailcall target consumption and address-root restoration through epilogs, deferred transfers/labels, PInvoke pre-call GC boundaries, wide-vector vzeroupper gating, pending-label helper exclusions and position before return moves, ABI result moves/production, optimized versus minopts terminal return roots, SIMD12 signed immediate and pre-mutation D005. Shared fixture modes are initialized at construction, not changed after use.",
+        "remaining": "Complete Windows-AMD64 genCall and required label/alignment/this-register/SIMD support. GenTreeCall.NeedsVzeroupper reuses the prior LSRA predicate; multi-register-return branch retained but FEATURE_MULTIREG_RET is disabled on Windows AMD64. Production dispatch, encoding and metadata closure remain; no execution-frontier change and managed machine-code size remains zero."
+      },
       "switchOptimization": {
         "debugPassed": 195,
         "releasePassed": 195,
@@ -3716,6 +3726,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "general-call-orchestration",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:5776-6006,7571-7642", "src\\coreclr\\jit\\codegencommon.cpp:1155-1158,6211-6242", "src\\coreclr\\jit\\gentree.cpp:1920-2000", "src\\coreclr\\jit\\simdcodegenxarch.cpp:452-462"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.Calls.cs", "sources\\Core\\jit\\gentree\\GenTreeCall.cs", "sources\\Core\\jit\\lsra\\LinearScan.Calls.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete Windows-AMD64 genCall, genDefinePendingCallLabel, call alignment/removal, genGetThisArgReg and genSimd12UpperClear. GenTreeCall.NeedsVzeroupper is shared by allocation and generation. Native Windows per-call alignment is genuinely empty; other targets explicitly reject. No production emission activation."
+    },
     {
       "area": "switch-and-conditional-return-optimization",
       "native": ["src\\coreclr\\jit\\fgopt.cpp:1625-1921", "src\\coreclr\\jit\\optimizebools.cpp:1749-1883", "src\\coreclr\\jit\\block.cpp:965-977"],

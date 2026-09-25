@@ -351,7 +351,7 @@ internal static class CodeGenBinaryTests
     }
 #endif
 
-    internal static void WithCodeGen(Action<Compiler, CodeGen> action)
+    internal static void WithCodeGen(Action<Compiler, CodeGen> action, bool minopts = true)
     {
         CodeGenShiftTests.WithCodeGen((compiler, codeGen) =>
         {
@@ -361,7 +361,7 @@ internal static class CodeGenBinaryTests
             AllIntRegisters(compiler) = SRBM_ALLINT_INIT;
             codeGen.CopyRegisterInfo();
             action(compiler, codeGen);
-        });
+        }, minopts);
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllInt")]

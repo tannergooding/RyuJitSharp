@@ -14,6 +14,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: General call generation
+
+General calls now connect argument placement, null checks, P/Invoke GC boundaries,
+AVX transition handling and control transfer. Return values move from ABI registers
+to their allocated homes; pending return labels exclude intervening helper calls.
+Fast tailcalls retain target-address roots through the epilog and defer the jump.
+
+Allocation and code generation share the native `vzeroupper` classification.
+These paths remain below the production emission boundary; remaining node/block
+generation, encoding and metadata dependencies still prevent managed native code.
+
 ## 2026-09-25: Switch and conditional-return optimization
 
 Switch cleanup now bypasses eligible empty branches, removes single-target

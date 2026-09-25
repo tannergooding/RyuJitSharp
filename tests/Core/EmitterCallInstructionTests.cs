@@ -527,7 +527,7 @@ internal static unsafe class EmitterCallInstructionTests
         ptrVars = VarSetOps.MakeEmpty(compiler),
     };
 
-    internal static void WithEmitter(Action<Compiler, CodeGen> action)
+    internal static void WithEmitter(Action<Compiler, CodeGen> action, bool minopts = true)
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
@@ -540,7 +540,7 @@ internal static unsafe class EmitterCallInstructionTests
             codeGen.Emitter.UseRex2Encodings = true;
             StackLevel(codeGen) = 4096;
             action(compiler, codeGen);
-        });
+        }, minopts);
     }
 
     private static Emitter.instrDesc Last(Emitter emitter)

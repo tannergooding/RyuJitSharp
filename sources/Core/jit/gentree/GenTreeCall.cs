@@ -642,6 +642,69 @@ public sealed class GenTreeCall : GenTree
 
     public bool NeedsNullCheck => (Flags & GTF_CALL_NULLCHECK) != 0;
 
+#if TARGET_XARCH
+    public unsafe bool NeedsVzeroupper(Compiler compiler)
+    {
+        if (!compiler.canUseVexEncoding())
+        {
+            return false;
+        }
+
+        var needsVzeroupper = false;
+        var checkSignature = false;
+        switch (_callType)
+        {
+            case CT_USER_FUNC:
+            case CT_INDIRECT:
+            {
+                if (IsPInvoke)
+                {
+                    needsVzeroupper = true;
+                }
+                else if (IsSpecialIntrinsic())
+                {
+                    checkSignature = true;
+                }
+                break;
+            }
+
+            case CT_HELPER:
+            {
+                var helper = HelperNum;
+                needsVzeroupper = helper is CORINFO_HELP_BULK_WRITEBARRIER or CORINFO_HELP_BULK_WRITEBARRIER_SMALL;
+                // These checked conversions are managed and do not need an AVX/SSE transition.
+                checkSignature = !needsVzeroupper &&
+                    helper is not CORINFO_HELP_DBL2INT_OVF and not CORINFO_HELP_DBL2LNG_OVF and
+                        not CORINFO_HELP_DBL2UINT_OVF and not CORINFO_HELP_DBL2ULNG_OVF;
+                break;
+            }
+
+            default:
+            {
+                throw new FatalJitException("Unsupported call kind in vzeroupper classification.");
+            }
+        }
+
+        if (checkSignature)
+        {
+            needsVzeroupper = varTypeUsesFloatReg(Type);
+            if (!needsVzeroupper)
+            {
+                foreach (var arg in Args.Args)
+                {
+                    if (varTypeUsesFloatReg(arg.SignatureType))
+                    {
+                        needsVzeroupper = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return needsVzeroupper;
+    }
+#endif
+
     public bool NormalizesSmallTypesOnReturn => UnmanagedCallConv is CorInfoCallConvExtension.Managed;
 
     /// <summary>The return type handle of the call if it is a struct; always available</summary>

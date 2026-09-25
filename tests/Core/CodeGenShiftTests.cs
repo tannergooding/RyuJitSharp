@@ -259,7 +259,7 @@ internal static unsafe class CodeGenShiftTests
         }
     }
 
-    internal static void WithCodeGen(Action<Compiler, CodeGen> action)
+    internal static void WithCodeGen(Action<Compiler, CodeGen> action, bool minopts = true)
     {
         CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, _) =>
         {
@@ -270,7 +270,7 @@ internal static unsafe class CodeGenShiftTests
             compiler.lvaTable[0].lvLRACandidate = false;
             codeGen.RegSet.ClearMaskVars();
             action(compiler, codeGen);
-        });
+        }, minopts);
     }
 
     internal static List<Emitter.instrDesc> Descriptors(CodeGen codeGen)
