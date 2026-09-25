@@ -14,6 +14,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Return values and profiler leave callbacks
+
+Return generation now moves scalar and field-list values into their ABI registers
+and restores GC return roots before profiler callbacks. Void and filter returns
+retain their distinct behavior; async returns clear and report the continuation
+after the callback. Debug stack-pointer checks remain limited to the root function.
+
+Profiler leave and tailcall callbacks preserve direct/indirect handles and
+tentative/final frame addressing. Caller-relative offsets now retain the native
+frame-delta signs, EnC/localloc rules and OSR root-frame adjustment. General calls,
+remaining node/block generation, encoding and metadata publication still prevent
+production machine-code emission.
+
 ## 2026-09-25: Inline exception helpers
 
 Overflow, bounds and finite checks now support inline throw helpers as well as

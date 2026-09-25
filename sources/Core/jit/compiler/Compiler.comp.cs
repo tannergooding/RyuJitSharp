@@ -267,10 +267,10 @@ public partial class Compiler
     protected bool compProfilerHookNeeded;
 
     /// <summary>Profiler handle of the method being compiled. Passed as param to ELT callbacks</summary>
-    protected unsafe void* compProfilerMethHnd;
+    protected internal unsafe void* compProfilerMethHnd;
 
     /// <summary>Whether compProfilerHandle is pointer to the handle or is an actual handle</summary>
-    protected bool compProfilerMethHndIndirected;
+    protected internal bool compProfilerMethHndIndirected;
 #endif
 
 #if DEBUG

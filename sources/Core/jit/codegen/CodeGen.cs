@@ -165,7 +165,7 @@ public sealed partial class CodeGen : ICodeGen
             //     pushed ebp
             callerSPtoFPdelta -= (2 * REGSIZE_BYTES);
 #else
-            callerSPtoFPdelta -= genCallerSPtoInitialSPdelta + genSPtoFPdelta;
+            callerSPtoFPdelta += genCallerSPtoInitialSPdelta + genSPtoFPdelta;
 #endif
 
             assert(callerSPtoFPdelta <= 0);
@@ -236,7 +236,7 @@ public sealed partial class CodeGen : ICodeGen
                 // we will always position FP at min(240, outgoing arg area size).
                 delta = int.Min(240, _compiler.lvaOutgoingArgSpaceSize.Value);
             }
-            else if (!_compiler.opts.compDbgEnC)
+            else if (_compiler.opts.compDbgEnC)
             {
                 // vm assumption on EnC methods is that rsp and rbp are equal
                 delta = 0;

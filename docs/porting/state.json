@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete Windows-AMD64 genJumpToThrowHlpBlk, including inline calls and continuation labels, then remove D006 restrictions from all checked generation callers. Reuse the committed helper-call, jump and label closures and the shared native exception-helper mapping.",
+      "scope": "Complete Windows-AMD64 return generation with native field-list handling, return GC state, profiler leave/tailcall callbacks, caller-relative frame offsets and Debug stack checks. Register-argument placement is being prepared independently in a staged worker packet.",
       "doneWhen": [
-        "Port both native throw-helper modes, preserving conditional reversal, unconditional calls, shared targets and continuation GC state.",
-        "Wire arithmetic, multiplication, casts, bounds, indexed addresses and finite checks to the complete function, retaining D005 before mutation.",
+        "Port complete genReturn, isStructReturn, genStructReturn and genMarkReturnGCInfo for Windows AMD64, preserving void/filter/async distinctions.",
+        "Complete profiler callbacks, stack checks and caller-SP-relative offsets; repair the directly required native frame-delta translation defects without changing upstream behavior.",
         "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Validate helper identities, reversed jumps, unconditional throws, continuation GC roots, shared-target identity and all formerly guarded callers in Debug/Release before committing.",
+        "Validate return ABI moves and GC roots, callback/frame forms, async ordering, root-only stack checks, EnC/localloc/OSR offsets and D005 in Debug/Release before committing.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Inline throw generation is complete and validated (inlineThrows); D006 is closed for Windows AMD64. Continue complete native genReturn in codegencommon.cpp:7361 and its genFloatReturn (codegenxarch.cpp:1391), genStructReturn and GC-return dependencies. These entrypoints are not yet present in managed CodeGen; read the pinned bodies to establish the full Windows-AMD64 closure rather than adding a scalar-only alternate function. Keep production emission skipped until remaining node/block generation, general calls, encoding and metadata publication are complete.",
+    "nextAction": "Return generation is complete and validated (returnGeneration). Collect worker 4c9a8661-6e45-4e43-960d-7f3a779cdcde after its completion notification. Its artifacts\\register-argument-packet is the staging location for CodeGen.CallArguments.cs, CodeGen.RegisterArguments.cs and CodeGenRegisterArgumentTests.cs, implementing complete genCallPlaceRegArgs/genPutArgReg. Integrate into codegencommon, codegenxarch and tests\\Core, validate Debug/Release and commit the coherent argument packet. Do not treat staged files as compiled. Also collect a7f6ecaf-b706-4be6-83c3-c83235b7452f's read-only recommendation for an independent earlier-phase flowgraph packet and assign bounded implementation ownership if feasible. Production emission remains skipped.",
     "handoff": {
-      "status": "inline-throw-generation-validated",
+      "status": "return-generation-validated-register-arguments-in-flight",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All packets and follow-ups from 4c9a8661-6e45-4e43-960d-7f3a779cdcde are collected through turn 22, frozen and integrated, including emitInsStoreInd, emitIns_A_R_I and EmitterIndirectStoreTests. Root Debug/Release store validation passes. Both this worker and a7f6ecaf-b706-4be6-83c3-c83235b7452f are idle with no assignment or unread handoff. No app-native child sessions.",
+      "workerPackets": "Earlier packets from 4c9a8661-6e45-4e43-960d-7f3a779cdcde are collected through turn 22 and integrated. The worker now owns complete Windows-AMD64 genCallPlaceRegArgs/genPutArgReg and focused tests, staged only under artifacts\\register-argument-packet to avoid racing parent builds. New handoff is outstanding; no worker commits/builds authorized. a7f6ecaf-b706-4be6-83c3-c83235b7452f is independently scoping one earlier-phase flowgraph packet, prioritizing fgOptimizeSwitchBranches or compaction, read-only with no implementation yet. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "returnGeneration": {
+        "debugPassed": 218,
+        "releasePassed": 203,
+        "skipped": 0,
+        "selection": ["CodeGenReturnTests", "CodeGenHelperCallTests", "EmitterCallInstructionTests", "CodeGenInitializationTests", "RegallocFrame", "FuncletCreationTests"],
+        "debugTests": "artifacts\\return-generation-debug.trx",
+        "releaseTests": "artifacts\\return-generation-release.trx",
+        "coverage": "Scalar widths and ABI register moves, GC/byref return roots, elided aliases, void/filter distinctions, field-list returns, retbuf addresses retained across profiler callbacks, async continuation zeroing after callbacks, direct/indirect profiler handles and tentative/final frame forms, leave/tailcall helpers, disabled hooks, root-only Debug stack comparisons/breakpoints/labels, native frame-delta signs and EnC/localloc precedence, OSR root-frame offsets and pre-mutation D005. B219 fixes directly required frame-delta translation defects.",
+        "remaining": "Complete Windows-AMD64 target branches; genFloatReturn is x86-only and FEATURE_MULTIREG_RET/SWIFT_SUPPORT are disabled on Windows AMD64. genReturn uses the existing managed unary-node layout, matching lowering. Other targets explicitly reject. Reuses funcletCreation.nativeHost because reachable production behavior remains unchanged; emitted managed code size is zero."
+      },
       "inlineThrows": {
         "debugPassed": 368,
         "releasePassed": 355,
@@ -3638,6 +3648,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "return-generation",
+      "native": ["src\\coreclr\\jit\\codegencommon.cpp:genReturn,genStructReturn,isStructReturn,genMarkReturnGCInfo,genStackPointerCheck", "src\\coreclr\\jit\\codegenxarch.cpp:genProfilingLeaveCallback and AMD64 frame-delta helpers", "src\\coreclr\\jit\\lclvars.cpp:Compiler::lvaToCallerSPRelativeOffset", "src\\coreclr\\jit\\codegen.h:CodeGen::genFramePointerReg"],
+      "csharp": ["sources\\Core\\jit\\codegencommon\\CodeGen.Returns.cs", "sources\\Core\\jit\\codegenxarch\\CodeGen.Profiling.cs", "sources\\Core\\jit\\compiler\\Compiler.FrameOffsets.cs", "sources\\Core\\jit\\codegen\\CodeGen.cs", "sources\\Core\\jit\\compiler\\Compiler.comp.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete Windows-AMD64 return/field-list/GC-return generation, profiler leave and tailcall callbacks, frame-base selection, caller-SP-relative offsets and Debug stack checks. Reuses helper kill masks and native move/label recording. B219 corrects frame-delta signs and the EnC predicate. D005 and explicit target boundaries remain; production emission is still skipped."
+    },
     {
       "area": "inline-throw-generation",
       "native": ["src\\coreclr\\jit\\codegencommon.cpp:2000-2069", "src\\coreclr\\jit\\flowgraph.cpp:Compiler::acdHelper"],

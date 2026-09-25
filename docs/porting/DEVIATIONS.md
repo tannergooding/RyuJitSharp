@@ -1111,6 +1111,11 @@ covered for every recording entrypoint. Retain the mixed-mode
 native bodies until full disassembly is ported. This does not activate production
 emission or waive future `jitdump`/`jitdisasm` parity.
 
+Return generation and profiler leave/tailcall callbacks also reject unsupported
+disassembly before operand consumption or callback-state changes. Debug
+stack-pointer checks retain the same guard before recording comparisons,
+breakpoints or continuation labels.
+
 ### D006: Shared throw-helper blocks before inline helper calls
 
 **Status:** closed for Windows AMD64; not an accepted output difference.

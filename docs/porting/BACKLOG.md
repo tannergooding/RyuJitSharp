@@ -256,6 +256,8 @@ existing deviation entries rather than maintaining competing descriptions.
 
 | B218 | Upstream question / absolute indirect-call assertion | Native `emitIns_Call` (`emitxarch.cpp:11129-11143`) checks `params.addr` for signed-32-bit encodability in the no-base/no-index address-mode branch, although that call form requires `params.addr == nullptr` and carries the address in `params.disp`. | Confirm the intended assertion operand upstream; preserve the pinned code until a correction is approved. | The vacuous native assertion is retained. Relocation selection still tests the actual displacement; no executable defect or managed-only behavior change is established. |
 
+| B219 | Port defect / AMD64 frame deltas | Managed `genCallerSPtoFPdelta` negated the native sum, producing a positive caller-relative offset, and `genSPtoFPdelta` inverted the native EnC predicate. Both affect the profiler's caller-SP argument. | Restore the pinned AMD64 formulas (`codegenxarch.cpp:7203-7308`) before using them in return/profiler generation. | Fixed with regression coverage for ordinary/EnC frames, localloc precedence and its 240-byte cap, SP/FP-relative offsets and OSR root-frame adjustment. No upstream algorithm change. |
+
 Larger module decomposition and broad unit-test infrastructure belong to the
 post-port phase. Add concrete candidates here as evidence appears, rather than
 preemptively planning a redesign of every compiler subsystem.
