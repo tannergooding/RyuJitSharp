@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete native TreeLifeUpdater with its existing code-generation and local-address handling predicates. Reuse real local spilling, register-life and variable-range support without activating incomplete production code generation.",
+      "scope": "Complete Windows-AMD64 code-generation preparation and block-list initialization: genPrepForCompiler, genInitialize, register/spill checks, GC tracking resets and scope initialization. Wire tree-lifetime and variable-range support at their distinct native callsites without activating incomplete production emission.",
       "doneWhen": [
-        "Port the complete tracked/promoted/field/call-definition liveness updates, native diagnostics and duplicate-tree/epoch behavior.",
-        "Preserve GC/register/range ordering and actual spill recording in code-generation mode; non-code-generation mode must not require codegen state.",
-        "Validate the integrated lifetime and spill boundary in Debug and Release and commit before following the next code-generation dependency."
+        "Preserve preparation's tracked-stack GC classification, empty liveness cache and block metric; initialize TreeLifeUpdater there, not in the constructor or genInitialize.",
+        "Preserve scope/live-range/call-return/GC/register/current-life/stack setup in native genInitialize order.",
+        "Validate the integrated initialization/lifetime boundary in Debug and Release and commit before per-block generation."
       ],
       "validation": [
-        "Reuse the integrated emitter/spill selection and relevant liveness-call tests; add focused lifetime transitions and exact diagnostics, not a new infrastructure layer.",
+        "Reuse treeLifeUpdater.selection, add focused initialization-state reset, parameter-register eligibility and scope-cursor checks.",
         "Reuse the exact allocation-activation capture; republish only if reachable production behavior changes. B145 remains deferred."
       ],
       "deferred": [
@@ -32,9 +32,9 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Complete TreeLifeUpdater is integrated with both native ForCodeGen and GeneralLclAddrHandling predicates (689 Debug/677 Release, zero skipped). Resume CodeGen::genInitialize and its required initialization closure at the pinned native source: wire the established TreeLifeUpdater and VariableLiveKeeper at their native initialization callsites, preserving emitter/GC/register/stack setup order. There was no earlier managed TreeLifeUpdater specialization. Do not activate genGenerateCode or invent reduced per-node emission before all required dependencies are ready. D005 instruction-disassembly rejection remains; all workers are collected/frozen.",
+    "nextAction": "Code-generation preparation and initialization are complete and validated (709 Debug/697 Release). Resume native Compiler::compUpdateLife<true>(newLife) at compiler.hpp:3689 and its CodeGenInterface::genUpdateLife(VARSET_VALARG_TP) wrapper at codegencommon.cpp:782, the next dependency of genCodeForBlock. Preserve live-set ownership, register/GC transitions and range ordering; then follow the remaining per-block generation dependencies rather than activate a reduced loop. TreeLifeUpdater is correctly initialized in genPrepForCompiler and VariableLiveKeeper in genInitialize. Keep genGenerateCode explicitly skipped; D005 disassembly rejection remains. All workers are collected/frozen.",
     "handoff": {
-      "status": "tree-life-updater-validated",
+      "status": "codegen-initialization-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
       "workerPackets": "All prefix, opcode-comparison and constant/displacement packets are fully collected, frozen and integrated. Constant worker b6e1f160-b3d7-4126-bf91-39bc8de2e495 returned four new files without shared allocation/schema edits. No active or unread workers; no app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "codegenInitialization": {
+        "debugPassed": 709,
+        "releasePassed": 697,
+        "skipped": 0,
+        "selection": "treeLifeUpdater.selection plus CodeGenInitializationTests; combine FullyQualifiedName filters in one dotnet test tests\\Core\\RyuJitSharp.UnitTests.csproj --no-restore run per configuration.",
+        "debugTests": "artifacts\\codegen-initialization-debug.trx",
+        "releaseTests": "artifacts\\codegen-initialization-release.trx",
+        "coverage": "Tracked-GC stack-home classification, full-register and stack-parameter exclusions; eligible integer parameter registers; scope enabled/count predicates; current-life and pointer-set replacement without alias corruption; mode-selective descriptor-list resets; retained tracked-stack classification; stack-level reset; actual preparation/initialization/tree-update wiring; fresh call-return storage and pending-label reset.",
+        "remaining": "No production genGenerateCode activation or new host capture. Per-block lifetime transitions, node generation and encoding remain; managed emitted code is zero."
+      },
       "treeLifeUpdater": {
         "debugPassed": 689,
         "releasePassed": 677,
@@ -3290,6 +3300,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "codegen-preparation-and-initialization",
+      "native": ["src\\coreclr\\jit\\codegencommon.cpp:569-595,777-780", "src\\coreclr\\jit\\codegenlinear.cpp:33-128", "src\\coreclr\\jit\\codegen.h:152-159", "src\\coreclr\\jit\\codegeninterface.h:651-656", "src\\coreclr\\jit\\gcinfo.cpp:363-369,665-678", "src\\coreclr\\jit\\regset.cpp:975-978,1037-1060", "src\\coreclr\\jit\\scopeinfo.cpp:1587-1601"],
+      "csharp": ["sources\\Core\\jit\\codegenlinear\\CodeGen.Initialization.cs", "sources\\Core\\jit\\gcinfo\\GCInfo.Initialization.cs", "sources\\Core\\jit\\regsset\\RegSet.SpillTracking.cs", "sources\\Core\\jit\\scopeinfo\\CodeGen.ScopeInitialization.cs", "sources\\Core\\jit\\codegeninterface\\ICodeGen.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 genPrepForCompiler, genInitializeRegisterState/genInitialize and dependencies, plus the tree genUpdateLife entrypoint. TreeLifeUpdater and VariableLiveKeeper are created at their separate native callsites. Scope-location enums/storage are the EE types themselves; the native layout-size assertion is retained. Other-target block/register initialization rejects before mutation. Full block traversal, node generation and final emission remain unported; production genGenerateCode stays explicitly skipped."
+    },
     {
       "area": "tree-life-updater",
       "native": ["src\\coreclr\\jit\\treelifeupdater.h", "src\\coreclr\\jit\\treelifeupdater.cpp:11-411"],

@@ -14,6 +14,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Code-generation initialization
+
+Code-generation preparation now classifies tracked GC locals with stack homes
+and creates the tree-lifetime updater. Block-list initialization follows native
+ordering for scope cursors, variable live ranges, call-return storage, pointer
+tracking, parameter registers, current liveness and stack level.
+
+The GC reset paths retain the distinction between full register maps and call
+descriptors, without discarding the prepared tracked-stack classification.
+Per-block liveness transitions, node generation and final encoding still precede
+production activation; managed native-code emission remains zero.
+
 ## 2026-09-25: Tree-lifetime updates
 
 Tree-driven liveness now follows native birth, death and partial-definition

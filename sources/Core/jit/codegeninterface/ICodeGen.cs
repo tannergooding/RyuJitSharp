@@ -102,6 +102,8 @@ public interface ICodeGen
 
     void genSpillVar(GenTree tree);
 
+    void genUpdateLife(GenTree tree);
+
     void initializeVariableLiveKeeper();
 
     CodeGen.VariableLiveKeeper getVariableLiveKeeper();
