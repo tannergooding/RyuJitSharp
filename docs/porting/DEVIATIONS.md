@@ -58,6 +58,12 @@ reversal and append order without copying CLR objects into unmanaged storage.
 Actual emitted-code patch addresses remain native pointers; they are not
 narrowed to managed descriptor offsets.
 
+The descriptor's pointer-sized, reference-free address union overlays packed
+local addresses, xarch address modes and additional register fields. Explicit
+layout preserves their native aliasing; custom EVEX/APX context bits retain
+their shared interpretations. Neither representation changes logical descriptor
+sizes or authorizes different instruction sizes or encoding choices.
+
 `ILLocation` stores the bitwise complement of its IL offset so that
 zero-initialized C# values, including locations embedded in `default(DebugInfo)`,
 represent the native invalid offset. Explicit offsets and source flags retain

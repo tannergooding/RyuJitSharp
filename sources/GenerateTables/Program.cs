@@ -40,6 +40,7 @@ internal static class Program
         GenerateInlineObservationExtensions();
         GenerateInstruction();
         GenerateInstructionFormats();
+        GenerateInstructionOpcodes();
 
         GenerateJitConfigValues();
         GenerateJitMetadata();
@@ -1299,6 +1300,167 @@ public partial class Emitter
         GenerateNativeEnum(formatInput, "IS_INFO", @"Outputs\jit\emit\IS_INFO.generated.cs", isFlags: true);
         GenerateNativeEnum(@"Inputs\instr.h", "insUpdateModes",
             @"Outputs\jit\instr\insUpdateModes.generated.cs", isFlags: false);
+    }
+
+    private static void GenerateInstructionOpcodes()
+    {
+        var macros = new Dictionary<string, (string[] Parameters, string Body)>(StringComparer.Ordinal);
+        foreach (var line in File.ReadLines(@"Inputs\instrsxarch.h"))
+        {
+            var match = Regex.Match(line, @"^#define\s+(\w+)\(([^)]*)\)\s+(.+)$");
+            if (match.Success)
+            {
+                macros.Add(match.Groups[1].Value,
+                    (match.Groups[2].Value.Split(',', StringSplitOptions.TrimEntries), match.Groups[3].Value));
+            }
+        }
+
+        var tables = new StringBuilder();
+        (string Name, int MinimumArity, int Column, bool NativeWidth)[] layouts = [
+            ("insCodes", 0, 3, false),
+            ("insCodesACC", 4, 6, false),
+            ("insCodesRR", 5, 7, false),
+            ("insCodesRM", 3, 5, true),
+            ("insCodesMI", 2, 4, true),
+            ("insCodesMR", 1, 3, false),
+        ];
+
+        foreach (var (name, minimumArity, column, nativeWidth) in layouts)
+        {
+            var entries = ProcessInstrs((builder, inputFile, line, prefix, parts) =>
+            {
+                if (!inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                var arity = prefix.Equals("INSTMUL(", StringComparison.Ordinal) ? 3 : prefix[4] - '0';
+                var arguments = SplitOpcodeArguments(line);
+                if ((arity < 0) || (arity > 5) || (arguments.Length != Math.Max(1, arity) + 7))
+                {
+                    throw new InvalidDataException($"Invalid opcode table entry: '{line}'");
+                }
+
+                // Native tables are prefixes of instruction order, not padded arrays:
+                // e.g. insCodesRR includes INST5 only, while insCodes includes INST0 too.
+                if (arity >= minimumArity)
+                {
+                    var opcode = ExpandOpcode(arguments[column], macros);
+                    var expression = $"unchecked(({(nativeWidth ? "OpcodeNative" : "uint")})({opcode}))";
+                    _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                        $"        {expression}, // INS_{arguments[0]}");
+                }
+            });
+
+            if (nativeWidth)
+            {
+                _ = tables.AppendLine(CultureInfo.InvariantCulture, $"    private static ReadOnlySpan<OpcodeNative> {name} => [");
+            }
+            else
+            {
+                _ = tables.AppendLine(CultureInfo.InvariantCulture, $"    private static ReadOnlySpan<uint> {name} => [");
+            }
+
+            _ = tables.Append(entries);
+            _ = tables.AppendLine("    ];");
+            _ = tables.AppendLine();
+        }
+
+        _ = Directory.CreateDirectory(@"Outputs\jit\emitxarch");
+        File.WriteAllText(@"Outputs\jit\emitxarch\Globals.InstructionOpcodes.generated.cs", $$"""
+// Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+using System;
+#if TARGET_AMD64
+using OpcodeNative = System.UInt64;
+#else
+using OpcodeNative = System.UInt32;
+#endif
+
+namespace RyuJitSharp;
+
+public static partial class Globals
+{
+#if TARGET_XARCH
+{{tables}}#endif
+}
+""");
+    }
+
+    private static string[] SplitOpcodeArguments(string invocation)
+    {
+        var arguments = new List<string>();
+        var start = invocation.IndexOf('(', StringComparison.Ordinal) + 1;
+        var depth = 0;
+        var quoted = false;
+
+        for (var index = start; index < invocation.Length; index++)
+        {
+            var c = invocation[index];
+            if ((c == '"') && ((index == 0) || (invocation[index - 1] != '\\')))
+            {
+                quoted = !quoted;
+            }
+            if (quoted)
+            {
+                continue;
+            }
+
+            if (c == '(')
+            {
+                depth++;
+            }
+            else if ((c == ')') && (depth-- == 0))
+            {
+                arguments.Add(invocation[start..index].Trim());
+                return [.. arguments];
+            }
+            else if ((c == ',') && (depth == 0))
+            {
+                arguments.Add(invocation[start..index].Trim());
+                start = index + 1;
+            }
+        }
+
+        throw new InvalidDataException($"Unterminated opcode macro: '{invocation}'");
+    }
+
+    private static string ExpandOpcode(string expression,
+        Dictionary<string, (string[] Parameters, string Body)> macros)
+    {
+        expression = expression.Trim();
+        if (Regex.IsMatch(expression, @"^(0[xX][0-9a-fA-F]+|[0-9]+)$"))
+        {
+            return expression;
+        }
+        if ((expression == "BAD_CODE") || expression.StartsWith('(', StringComparison.Ordinal))
+        {
+            return expression;
+        }
+
+        var opening = expression.IndexOf('(', StringComparison.Ordinal);
+        if ((opening < 0) || !macros.TryGetValue(expression[..opening], out var macro))
+        {
+            throw new InvalidDataException($"Unknown opcode expression: '{expression}'");
+        }
+
+        var arguments = SplitOpcodeArguments(expression);
+        if (arguments.Length != macro.Parameters.Length)
+        {
+            throw new InvalidDataException($"Invalid opcode macro arguments: '{expression}'");
+        }
+
+        var body = macro.Body;
+        for (var index = 0; index < arguments.Length; index++)
+        {
+            var argument = ExpandOpcode(arguments[index], macros);
+            body = Regex.Replace(body, $@"\b{Regex.Escape(macro.Parameters[index])}\b", _ => $"({argument})");
+        }
+
+        return ExpandOpcode(body, macros);
     }
 
     private static void GenerateNativeEnum(string inputFile, string enumName, string outputFile, bool isFlags)

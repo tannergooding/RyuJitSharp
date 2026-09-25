@@ -12,15 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Close stack-local instruction metadata prerequisites for genSpillVar: native instruction formats/update modes, descriptor local-address encoding and Windows-AMD64 store selection/alignment. Actual store recording additionally needs full instruction-size/prefix/diagnostic closure and remains unactivated.",
+      "scope": "Complete the remaining Windows-AMD64 stack-local instruction recording and real spill-store dependencies, using integrated native prefix/size/compression support. Keep production emission inactive until its full required closure is ready.",
       "doneWhen": [
-        "Generate native instruction formats and instruction update modes through the existing table generator, with inputs and maintained outputs together.",
-        "Port complete local-address packing/decoding and format selection/accessors without changing native limits, widths or logical descriptor sizes.",
-        "Port native AMD64 ins_Store and isSIMDTypeLocalAligned using existing type-size tables and frame-address helpers.",
-        "Validate focused address/format/store metadata behavior and deterministic generator output; commit before the remaining store-size and TreeLifeUpdater closure."
+        "Close complete native emitIns_S_R and emitIns_S_R_I recording dependencies, including required diagnostics and instruction options.",
+        "Wire inst_TT_RV, SIMD12 local stores and genSpillVar only with real instruction recording, preserving native GC and register-life transitions.",
+        "Validate a dependency-coherent packet in Debug and Release and commit before continuing tree-lifetime code generation."
       ],
       "validation": [
-        "Run focused address/format/store-selection checks and the existing descriptor/allocation/location selection in Debug and Release. Review deterministic isolated table generation.",
+        "Reuse the integrated prefix/size/displacement and emitter metadata selection; extend only for the actual store-recording closure.",
         "Reuse the exact allocation-activation capture; republish only if reachable production behavior changes. B145 remains deferred."
       ],
       "deferred": [
@@ -33,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Stack-local address/format/store-selection metadata is integrated and validated (333 Debug/320 Release); all workers are frozen and collected. Next close the size/prefix dependencies of emitInsSizeSVCalcDisp and emitInsSizeSV in pinned emitxarch.cpp, including actual opcode lookup and EVEX displacement compression. genSpillVar's true-store path is inst_TT_RV -> emitIns_S_R, plus emitStoreSimd12ToLclOffset -> emitIns_S_R_I. These entrypoints remain absent; do not fake sizes or install a reduced store. Reuse the now-ported formats, local-address storage, CodeGen.ins_Store, SIMD local alignment and existing var_types.EmitSize/EmitActualSize/lvaFrameAddress. Then return to the complete TreeLifeUpdater codegen mode. Production emission remains explicitly skipped.",
+    "nextAction": "Prefix/opcode/stack-size/compression support is integrated (421 Debug/408 Release); all worker packets are collected and frozen. Resume complete emitIns_S_R at pinned emitxarch.cpp:10574 and emitIns_S_R_I at 9407, identifying only their remaining recording/options/diagnostic dependencies; size/prefix and tuple compression are no longer blockers. True-store closure is inst_TT_RV -> emitIns_S_R, plus emitStoreSimd12ToLclOffset -> emitIns_S_R_I, then genSpillVar and complete TreeLifeUpdater codegen mode. Do not substitute fake instruction sizes or no-op diagnostics. Production emission remains explicitly skipped.",
     "handoff": {
-      "status": "stack-local-instruction-metadata-integrated",
+      "status": "instruction-prefix-opcode-size-integrated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All descriptor/diagnostic, live-range and instruction-format packets are collected, frozen and integrated. No pending worker edits or app-native child sessions.",
+      "workerPackets": "All prefix/descriptor and independent opcode native-comparison packets are collected, frozen and integrated. No pending worker edits or unread handoffs; no app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -61,6 +60,20 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "instructionPrefixesAndSizes": {
+        "debugPassed": 421,
+        "releasePassed": 408,
+        "skipped": 0,
+        "selection": "stackLocalMetadata.selection plus EmitterOpcodeTests, EmitterPrefixTests and EmitterInstructionSizeTests; combine FullyQualifiedName filters in one dotnet test tests\\Core\\RyuJitSharp.UnitTests.csproj --no-restore run per configuration.",
+        "debugTests": "artifacts\\instruction-prefix-size-debug.trx",
+        "releaseTests": "artifacts\\instruction-prefix-size-release.trx",
+        "coverage": "Legacy/VEX/EVEX/REX2/APX selection; native descriptor address/register/context aliasing; stack-base/SIB/displacement boundaries, immediate widths and APX escape absorption; every EVEX tuple family, mixed shift tuples, broadcasts and native-sized signed displacement limits.",
+        "generator": "45 byte-identical outputs across two runs. All 44 prior outputs unchanged after newline normalization. Actual MSVC evaluation of pinned native opcode expressions matches all 4371 managed entries, including 24 encodings wider than uint32.",
+        "tableLengths": { "insCode": 1135, "ACC": 24, "RR": 12, "RM": 1049, "MI": 1052, "MR": 1099 },
+        "generatorEvidence": ["artifacts\\opcode-generation-determinism.log", "artifacts\\opcode-native-validation\\comparison.log"],
+        "nativeComparisonCommand": "& .\\artifacts\\opcode-native-validation\\run.ps1",
+        "remaining": "Support-only implementation; stack-store recording, TreeLifeUpdater and production emission remain unported. Existing allocation capture remains the execution frontier; managed emitted code is zero."
+      },
       "stackLocalMetadata": {
         "debugPassed": 333,
         "releasePassed": 320,
@@ -3256,12 +3269,20 @@
   },
   "sourceMap": [
     {
+      "area": "instruction-prefix-opcode-and-stack-size",
+      "native": ["src\\coreclr\\jit\\emitxarch.cpp:2013-2247,2523-2710,2837-2910,3093-3108,3746-3979,4208-4619,5144-5151,5304-5434,17733-18011", "src\\coreclr\\jit\\emitxarch.h:189-235,373,498-504,1298-1302", "src\\coreclr\\jit\\emit.h:624-635,1800-1924", "src\\coreclr\\jit\\compiler.h:11063-11131", "src\\coreclr\\jit\\instr.h:676"],
+      "csharp": ["sources\\Core\\jit\\emitxarch\\Emitter.PrefixDecisions.cs", "sources\\Core\\jit\\emitxarch\\Emitter.PrefixInstructionQueries.cs", "sources\\Core\\jit\\emitxarch\\Emitter.PrefixRegisters.cs", "sources\\Core\\jit\\emitxarch\\Emitter.PrefixSizes.cs", "sources\\Core\\jit\\emitxarch\\Emitter.AddressMode.cs", "sources\\Core\\jit\\emitxarch\\Emitter.instrDesc.PrefixContexts.cs", "sources\\Core\\jit\\emitxarch\\Emitter.instrDesc.Registers.cs", "sources\\Core\\jit\\emit\\Emitter.instrDesc.Address.cs", "sources\\Core\\jit\\compiler\\Compiler.PrefixStress.cs", "sources\\Core\\jit\\emitxarch\\Emitter.InstructionSizes.cs", "sources\\Core\\jit\\emitxarch\\Emitter.DisplacementCompression.cs", "sources\\Core\\jit\\emitxarch\\Globals.InstructionOpcodes.cs", "sources\\Core\\jit\\emitxarch\\Globals.InstructionOpcodes.generated.cs", "sources\\GenerateTables\\Program.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete Windows-AMD64 prefix selection/query closure, native-width opcode lookup, stack-local size adjustment and all EVEX displacement tuple paths. Other-target prefix paths reject where required. Descriptor address/register union and custom bits preserve native aliasing. General address/register sizing, instruction recording and final encoding remain ahead; no production emission activation."
+    },
+    {
       "area": "stack-local-instruction-metadata",
       "native": ["src\\coreclr\\jit\\emit.cpp:767-857", "src\\coreclr\\jit\\emit.h:416-445,611-620,700-773,1390-1510,2038-2047", "src\\coreclr\\jit\\emitfmtsxarch.h", "src\\coreclr\\jit\\emitxarch.cpp:4060-4135", "src\\coreclr\\jit\\instr.cpp:2464-2603", "src\\coreclr\\jit\\compiler.h:10872-10924", "src\\coreclr\\jit\\simd.cpp:66-102"],
       "csharp": ["sources\\Core\\jit\\emit\\emitLclVarAddr.cs", "sources\\Core\\jit\\emit\\Emitter.instrDesc.Address.cs", "sources\\Core\\jit\\emit\\Emitter.instrDesc.Formats.cs", "sources\\Core\\jit\\emit\\Emitter.InstructionFormats.cs", "sources\\Core\\jit\\emit\\Emitter.InstructionFormats.generated.cs", "sources\\Core\\jit\\emitxarch\\Emitter.InstructionUpdateModes.generated.cs", "sources\\Core\\jit\\instr\\CodeGen.StoreSelection.cs", "sources\\Core\\jit\\simd\\Compiler.LocalAlignment.cs", "sources\\GenerateTables\\Program.cs"],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Complete local-address packing/decoding with native limits; stack-local descriptor address variant; xarch format/update/scheduling metadata and AMD64 APX NDD selection; xarch ins_Store and SIMD local-alignment policy. Other descriptor address variants and stack-store size/prefix/encoding entrypoints remain unported. Production emission stays explicitly skipped."
+      "status": "Complete local-address packing/decoding with native limits; stack-local descriptor address variant; xarch format/update/scheduling metadata and AMD64 APX NDD selection; xarch ins_Store and SIMD local-alignment policy. Prefix/stack sizing and additional address/register variants are now covered in instruction-prefix-opcode-and-stack-size. Store recording and encoding remain unported. Production emission stays explicitly skipped."
     },
     {
       "area": "emitter-locations-and-variable-live-ranges",

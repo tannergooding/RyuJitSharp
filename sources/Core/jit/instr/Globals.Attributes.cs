@@ -9,6 +9,8 @@ public static partial class Globals
 {
     public static emitAttr EA_SIZE(emitAttr attr) => attr & EA_SIZE_MASK;
 
+    public static uint EA_SIZE_IN_BYTES(emitAttr attr) => (uint)EA_SIZE(attr);
+
     public static bool EA_IS_GCREF(emitAttr attr) => (attr & EA_GCREF_FLG) != 0;
 
     public static bool EA_IS_BYREF(emitAttr attr) => (attr & EA_BYREF_FLG) != 0;

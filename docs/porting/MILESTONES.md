@@ -14,6 +14,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Instruction prefixes and stack sizing
+
+Windows-x64 instruction sizing now accounts for legacy, VEX, EVEX and APX
+prefixes, operand widths, extended registers and stack addressing. EVEX
+displacement compression retains native tuple scaling, embedded broadcasts,
+signed boundaries and the preference for smaller VEX encodings where possible.
+Generated opcode tables preserve native ordering and pre-encoded prefix bits.
+
+This closes sizing dependencies needed by real local spill stores. Instruction
+recording, store emission and tree-lifetime activation remain ahead; production
+code generation is still explicitly skipped.
+
 ## 2026-09-25: Stack-local instruction metadata
 
 Instruction descriptors now retain native stack-local address encodings,
