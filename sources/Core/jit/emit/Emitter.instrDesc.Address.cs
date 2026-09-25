@@ -29,6 +29,9 @@ public partial class Emitter
 
             [FieldOffset(0)]
             internal uint iiaRegisterBits;
+
+            [FieldOffset(0)]
+            public bool iiaSecRel;
 #endif
         }
 

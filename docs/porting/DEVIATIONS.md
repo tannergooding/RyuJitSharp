@@ -997,17 +997,20 @@ without adding success-shaped fallbacks on the active path.
 **Status:** temporary implementation boundary along the existing native Debug
 `opts.dspCode` predicate, not an accepted diagnostic difference.
 
-Windows-AMD64 `emitIns_S_R`, `emitIns_S_R_I`, both `emitIns` overloads and
-`emitIns_Nop` record complete native descriptors and sizes. Their `dispIns` path
+Windows-AMD64 `emitIns_S_R`, `emitIns_S_R_I`, `emitIns_R_S`, `emitIns_R_I`,
+`emitIns_R_R`, `emitIns_Mov`, both `emitIns` overloads and `emitIns_Nop`
+record complete native descriptors and sizes. Their `dispIns` path
 preserves sanity, stack-depth, logical-size and conditional statistics checks.
 In Debug, these entrypoints reject requested
 instruction disassembly with `CORJIT_SKIPPED` before move elision or descriptor
 allocation; the native `emitDispIns` body remains unported. Release retains the
 native absence of that immediate-disassembly call.
 
-Native roots are `emitxarch.cpp:5945,5962,6019,9407,10574` and `emit.cpp:1611`;
-the managed specialization is in `emitxarch/Emitter.StackStores.cs` and
-`emitxarch/Emitter.ZeroOperandInstructions.cs`. The pre-mutation rejection is
+Native roots are `emitxarch.cpp:5945,5962,6019,7168,7798,8090,9407,10574,10609`
+and `emit.cpp:1611`; the managed specialization is in
+`emitxarch/Emitter.StackStores.cs`, `Emitter.StackLoads.cs`,
+`Emitter.RegisterInstructions.cs`, `Emitter.RegisterMoves.cs` and
+`Emitter.ZeroOperandInstructions.cs`. The pre-mutation rejection is
 covered for every recording entrypoint. Retain the mixed-mode
 native bodies until full disassembly is ported. This does not activate production
 emission or waive future `jitdump`/`jitdisasm` parity.

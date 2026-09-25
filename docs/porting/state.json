@@ -12,15 +12,15 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Activate complete Windows-AMD64 fgCreateFunclets with native handler relocation, required loop-head prolog blocks, ordered descriptor/clause maps and current-funclet selection. Replace unused native descriptor/map pointers with owned managed arrays under D002; port the common descriptor header, leaving unwind/location payloads for their actual consumers.",
+      "scope": "Complete native register consumption/production and their required copy/reload/spill closure for Windows AMD64. Add real register/register and register/immediate recording under D005 as an independent emitter dependency; retain native scalar/multireg liveness and GC ownership. Keep production emission skipped.",
       "doneWhen": [
-        "Port fgCreateFunclets, fgCreateFuncletPrologBlocks and fgInsertFuncletPrologBlock (flowgraph.cpp:3003-3262), with complete handler-range relocation (fgbasic.cpp:5323-5548) and required predecessor classification.",
-        "Preserve clause ordering, filter-before-handler indices, ref identity, enclosing EH range ends, backedges and profile weights. Wire genUpdateCurrentFunclet through real descriptor lookups.",
-        "Validate Debug/Release, republish a local NativeAOT library and compare the native-host funclet/allocation frontier; record concrete defects and commit the coherent phase."
+        "Port complete genConsumeReg/genConsumeRegs/genProduceReg and required copy/reload/spill functions, preserving consumption order, local homes, multireg fields, temporary ownership and register GC transitions.",
+        "Integrate complete AMD64 emitIns_R_R and emitIns_R_I dependency closures with actual descriptors, encoding sizes and pre-mutation rejection of unported optional disassembly.",
+        "Validate the integrated dependency closure in Debug/Release and commit coherent completed portions before moving to per-node generation."
       ],
       "validation": [
-        "Reuse prologEpilogPlaceholders.selection with focused root/filter/shared-try ordering and loop-head split cases; reuse existing flowgraph/exceptional predecessor coverage.",
-        "Refresh native-host minopts evidence because fgCreateFunclets is on the production path. Preserve exact phase diagnostics and explicit emission skips; native fallback is not managed execution."
+        "Reuse funcletCreation.selection, adding focused register-recording and register consume/produce/spill cases at the closure boundary rather than after each helper.",
+        "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
         "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Funclet creation/current-function selection is integrated and validated (900 Debug/871 Release). Fresh native-host evidence is in funcletCreation.nativeHost: 20/20 funclet bodies/result graphs and 19/20 allocation sections. Continue required scalar codegen dependencies, beginning with full genConsumeReg overloads/genConsumeRegs and genProduceReg (codegenlinear.cpp:1502,1573,1691,2161), following their copy/reload/spill and register-recording dependencies as one coherent closure. Required register/immediate and register/register emitter roots are emitxarch.cpp:7168 and 8090. genCodeForBlock at codegenlinear.cpp:237 and genEmitEndBlock at 701 still require per-node generation, exits/jumps/calls, alignment recording and debug support; genEmitStartBlock at 985 is genuinely empty for non-Wasm. Keep genGenerateCode explicitly skipped until its complete closure is ready. Do not revisit the established B135 diagnostic difference or manufacture unwind metadata.",
+    "nextAction": "Port the complete AMD64 CodeGen.instGen_Set_Reg_To_Imm starting at codegenxarch.cpp:215 and its constant-materialization consumers as the next node-generation dependency. Register consume/produce/copy/reload/spill and register/stack instruction recording are complete and validated. Do not activate a reduced block loop or genGenerateCode. Reuse funcletCreation.nativeHost until reachable production behavior changes.",
     "handoff": {
-      "status": "funclet-creation-validated",
+      "status": "register-consume-produce-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All prefix, opcode-comparison and constant/displacement packets are fully collected, frozen and integrated. Constant worker b6e1f160-b3d7-4126-bf91-39bc8de2e495 returned four new files without shared allocation/schema edits. No active or unread workers; no app-native child sessions.",
+      "workerPackets": "Register-recording worker a7f6ecaf-b706-4be6-83c3-c83235b7452f is fully collected, frozen and integrated, including its test-fixture follow-ups. All older packets remain integrated. No active or unread workers; no app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "registerValues": {
+        "debugPassed": 991,
+        "releasePassed": 958,
+        "skipped": 0,
+        "selection": "funcletCreation.selection plus EmitterRegisterInstructionTests and CodeGenRegisterValueTests.",
+        "debugTests": "artifacts\\register-values-integrated-debug.trx",
+        "releaseTests": "artifacts\\register-values-integrated-release.trx",
+        "coverage": "Native register/immediate and register/register descriptors, immediate/relocation widths, prefix options and instruction sizing, move elision and bounded backward searches; normalize-on-load widths, write-through GC roots, last-use live ranges, alternate-register temporary reloads, spill-list identity/unlinking/reuse, permanent versus temporary local copies, source-copy-before-field-reload ordering, contained operand consumption, register-class copy selection and pre-mutation D005 rejection.",
+        "remaining": "Production emission remains explicitly skipped. Reuses funcletCreation.nativeHost because these helpers are below that boundary. No encoding, managed execution or new native-host parity claim. Native reload-mask and multi-register local index questions are recorded without behavioral changes as B211/B212."
+      },
       "funcletCreation": {
         "debugPassed": 900,
         "releasePassed": 871,
@@ -3386,6 +3396,22 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "register-values-and-spill-ownership",
+      "native": ["src\\coreclr\\jit\\codegenlinear.cpp:1154-1843,2129-2346", "src\\coreclr\\jit\\codegencommon.cpp:1140-1151,8248-8429", "src\\coreclr\\jit\\regset.cpp:291-446,494-570,997-1026", "src\\coreclr\\jit\\instr.cpp:736-780,890-899,2046-2449", "src\\coreclr\\jit\\gentree.h:10294-10404", "src\\coreclr\\jit\\gentree.cpp:1072-1107", "src\\coreclr\\jit\\codegen.h:1377-1384"],
+      "csharp": ["sources\\Core\\jit\\codegenlinear\\CodeGen.ConsumeRegisters.cs", "sources\\Core\\jit\\codegenlinear\\CodeGen.ProduceRegisters.cs", "sources\\Core\\jit\\codegenlinear\\CodeGen.UnspillRegisters.cs", "sources\\Core\\jit\\codegencommon\\CodeGen.CopyRegisters.cs", "sources\\Core\\jit\\codegencommon\\CodeGen.SpillRegisters.cs", "sources\\Core\\jit\\regsset\\RegSet.TreeSpills.cs", "sources\\Core\\jit\\instr\\CodeGen.LoadSelection.cs", "sources\\Core\\jit\\instr\\CodeGen.RegisterCopies.cs", "sources\\Core\\jit\\gentree\\GenTree.RegisterSpills.cs", "sources\\Core\\jit\\gentree\\GenTree.CodeGen.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete Windows-AMD64 scalar and multireg local/hardware consume/produce/copy/reload/spill paths, debug use numbering and consumption checks, load/copy selection and typed spill-temp ownership. Reuses TreeLifeUpdater, GCInfo and existing temp allocation. The native local-reference diagnostic assignment is inline in genUnspillLocal. Windows uses its existing single-register-call ABI; other-target multireg-call masks explicitly reject. B211/B212 native questions remain unchanged. Production emission is not activated."
+    },
+    {
+      "area": "register-and-stack-load-instruction-recording",
+      "native": ["src\\coreclr\\jit\\emitxarch.cpp:7168-7367,7798-8127,10609-10636", "src\\coreclr\\jit\\emitxarch.cpp:48-69,530-538,1040-1047,1183-1311,1347-1510,2553-2579,4909-4919,5105-5134,5234-5293", "src\\coreclr\\jit\\emitxarch.h:482-491,535-650", "src\\coreclr\\jit\\emit.h:3161-3204", "src\\coreclr\\jit\\emit.cpp:3396-3447"],
+      "csharp": ["sources\\Core\\jit\\emitxarch\\Emitter.RegisterInstructions.cs", "sources\\Core\\jit\\emitxarch\\Emitter.RegisterInstructionSizes.cs", "sources\\Core\\jit\\emitxarch\\Emitter.RegisterInstructionOptions.cs", "sources\\Core\\jit\\emitxarch\\Emitter.RegisterMoves.cs", "sources\\Core\\jit\\emitxarch\\Emitter.RegisterPeepholes.cs", "sources\\Core\\jit\\emitxarch\\Emitter.StackLoads.cs", "sources\\Core\\jit\\emit\\Emitter.instrDesc.Address.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 emitIns_R_I, emitIns_R_R, emitIns_Mov and emitIns_R_S with required descriptor, sizing, prefix-option, implicit-register-write and bounded move-elision dependencies under D005. Preserves the native Debug prohibition and Release MOV fallthrough in emitIns_R_R. Reuses owned descriptor traversal and adds only the native iiaSecRel address-union overlay. No final encoding."
+    },
     {
       "area": "funclet-creation-and-current-function-selection",
       "native": ["src\\coreclr\\jit\\flowgraph.cpp:3003-3262", "src\\coreclr\\jit\\fgbasic.cpp:584-588,5032-5066,5323-5548", "src\\coreclr\\jit\\jiteh.cpp:661-665,1095-1109,4277-4395", "src\\coreclr\\jit\\compiler.hpp:813-871", "src\\coreclr\\jit\\compiler.h:1800-1828,13490-13518", "src\\coreclr\\jit\\codegencommon.cpp:2133-2142"],

@@ -29,7 +29,7 @@ public partial class Emitter
     protected int emitInsCount;
 
 #if DEBUG
-    protected int emitVarRefOffs;
+    protected internal int emitVarRefOffs;
 #else
     protected const int emitVarRefOffs = 0;
 #endif

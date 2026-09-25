@@ -14,6 +14,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Register values, copies and reloads
+
+Code-generation support now consumes and produces register values in native
+order, including local-home changes, temporary spills, reloads and GC-register
+transitions. Multi-register copies preserve a source before a later field reload
+can overwrite it. Reloads retain narrow-local normalization and debug live-range
+boundaries.
+
+The emitter records register moves, register/immediate operations and stack
+loads, preserving instruction sizes, relocation metadata and native move
+elision. These are dependencies of node generation, not emitted machine code:
+the production emission boundary remains explicitly skipped.
+
 ## 2026-09-25: Native EH funclet creation
 
 The funclet-creation phase now relocates handlers, keeps filters adjacent to

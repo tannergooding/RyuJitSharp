@@ -199,7 +199,8 @@ internal static unsafe class CodeGenSpillVariableTests
         });
     }
 
-    internal static void WithCompiler(var_types type, regNumber reg, Action<Compiler, CodeGen, GenTree> action)
+    internal static void WithCompiler(var_types type, regNumber reg, Action<Compiler, CodeGen, GenTree> action,
+        bool minopts = true)
     {
 #if DEBUG
         using var tls = new JitTls(null);
@@ -209,7 +210,7 @@ internal static unsafe class CodeGenSpillVariableTests
         JitFlags flags = default;
         CORINFO_METHOD_INFO methodInfo = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.opts.SetMinOpts(minopts);
         compiler.info.compMethodInfo = &methodInfo;
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
         compiler.info.compTypeCtxtArg = BAD_VAR_NUM;
