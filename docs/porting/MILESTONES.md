@@ -14,6 +14,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Prolog and epilog reservations
+
+Code generation can now reserve main-function and funclet prolog/epilog groups,
+retaining the GC snapshots needed for later out-of-order generation. Reservations
+preserve group ordering, estimated offsets and funclet debug mappings, and force
+the following group to report its GC state.
+
+Epilogs separate preceding calls from their unwind region with native padding
+and end active no-GC regions when more code follows. Actual prolog/epilog
+generation, unwind metadata and production block generation remain unported.
+
 ## 2026-09-25: Block debug scopes and IL mappings
 
 Block-level debug support now opens untracked-local scopes, catches up across IL

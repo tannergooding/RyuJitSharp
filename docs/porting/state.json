@@ -12,15 +12,15 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete block debug-scope lifecycle and IP mapping recording/display, including genEnsureCodeEmitted and its existing native zero-operand wrapper. Correct the existing sorted-scope cursor accessors, which currently bypass their sorted index arrays, before using them for scope opening.",
+      "scope": "Port complete AMD64 emitter prolog/epilog placeholder creation and the four codegen reservation wrappers. Preserve native group transitions, GC snapshots, funclet mappings, call-return padding and epilog no-GC reset. Funclet descriptor production and final placeholder expansion remain separate dependencies.",
       "doneWhen": [
-        "Preserve native scope enablement, funclet suppression, IL-gap cursor catch-up and referenced-local policy; prove sorted cursors return the original descriptors by reference.",
-        "Preserve mapping kind/source-flag identity, append/prepend order, exact diagnostics and required debug-code padding at unchanged emitter locations.",
-        "Validate the complete packet in Debug/Release, record the scope-index defect and commit before continuing block generation. Final mapping publication and rich debug metadata remain deferred."
+        "Port emitCreatePlaceholderIG at emit.cpp:2090-2260 for every native placeholder kind, including AMD64 pre-epilog padding and the complete last/non-last branches.",
+        "Wire genReserveProlog, genReserveEpilog, genReserveFuncletProlog and genReserveFuncletEpilog to real placeholders; retain the existing no-emitter-statistics storage boundary.",
+        "Validate group ownership, snapshot aliasing, ordering, estimated offsets, last-instruction invalidation, funclet mappings and conditional GC reset in Debug/Release, then commit."
       ],
       "validation": [
-        "Reuse blockEntryState.selection; add a failing-before-fix sorted-scope regression and focused block-scope/mapping ordering, flag identity, location and diagnostic cases.",
-        "Reuse the exact allocation-activation capture; republish only if reachable production behavior changes. B145 remains deferred."
+        "Reuse blockScopesAndMappings.selection and add focused EmitterPlaceholderTests through the codegen reservation entrypoints.",
+        "Reuse the scope-mapping native-host capture: this packet remains below the explicit emission skip and does not change reachable production behavior. B145 remains deferred."
       ],
       "deferred": [
         "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
@@ -32,9 +32,9 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Block scopes and IL mapping recording are complete (811 Debug/794 Release), including the B209 sorted-scope cursor repair and its debug basic-block consumer. Continue the genCodeForBlock dependency closure with genUpdateCurrentFunclet at codegencommon.cpp:2133 and genReserveFuncletProlog at 4879; inspect their emitter placeholder dependencies before defining the next coherent batch. genEmitStartBlock at codegenlinear.cpp:985 is genuinely empty for non-Wasm. Rich mappings, Debug operand numbering, per-node generation, encoding and final metadata remain. Do not activate a reduced block loop or genGenerateCode. General enregistered-local candidate construction remains unsupported.",
+    "nextAction": "Prolog/epilog placeholder creation and all four reservation wrappers are complete (822 Debug/804 Release). Continue with genUpdateCurrentFunclet at codegencommon.cpp:2133 and its complete function-index helpers at compiler.hpp:813-871/GetStartBlock at compiler.h:13500. FuncInfoDsc is currently empty and compFuncInfos is an unused native pointer; inspect the native descriptor producer before choosing the required storage closure. Preserve existing EH indices/filter-before-handler ordering, not fabricated funclet metadata. genEmitStartBlock at codegenlinear.cpp:985 is genuinely empty for non-Wasm. Full genCodeForBlock, node generation, placeholder expansion, encoding and final metadata remain; keep emission explicitly skipped.",
     "handoff": {
-      "status": "block-scopes-mappings-validated",
+      "status": "prolog-epilog-placeholders-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
       "workerPackets": "All prefix, opcode-comparison and constant/displacement packets are fully collected, frozen and integrated. Constant worker b6e1f160-b3d7-4126-bf91-39bc8de2e495 returned four new files without shared allocation/schema edits. No active or unread workers; no app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "prologEpilogPlaceholders": {
+        "debugPassed": 822,
+        "releasePassed": 804,
+        "skipped": 0,
+        "selection": "blockScopesAndMappings.selection plus EmitterPlaceholderTests.",
+        "debugTests": "artifacts\\placeholders-debug.trx",
+        "releaseTests": "artifacts\\placeholders-release.trx",
+        "coverage": "All four reservation kinds, empty-group reuse and function-index refresh, nonempty extension groups, distinct previous/initial owned GC snapshots, placeholder linkage and estimated offsets, funclet mapping positions, last/non-last transitions, epilog-only no-GC reset, required padding after GC and no-GC calls, last-instruction invalidation and pre-mutation D005 rejection.",
+        "remaining": "Placeholder creation is recording, not prolog/epilog generation or encoding. Funclet descriptor production/current-function switching, placeholder expansion, final unwind/debug metadata and the production block loop remain. Reuses blockScopesAndMappings.nativeHost because no reachable production behavior changes."
+      },
       "blockScopesAndMappings": {
         "debugPassed": 811,
         "releasePassed": 794,
@@ -3347,6 +3357,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "prolog-epilog-placeholder-reservations",
+      "native": ["src\\coreclr\\jit\\emit.cpp:2090-2260", "src\\coreclr\\jit\\emit.h:404", "src\\coreclr\\jit\\emitxarch.cpp:3722-3741", "src\\coreclr\\jit\\codegencommon.cpp:4849-4915"],
+      "csharp": ["sources\\Core\\jit\\emit\\Emitter.Placeholders.cs", "sources\\Core\\jit\\codegencommon\\CodeGen.PrologEpilogReservations.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 emitCreatePlaceholderIG and four reservation wrappers; native call-before-epilog padding, distinct GC snapshots, estimated offsets, ordered placeholder links, funclet mappings and no-GC continuation policy. Reuses the existing managed group/placeholder representation and no-emitter-statistics boundary. Final placeholder expansion and production block generation remain unported."
+    },
     {
       "area": "block-scopes-and-il-mapping-recording",
       "native": ["src\\coreclr\\jit\\scopeinfo.cpp:1610-1787", "src\\coreclr\\jit\\compiler.cpp:7328-7415", "src\\coreclr\\jit\\compiler.h:2712-2726", "src\\coreclr\\jit\\codegencommon.cpp:6606-6795", "src\\coreclr\\jit\\debuginfo.h", "src\\coreclr\\jit\\instr.cpp:486-490", "src\\coreclr\\jit\\ee_il_dll.cpp:1067-1070"],

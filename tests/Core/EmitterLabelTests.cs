@@ -154,7 +154,7 @@ internal static class EmitterLabelTests
 
 #endif
 
-    private static Emitter.instrDesc RecordCallDescriptor(Emitter emitter, bool noGc)
+    internal static Emitter.instrDesc RecordCallDescriptor(Emitter emitter, bool noGc)
     {
         var call = EmitterInstructionAllocationTests.Allocate(emitter, EA_PTRSIZE);
         call.idIns(INS_call);
