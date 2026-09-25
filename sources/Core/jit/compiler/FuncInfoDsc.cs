@@ -5,7 +5,7 @@
 
 namespace RyuJitSharp;
 
-public struct FuncInfoDsc
+public partial struct FuncInfoDsc
 {
     public FuncKind funKind;
     public byte funFlags;

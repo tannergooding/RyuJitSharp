@@ -7,6 +7,13 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    public bool lvaIsCalleeSavedIntRegCountEven()
+    {
+        assert(codeGen is not null);
+        var regsPushed = compCalleeRegsPushed + (codeGen.IsFramePointerUsed ? 1 : 0);
+        return (regsPushed % (16 / REGSIZE_BYTES)) == 0;
+    }
+
     public int lvaCachedGenericContextArgOffset()
     {
         assert(lvaDoneFrameLayout == FINAL_FRAME_LAYOUT);

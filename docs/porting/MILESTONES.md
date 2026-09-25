@@ -14,6 +14,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Prolog frame setup, unwind recording and argument homes
+
+Windows-x64 prolog support now allocates and probes stack frames, establishes
+the frame pointer, and saves integer and floating callee-saved registers.
+APX paired pushes retain native alignment and register order. Unwind recording
+preserves the native header and reverse-written operation encodings.
+
+Incoming parameters can now move to their stack and register homes, including
+promoted locals, write-through homes and register cycles. Varargs preserve the
+four incoming integer registers in their ABI shadow slots. Full prolog/epilog
+materialization, machine-code encoding and runtime metadata publication remain
+necessary before production emission can be enabled.
+
 ## 2026-09-25: Prolog initialization and final jump placement
 
 Prolog support now initializes stack locals, GC spill temps and floating

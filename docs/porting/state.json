@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete Windows-AMD64 prolog initialization helpers and final jump/alignment placement. Frame finalization is committed c75db19; production emission remains explicitly unavailable.",
+      "scope": "Complete Windows-AMD64 prolog frame setup, unwind recording and incoming-argument homing. Initialization and final jump placement are committed 3ae62d3; production emission remains explicitly unavailable.",
       "doneWhen": [
-        "Port complete genZeroInitFrame, block/SIMD clearing, genZeroInitFltRegs, genSetGSSecurityCookie and genReportGenericContextArg with native scratch-register and initialization contracts.",
-        "Port complete native emitJumpDistBind and emitLoopAlignAdjustments; retain displacement widths, offsets, group flags and hot/cold constraints.",
+        "Port complete stack allocation/frame establishment, integer/floating callee-save recording and associated unwind prolog byte encoding.",
+        "Port complete native incoming register/stack argument homing and required cycle/move helpers without an alternate scalar-only algorithm.",
         "Validate each integrated closure in Debug/Release and commit; retain production activation, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Run focused prolog initialization and jump/alignment regressions in Debug/Release, extending with relevant existing emitter and frame tests.",
+        "Run focused prolog setup, unwind byte encoding and parameter homing regressions in Debug/Release, extending with relevant existing emitter and frame tests.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Frame finalization/jump removal is committed c75db19. Complete prolog initialization helpers and jump-distance/final-alignment placement now pass 384 Debug/352 Release (zero skipped). Continue with Windows-AMD64 genAllocLclFrame and genEstablishFramePointer (codegenxarch.cpp:2382-2510), integer/floating callee-save recording and the required unwind prolog recording APIs; reuse retained workers for independent Windows unwind recording and incoming-argument homing. Full genFnProlog/genFnEpilog, funclet materialization and genGeneratePrologsAndEpilogs remain unported. Encoding and required runtime publication remain ahead; keep production genGenerateCode CORJIT_SKIPPED and managed native-code size zero.",
+    "nextAction": "Frame setup, unwind recording and parameter homing are integrated and validated with 320 Debug/300 Release cases, zero skipped, in artifacts\\prolog-setup-{debug,release}.trx. Continue complete root/funclet prolog and epilog materialization, including OSR and profiling support. Native genFnProlog is codegencommon.cpp:5196-6040; its emitter prolog boundaries, scope tracking, profiling entry and OSR dependencies still need implementation. Reuse completed initialization/frame/homing/unwind helpers rather than translating them again. Keep production genGenerateCode CORJIT_SKIPPED and managed native-code size zero until the complete encoding/publication closure is ready.",
     "handoff": {
-      "status": "prolog-initialization-and-final-placement-validated",
+      "status": "prolog-frame-setup-unwind-and-homing-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Both GPT-6 Sol packets are frozen, collected and integrated: d62fc6a5-a4dd-40be-8b42-5de1405b22b7 through turn15 (jump distance binding), and 942a496f-db30-4389-a403-265f28fdb23c through turn9 (final loop alignment). Parent prolog initialization and combined dependency validation are complete. No unread handoffs or app-native child-session coordination.",
+      "workerPackets": "Both GPT-6 Sol packets are collected, frozen and integrated: d62fc6a5-a4dd-40be-8b42-5de1405b22b7 through turn20 (unwind); 942a496f-db30-4389-a403-265f28fdb23c through turn14 (parameter homing). Combined dependency validation passed 320 Debug/300 Release. Workers are idle and reusable for concrete next-batch lanes. No app-native child-session coordination.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -52,6 +52,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "prologFrameSetupUnwindAndHoming": {
+        "debugPassed": 320,
+        "releasePassed": 300,
+        "skipped": 0,
+        "selection": "CodeGenPrologFrameSetupTests, UnwindPrologRecordingTests, CodeGenParameterHomingTests, CodeGenFrameInitializationTests, CodeGenFrameFinalizationTests, CompilerFinalFrameLayoutTests, CodeGenPrologInitializationTests, CodeGenHelperCallTests, EmitterRegisterInstructionTests, EmitterSimdRegisterInstructionTests, CodeGenRegisterArgumentTests and AbiShadowSpaceTests",
+        "debugTests": "artifacts\\prolog-setup-debug.trx",
+        "releaseTests": "artifacts\\prolog-setup-release.trx",
+        "coverage": "Frame-pointer MOV/LEA, zero/single-push/subtraction/probed frames, scratch state, native/APX callee-save order, aligned low-128-bit vector saves/restores, AVX clearing and varargs shadow slots. Byte-level unwind allocation thresholds, push order, frame-register encoding, near/far saves and root/funclet locations. Register/stack and promoted/write-through parameter homes, integer/floating cycles, SIMD, secret-stub parameters and live-in incoming stack arguments.",
+        "remaining": "Complete root/funclet prolog/epilog materialization, encoding, executable allocation and runtime metadata publication precede production activation. Reuse funcletCreation.nativeHost; instruction recording and unwind-byte tests are not executable-code parity."
+      },
       "prologInitializationAndPlacement": {
         "debugPassed": 384,
         "releasePassed": 352,
@@ -3896,6 +3906,27 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "windows-amd64-prolog-frame-setup",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:2382-2508,10118-10259,11401-11538", "src\\coreclr\\jit\\emitxarch.cpp:6236-6269", "src\\coreclr\\jit\\lclvars.cpp:lvaIsCalleeSavedIntRegCountEven"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.PrologFrameSetup.cs", "sources\\Core\\jit\\codegenxarch\\CodeGen.CalleeSaveRecording.cs", "sources\\Core\\jit\\emitxarch\\Emitter.VarArgsHoming.cs", "sources\\Core\\jit\\compiler\\Compiler.FinalFrameLayout.cs:lvaIsCalleeSavedIntRegCountEven"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete Windows-AMD64 frame allocation/probing, frame-pointer establishment, integer/APX pushes, floating saves/restores, AVX clearing and varargs shadow-slot homing. Root and funclet prolog/epilog orchestration remains pending."
+    },
+    {
+      "area": "windows-amd64-unwind-prolog-recording",
+      "native": ["src\\coreclr\\jit\\unwindamd64.cpp:135-505", "src\\coreclr\\jit\\unwind.cpp:49-123,426-435"],
+      "csharp": ["sources\\Core\\jit\\unwindamd64\\"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete Windows-AMD64 prolog/epilog recording boundaries, pushes, stack allocation, frame-register setup and integer/vector save encodings with function locations and native unwind storage. Unwind reservation and publication remain pending."
+    },
+    {
+      "area": "windows-amd64-parameter-homing",
+      "native": ["src\\coreclr\\jit\\codegencommon.cpp:3052-3278,3363-3450,3460-3703,3728-3827,8482-8487"],
+      "csharp": ["sources\\Core\\jit\\codegencommon\\CodeGen.ParameterHoming.cs", "sources\\Core\\jit\\codegencommon\\CodeGen.ParameterHomingGraph.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete Windows-AMD64 incoming register/stack parameter homing and register move-graph/cycle support, including promoted and write-through homes, SIMD and secret-stub arguments. Production prolog invocation remains pending."
+    },
     {
       "area": "windows-amd64-prolog-initialization",
       "native": ["src\\coreclr\\jit\\codegencommon.cpp:4084-4325,4654-4756", "src\\coreclr\\jit\\codegenxarch.cpp:37-83,11129-11397", "src\\coreclr\\jit\\codegen.h:56-62", "src\\coreclr\\jit\\instr.cpp:1740-1743", "src\\coreclr\\jit\\compiler.hpp:2723-2728", "src\\coreclr\\jit\\emit.cpp:3615-3633"],

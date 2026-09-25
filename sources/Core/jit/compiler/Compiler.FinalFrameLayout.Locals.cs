@@ -449,7 +449,7 @@ public partial class Compiler
         }
 
         assert((compLclFrameSize % REGSIZE_BYTES) == 0);
-        var regPushedCountAligned = ((compCalleeRegsPushed + (codeGen.IsFramePointerUsed ? 1 : 0)) % 2) == 0;
+        var regPushedCountAligned = lvaIsCalleeSavedIntRegCountEven();
         var lclFrameSizeAligned = (compLclFrameSize % STACK_ALIGN) == 0;
         if ((!codeGen.IsFramePointerUsed && (lvaDoneFrameLayout != FINAL_FRAME_LAYOUT)) ||
             ((compLclFrameSize != 0) && (regPushedCountAligned == lclFrameSizeAligned)))
