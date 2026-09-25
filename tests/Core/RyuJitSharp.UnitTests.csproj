@@ -10,4 +10,13 @@
     <ProjectReference Include="..\..\sources\Core\RyuJitSharp.csproj" />
   </ItemGroup>
 
+  <Target Name="GetRyuJitCompileConstants" BeforeTargets="CoreCompile">
+    <MSBuild Projects="@(ProjectReference)" Targets="GetRyuJitCompileConstants" Properties="Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" ItemName="_RyuJitCompileConstants" />
+    </MSBuild>
+    <PropertyGroup>
+      <DefineConstants>$(DefineConstants);@(_RyuJitCompileConstants)</DefineConstants>
+    </PropertyGroup>
+  </Target>
+
 </Project>

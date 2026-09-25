@@ -2,6 +2,8 @@
 <!-- Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information. -->
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <Target Name="GetRyuJitCompileConstants" Returns="$(DefineConstants)" />
+
   <ItemGroup>
     <InternalsVisibleTo Include="RyuJitSharp.UnitTests" />
   </ItemGroup>

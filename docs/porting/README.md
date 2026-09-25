@@ -318,6 +318,10 @@ smallest relevant test selection once tests exist, and verify a nonzero count.
 Focused output tests do not establish compiler coverage. NativeAOT publish and
 native loading are separate gates from these managed builds.
 
+The core test project obtains compilation symbols from the referenced core
+project before compiling. Target- and feature-guarded tests therefore use the
+implementation's actual configuration, rather than a separate symbol list.
+
 `AnalysisModeStyle=Default` preserves the prior style-rule selection: .NET 11
 otherwise also applies `AnalysisLevel=latest-all` to style diagnostics. Explicit
 `.editorconfig` rules, build-time style enforcement, all quality analyzers and

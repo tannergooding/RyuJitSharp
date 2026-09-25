@@ -652,11 +652,11 @@ internal static unsafe class AssertionTests
             var simdType = store.VNForFuncNoFolding(TYP_UNKNOWN, VNFunc.VNF_SimdType,
                 store.VNForIntCon(16), store.VNForIntCon((int)TYP_SHORT));
             var unknown = store.VNForExpr(null, TYP_SIMD16);
-            var compare = StoreFunctionRecord(store, TYP_SIMD16, VNFunc.VNF_HWI_SSE2_CompareEqual, unknown, unknown, simdType);
-            var bitwise = StoreFunctionRecord(store, TYP_SIMD16, VNFunc.VNF_HWI_SSE2_AndNot, compare, constant, simdType);
+            var compare = StoreFunctionRecord(store, TYP_SIMD16, VNFunc.VNF_HWI_X86Base_CompareEqual, unknown, unknown, simdType);
+            var bitwise = StoreFunctionRecord(store, TYP_SIMD16, VNFunc.VNF_HWI_X86Base_AndNot, compare, constant, simdType);
             Assert.That(store.IsVectorPerElementMask(compare, baseType, 16), Is.EqualTo(expected));
             Assert.That(store.IsVectorPerElementMask(bitwise, baseType, 16), Is.EqualTo(expected));
-            var unproven = StoreFunctionRecord(store, TYP_SIMD16, VNFunc.VNF_HWI_SSE2_AndNot, compare, unknown, simdType);
+            var unproven = StoreFunctionRecord(store, TYP_SIMD16, VNFunc.VNF_HWI_X86Base_AndNot, compare, unknown, simdType);
             Assert.That(store.IsVectorPerElementMask(unproven, baseType, 16), Is.False);
 #endif
         });
