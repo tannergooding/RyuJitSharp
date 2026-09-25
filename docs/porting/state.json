@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete Windows-AMD64 stack-argument generation and its native field-list, SIMD and three struct-copy modes. Reuse the existing argument-home field rather than duplicating native state. Independently integrate the collected empty-block optimization packet next; switch optimization and scope reporting remain worker-owned.",
+      "scope": "Complete native empty-block optimization and its EH/removal emptiness contracts, preserving catch-return behavior in statement and LIR modes. Scope reporting is collected for the next integration batch; switch optimization remains worker-owned.",
       "doneWhen": [
-        "Port complete genPutArgStk and genPutStructArgStk with field-list, SIMD, unroll, rep and partial-rep dependencies.",
-        "Preserve incoming/outgoing homes, scalar actual widths, field widths, GC slot recording, copy load sizes and native non-GC-run thresholds.",
+        "Port complete fgOptimizeEmptyBlock, preserving init/OSR/profile guards and catch-return EH boundaries.",
+        "Update required EH/removal assertions to native BasicBlock.isEmpty and lower inserted LIR no-ops through the existing Lowering instance.",
         "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Validate CodeGenStackArgumentTests with CodeGenRegisterArgumentTests, CodeGenCallInstructionTests, EmitterStackStoreTests and CodeGenLocalStoreTests in Debug/Release before committing.",
+        "Validate EmptyBlockOptimizationTests, FlowGraphCompactionTests, FlowGraphBranchThreadingTests and BlockSplittingTests in Debug/Release before committing.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,15 +32,14 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Stack arguments are integrated and validated (stackArguments), reusing existing _stkArgVarNum and adding only _stkArgOffset. Integrate collected artifacts\\empty-block-optimization-packet (b6e1f160 through turn 4): update native emptiness assertions in ehCanDeleteEmptyBlock and fgRemoveBlock to block.isEmpty(), integrate its two files, validate EmptyBlockOptimizationTests with compaction/branch-threading/EH tests and commit. Switch and scope-reporting workers remain outstanding; collect each after notification. General genCall orchestration, production dispatch and final emission remain separate.",
+    "nextAction": "Empty-block optimization is integrated and validated (emptyBlockOptimization). Integrate the collected three-file artifacts\\scope-reporting-packet (87f10c61 through turn 6); its handoff.txt specifies native reporting/EE functions. Replace placeholder Compiler.eeVars with ICorDebugInfo.NativeVarInfo*, reuse existing counts, centralize siInit's layout assertion via checkICodeDebugInfo, validate scope/keeper/location/call tests in Debug/Release and commit. Switch optimization worker a7f6ecaf remains outstanding; collect after notification. General genCall orchestration, full fgUpdateFlowGraph and production emission remain separate.",
     "handoff": {
-      "status": "stack-arguments-validated-empty-block-collected-switch-scope-in-flight",
+      "status": "empty-block-validated-scope-collected-switch-in-flight",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All previous handoffs collected: 4c9a8661-6e45-4e43-960d-7f3a779cdcde through turn 24 (stack arguments frozen, parent-owned); a7f6ecaf-b706-4be6-83c3-c83235b7452f through turn 26 (compaction parent-owned). Reused a7f6ecaf now owns artifacts\\switch-optimization-packet (fgOptimizeSwitchBranches/fgFoldCondToReturnBlock), b6e1f160-b3d7-4126-bf91-39bc8de2e495 owns artifacts\\empty-block-optimization-packet (fgOptimizeEmptyBlock), and 87f10c61-b152-4bdc-a27e-1ecfad4f6342 owns artifacts\\scope-reporting-packet (genSetScopeInfo overloads/ranges and checkICodeDebugInfo). Their earlier descriptor/live-range/opcode work is resolved. Workers stage new files only; no shared edits, builds, phase activation or publication. No app-native child sessions.",
+      "workerPackets": "4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn 24; stack arguments committed b46e045. b6e1f160-b3d7-4126-bf91-39bc8de2e495 collected through turn 4; empty-block packet integrated and validated. 87f10c61-b152-4bdc-a27e-1ecfad4f6342 collected through turn 6; three-file scope-reporting packet is frozen and parent-owned. a7f6ecaf-b706-4be6-83c3-c83235b7452f collected through turn 26 and actively owns only artifacts\\switch-optimization-packet (fgOptimizeSwitchBranches/fgFoldCondToReturnBlock). No uncollected earlier packets. No worker shared edits, builds, phase activation or publication; no app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
-        "fgOptimizeEmptyBlock",
         "fgDedupReturnComparison",
         "fgOptimizeUncondBranchToSimpleCond",
         "fgFoldSimpleCondByForwardSub",
@@ -59,6 +58,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "emptyBlockOptimization": {
+        "debugPassed": 200,
+        "releasePassed": 200,
+        "skipped": 0,
+        "selection": ["EmptyBlockOptimizationTests", "FlowGraphCompactionTests", "FlowGraphBranchThreadingTests", "BlockSplittingTests"],
+        "debugTests": "artifacts\\empty-block-debug.trx",
+        "releaseTests": "artifacts\\empty-block-release.trx",
+        "coverage": "60 new cases for IL/LIR empty representations, init entry references, OSR guards, self-loops, nonbranch exclusions, all threading modes for EH-sensitive catch-return no-op insertion, conditional collapse, predecessor and async-flag transfer, EH end updates and lexical-next/profile guards. Existing compaction and graph tests remain passing.",
+        "remaining": "Complete fgOptimizeEmptyBlock without full fgUpdateFlowGraph activation. B221's native emptiness correction extends to EH/removal assertions. LIR catch-return fixtures initialize real CodeGen/LinearScan/Lowering state. No production reachability change."
+      },
       "stackArguments": {
         "debugPassed": 143,
         "releasePassed": 128,
@@ -3687,6 +3696,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "empty-block-optimization",
+      "native": ["src\\coreclr\\jit\\fgopt.cpp:1433-1613"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.EmptyBlockOptimization.cs", "sources\\Core\\jit\\compiler\\Compiler.eh.cs:ehCanDeleteEmptyBlock", "sources\\Core\\jit\\compiler\\Compiler.fg.cs:fgRemoveBlock"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete native fgOptimizeEmptyBlock using existing removal and EH helpers, with mode-correct emptiness assertions and immediate lowering of inserted LIR no-ops. Preserves full profile/init/OSR/catch-return behavior. No full graph-update phase activation."
+    },
     {
       "area": "stack-argument-generation",
       "native": ["src\\coreclr\\jit\\codegenxarch.cpp:3434-3445,3733-3942,4016-4095,7523-7548,7941-8025,8119-8236", "src\\coreclr\\jit\\codegenlinear.cpp:1867-1985", "src\\coreclr\\jit\\codegencommon.cpp:6413-6443"],

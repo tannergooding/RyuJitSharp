@@ -10278,7 +10278,7 @@ public partial class Compiler
         }
         else // block is empty
         {
-            noway_assert(block.IsEmpty);
+            noway_assert(block.isEmpty());
 
             // The block cannot follow a non-retless BBJ_CALLFINALLY (because we don't know who may jump to it).
             noway_assert(!block.isBBCallFinallyPairTail);

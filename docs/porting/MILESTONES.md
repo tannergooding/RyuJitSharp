@@ -14,6 +14,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Empty-block optimization
+
+Empty-block optimization now preserves init and OSR entries, profile bookkeeping
+and catch-return EH boundaries. Removing a block redirects its predecessors
+through the existing graph helpers; an EH-sensitive catch-return target gains a
+real no-op, lowered immediately when already in linear IR.
+
+Statement phis/NOPs and linear-IR offset markers use native emptiness rules.
+Full flowgraph update still awaits its remaining optimization dependencies.
+
 ## 2026-09-25: Stack argument generation
 
 Stack arguments now support scalar and SIMD stores, field lists and all native

@@ -748,7 +748,7 @@ public partial class Compiler
 
     public bool ehCanDeleteEmptyBlock(BasicBlock block)
     {
-        assert(block.IsEmpty);
+        assert(block.isEmpty());
 
         // Native normalization of multiple regions ending at one block is currently disabled.
         return true;
