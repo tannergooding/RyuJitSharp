@@ -14,6 +14,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Prolog initialization and final jump placement
+
+Prolog support now initializes stack locals, GC spill temps and floating
+registers, sets security cookies and preserves generic-context reporting slots.
+Block clearing retains native scalar tails, SIMD alignment and overlap choices,
+and the three-store loop. OSR reuses the original frame's cookie and context.
+
+Jump-distance binding now shortens eligible branches to a fixed point while
+preserving forced widths and hot/cold boundaries. Final loop alignment adjusts
+padding and group offsets after binding. Full prolog/epilog generation, encoding
+and runtime metadata are still required before executable code can be produced.
+
 ## 2026-09-25: Final frame layout and redundant-jump removal
 
 Windows-x64 frame finalization now restores entry locations, accounts for local

@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete Windows-AMD64 frame finalization and post-recording jump placement. Block generation and IP/rich debug publication are validated; production emission remains explicitly unavailable.",
+      "scope": "Complete Windows-AMD64 prolog initialization helpers and final jump/alignment placement. Frame finalization is committed c75db19; production emission remains explicitly unavailable.",
       "doneWhen": [
-        "Preserve native prolog initialization accounting, entry locations, modified registers and final frame offsets across the complete Windows-AMD64 frame-layout closure.",
-        "Port complete native redundant-jump removal without substituting a reduced list walk; retain descriptor identity, offsets, group flags and hot/cold constraints.",
+        "Port complete genZeroInitFrame, block/SIMD clearing, genZeroInitFltRegs, genSetGSSecurityCookie and genReportGenericContextArg with native scratch-register and initialization contracts.",
+        "Port complete native emitJumpDistBind and emitLoopAlignAdjustments; retain displacement widths, offsets, group flags and hot/cold constraints.",
         "Validate each integrated closure in Debug/Release and commit; retain production activation, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Run focused frame-initialization/layout and jump-removal regressions in Debug/Release, extending with relevant existing emitter and frame tests.",
+        "Run focused prolog initialization and jump/alignment regressions in Debug/Release, extending with relevant existing emitter and frame tests.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Frame initialization/finalization, complete Windows-AMD64 lvaAssignFrameOffsets and redundant-jump removal are integrated and validated (305 Debug/279 Release, zero skipped). Continue with genGeneratePrologsAndEpilogs and its required Windows-AMD64 prolog/epilog closure; reuse the two collected GPT-6 Sol workers for independent emitJumpDistBind and emitLoopAlignAdjustments lanes. Preserve native ordering: finalize frame, begin emission, generate blocks, materialize prologs/epilogs, remove redundant jumps, bind distances, adjust alignment. Encoding and required runtime publication remain ahead; keep production genGenerateCode CORJIT_SKIPPED and managed native-code size zero.",
+    "nextAction": "Frame finalization/jump removal is committed c75db19. Complete prolog initialization helpers and jump-distance/final-alignment placement now pass 384 Debug/352 Release (zero skipped). Continue with Windows-AMD64 genAllocLclFrame and genEstablishFramePointer (codegenxarch.cpp:2382-2510), integer/floating callee-save recording and the required unwind prolog recording APIs; reuse retained workers for independent Windows unwind recording and incoming-argument homing. Full genFnProlog/genFnEpilog, funclet materialization and genGeneratePrologsAndEpilogs remain unported. Encoding and required runtime publication remain ahead; keep production genGenerateCode CORJIT_SKIPPED and managed native-code size zero.",
     "handoff": {
-      "status": "frame-and-jump-closure-validated",
+      "status": "prolog-initialization-and-final-placement-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Both GPT-6 Sol packets are frozen, collected and integrated: d62fc6a5-a4dd-40be-8b42-5de1405b22b7 through turn13 (final frame layout), and 942a496f-db30-4389-a403-265f28fdb23c through turn6 (jump removal and diagnostic closure). Parent frame initialization/finalization and combined dependency validation are complete. Power-outage recovery preserved the committed and uncommitted work. No unread handoffs or app-native child-session coordination.",
+      "workerPackets": "Both GPT-6 Sol packets are frozen, collected and integrated: d62fc6a5-a4dd-40be-8b42-5de1405b22b7 through turn15 (jump distance binding), and 942a496f-db30-4389-a403-265f28fdb23c through turn9 (final loop alignment). Parent prolog initialization and combined dependency validation are complete. No unread handoffs or app-native child-session coordination.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -52,6 +52,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "prologInitializationAndPlacement": {
+        "debugPassed": 384,
+        "releasePassed": 352,
+        "skipped": 0,
+        "selection": "CodeGenPrologInitializationTests, EmitterJumpDistanceBindingTests, EmitterLoopAlignmentAdjustmentTests, CodeGenBlockMemoryTests, EmitterAddressInstructionTests, EmitterJumpInstructionTests, EmitterJumpRemovalTests, EmitterLoopAlignmentRecordingTests, EmitterGroupDiagnosticsTests, CompilerFinalFrameLayoutTests, CodeGenFrameInitializationTests, CodeGenFrameFinalizationTests, CodeGenExitAndPoisonTests and SpillTemporaryTests",
+        "debugTests": "artifacts\\prolog-placement-debug.trx",
+        "releaseTests": "artifacts\\prolog-placement-release.trx",
+        "coverage": "Zero-register reuse, cross-width floating initialization, GC-only struct slots/spill temps, exact block coverage for scalar and 16/32/64-byte vector paths, overlapping tails, alignment and loop thresholds, forced short prolog jumps, signed cookie immediates and RAX address loads, OSR cookie/context reuse, incoming generic context locations and D005 preflight. Forward/backward branch boundaries, fixed-point shortening, calls, hot/cold long branches, adaptive/fixed padding, backedges, group offsets and diagnostics.",
+        "remaining": "Stack allocation, callee-save/unwind recording, argument homing and complete prolog/epilog materialization still precede genGenerateCode activation. Final encoding and runtime publication remain unported; funcletCreation.nativeHost is unchanged."
+      },
       "frameAndJumpFinalization": {
         "debugPassed": 305,
         "releasePassed": 279,
@@ -3886,6 +3896,20 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "windows-amd64-prolog-initialization",
+      "native": ["src\\coreclr\\jit\\codegencommon.cpp:4084-4325,4654-4756", "src\\coreclr\\jit\\codegenxarch.cpp:37-83,11129-11397", "src\\coreclr\\jit\\codegen.h:56-62", "src\\coreclr\\jit\\instr.cpp:1740-1743", "src\\coreclr\\jit\\compiler.hpp:2723-2728", "src\\coreclr\\jit\\emit.cpp:3615-3633"],
+      "csharp": ["sources\\Core\\jit\\codegencommon\\CodeGen.PrologInitialization.cs", "sources\\Core\\jit\\codegenxarch\\CodeGen.PrologBlockInitialization.cs", "sources\\Core\\jit\\codegenxarch\\CodeGen.GSCookieInitialization.cs", "sources\\Core\\jit\\instr\\CodeGen.SpillTempStores.cs", "sources\\Core\\jit\\compiler\\Compiler.FinalFrameLayout.cs:lvaCachedGenericContextArgOffset", "sources\\Core\\jit\\emit\\Emitter.ShortJump.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete Windows-AMD64 stack/block/floating initialization, cookie setup and generic-context storage with native scratch state and OSR reuse. Required wrapper/accessor support is ported. Full prolog orchestration remains pending."
+    },
+    {
+      "area": "windows-amd64-final-jump-placement",
+      "native": ["src\\coreclr\\jit\\emit.cpp:4917-5729,5960-6139,6279-6619,6634-6731"],
+      "csharp": ["sources\\Core\\jit\\emit\\Emitter.JumpDistanceBinding.cs", "sources\\Core\\jit\\emit\\Emitter.JumpBindingHelpers.cs", "sources\\Core\\jit\\emit\\Emitter.LoopAlignmentAdjustment.cs", "sources\\Core\\jit\\emit\\Emitter.LoopAlignmentPadding.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete Windows-AMD64 emitJumpDistBind and emitLoopAlignAdjustments with required loop-size/padding and Debug funclet validation helpers. Preserve native descriptor identity, offsets and fixed/variable widths. Production invocation awaits prolog/epilog materialization."
+    },
     {
       "area": "windows-amd64-frame-finalization",
       "native": ["src\\coreclr\\jit\\codegencommon.cpp:3715,3847,4925-5186", "src\\coreclr\\jit\\lclvars.cpp:4302-6277", "src\\coreclr\\jit\\compiler.cpp:10454-10481"],

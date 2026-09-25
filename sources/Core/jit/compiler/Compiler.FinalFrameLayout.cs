@@ -7,6 +7,12 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    public int lvaCachedGenericContextArgOffset()
+    {
+        assert(lvaDoneFrameLayout == FINAL_FRAME_LAYOUT);
+        return lvaCachedGenericContextArgOffs;
+    }
+
     public void lvaAssignFrameOffsets(FrameLayoutState curState)
     {
 #if !TARGET_AMD64 || UNIX_AMD64_ABI
