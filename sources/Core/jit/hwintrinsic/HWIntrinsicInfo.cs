@@ -270,11 +270,7 @@ public readonly partial struct HWIntrinsicInfo
         return count == byte.MaxValue ? -1 : count;
     }
 
-    public static bool IsMultiReg(NamedIntrinsic id)
-    {
-        // TODO: Port HWIntrinsicInfo.IsMultiReg
-        return false;
-    }
+    public static bool IsMultiReg(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_MultiReg) != 0;
 
     public static HWIntrinsicCategory lookupCategory(NamedIntrinsic id)
     {

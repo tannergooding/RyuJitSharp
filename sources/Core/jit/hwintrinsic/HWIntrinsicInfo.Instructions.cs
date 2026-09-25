@@ -55,6 +55,15 @@ public readonly partial struct HWIntrinsicInfo
         return ins;
     }
 
+    public static bool HasEvexSemantics(NamedIntrinsic id)
+    {
+#if TARGET_XARCH
+        return (lookupFlags(id) & HW_Flag_NoEvexSemantics) == 0;
+#else
+        return false;
+#endif
+    }
+
     public static bool HasRMWSemantics(NamedIntrinsic id)
     {
 #if TARGET_XARCH

@@ -660,6 +660,45 @@ public partial class GenTree
     /// <summary>whether a call node returns its value in more than one register</summary>
     public bool IsMultiRegCall => _oper.IsCall && AsCall().HasMultiRegRetVal;
 
+    public int GetRegisterDstCount(Compiler compiler)
+    {
+        assert(!IsContained);
+#if FEATURE_MULTIREG_RET
+        if (IsMultiRegCall)
+        {
+            return AsCall().ReturnTypeDesc.ReturnRegCount;
+        }
+
+#if TARGET_32BIT
+        if (Oper.IsMultiRegOp)
+        {
+            assert(Oper is GT_MUL_LONG);
+            return 2;
+        }
+#endif
+#endif
+
+        if (Oper.IsCopyOrReload)
+        {
+            return AsUnOp().Op1.GetRegisterDstCount(compiler);
+        }
+
+#if FEATURE_HW_INTRINSICS
+        if (Oper.IsHWIntrinsic && HWIntrinsicInfo.IsMultiReg(AsHWIntrinsic().HWIntrinsicId))
+        {
+            return HWIntrinsicInfo.GetMultiRegCount(AsHWIntrinsic().HWIntrinsicId);
+        }
+#endif
+
+        if (IsMultiRegLclVar)
+        {
+            return AsLclVar().GetFieldCount(compiler);
+        }
+
+        assert(!IsMultiRegNode);
+        return IsValue ? 1 : 0;
+    }
+
     /// <summary>whether a node returning its value in more than one register</summary>
     /// <remarks>
     ///   <para>All targets that support multi-reg ops of any kind also support multi-reg return values for calls.</para>

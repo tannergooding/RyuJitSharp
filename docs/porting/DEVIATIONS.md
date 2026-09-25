@@ -786,6 +786,12 @@ lowering, including floating conversion expansion and optimized transforms.
 and terminate with `fatal(CORJIT_IMPLLIMITATION)` pending their callee-save sets.
 The interval/reference support does not activate register allocation.
 
+`LinearScan.buildNode`, `buildStoreLoc`, `buildMultiRegStoreLoc` and `buildReturn`
+implement AMD64 node dispatch, local stores and ABI return constraints. Other
+targets report NYI and throw `FatalJitException`, pending their target-specific
+dispatch and register constraints. Node-reference construction does not activate
+the unfinished interval-building and allocation drivers.
+
 Current target-sync additions under `TARGET_WASM` are
 `Compiler.fgWasmRepairTryEntries` and `Compiler.fgWasmSpillRefs` in
 `Compiler.fg.cs`. They throw `NotImplementedException` rather than returning a

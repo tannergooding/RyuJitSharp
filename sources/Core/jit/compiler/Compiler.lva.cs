@@ -1552,6 +1552,24 @@ public partial class Compiler
         return lclNum;
     }
 
+#if FEATURE_SIMD
+    public int getSIMDInitTempVarNum(var_types simdType)
+    {
+        if (lvaSimdInitTempVarNum == BAD_VAR_NUM)
+        {
+            JITDUMP($"Allocating SIMDInitTempVar as {simdType.Name}\n");
+            lvaSimdInitTempVarNum = lvaGrabTempWithImplicitUse(false, "SIMDInitTempVar");
+            lvaTable[lvaSimdInitTempVarNum].Type = simdType;
+        }
+        else if (lvaTable[lvaSimdInitTempVarNum].Type.Size < simdType.Size)
+        {
+            JITDUMP($"Increasing SIMDInitTempVar type size from {lvaTable[lvaSimdInitTempVarNum].Type.Name} to {simdType.Name}\n");
+            lvaTable[lvaSimdInitTempVarNum].Type = simdType;
+        }
+        return lvaSimdInitTempVarNum;
+    }
+#endif
+
     public bool lvaHaveManyLocals(float percent = 1.0f)
     {
         assert((percent >= 0.0) && (percent <= 1.0));

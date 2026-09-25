@@ -13,6 +13,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-24: Complete Windows-x64 node-reference construction
+
+The native node dispatcher now connects scalar, call, memory, local-store,
+return and hardware-intrinsic register requirements. Local stores preserve
+candidate liveness and multireg field ordering; returns retain ABI register
+constraints. Hardware operations model implicit registers, delayed uses,
+gather temporaries and APX/EVEX restrictions, including both DivRem and BigMul
+result registers.
+
+Build-state reset preserves argument placements across intervening nodes, and
+SIMD element operations share an implicitly live spill temp that grows as
+needed. Interval construction and register resolution remain before allocation
+can become active; this completes node-level requirements, not code generation.
+
 ## 2026-09-24: Call and memory register-allocation constraints
 
 Reference construction now models calls, register and stack arguments, write

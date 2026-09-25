@@ -10,6 +10,20 @@ namespace RyuJitSharp;
 public partial class GenTree
 {
 #if FEATURE_HW_INTRINSICS
+    public bool IsEvexCompatibleHWIntrinsic(Compiler compiler)
+    {
+#if TARGET_XARCH
+        if (Oper.IsHWIntrinsic)
+        {
+            var intrinsic = AsHWIntrinsic().HWIntrinsicId;
+            return intrinsic is NI_AES_CarrylessMultiply
+                ? compiler.compOpportunisticallyDependsOn(InstructionSet_AES_V512)
+                : HWIntrinsicInfo.HasEvexSemantics(intrinsic);
+        }
+#endif
+        return false;
+    }
+
     public bool IsEmbeddedMaskingCompatible()
     {
         if (!Oper.IsHWIntrinsic)

@@ -14,6 +14,30 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class IntrinsicEncodingTests
 {
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void CarrylessMultiplyEvexCompatibilityRequiresItsVectorIsa(bool supported)
+    {
+        WithCompiler((compiler, _) => {
+            compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_AES_V512);
+            if (supported)
+            {
+                EnableIsa(compiler, InstructionSet_AES_V512);
+            }
+
+            var left = new GenTreeVecCon(TYP_SIMD16);
+            var right = new GenTreeVecCon(TYP_SIMD16);
+            var immediate = compiler.gtNewIconNode(TYP_INT, 0);
+            var intrinsic = new GenTreeHWIntrinsic(
+                TYP_SIMD16, NI_AES_CarrylessMultiply, TYP_LONG, 16, left, right, immediate);
+
+            Assert.That(intrinsic.IsEvexCompatibleHWIntrinsic(compiler), Is.EqualTo(supported));
+            Assert.That(immediate.IsEvexCompatibleHWIntrinsic(compiler), Is.False);
+            var add = new GenTreeHWIntrinsic(TYP_SIMD16, NI_X86Base_Add, TYP_LONG, 16, left, right);
+            Assert.That(add.IsEvexCompatibleHWIntrinsic(compiler), Is.True);
+        });
+    }
+
     [TestCase(false, true)]
     [TestCase(true, false)]
     [TestCase(true, true)]
