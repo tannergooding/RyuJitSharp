@@ -214,13 +214,13 @@ public sealed partial class LinearScan
     private void setRegInUse(regNumber register, RegisterType registerType)
     {
         assert(registerType is not TYP_UNDEF and not TYP_STRUCT);
-        _availableRegs[(int)registerType] &= ~genSingleTypeRegMask(register);
+        _availableRegs[(int)regType(registerType)] &= ~genSingleTypeRegMask(register);
     }
 
     private void makeRegAvailable(regNumber register, RegisterType registerType)
     {
         assert(registerType is not TYP_UNDEF and not TYP_STRUCT);
-        _availableRegs[(int)registerType] |= genSingleTypeRegMask(register);
+        _availableRegs[(int)regType(registerType)] |= genSingleTypeRegMask(register);
     }
 
     private void setConstantReg(regNumber register)

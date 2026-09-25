@@ -5,13 +5,28 @@ A newest-first history of what the port can do and how it has developed.
 The primary target is Windows x64. The port can import methods, expand inline
 calls, lower heap allocations, simplify local accesses and construct internal
 method entry/exit paths, rationalize expression trees into linear IR, and lower
-minopts methods for Windows x64, but does not yet generate native code. Remaining
+minopts methods and allocate registers with stack-resident locals for Windows
+x64, but does not yet generate native code. Remaining
 work includes hardware-intrinsic import, lifetime-enabled lowering cleanup,
-register allocation and code generation.
+optimized register allocation and code generation.
 
 The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
+
+## 2026-09-25: Active minimal register allocation
+
+The production backend now constructs intervals, allocates and resolves registers,
+and prepares spill homes for minopts methods with stack-resident locals. It
+preserves phase boundaries, allocation statistics and final verification.
+Morph-time frame selection also establishes the native EH, P/Invoke and GC
+reporting requirements before allocation.
+
+The complete allocation-phase dump matches the pinned native compiler for
+seventeen of twenty corpus methods. Three retain the known hardware-import and
+EH-order differences. All twenty reach the explicit unfinished code-generation
+boundary; these results establish allocation behavior, not managed execution.
+Instruction generation, emission and runtime metadata remain ahead.
 
 ## 2026-09-24: Minimal register resolution and verification
 

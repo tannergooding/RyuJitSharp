@@ -12,16 +12,16 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete Windows-AMD64 resolveRegisters<false> and its no-local-enregistration final-allocation verification mode, reusing the committed resolution support. Preserve temporary upper-vector handling, spill/copy flags, internal registers, stack-home finalization and diagnostics. Keep production allocation inactive until its driver and explicit emission boundary are ready.",
+      "scope": "Activate the complete Windows-AMD64 minopts/no-enregistered-local allocation driver and move the explicit unfinished boundary to emission. Preserve native phase ordering, completion flags, diagnostics, statistics and DFS invalidation.",
       "doneWhen": [
-        "Port the complete native resolveRegisters<false> traversal and required generic indexed-spill flag dispatch, rejecting enregistered-local mode before mutation.",
-        "Port the complete no-enregistered-local mode of verifyFinalAllocation with required resolution-node classification and diagnostics.",
-        "Exercise real interval construction, minimal allocation and resolution together, including spills/copies and internal registers, in Debug and Release.",
-        "Commit the coherent traversal packet with exact remaining driver/activation boundary; retain native mixed-mode bodies."
+        "Wire complete supported native allocation orchestration, reject unsupported modes before mutation and preserve explicit CORJIT_SKIPPED at code generation.",
+        "Integrate complete textual LSRA statistics and focused driver coverage.",
+        "Publish locally and compare the newly reachable allocation phases using the existing native-host corpus workflow.",
+        "Commit the coherent activation packet with exact remaining execution boundary; retain native mixed-mode bodies."
       ],
       "validation": [
-        "Use focused integrated construction/allocation/resolution cases and verifier contracts with existing LinearScan, spill-temporary and stack-home coverage.",
-        "Reuse the lowering capture at 7372483 while allocation remains inactive. The broader HWI Debug selection's existing B145 failures are recorded, not part of this dependency packet."
+        "Run focused LinearScan, spill-temporary, stack-home, parameter-mapping and lowering-phase coverage in Debug and Release.",
+        "Reuse the pinned lowering-native-minopts capture and prepared host; capture managed allocation with the same minopts corpus/settings. B145 remains deferred."
       ],
       "deferred": [
         "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
@@ -33,12 +33,12 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Port the complete supported minopts/no-enregistered-local allocation driver (lsra.cpp:1336), including the native no-tracked-locals adjustment, phase boundaries and diagnostics. Reject unsupported optimized modes before mutation and preserve an explicit CORJIT_SKIPPED unfinished emission boundary before activation. Resolution and checked-build verification are integrated; 470 Debug / 400 Release focused cases pass with zero skipped. Reuse the existing NativeAOT/native-host capture workflow for newly reachable allocation phases. Retain native mixed-mode bodies; B145 remains deferred. No push or PR.",
+    "nextAction": "Allocation activation is validated and ready for its coherent local commit. Next port the required code-generation preparation dependencies, beginning with complete genMarkLabelsForCodegen (codegencommon.cpp:622-768), preserving branch/throw-helper/EH label rules and diagnostics. genGenerateMachineCode first calls genPrepForCompiler (codegencommon.cpp:569-596), which requires the missing TreeLifeUpdater; retain the explicit genGenerateCode CORJIT_SKIPPED boundary until the complete required generator/emitter/metadata closure is ready. No reduced alternate generator, native residual deletions, push or PR. B145 and the three recorded pre-backend corpus differences remain deferred.",
     "handoff": {
-      "status": "minimal-resolution-complete",
+      "status": "allocation-driver-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Both retained ordinary task workers are idle with no assignment; all returned packets are read and integrated. No unread handoffs or app-native child-session dependencies.",
-      "preserve": "Activate only the complete no-local-lifetimes lowering mode; keep allocation explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
+      "workerPackets": "Both retained task workers are idle and frozen. All returned packets and handoffs are integrated, including table/event fidelity and textual statistics. No outstanding worker or app-native child-session dependencies.",
+      "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
         "fgCanCompactBlock and fgCompactBlock",
@@ -50,7 +50,7 @@
       ],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
       "nativeFlowGraphSource": "src/coreclr/jit/fgopt.cpp:4373-4902",
-      "executionBoundary": "Native-host evidence now reaches complete no-local-lifetimes lowering and stack preparation for twenty minopts methods. Allocation explicitly skips; managed code size remains zero.",
+      "executionBoundary": "The integrated native-host capture completes allocation and explicitly skips emission for twenty minopts methods. Full allocation phase bodies, REFPOS and POST tuples are byte-exact for seventeen methods; FoldHardware, SynchronizedReturn and GenericCatch retain existing hardware-import/EH-order differences. Disabled loop-alignment bodies are exact for all twenty. Managed code size remains zero.",
       "publishedHandoffCommit": "b6d5c71c338d84b6c120766b52ea577a4df735c8",
       "publication": "Verified origin/main at the completed handoff commit. This replacement session has not published changes; its app diff base is now main."
     },
@@ -61,6 +61,27 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "allocationActivation": {
+        "debugPassed": 529,
+        "releasePassed": 452,
+        "skipped": 0,
+        "selection": ["LinearScan*", "SpillTemporaryTests", "RegisterAllocationStackHomeTests", "ParameterLocalMappingTests", "LoweringPhaseTests", "RegisterTrackingTests", "CompilerRegallocFrameTests"],
+        "debugTests": "artifacts\\lsra-driver-debug.trx",
+        "releaseTests": "artifacts\\lsra-driver-release.trx",
+        "managedCapture": "artifacts\\lsra-managed-integrated-minopts",
+        "nativeCapture": "artifacts\\lowering-native-minopts",
+        "sourceSnapshot": "e0745f8 + artifacts\\lsra-integrated-source.patch",
+        "comparison": "artifacts\\Compare-Allocation.ps1 -ManagedDirectory lsra-managed-integrated-minopts",
+        "methods": 20,
+        "exactAllocationPhaseBodies": 17,
+        "exactReferenceTuples": 17,
+        "exactAssignmentTuples": 17,
+        "exactDisabledAlignmentBodies": 20,
+        "explicitEmissionSkips": 20,
+        "remainingDifferences": ["FoldHardware: hardware import", "SynchronizedReturn: EH/block order", "GenericCatch: EH/import order"],
+        "regressionBefore": ["artifacts\\lsra-register-bank-before.trx", "artifacts\\lsra-availability-before.trx", "artifacts\\lsra-block-reset-before.trx"],
+        "scope": "Complete native minopts/no-enregistered-local production allocation driver, textual statistics, native allocation tables and events, disabled loop alignment, morph-time frame/GC policy, canonical mask-bank and availability-alias handling, and block-boundary state reset. Twenty case-sensitive compilation headers without allocation retries. Emission is explicitly skipped; no managed execution or machine-code parity claim."
+      },
       "minimalResolution": {
         "debugPassed": 470,
         "releasePassed": 400,
@@ -3161,19 +3182,27 @@
   },
   "sourceMap": [
     {
+      "area": "lsra-production-activation",
+      "native": ["src\\coreclr\\jit\\lsra.cpp:1336-1437,1903-1920,3939-3962,10062-10196,11329-11694", "src\\coreclr\\jit\\regMaskTPOps.cpp:119-133", "src\\coreclr\\jit\\morph.cpp:14571-14655", "src\\coreclr\\jit\\codegencommon.cpp:37-61", "src\\coreclr\\jit\\codegeninterface.h:354-359", "src\\coreclr\\jit\\compiler.cpp:5319-5327"],
+      "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.cs", "sources\\Core\\jit\\lsra\\LinearScan.AllocationStatistics.cs", "sources\\Core\\jit\\lsra\\LinearScan.AllocationDiagnostics.cs", "sources\\Core\\jit\\lsra\\LinearScan.MinimalAllocationTraversal.cs", "sources\\Core\\jit\\lsra\\LinearScan.MinimalCandidates.cs", "sources\\Core\\jit\\lsra\\LinearScan.SelectorHelpers.cs", "sources\\Core\\jit\\lsra\\LinearScan.RegisterAssignment.cs", "sources\\Core\\jit\\lsra\\LinearScan.RegisterLifetime.cs", "sources\\Core\\jit\\target\\regMaskTP.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.cs", "sources\\Core\\jit\\compiler\\Compiler.cs", "sources\\Core\\jit\\codegen\\CodeGen.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Production Windows-AMD64 minopts allocation without enregistered locals is active. Complete textual statistics and morph-time frame/GC option policy are integrated. Unsupported allocation modes and enabled loop alignment reject before their unported work; genGenerateCode remains an explicit emission skip. Full allocation bodies match native for 17/20 methods; native mixed-mode bodies are retained."
+    },
+    {
       "area": "lsra-minimal-resolution",
       "native": ["src\\coreclr\\jit\\lsra.cpp:7811-8420", "src\\coreclr\\jit\\lsra.cpp:11695-12380", "src\\coreclr\\jit\\gentree.h:10409-10448", "src\\coreclr\\jit\\codegencommon.cpp:125-131"],
       "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.MinimalResolution.cs", "sources\\Core\\jit\\lsra\\LinearScan.FinalVerification.cs", "sources\\Core\\jit\\gentree\\GenTree.RegisterSpills.cs", "sources\\Core\\jit\\codegeninterface\\NodeInternalRegisters.cs"],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Complete Windows-AMD64 resolveRegisters<false> and no-enregistered-local final-allocation verification, with pre-mutation rejection of unsupported modes. Shared native allocation-table formatting is corrected (B201). Allocation-driver activation and emission remain; native mixed-mode bodies are retained."
+      "status": "Complete Windows-AMD64 resolveRegisters<false> and no-enregistered-local final-allocation verification, with pre-mutation rejection of unsupported modes. Shared native allocation-table formatting is corrected (B201). Production activation is recorded separately; emission remains. Native mixed-mode bodies are retained."
     },
     {
       "area": "lsra-register-resolution-support",
       "native": ["src\\coreclr\\jit\\lsra.cpp:126-172,793-823,7270-7412,7642-7805,10612-11080", "src\\coreclr\\jit\\regalloc.cpp:205-316"],
       "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.RegisterWriteback.cs", "sources\\Core\\jit\\lsra\\LinearScan.SpillAccounting.cs", "sources\\Core\\jit\\lsra\\LinearScan.IntervalDiagnostics.cs", "sources\\Core\\jit\\compiler\\Compiler.RegisterAllocation.cs"],
       "reconciledCommit": null,
-      "status": "Windows-AMD64 writeback and copy/reload insertion, complete spill accounting, local stack-home marking and all tuple-dump modes. Reuses existing RegSet temporary storage; native copy/reload executable placement is preserved despite its stale description (B200). Other-target writeback/insertion and non-AMD64 stack-home marking reject explicitly. Resolution traversal and final verification are integrated in the minimal-resolution mapping; production allocation remains inactive."
+      "status": "Windows-AMD64 writeback and copy/reload insertion, complete spill accounting, local stack-home marking and all tuple-dump modes. Reuses existing RegSet temporary storage; native copy/reload executable placement is preserved despite its stale description (B200). Other-target writeback/insertion and non-AMD64 stack-home marking reject explicitly. Resolution traversal, final verification and production activation are recorded in their respective mappings."
     },
     {
       "area": "lsra-minimal-interval-construction",

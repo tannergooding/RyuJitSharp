@@ -4,13 +4,40 @@ using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.LsraGlobals;
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
+using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class RegisterTrackingTests
 {
+    [TestCase(TYP_INT)]
+    [TestCase(TYP_LONG)]
+    [TestCase(TYP_REF)]
+    [TestCase(TYP_BYREF)]
+    [TestCase(TYP_FLOAT)]
+    [TestCase(TYP_DOUBLE)]
+#if FEATURE_SIMD
+    [TestCase(TYP_SIMD16)]
+    [TestCase(TYP_SIMD32)]
+    [TestCase(TYP_SIMD64)]
+#endif
+#if FEATURE_MASKED_HW_INTRINSICS
+    [TestCase(TYP_MASK)]
+#endif
+    public static void TypeSelectsTheNativeRegisterMaskBankWithoutFiltering(var_types type)
+    {
+        var mask = new regMaskTP(SRBM_RAX | SRBM_XMM6);
+#if FEATURE_MASKED_HW_INTRINSICS
+        mask |= regMaskTP.CreateFromRegNum(REG_K1, genSingleTypeRegMask(REG_K1));
+#endif
+        var expected = varTypeIsMask(type) ? mask.MskRegSet : mask.Lower;
+
+        Assert.That(mask.GetRegSetForType(type), Is.EqualTo(expected));
+    }
+
     [Test]
     public static void ModifiedMaskAccumulatesAndRemovingRegistersPreservesOthers()
     {

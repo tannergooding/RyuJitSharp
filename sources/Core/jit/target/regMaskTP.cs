@@ -47,6 +47,15 @@ public readonly struct regMaskTP : IEquatable<regMaskTP>
 
     public bool IsNonEmpty => !IsEmpty;
 
+    public regMask GetRegSetForType(var_types type)
+    {
+#if HAS_MORE_THAN_64_REGISTERS
+        return varTypeIsMask(type) ? _upper : _lower;
+#else
+        return _lower;
+#endif
+    }
+
     public regMask Lower => _lower;
 
 #if HAS_MORE_THAN_64_REGISTERS

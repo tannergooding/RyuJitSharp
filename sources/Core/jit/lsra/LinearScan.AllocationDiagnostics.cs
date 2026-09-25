@@ -164,7 +164,7 @@ public sealed partial class LinearScan
 #if TARGET_AMD64
         var smallIntegerSet = SRBM_RAX | SRBM_RCX | SRBM_RBX | SRBM_ETW_FRAMED_EBP | SRBM_RSI | SRBM_RDI;
         var smallFloatSet = SRBM_XMM0 | SRBM_XMM1 | SRBM_XMM2 | SRBM_XMM6 | SRBM_XMM7;
-        _allocationDumpRegisters = new regMaskTP(smallIntegerSet | smallFloatSet | SRBM_ARG_REGS | SRBM_FLTARG_REGS);
+        _allocationDumpRegisters = new regMaskTP(smallIntegerSet | smallFloatSet | SRBM_ARG_REGS);
 #else
         NYI("LSRA allocation table formatting outside AMD64");
         fatal(CORJIT_IMPLLIMITATION);
@@ -206,6 +206,7 @@ public sealed partial class LinearScan
             "in which case additional columns will appear. Registers which are not marked modified have ---- in\n" +
             "their column.\n\n");
         dumpAllocationRegisterTitleIfNeeded();
+        dumpAllocationIndentedText("");
     }
 
     private static int getDecimalWidth(uint value)
@@ -250,9 +251,9 @@ public sealed partial class LinearScan
         dumpAllocationRegisterTitleLines();
         jitprintf(
             "TreeID ".PadRight(9) +
-            "Loc ".PadRight(_allocationDumpNodeLocationWidth + 1) +
-            "RP# ".PadRight(_allocationDumpRefPositionWidth + 2) +
-            "Name ".PadRight(_allocationDumpRegColumnWidth + 1) +
+            padOrTruncate("Loc ", _allocationDumpNodeLocationWidth + 1) +
+            padOrTruncate("RP# ", _allocationDumpRefPositionWidth + 2) +
+            padOrTruncate("Name ", _allocationDumpRegColumnWidth + 1) +
             "Type  Action    Reg  ");
 
         for (var registerIndex = 0; registerIndex <= _allocationDumpLastUsedRegNumIndex; registerIndex++)
@@ -268,6 +269,9 @@ public sealed partial class LinearScan
         _allocationDumpRowsSinceTitle = 0;
         dumpAllocationRegisterTitleLines();
     }
+
+    private static string padOrTruncate(string text, int width) =>
+        text.Length > width ? text[..width] : text.PadRight(width);
 
     private void dumpAllocationRegisterTitleLines()
     {
@@ -355,7 +359,7 @@ public sealed partial class LinearScan
             number = interval.intervalIndex;
         }
 
-        var prefixAndNumber = interval.isLocalVar && (number < 10)
+        var prefixAndNumber = (interval.isLocalVar || interval.IsUpperVector()) && (number < 10)
             ? $"{prefix}0{number}"
             : $"{prefix}{number}";
         return prefixAndNumber.PadRight(_allocationDumpRegColumnWidth - 1);

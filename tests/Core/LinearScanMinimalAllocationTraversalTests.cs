@@ -19,6 +19,35 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
 {
     [TestCase(false)]
     [TestCase(true)]
+    public static void BlockBoundariesClearRetainedConstantAssignments(bool floating)
+    {
+        WithAllocator((compiler, allocator) => {
+            var blocks = CreateBlocks(compiler, BBJ_RETURN, BBJ_RETURN);
+            compiler.fgPredsComputed = true;
+            SetBlockSequence(allocator);
+            CurrentBlockNumber(allocator) = (uint)blocks[0].bbNum;
+            _ = allocator.newRefPosition(null, 0, RefType.RefTypeBB, null, SRBM_NONE);
+
+            var type = floating ? TYP_DOUBLE : TYP_INT;
+            var mask = floating ? SRBM_XMM0 : SRBM_RAX;
+            var interval = NewInterval(allocator, type);
+            interval.isConstant = true;
+            GenTree tree = floating ? compiler.gtNewDconNode(type, 1) : compiler.gtNewIconNode(type, 1);
+            _ = allocator.newRefPosition(interval, 2, RefType.RefTypeDef, tree, mask);
+            _ = allocator.newRefPosition(interval, 4, RefType.RefTypeUse, tree, mask);
+            CurrentBlockNumber(allocator) = (uint)blocks[1].bbNum;
+            _ = allocator.newRefPosition(null, 6, RefType.RefTypeBB, null, SRBM_NONE);
+
+            AllocateRegistersMinimal(allocator);
+
+            var register = floating ? regNumber.REG_XMM0 : regNumber.REG_RAX;
+            Assert.That(interval.isActive, Is.False);
+            Assert.That(allocator.physRegs[(int)register].assignedInterval, Is.Null);
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
     public static void MinimalTraversalAllocatesAndReleasesScalarDefinitionAndUse(bool evex)
     {
         WithAllocator((compiler, allocator) => {

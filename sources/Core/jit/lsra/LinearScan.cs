@@ -17,7 +17,7 @@ public sealed partial class LinearScan : IRegAlloc
     private int _availableRegCount;
     private readonly bool _evexIsSupported;
     private readonly bool _apxIsSupported;
-    private readonly bool _enregisterLocalVars;
+    private bool _enregisterLocalVars;
 
     private regMask _rbmAllFloat;
     private regMask _rbmFltCalleeTrash;
@@ -287,9 +287,76 @@ public sealed partial class LinearScan : IRegAlloc
 
     public PhaseStatus DoRegisterAllocation()
     {
-        const string message = "LinearScan.DoRegisterAllocation is not implemented.";
+#if TARGET_AMD64 && !UNIX_AMD64_ABI
+        if (_compiler.opts.OptimizationEnabled || (_enregisterLocalVars && (_compiler.lvaTrackedCount != 0)))
+        {
+            const string message = "LinearScan register allocation with optimization or enregistered locals is not implemented.";
+            JITDUMP($"\nCOMPILATION FAILED: {message}\n");
+            throw new FatalJitException(CORJIT_SKIPPED, message);
+        }
+
+        if (_enregisterLocalVars && (_compiler.lvaTrackedCount == 0))
+        {
+            _enregisterLocalVars = false;
+        }
+        _splitBBNumToTargetBBNumMap = null;
+
+        assert(_compiler.codeGen is not null);
+        _compiler.codeGen.RegSet.rsClearRegsModified();
+        initMaxSpill();
+        buildIntervalsMinimal();
+#if DEBUG
+        if (VERBOSE)
+        {
+            tupleStyleDump(LsraTupleDumpMode.LSRA_DUMP_REFPOS);
+        }
+#endif
+        _compiler.EndPhase(PHASE_LINEAR_SCAN_BUILD);
+#if DEBUG
+        if (VERBOSE)
+        {
+            dumpLsraIntervals("after buildIntervals");
+        }
+#endif
+
+        initVarRegMaps();
+        allocateRegistersMinimal();
+        _allocationPassComplete = true;
+        _compiler.EndPhase(PHASE_LINEAR_SCAN_ALLOC);
+
+        resolveRegistersMinimal();
+        _compiler.EndPhase(PHASE_LINEAR_SCAN_RESOLVE);
+        assert(_blockSequencingDone);
+
+#if TRACK_LSRA_STATS
+        if ((JitConfig.DisplayLsraStats == 1)
+#if DEBUG
+            || VERBOSE
+#endif
+        )
+        {
+            dumpLsraStats(jitstdout());
+        }
+#endif
+#if DEBUG
+        if (VERBOSE)
+        {
+            tupleStyleDump(LsraTupleDumpMode.LSRA_DUMP_POST);
+        }
+#endif
+        _compiler.compRegAllocDone = true;
+
+        if (_compiler.fgBBcount != _blockSequenceCount)
+        {
+            assert(_compiler.fgBBcount > _blockSequenceCount);
+            _compiler.fgInvalidateDfsTree();
+        }
+        return PhaseStatus.MODIFIED_EVERYTHING;
+#else
+        const string message = "LinearScan.DoRegisterAllocation outside Windows AMD64 is not implemented.";
         JITDUMP($"\nCOMPILATION FAILED: {message}\n");
         throw new FatalJitException(CORJIT_SKIPPED, message);
+#endif
     }
 
 #if TRACK_LSRA_STATS

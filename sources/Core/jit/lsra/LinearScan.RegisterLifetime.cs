@@ -270,7 +270,7 @@ public sealed partial class LinearScan
     }
 
     private bool isRegAvailable(regNumber register, RegisterType registerType) =>
-        (_availableRegs[(int)registerType] & genSingleTypeRegMask(register)) != SRBM_NONE;
+        (_availableRegs[(int)regType(registerType)] & genSingleTypeRegMask(register)) != SRBM_NONE;
 
     private bool isRegConstant(regNumber register, RegisterType registerType) =>
         _registersWithConstants.IsSet(register);

@@ -601,7 +601,7 @@ public sealed partial class LinearScan
     private void processBlockEndAllocation(BasicBlock currentBlock)
     {
         markBlockVisited(currentBlock);
-        resetRegStateMinimal();
+        resetAllRegistersState();
     }
 
     private void setIntervalAsSplitMinimal(Interval interval)
@@ -764,31 +764,7 @@ public sealed partial class LinearScan
             }
             case MinimalAllocationEvent.START_BB:
             {
-                if ((block is not null) && !ReferenceEquals(block, _compiler.fgFirstBB))
-                {
-                    dumpAllocationRegisterTitle();
-                }
-
-                if (refPosition.refType is RefType.RefTypeDummyDef)
-                {
-                    dumpRefPositionShort(refPosition);
-                    jitprintf("DDefs    ");
-                    dumpAllocationRegisterRecords();
-                }
-                else if (block is null)
-                {
-                    dumpRefPositionShort(refPosition);
-                    jitprintf("END               ");
-                    dumpAllocationRegisterRecords();
-                }
-                else
-                {
-                    dumpRefPositionShort(refPosition);
-                    var predBlockNumber = _blockInfo![checked((int)block.bbNum)].predBBNum;
-                    jitprintf($"BB{block.bbNum:D2} <- BB{predBlockNumber:D2}");
-                    dumpAllocationRegisterRecords();
-                }
-
+                dumpAllocationNewBlock(block, refPosition.nodeLocation, refPosition);
                 break;
             }
             default:

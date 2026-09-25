@@ -89,6 +89,33 @@ internal static unsafe class LinearScanRegisterLifetimeTests
         });
     }
 
+    [TestCase(TYP_LONG, TYP_INT)]
+    [TestCase(TYP_INT, TYP_LONG)]
+    [TestCase(TYP_REF, TYP_BYREF)]
+    [TestCase(TYP_BYREF, TYP_REF)]
+    [TestCase(TYP_DOUBLE, TYP_FLOAT)]
+    [TestCase(TYP_FLOAT, TYP_DOUBLE)]
+    public static void AllocationAndFreeingShareAvailabilityAcrossTypeAliases(var_types type, var_types alias)
+    {
+        WithAllocator((compiler, allocator) => {
+            var floating = varTypeUsesFloatReg(type);
+            var interval = NewInterval(allocator, type);
+            GenTree tree = floating ? compiler.gtNewDconNode(type, 1) : compiler.gtNewIconNode(type, 0);
+            var mask = floating ? SRBM_XMM0 : SRBM_RAX;
+            var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, mask);
+            interval.recentRefPosition = definition;
+            var register = allocator.physRegs[(int)(floating ? regNumber.REG_XMM0 : regNumber.REG_RAX)];
+
+            AssignPhysReg(allocator, register, interval);
+            Assert.That(GetFreeCandidates(allocator, mask, type), Is.EqualTo(SRBM_NONE));
+            Assert.That(GetFreeCandidates(allocator, mask, alias), Is.EqualTo(SRBM_NONE));
+
+            FreeRegister(allocator, register);
+            Assert.That(GetFreeCandidates(allocator, mask, type), Is.EqualTo(mask));
+            Assert.That(GetFreeCandidates(allocator, mask, alias), Is.EqualTo(mask));
+        });
+    }
+
     [Test]
     public static void FreeRegisterRestoresBothFloatingRegisterViews()
     {

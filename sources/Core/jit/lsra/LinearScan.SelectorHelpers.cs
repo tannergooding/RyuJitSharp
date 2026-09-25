@@ -15,15 +15,7 @@ public sealed partial class LinearScan
     public static bool isSingleRegister(SingleTypeRegSet registers) => genExactlyOneBit(registers);
 
     private static SingleTypeRegSet getRegSetForType(regMaskTP registers, RegisterType registerType) =>
-        registerType switch
-        {
-            TYP_INT => registers.IntRegSet,
-            TYP_FLOAT or TYP_DOUBLE => registers.FltRegSet,
-#if FEATURE_MASKED_HW_INTRINSICS
-            TYP_MASK => registers.MskRegSet,
-#endif
-            _ => throw new FatalJitException($"Unsupported LSRA register type: {registerType}."),
-        };
+        registers.GetRegSetForType(registerType);
 
 #if DEBUG
     private SingleTypeRegSet getConstrainedRegMask(
@@ -77,8 +69,8 @@ public sealed partial class LinearScan
                 SRBM_XMM0 | SRBM_XMM1 | SRBM_XMM2 | SRBM_XMM6 | SRBM_XMM7,
                 SRBM_NONE,
                 registerType),
-            LimitUpperSimdSet => registerType is TYP_FLOAT or TYP_DOUBLE ? SRBM_HIGHFLOAT : mask,
-            LimitExtGprSet => registerType is TYP_INT ? SRBM_HIGHINT | SRBM_ETW_FRAMED_EBP : mask,
+            LimitUpperSimdSet => varTypeUsesFloatReg(registerType) ? SRBM_HIGHFLOAT : mask,
+            LimitExtGprSet => varTypeUsesIntReg(registerType) ? SRBM_HIGHINT | SRBM_ETW_FRAMED_EBP : mask,
             _ => throw new FatalJitException($"Unsupported LSRA register stress limit: 0x{limit:X}."),
         };
 
@@ -104,7 +96,7 @@ public sealed partial class LinearScan
 #if TARGET_AMD64
     private static SingleTypeRegSet getRegSetForType(
         regMask intRegisters, regMask floatRegisters, regMask maskRegisters, RegisterType registerType) =>
-        registerType switch
+        regType(registerType) switch
         {
             TYP_INT => intRegisters,
             TYP_FLOAT or TYP_DOUBLE => floatRegisters,
@@ -261,7 +253,7 @@ public sealed partial class LinearScan
     }
 
     private SingleTypeRegSet getFreeCandidates(SingleTypeRegSet candidates, RegisterType registerType) =>
-        candidates & _availableRegs[(int)registerType];
+        candidates & _availableRegs[(int)regType(registerType)];
 
     private SingleTypeRegSet getAvailableGPRsForType(SingleTypeRegSet candidates, var_types registerType)
     {

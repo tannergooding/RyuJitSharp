@@ -11,6 +11,42 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class CompilerRegallocFrameTests
 {
+    internal enum MorphFramePolicy
+    {
+        None,
+        Localloc,
+        NoFramePointerOmission,
+        PInvoke,
+        ExceptionHandling,
+        Profiler,
+        DebugCode,
+    }
+
+    [TestCase(MorphFramePolicy.None, false, false)]
+    [TestCase(MorphFramePolicy.Localloc, true, false)]
+    [TestCase(MorphFramePolicy.NoFramePointerOmission, true, false)]
+    [TestCase(MorphFramePolicy.PInvoke, true, false)]
+    [TestCase(MorphFramePolicy.ExceptionHandling, true, true)]
+    [TestCase(MorphFramePolicy.Profiler, true, false)]
+    [TestCase(MorphFramePolicy.DebugCode, false, true)]
+    public static void MorphOptionsEstablishFrameAndGcPolicy(
+        MorphFramePolicy policy, bool framePointerRequired, bool interruptible)
+    {
+        WithCompiler((compiler, codeGen) => {
+            compiler.compLocallocUsed = policy is MorphFramePolicy.Localloc;
+            compiler.opts.genFPopt = policy is not MorphFramePolicy.NoFramePointerOmission;
+            compiler.info.compUnmanagedCallCountWithGCTransition = policy is MorphFramePolicy.PInvoke ? 1 : 0;
+            compiler.compHndBBtabCount = policy is MorphFramePolicy.ExceptionHandling ? (ushort)1 : (ushort)0;
+            compiler.opts.compJitELTHookEnabled = policy is MorphFramePolicy.Profiler;
+            compiler.opts.compDbgCode = policy is MorphFramePolicy.DebugCode;
+
+            compiler.fgSetOptions();
+
+            Assert.That(codeGen.IsFramePointerRequired, Is.EqualTo(framePointerRequired));
+            Assert.That(codeGen.Interruptible, Is.EqualTo(interruptible));
+        });
+    }
+
     [Test]
     public static void NativeCallsRequireFramePointerFrames()
     {
@@ -150,6 +186,8 @@ internal static unsafe class CompilerRegallocFrameTests
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
+        CORINFO_METHOD_INFO methodInfo = default;
+        compiler.info.compMethodInfo = &methodInfo;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(true);
         CompilerAllIntRegs(compiler) = SRBM_ALLINT_INIT;

@@ -114,7 +114,9 @@ internal static unsafe class LinearScanMinimalCandidatesTests
 #if DEBUG
             Assert.That(output, Is.EqualTo(
                 $"EH Vars: {{V00 V01}}{Environment.NewLine}" +
-                $"Finally Vars: {{V01}}{Environment.NewLine}{Environment.NewLine}"));
+                $"Finally Vars: {{V01}}{Environment.NewLine}{Environment.NewLine}{Environment.NewLine}" +
+                $"FP callee save candidate vars: None{Environment.NewLine}{Environment.NewLine}" +
+                $"floatVarCount = 0; hasLoops = false, singleExit = true{Environment.NewLine}"));
 #endif
         });
     }

@@ -337,6 +337,31 @@ public sealed partial class CodeGen : ICodeGen
         _cgFramePointerRequired.ResetWritePhase();
     }
 
+    public void SetFramePointerRequiredEH(bool value)
+    {
+        _cgFramePointerRequired.Value = value;
+#if !JIT32_GCENCODER && !TARGET_WASM
+        if (value)
+        {
+#if DEBUG
+            if (_verbose)
+            {
+                jitprintf("Method has EH, marking method as fully interruptible\n");
+            }
+#endif
+            // Aborted frames expose live catch/finally slots only when fully interruptible.
+            _cgInterruptible = true;
+        }
+#endif
+    }
+
+    public void SetFramePointerRequiredGCInfo(bool value)
+    {
+#if JIT32_GCENCODER
+        _cgFramePointerRequired.Value = value;
+#endif
+    }
+
     public bool IsFramePointerUsed
     {
         get
@@ -936,9 +961,9 @@ public sealed partial class CodeGen : ICodeGen
 
     public unsafe void genGenerateCode(out void* codePtr, out int nativeSizeOfCode)
     {
-        // TODO: Port CodeGen.genGenerateCode
-        codePtr = null;
-        nativeSizeOfCode = 0;
+        const string message = "CodeGen.genGenerateCode is not implemented.";
+        JITDUMP($"\nCOMPILATION FAILED: {message}\n");
+        throw new FatalJitException(CORJIT_SKIPPED, message);
     }
 
 #if HAS_FIXED_REGISTER_SET

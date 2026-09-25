@@ -34,6 +34,15 @@ public sealed partial class LinearScan
 #endif
             local.lvLRACandidate = false;
         }
+
+#if DEBUG
+        if (VERBOSE)
+        {
+            jitprintf("\nFP callee save candidate vars: None\n\n");
+            var singleExit = (_compiler.fgReturnBlocks is null) || (_compiler.fgReturnBlocks.Next is null);
+            jitprintf($"floatVarCount = 0; hasLoops = {dspBool(_compiler.fgHasLoops)}, singleExit = {dspBool(singleExit)}\n");
+        }
+#endif
     }
 
     private void identifyCandidatesExceptionDataflow()

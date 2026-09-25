@@ -76,15 +76,35 @@ internal static unsafe class LoweringPhaseTests
     }
 
     [Test]
-    public static void UnfinishedAllocationReturnsExplicitSkip()
+    public static void UnfinishedEmissionReturnsExplicitSkip()
     {
         WithCompiler((compiler, allocator) => {
-            var exception = Assert.Throws<FatalJitException>(() => allocator.DoRegisterAllocation());
+            var exception = Assert.Throws<FatalJitException>(() => compiler.codeGen!.genGenerateCode(out _, out _));
 
             Assert.That(exception!.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
             Assert.That(compiler.lvaTable[0].lvDoNotEnregister, Is.False);
         });
     }
+
+#if FEATURE_LOOP_ALIGN
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void LoopAlignmentRetainsItsNativeDisabledMode(bool enabled)
+    {
+        WithCompiler((compiler, allocator) => {
+            compiler.codeGen!.ShouldAlignLoops = enabled;
+            if (enabled)
+            {
+                var exception = Assert.Throws<FatalJitException>(() => compiler.placeLoopAlignInstructions());
+                Assert.That(exception!.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
+            }
+            else
+            {
+                Assert.That(compiler.placeLoopAlignInstructions(), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
+            }
+        });
+    }
+#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "DoPhase")]
     private static extern PhaseStatus DoPhase(Lowering lowering);

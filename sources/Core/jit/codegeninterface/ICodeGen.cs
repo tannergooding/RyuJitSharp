@@ -43,6 +43,10 @@ public interface ICodeGen
     /// <remarks>Does not prohibit double alignment of the stack.</remarks>
     bool IsFrameRequired { get; set; }
 
+    void SetFramePointerRequiredEH(bool value);
+
+    void SetFramePointerRequiredGCInfo(bool value);
+
     //  The following will be set to true if we've determined that we need to
     //  generate a full-blown pointer register map for the current method.
     //  Currently it is equal to (GetInterruptible() || !IsFramePointerUsed)

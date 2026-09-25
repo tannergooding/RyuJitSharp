@@ -713,6 +713,26 @@ diagnostics share native block-row formatting, node-location widths and register
 name casing; the earlier translation mismatches are corrected, not accepted
 differences (B201).
 
+The allocation driver supports the native minimal-allocation mode: optimization
+disabled and no enregistered locals after the native no-tracked-locals adjustment.
+Other modes reject before clearing register state or building intervals. The
+supported driver retains build/allocation/resolution phase boundaries, statistics,
+tuple dumps, completion flags and DFS invalidation.
+
+Post-allocation loop-alignment placement implements only the native
+`ShouldAlignLoops == false` branch, which is selected for minopts, including its
+diagnostics. The enabled mode explicitly skips rather than silently doing
+nothing. Unfinished machine-code emission likewise reports `CORJIT_SKIPPED`;
+neither boundary establishes managed code generation.
+
+Morph-time `fgSetOptions` and its frame/GC setters now establish the native
+frame-pointer and interruptibility policy before allocation. Register-mask bank
+selection, physical-register availability aliases and block-boundary constant
+reset defects found during activation are corrected (B202-B205), not accepted
+output differences. The complete allocation-phase body is byte-exact for
+seventeen of twenty minopts corpus methods; the three inherited hardware-import
+and EH-order mismatches remain outside this activation packet.
+
 Internal-register definitions, call definitions and kill references retain
 native location ordering, register preferences and upper-vector save rules.
 Write-barrier classification is exposed through `ICodeGen`, matching the native

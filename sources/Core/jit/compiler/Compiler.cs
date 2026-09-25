@@ -2491,8 +2491,20 @@ public partial class Compiler
     public PhaseStatus gsPhase() => PhaseStatus.MODIFIED_NOTHING;
 
 #if FEATURE_LOOP_ALIGN
-    // TODO: Port phase - placeLoopAlignInstructions
-    public PhaseStatus placeLoopAlignInstructions() => PhaseStatus.MODIFIED_NOTHING;
+    public PhaseStatus placeLoopAlignInstructions()
+    {
+        JITDUMP("*************** In placeLoopAlignInstructions()\n");
+        assert(codeGen is not null);
+        if (!codeGen.ShouldAlignLoops)
+        {
+            JITDUMP("Not aligning loops; ShouldAlignLoops is false\n");
+            return PhaseStatus.MODIFIED_NOTHING;
+        }
+
+        const string message = "Loop-alignment placement with ShouldAlignLoops enabled is not implemented.";
+        JITDUMP($"\nCOMPILATION FAILED: {message}\n");
+        throw new FatalJitException(CORJIT_SKIPPED, message);
+    }
 #endif
 
     // TODO: Port phase - rangeCheckPhase

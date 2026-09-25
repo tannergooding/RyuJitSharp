@@ -11929,9 +11929,75 @@ public partial class Compiler
         }
     }
 
-    public void fgSetOptions()
+    public unsafe void fgSetOptions()
     {
-        // TODO: Port Compiler.fgSetOptions
+        assert(codeGen is not null);
+#if TARGET_WASM
+        optMethodFlags |= OMF_NEEDS_GCPOLLS;
+        assert(!codeGen.Interruptible);
+#else
+#if DEBUG
+        if ((JitConfig.JitFullyInt != 0) || compStressCompile(STRESS_GENERIC_VARN, 30))
+        {
+            noway_assert(!codeGen.IsGcTypeFixed);
+            codeGen.Interruptible = true;
+        }
+#endif
+        if (opts.compDbgCode)
+        {
+#if DEBUG
+            assert(!codeGen.IsGcTypeFixed);
+#endif
+            codeGen.Interruptible = true;
+        }
+#endif
+
+        if (compLocallocUsed)
+        {
+            codeGen.IsFramePointerRequired = true;
+        }
+#if TARGET_X86
+        if (compTailCallUsed)
+        {
+            codeGen.IsFramePointerRequired = true;
+        }
+#endif
+        if (!opts.genFPopt)
+        {
+            codeGen.IsFramePointerRequired = true;
+        }
+
+        // EH can be removed after morph, but surviving handlers require stable frame roots.
+        if (compHndBBtabCount > 0)
+        {
+            codeGen.SetFramePointerRequiredEH(true);
+#if TARGET_X86
+#if DEBUG
+            assert(!codeGen.IsGcTypeFixed);
+#endif
+            codeGen.Interruptible = true;
+#endif
+        }
+        if (compMethodRequiresPInvokeFrame)
+        {
+            codeGen.IsFramePointerRequired = true;
+        }
+        if (info.compPublishStubParam)
+        {
+            codeGen.SetFramePointerRequiredGCInfo(true);
+        }
+        if (compIsProfilerHookNeeded)
+        {
+            codeGen.IsFramePointerRequired = true;
+        }
+        if (info.compIsVarArgs)
+        {
+            codeGen.SetFramePointerRequiredGCInfo(true);
+        }
+        if (lvaReportParamTypeArg())
+        {
+            codeGen.SetFramePointerRequiredGCInfo(true);
+        }
     }
 
     /// <summary>Set CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE as the preferred call constructure if it is undefined.</summary>

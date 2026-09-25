@@ -44,13 +44,12 @@ internal static unsafe class LinearScanIntervalConstructionTests
             }
 #endif
 
-            InitMaxSpill(allocator);
-            BuildIntervals(allocator);
-            allocator.initVarRegMaps();
-            AllocateRegisters(allocator);
-            AllocationPassComplete(allocator) = true;
-            ResolveRegisters(allocator);
+            var status = allocator.DoRegisterAllocation();
 
+            Assert.That(status, Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            Assert.That(compiler.compRegAllocDone, Is.True);
+            Assert.That(compiler.mostRecentlyActivePhase, Is.EqualTo(Phases.PHASE_LINEAR_SCAN_RESOLVE));
+            Assert.That(AllocationPassComplete(allocator), Is.True);
             Assert.That(left.RegNum, Is.Not.EqualTo(REG_NA));
             Assert.That(right.RegNum, Is.Not.EqualTo(REG_NA));
             Assert.That(add.RegNum, Is.Not.EqualTo(REG_NA));
@@ -91,12 +90,7 @@ internal static unsafe class LinearScanIntervalConstructionTests
             block.InsertAtEnd(finite);
             block.InsertAtEnd(ret);
 
-            InitMaxSpill(allocator);
-            BuildIntervals(allocator);
-            allocator.initVarRegMaps();
-            AllocateRegisters(allocator);
-            AllocationPassComplete(allocator) = true;
-            ResolveRegisters(allocator);
+            _ = allocator.DoRegisterAllocation();
 
             var internalRegisters = compiler.codeGen!.InternalRegisters.GetAll(finite);
             Assert.That(internalRegisters.IsEmpty, Is.False);
@@ -104,6 +98,66 @@ internal static unsafe class LinearScanIntervalConstructionTests
             Assert.That(finite.RegNum, Is.EqualTo(REG_XMM0));
             Assert.That(compiler.codeGen.InternalRegisters.GetAll(value).IsEmpty, Is.True);
         });
+    }
+
+    [TestCase(TYP_INT)]
+    [TestCase(TYP_LONG)]
+    public static void AllocationResolvesASingleRegisterCandidate(var_types type)
+    {
+        WithAllocator((compiler, allocator) => {
+            var returnType = new ReturnTypeDesc();
+            returnType.InitializeReturnType(compiler, type, null, CorInfoCallConvExtension.Managed);
+            compiler.compRetTypeDesc = returnType;
+            var block = CreateBlocks(compiler, BBJ_RETURN)[0];
+            var value = compiler.gtNewIconNode(type, 3);
+            var ret = new GenTreeUnOp(GT_RETURN, type, value);
+            block.InsertAtEnd(value);
+            block.InsertAtEnd(ret);
+#if DEBUG
+            compiler.verbose = true;
+#endif
+
+            _ = allocator.DoRegisterAllocation();
+
+            Assert.That(value.RegNum, Is.EqualTo(REG_INTRET));
+            Assert.That(compiler.compRegAllocDone, Is.True);
+        });
+    }
+
+    [Test]
+    public static void AllocationDisablesEnregistrationWhenThereAreNoTrackedLocals()
+    {
+        WithAllocator((compiler, allocator) => {
+            _ = CreateBlocks(compiler, BBJ_RETURN);
+            compiler.codeGen!.RegSet.rsSetRegsModified(RBM_RBX);
+
+            _ = allocator.DoRegisterAllocation();
+
+            Assert.That(compiler.compRegAllocDone, Is.True);
+            Assert.That(EnregisterLocalVars(allocator), Is.False);
+            Assert.That(compiler.codeGen.RegSet.rsRegsModified(RBM_RBX), Is.False);
+        }, enregister: true);
+    }
+
+    [TestCase(true, false)]
+    [TestCase(false, true)]
+    [TestCase(true, true)]
+    public static void UnsupportedAllocationModeRejectsBeforeMutation(bool optimized, bool trackedLocals)
+    {
+        WithAllocator((compiler, allocator) => {
+            compiler.lvaTrackedCount = trackedLocals ? 1 : 0;
+            compiler.codeGen!.RegSet.rsSetRegsModified(RBM_RBX);
+            var previousPhase = compiler.mostRecentlyActivePhase;
+
+            var exception = Assert.Throws<FatalJitException>(() => allocator.DoRegisterAllocation());
+
+            Assert.That(exception!.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
+            Assert.That(compiler.compRegAllocDone, Is.False);
+            Assert.That(compiler.mostRecentlyActivePhase, Is.EqualTo(previousPhase));
+            Assert.That(EnregisterLocalVars(allocator), Is.True);
+            Assert.That(allocator.refPositions, Is.Empty);
+            Assert.That(compiler.codeGen.RegSet.rsRegsModified(RBM_RBX), Is.True);
+        }, enregister: true, minOpts: !optimized);
     }
 
     [Test]
@@ -346,7 +400,7 @@ internal static unsafe class LinearScanIntervalConstructionTests
         return blocks;
     }
 
-    private static void WithAllocator(Action<Compiler, LinearScan> action, bool enregister = false)
+    private static void WithAllocator(Action<Compiler, LinearScan> action, bool enregister = false, bool minOpts = true)
     {
 #if DEBUG
         using var tls = new JitTls(null);
@@ -355,10 +409,11 @@ internal static unsafe class LinearScanIntervalConstructionTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
-        compiler.opts.compFlags = CLFLG_MINOPT | (enregister ? CLFLG_REGVAR : 0);
+        compiler.opts.SetMinOpts(minOpts);
+        compiler.opts.compFlags = (minOpts ? CLFLG_MINOPT : 0) | (enregister ? CLFLG_REGVAR : 0);
         compiler.fgPredsComputed = true;
         compiler.lvaTable = [];
+        compiler.compHndBBtab = [];
         compiler.lvaRefCountState = RefCountState.RCS_NORMAL;
 #if DEBUG
         compiler.fgSafeBasicBlockCreation = true;
@@ -395,9 +450,6 @@ internal static unsafe class LinearScanIntervalConstructionTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildIntervalsMinimal")]
     private static extern void BuildIntervals(LinearScan allocator);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "initMaxSpill")]
-    private static extern void InitMaxSpill(LinearScan allocator);
-
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "allocateRegistersMinimal")]
     private static extern void AllocateRegisters(LinearScan allocator);
 
@@ -406,6 +458,9 @@ internal static unsafe class LinearScanIntervalConstructionTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_allocationPassComplete")]
     private static extern ref bool AllocationPassComplete(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_enregisterLocalVars")]
+    private static extern ref bool EnregisterLocalVars(LinearScan allocator);
 
 #if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
