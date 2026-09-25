@@ -8,7 +8,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    private static bool isHighSimdReg(regNumber reg) => reg >= REG_XMM16 && reg <= REG_XMM31;
+    internal static bool isHighSimdReg(regNumber reg) => reg >= REG_XMM16 && reg <= REG_XMM31;
 
     private static bool isHighGPReg(regNumber reg) => reg >= REG_R16 && reg <= REG_R31;
 

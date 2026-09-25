@@ -14,6 +14,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Scalar, SIMD and mask constant materialization
+
+Code generation can now select and record native instruction sequences for all
+constant forms: integer handles, scalar floating values, SIMD vectors and masks.
+It preserves signed-zero distinctions, all-bits-set shortcuts, ISA-dependent
+forms, TLS GC transitions and the assigned registers of vector and mask nodes.
+
+SIMD constants use native repeated-pattern broadcasts or narrower zero-extending
+loads where applicable. Static-field load descriptors retain relocations,
+segment prefixes, operand options and exact instruction sizes. Block/node
+generation, final encoding and runtime metadata publication remain;
+production emission is still explicitly skipped.
+
 ## 2026-09-25: Constant data and SIMD register recording
 
 The emitter now owns constant-data sections and block-address tables, preserving

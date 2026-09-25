@@ -84,7 +84,7 @@ public partial class Emitter
     }
 #endif
 
-    private void RequireSupportedInstructionRecording()
+    internal void RequireSupportedInstructionRecording()
     {
         assert(_compiler is not null);
 #if DEBUG

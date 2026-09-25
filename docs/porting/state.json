@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete the next constant-materialization dependencies: AMD64 register-only SIMD recording wrappers and their full register-instruction closure; native owned constant-data sections, lookup/insertion and scalar floating constants. Preserve exact payload bits, alignment, bounded lookup and legacy/VEX/EVEX operand policies. Keep the mixed constant-node dispatcher and production emission unactivated until all dependencies exist.",
+      "scope": "Complete AMD64 constant materialization: SIMD/mask constant-data collection and compressed loads, static-field load descriptors and all genSetRegToConst overloads. Reuse committed scalar data storage and register-only SIMD recording; preserve bit patterns, native instruction selection and D005 pre-mutation rejection. Keep production emission skipped.",
       "doneWhen": [
-        "Port complete emitIns_SIMD_R_R_R and emitIns_SIMD_R_R_R_I plus required general register recording under D005, not SIMD-only substitutes for shared native routines.",
-        "Port native data-section collection and constant lookup/insertion, emitBlkConst and emitFltOrDblConst with real owned bytes and native offset handles. Preserve signed zero/NaN payloads and exact alignment/deduplication rules.",
-        "Validate the integrated dependency closure in Debug/Release and commit; retain unresolved SIMD compressed loads, static-field loads and the shared constant-node dispatcher explicitly."
+        "Port complete AMD64 emitIns_R_C and SIMD static-field wrappers with full shared sizing/descriptor/encoding dependencies under D005.",
+        "Port SIMD8/16/general/mask constant collection, full compressed-load selection and all three native genSetRegToConst overloads without a reduced scalar dispatcher.",
+        "Validate the integrated constant-materialization closure in Debug/Release and commit. Preserve production emission's explicit skip and leave final encoding/metadata publication unclaimed."
       ],
       "validation": [
-        "Reuse immediateMaterialization.selection, adding focused SIMD recording and constant-data cases at the closure boundary.",
+        "Reuse constantDataAndSimdRecording.selection, adding static-field recording, SIMD constant compression and complete constant-materialization cases.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit the validated constant-data/SIMD-register packet, then close static-field constant-load recording beginning with emitIns_R_C (emitxarch.cpp:8929) and emitIns_SIMD_R_R_C (9626), including complete shared dependencies. Reuse owned constant sections and register-only SIMD recording. In parallel, finish SIMD constant-data materialization from emit.cpp:8240 onward toward all genSetRegToConst overloads at codegenxarch.cpp:276,429,458. Do not activate a partial constant dispatcher or production emission.",
+    "nextAction": "Commit the validated complete constant-materialization packet, then resume required node generation at genCodeForNegNot/genCodeForBswap (codegenxarch.cpp:576,607), closing their complete native operand/instruction dependencies rather than reducing genCodeForTreeNode (1810). All genSetRegToConst overloads, compressed SIMD loads and required static-field load recording are complete under D005. Retain production emission's explicit skip until block/node generation, encoding and metadata publication are complete.",
     "handoff": {
-      "status": "simd-and-constant-data-validated",
+      "status": "constant-materialization-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All returned SIMD-register implementation and fixture corrections from a7f6ecaf-b706-4be6-83c3-c83235b7452f are integrated and validated with parent-owned constant-data storage. The worker is idle, with no unread packet or outstanding work. No app-native child sessions.",
+      "workerPackets": "All returned static-field recording files and signed-handle fixture corrections from a7f6ecaf-b706-4be6-83c3-c83235b7452f are integrated and validated with the parent constant-materialization implementation. The worker is idle with no unread handoff or outstanding assignment. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "constantMaterialization": {
+        "debugPassed": 1293,
+        "releasePassed": 1242,
+        "skipped": 0,
+        "selection": "constantDataAndSimdRecording.selection plus CodeGenConstantTests and EmitterStaticFieldInstructionTests.",
+        "debugTests": "artifacts\\constant-materialization-integrated-debug.trx",
+        "releaseTests": "artifacts\\constant-materialization-integrated-release.trx",
+        "coverage": "All scalar/SIMD/mask constant overloads, type widths and GC attributes, NativeAOT section/TLS handling, signed zero/all-bits-set distinctions, high SIMD registers, AVX2 fallback, vector/mask node register selection and native SIMD12 original-value behavior (B214). SIMD data widths and exact greedy broadcast versus zero-extension choices cover 4-64 byte payloads. Complete static-field load recording covers real/tagged/sentinel handles, relocations, FS/GS prefixes, offset loads, EVEX/APX options and legacy copies. D005 guards reject before descriptors, constant-pool allocation or TLS GC mutation.",
+        "remaining": "Production emission remains skipped; managed machine-code size is zero. Reuses funcletCreation.nativeHost with no new runtime parity claim. Required block/node generation, final instruction encoding and GC/EH/unwind/debug metadata publication remain."
+      },
       "constantDataAndSimdRecording": {
         "debugPassed": 1182,
         "releasePassed": 1139,
@@ -3423,6 +3433,22 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "complete-constant-materialization",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:276,429,458", "src\\coreclr\\jit\\emit.cpp:8248-8440"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.Constants.cs", "sources\\Core\\jit\\emit\\Emitter.SimdConstants.cs", "sources\\Core\\jit\\emitxarch\\Emitter.PrefixRegisters.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 genSetRegToConst scalar/vector/mask overloads and SIMD8/16/general/mask data collection plus complete compressed-load selection. Uses existing immediate, register-only SIMD and static-field recording; node overloads retain native vector/mask register selection and SIMD12 original-value use (B214). The managed APIs use readonly references instead of pointers to SIMD payloads. Native high-register classifier and D005 guard are assembly-visible for these callers. Other-target codegen/compressed-load execution explicitly rejects. Production emission remains inactive."
+    },
+    {
+      "area": "static-field-load-instruction-recording",
+      "native": ["src\\coreclr\\jit\\emitxarch.cpp:5762,8506,8929,9626", "src\\coreclr\\jit\\emit.cpp:1486-1496", "src\\coreclr\\jit\\compiler.hpp:3926"],
+      "csharp": ["sources\\Core\\jit\\emitxarch\\Emitter.StaticFieldInstructions.cs", "sources\\Core\\jit\\emitxarch\\Emitter.StaticFieldInstructionSizes.cs", "sources\\Core\\jit\\emitxarch\\Emitter.instrDesc.StaticFields.cs", "sources\\Core\\jit\\emitxarch\\Globals.StaticFields.cs", "sources\\Core\\jit\\emit\\Emitter.instrDesc.Address.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 emitIns_R_C, emitIns_R_R_C and emitIns_SIMD_R_R_C under D005, full emitInsSizeCV, native static-field sentinel predicate and descriptor handle/displacement access. Preserves all native offset, relocation, FS/GS, encoding-option and legacy-copy branches rather than specializing to constant-data handles. Final encoding remains unported."
+    },
     {
       "area": "constant-data-storage-and-offset-handles",
       "native": ["src\\coreclr\\jit\\emit.cpp:7870-7971,8028-8232", "src\\coreclr\\jit\\emit.h:442-452,3615-3690", "src\\coreclr\\jit\\ee_il_dll.cpp:1422-1459", "src\\coreclr\\jit\\utils.cpp:2241"],

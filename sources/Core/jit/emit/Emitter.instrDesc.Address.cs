@@ -18,7 +18,7 @@ public partial class Emitter
 #else
         [StructLayout(LayoutKind.Explicit, Size = 4)]
 #endif
-        public struct idAddrUnion
+        public partial struct idAddrUnion
         {
             [FieldOffset(0)]
             public emitLclVarAddr iiaLclVar;
