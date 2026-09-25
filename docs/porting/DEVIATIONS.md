@@ -1113,27 +1113,21 @@ emission or waive future `jitdump`/`jitdisasm` parity.
 
 ### D006: Shared throw-helper blocks before inline helper calls
 
-**Status:** temporary specialization along the existing native
-`fgUseThrowHelperBlocks()` predicate, not an accepted output difference.
+**Status:** closed for Windows AMD64; not an accepted output difference.
 
-`genJumpToSharedThrowHlpBlk` implements the complete Windows-AMD64 shared-block
-arm of native `genJumpToThrowHlpBlk` (`codegencommon.cpp`), including explicit
-targets, exception-target lookup and Debug consistency checks. `genCheckOverflow`
-uses this explicit specialization. Binary arithmetic and multiplication reject
-checked operations before operand consumption when the native predicate is
-false; unchecked arithmetic does not require shared throw blocks.
-Indexed address generation applies the same pre-consumption guard only when
-bounds checking is required; unchecked indexed addresses remain supported.
-Explicit bounds-check nodes likewise reject the inline-call mode before
-consuming either comparison operand.
-Integer casts apply the guard only when `GenIntCastDesc` requires an actual
-overflow check. Checked widening conversions that need no check remain supported.
-Finite checks reject inline throws before extracting their exponent temporary.
+`genJumpToThrowHlpBlk` now implements both native `fgUseThrowHelperBlocks()`
+arms (`codegencommon.cpp:2000-2069`). Shared blocks retain explicit targets,
+exception-target lookup and Debug consistency checks. Inline throws reverse
+conditional jumps around the selected runtime helper, then define the normal
+continuation with its GC roots restored. Unconditional throws emit no redundant
+branch or continuation label.
 
-The false arm emits an inline helper call and remains unported. It fails with
-`CORJIT_SKIPPED`, rather than omitting the throw or recording a partial arithmetic
-sequence. Retain the mixed-mode native body until inline call generation and
-its branch/label closure are complete. Production emission is still skipped.
+Arithmetic, multiplication, bounds checks, indexed addresses, integer casts and
+finite checks use the complete function. Their former shared-only restrictions
+are removed. Shared-block construction and inline calls use the same native
+`acdHelper` mapping. D005 still rejects unsupported disassembly before mutation;
+other targets explicitly reject throw generation. Production emission remains
+skipped pending the remaining backend closure.
 
 ## Implementation notes and parity findings
 

@@ -66,9 +66,9 @@ internal static unsafe class CodeGenIntrinsicTests
     }
 
     [Test]
-    public static void FiniteChecksRejectInlineThrowsBeforeExtractingTemporaries()
+    public static void FiniteChecksBranchAroundTheInlineArithmeticThrow()
     {
-        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
+        EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             var source = compiler.gtNewDconNode(TYP_DOUBLE, double.PositiveInfinity);
             source.RegNum = REG_XMM0;
@@ -76,13 +76,10 @@ internal static unsafe class CodeGenIntrinsicTests
             tree.RegNum = REG_XMM0;
             codeGen.InternalRegisters.Add(tree, RBM_R11);
             compiler.opts.compDbgCode = true;
+            var firstGroup = codeGen.Emitter.emitCurIG;
 
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genCkfinite(tree));
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            compiler.opts.compDbgCode = false;
-            _ = CodeGenBinaryTests.PrepareThrowTarget(compiler, SCK_ARITH_EXCPN);
             codeGen.genCkfinite(tree);
-            Assert.That(Descriptors(codeGen), Has.Count.EqualTo(5));
+            _ = CodeGenThrowHelperTests.AssertInlineThrow(firstGroup, INS_jne, 6);
         });
     }
 

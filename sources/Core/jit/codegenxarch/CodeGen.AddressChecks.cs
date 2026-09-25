@@ -54,7 +54,6 @@ public sealed partial class CodeGen
         throw new FatalJitException(CORJIT_SKIPPED, "Bounds-check generation requires AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
-        RequireSharedThrowHelperBlocks();
         noway_assert(oper.Oper is GT_BOUNDS_CHECK);
         var bounds = oper.AsBoundsChk();
         var index = bounds.Index;
@@ -96,7 +95,7 @@ public sealed partial class CodeGen
         assert(type is TYP_INT or TYP_LONG);
         assert(type.EmitSize >= src1.Type.EmitSize);
         _ = Emitter.emitInsBinary(compare, type.EmitSize, src1, src2);
-        genJumpToSharedThrowHlpBlk(jumpKind, bounds.ThrowKind);
+        genJumpToThrowHlpBlk(jumpKind, bounds.ThrowKind);
 #endif
     }
 }

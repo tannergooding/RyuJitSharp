@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete Windows-AMD64 indirect stores, including GC write barriers, RMW operations, SIMD12 and contained hardware extraction/narrowing stores. Reuse the committed helper-call closure; preserve native consumption, memory width and GC update ordering.",
+      "scope": "Complete Windows-AMD64 genJumpToThrowHlpBlk, including inline calls and continuation labels, then remove D006 restrictions from all checked generation callers. Reuse the committed helper-call, jump and label closures and the shared native exception-helper mapping.",
       "doneWhen": [
-        "Port complete genCodeForStoreInd and genStoreIndTypeSimd12, native write-barrier dispatch and store RMW predicates.",
-        "Complete emitInsStoreInd and required immediate-address wrappers for all Windows-AMD64 store forms, retaining D005 before mutation.",
+        "Port both native throw-helper modes, preserving conditional reversal, unconditional calls, shared targets and continuation GC state.",
+        "Wire arithmetic, multiplication, casts, bounds, indexed addresses and finite checks to the complete function, retaining D005 before mutation.",
         "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Validate ordinary/barrier stores, RMW operand ordering, scalar/SIMD widths, signed imm8 extraction, byte-swap/APX choices and local/indirect lifetime changes in Debug/Release before committing.",
+        "Validate helper identities, reversed jumps, unconditional throws, continuation GC roots, shared-target identity and all formerly guarded callers in Debug/Release before committing.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,9 +32,9 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "The complete indirect-store closure is integrated and validated (indirectStores), including GC barriers, RMW, SIMD12 and contained extraction/narrowing stores. Continue native genJumpToThrowHlpBlk in codegencommon.cpp from the current shared-only implementation in CodeGen.ArithmeticSupport.cs: use the committed helper-call closure to finish inline throws and all required stack/label paths before removing D006 guards. Keep production emission skipped until remaining node/block generation, general calls, encoding and metadata publication are complete.",
+    "nextAction": "Inline throw generation is complete and validated (inlineThrows); D006 is closed for Windows AMD64. Continue complete native genReturn in codegencommon.cpp:7361 and its genFloatReturn (codegenxarch.cpp:1391), genStructReturn and GC-return dependencies. These entrypoints are not yet present in managed CodeGen; read the pinned bodies to establish the full Windows-AMD64 closure rather than adding a scalar-only alternate function. Keep production emission skipped until remaining node/block generation, general calls, encoding and metadata publication are complete.",
     "handoff": {
-      "status": "indirect-store-generation-validated",
+      "status": "inline-throw-generation-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
       "workerPackets": "All packets and follow-ups from 4c9a8661-6e45-4e43-960d-7f3a779cdcde are collected through turn 22, frozen and integrated, including emitInsStoreInd, emitIns_A_R_I and EmitterIndirectStoreTests. Root Debug/Release store validation passes. Both this worker and a7f6ecaf-b706-4be6-83c3-c83235b7452f are idle with no assignment or unread handoff. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "inlineThrows": {
+        "debugPassed": 368,
+        "releasePassed": 355,
+        "skipped": 0,
+        "selection": ["CodeGenThrowHelperTests", "CodeGenBinaryTests", "CodeGenMultiplicationTests", "CodeGenAddressCheckTests", "CodeGenIndirectLoadTests", "CodeGenIntegerCastTests", "CodeGenIntrinsicTests", "CodeGenHelperCallTests", "EmitterLabelTests", "ThrowHelper"],
+        "debugTests": "artifacts\\inline-throw-debug.trx",
+        "releaseTests": "artifacts\\inline-throw-release.trx",
+        "coverage": "All seven exception-helper identities via EE callbacks, ignored explicit fail blocks in inline mode, reversed overflow/carry/bounds/equality jumps, unconditional calls without labels, cold continuation flags and restored reference/byref roots, shared explicit/lookup targets, checked arithmetic/multiplication/casts, bounds/indexed-address continuation and finite checks. The extracted native acdHelper map is reused by shared-block construction. D005 rejects before label creation.",
+        "remaining": "D006 closed for Windows AMD64. Existing helper-call and label support completes the native inline arm without additional stack specialization. Reuses funcletCreation.nativeHost because production reachability is unchanged; managed code size remains zero. Return-node generation, general calls, remaining node/block generation, final encoding and metadata publication remain."
+      },
       "indirectStores": {
         "debugPassed": 501,
         "releasePassed": 475,
@@ -3629,6 +3639,14 @@
   },
   "sourceMap": [
     {
+      "area": "inline-throw-generation",
+      "native": ["src\\coreclr\\jit\\codegencommon.cpp:2000-2069", "src\\coreclr\\jit\\flowgraph.cpp:Compiler::acdHelper"],
+      "csharp": ["sources\\Core\\jit\\codegencommon\\CodeGen.ArithmeticSupport.cs", "sources\\Core\\jit\\compiler\\Compiler.ThrowHelpers.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete Windows-AMD64 genJumpToThrowHlpBlk with both native modes and shared acdHelper mapping. All checked callers use the complete function; D006 is closed. Reuses complete helper-call, jump and label paths. D005 and other-target rejection remain explicit; production emission remains skipped."
+    },
+    {
       "area": "indirect-store-generation",
       "native": ["src\\coreclr\\jit\\codegenxarch.cpp:5315-5624,5697-5780", "src\\coreclr\\jit\\simdcodegenxarch.cpp:40-99", "src\\coreclr\\jit\\codegencommon.cpp:3029-3036", "src\\coreclr\\jit\\emitxarch.cpp:6323-6452,9440-9453", "src\\coreclr\\jit\\gentree.h:GenTreeStoreInd RMW predicates"],
       "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.IndirectStores.cs", "sources\\Core\\jit\\simdcodegenxarch\\CodeGen.IndirectStores.cs", "sources\\Core\\jit\\codegen\\CodeGen.WriteBarriers.cs", "sources\\Core\\jit\\emitxarch\\Emitter.IndirectStores.cs", "sources\\Core\\jit\\gentree\\GenTreeStoreInd.cs"],
@@ -3666,7 +3684,7 @@
       "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.Intrinsics.cs", "sources\\Core\\jit\\simdcodegenxarch\\CodeGen.UpperLanes.cs", "sources\\Core\\jit\\instr\\CodeGen.MemoryOperands.cs", "sources\\Core\\jit\\emitxarch\\Emitter.SimdMemoryInstructions.cs"],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Complete AMD64 genCkfinite, genIntrinsicRoundOp, genIntrinsic, genSimdUpperSave/genSimdUpperRestore, inst_RV_RV_TT_IV and emitIns_SIMD_R_R_C_I. Reuses native-faithful bitwise generation for abs. Preserves exponent bits, shared exception target, rounding immediates, source forms, SIMD widths/homes and lifetime ordering. D005/D006 guards precede mutation; non-AMD64 generation rejects. Production emission remains skipped."
+      "status": "Complete AMD64 genCkfinite, genIntrinsicRoundOp, genIntrinsic, genSimdUpperSave/genSimdUpperRestore, inst_RV_RV_TT_IV and emitIns_SIMD_R_R_C_I. Reuses native-faithful bitwise generation for abs. Preserves exponent bits, rounding immediates, source forms, SIMD widths/homes and lifetime ordering. Finite checks now support shared and inline throws through inline-throw-generation. D005 precedes mutation; non-AMD64 generation rejects. Production emission remains skipped."
     },
     {
       "area": "scalar-cast-generation",
@@ -3674,7 +3692,7 @@
       "csharp": ["sources\\Core\\jit\\codegenlinear\\CodeGen.Casts.cs", "sources\\Core\\jit\\codegenlinear\\CodeGen.GenIntCastDesc.cs", "sources\\Core\\jit\\codegenxarch\\CodeGen.IntegerCasts.cs", "sources\\Core\\jit\\codegenxarch\\CodeGen.FloatingCasts.cs", "sources\\Core\\jit\\instr\\CodeGen.FloatingConversions.cs", "sources\\Core\\jit\\codegeninterface\\NodeInternalRegisters.cs"],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Complete AMD64 GenIntCastDesc, genCodeForCast, genIntCastOverflowCheck, genIntToIntCast, genFloatToFloatCast, genIntToFloatCast, ins_FloatConv, inst_RV_SH and destructive internal-register Extract. Cast dispatch accepts managed GenTreeCast; readonly descriptor Check/Extend properties replace native methods that share enum names. Preserves widths, range decisions, unsigned-long rounding, ISA predicates and lifetimes. D005/D006 fail closed before mutation; other cast targets explicitly reject. Production emission remains skipped."
+      "status": "Complete AMD64 GenIntCastDesc, genCodeForCast, genIntCastOverflowCheck, genIntToIntCast, genFloatToFloatCast, genIntToFloatCast, ins_FloatConv, inst_RV_SH and destructive internal-register Extract. Cast dispatch accepts managed GenTreeCast; readonly descriptor Check/Extend properties replace native methods that share enum names. Preserves widths, range decisions, unsigned-long rounding, ISA predicates and lifetimes. Checked casts now support shared and inline throws. D005 fails closed before mutation; other cast targets explicitly reject. Production emission remains skipped."
     },
     {
       "area": "conditional-selection-and-branch-generation",
@@ -3706,7 +3724,7 @@
       "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.AddressChecks.cs", "sources\\Core\\jit\\emitxarch\\Emitter.AddressStores.cs"],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Complete AMD64 genLeaInstruction, genCodeForNullCheck, genRangeCheck, emitIns_AR_R and emitIns_ARX_R. Preserves operand order, address GC results, comparison direction/width, shared throw kinds, read/write formats and APX options. Native fixed-out-args stack adjustment is empty. D005/D006 rejection precedes mutation; production emission remains skipped."
+      "status": "Complete AMD64 genLeaInstruction, genCodeForNullCheck, genRangeCheck, emitIns_AR_R and emitIns_ARX_R. Preserves operand order, address GC results, comparison direction/width, shared and inline throw kinds, read/write formats and APX options. Native fixed-out-args stack adjustment is empty. D005 rejection precedes mutation; production emission remains skipped."
     },
     {
       "area": "indirect-read-and-indexed-address-generation",
@@ -3714,7 +3732,7 @@
       "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.IndirectLoads.cs", "sources\\Core\\jit\\emitxarch\\Emitter.IndirectLoads.cs", "sources\\Core\\jit\\emitxarch\\Emitter.SimdMemoryInstructions.cs", "sources\\Core\\jit\\codegeninterface\\NodeInternalRegisters.cs"],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Complete AMD64 genCodeForIndir, genCodeForIndexAddr, genLoadIndTypeSimd12, emitInsLoadInd and emitIns_SIMD_R_R_A_I; complete fixed-register GetSingle with native Debug-only removal. Preserves TLS no-consumption, SIMD12 address mutation, index widening/scaling, bounds ordering and base GC lifetime. D005/D006 reject before mutation; production emission remains skipped."
+      "status": "Complete AMD64 genCodeForIndir, genCodeForIndexAddr, genLoadIndTypeSimd12, emitInsLoadInd and emitIns_SIMD_R_R_A_I; complete fixed-register GetSingle with native Debug-only removal. Preserves TLS no-consumption, SIMD12 address mutation, index widening/scaling, shared and inline bounds throws and base GC lifetime. D005 rejects before mutation; production emission remains skipped."
     },
     {
       "area": "local-store-and-bitcast-generation",
@@ -3754,7 +3772,7 @@
       "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.Multiplication.cs", "sources\\Core\\jit\\emitxarch\\Emitter.MultiplyInstructions.cs"],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Complete AMD64 genCodeForMul, genCodeForMulHi, inst3opImulForReg and check3opImulValues. Preserves native LEA/immediate selection, implicit registers, checked overflow, memory operands, APX, BMI2 and consume/produce ordering. D005/D006 reject before mutation. Non-AMD64 generation explicitly rejects; production emission remains skipped."
+      "status": "Complete AMD64 genCodeForMul, genCodeForMulHi, inst3opImulForReg and check3opImulValues. Preserves native LEA/immediate selection, implicit registers, checked overflow, memory operands, APX, BMI2 and consume/produce ordering. Checked multiplication now supports shared and inline throws. D005 rejects before mutation. Non-AMD64 generation explicitly rejects; production emission remains skipped."
     },
     {
       "area": "binary-arithmetic-and-shared-overflow",
@@ -3762,7 +3780,7 @@
       "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.Binary.cs", "sources\\Core\\jit\\codegencommon\\CodeGen.ArithmeticSupport.cs"],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Complete AMD64 genCodeForBinary, genIsSameLocalVar, inst_JMP and genCheckOverflow using explicit genJumpToSharedThrowHlpBlk. D006 preserves the full native shared-block arm and rejects inline-helper mode before arithmetic mutation; mixed-mode native body remains. Scalar floating, APX, flags, GC and spill ordering are retained."
+      "status": "Complete AMD64 genCodeForBinary, genIsSameLocalVar, inst_JMP and genCheckOverflow, now using complete Windows-AMD64 genJumpToThrowHlpBlk for shared and inline throws. D006 is closed by inline-throw-generation. Scalar floating, APX, flags, GC and spill ordering are retained."
     },
     {
       "area": "jump-recording-and-binary-destinations",

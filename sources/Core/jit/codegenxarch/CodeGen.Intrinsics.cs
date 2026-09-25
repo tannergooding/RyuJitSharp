@@ -14,7 +14,6 @@ public sealed partial class CodeGen
         throw new FatalJitException(CORJIT_SKIPPED, "Finite-check generation requires AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
-        RequireSharedThrowHelperBlocks();
         assert(tree.Oper == GT_CKFINITE);
         var operand = tree.AsUnOp().Op1;
         var targetType = tree.Type;
@@ -34,7 +33,7 @@ public sealed partial class CodeGen
 
         inst_RV_IV(INS_and, tempReg, expMask, EA_4BYTE);
         inst_RV_IV(INS_cmp, tempReg, expMask, EA_4BYTE);
-        genJumpToSharedThrowHlpBlk(EJ_je, SCK_ARITH_EXCPN);
+        genJumpToThrowHlpBlk(EJ_je, SCK_ARITH_EXCPN);
         inst_Mov(targetType, targetReg, operand.RegNum, canSkip: true);
 
         genProduceReg(tree);

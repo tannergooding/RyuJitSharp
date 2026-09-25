@@ -342,9 +342,9 @@ internal static class CodeGenMultiplicationTests
     }
 
     [Test]
-    public static void InlineThrowRejectionLeavesMultiplyOperandsReusable()
+    public static void CheckedMultiplyBranchesAroundTheInlineThrow()
     {
-        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
+        EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             var tree = new GenTreeOp(GT_MUL, TYP_INT,
                 CodeGenShiftTests.Register(compiler, TYP_INT, REG_RAX),
@@ -354,13 +354,10 @@ internal static class CodeGenMultiplicationTests
                 Flags = GTF_OVERFLOW,
             };
             compiler.opts.compDbgCode = true;
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genCodeForMul(tree));
-            Assert.That(CodeGenShiftTests.Descriptors(codeGen), Is.Empty);
-            compiler.opts.compDbgCode = false;
-            _ = CodeGenBinaryTests.PrepareThrowTarget(compiler);
+            var firstGroup = codeGen.Emitter.emitCurIG;
 
             codeGen.genCodeForMul(tree);
-            Assert.That(CodeGenShiftTests.Descriptors(codeGen), Has.Count.EqualTo(2));
+            _ = CodeGenThrowHelperTests.AssertInlineThrow(firstGroup, INS_jno, 3);
         });
     }
 

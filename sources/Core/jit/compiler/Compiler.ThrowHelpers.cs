@@ -131,16 +131,7 @@ public partial class Compiler
         assert(block is not null);
         assert(block.IsEmpty);
 
-        var helper = add.acdKind switch {
-            SCK_RNGCHK_FAIL => CORINFO_HELP_RNGCHKFAIL,
-            SCK_DIV_BY_ZERO => CORINFO_HELP_THROWDIVZERO,
-            SCK_ARITH_EXCPN => CORINFO_HELP_OVERFLOW,
-            SCK_ARG_EXCPN => CORINFO_HELP_THROW_ARGUMENTEXCEPTION,
-            SCK_ARG_RNG_EXCPN => CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION,
-            SCK_FAIL_FAST => CORINFO_HELP_FAIL_FAST,
-            SCK_NULL_CHECK => CORINFO_HELP_THROWNULLREF,
-            _ => CORINFO_HELP_UNDEF,
-        };
+        var helper = acdHelper(add.acdKind);
         noway_assert(helper is not CORINFO_HELP_UNDEF);
 
         var tree = fgMorphArgs(gtNewHelperCallNode(TYP_VOID, helper));
@@ -157,6 +148,23 @@ public partial class Compiler
             assert(_pLowering is not null);
             _pLowering.LowerRange(block, new LIR.ReadOnlyRange(first, last));
         }
+    }
+
+    internal static CorInfoHelpFunc acdHelper(SpecialCodeKind codeKind)
+    {
+        var helper = codeKind switch {
+            SCK_RNGCHK_FAIL => CORINFO_HELP_RNGCHKFAIL,
+            SCK_DIV_BY_ZERO => CORINFO_HELP_THROWDIVZERO,
+            SCK_ARITH_EXCPN => CORINFO_HELP_OVERFLOW,
+            SCK_ARG_EXCPN => CORINFO_HELP_THROW_ARGUMENTEXCEPTION,
+            SCK_ARG_RNG_EXCPN => CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION,
+            SCK_FAIL_FAST => CORINFO_HELP_FAIL_FAST,
+            SCK_NULL_CHECK => CORINFO_HELP_THROWNULLREF,
+            _ => CORINFO_HELP_UNDEF,
+        };
+        assert(helper is not CORINFO_HELP_UNDEF, "Bad codeKind");
+
+        return helper;
     }
 
 #if DEBUG

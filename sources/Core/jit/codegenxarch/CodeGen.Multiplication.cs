@@ -21,11 +21,6 @@ public sealed partial class CodeGen
         var size = tree.Type.EmitSize;
         var isUnsigned = (tree.Flags & GTF_UNSIGNED) != 0;
         var requiresOverflowCheck = tree.HasOverflowCheckEx;
-        if (requiresOverflowCheck)
-        {
-            RequireSharedThrowHelperBlocks();
-        }
-
         var op1 = tree.Op1;
         var op2 = tree.Op2;
         genConsumeOperands(tree);

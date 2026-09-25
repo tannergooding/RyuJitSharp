@@ -290,20 +290,19 @@ internal static class CodeGenIntegerCastTests
     }
 
     [Test]
-    public static void InlineOverflowModeRejectsBeforeConsumptionOrTemporaryExtraction()
+    public static void CheckedCastsResumeAfterTheInlineOverflowThrow()
     {
-        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
+        EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             var cast = CreateCast(Register(compiler, TYP_LONG, REG_RAX), false, TYP_UINT, true);
             codeGen.InternalRegisters.Add(cast, RBM_R11);
             compiler.opts.compDbgCode = true;
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genIntToIntCast(cast));
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            compiler.opts.compDbgCode = false;
-            _ = CodeGenBinaryTests.PrepareThrowTarget(compiler);
+            var firstGroup = codeGen.Emitter.emitCurIG;
 
             codeGen.genIntToIntCast(cast);
-            Assert.That(Descriptors(codeGen), Has.Count.EqualTo(4));
+            _ = CodeGenThrowHelperTests.AssertInlineThrow(firstGroup, INS_je, 4);
+            Assert.That(Descriptors(codeGen), Has.Count.EqualTo(1));
+            Assert.That(Descriptors(codeGen)[0].idIns(), Is.EqualTo(INS_mov));
         });
     }
 

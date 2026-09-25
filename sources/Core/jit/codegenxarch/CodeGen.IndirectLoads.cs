@@ -95,11 +95,6 @@ public sealed partial class CodeGen
         throw new FatalJitException(CORJIT_SKIPPED, "Indexed address generation requires AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
-        if (tree.IsBoundsChecked)
-        {
-            RequireSharedThrowHelperBlocks();
-        }
-
         var @base = tree.Arr;
         var index = tree.Index;
         var baseReg = genConsumeReg(@base);
@@ -124,7 +119,7 @@ public sealed partial class CodeGen
                 Emitter.emitIns_R_AR(INS_cmp, EA_4BYTE, indexReg, baseReg, tree.LenOffset);
             }
 
-            genJumpToSharedThrowHlpBlk(EJ_jae, SCK_RNGCHK_FAIL);
+            genJumpToThrowHlpBlk(EJ_jae, SCK_RNGCHK_FAIL);
         }
 
         if (index.Type is not TYP_I_IMPL)

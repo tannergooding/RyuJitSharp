@@ -275,15 +275,15 @@ internal static class CodeGenBinaryTests
         WithCodeGen((compiler, codeGen) =>
         {
             var target = PrepareThrowTarget(compiler);
-            codeGen.genJumpToSharedThrowHlpBlk(EJ_jo, SCK_OVERFLOW, explicitTarget ? target : null);
+            codeGen.genJumpToThrowHlpBlk(EJ_jo, SCK_OVERFLOW, explicitTarget ? target : null);
             Assert.That(EmitterJumpInstructionTests.JumpView.Target(Descriptors(codeGen)[0]), Is.SameAs(target));
         });
     }
 
     [Test]
-    public static void InlineThrowModeRejectsBeforeConsumingOperands()
+    public static void CheckedArithmeticBranchesAroundTheInlineThrow()
     {
-        WithCodeGen((compiler, codeGen) =>
+        EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             var tree = new GenTreeOp(GT_ADD, TYP_INT,
                 Register(compiler, TYP_INT, REG_RAX), Register(compiler, TYP_INT, REG_RCX))
@@ -292,13 +292,10 @@ internal static class CodeGenBinaryTests
                 Flags = GTF_OVERFLOW,
             };
             compiler.opts.compDbgCode = true;
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genCodeForBinary(tree));
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            compiler.opts.compDbgCode = false;
-            _ = PrepareThrowTarget(compiler);
+            var firstGroup = codeGen.Emitter.emitCurIG;
 
             codeGen.genCodeForBinary(tree);
-            Assert.That(Descriptors(codeGen), Has.Count.EqualTo(2));
+            _ = CodeGenThrowHelperTests.AssertInlineThrow(firstGroup, INS_jno, 3);
         });
     }
 

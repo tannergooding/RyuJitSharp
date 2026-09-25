@@ -15,43 +15,54 @@ public sealed partial class CodeGen
             (first.AsLclVar().LclNum == second.AsLclVar().LclNum);
     }
 
-    private void RequireSharedThrowHelperBlocks()
-    {
-        if (!_compiler.fgUseThrowHelperBlocks())
-        {
-            throw new FatalJitException(CORJIT_SKIPPED, "Inline throw-helper call generation is not implemented.");
-        }
-    }
-
-    public void genJumpToSharedThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind,
+    public void genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind,
         BasicBlock? failBlock = null)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Shared throw-helper jumps require AMD64.");
+#if !TARGET_AMD64 || UNIX_AMD64_ABI
+        throw new FatalJitException(CORJIT_SKIPPED, "Throw-helper generation requires Windows AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
-        RequireSharedThrowHelperBlocks();
-        assert(_compiler.compCurBB is not null);
-        BasicBlock? target;
-        if (failBlock is not null)
+        if (_compiler.fgUseThrowHelperBlocks())
         {
-            target = failBlock;
+            assert(_compiler.compCurBB is not null);
+            BasicBlock? target;
+            if (failBlock is not null)
+            {
+                target = failBlock;
 #if DEBUG
-            var add = _compiler.fgGetExcptnTarget(codeKind, _compiler.compCurBB);
-            assert(add.acdUsed);
-            assert(ReferenceEquals(target, add.acdDstBlk));
+                var add = _compiler.fgGetExcptnTarget(codeKind, _compiler.compCurBB);
+                assert(add.acdUsed);
+                assert(ReferenceEquals(target, add.acdDstBlk));
 #endif
+            }
+            else
+            {
+                var add = _compiler.fgGetExcptnTarget(codeKind, _compiler.compCurBB);
+                assert(add is not null);
+                assert(add.acdUsed);
+                target = add.acdDstBlk;
+            }
+
+            noway_assert(target is not null);
+            inst_JMP(jumpKind, target);
         }
         else
         {
-            var add = _compiler.fgGetExcptnTarget(codeKind, _compiler.compCurBB);
-            assert(add is not null);
-            assert(add.acdUsed);
-            target = add.acdDstBlk;
-        }
+            BasicBlock? target = null;
+            var reverseJumpKind = RyuJitSharp.Emitter.emitReverseJumpKind(jumpKind);
+            if (reverseJumpKind != jumpKind)
+            {
+                target = genCreateTempLabel();
+                inst_JMP(reverseJumpKind, target);
+            }
 
-        noway_assert(target is not null);
-        inst_JMP(jumpKind, target);
+            genEmitHelperCall(Compiler.acdHelper(codeKind), 0, EA_UNKNOWN);
+            if (target is not null)
+            {
+                assert(reverseJumpKind != jumpKind);
+                genDefineTempLabel(target);
+            }
+        }
 #endif
     }
 
@@ -63,7 +74,7 @@ public sealed partial class CodeGen
         noway_assert(tree.HasOverflowCheck);
         noway_assert(!varTypeIsSmall(tree.Type));
         var jumpKind = (tree.Flags & GTF_UNSIGNED) != 0 ? emitJumpKind.EJ_jb : emitJumpKind.EJ_jo;
-        genJumpToSharedThrowHlpBlk(jumpKind, SCK_OVERFLOW);
+        genJumpToThrowHlpBlk(jumpKind, SCK_OVERFLOW);
 #endif
     }
 }

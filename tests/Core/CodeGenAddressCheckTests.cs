@@ -121,20 +121,17 @@ internal static class CodeGenAddressCheckTests
     }
 
     [Test]
-    public static void UnsupportedInlineBoundsThrowRejectsBeforeConsumption()
+    public static void BoundsChecksBranchAroundTheInlineThrow()
     {
-        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
+        EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             var tree = new GenTreeBoundsChk(Register(compiler, TYP_INT, REG_RAX),
                 Register(compiler, TYP_INT, REG_RCX), SCK_RNGCHK_FAIL);
             compiler.opts.compDbgCode = true;
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genRangeCheck(tree));
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            compiler.opts.compDbgCode = false;
-            _ = CodeGenBinaryTests.PrepareThrowTarget(compiler, SCK_RNGCHK_FAIL);
+            var firstGroup = codeGen.Emitter.emitCurIG;
 
             codeGen.genRangeCheck(tree);
-            Assert.That(Descriptors(codeGen), Has.Count.EqualTo(2));
+            _ = CodeGenThrowHelperTests.AssertInlineThrow(firstGroup, INS_jb, 3);
         });
     }
 

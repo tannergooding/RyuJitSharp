@@ -14,11 +14,6 @@ public sealed partial class CodeGen
         throw new FatalJitException(CORJIT_SKIPPED, "Binary arithmetic generation requires AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
-        if (tree.HasOverflowCheckEx)
-        {
-            RequireSharedThrowHelperBlocks();
-        }
-
 #if DEBUG
         var valid = tree.Oper is GT_ADD or GT_SUB;
         valid |= varTypeIsFloating(tree.Type)

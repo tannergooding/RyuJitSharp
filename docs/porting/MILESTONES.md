@@ -14,6 +14,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Inline exception helpers
+
+Overflow, bounds and finite checks now support inline throw helpers as well as
+shared exception blocks. Conditional checks branch around the helper and restore
+the normal path's GC state at the continuation; unconditional throws avoid an
+unnecessary branch and label. Both forms retain native exception-helper selection.
+
+This removes the shared-block-only restriction from arithmetic, multiplication,
+indexed addresses and checked casts. General call-node generation, remaining
+node/block generation, final encoding and metadata publication still prevent
+production machine-code emission.
+
 ## 2026-09-25: Indirect stores and GC write barriers
 
 Indirect stores now cover scalar values, read-modify-write operations, contained

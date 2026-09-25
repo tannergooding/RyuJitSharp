@@ -198,9 +198,9 @@ internal static unsafe class CodeGenIndirectLoadTests
     }
 
     [Test]
-    public static void InlineBoundsThrowsRejectBeforeConsumingTheInternalRegister()
+    public static void IndexedAddressesResumeAfterTheInlineBoundsThrow()
     {
-        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
+        EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             var tree = new GenTreeIndexAddr(Register(compiler, TYP_REF, REG_RAX),
                 Register(compiler, TYP_INT, REG_RCX), TYP_INT, NO_CLASS_HANDLE, 4, 8, 16, boundsCheck: true)
@@ -209,14 +209,14 @@ internal static unsafe class CodeGenIndirectLoadTests
             };
             codeGen.InternalRegisters.Add(tree, RBM_R11);
             compiler.opts.compDbgCode = true;
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genCodeForIndexAddr(tree));
-            Assert.That(codeGen.InternalRegisters.GetAll(tree), Is.EqualTo(RBM_R11));
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            compiler.opts.compDbgCode = false;
-            _ = CodeGenBinaryTests.PrepareThrowTarget(compiler, SCK_RNGCHK_FAIL);
+            var firstGroup = codeGen.Emitter.emitCurIG;
 
             codeGen.genCodeForIndexAddr(tree);
-            Assert.That(Descriptors(codeGen), Has.Count.EqualTo(4));
+            _ = CodeGenThrowHelperTests.AssertInlineThrow(firstGroup, INS_jb, 3);
+            Assert.That(Descriptors(codeGen), Has.Count.EqualTo(2));
+            Assert.That(Descriptors(codeGen)[0].idIns(), Is.EqualTo(INS_mov));
+            Assert.That(Descriptors(codeGen)[0].idOpSize(), Is.EqualTo(emitAttr.EA_4BYTE));
+            Assert.That(Descriptors(codeGen)[1].idIns(), Is.EqualTo(INS_lea));
         });
     }
 

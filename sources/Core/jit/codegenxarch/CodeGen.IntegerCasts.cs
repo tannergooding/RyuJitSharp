@@ -17,13 +17,12 @@ public sealed partial class CodeGen
         throw new FatalJitException(CORJIT_SKIPPED, "Integer cast overflow checks require AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
-        RequireSharedThrowHelperBlocks();
         switch (desc.Check)
         {
             case CHECK_POSITIVE:
             {
                 Emitter.emitIns_R_R(INS_test, (emitAttr)desc.CheckSrcSize, reg, reg);
-                genJumpToSharedThrowHlpBlk(EJ_jl, SCK_OVERFLOW);
+                genJumpToThrowHlpBlk(EJ_jl, SCK_OVERFLOW);
                 break;
             }
 
@@ -34,14 +33,14 @@ public sealed partial class CodeGen
                 assert(tempReg != reg);
                 _ = Emitter.emitIns_Mov(INS_mov, EA_8BYTE, tempReg, reg, canSkip: false);
                 Emitter.emitIns_R_I(INS_shr_N, EA_8BYTE, tempReg, 32);
-                genJumpToSharedThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
+                genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
                 break;
             }
 
             case CHECK_POSITIVE_INT_RANGE:
             {
                 Emitter.emitIns_R_I(INS_cmp, EA_8BYTE, reg, int.MaxValue);
-                genJumpToSharedThrowHlpBlk(EJ_ja, SCK_OVERFLOW);
+                genJumpToThrowHlpBlk(EJ_ja, SCK_OVERFLOW);
                 break;
             }
 
@@ -50,7 +49,7 @@ public sealed partial class CodeGen
                 var tempReg = _internalRegisters.GetSingle(cast);
                 _ = Emitter.emitIns_Mov(INS_movsxd, EA_8BYTE, tempReg, reg, canSkip: true);
                 Emitter.emitIns_R_R(INS_cmp, EA_8BYTE, reg, tempReg);
-                genJumpToSharedThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
+                genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
                 break;
             }
 
@@ -60,11 +59,11 @@ public sealed partial class CodeGen
                 var max = desc.CheckSmallIntMax;
                 var min = desc.CheckSmallIntMin;
                 Emitter.emitIns_R_I(INS_cmp, (emitAttr)desc.CheckSrcSize, reg, max);
-                genJumpToSharedThrowHlpBlk(min == 0 ? EJ_ja : EJ_jg, SCK_OVERFLOW);
+                genJumpToThrowHlpBlk(min == 0 ? EJ_ja : EJ_jg, SCK_OVERFLOW);
                 if (min != 0)
                 {
                     Emitter.emitIns_R_I(INS_cmp, (emitAttr)desc.CheckSrcSize, reg, min);
-                    genJumpToSharedThrowHlpBlk(EJ_jl, SCK_OVERFLOW);
+                    genJumpToThrowHlpBlk(EJ_jl, SCK_OVERFLOW);
                 }
                 break;
             }
@@ -78,15 +77,6 @@ public sealed partial class CodeGen
         throw new FatalJitException(CORJIT_SKIPPED, "Integer cast generation requires AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
-        if (cast.HasOverflowCheck && !_compiler.fgUseThrowHelperBlocks())
-        {
-            var boundary = new GenIntCastDesc(cast);
-            if (boundary.Check != CHECK_NONE)
-            {
-                RequireSharedThrowHelperBlocks();
-            }
-        }
-
         genConsumeRegs(cast.CastOp);
         var src = cast.CastOp;
         var srcReg = src.IsUsedFromReg ? src.RegNum : REG_NA;
