@@ -14,6 +14,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Whole-live-set transitions
+
+Block-boundary liveness can now transfer registers and GC roots between locals,
+processing deaths before births so two locals can safely reuse one register.
+Transitions preserve tracked-stack reporting rules, owned liveness sets and
+half-open variable location ranges. Unchanged sets retain the existing state,
+and analysis-only updates do not require code-generation state.
+
+Per-block location restoration and emitter labels are the next integration
+dependencies. Production code generation remains explicitly skipped.
+
 ## 2026-09-25: Code-generation initialization
 
 Code-generation preparation now classifies tracked GC locals with stack homes

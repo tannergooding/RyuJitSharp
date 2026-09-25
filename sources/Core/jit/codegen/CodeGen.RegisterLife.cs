@@ -62,7 +62,7 @@ public sealed partial class CodeGen
 
     public void genUpdateRegLife(in LclVarDsc local, bool isBorn, bool isDying
 #if DEBUG
-        , GenTree tree
+        , GenTree? tree
 #endif
     )
     {

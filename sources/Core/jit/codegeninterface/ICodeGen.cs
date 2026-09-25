@@ -104,6 +104,8 @@ public interface ICodeGen
 
     void genUpdateLife(GenTree tree);
 
+    void genUpdateLife(nint[] newLife);
+
     void initializeVariableLiveKeeper();
 
     CodeGen.VariableLiveKeeper getVariableLiveKeeper();
@@ -128,7 +130,7 @@ public interface ICodeGen
 
     void genUpdateRegLife(in LclVarDsc local, bool isBorn, bool isDying
 #if DEBUG
-        , GenTree tree
+        , GenTree? tree
 #endif
     );
 

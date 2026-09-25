@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete Windows-AMD64 code-generation preparation and block-list initialization: genPrepForCompiler, genInitialize, register/spill checks, GC tracking resets and scope initialization. Wire tree-lifetime and variable-range support at their distinct native callsites without activating incomplete production emission.",
+      "scope": "Complete whole-live-set transitions for code-generation block boundaries: compUpdateLife, compChangeLife and the codegen live-set wrapper. Preserve both native mode predicates, set ownership, death-before-birth ordering, register/GC masks and half-open variable ranges.",
       "doneWhen": [
-        "Preserve preparation's tracked-stack GC classification, empty liveness cache and block metric; initialize TreeLifeUpdater there, not in the constructor or genInitialize.",
-        "Preserve scope/live-range/call-return/GC/register/current-life/stack setup in native genInitialize order.",
-        "Validate the integrated initialization/lifetime boundary in Debug and Release and commit before per-block generation."
+        "Port complete native whole-live-set updates, including unchanged-set and register transitions without a tree in diagnostics.",
+        "Reuse bank-aware register masks and existing variable-range APIs without activating incomplete block generation.",
+        "Validate ownership, shared-register transfer, GC state and diagnostic ordering in Debug/Release, then commit before continuing per-block dependencies."
       ],
       "validation": [
-        "Reuse treeLifeUpdater.selection, add focused initialization-state reset, parameter-register eligibility and scope-cursor checks.",
+        "Reuse codegenInitialization.selection and add focused whole-live-set transitions, alias ownership and exact diagnostics.",
         "Reuse the exact allocation-activation capture; republish only if reachable production behavior changes. B145 remains deferred."
       ],
       "deferred": [
@@ -32,9 +32,9 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Code-generation preparation and initialization are complete and validated (709 Debug/697 Release). Resume native Compiler::compUpdateLife<true>(newLife) at compiler.hpp:3689 and its CodeGenInterface::genUpdateLife(VARSET_VALARG_TP) wrapper at codegencommon.cpp:782, the next dependency of genCodeForBlock. Preserve live-set ownership, register/GC transitions and range ordering; then follow the remaining per-block generation dependencies rather than activate a reduced loop. TreeLifeUpdater is correctly initialized in genPrepForCompiler and VariableLiveKeeper in genInitialize. Keep genGenerateCode explicitly skipped; D005 disassembly rejection remains. All workers are collected/frozen.",
+    "nextAction": "Whole-live-set transitions are complete and validated (721 Debug/708 Release). Resume the block-entry dependency packet: native LinearScan::recordVarLocationsAtStartOfBB at lsra.cpp:1450, emitter::emitAddLabel at emit.cpp:2851 and CodeGen::genLogLabel at codegencommon.cpp:1223 are absent from managed code. Complete their required location-map/label/GC-state closure and relevant cold-region helpers before returning to genCodeForBlock (codegenlinear.cpp:225 onward). Do not introduce a reduced block loop: per-node emission, scope/debug mapping, funclet and final encoding dependencies remain. Keep production genGenerateCode explicitly skipped; all workers are collected/frozen.",
     "handoff": {
-      "status": "codegen-initialization-validated",
+      "status": "block-life-transitions-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
       "workerPackets": "All prefix, opcode-comparison and constant/displacement packets are fully collected, frozen and integrated. Constant worker b6e1f160-b3d7-4126-bf91-39bc8de2e495 returned four new files without shared allocation/schema edits. No active or unread workers; no app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "wholeLiveSetTransitions": {
+        "debugPassed": 721,
+        "releasePassed": 708,
+        "skipped": 0,
+        "selection": "codegenInitialization.selection plus CodeGenLifeTransitionTests; combine FullyQualifiedName filters in one dotnet test tests\\Core\\RyuJitSharp.UnitTests.csproj --no-restore run per configuration.",
+        "debugTests": "artifacts\\block-life-debug.trx",
+        "releaseTests": "artifacts\\block-life-release.trx",
+        "coverage": "Death-before-birth with reversed tracked indices and a shared register, reference/byref/non-GC reclassification, exact half-open range locations, always-alive stack roots, GC tracking exclusions, source-set ownership, unchanged sets, analysis without codegen state and exact null-tree/register-transition diagnostics.",
+        "remaining": "Support remains below the explicit production emission skip; block-entry variable location restoration, emitter labels and subsequent block/node generation remain. No new native-host capture or managed code-size claim."
+      },
       "codegenInitialization": {
         "debugPassed": 709,
         "releasePassed": 697,
@@ -3300,6 +3310,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "whole-live-set-transitions",
+      "native": ["src\\coreclr\\jit\\compiler.hpp:3689-3707", "src\\coreclr\\jit\\codegencommon.cpp:782-785,1000-1133"],
+      "csharp": ["sources\\Core\\jit\\codegencommon\\Compiler.LifeTransitions.cs", "sources\\Core\\jit\\codegencommon\\CodeGen.LifeTransitions.cs", "sources\\Core\\jit\\codegeninterface\\ICodeGen.cs", "sources\\Core\\jit\\codegen\\CodeGen.RegisterLife.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete compUpdateLife/compChangeLife mode paths and the codegen live-set wrapper. Existing VisitBits preserves tracked-index order; deaths precede births. Uses bank-aware masks (B208), copies caller-owned sets and retains range/GC/debug ordering. genUpdateRegLife accepts native null Debug trees. No production block-loop or emission activation."
+    },
     {
       "area": "codegen-preparation-and-initialization",
       "native": ["src\\coreclr\\jit\\codegencommon.cpp:569-595,777-780", "src\\coreclr\\jit\\codegenlinear.cpp:33-128", "src\\coreclr\\jit\\codegen.h:152-159", "src\\coreclr\\jit\\codegeninterface.h:651-656", "src\\coreclr\\jit\\gcinfo.cpp:363-369,665-678", "src\\coreclr\\jit\\regset.cpp:975-978,1037-1060", "src\\coreclr\\jit\\scopeinfo.cpp:1587-1601"],
