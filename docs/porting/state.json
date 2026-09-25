@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete Windows-AMD64 block-driver closure, then final-offset debug publication and machine-generation dependencies. The block driver is validated; production emission remains explicitly unavailable.",
+      "scope": "Complete Windows-AMD64 frame finalization and post-recording jump placement. Block generation and IP/rich debug publication are validated; production emission remains explicitly unavailable.",
       "doneWhen": [
-        "Preserve complete native genCodeForTreeNode dispatch, reuse-before-containment, operand consumption, GC boundaries and pending-call label behavior.",
-        "Port complete Windows-AMD64 genCodeForBBlist and its required support without substituting a reduced block loop; retain explicit production emission rejection until encoding and publication are implemented.",
+        "Preserve native prolog initialization accounting, entry locations, modified registers and final frame offsets across the complete Windows-AMD64 frame-layout closure.",
+        "Port complete native redundant-jump removal without substituting a reduced list walk; retain descriptor identity, offsets, group flags and hot/cold constraints.",
         "Validate each integrated closure in Debug/Release and commit; retain production activation, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Run the blockGeneration selection in Debug/Release, then focused IP/rich debug publication tests before committing their independent packet.",
+        "Run focused frame-initialization/layout and jump-removal regressions in Debug/Release, extending with relevant existing emitter and frame tests.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Block generation is validated at blockGeneration. Collect d62fc6a5-a4dd-40be-8b42-5de1405b22b7's IP/rich publication validation: it is fixing the missing SPMI EE callback in the rich-file fixture and running both configurations. Commit that dependency-coherent packet only after successful execution. Native genGenerateCode and genGenerateMachineCode (codegencommon.cpp:2151 onward) have been read through their main dependencies; genFinalizeFrame is absent and is the next parent implementation boundary. Prolog/epilog materialization, jump removal/binding, loop adjustment, encoding and required runtime publication remain missing. Keep production genGenerateCode CORJIT_SKIPPED and managed native-code size zero.",
+    "nextAction": "Block driver is committed as 7a2c17c; IP/rich publication is validated at debugPublication. Parent is validating complete genCheckUseBlockInit and parameter-homing candidates in CodeGen.FrameInitialization.cs before genFinalizeFrame (native codegencommon.cpp:4925-5186). Worker d62fc6a5-a4dd-40be-8b42-5de1405b22b7 owns complete lvaAssignFrameOffsets and its Windows-AMD64 closure (lclvars.cpp:4302 onward); worker 942a496f-db30-4389-a403-265f28fdb23c owns emitRemoveJumpToNextInst (emit.cpp:4696). Collect and validate each packet before committing. Native genGenerateCode/genGenerateMachineCode have been read; prolog/epilog materialization, jump binding, loop adjustment, encoding and required runtime publication remain ahead. Keep production genGenerateCode CORJIT_SKIPPED and managed native-code size zero.",
     "handoff": {
-      "status": "block-driver-validated-debug-publication-integrating",
+      "status": "debug-publication-validated-frame-and-jump-closure-active",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Exit/frame-poisoning and loop-recording files from now-unavailable workers 87f10c61-b152-4bdc-a27e-1ecfad4f6342 and b6e1f160-b3d7-4126-bf91-39bc8de2e495 were recovered, compared with native and validated by the parent; their latest handoffs were not collected. New worker d62fc6a5-a4dd-40be-8b42-5de1405b22b7 (GPT-6 Sol) is collected through turn5 and is now validating its IP/rich publication packet after a missing callback aborted the Debug rich-file test. Parent driver tests pass independently. No app-native child-session coordination.",
+      "workerPackets": "Exit/frame-poisoning and loop-recording files from now-unavailable workers 87f10c61-b152-4bdc-a27e-1ecfad4f6342 and b6e1f160-b3d7-4126-bf91-39bc8de2e495 were recovered and validated by the parent, without their latest handoffs. d62fc6a5-a4dd-40be-8b42-5de1405b22b7 (GPT-6 Sol) is collected through turn6 with IP/rich publication passing 17 Debug/15 Release; reused for final frame layout. 942a496f-db30-4389-a403-265f28fdb23c (GPT-6 Sol) owns redundant jump removal. Parent owns frame initialization and genFinalizeFrame integration. No app-native child-session coordination.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -52,6 +52,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "debugPublication": {
+        "debugPassed": 17,
+        "releasePassed": 15,
+        "skipped": 0,
+        "selection": "CodeGenIPMappingPublicationTests and CodeGenRichDebugInfoPublicationTests",
+        "debugTests": "artifacts\\rich-publication-debug.trx",
+        "releaseTests": "artifacts\\rich-publication-release.trx",
+        "coverage": "IP duplicate-offset and label tiebreakers, prolog/epilog and call exceptions, async/source flags, zero-count buffers, EE ownership transfer, successful inline-tree traversal and ordinal encoding, recorded rich mapping order, and Debug file-record formatting.",
+        "remaining": "These routines require final emitter offsets; they do not activate encoding, executable allocation or production metadata publication."
+      },
       "blockGeneration": {
         "debugPassed": 225,
         "releasePassed": 209,
@@ -3866,6 +3876,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "native-debug-map-publication",
+      "native": ["src\\coreclr\\jit\\codegencommon.cpp:6801-7168", "src\\coreclr\\jit\\ee_il_dll.cpp:998-1063"],
+      "csharp": ["sources\\Core\\jit\\codegencommon\\CodeGen.IPMappingPublication.cs", "sources\\Core\\jit\\codegencommon\\CodeGen.RichDebugInfoPublication.cs", "sources\\Core\\jit\\ee_il_dll\\Compiler.IPMappingPublication.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete Windows-AMD64 IP/rich mapping publication, native offset filtering, inline-tree encoding, EE buffer ownership and optional rich debug file reporting. Production callers remain disabled until final offsets and required emission metadata exist."
+    },
     {
       "area": "windows-amd64-block-generation",
       "native": ["src\\coreclr\\jit\\codegenlinear.cpp:142-970", "src\\coreclr\\jit\\codegencommon.cpp:1947-1985,7178,8503-8608", "src\\coreclr\\jit\\codegenxarch.cpp:94-148", "src\\coreclr\\jit\\compiler.h:13520-13542", "src\\coreclr\\jit\\emit.cpp:148-210,5742-5940,6140-6268", "src\\coreclr\\jit\\emit.h:emitNewInstrAlign", "src\\coreclr\\jit\\regset.cpp:rsSpillEnd,tmpEnd"],

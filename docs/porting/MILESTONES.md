@@ -14,6 +14,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Native debug-map publication
+
+IP mapping publication now preserves native duplicate-offset selection, label
+priority, prolog/epilog boundaries, call sites and async flags. Rich debug
+publication encodes successful inline contexts and recorded mappings in native
+order, including the optional diagnostic file format.
+
+The publication routines transfer their buffers to the EE under the native
+ownership contract. They require final emitter offsets and remain disconnected
+from production until encoding and the remaining runtime metadata are complete.
+
 ## 2026-09-25: Windows-x64 block generation
 
 The block driver now traverses the root function and EH funclets, restores
