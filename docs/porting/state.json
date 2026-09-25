@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete native variable scope reporting and EE publication, including native buffer ownership, range coalescing and Debug diagnostics. The switch optimization packet is collected and frozen for the next integration batch.",
+      "scope": "Complete native switch optimization and conditional-to-boolean-return folding with their unique-predecessor and native-emptiness dependencies. No full flowgraph-update activation.",
       "doneWhen": [
-        "Port complete genSetScopeInfo overloads and variable-range reporting, preserving local ordering, filtered locations and call-return records.",
-        "Replace placeholder EE storage with NativeVarInfo and preserve allocation, publication, ownership transfer and native diagnostics.",
+        "Port complete fgOptimizeSwitchBranches, fgFoldCondToReturnBlock and BasicBlock.GetUniquePred, preserving edge/profile/EH and node identity contracts.",
+        "Use native block emptiness in cycle detection and branch-threading assertions; retain whole-node replacements and live statement/LIR aliases.",
         "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Validate ScopeReportingTests, VariableLiveKeeperTests, CodeGenInitializationTests, CodeGenCallInstructionTests and EmitterLocationTests in Debug/Release before committing.",
+        "Validate SwitchOptimizationTests, EmptyBlockOptimizationTests, FlowGraphCompactionTests and FlowGraphBranchThreadingTests in Debug/Release before committing.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,14 +32,13 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Scope reporting is integrated and validated (scopeReporting). Integrate the collected three-file artifacts\\switch-optimization-packet (a7f6ecaf through turn 28): Compiler.SwitchOptimization.cs, BasicBlock.UniquePredecessor.cs and SwitchOptimizationTests.cs. Update fgLeadsToEmptyBlockCycle to native isEmpty, validate the 47 AMD64 cases with compaction/empty-block/branch-threading tests in Debug/Release, update evidence and commit. No outstanding worker handoffs. General genCall orchestration, full fgUpdateFlowGraph and production emission remain separate.",
+    "nextAction": "Scope reporting and switch optimization are integrated and validated (scopeReporting/switchOptimization). Continue complete Windows-AMD64 genCall orchestration at codegenxarch.cpp:5776, reusing committed register/stack argument generation, call-transfer recording and GC capture. Production genGenerateCode remains explicitly skipped. The remaining independent fgUpdateFlowGraph prerequisites are fgDedupReturnComparison, fgOptimizeUncondBranchToSimpleCond and fgFoldSimpleCondByForwardSub; reuse a resolved graph worker for a bounded packet while keeping phase integration in the parent. All previous worker handoffs are collected.",
     "handoff": {
-      "status": "scope-reporting-validated-switch-collected",
+      "status": "scope-and-switch-validated-call-orchestration-next",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn 24; stack arguments committed b46e045. b6e1f160-b3d7-4126-bf91-39bc8de2e495 collected through turn 4; empty-block packet committed 5aa4742. 87f10c61-b152-4bdc-a27e-1ecfad4f6342 collected through turn 6; scope reporting integrated and validated. a7f6ecaf-b706-4be6-83c3-c83235b7452f collected through turn 28; artifacts\\switch-optimization-packet is frozen and parent-owned. All workers idle; no outstanding handoffs. No app-native child sessions.",
+      "workerPackets": "4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn 24; stack arguments committed b46e045. b6e1f160-b3d7-4126-bf91-39bc8de2e495 collected through turn 4; empty-block packet committed 5aa4742. 87f10c61-b152-4bdc-a27e-1ecfad4f6342 collected through turn 6; scope reporting committed 00fe311. a7f6ecaf-b706-4be6-83c3-c83235b7452f collected through turn 28; switch optimization integrated and validated. All workers idle; no outstanding handoffs. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
-        "fgOptimizeSwitchBranches",
         "fgDedupReturnComparison",
         "fgOptimizeUncondBranchToSimpleCond",
         "fgFoldSimpleCondByForwardSub",
@@ -58,6 +57,17 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "switchOptimization": {
+        "debugPassed": 195,
+        "releasePassed": 195,
+        "skipped": 0,
+        "selection": ["SwitchOptimizationTests", "EmptyBlockOptimizationTests", "FlowGraphCompactionTests", "FlowGraphBranchThreadingTests"],
+        "debugTests": "artifacts\\switch-optimization-debug.trx",
+        "releaseTests": "artifacts\\switch-optimization-release.trx",
+        "coverage": "47 new AMD64 cases: IL/LIR dispatch removal, side effects, two-case equality and unsigned range conversion, logical node IDs and owners, re-lowered branches, duplicated edges/profile debits, try/cycle guards, boolean return folding/refusal, compaction and unique predecessors. Existing graph tests also pass.",
+        "regression": "artifacts\\switch-emptiness-before.trx: exactly one non-LIR case fails with prior inherited range-emptiness cycle detection. Reproduce with --filter FullyQualifiedName~CycleDetectionStopsAtNonemptyStatementBlocksAndIgnoresLirOffsets&Name~False. Final integrated Debug/Release runs retain the native isEmpty correction.",
+        "remaining": "Complete fgOptimizeSwitchBranches, fgFoldCondToReturnBlock and GetUniquePred. B221 extends to cycle detection and branch-threading assertions. Full fgUpdateFlowGraph still awaits remaining optional optimization helpers; production emission and managed machine-code size remain unchanged."
+      },
       "scopeReporting": {
         "debugPassed": 115,
         "releasePassed": 104,
@@ -3706,6 +3716,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "switch-and-conditional-return-optimization",
+      "native": ["src\\coreclr\\jit\\fgopt.cpp:1625-1921", "src\\coreclr\\jit\\optimizebools.cpp:1749-1883", "src\\coreclr\\jit\\block.cpp:965-977"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.SwitchOptimization.cs", "sources\\Core\\jit\\block\\BasicBlock.UniquePredecessor.cs", "sources\\Core\\jit\\compiler\\Compiler.FlowGraphBranchThreading.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete switch optimization, conditional-return folding and unique predecessor lookup. Native root bashing maps to identity-preserving whole-node replacement with updated statement/LIR owners and diagnostic aliases; lower inserted comparisons through the existing Lowering instance. No full flowgraph phase activation."
+    },
     {
       "area": "variable-scope-reporting",
       "native": ["src\\coreclr\\jit\\scopeinfo.cpp:1555-1585,1919-2173", "src\\coreclr\\jit\\codegen.h:777-791", "src\\coreclr\\jit\\ee_il_dll.cpp:639-703,832-990"],

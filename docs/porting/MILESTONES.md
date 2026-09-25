@@ -14,6 +14,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Switch and conditional-return optimization
+
+Switch cleanup now bypasses eligible empty branches, removes single-target
+dispatches and converts simple case sets into equality or unsigned range tests.
+Boolean-return successors can fold into a branchless return while preserving
+EH boundaries, profile accounting, side effects and epilogue-sharing limits.
+
+Replacement nodes retain logical identity and update their statement or linear-IR
+owners. Cycle detection now uses native block emptiness rather than range
+emptiness. Full flowgraph update still awaits its remaining optimization helpers.
+
 ## 2026-09-25: Variable scope reporting
 
 Variable locations now coalesce across prolog and body ranges, retain argument

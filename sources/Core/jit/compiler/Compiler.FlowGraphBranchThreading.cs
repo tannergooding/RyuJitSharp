@@ -16,7 +16,7 @@ public partial class Compiler
         var traits = new BitVecTraits(this, fgBBNumMax + 1);
         var visited = BitVecOps.MakeEmpty(traits);
 
-        while (block.IsEmpty && (block.Kind is BBJ_ALWAYS))
+        while (block.isEmpty() && (block.Kind is BBJ_ALWAYS))
         {
             if (!BitVecOps.TryAddElemD(traits, visited, block.bbNum))
             {
@@ -31,7 +31,7 @@ public partial class Compiler
 
     private bool fgOptimizeBranchToEmptyUnconditional(BasicBlock block, BasicBlock bDest)
     {
-        assert(bDest.IsEmpty);
+        assert(bDest.isEmpty());
         assert(bDest.Kind is BBJ_ALWAYS);
 
         var bDestTarget = bDest.Target;
