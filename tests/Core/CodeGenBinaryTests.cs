@@ -365,12 +365,12 @@ internal static class CodeGenBinaryTests
         });
     }
 
-    internal static BasicBlock PrepareThrowTarget(Compiler compiler)
+    internal static BasicBlock PrepareThrowTarget(Compiler compiler, SpecialCodeKind kind = SCK_OVERFLOW)
     {
         var target = new BasicBlock(null, null);
         target.SetFlags(BBF_HAS_LABEL | BBF_THROW_HELPER);
         assert(compiler.compCurBB is not null);
-        var descriptor = compiler.fgGetExcptnTarget(SCK_OVERFLOW, compiler.compCurBB);
+        var descriptor = compiler.fgGetExcptnTarget(kind, compiler.compCurBB);
         descriptor.acdUsed = true;
         descriptor.acdDstBlk = target;
 

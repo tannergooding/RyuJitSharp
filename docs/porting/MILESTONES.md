@@ -14,6 +14,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Indirect reads and indexed addresses
+
+Indirect reads now preserve native narrow-load extension, TLS segment access
+and GC result kinds. SIMD12 reads compose eight- and four-byte loads without
+overreading, preserving the native address adjustment and unused-lane clearing.
+
+Indexed addresses retain index widening, scale selection and bounds branches,
+with the array base kept as a GC root through address generation. Internal
+temporaries retain native Debug-only consumption. Remaining node/block
+generation, final encoding and runtime metadata publication still keep
+production emission explicitly skipped.
+
 ## 2026-09-25: Local stores, bitcasts and multi-register results
 
 Local variable and field stores now preserve native stack/register homes,

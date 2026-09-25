@@ -125,6 +125,26 @@ public partial class Emitter
 #endif
     }
 
+    public void emitIns_SIMD_R_R_A_I(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg,
+        GenTreeIndir indir, int ival, insOpts instOptions)
+    {
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD address-immediate recording requires AMD64.");
+#else
+        RequireSupportedInstructionRecording();
+        if (UseSimdEncoding())
+        {
+            emitIns_R_R_A_I(ins, attr, targetReg, op1Reg, indir, ival, IF_RWR_RRD_ARD_CNS, instOptions);
+        }
+        else
+        {
+            assert(instOptions == INS_OPTS_NONE);
+            _ = emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, canSkip: true);
+            emitIns_R_A_I(ins, attr, targetReg, indir, ival);
+        }
+#endif
+    }
+
     public void emitIns_SIMD_R_R_S_I(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg,
         int varx, int offs, int ival, insOpts instOptions)
     {

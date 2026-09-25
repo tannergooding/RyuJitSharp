@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete AMD64 local variable/field stores, bitcasts, SIMD12 stores and multi-register source handling, preserving normalized types, constant reuse, stack/register homes and lifetime/GC ordering. Keep production emission skipped.",
+      "scope": "Complete AMD64 indirect reads and indexed addresses, including SIMD12 loads, TLS handles, bounds branches and internal-register ownership. Preserve address mutation, evaluation order and GC liveness; keep production emission skipped.",
       "doneWhen": [
-        "Port complete AMD64 genCodeForStoreLclFld, genCodeForStoreLclVar, genUpdateLifeStore and multi-register store closure.",
-        "Close bitcast generation, SIMD12 stores, store recording and extended-move selection; preserve D005 rejection before mutation.",
+        "Port complete AMD64 genCodeForIndir, genCodeForIndexAddr and genLoadIndTypeSimd12.",
+        "Close emitInsLoadInd, the SIMD address-immediate wrapper and NodeInternalRegisters.GetSingle, including native Debug extraction behavior. Preserve D005/D006 rejection before mutation.",
         "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Reuse localLoads.selection, adding local-store, bitcast, SIMD12, multi-register and lifetime-order checks.",
+        "Reuse localStores.selection, adding indirect/TLS/SIMD12 reads, index scaling/widening and bounds/GC/internal-register checks.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,9 +32,9 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Local stores, bitcasts and Windows-AMD64 multi-register stores are complete and validated (localStores). Continue with indirect reads and indexed address generation: genCodeForIndir at codegenxarch.cpp:5271-5307 and genCodeForIndexAddr at 5179-5263. Read complete genLoadIndTypeSimd12 and emitInsLoadInd dependencies; preserve TLS handle loads, no-extension flags, bounded-read SIMD12 composition, index widening/scaling, bounds-check branches and base-register GC lifetime. Reuse current operand recording and shared throw blocks; apply D005/D006 before mutation as appropriate. Retain write-barrier-backed stores until their complete call/GC closure is ready. Production emission remains skipped until node/block/encoding/metadata support is complete.",
+    "nextAction": "Indirect reads and indexed addresses are complete and validated (indirectReads). Continue with explicit address and check nodes: genLeaInstruction at codegenxarch.cpp:6312, genCodeForNullCheck at 4514 and genRangeCheck at 4410, including complete emitIns_AR_R at emitxarch.cpp:9351. Preserve native operand ordering, widths, contained-index comparison reversal, failure targets and GC lifetimes; reuse existing recording and shared throw blocks with pre-mutation D005/D006 guards. Retain write-barrier-backed stores until their full call/GC closure is ready. Production emission remains skipped until node/block/encoding/metadata support is complete.",
     "handoff": {
-      "status": "local-store-generation-validated",
+      "status": "indirect-read-generation-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
       "workerPackets": "All files and follow-ups from 4c9a8661-6e45-4e43-960d-7f3a779cdcde are collected through turn 8, frozen and integrated, including CodeGen.MultiRegisterStores.cs, CodeGen.StoreFromSource.cs and CodeGenMultiRegisterStoreTests.cs. Root Debug/Release validation passes. Both it and a7f6ecaf-b706-4be6-83c3-c83235b7452f are idle with no outstanding assignment or unread handoff. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "indirectReads": {
+        "debugPassed": 2031,
+        "releasePassed": 1936,
+        "skipped": 0,
+        "selection": "localStores.selection plus CodeGenIndirectLoadTests.",
+        "debugTests": "artifacts\\indirect-load-integrated-debug.trx",
+        "releaseTests": "artifacts\\indirect-load-integrated-release.trx",
+        "coverage": "Signed/unsigned/no-extension indirect loads, contained local addresses, GC results, TLS GS loads without handle consumption, all four SIMD12 address forms with legacy/VEX recording and native address advancement, index widths/scales/bounds branches, final GC roots, lower/upper-bank internal-register selection with Debug-only removal, and pre-mutation D005/D006 rejection and retry. Absolute-address fixtures provide the VM relocation query and native Debug containment setting.",
+        "remaining": "Reuses funcletCreation.nativeHost; no production reachability change or runtime parity claim. Managed code size remains zero. Explicit address/check nodes, comparisons, casts, calls, write-barrier stores, remaining node/block generation, encoding and metadata publication remain. B217 preserves the pinned contained-local-address load lifetime TODO."
+      },
       "localStores": {
         "debugPassed": 2000,
         "releasePassed": 1906,
@@ -3521,6 +3531,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "indirect-read-and-indexed-address-generation",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:5179-5307", "src\\coreclr\\jit\\simdcodegenxarch.cpp:111-157", "src\\coreclr\\jit\\emitxarch.cpp:6280-6312,9736-9754", "src\\coreclr\\jit\\codegencommon.cpp:173-185"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.IndirectLoads.cs", "sources\\Core\\jit\\emitxarch\\Emitter.IndirectLoads.cs", "sources\\Core\\jit\\emitxarch\\Emitter.SimdMemoryInstructions.cs", "sources\\Core\\jit\\codegeninterface\\NodeInternalRegisters.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 genCodeForIndir, genCodeForIndexAddr, genLoadIndTypeSimd12, emitInsLoadInd and emitIns_SIMD_R_R_A_I; complete fixed-register GetSingle with native Debug-only removal. Preserves TLS no-consumption, SIMD12 address mutation, index widening/scaling, bounds ordering and base GC lifetime. D005/D006 reject before mutation; production emission remains skipped."
+    },
     {
       "area": "local-store-and-bitcast-generation",
       "native": ["src\\coreclr\\jit\\codegenxarch.cpp:5004-5171", "src\\coreclr\\jit\\codegen.h:1128-1139", "src\\coreclr\\jit\\codegencommon.cpp:8612-8650", "src\\coreclr\\jit\\simdcodegenxarch.cpp:170-200,229-248", "src\\coreclr\\jit\\emitxarch.cpp:6463-6480", "src\\coreclr\\jit\\instr.cpp:787-808,890-899,1903-2033"],

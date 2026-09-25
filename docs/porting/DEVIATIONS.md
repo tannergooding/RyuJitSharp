@@ -1014,7 +1014,8 @@ overloads, `emitIns_Nop`, `emitIns_R_R_I`, `emitIns_R_R_R`,
 `emitIns_R_C_I`, `emitIns_R_S_I`, `emitIns_R_R_A`, `emitIns_R_R_A_I`,
 `emitIns_R_R_C_I`, `emitIns_R_R_S_I`, `emitIns_SIMD_R_R_I`,
 `emitIns_SIMD_R_R_A`, `emitIns_SIMD_R_R_S`, `emitIns_R_AR`,
-`emitIns_BASE_R_R_RM`, `emitIns_J`, `emitIns_SIMD_R_R_S_I` and `emitInsStoreLcl`
+`emitIns_BASE_R_R_RM`, `emitIns_J`, `emitIns_SIMD_R_R_S_I`, `emitInsStoreLcl`,
+`emitInsLoadInd` and `emitIns_SIMD_R_R_A_I`
 record complete native descriptors and sizes. Their `dispIns` path
 preserves sanity, stack-depth, logical-size and conditional statistics checks.
 In Debug, these entrypoints reject requested
@@ -1034,12 +1035,14 @@ Local reads and addresses, including SIMD12 loads, likewise reject before
 recording their first instruction or producing register/lifetime state.
 Local stores, bitcasts, extended moves and multi-register store generation
 reject before consuming operands, rewriting reused zeros or changing homes.
+Indirect reads and indexed addresses reject before consumption, SIMD12 address
+rewriting or internal-register extraction.
 
 Native roots are `emitxarch.cpp:5929,5945,5962,6019,7168,7798,8090,9314,9407,10574,10609`
 and `7042,8134,8506,8546,8686,8929,9626,9658,9804,10422`,
 plus `6159,6495,8574,10400,10640`,
 `6921,7012,9465,10439,8244,8264,8299,8344,8382,8606,8637,8709,9571,9598,9708`,
-`9309,10470,10703,9842,6463`
+`9309,10470,10703,9842,6463,6280,9736`
 and `emit.cpp:1611`;
 the managed specialization is in
 `emitxarch/Emitter.StackStores.cs`, `Emitter.StackLoads.cs`,
@@ -1050,7 +1053,7 @@ the managed specialization is in
 `Emitter.MemoryOperands.cs`, `Emitter.StackOperands.cs`,
 `Emitter.ShiftInstructions.cs`, `Emitter.MemoryImmediateInstructions.cs` and
 `Emitter.SimdMemoryInstructions.cs`, `Emitter.BinaryDestinations.cs` and
-`Emitter.JumpInstructions.cs` and `Emitter.LocalStores.cs`.
+`Emitter.JumpInstructions.cs`, `Emitter.LocalStores.cs` and `Emitter.IndirectLoads.cs`.
 The caller guards are in `emit/Emitter.SimdConstants.cs` and
 `codegenxarch/CodeGen.Constants.cs`, `CodeGen.Unary.cs` and
 `CodeGen.ByteSwap.cs`, `CodeGen.Shifts.cs` and
@@ -1058,7 +1061,8 @@ The caller guards are in `emit/Emitter.SimdConstants.cs` and
 `CodeGen.Multiplication.cs`, `CodeGen.Division.cs`, `CodeGen.LocalLoads.cs` and
 `codegencommon/CodeGen.ArithmeticSupport.cs`, `CodeGen.BitCast.cs`,
 `CodeGen.MultiRegisterStores.cs`, `codegenxarch/CodeGen.LocalStores.cs` and
-`instr/CodeGen.ExtendedMoves.cs`. The pre-mutation rejection is
+`instr/CodeGen.ExtendedMoves.cs` and `codegenxarch/CodeGen.IndirectLoads.cs`.
+The pre-mutation rejection is
 covered for every recording entrypoint. Retain the mixed-mode
 native bodies until full disassembly is ported. This does not activate production
 emission or waive future `jitdump`/`jitdisasm` parity.
@@ -1074,6 +1078,8 @@ targets, exception-target lookup and Debug consistency checks. `genCheckOverflow
 uses this explicit specialization. Binary arithmetic and multiplication reject
 checked operations before operand consumption when the native predicate is
 false; unchecked arithmetic does not require shared throw blocks.
+Indexed address generation applies the same pre-consumption guard only when
+bounds checking is required; unchecked indexed addresses remain supported.
 
 The false arm emits an inline helper call and remains unported. It fails with
 `CORJIT_SKIPPED`, rather than omitting the throw or recording a partial arithmetic

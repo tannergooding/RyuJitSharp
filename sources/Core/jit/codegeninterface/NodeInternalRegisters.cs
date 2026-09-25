@@ -3,6 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Numerics;
+
 namespace RyuJitSharp;
 
 public struct NodeInternalRegisters
@@ -23,7 +25,31 @@ public struct NodeInternalRegisters
     }
 
     // regNumber Extract(GenTree* tree, regMaskTP mask = static_cast<regMaskTP>(-1));
-    // regNumber GetSingle(GenTree* tree, regMaskTP mask = static_cast<regMaskTP>(-1));
+    public readonly regNumber GetSingle(GenTree tree) => GetSingle(tree, ~RBM_NONE);
+
+    public readonly regNumber GetSingle(GenTree tree, regMaskTP mask)
+    {
+        assert(_table.ContainsKey(tree));
+        var registers = _table[tree];
+        var available = registers & mask;
+        var lower = (ulong)available.Lower;
+#if HAS_MORE_THAN_64_REGISTERS
+        var upper = (ulong)available.Upper;
+        assert((BitOperations.IsPow2(lower) && (upper == 0)) ||
+            ((lower == 0) && BitOperations.IsPow2(upper)));
+        var result = (regNumber)(lower != 0
+            ? BitOperations.TrailingZeroCount(lower)
+            : 64 + BitOperations.TrailingZeroCount(upper));
+#else
+        assert(BitOperations.IsPow2(lower));
+        var result = (regNumber)BitOperations.TrailingZeroCount(lower);
+#endif
+#if DEBUG
+        _table[tree] = registers & ~regMaskTP.CreateFromRegNum(result, result.SingleTypeMask);
+#endif
+
+        return result;
+    }
 
     /// <summary>Get all internal registers for the specified IR node.</summary>
     /// <param name="tree">IR node whose internal registers to query</param>

@@ -252,6 +252,8 @@ existing deviation entries rather than maintaining competing descriptions.
 
 | B216 | Port defect / register-copy target guards | `instr/CodeGen.RegisterCopies.cs` closes the inner `TARGET_AMD64` guard before `emitIns_Mov`, so its following `#else` pairs with the file's `TARGET_XARCH` guard instead. AMD64 compiles, but x86 loses the `ins` declaration and non-xarch preprocessing leaves unmatched C# scope. | Repair the target guards with a targeted non-AMD64 compile check when restoring other-target compilation; do not infer support from the active AMD64 build. | Discovered while reusing register copies for local stores. No AMD64 behavior change is required; unrelated target repair is deferred. |
 
+| B217 | Upstream question / contained local-address load lifetime | Native `emitInsLoadInd` updates the contained `GT_LCL_ADDR` after recording a load (`emitxarch.cpp:6292-6298`). Its TODO questions updating the indirection instead, as the store counterpart does for a GC-hole fix. | Preserve the pinned call and establish a concrete native lifetime/GC repro before changing the node used for the update. | Recorded during indirect-load generation. No executable defect is established and no managed-only algorithm change is made. |
+
 Larger module decomposition and broad unit-test infrastructure belong to the
 post-port phase. Add concrete candidates here as evidence appears, rather than
 preemptively planning a redesign of every compiler subsystem.
