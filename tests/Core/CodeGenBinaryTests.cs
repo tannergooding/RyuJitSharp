@@ -354,7 +354,7 @@ internal static class CodeGenBinaryTests
     }
 #endif
 
-    private static void WithCodeGen(Action<Compiler, CodeGen> action)
+    internal static void WithCodeGen(Action<Compiler, CodeGen> action)
     {
         CodeGenShiftTests.WithCodeGen((compiler, codeGen) =>
         {
@@ -365,7 +365,7 @@ internal static class CodeGenBinaryTests
         });
     }
 
-    private static BasicBlock PrepareThrowTarget(Compiler compiler)
+    internal static BasicBlock PrepareThrowTarget(Compiler compiler)
     {
         var target = new BasicBlock(null, null);
         target.SetFlags(BBF_HAS_LABEL | BBF_THROW_HELPER);

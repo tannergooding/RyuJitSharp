@@ -1028,7 +1028,7 @@ Binary memory dispatch rejects before extracting spill ownership or allocating
 constant data, and byte-swap generation rejects before consuming its operand.
 Shift generation, shared operand classification and register/memory wrappers
 likewise reject before consumption, spill extraction or constant allocation.
-Binary arithmetic and shared throw-helper jumps reject before operand
+Binary arithmetic, multiplication and shared throw-helper jumps reject before operand
 consumption, target lookup or jump-list mutation.
 
 Native roots are `emitxarch.cpp:5929,5945,5962,6019,7168,7798,8090,9314,9407,10574,10609`
@@ -1050,7 +1050,8 @@ the managed specialization is in
 The caller guards are in `emit/Emitter.SimdConstants.cs` and
 `codegenxarch/CodeGen.Constants.cs`, `CodeGen.Unary.cs` and
 `CodeGen.ByteSwap.cs`, `CodeGen.Shifts.cs` and
-`instr/CodeGen.MemoryOperands.cs`, `codegenxarch/CodeGen.Binary.cs` and
+`instr/CodeGen.MemoryOperands.cs`, `codegenxarch/CodeGen.Binary.cs`,
+`CodeGen.Multiplication.cs` and
 `codegencommon/CodeGen.ArithmeticSupport.cs`. The pre-mutation rejection is
 covered for every recording entrypoint. Retain the mixed-mode
 native bodies until full disassembly is ported. This does not activate production
@@ -1064,7 +1065,7 @@ emission or waive future `jitdump`/`jitdisasm` parity.
 `genJumpToSharedThrowHlpBlk` implements the complete Windows-AMD64 shared-block
 arm of native `genJumpToThrowHlpBlk` (`codegencommon.cpp`), including explicit
 targets, exception-target lookup and Debug consistency checks. `genCheckOverflow`
-uses this explicit specialization. Binary arithmetic rejects checked operations
+uses this explicit specialization. Binary arithmetic and multiplication reject checked operations
 before operand consumption when the native predicate is false; unchecked
 arithmetic does not require shared throw blocks.
 

@@ -14,6 +14,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Integer multiplication and high-half results
+
+Integer multiplication generation now preserves native immediate forms, LEA
+shortcuts, memory operands and APX destinations. Checked signed and unsigned
+products retain implicit-register constraints and branch before result spilling.
+High-half multiplication uses the native RDX:RAX pair or BMI2 MULX, preserving
+source reuse and destination aliasing.
+
+Remaining node and block generators, final encoding and runtime metadata
+publication are still required. Production emission remains explicitly skipped.
+
 ## 2026-09-25: Binary arithmetic and overflow branches
 
 Binary arithmetic generation now preserves native operand selection, scalar

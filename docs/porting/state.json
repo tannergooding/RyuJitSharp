@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete AMD64 binary arithmetic and branch recording, including scalar floating operations, APX NDD, GC transitions and overflow checks using the existing shared throw-helper-block mode. Explicitly reject inline helper-call mode before node mutation until full call generation is ported. Keep production emission skipped.",
+      "scope": "Complete AMD64 integer multiplication and high-half multiplication, preserving immediate/LEA forms, implicit register pairs, BMI2, APX and signed/unsigned overflow. Reuse full operand recording and D006 shared throw-helper mode; keep production emission skipped.",
       "doneWhen": [
-        "Port complete genCodeForBinary, genIsSameLocalVar, genCheckOverflow and the full fgUseThrowHelperBlocks == true arm of genJumpToThrowHlpBlk with explicit pre-mutation rejection of the unported inline-helper mode.",
-        "Port inst_JMP, emitIns_J and required jump descriptor/region/short-jump helpers, emitIns_R_AR and emitIns_BASE_R_R_RM under D005.",
+        "Port complete AMD64 genCodeForMul and genCodeForMulHi, preserving operand order, implicit-register setup, immediate and contained memory forms, BMI2 high-half results and consume/produce ordering.",
+        "Close native three-operand IMUL opcode selection and encoding-layout assertions; apply D005 and D006 before mutation.",
         "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Reuse shiftGeneration.selection, adding arithmetic, overflow-target, jump-recording and unsupported-mode mutation checks.",
+        "Reuse binaryArithmetic.selection, adding integer multiplication, high-half, immediate-register mapping and unsupported-mode mutation cases.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Binary arithmetic, shared overflow branches and jump recording are complete and validated (binaryArithmetic). Continue with complete AMD64 integer multiplication: genCodeForMul at codegenxarch.cpp:1187 and genCodeForMulHi at 687. Read the full bodies and required emitter wrappers, preserve immediate/LEA choices, implicit register-pair constraints, signed/unsigned overflow, APX and high-half results. Reuse existing operand/memory recording and genCheckOverflow; apply D006 before operand mutation on any path requiring unported inline throw calls. Production emission must remain skipped until the full node/block/encoding/metadata closure is ready.",
+    "nextAction": "Integer multiplication and high-half generation are complete and validated (integerMultiplication). Continue with complete AMD64 genCodeForDivMod at codegenxarch.cpp:862-930: preserve dividend copying, signed/unsigned high-half preparation, implicit quotient/remainder registers and GC invalidation. Reuse existing memory recording, genCopyRegIfNeeded and zero-register generation. Apply D005 before operand consumption, validate relevant signed/unsigned and contained-memory cases, then commit the coherent division/remainder batch. Production emission must remain skipped until the full node/block/encoding/metadata closure is ready.",
     "handoff": {
-      "status": "binary-arithmetic-validated",
+      "status": "integer-multiplication-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All files and every follow-up from 4c9a8661-6e45-4e43-960d-7f3a779cdcde are collected, frozen and integrated, including generator changes and compile fixes. Both it and a7f6ecaf-b706-4be6-83c3-c83235b7452f are idle with no outstanding assignment or unread handoff. Root Debug/Release validation passes. No app-native child sessions.",
+      "workerPackets": "Arithmetic packet committed as c2ee1cf. All worker files and follow-ups are collected and integrated. Both 4c9a8661-6e45-4e43-960d-7f3a779cdcde and a7f6ecaf-b706-4be6-83c3-c83235b7452f are idle with no outstanding assignment or unread handoff. Parent handles the bounded multiplication packet directly. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "integerMultiplication": {
+        "debugPassed": 1907,
+        "releasePassed": 1817,
+        "skipped": 0,
+        "selection": "binaryArithmetic.selection plus CodeGenMultiplicationTests.",
+        "debugTests": "artifacts\\multiplication-integrated-debug.trx",
+        "releaseTests": "artifacts\\multiplication-integrated-release.trx",
+        "coverage": "Immediate operands on either side, 3/5/9 LEA selection versus checked IMUL, local/indirect/spilled sources, source/destination aliasing, explicit APX NDD, unsigned implicit-register multiplication with result copying before overflow, signed/unsigned overflow before spilling, high-half RAX/RDX reuse and setup, 32/64-bit BMI2 MULX, all AMD64 fake-IMUL opcode mappings and pre-consumption D005/D006 rejection.",
+        "remaining": "Reuses funcletCreation.nativeHost; no production reachability change or new runtime parity claim. Managed machine-code size remains zero. Division/remainder, remaining node/block generation, final encoding and runtime metadata publication remain."
+      },
       "binaryArithmetic": {
         "debugPassed": 1872,
         "releasePassed": 1784,
@@ -3481,6 +3491,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "integer-multiplication-generation",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:687-774,1187-1297", "src\\coreclr\\jit\\emitinl.h:41-92"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.Multiplication.cs", "sources\\Core\\jit\\emitxarch\\Emitter.MultiplyInstructions.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 genCodeForMul, genCodeForMulHi, inst3opImulForReg and check3opImulValues. Preserves native LEA/immediate selection, implicit registers, checked overflow, memory operands, APX, BMI2 and consume/produce ordering. D005/D006 reject before mutation. Non-AMD64 generation explicitly rejects; production emission remains skipped."
+    },
     {
       "area": "binary-arithmetic-and-shared-overflow",
       "native": ["src\\coreclr\\jit\\codegenxarch.cpp:946-1139,1752", "src\\coreclr\\jit\\codegencommon.cpp:863,2000-2070,2079"],
