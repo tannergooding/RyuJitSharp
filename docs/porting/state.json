@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete Windows-AMD64 genCallInstruction and its call-target, indirection-cell and epilog-register verification dependencies. Independently stage stack-argument generation and flowgraph compaction without phase activation.",
+      "scope": "Integrate complete IL/LIR flowgraph compaction, its mode-specific BasicBlock.isEmpty dependency and native finally-return edge transfer. Next integrate the collected Windows-AMD64 stack-argument packet. Three reused workers independently stage switch optimization, empty-block optimization and scope reporting.",
       "doneWhen": [
-        "Port complete genCallInstruction, getCallTarget, getCallIndirectionCellReg and Debug genCheckTailCallEpilogRegisters.",
-        "Preserve return GC classification, direct/register/memory/cell calls, fast-tailcall consumption boundaries, NativeAOT TLS prefixes and diagnostic signatures.",
+        "Integrate complete fgCanCompactBlock, fgCanCompactInitBlock, fgCompactBlock, fgChangeEhfBlock and BasicBlock.isEmpty, preserving native phi ordering and outgoing edge identity.",
+        "Preserve EH boundaries, profiles, IL offsets, block flags and liveness; record rather than fix the upstream phi-only-target splice defect.",
         "Validate the integrated closure in Debug/Release and commit; retain production node dispatch, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Validate CodeGenCallInstructionTests with CodeGenRegisterArgumentTests, CodeGenReturnTrapTests, CodeGenHelperCallTests and EmitterCallInstructionTests in Debug/Release before committing.",
+        "Validate FlowGraphCompactionTests with BlockSplittingTests and FlowGraphBranchThreadingTests in Debug/Release before committing.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,15 +32,14 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Call-target instruction generation is complete and validated (callInstructions). Integrate the collected flowgraph-compaction packet from artifacts\\flowgraph-compaction-packet. Required parent dependency: complete BasicBlock.isEmpty from block.cpp:1016-1040 and update the call-finally-pair assertion to use it rather than the inherited LIR-range IsEmpty. Record the preserved native target-only-phi loss (fgopt.cpp:945-963), validate FlowGraphCompactionTests with BlockSplittingTests and FlowGraphBranchThreadingTests in Debug/Release and commit. Worker 4c9a8661-6e45-4e43-960d-7f3a779cdcde still stages genPutArgStk/genPutStructArgStk and dependencies under artifacts\\stack-argument-packet; collect after notification. General genCall orchestration, production dispatch and final emission remain separate.",
+    "nextAction": "Compaction is integrated and validated (flowgraphCompaction), with B220 preserved and B221 fixed. Integrate artifacts\\stack-argument-packet (collected through turn 24): add int m_stkArgVarNum = BAD_VAR_NUM and int m_stkArgOffset, move its source/tests into project includes, validate all three struct-copy modes and commit. Workers a7f6ecaf, b6e1f160 and 87f10c61 own independent staged switch, empty-block and scope-reporting packets; collect each after notification. Production dispatch and final emission remain separate.",
     "handoff": {
-      "status": "call-instructions-validated-compaction-collected-stack-arguments-in-flight",
+      "status": "compaction-validated-stack-arguments-collected-three-independent-workers",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Worker 4c9a8661-6e45-4e43-960d-7f3a779cdcde is collected through turn 23; register arguments are committed in 1ccc023, and its active ownership is the staged stack-argument generation/tests packet. Worker a7f6ecaf-b706-4be6-83c3-c83235b7452f is collected through turn 26; its two-file compaction packet is frozen and parent-owned for integration, with 77 pending cases and the BasicBlock.isEmpty prerequisite. No shared worker edits, phase activation, builds, commits or publication. No app-native child sessions.",
+      "workerPackets": "All previous handoffs collected: 4c9a8661-6e45-4e43-960d-7f3a779cdcde through turn 24 (stack arguments frozen, parent-owned); a7f6ecaf-b706-4be6-83c3-c83235b7452f through turn 26 (compaction parent-owned). Reused a7f6ecaf now owns artifacts\\switch-optimization-packet (fgOptimizeSwitchBranches/fgFoldCondToReturnBlock), b6e1f160-b3d7-4126-bf91-39bc8de2e495 owns artifacts\\empty-block-optimization-packet (fgOptimizeEmptyBlock), and 87f10c61-b152-4bdc-a27e-1ecfad4f6342 owns artifacts\\scope-reporting-packet (genSetScopeInfo overloads/ranges and checkICodeDebugInfo). Their earlier descriptor/live-range/opcode work is resolved. Workers stage new files only; no shared edits, builds, phase activation or publication. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
-        "fgCanCompactBlock and fgCompactBlock",
         "fgOptimizeEmptyBlock",
         "fgDedupReturnComparison",
         "fgOptimizeUncondBranchToSimpleCond",
@@ -60,6 +59,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "flowgraphCompaction": {
+        "debugPassed": 140,
+        "releasePassed": 140,
+        "skipped": 0,
+        "selection": ["FlowGraphCompactionTests", "BlockSplittingTests", "FlowGraphBranchThreadingTests"],
+        "debugTests": "artifacts\\flowgraph-compaction-debug.trx",
+        "releaseTests": "artifacts\\flowgraph-compaction-release.trx",
+        "coverage": "77 compaction cases plus adjacent graph tests: eligibility/init/EH restrictions, native statement versus LIR emptiness, call-finally adjacency, phi/body concatenation, transferred LIR ownership/links, all supported outgoing kinds and duplicate edge identity, switch predecessor likelihood, profile consistency, flags/unsigned IL offsets/live-out and enclosing EH endpoints. B220 preserves upstream phi-only-target loss; B221 fixes the inherited range-emptiness substitution.",
+        "remaining": "Complete four-function compaction closure plus BasicBlock.isEmpty, without activating fgUpdateFlowGraph. Switch optimization, empty-block removal and other cleanup dependencies remain. No production reachability change; existing native-host evidence remains current."
+      },
       "callInstructions": {
         "debugPassed": 199,
         "releasePassed": 178,
@@ -3668,6 +3677,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "flowgraph-compaction",
+      "native": ["src\\coreclr\\jit\\fgopt.cpp:769-1181", "src\\coreclr\\jit\\fgbasic.cpp:240-254", "src\\coreclr\\jit\\block.cpp:1016-1040"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.FlowGraphCompaction.cs", "sources\\Core\\jit\\block\\BasicBlock.Empty.cs", "sources\\Core\\jit\\block\\BasicBlock.cs:isBBCallFinallyPair"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete fgCanCompactBlock, fgCanCompactInitBlock, fgCompactBlock, fgChangeEhfBlock and BasicBlock.isEmpty. Preserves native IL/LIR modes and edge identity; native FirstNonPhiDef maps to GetFirstNonPhiDef. Explicit detached LIR ranges retain ownership. B220 is preserved; B221 corrected. No full flowgraph phase activation."
+    },
     {
       "area": "call-target-instruction-generation",
       "native": ["src\\coreclr\\jit\\codegenxarch.cpp:6017-6228", "src\\coreclr\\jit\\codegencommon.cpp:2936-2961,6149-6210"],

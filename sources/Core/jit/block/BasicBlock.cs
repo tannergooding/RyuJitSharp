@@ -796,7 +796,7 @@ public sealed partial class BasicBlock : LIR.Range
                 // Some asserts that the next block is of the proper form.
                 assert(!IsLast);
                 assert(Next.Kind is BBJ_CALLFINALLYRET);
-                assert(Next.IsEmpty);
+                assert(Next.isEmpty());
 
                 return true;
             }

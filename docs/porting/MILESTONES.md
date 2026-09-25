@@ -14,6 +14,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Flowgraph block compaction
+
+Block compaction now merges statement and linear-IR blocks while retaining
+predecessor and outgoing-edge identity, EH endpoints, profile consistency,
+liveness, flags and IL ranges. Eligibility preserves entry blocks, protected
+regions and call-finally adjacency; block emptiness follows the native rules
+for each IR form.
+
+The remaining switch and empty-block cleanup paths still precede full flowgraph
+update activation. A suspected upstream phi-splice defect is preserved rather
+than silently corrected only in the port.
+
 ## 2026-09-25: Call-target instruction generation
 
 Call instructions now preserve direct, register, memory and indirection-cell
