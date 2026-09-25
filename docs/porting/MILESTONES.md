@@ -14,6 +14,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Block-memory generation
+
+Windows-x64 block-memory generation now handles unrolled copies, overlapping
+moves and unrolled or loop initialization. Scalar and SIMD tails follow native
+width and overlap decisions. Memmove captures every source byte before writing
+the destination; heap reference slots retain pointer-sized atomic stores.
+
+Loop initialization preserves the initial nullcheck, and GC-unsafe copies use
+the native noninterruptible region. These complete block-generation dependencies
+without activating production emission or claiming machine-code parity.
+
 ## 2026-09-25: Atomic instruction generation
 
 Windows-x64 atomic generation now records locked additions, exchanges,
