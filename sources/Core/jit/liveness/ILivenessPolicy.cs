@@ -15,5 +15,7 @@ public interface ILivenessPolicy
 
     static virtual bool ComputeMemoryLiveness => false;
 
+    static virtual bool EliminateDeadCode => false;
+
     static virtual bool TrackAddressExposedLocals => false;
 }

@@ -87,7 +87,7 @@ public sealed partial class Lowering
         return true;
     }
 
-    private static GenTreeIndir TransformUnusedIndirection(GenTreeIndir ind, Compiler compiler, BasicBlock block)
+    internal static GenTreeIndir TransformUnusedIndirection(GenTreeIndir ind, Compiler compiler, BasicBlock block)
     {
         assert(ind.Oper is GT_NULLCHECK or GT_IND or GT_BLK);
         ind.Type = compiler.gtTypeForNullCheck(ind);

@@ -675,6 +675,12 @@ handler-live bit. The checked public getter and underlying flag storage are
 unchanged, so marking can reset untracked locals without weakening consumer
 invariants or adding duplicate state.
 
+Backward LIR liveness reuses lowering's unused-indirection transformation and
+retargets its cached predecessor when that operation replaces the node. Native
+in-place bashing leaves the cached address valid; the managed replacement
+detaches the old object. Both local and indirect dead-store paths preserve
+reverse traversal rather than revisiting detached nodes or stopping early.
+
 LIR node replacement uses the existing metadata-preserving constructors with
 `NodeThreading.LIR`, followed by `LIR.Range.ReplaceNode` to transfer the owning
 use and range links. Address-mode lowering takes its address alias by reference,

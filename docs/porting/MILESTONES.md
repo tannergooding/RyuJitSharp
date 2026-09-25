@@ -87,8 +87,14 @@ different partial-store and conditional-definition rules.
 Inter-block liveness now propagates local and memory state to a fixed point,
 including exception-handler edges, filter bypass and second-pass handler flow.
 It preserves argument and generic-context lifetimes and identifies locals that
-need initialization. Backward death marking, dead-store rewriting and the
-complete liveness and allocation drivers remain unfinished.
+need initialization.
+
+Backward linear-IR analysis now marks local and promoted-field last uses,
+accounts for call-time definitions and P/Invoke frame roots, and removes dead
+stores and values when the policy permits it. It retains required faults,
+side effects and explicit GC initialization. Traversal follows replacement
+nodes when unused loads become null checks. The complete liveness and
+allocation drivers remain unfinished.
 
 Register kills and GC-specific spills now preserve live values and advance
 fixed-register constraints. Temporary copy-register allocation retains the
