@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Atomic generation is committed84c08a8 and block memory is validated at blockMemoryGeneration; all returned packets are integrated. Continue pinned genCodeForTreeNode dependency inspection after codegenxarch.cpp:2115 (entry at1810), matching actual managed symbols. genCallFinally/genEHCatchRet at151/204 are absent and form a bounded independent closure with local-label relocation recording. Validate and commit the next complete dependency packet; production genGenerateCode remains skipped.",
+    "nextAction": "ScalarNodes validation covers complete bit modification, saturating increment, physical/catch register values, constant reuse and APX CCMP generation. Integrate the frozen artifacts\\eh-transfer-generation-packet files using handoff.txt, validate EH transfers with existing label and GC cases in Debug/Release, and commit. Worker87f10c61 is collected through turn11 and idle. Complete genCodeForTreeNode was inspected through its end: remaining managed dependencies include async continuation/resume/suspend/nonlocal-jump generators, hardware-intrinsic generation and patchpoints; do not substitute a reduced dispatcher. Production genGenerateCode remains skipped.",
     "handoff": {
-      "status": "block-memory-validated-remaining-dispatch-dependencies",
+      "status": "scalar-nodes-validated-eh-transfer-packet-ready",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn26; JMP/GC/shadow-space packet committed de6bbb5. 87f10c61-b152-4bdc-a27e-1ecfad4f6342 through turn10; local heap committed4a3828e and block-memory packet integrated and validated. b6e1f160-b3d7-4126-bf91-39bc8de2e495 through turn6; graph diagnostics e1f0f90. a7f6ecaf-b706-4be6-83c3-c83235b7452f through turn29; cleanup2f55f04. All idle and all packets integrated. No app-native child sessions.",
+      "workerPackets": "4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn26; JMP/GC/shadow-space packet committed de6bbb5. 87f10c61-b152-4bdc-a27e-1ecfad4f6342 through turn11; local heap4a3828e and block memory694a902 integrated; EH-transfer packet frozen and awaiting parent integration. b6e1f160-b3d7-4126-bf91-39bc8de2e495 through turn6; graph diagnostics e1f0f90. a7f6ecaf-b706-4be6-83c3-c83235b7452f through turn29; cleanup2f55f04. All idle. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -52,6 +52,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "scalarNodes": {
+        "debugPassed": 174,
+        "releasePassed": 169,
+        "skipped": 0,
+        "selection": "CodeGenScalarNodeTests, CodeGenConditionalCompareTests, CodeGenComparisonTests, EmitterRegisterInstructionTests, CodeGenRegisterValueTests and EmitterLabelTests",
+        "debugTests": "artifacts\\scalar-nodes-debug.trx",
+        "releaseTests": "artifacts\\scalar-nodes-release.trx",
+        "coverage": "Saturating add/carry correction widths, bit-modification value/index aliasing, physical and catch register GC roots, reused-zero instruction-group boundaries, complete CCMP condition mapping, default condition flags and shorter zero CTEST encoding.",
+        "remaining": "Complete native scalar functions and APX conditional comparison support; expose existing emitter nonempty query without duplicating it. Production dispatch remains absent and generation skipped. Descriptor evidence does not change the funcletCreation.nativeHost runtime frontier."
+      },
       "blockMemoryGeneration": {
         "debugPassed": 188,
         "releasePassed": 176,
@@ -3796,6 +3806,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "scalar-node-and-conditional-compare-generation",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:670-684,1148-1179,1529-1557,4492-4503,8560-8578,8596-8639", "src\\coreclr\\jit\\codegenlinear.cpp:2352-2367", "src\\coreclr\\jit\\codegencommon.cpp:8698-8717"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.ScalarNodes.cs", "sources\\Core\\jit\\codegenxarch\\CodeGen.ConditionalCompare.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete Windows-AMD64 saturating increment, bit modification, physical/catch register values, constant reuse and CCMP generation with native condition/default-flag mappings. No production dispatcher activation."
+    },
     {
       "area": "block-memory-generation",
       "native": ["src\\coreclr\\jit\\codegenxarch.cpp:2684,3092,3144,3384,3453", "src\\coreclr\\jit\\codegen.h:simdUnalignedMovIns"],

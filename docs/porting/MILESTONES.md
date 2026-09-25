@@ -14,6 +14,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Scalar value and conditional-compare generation
+
+Saturating increments and bit modifications now preserve native carry and
+register-aliasing behavior. Physical-register reads and catch arguments maintain
+GC roots, while reused zero constants preserve instruction-group GC boundaries.
+APX conditional comparisons carry the native default flags and use the shorter
+conditional-test encoding for zero operands.
+
+The node dispatcher still has async, hardware-intrinsic and patchpoint
+dependencies; production emission remains unavailable.
+
 ## 2026-09-25: Block-memory generation
 
 Windows-x64 block-memory generation now handles unrolled copies, overlapping

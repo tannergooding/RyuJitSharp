@@ -79,7 +79,7 @@ public partial class Emitter
         return emitLastIns is not null;
     }
 
-    private bool emitCurIGnonEmpty()
+    internal bool emitCurIGnonEmpty()
     {
         return (emitCurIG is not null) && (emitCurIGfreeNext > 0);
     }
