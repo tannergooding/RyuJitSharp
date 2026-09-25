@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete Windows-xarch hardware-intrinsic generation, the remaining node-generator dependency before complete Windows-AMD64 genCodeForTreeNode integration. Async transfers and resume-table recording are integrated; production emission remains explicitly unavailable.",
+      "scope": "Complete Windows-AMD64 node dispatch and its native block-driver dependency closure. Hardware generation and node dispatch are integrated; production emission remains explicitly unavailable.",
       "doneWhen": [
-        "Port complete native hardware-intrinsic generation functions and strictly required emitter support, preserving table-driven and family-specific paths.",
-        "Integrate complete Windows-AMD64 genCodeForTreeNode only after its reachable dependency closure is present; retain explicit production emission rejection until encoding and publication are implemented.",
+        "Preserve complete native genCodeForTreeNode dispatch, reuse-before-containment, operand consumption, GC boundaries and pending-call label behavior.",
+        "Port complete Windows-AMD64 genCodeForBBlist and its required support without substituting a reduced block loop; retain explicit production emission rejection until encoding and publication are implemented.",
         "Validate each integrated closure in Debug/Release and commit; retain production activation, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Run CodeGenHardwareGenerationTests and CodeGenAvxFamilyTests with the returned base-family/emitter tests in Debug/Release; include existing operand, SIMD recording, switch, GC and register cases.",
+        "Run CodeGenNodeDispatchTests with comparison, scalar, call, hardware, atomic and GC-interruptibility cases in Debug/Release; extend the selection with focused block-driver coverage when implemented.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,9 +32,9 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Hardware generation and all family/emitter packets are integrated and validated at hardwareGeneration. Implement complete Windows-AMD64 genCodeForTreeNode from codegenxarch.cpp:1810 onward, reusing the now-complete scalar, atomic, block, async and hardware roots. Read its exact end and immediate dispatch support; Windows-x64 does not define SWIFT_SUPPORT. Preserve operand numbering, contained/reused-node handling, stack/GC updates and dispatch order. Validate direct node dispatch in Debug/Release and commit its closure before proceeding to the production driver/encoding/publication dependencies. Production genGenerateCode remains skipped.",
+    "nextAction": "Complete Windows-AMD64 genCodeForTreeNode is implemented and validated at nodeDispatch. Read complete native genCodeForBBlist in codegenlinear.cpp:142 onward and its immediate support; the managed symbol is absent. Implement the complete block driver and required helpers, preserving LIR traversal/numbering, block GC state, labels, EH transfers, debug mappings and epilog decisions. Validate and commit this closure before proceeding to genGenerateCode (codegencommon.cpp:2151), final encoding and publication. Do not activate production emission until the complete required closure is ready; managed native-code size remains zero.",
     "handoff": {
-      "status": "hardware-generation-validated-node-dispatch-next",
+      "status": "node-dispatch-validated-block-driver-next",
       "branch": "tannergooding-ryujit-backend-continuation",
       "workerPackets": "All packets integrated and validated. 4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn27 (AVX/FMA/Permute); 87f10c61-b152-4bdc-a27e-1ecfad4f6342 through turn14 (Base/X86Base/mask clearing); b6e1f160-b3d7-4126-bf91-39bc8de2e495 through turn9 (multioperand SIMD, gather and mask-store emitter); a7f6ecaf-b706-4be6-83c3-c83235b7452f through turn29 (earlier cleanup). All idle. No unread handoffs or app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
@@ -52,6 +52,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "nodeDispatch": {
+        "debugPassed": 219,
+        "releasePassed": 210,
+        "skipped": 0,
+        "selection": "CodeGenNodeDispatchTests, CodeGenComparisonTests, CodeGenScalarNodeTests, CodeGenCallTests, CodeGenHardwareGenerationTests, CodeGenAtomicTests and EmitterGCInterruptibilityTests",
+        "debugTests": "artifacts\\node-dispatch-debug.trx",
+        "releaseTests": "artifacts\\node-dispatch-release.trx",
+        "coverage": "Complete Windows-AMD64 operator routing; managed unary node types; reuse-before-containment; constant production; comparison consumption; per-node Debug operand-order reset; deferred copy/reload and IL markers; keepalive lifetimes; memory barriers; non-GC/preemptive boundaries; pending label relocation and call binding; hardware dispatch; invalid field lists and unsupported operators; D005 pre-mutation rejection.",
+        "remaining": "Native genCodeForTreeNode is complete for Windows AMD64. genCodeForBBlist, production orchestration, encoding, executable allocation and data/unwind/GC publication remain pending. Recording tests do not establish emitted-code execution; production genGenerateCode remains CORJIT_SKIPPED and funcletCreation.nativeHost remains the runtime frontier."
+      },
       "hardwareGeneration": {
         "debugPassed": 730,
         "releasePassed": 691,
@@ -3846,6 +3856,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "windows-amd64-node-dispatch",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:1810-2270"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.NodeDispatch.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete Windows-AMD64 genCodeForTreeNode, reusing existing generation roots and managed unary accessors. Reuse precedes containment, comparisons consume operands, markers preserve parent-owned work, and GC/call labels retain native boundaries. Unsupported targets and invalid dispatch inputs fail explicitly; D005 recording rejection occurs before mutation. Production generation remains skipped."
+    },
     {
       "area": "hardware-intrinsic-generation",
       "native": ["src\\coreclr\\jit\\hwintrinsiccodegenxarch.cpp:1-4220", "src\\coreclr\\jit\\hwintrinsicxarch.cpp:873-1140", "src\\coreclr\\jit\\emitxarch.cpp:107-146,1978,8218-8242,8477-8503,8753-8924,9877-10393", "src\\coreclr\\jit\\codegencommon.cpp:7298-7303"],

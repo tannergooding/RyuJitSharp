@@ -14,6 +14,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Windows-x64 node dispatch
+
+The complete Windows-x64 node dispatcher now connects lowered LIR nodes to the
+scalar, call, atomic, block, async and hardware generators. Register reuse is
+handled before containment, comparisons consume operands before generating
+conditions, and copy/reload markers leave their work to the consuming parent.
+
+GC transitions and pending call labels preserve their native boundaries. The
+block driver, final encoding and runtime publication remain ahead of production
+emission; this does not yet produce executable managed native code.
+
 ## 2026-09-25: Hardware-intrinsic generation
 
 Hardware-intrinsic generation now covers table-driven instructions and the
