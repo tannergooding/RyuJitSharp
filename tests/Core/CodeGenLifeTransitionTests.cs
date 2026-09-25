@@ -150,7 +150,7 @@ internal static class CodeGenLifeTransitionTests
         });
     }
 
-    private static string Capture(Action action)
+    internal static string Capture(Action action)
     {
         using var stream = new MemoryStream();
         using var writer = new JitTextWriter(stream, leaveOpen: true);

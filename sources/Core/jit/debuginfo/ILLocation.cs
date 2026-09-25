@@ -3,9 +3,11 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
+
 namespace RyuJitSharp;
 
-public readonly struct ILLocation
+public readonly struct ILLocation : IEquatable<ILLocation>
 {
     // Complementing the offset makes default(ILLocation) invalid, like the native constructor.
     private readonly IL_OFFSET _encodedOffset;
@@ -32,6 +34,25 @@ public readonly struct ILLocation
     public IL_OFFSET Offset => ~_encodedOffset;
 
     public ICorDebugInfo.SourceTypes SourceTypes => _sourceTypes;
+
+    public bool Equals(ILLocation other)
+    {
+        return (_encodedOffset == other._encodedOffset) && (_sourceTypes == other._sourceTypes);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is ILLocation other && Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(_encodedOffset, _sourceTypes);
+    }
+
+    public static bool operator ==(ILLocation left, ILLocation right) => left.Equals(right);
+
+    public static bool operator !=(ILLocation left, ILLocation right) => !left.Equals(right);
 
 #if DEBUG
     public void Dump()

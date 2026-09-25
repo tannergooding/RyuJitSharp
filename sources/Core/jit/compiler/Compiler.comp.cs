@@ -226,7 +226,7 @@ public partial class Compiler
     /// <summary>List has the offsets where variables enter scope, sorted by instr offset</summary>
     private int[] compEnterScopeIndices = [];
 
-    public ref VarScopeDsc compEnterScopeList(int index) => ref info.compVarScopes[index];
+    public ref VarScopeDsc compEnterScopeList(int index) => ref info.compVarScopes[compEnterScopeIndices[index]];
 
     public bool compMethodRequiresPInvokeFrame => info.compUnmanagedCallCountWithGCTransition > 0;
 
@@ -254,7 +254,7 @@ public partial class Compiler
     /// <summary>List has the offsets where variables go out of scope, sorted by instr offset</summary>
     private int[] compExitScopeIndices = [];
 
-    public ref VarScopeDsc compExitScopeList(int index) => ref info.compVarScopes[index];
+    public ref VarScopeDsc compExitScopeList(int index) => ref info.compVarScopes[compExitScopeIndices[index]];
 
     public int compNextExitScopeIndex;
 
@@ -2678,8 +2678,10 @@ public partial class Compiler
             compEnterScopeIndices[i] = i;
         }
 
-        compEnterScopeIndices.AsSpan().Sort((left, right) => compEnterScopeList(left).vsdLifeBeg.CompareTo(compEnterScopeList(right).vsdLifeBeg));
-        compExitScopeIndices.AsSpan().Sort((left, right) => compExitScopeList(left).vsdLifeEnd.CompareTo(compExitScopeList(right).vsdLifeEnd));
+        compEnterScopeIndices.AsSpan().Sort((left, right) =>
+            info.compVarScopes[left].vsdLifeBeg.CompareTo(info.compVarScopes[right].vsdLifeBeg));
+        compExitScopeIndices.AsSpan().Sort((left, right) =>
+            info.compVarScopes[left].vsdLifeEnd.CompareTo(info.compVarScopes[right].vsdLifeEnd));
     }
 
     /// <summary>Create a scope map so it can be looked up by varNum</summary>

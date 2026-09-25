@@ -7,4 +7,8 @@ namespace RyuJitSharp;
 
 public struct IPmappingDsc
 {
+    public emitLocation ipmdNativeLoc;
+    public IPmappingDscKind ipmdKind;
+    public ILLocation ipmdLoc;
+    public bool ipmdIsLabel;
 }

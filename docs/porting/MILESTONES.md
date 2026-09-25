@@ -14,6 +14,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Block debug scopes and IL mappings
+
+Block-level debug support now opens untracked-local scopes, catches up across IL
+gaps and suppresses funclet scopes according to native policy. IL mappings retain
+source flags, ordering and emitter positions, including padding when a debug
+sequence point would otherwise have no code.
+
+Scope cursors now follow their sorted indices instead of descriptor input order.
+This also restores debug basic-block boundaries for unordered variable scopes.
+Per-node generation, final debug metadata publication and machine-code emission
+remain unintegrated.
+
 ## 2026-09-25: Block-entry locations and emitter labels
 
 Code-generation support now restores live-in local locations and rehomes debug

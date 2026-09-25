@@ -241,6 +241,8 @@ existing deviation entries rather than maintaining competing descriptions.
 
 | B208 | Port defect / legacy local register masks | `LclVarDsc.lvRegMask` shifts a raw 64-bit value by the absolute register number. It does not preserve the high register bank, and mask-register indices can alias integer bits. | Migrate remaining consumers to native bank-aware masks when their behavior is ported; reuse `CodeGen.genGetRegMask(in LclVarDsc)` rather than introducing another classifier. | New local spilling uses the bank-aware helper, with a K1 spill regression preserving an unrelated RCX GC root. The legacy property and unrelated consumers remain deferred; no broad register-mask audit is claimed. |
 
+| B209 | Port defect / sorted scope cursors | `compEnterScopeList` and `compExitScopeList` ignored their sorted index arrays, exposing descriptor input order to debug basic-block creation and codegen scope opening. | Dereference the appropriate permutation in each accessor; sorting comparators must compare raw descriptors rather than consulting the permutation being sorted. | Corrected. The cursor-order/ref-identity regression fails before the fix; unordered-scope basic-block and IL-gap coverage exercise both consumers. The minopts native-host corpus has debug code disabled and does not establish scope parity. |
+
 Larger module decomposition and broad unit-test infrastructure belong to the
 post-port phase. Add concrete candidates here as evidence appears, rather than
 preemptively planning a redesign of every compiler subsystem.
