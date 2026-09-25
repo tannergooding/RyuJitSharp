@@ -319,7 +319,7 @@ public static partial class genTreeOpsExtensions
             get
             {
                 assert(AreContiguous(GT_OR, GT_XOR, GT_AND, GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR));
-                return oper is GT_NOT or GT_NEG or GT_ADD or GT_SUB or (>= GT_OR and <= GT_SUB);
+                return oper is GT_NOT or GT_NEG or GT_ADD or GT_SUB or (>= GT_OR and <= GT_ROR);
             }
         }
 #endif

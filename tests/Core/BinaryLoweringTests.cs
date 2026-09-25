@@ -16,6 +16,14 @@ internal static unsafe class BinaryLoweringTests
     [TestCase(genTreeOps.GT_LSH, false, false, var_types.TYP_SHORT, false)]
     [TestCase(genTreeOps.GT_NOT, false, false, var_types.TYP_INT, true)]
     [TestCase(genTreeOps.GT_NEG, false, false, var_types.TYP_INT, true)]
+    [TestCase(genTreeOps.GT_OR, false, false, var_types.TYP_INT, true)]
+    [TestCase(genTreeOps.GT_XOR, false, false, var_types.TYP_INT, true)]
+    [TestCase(genTreeOps.GT_AND, false, false, var_types.TYP_INT, true)]
+    [TestCase(genTreeOps.GT_LSH, false, false, var_types.TYP_INT, true)]
+    [TestCase(genTreeOps.GT_RSH, false, false, var_types.TYP_INT, true)]
+    [TestCase(genTreeOps.GT_RSZ, false, false, var_types.TYP_INT, true)]
+    [TestCase(genTreeOps.GT_ROL, false, false, var_types.TYP_INT, true)]
+    [TestCase(genTreeOps.GT_ROR, false, false, var_types.TYP_INT, true)]
     public static void ReadModifyWriteRecognitionPreservesOperandAndOverflowRules(
         genTreeOps oper, bool readSecond, bool overflow, var_types memoryType, bool expected)
     {
@@ -59,6 +67,26 @@ internal static unsafe class BinaryLoweringTests
                 ContainCheckBinary(lowering, operation.AsOp());
                 Assert.That(load.IsContained || value.IsContained || load.IsRegOptional || value.IsRegOptional, Is.False);
             }
+            if (expected)
+            {
+                load.IsRegOptional = true;
+                if (oper.IsBinary)
+                {
+                    value.IsContained = true;
+                    value.IsRegOptional = true;
+                }
+            }
+            Assert.That(LowerRMWMemOp(lowering, store), Is.EqualTo(expected));
+            if (expected)
+            {
+                Assert.That(operation.IsContained && load.IsContained && source.IsContained, Is.True);
+                Assert.That(target.IsContained, Is.False);
+                Assert.That(load.IsRegOptional, Is.False);
+                if (oper.IsBinary)
+                {
+                    Assert.That(value.IsContained || value.IsRegOptional, Is.False);
+                }
+            }
             foreach (var node in nodes)
             {
                 Assert.That(node._lirFlags & LIR.Flags.Mark, Is.EqualTo(LIR.Flags.None));
@@ -101,6 +129,9 @@ internal static unsafe class BinaryLoweringTests
             LoweringBlock(lowering) = block;
 
             Assert.That(IsRMWMemOpRootedAtStoreInd(lowering, store, out _, out _), Is.EqualTo(!modifyIndex));
+            Assert.That(LowerRMWMemOp(lowering, store), Is.EqualTo(!modifyIndex));
+            Assert.That(target.IsContained, Is.EqualTo(!modifyIndex));
+            Assert.That(sourceBase.IsContained && sourceIndex.IsContained, Is.EqualTo(!modifyIndex));
 
             for (var node = block.FirstNode; node is not null; node = node.Next)
             {
@@ -144,6 +175,9 @@ internal static unsafe class BinaryLoweringTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainCheckBinary")]
     private static extern void ContainCheckBinary(Lowering lowering, GenTreeOp operation);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerRMWMemOp")]
+    private static extern bool LowerRMWMemOp(Lowering lowering, GenTreeStoreInd store);
 
     private static void WithCompiler(Action<Compiler> action)
     {

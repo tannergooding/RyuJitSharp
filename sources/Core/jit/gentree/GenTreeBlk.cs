@@ -13,7 +13,7 @@ public sealed partial class GenTreeBlk : GenTreeIndir
 
     internal BlkOpKind _kind;
 
-    private bool _gcUnsafe;
+    internal bool _gcUnsafe;
 
     public GenTreeBlk(var_types type, GenTree addr, ClassLayout layout)
         : base(GT_BLK, type, addr, data: null)
@@ -31,6 +31,14 @@ public sealed partial class GenTreeBlk : GenTreeIndir
         {
             data.Flags |= GTF_DONT_CSE;
         }
+        _layout = layout;
+    }
+
+    internal GenTreeBlk(var_types type, GenTree addr, GenTree data, ClassLayout layout,
+        GenTree source, NodeThreading threading)
+        : base(GT_STORE_BLK, type, addr, data, source, threading)
+    {
+        assert(layout.Size != 0);
         _layout = layout;
     }
 

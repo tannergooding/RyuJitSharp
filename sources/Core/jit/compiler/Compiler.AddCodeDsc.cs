@@ -91,7 +91,7 @@ public partial class Compiler
 #if DEBUG
         public void Dump()
         {
-            jitprintf($"ACD{acdNum} {acdKind} ");
+            jitprintf($"ACD{acdNum} {sckName(acdKind)} ");
 
             switch (acdKeyDsg)
             {

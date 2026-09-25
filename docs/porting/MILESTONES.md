@@ -12,6 +12,32 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-24: Windows-x64 lowering integration
+
+Common linear-IR lowering now brings together calls and argument placement,
+control-flow guard checks, P/Invoke transitions, returns, switches, local and
+indirect stores, block operations and memory helpers. Stack-level preparation
+constructs and accounts for exception-helper blocks.
+
+Fast tailcalls preserve incoming stack arguments that outgoing arguments would
+overwrite, place profiler hooks and non-GC regions in native order, and avoid
+reserving ordinary outgoing call space.
+
+Hardware-intrinsic lowering now combines construction and element access,
+scalar extraction, dot products, comparisons, conditional selection, ternary
+logic and operand containment. Rounding operands and the ABI/gather exceptions
+to scalar or reinterpret elision retain their native contracts.
+
+Binary lowering includes BMI transformations and APX conditional-compare
+chains. It preserves flag dependencies, memory read-modify-write forms,
+variable shift-count semantics and linear-IR ownership when nodes are replaced.
+The shared dispatcher now applies the native bitwise pretransforms and
+byte-swap handling without rejecting operators that need no lowering.
+
+These implementations are integrated, but the compiler's lowering phase is
+not yet active. Phase orchestration and execution comparison are next;
+register allocation and machine-code emission remain unfinished.
+
 ## 2026-09-24: Scalar condition and array lowering
 
 Lowering now includes integer comparison narrowing, bit-test reductions,

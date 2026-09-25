@@ -7,4 +7,9 @@ namespace RyuJitSharp;
 
 public static partial class LIR
 {
+    public static Range SeqTree(Compiler compiler, GenTree tree)
+    {
+        _ = compiler.gtSetEvalOrder(tree);
+        return new Range(compiler.fgSetTreeSeq(tree, isLIR: true), tree);
+    }
 }

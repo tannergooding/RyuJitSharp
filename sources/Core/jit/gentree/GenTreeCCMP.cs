@@ -17,5 +17,12 @@ public sealed class GenTreeCCMP : GenTreeOpCC
     }
 
     public insCFlags FlagsVal => _flagsVal;
+
+    internal GenTreeCCMP(var_types type, GenCondition condition, GenTree op1, GenTree op2,
+        insCFlags flagsVal, GenTree source, NodeThreading threading)
+        : base(GT_CCMP, type, condition, op1, op2, source, threading)
+    {
+        _flagsVal = flagsVal;
+    }
 }
 #endif

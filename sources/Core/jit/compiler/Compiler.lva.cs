@@ -1151,6 +1151,27 @@ public partial class Compiler
         return false;
     }
 
+#if FEATURE_SIMD
+    public bool lvaMapSimd12ToSimd16(int varNum)
+    {
+        ref var descriptor = ref lvaGetDesc(varNum);
+        assert(descriptor.Type is TYP_SIMD12);
+        if (lvaLclStackHomeSize(varNum) != 16)
+        {
+            return false;
+        }
+
+        // A dependent field must stay within its parent, even though its own stack-home query rounds up.
+        if (lvaIsFieldOfDependentlyPromotedStruct(in descriptor))
+        {
+            ref var parent = ref lvaGetDesc(descriptor.lvParentLcl);
+            return (parent.lvFieldCnt == 1) && (lvaLclStackHomeSize(descriptor.lvParentLcl) == 16);
+        }
+
+        return true;
+    }
+#endif
+
     /// <summary>Determine whether this var should be reported as tracked for GC purposes.</summary>
     /// <param name="varDsc">the LclVarDsc for the var in question.</param>
     /// <returns>Returns true if the variable should be reported as tracked in the GC info.</returns>

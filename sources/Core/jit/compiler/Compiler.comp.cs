@@ -4426,7 +4426,7 @@ public partial class Compiler
     /// <param name="isa"></param>
     /// <returns></returns>
     /// <remarks>Use this api when asking the question so that future ISA questions can be asked correctly or when asserting support/nonsupport for an instruction set</remarks>
-    private bool compIsaSupportedDebugOnly(CORINFO_InstructionSet isa)
+    internal bool compIsaSupportedDebugOnly(CORINFO_InstructionSet isa)
     {
 #if DEBUG && (TARGET_XARCH || TARGET_ARM64)
         return opts.compSupportsISA.HasInstructionSet(isa);

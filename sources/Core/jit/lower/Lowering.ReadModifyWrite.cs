@@ -8,6 +8,85 @@ namespace RyuJitSharp;
 public sealed partial class Lowering
 {
 #if TARGET_XARCH
+    private bool LowerRMWMemOp(GenTreeStoreInd store)
+    {
+        assert(!varTypeIsFloating(store.Type));
+        if (!IsRMWMemOpRootedAtStoreInd(store, out var candidate, out var operand))
+        {
+#if DEBUG
+            JITDUMP($"Lower of StoreInd didn't mark the node as self contained for reason: {RMWStatusDescription(store.RmwStatus)}\n");
+#endif
+            DISPTREERANGE(BlockRange(), store);
+            return false;
+        }
+
+        assert(candidate is not null);
+        var destination = store.Addr;
+        var source = store.Data;
+        source.AsUnOp().Op1.IsRegOptional = false;
+        if (source.Oper.IsBinary)
+        {
+            assert(operand is not null);
+            // A fused memory operation needs its other source in a register or an immediate, not memory.
+            if (IsContainableMemoryOp(operand))
+            {
+                operand.IsContained = false;
+            }
+            source.AsOp().Op2.IsRegOptional = false;
+            JITDUMP("Lower successfully detected an assignment of the form: *addrMode BinOp= source\n");
+        }
+        else
+        {
+            assert(source.Oper.IsUnary);
+            JITDUMP("Lower successfully detected an assignment of the form: *addrMode = UnaryOp(*addrMode)\n");
+        }
+        DISPTREERANGE(BlockRange(), store);
+
+        source.IsContained = true;
+        candidate.IsContained = true;
+        var address = candidate.AsIndir().Addr;
+        address.IsContained = true;
+        if (address.Oper is GT_LEA)
+        {
+            var mode = address.AsAddrMode();
+            if (mode.BaseAddress is GenTree baseAddress)
+            {
+                assert(baseAddress.Oper.IsLeaf);
+                baseAddress.IsContained = true;
+            }
+            if (mode.Index is GenTree index)
+            {
+                assert(index.Oper.IsLeaf);
+                index.IsContained = true;
+            }
+            destination.IsContained = true;
+        }
+        else
+        {
+            assert(address.Oper is GT_LCL_VAR or GT_CNS_INT or GT_LCL_ADDR);
+            if (((address.Oper is GT_LCL_ADDR) && IsContainableLclAddr(address.AsLclFld(), (uint)store.Size)) ||
+                (address.Oper.IsCnsIntOrI && address.AsIntConCommon().FitsInAddrBase(CompilerInstance)))
+            {
+                destination.IsContained = true;
+            }
+        }
+
+        return true;
+    }
+
+#if DEBUG
+    private static string RMWStatusDescription(RmwStatus status) => status switch {
+        STOREIND_RMW_STATUS_UNKNOWN => "RMW status unknown",
+        STOREIND_RMW_DST_IS_OP1 => "dst candidate is op1",
+        STOREIND_RMW_DST_IS_OP2 => "dst candidate is op2",
+        STOREIND_RMW_UNSUPPORTED_ADDR => "address mode is not supported",
+        STOREIND_RMW_UNSUPPORTED_OPER => "oper is not supported",
+        STOREIND_RMW_UNSUPPORTED_TYPE => "type is not supported",
+        STOREIND_RMW_INDIR_UNEQUAL => "read indir is not equivalent to write indir",
+        _ => throw new System.ArgumentOutOfRangeException(nameof(status)),
+    };
+#endif
+
     private bool IsBinOpInRMWStoreInd(GenTreeOp tree)
     {
         assert(!varTypeIsFloating(tree.Type));

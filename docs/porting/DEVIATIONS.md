@@ -718,6 +718,11 @@ so replacing `GT_ADD` with `GT_LEA` preserves logical IDs without retaining the
 old managed node. Operands eliminated by the native transformation are removed
 in the same order.
 
+Conditional-compare chains likewise replace relational and boolean nodes with
+CCMP and SETCC nodes, preserving logical identity and clearing value numbers
+as native cross-kind changes do. The traversal continuation comes from the
+attached replacement, not the detached original node.
+
 Unused-load conversion likewise replaces indirection nodes and returns the
 current node to its caller. The constructors retain the nonfaulting flag that
 native `ChangeOper` preserves. Stack-argument `GT_BLK` to `GT_IND` conversion
@@ -735,6 +740,12 @@ with NYI while remaining compilable. Record the affected symbol, target predicat
 and missing behavior when introducing such a deferral. Windows-x64 behavior
 within the function must not be replaced by stubs. Verify that the selected
 failure path cannot continue as if implemented in Debug or Release.
+
+`LowerTailCallViaJitHelper` remains deferred to Windows x86. Its native body
+assumes four 4-byte special stack arguments and x86 register-restoration flags;
+native `fgCanTailCallViaJitHelper` rejects every other target. The generic call
+branch retains an explicit rejection rather than accepting an unexpectedly
+flagged AMD64 call. Windows-AMD64 fast-tailcall lowering is implemented.
 
 `RegSet` initializes Swift callee-saved masks under `SWIFT_SUPPORT`, as native
 does. Its non-AMD64 Swift path reports NYI and then terminates with

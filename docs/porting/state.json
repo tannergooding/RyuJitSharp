@@ -33,7 +33,25 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "All current worker packets are returned and frozen. Root common/hardware, binary/CCMP, fast-tailcall, liveness and flowgraph integration passes 1144 Debug/1129 Release. Commit the independently validated post-lowering policy and canonical branch-threading packet, then the complete common/hardware lowering dependency closure and its related docs. Native LowerNode passthrough, optimized bitwise pretransforms and byte-swap dispatch are restored; the RMW operator range now includes bitwise/shift/rotate operators. Fast tailcalls are wired without reserving ordinary outgoing argument space. The remaining JIT-helper tailcall rejection is Windows-x86-only by native morph eligibility. fgUpdateFlowGraph still needs broader canonical helpers, so phase activation must use the documented native no-local-lifetimes specialization or complete those dependencies first. Non-Wasm AfterLowerBlocks is empty. Persist the exact handoff and pause before phase activation. Allocation and emission remain inactive; managed code size remains zero.",
+    "nextAction": "Paused for the requested fresh-session handoff. Resume from the current HEAD of tannergooding-ryujit-port-continuity, not the older published tip. Common/hardware lowering, complete binary/CCMP and Windows-AMD64 fast-tailcall dependencies are integrated; root validation is 1144 Debug/1129 Release. Post-lowering liveness and canonical empty-block branch threading are committed as 47cfa9c. Next implement native Lowering.DoPhase orchestration for the complete backendRequiresLocalVarLifetimes == false mode, with explicit pre-mutation rejection of the still-unported lifetime-enabled cleanup mode, as permitted by the porting contract. Preserve P/Invoke prolog, enregistration marking, block traversal, reference recounting, DFS reachability removal and DFS invalidation. Non-Wasm AfterLowerBlocks is empty; fgRemoveBlocksOutsideDfsTree currently needs access from Lowering. Before activation, change the unfinished allocation frontier from its generic FatalJitException to the established explicit skip contract. Then publish a local NativeAOT binary and recapture the minopts corpus against the pinned oracle. Full fgUpdateFlowGraph still needs compaction, empty-block/switch cleanup and optional tail-duplication helpers; do not add success-shaped substitutes. No phase was activated at this handoff, no new native-host parity capture was made, and managed code size remains zero.",
+    "handoff": {
+      "status": "paused-at-validated-commit-boundary",
+      "branch": "tannergooding-ryujit-port-continuity",
+      "workerPackets": "All returned, integrated and frozen; no pending assignments or child-session dependencies.",
+      "preserve": "Keep Lowering.DoPhase and allocation inactive until the next complete mode and failure frontier are ready. Keep the pinned oracle and residual native tree unchanged.",
+      "remainingOptimizedFlowGraph": [
+        "fgOptimizeSwitchBranches",
+        "fgCanCompactBlock and fgCompactBlock",
+        "fgOptimizeEmptyBlock",
+        "fgDedupReturnComparison",
+        "fgOptimizeUncondBranchToSimpleCond",
+        "fgFoldSimpleCondByForwardSub",
+        "fgUpdateFlowGraph"
+      ],
+      "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
+      "nativeFlowGraphSource": "src/coreclr/jit/fgopt.cpp:4373-4902",
+      "executionBoundary": "Existing native-host evidence still ends at local marking/rationalization. Constructed-IR lowering tests and native fallback are not managed code-generation parity."
+    },
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
@@ -58,6 +76,15 @@
         "debugTests": "artifacts\\post-lower-policy-debug.trx",
         "releaseTests": "artifacts\\post-lower-policy-release.trx",
         "scope": "Stable-source Compiler.fgPostLowerLiveness adapter selects native non-SSA, non-memory, non-early LIR with dead-code elimination and without address-exposed tracking. Existing empty/local-bearing and repeated dead-store cases now exercise the compiler entrypoint. No phase activation."
+      },
+      "loweringDispatcherContracts": {
+        "debugPassed": 69,
+        "releasePassed": 69,
+        "skipped": 0,
+        "debugTests": "artifacts\\lowering-dispatch-debug.trx",
+        "releaseTests": "artifacts\\lowering-dispatch-release.trx",
+        "failingBefore": "artifacts\\lowering-dispatch-before.trx",
+        "scope": "Native passthrough default, optimized bitwise pretransforms and byte-swap placement. Ten new cases fail against the previous dispatcher; all 69 dispatcher cases pass after correction. The isolated source was freshly compiled after overlay."
       },
       "hardwareEncodingMetadata": {
         "debugPassed": 25,
@@ -112,12 +139,12 @@
         "scope": "Canonical binary/comparison operand predicates for elided floating scalars and LIR SIMD reinterprets, including ARM64 vector-versus-scalar multiply classification. Four cases fail before the fix. Execution validation is Windows x64; no ARM64 execution or emitted-code parity is claimed."
       },
       "commonHardwareLoweringIntegration": {
-        "debugPassed": 903,
-        "releasePassed": 893,
+        "debugPassed": 1144,
+        "releasePassed": 1129,
         "skipped": 0,
-        "debugTests": "artifacts\\hardware-full-lowering-debug.trx",
-        "releaseTests": "artifacts\\hardware-full-lowering-release.trx",
-        "scope": "Current working-tree integration, including common lowering, actual hardware transformation/containment dispatch, Dot, comparisons, selection and ternary logic. Direct cases cover rounding, ABI/gather elision boundaries, double-NOT continuation, signed/wide extraction and encoding metadata. The call-target boundary expectation and native-integer CFG zero assertion are corrected. Pending complete lowering source review/commit; production DoPhase remains inactive and these constructed-IR checks are not managed code-generation or native-host parity."
+        "debugTests": "artifacts\\lowering-handoff-debug.trx",
+        "releaseTests": "artifacts\\lowering-handoff-release.trx",
+        "scope": "Actual root integration: common/hardware lowering, binary/BMI/CCMP transforms, fast-tailcall dispatch, stack/throw-helper preparation, liveness entrypoint and flowgraph consumers. Includes 111 binary-arithmetic cases, all eight repaired RMW operator classes, ten dispatcher regressions and ordinary-versus-tailcall outgoing-space checks. Construction, Dot, comparison, selection, ternary, rounding, ABI/gather elision boundaries, continuation repair and signed/wide extraction remain covered. Production DoPhase is inactive; these are not managed-code-generation or native-host parity results."
       },
       "lirRangeEnumeration": {
         "debugPassed": 382,
