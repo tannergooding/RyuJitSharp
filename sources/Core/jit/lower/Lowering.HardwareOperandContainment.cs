@@ -8,7 +8,7 @@ namespace RyuJitSharp;
 public sealed partial class Lowering
 {
 #if FEATURE_HW_INTRINSICS && TARGET_XARCH
-    private bool IsContainableHWIntrinsicOp(GenTreeHWIntrinsic parentNode, GenTree childNode,
+    internal bool IsContainableHWIntrinsicOp(GenTreeHWIntrinsic parentNode, GenTree childNode,
         out bool supportsRegOptional)
     {
         var parentIntrinsicId = parentNode.HWIntrinsicId;

@@ -128,4 +128,14 @@ public sealed partial class CodeGen
 
         return indir;
     }
+
+    public static GenTreeStoreInd storeIndirForm(var_types type, GenTree address, GenTree data)
+    {
+        var store = new GenTreeStoreInd(type, address, data)
+        {
+            RegNum = REG_NA,
+        };
+
+        return store;
+    }
 }

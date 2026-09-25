@@ -194,6 +194,8 @@ public partial class Compiler
     /// <summary>Lowering; needed to Lower IR that's added or modified after Lowering.</summary>
     private Lowering? _pLowering;
 
+    internal Lowering? LoweringPhase => _pLowering;
+
     /// <summary>Register allocator</summary>
     private IRegAlloc? _regAlloc;
 

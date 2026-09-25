@@ -277,6 +277,11 @@ public readonly partial struct HWIntrinsicInfo
         return s_categories[GetTableIndex(id)];
     }
 
+    public static CORINFO_InstructionSet lookupIsa(NamedIntrinsic id)
+    {
+        return s_instructionSets[GetTableIndex(id)];
+    }
+
     public static HWIntrinsicFlag lookupFlags(NamedIntrinsic id)
     {
         return s_flags[GetTableIndex(id)];

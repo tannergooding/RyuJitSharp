@@ -14,6 +14,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Hardware-intrinsic generation
+
+Hardware-intrinsic generation now covers table-driven instructions and the
+base, X86Base, AVX and FMA families. Embedded masking and rounding preserve
+operand lifetimes, while variable immediates use the native masked or clamped
+jump tables. FMA and ternary logic retain their destination-alias decisions.
+
+The supporting emitters record blends, gathers, masked stores and multioperand
+SIMD instructions with native register ordering and addressing. These are
+instruction-generation capabilities; complete node dispatch and final
+encoding/publication still precede managed native-code execution.
+
 ## 2026-09-25: Async resume-table recording
 
 Async resume tables now retain native entry sizes, alignment and state offsets,

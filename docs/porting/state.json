@@ -19,7 +19,7 @@
         "Validate each integrated closure in Debug/Release and commit; retain production activation, final encoding and runtime metadata publication explicitly."
       ],
       "validation": [
-        "Validate new node/block dispatch dependencies with existing operand consumption, instruction recording, GC and register cases in Debug/Release.",
+        "Run CodeGenHardwareGenerationTests and CodeGenAvxFamilyTests with the returned base-family/emitter tests in Debug/Release; include existing operand, SIMD recording, switch, GC and register cases.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Async resume registration/location/address generation is validated at asyncResumeGeneration; all returned worker packets are integrated. Begin native hardware generation at hwintrinsiccodegenxarch.cpp:378(genHWIntrinsic), with complete family roots1940(genBaseIntrinsic),2576(genX86BaseIntrinsic),2913(genAvxFamilyIntrinsic),3946(genFmaIntrinsic),4150(genXCNTIntrinsic),4194(genX86SerializeIntrinsic). Inspect complete functions and required shared helpers; use bounded independent family lanes while retaining dispatcher integration in the parent. Windows-x64 does not define SWIFT_SUPPORT, so Swift-only generator roots are not a missing Windows dependency. Production genGenerateCode remains skipped.",
+    "nextAction": "Hardware generation and all family/emitter packets are integrated and validated at hardwareGeneration. Implement complete Windows-AMD64 genCodeForTreeNode from codegenxarch.cpp:1810 onward, reusing the now-complete scalar, atomic, block, async and hardware roots. Read its exact end and immediate dispatch support; Windows-x64 does not define SWIFT_SUPPORT. Preserve operand numbering, contained/reused-node handling, stack/GC updates and dispatch order. Validate direct node dispatch in Debug/Release and commit its closure before proceeding to the production driver/encoding/publication dependencies. Production genGenerateCode remains skipped.",
     "handoff": {
-      "status": "async-resume-validated-hardware-generation-next",
+      "status": "hardware-generation-validated-node-dispatch-next",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn26; JMP/GC/shadow-space packet committed de6bbb5. 87f10c61-b152-4bdc-a27e-1ecfad4f6342 through turn12; local heap4a3828e, block memory694a902, EH transfersb4548fe and async-resume packet integrated and validated. b6e1f160-b3d7-4126-bf91-39bc8de2e495 through turn6; graph diagnostics e1f0f90. a7f6ecaf-b706-4be6-83c3-c83235b7452f through turn29; cleanup2f55f04. All idle and all packets integrated. No app-native child sessions.",
+      "workerPackets": "All packets integrated and validated. 4c9a8661-6e45-4e43-960d-7f3a779cdcde collected through turn27 (AVX/FMA/Permute); 87f10c61-b152-4bdc-a27e-1ecfad4f6342 through turn14 (Base/X86Base/mask clearing); b6e1f160-b3d7-4126-bf91-39bc8de2e495 through turn9 (multioperand SIMD, gather and mask-store emitter); a7f6ecaf-b706-4be6-83c3-c83235b7452f through turn29 (earlier cleanup). All idle. No unread handoffs or app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -52,6 +52,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "hardwareGeneration": {
+        "debugPassed": 730,
+        "releasePassed": 691,
+        "skipped": 0,
+        "selection": "CodeGenHardwareGenerationTests, HardwareBaseGenerationTests, CodeGenAvxFamilyTests, EmitterSimdMultioperandInstructionTests, CodeGenOperandTests, EmitterSimdRegisterInstructionTests, EmitterMemoryOperandTests, CodeGenSwitchTests, CodeGenIntrinsicTests, HardwareContainmentDispatchTests and TreeLifeUpdaterTests",
+        "debugTests": "artifacts\\hardware-generation-debug.trx",
+        "releaseTests": "artifacts\\hardware-generation-release.trx",
+        "coverage": "All four hardware arities; implicit integer/floating predicates; every rounding byte; immediate lane masks/clamps and sparse tables; nested mask/rounding lifetime handling; dynamic-rounding FMA aliases; ternary truth-table permutations; scalar/vector/pointer and spill operands; SSE/AVX/AVX512 integer division; CRC/APX; native gathers/mask stores and blend memory descriptors; D005 preflight.",
+        "remaining": "Complete Windows-AMD64 hardware generation and required recording support, not production execution. Native vector-division option argument conversions are preserved as B227. Final node dispatch, encoding, executable allocation, data/unwind/GC publication and genGenerateCode activation remain pending; managed native-code size remains zero."
+      },
       "asyncResumeGeneration": {
         "debugPassed": 90,
         "releasePassed": 87,
@@ -3836,6 +3846,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "hardware-intrinsic-generation",
+      "native": ["src\\coreclr\\jit\\hwintrinsiccodegenxarch.cpp:1-4220", "src\\coreclr\\jit\\hwintrinsicxarch.cpp:873-1140", "src\\coreclr\\jit\\emitxarch.cpp:107-146,1978,8218-8242,8477-8503,8753-8924,9877-10393", "src\\coreclr\\jit\\codegencommon.cpp:7298-7303"],
+      "csharp": ["sources\\Core\\jit\\hwintrinsiccodegenxarch\\", "sources\\Core\\jit\\hwintrinsic\\HWIntrinsicInfo.ImplicitImmediates.cs", "sources\\Core\\jit\\hwintrinsic\\IntComparisonMode.cs", "sources\\Core\\jit\\emitxarch\\Emitter.SimdMultioperandInstructions.cs", "sources\\Core\\jit\\emitxarch\\Emitter.SimdBlendRecording.cs", "sources\\Core\\jit\\emitxarch\\Emitter.GatherInstructions.cs", "sources\\Core\\jit\\emitxarch\\Emitter.MultiRegisterAddressStores.cs", "sources\\Core\\jit\\codegen\\CodeGen.OperandDesc.cs:storeIndirForm"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "status": "Complete Windows-AMD64 hardware dispatcher, shared operand/options/immediate fallback, Base/X86Base/AVX/FMA/Permute/XCNT/Serialize and required SIMD recording closure. Floating comparison immediates reuse the matching BCL FloatComparisonMode enum. Node dispatch and final production emission remain deferred."
+    },
     {
       "area": "async-resume-table-generation",
       "native": ["src\\coreclr\\jit\\codegenlinear.cpp:998", "src\\coreclr\\jit\\codegenxarch.cpp:4195", "src\\coreclr\\jit\\codegencommon.cpp:6103,6129", "src\\coreclr\\jit\\emit.cpp:7982"],
