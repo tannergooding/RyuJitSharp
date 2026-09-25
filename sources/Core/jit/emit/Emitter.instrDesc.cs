@@ -7,7 +7,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    protected abstract class instrDesc
+    public abstract class instrDesc
     {
     }
 }

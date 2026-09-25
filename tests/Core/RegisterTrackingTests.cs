@@ -13,12 +13,106 @@ using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
 using static RyuJitSharp.emitAttr;
+using static RyuJitSharp.genTreeOps;
+using static RyuJitSharp.GenTreeFlags;
 using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
 
 namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class RegisterTrackingTests
 {
+    [TestCase(true, false)]
+    [TestCase(false, true)]
+    [TestCase(true, true)]
+    public static void LocalRegisterLifeGivesDeathPriorityOverBirth(bool born, bool dying)
+    {
+        WithCompiler(minOpts: true, (compiler, codeGen) => {
+            compiler.lvaTable = [new() { Type = TYP_INT, lvTracked = true, lvLRACandidate = true, RegNum = REG_RAX }];
+            compiler.lvaCount = 1;
+            compiler.lvaTrackedCount = 1;
+#if DEBUG
+            var tree = compiler.gtNewLclvNode(TYP_INT, 0);
+#endif
+            codeGen.RegSet.SetMaskVars(dying ? RBM_RAX | RBM_RBX : RBM_RBX);
+
+            codeGen.genUpdateRegLife(in compiler.lvaTable[0], born, dying
+#if DEBUG
+                , tree
+#endif
+            );
+
+            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(dying ? RBM_RBX : RBM_RAX | RBM_RBX));
+        });
+    }
+
+    [Test]
+    public static void AlwaysAliveMemoryLocalMayAlreadyOccupyItsRegisterAtBirth()
+    {
+        WithCompiler(minOpts: true, (compiler, codeGen) => {
+            compiler.lvaTable = [
+                new() { Type = TYP_REF, lvTracked = true, lvLRACandidate = true, RegNum = REG_RAX, lvSpillAtSingleDef = true },
+            ];
+            compiler.lvaCount = 1;
+            compiler.lvaTrackedCount = 1;
+#if DEBUG
+            var tree = compiler.gtNewLclvNode(TYP_REF, 0);
+#endif
+            codeGen.RegSet.SetMaskVars(RBM_RAX);
+
+            codeGen.genUpdateRegLife(in compiler.lvaTable[0], true, false
+#if DEBUG
+                , tree
+#endif
+            );
+
+            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(RBM_RAX));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void ScalarLocalLocationUsesTheDefinitionOrCopyRegister(bool copy)
+    {
+        WithCompiler(minOpts: true, (compiler, codeGen) => {
+            compiler.lvaTable = [new() { Type = TYP_INT, lvLRACandidate = true, RegNum = REG_STK }];
+            compiler.lvaCount = 1;
+            GenTree tree = compiler.gtNewLclvNode(TYP_INT, 0);
+            if (copy)
+            {
+                tree = new GenTreeCopyOrReload(GT_COPY, TYP_INT, tree);
+            }
+            tree.RegNum = REG_R8;
+
+            codeGen.genUpdateVarReg(ref compiler.lvaTable[0], tree);
+
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_R8));
+            Assert.That(codeGen.genGetRegMask(in compiler.lvaTable[0]), Is.EqualTo(RBM_R8));
+        });
+    }
+
+    [Test]
+    public static void PromotedLocalMaskOnlyIncludesRegisterResidentFields()
+    {
+        WithCompiler(minOpts: true, (compiler, codeGen) => {
+            compiler.lvaEnregMultiRegVars = true;
+            compiler.lvaTable = [
+                new() { Type = TYP_STRUCT, lvPromoted = true, lvFieldLclStart = 1, lvFieldCnt = 2 },
+                new() { Type = TYP_INT, lvIsStructField = true, lvLRACandidate = true, RegNum = REG_RAX },
+                new() { Type = TYP_DOUBLE, lvIsStructField = true, lvLRACandidate = true, RegNum = REG_STK },
+            ];
+            compiler.lvaCount = 3;
+            var tree = compiler.gtNewLclvNode(TYP_STRUCT, 0).AsLclVar();
+            tree.Flags |= GTF_VAR_MULTIREG;
+            tree.SetRegNumByIdx(REG_XMM1, 1);
+            Assert.That(codeGen.genGetRegMask(tree), Is.EqualTo(RBM_RAX));
+
+            codeGen.genUpdateVarReg(ref compiler.lvaTable[2], tree, 1);
+
+            Assert.That(compiler.lvaTable[2].RegNum, Is.EqualTo(REG_XMM1));
+            Assert.That(codeGen.genGetRegMask(tree), Is.EqualTo(RBM_RAX | RBM_XMM1));
+        });
+    }
+
     [Test]
     public static void GcRegisterStatePreservesLiveVariablesAndReclassifiesReferences()
     {
@@ -238,12 +332,28 @@ internal static unsafe class RegisterTrackingTests
 
     private static void WithCompiler(bool minOpts, Action<Compiler, CodeGen> action)
     {
+#if DEBUG
+        using var tls = new JitTls(null);
+        var previous = JitTls.Compiler;
+#endif
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(minOpts);
         var codeGen = new CodeGen(compiler);
         compiler.codeGen = codeGen;
-        action(compiler, codeGen);
+#if DEBUG
+        JitTls.Compiler = compiler;
+#endif
+        try
+        {
+            action(compiler, codeGen);
+        }
+        finally
+        {
+#if DEBUG
+            JitTls.Compiler = previous;
+#endif
+        }
     }
 }

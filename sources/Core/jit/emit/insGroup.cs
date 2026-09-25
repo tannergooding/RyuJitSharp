@@ -5,7 +5,7 @@
 
 namespace RyuJitSharp;
 
-public sealed class insGroup
+public sealed partial class insGroup
 {
     public InsGroupFlags igFlags;
 }

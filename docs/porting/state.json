@@ -12,16 +12,15 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port required code-generation preparation for Windows AMD64: complete branch/EH/throw-helper label marking, emitter method initialization and GC register/stack-pointer state with native register diagnostics. Correct Release GC feature selection exposed by the new state updates. Retain the explicit production emission boundary until the full code-generator and runtime-metadata closure is ready.",
+      "scope": "Continue Windows-AMD64 code-generation foundations with complete instruction-group object construction/linking and scalar/multireg local-register life transitions needed by TreeLifeUpdater. Retain native ordering, counters, label identities and dead-store lifetime semantics.",
       "doneWhen": [
-        "Port complete genMarkLabelsForCodegen and canonical jump-elision predicates, including hot/cold, throw-helper and EH boundary rules.",
-        "Port complete emitter Init, GC register/stack-pointer initialization and marking, live-register masks and their required native register-name/mask diagnostics.",
-        "Preserve required EMIT_GENERATE_GCINFO behavior in Release as well as Debug.",
-        "Validate the integrated preparation packet with focused Debug/Release coverage and review native state ordering.",
-        "Commit a coherent completed preparation boundary; do not activate reduced machine-code generation."
+        "Port emitInitIG, emitAllocIG, emitInsertIGAfter and emitAllocAndLinkIG with their managed insGroup state.",
+        "Port both genUpdateVarReg and genGetRegMask overloads plus genUpdateRegLife, retaining diagnostics and dying-over-born priority.",
+        "Integrate frozen source packets and validate group-link and register-life contracts in Debug and Release.",
+        "Commit the complete support boundary without activating partial instruction generation or inventing packed descriptor storage."
       ],
       "validation": [
-        "Run focused block-label, jump-elision and emitter initialization checks in Debug and Release, with existing relevant backend regressions.",
+        "Run focused instruction-group and codegen register-life checks with the preceding preparation selection in Debug and Release.",
         "Reuse the exact allocation-activation capture; republish only if reachable production behavior changes. B145 remains deferred."
       ],
       "deferred": [
@@ -34,11 +33,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit the validated code-generation preparation packet (68 Debug / 67 Release, no skipped tests). Allocation activation is committed at d791647 and its exact native-host evidence remains current. Then port native emitInitIG/emitAllocIG/emitInsertIGAfter/emitAllocAndLinkIG (emit.cpp:9875-10042) using the existing managed insGroup representation; native arena statistics are already an accepted difference. Do not mistake object construction for a raw allocator blocker. The first packed-buffer representation dependency is emitGenIG (emit.cpp:891-941), followed by emitSavIG (:971); instrDesc remains an abstract shell. genPrepForCompiler still requires TreeLifeUpdater and full codegen liveness support. Keep genGenerateCode explicitly skipped; no reduced alternate generator, native residual edits, push or PR.",
+    "nextAction": "The instruction-group and register-life packet is complete and validated (83 Debug / 82 Release, no skipped tests). After its local commit, resolve B207 before implementing native emitGenIG/emitSavIG (emit.cpp:891-1315): managed descriptor objects cannot be memcpy'd into native packed byte storage. Ask whether to retain typed managed descriptors in group-owned collections with native logical sizes/offsets, or use native-layout unmanaged descriptors with managed-reference handles. Preserve GC snapshots, jump/alignment/last-instruction alias updates and native group-splitting behavior either way. No representation change is yet authorized. TreeLifeUpdater, final frame layout, node generation and metadata also remain; keep genGenerateCode explicitly skipped. No push or PR.",
     "handoff": {
-      "status": "codegen-preparation-validated",
+      "status": "awaiting-emitter-storage-decision",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Both retained task workers are idle and frozen; all implementation and read-only follow-up handoffs are integrated. The emitter Init packet was integrated with a typed GCInfo.regPtrDsc reference, not an object placeholder. No outstanding worker or app-native child-session dependencies.",
+      "workerPackets": "Both retained task workers are idle and frozen. All handoffs, including the typed instruction reference and invariant corrections, are integrated. No outstanding worker or app-native child-session dependencies.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -62,6 +61,15 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "instructionGroupsAndRegisterLife": {
+        "debugPassed": 83,
+        "releasePassed": 82,
+        "skipped": 0,
+        "selection": ["CodeGenLabelTests", "EmitterInitializationTests", "EmitterInstructionGroupTests", "RegisterTrackingTests", "CompilerRegallocFrameTests", "LoweringPhaseTests"],
+        "debugTests": "artifacts\\codegen-groups-debug.trx",
+        "releaseTests": "artifacts\\codegen-groups-release.trx",
+        "scope": "Complete instruction-group construction/linking with native numbering, offsets, funclet identity, debug weight and propagated flags; typed last-instruction references. Complete scalar/multireg local-location updates, promoted-field register masks and native register-life transitions, including dead stores and already-live memory-backed locals. Production remains at the explicit emission boundary; no unchanged-frontier recapture."
+      },
       "codegenPreparation": {
         "debugPassed": 68,
         "releasePassed": 67,
@@ -3192,6 +3200,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "codegen-groups-and-register-life",
+      "native": ["src\\coreclr\\jit\\emit.cpp:9875-10042", "src\\coreclr\\jit\\emit.h", "src\\coreclr\\jit\\codegencommon.cpp:796-854,876-922", "src\\coreclr\\jit\\codegenlinear.cpp:1131-1137"],
+      "csharp": ["sources\\Core\\jit\\emit\\Emitter.InstructionGroups.cs", "sources\\Core\\jit\\emit\\insGroup.Initialization.cs", "sources\\Core\\jit\\emit\\insGroup.cs", "sources\\Core\\jit\\codegen\\CodeGen.RegisterLife.cs", "sources\\Core\\jit\\codegeninterface\\ICodeGen.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete group-object allocation/initialization/linking and local register-location/mask/life support. ARM32 floating register-variable masks explicitly reject. Packed descriptor buffers and relocation are unimplemented pending B207; the descriptor hierarchy remains managed and production emission remains explicitly skipped."
+    },
     {
       "area": "codegen-preparation",
       "native": ["src\\coreclr\\jit\\codegencommon.cpp:623-774", "src\\coreclr\\jit\\block.cpp:378-452", "src\\coreclr\\jit\\emit.h:3888-3905", "src\\coreclr\\jit\\gcinfo.cpp:63-215", "src\\coreclr\\jit\\regset.cpp:206-247", "src\\coreclr\\jit\\regset.h:130-150", "src\\coreclr\\jit\\emit.cpp:3498-3535", "src\\coreclr\\jit\\emitxarch.cpp:11520-11754", "src\\coreclr\\jit\\compiler.hpp:5047-5071", "src\\coreclr\\jit\\target.h:539-546", "src\\coreclr\\jit\\targetamd64.h:78"],

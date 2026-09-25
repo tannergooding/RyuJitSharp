@@ -22,9 +22,14 @@ creates independent GC-variable sets, and pointer-register tracking preserves
 live local registers while maintaining distinct reference and byref state.
 Register diagnostics retain native names, widths and transition order.
 
+Instruction groups now preserve numbering, funclet identity, list ordering and
+prolog/epilog flag propagation. Local register-location updates cover scalar and
+multi-register values, and lifetime transitions preserve the native priority of
+death over birth for dead stores.
+
 GC tracking is now enabled in Release as well as Debug; it is required compiler
-behavior, not a diagnostic feature. Instruction-group construction, descriptor
-storage, per-node generation and final metadata emission remain unported, so
+behavior, not a diagnostic feature. Descriptor-buffer storage, per-node
+generation and final metadata emission remain unported, so
 the production boundary still explicitly skips code generation.
 
 ## 2026-09-25: Active minimal register allocation

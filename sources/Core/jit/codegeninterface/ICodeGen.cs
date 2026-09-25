@@ -96,6 +96,22 @@ public interface ICodeGen
 
     unsafe void genGenerateCode(out void* codePtr, out int nativeSizeOfCode);
 
+    void genUpdateVarReg(ref LclVarDsc local, GenTree tree);
+
+    void genUpdateVarReg(ref LclVarDsc local, GenTree tree, byte registerIndex);
+
+#if !TARGET_WASM
+    regMaskTP genGetRegMask(in LclVarDsc local);
+
+    regMaskTP genGetRegMask(GenTree tree);
+#endif
+
+    void genUpdateRegLife(in LclVarDsc local, bool isBorn, bool isDying
+#if DEBUG
+        , GenTree tree
+#endif
+    );
+
     bool genUseOptimizedWriteBarriers(GCInfo.WriteBarrierForm writeBarrierForm);
 
     CorInfoHelpFunc genWriteBarrierHelperForWriteBarrierForm(GCInfo.WriteBarrierForm writeBarrierForm);

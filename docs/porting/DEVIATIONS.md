@@ -734,6 +734,13 @@ non-xarch emitter register names explicitly reject. These support routines do
 not activate machine-code generation or complete instruction-group storage,
 frame layout, per-tree liveness updates, encoding or runtime metadata.
 
+Instruction-group allocation/initialization/linking and local register-location,
+register-mask and birth/death transitions are complete. Groups retain typed
+descriptor references; native descriptor-buffer copying and relocation remain
+unimplemented pending the storage decision recorded in B207. ARM32 floating
+register-variable masks explicitly reject rather than dropping the second
+register of a pair.
+
 Morph-time `fgSetOptions` and its frame/GC setters now establish the native
 frame-pointer and interruptibility policy before allocation. Register-mask bank
 selection, physical-register availability aliases and block-boundary constant
