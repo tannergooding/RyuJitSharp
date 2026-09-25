@@ -49,6 +49,12 @@ C# helpers may replace native structure where appropriate. Examples include
 collection ordering, integer semantics, ownership, and native interop contracts.
 Larger algorithmic or architectural changes require separate approval.
 
+Constant-data sections own managed byte arrays, block-reference arrays or
+emitter-location arrays instead of a native payload union. The linked section
+order, logical offsets, alignment and payload-kind checks remain native.
+Span inputs are copied into owned storage; tagged EE data-offset handles retain
+their native bits. This does not implement final runtime data publication.
+
 Emitter instruction descriptors remain managed objects rather than packed native
 records (B207). Temporary and saved groups retain the pinned native logical
 sizes and offsets, including debug pointer prefixes and GC headers. Saving
@@ -999,7 +1005,8 @@ without adding success-shaped fallbacks on the active path.
 
 Windows-AMD64 `emitIns_S_R`, `emitIns_S_R_I`, `emitIns_R_S`, `emitIns_R_I`,
 `emitIns_R_R`, `emitIns_Mov`, `emitIns_R_AI`, `emitIns_Data16`, both `emitIns`
-overloads and `emitIns_Nop`
+overloads, `emitIns_Nop`, `emitIns_R_R_I`, `emitIns_R_R_R`,
+`emitIns_R_R_R_I`, `emitIns_SIMD_R_R_R` and `emitIns_SIMD_R_R_R_I`
 record complete native descriptors and sizes. Their `dispIns` path
 preserves sanity, stack-depth, logical-size and conditional statistics checks.
 In Debug, these entrypoints reject requested
@@ -1008,10 +1015,11 @@ allocation; the native `emitDispIns` body remains unported. Release retains the
 native absence of that immediate-disassembly call.
 
 Native roots are `emitxarch.cpp:5929,5945,5962,6019,7168,7798,8090,9314,9407,10574,10609`
-and `emit.cpp:1611`; the managed specialization is in
+and `8134,8546,8686,9658,9804`, plus `emit.cpp:1611`; the managed specialization is in
 `emitxarch/Emitter.StackStores.cs`, `Emitter.StackLoads.cs`,
 `Emitter.RegisterInstructions.cs`, `Emitter.RegisterMoves.cs`, `Emitter.AddressInstructions.cs` and
-`Emitter.ZeroOperandInstructions.cs`. The pre-mutation rejection is
+`Emitter.ZeroOperandInstructions.cs`, `Emitter.MultiRegisterInstructions.cs` and
+`Emitter.SimdRegisterInstructions.cs`. The pre-mutation rejection is
 covered for every recording entrypoint. Retain the mixed-mode
 native bodies until full disassembly is ported. This does not activate production
 emission or waive future `jitdump`/`jitdisasm` parity.

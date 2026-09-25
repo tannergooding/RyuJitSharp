@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete AMD64 integer immediate materialization: instGen_Set_Reg_To_Imm/Zero, native relocation-hint selection, immediate-address recording, DATA16 recording and complete address-mode instruction sizing. Keep the mixed integer/floating/SIMD constant-node dispatcher deferred until all of its dependencies are ported. Production emission stays skipped.",
+      "scope": "Complete the next constant-materialization dependencies: AMD64 register-only SIMD recording wrappers and their full register-instruction closure; native owned constant-data sections, lookup/insertion and scalar floating constants. Preserve exact payload bits, alignment, bounded lookup and legacy/VEX/EVEX operand policies. Keep the mixed constant-node dispatcher and production emission unactivated until all dependencies exist.",
       "doneWhen": [
-        "Port complete AMD64 instGen_Set_Reg_To_Imm/Zero and relocation-hint helpers without reducing zero, relocatable, section-relative or TLS descriptor cases.",
-        "Integrate complete emitIns_R_AI, emitIns_Data16 and emitInsSizeAM dependencies, retaining D005 and native address/prefix/displacement rules.",
-        "Validate focused immediate/relocation tests and existing recording dependencies in Debug/Release, then commit the coherent closure."
+        "Port complete emitIns_SIMD_R_R_R and emitIns_SIMD_R_R_R_I plus required general register recording under D005, not SIMD-only substitutes for shared native routines.",
+        "Port native data-section collection and constant lookup/insertion, emitBlkConst and emitFltOrDblConst with real owned bytes and native offset handles. Preserve signed zero/NaN payloads and exact alignment/deduplication rules.",
+        "Validate the integrated dependency closure in Debug/Release and commit; retain unresolved SIMD compressed loads, static-field loads and the shared constant-node dispatcher explicitly."
       ],
       "validation": [
-        "Reuse registerValues.selection, adding focused immediate-materialization and address-recording cases at the closure boundary.",
+        "Reuse immediateMaterialization.selection, adding focused SIMD recording and constant-data cases at the closure boundary.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Continue the complete genSetRegToConst dependency closure with native emitIns_SIMD_R_R_R at emitxarch.cpp:9658 and emitIns_SIMD_R_R_R_I at 9804, preserving legacy/VEX/EVEX operand policies and D005. Integer immediate/zero materialization and complete address-mode sizing/recording are validated. Floating/SIMD constant-data materialization and their shared dispatcher remain; do not activate a partial dispatcher, block loop or genGenerateCode.",
+    "nextAction": "Commit the validated constant-data/SIMD-register packet, then close static-field constant-load recording beginning with emitIns_R_C (emitxarch.cpp:8929) and emitIns_SIMD_R_R_C (9626), including complete shared dependencies. Reuse owned constant sections and register-only SIMD recording. In parallel, finish SIMD constant-data materialization from emit.cpp:8240 onward toward all genSetRegToConst overloads at codegenxarch.cpp:276,429,458. Do not activate a partial constant dispatcher or production emission.",
     "handoff": {
-      "status": "immediate-materialization-validated",
+      "status": "simd-and-constant-data-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Both register-recording and immediate-address packets from a7f6ecaf-b706-4be6-83c3-c83235b7452f are fully collected, frozen and integrated, including fixture/style follow-ups. No active or unread workers; no app-native child sessions.",
+      "workerPackets": "All returned SIMD-register implementation and fixture corrections from a7f6ecaf-b706-4be6-83c3-c83235b7452f are integrated and validated with parent-owned constant-data storage. The worker is idle, with no unread packet or outstanding work. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -60,6 +60,23 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "constantDataAndSimdRecording": {
+        "debugPassed": 1182,
+        "releasePassed": 1139,
+        "skipped": 0,
+        "selection": "immediateMaterialization.selection plus EmitterConstantDataTests and EmitterSimdRegisterInstructionTests.",
+        "debugTests": "artifacts\\constants-integrated-debug.trx",
+        "releaseTests": "artifacts\\constants-integrated-release.trx",
+        "coverage": "Owned payload copies, section ordering/alignment, block identity, prefix reuse, floating display-type promotion, exact 65th-entry hit and 66th-entry miss including non-data entries, Debug/Release section completion, raw signed-zero/NaN payloads and single-precision rounding. Native tagged-handle widths and signed decoder are preserved (B213). Complete SIMD/shared register recording covers legacy copies, VEX swaps, EVEX/APX options, descriptor formats/sizes, relocation widths and pre-mutation D005 guards. Native compCodeOpt is fixed to BLENDED_CODE, so the retained SMALL_CODE alignment branch is source-only.",
+        "nativeFloatProbe": {
+          "passed": 15,
+          "source": "artifacts\\constant-float-native.cpp",
+          "results": "artifacts\\constant-float-native-results.txt",
+          "reproduce": "Compile the Windows-x64 body of utils.cpp:2241 convertToSingle with MSVC x64 /O2 /fp:precise; pass the 15 hexadecimal double payloads from EmitterConstantDataTests.SingleConstantsUseNativeX64RoundingAndNaNPayloadConversion and compare the printed single payloads with the cases' expectations.",
+          "scope": "Primitive conversion evidence only, not runtime codegen parity."
+        },
+        "remaining": "Reuses funcletCreation.nativeHost; production emission still skips and managed code size remains zero. SIMD/compressed constant collection, static-field loads, complete constant-node dispatch, encoding and final GC/EH/unwind/debug metadata remain."
+      },
       "immediateMaterialization": {
         "debugPassed": 1104,
         "releasePassed": 1065,
@@ -3406,6 +3423,22 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "constant-data-storage-and-offset-handles",
+      "native": ["src\\coreclr\\jit\\emit.cpp:7870-7971,8028-8232", "src\\coreclr\\jit\\emit.h:442-452,3615-3690", "src\\coreclr\\jit\\ee_il_dll.cpp:1422-1459", "src\\coreclr\\jit\\utils.cpp:2241"],
+      "csharp": ["sources\\Core\\jit\\emit\\Emitter.ConstantData.cs", "sources\\Core\\jit\\emit\\Emitter.dataSection.cs", "sources\\Core\\jit\\emit\\Emitter.dataSecDsc.cs", "sources\\Core\\jit\\emit\\idAddrUnionTag.cs", "sources\\Core\\jit\\ee_il_dll\\Compiler.DataOffsetHandles.cs", "sources\\Core\\jit\\jit\\Globals.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete collection begin/write/end/find/insert and block-address table storage, block constants and AMD64 scalar floating constants. Managed owned payload arrays under D002 retain native ordering, alignment, bitwise prefix lookup and the actual 65-entry bound. Single conversion uses the native non-RISCV host cast, verified on Windows x64; other target scalar materialization explicitly rejects. Tagged offsets preserve native widths, assertions and signed decoding (B213). Async-resume table construction and final runtime data publication remain unported."
+    },
+    {
+      "area": "simd-and-multiregister-instruction-recording",
+      "native": ["src\\coreclr\\jit\\emitxarch.cpp:729-750,5159-5223,8134,8546,8686,9658,9804"],
+      "csharp": ["sources\\Core\\jit\\emitxarch\\Emitter.SimdRegisterInstructions.cs", "sources\\Core\\jit\\emitxarch\\Emitter.MultiRegisterInstructions.cs", "sources\\Core\\jit\\emitxarch\\Emitter.MultiRegisterInstructionSizes.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 emitIns_SIMD_R_R_R/emitIns_SIMD_R_R_R_I and shared emitIns_R_R_I/emitIns_R_R_R/emitIns_R_R_R_I, with encoding classifiers and complete emitInsSizeRR code/immediate overloads. Retains non-SIMD/APX branches, legacy copy ordering, commutative VEX operand swaps and EVEX options. D005 guards precede wrapper copies and descriptor mutation. Final encoding and production emission remain separate."
+    },
     {
       "area": "integer-immediate-materialization",
       "native": ["src\\coreclr\\jit\\codegenxarch.cpp:215-265,11576-11600", "src\\coreclr\\jit\\instr.cpp:498-507,2937-2958", "src\\coreclr\\jit\\instr.h:688-690"],

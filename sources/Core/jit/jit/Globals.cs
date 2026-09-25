@@ -1114,4 +1114,10 @@ public partial class Globals
         assert(int.IsPow2(mult));
         return (size + (mult - 1)) & ~(mult - 1);
     }
+
+    public static uint roundUp(uint size, uint mult)
+    {
+        assert(uint.IsPow2(mult));
+        return unchecked(size + (mult - 1)) & ~(mult - 1);
+    }
 }

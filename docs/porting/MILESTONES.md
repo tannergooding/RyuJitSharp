@@ -14,6 +14,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Constant data and SIMD register recording
+
+The emitter now owns constant-data sections and block-address tables, preserving
+native alignment, insertion order, bounded prefix reuse and tagged data offsets.
+Floating constants retain signed zero and NaN payloads; single-precision
+conversion follows the Windows-x64 rounding behavior.
+
+Register-only SIMD recording preserves legacy destination copies, VEX operand
+selection and EVEX/APX descriptor options and sizes. Static-field loads,
+complete constant-node generation and final encoding remain; production
+emission is still explicitly skipped.
+
 ## 2026-09-25: Immediate values and address-mode sizing
 
 Integer-immediate support now chooses native zeroing, MOV or PC-relative LEA

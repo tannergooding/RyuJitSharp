@@ -9,5 +9,8 @@ public partial class Emitter
 {
     public struct dataSecDsc
     {
+        public dataSection? dsdList;
+        public dataSection? dsdLast;
+        public uint dsdOffs;
     }
 }
