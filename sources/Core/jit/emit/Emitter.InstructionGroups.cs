@@ -57,6 +57,11 @@ public partial class Emitter
 #endif
 
         ig.igData = null;
+        ig.igPhData = null;
+        ig.igStorageSize = 0;
+        ig.igDataOffset = 0;
+        ig.SavedGcVars = [];
+        ig.SavedByrefRegs = 0;
         ig.igSize = 0;
         ig.igGCregs = regMask.SRBM_NONE;
         ig.igInsCnt = 0;

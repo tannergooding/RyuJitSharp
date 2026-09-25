@@ -14,6 +14,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Instruction descriptor storage
+
+Instruction groups can now save their descriptor data and entry GC state for
+later encoding. Managed descriptor objects retain native logical byte sizes and
+offsets, including the debug-info pointer prefix used by Release disassembly.
+Saving preserves jump and alignment order, independent GC snapshots and
+last-instruction references, including extension and out-of-order groups.
+Group and placeholder diagnostics retain native formatting.
+
+Basic, jump and alignment descriptor layouts are established. Instruction
+allocation and overflow transitions, additional descriptor families, per-node
+generation and final encoding remain ahead. This support does not activate
+production emission or change the zero-byte managed execution boundary.
+
 ## 2026-09-25: Code-generation preparation
 
 Code-generation support now marks branch, switch, throw-helper and EH-region

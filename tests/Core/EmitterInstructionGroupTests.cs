@@ -136,6 +136,44 @@ internal static unsafe class EmitterInstructionGroupTests
 #endif
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void ReinitializingGroupClearsItsPreviousStorage(bool placeholder)
+    {
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        var emitter = new CodeGen(compiler).Emitter;
+        emitter.emitBegCG(compiler, default);
+        var group = new insGroup();
+
+        if (placeholder)
+        {
+            group.igFlags = InsGroupFlags.Placeholder;
+            group.igPhData = new insPlaceholderGroupData();
+        }
+        else
+        {
+            group.igFlags = InsGroupFlags.GCVars | InsGroupFlags.ByrefRegs;
+            group.igData = [];
+            group.igStorageSize = 12;
+            group.igDataOffset = 12;
+            group.SavedGcVars = [1];
+            group.SavedByrefRegs = 1;
+        }
+
+        Initialize(emitter, group);
+
+        Assert.That(group.igFlags, Is.EqualTo(InsGroupFlags.None));
+        Assert.That(group.igData, Is.Null);
+        Assert.That(group.igPhData, Is.Null);
+        Assert.That(group.igStorageSize, Is.EqualTo((nuint)0));
+        Assert.That(group.igDataOffset, Is.EqualTo((nuint)0));
+        Assert.That(group.SavedGcVars, Is.Empty);
+        Assert.That(group.SavedByrefRegs, Is.Zero);
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInitIG")]
+    private static extern void Initialize(Emitter emitter, insGroup group);
+
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitAllocIG")]
     private static extern insGroup Allocate(Emitter emitter);
 

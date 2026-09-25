@@ -9,5 +9,41 @@ public partial class Emitter
 {
     protected sealed class instrDescJmp : instrDesc
     {
+        private uint _idjOffs;
+
+        public instrDescJmp? idjNext;
+        public insGroup? idjIG;
+        public unsafe byte* idjAddr;
+
+        public uint idjOffs
+        {
+            get
+            {
+                return _idjOffs;
+            }
+            set
+            {
+#if TARGET_AMD64
+                _idjOffs = value & 0x0FFF_FFFF;
+#elif TARGET_X86
+                _idjOffs = value & 0x1FFF_FFFF;
+#else
+                _idjOffs = value & 0x3FFF_FFFF;
+#endif
+            }
+        }
+
+        public bool idjIsRemovableJmpCandidate;
+#if TARGET_AMD64
+        public bool idjIsAfterCallBeforeEpilog;
+#endif
+        public bool idjShort;
+        public bool idjKeepLong;
+
+#if TARGET_AMD64
+        public override int NativeLogicalSize => DescriptorSizes.Jump;
+#else
+        public override int NativeLogicalSize => throw new System.PlatformNotSupportedException("Jump descriptor size is not yet ported for this target.");
+#endif
     }
 }

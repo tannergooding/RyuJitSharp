@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -109,7 +110,7 @@ public partial class Emitter
     private regMask srbmMskCalleeTrash;
 #endif
 
-    private nint emitIGbuffSize;
+    private nuint emitIGbuffSize;
 
     /// <summary>first  instruction group</summary>
     private insGroup? emitIGlist;
@@ -164,14 +165,13 @@ public partial class Emitter
     /// <summary>If we generate an instruction, and not another instruction group, force create a new emitAdd instruction group.</summary>
     private bool emitForceNewIG;
 
-    /// <summary>next available byte in buffer</summary>
-    private unsafe byte* emitCurIGfreeNext;
+    /// <summary>Native logical offset of the next available byte in the temporary buffer.</summary>
+    private nuint emitCurIGfreeNext;
 
-    /// <summary>one byte past the last available byte in buffer</summary>
-    private unsafe byte* emitCurIGfreeEndp;
+    /// <summary>Native logical capacity of the temporary buffer.</summary>
+    private nuint emitCurIGfreeEndp;
 
-    /// <summary>first byte address</summary>
-    private unsafe byte* emitCurIGfreeBase;
+    private List<instrDesc>? emitCurIGfreeBase;
 
     /// <summary># of collected instr's in buffer</summary>
     private int emitCurIGinsCnt;
@@ -253,9 +253,11 @@ public partial class Emitter
 
     private insGroup? emitLastInsIG;
 
-#if EMIT_BACKWARDS_NAVIGATION
+#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
     private int emitLastInsFullSize;
 #endif
+
+    private bool emitLastSavedIGWasNoGC;
 
 #if TARGET_ARMARCH
     private instrDesc? emitLastMemBarrier;
@@ -338,7 +340,7 @@ public partial class Emitter
     {
         _compiler = comp;
         emitCmpHandle = cmpHandle;
-        _debugInfoSize = sizeof(instrDescDebugInfo*);
+        _debugInfoSize = sizeof(nint);
 
 #if !DEBUG
         if (!comp.opts.disAsm)

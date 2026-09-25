@@ -49,6 +49,15 @@ C# helpers may replace native structure where appropriate. Examples include
 collection ordering, integer semantics, ownership, and native interop contracts.
 Larger algorithmic or architectural changes require separate approval.
 
+Emitter instruction descriptors remain managed objects rather than packed native
+records (B207). Temporary and saved groups retain the pinned native logical
+sizes and offsets, including debug pointer prefixes and GC headers. Saving
+transfers descriptors into group-owned arrays and resolves jump, alignment and
+last-instruction references through those arrays. It preserves native list
+reversal and append order without copying CLR objects into unmanaged storage.
+Actual emitted-code patch addresses remain native pointers; they are not
+narrowed to managed descriptor offsets.
+
 `ILLocation` stores the bitwise complement of its IL offset so that
 zero-initialized C# values, including locations embedded in `default(DebugInfo)`,
 represent the native invalid offset. Explicit offsets and source flags retain

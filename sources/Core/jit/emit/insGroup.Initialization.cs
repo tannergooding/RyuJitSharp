@@ -38,7 +38,10 @@ public sealed partial class insGroup
 #endif
 
     public regMask igGCregs;
-    public byte[]? igData;
+    public Emitter.instrDesc[]? igData;
+
+    internal nuint igStorageSize;
+    internal nuint igDataOffset;
 
 #if TARGET_XARCH
     public Emitter.instrDesc? igLastIns;

@@ -12,15 +12,15 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Continue Windows-AMD64 code-generation foundations with complete instruction-group object construction/linking and scalar/multireg local-register life transitions needed by TreeLifeUpdater. Retain native ordering, counters, label identities and dead-store lifetime semantics.",
+      "scope": "Complete Windows-AMD64 instruction descriptor storage and group-buffer preparation/saving, retaining the existing managed descriptor hierarchy with native logical sizes and offsets. Preserve native buffer capacity, overflow-save semantics, GC snapshots, alignment/jump list order and last-instruction references.",
       "doneWhen": [
-        "Port emitInitIG, emitAllocIG, emitInsertIGAfter and emitAllocAndLinkIG with their managed insGroup state.",
-        "Port both genUpdateVarReg and genGetRegMask overloads plus genUpdateRegLife, retaining diagnostics and dying-over-born priority.",
-        "Integrate frozen source packets and validate group-link and register-life contracts in Debug and Release.",
-        "Commit the complete support boundary without activating partial instruction generation or inventing packed descriptor storage."
+        "Establish the complete native descriptor fields/accessors and Windows-x64 logical-size contracts required by group preparation and saving.",
+        "Port complete emitGenIG/emitSavIG and required no-instruction-display diagnostics without partial success paths.",
+        "Validate logical sizes, group overflow/reset behavior, independent GC snapshots and jump/alignment/last-instruction alias updates in Debug and Release.",
+        "Commit the coherent descriptor-storage packet while keeping production instruction generation explicitly skipped."
       ],
       "validation": [
-        "Run focused instruction-group and codegen register-life checks with the preceding preparation selection in Debug and Release.",
+        "Run focused descriptor/group-storage checks with prior emitter and register-life tests in Debug and Release; verify logical native layout against the pinned source and a native sizeof probe if required.",
         "Reuse the exact allocation-activation capture; republish only if reachable production behavior changes. B145 remains deferred."
       ],
       "deferred": [
@@ -33,11 +33,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "The instruction-group and register-life packet is complete and validated (83 Debug / 82 Release, no skipped tests). After its local commit, resolve B207 before implementing native emitGenIG/emitSavIG (emit.cpp:891-1315): managed descriptor objects cannot be memcpy'd into native packed byte storage. Ask whether to retain typed managed descriptors in group-owned collections with native logical sizes/offsets, or use native-layout unmanaged descriptors with managed-reference handles. Preserve GC snapshots, jump/alignment/last-instruction alias updates and native group-splitting behavior either way. No representation change is yet authorized. TreeLifeUpdater, final frame layout, node generation and metadata also remain; keep genGenerateCode explicitly skipped. No push or PR.",
+    "nextAction": "Descriptor group preparation/saving, basic/jump/alignment logical layouts and Debug displayInstructions=false diagnostics are complete; integrated coverage passes 128 Debug/119 Release with zero skipped. Continue with complete emitAllocAnyInstr (emit.cpp:1709 onward) and its native buffer-overflow transition, plus the required emitAllocInstr wrappers in emit.h:3268 onward. Wire native logical offsets/index/size/group into the managed descriptors, preserve attributes/debug metadata/backward navigation, and keep unsupported descriptor families explicit. emitBegFN (emit.cpp:1324 onward), TreeLifeUpdater, final frame layout, node generation and final metadata remain. Keep genGenerateCode explicitly skipped; no push or PR.",
     "handoff": {
-      "status": "awaiting-emitter-storage-decision",
+      "status": "descriptor-storage-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Both retained task workers are idle and frozen. All handoffs, including the typed instruction reference and invariant corrections, are integrated. No outstanding worker or app-native child-session dependencies.",
+      "workerPackets": "Both retained task workers are idle and frozen. Descriptor and group-diagnostic handoffs are fully integrated and validated. No outstanding worker or app-native child-session dependencies.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -61,6 +61,17 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "descriptorStorage": {
+        "debugPassed": 128,
+        "releasePassed": 119,
+        "skipped": 0,
+        "selection": ["CodeGenLabelTests", "EmitterInitializationTests", "EmitterInstructionGroupTests", "EmitterDescriptorSchemaTests", "EmitterGroupBufferTests", "EmitterGroupDiagnosticsTests", "RegisterTrackingTests", "CompilerRegallocFrameTests", "LoweringPhaseTests"],
+        "debugTests": "artifacts\\emitter-storage-debug.trx",
+        "releaseTests": "artifacts\\emitter-storage-release.trx",
+        "nativeLayoutEvidence": "Pinned emit.h base/address-union and jump/align/debug fields, SMALL_IDSC_SIZE static assertion and native layout derivation; focused tests verify field offsets, widths and 8/16/48-byte descriptor sizes (align 48 Debug/40 Release). Native debug pointer prefix is 8 bytes; the separate debug record is 56.",
+        "coverage": "Exact 912-byte Release and 1424-byte debug-prefix buffer capacities; Release disassembly prefix; copied GC sets and native header widths; extension/forced-label state; out-of-order jumps; alignment/jump reversal and append order; last-instruction alias/removal; group storage reinitialization; exact Debug group/placeholder text.",
+        "executionEvidence": "Unchanged production allocation frontier; the existing integrated native-host capture remains current. Instruction allocation/overflow entrypoints, encoding and metadata remain unported, so managed emitted code is still zero."
+      },
       "instructionGroupsAndRegisterLife": {
         "debugPassed": 83,
         "releasePassed": 82,
@@ -3201,12 +3212,20 @@
   },
   "sourceMap": [
     {
+      "area": "emitter-descriptor-storage",
+      "native": ["src\\coreclr\\jit\\emit.cpp:891-1317,4050-4320", "src\\coreclr\\jit\\emit.h:229-374,639-650,678-1038,2270-2332,2904-2942", "src\\coreclr\\jit\\compiler.cpp:9146-9177"],
+      "csharp": ["sources\\Core\\jit\\emit\\Emitter.GroupBuffers.cs", "sources\\Core\\jit\\emit\\Emitter.DescriptorSizes.cs", "sources\\Core\\jit\\emit\\Emitter.instrDesc.cs", "sources\\Core\\jit\\emit\\Emitter.instrDesc.Storage.cs", "sources\\Core\\jit\\emit\\Emitter.instrDescJmp.cs", "sources\\Core\\jit\\emit\\Emitter.instrDescAlign.cs", "sources\\Core\\jit\\emit\\Emitter.instrDescDebugInfo.cs", "sources\\Core\\jit\\emit\\Emitter.GroupDiagnostics.cs", "sources\\Core\\jit\\emit\\insGroup.GCData.cs", "sources\\Core\\jit\\emit\\insPlaceholderGroupData.cs", "sources\\Core\\jit\\compiler\\Globals.ConvertedVarSet.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 emitGenIG/emitNewIG/emitSavIG without optional EMITTER_STATS, and Debug displayInstructions=false diagnostics including placeholders. Other targets/statistics and instruction-disassembly modes reject explicitly. Basic/jump/align native logical layouts are represented by typed managed objects; extended layouts reject rather than taking a default size. Native buffers are retained in the oracle/residual tree. Allocation/overflow entrypoints and production emission remain unported."
+    },
+    {
       "area": "codegen-groups-and-register-life",
       "native": ["src\\coreclr\\jit\\emit.cpp:9875-10042", "src\\coreclr\\jit\\emit.h", "src\\coreclr\\jit\\codegencommon.cpp:796-854,876-922", "src\\coreclr\\jit\\codegenlinear.cpp:1131-1137"],
       "csharp": ["sources\\Core\\jit\\emit\\Emitter.InstructionGroups.cs", "sources\\Core\\jit\\emit\\insGroup.Initialization.cs", "sources\\Core\\jit\\emit\\insGroup.cs", "sources\\Core\\jit\\codegen\\CodeGen.RegisterLife.cs", "sources\\Core\\jit\\codegeninterface\\ICodeGen.cs"],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Complete group-object allocation/initialization/linking and local register-location/mask/life support. ARM32 floating register-variable masks explicitly reject. Packed descriptor buffers and relocation are unimplemented pending B207; the descriptor hierarchy remains managed and production emission remains explicitly skipped."
+      "status": "Complete group-object allocation/initialization/linking and local register-location/mask/life support. ARM32 floating register-variable masks explicitly reject. Descriptor storage and saved-reference handling are recorded in emitter-descriptor-storage under B207; production emission remains explicitly skipped."
     },
     {
       "area": "codegen-preparation",
