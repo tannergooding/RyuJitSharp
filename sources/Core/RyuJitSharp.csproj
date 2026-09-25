@@ -465,9 +465,6 @@
     <!-- DUMP_GC_TABLES -->
     <DefineConstants>$(DefineConstants);DUMP_GC_TABLES</DefineConstants>
 
-    <!-- EMIT_GENERATE_GCINFO: Track GC ref liveness in codegen and emit and generate GCInfo based on that -->
-    <DefineConstants>$(DefineConstants);EMIT_GENERATE_GCINFO</DefineConstants>
-
     <!-- LATE_DISAM -->
     <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);LATE_DISASM;USE_COREDISTOOLS</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetIsXarch)' == 'true'">$(DefineConstants);LATE_DISASM;USE_COREDISTOOLS</DefineConstants>
@@ -490,6 +487,9 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <!-- EMIT_GENERATE_GCINFO: Required GC liveness and metadata support in all configurations. -->
+    <DefineConstants>$(DefineConstants);EMIT_GENERATE_GCINFO</DefineConstants>
+
     <!-- CSE_CONSTS: Enable if we want to CSE constants -->
     <DefineConstants>$(DefineConstants);CSE_CONSTS</DefineConstants>
 

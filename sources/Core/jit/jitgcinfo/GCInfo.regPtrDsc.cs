@@ -21,7 +21,7 @@ public partial struct GCInfo
         GCT_BYREF,
     }
 
-    private sealed class regPtrDsc
+    internal sealed class regPtrDsc
     {
         public regPtrDsc? rpdNext;
         public uint rpdOffs;

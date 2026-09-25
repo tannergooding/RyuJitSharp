@@ -86,6 +86,8 @@ public readonly struct regMaskTP : IEquatable<regMaskTP>
     public static regMaskTP operator |(regMaskTP left, regMaskTP right) => new regMaskTP(left._lower | right._lower, left._upper | right._upper);
 
     public static regMaskTP operator ^(regMaskTP left, regMaskTP right) => new regMaskTP(left._lower ^ right._lower, left._upper ^ right._upper);
+
+    public static regMaskTP operator ~(regMaskTP mask) => new regMaskTP(~mask._lower, ~mask._upper);
 #else
     public static bool operator ==(regMaskTP left, regMaskTP right) => left._lower == right._lower;
 
@@ -96,6 +98,8 @@ public readonly struct regMaskTP : IEquatable<regMaskTP>
     public static regMaskTP operator |(regMaskTP left, regMaskTP right) => new regMaskTP(left._lower | right._lower);
 
     public static regMaskTP operator ^(regMaskTP left, regMaskTP right) => new regMaskTP(left._lower ^ right._lower);
+
+    public static regMaskTP operator ~(regMaskTP mask) => new regMaskTP(~mask._lower);
 #endif
 
     public readonly bool IsSet(regNumber regNum)

@@ -725,6 +725,15 @@ diagnostics. The enabled mode explicitly skips rather than silently doing
 nothing. Unfinished machine-code emission likewise reports `CORJIT_SKIPPED`;
 neither boundary establishes managed code generation.
 
+Code-generation preparation includes complete non-Wasm block-label marking,
+native hot/cold jump-elision predicates, emitter `Init`, and GC register/stack
+pointer state with live-register protection and native diagnostics.
+`EMIT_GENERATE_GCINFO` is enabled in every configuration, correcting B206.
+Wasm interval-aware jump elision, non-fixed-register GC register clearing and
+non-xarch emitter register names explicitly reject. These support routines do
+not activate machine-code generation or complete instruction-group storage,
+frame layout, per-tree liveness updates, encoding or runtime metadata.
+
 Morph-time `fgSetOptions` and its frame/GC setters now establish the native
 frame-pointer and interruptibility policy before allocation. Register-mask bank
 selection, physical-register availability aliases and block-boundary constant

@@ -12,16 +12,17 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Activate the complete Windows-AMD64 minopts/no-enregistered-local allocation driver and move the explicit unfinished boundary to emission. Preserve native phase ordering, completion flags, diagnostics, statistics and DFS invalidation.",
+      "scope": "Port required code-generation preparation for Windows AMD64: complete branch/EH/throw-helper label marking, emitter method initialization and GC register/stack-pointer state with native register diagnostics. Correct Release GC feature selection exposed by the new state updates. Retain the explicit production emission boundary until the full code-generator and runtime-metadata closure is ready.",
       "doneWhen": [
-        "Wire complete supported native allocation orchestration, reject unsupported modes before mutation and preserve explicit CORJIT_SKIPPED at code generation.",
-        "Integrate complete textual LSRA statistics and focused driver coverage.",
-        "Publish locally and compare the newly reachable allocation phases using the existing native-host corpus workflow.",
-        "Commit the coherent activation packet with exact remaining execution boundary; retain native mixed-mode bodies."
+        "Port complete genMarkLabelsForCodegen and canonical jump-elision predicates, including hot/cold, throw-helper and EH boundary rules.",
+        "Port complete emitter Init, GC register/stack-pointer initialization and marking, live-register masks and their required native register-name/mask diagnostics.",
+        "Preserve required EMIT_GENERATE_GCINFO behavior in Release as well as Debug.",
+        "Validate the integrated preparation packet with focused Debug/Release coverage and review native state ordering.",
+        "Commit a coherent completed preparation boundary; do not activate reduced machine-code generation."
       ],
       "validation": [
-        "Run focused LinearScan, spill-temporary, stack-home, parameter-mapping and lowering-phase coverage in Debug and Release.",
-        "Reuse the pinned lowering-native-minopts capture and prepared host; capture managed allocation with the same minopts corpus/settings. B145 remains deferred."
+        "Run focused block-label, jump-elision and emitter initialization checks in Debug and Release, with existing relevant backend regressions.",
+        "Reuse the exact allocation-activation capture; republish only if reachable production behavior changes. B145 remains deferred."
       ],
       "deferred": [
         "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
@@ -33,11 +34,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Allocation activation is validated and ready for its coherent local commit. Next port the required code-generation preparation dependencies, beginning with complete genMarkLabelsForCodegen (codegencommon.cpp:622-768), preserving branch/throw-helper/EH label rules and diagnostics. genGenerateMachineCode first calls genPrepForCompiler (codegencommon.cpp:569-596), which requires the missing TreeLifeUpdater; retain the explicit genGenerateCode CORJIT_SKIPPED boundary until the complete required generator/emitter/metadata closure is ready. No reduced alternate generator, native residual deletions, push or PR. B145 and the three recorded pre-backend corpus differences remain deferred.",
+    "nextAction": "Commit the validated code-generation preparation packet (68 Debug / 67 Release, no skipped tests). Allocation activation is committed at d791647 and its exact native-host evidence remains current. Then port native emitInitIG/emitAllocIG/emitInsertIGAfter/emitAllocAndLinkIG (emit.cpp:9875-10042) using the existing managed insGroup representation; native arena statistics are already an accepted difference. Do not mistake object construction for a raw allocator blocker. The first packed-buffer representation dependency is emitGenIG (emit.cpp:891-941), followed by emitSavIG (:971); instrDesc remains an abstract shell. genPrepForCompiler still requires TreeLifeUpdater and full codegen liveness support. Keep genGenerateCode explicitly skipped; no reduced alternate generator, native residual edits, push or PR.",
     "handoff": {
-      "status": "allocation-driver-validated",
+      "status": "codegen-preparation-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Both retained task workers are idle and frozen. All returned packets and handoffs are integrated, including table/event fidelity and textual statistics. No outstanding worker or app-native child-session dependencies.",
+      "workerPackets": "Both retained task workers are idle and frozen; all implementation and read-only follow-up handoffs are integrated. The emitter Init packet was integrated with a typed GCInfo.regPtrDsc reference, not an object placeholder. No outstanding worker or app-native child-session dependencies.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -61,6 +62,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "codegenPreparation": {
+        "debugPassed": 68,
+        "releasePassed": 67,
+        "skipped": 0,
+        "selection": ["CodeGenLabelTests", "EmitterInitializationTests", "RegisterTrackingTests", "CompilerRegallocFrameTests", "LoweringPhaseTests"],
+        "debugTests": "artifacts\\codegen-preparation-debug.trx",
+        "releaseTests": "artifacts\\codegen-preparation-release.trx",
+        "regressionBefore": "artifacts\\gc-release-config-before.trx",
+        "scope": "Complete label marking, jump-elision predicates, emitter Init, GC root-state reset/marking, live-register masks and register-name/mask diagnostics. B206 Release feature-selection regression fails before correction. The before replay disables analyzers only to compile the omitted-body configuration; final Debug/Release validation uses normal analyzers. Production emission remains explicitly skipped, so no new host capture or execution claim."
+      },
       "allocationActivation": {
         "debugPassed": 529,
         "releasePassed": 452,
@@ -3181,6 +3192,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "codegen-preparation",
+      "native": ["src\\coreclr\\jit\\codegencommon.cpp:623-774", "src\\coreclr\\jit\\block.cpp:378-452", "src\\coreclr\\jit\\emit.h:3888-3905", "src\\coreclr\\jit\\gcinfo.cpp:63-215", "src\\coreclr\\jit\\regset.cpp:206-247", "src\\coreclr\\jit\\regset.h:130-150", "src\\coreclr\\jit\\emit.cpp:3498-3535", "src\\coreclr\\jit\\emitxarch.cpp:11520-11754", "src\\coreclr\\jit\\compiler.hpp:5047-5071", "src\\coreclr\\jit\\target.h:539-546", "src\\coreclr\\jit\\targetamd64.h:78"],
+      "csharp": ["sources\\Core\\jit\\codegen\\CodeGen.Labels.cs", "sources\\Core\\jit\\block\\BasicBlock.cs", "sources\\Core\\jit\\emit\\Emitter.Initialization.cs", "sources\\Core\\jit\\jitgcinfo\\GCInfo.RegisterState.cs", "sources\\Core\\jit\\regsset\\RegSet.LiveRegisters.cs", "sources\\Core\\jit\\emit\\Emitter.RegisterDiagnostics.cs", "sources\\Core\\jit\\emitxarch\\Emitter.RegisterNames.cs", "sources\\Core\\jit\\compiler\\Globals.RegisterDiagnostics.cs", "sources\\Core\\jit\\target\\regMaskTP.cs", "sources\\Core\\RyuJitSharp.csproj"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete Windows-AMD64 preparation support, with explicit rejection of unported Wasm jump elision, non-fixed-register GC clearing and non-xarch emitter register names. Release GC feature selection is corrected. Native pointer descriptors remain typed managed objects; byte-buffer emission, per-node generation and runtime metadata are not activated."
+    },
     {
       "area": "lsra-production-activation",
       "native": ["src\\coreclr\\jit\\lsra.cpp:1336-1437,1903-1920,3939-3962,10062-10196,11329-11694", "src\\coreclr\\jit\\regMaskTPOps.cpp:119-133", "src\\coreclr\\jit\\morph.cpp:14571-14655", "src\\coreclr\\jit\\codegencommon.cpp:37-61", "src\\coreclr\\jit\\codegeninterface.h:354-359", "src\\coreclr\\jit\\compiler.cpp:5319-5327"],

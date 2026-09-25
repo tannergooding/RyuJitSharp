@@ -2,17 +2,122 @@
 
 using System;
 using System.Runtime.CompilerServices;
+#if DEBUG
+using System.IO;
+using System.Text;
+#endif
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.LsraGlobals;
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
+using static RyuJitSharp.emitAttr;
+using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
 
 namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class RegisterTrackingTests
 {
+    [Test]
+    public static void GcRegisterStatePreservesLiveVariablesAndReclassifiesReferences()
+    {
+        WithCompiler(minOpts: true, (_, codeGen) => {
+            ref var gc = ref codeGen.GCInfo;
+            ref var registers = ref codeGen.RegSet;
+            var pointers = new regMaskTP(SRBM_RAX | SRBM_RBX);
+            gc.gcMarkRegSetGCref(pointers);
+            gc.gcMarkRegPtrVal(REG_RAX, TYP_BYREF);
+            registers.SetMaskVars(pointers);
+            gc.gcMarkRegSetNpt(pointers);
+            Assert.That(gc.gcRegGCrefSetCur, Is.EqualTo(RBM_RBX));
+            Assert.That(gc.gcRegByrefSetCur, Is.EqualTo(RBM_RAX));
+
+            registers.RemoveMaskVars(RBM_RAX);
+            gc.gcMarkRegPtrVal(REG_RAX, TYP_INT);
+            Assert.That(gc.gcRegByrefSetCur, Is.EqualTo(RBM_NONE));
+            Assert.That(gc.gcRegGCrefSetCur, Is.EqualTo(RBM_RBX));
+
+            registers.ClearMaskVars();
+            gc.gcMarkRegSetNpt(pointers);
+            Assert.That(gc.gcRegGCrefSetCur, Is.EqualTo(RBM_NONE));
+        });
+    }
+
+    [Test]
+    public static void GcBlockResetDoesNotDiscardTrackedStackPointerClassification()
+    {
+        WithCompiler(minOpts: true, (compiler, codeGen) => {
+            compiler.lvaTrackedCount = 2;
+            compiler.lvaTrackedCountInSizeTUnits = 1;
+            ref var gc = ref codeGen.GCInfo;
+            gc.gcTrkStkPtrLcls = VarSetOps.MakeEmpty(compiler);
+            VarSetOps.AddElemD(compiler, gc.gcTrkStkPtrLcls, 0);
+            gc.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
+            VarSetOps.AddElemD(compiler, gc.gcVarPtrSetCur, 1);
+            gc.gcRegGCrefSetCur = RBM_RAX;
+            gc.gcRegByrefSetCur = RBM_RBX;
+
+            gc.gcResetForBB();
+
+            Assert.That(gc.gcRegGCrefSetCur, Is.EqualTo(RBM_NONE));
+            Assert.That(gc.gcRegByrefSetCur, Is.EqualTo(RBM_NONE));
+            Assert.That(VarSetOps.IsMember(compiler, gc.gcTrkStkPtrLcls, 0), Is.True);
+            Assert.That(VarSetOps.IsMember(compiler, gc.gcVarPtrSetCur, 1), Is.False);
+        });
+    }
+
+    [TestCase(REG_RAX, EA_1BYTE, "al")]
+    [TestCase(REG_RAX, EA_2BYTE, "ax")]
+    [TestCase(REG_RAX, EA_4BYTE, "eax")]
+    [TestCase(REG_RAX, EA_GCREF, "rax")]
+    [TestCase(REG_RSI, EA_1BYTE, "sil")]
+    [TestCase(REG_R8, EA_1BYTE, "r8b")]
+    [TestCase(REG_R15, EA_2BYTE, "r15w")]
+    [TestCase(REG_R16, EA_4BYTE, "r16d")]
+    [TestCase(REG_XMM0, EA_8BYTE, "xmm0")]
+    [TestCase(REG_XMM15, EA_32BYTE, "ymm15")]
+    [TestCase(REG_XMM31, EA_64BYTE, "zmm31")]
+    [TestCase(REG_K1, EA_64BYTE, "k1")]
+    public static void EmitterRegisterNamesMatchNativeSizeAndRegisterClass(
+        regNumber reg, emitAttr attr, string expected)
+    {
+        WithCompiler(minOpts: true, (_, codeGen) =>
+            Assert.That(codeGen.Emitter.emitRegName(reg, attr, varName: false), Is.EqualTo(expected)));
+    }
+
+#if DEBUG
+    [Test]
+    public static void GcRegisterDiagnosticsPreserveTransitionsAndForcedUnchangedOutput()
+    {
+        WithCompiler(minOpts: true, (compiler, codeGen) => {
+            compiler.verbose = true;
+            using var stream = new MemoryStream();
+            using var writer = new JitTextWriter(stream, leaveOpen: true);
+            var previous = s_jitstdout;
+            try
+            {
+                s_jitstdout = writer;
+                codeGen.GCInfo.gcMarkRegSetGCref(RBM_RAX);
+                codeGen.GCInfo.gcMarkRegSetByref(RBM_RAX);
+                codeGen.GCInfo.gcMarkRegSetByref(RBM_RAX, forceOutput: true);
+                writer.Flush();
+            }
+            finally
+            {
+                s_jitstdout = previous;
+            }
+
+            var indent = new string('\t', 7);
+            Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo(
+                $"{indent}GC regs: 0000 {{}} => 0001 {{rax}}{Environment.NewLine}" +
+                $"{indent}GC regs: 0001 {{rax}} => 0000 {{}}{Environment.NewLine}" +
+                $"{indent}Byref regs: 0000 {{}} => 0001 {{rax}}{Environment.NewLine}" +
+                $"{indent}Byref regs: (unchanged) 0001 {{rax}}{Environment.NewLine}"));
+        });
+    }
+#endif
+
     [TestCase(TYP_INT)]
     [TestCase(TYP_LONG)]
     [TestCase(TYP_REF)]

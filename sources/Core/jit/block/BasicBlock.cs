@@ -1119,6 +1119,28 @@ public sealed partial class BasicBlock : LIR.Range
 
     public bool JumpsToNext => Target == _next;
 
+    public bool CanRemoveJumpToNext(Compiler compiler)
+    {
+        assert(Kind is BBJ_ALWAYS);
+        return CanRemoveJumpToTarget(Target, compiler);
+    }
+
+    public bool CanRemoveJumpToTarget(BasicBlock target, Compiler compiler)
+    {
+        assert(((Kind is BBJ_ALWAYS) && (Target == target)) ||
+               ((Kind is BBJ_COND) && ((TrueTarget == target) || (FalseTarget == target))));
+        if ((Next != target) || IsLastHotBlock(compiler))
+        {
+            return false;
+        }
+
+#if TARGET_WASM
+        throw new FatalJitException(CORJIT_SKIPPED, "Wasm interval-aware jump elision is not implemented.");
+#else
+        return true;
+#endif
+    }
+
     /// <summary>gives the number of successors, and GetSucc() returns a given numbered successor.</summary>
     public int NumSucc => _kind switch {
         // There are two versions of these functions: ones that take a Compiler* and ones that don't. You must
@@ -1599,6 +1621,8 @@ public sealed partial class BasicBlock : LIR.Range
     /// <param name="compiler">current compiler instance</param>
     /// <returns>true if this is fgFirstColdBlock</returns>
     public bool IsFirstColdBlock(Compiler compiler) => this == compiler.fgFirstColdBlock;
+
+    public bool IsLastHotBlock(Compiler compiler) => Next == compiler.fgFirstColdBlock;
 
     public void RemoveFlags(BasicBlockFlags flags)
     {

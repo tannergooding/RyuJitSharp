@@ -14,6 +14,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Code-generation preparation
+
+Code-generation support now marks branch, switch, throw-helper and EH-region
+labels, respecting fallthrough and hot/cold boundaries. Emitter initialization
+creates independent GC-variable sets, and pointer-register tracking preserves
+live local registers while maintaining distinct reference and byref state.
+Register diagnostics retain native names, widths and transition order.
+
+GC tracking is now enabled in Release as well as Debug; it is required compiler
+behavior, not a diagnostic feature. Instruction-group construction, descriptor
+storage, per-node generation and final metadata emission remain unported, so
+the production boundary still explicitly skips code generation.
+
 ## 2026-09-25: Active minimal register allocation
 
 The production backend now constructs intervals, allocates and resolves registers,
