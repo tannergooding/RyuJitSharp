@@ -12,14 +12,14 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete AMD64 constant materialization: SIMD/mask constant-data collection and compressed loads, static-field load descriptors and all genSetRegToConst overloads. Reuse committed scalar data storage and register-only SIMD recording; preserve bit patterns, native instruction selection and D005 pre-mutation rejection. Keep production emission skipped.",
+      "scope": "Complete AMD64 unary negation/complement node generation and floating sign-bit operations, including native opcode selection and complete single-register/APX unary recording. Reuse constant materialization and existing consume/produce lifetimes. Keep production emission skipped; byte swapping waits for complete contained-memory operand recording.",
       "doneWhen": [
-        "Port complete AMD64 emitIns_R_C and SIMD static-field wrappers with full shared sizing/descriptor/encoding dependencies under D005.",
-        "Port SIMD8/16/general/mask constant collection, full compressed-load selection and all three native genSetRegToConst overloads without a reduced scalar dispatcher.",
-        "Validate the integrated constant-materialization closure in Debug/Release and commit. Preserve production emission's explicit skip and leave final encoding/metadata publication unclaimed."
+        "Port complete AMD64 emitIns_R and emitIns_BASE_R_R with all native branches and required descriptor/sizing helpers under D005.",
+        "Port complete genGetInsForOper and its floating opcode dependency, genIntrinsicBitwiseOp (NEG and ABS), and genCodeForNegNot with native consume/produce and GC/lifetime ordering.",
+        "Validate Debug/Release and commit the integrated unary closure. Do not substitute a reduced genCodeForTreeNode or register-only genCodeForBswap."
       ],
       "validation": [
-        "Reuse constantDataAndSimdRecording.selection, adding static-field recording, SIMD constant compression and complete constant-materialization cases.",
+        "Reuse constantMaterialization.selection, adding single-register recording and unary node-generation regressions.",
         "Reuse funcletCreation.nativeHost while the new support remains below the explicit emission skip; republish only if reachable production behavior changes."
       ],
       "deferred": [
@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit the validated complete constant-materialization packet, then resume required node generation at genCodeForNegNot/genCodeForBswap (codegenxarch.cpp:576,607), closing their complete native operand/instruction dependencies rather than reducing genCodeForTreeNode (1810). All genSetRegToConst overloads, compressed SIMD loads and required static-field load recording are complete under D005. Retain production emission's explicit skip until block/node generation, encoding and metadata publication are complete.",
+    "nextAction": "Unary generation is complete and validated. Resume by tracing and closing complete emitInsBinary/contained-memory operand recording needed by genCodeForBswap (codegenxarch.cpp:607). Reuse completed register, stack, static-field and address-sizing surfaces; do not implement a register-only byte-swap generator or reduced genCodeForTreeNode. The next completion boundary is the required general memory descriptor/recording closure, followed by full byte-swap generation and its native normalization decision. Production emission remains explicitly skipped.",
     "handoff": {
-      "status": "constant-materialization-validated",
+      "status": "unary-node-generation-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All returned static-field recording files and signed-handle fixture corrections from a7f6ecaf-b706-4be6-83c3-c83235b7452f are integrated and validated with the parent constant-materialization implementation. The worker is idle with no unread handoff or outstanding assignment. No app-native child sessions.",
+      "workerPackets": "All single-register/APX unary recording files and source-map replies from a7f6ecaf-b706-4be6-83c3-c83235b7452f are integrated. The worker is idle with no unread handoff or outstanding assignment. No app-native child sessions.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [
         "fgOptimizeSwitchBranches",
@@ -60,6 +60,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "unaryGeneration": {
+        "debugPassed": 1376,
+        "releasePassed": 1320,
+        "skipped": 0,
+        "selection": "constantMaterialization.selection plus CodeGenUnaryTests and EmitterUnaryInstructionTests.",
+        "debugTests": "artifacts\\unary-integrated-debug.trx",
+        "releaseTests": "artifacts\\unary-integrated-release.trx",
+        "coverage": "Full integer/floating arithmetic opcode selection, NEG/NOT with aliased and distinct source/destination registers, consume/copy/produce ordering, GC-root transitions and result spilling after the unary operation. Floating NEG/ABS masks cover single/double and legacy/VEX recording. Complete single-register instructions and APX unary copies preserve descriptor formats, prefixes and register encodings. D005 guards reject before operand consumption and leave nodes reusable.",
+        "remaining": "Reuses funcletCreation.nativeHost; production emission still skips and managed machine-code size remains zero. General memory operand recording, remaining block/node generators, encoding and final GC/EH/unwind/debug metadata publication remain."
+      },
       "constantMaterialization": {
         "debugPassed": 1293,
         "releasePassed": 1242,
@@ -3433,6 +3443,22 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "unary-node-generation-and-operation-selection",
+      "native": ["src\\coreclr\\jit\\codegenxarch.cpp:576-597,4523-4597,7323-7367", "src\\coreclr\\jit\\instr.cpp:2705-2720"],
+      "csharp": ["sources\\Core\\jit\\codegenxarch\\CodeGen.Unary.cs", "sources\\Core\\jit\\codegenxarch\\CodeGen.OperationInstructions.cs", "sources\\Core\\jit\\instr\\CodeGen.MathSelection.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 genCodeForNegNot, genIntrinsicBitwiseOp NEG/ABS helper, native genGetInsForOper and xarch ins_MathOp. Reuses real consume/produce, spills, data masks and static-field/SIMD recording. Managed unary nodes use GenTreeUnOp rather than an invalid GenTreeOp downcast. D005 guards precede lifetime/GC mutation. The whole intrinsic dispatcher, byte-swap contained-memory path and production node dispatch remain separate dependencies."
+    },
+    {
+      "area": "single-register-and-apx-unary-recording",
+      "native": ["src\\coreclr\\jit\\emitxarch.cpp:7042-7138,10422-10437", "src\\coreclr\\jit\\emitxarch.cpp:313,1022,2819,2938,2998,3021,3045,4628,4927", "src\\coreclr\\jit\\emitxarch.h:596"],
+      "csharp": ["sources\\Core\\jit\\emitxarch\\Emitter.UnaryInstructions.cs", "sources\\Core\\jit\\emitxarch\\Emitter.RegisterOperandEncoding.cs", "sources\\Core\\jit\\emitxarch\\Globals.RegisterEncoding.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete AMD64 emitIns_R and emitIns_BASE_R_R, including non-NEG/NOT branches, APX NDD/ZU predicates, register encodings and required REX/VEX/EVEX prefix helpers. D005 guards precede all mutation; native AMD64 empty stack-depth adjustment is retained. This records descriptors and sizes, not final instruction bytes."
+    },
     {
       "area": "complete-constant-materialization",
       "native": ["src\\coreclr\\jit\\codegenxarch.cpp:276,429,458", "src\\coreclr\\jit\\emit.cpp:8248-8440"],

@@ -14,6 +14,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Unary operations and floating sign masks
+
+Unary node generation now consumes operands, records integer negation or
+complement, and produces or spills the result in native order. Floating
+negation and the shared absolute-value helper use exact packed sign masks,
+preserving the native bitwise treatment of signed zero and NaN payloads.
+
+Single-register recording retains APX unary forms, legacy destination copies
+and native prefix/register encodings. General memory-operand dispatch,
+remaining node generators, final encoding and runtime metadata publication
+remain; production emission is still explicitly skipped.
+
 ## 2026-09-25: Scalar, SIMD and mask constant materialization
 
 Code generation can now select and record native instruction sequences for all
