@@ -12,11 +12,11 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete SSA construction using committed dominator/frontier and rename-state primitives, alongside independent local-reference resolution.",
+      "scope": "Complete optimized LSRA edge resolution and earlier block-weight prerequisites after validated SSA construction; port the standalone SSA verifier without replacing the unfinished general CHECK_IR wrapper.",
       "doneWhen": [
-        "Complete native SSA builder, PHI insertion, local/memory renaming and required zero-initialization cleanup; activate only the complete native orchestration.",
-        "Preserve native graph/PHI ordering, diagnostics, EH propagation and shared-memory semantics; compare phase output once the full driver is ready.",
-        "Complete Windows-AMD64 local-reference resolution without activating incomplete optimized allocation.",
+        "SSA construction and its local-thread ownership correction are validated; retain the explicit limits on input and diagnostic parity.",
+        "Complete native edge resolution and block weights, including required direct helpers, without activating incomplete optimized allocation.",
+        "Complete the standalone SSA verification helper; preserve the existing general CHECK_IR boundary until all of its flag/type/LIR checks are ported.",
         "Review each frozen packet, run focused Debug/Release cases and commit it with related tracking before integrating the next packet."
       ],
       "validation": [
@@ -27,27 +27,27 @@
         {
           "scope": "Complete Windows-AMD64 resolveEdges/resolveEdge and required direct edge-resolution helpers.",
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
-          "files": "New LinearScan.EdgeResolution partials and LinearScanEdgeResolutionTests.cs; parent Compiler.EdgeSplit.cs may be included read-only.",
+          "files": "New LinearScan.EdgeResolution partials and LinearScanEdgeResolutionTests.cs; only stressLimitRegs in LinearScan.SelectorHelpers.cs may change to support the native null-reference caller.",
           "doneWhen": "Complete native Windows-AMD64 edge-resolution closure with move-cycle, stack/register, critical-edge and EH evidence; production optimized allocation gate unchanged.",
-          "status": "in-progress",
-          "result": "Local-reference resolution through turn9 is committed8480459. Turn10 reported missing fgSplitEdge before edits; parent supplied and validated that complete shared helper, and the worker resumed."
+          "status": "frozen-awaiting-integration",
+          "result": "Turn13 returned the shared nullable stress-helper correction with75Debug/57Release in artifacts\\edge-resolution-stress-validation. Parent completed native review of the edge algorithms; review the final helper diff and integrate the frozen packet."
         },
         {
-          "scope": "Correct B259 FullOpts FoldHardware lowering assertion using the complete native algorithm and ownership contract.",
+          "scope": "Complete native optSetBlockWeights and its required direct helper closure.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
-          "files": "Minimal relevant Lowering partials and one focused new regression fixture; shared compiler/LIR edits require a reported need.",
-          "doneWhen": "Establish the root cause and before/after regression, preserve the full native function and freeze exact source/evidence.",
-          "status": "complete",
-          "result": "Through turn14, B259 correction reviewed and frozen: keep the live LowerNode cursor and derive the diagnostic node only in Debug. Two pre-fix failures become34Debug/34Release passes; integrated1057Debug/933Release and32-method minopts GCStress4 execution also pass.",
-          "deferred": "Unrelated lowering discrepancies, phase activation, SSA/LSRA files and unowned shared changes."
+          "files": "New Compiler.BlockWeights partials and BlockWeightTests.cs; only optSetBlockWeights's stub in Compiler.opt.cs may be replaced after the complete closure is ready.",
+          "doneWhen": "Preserve native profile/heuristic decisions, EH and loop assumptions, arithmetic and diagnostics with isolated Debug/Release evidence.",
+          "status": "frozen-awaiting-review",
+          "result": "Turn16 returned complete optSetBlockWeights/loop scaling, return-block construction and reachability. Four owned overlays match the e8deea7 snapshot; focused cases13Debug/12Release and graph cases50Debug/46Release. Await parent review and integration.",
+          "deferred": "Major unported dependency subsystems, shared Compiler.fg.cs, SSA/LSRA/Lowering files and unrelated optimizations."
         },
         {
-          "scope": "Complete native SsaBuilder PHI insertion, local/memory renaming and EH propagation.",
+          "scope": "Complete standalone native SsaCheckVisitor and fgDebugCheckSsa.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
-          "files": "New SsaBuilder partials except parent-owned SsaBuilder.Build.cs, plus SsaBuilderTests.cs.",
-          "doneWhen": "Complete ssabuilder.cpp:102-1172 with native ordering and identity, frozen source hashes and actual Debug/Release cases; leave shared phase drivers unchanged.",
-          "status": "in-progress",
-          "result": "Turn78 corrections reviewed; full parent Build/fgSsaBuild and phase tests now pass1057Debug/933Release in a frozen10-overlay snapshot. Worker continues the same packet with optimized native/managed SSA phase capture/comparison; no code edits or optimized execution claims."
+          "files": "New Compiler.SsaVerification.cs and SsaVerificationTests.cs; no shared Compiler.fg.cs, phase-ordering or LIR edits.",
+          "doneWhen": "Complete native SSA verifier and actual success/failure cases with exact diagnostics; leave it unactivated until the complete general IR checker exists.",
+          "status": "frozen-awaiting-review",
+          "result": "Turn83 returned the standalone SSA verifier and fixture with15Debug cases and Debug/Release builds in artifacts\\ssa-verification-validation. General CHECK_IR remains explicitly outstanding as B261; no production callsite changed."
         }
       ],
       "deferred": [
@@ -56,15 +56,16 @@
         "Full EH-funclet and hardware-import parity are subsequent execution-capability packets, not gates on the first scalar minopts backend path.",
         "Non-xarch hardware-intrinsic folding and hashBv iterator/countBits/setLowest APIs. Native vector Intersects/XOR defects are recorded in B247/B246; their corrected algorithms are not authorized and those entire vector operations are deferred.",
         "The preexisting fgVerifyHandlerTab diagnostic stub and broader EH verification, outside the cleanup algorithm.",
+        "B261 general fgDebugCheckLinks flag/type/LIR closure; do not partially activate it or count annotation checks as equivalent.",
         "Patchpoint metadata generation and actual OSR execution; node generation support does not activate either.",
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Collect d62fc6a5's optimized SSA phase comparison following turn78; it uses the fresh artifacts\\ssa-phase-jit DLL and native standard/loop/EH references. Full SsaBuilder and parent Build/fgSsaBuild plus four phase/rebuild cases are integrated but uncommitted, with1057Debug/933Release and32 verified nonzero managed-code minopts GCStress4 executions in artifacts\\ssa-phase-validation. Commit full SSA after resolving concrete phase-comparison blockers; do not claim optimized execution because LSRA remains gated. Worker610162a0 owns complete edge resolution using committed07ba699 fgSplitEdge. Worker3a2c8d9b's B259 correction through turn14 is reviewed/validated and complete. No remote publication.",
+    "nextAction": "SSA construction and B260 local-thread retirement are validated together in artifacts\\ssa-threading-validation:455Debug/423Release,32 nonzero managed-code minopts GCStress4 executions,25 completed managed FullOpts SSA attempts,8 matching pre/post-SSA IR pairs. Review610162a0 turn13's final shared stress-helper diff, validate the edge packet against this SSA baseline and commit it. Then review/commit frozen3a2c8d9b turn16 block weights/reachability andd62fc6a5 turn83 standalone SSA verifier. All handoffs are collected; do not start further packets before integration. General CHECK_IR remains B261, not a reason for a reduced wrapper. Then identify the next full optimized-allocation integration dependency. No remote publication.",
     "handoff": {
-      "status": "ssa-phase-validation-and-edge-resolution",
+      "status": "ssa-validated-edge-resolution-and-block-weights",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 through turn10 is collected; complete edge-resolution family running with committed07ba699 fgSplitEdge. 3a2c8d9b through turn14 B259 is reviewed/validated and idle. d62fc6a5 through turn78 is integrated and now doing the same SSA packet's optimized phase capture/comparison. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
+      "workerPackets": "610162a0 through turn13 collected; corrected edge packet frozen. 3a2c8d9b through turn16 collected; block weights/reachability frozen. d62fc6a5 through turn83 collected; standalone SSA verifier frozen, general CHECK_IR deferred as B261. All three await parent integration before more work. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -80,6 +81,38 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "ssaConstruction": {
+        "nativeBoundary": "ssabuilder.cpp:13-30,102-1203; complete construction, PHI insertion, definition/use and memory/EH renaming, dominator traversal and Build/fgSsaBuild orchestration.",
+        "sourceManifest": "artifacts\\ssa-threading-validation\\source-manifest.json",
+        "sourceManifestSha256": "DE85474D5CC4E61C03C39964F7A6D121F767D932817979F552E59693792E5C57",
+        "snapshotBase": "e8deea7",
+        "rootSnapshotHashesMatch": true,
+        "debugTests": "artifacts\\ssa-threading-validation\\results\\threading-debug.trx",
+        "releaseTests": "artifacts\\ssa-threading-validation\\results\\threading-release.trx",
+        "debugPassed": 455,
+        "releasePassed": 423,
+        "skipped": 0,
+        "priorIntegratedSelection": "artifacts\\ssa-phase-validation:1057Debug/933Release before B260; all four SsaPhaseTests fail against the original phase stub.",
+        "managedJit": "artifacts\\ssa-threading-jit\\RyuJitSharp.dll",
+        "managedJitSha256": "70035FCF1F2741AA9FE29348A73C463004045D934232831F9509F152646C6CFE",
+        "executionResults": "artifacts\\ssa-threading-validation\\execution-results.json",
+        "executedMinoptsMethods": 32,
+        "comparison": "artifacts\\ssa-threading-validation\\comparison.json",
+        "comparisonSha256": "1A44660FFBBF5E4446DD4F313A15C9035D9ADFC8CC1D219ABADF7F9546C80A1C",
+        "reproduce": "Use Invoke-PortingCorpus.ps1 with each retained manifest's corpus, CoreRoot, type and expected methods; supply the frozen NativeAOT DLL/source identity and a fresh output directory. Five execution captures use MinOpts/GcStress/ExecuteManagedCode. Three FullOpts captures omit those switches and compare against the existing ssa-native-optimized,ssa-native-loops-optimized,ssa-native-eh-optimized references with local compare.py.",
+        "fullopts": {
+          "managedSsaCompleted": 25,
+          "phaseFunctionOrderExact": 25,
+          "matchingPreSsaIR": 8,
+          "matchingPostSsaIRForThoseInputs": 8,
+          "matchingCompletePhaseTextForThoseInputs": 7,
+          "remainingTextDifference": "ImplicitByRefArgument has identical pre/post SSA IR and names; its tracked-local heading reports native1 of6 versus managed1 of2 total locals. Other17 completed methods already have different pre-SSA IR.",
+          "hostExits": "All three hosts exit0 without timeout or assertions. Standard capture's selector check reports20 versus19 headers because Main has a native fallback after the preexisting Allocate Objects rejection; exclude both Main attempts from managed SSA evidence.",
+          "executionLimit": "Every one of the25 managed SSA attempts subsequently reaches the explicit optimized-allocation rejection. Managed execution is disabled for these captures; no optimized codegen claim."
+        },
+        "ownershipCorrection": "B260: retire local links and statement list heads when AllLocals maintenance ends. Existing roots, node IDs and early-liveness flags remain intact. Earlier three FullOpts captures assert before SSA; the corrected captures complete those methods.",
+        "diagnosticLimit": "B261: fgDebugCheckLinks remains a stub. Complete standalone SSA checking is being ported separately; full flag/type/LIR checks must precede its production activation."
+      },
       "optimizedStoreCursor": {
         "backlog": "B259",
         "nativeBoundary": "lower.cpp:5621 LowerStoreLocCommon,12207 LowerBlockStoreCommon and12398 TryTransformStoreObjAsStoreInd; native mutation retains identity while managed lowering replaces the node.",
@@ -5661,7 +5694,14 @@
       "native": ["src\\coreclr\\jit\\ssabuilder.cpp"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.SsaReset.cs"],
       "reconciledCommit": null,
-      "scope": "Complete fgResetForSsa in both modes; SSA construction remains incomplete."
+      "scope": "Complete fgResetForSsa in both modes, including deep cleanup used by the full SSA rebuild driver."
+    },
+    {
+      "area": "ssa-construction",
+      "native": ["src\\coreclr\\jit\\ssabuilder.cpp:13-30,102-1203"],
+      "csharp": ["sources\\Core\\jit\\ssabuilder", "sources\\Core\\jit\\compiler\\Compiler.fg.cs"],
+      "reconciledCommit": null,
+      "scope": "Complete SSA construction and phase driver. Memory/EH and PHI ordering preserved; general IR verification remains separately unported as B261."
     },
     {
       "area": "ssa-rename-state-and-diagnostics",

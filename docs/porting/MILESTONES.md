@@ -15,6 +15,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: SSA construction
+
+The optimized pipeline now constructs SSA: it inserts local and memory PHIs,
+renames definitions and uses, propagates names through EH regions, and supports
+deep rebuilds. The driver preserves native liveness and zero-initialization
+cleanup order. Retiring obsolete local-thread links also lets implicit-byref
+morphing perform managed whole-node replacements safely.
+
+Standard, loop and EH methods now finish managed SSA and reach the explicit
+optimized-allocation boundary. Matching pre-SSA IR produces matching post-SSA
+IR in the selected comparisons; broader input differences and the unfinished
+general IR verifier still prevent full diagnostic parity. The established
+minopts corpus continues to execute managed-generated code under GC stress.
+
 ## 2026-09-25: Struct-store lowering continuity
 
 Lowering now retains the live traversal cursor when scalarizing a struct store

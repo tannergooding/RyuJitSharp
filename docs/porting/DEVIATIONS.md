@@ -849,7 +849,15 @@ The separate SSA-policy driver includes memory liveness, non-phi backward
 traversal and native dead-store diagnostics. Interior COMMA replacements use
 metadata-preserving constructors and update every owning edge before
 rethreading; NOP conversion uses the existing base-field-only transformation.
-This does not complete SSA construction.
+The full SSA builder now inserts and renames local and memory PHIs, including
+EH propagation and shared GC-heap/byref state, in native traversal order.
+Its phase driver preserves liveness, zero-init cleanup and deep-rebuild order.
+The general `fgDebugCheckLinks` closure remains unported; annotation checking
+does not replace its SSA verifier or establish full diagnostic parity.
+At the end of local-list maintenance, managed code detaches obsolete local
+links and statement list heads before entering `NodeThreading.None`. This
+retires cached ownership under D002 without weakening replacement checks or
+changing the IR, logical IDs or early-liveness flags.
 SSA reset supports both native PHI-only and deep-clean modes. Memory-SSA maps
 are nullable, reflecting the native absent-map state. Deep reset retains the
 definition-array and composite-list storage for reuse while dropping map

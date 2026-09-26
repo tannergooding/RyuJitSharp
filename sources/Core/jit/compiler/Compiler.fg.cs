@@ -1992,6 +1992,35 @@ public partial class Compiler
         sequencer.Sequence(stmt);
     }
 
+    private void fgEndLocalTreeLists()
+    {
+        assert(fgNodeThreading is NodeThreading.None or NodeThreading.AllLocals);
+
+        if (fgNodeThreading is NodeThreading.AllLocals)
+        {
+            // Unthreaded managed replacements must not inherit obsolete local-list ownership.
+            foreach (var block in Blocks)
+            {
+                foreach (var statement in block.Statements)
+                {
+                    var local = statement.TreeListBegin;
+                    while (local is not null)
+                    {
+                        var next = local.Next;
+                        local.Prev = null;
+                        local.Next = null;
+                        local = next;
+                    }
+
+                    statement.TreeListBegin = null;
+                    statement.TreeListEnd = null;
+                }
+            }
+        }
+
+        fgNodeThreading = NodeThreading.None;
+    }
+
     public bool fgNeedToSortEHTable;
 
 #if DEBUG
@@ -15329,8 +15358,23 @@ public partial class Compiler
         }
     }
 
-    // TODO: Port phase - fgSsaBuild
-    public PhaseStatus fgSsaBuild() => PhaseStatus.MODIFIED_NOTHING;
+    public PhaseStatus fgSsaBuild()
+    {
+        if (fgSsaPassesCompleted > 0)
+        {
+            fgResetForSsa(deepClean: true);
+        }
+
+        var builder = new SsaBuilder(this);
+        builder.Build();
+        fgSsaPassesCompleted++;
+        fgSsaValid = true;
+#if DEBUG
+        JitTestCheckSSA();
+#endif
+
+        return PhaseStatus.MODIFIED_EVERYTHING;
+    }
 
 #if DEBUG
     public void CheckNoTransformableIndirectCallsRemain()

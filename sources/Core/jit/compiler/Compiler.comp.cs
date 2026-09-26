@@ -3393,7 +3393,7 @@ public partial class Compiler
         DoPhase(this, PHASE_IMPBYREF_COPY_OMISSION, fgMarkImplicitByRefCopyOmissionCandidates);
 
         // Locals tree list is no longer kept valid.
-        fgNodeThreading = NodeThreading.None;
+        fgEndLocalTreeLists();
 
         // Apply the type update to implicit byref parameters; also choose (based on address-exposed
         // analysis) which implicit byref promotions to keep (requires copy to initialize) or discard.
