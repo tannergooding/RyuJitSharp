@@ -12,11 +12,12 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete general register-selection/assignment primitives and the required loop/weight, general CHECK_IR and local-resolution driver closures before full optimized allocation activation.",
+      "scope": "Integrate full Windows-AMD64 allocation with the completed local-enabled resolver, while preparing independent object-allocation connection-graph primitives without bypassing either phase gate.",
       "doneWhen": [
-        "SSA construction and its local-thread ownership correction are validated; retain the explicit limits on input and diagnostic parity.",
-        "Complete native register selection, constant matching, allocation/copy primitives and local-enabled resolution; preserve the production optimized-allocation gate until the full traversal is ready.",
-        "Integrate complete loop canonicalization with block weighting and the complete general CHECK_IR wrapper, validating actual phase execution rather than only prepared graphs.",
+        "Complete the full native Windows-x64 allocation traversal, preserving both local modes, stress, upper-vector behavior and diagnostic ordering.",
+        "Wire the existing native build/allocate/resolve predicates only after complete traversal and local-resolution closures are validated together.",
+        "Validate actual optimized managed execution separately from fallback and explicit skips; preserve the established checked minopts execution baseline.",
+        "Complete the independent object-allocation preparation/connection-graph closure functions; leave ComputeEscapingNodes, clone analysis and phase activation deferred until their whole closures are ready.",
         "Review each frozen packet, run focused Debug/Release cases and commit it with related tracking before integrating the next packet."
       ],
       "validation": [
@@ -29,8 +30,8 @@
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
           "files": "New LinearScan.LocalResolutionDriver partials and LinearScanLocalResolutionDriverTests.cs; no production gate, minimal resolution, compiler or shared graph changes.",
           "doneWhen": "Complete local-enabled resolution and final verification with isolated Debug/Release evidence; production optimized allocation gate unchanged.",
-          "status": "validating",
-          "result": "Turns14-16 collected: six frozen files pass71Debug/49Release focused and621Debug/520Release LSRA cases. Parent reviewed driver/finalization/vector insertion; worker942a496f reviewed only final-verification files with no findings (turn62). Parent replaced the nullable local-interval-array fallback with its required invariant; validate the integrated packet before commit."
+          "status": "complete",
+          "result": "Turns14-16 collected; driver/finalization/vector insertion reviewed by parent, verification reviewed by942a496f turn62 with no findings. Parent requires the initialized local interval array. Fresh db274ea integrated snapshot passes640Debug/539Release LSRA cases with matching source hashes; production gate unchanged."
         },
         {
           "scope": "Complete the native Windows-AMD64 allocateRegisters traversal using the committed general selector and assignment primitives.",
@@ -42,12 +43,12 @@
           "deferred": "Major missing shared subsystems without explicit ownership, other targets, phase activation and publication."
         },
         {
-          "scope": "Complete native general CHECK_IR flags/types and block/link driver, reusing complete LIR and standalone SSA checks.",
+          "scope": "Complete object-allocation connection-graph preparation and closure prerequisites, without escape/cloning analysis or phase activation.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
-          "files": "Compiler.IRVerification.cs, IRVerificationTests.cs and removal of only the fgDebugCheckLinks stub from Compiler.fg.cs; Phase.cs unchanged.",
-          "doneWhen": "Complete checker closure with exact native ordering, focused cases and subsequent production capture; no partial SSA-only substitute.",
-          "status": "complete",
-          "result": "Turns84-87 collected. Complete native source review and194Debug/143Release combined cases pass. Combined NativeAOT captures verify SSA postchecks for25 optimized methods before existing frontiers and32/32 minopts GCStress4 executions, with no new assertion. Three InlineCaller relaxed notices match native;43 additional FoldHardware GTF_CALL notices occur on already-divergent hardware-import IR, not an accepted checker deviation."
+          "files": "New ObjectAllocator analysis partials and tests; ObjectAllocator.cs may become partial and initialize required state, but DoPhase and the heap-only path stay unchanged. No Compiler, LSRA or documentation edits.",
+          "doneWhen": "Complete native tracked/index/mark/edge helpers, PrepareAnalysis, ComputeConnGraphClosure and ComputeStackObjectPointers with Debug/Release coverage and unchanged heap-only behavior.",
+          "status": "in-progress",
+          "result": "CHECK_IR committed db274ea after turn87. Turn88 reported that ComputeEscapingNodes requires AnalyzeIfCloningCanPreventEscape/AnalyzePseudoForCloning and large CheckCanClone closure (objectalloc.cpp3984-4539). Scope narrowed to exclude ComputeEscapingNodes entirely, not approximate it. Remaining foundation proceeds from db274ea; Main's object-stack-allocation frontier stays explicit."
         }
       ],
       "deferred": [
@@ -61,11 +62,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "General CHECK_IR is fully reviewed and combined loop/checker runtime validation passes25 optimized SSA postchecks plus32 minopts GCStress4 executions; B261 closes without suppressing the43 additional FoldHardware notices on divergent hardware-import IR. Next validate/commit the six-file local-resolution packet (worker610162a0 through turn16, native driver/vector/finalization reviewed; verification review942a496f turn62 has no findings). Parent added the required localVarIntervals invariant in its driver, so use a fresh integrated snapshot rather than the old worker hashes. Collect3a2c8d9b allocation traversal after turn18. Then wire native doRegisterAllocation predicates: local-enabled build/resolve only when enregisterLocalVars, full allocation when enregisterLocalVars OR OptimizationEnabled. Existing interval construction and codegen home reporting are complete. Preserve gate until full traversal/resolution closure and actual execution are validated. No remote publication.",
+    "nextAction": "Local-enabled resolution is reviewed and validated against db274ea with640Debug/539Release LSRA cases; minimal resolution and the production gate remain unchanged. Collect worker3a2c8d9b full allocation traversal after turn18, review and integrate it with the existing general selector/resolver before native doRegisterAllocation wiring. Native predicates are local-enabled build/resolve when enregisterLocalVars, full allocation when enregisterLocalVars OR OptimizationEnabled. Existing buildIntervalsWithLocals and codegen home reporting are complete. Validate actual optimized execution and preserve the checked32-method minopts baseline. Collect worker d62fc6a5 object connection-graph foundation after turn88; ComputeEscapingNodes remains wholly deferred because of its clone-analysis dependency, not approximated. No remote publication.",
     "handoff": {
-      "status": "general-ir-validated-local-resolution-integration",
+      "status": "local-resolution-validated-allocation-traversal-pending",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 through turn16 fully collected; local-resolution packet returned and reviewed, parent integrating. 3a2c8d9b through turn18 collected; full allocation traversal in progress from f885d50. d62fc6a5 through turn87 fully collected; combined checker captures passed, worker idle. 942a496f through turn62 collected: read-only final-allocation verification review found no high-confidence bugs, worker idle. 6a004941 through turn35 remains resolved/idle. CoreRoot capture owner is free. No app-native child-session coordination.",
+      "workerPackets": "610162a0 through turn16 fully collected; local-resolution packet reviewed and integrated, worker idle. 3a2c8d9b through turn18 collected; full allocation traversal in progress from f885d50. d62fc6a5 through turn88 collected; object foundation scope narrowed past clone-analysis blocker and continuing. 942a496f through turn62 collected: verifier-only review complete, worker idle. 6a004941 through turn35 remains resolved/idle. CoreRoot capture owner is free. No app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -81,6 +82,27 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "localResolutionDriver": {
+        "nativeBoundary": "lsra.cpp:7811-8420 resolveRegisters<true>,7444-7517 and7534-7624 upper-vector insertion,11876-12382 final allocation checking,12395-12484 move verification; Windows AMD64.",
+        "workerManifest": "artifacts\\local-resolution-driver-validation\\source-manifest.json",
+        "workerFocusedDebug": 71,
+        "workerFocusedRelease": 49,
+        "workerLsraDebug": 621,
+        "workerLsraRelease": 520,
+        "sourceManifest": "artifacts\\local-resolution-integration\\source-manifest.json",
+        "sourceManifestSha256": "F19D2F4AD58F00DF96874EECBD9EBC2A7509A703F8FDF3A175DF3FB019BDEA2A",
+        "snapshotBase": "db274ea",
+        "rootSnapshotHashesMatch": true,
+        "parentAdjustment": "Assert and use the required localVarIntervals array instead of treating a missing array as all noncandidate entries.",
+        "debugTests": "artifacts\\local-resolution-integration\\debug.trx",
+        "releaseTests": "artifacts\\local-resolution-integration\\release.trx",
+        "debugPassed": 640,
+        "releasePassed": 539,
+        "skipped": 0,
+        "filter": "FullyQualifiedName~LinearScan",
+        "review": "Parent reviewed complete driver, finalization and vector insertion; bounded independent review of final-allocation/move verification found no high-confidence conformance bugs.",
+        "limit": "Local-enabled driver is not yet reached by production. Full allocation traversal and phase wiring remain required; unit evidence is not optimized execution."
+      },
       "generalIrVerification": {
         "nativeBoundary": "fgdiagnostic.cpp:3347-3689,3939-4038 plus existing LIR/SSA helpers; gentree.cpp:8168-8195 reverse-evaluation eligibility.",
         "workerManifest": "artifacts\\ir-verification-validation\\source-manifest.json",
@@ -5893,9 +5915,9 @@
     {
       "area": "linear-scan-local-reference-resolution",
       "native": ["src\\coreclr\\jit\\lsra.cpp", "src\\coreclr\\jit\\lsra.h"],
-      "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.LocalResolution.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalResolutionHelpers.cs"],
+      "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.LocalResolution.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalResolutionHelpers.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalResolutionDriver.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalResolutionDriverFinalization.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalResolutionDriverVectors.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalResolutionDriverVerification.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalResolutionDriverVerificationMoves.cs"],
       "reconciledCommit": null,
-      "scope": "Complete Windows-AMD64 resolveLocalRef, writeLocalReg and direct copy/spill/home helpers; optimized allocation remains gated."
+      "scope": "Complete Windows-AMD64 local-reference helpers and resolveRegisters<true> driver, vector insertion, descriptor finalization and final-allocation/move checking; optimized allocation remains gated."
     },
     {
       "area": "ssa-verification",

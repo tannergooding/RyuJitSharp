@@ -15,6 +15,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Enregistered-local resolution
+
+Windows-x64 LSRA now replays local-enabled register assignments into the IR,
+including parameter and dummy definitions, temporary spills and reloads, and
+upper-vector saves and restores. It reconciles block edges, finalizes local
+register and stack homes, and checks the resulting allocation with the native
+verification rules.
+
+The resolver remains a prerequisite, not an activation of optimized execution:
+the full allocation traversal must be integrated before the production gate is
+removed. The existing minopts resolver is unchanged.
+
 ## 2026-09-25: IR and SSA phase verification
 
 Native CHECK_IR verification is now active: tree phases check types, side-effect

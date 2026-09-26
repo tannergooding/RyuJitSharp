@@ -845,6 +845,12 @@ map semantics, register reassignment, EH write-through homes and dead candidates
 The complete `processBlockEndAllocation<true>` specialization is named
 `processBlockEndAllocationWithLocals`. These entrypoints reject unsupported
 targets or disabled local enregistration before mutating maps or visitation.
+The complete Windows-AMD64 `resolveRegisters<true>` specialization is now
+`resolveRegistersWithLocals`. It replays entry and block references, inserts
+upper-vector operations, resolves edges and finalizes local homes before native
+final-allocation verification and stack/spill accounting. The local interval
+array is required in this mode, not treated as an empty map when absent.
+The minimal resolver and production optimized-allocation gate remain unchanged.
 
 Loop discovery and canonicalization now preserve native preheader,
 backedge, exit and EH-header ordering, rebuilding cached DFS and loop data when
