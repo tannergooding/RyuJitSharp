@@ -12,10 +12,10 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete enregistered-local interval construction and SSA bookkeeping prerequisites while correcting native EH insertion fidelity.",
+      "scope": "Complete enregistered-local interval construction and SSA dominator/rename prerequisites while integrating native EH insertion fidelity.",
       "doneWhen": [
         "Complete Windows-AMD64 buildIntervals<true> and required native direct helpers without activating optimized allocation.",
-        "Reconcile composite SSA storage, unsigned stress encoding and the distinct memory-PHI sentinel without activating the incomplete SSA builder.",
+        "Complete native dominator construction/frontiers and SSA rename-state prerequisites without activating the incomplete SSA builder.",
         "Restore the native enclosing-region boolean contract and demonstrate corrected finally insertion/branch forms with paired execution.",
         "Review each frozen packet, run focused Debug/Release cases and commit it with related tracking before integrating the next packet."
       ],
@@ -32,20 +32,20 @@
           "status": "in-progress"
         },
         {
-          "scope": "Complete ternary/quaternary VNForFunc interning from valuenum.cpp:2982-3077.",
+          "scope": "Complete native SsaRenameState local/memory stacks and block-scoped restoration.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
-          "files": "ValueNumStore.HigherArity.cs, ValueNumHigherArityTests.cs and only genuinely required arity3/4 storage support.",
-          "doneWhen": "Frozen native-faithful dispatcher closure with isolated Debug/Release evidence and root/snapshot hashes.",
-          "status": "complete",
-          "deferred": "Full VN phase, map-selection algorithm and unowned compiler changes."
+          "files": "New ssarenamestate partials and SsaRenameStateTests.cs; no shared compiler or builder edits.",
+          "doneWhen": "Frozen complete state helper with isolated Debug/Release evidence, preserving local/memory ordering and shared-kind semantics.",
+          "status": "in-progress",
+          "deferred": "SsaBuilder orchestration, full SSA activation and unowned compiler changes."
         },
         {
           "scope": "Correct native enclosing EH-region output preservation and verify finally block placement and execution.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
           "files": "EHblkDsc.cs, required caller edits, a focused fixture and isolated finally-parity artifacts; no SSA/LSRA or shared documentation edits.",
           "doneWhen": "Frozen native helper/caller correction, failing-before and Debug/Release coverage, and fresh paired GCStress4 captures for three finally methods plus catch/filter controls.",
-          "status": "in-progress",
-          "result": "Source-and-dump diagnosis in artifacts\\backend-finally-parity\\findings.txt accounts for all three extra bytes; a changed-binary counterfactual is pending."
+          "status": "complete",
+          "result": "Frozen helper/caller correction restores all three finally insertion/branch-form/size comparisons. Five selected methods execute managed code under GCStress4; parent combined tests pass559Debug/522Release."
         }
       ],
       "deferred": [
@@ -58,11 +58,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Composite SSA bookkeeping B254/B255 is reconciled:14before failures,459Debug/438Release afterward. Parent next reads native SsaBuilder/rename-state declarations in ssabuilder.h to establish the complete construction closure; there is no managed SsaBuilder and fgSsaBuild remains a stub. Collect frozen LSRA worker turn5 when notified. EH worker next returns the B256 helper/caller correction plus changed-binary finally evidence. No partial SSA or optimized-allocation activation, and no publication.",
+    "nextAction": "B254/B255 are committed a3111ca; B256 is corrected and execution-validated. Parent next ports FlowGraphDominatorTree from flowgraph.cpp:7094-7334, then FlowGraphDominanceFrontiers:7335-7516 and the native DomTreeVisitor in compiler.h:13345; both managed graph classes are empty and block full SSA construction. Rename-state worker is active. LSRA turn5 is reviewed; turn6 adds native rationale and bounded mapping/predecessor cases before integration. No partial SSA or optimized-allocation activation, and no publication.",
     "handoff": {
       "status": "parallel-interval-and-ssa-prerequisites",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 collected through turn4, still building full local intervals. 3a2c8d9b through turn8 is collected and committed dfa1bcd; idle. d62fc6a5 through turn72 is collected; its finally diagnosis is frozen, and its next packet corrects B256 with focused and execution evidence. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
+      "workerPackets": "610162a0 through turn5 is collected/reviewed, revising useful native comments and bounded mapping/predecessor coverage before turn6 freeze. 3a2c8d9b through turn8 is collected and now ports SsaRenameState. d62fc6a5 through turn73 is collected/reviewed and its B256 fix is integrated with559Debug/522Release plus five-method execution evidence. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -78,6 +78,32 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "finallyPlacementCorrection": {
+        "nativeBoundary": "jiteh.cpp:135-165 ebdGetEnclosingRegionIndex and actual insertion/normalization/region-query callers; B256.",
+        "runtimeSourceManifest": "artifacts\\backend-finally-parity\\source-manifest.json",
+        "runtimeSnapshotBase": "c0320b1",
+        "runtimeEvidence": "artifacts\\backend-finally-parity\\validation.txt",
+        "managedJit": "artifacts\\backend-finally-parity\\eh-fixed-jit\\RyuJitSharp.dll",
+        "managedJitSha256": "4FBA2CDAA036EB290370126FC5BAC852A88D27F88522EAA07C4712A10E55ECDC",
+        "beforeTests": "artifacts\\backend-finally-parity\\baseline-results\\baseline.trx",
+        "beforeFailed": 2,
+        "beforePassed": 1,
+        "workerDebugPassed": 36,
+        "workerReleasePassed": 32,
+        "integratedSourceManifest": "artifacts\\eh-integration-validation\\source-manifest.json",
+        "integratedSnapshotBase": "a3111ca",
+        "debugTests": "artifacts\\eh-integration-validation\\snapshot\\artifacts\\tst\\Debug\\eh-integration-debug.trx",
+        "releaseTests": "artifacts\\eh-integration-validation\\snapshot\\artifacts\\tst\\Release\\eh-integration-release.trx",
+        "debugPassed": 559,
+        "releasePassed": 522,
+        "skipped": 0,
+        "selection": "FullyQualifiedName~Ssa|FullyQualifiedName~Liveness|FullyQualifiedName~EH|FullyQualifiedName~FlowGraphCleanupTests|FullyQualifiedName~FlowGraphCompactionTests",
+        "captures": ["artifacts\\backend-finally-parity\\eh-native", "artifacts\\backend-finally-parity\\eh-managed", "artifacts\\backend-finally-parity\\filter-native", "artifacts\\backend-finally-parity\\filter-managed"],
+        "matchingFinallySizes": {"FinallyObject":352,"FinallyPair":599,"NestedFinallyObject":404},
+        "matchingControlSizes": {"CatchObject":175,"FilteredObject":295},
+        "execution": "All five selected methods execute nonzero managed code with RunAltJitCode=1 and GCStress4; each corpus confirms eleven forced full collections and unchanged payload/identity outcomes.",
+        "limitation": "Matching insertion choices, previous differing branch forms, instruction counts and sizes; not full byte-for-byte or general EH parity."
+      },
       "ssaBookkeeping": {
         "nativeBoundary": "gentree.cpp SsaNumInfo Composite/GetNum/GetOutlinedNumSlot/NumCanBeEncodedCompactly; jitexpandarray.h value initialization/reset; block.cpp:995 memory-PHI sentinel.",
         "sourceManifest": "artifacts\\ssa-bookkeeping-validation\\source-manifest.json",
@@ -5460,6 +5486,13 @@
       "csharp": ["sources\\Core\\jit\\gentree\\SsaNumInfo.cs", "sources\\Core\\jit\\block\\BasicBlock.cs"],
       "reconciledCommit": null,
       "scope": "Complete composite SSA encoding/read/index helpers and memory-PHI placeholder identity; B254/B255."
+    },
+    {
+      "area": "eh-enclosing-region-contract",
+      "native": ["src\\coreclr\\jit\\jiteh.cpp"],
+      "csharp": ["sources\\Core\\jit\\jiteh\\EHblkDsc.cs", "sources\\Core\\jit\\compiler\\Compiler.eh.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.cs"],
+      "reconciledCommit": null,
+      "scope": "Complete ebdGetEnclosingRegionIndex in/out contract and actual callers; B256."
     },
     {
       "area": "batch-temporary-initialization",

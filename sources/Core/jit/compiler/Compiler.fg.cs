@@ -2986,7 +2986,8 @@ public partial class Compiler
             // Things look good for this region; check the enclosing regions, if any.
 
             // ehGetEnclosingRegionIndex uses [0..compHndBBtabCount) form.
-            nestedRegionIndex = ehGetEnclosingRegionIndex((ushort)(nestedRegionIndex - 1), out inTryRegion);
+            nestedRegionIndex = ehGetDsc((ushort)(nestedRegionIndex - 1))
+                .ebdGetEnclosingRegionIndex(ref inTryRegion);
 
             // Convert to [0..compHndBBtabCount] form.
             nestedRegionIndex = (nestedRegionIndex == EHblkDsc.NO_ENCLOSING_INDEX) ? (ushort)(0) : (ushort)(nestedRegionIndex + 1);
@@ -9438,7 +9439,8 @@ public partial class Compiler
             ref var eh = ref ehGetDsc(XTnum);
 
             // Find the EH region 'eh' is most nested within, either 'try' or handler or none.
-            var ehOuterIndex = eh.ebdGetEnclosingRegionIndex(out var outerIsTryRegion);
+            var outerIsTryRegion = false;
+            var ehOuterIndex = eh.ebdGetEnclosingRegionIndex(ref outerIsTryRegion);
 
             if (ehOuterIndex is not EHblkDsc.NO_ENCLOSING_INDEX)
             {
@@ -9724,7 +9726,7 @@ public partial class Compiler
                     innerIsTryRegion = outerIsTryRegion;
 
                     // Loop outwards in the EH nesting.
-                    ehOuterIndex = ehOuter.ebdGetEnclosingRegionIndex(out outerIsTryRegion);
+                    ehOuterIndex = ehOuter.ebdGetEnclosingRegionIndex(ref outerIsTryRegion);
 
                     if (ehOuterIndex is not EHblkDsc.NO_ENCLOSING_INDEX)
                     {

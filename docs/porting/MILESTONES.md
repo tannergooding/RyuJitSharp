@@ -15,6 +15,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Finally block-placement fidelity
+
+Finally-call blocks now retain the native insertion positions when an EH-region
+walk reaches the main method body. The enclosing-region helper preserves its
+incoming region kind instead of overwriting it at the end of the walk.
+
+This removes three extra bytes from each of the selected finally and
+nested-finally methods. Their insertion choices, branch forms, instruction
+counts and code sizes now match native, while the existing exceptional-path
+and collection checks continue to pass. Full byte-for-byte and general EH
+parity remain separate work.
+
 ## 2026-09-25: Composite SSA bookkeeping
 
 Promoted-struct SSA numbers now preserve field values when moving from compact

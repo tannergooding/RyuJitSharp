@@ -194,22 +194,18 @@ public struct EHblkDsc
 
     // Return the region index of the most nested EH region that encloses this region, or NO_ENCLOSING_INDEX
     // if this region is directly in the main function body. Set '*inTryRegion' to 'true' if this region is
-    // most nested within a 'try' region, or 'false' if this region is most nested within a handler. (Note
-    // that filters cannot contain nested EH regions.)
-    public readonly ushort ebdGetEnclosingRegionIndex(out bool inTryRegion)
+    // most nested within a 'try' region, or 'false' if this region is most nested within a handler. When
+    // there is no enclosing region, leave inTryRegion unchanged. (Filters cannot contain nested EH regions.)
+    public readonly ushort ebdGetEnclosingRegionIndex(ref bool inTryRegion)
     {
-        if (ebdEnclosingTryIndex == NO_ENCLOSING_INDEX)
+        if ((ebdEnclosingTryIndex == NO_ENCLOSING_INDEX) && (ebdEnclosingHndIndex == NO_ENCLOSING_INDEX))
+        {
+            return NO_ENCLOSING_INDEX;
+        }
+        else if (ebdEnclosingTryIndex == NO_ENCLOSING_INDEX)
         {
             inTryRegion = false;
-
-            if (ebdEnclosingHndIndex == NO_ENCLOSING_INDEX)
-            {
-                return NO_ENCLOSING_INDEX;
-            }
-            else
-            {
-                return ebdEnclosingHndIndex;
-            }
+            return ebdEnclosingHndIndex;
         }
         else if (ebdEnclosingHndIndex == NO_ENCLOSING_INDEX)
         {

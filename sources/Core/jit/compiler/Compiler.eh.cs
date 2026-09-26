@@ -533,16 +533,18 @@ public partial class Compiler
     /// <returns>NO_ENCLOSING_INDEX if there is no enclosing region. If the returned index is not NO_ENCLOSING_INDEX, then '*inTryRegion' is set to 'true' if the enclosing region is a 'try', or 'false' if the enclosing region is a handler. (It can never be a filter.)</returns>
     public ushort ehGetEnclosingRegionIndex(ushort regionIndex, out bool inTryRegion)
     {
+        // Callers of this output-only form use the kind only for a present enclosing region.
         assert(regionIndex is not EHblkDsc.NO_ENCLOSING_INDEX);
-        ref var ehDsc = ref ehGetDsc(regionIndex);
-        return ehDsc.ebdGetEnclosingRegionIndex(out inTryRegion);
+        inTryRegion = false;
+        return ehGetDsc(regionIndex).ebdGetEnclosingRegionIndex(ref inTryRegion);
     }
 
     public ushort ehGetCallFinallyRegionIndex(ushort finallyIndex, out bool inTryRegion)
     {
         assert(finallyIndex is not EHblkDsc.NO_ENCLOSING_INDEX);
         assert(ehGetDsc(finallyIndex).HasFinallyHandler);
-        return ehGetDsc(finallyIndex).ebdGetEnclosingRegionIndex(out inTryRegion);
+        inTryRegion = false;
+        return ehGetDsc(finallyIndex).ebdGetEnclosingRegionIndex(ref inTryRegion);
     }
 
     /// <summary>Find the inclusive block range that can call the indicated finally.</summary>

@@ -843,6 +843,10 @@ semantics. New outlined slots are explicitly zeroed after list growth, including
 reuse after reset, matching `JitExpandArray` value initialization. A readonly
 managed singleton represents native memory-PHI sentinel `0x1`; null continues
 to mean that no PHI exists.
+The enclosing EH-region helper takes a managed `ref bool`, preserving the
+native in/out value when no enclosing region exists. Output-only wrappers
+remain valid only where callers consume the kind for a present region; EH
+insertion and normalization retain the value across outward walks.
 An empty bitset span is a valid initialized set when its trait environment has
 zero elements, even though the same representation also denotes uninitialized
 storage in nonempty environments; canonical assignment distinguishes those
