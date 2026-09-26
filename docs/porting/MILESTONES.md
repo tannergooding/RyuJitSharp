@@ -15,6 +15,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Loop canonicalization and block weights
+
+The optimized pipeline now discovers and compacts natural loops, creates
+preheaders, merges backedges and splits exits in native order. It preserves EH
+regions when placing new blocks or splitting loop headers, then recomputes
+invalidated loop information before later phases use it.
+
+Block weighting now receives that required loop state and follows native
+profile or heuristic weighting. Optimized corpus methods proceed through these
+phases to the existing allocation boundary; selected minopts execution remains
+intact. Profile repair and the remaining loop optimizations are still separate
+work.
+
 ## 2026-09-25: General register selection and assignment
 
 Windows-x64 LSRA now selects registers using the full native heuristic sequence,

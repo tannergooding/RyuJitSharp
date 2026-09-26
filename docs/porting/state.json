@@ -37,8 +37,8 @@
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
           "files": "Frozen block-weight/reachability files plus new Compiler.LoopDiscovery partials and LoopDiscoveryTests.cs; only optFindLoopsPhase's stub in Compiler.opt.cs may now be removed after the complete closure is ready.",
           "doneWhen": "Preserve native profile/heuristic decisions, EH and loop assumptions, arithmetic and diagnostics with isolated Debug/Release evidence.",
-          "status": "in-progress",
-          "result": "Turn17 collected: seven frozen overlays pass46Debug/43Release in artifacts\\loop-discovery-validation. Parent source review pending; worker now publishes this frozen snapshot and checks the B262 FullOpts repro, then established32-method minopts GCStress4 execution if unblocked. Prior failed capture remains artifacts\\ssa-followup-integration\\standard-fullopts. Packet remains uncommitted.",
+          "status": "complete",
+          "result": "Turns17-18 collected and complete native source reviewed. Seven frozen overlays pass46Debug/43Release; integrated loop/SSA/CHECK_IR/selector cases pass194Debug/143Release. Fresh frozen NativeAOT capture moves18 standard FullOpts methods past B262 to the existing allocator gate, and all32 selected minopts methods execute under GCStress4. Before failure remains retained.",
           "deferred": "Major unported dependency subsystems, shared Compiler.fg.cs, SSA/LSRA/Lowering files and unrelated optimizations."
         },
         {
@@ -47,7 +47,7 @@
           "files": "Compiler.IRVerification.cs, IRVerificationTests.cs and removal of only the fgDebugCheckLinks stub from Compiler.fg.cs; Phase.cs unchanged.",
           "doneWhen": "Complete checker closure with exact native ordering, focused cases and subsequent production capture; no partial SSA-only substitute.",
           "status": "awaiting-review",
-          "result": "Turn84 collected: frozen aa60950 snapshot passes42Debug cases and Release build in artifacts\\ir-verification-validation. Existing CheckLir/local semantics reused. Parent review and production validation remain before commit."
+          "result": "Turn84 collected and complete native source reviewed; existing CheckLir/local semantics reused. Frozen aa60950 snapshot passes42Debug cases and Release build; combined loop/SSA/selector selection passes194Debug/143Release. Worker is publishing and capturing this frozen checker snapshot; production validation remains before commit."
         }
       ],
       "deferred": [
@@ -61,11 +61,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Full RegisterSelection.select, getMatchingConstants/isMatchingConstant, allocateReg and assignCopyReg are validated with109Debug/96Release cases in artifacts\\general-allocation-validation; production optimized allocation remains gated. buildIntervalsWithLocals already exists (c8bdd87), so do not duplicate it. Review frozen loop/weight turn17 and CHECK_IR turn84 packets, collect loop worker's actual NativeAOT B262/32-method results, and collect the local-resolution-driver handoff after turn13. Commit each complete reviewed/validated closure separately. Parent's next allocator implementation is full native allocateRegisters at lsra.cpp5459 onward, including required Windows-x64 upper-vector paths; reuse the completed selector and existing local interval/block helpers. No remote publication.",
+    "nextAction": "General register-selection/assignment primitives are committed c2a2413; complete loop/weight closure is reviewed and validated, resolving B262 for18 standard FullOpts methods while retaining32/32 minopts GCStress4 execution. General CHECK_IR source review and combined194Debug/143Release cases pass; collect worker d62fc6a5 native-host checker validation after turn84 and fix any actual production invariant failures before committing it. Collect worker610162a0 local-resolution-driver handoff after turn13. Parent's next allocator implementation is full native allocateRegisters at lsra.cpp5459 onward; CanSkipUpperVectorSave at7413 is absent, and its AMD64 native result is always false. Reuse buildIntervalsWithLocals (c8bdd87), full selector and existing block helpers; do not duplicate them or activate incomplete allocation. No remote publication.",
     "handoff": {
-      "status": "general-selection-validated-loop-and-verifier-integration",
+      "status": "loop-weights-validated-general-ir-capturing",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 through turn13 collected; local-resolution-driver follow-up in progress. 3a2c8d9b through turn17 collected; loop/weight packet frozen, worker performing actual pipeline captures while parent reviews. d62fc6a5 through turn84 collected; general CHECK_IR packet frozen awaiting review/capture. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
+      "workerPackets": "610162a0 through turn13 collected; local-resolution-driver follow-up in progress. 3a2c8d9b through turn18 collected; loop/weight packet reviewed and validated, worker idle. d62fc6a5 through turn84 collected; checker source reviewed, worker authorized to capture once its frozen publish completes; CoreRoot freed after loop captures. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -81,6 +81,28 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "loopDiscoveryAndWeights": {
+        "nativeBoundary": "optimizer.cpp:40-232,2493-3147,5181-5207; fgopt.cpp:19-51; flowgraph.cpp:7623-7727; fgbasic.cpp:6430-6450; jiteh.cpp:872-899.",
+        "sourceManifest": "artifacts\\loop-discovery-validation\\source-manifest.json",
+        "sourceManifestSha256": "48CAC9EB940FD5A09410350EC336A9B0F1E2BB6AD904BE41BBD34E80F4D0AD6E",
+        "snapshotBase": "a70a254",
+        "rootSnapshotHashesMatch": true,
+        "debugPassed": 46,
+        "releasePassed": 43,
+        "skipped": 0,
+        "integratedManifest": "artifacts\\loop-ir-integration\\source-manifest.json",
+        "integratedManifestSha256": "92AD4FDECC29444ADF50ACE07ECF46605C142777FC6B030F63CE7A4EDB58ACE5",
+        "integratedBase": "c2a2413",
+        "integratedDebugPassed": 194,
+        "integratedReleasePassed": 143,
+        "integratedCoverage": "Frozen loop and pending general CHECK_IR overlays with SSA, natural-loop, weighting, LIR and general register-selection cases; all executed, no skips.",
+        "pipelineResults": "artifacts\\loop-discovery-validation\\pipeline-results.json",
+        "pipelineResultsSha256": "C311CB6F1202FE400A4524573B53B5EFB3114EAD3F374C3C425FA50A117FA615",
+        "nativeAotDll": "artifacts\\loop-weight-jit\\RyuJitSharp.dll",
+        "nativeAotSha256": "4D6B81DFF4F4EDAF56C332BA77754DF040C48BC568F6389375AA6E12E976CE34",
+        "execution": "Five fresh -MinOpts -GcStress -ExecuteManagedCode captures execute32/32 selected methods with nonzero managed-generated code, exit0 and retained collection/payload checks. Standard FullOpts host exits0;18 managed methods pass loop/weight phases before the existing optimized-LSRA rejection, with no missing-loop failure.",
+        "limit": "FullOpts runner still rejects the known duplicate Main header after object-stack-allocation fallback. Exclude Main attempts; no optimized execution or full phase/code-parity claim. Profile repair and other loop optimizations remain unported."
+      },
       "generalRegisterSelection": {
         "nativeBoundary": "lsra.cpp:335-354,489-493,2700-2780,2854-2921,3186-3230,10022-10037,13358-13812; lsra.h:2170-2182; Windows-AMD64 selector, constant matching, allocation and copy assignment.",
         "sourceManifest": "artifacts\\general-allocation-validation\\source-manifest.json",
@@ -129,11 +151,12 @@
       },
       "blockWeightIntegrationBlocker": {
         "backlog": "B262",
+        "status": "resolved-by-complete-loop-phase",
         "capture": "artifacts\\ssa-followup-integration\\standard-fullopts",
         "exitCode": -1073740791,
         "failure": "Unhandled InvalidOperationException: Block weights require natural loops.",
         "cause": "The preceding fgDfsBlocksAndRemove invalidates _loops, while optFindLoopsPhase and fgRepairProfile are still stubs.",
-        "nextBoundary": "Complete native loop discovery, compaction, preheaders, header splitting and exit/backedge canonicalization before accepting the active non-profile block-weight path."
+        "nextBoundary": "Completed full loop phase; see loopDiscoveryAndWeights for actual phase continuation and32-method execution evidence. Retain this failed capture as before evidence."
       },
       "ssaConstruction": {
         "nativeBoundary": "ssabuilder.cpp:13-30,102-1203; complete construction, PHI insertion, definition/use and memory/EH renaming, dominator traversal and Build/fgSsaBuild orchestration.",
@@ -5659,9 +5682,10 @@
     },
     {
       "area": "natural-loop-discovery",
-      "native": ["src\\coreclr\\jit\\flowgraph.cpp", "src\\coreclr\\jit\\compiler.h", "src\\coreclr\\jit\\compiler.hpp"],
-      "csharp": ["sources\\Core\\jit\\compiler\\FlowGraphNaturalLoop.cs", "sources\\Core\\jit\\compiler\\FlowGraphNaturalLoops.cs"],
-      "reconciledCommit": null
+      "native": ["src\\coreclr\\jit\\flowgraph.cpp", "src\\coreclr\\jit\\compiler.h", "src\\coreclr\\jit\\compiler.hpp", "src\\coreclr\\jit\\optimizer.cpp", "src\\coreclr\\jit\\fgopt.cpp", "src\\coreclr\\jit\\fgbasic.cpp", "src\\coreclr\\jit\\jiteh.cpp"],
+      "csharp": ["sources\\Core\\jit\\compiler\\FlowGraphNaturalLoop.cs", "sources\\Core\\jit\\compiler\\FlowGraphNaturalLoops.cs", "sources\\Core\\jit\\compiler\\Compiler.LoopDiscovery.cs", "sources\\Core\\jit\\compiler\\Compiler.LoopDiscovery.EH.cs", "sources\\Core\\jit\\compiler\\Compiler.BlockWeights.cs", "sources\\Core\\jit\\compiler\\BlockReachabilitySets.cs"],
+      "reconciledCommit": null,
+      "scope": "Natural-loop analysis plus complete discovery/compaction/canonicalization phase, direct EH helpers, block weights and dense reachability. Profile repair and other loop optimizations remain separate."
     },
     {
       "area": "trees-and-locals",

@@ -846,6 +846,12 @@ The complete `processBlockEndAllocation<true>` specialization is named
 `processBlockEndAllocationWithLocals`. These entrypoints reject unsupported
 targets or disabled local enregistration before mutating maps or visitation.
 
+Loop discovery and canonicalization now preserve native preheader,
+backedge, exit and EH-header ordering, rebuilding cached DFS and loop data when
+required. Block weighting consumes that loop state rather than substituting
+lazy discovery for the native loop phase. Profile repair and other unported
+loop optimizations remain separate limitations.
+
 Liveness policies use static interface members in place of native template
 traits. Per-block scratch and stored sets retain independent managed storage.
 The early-tree specialization preserves native conditional-definition handling,

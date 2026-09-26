@@ -237,12 +237,6 @@ public partial class Compiler
     // TODO: Port phase - optOptimizePostLayout
     public PhaseStatus optOptimizePostLayout() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port phase - optSetBlockWeights
-    public PhaseStatus optSetBlockWeights() => PhaseStatus.MODIFIED_NOTHING;
-
-    // TODO: Port phase - optFindLoopsPhase
-    public PhaseStatus optFindLoopsPhase() => PhaseStatus.MODIFIED_NOTHING;
-
     // TODO: Port phase - optCloneLoops
     public PhaseStatus optCloneLoops() => PhaseStatus.MODIFIED_NOTHING;
 
