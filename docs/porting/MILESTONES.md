@@ -15,6 +15,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Early tree liveness
+
+Early liveness now follows the native optimized-tree policy: it computes local
+use/def and inter-block liveness, preserves exception-handler keepalives, removes
+dead stores without losing side effects, and repeats when removal changes live
+sets. Conditional definitions inside a qmark do not kill another branch's uses.
+
+The native minopts and debug method-range gates remain intact. Existing minopts
+execution and interior-reference/pinning behavior remain intact under GC stress.
+SSA liveness and optimized allocation are still separate boundaries; this phase
+alone does not enable optimized execution.
+
 ## 2026-09-25: Binary value-number constant folding
 
 Value numbering now has native binary folding eligibility, exception and

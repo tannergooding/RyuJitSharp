@@ -28,7 +28,7 @@
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
           "files": "liveness files, new Compiler.EarlyLiveness.cs, only the fgEarlyLiveness stub in Compiler.fg.cs, and EarlyLivenessTests.cs.",
           "doneWhen": "Review complete policy closure and isolated43Debug/38Release evidence; retain unchanged LIR behavior and validate integration before commit.",
-          "status": "validated-awaiting-execution"
+          "status": "complete"
         },
         {
           "scope": "Complete binary eligibility/safety and scalar constant evaluation/casts without full interning dispatch or VN activation.",
@@ -49,11 +49,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Binary folding is reviewed and complete. Finish the early-liveness packet: stage its four source/test files, save the exact source patch, publish a fresh NativeAOT DLL, then run the existing twenty-method minopts corpus and three interior/pinned cases under GCStress4. Integrated tests pass 276 Debug / 271 Release, including a failing-before correction that keeps the early driver's compCurStmt null. Commit early liveness with its mapping and evidence, then resume independent packets. All worker handoffs are collected; upstream defects remain deferred and no publication is authorized.",
+    "nextAction": "Early liveness and binary constant folding are integrated and validated. Reuse retained workers for complete fgSsaLiveness policy closure, EvalUsingMathIdentity prerequisites, and a bounded minopts loop/reference GC probe. Keep shared phase activation and integration in the parent. Current execution baseline is early-liveness-jit: twenty standard methods and three interior/pinned cases execute under GCStress4, the latter across three confirmed full collections. All prior handoffs are collected. Do not activate optimized allocation/full VN, correct deferred upstream defects, or publish.",
     "handoff": {
       "status": "parallel-prerequisite-integration",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 through turn2: early-tree liveness reviewed, native statement-cursor invariant repaired, integrated tests passed; fresh execution and commit remain. 3a2c8d9b through turn4: binary folding reviewed and complete. d62fc6a5 through turn65, 6a004941 through turn35 and942a496f through turn61 are resolved. All workers are idle, with no unread handoffs or app-native child-session coordination.",
+      "workerPackets": "610162a0 through turn2: early-tree liveness reviewed, native statement-cursor invariant repaired and fresh execution passed. 3a2c8d9b through turn4: binary folding committed as6087632. d62fc6a5 through turn65, 6a004941 through turn35 and942a496f through turn61 are resolved. All workers are idle, with no unread handoffs or app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -69,6 +69,38 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "earlyTreeLiveness": {
+        "nativeBoundary": "liveness.cpp:123-155,1025-1271,2733-2768,2852-2891; complete early policy, with mixed-mode native bodies retained.",
+        "snapshotEvidence": "artifacts\\early-liveness-validation\\source-manifest.json",
+        "snapshotHashesVerified": true,
+        "isolatedDebugPassed": 43,
+        "isolatedReleasePassed": 38,
+        "integratedDebugTests": "artifacts\\parallel-prerequisites-results\\parallel-prerequisites-debug-final.trx",
+        "integratedReleaseTests": "artifacts\\parallel-prerequisites-results\\parallel-prerequisites-release-final.trx",
+        "integratedDebugPassed": 276,
+        "integratedReleasePassed": 271,
+        "skipped": 0,
+        "regression": "artifacts\\parallel-prerequisites-results\\early-sideeffect-cursor-before.trx fails on nonnull compCurStmt; native leaves it null in the early policy. Final selection includes both side-effect and repeated-removal cursor checks.",
+        "source": "608763281fd53e7507147a6a9f61d4074f80f3a1 plus artifacts\\early-liveness-source.patch",
+        "sourcePatchSha256": "1D689E4A53B8C2A887D2C118A523516040533D9A9C7561FC23014C8463189567",
+        "managedJit": "artifacts\\early-liveness-jit\\RyuJitSharp.dll",
+        "managedJitSha256": "847C182336E95FD31B068773C171C71B12F46F81D060A3A9091C05832F74CB00",
+        "standardCapture": "artifacts\\early-liveness-corpus",
+        "interiorCapture": "artifacts\\early-liveness-interior",
+        "standardMethods": 20,
+        "interiorMethods": 3,
+        "confirmedFullCollections": 3,
+        "gcStress": 4,
+        "runAltJitCode": 1,
+        "exitCode": 0,
+        "timedOut": false,
+        "scope": "Optimized early-policy fixtures and preserved minopts runtime execution, not full optimized execution or whole-phase dump parity.",
+        "fileHashes": {
+          "sources\\Core\\jit\\compiler\\Compiler.EarlyLiveness.cs": "EF3E519AEAF7F627CBDCA89407651F7093C6E629F2D7F44F3AAA71612FF2324D",
+          "sources\\Core\\jit\\liveness\\Liveness.OrchestrationEarly.cs": "550DF12746DBCD74E5604CBEB90DADE2AF9B4DF3F53CDE1489C05C81526921F0",
+          "tests\\Core\\EarlyLivenessTests.cs": "C2C6FD2A08B8D312CC3845D0C8BF868D820D14533699DB853F4368527F61FFF4"
+        }
+      },
       "binaryConstantFolding": {
         "nativeBoundary": "valuenum.cpp:4218-4782,4902-5013,5070-5212 at the pinned oracle; includes complete scalar casts and bitcasts.",
         "source": [
@@ -5227,6 +5259,13 @@
       "native": ["src\\coreclr\\jit\\valuenum.cpp", "src\\coreclr\\jit\\valuenum.h", "src\\coreclr\\jit\\compiler.hpp"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.vn.Constants.cs", "sources\\Core\\jit\\valuenum"],
       "reconciledCommit": null
+    },
+    {
+      "area": "early-tree-liveness",
+      "native": ["src\\coreclr\\jit\\liveness.cpp"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.EarlyLiveness.cs", "sources\\Core\\jit\\liveness"],
+      "reconciledCommit": null,
+      "scope": "Complete native EarlyLiveness policy; remaining non-early tree/SSA modes are not reconciled."
     },
     {
       "area": "simd-recognition",

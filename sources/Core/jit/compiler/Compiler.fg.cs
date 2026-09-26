@@ -13583,9 +13583,6 @@ public partial class Compiler
         return fgRemoveBlocksOutsideDfsTree() ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
     }
 
-    // TODO: Port phase - fgEarlyLiveness
-    public PhaseStatus fgEarlyLiveness() => PhaseStatus.MODIFIED_NOTHING;
-
     // TODO: Port phase - fgExpandHelper
     public PhaseStatus fgExpandHelper(bool skipRarelyRunBlocks) => PhaseStatus.MODIFIED_NOTHING;
 

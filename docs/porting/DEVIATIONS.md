@@ -814,6 +814,9 @@ temporary values remain supported.
 
 Liveness policies use static interface members in place of native template
 traits. Per-block scratch and stored sets retain independent managed storage.
+The early-tree specialization preserves native conditional-definition handling,
+dead-store side effects and the null current-statement cursor. Other tree/SSA
+policies remain explicitly rejected by this driver.
 An empty bitset span is a valid initialized set when its trait environment has
 zero elements, even though the same representation also denotes uninitialized
 storage in nonempty environments; canonical assignment distinguishes those
