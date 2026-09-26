@@ -30,8 +30,8 @@
           "owner": "942a496f-db30-4389-a403-265f28fdb23c",
           "files": "New Compiler.SimdImportConstructors partials and focused tests; no shared Compiler.gt.cs or importer edits.",
           "doneWhen": "Complete 24 named constructor dependencies: 20 substantive bodies, two guarded wrappers and two existing load/store aliases, preserving native ISA and operand contracts.",
-          "status": "in-progress",
-          "result": "Constructor closure through67 frozen53D53R, seven owned files in simd-import-constructors-validation manifest.3a consumes it for xplat validation;942 independently reviews xplat while constructors stay frozen."
+          "status": "done",
+          "result": "Constructor closure through67 independently reviewed by6a through40 and integrated with portable/special import161D161R.942 xplat reviewthrough68 andclone reviewthrough69 collected."
         },
         {
           "scope": "Complete native allocation-to-stack rewriting and stack/heap morphing prerequisites.",
@@ -46,8 +46,8 @@
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
           "files": "New Compiler.HWIntrinsicImportXplat.cs and focused tests; preceding creation/fallback/metadata packet remains frozen.",
           "doneWhen": "Complete impXplatIntrinsic hwintrinsic.cpp2910-5841 with constructor dependencies; no selected-case activation or fabricated compile-time stubs.",
-          "status": "in-progress",
-          "result": "Creation/fallback/metadata integrated9564bec. Xplat through28 frozen but initial builds blocked only on24constructors; through29 object-morphing review collected. Now validating xplat with frozen942 constructor packet; no dispatcher activation.",
+          "status": "done",
+          "result": "Xplat through30 validated141D141R with constructors; independent942 reviewthrough68 found no high-confidence defect. Final integration with special import161D161R;3a special reviewthrough31 collected.",
           "deferred": "Shared generators/tables, LSRA, ObjectAllocator, EH feasibility, other targets and publication."
         },
         {
@@ -55,8 +55,8 @@
           "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
           "files": "New Compiler.HWIntrinsicImportSpecial.cs and focused tests; no dispatcher, shared constructor or table edits.",
           "doneWhen": "Complete native hwintrinsicxarch.cpp1234-2740 and required private helpers, preserving all WindowsAMD64 contracts.",
-          "status": "in-progress",
-          "result": "Assigned after38, baseline9564bec;942 owns SIMD constructors and3a owns portable import."
+          "status": "done",
+          "result": "Through39 complete special import20D20R andthrough40 constructor review collected.3a independently reviewed special importthrough31; integrated constructor/xplat/special selection161D161R."
         },
         {
           "scope": "Complete object-specific conditional clone transformations.",
@@ -78,11 +78,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Memory-VN provenance216D214R is complete; Counted's remaining entry-test difference is traced to unported VN/assertion phases (B267), with clone-ID divergence separately B268. Next collect3a's constructor+xplat validation and942's xplat review, review/integrate constructor closure, then integrate6a's xarch-special import. Collectd62 cloning and610 fullmorph/RewriteUses; do not activate object DoPhase before realEE-backed validation and complete orchestration. Only after returned packets are integrated, continue VN map-selection/traversal or generic importer closure. Preserve27optimized/32GCStress4 execution; no publication.",
+    "nextAction": "Hardware constructors and portable/xarch-special import are reviewed and integrated161D161R; generic impHWIntrinsic remains unported. Next collectd62's corrected clone packet: guardAsUnOpfix passed71D69R, but942 reviewthrough69 found self-copy removal replaced its root; d62 must use existing base-field-only BashToNOP and add identity regression.610 finishes RewriteUses; integrate andreview combined clone/morph/use closure before object DoPhase activation. Parent then completes generic hardware dispatcher and validates native-host execution, preserving27optimized/32GCStress4 behavior. No publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Collected through942:67,d62:95,610:20,3a:29,6a:38. Constructors53D53R frozen; xplat pending constructor-integrated validation and942 review. Morph36D35R reviewed, extending toRewriteUses.6a special import andd62 cloning active. Parent CoreRoot is free. No app-native sessions.",
+      "workerPackets": "Collected through942:69,d62:97,610:20,3a:31,6a:40. All hardware packets reviewed/integrated161D161R;3a/6a/942 idle/resolved. d62 fixes reviewed self-copy identity defect after71D69R;610 finishes use rewriting. Parent CoreRoot is free. No app-native sessions.",
       "preserve": "Windows-AMD64 lowering/allocation/placement/generation/emission/metadata execute27 selected optimized methods and the established32-method minopts corpus under GCStress4. Optimized runs use native JitObjectStackAllocation=0 on both sides while object analysis is incomplete. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -98,6 +98,20 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "hardwarePlatformImport": {
+        "snapshotBase": "52bd338",
+        "sourceManifest": "artifacts\\hwi-platform-import-integration\\source-manifest.json",
+        "sourceManifestSha256": "27A3BCED8494AEFBED2A74593A590774A482940CC41BA88B7C0C35CB6F9DC4CF",
+        "tests": "artifacts\\hwi-platform-import-integration\\{debug,release}.trx",
+        "debugPassed": 161,
+        "releasePassed": 161,
+        "skipped": 0,
+        "nativeBoundary": "impXplatIntrinsic hwintrinsic.cpp2910-5841;impSpecialIntrinsic hwintrinsicxarch.cpp1234-2740;24gentree SIMD constructor dependencies",
+        "review": "Independent whole-function WindowsAMD64 reviews found no high-confidence defects in constructors,xplat orspecial import. All15 root/tested overlays match;11new files are the packet.",
+        "coverageLimits": "Structural fixtures, not executed SIMD-result parity. Saturation/NaNs,reduction grouping,multi-use side effects,indexed memory offsets,masked gather,VNNI,variable comparison immediates and most ternary permutations are not comprehensively exercised.",
+        "priorEvidence": ["artifacts\\simd-import-constructors-validation\\source-manifest.json", "artifacts\\hwi-xplat-validation\\source-manifest-v2.json"],
+        "scope": "Complete WindowsAMD64 constructors and portable/special import bodies. Generic dispatcher remains unchanged and inactive; no native-host or broader target parity claim."
+      },
       "memoryVnProvenance": {
         "nativeBoundary": "valuenum.h257-272;valuenum.cpp3152-3212,7055-7100",
         "snapshotBase": "9564bec",
@@ -4990,6 +5004,14 @@
   },
   "sourceMap": [
     {
+      "area": "hardware-platform-import-and-simd-constructors",
+      "native": ["src\\coreclr\\jit\\hwintrinsic.cpp:2910-5841", "src\\coreclr\\jit\\hwintrinsicxarch.cpp:1234-2740", "src\\coreclr\\jit\\gentree.cpp:24016-24460,24753-24825,25276-25748,26315-26455,27814-28071,28152-28598,28612-28706,30066-30509"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.HWIntrinsicImportXplat.cs", "sources\\Core\\jit\\compiler\\Compiler.HWIntrinsicImportSpecial.cs", "sources\\Core\\jit\\compiler\\Compiler.SimdImportConstructors.*.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete native WindowsAMD64 portable/special import and24constructor dependencies. Load/store reuse existing value factories; remaining generic dispatcher is not activated."
+    },
+    {
       "area": "memory-vn-provenance",
       "native": ["src\\coreclr\\jit\\valuenum.h:257-272", "src\\coreclr\\jit\\valuenum.cpp:3152-3212,7055-7100"],
       "csharp": ["sources\\Core\\jit\\valuenum\\VNMemoryPhiDef.cs", "sources\\Core\\jit\\valuenum\\ValueNumStore.Queries.cs", "sources\\Core\\jit\\valuenum\\ValueNumStore.Storage.cs", "sources\\Core\\jit\\valuenum\\Globals.cs"],
@@ -5003,7 +5025,7 @@
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.HWIntrinsicImportCreation.cs", "sources\\Core\\jit\\compiler\\Compiler.HWIntrinsicImportFallback.cs", "sources\\Core\\jit\\hwintrinsic\\HWIntrinsicInfo.cs"],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Complete native creation/nonconstant fallback and metadata lookup helpers. Full importer and SIMD constructor closure still required before dispatcher activation."
+      "status": "Complete native creation/nonconstant fallback and metadata lookup helpers. SIMD constructors and portable/special import are mapped separately; generic dispatcher remains incomplete."
     },
     {
       "area": "loop-inversion-and-iteration-analysis",

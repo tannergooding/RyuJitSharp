@@ -218,9 +218,10 @@ table-driven eligibility and xarch immediate/range-check rules. SIMD/mask stack
 normalization, call return buffers and scalar argument coercion are implemented.
 SIMD creation, nonconstant shift/rotate fallback, signature-derived SIMD size
 lookup and AVX-only compatibility flags are also implemented.
-They do not activate `impHWIntrinsic`: the complete generic and
-special-import/fallback closure remains incomplete. Existing hardware-code
-differences are not accepted parity exceptions.
+They do not activate `impHWIntrinsic`. Portable vector and xarch-special import
+bodies and their SIMD constructors are now implemented;
+the generic dispatcher and its runtime validation remain outstanding. Existing
+hardware-code differences are not accepted parity exceptions.
 
 Local-address values retain their owning statement/operand slot rather than a
 native `GenTree**`. Unary and binary operands use direct slot identifiers;

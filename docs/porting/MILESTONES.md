@@ -15,6 +15,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Portable and xarch hardware-import paths
+
+The portable vector and xarch-special import implementations now have their
+SIMD constructor dependencies, including conversions, saturation, lane
+rearrangement, reductions and memory operations. Import paths preserve native
+ISA checks, operand evaluation order and fallback decisions.
+
+The generic hardware dispatcher remains inactive. Structural coverage of these
+primitives does not establish executed SIMD-result or native-host parity.
+
 ## 2026-09-26: Hardware creation and fallback prerequisites
 
 Hardware import now has native SIMD creation, nonconstant shift/rotate fallback,
