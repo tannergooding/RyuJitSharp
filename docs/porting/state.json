@@ -23,21 +23,21 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "VN dead-store removal validated908D887R,15 established captures and a separate4-body effect/overflow probe. Neither JIT removes probe stores; positive transformation coverage remains IR-only. Commit complete activation, then integrate frozen loop unrolling after942 review and collect redundant-branch closure. No broad phase/code parity claim.",
+      "parentScope": "Loop unrolling and coupled threaded-folding repair validated1093D1068R and17 captures:113bodies/67unroll completions/9changed. Nested now matches native29bytes; Counted retains17. Commit exact7source/test overlays and docs, then integrate reviewed redundant-branch/VN-relation packet. No broad parity or throughput claim.",
       "parallelPackets": [
         {
           "scope": "Complete native optUnrollLoops and required local helper/visitor closure.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
           "files": "New Compiler.LoopUnrolling*.cs and LoopUnrollingTests.cs only.",
-          "status": "in-progress",
-          "remainingBoundary": "d62 through128 frozen4file packet on953c284:optimizer.cpp670-1769 andflowgraph.cpp6328-6729,26D26R. Manifest artifacts\\loop-unrolling-validation\\source-manifest.json;942 reviews complete native closure. Production optUnrollLoops inactive; EH duplication implemented but not exercised by focused fixtures."
+          "status": "done",
+          "remainingBoundary": "d62 through131 corrected B284 with2 failing-before cases. Parent activated complete entry; runtime exposed B285 threaded scalar folding, fixed across constant kinds with6 failing-before cases. Integrated1093D1068R and17captures pass. Nested matches native29bytes; optimized unrolled loops pass GCStress4. EH duplication execution gap remains."
         },
         {
           "scope": "Complete redundantbranchopts.cpp and required VN relational predicates.",
           "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
           "files": "New Compiler.RedundantBranches*.cs, RedundantBranchTests.cs, ValueNumStore.RelopRelations.cs, native relation enum and ValueNumRelopRelationTests.cs; existing VNFuncIsComparison access modifier only.",
           "status": "in-progress",
-          "remainingBoundary": "After6a:81, ownership expanded to native valuenum.h1235-1264,2582-2602 and valuenum.cpp7443-7627. Reuse existing comparison predicate; report additional shared prerequisites. Keep production optRedundantBranches inactive."
+          "remainingBoundary": "6a through83 frozen full redundantbranchopts.cpp/VN-relop packet onab27703,34D32R. Manifest artifacts\\redundant-branch-validation\\packet.json;942 reviewthrough98 found no high-confidence defect. Ready for parent integration; public optRedundantBranches remains inactive. Complex global-phi execution remains unverified."
         },
         {
           "scope": "Complete VN-based dead-store removal and required helper/visitor closure.",
@@ -215,7 +215,7 @@
         }
       ],
       "deferred": [
-        "VN, global assertion propagation, range elimination, VN copy propagation and VN dead-store removal are active; redundant branches and loop unrolling remain inactive.",
+        "VN, global assertion propagation, range elimination, VN copy propagation, VN dead-store removal and loop unrolling are active; redundant branches remain inactive.",
         "Broader optimized execution and unfinished optimization phases beyond the current backend frontier.",
         "Full EH-funclet and hardware-import parity are subsequent execution-capability packets, not gates on the first scalar minopts backend path.",
         "Non-xarch hardware-intrinsic folding and hashBv iterator/countBits/setLowest APIs. Native vector Intersects/XOR defects are recorded in B247/B246; their corrected algorithms are not authorized and those entire vector operations are deferred.",
@@ -225,11 +225,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit complete VN dead-store activation:908D887R,15captures and3a probe through76 collected. Probe effects/overflow pass but neither JIT removes stores; do not claim positive runtime-removal parity. Exclude6a/d62 WIP. Collect942 review of d62:128 frozen loop-unrolling packet, integrate complete body and production entry on new committed baseline, then preserve execution configurations.6a continues redundant-branch/VN-relation closure. Parent snapshot contains exact DSE activation; CoreRoot free. B145/B282 baseline failures and B268/B281/B283 nonblocking parity work remain; no remote publication.",
+    "nextAction": "Commit fully validated loop unrolling plus coupled B285 folding fix:1093D1068R and17 captures using artifacts\\loop-unrolling-threaded-jit\\RyuJitSharp.dll; Nested/Counted match native29/17bytes. Exact7overlays in source-manifest-threaded.json; exclude redundant-branch/VN-relation WIP. Then integrate6a:83 frozen redundant-branch packet (942 reviewthrough98 clear), add production-entry coverage and preserve all17 configurations from artifacts\\loop-unrolling-phase-validation\\capture-configurations.json. Do not reuse failed initial capture or old unthreaded JIT. CoreRoot free; no remote publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "3a through76 DSE integrated908D887R/15captures plus bounded4-body probe, no positive removals. d62 through128 loop-unrolling packet frozen26D26R;942 reviewing.6a through81 continues redundant-branch/VN-relation closure.3a/610/d62 idle, CoreRoot free. No app-native sessions.",
+      "workerPackets": "d62 through131 unrolling integrated with B284/B285 repairs,1093D1068R/17captures.6a through83 redundant-branch/VN-relop packet frozen34D32R;942 reviewthrough98 clear.3a/610/d62/6a/942 idle, all handoffs collected. CoreRoot free. No app-native sessions.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -245,6 +245,23 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "loopUnrollingActivation": {
+        "snapshotBase": "1a08f81",
+        "sourceManifest": "artifacts\\loop-unrolling-phase-validation\\source-manifest-threaded.json",
+        "debugPassed": 1093,
+        "releasePassed": 1068,
+        "skipped": 0,
+        "selection": "Prior exact integration selection plus all LoopUnrollingTests and ScalarFoldingTests; artifacts\\loop-unrolling-phase-validation\\selection.runsettings.",
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\loop-unrolling-threaded-{Debug,Release}.trx",
+        "nativeAot": "artifacts\\loop-unrolling-threaded-jit\\RyuJitSharp.dll",
+        "runtimeEvidence": "artifacts\\loop-unrolling-phase-validation\\runtime-validation.json",
+        "configurations": "artifacts\\loop-unrolling-phase-validation\\capture-configurations.json",
+        "runtime": "All17 configurations execute113 positive-sized bodies with exact JIT identity, successful exits and no skip/failure markers.67 FullOpts compilations complete unrolling and subsequent optimization phases;9 unroll phases change. Adds optimized unrolled GC loops under GCStress4 to the prior16 configurations; stack allocation retained.",
+        "comparison": "artifacts\\loop-unrolling-phase-validation\\aligned-loop-comparison.json: Nested32->29bytes, exactly native; Counted17 remains exactly native. Conditional26 andMix101 do not match native bytes (native26/104). No general code/metadata/dump parity or throughput claim.",
+        "regressions": "3 public-entry cases fail against old stub; all28 unrolling cases now run. B284 has2 failing-before full-width increment cases. Initial runtime capture aborted during threaded AP folding; B285 has6 failing-before constant-kind/owner/traversal regressions. Constructor None-mode invariant retained.",
+        "review": "942 through97 reviewed full optimizer.cpp670-1769/flowgraph.cpp6328-6729 closure; only B284 found and corrected by d62 through131. Parent traced and repaired shared scalar folding exposed by activation.",
+        "scope": "Seven exact overlays; redundant-branch/VN-relop WIP excluded. Native EH duplication implemented but not covered by focused execution."
+      },
       "vnDeadStoreActivation": {
         "snapshotBase": "953c284",
         "sourceManifest": "artifacts\\vn-dead-store-phase-validation\\source-manifest.json",
@@ -6501,6 +6518,13 @@
       "native": ["src\\coreclr\\jit\\rangecheck.h", "src\\coreclr\\jit\\rangecheck.cpp", "src\\coreclr\\jit\\assertionprop.cpp"],
       "csharp": ["sources\\Core\\jit\\rangecheck\\", "sources\\Core\\jit\\compiler\\Compiler.ap.Relational.cs"],
       "status": "Complete range-analysis dependency and relational application; RangeProperties remains canonical in the relational partial. Global assertion and range-check elimination phases are active.",
+      "reconciledCommit": null
+    },
+    {
+      "area": "loop-unrolling",
+      "native": ["src\\coreclr\\jit\\optimizer.cpp:670-1769", "src\\coreclr\\jit\\flowgraph.cpp:6328-6729"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.LoopUnrolling.cs", "sources\\Core\\jit\\compiler\\Compiler.LoopUnrolling.IterationCount.cs", "sources\\Core\\jit\\compiler\\Compiler.LoopUnrolling.Duplication.cs"],
+      "status": "Complete active native unrolling and natural-loop duplication, reusing existing CFG/EH cloning. Full-width increment guard retained; native natural-loop methods reside in compiler partials.",
       "reconciledCommit": null
     },
     {

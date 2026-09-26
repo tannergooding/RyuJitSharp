@@ -15,6 +15,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Native loop unrolling
+
+Loop unrolling now uses native iteration proofs, growth limits and duplication
+rules, including secondary exits, nested-loop retries and unreachable-loop
+cleanup. `Nested` shrinks from 32 to 29 bytes and now matches native's complete
+machine-code body; `Counted` retains its matching 17-byte body. Other code and
+diagnostic differences remain, and no throughput improvement is claimed.
+
+Optimized unrolled loops execute through forced collections and GCStress4.
+Activation also exposed scalar constant folding during threaded assertion
+remorphing; replacement now carries the existing threading context while owners
+and remorphing retain responsibility for links. EH-region duplication is ported
+but still lacks focused execution evidence.
+
 ## 2026-09-26: VN-based dead-store removal
 
 VN-based dead-store removal now applies native conservative-value equality to

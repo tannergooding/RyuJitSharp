@@ -4330,7 +4330,7 @@ public partial class Compiler
                     {
                         JITDUMP("\nFolding operator with constant nodes into a constant:\n");
                         DISPTREE(tree);
-                        var result = new GenTreeIntCon(TYP_BYREF, 0, null, tree);
+                        var result = new GenTreeIntCon(TYP_BYREF, 0, null, tree, fgNodeThreading);
                         fgUpdateConstTreeValueNumber(result);
                         JITDUMP("\nFolded to null byref:\n");
                         DISPTREE(result);
@@ -4790,7 +4790,7 @@ public partial class Compiler
     {
         JITDUMP("\nFolding operator with constant nodes into a constant:\n");
         DISPTREE(tree);
-        var result = new GenTreeIntCon(TYP_INT, value, fields, tree);
+        var result = new GenTreeIntCon(TYP_INT, value, fields, tree, fgNodeThreading);
         fgUpdateConstTreeValueNumber(result);
         JITDUMP("Bashed to constant:\n");
         DISPTREE(result);
@@ -4812,9 +4812,9 @@ public partial class Compiler
         JITDUMP("\nFolding operator with constant nodes into a constant:\n");
         DISPTREE(tree);
 #if TARGET_64BIT
-        GenTree result = new GenTreeIntCon(TYP_LONG, (nint)value, fields, tree);
+        GenTree result = new GenTreeIntCon(TYP_LONG, (nint)value, fields, tree, fgNodeThreading);
 #else
-        GenTree result = new GenTreeLngCon(value, tree);
+        GenTree result = new GenTreeLngCon(value, tree, fgNodeThreading);
 #endif
         fgUpdateConstTreeValueNumber(result);
         JITDUMP("Bashed to constant:\n");
@@ -4834,7 +4834,7 @@ public partial class Compiler
             value = (float)value;
         }
 
-        var result = new GenTreeDblCon(tree.Type, value, tree);
+        var result = new GenTreeDblCon(tree.Type, value, tree, fgNodeThreading);
         fgUpdateConstTreeValueNumber(result);
         JITDUMP("Bashed to constant:\n");
         DISPTREE(result);

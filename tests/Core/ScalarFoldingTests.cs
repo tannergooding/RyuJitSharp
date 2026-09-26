@@ -16,6 +16,55 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ScalarFoldingTests
 {
+    [TestCase(TYP_INT)]
+    [TestCase(TYP_LONG)]
+    [TestCase(TYP_FLOAT)]
+    [TestCase(TYP_DOUBLE)]
+    [TestCase(TYP_REF)]
+    [TestCase(TYP_BYREF)]
+    public static void ThreadedConstantFoldingPreservesIdentityAndAssertionTraversal(var_types type)
+    {
+        WithCompiler(compiler =>
+        {
+            compiler.fgNodeThreading = NodeThreading.AllTrees;
+            GenTree left = type switch
+            {
+                TYP_FLOAT or TYP_DOUBLE => new GenTreeDblCon(type, 1.0),
+                TYP_REF or TYP_BYREF => compiler.gtNewIconNode(TYP_REF, 0),
+                _ => compiler.gtNewIconNode(type, 1),
+            };
+            GenTree right = type switch
+            {
+                TYP_FLOAT or TYP_DOUBLE => new GenTreeDblCon(type, 2.0),
+                TYP_REF => compiler.gtNewIconNode(TYP_REF, 0),
+                TYP_BYREF => compiler.gtNewIconNode(TYP_I_IMPL, 1),
+                _ => compiler.gtNewIconNode(type, 2),
+            };
+            var tree = compiler.gtNewBinaryNode(type is TYP_REF ? GT_EQ : GT_ADD,
+                type is TYP_REF ? TYP_INT : type, left, right);
+            var next = compiler.gtNewIconNode(TYP_INT, 0);
+            var parent = compiler.gtNewBinaryNode(GT_COMMA, TYP_INT, tree, next);
+            var statement = compiler.gtNewStmt(parent);
+            compiler.fgSetStmtSeq(statement);
+
+            var result = compiler.gtFoldExprBinaryConst(tree.AsOp());
+            Assert.That(result.Oper.IsConst, Is.True);
+            Assert.That(result, Is.Not.SameAs(tree));
+#if DEBUG
+            Assert.That(result.TreeId, Is.EqualTo(tree.TreeId));
+#endif
+            Assert.That(tree.Next, Is.SameAs(next));
+            Assert.That(compiler.optAssertionProp_Update(result, tree, statement), Is.SameAs(result));
+            Assert.That(parent.AsOp().Op1, Is.SameAs(result));
+            Assert.That(result.Next, Is.SameAs(next));
+
+            compiler.fgSetStmtSeq(statement);
+            Assert.That(statement.TreeListBegin, Is.SameAs(result));
+            Assert.That(result.Next, Is.SameAs(next));
+            Assert.That(next.Prev, Is.SameAs(result));
+        });
+    }
+
     [TestCase(GT_ADD, 0, false, true)]
     [TestCase(GT_ADD, 0, true, true)]
     [TestCase(GT_SUB, 0, false, true)]

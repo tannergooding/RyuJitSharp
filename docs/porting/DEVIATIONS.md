@@ -597,6 +597,18 @@ The bounded runtime probe preserves effects and exceptions but triggers no
 removals in either JIT. Positive-removal execution and code parity remain
 unestablished; focused IR cases exercise the transformation.
 
+Native loop unrolling is active, including iteration proofs, cost limits,
+secondary exits, nested-loop retries and natural-loop duplication. The latter
+methods are mapped to the compiler's unrolling partials and reuse existing
+CFG/EH cloning primitives. EH-region duplication remains unexercised by focused
+fixtures. `Nested` now matches native's 29 emitted bytes; that does not establish
+general loop, dump or metadata parity.
+
+Scalar constant-fold replacements accept the compiler's current node-threading
+mode. They do not transfer ownership or links implicitly: assertion application
+retains the forward traversal cursor, and statement remorphing rebuilds links.
+The unthreaded-source invariant is still enforced when the mode is `None`.
+
 VN-based folding and insertion-time statement morphing are also complete
 prerequisites. Local-address folds retain the native 16-bit offset invariant;
 the native constructor's unsigned parameter does not imply wider field storage.

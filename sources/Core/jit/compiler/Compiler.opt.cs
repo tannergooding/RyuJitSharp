@@ -243,9 +243,6 @@ public partial class Compiler
     // TODO: Port phase - optBoundsCheckCoalesce
     public PhaseStatus optBoundsCheckCoalesce() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port phase - optUnrollLoops
-    public PhaseStatus optUnrollLoops() => PhaseStatus.MODIFIED_NOTHING;
-
     // TODO: Port phase - optIfConversion
     public PhaseStatus optIfConversion() => PhaseStatus.MODIFIED_NOTHING;
 
