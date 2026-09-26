@@ -23,7 +23,7 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "If-conversion activation and B287/B291 repairs validated1240D1197R and20captures124bodies/78phase completions/9SELECTs. The99-case return probe passes native/baseline/current; final3 bodies and SELECT/RETURN costs match native. Commit exact6 source overlays and tracking, then integrate frozen CSE helper5 and SSA7 without overwriting ongoing heuristic work. Loop-cloning6 is diagnostic-complete and frozen.",
+      "parentScope": "If-conversion and B287/B291 committed57401e2. Frozen CSE helper5 integrated42D42R after fast iteration and full-analysis checkpoints; commit this prerequisite without activating CSE, preserving newer standard selection/rewrite and SSA WIP. Loop-cloning6 is diagnostic-complete and frozen.",
       "parallelPackets": [
         {
           "scope": "Complete Boolean optimization with the native CCMP switch-detection prerequisite.",
@@ -51,7 +51,7 @@
           "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
           "files": "New Compiler.CSE.Candidates*.cs/Compiler.CSE.Dataflow*.cs/CSECandidateTests.cs; existing CSEdsc.cs and CSE_HeuristicCommon.cs explicitly authorized.",
           "status": "in-progress",
-          "remainingBoundary": "Candidate prerequisites committed115bd6b. Helper5 frozen in heuristic-115bd6b-packet.json passes17D17R;942:108 review found no high-confidence defect. Preserve frozen bytes for integration while6a completes shared heuristic state/contracts and selection/rewrite dependencies with3a incremental SSA. CSE_HeuristicCommon extension authorized; public CSE inactive."
+          "remainingBoundary": "Candidate prerequisites committed115bd6b; helper5 integrated42D42R on57401e2 with reviewed frozen bytes. Standard selection/rewrite packet36D36R remains WIP:942:111 found missing sort/per-occurrence diagnostics; CopyReg assertion removal and Initialize virtual/override are required integration gates. Complete those plus alternate modes before public activation."
         },
         {
           "scope": "Complete native if-conversion descriptor, transforms and production phase.",
@@ -260,7 +260,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Integrate frozen CSE helper5 from artifacts\\cse-validation\\heuristic-115bd6b-packet.json and its heuristic-115bd6b snapshot, preserving newer root heuristic WIP;17D17R and942:108 review complete. Then integrate3a SSA7 (30D30R,942:110 clear review) and activate collectedd62:146 diagnostic-complete cloning6 (31D30R). Parent snapshot82b9829+ifconversion6; final JIT artifacts\\ifconversion-cost-jit\\RyuJitSharp.dll and source-manifest-cost.json. Preserve20 configurations. Fast wrappers committedc9c6ecb; use -fast/direct analyzer+documentation overrides for inner loops, full analysis before freeze. CoreRoot free; no publication.",
+    "nextAction": "Integrate3a frozen SSA7 from artifacts\\incremental-ssa-validation\\source-manifest.json (30D30R,942:110 clear review), preserving6a standard heuristic WIP. Helper5 validated on57401e2 at artifacts\\cse-helper-integration\\source-manifest.json,42D42R. Standard rewrite36D36R needs remaining diagnostics, CopyReg cross-operator assertion correction and Initialize virtual/override wiring; public CSE inactive. Then activate diagnostic-complete cloning6 (d62:146,31D30R) with20-config execution matrix. Latest executing JIT remains ifconversion-cost-jit. Use fast iterations/full freeze checks. CoreRoot free; no publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
@@ -280,6 +280,18 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "cseHeuristicHelpers": {
+        "snapshotBase": "57401e2",
+        "sourceManifest": "artifacts\\cse-helper-integration\\source-manifest.json",
+        "debugPassed": 42,
+        "releasePassed": 42,
+        "skipped": 0,
+        "selection": "17 existing candidate/initialization/rewrite-helper cases plus25 if-conversion/cost cases.",
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\cse-helper-full-{Debug,Release}.trx",
+        "review": "942:108 found no high-confidence defect in the five frozen helper files. Native initialization/order, weighted use repair, nested definitions, side-effect ordering and comma VNs reviewed.",
+        "scope": "Primitive-only prerequisite; public CSE remains inactive. No new NativeAOT or runtime parity claim.",
+        "gaps": "Nonempty exception-set comma VNs, mixed nested definitions/effects and EVEX/APX frame-pressure classifications lack focused coverage."
+      },
       "ifConversionActivation": {
         "snapshotBase": "82b9829",
         "sourceManifest": "artifacts\\ifconversion-phase-validation\\source-manifest-cost.json",
@@ -6669,6 +6681,13 @@
       "native": ["src\\coreclr\\jit\\optimizebools.cpp:20-429,450-1486,1619-1883", "src\\coreclr\\jit\\switchrecognition.cpp:70-103,123-194,212-344,366-478"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.BooleanOptimization*.cs", "sources\\Core\\jit\\compiler\\Compiler.SwitchRecognition.Detection.cs", "sources\\Core\\jit\\compiler\\Compiler.SwitchOptimization.cs:fgFoldCondToReturnBlock"],
       "status": "Complete Boolean phase active. Its switch dependency remains an explicit complete detection-only entry; the complete conversion-mode phase is now separately active.",
+      "reconciledCommit": null
+    },
+    {
+      "area": "cse-cost-and-rewrite-helpers",
+      "native": ["src\\coreclr\\jit\\optcse.cpp:123-205,308-378,3959-3977,3994-4266,5428-5532", "src\\coreclr\\jit\\optcse.h:329-359"],
+      "csharp": ["sources\\Core\\jit\\optcse\\CSE_Heuristic.Initialization.cs", "sources\\Core\\jit\\compiler\\Compiler.CSE.HeuristicCost.cs", "sources\\Core\\jit\\compiler\\Compiler.CSE.RewriteHelpers.cs"],
+      "status": "Complete initialization, cost ordering, unmarking and side-effect extraction prerequisites. Selection, SSA rewriting and production phase activation remain separate.",
       "reconciledCommit": null
     },
     {

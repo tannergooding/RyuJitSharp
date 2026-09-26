@@ -15,6 +15,14 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: CSE cost and rewrite prerequisites
+
+CSE support now initializes the native cost model, orders candidates by execution
+or size cost, and extracts retained side effects when removing CSE uses. Weighted
+use counts, nested definitions, evaluation order and comma value numbers are
+preserved. Candidate selection and SSA rewriting remain separate prerequisites;
+the production CSE phase is still inactive.
+
 ## 2026-09-26: If-conversion
 
 If-conversion now replaces eligible conditional stores and return diamonds with

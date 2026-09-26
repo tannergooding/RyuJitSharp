@@ -627,8 +627,11 @@ CSE candidate discovery/indexing, descriptor local counting, tree eligibility
 and availability/dataflow are implemented without activating the CSE phase.
 Managed reference arrays replace internal descriptor-pointer tables; both
 tables reference the same descriptors and retain native occurrence ordering.
-No unmanaged-layout consumer is changed. Heuristic selection and rewriting
-remain incomplete; helper coverage is not CSE execution parity.
+No unmanaged-layout consumer is changed. Native cost initialization, candidate
+ordering, use-count unmarking and ordered side-effect extraction are implemented.
+Nested CSE definitions remain in the tree and comma VNs retain the native
+composition rules. Heuristic selection and SSA rewriting remain incomplete;
+helper coverage is not CSE execution parity.
 
 Boolean optimization is active, including conditional/range folding, compare
 chains and native Debug GC-stress bookkeeping. The APX switch-recognition
