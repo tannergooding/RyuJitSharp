@@ -15,6 +15,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Early propagation
+
+Early propagation now follows SSA copies back to constant array allocations and
+removes bounds checks proved safe before value numbering. It also folds eligible
+explicit null checks into later accesses while preserving exception ordering,
+side-effect barriers and handler-visible stores.
+
+The production phase is enabled in the established optimized execution corpora.
+Range and fixed-array probes remove the same checks as native while preserving
+the surrounding accesses and effects. Positive null-check-folding execution
+coverage and full dump/code parity remain outstanding.
+
 ## 2026-09-26: Loop hoisting
 
 Loop-invariant expressions now move into loop preheaders through the production

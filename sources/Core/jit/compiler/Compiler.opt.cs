@@ -231,9 +231,6 @@ public partial class Compiler
     // TODO: Port phase - optBoundsCheckCoalesce
     public PhaseStatus optBoundsCheckCoalesce() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port phase - optEarlyProp
-    public PhaseStatus optEarlyProp() => PhaseStatus.MODIFIED_NOTHING;
-
     // TODO: Port phase - optInductionVariables
     public PhaseStatus optInductionVariables() => PhaseStatus.MODIFIED_NOTHING;
 

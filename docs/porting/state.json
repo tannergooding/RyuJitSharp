@@ -23,7 +23,7 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Complete hoisting6 production activation integrated208D128R and20configs124bodies78phase completions; JITD0A18A45.942:131 confirms four matching native hoists/preheaders and restores range B300 weighted uses; Boolean/switch return merging remains. B302/B303 corrected. Commit then integrate3a early propagation.",
+      "parentScope": "Early propagation4 integrated231D151R and20configurations124bodies78phases.3a:111 native comparison confirms matching range1 and fixed-array8 check removals, retained effects and unchanged range/Boolean/switch methods. Commit, then integrate reviewed d62 bounds-coalescing2.",
       "parallelPackets": [
         {
           "scope": "Complete Boolean optimization with the native CCMP switch-detection prerequisite.",
@@ -92,8 +92,15 @@
           "scope": "Complete native early propagation and required helper closure.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
           "files": "New Compiler.EarlyProp*.cs and EarlyPropagationTests.cs only; parent owns existing optEarlyProp stub.",
+          "status": "done",
+          "remainingBoundary": "Parent activated actual public entry on16b2066;231D151R and20captures pass. One positive production-entry test fails at old stub.942:132 complete native review clear;3a:111 confirms matching range1/object8 check-to-NOP transitions and retained effects. Positive null-check-fold execution remains unestablished."
+        },
+        {
+          "scope": "Complete native bounds-check coalescing and required local helper closure.",
+          "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
+          "files": "New Compiler.BoundsCheckCoalescing*.cs and BoundsCheckCoalescingTests.cs; parent owns existing optBoundsCheckCoalesce stub.",
           "status": "in-progress",
-          "remainingBoundary": "Private prerequisite packet based on9ebf969; collect frozen manifest/native spans/tests before parent production activation. Shared-file additions require approval."
+          "remainingBoundary": "d62:158 frozen2files16D16R in artifacts\\bounds-coalescing-validation\\source-manifest.json;942:133 native review clear. Native diagnostic ordering negative control passes after correction. Await parent integration after earlyprop commit; public phase inactive."
         },
         {
           "scope": "Complete native if-conversion descriptor, transforms and production phase.",
@@ -302,11 +309,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit validated hoisting6 plus tracking, then collect3a early-propagation private closure and integrate the actual production optEarlyProp entry after review. Hoisting source-manifest.json verified against root/snapshot;208D128R and20configs124bodies78phases pass.942:131 native-phase-comparison.json confirms four matching hoists and resolves range B300 occurrences; Boolean/switch return merging and B301 remain. Preserve early-propagation WIP outside hoisting commit. No publication.",
+    "nextAction": "Commit validated earlyprop4 plus tracking, then integrate frozen/reviewed d62:158 bounds-coalescing2 via public optBoundsCheckCoalesce at Compiler.comp.cs:3618. Earlyprop231D151R/20configs124bodies78phases and3a:111 native positive comparison complete. For coalescing, rename private core to public production name, remove Compiler.opt.cs stub, use direct production tests, and validate on the new committed baseline. Preserve phase order; no publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "CSE committed9ebf969; all its packets collected. Hoistingd62:156 integrated with parent corrections;942:131 comparison collected.3a early-propagation lane active on9ebf969. d62/610/6a/942 idle. CoreRoot free; no app-native sessions.",
+      "workerPackets": "Earlyprop3a:109 packet,942:132 review and3a:111 native comparison collected. d62:158 bounds-coalescing2 frozen and942:133 review collected. All workers idle with no unread results. CoreRoot free; no app-native sessions.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -322,6 +329,21 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "earlyPropagation": {
+        "snapshotBase": "16b2066",
+        "sourceManifest": "artifacts\\early-propagation-integration\\source-manifest.json",
+        "debugPassed": 231,
+        "releasePassed": 151,
+        "skipped": 0,
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\earlyprop-integrated-{Debug,Release}.trx",
+        "nativeAot": "artifacts\\early-propagation-jit\\RyuJitSharp.dll",
+        "sha256": "974A54B1006603D1BEF626936A4A67B088A429779DD884AB7D0DC694AD8D05B3",
+        "runtime": "artifacts\\early-propagation-integration\\runtime-validation.json:20configurations,124positive bodies,78early-propagation completions; managed execution without fallback.",
+        "regressions": "Same-block null-check folding test fails with MODIFIED_NOTHING at old public stub; passes through complete production entry.",
+        "review": "942:132 reviewed all nine native functions and enum/map contract; no high-confidence defect or missing path. Root replacement uses the existing native-faithful range-check removal return contract.",
+        "comparison": "artifacts\\early-propagation-integration\\native-phase-comparison.json:matching check-to-NOP transitions and retained effects for Range.Main1 and FixedValueArray8 checks across6statements; other selected range/Boolean/switch phases unchanged. Input hashes/flags match; preexisting local/cost differences are explicitly identified.",
+        "gaps": "Focused cases do not exhaust preserved extracted effects or intervening EH/effect boundaries; no positive native null-check-folding capture established. Phase evidence is not codegen parity."
+      },
       "loopHoisting": {
         "snapshotBase": "9ebf969",
         "sourceManifest": "artifacts\\loop-hoisting-activation\\source-manifest.json",
@@ -5687,6 +5709,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "early-propagation",
+      "native": ["src\\coreclr\\jit\\earlyprop.cpp:17-666", "src\\coreclr\\jit\\compiler.h:8324-8346"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.EarlyProp.cs", "sources\\Core\\jit\\compiler\\Compiler.EarlyProp.NullChecks.cs"],
+      "status": "Complete production phase for bounded SSA array-length propagation and ordered null-check folding; selected native-host execution established.",
+      "reconciledCommit": null
+    },
     {
       "area": "loop-hoisting",
       "native": ["src\\coreclr\\jit\\optimizer.cpp:3595-4045,4048-4169,4258-4290,4352-5045,5253-5286", "src\\coreclr\\jit\\compiler.h:7650-7734"],
