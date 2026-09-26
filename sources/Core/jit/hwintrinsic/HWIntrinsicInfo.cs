@@ -343,6 +343,8 @@ public readonly partial struct HWIntrinsicInfo
 
     public static bool ReturnsPerElementMask(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_ReturnsPerElementMask) != 0;
 
+    public static bool IsFloatingPointUsed(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_NoFloatingPointUsed) == 0;
+
 #if TARGET_XARCH
     public static bool AvxOnlyCompatible(NamedIntrinsic id) =>
         (lookupFlags(id) & HW_Flag_AvxOnlyCompatible) != 0;

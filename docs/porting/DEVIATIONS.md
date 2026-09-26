@@ -221,10 +221,15 @@ table-driven eligibility and xarch immediate/range-check rules. SIMD/mask stack
 normalization, call return buffers and scalar argument coercion are implemented.
 SIMD creation, nonconstant shift/rotate fallback, signature-derived SIMD size
 lookup and AVX-only compatibility flags are also implemented.
-They do not activate `impHWIntrinsic`. Portable vector and xarch-special import
-bodies and their SIMD constructors are now implemented;
-the generic dispatcher and its runtime validation remain outstanding. Existing
-hardware-code differences are not accepted parity exceptions.
+Portable vector and xarch-special import bodies and their SIMD constructors are
+active through the complete Windows-x64 generic dispatcher. Table eligibility
+preserves both `SpecialImport` and `InvalidNodeId`, as native does. GS preparation
+initializes cookies and shadows vulnerable parameters before code generation.
+Nonconstant hardware execution covers vector construction, addition, lane access,
+shifts, memory operations, BMI extraction and CRC, including GC-stress runs.
+Six hardware helpers and the constant `FoldHardware` method have exact native
+bytes; the stack-buffer case and other remaining code/dump differences are not
+accepted parity exceptions. Other-target execution remains unvalidated.
 
 Local-address values retain their owning statement/operand slot rather than a
 native `GenTree**`. Unary and binary operands use direct slot identifiers;

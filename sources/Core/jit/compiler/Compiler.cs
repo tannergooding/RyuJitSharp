@@ -308,7 +308,7 @@ public partial class Compiler
     public GSCookie gsGlobalSecurityCookieVal;
 
     /// <summary>Table used by shadow param analysis code</summary>
-    public ShadowParamVarInfo? gsShadowVarInfo;
+    public ShadowParamVarInfo[]? gsShadowVarInfo;
 
     public int gsShadowVarInfoCount;
 
@@ -2500,9 +2500,6 @@ public partial class Compiler
 
     public unsafe int typGetObjLayoutNum(CORINFO_CLASS_HANDLE classHandle)
         => typClassLayoutTable.GetObjLayoutNum(this, classHandle);
-
-    // TODO: Port phase - gsPhase
-    public PhaseStatus gsPhase() => PhaseStatus.MODIFIED_NOTHING;
 
     // TODO: Port phase - rangeCheckPhase
     public PhaseStatus rangeCheckPhase() => PhaseStatus.MODIFIED_NOTHING;

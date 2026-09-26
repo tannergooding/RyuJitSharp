@@ -12,7 +12,7 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete independent SIMD constructor/import and object clone/morph closures while tracing concrete remaining optimized-code differences after loop inversion.",
+      "scope": "Activate complete hardware import with real native-host execution; independently complete object phase orchestration and VN map algebra prerequisites.",
       "doneWhen": [
         "Preserve the completed loop-inversion/iteration-analysis contract and identify the first missing native transformation behind a concrete optimized-code difference.",
         "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
@@ -23,8 +23,36 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Hardware prerequisites integrated34101c9. Complete native WindowsAMD64 impHWIntrinsic and getBaseTypeFromArgIfNeeded, preserving immediate/fallback/mustExpand and deferred-user-call contracts.3a owns focused dispatcher fixtures; parent owns shared entrypoint and NativeAOT/native-host validation. In parallel review/validate returned complete object clone/morph/use prerequisites before their phase activation.",
+      "parentScope": "Hardware dispatcher and GS preparation are integrated with639D614R and final exact-source execution. Object orchestration/stack-array expansion and threaded scalar-init correction are integrated161D158R with final native-host captures, ready for their separate commit. Finish returned VN review fixes and commit that prerequisite closure without phase activation.",
       "parallelPackets": [
+        {
+          "scope": "Generic hardware-dispatch regression fixtures, including InvalidNodeId-only portable operations.",
+          "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
+          "files": "tests\\Core\\HWIntrinsicDispatchTests.cs",
+          "status": "done",
+          "result": "Collected through35:10D10R; InvalidNodeId-only regression fails1/1 with original mask and passes with corrected mask. Integrated635D610R with GS."
+        },
+        {
+          "scope": "Complete native GS phase required by the returned nonconstant hardware corpus.",
+          "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
+          "files": "New Compiler.GS partials, GS tests and exact gsPhase stub in Compiler.cs; no native-host execution in worker.",
+          "status": "done",
+          "result": "GS through46 complete with native ABI predicate; focused14D14R and integrated639D614R. Corpus8/8 executes in FullOpts andbothGCStress4 modes. Independent review collected throughd62:101. Six hardware helpers match native bytes."
+        },
+        {
+          "scope": "Complete precise/physical VN map algebra, local/memory PHIs and fixed-point budgets.",
+          "owner": "942a496f-db30-4389-a403-265f28fdb23c",
+          "files": "ValueNumStore.Maps/Diagnostics partials, storage and memory-SSA VN definitions, focused tests; complete optRecordLoopMemoryDependence and vnPrint/vnDump prerequisites.",
+          "status": "integration-pending",
+          "remainingBoundary": "942 fixed both3a review findings through75, with negative regressions and19D17R. Fifth dependency insertion and native UCRT floating text are corrected. Refresh broader integration and commit; no VN phase activation."
+        },
+        {
+          "scope": "Object phase orchestration and stack-array expansion regression fixtures.",
+          "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
+          "files": "ObjectAllocator.cs/phase tests frozen; object corpus returned.610 now owns StackArrayExpansionTests.cs; parent owns Compiler.StackArrayExpansion.cs and Compiler.fg.cs stub removal.",
+          "status": "validated",
+          "remainingBoundary": "610 threaded scalar-init correction collected through28. Final161D158R integration and real class/array stack allocation execution complete; commit separately from hardware/GS."
+        },
         {
           "scope": "Complete native SIMD constructors required by hardware import.",
           "owner": "942a496f-db30-4389-a403-265f28fdb23c",
@@ -78,11 +106,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Object clone/morph/use prerequisites are reviewed and integrated, 82D/80R; DoPhase stays gated pending orchestration and real EE execution. Parent's generic impHWIntrinsic/getBaseTypeFromArgIfNeeded are in Compiler.HWIntrinsicImport.cs, with the old Compiler.imp.cs stub removed in WIP. Initial build exposed five API/flag gaps, now corrected with GetSimdTypeForSize, varTypeIsSimd, GetOp and IsFloatingPointUsed. Refresh these overlays in artifacts\\hwi-dispatch-integration, rebuild Debug/Release and collect 3a's dispatcher fixtures. Then publish a fresh NativeAOT JIT and run the existing native-host corpora. 6a's review through41 found no high-confidence discrepancy. Do not commit activation before tests and execution; preserve 27 optimized/32 GCStress4 methods. No publication.",
+    "nextAction": "Commit validated object phase/stack-array expansion separately: final six source/test overlays in objectalloc-phase-validation\\source-manifest-final.json,161D158R and runtime-validation-final.json are complete, including threaded scalar-init correction. Include object corpus and related tracking; preserve VN WIP. Then integrate942's two corrected review findings in VN map/diagnostic/memorySSA closure (through75,19D17R), rerun broader VN/memorySSA selection and commit without phase activation. Hardware/GS final639D614R and11native-host captures preserve27optimized/32originalGCStress plushardware8in3modes. No publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Collected through942:70,d62:99,610:21,3a:31,6a:41. Allobjectprerequisites reviewed/integrated82D80R; hardwareprerequisites integrated34101c9.3a writesgenericdispatcherfixtures;6a reviewedparentgenericbody. Othersidle/resolved. Parent CoreRoot is free. No app-native sessions.",
+      "workerPackets": "Collected through942:75,d62:101,610:28,3a:36,6a:46. All current worker packets returned; GS/HWI integrated, object activation validated, VN review fixes await parent integration. Compiler.cs GS-only index blob preserves unstaged vnPrint. Parent owns CoreRoot, currently free. No app-native sessions.",
       "preserve": "Windows-AMD64 lowering/allocation/placement/generation/emission/metadata execute27 selected optimized methods and the established32-method minopts corpus under GCStress4. Optimized runs use native JitObjectStackAllocation=0 on both sides while object analysis is incomplete. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -98,6 +126,31 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "hardwareDispatcherAndGs": {
+        "snapshotBase": "34101c9",
+        "sourceManifest": "artifacts\\hwi-dispatch-integration\\source-manifest-final.json",
+        "runtimeEvidence": "artifacts\\hwi-dispatch-integration\\runtime-validation-final.json",
+        "nativeAot": "artifacts\\hwi-final-jit\\RyuJitSharp.dll",
+        "optimizedMethods": 27,
+        "minoptsGcStressMethods": 32,
+        "debugPassed": 639,
+        "releasePassed": 614,
+        "skipped": 0,
+        "hardwareCorpus": "PortingHardwareCorpus:8methods execute in FullOpts, FullOptsGCStress4 andMinOptsGCStress4;6of7hardwarehelpers match native raw bytes. Main andByrefLoadStore differ. See hardware-gs-comparison.json.",
+        "foldHardware": "Native and managed emit4 bytes,8D4107C3; previous managed capture emitted726.",
+        "regression": "artifacts\\hwi-dispatch-predicate-validation\\invalid-node-negative.trx fails1/1 with original mask; corrected fixture10D10R passes.",
+        "review": "Generic dispatcher reviewed by6a; GS independently reviewed byd62, no high-confidence WindowsAMD64 defect. Native ABI shadow predicate completed by6a through46,14D14R.",
+        "remaining": "Broader SIMD/immediate/EE-path and other-target coverage; byte/dump parity is not implied by execution.",
+        "nativeBoundary": "hwintrinsic.cpp888-918,2094-2884;hwintrinsic.h IsFloatingPointUsed/HasSpecialImport;gschecks.cpp and compiler.h shadow-parameter state."
+      },
+      "objectPhaseInProgress": {
+        "snapshotBase": "5725bc4",
+        "phaseManifest": "artifacts\\objectalloc-phase-validation\\source-manifest.json",
+        "expansionManifest": "artifacts\\objectalloc-phase-validation\\source-manifest-final.json",
+        "phaseTests": "Final integrated161D158R. Threaded scalar-init regression failed before correction;15expansion and51block-morph cases pass in both configurations.",
+        "runtime": "runtime-validation-final.json verifies11captures and finalJIT43DF382529270B57C427A7DB77DB8731BAC228E11BB87661C394E7DF63372387. Object corpus6methods in3modes, real class/array stack allocation, matching native escape decisions;27optimized/32originalGCStress preserved.",
+        "remaining": "Ready for separate commit. Object code differs from native; conditional cloning and further EE layouts remain coverage gaps."
+      },
       "objectCloneMorphUse": {
         "snapshotBase": "34101c9",
         "sourceManifest": "artifacts\\objectalloc-clone-use-integration-validation\\source-manifest.json",
@@ -5016,6 +5069,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "hardware-dispatch-and-gs-protection",
+      "native": ["src\\coreclr\\jit\\hwintrinsic.cpp:888-918,2094-2884", "src\\coreclr\\jit\\gschecks.cpp", "src\\coreclr\\jit\\compiler.h:12566-12602"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.HWIntrinsicImport.cs", "sources\\Core\\jit\\compiler\\Compiler.HWIntrinsicImportPrerequisites.cs", "sources\\Core\\jit\\compiler\\Compiler.GS.cs", "sources\\Core\\jit\\compiler\\Compiler.ShadowParamVarInfo.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete WindowsAMD64 generic hardware dispatch and GS phase; native-host execution established for selected corpora, not general dump/code parity."
+    },
     {
       "area": "object-cloning-allocation-morphing-and-use-rewriting",
       "native": ["src\\coreclr\\jit\\objectalloc.cpp:1317-1964,2410-3057,3856-3904,4540-5027"],

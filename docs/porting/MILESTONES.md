@@ -9,11 +9,24 @@ minopts methods, create EH funclets, allocate registers with stack-resident
 locals, emit native code and publish runtime metadata for Windows x64.
 Selected minopts and optimized corpora execute managed-generated code. Remaining
 work includes broader execution and GC-stress coverage, full dump/code parity,
-hardware-intrinsic import and unfinished optimization phases.
+and unfinished optimization phases.
 
 The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
+
+## 2026-09-26: Hardware import and GS protection
+
+Windows-x64 hardware import now dispatches portable and platform intrinsics,
+preserving argument order, precise operand types, immediate fallback and deferred
+call handling. GS preparation initializes security cookies and shadows vulnerable
+parameters before code generation, including copies back for jump tailcalls.
+
+Nonconstant vector construction, addition, lane access, shifts, BMI extraction
+and CRC execute managed-generated code. Six hardware helpers match native bytes;
+the stack-buffer load/store case executes but still differs in code generation.
+The constant `FoldHardware` method now matches native at four bytes, down from
+726. These results do not establish general SIMD or dump parity.
 
 ## 2026-09-26: Object cloning and stack-use rewriting
 

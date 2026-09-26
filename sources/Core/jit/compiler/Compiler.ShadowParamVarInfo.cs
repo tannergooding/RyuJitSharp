@@ -9,5 +9,17 @@ public partial class Compiler
 {
     public sealed class ShadowParamVarInfo
     {
+        public nint[]? AssignGroup;
+
+        public int ShadowCopy = BAD_VAR_NUM;
+
+        public static bool MayNeedShadowCopy(in LclVarDsc varDsc)
+        {
+#if WINDOWS_AMD64_ABI
+            return varDsc.lvIsParam;
+#else
+            return varDsc.lvIsParam && !varDsc.lvIsRegArg;
+#endif
+        }
     }
 }

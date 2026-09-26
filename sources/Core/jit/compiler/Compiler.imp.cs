@@ -5164,26 +5164,6 @@ public partial class Compiler
         }
     }
 
-    /// <summary>Import a hardware intrinsic as a GT_HWINTRINSIC node if possible</summary>
-    /// <param name="intrinsic">id of the intrinsic function.</param>
-    /// <param name="clsHnd">class handle containing the intrinsic function.</param>
-    /// <param name="method">method handle of the intrinsic function.</param>
-    /// <param name="sig">signature of the intrinsic call</param>
-    /// <param name="entryPoint">The entry point information required for R2R scenarios</param>
-    /// <param name="mustExpand">true if the intrinsic must return a GenTree*; otherwise, false</param>
-    /// <returns>The GT_HWINTRINSIC node, or nullptr if not a supported intrinsic</returns>
-    public unsafe GenTree? impHWIntrinsic(
-        NamedIntrinsic intrinsic,
-        CORINFO_CLASS_HANDLE clsHnd,
-        CORINFO_METHOD_HANDLE method,
-        in CORINFO_SIG_INFO sig,
-        in CORINFO_CONST_LOOKUP entryPoint,
-        bool mustExpand)
-    {
-        // TODO: Port impHWIntrinsic
-        return null;
-    }
-
     /// <summary>helper function that will tell us if the IL instruction at the addr passed by param consumes an address at the top of the stack.</summary>
     /// <param name="codeAddr"></param>
     /// <param name="codeEndp"></param>

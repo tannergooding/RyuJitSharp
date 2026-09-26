@@ -11,7 +11,7 @@ public partial class Compiler
     private static bool impIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsic, HWIntrinsicCategory category)
     {
         return (category != HW_Category_Special) &&
-            ((HWIntrinsicInfo.lookupFlags(intrinsic) & HW_Flag_SpecialImport) == 0);
+            ((HWIntrinsicInfo.lookupFlags(intrinsic) & (HW_Flag_SpecialImport | HW_Flag_InvalidNodeId)) == 0);
     }
 
     private static bool isSupportedBaseType(NamedIntrinsic intrinsic, var_types baseType)
