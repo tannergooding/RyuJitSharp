@@ -59,6 +59,72 @@ public sealed partial class ValueNumStore
     public ValueNum VNPhiDefToVN(in VNPhiDef phiDef, int ssaArgNum)
         => _compiler.lvaGetDesc(phiDef.LclNum).GetPerSsaData(phiDef.SsaArgs.Span[ssaArgNum])._vnPair.Conservative;
 
+    public ValueNum VNForMemoryPhiDef(BasicBlock block, ReadOnlySpan<int> ssaArgs)
+    {
+        var args = ssaArgs.ToArray();
+        var chunk = GetAllocChunk(TYP_HEAP, ChunkExtraAttribs.CEA_MemoryPhiDef);
+        var offset = chunk.AllocVN();
+        ((VNMemoryPhiDef[])chunk.Defs)[offset] = new(block, args);
+        return unchecked(chunk.BaseVN + offset);
+    }
+
+    public bool GetMemoryPhiDef(ValueNum vn, ref VNMemoryPhiDef memoryPhiDef)
+    {
+        if (vn == NoVN)
+        {
+            return false;
+        }
+
+        var chunk = _chunks[GetChunkNum(vn)];
+        var offset = ChunkOffset(vn);
+        assert(offset < chunk.NumUsed);
+        if (chunk.Attribs == ChunkExtraAttribs.CEA_MemoryPhiDef)
+        {
+            memoryPhiDef = ((VNMemoryPhiDef[])chunk.Defs)[offset];
+            return true;
+        }
+
+        return false;
+    }
+
+    public FlowGraphNaturalLoop? LoopOfVN(ValueNum vn)
+    {
+        VNFuncApp funcApp = default;
+        VNMemoryPhiDef memoryPhiDef = default;
+        if (GetVNFunc(vn, ref funcApp))
+        {
+            if (funcApp.Func is VNF_MemOpaque)
+            {
+                var index = funcApp.GetArg(0);
+                if ((index == NoLoop) || (index == UnknownLoop))
+                {
+                    return null;
+                }
+
+                assert(_compiler._loops is not null);
+                return _compiler._loops.GetLoopByIndex(index);
+            }
+            else if (funcApp.Func is VNF_MapStore)
+            {
+                var index = funcApp.GetArg(3);
+                if (index == NoLoop)
+                {
+                    return null;
+                }
+
+                assert(_compiler._loops is not null);
+                return _compiler._loops.GetLoopByIndex(index);
+            }
+        }
+        else if (GetMemoryPhiDef(vn, ref memoryPhiDef))
+        {
+            assert(_compiler._blockToLoop is not null);
+            return _compiler._blockToLoop.GetLoop(memoryPhiDef.Block);
+        }
+
+        return null;
+    }
+
     public VNVisit VNVisitReachingVNs(ValueNum vn, Func<ValueNum, VNVisit> argVisitor)
     {
         if (!IsPhiDef(vn))

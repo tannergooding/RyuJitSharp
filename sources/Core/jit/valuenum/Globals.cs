@@ -14,6 +14,10 @@ public partial class Globals
     // This is the constant value used for the default value of _mapSelectBudget. used by JitVNMapSelBudget
     public const int DEFAULT_MAP_SELECT_BUDGET = 100;
 
+    // Precise VN maps use placeholder types rather than concrete value types.
+    public const var_types TYP_MEM = TYP_UNDEF;
+    public const var_types TYP_HEAP = TYP_UNKNOWN;
+
 #if FEATURE_HW_INTRINSICS
     public const VNFunc VNF_HWI_FIRST = (VNFunc)((int)VNF_HWI_INTRINSIC_START + 1);
     public const VNFunc VNF_HWI_LAST = (VNFunc)((int)VNF_HWI_INTRINSIC_END - 1);

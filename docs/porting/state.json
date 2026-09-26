@@ -23,6 +23,7 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
+      "parentScope": "Memory VN provenance is complete216D214R: copied SSA inputs, exact loop ownership and native map type aliases. Integrate returned hardware and object packets before starting the larger VN map-selection/traversal closure. Keep full VN and assertion phases inactive until complete.",
       "parallelPackets": [
         {
           "scope": "Complete native SIMD constructors required by hardware import.",
@@ -30,15 +31,15 @@
           "files": "New Compiler.SimdImportConstructors partials and focused tests; no shared Compiler.gt.cs or importer edits.",
           "doneWhen": "Complete 24 named constructor dependencies: 20 substantive bodies, two guarded wrappers and two existing load/store aliases, preserving native ISA and operand contracts.",
           "status": "in-progress",
-          "result": "Iteration through66 reviewed and integrated with inversion253D249R. Constructor closure assigned after66, baseline55aaf69."
+          "result": "Constructor closure through67 frozen53D53R, seven owned files in simd-import-constructors-validation manifest.3a consumes it for xplat validation;942 independently reviews xplat while constructors stay frozen."
         },
         {
           "scope": "Complete native allocation-to-stack rewriting and stack/heap morphing prerequisites.",
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
-          "files": "New ObjectAllocator.StackAllocation/AllocationMorphing partials and tests; no AnalysisState, DoPhase or shared Compiler edits.",
+          "files": "New ObjectAllocator.StackAllocation/AllocationMorphing/UseRewriting partials and tests; no AnalysisState, DoPhase or shared Compiler edits.",
           "doneWhen": "Complete native morph functions and their closure without activating the unfinished phase or replacing existing heap-only production lowering.",
           "status": "in-progress",
-          "result": "EH clone through19 integrated55aaf69. Morphing assigned after19, baseline55aaf69."
+          "result": "Morphing through20 frozen36D35R and independently reviewed by3a through29, no high-confidence defects. Continuing same packet with complete RewriteUses/visitor closure before integration; real EE-backed layout and empty-static paths still need execution coverage."
         },
         {
           "scope": "Complete portable hardware-intrinsic importer body.",
@@ -46,8 +47,16 @@
           "files": "New Compiler.HWIntrinsicImportXplat.cs and focused tests; preceding creation/fallback/metadata packet remains frozen.",
           "doneWhen": "Complete impXplatIntrinsic hwintrinsic.cpp2910-5841 with constructor dependencies; no selected-case activation or fabricated compile-time stubs.",
           "status": "in-progress",
-          "result": "Through27 creation/fallback/metadata76D76R integrated after independent6a review through38. Xplat lane assigned after27;942 owns constructor closure.",
+          "result": "Creation/fallback/metadata integrated9564bec. Xplat through28 frozen but initial builds blocked only on24constructors; through29 object-morphing review collected. Now validating xplat with frozen942 constructor packet; no dispatcher activation.",
           "deferred": "Shared generators/tables, LSRA, ObjectAllocator, EH feasibility, other targets and publication."
+        },
+        {
+          "scope": "Complete xarch-special hardware-intrinsic import.",
+          "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
+          "files": "New Compiler.HWIntrinsicImportSpecial.cs and focused tests; no dispatcher, shared constructor or table edits.",
+          "doneWhen": "Complete native hwintrinsicxarch.cpp1234-2740 and required private helpers, preserving all WindowsAMD64 contracts.",
+          "status": "in-progress",
+          "result": "Assigned after38, baseline9564bec;942 owns SIMD constructors and3a owns portable import."
         },
         {
           "scope": "Complete object-specific conditional clone transformations.",
@@ -59,7 +68,7 @@
         }
       ],
       "deferred": [
-        "Value-numbering memory-phi traversal and the full value-numbering phase; SSA map selection is complete.",
+        "Value-numbering map selection and the full VN/assertion phases remain incomplete; memory-SSA ownership/map access and memory-VN provenance are complete.",
         "General assertion propagation and broader optimized execution beyond the current backend frontier.",
         "Full EH-funclet and hardware-import parity are subsequent execution-capability packets, not gates on the first scalar minopts backend path.",
         "Non-xarch hardware-intrinsic folding and hashBv iterator/countBits/setLowest APIs. Native vector Intersects/XOR defects are recorded in B247/B246; their corrected algorithms are not authorized and those entire vector operations are deferred.",
@@ -69,11 +78,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Inversion/iteration integrated1d833e4; fresh final JIT executes27FullOpts/32minopts-GCStress4 with253Debug/249Release regressions. HWI creation/fallback/metadata76D76R is reviewed and integrated. Parent next compares native and managed Counted phase IR to locate the first missing transformation behind its remaining17-byte code difference, rather than guessing from sizes.942 owns SIMD constructors,3a portable import,d62 object clone transformations and610 allocation morphing. Generic/xarch-special import still needs complete bodies before dispatcher activation. Keep stack-allocation gate until all transformations and orchestration are complete. No publication.",
+    "nextAction": "Memory-VN provenance216D214R is complete; Counted's remaining entry-test difference is traced to unported VN/assertion phases (B267), with clone-ID divergence separately B268. Next collect3a's constructor+xplat validation and942's xplat review, review/integrate constructor closure, then integrate6a's xarch-special import. Collectd62 cloning and610 fullmorph/RewriteUses; do not activate object DoPhase before realEE-backed validation and complete orchestration. Only after returned packets are integrated, continue VN map-selection/traversal or generic importer closure. Preserve27optimized/32GCStress4 execution; no publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Collected through942:66,d62:95,610:19,3a:27,6a:38. Site/EH integrated55aaf69; iteration integrated with inversion.6a found no high-confidence HWI packet defects. Four active implementation lanes have disjoint ownership in activeBatch;6a idle/resolved. Parent CoreRoot is free. No app-native sessions.",
+      "workerPackets": "Collected through942:67,d62:95,610:20,3a:29,6a:38. Constructors53D53R frozen; xplat pending constructor-integrated validation and942 review. Morph36D35R reviewed, extending toRewriteUses.6a special import andd62 cloning active. Parent CoreRoot is free. No app-native sessions.",
       "preserve": "Windows-AMD64 lowering/allocation/placement/generation/emission/metadata execute27 selected optimized methods and the established32-method minopts corpus under GCStress4. Optimized runs use native JitObjectStackAllocation=0 on both sides while object analysis is incomplete. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -89,6 +98,20 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "memoryVnProvenance": {
+        "nativeBoundary": "valuenum.h257-272;valuenum.cpp3152-3212,7055-7100",
+        "snapshotBase": "9564bec",
+        "sourceManifest": "artifacts\\vn-memory-provenance-validation\\source-manifest.json",
+        "sourceManifestSha256": "E63DC0CD31E004449B794BBAB4337DD0A51132ABF88EA4B7C38D963D9EB6AA45",
+        "tests": "artifacts\\vn-memory-provenance-validation\\{debug,release}.trx",
+        "debugPassed": 216,
+        "releasePassed": 214,
+        "skipped": 0,
+        "newCases": 8,
+        "coverage": "Copied ordered/duplicate/empty SSA inputs, distinct definitions across64-entry chunk boundaries, unchanged output on failed lookup, native heap-map type and local/memory-PHI separation, in-loop/outside/unknown ownership for opaque memory, stores and PHIs.",
+        "scope": "No production phase activation. Core rebuilt in both configurations; final fixture-only builds reused unchanged Core. Full VN map selection and traversal/evaluation remain unported.",
+        "trace": "Compare Counted in loop-alignment-execution-probe/native-padding versus loop-inversion-integration/aligned-loops-final: inversion/SSA retain the local comparison; native VN assigns zero and assertion propagation replaces it. Final raw bytes differ despite both having17bytes."
+      },
       "hardwareCreationFallbackMetadata": {
         "nativeBoundary": "hwintrinsic.cpp1468-1497,1605-1750;hwintrinsicxarch.cpp1155-1207;hwintrinsic.h640-649,771-776",
         "snapshotBase": "f806ffc",
@@ -4966,6 +4989,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "memory-vn-provenance",
+      "native": ["src\\coreclr\\jit\\valuenum.h:257-272", "src\\coreclr\\jit\\valuenum.cpp:3152-3212,7055-7100"],
+      "csharp": ["sources\\Core\\jit\\valuenum\\VNMemoryPhiDef.cs", "sources\\Core\\jit\\valuenum\\ValueNumStore.Queries.cs", "sources\\Core\\jit\\valuenum\\ValueNumStore.Storage.cs", "sources\\Core\\jit\\valuenum\\Globals.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete native memory-PHI allocation/query and LoopOfVN using existing natural-loop maps. ReadOnlyMemory exposes copied SSA inputs; full map-selection and VN phases remain unported."
+    },
     {
       "area": "hardware-creation-fallback-and-metadata",
       "native": ["src\\coreclr\\jit\\hwintrinsic.cpp:1468-1497,1605-1750", "src\\coreclr\\jit\\hwintrinsicxarch.cpp:1155-1207", "src\\coreclr\\jit\\hwintrinsic.h:640-649,771-776"],

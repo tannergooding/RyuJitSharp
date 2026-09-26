@@ -57,8 +57,6 @@ public sealed partial class ValueNumStore
 
     private readonly record struct VNHandle(nint Value, GenTreeFlags Flags);
 
-    private readonly record struct VNMemoryPhiDef(BasicBlock Block, int[] SsaArgs);
-
     private sealed class Chunk
     {
         public readonly Array Defs;

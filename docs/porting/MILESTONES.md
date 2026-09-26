@@ -35,6 +35,10 @@ Selected optimized methods execute with this phase active, including call-free
 and collecting loops. Their machine code still differs from the native oracle;
 remaining optimizer work and code parity are not implied by execution.
 
+The remaining scalar entry-test difference requires value numbering and
+assertion propagation. Memory-PHI storage and loop-ownership queries are now
+available as prerequisites; those optimization phases are not yet active.
+
 ## 2026-09-26: Allocation-site analysis and EH cloning
 
 Object-allocation analysis now walks allocation sites and aliases, checks stack
