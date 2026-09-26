@@ -823,6 +823,11 @@ Initial parameter definitions and live-in/finally-local zero definitions follow
 native register preferences, stress predicates, OSR initialization and spill
 rules. They are prerequisites for the enregistered-local interval builder, not
 an alternate allocator or an activation of optimized allocation.
+The complete Windows-AMD64 `buildIntervals<true>` specialization is implemented
+as `buildIntervalsWithLocals`, alongside the unchanged minopts builder. It
+includes predecessor selection, parameter stress and local interval validation.
+Production optimized allocation remains gated until allocation and resolution
+support those intervals.
 
 Liveness policies use static interface members in place of native template
 traits. Per-block scratch and stored sets retain independent managed storage.

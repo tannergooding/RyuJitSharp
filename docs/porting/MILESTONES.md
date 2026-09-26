@@ -15,6 +15,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Enregistered-local interval construction
+
+Windows-x64 LSRA can now construct intervals for enregistered locals, including
+parameter definitions, predecessor-dependent live-ins, EH stack homes,
+upper-vector restores and exposed uses at backedges and method jumps. Native
+reference-location ordering, last-use handling and write-through preferences
+are retained.
+
+The production allocator still uses the established minopts path. Optimized
+allocation and resolution must be completed before this builder is activated.
+
 ## 2026-09-25: Finally block-placement fidelity
 
 Finally-call blocks now retain the native insertion positions when an EH-region

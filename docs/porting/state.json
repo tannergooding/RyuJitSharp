@@ -29,14 +29,15 @@
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
           "files": "New lsra partials and LinearScanLocalIntervalConstructionTests.cs; existing shared helpers require a reported need before edits.",
           "doneWhen": "Frozen complete builder specialization with actual isolated Debug/Release evidence and exact source hashes; production allocation gate unchanged.",
-          "status": "in-progress"
+          "status": "complete",
+          "result": "Full builder and direct helpers reviewed, including native rationale and mapping/predecessor cases; integrated558Debug/473Release. Production optimized gate unchanged."
         },
         {
           "scope": "Complete native SsaRenameState local/memory stacks and block-scoped restoration.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
           "files": "New ssarenamestate partials and SsaRenameStateTests.cs; no shared compiler or builder edits.",
           "doneWhen": "Frozen complete state helper with isolated Debug/Release evidence, preserving local/memory ordering and shared-kind semantics.",
-          "status": "in-progress",
+          "status": "awaiting-parent-review",
           "deferred": "SsaBuilder orchestration, full SSA activation and unowned compiler changes."
         },
         {
@@ -58,11 +59,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "B254/B255 are committed a3111ca; B256 is corrected and execution-validated. Parent next ports FlowGraphDominatorTree from flowgraph.cpp:7094-7334, then FlowGraphDominanceFrontiers:7335-7516 and the native DomTreeVisitor in compiler.h:13345; both managed graph classes are empty and block full SSA construction. Rename-state worker is active. LSRA turn5 is reviewed; turn6 adds native rationale and bounded mapping/predecessor cases before integration. No partial SSA or optimized-allocation activation, and no publication.",
+    "nextAction": "Local interval construction is fully reviewed and integrated558Debug/473Release; B256 is committed696597d. Parent next repairs confirmed B257: AllMemoryKinds.GetEnumerator must invoke its initialized Enumerator(AllMemoryKinds) constructor rather than the default constructor that skips ByrefExposed. Validate all iteration surfaces and affected liveness/SSA plus native-host execution, then integrate frozen rename-state turn9. Continue with empty FlowGraphDominatorTree/FlowGraphDominanceFrontiers: native flowgraph.cpp:7094 onward, BlockDominancePreds in block.cpp:289 and DomTreeVisitor in compiler.h:13345. SSA diagnostic worker remains active. No partial SSA/optimized activation or publication.",
     "handoff": {
       "status": "parallel-interval-and-ssa-prerequisites",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 through turn5 is collected/reviewed, revising useful native comments and bounded mapping/predecessor coverage before turn6 freeze. 3a2c8d9b through turn8 is collected and now ports SsaRenameState. d62fc6a5 through turn73 is collected/reviewed and its B256 fix is integrated with559Debug/522Release plus five-method execution evidence. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
+      "workerPackets": "610162a0 through turn6 is collected/reviewed and integrated; idle. 3a2c8d9b through turn9 is collected, SsaRenameState frozen for parent review; its B257 finding is confirmed. d62fc6a5 through turn73 is collected and committed696597d, now ports Compiler.SsaDiagnostics.cs and focused tests only. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -78,6 +79,26 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "localIntervalConstruction": {
+        "nativeBoundary": "lsrabuild.cpp:2080-2795 buildIntervals<true>, parameter stress/validation helpers; lsra.cpp:2161-2463 checkLastUses/findPredBlockForLiveIn.",
+        "workerSourceManifest": "artifacts\\local-interval-construction-validation\\source-manifest.json",
+        "workerSnapshotBase": "e64909f",
+        "workerDebugPassed": 79,
+        "workerReleasePassed": 77,
+        "sourceManifest": "artifacts\\local-interval-integration\\source-manifest.json",
+        "snapshotBase": "696597d",
+        "rootSnapshotHashesMatch": true,
+        "debugTests": "artifacts\\local-interval-integration\\snapshot\\artifacts\\tst\\Debug\\local-interval-integration-debug.trx",
+        "releaseTests": "artifacts\\local-interval-integration\\snapshot\\artifacts\\tst\\Release\\local-interval-integration-release.trx",
+        "debugPassed": 558,
+        "releasePassed": 473,
+        "skipped": 0,
+        "newDebugCases": 16,
+        "newReleaseCases": 15,
+        "selection": "FullyQualifiedName~LinearScan|FullyQualifiedName~LoweringPhase|FullyQualifiedName~SsaBookkeeping",
+        "coverage": "Tracked-order entry refs, zero-init/first locations, mapped-parameter liveness, register stress, predecessor weights/EH/throw/unreachable cases, dummy definitions, exposed uses and node last-use ordering.",
+        "limitation": "Full Windows-AMD64 builder specialization and direct helpers, not production optimized allocation or execution."
+      },
       "finallyPlacementCorrection": {
         "nativeBoundary": "jiteh.cpp:135-165 ebdGetEnclosingRegionIndex and actual insertion/normalization/region-query callers; B256.",
         "runtimeSourceManifest": "artifacts\\backend-finally-parity\\source-manifest.json",
@@ -5526,6 +5547,13 @@
       "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.EntryDefinitions.cs"],
       "reconciledCommit": null,
       "scope": "buildInitialParamDef, insertZeroInitRefPositions and stressInitialParamReg; no optimized allocation activation."
+    },
+    {
+      "area": "linear-scan-local-interval-construction",
+      "native": ["src\\coreclr\\jit\\lsrabuild.cpp", "src\\coreclr\\jit\\lsra.cpp", "src\\coreclr\\jit\\lsra.h"],
+      "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.LocalIntervalConstruction.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalIntervalPredecessors.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalIntervalValidation.cs"],
+      "reconciledCommit": null,
+      "scope": "Complete Windows-AMD64 buildIntervals<true> and required predecessor/stress/validation helpers; optimized allocation gate unchanged."
     },
     {
       "area": "saved-wip-lir-and-rationalization",
