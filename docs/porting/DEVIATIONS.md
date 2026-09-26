@@ -806,11 +806,13 @@ Write-barrier classification is exposed through `ICodeGen`, matching the native
 codegen interface rather than requiring a concrete implementation. The compiler
 owns the shared GC-reference kill query.
 
-Floating-point preference sets and local upper-vector intervals belong to
-optimized candidate selection, which remains unported. There is no separate
-kill-state initialization phase or second candidate scan. The minopts
-specialization does not produce those local sets; upper-vector saves for
-temporary values remain supported.
+Local candidate selection now implements native eligibility, EH exposure,
+FP preference sets and local upper-vector intervals for Windows AMD64. Its
+production callsite remains gated until optimized interval construction,
+allocation and resolution are complete. There is no separate kill-state
+initialization phase or second candidate scan. The minopts specialization does
+not produce those local sets; upper-vector saves for temporary values remain
+supported.
 
 Liveness policies use static interface members in place of native template
 traits. Per-block scratch and stored sets retain independent managed storage.

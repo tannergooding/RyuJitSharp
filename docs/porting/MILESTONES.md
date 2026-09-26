@@ -15,6 +15,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Local register-candidate construction
+
+The optimized-allocation prerequisites now include native local eligibility,
+candidate interval creation, EH write-through/spill marking, collective promoted
+field rejection, FP callee-save preferences and large-vector upper-save
+intervals. FP preferences retain the native weighted-reference thresholds,
+register-argument adjustment and single-exit loop heuristic.
+
+The existing minopts path is unchanged. Optimized interval construction,
+allocation and resolution still need their remaining closure; the production
+allocator continues to reject optimized/enregistered-local compilation explicitly.
+
 ## 2026-09-25: Early tree liveness
 
 Early liveness now follows the native optimized-tree policy: it computes local

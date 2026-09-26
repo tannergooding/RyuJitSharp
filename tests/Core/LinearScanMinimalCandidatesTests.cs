@@ -142,7 +142,7 @@ internal static unsafe class LinearScanMinimalCandidatesTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllMask")]
     private static extern ref regMask CompilerAllMaskRegs(Compiler compiler);
 
-    private static void WithCompiler(Action<Compiler> action)
+    internal static void WithCompiler(Action<Compiler> action, bool minOpts = true)
     {
 #if DEBUG
         using var tls = new JitTls(null);
@@ -151,7 +151,7 @@ internal static unsafe class LinearScanMinimalCandidatesTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.opts.SetMinOpts(minOpts);
         CompilerAllIntRegs(compiler) = SRBM_ALLINT_INIT;
         CompilerAllFloatRegs(compiler) = SRBM_ALLFLOAT_INIT;
         CompilerAllMaskRegs(compiler) = SRBM_ALLMASK_INIT;

@@ -116,4 +116,75 @@ public sealed partial class LinearScan
 
         return _compiler.lvaGetDesc(node.AsLclVarCommon().LclNum).lvDoNotEnregister;
     }
+
+    private void checkForDNER(int localNumber, in LclVarDsc local)
+    {
+        if (local.lvDoNotEnregister)
+        {
+            return;
+        }
+
+        if (!_compiler.compEnregLocals)
+        {
+            _compiler.lvaSetVarDoNotEnregister(localNumber, DoNotEnregisterReason.NoRegVars);
+            return;
+        }
+
+        if (varTypeIsStruct(local.Type) && !local.lvPromoted)
+        {
+            if (!local.IsEnregisterableType)
+            {
+                _compiler.lvaSetVarDoNotEnregister(localNumber, DoNotEnregisterReason.NotRegSizeStruct);
+                return;
+            }
+
+            if (local.Type == TYP_STRUCT)
+            {
+                if (!local.lvRegStruct && !_compiler.compEnregStructLocals)
+                {
+                    _compiler.lvaSetVarDoNotEnregister(localNumber, DoNotEnregisterReason.DontEnregStructs);
+                    return;
+                }
+
+                if (local.lvIsMultiRegArgOrRet)
+                {
+                    // Prolog and return generators do not support SIMD/general-register moves.
+                    _compiler.lvaSetVarDoNotEnregister(localNumber, DoNotEnregisterReason.IsStructArg);
+                    return;
+                }
+
+#if TARGET_ARM
+                if (local.lvIsParam)
+                {
+                    _compiler.lvaSetVarDoNotEnregister(localNumber, DoNotEnregisterReason.IsStructArg);
+                    return;
+                }
+#endif
+            }
+        }
+
+        if (local.lvPinned)
+        {
+            _compiler.lvaSetVarDoNotEnregister(localNumber, DoNotEnregisterReason.PinningRef);
+            return;
+        }
+
+        if (local.lvTracked && local.IsLiveInOutOfHandler)
+        {
+            if (!_compiler.IsEHVarARegCandidate(in local))
+            {
+                _compiler.lvaSetVarDoNotEnregister(localNumber, DoNotEnregisterReason.LiveInOutOfHandler);
+                return;
+            }
+
+#if JIT32_GCENCODER
+            if (_compiler.lvaKeepAliveAndReportThis() && (localNumber == _compiler.info.compThisArg))
+            {
+                // EH exposure prevents keeping "this" in one register for the whole method.
+                _compiler.lvaSetVarDoNotEnregister(localNumber, DoNotEnregisterReason.LiveInOutOfHandler);
+                return;
+            }
+#endif
+        }
+    }
 }
