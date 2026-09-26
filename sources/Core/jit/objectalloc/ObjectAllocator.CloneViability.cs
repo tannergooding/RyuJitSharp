@@ -125,7 +125,7 @@ public sealed partial class ObjectAllocator
             return null;
         }
 
-        var tree = jumpTree.AsOp().Op1;
+        var tree = jumpTree.AsUnOp().Op1;
         if (tree.Oper is not (GT_NE or GT_EQ))
         {
             JITDUMP("... not NE/EQ\n");

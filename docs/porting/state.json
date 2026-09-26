@@ -23,7 +23,7 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Memory VN provenance is complete216D214R: copied SSA inputs, exact loop ownership and native map type aliases. Integrate returned hardware and object packets before starting the larger VN map-selection/traversal closure. Keep full VN and assertion phases inactive until complete.",
+      "parentScope": "Hardware prerequisites integrated34101c9. Complete native WindowsAMD64 impHWIntrinsic and getBaseTypeFromArgIfNeeded, preserving immediate/fallback/mustExpand and deferred-user-call contracts.3a owns focused dispatcher fixtures; parent owns shared entrypoint and NativeAOT/native-host validation. In parallel review/validate returned complete object clone/morph/use prerequisites before their phase activation.",
       "parallelPackets": [
         {
           "scope": "Complete native SIMD constructors required by hardware import.",
@@ -38,8 +38,8 @@
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
           "files": "New ObjectAllocator.StackAllocation/AllocationMorphing/UseRewriting partials and tests; no AnalysisState, DoPhase or shared Compiler edits.",
           "doneWhen": "Complete native morph functions and their closure without activating the unfinished phase or replacing existing heap-only production lowering.",
-          "status": "in-progress",
-          "result": "Morphing through20 frozen36D35R and independently reviewed by3a through29, no high-confidence defects. Continuing same packet with complete RewriteUses/visitor closure before integration; real EE-backed layout and empty-static paths still need execution coverage."
+          "status": "done",
+          "result": "Morphing through20 anduse rewritingthrough21 reviewed by3a/942, no high-confidence defects. Integrated fullclone/morph/use selection82D80R. Real EE-backed layouts, UNBOX/delegate paths andempty-static rewiring remain execution gaps."
         },
         {
           "scope": "Complete portable hardware-intrinsic importer body.",
@@ -63,8 +63,8 @@
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
           "files": "New ObjectAllocator.CloneTransformation partials/tests and necessary AnalysisState additions; no morphing, DoPhase or shared Compiler edits.",
           "doneWhen": "Complete native object clone transformation closure using committed analysis and full EH cloning, without phase activation.",
-          "status": "in-progress",
-          "result": "Site analysis through94 integrated55aaf69; iteration review through95 collected. Clone transformations assigned after95, baseline55aaf69."
+          "status": "done",
+          "result": "Clone through98 corrected reviewed self-copy identity defect andunaryguard accessor; integrationthrough99 passed82D80R withfullmorph/use packet. Direct EH-clone/multiappearance fixture gaps remain."
         }
       ],
       "deferred": [
@@ -78,11 +78,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Hardware constructors and portable/xarch-special import are reviewed and integrated161D161R; generic impHWIntrinsic remains unported. Next collectd62's corrected clone packet: guardAsUnOpfix passed71D69R, but942 reviewthrough69 found self-copy removal replaced its root; d62 must use existing base-field-only BashToNOP and add identity regression.610 finishes RewriteUses; integrate andreview combined clone/morph/use closure before object DoPhase activation. Parent then completes generic hardware dispatcher and validates native-host execution, preserving27optimized/32GCStress4 behavior. No publication.",
+    "nextAction": "Object clone/morph/use prerequisites are reviewed and integrated, 82D/80R; DoPhase stays gated pending orchestration and real EE execution. Parent's generic impHWIntrinsic/getBaseTypeFromArgIfNeeded are in Compiler.HWIntrinsicImport.cs, with the old Compiler.imp.cs stub removed in WIP. Initial build exposed five API/flag gaps, now corrected with GetSimdTypeForSize, varTypeIsSimd, GetOp and IsFloatingPointUsed. Refresh these overlays in artifacts\\hwi-dispatch-integration, rebuild Debug/Release and collect 3a's dispatcher fixtures. Then publish a fresh NativeAOT JIT and run the existing native-host corpora. 6a's review through41 found no high-confidence discrepancy. Do not commit activation before tests and execution; preserve 27 optimized/32 GCStress4 methods. No publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Collected through942:69,d62:97,610:20,3a:31,6a:40. All hardware packets reviewed/integrated161D161R;3a/6a/942 idle/resolved. d62 fixes reviewed self-copy identity defect after71D69R;610 finishes use rewriting. Parent CoreRoot is free. No app-native sessions.",
+      "workerPackets": "Collected through942:70,d62:99,610:21,3a:31,6a:41. Allobjectprerequisites reviewed/integrated82D80R; hardwareprerequisites integrated34101c9.3a writesgenericdispatcherfixtures;6a reviewedparentgenericbody. Othersidle/resolved. Parent CoreRoot is free. No app-native sessions.",
       "preserve": "Windows-AMD64 lowering/allocation/placement/generation/emission/metadata execute27 selected optimized methods and the established32-method minopts corpus under GCStress4. Optimized runs use native JitObjectStackAllocation=0 on both sides while object analysis is incomplete. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -98,6 +98,19 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "objectCloneMorphUse": {
+        "snapshotBase": "34101c9",
+        "sourceManifest": "artifacts\\objectalloc-clone-use-integration-validation\\source-manifest.json",
+        "sourceManifestSha256": "FA85BC812FDF01934562732065247970236CF446BEBEB1E58FC4939AF2FAE7D5",
+        "debugPassed": 82,
+        "releasePassed": 80,
+        "skipped": 0,
+        "tests": "Snapshot artifacts\\tst\\{Debug,Release}\\objectalloc-clone-uses-integrated-{debug,release}.trx",
+        "nativeBoundary": "objectalloc.cpp1317-1964,2410-3057,3856-3904,4540-5027;existing heap helper1698-1748 reused",
+        "review": "Independent clone,morph anduse-rewrite reviews completed. Unaryguard andself-copy identity defects corrected; all8root/snapshot overlays andactualexecuted counts verified.",
+        "coverageLimits": "No realEE-backed array/boxed layouts,UNBOX/delegate rewrites,COMMA/indirection sinking orfullcandidateEH/multiappearance execution evidence. Production DoPhase remains gated.",
+        "scope": "Complete clone specialization,allocation morphing,use rewriting andlayout conversions; not phase activation or runtime parity."
+      },
       "hardwarePlatformImport": {
         "snapshotBase": "52bd338",
         "sourceManifest": "artifacts\\hwi-platform-import-integration\\source-manifest.json",
@@ -5004,6 +5017,14 @@
   },
   "sourceMap": [
     {
+      "area": "object-cloning-allocation-morphing-and-use-rewriting",
+      "native": ["src\\coreclr\\jit\\objectalloc.cpp:1317-1964,2410-3057,3856-3904,4540-5027"],
+      "csharp": ["sources\\Core\\jit\\objectalloc\\ObjectAllocator.CloneTransformation.cs", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.AllocationMorphing.cs", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.StackAllocation.cs", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.UseRewriting.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete native clone/morph/use prerequisites, includingbase-onlyNOP identity andunaryguard correction. Production stack allocation waits for phaseorchestration andrealEEvalidation."
+    },
+    {
       "area": "hardware-platform-import-and-simd-constructors",
       "native": ["src\\coreclr\\jit\\hwintrinsic.cpp:2910-5841", "src\\coreclr\\jit\\hwintrinsicxarch.cpp:1234-2740", "src\\coreclr\\jit\\gentree.cpp:24016-24460,24753-24825,25276-25748,26315-26455,27814-28071,28152-28598,28612-28706,30066-30509"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.HWIntrinsicImportXplat.cs", "sources\\Core\\jit\\compiler\\Compiler.HWIntrinsicImportSpecial.cs", "sources\\Core\\jit\\compiler\\Compiler.SimdImportConstructors.*.cs"],
@@ -5041,7 +5062,7 @@
       "csharp": ["sources\\Core\\jit\\objectalloc\\ObjectAllocator.AllocationAnalysis.cs", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.AllocationViability.cs", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.ParentAnalysis.cs", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.GuardedAnalysis.cs", "sources\\Core\\jit\\compiler\\Compiler.EHCloneMutation.cs", "sources\\Core\\jit\\compiler\\Compiler.EHCloneMappedTargets.cs", "sources\\Core\\jit\\block\\BasicBlock.CloneState.cs", "sources\\Core\\jit\\block\\BasicBlock.Complexity.cs"],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Complete site/alias/guard analysis, stack viability and generic EH-region cloning. Shared complexity counting preserves native callback ordering and unsigned slack. Object transformations and stack/heap morphing still gate production stack allocation."
+      "status": "Complete site/alias/guard analysis, stack viability and generic EH-region cloning. Shared complexity counting preserves native callback ordering and unsigned slack. Object transformations/morphing are mapped separately; phase orchestration and real execution still gate production."
     },
     {
       "area": "hardware-import-prerequisites",

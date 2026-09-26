@@ -15,6 +15,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Object cloning and stack-use rewriting
+
+Conditional object cloning now specializes fast and slow paths while preserving
+profiles and cloned node identity. Allocation morphing and use rewriting can
+construct stack homes, update pointer/layout types and preserve write-barrier
+and side-effect rules.
+
+Production stack allocation remains gated until phase orchestration and real
+JIT/EE-backed execution are established, including arrays, boxed layouts,
+unboxing and delegate paths.
+
 ## 2026-09-26: Portable and xarch hardware-import paths
 
 The portable vector and xarch-special import implementations now have their

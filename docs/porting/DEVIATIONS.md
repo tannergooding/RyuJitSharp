@@ -210,8 +210,11 @@ clone viability are implemented, including guarded enumerator tracking, stack
 viability, overlap and profitability checks. `fgCloneTryRegionFeasibility`
 retains the native no-insertion mode, while `fgCloneTryRegion` now implements
 insertion, EH renumbering, block-state cloning and mapped successors.
-Object-specific clone transformations and stack/heap morphing remain unported;
-the production phase gate is unchanged.
+Object-specific clone transformations, stack/heap morphing and pointer/use
+rewriting are now implemented. Self-copy elimination uses the existing
+base-field-only `BashToNOP`, preserving aliases and logical node identity
+without cross-kind CLR retagging. Production phase orchestration and real
+JIT/EE-backed stack-path execution remain outstanding; the phase gate is unchanged.
 
 Hardware-import prerequisites preserve native argument order and precise types,
 table-driven eligibility and xarch immediate/range-check rules. SIMD/mask stack
