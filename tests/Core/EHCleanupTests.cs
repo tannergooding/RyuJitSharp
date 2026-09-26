@@ -73,8 +73,11 @@ internal static class EHCleanupTests
         });
     }
 
-    [Test]
-    public static void EmptyTryPromotesFinallyAndConnectsItsReturn()
+    [TestCase(false, GTF_EMPTY)]
+    [TestCase(true, GTF_EMPTY)]
+    [TestCase(true, GTF_EXCEPT)]
+    [TestCase(true, GTF_CALL)]
+    public static void TryPromotionPreservesThrowingStatements(bool hasStatement, GenTreeFlags effects)
     {
         WithCompiler(compiler =>
         {
@@ -105,7 +108,27 @@ internal static class EHCleanupTests
             continuation.setBBProfileWeight(100);
             Clause(compiler, EH_HANDLER_FINALLY, tryBlock, tryBlock, handler, handler);
 
-            Assert.That(RemoveEmptyTry(compiler), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            if (hasStatement)
+            {
+                var value = compiler.gtNewIconNode(TYP_INT, 5);
+                value.Flags |= effects;
+                compiler.fgInsertStmtAtEnd(tryBlock, compiler.fgNewStmtFromTree(value));
+            }
+
+            var status = RemoveEmptyTry(compiler);
+            if ((effects & (GTF_EXCEPT | GTF_CALL)) != 0)
+            {
+                Assert.That(status, Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
+                Assert.That(compiler.compHndBBtabCount, Is.EqualTo(1));
+                Assert.That(tryBlock.hasTryIndex, Is.True);
+                Assert.That(callFinally.Kind, Is.EqualTo(BBJ_CALLFINALLY));
+                Assert.That(handler.Kind, Is.EqualTo(BBJ_EHFINALLYRET));
+                Assert.That(handler.hasHndIndex, Is.True);
+                Assert.That(leave.HasFlag(BBF_REMOVED), Is.False);
+                return;
+            }
+
+            Assert.That(status, Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
             Assert.That(compiler.compHndBBtabCount, Is.Zero);
             Assert.That(tryBlock.hasTryIndex, Is.False);
             Assert.That(callFinally.Kind, Is.EqualTo(BBJ_ALWAYS));

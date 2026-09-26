@@ -15,6 +15,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Finally cloning and chain merging
+
+Finally optimization now shares callfinally chains with a common continuation
+and clones eligible handlers onto normal exit paths. When every normal call is
+redirected, the original handler becomes a fault handler for exceptional exits.
+Cloning preserves the native budget, profile-based path selection, EH ownership
+and continuation updates.
+
+Selected phase bodies match native for cloning, chain merging and rejection
+decisions. Execution covers normal and exceptional cleanup and optimized
+object/struct lifetimes across collections. This batch also corrects a
+statement-versus-LIR emptiness mix-up that could incorrectly remove a throwing
+try region before cloning. Cloned node IDs, profile diagnostics and a remaining
+struct-finally code-size gap prevent a full dump/code parity claim.
+
 ## 2026-09-26: Empty exception-region cleanup
 
 The native cleanup phases now remove empty finally/fault handlers, promote

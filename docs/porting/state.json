@@ -12,7 +12,7 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port complete native finally-chain merging and finally cloning after empty-EH cleanup. Preserve phase order, EH/continuation ownership, ACD/profile updates, diagnostics and all relevant WindowsAMD64 conditional paths.",
+      "scope": "Activate the complete frozen native array-operation morphing closure after finally optimization, preserving dimension/evaluation/exception order, unsigned pointer-width scaling and node ownership. Integrate the frozen runtime-lookup expansion closure next.",
       "doneWhen": [
         "Preserve the completed loop-inversion/iteration-analysis contract and identify the first missing native transformation behind a concrete optimized-code difference.",
         "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
@@ -23,8 +23,29 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "EHcleanup activation6 complete703D578R,8old-stub failures/1control,24configs135bodies1077phases. d62:177 confirms27/27exact cleanup phase slices and6/6exact CFG snapshots; positive empty-finally runtime gap retained. All worker packets integrated. Next close fgMergeFinallyChains/fgCloneFinally stubs. CoreRoot free.",
+      "parentScope": "Finally activation/B306 correction complete:724D599R,26configs139bodies278phases.3a:125 confirms8/8byte-identical selected phase bodies, matching CFG/effects and runtime outcomes; B307 clone IDs and FinallyPair387/367size gap remain. Next activate reviewed array packet, then reviewed runtime lookup packet. CoreRoot free.",
       "parallelPackets": [
+        {
+          "scope": "Complete native finally cloning and callfinally-chain merging.",
+          "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
+          "files": "New Compiler.FinallyCloning*.cs, Compiler.FinallyChainMerging*.cs and FinallyOptimizationTests.cs; parent owns existing Compiler.fg.cs entries.",
+          "status": "done",
+          "remainingBoundary": "3a:124 source/610:89 review/3a:125 comparison integrated.5old-stub failures/4controls; B306 fixed with2old-guard failures/10controls.7overlays724D599R,26configs139bodies278phases;8/8exact selected phase bodies. B307 clone-node IDs, profile diagnostics and FinallyPair387/367size gap remain outside scoped parity."
+        },
+        {
+          "scope": "Complete native array-operation morphing.",
+          "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
+          "files": "New Compiler.ArrayMorphing*.cs and ArrayMorphingTests.cs; parent owns existing entry.",
+          "status": "frozen-reviewed",
+          "remainingBoundary": "6a:121 frozen three-file closure on3790d32 covers morph.cpp15850-16263/compiler.h6250-6309;8Debug/8Release full analysis, parent verifies root/snapshot/receipt hashes.942:144 found no high-confidence defect. Activate actual public entry and route tests to it after primary commit. Positive native rank-two array morphing with nonzero lower bounds and four exception checks is frozen in artifacts\\array-runtime-lookup-probe\\evidence.json."
+        },
+        {
+          "scope": "Complete native runtime-lookup expansion.",
+          "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
+          "files": "New Compiler.RuntimeLookupExpansion*.cs and RuntimeLookupExpansionTests.cs; parent owns existing entry.",
+          "status": "frozen-reviewed",
+          "remainingBoundary": "d62:178 two-file fgExpandRuntimeLookups closure frozen on3790d32,11D/11R full analysis and root/snapshot hashes verified.942:145 found no high-confidence defect. Activate after array packet; exclude neighboring helper-expansion phases. Positive native shared-generic null-check/fast-path/helper evidence is artifacts\\array-runtime-lookup-probe\\evidence.json; no size-check, EH lookup or runtime branch-coverage claim."
+        },
         {
           "scope": "Complete native early/late head and tail merging.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
@@ -365,11 +386,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Port complete fgMergeFinallyChains and fgCloneFinally closures behind Compiler.fg.cs stubs, using pinned fgehopt.cpp entry points2049 and1054 respectively and existing EH/ACD/clone helpers. Preserve all WindowsAMD64 paths and native phase order; bound additional prerequisites before expanding. Use latest artifacts\\eh-cleanup-integration\\capture-configurations.json24cases and seek actual positive native finally cloning/chain merging, not empty-EH cleanup. All preceding packets committed/validated; no repeat investigation. No publication.",
+    "nextAction": "Activate frozen/reviewed6a:121 array packet on the committed finally boundary. Rename private fgMorphArrayOpsCore to actual public fgMorphArrayOps, remove Compiler.fg.cs stub and route tests through public entry; prove old-stub regression, full-analysis Debug/Release, fresh NativeAOT and26-case matrix plus frozen two-method artifacts\\array-runtime-lookup-probe. Compare positive rank-two morphing to native. Then integrate d62:178 runtime-lookup packet/942:145 review similarly. Preserve queued source bytes until each activation. No publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All returned source/test packets and reviews integrated. d62:177 EH native comparison collected; no unread handoff or active task remains. All5retained workers idle; no parent command running or app-native sessions; CoreRoot free.",
+      "workerPackets": "3a:124 finally source/610:89 review/3a:125 native comparison collected and integrated.6a:121 array source/942:144 review frozen and queued;d62:178 runtime lookup source/942:145 review frozen and queued. All5workers idle; no unread handoffs or app-native sessions. Preserve queued packet files outside each coherent commit. CoreRoot free.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -385,6 +406,23 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "finallyOptimization": {
+        "snapshotBase": "3790d32",
+        "sourceManifest": "artifacts\\finally-cloning-integration\\source-manifest.json",
+        "debugPassed": 724,
+        "releasePassed": 599,
+        "skipped": 0,
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\finally-corrected-{Debug,Release}.trx",
+        "regressions": "5positive cases fail old production stubs;4controls pass. B306 throwing/call guards have2failures before correction and10controls; fixed12EH cleanup cases pass. Logs entry-before.log and throw-guard-before.log in integration directory.",
+        "review": "610:89 complete native finally closure review found no high-confidence defect; runtime activation exposed B306 inherited IsEmpty misuse, corrected in empty-try and related finally guards.",
+        "nativeAot": "artifacts\\finally-cloning-corrected-jit\\RyuJitSharp.dll",
+        "sha256": "E958BBB75BEE19FA86DCEDA833E27F472DC0C22099E43C37E71D1B694ADCC8D5",
+        "runtime": "artifacts\\finally-cloning-integration\\runtime-validation.json:26configurations139positive bodies278finally phase completions; exact selected methods/JIT hash/GCStress/no fallback verified.",
+        "configurations": "artifacts\\finally-cloning-integration\\capture-configurations.json:prior24 plus one positive-cloning method and three optimized GC-EH methods.",
+        "nativeEvidence": "artifacts\\finally-cloning-probe\\evidence.json",
+        "comparison": "artifacts\\finally-cloning-integration\\native-phase-comparison.json:3a:125 confirms8/8byte-identical selected phase bodies, matching positive clone/fault conversion and two chain merges, CatchObject control and16/29statement-budget rejections. CFG/effects and stdout match, including throwing DIV and distinct clone/fault increments.",
+        "gaps": "B307 cloned node IDs and post-phase profile-check diagnostics differ. FinallyPair reports native387/managed367bytes; other3selected sizes match but no full code/GC/EH/unwind parity is established. Native GC-EH reference has no raw-hex output; exhaustive nested/profiled runtime EH remains open."
+      },
       "emptyEhCleanup": {
         "snapshotBase": "91d0592",
         "sourceManifest": "artifacts\\eh-cleanup-integration\\source-manifest.json",
@@ -5896,6 +5934,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "finally-cloning-and-chain-merging",
+      "native": ["src\\coreclr\\jit\\fgehopt.cpp:1054-1647,1673-1808,2049-2302"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.FinallyCloning.cs", "sources\\Core\\jit\\compiler\\Compiler.FinallyCloning.Validation.cs", "sources\\Core\\jit\\compiler\\Compiler.FinallyChainMerging.cs"],
+      "status": "Complete WindowsAMD64 production phases, canonical retargeting and DEBUG exit validator. Eight selected phase bodies match native and normal/exceptional/optimized GC-EH execution passes. B307 clone IDs, profile diagnostics and broader code/EH parity remain open.",
+      "reconciledCommit": null
+    },
     {
       "area": "empty-eh-cleanup",
       "native": ["src\\coreclr\\jit\\fgehopt.cpp:33-264,440-740,749-1022", "src\\coreclr\\jit\\fgflow.cpp:290-338", "src\\coreclr\\jit\\block.h:1049-1056"],

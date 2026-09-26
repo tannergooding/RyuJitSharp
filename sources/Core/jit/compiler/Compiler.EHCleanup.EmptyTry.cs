@@ -76,7 +76,7 @@ public partial class Compiler
             assert(firstTry.TryIndex == xtnum);
 
             var canThrow = false;
-            if (!firstTry.IsEmpty)
+            if (!firstTry.isEmpty())
             {
                 foreach (var stmt in firstTry.Statements)
                 {

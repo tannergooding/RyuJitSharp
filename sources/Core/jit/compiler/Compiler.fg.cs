@@ -13545,9 +13545,6 @@ public partial class Compiler
         return PhaseStatus.MODIFIED_EVERYTHING;
     }
 
-    // TODO: Port phase - fgCloneFinally
-    public PhaseStatus fgCloneFinally() => PhaseStatus.MODIFIED_NOTHING;
-
     // TODO: Port phase - fgComputeBlockWeights
     public PhaseStatus fgComputeBlockWeights() => PhaseStatus.MODIFIED_NOTHING;
 
@@ -14189,9 +14186,6 @@ public partial class Compiler
 
     // TODO: Port phase - fgLateCastExpansion
     public PhaseStatus fgLateCastExpansion() => PhaseStatus.MODIFIED_NOTHING;
-
-    // TODO: Port phase - fgMergeFinallyChains
-    public PhaseStatus fgMergeFinallyChains() => PhaseStatus.MODIFIED_NOTHING;
 
     // TODO: Port phase - fgMorphArrayOps
     public PhaseStatus fgMorphArrayOps() => PhaseStatus.MODIFIED_NOTHING;
