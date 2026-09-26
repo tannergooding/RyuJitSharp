@@ -1511,7 +1511,7 @@ public partial class Compiler
 
         while (cnt-- != 0)
         {
-            ref var lvaDsc = ref lvaTable[tempNum];
+            ref var lvaDsc = ref lvaTable[lvaCount];
 
             lvaDsc.Type = TYP_UNDEF;
             lvaDsc.lvIsTemp = false;

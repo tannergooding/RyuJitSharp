@@ -45,8 +45,8 @@
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
           "files": "artifacts\\backend-gc-loop-probe only; no production edits.",
           "doneWhen": "Three or four focused cases with exact payload/collection outcomes and provenance, or minimized first managed failure.",
-          "status": "returned-managed-failure",
-          "result": "Native passes all four cases with twelve confirmed helper collections. Managed object/interior loops pass separately; LoopConditional aborts in raMarkStkVars at the register/frame-home invariant. LoopStruct not reached."
+          "status": "complete",
+          "result": "B251 fixes batch-temp descriptor initialization. All four unchanged loop cases execute managed code with twelve confirmed helper collections; twenty standard and three interior/pin methods also pass fresh GCStress4 captures."
         }
       ],
       "deferred": [
@@ -59,11 +59,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Local-candidate construction is complete and isolated validation passes26Debug/22Release; production allocation remains gated. Parent next: repair the LoopConditional register/frame-home assertion in Compiler.raMarkStkVars:64 from artifacts\\backend-gc-loop-probe\\results.txt. Compare the whole native function and trace the offending local rather than assuming V02; add a failing-before regression and rerun all four loop cases with a fresh NativeAOT DLL. SSA-liveness and binary-interning workers remain active; collect their handoffs before starting successors. No publication or upstream-defect corrections.",
+    "nextAction": "B251 batch-temp initialization and loop/reference execution are complete. Collect SSA worker turn4 (node metadata/native diagnostics repairs) and VN worker turn7 (exact constant-interning helper order and numbering regressions), review revised diffs and final hashes, then run combined Debug/Release integration selection and commit each complete packet separately. Full SSA construction, VN phase and optimized allocation remain gated. No publication.",
     "handoff": {
       "status": "parallel-prerequisite-integration",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 through turn2 is collected and now running SSA liveness;3a2c8d9b through turn4 is collected and now running binary interning. d62fc6a5 through turn66 returned frozen loop evidence and is idle: parent must repair LoopConditional before this packet is resolved. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. Early liveness committed f613736 and binary folding6087632. No app-native child-session coordination.",
+      "workerPackets": "610162a0 through turn3 is collected; SSA review found missing replacement metadata/diagnostics and same-packet repairs are running. 3a2c8d9b through turn6 is collected:261/261 includes13VM cases; parent found identity helper allocation-order differences, now under repair with numbering tests and the14existing unary cases. d62fc6a5 through turn67 is collected and resolved: all loop/corpus/interior captures pass with batch-temp-jit. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. Local candidates committed c7c08e9. No app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -79,6 +79,29 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "batchTemporaryInitialization": {
+        "nativeBoundary": "compiler.hpp:2429-2495 lvaGrabTemps; managed Compiler.lva.cs.",
+        "backlog": "B251",
+        "snapshotBase": "c7c08e9dbfa245b2c1aff9e59ecba70d0e3c3db3",
+        "sourcePatch": "artifacts\\batch-temp-validation\\source.patch",
+        "sourcePatchSha256": "8AE35645E69282E43C831F3C9A43C1B3D6A4ADD1CA31501831AA90C325DCA5C6",
+        "beforeTests": "artifacts\\batch-temp-validation\\results\\batch-temps-before.trx",
+        "beforeFailed": 4,
+        "debugTests": "artifacts\\batch-temp-validation\\results\\batch-temps-debug.trx",
+        "releaseTests": "artifacts\\batch-temp-validation\\results\\batch-temps-release.trx",
+        "debugPassed": 13,
+        "releasePassed": 13,
+        "skipped": 0,
+        "selection": "FullyQualifiedName~LocalVariableTempTests|FullyQualifiedName~RegisterAllocationStackHomeTests",
+        "rootSnapshotHashesMatch": true,
+        "managedJit": "artifacts\\batch-temp-jit\\RyuJitSharp.dll",
+        "managedJitSha256": "E5EC3A199959AE1EB74E9E99044C80833B87608AE0B9636BCC1CE8949E6BA62F",
+        "runtimeEvidence": "artifacts\\backend-gc-loop-probe\\results.txt",
+        "runtimeCaptures": "artifacts\\backend-gc-loop-probe\\batch-temp-{loop,standard,interior}-gcstress4 and paired batch-temp-{standard,interior}-native-gcstress4; manifest.json in each directory.",
+        "runtimeResult": "Exact4/4,20/20,3/3headers, exit0, no timeout/skip/failure, nonzero generated code and RunAltJitCode=1. Loop probe confirms twelve helper full collections; interior/pin probe confirms three. Native loop baseline also passes.",
+        "reproduction": "Use scripts\\porting\\Invoke-PortingCorpus.ps1 with each manifest's CoreRoot, Corpus, TypeName derived from headers and ExpectedMethods; retain -MinOpts -GcStress -ExecuteManagedCode and the recorded ManagedJit/ManagedSource. Set GC_LOOP_CASE=all or GC_INTERIOR_CASE=all for those probes. Exact commands and probe source/hash are in runtimeEvidence.",
+        "limitation": "Selected managed execution only; no exclusive-root, object-movement, broad GC or codegen parity claim."
+      },
       "localRegisterCandidates": {
         "nativeBoundary": "lsra.cpp:1592-1962 identifyCandidates<true>; regalloc.cpp:429-501 checkForDNER; lsrabuild.cpp:1398-1405 makeUpperVectorInterval.",
         "scope": "Complete Windows-AMD64 local candidate specialization; optimized build/allocation/resolution remain gated.",
@@ -5292,6 +5315,13 @@
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.EarlyLiveness.cs", "sources\\Core\\jit\\liveness"],
       "reconciledCommit": null,
       "scope": "Complete native EarlyLiveness policy; remaining non-early tree/SSA modes are not reconciled."
+    },
+    {
+      "area": "batch-temporary-initialization",
+      "native": ["src\\coreclr\\jit\\compiler.hpp"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.lva.cs"],
+      "reconciledCommit": null,
+      "scope": "lvaGrabTemps descriptor initialization; B251."
     },
     {
       "area": "simd-recognition",

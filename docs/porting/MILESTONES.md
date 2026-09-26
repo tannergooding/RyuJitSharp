@@ -15,6 +15,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: References across loop backedges
+
+Selected minopts methods now retain objects, array interiors, conditional
+references and reference-bearing structs across loop backedges and confirmed
+full collections. Conditional stack merging exposed a temporary-allocation
+defect: allocating multiple locals initialized only the first descriptor.
+Every descriptor now receives the native initial type, temporary flag and
+stack-home state.
+
+The loop cases execute managed-generated code under GC stress, alongside the
+existing scalar and interior/pinning cases. This extends execution coverage;
+it does not establish general GC, optimized allocation or dump/code parity.
+
 ## 2026-09-25: Local register-candidate construction
 
 The optimized-allocation prerequisites now include native local eligibility,
