@@ -265,8 +265,10 @@ Binary VN constant evaluation includes native eligibility and exception guards,
 numeric casts and bitcasts. Binary interning, algebraic identities and VM type
 comparisons are implemented, preserving constant-interning order and runtime
 definite/unknown answers. Related-comparison tables retain native entries and
-ordering. Scalable ARM64 all-bits constants explicitly report NYI. Higher-arity
-dispatch and the full VN phase remain incomplete.
+ordering. Scalable ARM64 all-bits constants explicitly report NYI. Ternary and
+quaternary interning use the existing chunk/app storage and preserve variable
+arity and `MapStore`'s fourth-argument exception contract. Map selection and the
+full VN phase remain incomplete.
 
 Assertion descriptors use immutable managed objects with value-type operands;
 reversal creates a new descriptor. Vector constants own a copied byte array

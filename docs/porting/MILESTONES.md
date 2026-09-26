@@ -15,6 +15,14 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Higher-arity value numbers
+
+Three- and four-operand value-number functions now use native ordered interning
+and the existing chunk storage. This includes variable-arity SIMD attributes
+and the special fourth-argument contract for memory-map stores. These overloads
+do not perform constant folding; map-selection algorithms and the full
+value-numbering phase remain incomplete.
+
 ## 2026-09-25: Filters and nested finally execution
 
 Selected minopts methods now execute accepted and rejected exception filters

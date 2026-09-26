@@ -37,7 +37,7 @@
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
           "files": "ValueNumStore.HigherArity.cs, ValueNumHigherArityTests.cs and only genuinely required arity3/4 storage support.",
           "doneWhen": "Frozen native-faithful dispatcher closure with isolated Debug/Release evidence and root/snapshot hashes.",
-          "status": "in-progress",
+          "status": "complete",
           "deferred": "Full VN phase, map-selection algorithm and unowned compiler changes."
         },
         {
@@ -79,6 +79,20 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "higherArityValueNumbers": {
+        "nativeBoundary": "valuenum.cpp:2982-3017 ternary VNForFunc and3036-3069 quaternary VNForFunc.",
+        "sourceManifest": "artifacts\\vn-higher-arity-validation\\evidence.txt",
+        "snapshotBase": "e64909f",
+        "rootSnapshotHashesMatch": true,
+        "debugTests": "artifacts\\vn-higher-arity-validation\\snapshot\\artifacts\\tst\\Debug\\vn-higher-debug-final.trx",
+        "releaseTests": "artifacts\\vn-higher-arity-validation\\snapshot\\artifacts\\tst\\Release\\vn-higher-release-final.trx",
+        "debugPassed": 307,
+        "releasePassed": 307,
+        "skipped": 0,
+        "newCases": 10,
+        "coverage": "Ordered argument/function identity, native type-independent cache keys, zero-arity attributes, MapStore fourth-argument NoVN/exception allowance, chunk rollover and stable function views;297existing numeric cases also pass.",
+        "limitation": "Pure interning, not folding or full VN activation; existing storage needed no changes."
+      },
       "filterAndNestedFinallyExecution": {
         "scope": "FilteredObject accepted/rejected filters and NestedFinallyObject normal/exceptional paths, retaining references across collections.",
         "evidence": "artifacts\\backend-filter-gc-probe\\results.txt",
