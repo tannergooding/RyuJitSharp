@@ -23,7 +23,7 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Corrected Random/Replay+ConfigIntArray5 integrated112D83R on c1cca5a; B295 fixed with three failing-before cases. RLHook/RL5 frozen and under native review. Parent preparing full CSE factory/phase/wrapper closure; production entry remains inactive until all families integrate.",
+      "parentScope": "RLHook/RL5 integrated125D83R on2142288;942:120 confirmed B297 diagnostic correction. All policy families complete. Parent phase3 WIP includes factory/production wrapper and native fgDumpTrees;942:119/120 reviews clear,610 validating production tests after IDE0007 corrections. No active-phase runtime evidence yet.",
       "parallelPackets": [
         {
           "scope": "Complete Boolean optimization with the native CCMP switch-detection prerequisite.",
@@ -71,8 +71,22 @@
           "scope": "Complete native Debug RLHook and RL CSE heuristics.",
           "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
           "files": "New matching optcse partials and focused tests.",
+          "status": "done",
+          "remainingBoundary": "Corrected6a:108 family integrated125D83R on2142288.942:118 numeric/order review clear and942:120 confirms B297 formatting correction. Exact five overlays artifacts\\cse-rl-integration\\source-manifest.json. Production phase remains inactive."
+        },
+        {
+          "scope": "Complete optional Debug CSE emission metrics mode D008.",
+          "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
+          "files": "CodeGen.GenerationPhases.cs, CodeGenCSEMetricsTests.cs, CodeGenEmissionPhaseTests.cs; parent supplies readonly Compiler.CSE.HeuristicAccess.cs:CseCount.",
           "status": "in-progress",
-          "remainingBoundary": "Frozen five-file family, unchanged through6a:107; corrected helper compatibility81D40R on c1cca5a. Exact ten overlays in artifacts\\cse-validation\\rl-c1cca5a-source-manifest.json.942 reviewing native numerical policy, ordering and diagnostics before parent integration."
+          "remainingBoundary": "Three cases fail against2142288 rejection. Final isolated validation uses full policy hierarchy and parent phase3; no CoreRoot work. Do not include in phase activation unless explicitly integrated after validation."
+        },
+        {
+          "scope": "Complete native loop-hoisting prerequisite and driver closure without phase activation.",
+          "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
+          "files": "New Compiler.LoopHoisting*.cs, conventional loop-hoist models if needed, LoopHoistingTests.cs; existing shared additions require approval.",
+          "status": "in-progress",
+          "remainingBoundary": "Identify complete optHoistLoopCode closure and shared prerequisites. Reuse parent policy query and existing VN/loop helpers. Keep production stub until parent integration after CSE."
         },
         {
           "scope": "Complete native if-conversion descriptor, transforms and production phase.",
@@ -281,11 +295,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit corrected modes5 plus tracking after942 confirms B295 fix; integrated112D83R on c1cca5a, exact artifacts\\cse-modes-integration\\source-manifest.json. Then collect942 RL5 review and integrate frozen6a:107 packet. Parent Compiler.CSE.Phase.cs WIP includes native factory/phase and real production wrapper/cleanup (optcse.cpp5541-5764,5827-5863,5922-5935); old stubs still present until activation integration.610 owns CSEPhaseTests.cs. Native optIsCSEcandidate consumer belongs to still-unported optHoistLoopBlocks; do not add partial hoisting. Reuse20 configs/native13-promotion coverage for activation. CoreRoot free; no publication.",
+    "nextAction": "Commit validated RL5 plus tracking (125D83R on2142288;942:120 clear). Collect610 CSEPhaseTests.cs full D/R after parent IDE0007 fixes; parent phase3 is Compiler.CSE.Phase.cs/Compiler.opt.cs/Compiler.fg.cs including complete fgDumpTrees.942:119/120 native reviews clear. Integrate exact phase/test source, full D/R, then fresh AOT and20 configs/native13-promotion comparison.3a D008 metrics closure remains separate;d62 loop-hoisting prerequisite active without production stub edit. CoreRoot free; no publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "d62:153 corrected modes5 frozen58D29R and integrated112D83R.6a:107 RL5 frozen81D40R against corrected helper;942 reviewing fix and RL.610 preparing production phase/dispatch tests; parent owns factory and phase implementation.3a/d62/6a otherwise idle. CoreRoot free; no app-native sessions.",
+      "workerPackets": "RL5 corrected6a:108 and integrated125D83R;942:120 clear.610 owns production phase tests and refreshes corrected parent3.3a owns optional CSE metrics plus old rejection-test update;d62 owns loop-hoisting prerequisite.6a/942 idle. CoreRoot free; no app-native sessions.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -301,6 +315,17 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "rlCse": {
+        "snapshotBase": "2142288",
+        "sourceManifest": "artifacts\\cse-rl-integration\\source-manifest.json",
+        "debugPassed": 125,
+        "releasePassed": 83,
+        "skipped": 0,
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\cse-rl-full-{Debug,Release}.trx",
+        "scope": "Complete Debug RLHook/RL policy prerequisites, not active production CSE.",
+        "review": "942:118 selection/softmax/gradient/update-order review clear;942:120 confirms B297 formatting correction and exact hashes.",
+        "regressions": "Update diagnostic capture fails with old alpha/reward formatting and passes with native FMT_WT/%7.4f."
+      },
       "randomReplayCse": {
         "snapshotBase": "c1cca5a",
         "sourceManifest": "artifacts\\cse-modes-integration\\source-manifest.json",
@@ -6772,6 +6797,13 @@
       "native": ["src\\coreclr\\jit\\optimizebools.cpp:20-429,450-1486,1619-1883", "src\\coreclr\\jit\\switchrecognition.cpp:70-103,123-194,212-344,366-478"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.BooleanOptimization*.cs", "sources\\Core\\jit\\compiler\\Compiler.SwitchRecognition.Detection.cs", "sources\\Core\\jit\\compiler\\Compiler.SwitchOptimization.cs:fgFoldCondToReturnBlock"],
       "status": "Complete Boolean phase active. Its switch dependency remains an explicit complete detection-only entry; the complete conversion-mode phase is now separately active.",
+      "reconciledCommit": null
+    },
+    {
+      "area": "rl-cse-heuristics",
+      "native": ["src\\coreclr\\jit\\optcse.h:257-332", "src\\coreclr\\jit\\optcse.cpp:3005-3270,3294-3954"],
+      "csharp": ["sources\\Core\\jit\\optcse\\CSE_HeuristicRLHook.Decisions.cs", "sources\\Core\\jit\\optcse\\CSE_HeuristicRLHook.Features.cs", "sources\\Core\\jit\\optcse\\CSE_HeuristicRL.cs"],
+      "status": "Complete Debug decision/feature/stochastic-selection/update policy families with shared parameterized choices and canonical ConfigIntArray. Production activation remains separate.",
       "reconciledCommit": null
     },
     {

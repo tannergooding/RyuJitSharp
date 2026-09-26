@@ -15,6 +15,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Learning-based CSE policies
+
+The Debug RLHook and RL policies now implement configured decisions, feature
+reporting, stochastic selection and policy-gradient updates using the shared
+candidate model. Choice order, numeric policy and update diagnostics follow
+the native implementations.
+
+All CSE policy families are implemented. Production phase activation and optional
+emission metrics still require their integrated execution boundary.
+
 ## 2026-09-26: Random and replay CSE
 
 Debug CSE policies now support native-seeded random selection and configured

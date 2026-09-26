@@ -648,8 +648,9 @@ Its ordered managed choice list preserves native reverse-stack traversal and
 mutable choice references; no extra greedy iteration cap is introduced.
 Debug random and replay policies are implemented with the shared native integer
 configuration parser. Adjacent minus tokens and the persistent negative sign
-retain pinned behavior (B295/B296). Learning-based Debug families and phase
-dispatch remain incomplete; these prerequisites are not active CSE execution parity.
+retain pinned behavior (B295/B296). Debug RLHook and RL policies also implement
+decision replay, feature reporting, stochastic selection and parameter updates.
+Phase dispatch remains inactive; these prerequisites are not active CSE execution parity.
 
 Register-state copying accepts ordinary cross-operator replacements and delegates
 call/COPY/RELOAD state as native does (B292). Calls still require call sources, and
@@ -1383,9 +1384,10 @@ authorize silent omission of requested diagnostics or payload instructions.
 Windows-AMD64 `genEmitMachineCode` rejects this diagnostic mode with
 `CORJIT_SKIPPED` before code-size publication, unwind reservation or EE allocation.
 The complete ordinary emission path is implemented. Native `optGetCSEheuristic`
-constructs a policy even when none exists yet; its policy hierarchy and
-`DumpMetrics` implementations remain unported (B238). Returning null or printing
-invented empty metrics would not preserve the native behavior.
+constructs a policy even when none exists yet. The policy hierarchy and its
+`DumpMetrics` implementations are now ported, but factory activation and the
+emission callsite remain the integration boundary (B238). Returning null or
+printing invented empty metrics would not preserve the native behavior.
 
 ### D009: Final metadata without optional late disassembly
 
