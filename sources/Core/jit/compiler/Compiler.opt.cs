@@ -219,9 +219,6 @@ public partial class Compiler
     // TODO: Port phase - optOptimizeCSEs
     public void optOptimizeCSEs() { }
 
-    // TODO: Port phase - optOptimizeBools
-    public PhaseStatus optOptimizeBools() => PhaseStatus.MODIFIED_NOTHING;
-
     // TODO: Port phase - optRecognizeAndOptimizeSwitchJumps
     public PhaseStatus optRecognizeAndOptimizeSwitchJumps() => PhaseStatus.MODIFIED_NOTHING;
 

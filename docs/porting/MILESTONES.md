@@ -15,6 +15,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Boolean optimization
+
+Boolean optimization now folds adjacent conditions and range tests, combines
+eligible compare chains, and preserves native branch polarity and profile
+updates. Its APX path uses the complete switch-detection mode needed to avoid
+inappropriate compare chaining; switch conversion remains separate.
+
+A targeted execution probe performs the same four Boolean folds as native while
+preserving results and side effects across integer boundary inputs. The established
+optimized and GC-stress cases still execute, and `Counted` and `Nested` retain
+their native-matching bodies. Full generated-code parity and broader APX coverage
+remain outstanding.
+
 ## 2026-09-26: CSE candidate and dataflow support
 
 Common-subexpression elimination now has native-order candidate discovery,

@@ -23,14 +23,14 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Models committed830b309. CSE prerequisite6-file packet integrated on830b309 and validated60D58R, including8 CSE cases;942:101 review clear. Commit CSE6+related docs, then integrate/activate Boolean packet3a:78 after942 review. No production CSE/cloning activation.",
+      "parentScope": "Models830b309/CSE115bd6b committed. Boolean activation validated1176D1149R and18captures117bodies/71phase completions/27conservative changed statuses. Positive99-case probe matches native4 actual folds and pass counts. Commit exactBoolean7+docs; then integrate corrected ifconversion4 packet or next complete lane. B287 resolved as valid native null exclusion, not upstream defect;610 repairing bypass.",
       "parallelPackets": [
         {
           "scope": "Complete Boolean optimization with the native CCMP switch-detection prerequisite.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
           "files": "New Compiler.BooleanOptimization*.cs/BooleanOptimizationTests.cs and Compiler.SwitchRecognition.Detection.cs/SwitchRecognitionDetectionTests.cs.",
           "status": "in-progress",
-          "remainingBoundary": "Six-file Boolean+CCMP-detection packet frozen3a:78,21D21R on76a6f08;942 reviewing.3a now owns only NEW switch-conversion files/tests toward full native conversion mode; frozen Boolean/detection files require permission to change. Both public phases remain inactive."
+          "remainingBoundary": "Packet3a:78/review942:102 integrated1176D1149R/18captures117bodies.99-case probe matches native4 actual folds; exactBoolean7 ready to commit.3a owns NEW switch-conversion files/tests only; switch public phase inactive."
         },
         {
           "scope": "Complete loop-cloning representation and guard-expression prerequisites before phase closure.",
@@ -44,14 +44,14 @@
           "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
           "files": "New Compiler.CSE.Candidates*.cs/Compiler.CSE.Dataflow*.cs/CSECandidateTests.cs; existing CSEdsc.cs and CSE_HeuristicCommon.cs explicitly authorized.",
           "status": "in-progress",
-          "remainingBoundary": "Six-file prerequisite frozen6a:86 and integrated60D58R on830b309;942:101 review clear. All6 frozen including Compiler.opt.cs until commit.6a owns complete next heuristic-selection/cost/rewrite prerequisites in NEW files only; report shared dependencies before edits. Public CSE inactive."
+          "remainingBoundary": "Prerequisite6a:86 committed115bd6b after60D58R/942:101 clear review;6a notified.6a owns complete next heuristic-selection/cost/rewrite prerequisites in NEW files only; report shared dependencies before edits. Compiler.opt.cs parent-owned during Boolean activation. Public CSE inactive."
         },
         {
           "scope": "Complete native if-conversion descriptor, transforms and private phase core.",
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
           "files": "New ifconversion/OptIfConversionDsc*.cs, Compiler.IfConversion*.cs and IfConversionTests.cs.",
           "status": "in-progress",
-          "remainingBoundary": "Assigned complete pinned ifconversion.cpp Windows-x64 closure on7d1b595. Shared files and public entry remain untouched. Preserve eligibility, numeric/effect order, CFG/profile and reachability budget; report actual shared blockers."
+          "remainingBoundary": "Packet610:57 initial22D22R/review otherwise clear. Parent resolved B287 via native nextBlock==excludedBlock check; authorized610 to restore unconditional call and update Compiler.RedundantBranches.Reachability.cs nullable fromBlock/stack contract, with scratch/budget regression. Expect revised4-file packet on115bd6b. Public phase inactive; no upstream defect or approved deviation."
         },
         {
           "scope": "Complete native optUnrollLoops and required local helper/visitor closure.",
@@ -253,11 +253,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Models committed830b309. Commit CSE6+docs after60D58R integration (artifacts\\cse-integration\\source-manifest.json;942:101 clear), excluding Boolean/driver WIP. Then collect942 Boolean conformance review and integrate3a:78 packet (artifacts\\boolean-optimization-validation\\source-manifest.json,21D21R), add production-entry coverage and activate only complete optOptimizeBools; retain detection-only switch mode until full conversion ready. Preserve17 captures for phase activation. Parent snapshot830b309+CSE6 only. CoreRoot free; no publication.",
+    "nextAction": "Commit Boolean7+docs after1176D1149R and18captures117bodies/71phase completions. Positive probe99cases passes native/baseline/current; native/current folds Main2,Range1,NonZeroPair1,SameTarget0 with matching pass counts. Preserve new18-config matrix artifacts\\boolean-phase-validation\\capture-configurations.json. Then collect610 corrected ifconversion4 packet (B287 nullable-exclusion contract) and other lanes. CoreRoot free. Parent snapshot115bd6b+Boolean7 only; no ifconversion/driver overlays and no publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Collectedd62:133 model packet committed830b309;6a:85/86 CSE packet integrated60D58R;942:100/101 reviews;3a:78 Boolean packet21D21R.3a now new switch-conversion closure;d62 new cloning driver;6a new CSE heuristic prerequisites;610 new if-conversion;942 Boolean review. Frozen6 CSE and6 Boolean files remain unchanged. CoreRoot free; no app-native sessions.",
+      "workerPackets": "Collected3a:78;942:102-105;610:57-63 including probe62. Models830b309/CSE115bd6b committed; Boolean7 validated ready.3a switch conversion,d62 cloning driver,6a CSE heuristic prerequisites active.610 repairing ifconversion plus specifically authorized nullable reachability helper;942 idle/CoreRoot free. No app-native sessions.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -273,6 +273,24 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "booleanOptimizationActivation": {
+        "snapshotBase": "115bd6b",
+        "sourceManifest": "artifacts\\boolean-phase-validation\\source-manifest.json",
+        "debugPassed": 1176,
+        "releasePassed": 1149,
+        "skipped": 0,
+        "selection": "Exact RBO integration plus model/CSE/Boolean/detection classes;23 Boolean/detection cases including both destination orientations and unchanged phase.",
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\boolean-phase-integrated-{Debug,Release}.trx",
+        "nativeAot": "artifacts\\boolean-phase-jit\\RyuJitSharp.dll",
+        "jitSha256": "A2CF96BDA9CA9E29D1B7550C866629B84ACBD9AF049B1B9227EBB096CBD97018",
+        "runtimeEvidence": "artifacts\\boolean-phase-validation\\runtime-validation.json",
+        "configurations": "artifacts\\boolean-phase-validation\\capture-configurations.json",
+        "runtime": "18 managed execution configurations,117 positive bodies,71 Boolean completions,27 conservative modified statuses. First17 preserve all prior execution/GCStress4, with0 actual folds. Positive probe adds99 semantic checks and4 folds matching native per-method/pass counts; no fallback or skip.",
+        "regressions": "Both public shared-destination orientation cases fail against old stub; native reverse orientation uses EQ and redirects true edge to second true target with0.3 likelihood.",
+        "review": "942:102 found no high-confidence divergence in complete Boolean/CCMP detection closure; full switch conversion remains deferred.",
+        "comparison": "aligned-code-comparison.json preserves Counted17/Nested29 native bytes. positive-probe-comparison.json and positive-phase-by-method.json match native fold/pass counts, not full code. Range41->37 and NonZeroPair39->37 managed bytes against pre-activation baseline; no throughput claim and static relocations limit raw-byte interpretation.",
+        "gaps": "Multiblock APX/63-test-cap overlap, never-negative COMMA CFG paths and broad code parity remain unestablished. B288 baseline interpolated-diagnostic import failure kept out of scope; simple probe diagnostics preserve all99 checks."
+      },
       "cseCandidatePrerequisites": {
         "snapshotBase": "830b309",
         "sourceManifest": "artifacts\\cse-integration\\source-manifest.json",
@@ -6587,6 +6605,13 @@
       "native": ["src\\coreclr\\jit\\rangecheck.h", "src\\coreclr\\jit\\rangecheck.cpp", "src\\coreclr\\jit\\assertionprop.cpp"],
       "csharp": ["sources\\Core\\jit\\rangecheck\\", "sources\\Core\\jit\\compiler\\Compiler.ap.Relational.cs"],
       "status": "Complete range-analysis dependency and relational application; RangeProperties remains canonical in the relational partial. Global assertion and range-check elimination phases are active.",
+      "reconciledCommit": null
+    },
+    {
+      "area": "boolean-optimization",
+      "native": ["src\\coreclr\\jit\\optimizebools.cpp:20-429,450-1486,1619-1883", "src\\coreclr\\jit\\switchrecognition.cpp:70-103,123-194,212-344,366-478"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.BooleanOptimization*.cs", "sources\\Core\\jit\\compiler\\Compiler.SwitchRecognition.Detection.cs", "sources\\Core\\jit\\compiler\\Compiler.SwitchOptimization.cs:fgFoldCondToReturnBlock"],
+      "status": "Complete Boolean phase active. Switch dependency is explicit complete detection-only specialization; no conversion-mode request/fallback. Native mixed-mode body retained and switch-conversion phase inactive.",
       "reconciledCommit": null
     },
     {

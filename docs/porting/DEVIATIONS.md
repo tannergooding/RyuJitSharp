@@ -630,6 +630,14 @@ tables reference the same descriptors and retain native occurrence ordering.
 No unmanaged-layout consumer is changed. Heuristic selection and rewriting
 remain incomplete; helper coverage is not CSE execution parity.
 
+Boolean optimization is active, including conditional/range folding, compare
+chains and native Debug GC-stress bookkeeping. The APX switch-recognition
+dependency implements the complete existing detection-only mode; it cannot
+accept a conversion-mode request. Full switch conversion remains inactive.
+The positive probe matches native fold counts and pass counts with preserved
+results/side effects, but not complete generated code. A conservative Debug
+modified-phase status is not evidence that a condition was folded.
+
 VN-based folding and insertion-time statement morphing are also complete
 prerequisites. Local-address folds retain the native 16-bit offset invariant;
 the native constructor's unsigned parameter does not imply wider field storage.
