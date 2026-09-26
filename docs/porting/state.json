@@ -12,45 +12,45 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Advance SSA liveness, binary VN interning and optimized-allocation prerequisites independently while extending minopts loop/reference GC execution.",
+      "scope": "Complete enregistered-local interval construction, ternary/quaternary VN interning and SSA reset prerequisites while extending filter/nested-finally execution.",
       "doneWhen": [
-        "Complete native SSA-policy liveness without changing the supported Early/LIR policies.",
-        "Complete binary VN interning and required native identity/type-comparison helpers without activating the VN phase.",
-        "Validate paired loop/reference GC cases and repair any reached managed translation defect.",
-        "Port a complete optimized-allocation prerequisite without removing the allocation gate before its full closure exists.",
+        "Complete Windows-AMD64 buildIntervals<true> and required native direct helpers without activating optimized allocation.",
+        "Complete native ternary/quaternary VNForFunc pure interning, preserving MapStore and zero-arity contracts.",
+        "Complete fgResetForSsa deep and PHI-only modes without activating the incomplete SSA builder.",
+        "Validate paired filter/nested-finally reference cases and stop at the first real managed frontier.",
         "Review each frozen packet, run focused Debug/Release cases and commit it with related tracking before integrating the next packet."
       ],
       "validation": [
-        "Use focused Debug/Release selections against isolated f613736 archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
+        "Use focused Debug/Release selections against isolated e64909f archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
       "parallelPackets": [
         {
-          "scope": "Complete native fgSsaLiveness policy and required non-LIR SSA liveness closure.",
+          "scope": "Complete buildIntervals<true> Windows-AMD64 specialization and missing stress/validation helpers.",
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
-          "files": "liveness files, new Compiler.SsaLiveness.cs, only the fgSsaLiveness stub in Compiler.fg.cs, and SsaLivenessTests.cs.",
-          "doneWhen": "Frozen full policy closure with actual isolated Debug/Release evidence and root/snapshot hashes; parent reviews integration.",
-          "status": "complete"
+          "files": "New lsra partials and LinearScanLocalIntervalConstructionTests.cs; existing shared helpers require a reported need before edits.",
+          "doneWhen": "Frozen complete builder specialization with actual isolated Debug/Release evidence and exact source hashes; production allocation gate unchanged.",
+          "status": "in-progress"
         },
         {
-          "scope": "Complete binary VNForFunc interning/dispatch with EvalUsingMathIdentity, VNEvalFoldTypeCompare and direct dependencies.",
+          "scope": "Complete ternary/quaternary VNForFunc interning from valuenum.cpp:2982-3077.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
-          "files": "valuenum partials, exact existing stubs and focused binary-interning tests.",
+          "files": "ValueNumStore.HigherArity.cs, ValueNumHigherArityTests.cs and only genuinely required arity3/4 storage support.",
           "doneWhen": "Frozen native-faithful dispatcher closure with isolated Debug/Release evidence and root/snapshot hashes.",
-          "status": "complete",
-          "deferred": "Full VN phase, higher-arity dispatch and unowned compiler changes."
+          "status": "in-progress",
+          "deferred": "Full VN phase, map-selection algorithm and unowned compiler changes."
         },
         {
-          "scope": "Paired native/managed minopts execution retaining references across loop backedges and confirmed collections.",
+          "scope": "Paired native/managed filter and nested-finally execution with live references and confirmed collections.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
-          "files": "artifacts\\backend-gc-loop-probe only; no production edits.",
-          "doneWhen": "Three or four focused cases with exact payload/collection outcomes and provenance, or minimized first managed failure.",
+          "files": "artifacts\\backend-filter-gc-probe only; immutable entry-interval-jit, no production edits.",
+          "doneWhen": "Two focused methods with normal/exceptional and accepted/rejected-filter checks, exact payload/collection outcomes and provenance, or first managed failure.",
           "status": "complete",
-          "result": "B251 fixes batch-temp descriptor initialization. All four unchanged loop cases execute managed code with twelve confirmed helper collections; twenty standard and three interior/pin methods also pass fresh GCStress4 captures."
+          "result": "Both native and managed pass2/2headers and all accepted/rejected/normal/exceptional paths with eleven confirmed full collections; nested-finally sizes404native/407managed."
         }
       ],
       "deferred": [
-        "Higher-arity VN folding dispatch, memory-phi traversal, map selection and the full value-numbering phase.",
+        "Memory-phi traversal, map selection and the full value-numbering phase.",
         "General assertion propagation and full optimized allocation activation; parent may port prerequisite algorithms without bypassing the existing gate.",
         "Full EH-funclet and hardware-import parity are subsequent execution-capability packets, not gates on the first scalar minopts backend path.",
         "Non-xarch hardware-intrinsic folding and hashBv iterator/countBits/setLowest APIs. Native vector Intersects/XOR defects are recorded in B247/B246; their corrected algorithms are not authorized and those entire vector operations are deferred.",
@@ -59,11 +59,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "SSA liveness, VN interning(dbb565b), entry-local definitions(c844973), B251 and loop/EH execution are integrated. Resume complete buildIntervals<true> closure from lsrabuild.cpp:2074-2795: reuse identifyCandidatesWithLocals and entry definitions; port missing initial-parameter stress, last-use/interval validation and any required mode helpers, retaining DoRegisterAllocation's optimized gate until build/allocation/resolution closure exists. Reuse resolved workers for bounded independent next packets after defining exact native boundaries. No publication.",
+    "nextAction": "Parent fgResetForSsa is implemented and passes443Debug/428Release after eight functional before failures. Higher-arity VN packet is collected/reviewed and passes307/307; commit it and SSA reset with documentation, preserving the active LSRA worker files. Record the separately discovered SsaNumInfo.Composite stale-span and null EmptyMemoryPhiDef defects without silently folding them into reset. Filter/nested-finally evidence is verified. Collect LSRA worker turn5 when complete; no optimized activation or publication.",
     "handoff": {
-      "status": "ready-for-local-interval-construction",
+      "status": "parallel-interval-and-ssa-prerequisites",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All packets resolved:610162a0 through turn4(SSA),3a2c8d9b through turn7(VN),d62fc6a5 through turn70(runtime). Parent strengthened VN numbering regression, verified2before failures and297/297final cases, and integrated16entry-definition cases. Combined647/627and30managed runtime methods pass. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
+      "workerPackets": "All prior packets integrated through e64909f. 610162a0 collected through turn4, still building full local intervals. 3a2c8d9b through turn8 is collected, higher-arity packet reviewed and frozen. d62fc6a5 through turn71 is collected, filter/nested-finally packet verified and resolved. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -79,6 +79,18 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "filterAndNestedFinallyExecution": {
+        "scope": "FilteredObject accepted/rejected filters and NestedFinallyObject normal/exceptional paths, retaining references across collections.",
+        "evidence": "artifacts\\backend-filter-gc-probe\\results.txt",
+        "nativeCapture": "artifacts\\backend-filter-gc-probe\\native-gcstress4\\manifest.json",
+        "managedCapture": "artifacts\\backend-filter-gc-probe\\managed-gcstress4\\manifest.json",
+        "managedJit": "artifacts\\entry-interval-jit\\RyuJitSharp.dll",
+        "managedJitSha256": "D903EC5455489A843DB7ADD78DC27BA669622097C3E215BD1BA18327485B3D38",
+        "source": "checkpoint.validation.entryIntervalIntegration",
+        "result": "Native/managed exit0,2/2exact headers, no timeout/skip/failure, nonzero code and eleven helper-confirmed full collections. Managed RunAltJitCode=1. Payload/weak-identity checks pass. Native sizes295/404; managed295/407.",
+        "reproduction": "Build artifacts\\backend-filter-gc-probe\\GcFilterProbe.csproj, then Invoke-PortingCorpus.ps1 with TypeName RyuJitSharp.GcFilterCases, ExpectedMethods FilteredObject/NestedFinallyObject, -MinOpts -GcStress; managed adds recorded DLL/provenance and -ExecuteManagedCode. Exact commands and hashes are in evidence.",
+        "limitation": "Nonselected helpers throw/collect/evaluate the filter. No exclusive-root, movement, full EH or codegen parity claim."
+      },
       "ssaTreeLiveness": {
         "nativeBoundary": "liveness.cpp:123-153 Run,1025-1263 InterBlockLocalVarLiveness,1585-1659 ComputeLife,2039-2225 RemoveDeadStore,2768-2790 fgSsaLiveness.",
         "sourceManifest": "artifacts\\ssa-liveness-validation\\source-manifest.txt",

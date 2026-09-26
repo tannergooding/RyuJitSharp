@@ -15,6 +15,14 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Filters and nested finally execution
+
+Selected minopts methods now execute accepted and rejected exception filters
+and normal and exceptional nested-finally paths while retaining references
+across confirmed full collections. Values and identities match the native
+runs. A remaining nested-finally code-size difference is recorded separately
+from this execution result.
+
 ## 2026-09-25: SSA tree liveness
 
 The SSA liveness policy now performs native memory/local dataflow and backward
