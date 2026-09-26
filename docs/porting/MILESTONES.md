@@ -15,6 +15,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Assertion-propagation phase activation
+
+Global assertion propagation now runs the complete discovery, predicate-sensitive
+dataflow and application sequence, including switch-derived facts and statement
+remorphing. Conditional folding repairs outgoing facts for the retained edge;
+local-mode dispatch retains its nullable statement/block contract.
+
+The established optimized corpora execute with assertion propagation enabled,
+while minopts and GC-stress execution remain intact. `Counted` now uses native's
+zero-based entry test and emits the same 17-byte body. `Nested` shrinks from
+38 to 32 bytes, compared with native's 29; this is a size result, not a throughput
+claim. Full dump and code parity remain open, including cloned tree IDs and
+SSA-memory annotations.
+
 ## 2026-09-26: Arithmetic assertions and statement propagation
 
 Assertion application now handles checked arithmetic, division and modulo,

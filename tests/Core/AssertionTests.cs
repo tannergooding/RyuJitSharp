@@ -22,6 +22,30 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class AssertionTests
 {
+    [TestCase(GT_ADD)]
+    [TestCase(GT_SUB)]
+    [TestCase(GT_MUL)]
+    [TestCase(GT_DIV)]
+    [TestCase(GT_UDIV)]
+    [TestCase(GT_MOD)]
+    [TestCase(GT_UMOD)]
+    public static void LocalArithmeticDispatchDoesNotRequireStatementOrBlock(genTreeOps operation)
+    {
+        WithCompiler(compiler => {
+            var tree = compiler.gtNewBinaryNode(operation, TYP_INT,
+                compiler.gtNewIconNode(TYP_INT, 4), compiler.gtNewIconNode(TYP_INT, 2));
+            if (operation is GT_ADD or GT_SUB or GT_MUL)
+            {
+                tree.Flags |= GTF_OVERFLOW;
+            }
+
+            var flags = tree.Flags;
+            Assert.That(compiler.optAssertionProp(compiler.apFull, tree, null, null), Is.Null);
+            Assert.That(tree.Oper, Is.EqualTo(operation));
+            Assert.That(tree.Flags, Is.EqualTo(flags));
+        });
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void DataflowInitializesValidAssertionsAndSeparatesConditionalGeneration(bool falseEdge)

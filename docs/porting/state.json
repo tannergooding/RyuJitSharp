@@ -12,7 +12,7 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Preserve active native-faithful VN and complete assertion-propagation prerequisites: range analysis, relational/arithmetic application, VN-based folding and insertion-time morphing. Activate assertion propagation only after its complete dependency closure is validated.",
+      "scope": "Preserve active VN and complete assertion propagation while integrating native range-check elimination and VN copy propagation. Keep future phase entries inactive until their complete dependency closure and execution behavior are validated.",
       "doneWhen": [
         "Preserve the completed loop-inversion/iteration-analysis contract and identify the first missing native transformation behind a concrete optimized-code difference.",
         "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
@@ -23,8 +23,22 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Range/relational/dataflow committed61e5569; folding/morph committed5212336 with773D754R. Parent has written complete optAssertionProp dispatcher and private optAssertionPropMainCore in Compiler.ap.Phase.cs, pending compilation against worker freezes. Production entry remains inactive. Seven phase cases added to ValueNumberPhaseTests: six fail for missing propagation against old entrypoint, while skipped-SSA and five existing VN cases pass.",
+      "parentScope": "Complete production assertion phase active with834D815R and14 exact-source execution configurations (101 emitted bodies,55 FullOpts AP completions,13 changed). Counted entry LE(arg0,0) and17 emitted bytes match native. Parent next integrates range elimination and its complete phase wrapper; collect copy-propagation closure independently. Do not activate reduced phases.",
       "parallelPackets": [
+        {
+          "scope": "Complete range-check elimination helpers after the committed range analysis.",
+          "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
+          "files": "RangeCheck.Elimination.cs, Compiler.RangeCheckRemoval.cs, RangeCheck.cs and RangeEliminationTests.cs.",
+          "status": "in-progress",
+          "remainingBoundary": "6a through79 frozen26D26R on d20b5f3 after authorized optRemoveRangeCheck/gtUpdateSideEffects closure. Manifest artifacts\\range-elimination-validation\\source-manifest.json;942 reviewthrough91 clear. Production rangeCheckPhase remains inactive. Integrate after assertion activation commit."
+        },
+        {
+          "scope": "Complete native VN-based copy propagation and required closure.",
+          "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
+          "files": "New Compiler.CopyPropagation.cs/CopyPropagationTests.cs and existing Compiler.CopyPropSsaDef.cs.",
+          "status": "in-progress",
+          "remainingBoundary": "d62 through123 found CopyPropSsaDef empty. Ownership expanded to complete compiler.h8031-8057 representation preserving actual SSA-definition/node identities, then complete copyprop.cpp. Keep production optVnCopyProp inactive; return coherent freeze."
+        },
         {
           "scope": "Complete relational assertion application and canonical RangeProperties, assertionprop.cpp4141-4221,4433-4910.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
@@ -57,8 +71,8 @@
           "scope": "Complete optCreateJumpTableImpliedAssertions, assertionprop.cpp6007-6129.",
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
           "files": "New Compiler.ap.SwitchAssertions.cs/AssertionSwitchTests.cs and the existing ValueNumStore partial containing PeelOffsets.",
-          "status": "in-progress",
-          "remainingBoundary": "610 through55 found missing PeelOffsetsI32. Ownership expanded to complete native valuenum.cpp16486-16522 in the existing store partial, not a pointer-sized substitute or duplicate compiler helper. Then complete switch assertions preserving duplicate targets, order and diagnostics."
+          "status": "done",
+          "remainingBoundary": "610 through56 frozen8D8R;942 reviewthrough90 clear. Complete switch-implied facts and int32-only offset peeling integrate into active assertion phase834D815R and14 execution configurations."
         },
         {
           "scope": "Complete loop-side-effect analysis required by native fgValueNumber.",
@@ -190,11 +204,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Arithmetic6a:77 and VNStatement3a:74 integrate812D793R on5212336; reviews942:89 andd62:122 clear (artifacts\\assertion-application-integration\\statement-manifest.json). Collect610 switch/PeelOffsetsI32 freeze and integrate. Parent dispatcher/full private phase core already exists in uncommitted Compiler.ap.Phase.cs; compile/test it via snapshot-only optAssertionPropMain forwarding. Six of seven new phase cases fail against the old stub as expected (artifacts\\assertion-phase-validation\\before-manifest.json); do not repeat that investigation. Activate only after full phase/fixture validation, then preserve14 captures and inspect Counted substitution. No remote publication.",
+    "nextAction": "Complete assertion phase is active and validated834D815R plus14 captures using artifacts\\assertion-phase-jit\\RyuJitSharp.dll; Counted now matches native entry predicate and17 code bytes (B267 resolved). Commit this activation, then integrate6a's frozen26D26R range-elimination packet (942 reviewthrough91 clear) with the complete native Compiler.rangeCheckPhase wrapper; preserve14 execution configurations after activation. Collect d62 copy-propagation/CopyPropSsaDef closure independently; its production entry stays inactive until validated. B268/B281 raw diagnostic differences remain nonblocking, not accepted exceptions. No remote publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Collected arithmetic6a:77, VNStatement3a:74, reviews942:89 andd62:122; combined812D793R.610 switch/PeelOffsetsI32 remains active after expanded ownership through55. Other packets resolved and workers idle. Parent phase/fixture WIP is uncommitted; CoreRoot is free. No app-native sessions.",
+      "workerPackets": "Collected switch610:56/review942:90 and range6a:79/review942:91. Assertion activation834D815R and14 runtime captures complete.6a range elimination frozen26D26R, reviewed and ready for next integration;d62 copy propagation active after expanded CopyPropSsaDef ownership through123.3a/610/942 idle. CoreRoot free. No app-native sessions.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -210,6 +224,22 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "assertionPhaseActivation": {
+        "snapshotBase": "d20b5f3",
+        "sourceManifest": "artifacts\\assertion-phase-validation\\source-manifest.json",
+        "debugPassed": 834,
+        "releasePassed": 815,
+        "skipped": 0,
+        "selector": "FullyQualifiedName~Assertion|FullyQualifiedName~RangeAnalysisTests|FullyQualifiedName~ValueNum|FullyQualifiedName~FlowGraphDfsTests|FullyQualifiedName~MorphBlockStmtTests",
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\assertion-phase-integrated-{Debug,Release}.trx",
+        "nativeAot": "artifacts\\assertion-phase-jit\\RyuJitSharp.dll",
+        "runtimeEvidence": "artifacts\\assertion-phase-validation\\runtime-validation.json",
+        "runtime": "All14 established configurations execute101 positive-sized method bodies, unique within each capture, with exact JIT hash and no failure/skip markers. All55 FullOpts compilations finish AP (13 report changes); MinOpts correctly runs no AP. Object stack allocation and GCStress4 configurations retained.",
+        "comparison": "artifacts\\assertion-phase-validation\\aligned-loop-comparison.json proves Counted LE(arg0,0), VN100/80/40 and exact17-byte code match. Native/managed sizes17/17,29/32,26/26,104/101; previous managed Nested38. No throughput or full dump/code parity claim; B268/B281 remain.",
+        "regression": "Six of seven phase cases fail against old stub; final19 focused phase/local-context cases pass per build. Conditional fixtures now carry required GTF_RELOP_JMP_USED. True/false edge facts, zero-assertion stale sets, skipped SSA and constant substitution covered.",
+        "review": "942 switch reviewthrough90 clear; earlier application/morph reviews retained. Full native dispatcher/main preserve discovery, fault exclusion, traversal repair and outgoing-edge updates.",
+        "scope": "Nine exact overlays; complete active phase plus switch prerequisites and nullable local-mode API integration. Range-elimination and copy-propagation WIP excluded."
+      },
       "assertionApplicationIntegration": {
         "snapshotBase": "5212336",
         "sourceManifest": "artifacts\\assertion-application-integration\\statement-manifest.json",
@@ -5276,6 +5306,13 @@
   },
   "sourceMap": [
     {
+      "area": "global-assertion-phase-and-switch-facts",
+      "native": ["src\\coreclr\\jit\\assertionprop.cpp:5909-6127,6765-7025", "src\\coreclr\\jit\\valuenum.cpp:16486-16512"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.ap.Phase.cs", "sources\\Core\\jit\\compiler\\Compiler.ap.SwitchAssertions.cs", "sources\\Core\\jit\\valuenum\\ValueNumStore.Queries.cs"],
+      "status": "Complete production global assertion phase, switch-implied assertions and int32 offset peeling. NativeAOT execution verified; full diagnostic parity remains open.",
+      "reconciledCommit": null
+    },
+    {
       "area": "object-phase-and-stack-array-expansion",
       "native": ["src\\coreclr\\jit\\objectalloc.cpp:188-249", "src\\coreclr\\jit\\helperexpansion.cpp:2785-2937", "src\\coreclr\\jit\\morph.cpp:13577-13625", "src\\coreclr\\jit\\morphblock.cpp:448-484"],
       "csharp": ["sources\\Core\\jit\\objectalloc\\ObjectAllocator.cs", "sources\\Core\\jit\\compiler\\Compiler.StackArrayExpansion.cs", "sources\\Core\\jit\\compiler\\Compiler.MorphInitBlockHelper.cs", "sources\\Core\\jit\\gentree\\GenTree.cs:BashToZeroConst"],
@@ -6378,28 +6415,28 @@
       "area": "assertion-arithmetic-and-vn-statements",
       "native": ["src\\coreclr\\jit\\assertionprop.cpp:4222-4353,5020-5178,5651-5826,6483-6499,6553-6757"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.ap.Arithmetic.cs", "sources\\Core\\jit\\compiler\\Compiler.ap.VNStatement.cs"],
-      "status": "Complete native application and per-statement propagation families. Phase activation remains pending.",
+      "status": "Complete native application and per-statement propagation families consumed by the active global assertion phase.",
       "reconciledCommit": null
     },
     {
       "area": "vn-folding-and-statement-morphing",
       "native": ["src\\coreclr\\jit\\assertionprop.cpp:2652-3453,6514-6551", "src\\coreclr\\jit\\morph.cpp:13451-13569"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.ap.VNFolding.cs", "sources\\Core\\jit\\compiler\\Compiler.MorphBlockStmt.cs"],
-      "status": "Complete native function families; global assertion phase remains inactive.",
+      "status": "Complete native function families consumed by the active global assertion phase.",
       "reconciledCommit": null
     },
     {
       "area": "assertion-range-analysis-and-relational-application",
       "native": ["src\\coreclr\\jit\\rangecheck.h", "src\\coreclr\\jit\\rangecheck.cpp", "src\\coreclr\\jit\\assertionprop.cpp"],
       "csharp": ["sources\\Core\\jit\\rangecheck\\", "sources\\Core\\jit\\compiler\\Compiler.ap.Relational.cs"],
-      "status": "Complete range-analysis dependency and relational application; RangeProperties remains canonical in the relational partial. Range-check elimination and global assertion phase remain inactive.",
+      "status": "Complete range-analysis dependency and relational application; RangeProperties remains canonical in the relational partial. Global assertion phase is active; range-check elimination remains inactive.",
       "reconciledCommit": null
     },
     {
       "area": "forward-assertion-dataflow",
       "native": ["src\\coreclr\\jit\\dataflow.h", "src\\coreclr\\jit\\optimizer.cpp:20-23", "src\\coreclr\\jit\\assertionprop.cpp:6181-6480"],
       "csharp": ["sources\\Core\\jit\\dataflow\\DataFlow.cs", "sources\\Core\\jit\\assertionprop\\AssertionPropFlowCallback.cs", "sources\\Core\\jit\\compiler\\Compiler.ap.Dataflow.cs"],
-      "status": "Complete forward traversal and assertion initialization/gen/merge equations. Native per-merge tracing is disabled; general assertion phase is not activated.",
+      "status": "Complete forward traversal and assertion initialization/gen/merge equations consumed by the active phase. Native per-merge tracing remains disabled.",
       "reconciledCommit": null
     },
     {

@@ -267,9 +267,6 @@ public partial class Compiler
     // TODO: Port phase - optRedundantBranches
     public PhaseStatus optRedundantBranches() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port phase - optAssertionPropMain
-    public PhaseStatus optAssertionPropMain() => PhaseStatus.MODIFIED_NOTHING;
-
     // TODO: Port phase - optHoistLoopCode
     protected PhaseStatus optHoistLoopCode() => PhaseStatus.MODIFIED_NOTHING;
 }

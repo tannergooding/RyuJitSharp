@@ -219,6 +219,35 @@ public sealed partial class ValueNumStore
         }
     }
 
+    public void PeelOffsetsI32(ref ValueNum vn, out int offset)
+    {
+        offset = 0;
+        var first = NoVN;
+        var second = NoVN;
+        while (IsVNBinFunc(vn, VNF_ADD, ref first, ref second))
+        {
+            if ((TypeOfVN(first) != TYP_INT) || (TypeOfVN(second) != TYP_INT))
+            {
+                break;
+            }
+
+            if (IsVNInt32Constant(first) && !IsVNHandle(first))
+            {
+                offset = unchecked(offset + ConstantValue<int>(first));
+                vn = second;
+            }
+            else if (IsVNInt32Constant(second) && !IsVNHandle(second))
+            {
+                offset = unchecked(offset + ConstantValue<int>(second));
+                vn = first;
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+
     public bool IsKnownNonNull(ValueNum vn)
     {
         if (vn == NoVN)

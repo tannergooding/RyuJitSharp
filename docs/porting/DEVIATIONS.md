@@ -566,9 +566,9 @@ do not replace those arrays. The morph diagnostic invocation number is accepted
 in both builds but used only in Debug, like the existing invalidation diagnostic
 tree parameter (B099).
 
-Range analysis, relational application and forward assertion dataflow are now
-implemented, without activating global assertion propagation or range-check
-elimination. Duplicate conditional edges preserve native BitVec assignment:
+Range analysis, relational application and forward assertion dataflow now feed
+the active global assertion phase; range-check elimination remains inactive.
+Duplicate conditional edges preserve native BitVec assignment:
 single-word values are copied before destructive intersection, while multi-word
 storage remains aliased. The forward-analysis callback interface replaces the
 native template protocol without changing traversal or convergence.
@@ -576,10 +576,12 @@ native template protocol without changing traversal or convergence.
 VN-based folding and insertion-time statement morphing are also complete
 prerequisites. Local-address folds retain the native 16-bit offset invariant;
 the native constructor's unsigned parameter does not imply wider field storage.
-Arithmetic/cast/bounds application and VN statement propagation are also
-implemented, preserving native fault conditions and removal cursors. Global
-assertion propagation remains inactive pending switch assertions and integrated
-orchestration evidence.
+Arithmetic/cast/bounds application, VN statement propagation and switch-derived
+facts preserve native fault conditions, int32 offset peeling and removal cursors.
+The complete phase now runs discovery, dataflow, application and outgoing-edge
+repair. Local-mode calls retain nullable statement/block contexts; global range
+queries establish the required block before use. Selected execution is verified,
+but tree-ID and SSA-memory diagnostic differences still prevent full dump parity.
 
 Profile weight lookup uses a managed `ref` output: native leaves the pointed-to
 value unchanged when no profile weights are available, so an unconditional

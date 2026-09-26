@@ -8,6 +8,7 @@ using static RyuJitSharp.Globals;
 using static RyuJitSharp.VNFunc;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
+using AssertionOps = RyuJitSharp.BitSetOps<RyuJitSharp.BitVecTraits, RyuJitSharp.BitVecTraits>;
 using SetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
 
 namespace RyuJitSharp.UnitTests;
@@ -15,6 +16,119 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class ValueNumberPhaseTests
 {
+    [Test]
+    public static void SkippedSsaLeavesAssertionStateUnchanged()
+    {
+        WithCompiler(1, compiler => {
+            var block = CreateGraph(compiler, [[]])[0];
+            nint[] previousOut = [17];
+            block.bbAssertionOut = previousOut;
+
+            Assert.That(compiler.optAssertionPropMain(), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
+            Assert.That(block.bbAssertionOut, Is.SameAs(previousOut));
+            Assert.That(compiler.apTraits, Is.Null);
+        });
+    }
+
+    [Test]
+    public static void AssertionPhaseSubstitutesAValueNumberedLocalConstant()
+    {
+        WithCompiler(1, compiler => {
+            var block = CreateGraph(compiler, [[]])[0];
+            _ = AddStatement(compiler, block,
+                compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, 7)));
+            var statement = AddStatement(compiler, block,
+                new GenTreeUnOp(GT_RETURN, TYP_INT, new GenTreeLclVar(TYP_INT, 0)));
+            PrepareAssertionPropagation(compiler);
+
+            Assert.That(compiler.optAssertionPropMain(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            var result = statement.RootNode.AsUnOp().Op1;
+            Assert.That(result.Oper, Is.EqualTo(GT_CNS_INT));
+            Assert.That(result.AsIntCon().IconValue, Is.EqualTo((nint)7));
+        });
+    }
+
+    [TestCase(0)]
+    [TestCase(7)]
+    public static void AssertionPhasePropagatesEqualityOnlyAlongTheTrueEdge(int constant)
+    {
+        WithCompiler(1, compiler => {
+            compiler.lvaTable[0].lvIsParam = true;
+            var blocks = CreateGraph(compiler, [[1, 2], [], []]);
+            _ = AddStatement(compiler, blocks[0], new GenTreeUnOp(GT_JTRUE, TYP_VOID,
+                new GenTreeOp(GT_EQ, TYP_INT, new GenTreeLclVar(TYP_INT, 0),
+                    compiler.gtNewIconNode(TYP_INT, constant))));
+            var trueReturn = AddStatement(compiler, blocks[1],
+                new GenTreeUnOp(GT_RETURN, TYP_INT, new GenTreeLclVar(TYP_INT, 0)));
+            var falseReturn = AddStatement(compiler, blocks[2],
+                new GenTreeUnOp(GT_RETURN, TYP_INT, new GenTreeLclVar(TYP_INT, 0)));
+            PrepareAssertionPropagation(compiler);
+
+            Assert.That(compiler.optAssertionPropMain(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            var result = trueReturn.RootNode.AsUnOp().Op1;
+            Assert.That(result.Oper, Is.EqualTo(GT_CNS_INT));
+            Assert.That(result.AsIntCon().IconValue, Is.EqualTo((nint)constant));
+            Assert.That(falseReturn.RootNode.AsUnOp().Op1.Oper, Is.EqualTo(GT_LCL_VAR));
+            Assert.That(compiler.AssertionCount, Is.GreaterThan(0));
+        });
+    }
+
+    [TestCase(GT_EQ, 2)]
+    [TestCase(GT_NE, 3)]
+    public static void AssertionPhaseRepairsOutgoingFactsAfterFoldingAnEdge(genTreeOps comparison, int retained)
+    {
+        WithCompiler(1, compiler => {
+            compiler.lvaTable[0].lvIsParam = true;
+            var blocks = CreateGraph(compiler, [[1, 4], [2, 3], [], [], []]);
+            _ = AddStatement(compiler, blocks[0], new GenTreeUnOp(GT_JTRUE, TYP_VOID,
+                new GenTreeOp(GT_EQ, TYP_INT, new GenTreeLclVar(TYP_INT, 0),
+                    compiler.gtNewIconNode(TYP_INT, 7))));
+            _ = AddStatement(compiler, blocks[1], new GenTreeUnOp(GT_JTRUE, TYP_VOID,
+                new GenTreeOp(comparison, TYP_INT, new GenTreeLclVar(TYP_INT, 0),
+                    compiler.gtNewIconNode(TYP_INT, 7))));
+            for (var index = 2; index < blocks.Length; index++)
+            {
+                _ = AddStatement(compiler, blocks[index],
+                    new GenTreeUnOp(GT_RETURN, TYP_INT, new GenTreeLclVar(TYP_INT, 0)));
+            }
+
+            PrepareAssertionPropagation(compiler);
+            Assert.That(compiler.optAssertionPropMain(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            Assert.That(blocks[1].Kind, Is.EqualTo(BBJ_ALWAYS));
+            Assert.That(blocks[1].UniqueSucc, Is.SameAs(blocks[retained]));
+            var traits = compiler.apTraits ?? throw new InvalidOperationException("Assertion traits were not initialized.");
+            Assert.That(AssertionOps.Equal(traits, blocks[1].bbAssertionOut,
+                compiler.optGetEdgeAssertions(blocks[1], blocks[0])), Is.True);
+        });
+    }
+
+    [Test]
+    public static void AssertionPhaseWithNoFactsClearsStaleIncomingAndOutgoingSets()
+    {
+        WithCompiler(1, compiler => {
+            var block = CreateGraph(compiler, [[]])[0];
+            _ = AddStatement(compiler, block,
+                new GenTreeUnOp(GT_RETURN, TYP_INT, compiler.gtNewIconNode(TYP_INT, 7)));
+            PrepareAssertionPropagation(compiler);
+            block.bbAssertionIn = [-1, -1, -1, -1];
+            block.bbAssertionOut = [-1, -1, -1, -1];
+
+            _ = compiler.optAssertionPropMain();
+            Assert.That(compiler.AssertionCount, Is.Zero);
+            var traits = compiler.apTraits ?? throw new InvalidOperationException("Assertion traits were not initialized.");
+            Assert.That(AssertionOps.IsEmpty(traits, block.bbAssertionIn), Is.True);
+            Assert.That(AssertionOps.MaybeUninit(block.bbAssertionOut), Is.True);
+        });
+    }
+
+    private static void PrepareAssertionPropagation(Compiler compiler)
+    {
+        _ = ComputeDominators(compiler);
+        Assert.That(compiler.fgSsaBuild(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+        PrepareValueNumbering(compiler);
+        Assert.That(compiler.fgValueNumber(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+    }
+
     [Test]
     public static void SkippedSsaLeavesValueNumberStateUnchanged()
     {
@@ -178,6 +292,11 @@ internal static class ValueNumberPhaseTests
 
     private static Statement AddStatement(Compiler compiler, BasicBlock block, GenTree root)
     {
+        if ((root.Oper is GT_JTRUE) && root.AsUnOp().Op1.Oper.IsCompare)
+        {
+            root.AsUnOp().Op1.Flags |= GenTreeFlags.GTF_RELOP_JMP_USED;
+        }
+
         var statement = new Statement(root, 0);
         compiler.fgInsertStmtAtEnd(block, statement);
         compiler.gtSetStmtInfo(statement);

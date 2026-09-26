@@ -11,12 +11,13 @@ namespace RyuJitSharp;
 public partial class Compiler
 {
     public GenTree? optAssertionProp_AddMulSub(ASSERT_TP? assertions, GenTreeOp tree,
-        Statement? statement, BasicBlock block)
+        Statement? statement, BasicBlock? block)
     {
         assert(tree.Oper is GT_MUL or GT_ADD or GT_SUB);
 
         if (!optLocalAssertionProp && varTypeIsIntegral(tree.Type) && tree.HasOverflowCheck)
         {
+            assert(block is not null);
             var op1Range = RangeCheck.GetRange(this, tree.Op1, block, assertions, fast: true);
             var op2Range = RangeCheck.GetRange(this, tree.Op2, block, assertions, fast: true);
             if (op1Range.IsConstantRange() && op2Range.IsConstantRange())
@@ -40,7 +41,7 @@ public partial class Compiler
     }
 
     public GenTree? optAssertionProp_ModDiv(ASSERT_TP? assertions, GenTreeOp tree,
-        Statement statement, BasicBlock block)
+        Statement? statement, BasicBlock? block)
     {
         assert(tree.Oper is GT_DIV or GT_UDIV or GT_MOD or GT_UMOD);
         optAssertionProp_RangeProperties(assertions, tree.Op1, statement, block,
@@ -164,7 +165,7 @@ public partial class Compiler
     }
 
     public GenTree? optAssertionProp_BndsChk(ASSERT_TP? assertions, GenTree tree,
-        Statement statement, BasicBlock block)
+        Statement? statement, BasicBlock? block)
     {
         assert(tree.Oper is GT_BOUNDS_CHECK);
         if (optLocalAssertionProp)
@@ -172,6 +173,8 @@ public partial class Compiler
             return null;
         }
 
+        assert(statement is not null);
+        assert(block is not null);
         ArgumentNullException.ThrowIfNull(vnStore);
         assert(apTraits is not null);
         var check = tree.AsBoundsChk();

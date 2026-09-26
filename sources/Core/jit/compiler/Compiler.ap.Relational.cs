@@ -12,7 +12,7 @@ namespace RyuJitSharp;
 public partial class Compiler
 {
     public void optAssertionProp_RangeProperties(ASSERT_TP? assertions, GenTree tree,
-        Statement statement, BasicBlock block, out bool isKnownNonZero, out bool isKnownNonNegative)
+        Statement? statement, BasicBlock? block, out bool isKnownNonZero, out bool isKnownNonNegative)
     {
         isKnownNonZero = false;
         isKnownNonNegative = false;
@@ -79,6 +79,7 @@ public partial class Compiler
             return;
         }
 
+        assert(block is not null);
         var range = RangeCheck.GetRange(this, tree, block, assertions, fast: true);
         if (range.IsConstantRange())
         {
