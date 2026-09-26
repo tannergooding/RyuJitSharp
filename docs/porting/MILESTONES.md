@@ -39,6 +39,11 @@ IR in the selected comparisons; broader input differences and the unfinished
 general IR verifier still prevent full diagnostic parity. The established
 minopts corpus continues to execute managed-generated code under GC stress.
 
+Standalone SSA checking now cross-checks definitions, uses, PHIs and descriptor
+flags, including the results of full builds and rebuilds. Its native notices
+and failures are preserved; production CHECK_IR integration still requires the
+remaining general flag, type and LIR checks.
+
 ## 2026-09-25: Struct-store lowering continuity
 
 Lowering now retains the live traversal cursor when scalarizing a struct store

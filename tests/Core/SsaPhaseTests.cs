@@ -83,6 +83,9 @@ internal static class SsaPhaseTests
             Assert.That(compiler.fgSsaValid, Is.True);
             Assert.That(compiler.fgLocalVarLivenessDone, Is.True);
             Assert.That(compiler.mostRecentlyActivePhase, Is.EqualTo(Phases.PHASE_BUILD_SSA_RENAME));
+#if DEBUG
+            compiler.fgDebugCheckSsa();
+#endif
         });
     }
 
@@ -117,6 +120,9 @@ internal static class SsaPhaseTests
             Assert.That(result.SsaNum, Is.EqualTo(phi.SsaNum));
             Assert.That(update.SsaNum, Is.Not.EqualTo(phi.SsaNum));
             Assert.That(compiler.fgSsaValid, Is.True);
+#if DEBUG
+            compiler.fgDebugCheckSsa();
+#endif
         });
     }
 
@@ -139,6 +145,9 @@ internal static class SsaPhaseTests
             Assert.That(compiler.lvaTable[0].lvInSsa, Is.False);
             Assert.That(value.SsaNum, Is.EqualTo(SsaConfig.RESERVED_SSA_NUM));
             Assert.That(compiler.fgSsaPassesCompleted, Is.EqualTo(1));
+#if DEBUG
+            compiler.fgDebugCheckSsa();
+#endif
         });
     }
 

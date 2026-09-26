@@ -854,6 +854,9 @@ EH propagation and shared GC-heap/byref state, in native traversal order.
 Its phase driver preserves liveness, zero-init cleanup and deep-rebuild order.
 The general `fgDebugCheckLinks` closure remains unported; annotation checking
 does not replace its SSA verifier or establish full diagnostic parity.
+The standalone SSA verifier is ported but unactivated. Its tuple-keyed managed
+dictionary is queried in native local/SSA descriptor order, not enumerated,
+so hash layout does not affect notice or failure ordering.
 At the end of local-list maintenance, managed code detaches obsolete local
 links and statement list heads before entering `NodeThreading.None`. This
 retires cached ownership under D002 without weakening replacement checks or

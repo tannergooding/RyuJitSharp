@@ -46,8 +46,8 @@
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
           "files": "New Compiler.SsaVerification.cs and SsaVerificationTests.cs; no shared Compiler.fg.cs, phase-ordering or LIR edits.",
           "doneWhen": "Complete native SSA verifier and actual success/failure cases with exact diagnostics; leave it unactivated until the complete general IR checker exists.",
-          "status": "frozen-awaiting-review",
-          "result": "Turn83 returned the standalone SSA verifier and fixture with15Debug cases and Debug/Release builds in artifacts\\ssa-verification-validation. General CHECK_IR remains explicitly outstanding as B261; no production callsite changed."
+          "status": "complete",
+          "result": "Turn83 reviewed and integrated. Parent retained native invariant comments and checked four real SSA/rebuild outcomes:19Debug/4Release pass in artifacts\\ssa-verifier-phase-validation. General CHECK_IR remains B261; no production callsite changed."
         }
       ],
       "deferred": [
@@ -61,11 +61,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "SSA construction is committed as a70a254 and edge resolution is integrated. Finish committing the reviewed standalone SSA verifier: parent added native invariant comments and calls from four full SSA/rebuild cases; artifacts\\ssa-verifier-phase-validation passes19Debug/4Release. Do not activate partial CHECK_IR. Worker3a2c8d9b continues the block-weight packet's missing optFindLoopsPhase/compaction/canonicalization closure after turn16: artifacts\\ssa-followup-integration\\standard-fullopts reproduces B262 missing loops. Preserve that failed capture and the prior passing unit snapshot. Review the loop handoff, validate actual optimized phase continuation plus established minopts execution, then commit the block-weight/loop boundary. No remote publication.",
+    "nextAction": "SSA construction a70a254, edge resolution d9471a7 and standalone SSA checking are integrated. Worker3a2c8d9b continues the block-weight packet's required optFindLoopsPhase/compaction/canonicalization closure after turn16; artifacts\\ssa-followup-integration\\standard-fullopts reproduces B262 missing loops. Preserve that failed capture and the prior passing unit snapshot. Review the loop handoff, validate actual optimized phase continuation and established minopts execution, then commit the block-weight/loop boundary. Reuse the resolved SSA checker lane for complete general CHECK_IR flags/types/LIR closure, and inspect the next optimized-allocation driver dependency. Do not activate a partial verifier or incomplete allocator. No remote publication.",
     "handoff": {
       "status": "edge-resolution-integrated-loop-phase-prerequisite",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 through turn13 collected and edge packet integrated. 3a2c8d9b through turn16 collected; weight algorithms reviewed, continuing required loop phase for B262. d62fc6a5 through turn83 collected; verifier reviewed and phase integration passes19Debug/4Release, awaiting commit. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
+      "workerPackets": "610162a0 through turn13 collected and edge packet integrated. 3a2c8d9b through turn16 collected; weight algorithms reviewed, continuing required loop phase for B262. d62fc6a5 through turn83 collected and standalone verifier integrated with19Debug/4Release. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -81,6 +81,21 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "ssaVerification": {
+        "nativeBoundary": "fgdiagnostic.cpp:4206-4740,4757-4793; complete SsaCheckVisitor and fgDebugCheckSsa.",
+        "workerSourceManifest": "artifacts\\ssa-verification-validation\\source-manifest.json",
+        "sourceManifest": "artifacts\\ssa-verifier-phase-validation\\source-manifest.json",
+        "sourceManifestSha256": "A6F123ADB7CA7A97747B97C7898294A032A39009AE8931B614EFF79DCB33BA65",
+        "snapshotBase": "a70a254",
+        "rootSnapshotHashesMatch": true,
+        "debugTests": "artifacts\\ssa-verifier-phase-validation\\results\\verifier-debug.trx",
+        "releaseTests": "artifacts\\ssa-verifier-phase-validation\\results\\verifier-release.trx",
+        "debugPassed": 19,
+        "releasePassed": 4,
+        "skipped": 0,
+        "coverage": "Fifteen Debug-only success/failure/notice cases and four actual SSA/rebuild outcomes. Release runs the unchanged four phase cases without Debug verification.",
+        "limit": "Standalone helper only. Native general CHECK_IR flags/types/LIR checks must be completed before fgDebugCheckLinks activates it; B261 remains open."
+      },
       "edgeResolution": {
         "nativeBoundary": "lsra.cpp:634-722,8434-8719,8793-10000; complete Windows-AMD64 edge resolution and native nullable stressLimitRegs.",
         "workerSourceManifest": "artifacts\\edge-resolution-stress-validation\\source-manifest.json",
@@ -5814,7 +5829,7 @@
       "native": ["src\\coreclr\\jit\\fgopt.cpp", "src\\coreclr\\jit\\compiler.h", "src\\coreclr\\jit\\compiler.hpp", "src\\coreclr\\jit\\optimizer.cpp"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.fg.cs", "sources\\Core\\jit\\compiler\\Compiler.MemorySsa.cs", "sources\\Core\\jit\\block\\BasicBlock.ExceptionalSuccessors.cs", "sources\\Core\\jit\\compiler\\Compiler.RedundantZeroInit.cs"],
       "reconciledCommit": null,
-      "scope": "Complete fgComputeDominators, memory SSA allocation/map access, VisitAllSuccs/shared EH traversal and optRemoveRedundantZeroInits/IsPotentialGCSafePoint; production SSA construction remains unactivated."
+      "scope": "Complete fgComputeDominators, memory SSA allocation/map access, VisitAllSuccs/shared EH traversal and optRemoveRedundantZeroInits/IsPotentialGCSafePoint, used by full SSA construction."
     },
     {
       "area": "linear-scan-local-reference-resolution",
@@ -5822,6 +5837,13 @@
       "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.LocalResolution.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalResolutionHelpers.cs"],
       "reconciledCommit": null,
       "scope": "Complete Windows-AMD64 resolveLocalRef, writeLocalReg and direct copy/spill/home helpers; optimized allocation remains gated."
+    },
+    {
+      "area": "ssa-verification",
+      "native": ["src\\coreclr\\jit\\fgdiagnostic.cpp:4206-4740,4757-4793"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.SsaVerification.cs"],
+      "reconciledCommit": null,
+      "scope": "Complete standalone SSA verifier. Unactivated until the full general IR-checking closure is ported; B261."
     },
     {
       "area": "linear-scan-edge-resolution",
