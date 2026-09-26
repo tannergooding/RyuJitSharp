@@ -16,6 +16,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Hash-vector set operations
+
+Sparse hash vectors now support native AND, OR, subtraction, comparison,
+independent copying and compound set operations across equal and unequal bucket
+counts. The implementation preserves traversal order, change flags and the
+observable distinction between absent and physically present empty nodes.
+
+Vector XOR and intersection remain deferred because the pinned native paths
+contain a dropped-node link and a nonadvancing traversal, respectively.
+Node-level operations are independent and available. This completes another
+optimization prerequisite without activating an optimization phase.
+
 ## 2026-09-25: Initial GC-stress execution and backend diagnostic parity
 
 The twenty-method Windows-x64 minopts corpus also executes with JIT-instruction

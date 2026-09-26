@@ -13,7 +13,7 @@ using indexType = uint;
 
 namespace RyuJitSharp;
 
-public sealed class hashBv
+public sealed partial class hashBv
 {
     public hashBvNode?[] nodeArr = new hashBvNode?[1];
     public ushort log2_hashSize;

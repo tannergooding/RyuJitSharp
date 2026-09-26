@@ -79,4 +79,137 @@ public sealed class hashBvNode
 
         return false;
     }
+
+    public void copyFrom(hashBvNode other)
+    {
+        baseIndex = other.baseIndex;
+
+        for (var i = 0; i < numElements(); i++)
+        {
+            elements[i] = other.elements[i];
+        }
+    }
+
+    public elemType AndWithChange(hashBvNode other)
+    {
+        elemType result = 0;
+
+        for (var i = 0; i < numElements(); i++)
+        {
+            var source = elements[i];
+            var destination = source & other.elements[i];
+            result |= source ^ destination;
+            elements[i] = destination;
+        }
+
+        return result;
+    }
+
+    public elemType OrWithChange(hashBvNode other)
+    {
+        elemType result = 0;
+
+        for (var i = 0; i < numElements(); i++)
+        {
+            var source = elements[i];
+            var destination = source | other.elements[i];
+            result |= source ^ destination;
+            elements[i] = destination;
+        }
+
+        return result;
+    }
+
+    public elemType XorWithChange(hashBvNode other)
+    {
+        elemType result = 0;
+
+        for (var i = 0; i < numElements(); i++)
+        {
+            var source = elements[i];
+            var destination = source ^ other.elements[i];
+            result |= source ^ destination;
+            elements[i] = destination;
+        }
+
+        return result;
+    }
+
+    public elemType SubtractWithChange(hashBvNode other)
+    {
+        elemType result = 0;
+
+        for (var i = 0; i < numElements(); i++)
+        {
+            var source = elements[i];
+            var destination = source & ~other.elements[i];
+            result |= source ^ destination;
+            elements[i] = destination;
+        }
+
+        return result;
+    }
+
+    public bool Intersects(hashBvNode other)
+    {
+        for (var i = 0; i < numElements(); i++)
+        {
+            if ((elements[i] & other.elements[i]) != 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public void AndWith(hashBvNode other)
+    {
+        for (var i = 0; i < numElements(); i++)
+        {
+            elements[i] &= other.elements[i];
+        }
+    }
+
+    public void OrWith(hashBvNode other)
+    {
+        for (var i = 0; i < numElements(); i++)
+        {
+            elements[i] |= other.elements[i];
+        }
+    }
+
+    public void XorWith(hashBvNode other)
+    {
+        for (var i = 0; i < numElements(); i++)
+        {
+            elements[i] ^= other.elements[i];
+        }
+    }
+
+    public void Subtract(hashBvNode other)
+    {
+        for (var i = 0; i < numElements(); i++)
+        {
+            elements[i] &= ~other.elements[i];
+        }
+    }
+
+    public bool sameAs(hashBvNode other)
+    {
+        if (baseIndex != other.baseIndex)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < numElements(); i++)
+        {
+            if (elements[i] != other.elements[i])
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

@@ -20,7 +20,7 @@
         "Review each frozen packet, run focused Debug/Release cases and commit it with related tracking before integrating the next packet."
       ],
       "validation": [
-        "Use focused Debug/Release selections for each packet and the unchanged minopts path. Build only with frozen source packets; do not overlap builds writing the same configuration outputs.",
+        "Use focused Debug/Release selections for each packet and the unchanged minopts path. Workers validate isolated git-archive e030e2e snapshots with only their owned overlays and separate obj/bin outputs; preserve matching root/snapshot hashes and force rebuild after overlays. Do not overlap builds writing the same configuration outputs.",
         "For production lowering changes, republish into a fresh NativeAOT directory and rerun the established minopts execution/GCStress4 capture against pinned native inputs. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
       "parallelPackets": [
@@ -37,27 +37,29 @@
           "doneWhen": "Preserve native numeric semantics across integer boundaries, shifts, comparisons, NaN and signed zero; validate complete functions in Debug/Release before a separate commit."
         },
         {
-          "scope": "Complete native hash-vector set algebra without porting the disputed countBits/setLowest APIs or activating an optimization phase.",
+          "scope": "Complete unaffected native hash-vector set algebra without porting disputed vector Intersects/XOR or countBits/setLowest APIs, or activating an optimization phase.",
           "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
           "files": "hashbv source files and new HashBvSetAlgebraTests.cs.",
-          "doneWhen": "Preserve native traversal, mutation and change flags across unequal table sizes and aliases; validate focused Debug/Release cases before a separate commit."
+          "doneWhen": "Preserve native traversal, mutation and change flags across unequal table sizes and aliases; validate focused Debug/Release cases before a separate commit.",
+          "status": "complete",
+          "deferred": "Vector XOR and Intersects are entirely deferred under B246/B247; no corrected managed algorithms are included."
         }
       ],
       "deferred": [
         "General multi-argument VN folding dispatch, memory-phi traversal, map selection and the value-numbering phase; only the explicitly owned binary evaluation primitives are in the parallel packet.",
         "Optional general assertion propagation and optimization-only allocation analyses unless required by the active minopts dependency closure.",
         "Full EH-funclet and hardware-import parity are subsequent execution-capability packets, not gates on the first scalar minopts backend path.",
-        "Non-xarch hardware-intrinsic folding and hashBv iterator/countBits/setLowest APIs; set algebra has its own parallel packet.",
+        "Non-xarch hardware-intrinsic folding and hashBv iterator/countBits/setLowest APIs. Native vector Intersects/XOR defects are recorded in B247/B246; their corrected algorithms are not authorized and those entire vector operations are deferred.",
         "The preexisting fgVerifyHandlerTab diagnostic stub and broader EH verification, outside the cleanup algorithm.",
         "Patchpoint metadata generation and actual OSR execution; node generation support does not activate either.",
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Collect lifetime cleanup from610162a0, binary VN evaluation from3a2c8d9b and hash-vector algebra from6a004941. Freeze source packets before shared-output builds, review complete native function boundaries, validate focused Debug/Release cases and commit each separately. Republish and rerun minopts GCStress4 after production lowering changes. The preceding B244/parity/GC-stress boundary has40Debug/31Release, fresh20-method execution, exact phases generation0/emission19/metadata10, a six-method address-field audit and three forced-GC liveness methods. Evidence workers942a496f through turn61 and d62fc6a5 through turn64 are collected/frozen. B245 and unresolved relocation identities remain explicit; do not activate optimized allocation/VN, claim broader parity, or publish.",
+    "nextAction": "Collect isolated lifetime validation from610162a0 and numeric review/validation from3a2c8d9b. Their snapshots use e030e2e plus only owned overlays. Commit complete packets separately; republish and rerun minopts GCStress4 after lowering changes. The narrowed hash-vector packet is complete with40Debug/40Release, matching root/snapshot hashes and B246/B247 tracking the deferred native defects. 6a004941 through turn35,942a496f through turn61 and d62fc6a5 through turn64 are resolved/frozen. B245 and relocation-identity gaps remain; do not activate optimized allocation/VN or publish.",
     "handoff": {
       "status": "parallel-prerequisite-integration",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "6a004941's final diagnostic comparison was collected through turn32 and frozen; it now owns hash-vector set algebra/tests. 942a496f's target evidence through turn61 and d62fc6a5's forced-GC probe through turn64 are collected/frozen with no outstanding work. 610162a0 owns lifetime-enabled lowering cleanup/tests; 3a2c8d9b owns new binary VN evaluation primitives/tests. Parent owns B244 integration, maintained tracking, shared-output build scheduling and separate commits. Implementation workers return frozen packets before integration builds. No app-native child-session coordination.",
+      "workerPackets": "6a004941 through turn35 returned narrowed hash-vector algebra and40Debug/40Release from artifacts\\hash-vector-validation; hashes match and packet is frozen. 610162a0 through turn0 owns lifetime cleanup/tests and artifacts\\lowering-lifetime-validation. 3a2c8d9b through turn0 owns binary VN primitives/tests, numeric review corrections and artifacts\\vn-binary-validation. Validation snapshots use e030e2e plus owned overlays and independent outputs. 942a496f through turn61 and d62fc6a5 through turn64 are collected/frozen with no outstanding work. Parent reviews complete packets, maintains tracking and commits separately. No app-native child-session coordination.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode, allocation supports minopts without enregistered locals, and Windows-AMD64 generation/emission/metadata execute the selected corpus. Keep unsupported optional modes explicit; do not infer optimized, other-target or GC-stress parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -73,6 +75,25 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "hashVectorSetAlgebra": {
+        "debugPassed": 40,
+        "releasePassed": 40,
+        "skipped": 0,
+        "snapshotBase": "e030e2e",
+        "snapshot": "artifacts\\hash-vector-validation",
+        "debugTests": "artifacts\\hash-vector-validation\\artifacts\\tst\\Debug\\hashbv-debug.trx",
+        "releaseTests": "artifacts\\hash-vector-validation\\artifacts\\tst\\Release\\hashbv-release.trx",
+        "selection": "FullyQualifiedName~HashBvSetAlgebraTests|FullyQualifiedName~HashBitVectorTests",
+        "reproduction": "Materialize the snapshot base with git archive, overlay only the four packet files, restore if snapshot assets are absent, then run focused dotnet test in Debug/Release. Final root/snapshot SHA256 pairs were verified equal; force rebuild after replacing overlaid source.",
+        "fileHashes": {
+          "sources\\Core\\jit\\hashbv\\hashBv.cs": "C269AE0F390C44CF85B10BD79A6A64312340F7003BB03BAE2B1F68F08D97A70C",
+          "sources\\Core\\jit\\hashbv\\hashBvNode.cs": "55E0F30E8CB533A828DE5C5ABA7F427E48F977AB81D7E85D28211EF996DDEDA5",
+          "sources\\Core\\jit\\hashbv\\hashBv.SetAlgebra.cs": "7853A8841855827B54A038BE732BA6BDFB80939C9A2DCC225FD5B77A142E1CE4",
+          "tests\\Core\\HashBvSetAlgebraTests.cs": "F311D710AE7F8F4DFC3B51CD630AC45EE0730AA647EE7251CE7EA51B34069B4A"
+        },
+        "coverage": "Complete unaffected node operations and vector AND/OR/subtract/comparison/copy/zero/compound operations. Native traversal is preserved for equal and unequal bucket counts, collision chains, physical zero nodes, change flags, self set operands and independent copied nodes.",
+        "remaining": "Vector XOR/Intersects (B246/B247), countBits/setLowest (B115) and iterator APIs remain unported. Native residual unchanged; no optimization phase activated."
+      },
       "backendParity": {
         "debugPassed": 40,
         "releasePassed": 31,
