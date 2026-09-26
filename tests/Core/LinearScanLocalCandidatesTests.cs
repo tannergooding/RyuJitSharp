@@ -173,7 +173,7 @@ internal static class LinearScanLocalCandidatesTests
         });
     }
 
-    private static void WithCandidates(int count, Action<Compiler, LinearScan> action)
+    internal static void WithCandidates(int count, Action<Compiler, LinearScan> action)
     {
         LinearScanMinimalCandidatesTests.WithCompiler(compiler => {
             compiler.opts.compFlags |= CLFLG_REGVAR;

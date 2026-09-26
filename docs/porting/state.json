@@ -59,11 +59,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "SSA turn4, VN turn7 and EH/GC turn68 are collected and reviewed. Entry-local definitions are also implemented. Frozen combined snapshot passes647Debug/627Release, including16entry-definition cases. Commit reviewed VN interning and entry-definition prerequisites separately; publish a fresh NativeAOT binary from the frozen snapshot and preserve standard/loop/interior/EH execution before committing SSA liveness. Full SSA construction, VN phase and optimized allocation remain gated. No publication.",
+    "nextAction": "VN interning is committed as dbb565b; entry-local definition prerequisites are complete. SSA liveness is reviewed and ready to commit: frozen combined snapshot passes647Debug/627Release and all30standard/loop/interior/EH methods execute with the fresh entry-interval-jit. Finish SSA documentation/commit, then resume complete buildIntervals<true> closure from lsrabuild.cpp:2074-2795 without activating optimized allocation. Full SSA construction and VN phase remain incomplete. No publication.",
     "handoff": {
       "status": "parallel-prerequisite-integration",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 through turn4 and3a2c8d9b through turn7 are collected, revised packets reviewed and frozen. d62fc6a5 through turn68 is collected and resolved: EH/GC execution passes with batch-temp-jit. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. Parent entry-local definition prerequisites pass combined snapshot selection; all workers idle pending integration. No app-native child-session coordination.",
+      "workerPackets": "610162a0 through turn4 is collected and SSA packet awaits documentation/commit. 3a2c8d9b through turn7 is collected and committed dbb565b; parent strengthened the numbering regression and verified2before failures and297/297final cases. d62fc6a5 through turn70 is collected and resolved: fresh NativeAOT integration passes all30methods. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. All workers idle pending next coherent scope; no app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -79,6 +79,14 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "entryLocalDefinitions": {
+        "nativeBoundary": "lsrabuild.cpp:1974-2070 insertZeroInitRefPositions and2803-2819 buildInitialParamDef; lsra.h stressInitialParamReg DEBUG/Release predicates.",
+        "source": "sources\\Core\\jit\\lsra\\LinearScan.EntryDefinitions.cs",
+        "integration": "checkpoint.validation.entryIntervalIntegration",
+        "newCases": 16,
+        "coverage": "GC/byref versus non-GC initialization, initlocals, finally-only locals and entry/finally deduplication, parameter/register-target exclusion, OSR with/without finally liveness, stack/integer/floating incoming parameter registers.",
+        "limitation": "Helpers are not connected to production optimized allocation. Full buildIntervals<true>, allocation and resolution remain gated."
+      },
       "binaryValueNumberInterning": {
         "nativeBoundary": "valuenum.cpp:2746-2814 VNForCast,2831-2923 binary VNForFunc,4803-4884 VNEvalFoldTypeCompare,5218-6326 related-relop tables and EvalUsingMathIdentity; reverse-relop specialization and scalar/fixed-vector/mask constants. valuenum.h:2582-2593 comparison classification.",
         "sourceManifest": "artifacts\\vn-binary-interning-validation\\parent-source-manifest.json",
@@ -5387,6 +5395,13 @@
       "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.LocalCandidates.cs", "sources\\Core\\jit\\regalloc\\LinearScan.Candidates.cs"],
       "reconciledCommit": null,
       "scope": "Windows-AMD64 identifyCandidates<true>, checkForDNER and makeUpperVectorInterval; no optimized allocation activation."
+    },
+    {
+      "area": "linear-scan-entry-definitions",
+      "native": ["src\\coreclr\\jit\\lsrabuild.cpp", "src\\coreclr\\jit\\lsra.h"],
+      "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.EntryDefinitions.cs"],
+      "reconciledCommit": null,
+      "scope": "buildInitialParamDef, insertZeroInitRefPositions and stressInitialParamReg; no optimized allocation activation."
     },
     {
       "area": "saved-wip-lir-and-rationalization",

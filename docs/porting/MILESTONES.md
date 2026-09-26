@@ -15,6 +15,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Entry-local allocation definitions
+
+Register-allocation prerequisites now include initial parameter definitions and
+entry-local initialization references. Parameters retain their incoming-register
+preferences; live-in GC references and `initlocals` values receive zero
+definitions, while potentially undefined non-GC locals keep stack homes.
+OSR initialization and finally-local deduplication follow native rules.
+
+These helpers do not activate enregistered-local allocation; complete optimized
+interval construction, allocation and resolution remain required.
+
 ## 2026-09-25: Binary value-number interning
 
 Binary expressions now use native value-number interning, constant folding,

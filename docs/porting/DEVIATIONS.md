@@ -817,6 +817,11 @@ initialization phase or second candidate scan. The minopts specialization does
 not produce those local sets; upper-vector saves for temporary values remain
 supported.
 
+Initial parameter definitions and live-in/finally-local zero definitions follow
+native register preferences, stress predicates, OSR initialization and spill
+rules. They are prerequisites for the enregistered-local interval builder, not
+an alternate allocator or an activation of optimized allocation.
+
 Liveness policies use static interface members in place of native template
 traits. Per-block scratch and stored sets retain independent managed storage.
 The early-tree specialization preserves native conditional-definition handling,
