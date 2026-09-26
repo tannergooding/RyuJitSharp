@@ -34,11 +34,11 @@ public partial class Compiler
     /// <summary>number of indirect (see above) fast tail calls made in the method</summary>
     protected int optIndirectFastTailCallCount;
 
-    protected static readonly nint s_optCSEhashSizeInitial;
+    protected static readonly nint s_optCSEhashSizeInitial = EXPSET_SZ * 2;
 
-    protected static readonly nint s_optCSEhashGrowthFactor;
+    protected static readonly nint s_optCSEhashGrowthFactor = 2;
 
-    protected static readonly nint s_optCSEhashBucketSize;
+    protected static readonly nint s_optCSEhashBucketSize = 4;
 
     /// <summary>The current size of hashtable</summary>
     protected nint optCSEhashSize;
@@ -49,9 +49,9 @@ public partial class Compiler
     /// <summary>Number of entries before resize</summary>
     protected nint optCSEhashMaxCountBeforeResize;
 
-    protected unsafe CSEdsc** optCSEhash;
+    protected CSEdsc?[] optCSEhash = [];
 
-    protected unsafe CSEdsc** optCSEtab;
+    protected CSEdsc?[] optCSEtab = [];
 
     // Treewalk helper for optCSE_DefMask and optCSE_UseMask
     // TODO: Port Compiler.optCSE_MaskHelper

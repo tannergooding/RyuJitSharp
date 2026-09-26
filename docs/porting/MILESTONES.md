@@ -15,6 +15,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: CSE candidate and dataflow support
+
+Common-subexpression elimination now has native-order candidate discovery,
+hashing and indexing, tree eligibility checks, and forward availability analysis.
+Hash buckets and candidate tables share descriptor identity and preserve the
+order of expression occurrences.
+
+This prepares the selection and rewriting machinery; the production CSE phase
+remains inactive, so no generated-code improvement is claimed yet.
+
 ## 2026-09-26: Loop-cloning models and guards
 
 Loop-cloning support now represents array, span, type-test and delegate-target

@@ -623,6 +623,13 @@ copies share the already-populated index/check buffers, as native value copies
 do; consumers do not grow those buffers. IR, block and statement references
 retain their native identity. Guard-model tests are not phase or execution parity.
 
+CSE candidate discovery/indexing, descriptor local counting, tree eligibility
+and availability/dataflow are implemented without activating the CSE phase.
+Managed reference arrays replace internal descriptor-pointer tables; both
+tables reference the same descriptors and retain native occurrence ordering.
+No unmanaged-layout consumer is changed. Heuristic selection and rewriting
+remain incomplete; helper coverage is not CSE execution parity.
+
 VN-based folding and insertion-time statement morphing are also complete
 prerequisites. Local-address folds retain the native 16-bit offset invariant;
 the native constructor's unsigned parameter does not imply wider field storage.

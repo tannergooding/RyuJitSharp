@@ -23,28 +23,28 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Loop-cloning model8-file packet corrected for B286 and validated109D107R on7d1b595. Native ArrIndex copies preserve populated buffer aliases; scalar descriptors copied. Commit corrected model8+docs, then integrate6a:86 CSE6 (8D8R,942:101 review clear). No new public phase activation.",
+      "parentScope": "Models committed830b309. CSE prerequisite6-file packet integrated on830b309 and validated60D58R, including8 CSE cases;942:101 review clear. Commit CSE6+related docs, then integrate/activate Boolean packet3a:78 after942 review. No production CSE/cloning activation.",
       "parallelPackets": [
         {
           "scope": "Complete Boolean optimization with the native CCMP switch-detection prerequisite.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
           "files": "New Compiler.BooleanOptimization*.cs/BooleanOptimizationTests.cs and Compiler.SwitchRecognition.Detection.cs/SwitchRecognitionDetectionTests.cs.",
           "status": "in-progress",
-          "remainingBoundary": "After3a:77, authorized complete existing native detection-only/CCMP specialization at optimizebools.cpp1703-1718 and switchrecognition.cpp70-478 relevant functions. No conversion-mode fallback or reduced detection. Both public phases remain inactive."
+          "remainingBoundary": "Six-file Boolean+CCMP-detection packet frozen3a:78,21D21R on76a6f08;942 reviewing.3a now owns only NEW switch-conversion files/tests toward full native conversion mode; frozen Boolean/detection files require permission to change. Both public phases remain inactive."
         },
         {
           "scope": "Complete loop-cloning representation and guard-expression prerequisites before phase closure.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
           "files": "New conventional loopcloning type files, Compiler.LoopCloning*.cs and LoopCloningModelTests.cs/LoopCloningTests.cs.",
           "status": "in-progress",
-          "remainingBoundary": "Model packet through133 corrected by parent for B286 in ArrIndex.cs/LcOptInfo.cs/tests;109D107R. d62 owns NEW Compiler.LoopCloning*.cs/LoopCloningTests.cs for remaining1128-3590 closure; use corrected model hashes after commit. Buffer question canceled and resolved directly at native construction/consumers. Public phase inactive."
+          "remainingBoundary": "Model packet through133 corrected for B286 and committed830b309 after109D107R;d62 notified to use this baseline. d62 owns NEW Compiler.LoopCloning*.cs/LoopCloningTests.cs for remaining1128-3590 closure. No pending buffer question; public phase inactive."
         },
         {
           "scope": "Complete VN-CSE candidate/indexing and availability/dataflow prerequisites.",
           "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
           "files": "New Compiler.CSE.Candidates*.cs/Compiler.CSE.Dataflow*.cs/CSECandidateTests.cs; existing CSEdsc.cs and CSE_HeuristicCommon.cs explicitly authorized.",
           "status": "in-progress",
-          "remainingBoundary": "Six-file prerequisite frozen6a:86,8D8R on7d1b595;942:101 review found no isolated high-confidence defect. All6 frozen including Compiler.opt.cs.6a next identifies/implements complete heuristic-selection/cost/rewrite prerequisite closure in NEW files only; report shared dependencies before editing. No public activation."
+          "remainingBoundary": "Six-file prerequisite frozen6a:86 and integrated60D58R on830b309;942:101 review clear. All6 frozen including Compiler.opt.cs until commit.6a owns complete next heuristic-selection/cost/rewrite prerequisites in NEW files only; report shared dependencies before edits. Public CSE inactive."
         },
         {
           "scope": "Complete native if-conversion descriptor, transforms and private phase core.",
@@ -253,11 +253,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit corrected loop-cloning model8+docs:109D107R, source-manifest-corrected.json in artifacts\\loop-cloning-integration, B286 fail-before regression established. Native populated-buffer aliases retained; no pending ownership question. Then integrate CSE6 from artifacts\\cse-validation\\packet.json (6a:86,8D8R,942:101 clear); public CSE remains inactive. Collect Boolean/CCMP, new cloning driver, CSE heuristic and if-conversion packets as they complete. Parent snapshot7d1b595+corrected model8 only. CoreRoot free; no publication.",
+    "nextAction": "Models committed830b309. Commit CSE6+docs after60D58R integration (artifacts\\cse-integration\\source-manifest.json;942:101 clear), excluding Boolean/driver WIP. Then collect942 Boolean conformance review and integrate3a:78 packet (artifacts\\boolean-optimization-validation\\source-manifest.json,21D21R), add production-entry coverage and activate only complete optOptimizeBools; retain detection-only switch mode until full conversion ready. Preserve17 captures for phase activation. Parent snapshot830b309+CSE6 only. CoreRoot free; no publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Collectedd62:133 model packet,6a:85/86 CSE packet,942:100 model review and101 clear CSE review. Parent B286 repair validated109D107R.3a Boolean+CCMP ongoing;d62 new cloning driver;6a new CSE heuristic prerequisites;610 new if-conversion;942 idle. All returned packet files frozen otherwise. CoreRoot free; no app-native sessions.",
+      "workerPackets": "Collectedd62:133 model packet committed830b309;6a:85/86 CSE packet integrated60D58R;942:100/101 reviews;3a:78 Boolean packet21D21R.3a now new switch-conversion closure;d62 new cloning driver;6a new CSE heuristic prerequisites;610 new if-conversion;942 Boolean review. Frozen6 CSE and6 Boolean files remain unchanged. CoreRoot free; no app-native sessions.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -273,6 +273,18 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "cseCandidatePrerequisites": {
+        "snapshotBase": "830b309",
+        "sourceManifest": "artifacts\\cse-integration\\source-manifest.json",
+        "debugPassed": 60,
+        "releasePassed": 58,
+        "skipped": 0,
+        "selection": "CSECandidateTests, ValueNumRelopRelationTests, RedundantBranchTests and LoopCloningModelTests;8 CSE cases in each configuration.",
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\cse-integrated-{Debug,Release}.trx",
+        "identity": "A hash bucket and index-table slot retain the same descriptor; three linked occurrences preserve native order. Internal pointer placeholders replaced by managed reference arrays, not parallel descriptor state.",
+        "review": "942:101 found no isolated high-confidence defect; artifacts\\cse-validation\\conformance-review.md.",
+        "scope": "Candidate discovery/hash/indexing, descriptor local counting, complete tree eligibility and forward availability/dataflow. Public CSE inactive. Collision-heavy resizing, multi-predecessor loops, async byref kills and conflicting exception sets lack focused execution coverage."
+      },
       "loopCloningModels": {
         "snapshotBase": "7d1b595",
         "sourceManifest": "artifacts\\loop-cloning-integration\\source-manifest-corrected.json",
@@ -6575,6 +6587,13 @@
       "native": ["src\\coreclr\\jit\\rangecheck.h", "src\\coreclr\\jit\\rangecheck.cpp", "src\\coreclr\\jit\\assertionprop.cpp"],
       "csharp": ["sources\\Core\\jit\\rangecheck\\", "sources\\Core\\jit\\compiler\\Compiler.ap.Relational.cs"],
       "status": "Complete range-analysis dependency and relational application; RangeProperties remains canonical in the relational partial. Global assertion and range-check elimination phases are active.",
+      "reconciledCommit": null
+    },
+    {
+      "area": "cse-candidates-and-dataflow",
+      "native": ["src\\coreclr\\jit\\optcse.cpp:39-41,73-120,390-1723,1773-2068,3989-3992,5870-5912", "src\\coreclr\\jit\\optcse.h:363-439"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.CSE.Candidates.cs", "sources\\Core\\jit\\compiler\\Compiler.CSE.Dataflow.cs", "sources\\Core\\jit\\optcse\\CSEdsc.cs", "sources\\Core\\jit\\optcse\\CSE_HeuristicCommon.cs"],
+      "status": "Candidate/index/eligibility/dataflow prerequisite implemented with shared managed descriptor identity. Compiler.opt.cs owns hash configuration/table fields. Heuristic selection, rewriting and production activation deferred.",
       "reconciledCommit": null
     },
     {
