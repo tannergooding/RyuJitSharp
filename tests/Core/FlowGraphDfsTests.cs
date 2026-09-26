@@ -330,6 +330,23 @@ internal static unsafe class FlowGraphDfsTests
                 Assert.That(dfs.IsAncestor(tryBlock, filter), Is.True);
                 Assert.That(dfs.IsAncestor(tryBlock, handler), Is.True);
             });
+
+            compiler._dfsTree = dfs;
+            var callback = new DataFlowCallback(changeFirstPass: false, blockCount: 3);
+            new DataFlow(compiler).ForwardAnalysis(ref callback);
+            BasicBlock[] expectedStarts = [tryBlock, handler, filter];
+            (BasicBlock, BasicBlock, BasicBlock)[] expectedHandlerMerges = [
+                (handler, tryBlock, tryBlock),
+                (filter, tryBlock, tryBlock)
+            ];
+
+            Assert.Multiple(() => {
+                Assert.That(compiler._dfsTree, Is.SameAs(dfs));
+                Assert.That(callback.Starts, Is.EqualTo(expectedStarts));
+                Assert.That(callback.HandlerMerges, Is.EqualTo(expectedHandlerMerges));
+                Assert.That(callback.Merges, Is.Empty);
+                Assert.That(callback.Ends, Is.EqualTo(3));
+            });
         }
         finally
         {
@@ -545,6 +562,101 @@ internal static unsafe class FlowGraphDfsTests
         finally
         {
             JitTls.Compiler = previous;
+        }
+    }
+
+    [TestCase(false, false, 1)]
+    [TestCase(false, true, 1)]
+    [TestCase(true, false, 1)]
+    [TestCase(true, true, 2)]
+    public static void ForwardDataFlowRepeatsOnlyChangedCyclicGraphs(bool cyclic, bool changeFirstPass, int passes)
+    {
+        var compiler = CreateCompiler();
+#if DEBUG
+        using var jitTls = new JitTls(null);
+#endif
+        var previous = JitTls.Compiler;
+        JitTls.Compiler = compiler;
+
+        try
+        {
+            var entry = BasicBlock.New(compiler, BBJ_COND);
+            var next = BasicBlock.New(compiler, cyclic ? BBJ_ALWAYS : BBJ_RETURN);
+            var unreachable = BasicBlock.New(compiler, BBJ_RETURN);
+            entry.Next = next;
+            next.Next = unreachable;
+            compiler.fgFirstBB = entry;
+            compiler.fgLastBB = unreachable;
+
+            var sharedEdge = new FlowEdge(entry, next, null);
+            sharedEdge.incrementDupCount();
+            sharedEdge.incrementDupCount();
+            entry.SetCond(sharedEdge, sharedEdge);
+            next.bbPreds = sharedEdge;
+
+            if (cyclic)
+            {
+                var backedge = new FlowEdge(next, entry, null);
+                backedge.incrementDupCount();
+                next.SetKindAndTargetEdge(BBJ_ALWAYS, backedge);
+                entry.bbPreds = backedge;
+            }
+
+            var callback = new DataFlowCallback(changeFirstPass, blockCount: 2);
+            new DataFlow(compiler).ForwardAnalysis(ref callback);
+            BasicBlock[] expectedStarts = passes == 1 ? [entry, next] : [entry, next, entry, next];
+
+            Assert.Multiple(() => {
+                Assert.That(compiler._dfsTree, Is.Not.Null);
+                Assert.That(callback.Ends, Is.EqualTo(2 * passes));
+                Assert.That(callback.Starts, Is.EqualTo(expectedStarts));
+                Assert.That(callback.HandlerMerges, Is.Empty);
+                Assert.That(callback.Merges.Count, Is.EqualTo((cyclic ? 2 : 1) * passes));
+            });
+
+            for (var pass = 0; pass < passes; pass++)
+            {
+                var index = pass * (cyclic ? 2 : 1);
+                if (cyclic)
+                {
+                    Assert.That(callback.Merges[index++], Is.EqualTo((entry, next, 1)));
+                }
+
+                Assert.That(callback.Merges[index], Is.EqualTo((next, entry, 2)));
+            }
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+
+    private struct DataFlowCallback(bool changeFirstPass, int blockCount) : DataFlow.ICallback
+    {
+        public List<BasicBlock> Starts = [];
+        public List<(BasicBlock, BasicBlock, int)> Merges = [];
+        public List<(BasicBlock, BasicBlock, BasicBlock)> HandlerMerges = [];
+        public int Ends;
+
+        public readonly void StartMerge(BasicBlock block)
+        {
+            Starts.Add(block);
+        }
+
+        public readonly void Merge(BasicBlock block, BasicBlock predecessor, int duplicateCount)
+        {
+            Merges.Add((block, predecessor, duplicateCount));
+        }
+
+        public readonly void MergeHandler(BasicBlock block, BasicBlock firstTryBlock, BasicBlock lastTryBlock)
+        {
+            HandlerMerges.Add((block, firstTryBlock, lastTryBlock));
+        }
+
+        public bool EndMerge(BasicBlock block)
+        {
+            Ends++;
+            return changeFirstPass && (Ends <= blockCount);
         }
     }
 

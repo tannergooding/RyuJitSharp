@@ -363,7 +363,7 @@ public partial class Compiler
         }
     }
 
-    private bool fgTrysContiguous()
+    internal bool fgTrysContiguous()
     {
 #if TARGET_WASM
         return fgIndexToBlockMap is null;

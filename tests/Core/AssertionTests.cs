@@ -24,6 +24,136 @@ internal static unsafe class AssertionTests
 {
     [TestCase(false)]
     [TestCase(true)]
+    public static void DataflowInitializesValidAssertionsAndSeparatesConditionalGeneration(bool falseEdge)
+    {
+        WithDataflowCompiler(compiler => {
+            var entry = BasicBlock.New(compiler, BBKinds.BBJ_COND);
+            var trueTarget = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            var falseTarget = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            var unreachable = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            entry.Next = trueTarget;
+            trueTarget.Next = falseTarget;
+            falseTarget.Next = unreachable;
+            compiler.fgFirstBB = entry;
+            compiler.fgLastBB = unreachable;
+            entry.SetCond(new FlowEdge(entry, trueTarget, null), new FlowEdge(entry, falseTarget, null));
+
+            var equal = IntAssertion(compiler, 7);
+            var notEqual = AssertionDsc.CreateConstLclVarAssertion(
+                compiler, 0, ValueNumStore.NoVN, 7, ValueNumStore.NoVN, false);
+            var valid = InstallAssertions(compiler, [equal, notEqual, IntAssertion(compiler, 8)]);
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            var jumpOut = compiler.optInitAssertionDataflowFlags();
+            Assert.That(BitOps.IsEmpty(traits, entry.bbAssertionIn), Is.True);
+
+            foreach (var block in compiler.Blocks)
+            {
+                Assert.That(BitOps.Equal(traits, block.bbAssertionOut, valid), Is.True);
+                Assert.That(BitOps.Equal(traits, jumpOut[block.bbNum], valid), Is.True);
+                Assert.That(block.bbAssertionOut, Is.Not.SameAs(jumpOut[block.bbNum]));
+            }
+
+            Assert.That(BitOps.Equal(traits, unreachable.bbAssertionIn, valid), Is.True);
+            var local = compiler.gtNewLclvNode(TYP_INT, 0);
+            local.AssertionInfo = new AssertionInfo(3);
+            var localStatement = compiler.gtNewStmt(local);
+            localStatement.TreeListBegin = local;
+            compiler.fgInsertStmtAtEnd(entry, localStatement);
+
+            var condition = compiler.gtNewBinaryNode(GT_EQ, TYP_INT,
+                compiler.gtNewLclvNode(TYP_INT, 0), compiler.gtNewIconNode(TYP_INT, 7));
+            var jtrue = compiler.gtNewUnaryNode(GT_JTRUE, TYP_VOID, condition);
+            jtrue.AssertionInfo = falseEdge ? AssertionInfo.ForNextEdge(1) : new AssertionInfo(1);
+            var branchStatement = compiler.gtNewStmt(jtrue);
+            compiler.fgSetStmtSeq(branchStatement);
+            compiler.fgInsertStmtAtEnd(entry, branchStatement);
+            var jumpGen = compiler.optComputeAssertionGen();
+
+            Assert.Multiple(() => {
+                Assert.That(BitOps.Count(traits, entry.bbAssertionGen), Is.EqualTo((nint)2));
+                Assert.That(BitOps.Count(traits, jumpGen[entry.bbNum]), Is.EqualTo((nint)2));
+                Assert.That(BitOps.IsMember(traits, entry.bbAssertionGen, falseEdge ? 0 : 1), Is.True);
+                Assert.That(BitOps.IsMember(traits, jumpGen[entry.bbNum], falseEdge ? 1 : 0), Is.True);
+                Assert.That(BitOps.IsMember(traits, entry.bbAssertionGen, 2), Is.True);
+                Assert.That(BitOps.IsMember(traits, jumpGen[entry.bbNum], 2), Is.True);
+                Assert.That(BitOps.IsEmpty(traits, jumpGen[unreachable.bbNum]), Is.True);
+            });
+        });
+    }
+
+    [TestCase(64)]
+    [TestCase(128)]
+    public static void DuplicateConditionalDataflowPreservesNativeBitsetCopySemantics(int capacity)
+    {
+        WithDataflowCompiler(compiler => {
+            compiler.optAssertionTraitsInit((ushort)capacity);
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            var predecessor = BasicBlock.New(compiler, BBKinds.BBJ_COND);
+            var block = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            var edge = new FlowEdge(predecessor, block, null);
+            predecessor.SetCond(edge, edge);
+            var jumpOut = new nint[compiler.fgBBNumMax + 1][];
+            var jumpGen = new nint[compiler.fgBBNumMax + 1][];
+            var originalTrue = BitOps.MakeSingleton(traits, 0);
+            BitOps.AddElemD(traits, originalTrue, 1);
+            jumpOut[predecessor.bbNum] = BitOps.MakeCopy(traits, originalTrue);
+            predecessor.bbAssertionOut = BitOps.MakeSingleton(traits, 1);
+            block.bbAssertionIn = BitOps.MakeFull(traits);
+            block.bbAssertionOut = BitOps.MakeFull(traits);
+            block.bbAssertionGen = BitOps.MakeSingleton(traits, 2);
+            jumpOut[block.bbNum] = BitOps.MakeFull(traits);
+            jumpGen[block.bbNum] = BitOps.MakeSingleton(traits, 3);
+
+            var callback = new AssertionPropFlowCallback(compiler, jumpOut, jumpGen);
+            callback.StartMerge(block);
+            callback.Merge(block, predecessor, duplicateCount: 2);
+            Assert.That(callback.EndMerge(block), Is.True);
+            Assert.Multiple(() => {
+                Assert.That(BitOps.Count(traits, block.bbAssertionIn), Is.EqualTo((nint)1));
+                Assert.That(BitOps.IsMember(traits, block.bbAssertionIn, 1), Is.True);
+                Assert.That(BitOps.Count(traits, block.bbAssertionOut), Is.EqualTo((nint)2));
+                Assert.That(BitOps.IsMember(traits, block.bbAssertionOut, 2), Is.True);
+                Assert.That(BitOps.IsMember(traits, jumpOut[block.bbNum], 3), Is.True);
+                Assert.That(BitOps.IsMember(traits, jumpOut[predecessor.bbNum], 0), Is.EqualTo(capacity == 64));
+            });
+
+            callback.StartMerge(block);
+            Assert.That(callback.EndMerge(block), Is.False);
+        });
+    }
+
+    [Test]
+    public static void HandlerDataflowUsesTryEntryAssertionsRatherThanExitAssertions()
+    {
+        WithDataflowCompiler(compiler => {
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            var firstTry = BasicBlock.New(compiler, BBKinds.BBJ_ALWAYS);
+            var lastTry = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            var handler = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            firstTry.bbAssertionIn = BitOps.MakeSingleton(traits, 1);
+            lastTry.bbAssertionOut = BitOps.MakeSingleton(traits, 2);
+            handler.bbAssertionIn = BitOps.MakeFull(traits);
+            var callback = new AssertionPropFlowCallback(compiler, [], []);
+            callback.MergeHandler(handler, firstTry, lastTry);
+            Assert.That(BitOps.Equal(traits, handler.bbAssertionIn, firstTry.bbAssertionIn), Is.True);
+        });
+    }
+
+    private static void WithDataflowCompiler(Action<Compiler> action)
+    {
+        WithCompiler(compiler => {
+            compiler.compHndBBtab = [];
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }, new LclVarDsc { Type = TYP_INT }];
+            compiler.fgNodeThreading = NodeThreading.AllTrees;
+#if DEBUG
+            compiler.fgSafeBasicBlockCreation = true;
+#endif
+            action(compiler);
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
     public static void MorphUsesLocalAssertionsWithoutGlobalRangeAnalysis(bool cast)
     {
         WithCompiler(compiler => {

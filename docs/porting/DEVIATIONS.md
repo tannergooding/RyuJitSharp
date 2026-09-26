@@ -566,6 +566,13 @@ do not replace those arrays. The morph diagnostic invocation number is accepted
 in both builds but used only in Debug, like the existing invalidation diagnostic
 tree parameter (B099).
 
+Range analysis, relational application and forward assertion dataflow are now
+implemented, without activating global assertion propagation or range-check
+elimination. Duplicate conditional edges preserve native BitVec assignment:
+single-word values are copied before destructive intersection, while multi-word
+storage remains aliased. The forward-analysis callback interface replaces the
+native template protocol without changing traversal or convergence.
+
 Profile weight lookup uses a managed `ref` output: native leaves the pointed-to
 value unchanged when no profile weights are available, so an unconditional
 `out` initialization would change that contract (B067).

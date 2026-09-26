@@ -23,28 +23,35 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Full VN phase activated with815D767R, reviewed native-order loop collections and fourteen exact-source native-host captures. Parent owns shared integration and upcoming full assertion orchestration; workers own bounded range, relational/arithmetic and VN-folding/morph prerequisites. Do not activate reduced phases.",
+      "parentScope": "Full VN remains active with815D767R and fourteen exact-source native-host captures. Range analysis, relational application and complete forward assertion dataflow primitives integrate731D712R. Parent owns remaining full assertion orchestration and shared integration; do not activate reduced phases.",
       "parallelPackets": [
         {
-          "scope": "Complete relational assertion application prerequisite, assertionprop.cpp4433-4910.",
+          "scope": "Complete relational assertion application and canonical RangeProperties, assertionprop.cpp4141-4221,4433-4910.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
           "files": "New Compiler.ap.Relational.cs and AssertionRelationalTests.cs only.",
-          "status": "in-progress",
-          "remainingBoundary": "3a through67 has full relational family and32D32R provisional evidence; final freeze awaits6a stable range APIs. Shared IsVNRelop query is committed4490b27. No phase activation."
+          "status": "done",
+          "remainingBoundary": "3a through72 frozen36D32R after four failing-before infinity diagnostics cases.942 reviewthrough87 found no folding defect. Integrated731D712R with corrected range and dataflow. RangeProperties remains canonical in this partial."
         },
         {
           "scope": "Complete native range-analysis prerequisite, then arithmetic/range/cast/bounds assertion application.",
           "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
           "files": "sources\\Core\\jit\\rangecheck\\ native analysis types/helpers and RangeAnalysisTests.cs; Compiler.ap.Arithmetic.cs/AssertionArithmeticTests.cs remain reserved but deferred.",
           "status": "in-progress",
-          "remainingBoundary": "6a through69 found RangeCheck empty and Limit/Range/RangeOps/GetRangeFromAssertions absent. Ownership expanded to full required native rangecheck.h75-351/rangecheck.cpp analysis closure, including GetRange/TryGetRange SSA and stress paths. Return validated prerequisite before assertionprop.cpp4141-4353,5020-5178,5651-5826 application. No range-check/assertion phase activation."
+          "remainingBoundary": "6a through76: complete range analysis frozen18D18R;610 reviewthrough54 found long-RSH early return, fixed with failing-before32/63 regressions (B280). Integrated731D712R. Resume remaining arithmetic/cast/bounds application after this commit, reusing3a RangeProperties and RangeCheck.GetRange. No phase activation."
         },
         {
           "scope": "Complete VN-based assertion folding prerequisite.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
           "files": "New Compiler.ap.VNFolding.cs/AssertionVNFoldingTests.cs plus required Compiler.MorphBlockStmt.cs/MorphBlockStmtTests.cs.",
           "status": "in-progress",
-          "remainingBoundary": "d62 through119: five independent call/profitability functions13D13R; full folder needs optVNConstantPropOnJTrue and insertion-time fgMorphBlockStmt. Ownership expanded to complete morph.cpp13451onward helper and assertionprop.cpp6514-6551 prerequisite; no whole-block morph substitute or phase activation."
+          "remainingBoundary": "d62 through121: complete four-file folding/morph packet frozen42D42R.942 reviewthrough88 clear. Ready for next integration. Native GenTreeLclFld is uint16_t with an <=65535 invariant; corrected fold preserves assertion and unchecked conversion, and no widening is required. EE immutable-data folding is not exercised by focused cases."
+        },
+        {
+          "scope": "Complete optCreateJumpTableImpliedAssertions, assertionprop.cpp6007-6129.",
+          "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
+          "files": "New Compiler.ap.SwitchAssertions.cs and AssertionSwitchTests.cs only.",
+          "status": "in-progress",
+          "remainingBoundary": "Preserve duplicate-target grouping, assertion/VN creation order and diagnostics. Return focused Debug/Release freeze; no shared edits or phase activation."
         },
         {
           "scope": "Complete loop-side-effect analysis required by native fgValueNumber.",
@@ -176,11 +183,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Full VN phase is active and exact-source validated815D767R plus14native-host configurations using artifacts\\vn-phase-final-jit\\RyuJitSharp.dll. Counted entry V02/2 receives native zeroVN; final raw loop dumps still differ in cloneIDs/traversal, and assertion substitution remains next. Collect6a complete range-analysis freeze, then3a final relational andd62 complete VN-folding/insertion-time morph packets; integrate dependency-coherently. Parent next native closure is full optAssertionPropMain/dataflow/dispatch after required callees, not an equality-only phase. Preserve14capture configurations; no remote publication.",
+    "nextAction": "Range, relational and complete forward assertion dataflow primitives are integrated731D712R. After committing this boundary, release6a to arithmetic/cast/bounds application using canonical3a RangeProperties. Next integrate d62's reviewed four-file folding/morph freeze42D42R from artifacts\\assertion-vn-folding-validation\\source-manifest.json.610 owns switch-implied assertions. Parent then completes optVNAssertionPropCurStmt/VN non-null visitor, full dispatcher and optAssertionPropMain; production phase remains inactive. Preserve all14 VN-enabled captures and inspect Counted substitution only after complete activation. No remote publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Collected loop610:53, phasefixture942:86, relational3a:67, rangeblocker6a:69, foldingd62:119.610/942 VN packets integrated and resolved;3a awaits6a final range freeze;6a owns range closure then arithmetic;d62 owns folding plus insertion-time morph prerequisite. Parent owns CoreRoot, currently free. No app-native sessions.",
+      "workerPackets": "Collected range610review:54, relational3a:72, range6a:76, foldingd62:121, folding942review:88. Corrected range/relational plus parent dataflow integrate731D712R.6a waits for commit to resume arithmetic; d62 four-file packet is frozen and reviewed for next integration;610 implements switch assertions. Parent owns CoreRoot, currently free. No app-native sessions.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -196,6 +203,18 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "assertionPrerequisiteIntegration": {
+        "snapshotBase": "04e23d4",
+        "sourceManifest": "artifacts\\assertion-prerequisite-integration\\source-manifest-final.json",
+        "debugPassed": 731,
+        "releasePassed": 712,
+        "skipped": 0,
+        "selector": "FullyQualifiedName~Assertion|FullyQualifiedName~RangeAnalysisTests|FullyQualifiedName~ValueNum|FullyQualifiedName~FlowGraphDfsTests",
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\assertion-prerequisite-final-{Debug,Release}.trx",
+        "review": "610 range reviewthrough54 and942 relational reviewthrough87. Corrected B280 long-RSH refinement and B276 reachable infinity diagnostics have failing-before cases.",
+        "scope": "Exact19overlays: range analysis, relational/RangeProperties, generic forward traversal, assertion initialization/gen/merge callback and related tests; stale VN TODO removed. No assertion or range-elimination phase activation; folding/morph WIP excluded.",
+        "dataflow": "Cyclic convergence, acyclic single pass, DFS reuse and unreachable omission, handler/filter merging, valid-only initial sets, complementary true/false generation, and native single-word-copy/multi-word-alias duplicate-edge behavior."
+      },
       "vnPhaseActivation": {
         "snapshotBase": "4490b27",
         "sourceManifest": "artifacts\\vn-phase-validation\\source-manifest-final.json",
@@ -6324,6 +6343,20 @@
       "area": "simple-operator-morphing",
       "native": ["src\\coreclr\\jit\\morph.cpp", "src\\coreclr\\jit\\optimizer.cpp", "src\\coreclr\\jit\\flowgraph.cpp", "src\\coreclr\\jit\\gentree.cpp", "src\\coreclr\\jit\\gentree.h"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.fg.SimpleOps.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.Comparisons.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.Arithmetic.cs", "sources\\Core\\jit\\compiler\\Compiler.opt.Narrowing.cs", "sources\\Core\\jit\\compiler\\Compiler.opt.SsaUses.cs", "sources\\Core\\jit\\compiler\\Compiler.gt.cs", "sources\\Core\\jit\\gentree\\GenTreeCast.cs", "sources\\Core\\jit\\gentree\\GenTreeIntCon.cs", "sources\\Core\\jit\\gentree\\GenTreeIntConCommon.cs", "sources\\Core\\jit\\gentree\\GenTreeOp.cs"],
+      "reconciledCommit": null
+    },
+    {
+      "area": "assertion-range-analysis-and-relational-application",
+      "native": ["src\\coreclr\\jit\\rangecheck.h", "src\\coreclr\\jit\\rangecheck.cpp", "src\\coreclr\\jit\\assertionprop.cpp"],
+      "csharp": ["sources\\Core\\jit\\rangecheck\\", "sources\\Core\\jit\\compiler\\Compiler.ap.Relational.cs"],
+      "status": "Complete range-analysis dependency and relational application; RangeProperties remains canonical in the relational partial. Range-check elimination and global assertion phase remain inactive.",
+      "reconciledCommit": null
+    },
+    {
+      "area": "forward-assertion-dataflow",
+      "native": ["src\\coreclr\\jit\\dataflow.h", "src\\coreclr\\jit\\optimizer.cpp:20-23", "src\\coreclr\\jit\\assertionprop.cpp:6181-6480"],
+      "csharp": ["sources\\Core\\jit\\dataflow\\DataFlow.cs", "sources\\Core\\jit\\assertionprop\\AssertionPropFlowCallback.cs", "sources\\Core\\jit\\compiler\\Compiler.ap.Dataflow.cs"],
+      "status": "Complete forward traversal and assertion initialization/gen/merge equations. Native per-merge tracing is disabled; general assertion phase is not activated.",
       "reconciledCommit": null
     },
     {

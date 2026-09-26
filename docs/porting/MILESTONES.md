@@ -15,6 +15,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Range analysis and assertion dataflow
+
+Range analysis now follows SSA definitions and edge assertions, including
+symbolic bounds, overflow, widening and cyclic phis. Relational assertion
+application uses those proofs while preserving floating-point comparisons and
+side effects. Signed long-shift ranges retain the subsequent assertion
+refinement, and floating assertion diagnostics use native spellings.
+
+Forward dataflow now visits reachable blocks in reverse postorder, iterates
+changed cyclic graphs and merges exception handlers from their try-entry facts.
+Assertion initialization and generation retain separate true/false edge sets.
+These are prerequisites, not activation of global assertion propagation or
+range-check elimination; arithmetic application, folding and phase integration
+remain.
+
 ## 2026-09-26: Value-numbering phase activation
 
 The full VN phase now numbers initial SSA values, local and memory phis, loop
