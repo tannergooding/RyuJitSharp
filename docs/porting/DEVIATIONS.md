@@ -573,6 +573,12 @@ single-word values are copied before destructive intersection, while multi-word
 storage remains aliased. The forward-analysis callback interface replaces the
 native template protocol without changing traversal or convergence.
 
+VN-based folding and insertion-time statement morphing are also complete
+prerequisites. Local-address folds retain the native 16-bit offset invariant;
+the native constructor's unsigned parameter does not imply wider field storage.
+Global assertion propagation remains inactive until its remaining application
+and orchestration functions are integrated.
+
 Profile weight lookup uses a managed `ref` output: native leaves the pointed-to
 value unchanged when no profile weights are available, so an unconditional
 `out` initialization would change that contract (B067).

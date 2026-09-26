@@ -15,6 +15,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: VN-based folding and statement remorphing
+
+VN-based folding now handles proven constants, memory-intrinsic simplification
+and conditional propagation while retaining native side-effect and exception
+ordering. Statement remorphing uses the native insertion-time path, including
+removal and control-flow updates, rather than rerunning whole blocks.
+
+These complete the folding and morphing prerequisites for global assertion
+propagation. Arithmetic application, switch-derived assertions and statement
+visitors still need integration before activating the full phase.
+
 ## 2026-09-26: Range analysis and assertion dataflow
 
 Range analysis now follows SSA definitions and edge assertions, including
