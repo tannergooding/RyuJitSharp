@@ -15,6 +15,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: SSA rename state and diagnostics
+
+SSA renaming now has native block-scoped local and memory stacks, including
+same-block definition replacement, restoration on dominator-tree exit and
+reuse of popped entries. SSA lifetime summaries and annotation-constraint
+checks are also implemented, retaining full-width label identity and native
+diagnostic formatting.
+
+Full SSA construction still requires dominator/frontier construction,
+zero-initialization cleanup, PHI insertion and the renaming driver.
+
 ## 2026-09-25: Complete memory-kind iteration
 
 Memory-kind iteration now includes byref-exposed memory before the GC heap,

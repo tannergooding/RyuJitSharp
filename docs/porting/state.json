@@ -12,11 +12,11 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete enregistered-local interval construction and SSA dominator/rename prerequisites while integrating native EH insertion fidelity.",
+      "scope": "Complete local block-location allocation and SSA dominator/frontier prerequisites after integrating rename state and diagnostics.",
       "doneWhen": [
-        "Complete Windows-AMD64 buildIntervals<true> and required native direct helpers without activating optimized allocation.",
-        "Complete native dominator construction/frontiers and SSA rename-state prerequisites without activating the incomplete SSA builder.",
-        "Restore the native enclosing-region boolean contract and demonstrate corrected finally insertion/branch forms with paired execution.",
+        "Complete Windows-AMD64 local block-start/end register-location handling without activating optimized allocation.",
+        "Complete native dominator construction/frontiers and their required predecessor/visitor helpers without activating the incomplete SSA builder.",
+        "Integrate complete SSA rename state and native diagnostics, preserving bookkeeping and collection-stress execution.",
         "Review each frozen packet, run focused Debug/Release cases and commit it with related tracking before integrating the next packet."
       ],
       "validation": [
@@ -25,28 +25,28 @@
       ],
       "parallelPackets": [
         {
-          "scope": "Complete buildIntervals<true> Windows-AMD64 specialization and missing stress/validation helpers.",
+          "scope": "Complete Windows-AMD64 local block-start/end register locations and processBlockEndAllocation<true>.",
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
-          "files": "New lsra partials and LinearScanLocalIntervalConstructionTests.cs; existing shared helpers require a reported need before edits.",
-          "doneWhen": "Frozen complete builder specialization with actual isolated Debug/Release evidence and exact source hashes; production allocation gate unchanged.",
-          "status": "complete",
-          "result": "Full builder and direct helpers reviewed, including native rationale and mapping/predecessor cases; integrated558Debug/473Release. Production optimized gate unchanged."
+          "files": "New LocalBlockLocations partials and focused fixture; shared helpers require a reported need before edits.",
+          "doneWhen": "Frozen complete block-location closure with actual isolated Debug/Release evidence and exact hashes; production allocation gate unchanged.",
+          "status": "in-progress",
+          "result": "Preceding local interval builder is committed c8bdd87."
         },
         {
           "scope": "Complete native SsaRenameState local/memory stacks and block-scoped restoration.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
           "files": "New ssarenamestate partials and SsaRenameStateTests.cs; no shared compiler or builder edits.",
           "doneWhen": "Frozen complete state helper with isolated Debug/Release evidence, preserving local/memory ordering and shared-kind semantics.",
-          "status": "awaiting-parent-review",
+          "status": "complete",
           "deferred": "SsaBuilder orchestration, full SSA activation and unowned compiler changes."
         },
         {
-          "scope": "Correct native enclosing EH-region output preservation and verify finally block placement and execution.",
+          "scope": "Complete native SSA summaries, annotation constraints and annotated-node reachability.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
-          "files": "EHblkDsc.cs, required caller edits, a focused fixture and isolated finally-parity artifacts; no SSA/LSRA or shared documentation edits.",
-          "doneWhen": "Frozen native helper/caller correction, failing-before and Debug/Release coverage, and fresh paired GCStress4 captures for three finally methods plus catch/filter controls.",
+          "files": "Compiler.SsaDiagnostics.cs and SsaDiagnosticsTests.cs only.",
+          "doneWhen": "Frozen complete DEBUG diagnostics with native formatting and constraint identity, focused evidence and exact hashes.",
           "status": "complete",
-          "result": "Frozen helper/caller correction restores all three finally insertion/branch-form/size comparisons. Five selected methods execute managed code under GCStress4; parent combined tests pass559Debug/522Release."
+          "result": "Wide-label diagnostic casts corrected before integration; combined SSA/rename/liveness tests pass347Debug/316Release."
         }
       ],
       "deferred": [
@@ -59,11 +59,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "B257 is corrected:4before failures,573Debug/535Release, and32managed methods execute under GCStress4. Parent next integrates the reviewed frozen SsaRenameState turn10 and corrected SsaDiagnostics turn75 packets with focused combined validation, then ports empty FlowGraphDominatorTree/FlowGraphDominanceFrontiers: native flowgraph.cpp:7094 onward, BlockDominancePreds in block.cpp:289 and DomTreeVisitor in compiler.h:13345. LSRA worker now ports complete local block-start/end locations. No partial SSA/optimized activation or publication.",
+    "nextAction": "B257 is committed2114101 with32-method GCStress4 execution. Rename state and corrected SSA diagnostics are integrated347Debug/316Release. Parent next implements the complete empty FlowGraphDominatorTree/FlowGraphDominanceFrontiers classes (flowgraph.cpp:7094-7520), DomTreeNode (block.h:2453), BlockDominancePreds (block.cpp:289-312 with a separate lazy dominance cache), and the nonrecursive DomTreeVisitor (compiler.h:13345). Existing BlockPredsWithEH and FlowGraphDfsTree are reusable. Follow existing struct-visitor CRTP interface patterns; preserve native predecessor/child order and EH behavior. LSRA worker owns local block locations. No partial SSA/optimized activation or publication.",
     "handoff": {
       "status": "parallel-interval-and-ssa-prerequisites",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 through turn6 is integrated as c8bdd87; now owns new LocalBlockLocations partials/tests for native block-start/end location handling. 3a2c8d9b through turn10 is collected/reviewed; final rename-state comments/hash are frozen. d62fc6a5 through turn75 is collected; SSA diagnostics include corrected native int label formatting and three failing-before cases. Both SSA packets await parent integration. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
+      "workerPackets": "610162a0 through turn6 is integrated as c8bdd87; now owns new LocalBlockLocations partials/tests. 3a2c8d9b through turn10 and d62fc6a5 through turn75 are fully reviewed and integrated with347Debug/316Release; both idle/resolved. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -79,6 +79,24 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "ssaRenameAndDiagnostics": {
+        "nativeBoundary": "Complete ssarenamestate.h/cpp; ssabuilder.cpp:1205-1380 DumpSsaSummary/JitTestCheckSSA; compiler.cpp:8060-8110 FindReachableNodesInNodeTestData.",
+        "renameEvidence": "artifacts\\ssa-rename-state-validation\\evidence.txt",
+        "diagnosticManifest": "artifacts\\ssa-diagnostics-validation\\source-manifest.json",
+        "wideLabelBeforeTests": "artifacts\\ssa-diagnostics-validation\\wide-label-before-results\\wide-label-before.trx",
+        "wideLabelBeforeFailed": 3,
+        "sourceManifest": "artifacts\\ssa-state-integration\\source-manifest.json",
+        "snapshotBase": "2114101",
+        "rootSnapshotHashesMatch": true,
+        "debugTests": "artifacts\\ssa-state-integration\\snapshot\\artifacts\\tst\\Debug\\ssa-state-debug.trx",
+        "releaseTests": "artifacts\\ssa-state-integration\\snapshot\\artifacts\\tst\\Release\\ssa-state-release.trx",
+        "debugPassed": 347,
+        "releasePassed": 316,
+        "skipped": 0,
+        "selection": "FullyQualifiedName~Ssa|FullyQualifiedName~MemoryKindEnumerationTests|FullyQualifiedName~Liveness",
+        "coverage": "Block-scoped local/memory definitions, repeated-def replacement, cross-stack restoration/free-node reuse, diagnostics, SSA summary ordering, annotation equality/conflicts/reachability and full-width labels with int-formatted output.",
+        "limitation": "Rename-state primitives and DEBUG diagnostics only; full SSA construction remains unimplemented."
+      },
       "memoryKindEnumeration": {
         "nativeBoundary": "block.h:125-205 MemoryKindIterator/allMemoryKinds; both memory kinds in native order, B257.",
         "sourceManifest": "artifacts\\memory-kind-validation\\source-manifest.json",
@@ -5522,6 +5540,13 @@
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.SsaReset.cs"],
       "reconciledCommit": null,
       "scope": "Complete fgResetForSsa in both modes; SSA construction remains incomplete."
+    },
+    {
+      "area": "ssa-rename-state-and-diagnostics",
+      "native": ["src\\coreclr\\jit\\ssarenamestate.h", "src\\coreclr\\jit\\ssarenamestate.cpp", "src\\coreclr\\jit\\ssabuilder.cpp", "src\\coreclr\\jit\\compiler.cpp"],
+      "csharp": ["sources\\Core\\jit\\ssarenamestate\\SsaRenameState.cs", "sources\\Core\\jit\\compiler\\Compiler.SsaDiagnostics.cs"],
+      "reconciledCommit": null,
+      "scope": "Complete rename stack state, SSA lifetime summaries, annotation constraints and annotated-node reachability."
     },
     {
       "area": "composite-ssa-bookkeeping",

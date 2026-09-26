@@ -848,6 +848,11 @@ semantics. New outlined slots are explicitly zeroed after list growth, including
 reuse after reset, matching `JitExpandArray` value initialization. A readonly
 managed singleton represents native memory-PHI sentinel `0x1`; null continues
 to mean that no PHI exists.
+SSA rename state uses managed linked stack nodes and the native free-node pool.
+Per-local history and the cross-stack block-pop list remain distinct; memory
+stacks stay independent, with shared-kind selection left to the builder.
+SSA annotation labels retain native pointer-width identity while diagnostics
+truncate them to signed 32-bit values at the native formatting sites.
 The enclosing EH-region helper takes a managed `ref bool`, preserving the
 native in/out value when no enclosing region exists. Output-only wrappers
 remain valid only where callers consume the kind for a present region; EH
