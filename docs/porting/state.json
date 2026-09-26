@@ -37,8 +37,8 @@
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
           "files": "New Compiler.HWIntrinsicImport partials/support and focused tests; existing dispatcher stub is replaced only when its complete supported closure is ready.",
           "doneWhen": "Establish exact native closure and preserve ISA, forceExpand, fallback, evaluation and numeric contracts. No selected-case importer or changed ISA reporting.",
-          "status": "in-progress",
-          "result": "Traversal corrections collected through turn21 and integrated by parent. New hardware-import assignment from0671581; bounded native plan pending.",
+          "status": "done",
+          "result": "Complete signature reader, table/base-type predicates and xarch immediate/range-check prerequisites39D39R, reviewed against native. Combined root selection153D143R passes. Dispatcher remains gated; next prerequisites are SIMD recognition and operand handling.",
           "deferred": "Shared generators/tables, LSRA, ObjectAllocator, EH feasibility, other targets and publication."
         },
         {
@@ -61,11 +61,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Loop placement/execution committed20b2aaf. EH feasibility and dependent object escape/clone analysis are reviewed and validated together (43D38R EH,33D31R combined object selection). Finish integrating3a's reviewed hardware-import prerequisites39D39R, whose33 broader Debug failures match baseline exactly. Then continue native SIMD recognition/import dependencies and object allocation-site walking without activating incomplete modes. Parent should exercise call-free optimized loops to cover actual alignment padding before broader code comparisons. Current23 optimized and32 minopts GCStress4 methods execute; no code/dump parity or remote publication.",
+    "nextAction": "Completed loop placement/execution20b2aaf and object escape/clone analysis with EH support31aaac0; hardware prerequisites now integrated. Combined root build/selection153D143R passes. Resume productive lanes:3a complete SIMD recognition/import prerequisites, d62 complete allocation-site analysis,610 complete mutating EH clone support or its whole-function prerequisite boundary. Preserve existing APIs and phase gates until closures are complete. Parent next creates a small call-free loop execution probe under artifacts and captures native/managed FullOpts with the current validated JIT to exercise actual alignment padding; then follow concrete runtime/code differences. Current23 optimized and32 minopts GCStress4 methods execute. No code/dump parity or remote publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 through17 and d62fc6a5 through92 collected; EH/object packets reviewed by942 through65, root/snapshot hashes and43D38R/33D31R verified. 3a2c8d9b through23 collected; hardware prerequisites39D39R, broader33Debug failures confirmed identically on baseline. HWI integration remains before new packets. All workers idle/resolved. CoreRoot is free. No app-native child-session coordination.",
+      "workerPackets": "All returned packets collected and integrated:610 through17,d62 through92,3a through23;942 through65 reviewed EH/object. Combined root153D143R passes. Workers currently idle and ready for the next assignments in nextAction; do not confuse prior notifications with pending results. CoreRoot is free. No app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering/allocation/placement/generation/emission/metadata execute23 selected optimized methods and the established32-method minopts corpus under GCStress4. Optimized runs use native JitObjectStackAllocation=0 on both sides while object analysis is incomplete. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -81,6 +81,20 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "hardwareImportPrerequisites": {
+        "nativeBoundary": "hwintrinsic.cpp1765-1798,1856-1969; hwintrinsicxarch.cpp2751-2765",
+        "sourceManifest": "artifacts\\hwintrinsic-import-validation\\source-manifest.json",
+        "sourceManifestSha256": "7961462D1FD0DD1EDBA95FEC2214DD9FCE48AEB637C94E2F2B02BD21277F2175",
+        "snapshotBase": "0671581",
+        "debugPassed": 39,
+        "releasePassed": 39,
+        "integratedDebugPassed": 153,
+        "integratedReleasePassed": 143,
+        "integratedTests": "artifacts\\hwintrinsic-import-validation\\integrated-{debug,release}.trx",
+        "skipped": 0,
+        "baselineFailures": "Broader Debug selection: baseline346pass/33fail, packet369pass/33fail; identical failing names/first exceptions. First checked negative-to-unsigned vector broadcast conversion throws in GenTreeVecCon.EvaluateBroadcastInPlace. No new failures; not fixed in this packet.",
+        "scope": "Whole prerequisites only. Signature reader preserves argument order, handles, modifier stripping and precise element types. impHWIntrinsic remains unactivated; hardware code parity remains incomplete."
+      },
       "conditionalEscapeAndCloneAnalysis": {
         "nativeBoundary": "objectalloc.cpp917-995,3088-3248,3366-3468,3821-3950,3961-4539; fgehopt.cpp2341-2611 no-insertion mode and3003-3007 CloneTryInfo",
         "sourceManifest": "artifacts\\objectalloc-escape-validation\\source-manifest.json",
@@ -4875,6 +4889,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "hardware-import-prerequisites",
+      "native": ["src\\coreclr\\jit\\hwintrinsic.cpp:1765-1798,1856-1969", "src\\coreclr\\jit\\hwintrinsicxarch.cpp:2751-2765"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.HWIntrinsicImportPrerequisites.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete signature reader, table/base-type predicates and xarch immediate/range-check helpers. SIMD recognition, operand handling and full dispatcher/special-import closure remain required."
+    },
     {
       "area": "object-escape-clone-analysis",
       "native": ["src\\coreclr\\jit\\objectalloc.cpp:917-995,3088-3248,3366-3468,3821-3950,3961-4539", "src\\coreclr\\jit\\fgehopt.cpp:2341-2611,3003-3007"],

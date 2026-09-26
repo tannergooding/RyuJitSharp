@@ -212,6 +212,12 @@ mode: it enumerates clone blocks and checks capacity without mutating CFG or EH
 entries. The mutating clone path, allocation-site analysis traversal and
 stack/heap morphing remain unported; the phase gate is unchanged.
 
+Hardware-import prerequisites preserve native argument order and precise types,
+table-driven eligibility and xarch immediate/range-check rules. They do not
+activate `impHWIntrinsic`: SIMD signature recognition, stack handling and
+special-import/fallback closure remain incomplete. Existing hardware-code
+differences are not accepted parity exceptions.
+
 Local-address values retain their owning statement/operand slot rather than a
 native `GenTree**`. Unary and binary operands use direct slot identifiers;
 special-node operands use an ordinal in the owner's stable operand list. This

@@ -15,6 +15,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Hardware-import prerequisites
+
+Hardware-intrinsic import now has native argument-signature reading, table-driven
+eligibility, element-type checks, xarch immediate discovery and conditional
+immediate range checks. Argument order and precise unsigned types are preserved.
+
+The importer itself remains unported. SIMD signature recognition, stack operand
+handling and the complete special-import/fallback paths are still required;
+these prerequisites do not reduce the existing hardware-code differences.
+
 ## 2026-09-26: Conditional escape and clone analysis
 
 Object-allocation analysis now propagates escapes, recognizes cloning guards,
