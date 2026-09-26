@@ -15,6 +15,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Range-check cloning
+
+Range-check cloning now replaces eligible groups of bounds checks with guarded
+fast and fallback paths. It preserves native value-number grouping, selection
+order and complexity limits. The fast path removes the selected checks while
+the fallback retains their original exception behavior.
+
+A four-access variable-index probe produces the same guards, edge likelihoods
+and fast/fallback structure as native, retaining every array load and index
+store. Both implementations preserve successful sums and null, negative,
+short-array and overflowing-index exceptions. Established optimized and
+GC-stress corpora continue to execute. Broader dump/code parity remains open.
+
 ## 2026-09-26: Flow optimization phases
 
 Flow optimization now runs at the native early, pre-layout and post-layout

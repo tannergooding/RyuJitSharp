@@ -12,7 +12,7 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete optOptimizeFlow/PreLayout/PostLayout and their rarely-run/branch-reversal prerequisites. Independently port range-check cloning. Preserve native flow/phase ordering, predecessor/profile contracts and post-LSRA in-place-only reversal.",
+      "scope": "Integrate the complete SCEV model/context prerequisite, then the complete induction-variable optimization closure. Preserve native SSA recurrence analysis, overflow/exit-count semantics, phase ordering and established optimized execution.",
       "doneWhen": [
         "Preserve the completed loop-inversion/iteration-analysis contract and identify the first missing native transformation behind a concrete optimized-code difference.",
         "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
@@ -23,14 +23,28 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Complete flow7 integrated628D503R and22configs130bodies252flow completions.942:137/138 positive native comparison complete: cold blocks, switch6block removal, return compaction and in-place reversals match applicable inputs; six B300 non-Main return/CSE differences remain. Commit then integrate frozen/reviewed range-check cloning.",
+      "parentScope": "Range-cloning4 complete:636D511R,4old-stub failures,23configurations132bodies86phases.3a:118 confirms matching positive guards, edges, retained effects and exceptions; exact source inventory/hashes verified. Freeze and integrate complete SCEV before IV activation. CoreRoot free.",
       "parallelPackets": [
+        {
+          "scope": "Port the complete induction-variable optimization consumer closure against the SCEV prerequisite.",
+          "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
+          "files": "New Compiler.InductionVariables*.cs and focused tests; parent owns public optInductionVariables stub.",
+          "status": "in-progress",
+          "remainingBoundary": "Independent cf53c49 lane for all native inductionvariableopts.cpp helpers and inactive private driver. Coordinate the API contract with d62 without duplicating SCEV implementation. Report additional major prerequisites before expanding; activate only after both complete frozen packets are integrated."
+        },
+        {
+          "scope": "Port the complete SCEV model/context prerequisite for induction-variable optimization.",
+          "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
+          "files": "New sources/Core/jit/scev files and focused ScalarEvolution tests; parent owns public optInductionVariables stub.",
+          "status": "in-progress",
+          "remainingBoundary": "Independentcf53c49 lane explicitly authorized for complete scev.h17-262/scev.cpp1-2049: SSA recurrence, simplification, exit counts, overflow, VN materialization and diagnostics. Report settled API/shared prerequisites before the subsequent IV consumer packet. Public IV phase remains inactive."
+        },
         {
           "scope": "Complete range-check cloning and required local helper/model closure.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
           "files": "New Compiler.RangeCheckCloning*.cs and RangeCheckCloningTests.cs; parent owns production stub.",
-          "status": "in-progress",
-          "remainingBoundary": "3a:116 frozen3files onb4df9ab,8D8R; manifest artifacts\\rangecheckcloning-validation\\source-manifest.json.6a:111 native/hash-order review clear. Await parent production activation after flow commit; no runtime parity established."
+          "status": "done",
+          "remainingBoundary": "Parent activation4 oncf53c49 passes636D511R;4old-stub failures.6a:111 native/hash-order review clear. JITD2606D69 executes23configs132bodies86phases.3a:118 confirms native-matching four-check grouping/budget, guards, edge likelihoods, fast/fallback checks and retained effects; frozen runtime outcomes match. Broader code/dump parity remains open."
         },
         {
           "scope": "Complete pre-layout unconditional-to-conditional branch optimization prerequisite.",
@@ -323,11 +337,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit validated flow7 plus tracking;942:137/138 comparison collected, no introduced defect. Then integrate3a:116 frozen range-check-cloning3 on new committed baseline: rename optRangeCheckCloningCore to actual public entry, remove Compiler.opt.cs stub and route focused tests through production entry.6a:111 native/hash-order review clear. Validate fullD/R and freshAOT with flow-phase-integration\\capture-configurations.json22cases. Native phase comparison required; no publication.",
+    "nextAction": "Collect d62 complete SCEV model/context packet and its settled API/shared-prerequisite requests; integrate against the committed range-cloning baseline with focused Debug/Release semantic evidence and native review before committing.6a concurrently ports the complete inactive IV consumer against that API. Keep public optInductionVariables inactive until the full closure is ready; then use artifacts\\range-cloning-integration\\capture-configurations.json23cases for fresh phase execution. No publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Flow d62:160,942:134/136 reviews and137/138 comparison fully collected. Range-check cloning3a:116 frozen3 and6a:111 review collected. All retained workers idle with no unread results. CoreRoot free; no parent command running or app-native sessions.",
+      "workerPackets": "Range-cloning3a:118 positive comparison and6a:111 review collected and integrated;942:139 earlier negative-only inventory resolved. d62 implements complete SCEV prerequisite;6a implements complete inactive IV consumer against its coordinated API oncf53c49.3a/942/610 idle; no parent command running or app-native sessions. CoreRoot free.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -343,6 +357,22 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "rangeCheckCloning": {
+        "snapshotBase": "cf53c49",
+        "sourceManifest": "artifacts\\range-cloning-integration\\source-manifest.json",
+        "debugPassed": 636,
+        "releasePassed": 511,
+        "skipped": 0,
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\range-cloning-integrated-{Debug,Release}.trx",
+        "nativeAot": "artifacts\\range-cloning-jit\\RyuJitSharp.dll",
+        "sha256": "D2606D69D849F6113D3142A8BBD2A1DF6DB941BD1DD30966BB81C08BF2609EC5",
+        "regressions": "Four positive cloning cases fail at old public stub; four rejection cases remain unchanged.",
+        "review": "6a:111 native review includes eligibility/budgets, candidate/VN ordering, hash bucket/growth/rehash tie order and CFG clone/update ownership; no high-confidence defect.",
+        "runtime": "artifacts\\range-cloning-integration\\runtime-validation.json:23configurations,132positive bodies,86cloning phase completions; exact JIT/corpus hashes and managed execution without fallback verified.",
+        "configurations": "artifacts\\range-cloning-integration\\capture-configurations.json:prior22 plus frozen four-check variable-index probe. Both native and managed positive probe exit0/stdout17.",
+        "comparison": "artifacts\\range-cloning-integration\\native-phase-comparison.json:matching four-check/160-node selection, index<0 and index<length-3 guards, edge likelihoods, fast0/fallback4 checks, four loads/three offset stores per path and runtime exceptions. No introduced cloning discrepancy; existing signature/hash/tree-cost differences retained without causal attribution.",
+        "gaps": "EH, side-effectful expressions, rehash ties and overlapping groups lack specific focused coverage. Broader code/dump parity remains open."
+      },
       "flowOptimization": {
         "snapshotBase": "b4df9ab",
         "sourceManifest": "artifacts\\flow-phase-integration\\source-manifest.json",
@@ -5756,6 +5786,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "range-check-cloning",
+      "native": ["src\\coreclr\\jit\\rangecheckcloning.cpp:57-96,106-120,166-372,376-420,434-475,489-672", "src\\coreclr\\jit\\rangecheckcloning.h:1-95", "src\\coreclr\\jit\\fgbasic.cpp:4715-4760", "src\\coreclr\\jit\\jithashtable.cpp:23-53", "src\\coreclr\\jit\\jithashtable.h:270-303,475-510,733-763,775-819"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.RangeCheckCloning.cs", "sources\\Core\\jit\\compiler\\Compiler.RangeCheckCloning.Transformation.cs"],
+      "status": "Complete production phase including native hash-order tie selection, budgets, splitting, guards and fast/fallback cloning. Positive native phase comparison and selected execution established; broader code/dump parity remains open.",
+      "reconciledCommit": null
+    },
     {
       "area": "flow-optimization-phases",
       "native": ["src\\coreclr\\jit\\optimizer.cpp:2366-2455", "src\\coreclr\\jit\\fgopt.cpp:2575-2853,2984-3281", "src\\coreclr\\jit\\gentree.cpp:3863-3921"],

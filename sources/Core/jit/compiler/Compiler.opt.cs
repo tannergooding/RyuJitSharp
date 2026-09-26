@@ -216,9 +216,6 @@ public partial class Compiler
         _ = walker.WalkTree(ref tree, null);
     }
 
-    // TODO: Port phase - optRangeCheckCloning
-    public PhaseStatus optRangeCheckCloning() => PhaseStatus.MODIFIED_NOTHING;
-
     // TODO: Port phase - optInductionVariables
     public PhaseStatus optInductionVariables() => PhaseStatus.MODIFIED_NOTHING;
 
