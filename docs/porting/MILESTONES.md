@@ -15,6 +15,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Induction-variable optimization
+
+Induction-variable optimization now strength-reduces derived expressions,
+converts eligible loops to downward counting, widens profitable integer IVs
+on Windows x64 and removes unused updates. Selection preserves native loop
+order, exit handling and GC safety constraints for derived byrefs.
+
+Range probes match native widening, byref start/step values, trip-count tests
+and removal decisions. Array loads and externally visible stores retain their
+ordering, including exception paths. Established optimized and GC-stress corpora
+execute with the phase enabled. Broader dump/code parity and other-target
+coverage remain outstanding.
+
 ## 2026-09-26: Scalar-evolution analysis
 
 Scalar-evolution analysis now models loop-invariant expressions and induction

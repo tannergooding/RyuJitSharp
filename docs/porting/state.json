@@ -12,7 +12,7 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Integrate the complete SCEV model/context prerequisite, then the complete induction-variable optimization closure. Preserve native SSA recurrence analysis, overflow/exit-count semantics, phase ordering and established optimized execution.",
+      "scope": "Complete native head/tail merging and its required helper closure after IV activation. Preserve native structural matching, ordering, EH/profile contracts and diagnostics; compare remaining separate-return differences without assuming their cause.",
       "doneWhen": [
         "Preserve the completed loop-inversion/iteration-analysis contract and identify the first missing native transformation behind a concrete optimized-code difference.",
         "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
@@ -23,14 +23,21 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Range cloning committed28676e2. Complete SCEV7 integrated647D522R with full analysis and exact root/worker/snapshot hashes;942:140 native review found no high-confidence defect.6a builds complete inactive IV consumer against this frozen API. Integrate its entire closure before public phase activation. CoreRoot free.",
+      "parentScope": "Complete IV activation13 integrated656D531R with full analysis, positive old-stub failure/restored-entry pass and23configs132bodies86phases.942:141 review and3a:120 positive native comparison clear. Next close the still-stubbed fgHeadTailMerge native closure; do not attribute B300 return differences until compared. CoreRoot free.",
       "parallelPackets": [
+        {
+          "scope": "Establish bounded positive native induction-variable execution evidence.",
+          "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
+          "files": "Artifact-only existing native captures, or one bounded new IV probe/capture if required.",
+          "status": "done",
+          "remainingBoundary": "3a:119 artifacts\\induction-variable-native-evidence\\native-positive-evidence.json records existing native range-probe SumByLength strength reduction/downward counting, Main widening and SumShifted no-change control with frozen corpus/dump hashes and successful runtime assertions. No new probe/capture; CoreRoot released."
+        },
         {
           "scope": "Port the complete induction-variable optimization consumer closure against the SCEV prerequisite.",
           "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
           "files": "New Compiler.InductionVariables*.cs and focused tests; parent owns public optInductionVariables stub.",
-          "status": "in-progress",
-          "remainingBoundary": "Independent cf53c49 lane for all native inductionvariableopts.cpp helpers and inactive private driver. Coordinate the API contract with d62 without duplicating SCEV implementation. Report additional major prerequisites before expanding; activate only after both complete frozen packets are integrated."
+          "status": "done",
+          "remainingBoundary": "6a:114-119 full consumer andd62:173 positive public-entry case integrated13overlays656D531R. Old stub fails expected phase-status assertion; restored entry passes.942:141 review clear.3a:120 native comparison matches widening, strength reduction/downward counting, retained effects and no-change control.23configs132bodies86phases; broader parity open."
         },
         {
           "scope": "Port the complete SCEV model/context prerequisite for induction-variable optimization.",
@@ -337,11 +344,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Collect6a complete induction-variable consumer packet and validate its full native closure against the committed SCEV prerequisite. Activate the actual public optInductionVariables entry only after complete helpers are ready, prove positive entry behavior against the old stub, then publish a fresh NativeAOT JIT and run artifacts\\range-cloning-integration\\capture-configurations.json23cases. Require a positive native/managed IV comparison before completing activation. SCEV647D522R and942:140 review complete; no repeat analysis needed. No publication.",
+    "nextAction": "Port complete native fgHeadTailMerge and required helper closure behind its Compiler.fg.cs no-op stub. Establish exact native boundaries and existing managed prerequisites; preserve all WindowsAMD64 conditional paths. After coherent activation, compare B300 six non-Main Boolean/switch separate-return shapes without assuming head/tail merging resolves them. Preserve artifacts\\induction-variable-integration\\capture-configurations.json23case execution matrix. IV13 complete656D531R, old-stub regression and positive native comparison; no repeat IV investigation. No publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "d62:162-166 SCEV packet/API and942:140 native review collected and integrated.6a implements complete inactive IV consumer oncf53c49 with frozen SCEV overlays.3a/d62/942/610 idle; no parent command running or app-native sessions. CoreRoot free.",
+      "workerPackets": "6a:114-119 consumer, d62:173 positive public-entry test,942:141 review and3a:120 native comparison fully collected/integrated. All five retained workers idle; no parent command running or app-native sessions. CoreRoot free.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -357,6 +364,25 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "inductionVariables": {
+        "snapshotBase": "fc426c5",
+        "sourceManifest": "artifacts\\induction-variable-integration\\source-manifest.json",
+        "debugPassed": 656,
+        "releasePassed": 531,
+        "skipped": 0,
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\iv-final-{Debug,Release}.trx",
+        "nativeAotInputs": "artifacts\\induction-variable-integration\\aot-source-manifest.json:production inputs unchanged by final tests-only overlay.",
+        "nativeAot": "artifacts\\induction-variable-jit\\RyuJitSharp.dll",
+        "sha256": "123017CD0B7DC07EB5F141823595FB2CB4AB6D2D68C40C10CEE82B0C5B641040",
+        "runtime": "artifacts\\induction-variable-integration\\runtime-validation.json:23configurations,132positive bodies,86IVphase completions; exact selected methods, JIT hash, requested GCStress4 and no fallback verified.",
+        "review": "942:141 no high-confidence WindowsAMD64 algorithm defect across native consumer/loop predicate closure; parent activation independently656D531R.",
+        "regression": "Positive production-entry counted SSA loop verifies trip-count initialization, !=0 test and unused primary-IV update removal with retained header PHI. Old public stub fails expected MODIFIED_NOTHING/MODIFIED_EVERYTHING assertion; restored entry passes. Evidence artifacts\\induction-variable-integration\\entry-{before,restored}.log and snapshot Debug iv-entry-{before,restored}.trx.",
+        "comparison": "artifacts\\induction-variable-integration\\native-phase-comparison.json:Main widening and SumByLength/SumWithCount byref strength reduction/downward counting match native start/step, tests, removal and retained store/load order; SumShifted unchanged. All4methods exit0/stdout2. Existing signature/hash/tree-cost differences retained without attributing them to IV.",
+        "nativeEvidence": "artifacts\\induction-variable-native-evidence\\native-positive-evidence.json",
+        "positiveNativeMethods": "Range-probe SumByLength strength-reduces its array address to a byref IV, introduces downward trip counting and removes the primary-index increment; Main widens an IV to long. SumShifted is a no-change control.",
+        "corpusSha256": "5845B544BBB65D614DD27B03A2FEC2CEB8265104D3143CC70BEED3407183556D",
+        "gaps": "Byref GC-proof branches, exit sinks and cross-block cursor uses lack specific focused cases; successful captures do not identify every GC proof branch. ARM64-exclusive paths explicitly reject; broader target/code/dump parity remains open."
+      },
       "scalarEvolution": {
         "snapshotBase": "28676e2",
         "sourceManifest": "artifacts\\scev-integration\\source-manifest.json",
@@ -5797,6 +5823,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "induction-variable-optimization",
+      "native": ["src\\coreclr\\jit\\inductionvariableopts.cpp:60-2936", "src\\coreclr\\jit\\flowgraph.cpp:6741-6761,6775-6831"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.InductionVariables.Driver.cs", "sources\\Core\\jit\\compiler\\Compiler.InductionVariables.PerLoopInfo.cs", "sources\\Core\\jit\\compiler\\Compiler.InductionVariables.LoopPredicates.cs", "sources\\Core\\jit\\compiler\\Compiler.InductionVariables.Analysis.cs", "sources\\Core\\jit\\compiler\\Compiler.InductionVariables.Downwards.cs", "sources\\Core\\jit\\compiler\\Compiler.InductionVariables.Widening.cs", "sources\\Core\\jit\\compiler\\Compiler.InductionVariables.StrengthReduction.cs", "sources\\Core\\jit\\compiler\\Compiler.InductionVariables.StrengthReduction.Cursors.cs", "sources\\Core\\jit\\compiler\\Compiler.InductionVariables.StrengthReduction.GcSafety.cs", "sources\\Core\\jit\\compiler\\Compiler.InductionVariables.StrengthReduction.Rewrite.cs"],
+      "status": "Complete WindowsAMD64 production phase and helper closure. Positive entry regression, native phase comparison and selected runtime/GC-stress execution established; ARM64-specific paths explicitly reject and broader parity remains open.",
+      "reconciledCommit": null
+    },
     {
       "area": "scalar-evolution",
       "native": ["src\\coreclr\\jit\\scev.h:17-262", "src\\coreclr\\jit\\scev.cpp:1-2049"],

@@ -215,8 +215,4 @@ public partial class Compiler
         var walker = new MaskDataWalker(this, ref maskData);
         _ = walker.WalkTree(ref tree, null);
     }
-
-    // TODO: Port phase - optInductionVariables
-    public PhaseStatus optInductionVariables() => PhaseStatus.MODIFIED_NOTHING;
-
 }
