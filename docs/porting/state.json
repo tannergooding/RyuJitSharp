@@ -12,7 +12,7 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Preserve active VN, assertion propagation and range elimination while activating complete VN copy propagation and preparing redundant-branch optimization and VN dead-store removal. Keep future phase entries inactive until their complete dependency closure and execution behavior are validated.",
+      "scope": "Preserve active VN, assertion propagation, range elimination and VN copy propagation while preparing redundant-branch optimization, VN dead-store removal and native loop unrolling. Keep future phase entries inactive until their complete dependency closure and execution behavior are validated.",
       "doneWhen": [
         "Preserve the completed loop-inversion/iteration-analysis contract and identify the first missing native transformation behind a concrete optimized-code difference.",
         "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
@@ -23,8 +23,15 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Complete copyprop entry activated and validated888D869R,15 captures and bounded native phase comparison. Counted/Conditional event traces match after tree-ID masking; Nested/Mix enter with earlier CFG/SSA differences. Commit activation, then integrate returned redundant-branch/VN-dead-store packets. Counted retains native17-byte body; no broad phase/code parity claim.",
+      "parentScope": "VN dead-store removal validated908D887R,15 established captures and a separate4-body effect/overflow probe. Neither JIT removes probe stores; positive transformation coverage remains IR-only. Commit complete activation, then integrate frozen loop unrolling after942 review and collect redundant-branch closure. No broad phase/code parity claim.",
       "parallelPackets": [
+        {
+          "scope": "Complete native optUnrollLoops and required local helper/visitor closure.",
+          "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
+          "files": "New Compiler.LoopUnrolling*.cs and LoopUnrollingTests.cs only.",
+          "status": "in-progress",
+          "remainingBoundary": "d62 through128 frozen4file packet on953c284:optimizer.cpp670-1769 andflowgraph.cpp6328-6729,26D26R. Manifest artifacts\\loop-unrolling-validation\\source-manifest.json;942 reviews complete native closure. Production optUnrollLoops inactive; EH duplication implemented but not exercised by focused fixtures."
+        },
         {
           "scope": "Complete redundantbranchopts.cpp and required VN relational predicates.",
           "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
@@ -36,8 +43,8 @@
           "scope": "Complete VN-based dead-store removal and required helper/visitor closure.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
           "files": "New Compiler.VNDeadStoreRemoval.cs and VNDeadStoreRemovalTests.cs only.",
-          "status": "in-progress",
-          "remainingBoundary": "Assigned onab27703; locate complete native function closure and preserve SSA identity and side effects. Shared edits require reporting; keep production optVNBasedDeadStoreRemoval inactive."
+          "status": "done",
+          "remainingBoundary": "3a through76 integrated complete public entry and direct phase tests on953c284.908D887R and15captures pass;8 cases fail against old stub. Separate4-body probe preserves volatile effects/checked overflow but neither JIT removes stores; positive-removal execution remains unestablished. CoreRoot free."
         },
         {
           "scope": "Complete range-check elimination helpers after the committed range analysis.",
@@ -208,7 +215,7 @@
         }
       ],
       "deferred": [
-        "VN, global assertion propagation, range elimination and VN copy propagation are active; redundant branches and VN dead-store removal remain inactive.",
+        "VN, global assertion propagation, range elimination, VN copy propagation and VN dead-store removal are active; redundant branches and loop unrolling remain inactive.",
         "Broader optimized execution and unfinished optimization phases beyond the current backend frontier.",
         "Full EH-funclet and hardware-import parity are subsequent execution-capability packets, not gates on the first scalar minopts backend path.",
         "Non-xarch hardware-intrinsic folding and hashBv iterator/countBits/setLowest APIs. Native vector Intersects/XOR defects are recorded in B247/B246; their corrected algorithms are not authorized and those entire vector operations are deferred.",
@@ -218,11 +225,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Copyprop activation is fully validated888D869R,15 captures and942 comparisonthrough96; commit exact4source/test overlays with docs, excluding6a/3a WIP. Then collect3a complete VN-dead-store packet and6a full redundant-branch/VN-relation closure or concrete prerequisites. Integrate complete frozen functions and preserve established execution configurations before activating each public phase. B145/B282 baseline failures and B268/B281/B283 nonblocking parity work remain; no remote publication.",
+    "nextAction": "Commit complete VN dead-store activation:908D887R,15captures and3a probe through76 collected. Probe effects/overflow pass but neither JIT removes stores; do not claim positive runtime-removal parity. Exclude6a/d62 WIP. Collect942 review of d62:128 frozen loop-unrolling packet, integrate complete body and production entry on new committed baseline, then preserve execution configurations.6a continues redundant-branch/VN-relation closure. Parent snapshot contains exact DSE activation; CoreRoot free. B145/B282 baseline failures and B268/B281/B283 nonblocking parity work remain; no remote publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Copyprop d62:127/review942:92 integrated888D869R and15 captures;942 comparisonthrough96 clear of isolated copy-phase defects.6a through81 unblocked for full redundant-branch/VN-relation closure;3a implements VN dead-store removal.610/d62/942 idle. CoreRoot free. No app-native sessions.",
+      "workerPackets": "3a through76 DSE integrated908D887R/15captures plus bounded4-body probe, no positive removals. d62 through128 loop-unrolling packet frozen26D26R;942 reviewing.6a through81 continues redundant-branch/VN-relation closure.3a/610/d62 idle, CoreRoot free. No app-native sessions.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -238,6 +245,22 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "vnDeadStoreActivation": {
+        "snapshotBase": "953c284",
+        "sourceManifest": "artifacts\\vn-dead-store-phase-validation\\source-manifest.json",
+        "debugPassed": 908,
+        "releasePassed": 887,
+        "skipped": 0,
+        "selection": "artifacts\\vn-dead-store-phase-validation\\selection.runsettings preserves the prior method selection and adds VNDeadStoreRemovalTests.",
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\vn-dead-store-phase-integrated-{Debug,Release}.trx",
+        "nativeAot": "artifacts\\vn-dead-store-phase-jit\\RyuJitSharp.dll",
+        "runtimeEvidence": "artifacts\\vn-dead-store-phase-validation\\runtime-validation.json",
+        "runtime": "All15 existing configurations execute105 positive-sized bodies with exact JIT identity, successful exits and no skip/failure markers.59 FullOpts compilations finish DSE and earlier optimization phases;none remove a store. MinOpts omits them; stack allocation/GCStress4 preserved.",
+        "regression": "Eight of20 Debug cases fail against old public stub.20D18R focused cases cover primitive/struct/partial-store rules, composite and explicit-init guards, async byrefs, Debug method ranges, effects, logical tree IDs, owning uses and threading.",
+        "review": "Parent directly compared complete optimizer.cpp6013-6151 and checked native/managed invalidation schedule (compiler.cpp4831-4838/Compiler.comp.cs3636-3642). DefNode consumers are in prior SSA-dependent phases; replacement clears detached typed reference without discarding descriptor VN values.",
+        "boundedExecution": "artifacts\\vn-dead-store-execution-probe\\results.json: native/managed each execute4 selected bodies; volatile observations and checked-overflow exception match, rawhex is nonempty and size-consistent, no fallback. Neither JIT removes stores in FullScalar/FullStruct/PartialOverlap. Candidate code bytes differ; no positive-removal execution or code-parity claim.",
+        "scope": "Three exact source/test overlays. Redundant-branch/VN-relation and loop-unrolling WIP excluded. Complete native phase with explicit positive-execution coverage gap."
+      },
       "copyPropagationActivation": {
         "snapshotBase": "ab27703",
         "sourceManifest": "artifacts\\copyprop-phase-validation\\source-manifest.json",
@@ -6478,6 +6501,13 @@
       "native": ["src\\coreclr\\jit\\rangecheck.h", "src\\coreclr\\jit\\rangecheck.cpp", "src\\coreclr\\jit\\assertionprop.cpp"],
       "csharp": ["sources\\Core\\jit\\rangecheck\\", "sources\\Core\\jit\\compiler\\Compiler.ap.Relational.cs"],
       "status": "Complete range-analysis dependency and relational application; RangeProperties remains canonical in the relational partial. Global assertion and range-check elimination phases are active.",
+      "reconciledCommit": null
+    },
+    {
+      "area": "vn-dead-store-removal",
+      "native": ["src\\coreclr\\jit\\optimizer.cpp:6013-6151", "src\\coreclr\\jit\\compiler.cpp:4831-4838"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.VNDeadStoreRemoval.cs", "sources\\Core\\jit\\compiler\\Compiler.comp.cs"],
+      "status": "Complete active phase with native guards and whole-node replacement after SSA invalidation; typed detached definition references cleared while VN descriptors remain.",
       "reconciledCommit": null
     },
     {

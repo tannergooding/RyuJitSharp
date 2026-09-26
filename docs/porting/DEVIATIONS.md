@@ -587,6 +587,16 @@ rehashing; the managed dictionary's enumeration order is not used. Dominator
 scoping, liveness and profitability gates remain native. Selected loop/array
 captures exercise substitutions, without establishing full phase/dump parity.
 
+VN-based dead-store removal is active after the native SSA-invalidation boundary.
+Native retags a store as `GT_COMMA`; managed code replaces its owning use,
+preserves the logical tree ID and data effects, and repairs threading and
+ancestor flags. The typed SSA `DefNode` reference is cleared rather than left
+pointing to the detached store; its descriptor and VN pair remain available for
+later comparisons within the pass. SSA-dependent consumers precede this phase.
+The bounded runtime probe preserves effects and exceptions but triggers no
+removals in either JIT. Positive-removal execution and code parity remain
+unestablished; focused IR cases exercise the transformation.
+
 VN-based folding and insertion-time statement morphing are also complete
 prerequisites. Local-address folds retain the native 16-bit offset invariant;
 the native constructor's unsigned parameter does not imply wider field storage.

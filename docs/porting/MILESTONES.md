@@ -15,6 +15,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: VN-based dead-store removal
+
+VN-based dead-store removal now applies native conservative-value equality to
+full and partial local stores. It retains explicit initialization, the
+first-primitive-definition profitability rule, composite definitions and async
+byrefs that may cross suspension points.
+
+Removed stores become comma expressions that preserve evaluation effects and
+logical tree identity. Their detached, typed SSA-node references are cleared
+after SSA invalidation; the descriptors retain the values needed by subsequent
+comparisons within the pass. Established optimized and minopts/GC-stress
+execution remains intact. Focused runtime candidates also preserve volatile
+observations and checked-overflow behavior, but neither JIT removes their
+stores; successful removal is currently covered by IR regressions rather
+than runtime removal parity.
+
 ## 2026-09-26: VN copy propagation
 
 VN copy propagation now rewrites equivalent local uses using native dominance,
