@@ -37,8 +37,8 @@
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
           "files": "Minimal relevant Lowering partials and one focused new regression fixture; shared compiler/LIR edits require a reported need.",
           "doneWhen": "Establish the root cause and before/after regression, preserve the full native function and freeze exact source/evidence.",
-          "status": "in-progress",
-          "result": "Through turn12 zero-init cleanup is committed1d21dc9; worker reused for the observed FullOpts blocker.",
+          "status": "complete",
+          "result": "Through turn14, B259 correction reviewed and frozen: keep the live LowerNode cursor and derive the diagnostic node only in Debug. Two pre-fix failures become34Debug/34Release passes; integrated1057Debug/933Release and32-method minopts GCStress4 execution also pass.",
           "deferred": "Unrelated lowering discrepancies, phase activation, SSA/LSRA files and unowned shared changes."
         },
         {
@@ -47,7 +47,7 @@
           "files": "New SsaBuilder partials except parent-owned SsaBuilder.Build.cs, plus SsaBuilderTests.cs.",
           "doneWhen": "Complete ssabuilder.cpp:102-1172 with native ordering and identity, frozen source hashes and actual Debug/Release cases; leave shared phase drivers unchanged.",
           "status": "in-progress",
-          "result": "Turn77 complete primitive packet reviewed against native102-1143, with16Debug/16Release. Worker is making bounded review corrections: existing set-bit visitation, useful native rationale and multiline empty visitor hooks. Parent Build/fgSsaBuild integration is pending."
+          "result": "Turn78 corrections reviewed; full parent Build/fgSsaBuild and phase tests now pass1057Debug/933Release in a frozen10-overlay snapshot. Worker continues the same packet with optimized native/managed SSA phase capture/comparison; no code edits or optimized execution claims."
         }
       ],
       "deferred": [
@@ -60,11 +60,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Collect d62fc6a5's corrections following turn77, then integrate complete SsaBuilder with parent Build/fgSsaBuild and focused phase/rebuild tests. Full native102-1143 review found no functional mismatch; replace tracked-local scanning with existing set-bit visitation before integration. Worker610162a0 resumed the complete edge-resolution family after parent supplied fgSplitEdge, now validated101Debug/89Release. Worker3a2c8d9b owns B259 FullOpts lowering correction. Do not duplicate their investigations. Native optimized standard/loop/EH references are ready; publish a fresh local JIT only after SSA integration and preserve the32-method minopts GCStress4 boundary. Keep optimized allocation gated and do not publish remotely.",
+    "nextAction": "Collect d62fc6a5's optimized SSA phase comparison following turn78; it uses the fresh artifacts\\ssa-phase-jit DLL and native standard/loop/EH references. Full SsaBuilder and parent Build/fgSsaBuild plus four phase/rebuild cases are integrated but uncommitted, with1057Debug/933Release and32 verified nonzero managed-code minopts GCStress4 executions in artifacts\\ssa-phase-validation. Commit full SSA after resolving concrete phase-comparison blockers; do not claim optimized execution because LSRA remains gated. Worker610162a0 owns complete edge resolution using committed07ba699 fgSplitEdge. Worker3a2c8d9b's B259 correction through turn14 is reviewed/validated and complete. No remote publication.",
     "handoff": {
-      "status": "ssa-core-and-optimized-lowering-correction",
+      "status": "ssa-phase-validation-and-edge-resolution",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 through turn10 is collected; local resolution committed8480459 and complete edge-resolution family resumed with parent fgSplitEdge. 3a2c8d9b through turn12 is committed1d21dc9; now correcting B259. d62fc6a5 through turn77 is collected/reviewed and making bounded corrections before full SSA integration. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
+      "workerPackets": "610162a0 through turn10 is collected; complete edge-resolution family running with committed07ba699 fgSplitEdge. 3a2c8d9b through turn14 B259 is reviewed/validated and idle. d62fc6a5 through turn78 is integrated and now doing the same SSA packet's optimized phase capture/comparison. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -80,6 +80,27 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "optimizedStoreCursor": {
+        "backlog": "B259",
+        "nativeBoundary": "lower.cpp:5621 LowerStoreLocCommon,12207 LowerBlockStoreCommon and12398 TryTransformStoreObjAsStoreInd; native mutation retains identity while managed lowering replaces the node.",
+        "workerSourceManifest": "artifacts\\optimized-lowering-fix-validation\\source-manifest.json",
+        "workerSnapshotBase": "1d21dc9",
+        "beforeTests": "artifacts\\optimized-lowering-fix-validation\\snapshot\\artifacts\\test-results\\before-debug.trx",
+        "beforeFailed": 2,
+        "workerDebugPassed": 34,
+        "workerReleasePassed": 34,
+        "integratedSourceManifest": "artifacts\\ssa-phase-validation\\source-manifest.json",
+        "integratedSourceManifestSha256": "5657B92345C484E81DD261661CC6AC7D4DD189EEFD182839DDECEC3122BC01F7",
+        "debugPassed": 1057,
+        "releasePassed": 933,
+        "skipped": 0,
+        "managedJit": "artifacts\\ssa-phase-jit\\RyuJitSharp.dll",
+        "managedJitSha256": "ADD0093B1DFF1C77AEC8C0D3E20D7714125E90E79154B6A7E66ABCE17A08771C",
+        "executionResults": "artifacts\\ssa-phase-validation\\execution-results.json",
+        "executedMinoptsMethods": 32,
+        "coverage": "Scalarized local-field stores with and without a following node preserve logical identity, LIR ownership, diagnostics and continuation. Release performs no diagnostic-only lookup.",
+        "limitation": "Integrated snapshot also contains full SSA activation under validation. Optimized native-host phase comparison is separate; minopts GCStress4 execution is not an optimized codegen-parity claim."
+      },
       "edgeSplitting": {
         "nativeBoundary": "fgbasic.cpp:4924-4979 complete Compiler::fgSplitEdge.",
         "sourceManifest": "artifacts\\edge-split-validation\\source-manifest.json",

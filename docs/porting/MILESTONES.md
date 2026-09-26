@@ -15,6 +15,14 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Struct-store lowering continuity
+
+Lowering now retains the live traversal cursor when scalarizing a struct store
+replaces its node. Diagnostics also use the replacement rather than the
+detached original. This corrects the observed optimized `FoldHardware` lowering
+failure without emulating native node bashing or adding Release-only overhead
+for diagnostics.
+
 ## 2026-09-25: Critical-edge splitting
 
 The flow graph can now split an edge while preserving EH placement,

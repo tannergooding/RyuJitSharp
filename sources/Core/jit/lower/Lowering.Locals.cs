@@ -195,11 +195,18 @@ public sealed partial class Lowering
                 };
                 BlockRange().ReplaceNode(lclStore, store);
                 BlockRange().InsertBefore(store, address);
-                _ = LowerNode(store);
+                // LowerNode may replace the block store; native lowering keeps the same node when changing its operator.
+                var nextNode = LowerNode(store);
+#if DEBUG
+                var loweredStore = nextNode is null ? BlockRange().LastNode : nextNode.Prev;
+                assert(loweredStore is not null);
+#endif
                 JITDUMP("lowering store lcl var/field (after):\n");
-                DISPTREERANGE(BlockRange(), store);
+#if DEBUG
+                DISPTREERANGE(BlockRange(), loweredStore);
+#endif
                 JITDUMP("\n");
-                return store.Next;
+                return nextNode;
             }
         }
 
