@@ -14667,15 +14667,6 @@ public partial class Compiler
     // TODO: Port phase - fgPostInlineNoReturnCleanup
     public PhaseStatus fgPostInlineNoReturnCleanup() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port phase - fgRemoveEmptyFinally
-    public PhaseStatus fgRemoveEmptyFinally() => PhaseStatus.MODIFIED_NOTHING;
-
-    // TODO: Port phase - fgRemoveEmptyTry
-    public PhaseStatus fgRemoveEmptyTry() => PhaseStatus.MODIFIED_NOTHING;
-
-    // TODO: Port phase - fgRemoveEmptyTryCatchOrTryFault
-    public PhaseStatus fgRemoveEmptyTryCatchOrTryFault() => PhaseStatus.MODIFIED_NOTHING;
-
     /// <summary>Remove EH regions whose try entry is unreachable, including structurally enclosed regions.</summary>
     private PhaseStatus fgRemoveUnreachableTry()
     {

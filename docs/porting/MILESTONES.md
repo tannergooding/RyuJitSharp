@@ -15,6 +15,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Empty exception-region cleanup
+
+The native cleanup phases now remove empty finally/fault handlers, promote
+finally bodies out of empty try regions, and remove catch/fault regions whose
+try bodies cannot throw. They preserve continuations, surviving effects,
+predecessor weights and EH-table nesting/index updates.
+
+A three-method probe matches native across all cleanup rounds and the resulting
+control-flow graphs, including a retained static increment. Established
+optimized and minopts/GC-stress corpora continue to execute. The probe's empty
+finally is consumed by the earlier empty-try pass, so positive execution of the
+empty-finally phase and broader nested/profiled EH cases remain unverified.
+
 ## 2026-09-26: Forward substitution
 
 Forward substitution now moves eligible expressions into their next uses,

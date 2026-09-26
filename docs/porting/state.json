@@ -12,7 +12,7 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Activate complete native empty-EH cleanup from the frozen packet. Preserve native phase ordering, EH nesting/indices, callfinally continuations, predecessor/profile/IL contracts and retained handler effects.",
+      "scope": "Port complete native finally-chain merging and finally cloning after empty-EH cleanup. Preserve phase order, EH/continuation ownership, ACD/profile updates, diagnostics and all relevant WindowsAMD64 conditional paths.",
       "doneWhen": [
         "Preserve the completed loop-inversion/iteration-analysis contract and identify the first missing native transformation behind a concrete optimized-code difference.",
         "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
@@ -23,7 +23,7 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "ForwardSub activation7 complete694D569R,6old-stub failures/9controls,23configs132bodies132phases;3a:123 matches native positive allocation forwarding and3unchanged controls. EHcleanup5 frozen/reviewed with native positive empty-try/try-catch evidence; empty-finally positive runtime gap retained. CoreRoot free.",
+      "parentScope": "EHcleanup activation6 complete703D578R,8old-stub failures/1control,24configs135bodies1077phases. d62:177 confirms27/27exact cleanup phase slices and6/6exact CFG snapshots; positive empty-finally runtime gap retained. All worker packets integrated. Next close fgMergeFinallyChains/fgCloneFinally stubs. CoreRoot free.",
       "parallelPackets": [
         {
           "scope": "Complete native early/late head and tail merging.",
@@ -43,8 +43,8 @@
           "scope": "Complete native empty EH cleanup.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
           "files": "New Compiler.EHCleanup*.cs and EHCleanupTests.cs; parent owns existing entries.",
-          "status": "in-progress",
-          "remainingBoundary": "d62:174 frozen5files9D9R and942:143 review clear; production entries inactive. d62:175/176 single frozen native probe produces positive empty-try and nonthrowing try/catch removal; empty-finally is consumed earlier and has no positive later-phase evidence. CoreRoot released. Integrate after ForwardSub commit."
+          "status": "done",
+          "remainingBoundary": "d62:174 source/942:143 review integrated as actual entries:6overlays703D578R,8old-stub failures/1control,24configs135bodies1077phases. d62:177 native comparison has27/27exact phase slices,6/6exact CFG snapshots and matching runtime effects. Positive empty-finally runtime gap retained."
         },
         {
           "scope": "Establish bounded positive native induction-variable execution evidence.",
@@ -365,11 +365,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Activate frozen EHcleanup5 after ForwardSub commit: rename three complete cores to actual public fgRemoveEmptyFinally/fgRemoveEmptyTry/fgRemoveEmptyTryCatchOrTryFault, remove Compiler.fg.cs stubs and target production entries in tests.942:143 review clear. Prove positive old-stub failures, integrate fullD/R, publish freshAOT and run existing23cases plus exact ADA374DA native EH probe. Compare positive empty-try/try-catch transformations; retain empty-finally positive execution gap. CoreRoot free; no publication.",
+    "nextAction": "Port complete fgMergeFinallyChains and fgCloneFinally closures behind Compiler.fg.cs stubs, using pinned fgehopt.cpp entry points2049 and1054 respectively and existing EH/ACD/clone helpers. Preserve all WindowsAMD64 paths and native phase order; bound additional prerequisites before expanding. Use latest artifacts\\eh-cleanup-integration\\capture-configurations.json24cases and seek actual positive native finally cloning/chain merging, not empty-EH cleanup. All preceding packets committed/validated; no repeat investigation. No publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "ForwardSub6/610:87 review and3a:123 comparison integrated into completed activation7. EHcleanup5/942:143 review andd62:175/176 native probe collected but EH entries remain inactive/uncommitted. All5workers idle; no parent command running or app-native sessions; CoreRoot free.",
+      "workerPackets": "All returned source/test packets and reviews integrated. d62:177 EH native comparison collected; no unread handoff or active task remains. All5retained workers idle; no parent command running or app-native sessions; CoreRoot free.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -386,10 +386,23 @@
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
       "emptyEhCleanup": {
+        "snapshotBase": "91d0592",
+        "sourceManifest": "artifacts\\eh-cleanup-integration\\source-manifest.json",
+        "debugPassed": 703,
+        "releasePassed": 578,
+        "skipped": 0,
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\eh-cleanup-integrated-{Debug,Release}.trx",
+        "regressions": "Eight positive production-entry cases fail old stubs; one throwing-region rejection passes. Evidence snapshot Debug eh-cleanup-entry-before.trx and artifacts\\eh-cleanup-integration\\entry-before.log.",
+        "review": "942:143 complete WindowsAMD64 cleanup/helper review found no high-confidence semantic defect or missing path.",
+        "nativeAot": "artifacts\\eh-cleanup-jit\\RyuJitSharp.dll",
+        "sha256": "D22A31DBC8D88F68C5E9AB3299E42FF15E78D58394645CF73C450EFDDA174788",
+        "runtime": "artifacts\\eh-cleanup-integration\\runtime-validation.json:24configurations135positive bodies1077cleanup phase completions; selected methods/JIT hash/GCStress/no fallback verified.",
+        "configurations": "artifacts\\eh-cleanup-integration\\capture-configurations.json:prior23 plus exact frozen3-method EH probe.",
         "nativeEvidence": "artifacts\\eh-cleanup-native-probe\\native-positive-evidence.json",
         "nativeProbe": "Three selected methods exit0/stdout9,10,11,1. EmptyTry promotes try-finally and removes EH#0; EmptyTryCatch removes a nonthrowing handler and EH#0.",
         "corpusSha256": "ADA374DA3CF914D7F8E02E4F2380E37AEA2CB4BD9404ACD331D1D016C70F18CC",
-        "gaps": "Production entries inactive. EmptyFinally is optimized by the earlier empty-try phase; no positive native empty-finally-phase execution established by the single probe."
+        "comparison": "artifacts\\eh-cleanup-integration\\native-phase-comparison.json:d62:177 verifies27/27byte-identical early/second/third phase slices and6/6post-transform/final-order CFG snapshots for3methods. Both retain finally static increment, remove/promote matching clauses and continuations and exit0/stdout9,10,11,1. No broad codegen-parity claim.",
+        "gaps": "EmptyFinally is consumed by earlier empty-try cleanup, so no positive native empty-finally-phase execution is established. Probe lacks filter/fault/nested/nonunit-profile/ACD cases; focused tests also omit nested reparenting, ACD rekey/merge, multiple callfinallys, callfinally pairs inside removed catches and IL-range behavior."
       },
       "forwardSubstitution": {
         "snapshotBase": "a4ab10c",
@@ -5883,6 +5896,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "empty-eh-cleanup",
+      "native": ["src\\coreclr\\jit\\fgehopt.cpp:33-264,440-740,749-1022", "src\\coreclr\\jit\\fgflow.cpp:290-338", "src\\coreclr\\jit\\block.h:1049-1056"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.EHCleanup.EmptyTry.cs", "sources\\Core\\jit\\compiler\\Compiler.EHCleanup.Finally.cs", "sources\\Core\\jit\\compiler\\Compiler.EHCleanup.TryCatchFault.cs", "sources\\Core\\jit\\compiler\\Compiler.EHCleanup.Predecessors.cs"],
+      "status": "Complete three production phases and direct predecessor/continuation helpers. Positive empty-try/try-catch native phase and CFG comparison established; empty-finally positive runtime and broader EH/code parity remain open.",
+      "reconciledCommit": null
+    },
     {
       "area": "forward-substitution",
       "native": ["src\\coreclr\\jit\\forwardsub.cpp:121-136,159-242,250-325,335-583,600-1078,1096-1141,1163-1220"],
