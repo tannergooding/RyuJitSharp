@@ -177,7 +177,7 @@ internal static class CodeGenConditionalTests
 
 #if DEBUG
     [Test]
-    public static void UnsupportedDisassemblyDoesNotConsumeSelectionOperands()
+    public static void DisassemblyRecordsSelectionInstructions()
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
@@ -185,12 +185,9 @@ internal static class CodeGenConditionalTests
                 Register(compiler, TYP_INT, REG_R8), Register(compiler, TYP_INT, REG_RAX),
                 Register(compiler, TYP_INT, REG_RCX)) { RegNum = REG_RDX };
             compiler.opts.dspCode = true;
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genCodeForSelect(tree));
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            compiler.opts.dspCode = false;
-
-            codeGen.genCodeForSelect(tree);
+            var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCodeForSelect(tree));
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(3));
+            Assert.That(diagnostic, Does.Contain("cmov"));
         });
     }
 #endif

@@ -258,20 +258,21 @@ internal static unsafe class CodeGenReturnTests
     }
 
     [Test]
-    public static void DisassemblyRejectsBeforeConsumingTheReturnOrSettingProfilerState()
+    public static void DisassemblyRecordsReturnsAndProfilerCallbacks()
     {
         WithReturn(TYP_REF, (compiler, codeGen) =>
         {
             var source = Register(compiler, TYP_REF, REG_RCX);
             var tree = new GenTreeUnOp(GT_RETURN, TYP_REF, source);
             codeGen.GCInfo.gcMarkRegPtrVal(REG_RCX, TYP_REF);
+            ProfilerHookNeeded(compiler) = true;
+            PrepareProfiler(compiler, codeGen, finalLayout: true, framePointer: true, indirect: false);
             compiler.opts.dspCode = true;
 
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genReturn(tree));
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_LEAVE));
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_RCX));
-            Assert.That(compiler.info.compProfilerCallback, Is.False);
+            var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genReturn(tree));
+            Assert.That(Descriptors(codeGen), Is.Not.Empty);
+            Assert.That(diagnostic, Does.Contain("call"));
+            Assert.That(compiler.info.compProfilerCallback, Is.True);
         });
     }
 #endif

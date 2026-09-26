@@ -158,21 +158,21 @@ internal static class CodeGenLocalLoadTests
 
 #if DEBUG
     [Test]
-    public static void DisassemblyRejectsBeforeLocalLoadOrGcChanges()
+    public static void DisassemblyRecordsLocalAndSimdLoadsWithGcState()
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var tree = new GenTreeLclFld(GT_LCL_FLD, TYP_REF, 0, 0) { RegNum = REG_RCX };
             compiler.opts.dspCode = true;
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genCodeForLclFld(tree));
-            _ = Assert.Throws<FatalJitException>(() => codeGen.Emitter.emitIns_SIMD_R_R_S_I(
-                INS_insertps, EA_16BYTE, REG_XMM1, REG_XMM0, 0, 8, 0x28, INS_OPTS_NONE));
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_NONE));
-            compiler.opts.dspCode = false;
-
-            codeGen.genCodeForLclFld(tree);
+            var diagnostic = InstructionRecordingTestSupport.Capture(() =>
+            {
+                codeGen.genCodeForLclFld(tree);
+                codeGen.Emitter.emitIns_SIMD_R_R_S_I(
+                    INS_insertps, EA_16BYTE, REG_XMM1, REG_XMM0, 0, 8, 0x28, INS_OPTS_NONE);
+            });
+            Assert.That(Descriptors(codeGen), Has.Count.EqualTo(2));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_RCX));
+            Assert.That(diagnostic, Does.Contain("insertps"));
         });
     }
 #endif

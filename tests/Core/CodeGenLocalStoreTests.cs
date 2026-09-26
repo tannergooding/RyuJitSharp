@@ -255,7 +255,7 @@ internal static class CodeGenLocalStoreTests
 
 #if DEBUG
     [Test]
-    public static void DisassemblyRejectsBeforeStoreConsumptionAndZeroRewriting()
+    public static void DisassemblyRecordsLocalStoresAndZeroRewriting()
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
@@ -266,14 +266,9 @@ internal static class CodeGenLocalStoreTests
             var tree = compiler.gtNewStoreLclVarNode(0, source);
             tree.RegNum = REG_RAX;
             compiler.opts.dspCode = true;
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genCodeForStoreLclVar(tree));
-            Assert.That(source.IsReuseRegVal, Is.True);
-            Assert.That(source.IsContained, Is.False);
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            compiler.opts.dspCode = false;
-
-            codeGen.genCodeForStoreLclVar(tree);
+            var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCodeForStoreLclVar(tree));
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(1));
+            Assert.That(diagnostic, Does.Contain("xor"));
         });
     }
 #endif

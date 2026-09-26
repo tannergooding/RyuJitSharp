@@ -569,7 +569,7 @@ internal static class CodeGenAvxFamilyTests
 
 #if DEBUG
     [Test]
-    public static void GatherRejectionLeavesItsScratchMaskAndOperandsReusable()
+    public static void DspCodeRecordsGatherAndConsumesScratchMask()
     {
         WithHardware((compiler, codeGen) =>
         {
@@ -581,16 +581,13 @@ internal static class CodeGenAvxFamilyTests
                 RegNum = REG_XMM1,
                 AuxiliaryType = TYP_INT,
             };
-            var mask = Mask(REG_XMM5);
-            codeGen.InternalRegisters.Add(node, mask);
+            codeGen.InternalRegisters.Add(node, Mask(REG_XMM5));
             compiler.opts.dspCode = true;
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genAvxFamilyIntrinsic(node, INS_OPTS_NONE));
-            compiler.opts.dspCode = false;
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            Assert.That(codeGen.InternalRegisters.GetAll(node), Is.EqualTo(mask));
-            codeGen.genAvxFamilyIntrinsic(node, INS_OPTS_NONE);
+            var diagnostic = InstructionRecordingTestSupport.Capture(
+                () => codeGen.genAvxFamilyIntrinsic(node, INS_OPTS_NONE));
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(2));
             Assert.That(codeGen.InternalRegisters.GetAll(node), Is.EqualTo(default(regMaskTP)));
+            Assert.That(diagnostic, Does.Contain("gather"));
         });
     }
 
@@ -598,7 +595,7 @@ internal static class CodeGenAvxFamilyTests
     [TestCase(1)]
     [TestCase(2)]
     [TestCase(3)]
-    public static void DisassemblyRejectionPrecedesConsumptionAndAllowsRetry(int entry)
+    public static void DisassemblyRecordsAvxInstructionsAndConsumesOperands(int entry)
     {
         WithHardware((compiler, codeGen) =>
         {
@@ -611,16 +608,14 @@ internal static class CodeGenAvxFamilyTests
             node.RegNum = entry == 3 ? REG_RAX : REG_XMM1;
             var before = Descriptors(codeGen).Count;
             compiler.opts.dspCode = true;
-            _ = Assert.Throws<FatalJitException>(() => EmitEntry(codeGen, node, entry));
-            compiler.opts.dspCode = false;
-            Assert.That(Descriptors(codeGen), Has.Count.EqualTo(before));
+            var diagnostic = InstructionRecordingTestSupport.Capture(() => EmitEntry(codeGen, node, entry));
+            Assert.That(Descriptors(codeGen), Has.Count.EqualTo(before + 1));
             foreach (var operand in node.Operands)
             {
                 Assert.That(operand._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                    Is.EqualTo((GenTreeDebugFlags)0));
+                    Is.EqualTo(entry is 1 or 3 ? GenTreeDebugFlags.GTF_DEBUG_NONE : GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
             }
-            EmitEntry(codeGen, node, entry);
-            Assert.That(Descriptors(codeGen), Has.Count.EqualTo(before + 1));
+            Assert.That(diagnostic, Is.Not.Empty);
         });
     }
 

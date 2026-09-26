@@ -482,7 +482,7 @@ internal static unsafe class EmitterCallInstructionTests
 
 #if DEBUG
     [Test]
-    public static void D005RejectsCallsBeforeAllocationGcMutationOrDebugRecording()
+    public static void DspCodeRecordsCallsAndGcState()
     {
         WithEmitter((compiler, codeGen) =>
         {
@@ -499,20 +499,25 @@ internal static unsafe class EmitterCallInstructionTests
             compiler.opts.doLateDisasm = true;
 #endif
             compiler.opts.dspCode = true;
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.runWithSPMIErrorTrap = &InstructionRecordingTestSupport.UnavailableMethodMetadata;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
 
-            var exception = Assert.Throws<FatalJitException>(() => emitter.emitIns_Call(parameters));
+            var diagnostic = InstructionRecordingTestSupport.Capture(() => emitter.emitIns_Call(parameters));
 
-            Assert.That(exception, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(Last(emitter), Is.SameAs(first));
-            Assert.That(Used(emitter), Is.EqualTo(used));
-            Assert.That(CurrentCount(emitter), Is.EqualTo(1));
-            Assert.That(CurrentSize(emitter), Is.EqualTo(1));
+            Assert.That(Last(emitter), Is.Not.SameAs(first));
+            Assert.That(Used(emitter), Is.GreaterThan(used));
+            Assert.That(CurrentCount(emitter), Is.EqualTo(2));
+            Assert.That(CurrentSize(emitter), Is.GreaterThan(1));
             Assert.That(ThisVars(emitter), Is.SameAs(vars));
-            Assert.That(ThisRefs(emitter), Is.EqualTo(regMask.SRBM_NONE));
+            Assert.That(VarSetOps.IsMember(compiler, ThisVars(emitter), 0), Is.True);
+            Assert.That(ThisRefs(emitter), Is.Not.EqualTo(regMask.SRBM_NONE));
             Assert.That(ThisByrefs(emitter), Is.EqualTo(regMask.SRBM_NONE));
+            Assert.That(diagnostic, Does.Contain("call"));
+            Assert.That(diagnostic, Does.Contain("<unknown method>"));
 #if LATE_DISASM
-            Assert.That(MethodMap(ref codeGen.Disassembler), Is.Null);
-            Assert.That(HelperMap(ref codeGen.Disassembler), Is.Null);
+            Assert.That(MethodMap(ref codeGen.Disassembler), Is.Not.Null);
 #endif
         });
     }

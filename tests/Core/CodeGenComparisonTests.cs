@@ -265,16 +265,15 @@ internal static class CodeGenComparisonTests
 
 #if DEBUG
     [Test]
-    public static void DisassemblyRejectsBeforeConditionOrLabelMutation()
+    public static void DisassemblyRecordsConditionInstructions()
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
-            var count = compiler.fgBBcount;
             compiler.opts.dspCode = true;
-            _ = Assert.Throws<FatalJitException>(() =>
+            var diagnostic = InstructionRecordingTestSupport.Capture(() =>
                 codeGen.inst_SETCC(new GenCondition(GenCondition.CodeKind.FEQ), TYP_INT, REG_RAX));
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            Assert.That(compiler.fgBBcount, Is.EqualTo(count));
+            Assert.That(Descriptors(codeGen), Is.Not.Empty);
+            Assert.That(diagnostic, Does.Contain("set"));
         });
     }
 #endif

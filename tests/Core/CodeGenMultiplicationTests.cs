@@ -364,7 +364,7 @@ internal static class CodeGenMultiplicationTests
 #if DEBUG
     [TestCase(false)]
     [TestCase(true)]
-    public static void DisassemblyRejectsBeforeMultiplyConsumption(bool high)
+    public static void DisassemblyRecordsMultiplicationWithoutConsumingOperandsTwice(bool high)
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
@@ -375,7 +375,7 @@ internal static class CodeGenMultiplicationTests
                 RegNum = high ? REG_RDX : REG_RAX,
             };
             compiler.opts.dspCode = true;
-            _ = Assert.Throws<FatalJitException>(() =>
+            var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
                 if (high)
                 {
@@ -386,16 +386,8 @@ internal static class CodeGenMultiplicationTests
                     codeGen.genCodeForMul(tree);
                 }
             });
-            compiler.opts.dspCode = false;
-            if (high)
-            {
-                codeGen.genCodeForMulHi(tree);
-            }
-            else
-            {
-                codeGen.genCodeForMul(tree);
-            }
             Assert.That(CodeGenShiftTests.Descriptors(codeGen), Has.Count.EqualTo(1));
+            Assert.That(diagnostic, Does.Contain("mul"));
         });
     }
 #endif

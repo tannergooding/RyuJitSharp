@@ -298,7 +298,7 @@ internal static unsafe class EmitterMemoryImmediateInstructionTests
     [TestCase(8)]
     [TestCase(9)]
     [TestCase(10)]
-    public static void DisassemblyRejectsAllEntrypointsBeforeRecordingOrLegacyCopies(int entrypoint)
+    public static void DisassemblyRecordsMemoryImmediateOperandsAndLegacyCopies(int entrypoint)
     {
         WithEmitter((compiler, emitter) =>
         {
@@ -311,7 +311,7 @@ internal static unsafe class EmitterMemoryImmediateInstructionTests
                 emitter.UseVexEncodings = false;
             }
             var used = Used(emitter);
-            var exception = Assert.Throws<FatalJitException>(() =>
+            var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
                 switch (entrypoint)
                 {
@@ -383,11 +383,17 @@ internal static unsafe class EmitterMemoryImmediateInstructionTests
                 }
             });
 
-            Assert.That(exception, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(Used(emitter), Is.EqualTo(used));
-            Assert.That(CurrentCount(emitter), Is.Zero);
-            Assert.That(CurrentSize(emitter), Is.Zero);
-            Assert.That(LastInstruction(emitter), Is.Null);
+            Assert.That(Used(emitter), Is.GreaterThan(used));
+            Assert.That(CurrentCount(emitter), Is.GreaterThan(0));
+            Assert.That(CurrentSize(emitter), Is.GreaterThan(0));
+            Assert.That(LastInstruction(emitter), Is.Not.Null);
+            Assert.That(diagnostic, Does.Contain(entrypoint switch
+            {
+                0 or 1 or 2 => "pshufd",
+                3 or 4 or 5 => "shufps",
+                8 => "pslld",
+                _ => "addps",
+            }));
         });
     }
 #endif

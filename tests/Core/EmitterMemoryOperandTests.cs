@@ -293,13 +293,13 @@ internal static unsafe class EmitterMemoryOperandTests
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]
-    public static void DisassemblyRejectsAllRecordingEntrypointsBeforeAllocation(int entrypoint)
+    public static void DisassemblyRecordsMemoryOperands(int entrypoint)
     {
         WithEmitter((compiler, emitter) =>
         {
             compiler.opts.dspCode = true;
             var used = Used(emitter);
-            var exception = Assert.Throws<FatalJitException>(() =>
+            var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
                 switch (entrypoint)
                 {
@@ -323,11 +323,11 @@ internal static unsafe class EmitterMemoryOperandTests
                 }
             });
 
-            Assert.That(exception, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(Used(emitter), Is.EqualTo(used));
-            Assert.That(CurrentCount(emitter), Is.Zero);
-            Assert.That(CurrentSize(emitter), Is.Zero);
-            Assert.That(LastInstruction(emitter), Is.Null);
+            Assert.That(Used(emitter), Is.GreaterThan(used));
+            Assert.That(CurrentCount(emitter), Is.GreaterThan(0));
+            Assert.That(CurrentSize(emitter), Is.GreaterThan(0));
+            Assert.That(LastInstruction(emitter), Is.Not.Null);
+            Assert.That(diagnostic, Does.Contain(entrypoint == 0 ? "neg" : entrypoint == 1 ? "mov" : "addps"));
         });
     }
 #endif

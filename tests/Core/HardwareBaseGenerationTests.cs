@@ -451,21 +451,22 @@ internal static class HardwareBaseGenerationTests
 
 #if DEBUG
     [Test]
-    public static void MaskClearingRejectsD005BeforeRecordingEitherShift()
+    public static void DspCodeRecordsMaskClearingShifts()
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.opts.dspCode = true;
 
-            _ = Assert.Throws<FatalJitException>(() => codeGen.ClearUnusedMaskBits(REG_K3, 2));
-
-            Assert.That(Descriptors(codeGen), Is.Empty);
+            var diagnostic = InstructionRecordingTestSupport.Capture(
+                () => codeGen.ClearUnusedMaskBits(REG_K3, 2));
+            Assert.That(Descriptors(codeGen), Is.Not.Empty);
+            Assert.That(diagnostic, Is.Not.Empty);
         });
     }
 
     [TestCase(false)]
     [TestCase(true)]
-    public static void D005RejectsBeforeOperandConsumptionAndCanBeRetried(bool x86)
+    public static void DspCodeRecordsBaseHardwareInstructions(bool x86)
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
@@ -488,11 +489,9 @@ internal static class HardwareBaseGenerationTests
                 }
             }
 
-            _ = Assert.Throws<FatalJitException>(Generate);
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            compiler.opts.dspCode = false;
-            Generate();
+            var diagnostic = InstructionRecordingTestSupport.Capture(Generate);
             Assert.That(Descriptors(codeGen), Is.Not.Empty);
+            Assert.That(diagnostic, Is.Not.Empty);
         });
     }
 #endif

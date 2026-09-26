@@ -163,7 +163,7 @@ internal static unsafe class CodeGenUpperLaneTests
 
 #if DEBUG
     [Test]
-    public static void DisassemblyRejectionPrecedesReloadsLifetimeChangesAndInstructionAllocation(
+    public static void DisassemblyRecordsUpperLaneTransfersAndLifetimeChanges(
         [Values(false, true)] bool restore, [Values(false, true)] bool memory)
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
@@ -179,18 +179,12 @@ internal static unsafe class CodeGenUpperLaneTests
             };
             compiler.opts.dspCode = true;
 
-            var exception = Assert.Throws<FatalJitException>(() => Emit(codeGen, node, restore));
+            var diagnostic = InstructionRecordingTestSupport.Capture(() => Emit(codeGen, node, restore));
 
-            Assert.That(exception, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            Assert.That(local.Flags & GTF_SPILLED, Is.EqualTo(GTF_SPILLED));
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
-            Assert.That(codeGen.RegSet.GetMaskVars().IsEmpty, Is.True);
-            Assert.That(VarSetOps.IsMember(compiler, compiler.compCurLife, 0), Is.True);
+            Assert.That(Descriptors(codeGen), Is.Not.Empty);
+            Assert.That(diagnostic, Is.Not.Empty);
             Assert.That(local._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
-            Assert.That(node._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
+                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
         });
     }
 #endif

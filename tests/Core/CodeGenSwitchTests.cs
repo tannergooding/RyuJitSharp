@@ -157,7 +157,7 @@ internal static class CodeGenSwitchTests
 
 #if DEBUG
     [Test]
-    public static void DisassemblyRejectsBeforeTableAllocationOrSwitchConsumption()
+    public static void DisassemblyRecordsJumpTablesAndSwitchDispatch()
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
@@ -169,19 +169,15 @@ internal static class CodeGenSwitchTests
             codeGen.InternalRegisters.Add(tree, RBM_R11);
             compiler.opts.dspCode = true;
 
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genEmitJumpTable(table, relativeAddr: true));
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genJumpTable(table));
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genTableBasedSwitch(tree));
-            _ = Assert.Throws<FatalJitException>(() =>
-                codeGen.Emitter.emitIns_R_L(INS_lea, EA_8BYTE, targets[0], REG_R11));
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            Assert.That(codeGen.Emitter.emitConsDsc.dsdLast, Is.Null);
-            Assert.That(JumpLists.PendingJump(codeGen.Emitter), Is.Null);
-
-            compiler.opts.dspCode = false;
-            codeGen.genJumpTable(table);
-            codeGen.genTableBasedSwitch(tree);
-            Assert.That(Descriptors(codeGen), Has.Count.EqualTo(5));
+            var diagnostic = InstructionRecordingTestSupport.Capture(() =>
+            {
+                codeGen.genJumpTable(table);
+                codeGen.genTableBasedSwitch(tree);
+                codeGen.Emitter.emitIns_R_L(INS_lea, EA_8BYTE, targets[0], REG_R11);
+            });
+            Assert.That(Descriptors(codeGen), Has.Count.EqualTo(6));
+            Assert.That(codeGen.Emitter.emitConsDsc.dsdLast, Is.Not.Null);
+            Assert.That(diagnostic, Does.Contain("lea"));
         });
     }
 #endif

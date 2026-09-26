@@ -212,19 +212,37 @@ internal static unsafe class CodeGenHelperCallTests
 
 #if DEBUG
     [Test]
-    public static void DisassemblyRejectsBeforeHelperQueriesAndGcCapture()
+    public static void DspCodeRecordsHelperCallsAndCapturesGcRegisters()
     {
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             compiler.info.compMatchedVM = true;
             compiler.opts.dspCode = true;
-            _ = Assert.Throws<FatalJitException>(() =>
-                codeGen.genEmitHelperCall(CORINFO_HELP_ASSIGN_REF, 0, EA_PTRSIZE));
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.getHelperFtn = &GetHelperFtn;
+            vtable.getRelocTypeHint = &GetRelocTypeHint;
+            var context = new HelperContext
+            {
+                JitInfo = new ICorJitInfo { lpVtbl = &vtable },
+                Address = (void*)0x1234,
+                Access = IAT_VALUE,
+            };
+            compiler.info.compCompHnd = &context.JitInfo;
+
+            var helperDiagnostic = InstructionRecordingTestSupport.Capture(
+                () => codeGen.genEmitHelperCall(CORINFO_HELP_ASSIGN_REF, 0, EA_PTRSIZE));
             var parameters = Parameters();
             codeGen.GCInfo.gcMarkRegPtrVal(REG_RBX, TYP_REF);
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genEmitCallWithCurrentGC(ref parameters));
-            Assert.That(parameters.gcrefRegs, Is.EqualTo(RBM_NONE));
-            Assert.That(Descriptors(codeGen), Is.Empty);
+            void EmitCurrentGcCall()
+            {
+                codeGen.genEmitCallWithCurrentGC(ref parameters);
+            }
+            var gcDiagnostic = InstructionRecordingTestSupport.Capture(EmitCurrentGcCall);
+            Assert.That(context.HelperQueries, Is.EqualTo(1));
+            Assert.That(parameters.gcrefRegs, Is.EqualTo(RBM_RBX));
+            Assert.That(Descriptors(codeGen), Has.Count.EqualTo(2));
+            Assert.That(helperDiagnostic, Does.Contain("call"));
+            Assert.That(gcDiagnostic, Does.Contain("call"));
         });
     }
 #endif

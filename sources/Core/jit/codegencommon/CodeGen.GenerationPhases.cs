@@ -25,6 +25,9 @@ public sealed partial class CodeGen
 #if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
         throw new FatalJitException(CORJIT_SKIPPED, "Machine-code generation requires Windows AMD64.");
 #else
+#if LATE_DISASM
+        RequireSupportedLateDisassembly();
+#endif
 #if DEBUG
         _genInterruptibleUsed = true;
         _compiler.fgDebugCheckBBlist();
@@ -174,6 +177,9 @@ public sealed partial class CodeGen
 #if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
         throw new FatalJitException(CORJIT_SKIPPED, "Machine-code emission requires Windows AMD64.");
 #else
+#if LATE_DISASM
+        RequireSupportedLateDisassembly();
+#endif
 #if DEBUG
         // The CSE policy constructors and DumpMetrics hierarchy are not ported.
         // Reject this native diagnostic mode before reserving or allocating memory.
@@ -254,4 +260,15 @@ public sealed partial class CodeGen
         _compiler.info.compNativeCodeSize = unchecked((int)_codeSize);
 #endif
     }
+
+#if LATE_DISASM
+    private void RequireSupportedLateDisassembly()
+    {
+        if (_compiler.opts.doLateDisasm)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Late disassembly requires a native callback bridge to preserve decoder-error output.");
+        }
+    }
+#endif
 }

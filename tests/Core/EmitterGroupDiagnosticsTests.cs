@@ -6,8 +6,8 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
 using NUnit.Framework;
-using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.instruction;
 using static RyuJitSharp.regMask;
 
 using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
@@ -169,23 +169,38 @@ internal static unsafe class EmitterGroupDiagnosticsTests
     }
 
     [Test]
-    public static void InstructionDisassemblyRejectsBeforePrintingAnyGroup()
+    public static void GroupInstructionDisplayUsesFinalOffsetsAndListSelection()
+    {
+        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var emitter = codeGen.Emitter;
+            emitter.emitIns(INS_nop);
+            emitter.emitIns(INS_ret);
+            var group = Save(emitter, false);
+            group.igOffs = 0x24;
+            var instructions = group.igData ?? throw new AssertionException("Missing saved instructions.");
+            var expected = Capture(() =>
+            {
+                emitter.emitDispIns(instructions[0], false, true, false, 0x24, null, 0, group);
+                emitter.emitDispIns(instructions[1], false, true, false, 0x25, null, 0, group);
+            });
+            var output = Capture(() => emitter.emitDispIG(group, displayInstructions: true));
+            var listOutput = Capture(() => emitter.emitDispIGlist(displayInstructions: true));
+
+            Assert.That(expected, Does.Contain("nop"));
+            Assert.That(expected, Does.Contain("ret"));
+            Assert.That(output, Does.EndWith(Environment.NewLine + expected + Environment.NewLine));
+            Assert.That(listOutput, Does.Contain(expected));
+        });
+    }
+
+    [Test]
+    public static void EmptyGroupCanBeDisplayedWithInstructionsEnabled()
     {
         var emitter = CreateEmitter(out _);
         var group = new insGroup();
-
-        var output = Capture(() =>
-        {
-            var error = Assert.Throws<FatalJitException>(() =>
-                emitter.emitDispIG(group, displayInstructions: true));
-            Assert.That(error?.Result, Is.EqualTo(CORJIT_SKIPPED));
-
-            error = Assert.Throws<FatalJitException>(() =>
-                emitter.emitDispIGlist(displayInstructions: true));
-            Assert.That(error?.Result, Is.EqualTo(CORJIT_SKIPPED));
-        });
-
-        Assert.That(output, Is.Empty);
+        Assert.That(Capture(() => emitter.emitDispIG(group, displayInstructions: true)),
+            Is.EqualTo(Capture(() => emitter.emitDispIG(group))));
     }
 
     [Test]
@@ -227,6 +242,9 @@ internal static unsafe class EmitterGroupDiagnosticsTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitPlaceholderLast")]
     private static extern ref insGroup? LastPlaceholder(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitSavIG")]
+    private static extern insGroup Save(Emitter emitter, bool extend);
 
     private static string Capture(Action action)
     {

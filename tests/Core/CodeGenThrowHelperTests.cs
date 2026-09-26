@@ -94,19 +94,23 @@ internal static unsafe class CodeGenThrowHelperTests
 
 #if DEBUG
     [Test]
-    public static void DisassemblyRejectsBeforeCreatingTheInlineContinuation()
+    public static void DisassemblyRecordsInlineThrowAndContinuation()
     {
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             compiler.opts.compDbgCode = true;
             compiler.opts.dspCode = true;
-            var blockCount = compiler.fgBBcount;
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.getHelperFtn = &GetHelperFtn;
+            var context = new HelperContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
+            compiler.info.compCompHnd = &context.JitInfo;
+            compiler.info.compMatchedVM = true;
+            var first = codeGen.Emitter.emitCurIG;
 
-            var error = Assert.Throws<FatalJitException>(() => codeGen.genJumpToThrowHlpBlk(EJ_jo, SCK_OVERFLOW));
-
-            Assert.That(error?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            Assert.That(compiler.fgBBcount, Is.EqualTo(blockCount));
+            var diagnostic = InstructionRecordingTestSupport.Capture(
+                () => codeGen.genJumpToThrowHlpBlk(EJ_jo, SCK_OVERFLOW));
+            Assert.That(diagnostic, Does.Contain("call"));
+            Assert.That(CodeGenLocalHeapTests.AllDescriptors(first, codeGen).Exists(id => id.idIns() == INS_call), Is.True);
         });
     }
 #endif

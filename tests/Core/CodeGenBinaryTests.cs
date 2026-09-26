@@ -332,7 +332,7 @@ internal static class CodeGenBinaryTests
 
 #if DEBUG
     [Test]
-    public static void DisassemblyRejectsBeforeArithmeticConsumption()
+    public static void DisassemblyRecordsArithmeticWithoutConsumingItTwice()
     {
         WithCodeGen((compiler, codeGen) =>
         {
@@ -342,11 +342,10 @@ internal static class CodeGenBinaryTests
                 RegNum = REG_RAX,
             };
             compiler.opts.dspCode = true;
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genCodeForBinary(tree));
-            compiler.opts.dspCode = false;
-            codeGen.genCodeForBinary(tree);
+            var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCodeForBinary(tree));
 
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(1));
+            Assert.That(diagnostic, Does.Contain("xor"));
         });
     }
 #endif

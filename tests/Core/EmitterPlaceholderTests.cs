@@ -200,7 +200,7 @@ internal static class EmitterPlaceholderTests
 
 #if DEBUG
     [Test]
-    public static void RequiredCallPaddingRejectsDisassemblyBeforePlaceholderMutation()
+    public static void RequiredCallPaddingSupportsDisassemblyDuringEpilogReservation()
     {
         CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, _) =>
         {
@@ -209,13 +209,12 @@ internal static class EmitterPlaceholderTests
             var call = EmitterLabelTests.RecordCallDescriptor(emitter, noGc: false);
             compiler.opts.dspCode = true;
 
-            var exception = Assert.Throws<FatalJitException>(() => codeGen.genReserveEpilog(new BasicBlock(null, null)));
-
-            Assert.That(exception, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(emitter.emitCurIG, Is.SameAs(group));
-            Assert.That(FirstPlaceholder(emitter), Is.Null);
-            Assert.That(LastInstruction(emitter), Is.SameAs(call));
-            Assert.That(CodeOffset(emitter), Is.Zero);
+            var diagnostic = InstructionRecordingTestSupport.Capture(
+                () => codeGen.genReserveEpilog(new BasicBlock(null, null)));
+            Assert.That(FirstPlaceholder(emitter), Is.Not.Null);
+            Assert.That(emitter.emitCurIG, Is.Not.SameAs(group));
+            Assert.That(call.idIns(), Is.EqualTo(INS_call));
+            Assert.That(diagnostic, Does.Contain("nop"));
         });
     }
 #endif

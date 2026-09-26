@@ -322,7 +322,7 @@ internal static class CodeGenFloatingCastTests
 
 #if DEBUG
     [Test]
-    public static void DisassemblyRejectionPrecedesConsumptionTemporaryExtractionAndEmission(
+    public static void DisassemblyRecordsFloatingCastAndUpdatesTemporaryOwnership(
         [Values(false, true)] bool floating)
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
@@ -334,8 +334,9 @@ internal static class CodeGenFloatingCastTests
             codeGen.GCInfo.gcMarkRegPtrVal(REG_RAX, TYP_BYREF);
             var gc = codeGen.GCInfo.gcRegByrefSetCur;
             compiler.opts.dspCode = true;
+            var first = codeGen.Emitter.emitCurIG;
 
-            _ = Assert.Throws<FatalJitException>(() =>
+            var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
                 if (floating)
                 {
@@ -347,11 +348,12 @@ internal static class CodeGenFloatingCastTests
                 }
             });
 
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            Assert.That(codeGen.InternalRegisters.GetAll(cast), Is.EqualTo(temps));
-            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(gc));
-            Assert.That(source._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED, Is.EqualTo((GenTreeDebugFlags)0));
-            Assert.That(cast._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED, Is.EqualTo((GenTreeDebugFlags)0));
+            Assert.That(CodeGenLocalHeapTests.AllDescriptors(first, codeGen), Is.Not.Empty);
+            Assert.That(diagnostic, Is.Not.Empty);
+            Assert.That(codeGen.InternalRegisters.GetAll(cast), Is.EqualTo(floating ? temps : default));
+            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(floating ? gc : default));
+            Assert.That(source._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
         });
     }
 #endif

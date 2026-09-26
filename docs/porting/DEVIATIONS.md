@@ -880,6 +880,16 @@ GC bitstream storage uses ordered managed 128-byte blocks instead of native
 linked allocations, preserving least-significant-bit-first 64-bit packing,
 variable-length encodings and the exact byte count.
 
+GC encoding uses managed slot, transition and bit-vector storage while retaining
+native slot IDs, sorting, compression and exact encoded bytes. The encoder owns
+its bitstream writers through `IDisposable`; emission releases scratch storage
+without taking ownership of the EE's allocated GC-info buffer.
+
+Async debug publication copies records into EE-owned arrays and transfers them
+at the callback. Subsequent diagnostics read the original managed records,
+preserving native values and ordering without relying on transferred storage
+remaining readable (B239).
+
 ### D003: Deferred non-Windows-x64-only paths
 
 **Status:** accepted scoped deferral; not a successful execution/parity result.
@@ -1014,131 +1024,19 @@ without adding success-shaped fallbacks on the active path.
 
 ### D005: Instruction recording without optional disassembly
 
-**Status:** temporary implementation boundary along the existing native Debug
-`opts.dspCode` predicate, not an accepted diagnostic difference.
+**Status:** closed for Windows AMD64; not an accepted diagnostic difference.
 
-Windows-AMD64 `emitIns_S_R`, `emitIns_S_R_I`, `emitIns_R_S`, `emitIns_R_I`,
-`emitIns_R_R`, `emitIns_Mov`, `emitIns_R_AI`, `emitIns_Data16`, both `emitIns`
-overloads, `emitIns_Nop`, `emitIns_R_R_I`, `emitIns_R_R_R`,
-`emitIns_R_R_R_I`, `emitIns_SIMD_R_R_R`, `emitIns_SIMD_R_R_R_I`,
-`emitIns_R_C`, `emitIns_R_R_C`, `emitIns_SIMD_R_R_C`, `emitIns_R` and
-`emitIns_BASE_R_R`, `emitInsBinary`, `emitHandleMemOp`, `emitIns_S`,
-`emitIns_S_I`, `emitIns_R_R_S`, both `emitInsRMW` overloads,
-`emitIns_R_ARX`, `emitIns_BASE_R_R_I`, `emitIns_R_A`, `emitIns_R_A_I`,
-`emitIns_R_C_I`, `emitIns_R_S_I`, `emitIns_R_R_A`, `emitIns_R_R_A_I`,
-`emitIns_R_R_C_I`, `emitIns_R_R_S_I`, `emitIns_SIMD_R_R_I`,
-`emitIns_SIMD_R_R_A`, `emitIns_SIMD_R_R_S`, `emitIns_R_AR`,
-`emitIns_BASE_R_R_RM`, `emitIns_J`, `emitIns_SIMD_R_R_S_I`, `emitInsStoreLcl`,
-`emitInsLoadInd`, `emitIns_SIMD_R_R_A_I`, `emitIns_AR_R` and `emitIns_ARX_R`
-record complete native descriptors and sizes. Their `dispIns` path
-preserves sanity, stack-depth, logical-size and conditional statistics checks.
-In Debug, these entrypoints reject requested
-instruction disassembly with `CORJIT_SKIPPED` before move elision or descriptor
-allocation; the native `emitDispIns` body remains unported. Release retains the
-native absence of that immediate-disassembly call. The constant-materialization
-and compressed-load callers apply the same guard before allocating constant
-data or changing TLS-related GC state. Unary node generation and floating
-sign-mask generation also reject before operand consumption or lifetime changes.
-Binary memory dispatch rejects before extracting spill ownership or allocating
-constant data, and byte-swap generation rejects before consuming its operand.
-Shift generation, shared operand classification and register/memory wrappers
-likewise reject before consumption, spill extraction or constant allocation.
-Binary arithmetic, multiplication, division and shared throw-helper jumps reject
-before operand consumption, target lookup or jump-list mutation.
-Local reads and addresses, including SIMD12 loads, likewise reject before
-recording their first instruction or producing register/lifetime state.
-Local stores, bitcasts, extended moves and multi-register store generation
-reject before consuming operands, rewriting reused zeros or changing homes.
-Indirect reads and indexed addresses reject before consumption, SIMD12 address
-rewriting or internal-register extraction.
-Explicit LEA, null checks and bounds checks reject before operand consumption.
-Scalar comparison and Boolean condition generation reject before recording,
-rewriting a flag consumer or creating a short-circuit label.
-Conditional selection, Boolean/flag branches and SETCC nodes reject before
-consuming operands or creating branch labels. `inst_RV_TT` rejects before
-classifying operands, extracting spill ownership or allocating constant data.
-Integer and floating casts reject before consumption, overflow-check temporary
-extraction or label creation. Shift-immediate recording follows the same guard.
-Finite checks, scalar intrinsics and SIMD upper saves/restores reject before
-temporary extraction or operand consumption. Three-operand immediate helpers
-reject before constant allocation, spill extraction or instruction recording.
-Jump tables and table-switch dispatch reject before table allocation, operand
-consumption or internal-register extraction; label addresses reject before
-instruction allocation and jump-list mutation.
-Register swaps reject before changing local register homes or GC classifications.
-Helper calls and current-GC call generation reject before helper lookup or GC
-parameter capture. Call-instruction recording rejects before descriptor allocation,
-GC-state updates or late-disassembly target registration.
-Indirect stores reject before operand consumption, write-barrier selection,
-SIMD12 address advancement or extraction-immediate rewriting. Their emitter
-entrypoints reject before recording or updating a local-address store's lifetime.
+Debug `opts.dspCode` now uses the native immediate instruction printer rather
+than rejecting compilation. `dispIns` preserves sanity checking, then prints
+before the remaining stack-depth, logical-size and conditional statistics checks
+(`emit.cpp:1611`). Release retains native omission of this Debug call.
 
-Native roots are `emitxarch.cpp:5929,5945,5962,6019,7168,7798,8090,9314,9407,10574,10609`
-and `7042,8134,8506,8546,8686,8929,9626,9658,9804,10422`,
-plus `6159,6495,8574,10400,10640`,
-`6921,7012,9465,10439,8244,8264,8299,8344,8382,8606,8637,8709,9571,9598,9708`,
-`9309,10470,10703,9842,6463,6280,9736,9351,9500`
-and `emit.cpp:1611`;
-the managed specialization is in
-`emitxarch/Emitter.StackStores.cs`, `Emitter.StackLoads.cs`,
-`Emitter.RegisterInstructions.cs`, `Emitter.RegisterMoves.cs`, `Emitter.AddressInstructions.cs`,
-`Emitter.ZeroOperandInstructions.cs`, `Emitter.MultiRegisterInstructions.cs` and
-`Emitter.SimdRegisterInstructions.cs`, `Emitter.StaticFieldInstructions.cs` and
-`Emitter.UnaryInstructions.cs`, `Emitter.BinaryInstructions.cs`,
-`Emitter.MemoryOperands.cs`, `Emitter.StackOperands.cs`,
-`Emitter.ShiftInstructions.cs`, `Emitter.MemoryImmediateInstructions.cs` and
-`Emitter.SimdMemoryInstructions.cs`, `Emitter.BinaryDestinations.cs` and
-`Emitter.JumpInstructions.cs`, `Emitter.LocalStores.cs`, `Emitter.IndirectLoads.cs`
-and `Emitter.AddressStores.cs`.
-The caller guards are in `emit/Emitter.SimdConstants.cs` and
-`codegenxarch/CodeGen.Constants.cs`, `CodeGen.Unary.cs` and
-`CodeGen.ByteSwap.cs`, `CodeGen.Shifts.cs` and
-`instr/CodeGen.MemoryOperands.cs`, `codegenxarch/CodeGen.Binary.cs`,
-`CodeGen.Multiplication.cs`, `CodeGen.Division.cs`, `CodeGen.LocalLoads.cs` and
-`codegencommon/CodeGen.ArithmeticSupport.cs`, `CodeGen.BitCast.cs`,
-`CodeGen.MultiRegisterStores.cs`, `codegenxarch/CodeGen.LocalStores.cs` and
-`instr/CodeGen.ExtendedMoves.cs`, `codegenxarch/CodeGen.IndirectLoads.cs`
-and `CodeGen.AddressChecks.cs`.
-Comparison guards are in `codegenxarch/CodeGen.Comparisons.cs`,
-`CodeGen.Conditions.cs` and `instr/CodeGen.SetCondition.cs`.
-Conditional control-flow guards are in `codegenxarch/CodeGen.ConditionalSelection.cs`
-and `codegenlinear/CodeGen.ConditionalBranches.cs`; register/operand recording
-uses `instr/CodeGen.MemoryOperands.cs`.
-Cast guards are in `codegenxarch/CodeGen.IntegerCasts.cs`,
-`CodeGen.FloatingCasts.cs` and `instr/CodeGen.FloatingConversions.cs`.
-Intrinsic guards are in `codegenxarch/CodeGen.Intrinsics.cs`,
-`simdcodegenxarch/CodeGen.UpperLanes.cs`, `instr/CodeGen.MemoryOperands.cs`
-and `emitxarch/Emitter.SimdMemoryInstructions.cs`.
-Table-switch guards are in `codegenxarch/CodeGen.Switches.cs`,
-`codegencommon/CodeGen.JumpTables.cs` and `emitxarch/Emitter.JumpInstructions.cs`.
-Register-swap guards are in `codegenxarch/CodeGen.RegisterSwaps.cs`.
-Call guards are in `codegenxarch/CodeGen.HelperCalls.cs`,
-`codegencommon/CodeGen.CallGC.cs` and `emitxarch/Emitter.CallInstructions.cs`
-(`codegenxarch.cpp:8485`, `codegencommon.cpp:1790`, `emitxarch.cpp:10961`).
-Indirect-store guards are in `codegenxarch/CodeGen.IndirectStores.cs`,
-`simdcodegenxarch/CodeGen.IndirectStores.cs`, `codegen/CodeGen.WriteBarriers.cs`
-and `emitxarch/Emitter.IndirectStores.cs`
-(`codegenxarch.cpp:5315`, `simdcodegenxarch.cpp:40`,
-`codegencommon.cpp:3029`, `emitxarch.cpp:6323,9440`).
-The pre-mutation rejection is
-covered for every recording entrypoint. Retain the mixed-mode
-native bodies until full disassembly is ported. This does not activate production
-emission or waive future `jitdump`/`jitdisasm` parity.
-
-Return generation and profiler leave/tailcall callbacks also reject unsupported
-disassembly before operand consumption or callback-state changes. Debug
-stack-pointer checks retain the same guard before recording comparisons,
-breakpoints or continuation labels.
-Register-argument generation and placement reject before consuming operands or
-changing ABI-register GC state. Return traps reject before consuming the flag
-or extracting their helper-call temporary. These guards are in
-`codegencommon/CodeGen.CallArguments.cs`, `codegenxarch/CodeGen.RegisterArguments.cs`
-and `codegenxarch/CodeGen.ReturnTraps.cs`.
-Call-target instruction generation in `codegenxarch/CodeGen.CallInstructions.cs`
-rejects before target consumption, TLS prefix recording or signature capture.
-Stack-argument entrypoints in `codegenxarch/CodeGen.StackArguments.cs` reject
-before changing the active argument home, consuming operands or selecting
-struct-copy temporaries.
+Instruction-group diagnostics walk saved descriptors at their final offsets,
+including native handling of removed terminal jumps; group-list display forwards
+the instruction-selection flag (`emit.cpp:4099-4330`). Ordinary verbose JitDump,
+which also enables `dspCode`, no longer hits the old pre-recording rejection.
+Recording tests exercise diagnostics together with descriptor, GC, ownership and
+move-elision behavior. CoreDisTools late disassembly is a distinct mode (D009).
 
 ### D006: Shared throw-helper blocks before inline helper calls
 
@@ -1154,7 +1052,7 @@ branch or continuation label.
 Arithmetic, multiplication, bounds checks, indexed addresses, integer casts and
 finite checks use the complete function. Their former shared-only restrictions
 are removed. Shared-block construction and inline calls use the same native
-`acdHelper` mapping. D005 still rejects unsupported disassembly before mutation;
+`acdHelper` mapping. Immediate instruction disassembly is available (D005);
 other targets explicitly reject throw generation. Production emission remains
 skipped pending the remaining backend closure.
 
@@ -1169,8 +1067,8 @@ Windows-AMD64 block generation rejects the matched emitter-test payload mode wit
 block generation follows the complete native driver. The optional native
 `genEmitterUnitTests` dispatcher and its synthetic instruction payloads remain
 unported; unmatched methods and null section selections do not require them.
-D005 separately rejects immediate instruction disassembly. Neither boundary
-authorizes silent omission of requested diagnostics or payload instructions.
+Immediate instruction disassembly is available (D005). This boundary does not
+authorize silent omission of requested diagnostics or payload instructions.
 
 ### D008: Machine-code emission without optional CSE metrics
 
@@ -1183,6 +1081,22 @@ The complete ordinary emission path is implemented. Native `optGetCSEheuristic`
 constructs a policy even when none exists yet; its policy hierarchy and
 `DumpMetrics` implementations remain unported (B238). Returning null or printing
 invented empty metrics would not preserve the native behavior.
+
+### D009: Final metadata without optional late disassembly
+
+**Status:** temporary implementation boundary along the existing
+`opts.doLateDisasm` predicate, not an accepted output difference.
+
+Requested `JitLateDisasm` terminates with `CORJIT_SKIPPED` before generation,
+emission allocation or final metadata publication. Ordinary emitter
+`jitdisasm` and immediate instruction diagnostics are separate from this mode.
+
+CoreDisTools' buffered interface matches the native printer for the tested valid
+instructions, but sends decoder errors to stderr instead of returning the text
+that RyuJIT's callbacks write to the selected output stream. The native callbacks
+are variadic and cannot be supplied directly by `UnmanagedCallersOnly`. A native
+callback bridge or another exact ABI solution needs approval; the buffered draft
+is not used as a success-shaped approximation (B241).
 
 ## Implementation notes and parity findings
 

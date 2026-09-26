@@ -11,6 +11,34 @@ namespace RyuJitSharp.UnitTests;
 internal static class SpillTemporaryTests
 {
     [Test]
+    public static void FinalCleanupChecksReleasedTempsWithoutDiscardingDescriptors()
+    {
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        var codeGen = new CodeGen(compiler);
+        ref var regSet = ref codeGen.RegSet;
+
+        regSet.rsSpillDone();
+        regSet.tmpDone();
+        regSet.tmpBeginPreAllocateTemps();
+        regSet.tmpPreAllocateTemps(TYP_INT, 1);
+        regSet.tmpPreAllocateTemps(TYP_REF, 1);
+        var integer = regSet.tmpGetTemp(TYP_INT);
+        var reference = regSet.tmpGetTemp(TYP_REF);
+        integer.tdTempOffs = -16;
+        reference.tdTempOffs = -32;
+        regSet.tmpRlsTemp(integer);
+        regSet.tmpRlsTemp(reference);
+
+        regSet.rsSpillDone();
+        regSet.tmpDone();
+
+        Assert.That(regSet.tmpGetNum(integer.tdTempNum), Is.SameAs(integer));
+        Assert.That(regSet.tmpGetNum(reference.tdTempNum), Is.SameAs(reference));
+        Assert.That(integer.tdTempOffs, Is.EqualTo(-16));
+        Assert.That(reference.tdTempOffs, Is.EqualTo(-32));
+    }
+
+    [Test]
     public static void PreallocationKeepsDistinctTypesAndNumberingInSharedSlots()
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));

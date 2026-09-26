@@ -206,7 +206,7 @@ internal static class CodeGenAtomicTests
     [TestCase(GT_LOCKADD)]
     [TestCase(GT_XADD)]
     [TestCase(GT_CMPXCHG)]
-    public static void D005RejectsBeforeOperandConsumption(genTreeOps oper)
+    public static void DspCodeRecordsAtomicInstructionsAndConsumesOperands(genTreeOps oper)
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) => {
             var address = Register(compiler, TYP_BYREF, REG_RCX);
@@ -216,7 +216,8 @@ internal static class CodeGenAtomicTests
                 : new GenTreeOp(oper, TYP_INT, address, value);
             tree.RegNum = REG_R8;
             compiler.opts.dspCode = true;
-            _ = Assert.Throws<FatalJitException>(() => {
+            var diagnostic = InstructionRecordingTestSupport.Capture(() =>
+            {
                 if (oper == GT_CMPXCHG)
                 {
                     codeGen.genCodeForCmpXchg(tree.AsCmpXchg());
@@ -230,11 +231,12 @@ internal static class CodeGenAtomicTests
                     codeGen.genLockedInstructions(tree.AsOp());
                 }
             });
-            Assert.That(Descriptors(codeGen), Is.Empty);
+            Assert.That(Descriptors(codeGen), Is.Not.Empty);
+            Assert.That(diagnostic, Is.Not.Empty);
             Assert.That(address._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
+                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
             Assert.That(value._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
+                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
         });
     }
 #endif

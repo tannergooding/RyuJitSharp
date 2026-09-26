@@ -222,7 +222,7 @@ internal static unsafe class CodeGenIndirectLoadTests
 
 #if DEBUG
     [Test]
-    public static void DisassemblyRejectsBeforeSimdAddressMutation()
+    public static void DisassemblyRecordsSimdLoadsAndAdvancesAddress()
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
@@ -232,13 +232,10 @@ internal static unsafe class CodeGenIndirectLoadTests
             };
             var tree = new GenTreeIndir(GT_IND, TYP_SIMD12, address) { RegNum = REG_XMM0 };
             compiler.opts.dspCode = true;
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genCodeForIndir(tree));
-            Assert.That(address.Offset, Is.EqualTo(4));
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            compiler.opts.dspCode = false;
-
-            codeGen.genCodeForIndir(tree);
+            var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCodeForIndir(tree));
             Assert.That(address.Offset, Is.EqualTo(12));
+            Assert.That(Descriptors(codeGen), Is.Not.Empty);
+            Assert.That(diagnostic, Is.Not.Empty);
         });
     }
 #endif

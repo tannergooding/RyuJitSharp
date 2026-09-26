@@ -262,7 +262,7 @@ internal static class EmitterSimdRegisterInstructionTests
     [TestCase(2, true)]
     [TestCase(3, true)]
     [TestCase(4, true)]
-    public static void DisassemblyRejectsBeforeCopiesElisionOrAllocation(int entrypoint, bool vex)
+    public static void DisassemblyRecordsSimdOperandsAndLegacyCopies(int entrypoint, bool vex)
     {
         WithEmitter((compiler, emitter) =>
         {
@@ -270,7 +270,7 @@ internal static class EmitterSimdRegisterInstructionTests
             emitter.UseVexEncodings = vex;
             compiler.opts.dspCode = true;
             var used = Used(emitter);
-            var exception = Assert.Throws<FatalJitException>(() =>
+            var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
                 switch (entrypoint)
                 {
@@ -306,11 +306,11 @@ internal static class EmitterSimdRegisterInstructionTests
                 }
             });
 
-            Assert.That(exception, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(Used(emitter), Is.EqualTo(used));
-            Assert.That(CurrentCount(emitter), Is.Zero);
-            Assert.That(CurrentSize(emitter), Is.Zero);
-            Assert.That(LastInstruction(emitter), Is.Null);
+            Assert.That(Used(emitter), Is.GreaterThan(used));
+            Assert.That(CurrentCount(emitter), Is.GreaterThan(0));
+            Assert.That(CurrentSize(emitter), Is.GreaterThan(0));
+            Assert.That(LastInstruction(emitter), Is.Not.Null);
+            Assert.That(diagnostic, Does.Contain(entrypoint is 1 or 3 ? "shufps" : entrypoint == 4 ? "pshufd" : "addps"));
         });
     }
 #endif

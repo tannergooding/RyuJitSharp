@@ -305,7 +305,7 @@ internal static class CodeGenStackArgumentTests
 #if DEBUG
     [TestCase(false)]
     [TestCase(true)]
-    public static void D005RejectsBeforeStructContextConsumptionAndScratchOwnership(bool directStructEntry)
+    public static void DspCodeRecordsStructStackArgumentsAndConsumesAddress(bool directStructEntry)
     {
         WithStackArea((compiler, codeGen) =>
         {
@@ -314,13 +314,10 @@ internal static class CodeGenStackArgumentTests
             var argument = Argument(compiler, source, 40, 24, false);
             argument._kind = GenTreePutArgStk.Kind.Unroll;
             argument.ArgLoadSize = 17;
-            var temps = Mask(REG_RAX) | Mask(REG_XMM1);
-            codeGen.InternalRegisters.Add(argument, temps);
+            codeGen.InternalRegisters.Add(argument, Mask(REG_RAX) | Mask(REG_XMM1));
             codeGen.GCInfo.gcMarkRegPtrVal(REG_R10, TYP_BYREF);
             StackArgVariable(codeGen) = directStructEntry ? 1 : BAD_VAR_NUM;
             StackArgOffset(codeGen) = directStructEntry ? 40 : 123;
-            var oldVariable = StackArgVariable(codeGen);
-            var oldOffset = StackArgOffset(codeGen);
             compiler.opts.dspCode = true;
 
             void Generate()
@@ -335,21 +332,11 @@ internal static class CodeGenStackArgumentTests
                 }
             }
 
-            var exception = Assert.Throws<FatalJitException>(Generate);
-
-            Assert.That(exception, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            Assert.That(StackArgVariable(codeGen), Is.EqualTo(oldVariable));
-            Assert.That(StackArgOffset(codeGen), Is.EqualTo(oldOffset));
-            Assert.That(codeGen.InternalRegisters.GetAll(argument), Is.EqualTo(temps));
-            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(Mask(REG_R10)));
-            AssertConsumed(address, false);
-
-            compiler.opts.dspCode = false;
-            Generate();
+            var diagnostic = InstructionRecordingTestSupport.Capture(Generate);
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(4));
             Assert.That(StackArgVariable(codeGen), Is.EqualTo(directStructEntry ? 1 : BAD_VAR_NUM));
             AssertConsumed(address, true);
+            Assert.That(diagnostic, Is.Not.Empty);
         });
     }
 #endif

@@ -175,16 +175,20 @@ internal static class CodeGenEHTransferTests
 #if DEBUG
     [TestCase(false)]
     [TestCase(true)]
-    public static void D005RejectsBeforeCallsLabelsOrGcChanges(bool catchReturn)
+    public static void DspCodeRecordsEhTransfersAndGcState(bool catchReturn)
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var target = Label();
             var block = Transfer(catchReturn ? BBJ_EHCATCHRET : BBJ_CALLFINALLY, target);
+            if (!catchReturn)
+            {
+                block.SetFlags(BBF_RETLESS_CALL);
+            }
             compiler.compCurBB = block;
             compiler.opts.dspCode = true;
 
-            _ = Assert.Throws<FatalJitException>(() =>
+            var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
                 if (catchReturn)
                 {
@@ -196,9 +200,9 @@ internal static class CodeGenEHTransferTests
                 }
             });
 
-            Assert.That(Descriptors(codeGen), Is.Empty);
+            Assert.That(Descriptors(codeGen), Is.Not.Empty);
             Assert.That(NoGcRequests(codeGen.Emitter), Is.Zero);
-            Assert.That(target.bbEmitCookie, Is.Null);
+            Assert.That(diagnostic, Is.Not.Empty);
         });
     }
 #endif

@@ -284,13 +284,13 @@ internal static unsafe class CodeGenOperandTests
 #if DEBUG
     [TestCase(false)]
     [TestCase(true)]
-    public static void DisassemblyRejectionPrecedesConstantAllocation(bool immediate)
+    public static void DisassemblyRecordsSimdConstantOperands(bool immediate)
     {
         WithCodeGen((compiler, codeGen) =>
         {
             var value = new GenTreeVecCon(TYP_SIMD16) { IsContained = true };
             compiler.opts.dspCode = true;
-            _ = Assert.Throws<FatalJitException>(() =>
+            var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
                 if (immediate)
                 {
@@ -302,7 +302,8 @@ internal static unsafe class CodeGenOperandTests
                 }
             });
 
-            Assert.That(codeGen.Emitter.emitConsDsc.dsdOffs, Is.Zero);
+            Assert.That(codeGen.Emitter.emitConsDsc.dsdOffs, Is.GreaterThan(0));
+            Assert.That(diagnostic, Does.Contain(immediate ? "pshufd" : "vpand"));
         });
     }
 #endif

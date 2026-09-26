@@ -32,11 +32,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Generation/emission phase bodies, EH publication, BitStreamWriter and LSRA summary are integrated at991Debug/920Release. Begin the complete Windows-AMD64 GcInfoEncoder: native inc/gcinfoencoder.h:327-550 and gcinfo/gcinfoencoder.cpp:447-2433; Build starts914. First settle shared native encoding types/fields, then parallelize noninterfering encoder support, JIT GC table construction (gcencode.cpp:3866 onward) and late-disassembly support. Reuse BitStreamWriter, existing GC lifetime records and EE allocation interfaces. Required remaining entrypoints are genCreateAndStoreGCInfoX64 (codegenxarch.cpp:8384-8490), genEmitUnwindDebugGCandEH (codegencommon.cpp:2616-2722), rsSpillDone (regset.cpp:963) and tmpDone (compiler.hpp:3404). Disassembler.disAsmCode and late-disassembly opening/cleanup are also missing; do not silently skip requested output. D008/B238 explicitly reject unported CSE metrics. Keep genGenerateCode skipped and managed code size zero until complete runtime publication is ready.",
+    "nextAction": "GC/runtime-metadata batch validated at2738Debug/2530Release with no failures or skips; ten native encoder fixtures match and B240/B242 have failing-old/passing-fixed regressions. All workers collected/frozen. Commit this coherent batch if still uncommitted, then implement complete genGenerateCode orchestration at native codegencommon.cpp:2151-2216 using existing DoPhase(Compiler,Phases,Action), scoped output addresses and Debug extra helper queries. Add whole-driver coverage using the real CodeGenMetadataPhaseTests fixture; update LoweringPhaseTests, which still expects the former emission skip. Preserve D008 CSE metrics and D009 optional late-disassembly rejection. Publish a fresh local NativeAOT binary and run scripts/porting/Invoke-PortingCorpus.ps1 -MinOpts against the established native host, verifying actual managed bytes/execution instead of fallback. Managed production code size remains zero until activation.",
     "handoff": {
-      "status": "generation-emission-phases-validated",
+      "status": "gc-metadata-validated-awaiting-generation-driver",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All current packets are frozen, integrated and collected: d62fc6a5-a4dd-40be-8b42-5de1405b22b7 EH publication through turn54; 942a496f-db30-4389-a403-265f28fdb23c BitStreamWriter through turn46; 6a004941-37d2-4a3d-b2f4-0d1a35021099 LSRA summary/phase tests through turn19. All are idle with no unread handoffs. Parent supplied phase integration, shared interfaces, fixture/analyzer integration, D008 and expanded validation. No app-native child-session coordination.",
+      "workerPackets": "All collected, integrated and frozen: 942a496f-db30-4389-a403-265f28fdb23c through turn56 (encoder plus native B240/B242 regressions); d62fc6a5-a4dd-40be-8b42-5de1405b22b7 through turn60 (GC tables/final metadata tests); 6a004941-37d2-4a3d-b2f4-0d1a35021099 through turn26 (D005 diagnostics and deferred late mode). Parent integrated run passes2738Debug/2530Release. No outstanding worker edits or builds. No app-native child-session coordination.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -52,6 +52,23 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "runtimeMetadata": {
+        "debugPassed": 2738,
+        "releasePassed": 2530,
+        "skipped": 0,
+        "debugTests": "artifacts\\runtime-metadata-debug.trx",
+        "releaseTests": "artifacts\\runtime-metadata-release.trx",
+        "selection": "All test-class files changed by the metadata batch relative to5ba5c91 plus CompilerFinalFrameLayoutTests; join each class with FullyQualifiedName~ and |. Run dotnet test tests\\Core\\RyuJitSharp.UnitTests.csproj -c <Debug|Release> --no-restore --filter <selection> with TRX logging.",
+        "coverage": "Actual generation, emission and final publication preserve unwind-reservation/allocation/unwind/debug/GC ordering and executable/writable aliases. GC headers, two-pass slots/liveness, filter splitting/diagnostics, full/partial interruptibility, compression, Debug measurements, cleanup and raw hex are covered. Async callbacks poison transferred buffers without corrupting subsequent diagnostics. D005 recording cases exercise native display together with descriptor, GC and ownership behavior. Requested D009 late disassembly rejects before phase mutation/publication.",
+        "nativeEncoder": {
+          "cases": 10,
+          "reproduction": "Run artifacts\\gcinfo-native-oracle\\build-run.ps1 with the pinned Checked gcinfo_win_x64.lib; compare oracle-output.txt with GcInfoEncoderTests. The retained probe invokes the actual native encoder.",
+          "librarySha256": "5DB9228452A36D62BA1C66EC1985F1B265EBBF1CD3FDBBF11ACFA65918EBDFEA",
+          "b240": "artifacts\\gcinfo-b240-regression: correct-before2/2, mutant1pass/1fail (fat untracked slots), correct-after2/2. Source restored to SHA2563295D815AFC4F3E02AE9B48D7708EB77221B03D9795D50F5905F18FB47ADD662.",
+          "b242": "artifacts\\gcinfo-b242-regression: old slot-only comparator fails dense 36-transition/three-slot native fixture at byte10 (E2 instead of41); two-key comparator passes all10 encoder tests in Debug/Release. Exact final hashes are retained in final-hashes.sha256."
+        },
+        "remaining": "genGenerateCode remains explicitly skipped and managed production code size remains zero. Next wire the complete driver, publish locally and capture native-host results. Optional late disassembly requires an approved exact callback ABI solution (D009/B241), not buffered output substitution."
+      },
       "generationEmissionPhases": {
         "debugPassed": 991,
         "releasePassed": 920,
@@ -3974,6 +3991,43 @@
   },
   "sourceMap": [
     {
+      "area": "runtime-gc-metadata-and-immediate-diagnostics",
+      "native": [
+        "src\\coreclr\\gcinfo\\gcinfoencoder.cpp",
+        "src\\coreclr\\inc\\gcinfoencoder.h",
+        "src\\coreclr\\jit\\gcencode.cpp:86-275,3866-4710",
+        "src\\coreclr\\jit\\codegenxarch.cpp:8247,8384-8490",
+        "src\\coreclr\\jit\\codegencommon.cpp:2616-2722,7190-7251",
+        "src\\coreclr\\jit\\emit.cpp:1611,4099-4330",
+        "src\\coreclr\\jit\\regset.cpp:963",
+        "src\\coreclr\\jit\\compiler.hpp:3404",
+        "src\\coreclr\\jit\\utils.cpp:1420"
+      ],
+      "csharp": [
+        "sources\\Core\\gcinfo\\GcInfoEncoder.Types.cs",
+        "sources\\Core\\gcinfo\\GcInfoEncoder.Collection.cs",
+        "sources\\Core\\gcinfo\\GcInfoEncoder.Build.cs",
+        "sources\\Core\\gcinfo\\GcInfoEncoder.Vectors.cs",
+        "sources\\Core\\gcinfo\\GcInfoEncoder.Lifetimes.cs",
+        "sources\\Core\\gcinfo\\GcInfoEncoder.Measurements.cs",
+        "sources\\Core\\jit\\gcencode\\GCInfo.HeaderEncoding.cs",
+        "sources\\Core\\jit\\gcencode\\GCInfo.TableSlots.cs",
+        "sources\\Core\\jit\\gcencode\\GCInfo.FilterLifetimes.cs",
+        "sources\\Core\\jit\\gcencode\\GCInfo.EncoderLogging.cs",
+        "sources\\Core\\jit\\gcencode\\GCInfo.EmitterNoGcRanges.cs",
+        "sources\\Core\\jit\\codegenxarch\\CodeGen.GCInfoPublication.cs",
+        "sources\\Core\\jit\\codegencommon\\CodeGen.MetadataPhase.cs",
+        "sources\\Core\\jit\\codegencommon\\CodeGen.AsyncDebugInfoPublication.cs",
+        "sources\\Core\\jit\\emitxarch\\Emitter.StackStores.cs",
+        "sources\\Core\\jit\\emit\\Emitter.GroupDiagnostics.cs",
+        "sources\\Core\\jit\\regsset\\RegSet.SpillTracking.cs",
+        "sources\\Core\\jit\\utils\\Globals.HexDump.cs"
+      ],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete Windows-AMD64 encoder, header/two-pass liveness tables, filter splitting and final unwind/debug/GC/EH publication. Immediate instruction and group diagnostics restore D005; optional late disassembly remains explicitly rejected under D009. Integrated2738Debug/2530Release cases pass; encoder bytes match ten native fixtures, including B240/B242 negative controls. Production genGenerateCode remains explicitly skipped."
+    },
+    {
       "area": "generation-emission-phases-and-eh-publication",
       "native": [
         "src\\coreclr\\jit\\codegencommon.cpp:2221-2611,genReportEH,genReportEHClauses",
@@ -4006,7 +4060,7 @@
       ],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Complete little-endian 64-bit bitstream writer, size calculation, copy/disposal and variable-length encodings, using managed 128-byte blocks. Exact-byte and boundary tests pass; the containing GC encoder remains unported."
+      "status": "Complete little-endian 64-bit bitstream writer, size calculation, copy/disposal and variable-length encodings, using managed 128-byte blocks. Exact-byte and boundary tests pass; the containing encoder is tracked under runtime-gc-metadata-and-immediate-diagnostics."
     },
     {
       "area": "final-instruction-emission-and-costs",

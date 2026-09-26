@@ -17,6 +17,11 @@ public partial struct RegSet
         rsSpillChk();
     }
 
+    public readonly void rsSpillDone()
+    {
+        rsSpillChk();
+    }
+
     public readonly void tmpEnd()
     {
 #if DEBUG
@@ -36,6 +41,21 @@ public partial struct RegSet
         {
             assert(_rsSpillDesc[(int)reg] is null);
         }
+#endif
+    }
+
+    public readonly void tmpDone()
+    {
+#if DEBUG
+        assert(tmpGetAllFree());
+        var count = 0;
+        for (var temp = tmpListBeg(); temp is not null; temp = tmpListNxt(temp))
+        {
+            assert(temp.tdLegalOffset);
+            count++;
+        }
+        assert(count == tmpCount);
+        assert(tmpGetCount == 0);
 #endif
     }
 }

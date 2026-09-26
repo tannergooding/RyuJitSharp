@@ -245,7 +245,7 @@ internal static unsafe class EmitterStaticFieldInstructionTests
     [TestCase(1, true)]
     [TestCase(2, true)]
     [TestCase(2, false)]
-    public static void DisassemblyRejectsBeforeRecordingOrTheLegacyDestinationCopy(int entrypoint, bool vex)
+    public static void DisassemblyRecordsStaticOperandsAndLegacyCopies(int entrypoint, bool vex)
     {
         WithEmitter((compiler, emitter) =>
         {
@@ -253,7 +253,7 @@ internal static unsafe class EmitterStaticFieldInstructionTests
             emitter.UseVexEncodings = vex;
             compiler.opts.dspCode = true;
             var used = Used(emitter);
-            var exception = Assert.Throws<FatalJitException>(() =>
+            var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
                 var field = Compiler.eeFindJitDataOffs(64);
                 switch (entrypoint)
@@ -278,11 +278,11 @@ internal static unsafe class EmitterStaticFieldInstructionTests
                 }
             });
 
-            Assert.That(exception, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(Used(emitter), Is.EqualTo(used));
-            Assert.That(CurrentCount(emitter), Is.Zero);
-            Assert.That(CurrentSize(emitter), Is.Zero);
-            Assert.That(LastInstruction(emitter), Is.Null);
+            Assert.That(Used(emitter), Is.GreaterThan(used));
+            Assert.That(CurrentCount(emitter), Is.GreaterThan(0));
+            Assert.That(CurrentSize(emitter), Is.GreaterThan(0));
+            Assert.That(LastInstruction(emitter), Is.Not.Null);
+            Assert.That(diagnostic, Does.Contain(entrypoint == 0 ? "movss" : "addps"));
         });
     }
 #endif

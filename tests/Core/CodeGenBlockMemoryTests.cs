@@ -287,7 +287,7 @@ internal static class CodeGenBlockMemoryTests
 #if DEBUG
     [TestCase(BlkOpKindUnroll)]
     [TestCase(BlkOpKindUnrollMemmove)]
-    public static void D005PrecedesGcDisableAddressConsumptionAndTempExtraction(BlkOpKind kind)
+    public static void DspCodeRecordsBlockStoresAndRestoresGcInterruptibility(BlkOpKind kind)
     {
         WithMemory(16, true, (compiler, codeGen) =>
         {
@@ -296,13 +296,14 @@ internal static class CodeGenBlockMemoryTests
             codeGen.InternalRegisters.Add(node, Mask(REG_R8));
             compiler.opts.dspCode = true;
 
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genCodeForStoreBlk(node));
+            var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCodeForStoreBlk(node));
 
-            Assert.That(Descriptors(codeGen), Is.Empty);
+            Assert.That(Descriptors(codeGen), Is.Not.Empty);
+            Assert.That(diagnostic, Is.Not.Empty);
             Assert.That(NoGcRequests(codeGen.Emitter), Is.Zero);
-            Assert.That(codeGen.InternalRegisters.Count(node), Is.EqualTo(1u));
+            Assert.That(codeGen.InternalRegisters.Count(node), Is.Zero);
             Assert.That(node.Addr._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
+                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
         });
     }
 #endif

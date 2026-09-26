@@ -70,20 +70,25 @@ internal static unsafe class CodeGenReturnTrapTests
 
 #if DEBUG
     [Test]
-    public static void DisassemblyRejectsBeforeConsumingTrapOperandsOrTemporaries()
+    public static void DisassemblyRecordsReturnTrapsAndConsumesAssignedTemporary()
     {
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             var tree = new GenTreeUnOp(GT_RETURNTRAP, TYP_VOID, Register(compiler, TYP_INT, REG_RAX));
             codeGen.InternalRegisters.Add(tree, RBM_R11);
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.getHelperFtn = &GetHelperFtn;
+            vtable.getRelocTypeHint = &GetRelocTypeHint;
+            var context = new HelperContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
+            compiler.info.compCompHnd = &context.JitInfo;
+            compiler.info.compMatchedVM = true;
             compiler.opts.dspCode = true;
+            var first = codeGen.Emitter.emitCurIG;
 
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genCodeForReturnTrap(tree));
-
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            Assert.That(codeGen.InternalRegisters.GetAll(tree), Is.EqualTo(RBM_R11));
-            compiler.opts.dspCode = false;
-            codeGen.genCodeForReturnTrap(tree);
+            var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCodeForReturnTrap(tree));
+            Assert.That(CodeGenLocalHeapTests.AllDescriptors(first, codeGen), Is.Not.Empty);
+            Assert.That(codeGen.InternalRegisters.GetAll(tree), Is.EqualTo(default(regMaskTP)));
+            Assert.That(diagnostic, Does.Contain("call"));
         });
     }
 #endif

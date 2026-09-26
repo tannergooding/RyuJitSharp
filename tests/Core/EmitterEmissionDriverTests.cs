@@ -25,6 +25,26 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class EmitterEmissionDriverTests
 {
+#if DEBUG
+    [Test]
+    public static void DspCodePrintsWhileRecordingWithoutChangingEmittedBytes()
+    {
+        WithDriver((compiler, _, emitter, allocation) =>
+        {
+            compiler.opts.dspCode = true;
+            var recording = Capture(() => emitter.emitIns(INS_ret));
+            Assert.That(recording, Does.Contain("ret"));
+            FinishRecording(compiler, emitter);
+
+            var result = End(compiler, emitter);
+            Assert.That(result.Actual, Is.EqualTo(2u));
+            Assert.That(new ReadOnlySpan<byte>(allocation->HotRW, 2).ToArray(),
+                Is.EqualTo(Convert.FromHexString("90C3")));
+            Assert.That(compiler.Metrics.ActualCodeBytes, Is.EqualTo(2));
+        });
+    }
+#endif
+
     [TestCase(true, false)]
 #if DEBUG
     [TestCase(false, true)]

@@ -316,15 +316,17 @@ internal static class CodeGenRegisterValueTests
 
 #if DEBUG
     [Test]
-    public static void StackLoadsRejectOptionalDisassemblyBeforeRecording()
+    public static void DspCodeRecordsStackLoads()
     {
         CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, tree) =>
         {
             compiler.opts.dspCode = true;
 
-            _ = Assert.Throws<FatalJitException>(() => codeGen.Emitter.emitIns_R_S(INS_mov, EA_4BYTE, REG_RAX, 0, 0));
+            var diagnostic = InstructionRecordingTestSupport.Capture(
+                () => codeGen.Emitter.emitIns_R_S(INS_mov, EA_4BYTE, REG_RAX, 0, 0));
 
-            Assert.That(LastInstruction(codeGen.Emitter), Is.Null);
+            Assert.That(LastInstruction(codeGen.Emitter)?.idIns(), Is.EqualTo(INS_mov));
+            Assert.That(diagnostic, Does.Contain("mov"));
         });
     }
 #endif

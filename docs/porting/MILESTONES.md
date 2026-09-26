@@ -15,6 +15,24 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: GC encoding and final runtime metadata
+
+Windows-x64 GC metadata now covers header fields, register and stack slots,
+filter lifetimes, call-site states and fully interruptible ranges using native
+compression and ordering. Final publication connects unwind, instruction
+mappings, rich and async debug data, scopes, EH clauses and GC info in native
+order, followed by spill and temporary cleanup. Async diagnostics remain valid
+after ownership of their buffers transfers to the runtime.
+
+Immediate instruction and instruction-group diagnostics now accompany ordinary
+emission, removing the former verbose-JitDump restriction. Optional CoreDisTools
+late disassembly still rejects explicitly because its buffered API does not
+preserve decoder-error output; no diagnostic difference is accepted.
+
+The top-level generation driver remains the next activation boundary. These
+components do not yet establish managed production execution or whole-pipeline
+parity.
+
 ## 2026-09-25: Generation phases and EH publication
 
 The Windows-x64 generation and emission phase bodies now connect frame

@@ -325,22 +325,27 @@ internal static unsafe class CodeGenNodeDispatchTests
     }
 
     [Test]
-    public static void DisassemblyRejectsBeforeMarkerStateChanges()
+    public static void DspCodePreservesGcPreemptionMarkerTransitions()
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             codeGen.GCInfo.gcMarkRegSetGCref(RBM_RBX);
-            var group = codeGen.Emitter.emitCurIG;
+            var group = codeGen.Emitter.emitCurIG ?? throw new AssertionException("Missing current group.");
             compiler.opts.dspCode = true;
-            _ = Assert.Throws<FatalJitException>(() =>
+            _ = InstructionRecordingTestSupport.Capture(() =>
                 codeGen.genCodeForTreeNode(new GenTree(GT_START_PREEMPTGC, TYP_VOID)));
 
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_RBX));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_NONE));
             Assert.That(codeGen.Emitter.emitCurIG, Is.SameAs(group));
+            Assert.That(group.igFlags & InsGroupFlags.NoGCInterrupt, Is.EqualTo(InsGroupFlags.None));
+            Assert.That(AddedLabel(codeGen.Emitter), Is.True);
         });
     }
 #endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "genPendingCallLabel")]
     private static extern ref BasicBlock? PendingLabel(CodeGen codeGen);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitAddedLabel")]
+    private static extern ref bool AddedLabel(Emitter emitter);
 }

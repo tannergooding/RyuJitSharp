@@ -226,7 +226,7 @@ internal static class CodeGenMultiRegisterStoreTests
 
 #if DEBUG
     [Test]
-    public static void DisassemblyRejectionRetainsSpillOwnershipAndAllowsRetry()
+    public static void DisassemblyRecordsMultiRegisterSpills()
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
@@ -237,16 +237,11 @@ internal static class CodeGenMultiRegisterStoreTests
             var before = Descriptors(codeGen).Count;
             compiler.opts.dspCode = true;
 
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genMultiRegStoreToLocal(store));
-            Assert.That(Descriptors(codeGen), Has.Count.EqualTo(before));
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_RAX));
-            Assert.That(compiler.compCurLifeTree, Is.Null);
-            compiler.opts.dspCode = false;
-
-            codeGen.genMultiRegStoreToLocal(store);
+            var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genMultiRegStoreToLocal(store));
 
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(before + 3));
             Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
+            Assert.That(diagnostic, Does.Contain("mov"));
         });
     }
 #endif

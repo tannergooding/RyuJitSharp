@@ -317,11 +317,17 @@ internal static unsafe class CodeGenPrologInitializationTests
     [TestCase(2)]
     [TestCase(3)]
     [TestCase(4)]
-    public static void D005RejectsBeforeInstructionsAndScratchStateChange(int operation)
+    public static void DspCodeRecordsPrologInitializationAndPreservesUnneededContextNoOp(int operation)
     {
         WithProlog((compiler, codeGen) =>
         {
             compiler.opts.dspCode = true;
+            if (operation == 3)
+            {
+                compiler.compNeedsGSSecurityCookie = true;
+                compiler.lvaGSSecurityCookie = 0;
+                compiler.gsGlobalSecurityCookieVal = 0x1234;
+            }
             var zeroed = false;
 
             void Generate()
@@ -360,9 +366,9 @@ internal static unsafe class CodeGenPrologInitializationTests
                 }
             }
 
-            Assert.That(Assert.Throws<FatalJitException>(Generate)?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            Assert.That(zeroed, Is.False);
+            var diagnostic = InstructionRecordingTestSupport.Capture(Generate);
+            Assert.That(Descriptors(codeGen).Count > 0, Is.EqualTo(operation is not 2 and not 4));
+            Assert.That(diagnostic.Length > 0, Is.EqualTo(operation is not 2 and not 4));
         });
     }
 #endif

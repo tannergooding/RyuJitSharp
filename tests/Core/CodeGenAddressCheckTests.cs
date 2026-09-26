@@ -139,7 +139,7 @@ internal static class CodeGenAddressCheckTests
     [TestCase(GT_LEA)]
     [TestCase(GT_NULLCHECK)]
     [TestCase(GT_BOUNDS_CHECK)]
-    public static void DisassemblyRejectionLeavesCheckOperandsReusable(genTreeOps oper)
+    public static void DisassemblyRecordsAddressChecks(genTreeOps oper)
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
@@ -153,13 +153,11 @@ internal static class CodeGenAddressCheckTests
                     Register(compiler, TYP_LONG, REG_RCX), SCK_RNGCHK_FAIL)),
             };
             compiler.opts.dspCode = true;
-            _ = Assert.Throws<FatalJitException>(() => generate());
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            compiler.opts.dspCode = false;
             _ = CodeGenBinaryTests.PrepareThrowTarget(compiler, SCK_RNGCHK_FAIL);
 
-            generate();
+            var diagnostic = InstructionRecordingTestSupport.Capture(generate);
             Assert.That(Descriptors(codeGen), Is.Not.Empty);
+            Assert.That(diagnostic, Is.Not.Empty);
         });
     }
 #endif

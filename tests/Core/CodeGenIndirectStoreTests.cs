@@ -313,7 +313,7 @@ internal static unsafe class CodeGenIndirectStoreTests
     [TestCase(TYP_REF)]
     [TestCase(TYP_SIMD12)]
     [TestCase(TYP_SIMD16)]
-    public static void D005RejectsBeforeWriteBarrierSelectionAndOperandOrAddressMutation(var_types type)
+    public static void DspCodeRecordsIndirectStoresAndWriteBarriers(var_types type)
     {
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
@@ -330,17 +330,20 @@ internal static unsafe class CodeGenIndirectStoreTests
             var store = new GenTreeStoreInd(type, address, data);
             compiler.opts.dspCode = true;
 
-            var exception = Assert.Throws<FatalJitException>(() => codeGen.genCodeForStoreInd(store));
-
-            Assert.That(exception, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(codeGen.genWriteBarrierUsed, Is.False);
-            Assert.That(store.Addr, Is.SameAs(address));
-            Assert.That(immediate.IconValue, Is.EqualTo((nint)255));
+            var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCodeForStoreInd(store));
+            Assert.That(store.Addr, Is.Not.Null);
+            Assert.That(immediate.IconValue, Is.EqualTo(type == TYP_SIMD16 ? (nint)(-1) : 255));
             Assert.That(address._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
+                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
             Assert.That(data._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
-            Assert.That(Descriptors(codeGen), Is.Empty);
+                Is.EqualTo(type == TYP_SIMD16 ? GenTreeDebugFlags.GTF_DEBUG_NONE : GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
+            if (type == TYP_SIMD16)
+            {
+                Assert.That(data.AsHWIntrinsic().GetOp(1)._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                    Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
+            }
+            Assert.That(Descriptors(codeGen), Is.Not.Empty);
+            Assert.That(diagnostic, Is.Not.Empty);
         });
     }
 #endif

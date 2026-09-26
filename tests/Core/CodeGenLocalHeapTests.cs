@@ -195,18 +195,20 @@ internal static class CodeGenLocalHeapTests
 
 #if DEBUG
     [Test]
-    public static void D005RejectsBeforeConsumptionOrInternalRegisterUse()
+    public static void DspCodeRecordsLocalHeapAndConsumesScratchRegisters()
     {
         WithHeap(32, false, (compiler, codeGen) =>
         {
             var tree = Heap(compiler, 7, contained: false);
+            var first = codeGen.Emitter.emitCurIG;
             codeGen.InternalRegisters.Add(tree, RBM_RDX);
             compiler.opts.dspCode = true;
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genLclHeap(tree));
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            Assert.That(codeGen.InternalRegisters.Count(tree), Is.EqualTo(1u));
+            var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genLclHeap(tree));
+            Assert.That(AllDescriptors(first, codeGen), Is.Not.Empty);
+            Assert.That(diagnostic, Is.Not.Empty);
+            Assert.That(codeGen.InternalRegisters.Count(tree), Is.Zero);
             Assert.That(tree.Op1._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
+                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
         });
     }
 

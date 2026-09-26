@@ -222,14 +222,14 @@ internal static unsafe class EmitterUnaryInstructionTests
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]
-    public static void DisassemblyRejectsBeforeAllocationCopiesOrElision(int entrypoint)
+    public static void DisassemblyRecordsUnaryInstructionsAndRequiredCopies(int entrypoint)
     {
         CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (compiler, codeGen, _) =>
         {
             var emitter = codeGen.Emitter;
             compiler.opts.dspCode = true;
             var used = Used(emitter);
-            var exception = Assert.Throws<FatalJitException>(() =>
+            var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
                 if (entrypoint == 0)
                 {
@@ -241,11 +241,11 @@ internal static unsafe class EmitterUnaryInstructionTests
                 }
             });
 
-            Assert.That(exception, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(Used(emitter), Is.EqualTo(used));
-            Assert.That(CurrentCount(emitter), Is.Zero);
-            Assert.That(CurrentSize(emitter), Is.Zero);
-            Assert.That(LastInstruction(emitter), Is.Null);
+            Assert.That(Used(emitter), Is.GreaterThan(used));
+            Assert.That(CurrentCount(emitter), Is.GreaterThan(0));
+            Assert.That(CurrentSize(emitter), Is.GreaterThan(0));
+            Assert.That(LastInstruction(emitter), Is.Not.Null);
+            Assert.That(diagnostic, Does.Contain("neg"));
         });
     }
 #endif

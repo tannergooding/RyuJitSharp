@@ -87,19 +87,19 @@ public partial class Emitter
     internal void RequireSupportedInstructionRecording()
     {
         assert(_compiler is not null);
-#if DEBUG
-        if (_compiler.opts.dspCode)
-        {
-            throw new FatalJitException(CORJIT_SKIPPED, "Instruction recording with disassembly is not implemented.");
-        }
-#endif
     }
 
-    private void dispIns(instrDesc id)
+    private unsafe void dispIns(instrDesc id)
     {
 #if DEBUG
         RequireSupportedInstructionRecording();
         emitInsSanityCheck(id);
+        assert(_compiler is not null);
+        if (_compiler.opts.dspCode)
+        {
+            emitDispIns(id, true, false, false);
+        }
+
 #if EMIT_TRACK_STACK_DEPTH
         assert(unchecked((int)emitCurStackLvl) >= 0);
 #endif

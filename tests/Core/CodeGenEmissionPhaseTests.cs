@@ -145,6 +145,41 @@ internal static unsafe class CodeGenEmissionPhaseTests
     }
 
 #if DEBUG
+#if LATE_DISASM
+    [TestCase(0)]
+    [TestCase(1)]
+    [TestCase(2)]
+    public static void LateDisassemblyRejectsBeforePhaseMutationOrPublication(int phaseNumber)
+    {
+        WithEmission((compiler, codeGen, state) =>
+        {
+            void* hotCode = null;
+            var nativeSize = -1;
+            CodePointerAddress(codeGen) = &hotCode;
+            NativeSizeAddress(codeGen) = &nativeSize;
+            compiler.info.compTotalHotCodeSize = 19;
+            compiler.lvaDoneFrameLayout = Compiler.TENTATIVE_FRAME_LAYOUT;
+            compiler.opts.doLateDisasm = true;
+            Action phase = phaseNumber switch
+            {
+                0 => codeGen.genGenerateMachineCode,
+                1 => codeGen.genEmitMachineCode,
+                2 => codeGen.genEmitUnwindDebugGCandEH,
+                _ => throw new ArgumentOutOfRangeException(nameof(phaseNumber)),
+            };
+
+            var error = Assert.Throws<FatalJitException>(() => phase());
+
+            Assert.That(error, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
+            Assert.That(state->Calls, Is.Zero);
+            Assert.That((nuint)hotCode, Is.EqualTo((nuint)0));
+            Assert.That(nativeSize, Is.EqualTo(-1));
+            Assert.That(compiler.info.compTotalHotCodeSize, Is.EqualTo(19));
+            Assert.That(compiler.lvaDoneFrameLayout, Is.EqualTo(Compiler.TENTATIVE_FRAME_LAYOUT));
+        });
+    }
+#endif
+
     [Test]
     public static void MetricsModeRejectsBeforeCodeSizingReservationAllocationAndPublication()
     {

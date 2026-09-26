@@ -275,23 +275,24 @@ internal static unsafe class CodeGenCallTests
 
 #if DEBUG
     [Test]
-    public static void UnsupportedDisassemblyRejectsBeforeCallStateChanges()
+    public static void DisassemblyRecordsCallAndUpdatesCallState()
     {
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             var call = Call(TYP_REF, REG_RAX);
             var label = new BasicBlock(null, null);
             PendingLabel(codeGen) = label;
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.runWithSPMIErrorTrap = &InstructionRecordingTestSupport.UnavailableMethodMetadata;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
             compiler.opts.dspCode = true;
+            var first = codeGen.Emitter.emitCurIG;
 
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genCall(call));
-
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            Assert.That(PendingLabel(codeGen), Is.SameAs(label));
-            Assert.That(call._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED,
-                Is.EqualTo((GenTreeDebugFlags)0));
-            compiler.opts.dspCode = false;
-            codeGen.genCall(call);
+            var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCall(call));
+            Assert.That(CodeGenLocalHeapTests.AllDescriptors(first, codeGen).Exists(id => id.idIns() == INS_call), Is.True);
+            Assert.That(diagnostic, Does.Contain("call"));
+            Assert.That(diagnostic, Does.Contain("<unknown method>"));
         });
     }
 #endif

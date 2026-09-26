@@ -166,7 +166,7 @@ internal static unsafe class CodeGenUnaryTests
 #if DEBUG
     [TestCase(TYP_INT)]
     [TestCase(TYP_DOUBLE)]
-    public static void DisassemblyRejectionPrecedesConsumptionAndLeavesTheNodeReusable(var_types type)
+    public static void DisassemblyRecordsNegationAndConsumesOperand(var_types type)
     {
         WithCodeGen((compiler, codeGen) =>
         {
@@ -178,13 +178,10 @@ internal static unsafe class CodeGenUnaryTests
             tree.RegNum = operand.RegNum;
             compiler.opts.dspCode = true;
 
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genCodeForNegNot(tree.AsUnOp()));
-
-            Assert.That(codeGen.Emitter.emitConsDsc.dsdOffs, Is.Zero);
-            Assert.That(Descriptors(codeGen.Emitter), Is.Empty);
-            compiler.opts.dspCode = false;
-            codeGen.genCodeForNegNot(tree.AsUnOp());
+            var diagnostic = InstructionRecordingTestSupport.Capture(
+                () => codeGen.genCodeForNegNot(tree.AsUnOp()));
             Assert.That(Descriptors(codeGen.Emitter), Is.Not.Empty);
+            Assert.That(diagnostic, Is.Not.Empty);
         });
     }
 #endif

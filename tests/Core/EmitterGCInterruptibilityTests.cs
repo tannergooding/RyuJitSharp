@@ -1,5 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -182,7 +183,7 @@ internal static class EmitterGCInterruptibilityTests
 #if DEBUG
     [TestCase(false)]
     [TestCase(true)]
-    public static void D005RejectsBothTransitionsBeforeChangingRequestsFlagsOrInstructions(bool enable)
+    public static void DspCodePreservesGcInterruptibilityTransitions(bool enable)
     {
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
@@ -193,11 +194,9 @@ internal static class EmitterGCInterruptibilityTests
             }
             emitter.emitIns(INS_nop);
             var group = emitter.emitCurIG ?? throw new AssertionException("Missing group.");
-            var flags = group.igFlags;
-            var forceNewGroup = ForceNewGroup(emitter);
             compiler.opts.dspCode = true;
 
-            var exception = Assert.Throws<FatalJitException>(() =>
+            var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
                 if (enable)
                 {
@@ -209,13 +208,12 @@ internal static class EmitterGCInterruptibilityTests
                 }
             });
 
-            Assert.That(exception, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(RequestCount(emitter), Is.EqualTo(enable ? 1 : 0));
-            Assert.That(NoGcGroup(emitter), Is.EqualTo(enable));
-            Assert.That(ForceNewGroup(emitter), Is.EqualTo(forceNewGroup));
-            Assert.That(emitter.emitCurIG, Is.SameAs(group));
-            Assert.That(group.igFlags, Is.EqualTo(flags));
-            Assert.That(Descriptors(codeGen), Has.Count.EqualTo(1));
+            Assert.That(RequestCount(emitter), Is.EqualTo(enable ? 0 : 1));
+            Assert.That(NoGcGroup(emitter), Is.EqualTo(!enable));
+            Assert.That(ForceNewGroup(emitter), Is.EqualTo(enable));
+            Assert.That(emitter.emitCurIG, enable ? Is.SameAs(group) : Is.Not.SameAs(group));
+            Assert.That(CodeGenLocalHeapTests.AllDescriptors(group, codeGen), Has.Count.EqualTo(1));
+            Assert.That(diagnostic.Contains("G_M", StringComparison.Ordinal), Is.EqualTo(!enable));
         });
     }
 #endif

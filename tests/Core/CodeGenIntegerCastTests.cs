@@ -324,18 +324,15 @@ internal static class CodeGenIntegerCastTests
 
 #if DEBUG
     [Test]
-    public static void DisassemblyRejectsBeforeConsumingTheCastSource()
+    public static void DisassemblyRecordsIntegerCastAndConsumesSource()
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var cast = CreateCast(Register(compiler, TYP_INT, REG_RAX), false, TYP_LONG, false);
             compiler.opts.dspCode = true;
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genIntToIntCast(cast));
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            compiler.opts.dspCode = false;
-
-            codeGen.genIntToIntCast(cast);
+            var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genIntToIntCast(cast));
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(1));
+            Assert.That(diagnostic, Is.Not.Empty);
         });
     }
 #endif

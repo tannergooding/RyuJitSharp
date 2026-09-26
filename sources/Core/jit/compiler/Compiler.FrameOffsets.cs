@@ -7,6 +7,14 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    public unsafe int lvaGetCallerSPRelativeOffset(int varNum)
+    {
+        assert(lvaDoneFrameLayout == FINAL_FRAME_LAYOUT);
+        ref var descriptor = ref lvaGetDesc(varNum);
+        assert(descriptor.lvOnFrame);
+        return lvaToCallerSPRelativeOffset(descriptor.StackOffset, descriptor.lvFramePointerBased);
+    }
+
     public unsafe int lvaToCallerSPRelativeOffset(int offset, bool isFpBased, bool forRootFrame = true)
     {
 #if !TARGET_AMD64 || UNIX_AMD64_ABI

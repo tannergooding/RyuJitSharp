@@ -68,13 +68,8 @@ public partial class Emitter
         }
     }
 
-    public void emitDispIG(insGroup ig, bool displayFunc = false, bool displayInstructions = false, bool displayLocation = true)
+    public unsafe void emitDispIG(insGroup ig, bool displayFunc = false, bool displayInstructions = false, bool displayLocation = true)
     {
-        if (displayInstructions)
-        {
-            throw new FatalJitException(CORJIT_SKIPPED, "Instruction-group disassembly is not implemented.");
-        }
-
 #if !TARGET_AMD64
         throw new FatalJitException(CORJIT_SKIPPED, "Instruction-group diagnostics outside AMD64 are not implemented.");
 #else
@@ -225,17 +220,33 @@ public partial class Emitter
             }
 
             jitprintf("\n");
+
+            if (displayInstructions && (ig.igInsCnt != 0))
+            {
+                var instructions = ig.igData.AsSpan();
+                assert(instructions.Length >= ig.igInsCnt);
+                var offset = ig.igOffs;
+                jitprintf("\n");
+                for (var index = 0; index < ig.igInsCnt; index++)
+                {
+                    var instruction = instructions[index];
+                    if (emitJmpInstHasNoCode(instruction))
+                    {
+                        assert(index == ig.igInsCnt - 1);
+                        break;
+                    }
+
+                    emitDispIns(instruction, false, true, false, offset, null, 0, ig);
+                    offset = unchecked(offset + instruction.idCodeSize());
+                }
+                jitprintf("\n");
+            }
         }
 #endif
     }
 
     public void emitDispIGlist(bool displayInstructions = false)
     {
-        if (displayInstructions)
-        {
-            throw new FatalJitException(CORJIT_SKIPPED, "Instruction-group disassembly is not implemented.");
-        }
-
 #if !EMIT_BACKWARDS_NAVIGATION
         insGroup? previous = null;
 #endif
@@ -247,7 +258,7 @@ public partial class Emitter
             var displayFunc = (previous is null) || (previous.igFuncIdx != ig.igFuncIdx);
             previous = ig;
 #endif
-            emitDispIG(ig, displayFunc);
+            emitDispIG(ig, displayFunc, displayInstructions);
         }
     }
 

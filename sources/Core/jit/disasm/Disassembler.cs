@@ -20,11 +20,6 @@ public partial struct Disassembler
     private bool _diffable;
     private StreamWriter? _disAsmFile;
 
-#if USE_COREDISTOOLS
-    private static StreamWriter? s_disAsmFileCorDisTools;
-    private nint _corDisasm;
-#endif
-
     public void disInit(Compiler compiler)
     {
         assert(compiler is not null);
@@ -36,21 +31,29 @@ public partial struct Disassembler
         _relocationMap = null;
         _diffable = false;
         _disAsmFile = null;
-
-#if USE_COREDISTOOLS
-        s_disAsmFileCorDisTools = null;
-        _corDisasm = 0;
-#endif
     }
 
     public readonly void disDone()
     {
-        // TODO: Port Disassembler.disDone
     }
 
     public readonly unsafe void disOpenForLateDisAsm(string curMethodName, string curClassName, PCCOR_SIGNATURE sig)
     {
-        // TODO: Port Disassembler.disOpenForLateDisAsm
+        var compiler = _compiler ?? throw new FatalJitException("Disassembler has not been initialized.");
+        if (compiler.opts.doLateDisasm)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Late disassembly requires the native CoreDisTools callback ABI.");
+        }
+    }
+
+    public readonly unsafe void disAsmCode(byte* hotCodePtr, byte* hotCodePtrRW, uint hotCodeSize,
+        byte* coldCodePtr, byte* coldCodePtrRW, uint coldCodeSize)
+    {
+        var compiler = _compiler ?? throw new FatalJitException("Disassembler has not been initialized.");
+        if (compiler.opts.doLateDisasm)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Late disassembly requires the native CoreDisTools callback ABI.");
+        }
     }
 }
 #endif

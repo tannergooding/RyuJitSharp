@@ -320,13 +320,13 @@ internal static class EmitterAddressInstructionTests
 
     [TestCase(false)]
     [TestCase(true)]
-    public static void DisassemblyRejectsBeforeRecordingEitherEntryPoint(bool data16)
+    public static void DisassemblyRecordsAddressAndPrefixInstructions(bool data16)
     {
         WithEmitter((compiler, emitter) =>
         {
             compiler.opts.dspCode = true;
             var used = Used(emitter);
-            var exception = Assert.Throws<FatalJitException>(() =>
+            var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
                 if (data16)
                 {
@@ -338,11 +338,11 @@ internal static class EmitterAddressInstructionTests
                 }
             });
 
-            Assert.That(exception, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(Used(emitter), Is.EqualTo(used));
-            Assert.That(CurrentCount(emitter), Is.Zero);
-            Assert.That(CurrentSize(emitter), Is.Zero);
-            Assert.That(LastInstruction(emitter), Is.Null);
+            Assert.That(Used(emitter), Is.GreaterThan(used));
+            Assert.That(CurrentCount(emitter), Is.EqualTo(1));
+            Assert.That(CurrentSize(emitter), Is.GreaterThan(0));
+            Assert.That(LastInstruction(emitter), Is.Not.Null);
+            Assert.That(diagnostic, Does.Contain(data16 ? "data16" : "lea"));
         });
     }
 #endif

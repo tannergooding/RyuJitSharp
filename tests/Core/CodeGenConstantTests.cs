@@ -298,43 +298,45 @@ internal static unsafe class CodeGenConstantTests
     [TestCase(1)]
     [TestCase(2)]
     [TestCase(3)]
-    public static void DisassemblyRejectionPrecedesConstantDataOrGcMutation(int kind)
+    public static void DspCodeRecordsConstantsAndUpdatesGcState(int kind)
     {
         WithCodeGen((compiler, codeGen) =>
         {
             compiler.opts.dspCode = true;
             codeGen.GCInfo.gcMarkRegPtrVal(REG_RAX, TYP_REF);
             var before = codeGen.GCInfo.gcRegGCrefSetCur;
+            string diagnostic;
             if (kind == 0)
             {
                 compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI;
                 var tree = compiler.gtNewIconNode(TYP_I_IMPL, 0x1234);
                 tree.Flags |= GTF_ICON_TLSGD_OFFSET;
-                _ = Assert.Throws<FatalJitException>(() => codeGen.genSetRegToConst(REG_RCX, TYP_I_IMPL, tree));
+                diagnostic = InstructionRecordingTestSupport.Capture(
+                    () => codeGen.genSetRegToConst(REG_RCX, TYP_I_IMPL, tree));
             }
             else if (kind == 1)
             {
                 var value = Pattern(16, 16);
-                _ = Assert.Throws<FatalJitException>(() =>
-                    codeGen.Emitter.emitSimdConstCompressedLoad(in value, EA_16BYTE, REG_XMM1));
+                diagnostic = InstructionRecordingTestSupport.Capture(
+                    () => codeGen.Emitter.emitSimdConstCompressedLoad(in value, EA_16BYTE, REG_XMM1));
             }
             else if (kind == 2)
             {
                 simdmask_t value = default;
                 value.u64[0] = 1;
-                _ = Assert.Throws<FatalJitException>(() =>
-                    codeGen.genSetRegToConst(REG_K1, TYP_MASK, in value));
+                diagnostic = InstructionRecordingTestSupport.Capture(
+                    () => codeGen.genSetRegToConst(REG_K1, TYP_MASK, in value));
             }
             else
             {
                 var tree = compiler.gtNewDconNode(TYP_DOUBLE, 1.5);
-                _ = Assert.Throws<FatalJitException>(() =>
-                    codeGen.genSetRegToConst(REG_XMM1, TYP_DOUBLE, tree));
+                diagnostic = InstructionRecordingTestSupport.Capture(
+                    () => codeGen.genSetRegToConst(REG_XMM1, TYP_DOUBLE, tree));
             }
 
-            Assert.That(codeGen.Emitter.emitConsDsc.dsdOffs, Is.Zero);
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(before));
-            Assert.That(InstructionCount(codeGen.Emitter), Is.Zero);
+            Assert.That(InstructionCount(codeGen.Emitter), Is.GreaterThan(0));
+            Assert.That(diagnostic, Is.Not.Empty);
         });
     }
 #endif

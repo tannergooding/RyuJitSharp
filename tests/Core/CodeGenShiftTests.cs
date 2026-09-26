@@ -225,7 +225,7 @@ internal static unsafe class CodeGenShiftTests
 
 #if DEBUG
     [Test]
-    public static void DisassemblyRejectionPrecedesOperandConsumption()
+    public static void DisassemblyRecordsShiftOperandsOnce()
     {
         WithCodeGen((compiler, codeGen) =>
         {
@@ -233,11 +233,9 @@ internal static unsafe class CodeGenShiftTests
             var count = Register(compiler, TYP_INT, REG_RCX);
             var tree = new GenTreeOp(GT_LSH, TYP_INT, value, count) { RegNum = REG_RDX };
             compiler.opts.dspCode = true;
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genCodeForShift(tree));
-            compiler.opts.dspCode = false;
-
-            codeGen.genCodeForShift(tree);
+            var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCodeForShift(tree));
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(2));
+            Assert.That(diagnostic, Does.Contain("shl"));
         });
     }
 #endif

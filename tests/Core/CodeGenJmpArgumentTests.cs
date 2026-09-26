@@ -249,16 +249,14 @@ internal static unsafe class CodeGenJmpArgumentTests
 #if DEBUG
     [TestCase(false)]
     [TestCase(true)]
-    public static void D005RejectsBeforeSpillsProfilerGcAndGroupMutation(bool varargsEntry)
+    public static void DspCodeRecordsJmpArgumentsAndUpdatesGcState(bool varargsEntry)
     {
         WithJmp((compiler, codeGen) =>
         {
             Configure(compiler, codeGen, [TYP_REF], [REG_RDX], [REG_RCX]);
             compiler.info.compIsVarArgs = true;
             var jump = new GenTreeVal(GT_JMP, TYP_VOID, 0);
-            var group = codeGen.Emitter.emitCurIG ?? throw new AssertionException("Missing instruction group.");
-            var mask = codeGen.RegSet.GetMaskVars();
-            var stackRoots = (nint[])codeGen.GCInfo.gcVarPtrSetCur.Clone();
+            Assert.That(codeGen.Emitter.emitCurIG, Is.Not.Null);
             compiler.opts.dspCode = true;
 
             void Generate()
@@ -273,20 +271,10 @@ internal static unsafe class CodeGenJmpArgumentTests
                 }
             }
 
-            var exception = Assert.Throws<FatalJitException>(Generate);
-            Assert.That(exception, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            Assert.That(codeGen.Emitter.emitCurIG, Is.SameAs(group));
-            Assert.That(NoGcRequests(codeGen.Emitter), Is.Zero);
-            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(mask));
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(REG_RDX)));
-            Assert.That(codeGen.GCInfo.gcVarPtrSetCur, Is.EqualTo(stackRoots));
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_RDX));
-            Assert.That(compiler.info.compProfilerCallback, Is.False);
-
-            compiler.opts.dspCode = false;
-            Generate();
+            var diagnostic = InstructionRecordingTestSupport.Capture(Generate);
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(6));
+            Assert.That(NoGcRequests(codeGen.Emitter), Is.Zero);
+            Assert.That(diagnostic, Is.Not.Empty);
         });
     }
 #endif

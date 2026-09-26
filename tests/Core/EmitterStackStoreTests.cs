@@ -107,12 +107,12 @@ internal static unsafe class EmitterStackStoreTests
 #if DEBUG
     [TestCase(false)]
     [TestCase(true)]
-    public static void UnportedInstructionDisassemblyRejectsBeforeDescriptorAllocation(bool immediate)
+    public static void InstructionDisplayRecordsStackStoresAndTheirNativeSizes(bool immediate)
     {
         var emitter = CreateEmitter(out var compiler);
         compiler.opts.dspCode = true;
         var before = Used(emitter);
-        var exception = Assert.Throws<FatalJitException>(() =>
+        var diagnostic = InstructionRecordingTestSupport.Capture(() =>
         {
             if (immediate)
             {
@@ -124,11 +124,11 @@ internal static unsafe class EmitterStackStoreTests
             }
         });
 
-        Assert.That(exception, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-        Assert.That(Used(emitter), Is.EqualTo(before));
-        Assert.That(CurrentCount(emitter), Is.Zero);
-        Assert.That(CurrentSize(emitter), Is.Zero);
-        Assert.That(LastInstruction(emitter), Is.Null);
+        Assert.That(Used(emitter), Is.GreaterThan(before));
+        Assert.That(CurrentCount(emitter), Is.EqualTo(1));
+        Assert.That(CurrentSize(emitter), Is.EqualTo(immediate ? 7 : 4));
+        Assert.That(LastInstruction(emitter)?.idIns(), Is.EqualTo(immediate ? INS_extractps : INS_mov));
+        Assert.That(diagnostic, Does.Contain(immediate ? "extractps" : "mov"));
     }
 #endif
 

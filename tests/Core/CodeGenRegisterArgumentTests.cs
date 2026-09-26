@@ -1,5 +1,8 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+#if DEBUG
+using System;
+#endif
 using NUnit.Framework;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
@@ -242,7 +245,7 @@ internal static class CodeGenRegisterArgumentTests
     [TestCase(false, true)]
     [TestCase(true, false)]
     [TestCase(true, true)]
-    public static void UnsupportedDiagnosticsRejectBeforeConsumptionAndAllowRetry(bool placement, bool alias)
+    public static void DspCodeRecordsRegisterArgumentsAndGcState(bool placement, bool alias)
     {
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
@@ -256,10 +259,6 @@ internal static class CodeGenRegisterArgumentTests
             _ = AddArgument(compiler, call, argument, AbiPassingSegment.InRegister(REG_RCX, 0, 8));
             codeGen.GCInfo.gcMarkRegPtrVal(sourceReg, TYP_REF);
             codeGen.GCInfo.gcMarkRegPtrVal(REG_R10, TYP_BYREF);
-            var sourceFlags = source._debugFlags;
-            var argumentFlags = argument._debugFlags;
-            var group = codeGen.Emitter.emitCurIG ?? throw new AssertionException("Missing instruction group.");
-            var groupSize = group.igSize;
             compiler.opts.dspCode = true;
 
             void Generate()
@@ -274,22 +273,12 @@ internal static class CodeGenRegisterArgumentTests
                 }
             }
 
-            _ = Assert.Throws<FatalJitException>(Generate);
-
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            Assert.That(codeGen.Emitter.emitCurIG, Is.SameAs(group));
-            Assert.That(group.igSize, Is.EqualTo(groupSize));
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(sourceReg)));
-            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(Mask(REG_R10)));
-            Assert.That(source._debugFlags, Is.EqualTo(sourceFlags));
-            Assert.That(argument._debugFlags, Is.EqualTo(argumentFlags));
-
-            compiler.opts.dspCode = false;
-            Generate();
+            var diagnostic = InstructionRecordingTestSupport.Capture(Generate);
 
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(alias ? 0 : 1));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(placement ? default : Mask(REG_RCX)));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(Mask(REG_R10)));
+            Assert.That(diagnostic.Contains("mov", StringComparison.Ordinal), Is.EqualTo(!alias));
         });
     }
 #endif

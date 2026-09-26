@@ -259,7 +259,7 @@ internal static class EmitterShiftInstructionTests
     [TestCase(3)]
     [TestCase(4)]
     [TestCase(5)]
-    public static void D005RejectsBeforeCopiesAllocationAndIdentityElision(int entrypoint)
+    public static void DspCodeRecordsShiftsAndPreservesIdentityElision(int entrypoint)
     {
         WithEmitter((compiler, emitter) =>
         {
@@ -269,7 +269,7 @@ internal static class EmitterShiftInstructionTests
             var used = Used(emitter);
             compiler.opts.dspCode = true;
 
-            var exception = Assert.Throws<FatalJitException>(() =>
+            var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
                 switch (entrypoint)
                 {
@@ -302,11 +302,11 @@ internal static class EmitterShiftInstructionTests
                 }
             });
 
-            Assert.That(exception, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(Used(emitter), Is.EqualTo(used));
-            Assert.That(CurrentCount(emitter), Is.Zero);
-            Assert.That(CurrentSize(emitter), Is.Zero);
-            Assert.That(LastInstruction(emitter), Is.Null);
+            Assert.That(Used(emitter) > used, Is.EqualTo(entrypoint != 2));
+            Assert.That(CurrentCount(emitter) > 0, Is.EqualTo(entrypoint != 2));
+            Assert.That(CurrentSize(emitter) > 0, Is.EqualTo(entrypoint != 2));
+            Assert.That(diagnostic.Contains(entrypoint is 2 or 3 ? "lea" : "shl", StringComparison.Ordinal),
+                Is.EqualTo(entrypoint != 2));
         });
     }
 #endif

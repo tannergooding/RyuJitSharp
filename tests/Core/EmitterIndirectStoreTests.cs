@@ -57,7 +57,7 @@ internal static unsafe class EmitterIndirectStoreTests
 
 #if DEBUG
     [Test]
-    public static void D005RejectsTheAddressRegisterImmediateWrapperBeforeAllocation()
+    public static void DspCodeRecordsAddressRegisterImmediateStores()
     {
         WithEmitter((compiler, codeGen) =>
         {
@@ -65,13 +65,13 @@ internal static unsafe class EmitterIndirectStoreTests
             var used = Used(codeGen.Emitter);
             compiler.opts.dspCode = true;
 
-            var exception = Assert.Throws<FatalJitException>(() =>
-                codeGen.Emitter.emitIns_A_R_I(INS_extractps, EA_16BYTE, store, REG_XMM2, 2));
+            var diagnostic = InstructionRecordingTestSupport.Capture(
+                () => codeGen.Emitter.emitIns_A_R_I(INS_extractps, EA_16BYTE, store, REG_XMM2, 2));
 
-            Assert.That(exception, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            Assert.That(Used(codeGen.Emitter), Is.EqualTo(used));
-            Assert.That(CurrentSize(codeGen.Emitter), Is.Zero);
+            Assert.That(Descriptors(codeGen), Has.Count.EqualTo(1));
+            Assert.That(Used(codeGen.Emitter), Is.GreaterThan(used));
+            Assert.That(CurrentSize(codeGen.Emitter), Is.GreaterThan(0));
+            Assert.That(diagnostic, Does.Contain("extractps"));
             Assert.That(compiler.compCurLifeTree, Is.Null);
         });
     }
@@ -439,7 +439,7 @@ internal static unsafe class EmitterIndirectStoreTests
     [TestCase(false, true)]
     [TestCase(true, false)]
     [TestCase(true, true)]
-    public static void D005RejectsBeforeDescriptorsAndLocalLivenessChange(bool local, bool immediate)
+    public static void DspCodeRecordsIndirectStoresAndLocalLiveness(bool local, bool immediate)
     {
         WithEmitter((compiler, codeGen) =>
         {
@@ -458,15 +458,13 @@ internal static unsafe class EmitterIndirectStoreTests
             var used = Used(codeGen.Emitter);
             compiler.opts.dspCode = true;
 
-            var exception = Assert.Throws<FatalJitException>(() =>
-                codeGen.Emitter.emitInsStoreInd(INS_mov, EA_4BYTE, store));
+            var diagnostic = InstructionRecordingTestSupport.Capture(
+                () => codeGen.Emitter.emitInsStoreInd(INS_mov, EA_4BYTE, store));
 
-            Assert.That(exception, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            Assert.That(Used(codeGen.Emitter), Is.EqualTo(used));
-            Assert.That(CurrentSize(codeGen.Emitter), Is.Zero);
-            Assert.That(compiler.compCurLifeTree, Is.Null);
-            Assert.That(VarSetOps.IsEmpty(compiler, compiler.compCurLife), Is.True);
+            Assert.That(Descriptors(codeGen), Is.Not.Empty);
+            Assert.That(Used(codeGen.Emitter), Is.GreaterThan(used));
+            Assert.That(CurrentSize(codeGen.Emitter), Is.GreaterThan(0));
+            Assert.That(diagnostic, Does.Contain("mov"));
         });
     }
 #endif

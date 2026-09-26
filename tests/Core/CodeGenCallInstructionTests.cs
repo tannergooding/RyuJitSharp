@@ -295,22 +295,25 @@ internal static unsafe class CodeGenCallInstructionTests
     }
 
     [Test]
-    public static void DisassemblyRejectsBeforeCallTargetConsumption()
+    public static void DisassemblyRecordsIndirectCallsAndConsumesTarget()
     {
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             var call = DirectCall(TYP_VOID);
             var target = RegisterTarget(REG_R11);
             call.ControlExpr = target;
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.runWithSPMIErrorTrap = &InstructionRecordingTestSupport.UnavailableMethodMetadata;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
             compiler.opts.dspCode = true;
 
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genCallInstruction(call));
-
-            Assert.That(Descriptors(codeGen), Is.Empty);
+            var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCallInstruction(call));
+            Assert.That(Descriptors(codeGen), Is.Not.Empty);
             Assert.That(target._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
-            compiler.opts.dspCode = false;
-            codeGen.genCallInstruction(call);
+                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
+            Assert.That(diagnostic, Does.Contain("call"));
+            Assert.That(diagnostic, Does.Contain("<unknown method>"));
         });
     }
 #endif

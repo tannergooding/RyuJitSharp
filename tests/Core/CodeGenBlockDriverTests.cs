@@ -291,15 +291,23 @@ internal static unsafe class CodeGenBlockDriverTests
     }
 
     [Test]
-    public static void DisassemblyRejectsBeforeBlockListMutation()
+    public static void DisassemblyRecordsBlockListInstructions()
     {
         WithDriver((compiler, codeGen) =>
         {
             var blocks = Blocks(compiler, BBJ_RETURN);
+            var constant = compiler.gtNewIconNode(TYP_INT, 17);
+            constant.RegNum = REG_RAX;
+            var negation = new GenTreeUnOp(GT_NEG, TYP_INT, constant) { RegNum = REG_RAX, IsUnusedValue = true };
+            blocks[0].InsertAtEnd(constant);
+            blocks[0].InsertAtEnd(negation);
+            var first = codeGen.Emitter.emitCurIG;
             compiler.opts.dspCode = true;
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genCodeForBBlist());
-            Assert.That(blocks[0].HasFlag(BBF_HAS_LABEL), Is.False);
-            Assert.That(Descriptors(codeGen), Is.Empty);
+            var diagnostic = InstructionRecordingTestSupport.Capture(codeGen.genCodeForBBlist);
+            Assert.That(blocks[0].HasFlag(BBF_HAS_LABEL), Is.True);
+            Assert.That(CodeGenLocalHeapTests.AllDescriptors(first, codeGen).Select(id => id.idIns()),
+                Is.EqualTo((instruction[])[INS_mov, INS_neg]));
+            Assert.That(diagnostic, Does.Contain("neg"));
         });
     }
 #endif

@@ -292,7 +292,7 @@ internal static class EmitterBinaryOperandTests
 
 #if DEBUG
     [Test]
-    public static void RejectedBinaryRecordingDoesNotConsumeSpillOwnership()
+    public static void DspCodeRecordsBinarySpillOwnershipOnce()
     {
         WithCodeGen((compiler, codeGen) =>
         {
@@ -305,12 +305,10 @@ internal static class EmitterBinaryOperandTests
             var dst = Register(compiler, REG_RCX);
             compiler.opts.dspCode = true;
 
-            _ = Assert.Throws<FatalJitException>(() => codeGen.Emitter.emitInsBinary(INS_add, EA_4BYTE, dst, src));
-
-            Assert.That(Descriptors(codeGen.Emitter), Has.Count.EqualTo(1));
-            compiler.opts.dspCode = false;
-            _ = codeGen.Emitter.emitInsBinary(INS_add, EA_4BYTE, dst, src);
+            var diagnostic = InstructionRecordingTestSupport.Capture(
+                () => codeGen.Emitter.emitInsBinary(INS_add, EA_4BYTE, dst, src));
             Assert.That(Descriptors(codeGen.Emitter), Has.Count.EqualTo(2));
+            Assert.That(diagnostic, Does.Contain("add"));
         });
     }
 #endif

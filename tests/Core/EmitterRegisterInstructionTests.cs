@@ -356,13 +356,13 @@ internal static class EmitterRegisterInstructionTests
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]
-    public static void DisassemblyRejectsBeforeAllocationOrMoveElision(int entrypoint)
+    public static void DisassemblyRecordsRegisterInstructionsAndPreservesMoveElision(int entrypoint)
     {
         WithEmitter((compiler, emitter) =>
         {
             compiler.opts.dspCode = true;
             var used = Used(emitter);
-            var exception = Assert.Throws<FatalJitException>(() =>
+            var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
                 switch (entrypoint)
                 {
@@ -386,11 +386,11 @@ internal static class EmitterRegisterInstructionTests
                 }
             });
 
-            Assert.That(exception, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(Used(emitter), Is.EqualTo(used));
-            Assert.That(CurrentSize(emitter), Is.Zero);
-            Assert.That(CurrentCount(emitter), Is.Zero);
-            Assert.That(LastInstruction(emitter), Is.Null);
+            Assert.That(CurrentCount(emitter), Is.EqualTo(entrypoint == 2 ? 0 : 1));
+            Assert.That(Used(emitter) > used, Is.EqualTo(entrypoint != 2));
+            Assert.That(CurrentSize(emitter) > 0, Is.EqualTo(entrypoint != 2));
+            Assert.That(diagnostic.Contains(entrypoint == 0 ? "mov" : "add", StringComparison.Ordinal),
+                Is.EqualTo(entrypoint != 2));
         });
     }
 #else

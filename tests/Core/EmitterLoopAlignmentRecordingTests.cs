@@ -230,20 +230,18 @@ internal static class EmitterLoopAlignmentRecordingTests
 
 #if DEBUG
     [Test]
-    public static void UnsupportedDisassemblyFailsBeforeAlignmentFlagsOrAllocation()
+    public static void DisassemblyRecordsAlignmentInstructions()
     {
         WithEmitter((compiler, emitter) =>
         {
             compiler.opts.dspCode = true;
             var group = emitter.emitCurIG ?? throw new AssertionException("Missing current group.");
-            var flags = group.igFlags;
             var used = Used(emitter);
-            var exception = Assert.Throws<FatalJitException>(() => emitter.emitLoopAlignment(false));
-            Assert.That(exception, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(group.igFlags, Is.EqualTo(flags));
-            Assert.That(Used(emitter), Is.EqualTo(used));
-            Assert.That(Count(emitter), Is.Zero);
-            Assert.That(Access.Pending(emitter), Is.Null);
+            var diagnostic = InstructionRecordingTestSupport.Capture(() => emitter.emitLoopAlignment(false));
+            Assert.That(Used(emitter), Is.GreaterThan(used));
+            Assert.That(Count(emitter), Is.GreaterThan(0));
+            Assert.That(group.igFlags & InsGroupFlags.HasAlign, Is.Not.EqualTo(InsGroupFlags.None));
+            Assert.That(diagnostic, Does.Contain("align"));
         });
     }
 #endif

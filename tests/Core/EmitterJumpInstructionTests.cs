@@ -310,7 +310,7 @@ internal static class EmitterJumpInstructionTests
     [TestCase(INS_jo)]
     [TestCase(INS_call)]
     [TestCase(INS_push)]
-    public static void D005RejectionPreservesInstructionBuffersAndJumpLists(instruction ins)
+    public static void DspCodeRecordsJumpsAndUpdatesJumpLists(instruction ins)
     {
         WithEmitter((compiler, emitter) =>
         {
@@ -322,17 +322,16 @@ internal static class EmitterJumpInstructionTests
             var count = CurrentCount(emitter);
             compiler.opts.dspCode = true;
 
-            var exception = Assert.Throws<FatalJitException>(() =>
-                emitter.emitIns_J(ins, target, keepShort: true, isRemovableJmpCandidate: true));
+            var diagnostic = InstructionRecordingTestSupport.Capture(
+                () => emitter.emitIns_J(ins, target, keepShort: true, isRemovableJmpCandidate: true));
 
-            Assert.That(exception, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(Last(emitter), Is.SameAs(previous));
-            Assert.That(Used(emitter), Is.EqualTo(used));
-            Assert.That(CurrentSize(emitter), Is.EqualTo(size));
-            Assert.That(CurrentCount(emitter), Is.EqualTo(count));
-            Assert.That(JumpLists.PendingJump(emitter), Is.SameAs(previous));
-            Assert.That(JumpLists.NextJump(previous), Is.Null);
-            Assert.That(ContainsRemovable(emitter), Is.False);
+            Assert.That(Last(emitter), Is.Not.SameAs(previous));
+            Assert.That(Used(emitter), Is.GreaterThan(used));
+            Assert.That(CurrentSize(emitter), Is.GreaterThan(size));
+            Assert.That(CurrentCount(emitter), Is.EqualTo(count + 1));
+            Assert.That(JumpLists.PendingJump(emitter), Is.SameAs(Last(emitter)));
+            Assert.That(JumpLists.NextJump(Last(emitter)), Is.SameAs(previous));
+            Assert.That(diagnostic, Is.Not.Empty);
             Assert.That(target.bbEmitCookie, Is.Null);
         });
     }

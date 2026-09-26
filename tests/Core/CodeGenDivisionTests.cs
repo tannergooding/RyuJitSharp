@@ -116,7 +116,7 @@ internal static class CodeGenDivisionTests
 
 #if DEBUG
     [Test]
-    public static void DisassemblyRejectsBeforeDivisionConsumesOperands()
+    public static void DisassemblyRecordsDivisionWithoutConsumingOperandsTwice()
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
@@ -126,12 +126,9 @@ internal static class CodeGenDivisionTests
                 RegNum = REG_RAX,
             };
             compiler.opts.dspCode = true;
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genCodeForDivMod(tree));
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            compiler.opts.dspCode = false;
-
-            codeGen.genCodeForDivMod(tree);
+            var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCodeForDivMod(tree));
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(2));
+            Assert.That(diagnostic, Does.Contain("idiv"));
         });
     }
 #endif

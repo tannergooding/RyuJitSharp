@@ -82,20 +82,20 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
 
 #if DEBUG
     [Test]
-    public static void GatherDisassemblyIsRejectedBeforeAllocation()
+    public static void GatherDisassemblyRecordsNativeOperands()
     {
         WithEmitter((compiler, emitter) =>
         {
             compiler.opts.dspCode = true;
             var used = Used(emitter);
-            var exception = Assert.Throws<FatalJitException>(() =>
+            var diagnostic = InstructionRecordingTestSupport.Capture(() =>
                 emitter.emitIns_R_AR_R(INS_vgatherdps, EA_32BYTE, REG_XMM1, REG_XMM2, REG_RAX, REG_XMM3, 4, 0));
 
-            Assert.That(exception, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(Used(emitter), Is.EqualTo(used));
-            Assert.That(CurrentCount(emitter), Is.Zero);
-            Assert.That(CurrentSize(emitter), Is.Zero);
-            Assert.That(LastInstruction(emitter), Is.Null);
+            Assert.That(Used(emitter), Is.GreaterThan(used));
+            Assert.That(CurrentCount(emitter), Is.EqualTo(1));
+            Assert.That(CurrentSize(emitter), Is.GreaterThan(0));
+            Assert.That(LastInstruction(emitter)?.idIns(), Is.EqualTo(INS_vgatherdps));
+            Assert.That(diagnostic, Does.Contain("vgatherdps"));
         });
     }
 #endif
@@ -165,20 +165,20 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
 
 #if DEBUG
     [Test]
-    public static void MaskStoreDisassemblyIsRejectedBeforeAllocation()
+    public static void MaskStoreDisassemblyRecordsNativeOperands()
     {
         WithEmitter((compiler, emitter) =>
         {
             compiler.opts.dspCode = true;
             var used = Used(emitter);
-            var exception = Assert.Throws<FatalJitException>(() =>
+            var diagnostic = InstructionRecordingTestSupport.Capture(() =>
                 emitter.emitIns_AR_R_R(INS_vmaskmovps, EA_32BYTE, REG_XMM1, REG_XMM2, REG_RAX, 0));
 
-            Assert.That(exception, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(Used(emitter), Is.EqualTo(used));
-            Assert.That(CurrentCount(emitter), Is.Zero);
-            Assert.That(CurrentSize(emitter), Is.Zero);
-            Assert.That(LastInstruction(emitter), Is.Null);
+            Assert.That(Used(emitter), Is.GreaterThan(used));
+            Assert.That(CurrentCount(emitter), Is.EqualTo(1));
+            Assert.That(CurrentSize(emitter), Is.GreaterThan(0));
+            Assert.That(LastInstruction(emitter)?.idIns(), Is.EqualTo(INS_vmaskmovps));
+            Assert.That(diagnostic, Does.Contain("vmaskmovps"));
         });
     }
 #endif
@@ -527,14 +527,14 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
 
 #if DEBUG
     [Test]
-    public static void UnsupportedDisassemblyIsRejectedBeforeAnyCopyOrAllocation(
+    public static void DisassemblyRecordsSimdFamiliesAndRequiredCopies(
         [Values(0, 1, 2, 3)] int kind, [Values(0, 1, 2)] int family)
     {
         WithEmitter((compiler, emitter) =>
         {
             compiler.opts.dspCode = true;
             var used = Used(emitter);
-            var exception = Assert.Throws<FatalJitException>(() =>
+            var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
                 switch (family)
                 {
@@ -558,11 +558,16 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
                     }
                 }
             });
-            Assert.That(exception, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(Used(emitter), Is.EqualTo(used));
-            Assert.That(CurrentCount(emitter), Is.Zero);
-            Assert.That(CurrentSize(emitter), Is.Zero);
-            Assert.That(LastInstruction(emitter), Is.Null);
+            Assert.That(Used(emitter), Is.GreaterThan(used));
+            Assert.That(CurrentCount(emitter), Is.GreaterThan(0));
+            Assert.That(CurrentSize(emitter), Is.GreaterThan(0));
+            Assert.That(LastInstruction(emitter), Is.Not.Null);
+            Assert.That(diagnostic, Does.Contain(family switch
+            {
+                0 => "fmadd",
+                1 => "blend",
+                _ => "vpternlogd",
+            }));
         });
     }
 #endif

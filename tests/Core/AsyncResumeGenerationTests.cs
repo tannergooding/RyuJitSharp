@@ -1,5 +1,8 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+#if DEBUG
+using System;
+#endif
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -205,13 +208,13 @@ internal static unsafe class AsyncResumeGenerationTests
     [TestCase(2)]
     [TestCase(3)]
     [TestCase(4)]
-    public static void UnsupportedDiagnosticsRejectBeforeTableAllocationOrEeCallbacks(int operation)
+    public static void DspCodeRecordsAsyncResumeTablesAndInstructions(int operation)
     {
         WithResumeEmitter(1, (compiler, codeGen, context) =>
         {
             compiler.opts.dspCode = true;
 
-            _ = Assert.Throws<FatalJitException>(() =>
+            var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
                 switch (operation)
                 {
@@ -250,11 +253,10 @@ internal static unsafe class AsyncResumeGenerationTests
                 }
             });
 
-            Assert.That(codeGen.Emitter.emitConsDsc.dsdOffs, Is.Zero);
-            Assert.That(codeGen.Emitter.emitConsDsc.dsdList, Is.Null);
-            Assert.That(codeGen.Emitter.emitConsDsc.dsdLast, Is.Null);
-            Assert.That(context->Queries, Is.Zero);
-            Assert.That(Descriptors(codeGen), Is.Empty);
+            Assert.That(codeGen.Emitter.emitConsDsc.dsdOffs, Is.GreaterThan(0));
+            Assert.That(context->Queries, Is.EqualTo(1));
+            Assert.That(Descriptors(codeGen).Count > 0, Is.EqualTo(operation == 4));
+            Assert.That(diagnostic.Contains("lea", StringComparison.Ordinal), Is.EqualTo(operation == 4));
         });
     }
 #endif

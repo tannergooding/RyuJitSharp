@@ -83,13 +83,13 @@ internal static class EmitterZeroOperandTests
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]
-    public static void UnportedDisassemblyIsRejectedBeforeRecording(int entrypoint)
+    public static void InstructionDisplayRecordsZeroOperandInstructions(int entrypoint)
     {
         CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, _) =>
         {
             compiler.opts.dspCode = true;
             var emitter = codeGen.Emitter;
-            var exception = Assert.Throws<FatalJitException>(() =>
+            var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
                 switch (entrypoint)
                 {
@@ -113,10 +113,10 @@ internal static class EmitterZeroOperandTests
                 }
             });
 
-            Assert.That(exception, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(CurrentSize(emitter), Is.Zero);
-            Assert.That(CurrentCount(emitter), Is.Zero);
-            Assert.That(LastInstruction(emitter), Is.Null);
+            Assert.That(CurrentSize(emitter), Is.EqualTo(entrypoint switch { 0 => 1u, 1 => 2u, _ => 3u }));
+            Assert.That(CurrentCount(emitter), Is.EqualTo(1));
+            Assert.That(LastInstruction(emitter), Is.Not.Null);
+            Assert.That(diagnostic, Does.Contain(entrypoint == 1 ? "cqo" : "nop"));
         });
     }
 #endif

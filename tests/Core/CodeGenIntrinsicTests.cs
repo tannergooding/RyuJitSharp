@@ -234,25 +234,28 @@ internal static unsafe class CodeGenIntrinsicTests
 
 #if DEBUG
     [Test]
-    public static void ImmediateOperandGuardsPrecedeConstantAllocation()
+    public static void DspCodeRecordsImmediateOperandConstants()
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var source = compiler.gtNewDconNode(TYP_DOUBLE, -0.0);
             source.IsContained = true;
             compiler.opts.dspCode = true;
-            _ = Assert.Throws<FatalJitException>(() => codeGen.inst_RV_RV_TT_IV(
-                INS_roundsd, EA_8BYTE, REG_XMM0, REG_XMM0, source, 4, isRMW: true, INS_OPTS_NONE));
-            _ = Assert.Throws<FatalJitException>(() => codeGen.Emitter.emitIns_SIMD_R_R_C_I(
-                INS_roundsd, EA_8BYTE, REG_XMM0, REG_XMM0, null, 0, 4, INS_OPTS_NONE));
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            Assert.That(codeGen.Emitter.emitConsDsc.dsdLast, Is.Null);
+            var diagnostic = InstructionRecordingTestSupport.Capture(() =>
+            {
+                codeGen.inst_RV_RV_TT_IV(INS_roundsd, EA_8BYTE, REG_XMM0, REG_XMM0,
+                    source, 4, isRMW: true, INS_OPTS_NONE);
+                codeGen.Emitter.emitIns_SIMD_R_R_C_I(
+                    INS_roundsd, EA_8BYTE, REG_XMM0, REG_XMM0, null, 0, 4, INS_OPTS_NONE);
+            });
+            Assert.That(Descriptors(codeGen), Has.Count.EqualTo(2));
+            Assert.That(diagnostic, Does.Contain("roundsd"));
         });
     }
 
     [TestCase(true)]
     [TestCase(false)]
-    public static void DisassemblyRejectsBeforeFiniteOrIntrinsicConsumption(bool finite)
+    public static void DisassemblyRecordsFiniteChecksAndIntrinsics(bool finite)
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
@@ -274,13 +277,11 @@ internal static unsafe class CodeGenIntrinsicTests
                 }
             }
 
-            compiler.opts.dspCode = true;
-            _ = Assert.Throws<FatalJitException>(Generate);
-            Assert.That(Descriptors(codeGen), Is.Empty);
-            compiler.opts.dspCode = false;
             _ = CodeGenBinaryTests.PrepareThrowTarget(compiler, SCK_ARITH_EXCPN);
-            Generate();
+            compiler.opts.dspCode = true;
+            var diagnostic = InstructionRecordingTestSupport.Capture(Generate);
             Assert.That(Descriptors(codeGen), Is.Not.Empty);
+            Assert.That(diagnostic, Is.Not.Empty);
         });
     }
 #endif

@@ -62,13 +62,15 @@ internal static class EmitterImmediateOnlyTests
 
 #if DEBUG
     [Test]
-    public static void D005RejectsImmediateInstructionsBeforeRecording()
+    public static void DspCodeRecordsImmediateInstructions()
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.opts.dspCode = true;
-            _ = Assert.Throws<FatalJitException>(() => codeGen.Emitter.emitIns_I(INS_push_hide, EA_PTRSIZE, 0));
-            Assert.That(Descriptors(codeGen), Is.Empty);
+            var diagnostic = InstructionRecordingTestSupport.Capture(
+                () => codeGen.Emitter.emitIns_I(INS_push_hide, EA_PTRSIZE, 0));
+            Assert.That(Descriptors(codeGen), Has.Count.EqualTo(1));
+            Assert.That(diagnostic, Does.Contain("push"));
         });
     }
 #endif
