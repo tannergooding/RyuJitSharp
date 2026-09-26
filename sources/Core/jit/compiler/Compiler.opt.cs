@@ -252,9 +252,6 @@ public partial class Compiler
     // TODO: Port phase - optOptimizeValnumCSEs
     public PhaseStatus optOptimizeValnumCSEs() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port phase - optVnCopyProp
-    public PhaseStatus optVnCopyProp() => PhaseStatus.MODIFIED_NOTHING;
-
     // TODO: Port phase - optVNBasedDeadStoreRemoval
     public PhaseStatus optVNBasedDeadStoreRemoval() => PhaseStatus.MODIFIED_NOTHING;
 

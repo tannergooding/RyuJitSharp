@@ -15,6 +15,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: VN copy propagation
+
+VN copy propagation now rewrites equivalent local uses using native dominance,
+liveness, type and profitability rules. Definition stacks preserve live SSA
+identity and sibling-block isolation; candidate iteration retains native hash
+order, and rewritten statements use the shared side-effect repair path.
+
+The phase performs substitutions in the loop and array corpora while preserving
+their results and established minopts/GC-stress execution. The aligned-loop
+machine-code bodies remain unchanged, including `Counted`'s native-matching
+17 bytes; this activation does not establish a size or throughput improvement.
+Redundant-branch optimization and VN-based dead-store removal remain inactive.
+
 ## 2026-09-26: Range-check elimination
 
 Range analysis now drives the native bounds-check elimination phase after

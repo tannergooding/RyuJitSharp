@@ -580,6 +580,13 @@ single-word values are copied before destructive intersection, while multi-word
 storage remains aliased. The forward-analysis callback interface replaces the
 native template protocol without changing traversal or convergence.
 
+VN copy propagation is active. Managed definition records retain compiler/local/
+SSA identity and resolve the live descriptor rather than copying SSA state.
+Candidate iteration reproduces native hash-bucket order, including insertion and
+rehashing; the managed dictionary's enumeration order is not used. Dominator
+scoping, liveness and profitability gates remain native. Selected loop/array
+captures exercise substitutions, without establishing full phase/dump parity.
+
 VN-based folding and insertion-time statement morphing are also complete
 prerequisites. Local-address folds retain the native 16-bit offset invariant;
 the native constructor's unsigned parameter does not imply wider field storage.

@@ -12,19 +12,33 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Preserve active VN and complete assertion propagation while integrating native range-check elimination and VN copy propagation. Keep future phase entries inactive until their complete dependency closure and execution behavior are validated.",
+      "scope": "Preserve active VN, assertion propagation and range elimination while activating complete VN copy propagation and preparing redundant-branch optimization and VN dead-store removal. Keep future phase entries inactive until their complete dependency closure and execution behavior are validated.",
       "doneWhen": [
         "Preserve the completed loop-inversion/iteration-analysis contract and identify the first missing native transformation behind a concrete optimized-code difference.",
         "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
-        "Preserve complete VN traversal/evaluation, native-order loop state and all fourteen established execution configurations while completing assertion dependencies.",
+        "Preserve complete VN traversal/evaluation, native-order loop state and all fourteen established execution configurations while completing subsequent optimization phases.",
         "Review each frozen packet, run focused Debug/Release cases and commit it with related tracking before integrating the next packet."
       ],
       "validation": [
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Complete range elimination and native phase wrapper validated865D846R,14 established configurations and a dedicated4-method array corpus with managed removals. Native removes the corresponding loop check earlier (B283); no phase-parity claim. Next integrate reviewed copy propagation. Assertion propagation remains active; Counted retains native17-byte body. Do not activate reduced phases.",
+      "parentScope": "Complete copyprop entry activated and validated888D869R,15 captures and bounded native phase comparison. Counted/Conditional event traces match after tree-ID masking; Nested/Mix enter with earlier CFG/SSA differences. Commit activation, then integrate returned redundant-branch/VN-dead-store packets. Counted retains native17-byte body; no broad phase/code parity claim.",
       "parallelPackets": [
+        {
+          "scope": "Complete redundantbranchopts.cpp and required VN relational predicates.",
+          "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
+          "files": "New Compiler.RedundantBranches*.cs, RedundantBranchTests.cs, ValueNumStore.RelopRelations.cs, native relation enum and ValueNumRelopRelationTests.cs; existing VNFuncIsComparison access modifier only.",
+          "status": "in-progress",
+          "remainingBoundary": "After6a:81, ownership expanded to native valuenum.h1235-1264,2582-2602 and valuenum.cpp7443-7627. Reuse existing comparison predicate; report additional shared prerequisites. Keep production optRedundantBranches inactive."
+        },
+        {
+          "scope": "Complete VN-based dead-store removal and required helper/visitor closure.",
+          "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
+          "files": "New Compiler.VNDeadStoreRemoval.cs and VNDeadStoreRemovalTests.cs only.",
+          "status": "in-progress",
+          "remainingBoundary": "Assigned onab27703; locate complete native function closure and preserve SSA identity and side effects. Shared edits require reporting; keep production optVNBasedDeadStoreRemoval inactive."
+        },
         {
           "scope": "Complete range-check elimination helpers after the committed range analysis.",
           "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
@@ -36,8 +50,8 @@
           "scope": "Complete native VN-based copy propagation and required closure.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
           "files": "New Compiler.CopyPropagation.cs/CopyPropagationTests.cs and existing Compiler.CopyPropSsaDef.cs.",
-          "status": "in-progress",
-          "remainingBoundary": "d62 through127 frozen23copyprop cases plus26range cases per configuration on a395676. Live SSA-definition/node identity retained; duplicate effect repair removed in favor of canonical gtUpdateSideEffects. Manifest artifacts\\copyprop-validation\\source-manifest.json;942 reviewthrough92 and refreeze acknowledgement clear. Production optVnCopyProp remains inactive."
+          "status": "done",
+          "remainingBoundary": "d62 through127/review942:92 integrated with public production entry and direct phase tests.888D869R and15 captures pass;3 phase tests fail against old stub.942 through96 found no isolated copyprop discrepancy in four native/managed aligned-loop phase sections; earlier CFG/SSA/tree-ID differences remain."
         },
         {
           "scope": "Complete relational assertion application and canonical RangeProperties, assertionprop.cpp4141-4221,4433-4910.",
@@ -194,7 +208,7 @@
         }
       ],
       "deferred": [
-        "VN, global assertion propagation and range elimination are active; VN copy propagation awaits integration and execution validation.",
+        "VN, global assertion propagation, range elimination and VN copy propagation are active; redundant branches and VN dead-store removal remain inactive.",
         "Broader optimized execution and unfinished optimization phases beyond the current backend frontier.",
         "Full EH-funclet and hardware-import parity are subsequent execution-capability packets, not gates on the first scalar minopts backend path.",
         "Non-xarch hardware-intrinsic folding and hashBv iterator/countBits/setLowest APIs. Native vector Intersects/XOR defects are recorded in B247/B246; their corrected algorithms are not authorized and those entire vector operations are deferred.",
@@ -204,11 +218,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Range activation ready to commit:865D846R,14 established captures and dedicated4-method array probe completed (6a:80). Managed removal executes correctly; native removes corresponding loop check earlier (B283). Finish this commit, then integrate d62 frozen copyprop closure through127/review942:92 with canonical side-effect repair; replace inactive optVnCopyProp with the complete body and validate production entry plus established execution configurations. B145/B282 are independently confirmed baseline failures; B268/B281/B283 remain nonblocking parity work, not accepted exceptions. No remote publication.",
+    "nextAction": "Copyprop activation is fully validated888D869R,15 captures and942 comparisonthrough96; commit exact4source/test overlays with docs, excluding6a/3a WIP. Then collect3a complete VN-dead-store packet and6a full redundant-branch/VN-relation closure or concrete prerequisites. Integrate complete frozen functions and preserve established execution configurations before activating each public phase. B145/B282 baseline failures and B268/B281/B283 nonblocking parity work remain; no remote publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Range6a:80/review942:91 integrated865D846R,14 established captures and dedicated4-method array probe. Copyprop d62:127 frozen/reviewed, canonical side-effect repair reused; production entry inactive.942 through95 confirms35/35 widened-selection failures on a395676 baseline, identical messages (B145/B282). All retained workers idle, CoreRoot free. No app-native sessions.",
+      "workerPackets": "Copyprop d62:127/review942:92 integrated888D869R and15 captures;942 comparisonthrough96 clear of isolated copy-phase defects.6a through81 unblocked for full redundant-branch/VN-relation closure;3a implements VN dead-store removal.610/d62/942 idle. CoreRoot free. No app-native sessions.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -224,6 +238,22 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "copyPropagationActivation": {
+        "snapshotBase": "ab27703",
+        "sourceManifest": "artifacts\\copyprop-phase-validation\\source-manifest.json",
+        "debugPassed": 888,
+        "releasePassed": 869,
+        "skipped": 0,
+        "selection": "artifacts\\copyprop-phase-validation\\selection.runsettings preserves the prior exact method selection and adds CopyPropagationTests.",
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\copyprop-phase-integrated-{Debug,Release}.trx",
+        "nativeAot": "artifacts\\copyprop-phase-jit\\RyuJitSharp.dll",
+        "runtimeEvidence": "artifacts\\copyprop-phase-validation\\runtime-validation.json",
+        "runtime": "All14 established configurations plus the dedicated4-method array probe execute105 positive-sized bodies with exact JIT identity, successful exits and no skip/failure markers.59 FullOpts compilations finish copy/AP/range phases;6 copy phases change. MinOpts omits these phases; object stack allocation/GCStress4 preserved.",
+        "regression": "Three production-entry cases fail against the inactive stub;23 focused copy cases pass after activation. Tests cover SSA gate, dominator sibling isolation, parameter lifetime, live SSA accounting and native candidate order.",
+        "review": "942 through92 and refreeze acknowledgement clear on complete native packet; parent exposed complete entry, removed old stub and replaced private-core test accessors with direct public calls.",
+        "comparison": "artifacts\\copyprop-phase-validation\\aligned-loops-copyprop-comparison.md: all three positive substitutions match local/SSA identities. Counted/Conditional phase event traces match after tree-ID masking; Nested/Mix already differ in input CFG/SSA. No isolated copyprop discrepancy. Four emitted sizes remain17/32/26/101; raw Counted17 matches native. No size/throughput or full parity claim.",
+        "scope": "Four exact source/test overlays, complete active entry and shared gtUpdateSideEffects reuse; future redundant-branch and VN-dead-store WIP excluded."
+      },
       "rangePhaseActivation": {
         "snapshotBase": "a395676",
         "sourceManifest": "artifacts\\range-phase-validation\\source-manifest.json",
@@ -6448,6 +6478,13 @@
       "native": ["src\\coreclr\\jit\\rangecheck.h", "src\\coreclr\\jit\\rangecheck.cpp", "src\\coreclr\\jit\\assertionprop.cpp"],
       "csharp": ["sources\\Core\\jit\\rangecheck\\", "sources\\Core\\jit\\compiler\\Compiler.ap.Relational.cs"],
       "status": "Complete range-analysis dependency and relational application; RangeProperties remains canonical in the relational partial. Global assertion and range-check elimination phases are active.",
+      "reconciledCommit": null
+    },
+    {
+      "area": "vn-copy-propagation",
+      "native": ["src\\coreclr\\jit\\copyprop.cpp:31-514", "src\\coreclr\\jit\\compiler.h:8031-8057"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.CopyPropagation.cs", "sources\\Core\\jit\\compiler\\Compiler.CopyPropSsaDef.cs", "sources\\Core\\jit\\compiler\\Compiler.ap.Locals.cs"],
+      "status": "Complete active phase with live SSA-definition records, native candidate ordering and existing profitability/side-effect helpers.",
       "reconciledCommit": null
     },
     {
