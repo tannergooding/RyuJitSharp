@@ -35,7 +35,7 @@ public sealed partial class LinearScan
         REG_NUM = 0x00001,
     }
 
-    private sealed class RegisterSelection
+    private sealed partial class RegisterSelection
     {
         private const int HeuristicCount = 17;
 
@@ -161,21 +161,21 @@ public sealed partial class LinearScan
         private RefPosition CurrentRefPosition =>
             _refPosition ?? throw new FatalJitException("Register selection has not been reset.");
 
-        private bool foundUnassignedReg()
+        internal bool foundUnassignedReg()
         {
             assert(_found && isSingleRegister(_foundRegBit));
             return ((_foundRegBit & _unassignedSet) != SRBM_NONE) && !isAlreadyAssigned();
         }
 
-        private bool isSpilling() => (_foundRegBit & _freeCandidates) == SRBM_NONE;
+        internal bool isSpilling() => (_foundRegBit & _freeCandidates) == SRBM_NONE;
 
-        private bool isMatchingConstant()
+        internal bool isMatchingConstant()
         {
             assert(_found && isSingleRegister(_foundRegBit));
             return (_matchingConstants & _foundRegBit) != SRBM_NONE;
         }
 
-        private bool isConstAvailable() => _constAvailableApplied;
+        internal bool isConstAvailable() => _constAvailableApplied;
 
         private bool isAlreadyAssigned()
         {

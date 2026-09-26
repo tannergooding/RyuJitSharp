@@ -834,6 +834,12 @@ as `buildIntervalsWithLocals`, alongside the unchanged minopts builder. It
 includes predecessor selection, parameter stress and local interval validation.
 Production optimized allocation remains gated until allocation and resolution
 support those intervals.
+The full Windows-AMD64 register selector and assignment/copy primitives are
+implemented alongside the unchanged minimal versions. They reuse the native
+heuristic sequence and preserve fixed-register conflicts in both register-mask
+banks, related-interval horizons, spill costs and constant identity. The unused
+native reverse-selection local does not reorder heuristics. These primitives
+do not activate the unfinished optimized allocation traversal.
 Windows-AMD64 block-location processing includes native allocation and resolution
 map semantics, register reassignment, EH write-through homes and dead candidates.
 The complete `processBlockEndAllocation<true>` specialization is named

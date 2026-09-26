@@ -12,11 +12,11 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete optimized LSRA edge resolution and earlier block-weight prerequisites after validated SSA construction; port the standalone SSA verifier without replacing the unfinished general CHECK_IR wrapper.",
+      "scope": "Complete general register-selection/assignment primitives and the required loop/weight, general CHECK_IR and local-resolution driver closures before full optimized allocation activation.",
       "doneWhen": [
         "SSA construction and its local-thread ownership correction are validated; retain the explicit limits on input and diagnostic parity.",
-        "Complete native edge resolution and block weights, including required direct helpers, without activating incomplete optimized allocation.",
-        "Complete the standalone SSA verification helper; preserve the existing general CHECK_IR boundary until all of its flag/type/LIR checks are ported.",
+        "Complete native register selection, constant matching, allocation/copy primitives and local-enabled resolution; preserve the production optimized-allocation gate until the full traversal is ready.",
+        "Integrate complete loop canonicalization with block weighting and the complete general CHECK_IR wrapper, validating actual phase execution rather than only prepared graphs.",
         "Review each frozen packet, run focused Debug/Release cases and commit it with related tracking before integrating the next packet."
       ],
       "validation": [
@@ -25,12 +25,12 @@
       ],
       "parallelPackets": [
         {
-          "scope": "Complete Windows-AMD64 resolveEdges/resolveEdge and required direct edge-resolution helpers.",
+          "scope": "Complete Windows-AMD64 resolveRegisters<true> and its final-allocation verifier, reusing committed edge resolution.",
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
-          "files": "New LinearScan.EdgeResolution partials and LinearScanEdgeResolutionTests.cs; only stressLimitRegs in LinearScan.SelectorHelpers.cs may change to support the native null-reference caller.",
-          "doneWhen": "Complete native Windows-AMD64 edge-resolution closure with move-cycle, stack/register, critical-edge and EH evidence; production optimized allocation gate unchanged.",
-          "status": "complete",
-          "result": "Turn13 reviewed and integrated:75Debug/57Release focused worker cases;1088Debug/931Release integrated SSA/LSRA/graph cases. Nullable stress limiting is shared, and optimized allocation remains gated."
+          "files": "New LinearScan.LocalResolutionDriver partials and LinearScanLocalResolutionDriverTests.cs; no production gate, minimal resolution, compiler or shared graph changes.",
+          "doneWhen": "Complete local-enabled resolution and final verification with isolated Debug/Release evidence; production optimized allocation gate unchanged.",
+          "status": "in-progress",
+          "result": "Prior edge packet committed d9471a7. Follow-up assigned after turn13; parent reported LocalResolutionDriverFinalization.cs IDE0007 for worker correction. Await the frozen driver handoff."
         },
         {
           "scope": "Complete block weights and the native loop-discovery/compaction/canonicalization phase required to prepare their loop state.",
@@ -38,16 +38,16 @@
           "files": "Frozen block-weight/reachability files plus new Compiler.LoopDiscovery partials and LoopDiscoveryTests.cs; only optFindLoopsPhase's stub in Compiler.opt.cs may now be removed after the complete closure is ready.",
           "doneWhen": "Preserve native profile/heuristic decisions, EH and loop assumptions, arithmetic and diagnostics with isolated Debug/Release evidence.",
           "status": "in-progress",
-          "result": "Turn16 weight/reachability algorithms reviewed; focused13Debug/12Release and graph50Debug/46Release. Integrated1088Debug/931Release pass, but actual FullOpts host fails because the earlier optFindLoopsPhase stub leaves _loops null after DFS invalidation (B262). Worker continues this required loop-phase closure; block-weight files remain uncommitted.",
+          "result": "Turn17 collected: seven frozen overlays pass46Debug/43Release in artifacts\\loop-discovery-validation. Parent source review pending; worker now publishes this frozen snapshot and checks the B262 FullOpts repro, then established32-method minopts GCStress4 execution if unblocked. Prior failed capture remains artifacts\\ssa-followup-integration\\standard-fullopts. Packet remains uncommitted.",
           "deferred": "Major unported dependency subsystems, shared Compiler.fg.cs, SSA/LSRA/Lowering files and unrelated optimizations."
         },
         {
-          "scope": "Complete standalone native SsaCheckVisitor and fgDebugCheckSsa.",
+          "scope": "Complete native general CHECK_IR flags/types and block/link driver, reusing complete LIR and standalone SSA checks.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
-          "files": "New Compiler.SsaVerification.cs and SsaVerificationTests.cs; no shared Compiler.fg.cs, phase-ordering or LIR edits.",
-          "doneWhen": "Complete native SSA verifier and actual success/failure cases with exact diagnostics; leave it unactivated until the complete general IR checker exists.",
-          "status": "complete",
-          "result": "Turn83 reviewed and integrated. Parent retained native invariant comments and checked four real SSA/rebuild outcomes:19Debug/4Release pass in artifacts\\ssa-verifier-phase-validation. General CHECK_IR remains B261; no production callsite changed."
+          "files": "Compiler.IRVerification.cs, IRVerificationTests.cs and removal of only the fgDebugCheckLinks stub from Compiler.fg.cs; Phase.cs unchanged.",
+          "doneWhen": "Complete checker closure with exact native ordering, focused cases and subsequent production capture; no partial SSA-only substitute.",
+          "status": "awaiting-review",
+          "result": "Turn84 collected: frozen aa60950 snapshot passes42Debug cases and Release build in artifacts\\ir-verification-validation. Existing CheckLir/local semantics reused. Parent review and production validation remain before commit."
         }
       ],
       "deferred": [
@@ -56,16 +56,16 @@
         "Full EH-funclet and hardware-import parity are subsequent execution-capability packets, not gates on the first scalar minopts backend path.",
         "Non-xarch hardware-intrinsic folding and hashBv iterator/countBits/setLowest APIs. Native vector Intersects/XOR defects are recorded in B247/B246; their corrected algorithms are not authorized and those entire vector operations are deferred.",
         "The preexisting fgVerifyHandlerTab diagnostic stub and broader EH verification, outside the cleanup algorithm.",
-        "B261 general fgDebugCheckLinks flag/type/LIR closure; do not partially activate it or count annotation checks as equivalent.",
+        "Broader diagnostic parity beyond the complete B261 checker closure; do not count annotation checks as equivalent.",
         "Patchpoint metadata generation and actual OSR execution; node generation support does not activate either.",
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "SSA construction a70a254, edge resolution d9471a7 and standalone SSA checking are integrated. Worker3a2c8d9b continues the block-weight packet's required optFindLoopsPhase/compaction/canonicalization closure after turn16; artifacts\\ssa-followup-integration\\standard-fullopts reproduces B262 missing loops. Preserve that failed capture and the prior passing unit snapshot. Review the loop handoff, validate actual optimized phase continuation and established minopts execution, then commit the block-weight/loop boundary. Reuse the resolved SSA checker lane for complete general CHECK_IR flags/types/LIR closure, and inspect the next optimized-allocation driver dependency. Do not activate a partial verifier or incomplete allocator. No remote publication.",
+    "nextAction": "Full RegisterSelection.select, getMatchingConstants/isMatchingConstant, allocateReg and assignCopyReg are validated with109Debug/96Release cases in artifacts\\general-allocation-validation; production optimized allocation remains gated. buildIntervalsWithLocals already exists (c8bdd87), so do not duplicate it. Review frozen loop/weight turn17 and CHECK_IR turn84 packets, collect loop worker's actual NativeAOT B262/32-method results, and collect the local-resolution-driver handoff after turn13. Commit each complete reviewed/validated closure separately. Parent's next allocator implementation is full native allocateRegisters at lsra.cpp5459 onward, including required Windows-x64 upper-vector paths; reuse the completed selector and existing local interval/block helpers. No remote publication.",
     "handoff": {
-      "status": "edge-resolution-integrated-loop-phase-prerequisite",
+      "status": "general-selection-validated-loop-and-verifier-integration",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 through turn13 collected and edge packet integrated. 3a2c8d9b through turn16 collected; weight algorithms reviewed, continuing required loop phase for B262. d62fc6a5 through turn83 collected and standalone verifier integrated with19Debug/4Release. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
+      "workerPackets": "610162a0 through turn13 collected; local-resolution-driver follow-up in progress. 3a2c8d9b through turn17 collected; loop/weight packet frozen, worker performing actual pipeline captures while parent reviews. d62fc6a5 through turn84 collected; general CHECK_IR packet frozen awaiting review/capture. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -81,6 +81,21 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "generalRegisterSelection": {
+        "nativeBoundary": "lsra.cpp:335-354,489-493,2700-2780,2854-2921,3186-3230,10022-10037,13358-13812; lsra.h:2170-2182; Windows-AMD64 selector, constant matching, allocation and copy assignment.",
+        "sourceManifest": "artifacts\\general-allocation-validation\\source-manifest.json",
+        "sourceManifestSha256": "E0446B8EEB26920F6895AD9BFFECDD3307B6AB3C72785B9AF160289891AE6FA5",
+        "snapshotBase": "aa60950",
+        "rootSnapshotHashesMatch": true,
+        "debugTests": "artifacts\\general-allocation-validation\\debug.trx",
+        "releaseTests": "artifacts\\general-allocation-validation\\release.trx",
+        "debugPassed": 109,
+        "releasePassed": 96,
+        "skipped": 0,
+        "filter": "FullyQualifiedName~LinearScanRegister|FullyQualifiedName~LinearScanSelector|FullyQualifiedName~LinearScanGeneralAllocation|FullyQualifiedName~LinearScanMinimalAllocation|FullyQualifiedName~LinearScanEncodingCandidates",
+        "coverage": "Nineteen new cases cover caller/callee and write-through preferences, integer/FP/high mask-bank conflicts, no-register optional references, signed integer width, null/GC constant reuse, signed zero/NaN bits, inactive history, active spills, related cycles and copy-home restoration; existing selector/lifetime/encoding/minimal traversal cases also pass.",
+        "limit": "Primitive-only port. Production minopts callsites unchanged; optimized allocation traversal and local-enabled resolution still require integration. No new execution or code-parity claim."
+      },
       "ssaVerification": {
         "nativeBoundary": "fgdiagnostic.cpp:4206-4740,4757-4793; complete SsaCheckVisitor and fgDebugCheckSsa.",
         "workerSourceManifest": "artifacts\\ssa-verification-validation\\source-manifest.json",
@@ -5851,6 +5866,13 @@
       "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.EdgeResolution.cs", "sources\\Core\\jit\\lsra\\LinearScan.EdgeResolutionMoves.cs", "sources\\Core\\jit\\lsra\\LinearScan.EdgeResolutionRegisters.cs", "sources\\Core\\jit\\lsra\\LinearScan.EdgeResolutionParallelMoves.cs", "sources\\Core\\jit\\lsra\\LinearScan.SelectorHelpers.cs"],
       "reconciledCommit": null,
       "scope": "Complete Windows-AMD64 resolution across edges and nullable shared stress limiting. Other targets explicitly reject; optimized allocation remains gated."
+    },
+    {
+      "area": "linear-scan-general-selection",
+      "native": ["src\\coreclr\\jit\\lsra.cpp:335-354,489-493,2700-2780,2854-2921,3186-3230,10022-10037,13358-13812", "src\\coreclr\\jit\\lsra.h:2170-2182"],
+      "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.RegisterSelection.cs", "sources\\Core\\jit\\lsra\\LinearScan.RegisterSelection.General.cs", "sources\\Core\\jit\\lsra\\LinearScan.RegisterAllocation.cs"],
+      "reconciledCommit": null,
+      "scope": "Complete Windows-AMD64 full selector and constant/assignment/copy primitives. Minimal path unchanged; full optimized allocation remains gated."
     },
     {
       "area": "critical-edge-splitting",

@@ -15,6 +15,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: General register selection and assignment
+
+Windows-x64 LSRA now selects registers using the full native heuristic sequence,
+including related-interval preferences, call preservation, fixed-register
+conflicts and spill costs. Assignment preserves inactive register histories
+and constant reuse, including integer-width restrictions, signed zero and NaN
+payloads. Copy-register assignment retains the interval's original home.
+
+These are prerequisites for the optimized allocation traversal. The production
+minopts path is unchanged, and optimized allocation remains explicitly gated
+until its complete allocation and resolution drivers are integrated.
+
 ## 2026-09-25: Register resolution across edges
 
 Windows-x64 LSRA now reconciles local register homes across split, join and
