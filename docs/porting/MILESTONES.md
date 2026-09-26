@@ -15,6 +15,13 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Critical-edge splitting
+
+The flow graph can now split an edge while preserving EH placement,
+predecessor multiplicity, profile weight and live sets. Adjacent edges extend
+their region directly; other edges use the existing region-aware insertion.
+This supplies the graph operation needed by optimized LSRA edge resolution.
+
 ## 2026-09-25: Enregistered-local reference resolution
 
 Windows-x64 LSRA now resolves individual local references, preserving register

@@ -25,12 +25,12 @@
       ],
       "parallelPackets": [
         {
-          "scope": "Complete Windows-AMD64 resolveLocalRef and required direct helpers.",
+          "scope": "Complete Windows-AMD64 resolveEdges/resolveEdge and required direct edge-resolution helpers.",
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
-          "files": "New LocalResolution partials and LinearScanLocalResolutionTests.cs; shared helpers require a reported need before edits.",
-          "doneWhen": "Frozen complete local-reference resolution with actual isolated Debug/Release evidence and exact hashes; production allocation gate unchanged.",
-          "status": "complete",
-          "result": "Local-reference resolution through turn9 is reviewed and integrated; worker97Debug/87Release, integrated995Debug/871Release and32-method GCStress4 execution pass. Parent added explanatory comments only."
+          "files": "New LinearScan.EdgeResolution partials and LinearScanEdgeResolutionTests.cs; parent Compiler.EdgeSplit.cs may be included read-only.",
+          "doneWhen": "Complete native Windows-AMD64 edge-resolution closure with move-cycle, stack/register, critical-edge and EH evidence; production optimized allocation gate unchanged.",
+          "status": "in-progress",
+          "result": "Local-reference resolution through turn9 is committed8480459. Turn10 reported missing fgSplitEdge before edits; parent supplied and validated that complete shared helper, and the worker resumed."
         },
         {
           "scope": "Correct B259 FullOpts FoldHardware lowering assertion using the complete native algorithm and ownership contract.",
@@ -47,7 +47,7 @@
           "files": "New SsaBuilder partials except parent-owned SsaBuilder.Build.cs, plus SsaBuilderTests.cs.",
           "doneWhen": "Complete ssabuilder.cpp:102-1172 with native ordering and identity, frozen source hashes and actual Debug/Release cases; leave shared phase drivers unchanged.",
           "status": "in-progress",
-          "result": "Turn76 reported missing shared memory SSA APIs and VisitAllSuccs without edits. Those prerequisites are now supplied; turn77 resumed. Parent Build orchestration remains uncommitted and excluded from prerequisite validation."
+          "result": "Turn77 complete primitive packet reviewed against native102-1143, with16Debug/16Release. Worker is making bounded review corrections: existing set-bit visitation, useful native rationale and multiline empty visitor hooks. Parent Build/fgSsaBuild integration is pending."
         }
       ],
       "deferred": [
@@ -60,11 +60,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Collect d62fc6a5 turn77 on completion and integrate the complete SSA core with parent SsaBuilder.Build.cs; only wire fgSsaBuild after the full closure is ready. Shared SSA prerequisites/zero-init cleanup are committed1d21dc9 and local-reference resolution is reviewed/integrated, with995Debug/871Release and32 nonzero managed-code GCStress4 executions in artifacts\\ssa-prerequisites-validation. Reuse610162a0 for the next complete optimized-allocation dependency after its local-resolution commit. Worker3a2c8d9b is correcting B259 against the existing failed optimized capture; do not duplicate that investigation. Native optimized standard/loop/EH references are ready. Keep optimized allocation gated and do not publish.",
+    "nextAction": "Collect d62fc6a5's corrections following turn77, then integrate complete SsaBuilder with parent Build/fgSsaBuild and focused phase/rebuild tests. Full native102-1143 review found no functional mismatch; replace tracked-local scanning with existing set-bit visitation before integration. Worker610162a0 resumed the complete edge-resolution family after parent supplied fgSplitEdge, now validated101Debug/89Release. Worker3a2c8d9b owns B259 FullOpts lowering correction. Do not duplicate their investigations. Native optimized standard/loop/EH references are ready; publish a fresh local JIT only after SSA integration and preserve the32-method minopts GCStress4 boundary. Keep optimized allocation gated and do not publish remotely.",
     "handoff": {
       "status": "ssa-core-and-optimized-lowering-correction",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 through turn9 local-reference resolution is reviewed/integrated and ready for reuse after commit. 3a2c8d9b through turn12 is committed1d21dc9; now correcting B259. d62fc6a5 through turn76 is collected; turn77 implements the SSA core using supplied shared APIs. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
+      "workerPackets": "610162a0 through turn10 is collected; local resolution committed8480459 and complete edge-resolution family resumed with parent fgSplitEdge. 3a2c8d9b through turn12 is committed1d21dc9; now correcting B259. d62fc6a5 through turn77 is collected/reviewed and making bounded corrections before full SSA integration. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -80,6 +80,22 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "edgeSplitting": {
+        "nativeBoundary": "fgbasic.cpp:4924-4979 complete Compiler::fgSplitEdge.",
+        "sourceManifest": "artifacts\\edge-split-validation\\source-manifest.json",
+        "snapshotBase": "8480459",
+        "rootSnapshotHashesMatch": true,
+        "debugTests": "artifacts\\edge-split-validation\\results\\edge-split-debug.trx",
+        "releaseTests": "artifacts\\edge-split-validation\\results\\edge-split-release.trx",
+        "debugPassed": 101,
+        "releasePassed": 89,
+        "newCasesPerConfiguration": 8,
+        "skipped": 0,
+        "selection": "FullyQualifiedName~FlowGraphEdgeSplitTests|FullyQualifiedName~BlockSplittingTests|FullyQualifiedName~FlowGraphDominanceTests|FullyQualifiedName~ExceptionalPredecessorTests",
+        "reproducer": "Archive8480459, overlay the two manifest files, verify hashes, force Debug/Release --no-incremental builds and run selection --no-build with TRX output. Restore only after missing snapshot assets.",
+        "coverage": "Adjacent and nonadjacent always/conditional/switch edges, duplicate switch references, profile likelihood, backward/async flags, independently copied70-local live sets, try-end extension, zero-weight rarity and preserved callfinally pairs.",
+        "limitation": "Shared graph prerequisite only; optimized LSRA edge-resolution integration is still in progress and no new runtime-parity claim is made."
+      },
       "localReferenceResolution": {
         "nativeBoundary": "lsra.cpp:6910-6926 writeLocalReg and6966-7268 resolveLocalRef, with direct helpers at3342-3357 and7332-7403.",
         "workerSourceManifest": "artifacts\\local-resolution-validation\\source-manifest.json",
@@ -5721,6 +5737,13 @@
       "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.LocalResolution.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalResolutionHelpers.cs"],
       "reconciledCommit": null,
       "scope": "Complete Windows-AMD64 resolveLocalRef, writeLocalReg and direct copy/spill/home helpers; optimized allocation remains gated."
+    },
+    {
+      "area": "critical-edge-splitting",
+      "native": ["src\\coreclr\\jit\\fgbasic.cpp"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.EdgeSplit.cs"],
+      "reconciledCommit": null,
+      "scope": "Complete fgSplitEdge using existing EH-aware placement and target/pred redirection, retaining native flags, profile weight and live sets."
     },
     {
       "area": "saved-wip-lir-and-rationalization",
