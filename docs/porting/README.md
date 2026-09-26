@@ -277,16 +277,25 @@ identifying the C# revision and any preserved uncommitted source snapshot.
 The host must be Checked/debug and ABI-compatible with that managed binary.
 The runner isolates the child environment, rejects reused output directories,
 requires exactly the expected case-sensitive compilation headers, and records
-binary hashes, settings, timeout/exit status, and the raw dump. Native fallback
-is expected for this incomplete port; process success is not generated-code
-success.
+binary hashes, settings, timeout/exit status, and the raw dump. By default,
+the runner sets `RunAltJitCode=0`, requesting nonexecuting mode from a Debug
+managed JIT; process success is not generated-code success. Add
+`-ExecuteManagedCode` only when validating the implemented backend.
+It requires `-ManagedJit` and records the execution request in the manifest.
+Check that every selected method completed managed compilation without a skip
+or fallback before treating a successful corpus run as managed execution.
 
 Use `-MinOpts` on both captures to exercise required, unoptimized compilation;
 the default method set then includes `InlineCandidate`, which is no longer
 inlined. For optimized captures that exclude the still-unported object stack
 allocation analysis, use `-DisableObjectStackAllocation` on both runs. These
-switches are recorded in the manifest and do not establish managed execution:
-the AltJIT still falls back to native code.
+switches are recorded in the manifest and do not themselves enable managed
+execution.
+
+Use `-RawHexCode` on native and managed captures to retain emitted hot-code
+bytes in the dump. This is independent of `-ExecuteManagedCode`; raw bytes that
+contain relocated addresses can differ between processes and require
+relocation-aware comparison.
 
 `scripts\porting\Compare-PortingDumps.ps1 -NativeDump <file> -ManagedDump <file>
 -OutputPath <report.json>` compares each compilation from its start header up

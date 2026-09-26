@@ -1495,9 +1495,7 @@ public partial class Compiler
 #endif
             }
 
-            // Inlinees return imported IR, not generated code. Root compilations must
-            // still be skipped until codegen and its required metadata are available.
-            return compiler.compIsForInlining ? CORJIT_OK : CORJIT_SKIPPED;
+            return CORJIT_OK;
         }
     }
 

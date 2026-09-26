@@ -890,6 +890,11 @@ at the callback. Subsequent diagnostics read the original managed records,
 preserving native values and ordering without relying on transferred storage
 remaining readable (B239).
 
+The generation driver owns stack-local output storage for its synchronous phase
+calls. It copies successful results to the caller and clears borrowed emitter
+output addresses on both success and failure; EE code and metadata buffers
+remain runtime-owned.
+
 ### D003: Deferred non-Windows-x64-only paths
 
 **Status:** accepted scoped deferral; not a successful execution/parity result.
@@ -1053,8 +1058,8 @@ Arithmetic, multiplication, bounds checks, indexed addresses, integer casts and
 finite checks use the complete function. Their former shared-only restrictions
 are removed. Shared-block construction and inline calls use the same native
 `acdHelper` mapping. Immediate instruction disassembly is available (D005);
-other targets explicitly reject throw generation. Production emission remains
-skipped pending the remaining backend closure.
+other targets explicitly reject throw generation. Windows-AMD64 production
+emission is now active for the supported backend modes.
 
 ### D007: Block generation without optional emitter-test injection
 

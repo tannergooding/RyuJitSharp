@@ -124,6 +124,22 @@ internal static class CodeGenLifeTransitionTests
 
 #if DEBUG
     [Test]
+    public static void ZeroTrackedVariablesRetainNativeHexWidthInLifeDiagnostics()
+    {
+        WithCompiler((compiler, _) =>
+        {
+            compiler.lvaTrackedCount = 0;
+            compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
+            compiler.verbose = true;
+
+            var output = Capture(() => compiler.compUpdateLife(VarSetOps.MakeEmpty(compiler), forCodeGen: false));
+
+            Assert.That(VarSetOps.ToString(compiler, compiler.compCurLife), Is.EqualTo("0000000000000000"));
+            Assert.That(output, Is.EqualTo($"Liveness not changing: 0000000000000000 {{}}{Environment.NewLine}"));
+        });
+    }
+
+    [Test]
     public static void DiagnosticsRetainNullTreeSpellingAndDeathBeforeBirthOrder()
     {
         WithCompiler((compiler, codeGen) =>

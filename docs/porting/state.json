@@ -12,15 +12,15 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete the Windows-AMD64 GC encoder and required final runtime-metadata publication, reusing validated generation/emission phase bodies. Retain the top-level emission skip until the complete metadata closure is ready.",
+      "scope": "Activate the complete Windows-AMD64 genGenerateCode driver using the validated generation, emission and final metadata phases, then establish fresh native-host execution evidence.",
       "doneWhen": [
-        "Port native GC encoding types, metadata/slot collection, complete Build/Emit algorithms and JIT header/liveness-table construction; preserve full and partial interruptibility rather than introducing a reduced encoder.",
-        "Complete genCreateAndStoreGCInfoX64 and final unwind/debug/GC/EH orchestration, including spill/temp cleanup and explicit treatment of requested late-disassembly/raw-hex modes.",
-        "Commit validated dependency-coherent portions. Activate genGenerateCode only after all required publication contracts are implemented, then publish locally and run the established native-host comparison."
+        "Port the complete native genGenerateCode orchestration, phase wrappers, Debug dumps/write-barrier queries and scoped output-address lifetime; preserve explicit unsupported optional modes.",
+        "Validate actual whole-driver publication, output/cleanup contracts and the changed former emission boundary in Debug/Release.",
+        "Publish a fresh local NativeAOT binary and capture the established minopts corpus. Resolve required backend failures without reduced algorithms, record actual managed sizes/execution and phase/code/metadata comparisons, then commit coherent validated work."
       ],
       "validation": [
-        "Use focused Debug/Release GC encoding, exact-byte and EE-publication regressions, including slot ordering, transition boundaries, native integer widths and callback ownership.",
-        "Reuse generationEmissionPhases and funcletCreation.nativeHost while production reachability is unchanged; activation requires a fresh local NativeAOT binary and native-host dump/code/metadata comparison."
+        "Use CodeGenMetadataPhaseTests, CodeGenEmissionPhaseTests, LoweringPhaseTests and related phase tests in Debug/Release; expand only for identified failures.",
+        "Use the pinned prepared Core_Root with scripts\\porting\\Invoke-PortingCorpus.ps1 -MinOpts and fresh generation-driver-jit publication; compare against the verified native baseline. Fallback and skipped compilation are not managed execution."
       ],
       "deferred": [
         "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
@@ -32,16 +32,16 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "GC/runtime-metadata batch validated at2738Debug/2530Release with no failures or skips; ten native encoder fixtures match and B240/B242 have failing-old/passing-fixed regressions. All workers collected/frozen. Commit this coherent batch if still uncommitted, then implement complete genGenerateCode orchestration at native codegencommon.cpp:2151-2216 using existing DoPhase(Compiler,Phases,Action), scoped output addresses and Debug extra helper queries. Add whole-driver coverage using the real CodeGenMetadataPhaseTests fixture; update LoweringPhaseTests, which still expects the former emission skip. Preserve D008 CSE metrics and D009 optional late-disassembly rejection. Publish a fresh local NativeAOT binary and run scripts/porting/Invoke-PortingCorpus.ps1 -MinOpts against the established native host, verifying actual managed bytes/execution instead of fallback. Managed production code size remains zero until activation.",
+    "nextAction": "First production execution is verified: generation-driver-status-execution exits0 with RunAltJitCode1, all20 selected methods complete and publish2166bytes, no failure markers. Final51Debug/35Release tests pass. Commit the validated activation batch if still uncommitted. Next batch: correct B244's mapped-block diagnostic IDs and allocUnwindInfo pointer formatting together, using generation-driver-status-execution/generation-comparison.json; verify remaining non-hardware raw-code differences with relocation-aware evidence and add focused runtime GC-stress validation. Preserve native-success return in compCompileHelper, supported minopts boundaries and D008/D009 explicit rejection. FoldHardware still has119managed vs35native bytes due deferred hardware import; do not conflate this with the six other nonidentical raw streams or claim full parity.",
     "handoff": {
-      "status": "gc-metadata-validated-awaiting-generation-driver",
+      "status": "first-managed-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All collected, integrated and frozen: 942a496f-db30-4389-a403-265f28fdb23c through turn56 (encoder plus native B240/B242 regressions); d62fc6a5-a4dd-40be-8b42-5de1405b22b7 through turn60 (GC tables/final metadata tests); 6a004941-37d2-4a3d-b2f4-0d1a35021099 through turn26 (D005 diagnostics and deferred late mode). Parent integrated run passes2738Debug/2530Release. No outstanding worker edits or builds. No app-native child-session coordination.",
-      "preserve": "Production lowering supports the complete no-local-lifetimes mode and allocation supports minopts without enregistered locals. Keep emission explicitly skipped until its complete dependency closure is ready. Keep the pinned oracle and residual native tree unchanged.",
+      "workerPackets": "All collected/integrated/frozen: d62fc6a5-a4dd-40be-8b42-5de1405b22b7 through turn63 (whole-driver fixture); 6a004941-37d2-4a3d-b2f4-0d1a35021099 through turn30 (three diagnostic roots and exact native comparison); 942a496f-db30-4389-a403-265f28fdb23c through turn59 (B243 first-exception evidence, retained but no more runs). No outstanding edits or builds. No app-native child-session coordination.",
+      "preserve": "Production lowering supports the complete no-local-lifetimes mode, allocation supports minopts without enregistered locals, and Windows-AMD64 generation/emission/metadata execute the selected corpus. Keep unsupported optional modes explicit; do not infer optimized, other-target or GC-stress parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
       "nativeFlowGraphSource": "src/coreclr/jit/fgopt.cpp:4373-4902",
-      "executionBoundary": "The fresh funclet-managed-minopts capture completes allocation and explicitly skips emission for twenty methods. Funclet phase bodies and resulting graph dumps are exact for all twenty; full sections including post-phase checks retain B135 differences for SynchronizedReturn and GenericCatch. Allocation phase bodies, REFPOS and POST tuples are exact for nineteen methods, with only FoldHardware differing. Disabled alignment bodies remain exact for twenty. Managed code size is zero.",
+      "executionBoundary": "generation-driver-status-execution executes managed-generated code for all20 selected minopts methods and exits0 without timeout or failure markers. Managed code totals2166bytes versus2082native;19method sizes and19Emit-code phase bodies match, with FoldHardware the exception. Thirteen raw byte streams are identical. Full generation/GC-EH dump parity, remaining relocation-sensitive streams and GC-stress behavior are not established. Earlier B135 profile diagnostics remain tracked separately.",
       "publishedHandoffCommit": "b6d5c71c338d84b6c120766b52ea577a4df735c8",
       "publication": "Verified origin/main at the completed handoff commit. This replacement session has not published changes; its app diff base is now main."
     },
@@ -52,6 +52,41 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "generationDriver": {
+        "debugPassed": 51,
+        "releasePassed": 35,
+        "skipped": 0,
+        "debugTests": "artifacts\\generation-driver-final-debug.trx",
+        "releaseTests": "artifacts\\generation-driver-final-release.trx",
+        "selection": "CodeGenMetadataPhaseTests|CodeGenEmissionPhaseTests|LoweringPhaseTests|PhaseTests|CodeGenLifeTransitionTests|CompilerLocalDumpTests|UnwindPublicationTests, each prefixed with FullyQualifiedName~.",
+        "coverage": "Whole-driver and standalone phases with/without debug info; exact EE publication ordering, native sizes and code aliases; scoped output pointers cleared on success and D008 failure. Native empty-bitset width, struct-size space padding and diffable unwind offsets are covered. The corpus runner rejects ExecuteManagedCode without ManagedJit before filesystem mutation; default capture mode remains nonexecuting.",
+        "source": "c9d3d6b plus artifacts\\generation-driver-status-source.patch SHA256 A5E9C3A737687270E2D9A2DFA7747956EBA56B4D107D5B3F44429BFBD354D372",
+        "nativeHost": {
+          "publishLog": "artifacts\\generation-driver-status-publish.log",
+          "managedJit": "artifacts\\generation-driver-status-jit\\RyuJitSharp.dll",
+          "managedJitSha256": "E46E9D88FF48BB00EE2A588629651AE8E98845CAD9183D78B455D6F4BF09885A",
+          "managedDirectory": "artifacts\\generation-driver-status-execution",
+          "nativeDirectory": "artifacts\\generation-driver-native-raw",
+          "reproduction": "Use README's Windows NativeAOT publish command. Invoke-PortingCorpus.ps1 -MinOpts -RawHexCode with the manifest's pinned CoreRoot/Corpus/NativeCommit; managed capture additionally uses -ManagedJit, accurate -ManagedSource and -ExecuteManagedCode. Compare using artifacts\\Compare-GenerationDriver.ps1 -NativeDirectory generation-driver-native-raw -ManagedDirectory generation-driver-status-execution.",
+          "methods": 20,
+          "exitCode": 0,
+          "timedOut": false,
+          "unexpectedHeaders": 0,
+          "failureMarkers": 0,
+          "runAltJitCode": 1,
+          "managedExecutionEstablished": true,
+          "managedCodeBytes": 2166,
+          "nativeCodeBytes": 2082,
+          "methodSizesExact": 19,
+          "emitPhaseBodiesExact": 19,
+          "generationPhaseBodiesExact": 0,
+          "metadataPhaseBodiesExact": 0,
+          "rawByteStreamsExact": 13,
+          "rawByteReport": "artifacts\\generation-driver-status-raw-comparison.json",
+          "remaining": "FoldHardware is119managed/35native bytes. Six other raw streams require relocation-aware comparison. Generation first differs on mapped-block IDs for19methods; metadata first differs on allocUnwindInfo addresses for19methods (B244). Raw bytes are compared literally, without relocation normalization. No GC-stress or broader runtime coverage claim."
+        },
+        "b243": "generation-driver-managed-execution failed with a stack overflow after Main publication while the obsolete root skip remained. artifacts\\generation-driver-debug-probe captured native clrjit assertAbort/jitstdout recursion. Restoring native CORJIT_OK completion preserves mismatch/RunAltJitCode guards and the subsequent complete execution passes."
+      },
       "runtimeMetadata": {
         "debugPassed": 2738,
         "releasePassed": 2530,
@@ -3991,6 +4026,20 @@
   },
   "sourceMap": [
     {
+      "area": "production-generation-driver",
+      "native": [
+        "src\\coreclr\\jit\\codegencommon.cpp:2151-2216",
+        "src\\coreclr\\jit\\compiler.cpp:7135-7157"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\codegen\\CodeGen.cs:genGenerateCode",
+        "sources\\Core\\jit\\compiler\\Compiler.comp.cs:compCompileHelper"
+      ],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete Windows-AMD64 driver uses native phase order, Debug dumps/write-barrier queries and scoped output storage. Completed matching-VM compilations return native CORJIT_OK; requested nonexecuting AltJIT mode still skips. All20 selected minopts methods execute managed code with exit0. See generationDriver evidence for exact byte/size/dump scopes and remaining parity gaps."
+    },
+    {
       "area": "runtime-gc-metadata-and-immediate-diagnostics",
       "native": [
         "src\\coreclr\\gcinfo\\gcinfoencoder.cpp",
@@ -4025,7 +4074,7 @@
       ],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Complete Windows-AMD64 encoder, header/two-pass liveness tables, filter splitting and final unwind/debug/GC/EH publication. Immediate instruction and group diagnostics restore D005; optional late disassembly remains explicitly rejected under D009. Integrated2738Debug/2530Release cases pass; encoder bytes match ten native fixtures, including B240/B242 negative controls. Production genGenerateCode remains explicitly skipped."
+      "status": "Complete Windows-AMD64 encoder, header/two-pass liveness tables, filter splitting and final unwind/debug/GC/EH publication. Immediate instruction and group diagnostics restore D005; optional late disassembly remains explicitly rejected under D009. Integrated2738Debug/2530Release cases pass; encoder bytes match ten native fixtures, including B240/B242 negative controls. Active production driver execution is tracked under production-generation-driver."
     },
     {
       "area": "generation-emission-phases-and-eh-publication",
@@ -4047,7 +4096,7 @@
       ],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Complete Windows-AMD64 generation phase, ordinary emission mode and EH publication. Debug CSE metrics reject before emission mutation (D008/B238). Native code-size calculation, empty emitter end hook and LSRA statistics summary are implemented. Generation/emission and metadata support pass Debug/Release tests; production remains gated on the remaining final metadata closure."
+      "status": "Complete Windows-AMD64 generation phase, ordinary emission mode and EH publication. Debug CSE metrics reject before emission mutation (D008/B238). Native code-size calculation, empty emitter end hook and LSRA statistics summary are implemented. Generation/emission and metadata support pass Debug/Release tests; active driver execution is tracked under production-generation-driver."
     },
     {
       "area": "gc-encoding-bitstream",

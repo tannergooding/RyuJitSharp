@@ -75,16 +75,19 @@ internal static unsafe class LoweringPhaseTests
         }, minOpts: false);
     }
 
+#if LATE_DISASM
     [Test]
-    public static void UnfinishedEmissionReturnsExplicitSkip()
+    public static void UnsupportedLateDisassemblyReturnsExplicitSkipBeforeGeneration()
     {
         WithCompiler((compiler, allocator) => {
+            compiler.opts.doLateDisasm = true;
             var exception = Assert.Throws<FatalJitException>(() => compiler.codeGen!.genGenerateCode(out _, out _));
 
             Assert.That(exception!.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
             Assert.That(compiler.lvaTable[0].lvDoNotEnregister, Is.False);
         });
     }
+#endif
 
 #if FEATURE_LOOP_ALIGN
     [TestCase(false)]

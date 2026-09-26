@@ -187,6 +187,26 @@ internal static unsafe class UnwindPublicationTests
     }
 
 #if DEBUG
+    [TestCase(false, "0x000020")]
+    [TestCase(true, "0xd1ffab1e")]
+    public static void UnwindDumpUsesDiffableOffsetsWithoutChangingPublication(bool diffable, string endOffset)
+    {
+        WithPublication((compiler, _, context) =>
+        {
+            compiler.opts.dspUnwind = true;
+            compiler.opts.dspDiffable = diffable;
+            compiler.unwindReserve();
+
+            var output = CodeGenLifeTransitionTests.Capture(
+                () => compiler.unwindEmit(context->HotCode, context->ColdCode));
+
+            Assert.That(output, Does.Contain("Start offset   : 0x000000"));
+            Assert.That(output, Does.Contain($"End offset   : {endOffset}"));
+            Assert.That(context->Allocations[0].Start, Is.Zero);
+            Assert.That(context->Allocations[0].End, Is.EqualTo(32));
+        });
+    }
+
     [Test]
     public static void FakeSplitTreatsColdRootAndFuncletAsHot()
     {

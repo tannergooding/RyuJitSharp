@@ -11,11 +11,17 @@ param(
     [string] $TypeName = "RyuJitSharp.PortingCorpus",
     [string[]] $ExpectedMethods = @("Main", "Add", "Branch", "Locals", "Call", "InlineCaller", "IndirectCall", "FoldConstants", "FoldFloating", "FoldInteger", "FoldHardware",
         "SynchronizedReturn", "GenericCatch", "PInvokeCall", "ReversePInvoke", "ManyReturns", "LocalAddressStore", "LocalAddressDifference", "ImplicitByRefArgument"),
-    [ValidateRange(1, 3600)][int] $TimeoutSeconds = 120
+    [ValidateRange(1, 3600)][int] $TimeoutSeconds = 120,
+    [switch] $ExecuteManagedCode,
+    [switch] $RawHexCode
 )
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
+
+if ($ExecuteManagedCode -and -not $ManagedJit) {
+    throw "-ExecuteManagedCode requires -ManagedJit."
+}
 
 if ($MinOpts -and -not $PSBoundParameters.ContainsKey("ExpectedMethods")) {
     $ExpectedMethods += "InlineCandidate"
@@ -74,11 +80,14 @@ if ($MinOpts) {
 if ($DisableObjectStackAllocation) {
     $settings.DOTNET_JitObjectStackAllocation = "0"
 }
+if ($RawHexCode) {
+    $settings.DOTNET_JitRawHexCode = $selector
+}
 if ($ManagedJit) {
     $settings.DOTNET_AltJit = $selector
     $settings.DOTNET_AltJitName = [IO.Path]::GetFileName($ManagedJit)
     $settings.DOTNET_AltJitPath = (Resolve-Path -LiteralPath $ManagedJit).Path
-    $settings.DOTNET_RunAltJitCode = "0"
+    $settings.DOTNET_RunAltJitCode = if ($ExecuteManagedCode) { "1" } else { "0" }
     $settings.DOTNET_AltJitAssertOnNYI = "0"
 }
 foreach ($setting in $settings.GetEnumerator()) {
@@ -136,7 +145,8 @@ $unexpectedMethodHeaders = @($allMethodHeaders | Where-Object { $_ -cnotmatch $t
     methodHeaders = $methodHeaders
     unexpectedMethodHeaders = $unexpectedMethodHeaders
     runnerHash = (Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash
-    nativeFallbackExpected = [bool]$ManagedJit
+    nativeFallbackExpected = [bool]$ManagedJit -and -not $ExecuteManagedCode
+    managedExecutionRequested = [bool]$ExecuteManagedCode
     codegenParityEstablished = $false
 } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $OutputDirectory "manifest.json")
 

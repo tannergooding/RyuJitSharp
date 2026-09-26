@@ -5,15 +5,31 @@ A newest-first history of what the port can do and how it has developed.
 The primary target is Windows x64. The port can import methods, expand inline
 calls, lower heap allocations, simplify local accesses and construct internal
 method entry/exit paths, rationalize expression trees into linear IR, and lower
-minopts methods, create EH funclets and allocate registers with stack-resident
-locals for Windows x64, but production compilation still stops before
-native-code emission. Remaining
-work includes hardware-intrinsic import, lifetime-enabled lowering cleanup,
-optimized register allocation and code generation.
+minopts methods, create EH funclets, allocate registers with stack-resident
+locals, emit native code and publish runtime metadata for Windows x64.
+The selected minopts corpus executes managed-generated code. Remaining work
+includes broader execution and GC-stress coverage, full dump/code parity,
+hardware-intrinsic import, lifetime-enabled lowering cleanup and optimized
+register allocation.
 
 The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
+
+## 2026-09-25: First managed native-code execution
+
+The complete Windows-x64 generation driver now runs generation, emission and
+runtime-metadata phases, then reports successful compilation to the runtime.
+The minopts corpus executes all twenty selected methods using managed-generated
+code, including ordinary and indirect calls, signed-zero arithmetic, exception
+handling, synchronization, P/Invoke, reverse P/Invoke and implicit-byref arguments.
+
+Native code sizes match for nineteen methods; thirteen raw instruction streams
+are byte-for-byte equal across the captured processes. Other streams still need
+relocation-aware comparison, and the hardware-intrinsic case retains a different
+implementation. This is a first execution milestone, not full backend or GC-stress
+parity. Remaining dump differences and broader runtime coverage are the next
+validation boundary.
 
 ## 2026-09-25: GC encoding and final runtime metadata
 

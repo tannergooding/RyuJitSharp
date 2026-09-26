@@ -964,9 +964,49 @@ public sealed partial class CodeGen : ICodeGen
 
     public unsafe void genGenerateCode(out void* codePtr, out int nativeSizeOfCode)
     {
-        const string message = "CodeGen.genGenerateCode is not implemented.";
-        JITDUMP($"\nCOMPILATION FAILED: {message}\n");
-        throw new FatalJitException(CORJIT_SKIPPED, message);
+#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
+        throw new FatalJitException(CORJIT_SKIPPED, "Machine-code generation requires Windows AMD64.");
+#else
+#if LATE_DISASM
+        RequireSupportedLateDisassembly();
+#endif
+#if DEBUG
+        if (_verbose)
+        {
+            jitprintf("*************** In genGenerateCode()\n");
+            _compiler.fgDispBasicBlocks(_compiler.verboseTrees);
+        }
+
+        _genWriteBarrierUsed = false;
+#endif
+        void* generatedCode = null;
+        var generatedSize = 0;
+        _codePtr = &generatedCode;
+        _nativeSizeOfCode = &generatedSize;
+        try
+        {
+            DoPhase(_compiler, PHASE_GENERATE_CODE, genGenerateMachineCode);
+            DoPhase(_compiler, PHASE_EMIT_CODE, genEmitMachineCode);
+            DoPhase(_compiler, PHASE_EMIT_GCEH, genEmitUnwindDebugGCandEH);
+
+#if DEBUG
+            if (_genWriteBarrierUsed && (JitConfig.EnableExtraSuperPmiQueries != 0) && !_compiler.IsAot)
+            {
+                for (var helper = CORINFO_HELP_ASSIGN_REF; helper <= CORINFO_HELP_BULK_WRITEBARRIER_SMALL; helper++)
+                {
+                    _ = _compiler.compGetHelperFtn(helper);
+                }
+            }
+#endif
+            codePtr = generatedCode;
+            nativeSizeOfCode = generatedSize;
+        }
+        finally
+        {
+            _codePtr = null;
+            _nativeSizeOfCode = null;
+        }
+#endif
     }
 
 #if HAS_FIXED_REGISTER_SET

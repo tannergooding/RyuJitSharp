@@ -320,6 +320,12 @@ public struct BitSetOps<TEnv, TBitSetTraits>
     public static unsafe string ToString(TEnv env, ReadOnlySpan<nint> bs)
     {
         bs = bs[..TBitSetTraits.GetArrSize(env)];
+
+        if (bs.IsEmpty)
+        {
+            return new string('0', sizeof(nint) * 2);
+        }
+
         var stringBuilder = new StringBuilder(bs.Length * (sizeof(nint) * 2) + 4);
 
         for (var i = bs.Length; i > 0; i--)

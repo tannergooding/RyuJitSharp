@@ -11,11 +11,11 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    private static void DumpUnwindInfo(bool isHotCode, uint startOffset, uint endOffset, byte[]? storage, uint slot)
+    private void DumpUnwindInfo(bool isHotCode, uint startOffset, uint endOffset, byte[]? storage, uint slot)
     {
         jitprintf($"Unwind Info{(isHotCode ? "" : " COLD")}:\n");
-        jitprintf($"  >> Start offset   : 0x{startOffset:x6} (not in unwind data)\n");
-        jitprintf($"  >>   End offset   : 0x{endOffset:x6} (not in unwind data)\n");
+        jitprintf($"  >> Start offset   : 0x{dspOffset((nint)startOffset):x6} (not in unwind data)\n");
+        jitprintf($"  >>   End offset   : 0x{dspOffset((nint)endOffset):x6} (not in unwind data)\n");
 
         if (storage is null)
         {

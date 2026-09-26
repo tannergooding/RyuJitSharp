@@ -8,6 +8,7 @@ using NUnit.Framework;
 using static RyuJitSharp.CORINFO_RUNTIME_ABI;
 using static RyuJitSharp.CorJitAllocMemFlag;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.Phases;
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
@@ -21,9 +22,15 @@ internal static unsafe class CodeGenMetadataPhaseTests
     private static string? s_assertion;
 #endif
 
-    [TestCase(false)]
-    [TestCase(true)]
-    public static void CompleteMachineAndMetadataPhasesPublishInNativeOrder(bool debugInfo)
+    [TestCase(false, false, false)]
+    [TestCase(false, true, false)]
+    [TestCase(true, false, false)]
+    [TestCase(true, true, false)]
+#if DEBUG
+    [TestCase(true, false, true)]
+#endif
+    public static void CompleteMachineAndMetadataPhasesPublishInNativeOrder(
+        bool useDriver, bool debugInfo, bool rejectMetrics)
     {
         var previousConfig = JitConfig;
         try
@@ -79,18 +86,53 @@ internal static unsafe class CodeGenMetadataPhaseTests
                 codeGen.Emitter.emitCmpHandle = &state.JitInfo;
                 void* code = null;
                 var size = -1;
-                CodePointerAddress(codeGen) = &code;
-                NativeSizeAddress(codeGen) = &size;
 
 #if DEBUG
                 using var tls = new JitTls(&state.JitInfo);
                 JitTls.Compiler = compiler;
                 s_assertion = null;
+                compiler.opts.dspMetrics = rejectMetrics;
 #endif
-                codeGen.genGenerateMachineCode();
-                Assert.That(state.EventCount, Is.Zero);
-                codeGen.genEmitMachineCode();
-                codeGen.genEmitUnwindDebugGCandEH();
+                if (useDriver)
+                {
+                    Assert.That((nuint)CodePointerAddress(codeGen), Is.EqualTo((nuint)0));
+                    Assert.That((nuint)NativeSizeAddress(codeGen), Is.EqualTo((nuint)0));
+                    if (rejectMetrics)
+                    {
+#if DEBUG
+                        var failedCode = (void*)0x1234;
+                        var failedSize = -1;
+                        var error = Assert.Throws<FatalJitException>(() => codeGen.genGenerateCode(out failedCode, out failedSize));
+                        Assert.That(error, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
+                        Assert.That(compiler.mostRecentlyActivePhase, Is.EqualTo(PHASE_EMIT_CODE));
+                        Assert.That(compiler.lvaDoneFrameLayout, Is.EqualTo(Compiler.FINAL_FRAME_LAYOUT));
+                        Assert.That(state.EventCount, Is.Zero);
+                        Assert.That(state.InvalidRequests, Is.Zero);
+                        Assert.That((nuint)failedCode, Is.EqualTo((nuint)0x1234));
+                        Assert.That(failedSize, Is.EqualTo(-1));
+                        Assert.That((nuint)CodePointerAddress(codeGen), Is.EqualTo((nuint)0));
+                        Assert.That((nuint)NativeSizeAddress(codeGen), Is.EqualTo((nuint)0));
+                        Assert.That(s_assertion, Is.Null);
+                        s_assertion = null;
+                        return;
+#else
+                        Assert.Fail("Metrics rejection is only supported in Debug builds.");
+#endif
+                    }
+                    codeGen.genGenerateCode(out code, out size);
+                    Assert.That((nuint)CodePointerAddress(codeGen), Is.EqualTo((nuint)0));
+                    Assert.That((nuint)NativeSizeAddress(codeGen), Is.EqualTo((nuint)0));
+                    Assert.That(compiler.mostRecentlyActivePhase, Is.EqualTo(PHASE_EMIT_GCEH));
+                }
+                else
+                {
+                    CodePointerAddress(codeGen) = &code;
+                    NativeSizeAddress(codeGen) = &size;
+                    codeGen.genGenerateMachineCode();
+                    Assert.That(state.EventCount, Is.Zero);
+                    codeGen.genEmitMachineCode();
+                    codeGen.genEmitUnwindDebugGCandEH();
+                }
 
 #if DEBUG
                 var assertion = s_assertion;

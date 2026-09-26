@@ -621,7 +621,7 @@ public partial class Compiler
 
             if (type.Size is 0)
             {
-                jitprintf($"({lvaLclStackHomeSize(lclNum):D2}) ");
+                jitprintf($"({lvaLclStackHomeSize(lclNum),2}) ");
             }
             else
             {
