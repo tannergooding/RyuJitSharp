@@ -152,9 +152,10 @@ internal static unsafe class LinearScanRegisterAssignmentTests
         }, trackedLocal: true);
     }
 
-    [Test]
+    [TestCase(false)]
+    [TestCase(true)]
     [Platform("Win")]
-    public static void PartialSimdSpillUsesNativeSpillWeightWithCurrentLocation()
+    public static void PartialSimdSpillUsesNativeSpillWeightWithBuildCursor(bool delayedUse)
     {
         WithAllocator((compiler, allocator) => {
             var localInterval = NewInterval(allocator, TYP_FLOAT);
@@ -164,12 +165,14 @@ internal static unsafe class LinearScanRegisterAssignmentTests
             _ = allocator.newRefPosition(localInterval, 5, RefType.RefTypeDef, local, SRBM_XMM6);
             var recentReference = allocator.newRefPosition(
                 localInterval, 10, RefType.RefTypeUse, local, SRBM_XMM6);
+            recentReference.delayRegFree = delayedUse;
             localInterval.recentRefPosition = recentReference;
             var register = allocator.physRegs[(int)regNumber.REG_XMM6];
             AssignPhysReg(allocator, register, localInterval);
 
-            var currentLocation = 20u;
+            var currentLocation = delayedUse ? 11u : 20u;
             CurrentAllocationLocation(allocator) = currentLocation;
+            ReferenceBuildLocation(allocator) = 20;
             Assert.That(recentReference.nodeLocation, Is.LessThan(currentLocation));
             var expectedSpillWeight = GetSpillWeight(allocator, register);
 
@@ -268,6 +271,9 @@ internal static unsafe class LinearScanRegisterAssignmentTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_currentAllocationLocation")]
     private static extern ref uint CurrentAllocationLocation(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_referenceBuildLocation")]
+    private static extern ref uint ReferenceBuildLocation(LinearScan allocator);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_spillCost")]
     private static extern ref double[] SpillCost(LinearScan allocator);

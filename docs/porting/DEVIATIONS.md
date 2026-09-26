@@ -765,17 +765,15 @@ diagnostics share native block-row formatting, node-location widths and register
 name casing; the earlier translation mismatches are corrected, not accepted
 differences (B201).
 
-The allocation driver supports the native minimal-allocation mode: optimization
-disabled and no enregistered locals after the native no-tracked-locals adjustment.
-Other modes reject before clearing register state or building intervals. The
-supported driver retains build/allocation/resolution phase boundaries, statistics,
-tuple dumps, completion flags and DFS invalidation.
+The allocation driver uses the native minimal/full-allocation and local-enabled
+construction/resolution predicates, including the no-tracked-locals adjustment.
+It retains build/allocation/resolution phase boundaries, statistics, tuple dumps,
+completion flags and DFS invalidation.
 
-Post-allocation loop-alignment placement implements only the native
-`ShouldAlignLoops == false` branch, which is selected for minopts, including its
-diagnostics. The enabled mode explicitly skips rather than silently doing
-nothing. Unfinished machine-code emission likewise reports `CORJIT_SKIPPED`;
-neither boundary establishes managed code generation.
+Post-allocation loop-alignment placement implements both native modes, including
+innermost-loop eligibility, call/EH exclusions, normalized weight thresholds and
+padding behind retained jumps. Selected optimized and minopts corpora execute
+managed-generated code; this does not establish broad execution or code parity.
 
 Code-generation preparation includes complete non-Wasm block-label marking,
 native hot/cold jump-elision predicates, emitter `Init`, and GC register/stack
@@ -849,9 +847,11 @@ array is required in this mode, not treated as an empty map when absent.
 The complete allocation traversal is now dispatched under the native
 `enregisterLocalVars || OptimizationEnabled` predicate. Local-enabled building
 and resolution use only `enregisterLocalVars`; the minimal paths are unchanged.
-Production optimized compilation passes allocation and its checks, but still
-stops at the enabled loop-alignment placement frontier before code generation.
-This is not optimized execution or codegen parity.
+Production optimized compilation now passes allocation and loop placement,
+emits native code and executes the selected standard and GC-loop corpora.
+The spill-weight assertion uses the native interval-building cursor rather than
+the allocation traversal cursor (B264). This is a translation correction, not
+an accepted algorithmic deviation. Full dump/code parity remains unestablished.
 
 Loop discovery and canonicalization now preserve native preheader,
 backedge, exit and EH-header ordering, rebuilding cached DFS and loop data when

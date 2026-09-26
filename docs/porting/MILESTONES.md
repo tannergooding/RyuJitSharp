@@ -7,13 +7,26 @@ calls, lower heap allocations, simplify local accesses and construct internal
 method entry/exit paths, rationalize expression trees into linear IR, and lower
 minopts methods, create EH funclets, allocate registers with stack-resident
 locals, emit native code and publish runtime metadata for Windows x64.
-The selected minopts corpus executes managed-generated code. Remaining work
-includes broader execution and GC-stress coverage, full dump/code parity,
-hardware-intrinsic import and optimized register allocation.
+Selected minopts and optimized corpora execute managed-generated code. Remaining
+work includes broader execution and GC-stress coverage, full dump/code parity,
+hardware-intrinsic import and unfinished optimization phases.
 
 The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
+
+## 2026-09-26: Optimized native-code execution
+
+The Windows-x64 optimized pipeline now emits and executes the standard corpus
+and focused GC-loop cases. Loop-alignment placement follows native loop
+eligibility, normalized weight thresholds, EH exclusions and hidden-padding
+selection. Checked allocation also preserves the native spill-weight cursor;
+using the traversal cursor had incorrectly rejected a live delayed use.
+
+The established minopts GC-stress cases remain executable. This is an execution
+milestone, not dump or machine-code parity: hardware-intrinsic import still
+produces substantially different code, and other optimization and diagnostic
+differences remain.
 
 ## 2026-09-25: Full register-allocation phase
 

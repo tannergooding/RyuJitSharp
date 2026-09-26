@@ -61,12 +61,12 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Full native allocation is integrated:677Debug/572Release cases pass, and32 minopts GCStress4 methods execute managed code. Fresh optimized standard-fullopts capture passes Main's LSRA/IR checks, then rejects enabled loop alignment and the host exits with stack overflow; no optimized execution claim. Next port complete shouldAlignLoop and placeLoopAlignInstructions (compiler.cpp5205-5425), replacing Compiler.cs2508's gate. Do not disable alignment. Then publish fresh NativeAOT and repeat the matching optimized capture against allocation-native-fullopts (DisableObjectStackAllocation/RawHexCode). Collect610 EH feasibility API and relay to d62 object analysis; collect3a hardware-import boundary after turn21. All worker outputs remain isolated from parent snapshots. No remote publication.",
+    "nextAction": "Loop placement and native spill-weight cursor are validated:130Debug/113Release,23 optimized bodies execute (standard19 plus GC loops4), and32 established minopts methods execute under GCStress4. Next commit the reviewed EH feasibility packet (43D38R, hashes verified); collect942's object escape/clone-analysis review, then integrate d62's frozen33D31R packet. Review3a's frozen hardware-import prerequisites (39D39R); its33 broader Debug failures match baseline0671581 exactly and are not caused by the packet. Continue complete object-analysis and SIMD import dependencies after coherent commits. Existing optimized GC loops exercise call exclusions, not emitted alignment padding. Hardware/code/dump parity remains incomplete. No remote publication.",
     "handoff": {
-      "status": "full-allocation-validated-loop-alignment-frontier",
+      "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 through turn16 collected, now implementing EH clone feasibility. 3a2c8d9b through turn21 collected, now hardware-import prerequisites. d62fc6a5 through turn90 collected, continuing escape/clone analysis with610 dependency. 942a496f through turn63 and6a004941 through35 resolved/idle. CoreRoot is free. No app-native child-session coordination.",
-      "preserve": "Windows-AMD64 lowering and allocation support their native local modes; generation/emission/metadata execute the established32-method minopts corpus. Optimized compilation is now blocked after allocation at loop alignment, not the former allocator gate. Focused GC stress is not broad runtime/other-target parity. Keep pinned oracle and residual source unchanged.",
+      "workerPackets": "610162a0 through17 collected; EH packet independently reviewed by942 through64, root/snapshot hashes and43D38R verified. d62fc6a5 through92 collected; frozen object escape/clone analysis33D31R under942 review. 3a2c8d9b through23 collected; hardware prerequisites39D39R, broader33Debug failures confirmed identically on baseline. No implementation worker edits pending; do not start unrelated packets before integrating returns. CoreRoot is free. No app-native child-session coordination.",
+      "preserve": "Windows-AMD64 lowering/allocation/placement/generation/emission/metadata execute23 selected optimized methods and the established32-method minopts corpus under GCStress4. Optimized runs use native JitObjectStackAllocation=0 on both sides while object analysis is incomplete. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
       "nativeFlowGraphSource": "src/coreclr/jit/fgopt.cpp:4373-4902",
@@ -81,6 +81,27 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "loopAlignmentExecution": {
+        "nativeBoundary": "compiler.cpp5205-5425 complete loop legality/profitability/placement; lsra.cpp2965-2977 native spill-weight assertion cursor",
+        "sourceManifest": "artifacts\\loop-alignment-integration\\source-manifest.json",
+        "sourceManifestSha256": "BF66FDDCFD3077F8BC9B6BB2ABBBA1D0C6AF473B6FAB5D38FC69EBFC75BDAA51",
+        "snapshotBase": "fba66f0",
+        "debugTests": "artifacts\\loop-alignment-integration\\cursor-debug.trx",
+        "releaseTests": "artifacts\\loop-alignment-integration\\cursor-release.trx",
+        "debugPassed": 130,
+        "releasePassed": 113,
+        "skipped": 0,
+        "regressionBefore": "spill-cursor-before.trx: delayed-use case fails against prior Core, ordinary case passes",
+        "jit": "artifacts\\loop-alignment-cursor-jit\\RyuJitSharp.dll",
+        "jitSha256": "E6F71597BA0DE7656BA5487B984B9F06FC6F4D1E5D186935A356CD7CFAD50687",
+        "runtimeEvidence": "artifacts\\loop-alignment-integration\\runtime-validation.json",
+        "runtimeEvidenceSha256": "6B858136B26F5BCDD9BD925E976E1E5D41243B9632B607191AA818D5B17A9F43",
+        "optimizedManagedMethods": 23,
+        "minoptsGcStress4Methods": 32,
+        "nativeOptimizedStandard": "artifacts\\allocation-native-fullopts",
+        "nativeOptimizedLoops": "artifacts\\loop-alignment-integration\\loop-native-fullopts",
+        "scope": "Every expected header/body is unique and nonzero, executable JIT hashes match, exits are zero and no failure/skip/assertion markers occur. Optimized captures match native DisableObjectStackAllocation/RawHexCode options. GC-loop cases exercise call exclusions, not actual padding. Matching sizes do not establish code parity."
+      },
       "fullAllocationIntegration": {
         "nativeBoundary": "lsra.cpp1336-1430 phase dispatch,5459-6759 allocation traversal,7413-7429 AMD64 upper-save predicate; committed general selector and local/minimal build/resolve helpers.",
         "sourceManifest": "artifacts\\allocation-phase-integration\\source-manifest.json",
@@ -4839,6 +4860,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "post-allocation-loop-alignment",
+      "native": ["src\\coreclr\\jit\\compiler.cpp:5205-5425"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.LoopAlignment.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete native loop eligibility and placement, including enabled mode. Focused graph tests and selected optimized execution are validated; actual emitted padding and full dump/code parity require further execution coverage."
+    },
     {
       "area": "production-generation-driver",
       "native": [

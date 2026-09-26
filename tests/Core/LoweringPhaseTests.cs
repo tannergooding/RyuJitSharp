@@ -143,19 +143,15 @@ internal static unsafe class LoweringPhaseTests
 #if FEATURE_LOOP_ALIGN
     [TestCase(false)]
     [TestCase(true)]
-    public static void LoopAlignmentRetainsItsNativeDisabledMode(bool enabled)
+    public static void LoopAlignmentWithoutNaturalLoopsLeavesGraphUnchanged(bool enabled)
     {
         WithCompiler((compiler, allocator) => {
+            var block = BasicBlock.New(compiler, BBJ_RETURN);
+            compiler.fgFirstBB = block;
+            compiler.fgLastBB = block;
+            compiler.fgPredsComputed = true;
             compiler.codeGen!.ShouldAlignLoops = enabled;
-            if (enabled)
-            {
-                var exception = Assert.Throws<FatalJitException>(() => compiler.placeLoopAlignInstructions());
-                Assert.That(exception!.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
-            }
-            else
-            {
-                Assert.That(compiler.placeLoopAlignInstructions(), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
-            }
+            Assert.That(compiler.placeLoopAlignInstructions(), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
         });
     }
 #endif

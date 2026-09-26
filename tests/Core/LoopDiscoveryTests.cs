@@ -291,6 +291,97 @@ internal static unsafe class LoopDiscoveryTests
         });
     }
 
+#if FEATURE_LOOP_ALIGN
+    [TestCase(7, false, false, false)]
+    [TestCase(8, false, false, true)]
+    [TestCase(9, false, false, true)]
+    [TestCase(9, true, false, false)]
+    [TestCase(9, false, true, false)]
+    public static void AlignmentRetainsWeightThresholdAndCallAndColdExclusions(
+        int weight, bool hasCall, bool cold, bool expected)
+    {
+        WithCompiler(compiler => {
+            var blocks = PrepareAlignment(compiler, [[1], [2, 3], [1], []]);
+            compiler.opts.compJitAlignLoopMinBlockWeight = 8;
+            blocks[1].bbWeight = weight * BB_UNITY_WEIGHT;
+            if (cold)
+            {
+                blocks[1].SetFlags(BBF_COLD);
+            }
+            if (hasCall)
+            {
+                blocks[2].InsertAtEnd(new GenTreeCall(var_types.TYP_VOID));
+            }
+
+            var status = compiler.placeLoopAlignInstructions();
+
+            Assert.That(status, Is.EqualTo(expected
+                ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING));
+            Assert.That(blocks[1].HasFlag(BBF_LOOP_ALIGN), Is.EqualTo(expected));
+            Assert.That(blocks[0].HasFlag(BBF_HAS_ALIGN), Is.EqualTo(expected));
+            Assert.That(compiler.Metrics.LoopAlignmentCandidates, Is.EqualTo(expected ? 1 : 0));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void AlignmentPrefersRetainedJumpEvenWhenPreheaderIsColder(bool hide)
+    {
+        WithCompiler(compiler => {
+            var blocks = PrepareAlignment(compiler, [[1, 2], [3, 4], [4], [4], [5], [6, 7], [5], []]);
+            compiler.opts.compJitHideAlignBehindJmp = hide;
+            blocks[2].bbWeight = 100 * BB_UNITY_WEIGHT;
+            blocks[4].bbWeight = BB_UNITY_WEIGHT;
+
+            Assert.That(compiler.placeLoopAlignInstructions(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            Assert.That(blocks[5].HasFlag(BBF_LOOP_ALIGN), Is.True);
+            Assert.That(blocks[2].HasFlag(BBF_HAS_ALIGN), Is.EqualTo(hide));
+            Assert.That(blocks[4].HasFlag(BBF_HAS_ALIGN), Is.EqualTo(!hide));
+            Assert.That(compiler.Metrics.LoopAlignmentCandidates, Is.EqualTo(1));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void AlignmentExcludesMethodEntryAndNonInnermostLoops(bool nested)
+    {
+        WithCompiler(compiler => {
+            var blocks = PrepareAlignment(compiler, nested
+                ? [[1], [2, 5], [3, 4], [2], [1], []]
+                : [[1, 2], [0], []]);
+
+            var status = compiler.placeLoopAlignInstructions();
+
+            Assert.That(status, Is.EqualTo(nested
+                ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING));
+            Assert.That(blocks[nested ? 1 : 0].HasFlag(BBF_LOOP_ALIGN), Is.False);
+            if (nested)
+            {
+                Assert.That(blocks[2].HasFlag(BBF_LOOP_ALIGN), Is.True);
+                Assert.That(blocks[1].HasFlag(BBF_HAS_ALIGN), Is.True);
+            }
+            Assert.That(compiler.Metrics.LoopAlignmentCandidates, Is.EqualTo(nested ? 1 : 0));
+        });
+    }
+
+    private static BasicBlock[] PrepareAlignment(Compiler compiler, int[][] successors)
+    {
+        var blocks = CreateGraph(compiler, successors);
+        compiler.codeGen = new CodeGen(compiler) {
+            ShouldAlignLoops = true,
+        };
+        compiler.fgMightHaveNaturalLoops = true;
+        compiler.fgCalledCount = BB_UNITY_WEIGHT;
+        foreach (var block in blocks)
+        {
+            block.SetFlags(BBF_IS_LIR);
+            block.bbWeight = 10 * BB_UNITY_WEIGHT;
+        }
+
+        return blocks;
+    }
+#endif
+
     private static BasicBlock[] CreateGraph(Compiler compiler, int[][] successors)
     {
         var blocks = new BasicBlock[successors.Length];

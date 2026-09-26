@@ -284,7 +284,9 @@ public sealed partial class LinearScan
             ?? throw new FatalJitException("Spill-weight calculation requires an assigned interval.");
         var recentRefPosition = interval.recentRefPosition
             ?? throw new FatalJitException("Spill-weight calculation requires a recent reference.");
-        assert(!isRefPositionActive(recentRefPosition, _currentAllocationLocation));
+        // Native currentLoc retains the interval-building cursor during allocation;
+        // it is not the traversal's currentLocation, which can still hold delayed uses.
+        assert(!isRefPositionActive(recentRefPosition, _referenceBuildLocation));
         return getWeight(recentRefPosition);
     }
 
