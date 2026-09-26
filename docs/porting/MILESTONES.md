@@ -15,6 +15,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Thread-static EE contract alignment
+
+The thread-static metadata query now matches the pinned native interface across
+all three managed EE wrappers and the vtable. The obsolete extra argument is
+removed, and the final metadata field identifies the base of thread-local data
+rather than a GC-data pointer.
+
+This restores a prerequisite for TLS-access expansion without changing the
+vtable slot or structure layout. TLS expansion itself remains in progress.
+
 ## 2026-09-26: Runtime-lookup expansion
 
 Generic-handle lookup expansion now emits dictionary loads and the required

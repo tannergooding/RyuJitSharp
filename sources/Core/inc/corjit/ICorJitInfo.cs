@@ -237,7 +237,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
     public int getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, bool isGCType) => lpVtbl->Base.Base.getThreadLocalFieldInfo((ICorJitInfo*)(Unsafe.AsPointer(ref this)), field, isGCType);
 
-    public void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType) => lpVtbl->Base.Base.getThreadLocalStaticBlocksInfo((ICorJitInfo*)(Unsafe.AsPointer(ref this)), pInfo, isGCType);
+    public void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo) => lpVtbl->Base.Base.getThreadLocalStaticBlocksInfo((ICorJitInfo*)(Unsafe.AsPointer(ref this)), pInfo);
 
     public void getThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo) => lpVtbl->Base.Base.getThreadLocalStaticInfo_NativeAOT((ICorJitInfo*)(Unsafe.AsPointer(ref this)), pInfo);
 

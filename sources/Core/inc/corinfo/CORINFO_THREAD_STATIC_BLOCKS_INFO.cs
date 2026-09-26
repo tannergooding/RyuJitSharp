@@ -27,5 +27,5 @@ public struct CORINFO_THREAD_STATIC_BLOCKS_INFO
 
     public int offsetOfThreadStaticBlocks;
 
-    public int offsetOfGCDataPointer;
+    public int offsetOfBaseOfThreadLocalData;
 }

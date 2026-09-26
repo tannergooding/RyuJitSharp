@@ -230,7 +230,7 @@ public unsafe struct ICorDynamicInfo : ICorDynamicInfo.Interface
 
     public int getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, bool isGCType) => lpVtbl->Base.getThreadLocalFieldInfo((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), field, isGCType);
 
-    public void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType) => lpVtbl->Base.getThreadLocalStaticBlocksInfo((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), pInfo, isGCType);
+    public void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo) => lpVtbl->Base.getThreadLocalStaticBlocksInfo((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), pInfo);
 
     public void getThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo) => lpVtbl->Base.getThreadLocalStaticInfo_NativeAOT((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), pInfo);
 

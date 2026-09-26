@@ -229,7 +229,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
     public int getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, bool isGCType) => lpVtbl->getThreadLocalFieldInfo((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), field, isGCType);
 
-    public void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType) => lpVtbl->getThreadLocalStaticBlocksInfo((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), pInfo, isGCType);
+    public void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo) => lpVtbl->getThreadLocalStaticBlocksInfo((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), pInfo);
 
     public void getThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo) => lpVtbl->getThreadLocalStaticInfo_NativeAOT((ICorStaticInfo*)(Unsafe.AsPointer(ref this)), pInfo);
 
@@ -880,7 +880,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
         int getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, bool isGCType);
 
         // Returns the thread static block information like offsets, etc. from current TLS.
-        void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType);
+        void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
 
         void getThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo);
 
@@ -1352,7 +1352,7 @@ public unsafe struct ICorStaticInfo : ICorStaticInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_FIELD_HANDLE, bool, int> getThreadLocalFieldInfo;
 
-        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_THREAD_STATIC_BLOCKS_INFO*, bool, void> getThreadLocalStaticBlocksInfo;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_THREAD_STATIC_BLOCKS_INFO*, void> getThreadLocalStaticBlocksInfo;
 
         public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_THREAD_STATIC_INFO_NATIVEAOT*, void> getThreadLocalStaticInfo_NativeAOT;
 
