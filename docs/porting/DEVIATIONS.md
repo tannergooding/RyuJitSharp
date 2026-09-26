@@ -263,7 +263,10 @@ this does not activate the broader value-numbering phase.
 
 Binary VN constant evaluation includes native eligibility and exception guards,
 numeric casts and bitcasts. Binary interning, algebraic identities and VM type
-comparisons remain unported; constant evaluation does not activate the VN phase.
+comparisons are implemented, preserving constant-interning order and runtime
+definite/unknown answers. Related-comparison tables retain native entries and
+ordering. Scalable ARM64 all-bits constants explicitly report NYI. Higher-arity
+dispatch and the full VN phase remain incomplete.
 
 Assertion descriptors use immutable managed objects with value-type operands;
 reversal creates a new descriptor. Vector constants own a copied byte array

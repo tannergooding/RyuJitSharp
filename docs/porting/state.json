@@ -37,7 +37,7 @@
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
           "files": "valuenum partials, exact existing stubs and focused binary-interning tests.",
           "doneWhen": "Frozen native-faithful dispatcher closure with isolated Debug/Release evidence and root/snapshot hashes.",
-          "status": "in-progress",
+          "status": "complete",
           "deferred": "Full VN phase, higher-arity dispatch and unowned compiler changes."
         },
         {
@@ -79,6 +79,40 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "binaryValueNumberInterning": {
+        "nativeBoundary": "valuenum.cpp:2746-2814 VNForCast,2831-2923 binary VNForFunc,4803-4884 VNEvalFoldTypeCompare,5218-6326 related-relop tables and EvalUsingMathIdentity; reverse-relop specialization and scalar/fixed-vector/mask constants. valuenum.h:2582-2593 comparison classification.",
+        "sourceManifest": "artifacts\\vn-binary-interning-validation\\parent-source-manifest.json",
+        "snapshotBase": "f613736",
+        "rootSnapshotHashesMatch": true,
+        "debugTests": "artifacts\\vn-binary-interning-validation\\snapshot\\artifacts\\tst\\Debug\\vn-parent-debug.trx",
+        "releaseTests": "artifacts\\vn-binary-interning-validation\\snapshot\\artifacts\\tst\\Release\\vn-parent-release.trx",
+        "debugPassed": 297,
+        "releasePassed": 297,
+        "skipped": 0,
+        "coverage": "58 interning cases include13VM callback outcomes and16fresh-store numbering cases;52folding,151evaluation,22checked-cast and14unary cases. All136related-relop table entries match native.",
+        "regression": "B252: vn-zero-order-before.trx in the Debug result directory fails both OR/AND cases after deliberately restoring eager all-bits allocation. Parent strengthened the original ineffective assertion with an intervening marker, restored source and forced complete Debug/Release rebuilds.",
+        "integration": "checkpoint.validation.entryIntervalIntegration",
+        "limitation": "No full VN phase activation; scalable ARM64 all-bits constants explicitly reject."
+      },
+      "entryIntervalIntegration": {
+        "snapshotBase": "cbbc8bbcbc47f0de8a390e616d9802848246a4b8",
+        "sourceManifest": "artifacts\\entry-interval-validation\\source-manifest.json",
+        "sourceManifestSha256": "C2C6FDAFA4DD781C97395B1510EF678B59BEE910083260080B713920B21A201C",
+        "scope": "SSA liveness, binary VN interning and entry-local interval definitions;13frozen overlays.",
+        "debugTests": "artifacts\\entry-interval-validation\\snapshot\\artifacts\\tst\\Debug\\integrated-debug.trx",
+        "releaseTests": "artifacts\\entry-interval-validation\\snapshot\\artifacts\\tst\\Release\\integrated-release.trx",
+        "debugPassed": 647,
+        "releasePassed": 627,
+        "skipped": 0,
+        "selection": "FullyQualifiedName~Liveness|FullyQualifiedName~ValueNumBinary|FullyQualifiedName~CheckedCastTests|FullyQualifiedName~AssertionTests.Unary|FullyQualifiedName~LinearScanLocalCandidatesTests|FullyQualifiedName~LinearScanEntryDefinitionsTests|FullyQualifiedName~LinearScanMinimalCandidatesTests|FullyQualifiedName~LinearScanMinimalAllocationTests|FullyQualifiedName~LinearScanAllocationStatisticsTests|FullyQualifiedName~LocalVariableTempTests|FullyQualifiedName~RegisterAllocationStackHomeTests|FullyQualifiedName~LoweringPhaseTests",
+        "testOnlyFollowup": "The root VN zero-identity test was subsequently strengthened and validated separately by binaryValueNumberInterning. No production source differs from the publication snapshot.",
+        "managedJit": "artifacts\\entry-interval-jit\\RyuJitSharp.dll",
+        "managedJitSha256": "D903EC5455489A843DB7ADD78DC27BA669622097C3E215BD1BA18327485B3D38",
+        "runtimeEvidence": "artifacts\\entry-interval-runtime-validation\\results.txt",
+        "runtimeResult": "Unchanged standard,loop,interior/pin and EH corpora pass20/20,4/4,3/3,3/3exact headers underGCStress4/RunAltJitCode=1. All30methods emit nonzero code; no skips/failures/timeouts. Loop/interior/EH entrypoints confirm12/3/11helper collections and payload/identity checks.",
+        "reproduction": "runtimeEvidence records exact NativeAOT publication and Invoke-PortingCorpus.ps1 commands plus baseline corpus manifests; preserve the source-manifest hash.",
+        "limitation": "Selected minopts execution only, not full SSA/VN/optimized allocation or codegen parity."
+      },
       "ehReferenceExecution": {
         "scope": "CatchObject, FinallyObject and FinallyPair; normal and exceptional paths with object/reference-bearing-struct locals under minopts GCStress4.",
         "evidence": "artifacts\\backend-eh-gc-probe\\results.txt",

@@ -16,8 +16,9 @@ public sealed partial class ValueNumStore
         => func is >= VNF_ADD_OVF and <= VNF_MUL_UN_OVF;
 
     private static bool VNFuncIsComparison(VNFunc func)
-        => func is VNF_EQ or VNF_NE or VNF_GT or VNF_GE or VNF_LT or VNF_LE or
-            VNF_GT_UN or VNF_GE_UN or VNF_LT_UN or VNF_LE_UN;
+        => func >= VNF_Boundary
+            ? func is VNF_GT_UN or VNF_GE_UN or VNF_LT_UN or VNF_LE_UN
+            : ((genTreeOps)func).IsCompare;
 
     private bool VNEvalCanFoldBinaryFunc(var_types type, VNFunc func, ValueNum arg0VN, ValueNum arg1VN)
     {

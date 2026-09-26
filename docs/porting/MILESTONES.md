@@ -15,6 +15,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Binary value-number interning
+
+Binary expressions now use native value-number interning, constant folding,
+algebraic identities and related-comparison rules. Cast and runtime-type
+comparisons preserve the runtime's definite and unknown answers, including
+exact-type restrictions and exception values. Constant creation retains native
+ordering so equivalent results do not silently renumber later expressions.
+
+This completes another prerequisite for optimized compilation; the full
+value-numbering phase is not yet active.
+
 ## 2026-09-25: Catch and finally execution
 
 Selected minopts methods now execute normal and exceptional catch/finally paths
