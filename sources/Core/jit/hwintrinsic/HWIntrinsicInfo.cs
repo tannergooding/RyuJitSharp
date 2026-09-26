@@ -287,11 +287,66 @@ public readonly partial struct HWIntrinsicInfo
         return s_flags[GetTableIndex(id)];
     }
 
+    private static bool tryLookupSimdSize(NamedIntrinsic id, out uint simdSize)
+    {
+        var size = s_simdSizes[GetTableIndex(id)];
+
+        if (size != byte.MaxValue)
+        {
+            simdSize = size;
+            return true;
+        }
+
+        simdSize = 0;
+        return false;
+    }
+
+    public static unsafe uint lookupSimdSize(Compiler compiler, NamedIntrinsic id, in CORINFO_SIG_INFO sig)
+    {
+        if (tryLookupSimdSize(id, out var simdSize))
+        {
+            return simdSize;
+        }
+
+        CORINFO_CLASS_HANDLE typeHnd;
+
+        fixed (CORINFO_SIG_INFO* sigPtr = &sig)
+        {
+            if (BaseTypeFromFirstArg(id))
+            {
+                typeHnd = compiler.info.compCompHnd->getArgClass(sigPtr, sig.args);
+            }
+            else if (BaseTypeFromSecondArg(id))
+            {
+                var secondArg = compiler.info.compCompHnd->getArgNext(sig.args);
+                typeHnd = compiler.info.compCompHnd->getArgClass(sigPtr, secondArg);
+            }
+            else
+            {
+                assert(sig.retType.VarType == TYP_STRUCT);
+                typeHnd = sig.retTypeSigClass;
+            }
+        }
+
+        var simdBaseType = compiler.getBaseTypeAndSizeOfSimdType(typeHnd, out var sizeBytes);
+        assert((sizeBytes > 0) && (simdBaseType != TYP_UNDEF));
+        return unchecked((uint)sizeBytes);
+    }
+
+    public static bool BaseTypeFromFirstArg(NamedIntrinsic id) =>
+        (lookupFlags(id) & HW_Flag_BaseTypeFromFirstArg) != 0;
+
+    public static bool BaseTypeFromSecondArg(NamedIntrinsic id) =>
+        (lookupFlags(id) & HW_Flag_BaseTypeFromSecondArg) != 0;
+
     public static bool ReturnsBoolean(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_ReturnsBoolean) != 0;
 
     public static bool ReturnsPerElementMask(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_ReturnsPerElementMask) != 0;
 
 #if TARGET_XARCH
+    public static bool AvxOnlyCompatible(NamedIntrinsic id) =>
+        (lookupFlags(id) & HW_Flag_AvxOnlyCompatible) != 0;
+
     public static bool IsVariableShift(NamedIntrinsic id) => id is NI_AVX2_ShiftLeftLogicalVariable or
         NI_AVX2_ShiftRightArithmeticVariable or NI_AVX2_ShiftRightLogicalVariable or
         NI_AVX512_ShiftLeftLogicalVariable or NI_AVX512_ShiftRightArithmeticVariable or NI_AVX512_ShiftRightLogicalVariable;

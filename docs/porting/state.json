@@ -12,11 +12,11 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Integrate the validated loop-inversion boundary and remaining hardware-import prerequisites, then complete independent SIMD constructor/import and object clone/morph closures.",
+      "scope": "Complete independent SIMD constructor/import and object clone/morph closures while tracing concrete remaining optimized-code differences after loop inversion.",
       "doneWhen": [
-        "Complete optTryInvertWhileLoop/optInvertLoops with full iteration-analysis eligibility, native cost/profile/CFG behavior and optimized execution evidence.",
+        "Preserve the completed loop-inversion/iteration-analysis contract and identify the first missing native transformation behind a concrete optimized-code difference.",
         "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
-        "Complete hardware-argument prerequisites, allocation-site analysis and mutating EH clone closure or whole-function prerequisites without activating unfinished phases.",
+        "Complete native SIMD constructor/import and object-specific clone/morph closures without activating incomplete dispatchers or phases.",
         "Review each frozen packet, run focused Debug/Release cases and commit it with related tracking before integrating the next packet."
       ],
       "validation": [
@@ -46,7 +46,7 @@
           "files": "New Compiler.HWIntrinsicImportXplat.cs and focused tests; preceding creation/fallback/metadata packet remains frozen.",
           "doneWhen": "Complete impXplatIntrinsic hwintrinsic.cpp2910-5841 with constructor dependencies; no selected-case activation or fabricated compile-time stubs.",
           "status": "in-progress",
-          "result": "Through27 creation/fallback/metadata76D76R frozen and independently reviewed by6a through38. Parent must commit that packet. Xplat lane assigned after27;942 owns constructor closure.",
+          "result": "Through27 creation/fallback/metadata76D76R integrated after independent6a review through38. Xplat lane assigned after27;942 owns constructor closure.",
           "deferred": "Shared generators/tables, LSRA, ObjectAllocator, EH feasibility, other targets and publication."
         },
         {
@@ -69,7 +69,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Inversion/iteration is validated253Debug/249Release after correcting statement construction; fresh final JIT executes27FullOpts/32minopts-GCStress4. Final source/runtime manifests end in -final.json. Commit the reviewed HWI creation/fallback/metadata76D76R packet next, excluding active workers. Then trace a specific remaining native/managed optimizer difference while942 completes SIMD constructors,3a portable import,d62 object clone transformations and610 allocation morphing. Full importer/stack-allocation gates remain. No publication.",
+    "nextAction": "Inversion/iteration integrated1d833e4; fresh final JIT executes27FullOpts/32minopts-GCStress4 with253Debug/249Release regressions. HWI creation/fallback/metadata76D76R is reviewed and integrated. Parent next compares native and managed Counted phase IR to locate the first missing transformation behind its remaining17-byte code difference, rather than guessing from sizes.942 owns SIMD constructors,3a portable import,d62 object clone transformations and610 allocation morphing. Generic/xarch-special import still needs complete bodies before dispatcher activation. Keep stack-allocation gate until all transformations and orchestration are complete. No publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
@@ -89,6 +89,18 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "hardwareCreationFallbackMetadata": {
+        "nativeBoundary": "hwintrinsic.cpp1468-1497,1605-1750;hwintrinsicxarch.cpp1155-1207;hwintrinsic.h640-649,771-776",
+        "snapshotBase": "f806ffc",
+        "sourceManifest": "artifacts\\hwi-import-metadata-validation\\source-manifest.json",
+        "sourceManifestSha256": "EA87F6E6FFB19131127F5963AABAB1BFDE5B895588EF8CFA0FB4CCD6F731B63F",
+        "tests": "artifacts\\hwi-import-metadata-validation\\artifacts\\tst\\{Debug,Release}\\hwi-metadata-{Debug,Release}.trx",
+        "debugPassed": 76,
+        "releasePassed": 76,
+        "skipped": 0,
+        "review": "Independent source review found no high-confidence algorithm/side-effect/width/ABI defects. Root/tested snapshot hashes and executed/pass counts match.",
+        "scope": "Complete creation, nonconstant fallback, SIMD-size lookup and AVX-only flag accessor. No dispatcher activation or generator/table changes; direct helper fixtures do not establish import parity."
+      },
       "loopInversion": {
         "nativeBoundary": "optimizer.cpp1768-2356;compiler.hpp3855-3887;iteration optimizer.cpp243-456 and flowgraph.cpp5493-5579,5643-6234,6839-7037",
         "snapshotBase": "f806ffc",
@@ -4954,6 +4966,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "hardware-creation-fallback-and-metadata",
+      "native": ["src\\coreclr\\jit\\hwintrinsic.cpp:1468-1497,1605-1750", "src\\coreclr\\jit\\hwintrinsicxarch.cpp:1155-1207", "src\\coreclr\\jit\\hwintrinsic.h:640-649,771-776"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.HWIntrinsicImportCreation.cs", "sources\\Core\\jit\\compiler\\Compiler.HWIntrinsicImportFallback.cs", "sources\\Core\\jit\\hwintrinsic\\HWIntrinsicInfo.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete native creation/nonconstant fallback and metadata lookup helpers. Full importer and SIMD constructor closure still required before dispatcher activation."
+    },
     {
       "area": "loop-inversion-and-iteration-analysis",
       "native": ["src\\coreclr\\jit\\optimizer.cpp:243-456,1768-2356", "src\\coreclr\\jit\\flowgraph.cpp:5493-5579,5643-6234,6839-7037", "src\\coreclr\\jit\\compiler.h:2017-2105", "src\\coreclr\\jit\\compiler.hpp:3855-3887"],

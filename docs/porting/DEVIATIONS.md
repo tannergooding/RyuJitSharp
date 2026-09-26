@@ -216,6 +216,8 @@ the production phase gate is unchanged.
 Hardware-import prerequisites preserve native argument order and precise types,
 table-driven eligibility and xarch immediate/range-check rules. SIMD/mask stack
 normalization, call return buffers and scalar argument coercion are implemented.
+SIMD creation, nonconstant shift/rotate fallback, signature-derived SIMD size
+lookup and AVX-only compatibility flags are also implemented.
 They do not activate `impHWIntrinsic`: the complete generic and
 special-import/fallback closure remains incomplete. Existing hardware-code
 differences are not accepted parity exceptions.

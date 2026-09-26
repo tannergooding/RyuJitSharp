@@ -15,6 +15,15 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Hardware creation and fallback prerequisites
+
+Hardware import now has native SIMD creation, nonconstant shift/rotate fallback,
+signature-derived vector widths and AVX-only compatibility lookup. These
+primitives preserve operand-pop order and constant lane construction.
+
+The complete generic, xarch-special and portable import bodies still require
+their constructor dependencies before the dispatcher can be activated.
+
 ## 2026-09-26: Loop inversion and iteration analysis
 
 Top-tested loops can now duplicate their entry conditions using native size,
