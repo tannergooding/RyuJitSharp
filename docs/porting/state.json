@@ -12,25 +12,25 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Synchronize oracle, residual native source and existing C# implementations from 206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc to immutable upstream 33baf8ee337b20dd0f184b69a6f09be92850bf9e, preserving inactive helper WIP and old-pin evidence before resuming helper activation.",
+      "scope": "Integrate the preserved shared helper driver and complete static-initialization expansion against synchronized33baf8. Keep TLS and VN-intrinsic packets inactive and uncommitted until their own integration boundaries.",
       "doneWhen": [
-        "Reconcile every worker handoff and protect raw source bytes, staged/unstaged distinctions, execution inputs and historical evidence before retiring the old workspace.",
-        "Fast-forward completed commits to verified origin/main without force; create the successor on that exact main tip and verify its diff base. Inactive helper WIP remains uncommitted.",
-        "Select one immutable latest upstream target, preserve both revisions and reconcile relevant native algorithms, EE contracts and generator/table changes into residual and C# sources.",
-        "Prepare a native host matching the new pin and validate the synchronized C# port with focused tests, fresh NativeAOT and the established29-case execution matrix before resuming helper activation."
+        "Review the complete shared driver and static-init expansion against the pinned oracle, preserving both runtime ABI branches and rare/minopts guards.",
+        "Activate the public static-init entry, prove positive tests fail against the previous stub, and preserve runtime-lookup behavior through the shared driver.",
+        "Obtain positive new-pin native expansion evidence, execute fresh managed NativeAOT with matching outcomes and compare the selected phase/CFG.",
+        "Commit the complete validated shared/static-init batch locally while preserving the inactive TLS/VN packets."
       ],
       "validation": [
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Upstream33baf8 synchronization complete: all67 JIT/interface candidates classified; oracle/residual and fresh native host match target. Native residual retains176staged paths with old/new snapshots protected. Final source snapshot18df772 excludes frozen helpers;1021Release cases pass,1044Debug cases pass with one unchanged baseline fixture failure B311. Fresh NativeAOT executes29configurations143bodies without fallback. Inactive helper compatibility77D77R passes; public phases remain inactive. No future publication authorized.",
+      "parentScope": "Synchronization committed5aaefb7. Shared/static-init integration is complete: whole native functions reviewed, public entry active, isolated34D34R/full helper77D77R pass. Stub control fails17cases with6unchanged controls. Fresh NativeAOT executes established29configurations143bodies plus explicit-cctor corpus in fullopts/minopts/GCStress; six positive native transformation/CFG slices match. TLS/VN remain frozen. B311 is a preexisting unrelated Debug metrics fixture failure. No publication authorized.",
       "parallelPackets": [
         {
           "scope": "Complete native static-initialization expansion.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
           "files": "New Compiler.StaticInitExpansion*.cs and StaticInitExpansionTests.cs; parent owns shared APIs and public entry.",
-          "status": "paused",
-          "remainingBoundary": "3a:127 frozen complete/inactive;23D23R full analysis. artifacts\\static-init-validation\\freeze-receipt.json. Reconcile against refreshed upstream before parent integration, public activation and runtime comparison."
+          "status": "done",
+          "remainingBoundary": "Parent integrated at33baf8: full function/shared-driver review, public activation,17stub-control failures/6controls,34D34R isolated/full-analysis and77D77R with frozen packets. New explicit-cctor corpus executes9managed bodies across fullopts/minopts/GCStress; six positive native transformation/CFG slices are exact. Full post-phase VN/profile diagnostics and machine-code parity remain open. Evidence artifacts\\static-init-refresh."
         },
         {
           "scope": "Complete native thread-local access expansion.",
@@ -407,7 +407,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit the validated33baf8 synchronization with frozen helper WIP excluded, then resume static-init integration: review Compiler.HelperExpansion.cs and Compiler.StaticInitExpansion.cs against unchanged new-pin helperexpansion.cpp, activate fgExpandStaticInit with public-entry negative controls, and obtain a new positive native static-init input before claiming phase parity. The old BooleanExecutionProbe.Main positive does not reproduce on the new host (four no-change phases). Preserve TLS/VN packets inactive until their integration boundaries. B311 is an independently reproduced preexisting Debug metrics-test failure, not a new compiler regression. No push or PR is authorized.",
+    "nextAction": "Continue with the preserved TLS packet: review Compiler.ThreadLocalExpansion.cs against33baf8 helperexpansion.cpp, obtain positive native thread-static expansion using the saved isolation/GC probe, then activate fgExpandThreadLocalAccess with public-entry negative controls and fresh managed execution. Static-init/shared support is integrated and validated; VN-intrinsic remains inactive. Keep the native shared helper region until all dependent phase packets are integrated. Preserve recovery refs; no push or PR is authorized.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -476,6 +476,22 @@
         "nativeEvidence": "MSVC native-probe.cpp static_assert checks exact member signature against pinned corinfo.h; sizeof56, pointer-field offsets0/16/24/32 and scalar offsets40/44/48/52 match managed raw layout.",
         "gaps": "TLS phase is not activated. Virtual native callbacks verify forwarding without claiming actual runtime TLS expansion."
       },
+      "staticInitIntegration": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "snapshot": "c67c31744df5ff17807a17cdf4759d9a949bc0d3",
+        "nativeAotSnapshot": "69a9b5f37d052bc67ab7c939abdf8c01dd7b8d93",
+        "nativeAot": "artifacts\\static-init-refresh\\native-jit\\RyuJitSharp.dll",
+        "sha256": "44E3FBE81EB132FBF88DA1C8803A50E3E0ED2737C66425655D5CD96FB55D2280",
+        "debugPassed": 34,
+        "releasePassed": 34,
+        "tests": "StaticInitExpansionTests and RuntimeLookupExpansionTests in isolated validation-2 sources, full analysis;77D77R includes frozen TLS/VN compatibility. Both snapshots have identical compiler sources.",
+        "negativeControl": "Previous public stub:17failures6passes. Previous synchronized NativeAOT: three executed probe bodies with no positive static-init expansion.",
+        "execution": "artifacts\\static-init-refresh\\final-corpus\\results.json: native/managed fullopts,minopts,GCStress,18positive bodies; four expansions per optimized run and zero in minopts. Runtime asserts first/repeated initialization, two classes in one expression and reference identity after compacting GC.",
+        "baseline": "artifacts\\upstream-refresh-33baf8\\static-init-managed-matrix\\results.json:29configurations143positive bodies, same runtime outcomes and no fallback.",
+        "comparison": "Six positive transformation logs and CFG summaries match exactly without identity normalization. Full phase slices differ in existing VN identifiers and profile-check diagnostics; full dump/code parity is not established.",
+        "nativeResidual": "Shared helper region retained with176staged paths and tree59d3dbb096ebc96e66e006f75d77176444088d8c until TLS/VN and remaining callers are reconciled; no native retirement claimed.",
+        "gaps": "NativeAOT ABI covered structurally, not by NativeAOT-runtime execution. Positive ready-to-run, pinned-static helper and EH-region runtime inputs remain outside this selected corpus. TLS/VN public phases remain inactive."
+      },
       "sharedHelperExpansion": {
         "snapshotBase": "1f40b70",
         "sourceManifest": "artifacts\\static-init-integration\\shared-helper-manifest.json",
@@ -486,7 +502,7 @@
         "sha256": "BDE410C286BB31B748185DCBEA252E6017BF4D92BA82B8FA0901FD027E6C87DB",
         "runtime": "artifacts\\static-init-integration\\shared-helper-runtime-validation.json:2configurations3selected bodies; all3lookup phase/post-phase IR slices equal the committed runtime-lookup captures.",
         "scope": "Complete shared helper driver with skip-rare mode and DEBUG progress checks; reusable split/spill/flag support and native SplitAtTreeAndReplaceItWithLocal. Existing runtime lookup now uses shared path.",
-        "gaps": "New skip-rare and replace-with-local callers still need upcoming phase tests/activation. This is uncommitted support for the active static-init batch, not completion of the three pending phases."
+        "gaps": "Historical pre-refresh support evidence. Superseded for shared/static-init integration by staticInitIntegration; replace-with-local consumers still await TLS/VN public activation."
       },
       "runtimeLookupExpansion": {
         "snapshotBase": "405a663",
@@ -6053,6 +6069,13 @@
   },
   "sourceMap": [
     {
+      "area": "static-init-and-shared-helper-expansion",
+      "native": ["src\\coreclr\\jit\\helperexpansion.cpp:11-78,1232-1603", "src\\coreclr\\jit\\fgbasic.cpp:4731-4761"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.HelperExpansion.cs", "sources\\Core\\jit\\compiler\\Compiler.StaticInitExpansion.cs"],
+      "status": "Complete static-init public phase and shared traversal/split/spill/flag support, including CoreCLR/NativeAOT guard layouts and native optimization/rare-block policies. Positive CoreCLR fullopts/GCStress transformations and CFGs match. Residual native shared region retained for remaining callers; TLS/VN packets inactive.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
+    {
       "area": "late-liveness-scheduling",
       "native": ["src\\coreclr\\jit\\lower.cpp", "src\\coreclr\\jit\\compiler.cpp", "src\\coreclr\\jit\\liveness.cpp"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.LateLiveness.cs", "sources\\Core\\jit\\compiler\\Compiler.comp.cs", "sources\\Core\\jit\\lower\\Lowering.cs", "sources\\Core\\jit\\liveness\\Liveness.FixedPoint.cs"],
@@ -6062,7 +6085,7 @@
     {
       "area": "runtime-lookup-expansion",
       "native": ["src\\coreclr\\jit\\helperexpansion.cpp:11-29,136-148,169-485,1232-1260,1276-1300", "src\\coreclr\\jit\\fgbasic.cpp:4731-4761", "src\\coreclr\\jit\\gentree.cpp:2447-2457"],
-      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.RuntimeLookupExpansion.cs"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.RuntimeLookupExpansion.cs", "sources\\Core\\jit\\compiler\\Compiler.HelperExpansion.cs"],
       "status": "Complete WindowsAMD64 runtime-lookup production phase and direct split/spill/helper-scan closure. Selected shared-generic/combined execution and native-matching phase/CFG slices established. B307 IDs, diagnostics, code layout and broader runtime lookup coverage remain open.",
       "reconciledCommit": null
     },

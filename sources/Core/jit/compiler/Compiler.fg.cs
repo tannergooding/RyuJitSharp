@@ -13566,9 +13566,6 @@ public partial class Compiler
         return fgRemoveBlocksOutsideDfsTree() ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
     }
 
-    // TODO: Port phase - fgExpandHelper
-    public PhaseStatus fgExpandHelper(bool skipRarelyRunBlocks) => PhaseStatus.MODIFIED_NOTHING;
-
 #if DEBUG
     public void fgPreExpandQmarkChecks(GenTree expr)
     {
@@ -13901,9 +13898,6 @@ public partial class Compiler
             block.bbSetRunRarely();
         }
     }
-
-    // TODO: Port phase - fgExpandStaticInit
-    public PhaseStatus fgExpandStaticInit() => PhaseStatus.MODIFIED_NOTHING;
 
     // TODO: Port phase - fgExpandThreadLocalAccess
     public PhaseStatus fgExpandThreadLocalAccess() => PhaseStatus.MODIFIED_NOTHING;

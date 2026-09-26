@@ -24,49 +24,7 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-        var result = PhaseStatus.MODIFIED_NOTHING;
-        for (var block = fgFirstBB; block is not null; block = block.Next)
-        {
-#if DEBUG
-            var originalBlock = block;
-#endif
-            while (fgExpandRuntimeLookupForBlock(ref block))
-            {
-                result = PhaseStatus.MODIFIED_EVERYTHING;
-#if DEBUG
-                assert(originalBlock != block);
-                originalBlock = block;
-#endif
-            }
-        }
-
-        if (result is PhaseStatus.MODIFIED_EVERYTHING)
-        {
-            fgInvalidateDfsTree();
-        }
-
-        return result;
-    }
-
-    private bool fgExpandRuntimeLookupForBlock(ref BasicBlock block)
-    {
-        for (var stmt = block.GetFirstNonPhiDef(); stmt is not null; stmt = stmt.NextStmt)
-        {
-            if ((stmt.RootNode.Flags & GTF_CALL) == 0)
-            {
-                continue;
-            }
-
-            foreach (var tree in stmt.TreeList)
-            {
-                if ((tree is GenTreeCall call) && fgExpandRuntimeLookupsForCall(ref block, stmt, call))
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        return fgExpandHelper(fgExpandRuntimeLookupsForCall);
     }
 
     private unsafe bool fgExpandRuntimeLookupsForCall(ref BasicBlock block, Statement stmt, GenTreeCall call)
@@ -117,7 +75,7 @@ public partial class Compiler
         }
 
         var prevBb = block;
-        ref var callUse = ref SplitRuntimeLookupBlockBeforeTree(block, stmt, call, out var newFirstStmt, out block);
+        ref var callUse = ref fgSplitBlockBeforeTree(block, stmt, call, out var newFirstStmt, out block);
         while ((newFirstStmt is not null) && (newFirstStmt != stmt))
         {
             fgMorphStmtBlockOps(block, newFirstStmt);
@@ -154,7 +112,7 @@ public partial class Compiler
                 || ((i == 2) && runtimeLookup.indirectSecondOffset);
             if (indirectOffset)
             {
-                indOffTree = SpillRuntimeLookupExpression(slotPtrTree, prevBb, debugInfo);
+                indOffTree = SpillExpression(slotPtrTree, prevBb, debugInfo);
                 slotPtrTree = gtCloneExpr(indOffTree)
                     ?? throw new FatalJitException("Cannot clone indirect runtime lookup offset.");
             }
@@ -182,7 +140,7 @@ public partial class Compiler
             {
                 if (lastWithSizeCheck)
                 {
-                    lastIndOfTree = SpillRuntimeLookupExpression(slotPtrTree, prevBb, debugInfo);
+                    lastIndOfTree = SpillExpression(slotPtrTree, prevBb, debugInfo);
                     slotPtrTree = gtCloneExpr(lastIndOfTree)
                         ?? throw new FatalJitException("Cannot clone dictionary size-check base.");
                 }
@@ -264,13 +222,13 @@ public partial class Compiler
             fallbackBb.inheritWeightPercentage(nullcheckBb, 20);
         }
 
-        InheritRuntimeLookupFlags(nullcheckBb, prevBb);
-        InheritRuntimeLookupFlags(fastPathBb, prevBb);
-        InheritRuntimeLookupFlags(fallbackBb, prevBb);
-        InheritRuntimeLookupFlags(block, prevBb);
+        InheritFlags(nullcheckBb, prevBb);
+        InheritFlags(fastPathBb, prevBb);
+        InheritFlags(fallbackBb, prevBb);
+        InheritFlags(block, prevBb);
         if (sizeCheckBb is not null)
         {
-            InheritRuntimeLookupFlags(sizeCheckBb, prevBb);
+            InheritFlags(sizeCheckBb, prevBb);
         }
 
         assert(BasicBlock.sameEHRegion(prevBb, block));
@@ -282,52 +240,5 @@ public partial class Compiler
         }
 
         return true;
-    }
-
-    private ref GenTree? SplitRuntimeLookupBlockBeforeTree(BasicBlock block, Statement stmt, GenTree call,
-        out Statement? firstNewStmt, out BasicBlock bottomBlock)
-    {
-        ref var use = ref gtSplitTree(block, stmt, call, out firstNewStmt, out _);
-        var originalFlags = block.FlagsRaw;
-        var previous = block;
-
-        if (stmt == block.FirstStmt)
-        {
-            block = fgSplitBlockAtBeginning(previous);
-        }
-        else
-        {
-            var before = stmt.PrevStmt ?? throw new FatalJitException("A non-first statement needs a predecessor.");
-#if DEBUG
-            JITDUMP($"Splitting {FMT_BB(previous.bbNum)} after statement {FMT_STMT(before.Id)}\n");
-#endif
-            block = fgSplitBlockAfterStatement(previous, before);
-        }
-
-        previous.FlagsRaw = originalFlags & (~(BBF_SPLIT_LOST | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT);
-        block.SetFlags(originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_RETLESS_CALL));
-        assert(previous.Kind is BBJ_ALWAYS && previous.JumpsToNext && previous.Next == block);
-
-        bottomBlock = block;
-        return ref use;
-    }
-
-    private GenTreeLclVar SpillRuntimeLookupExpression(GenTree expression, BasicBlock block, in DebugInfo debugInfo)
-    {
-        var temp = lvaGrabTemp(shortLifetime: true, "spilling expr");
-        var stmt = fgNewStmtFromTree(gtNewTempStore(temp, expression), di: debugInfo);
-        fgInsertStmtAtEnd(block, stmt);
-        gtSetStmtInfo(stmt);
-        fgSetStmtSeq(stmt);
-        return gtNewLclVarNode(lvaTable[temp].Type, temp);
-    }
-
-    private static void InheritRuntimeLookupFlags(BasicBlock destination, BasicBlock source)
-    {
-        if (!source.HasFlag(BBF_INTERNAL))
-        {
-            destination.RemoveFlags(BBF_INTERNAL);
-            destination.SetFlags(BBF_IMPORTED);
-        }
     }
 }

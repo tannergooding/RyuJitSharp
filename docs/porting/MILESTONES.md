@@ -15,6 +15,27 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Static-initialization expansion
+
+The public static-init phase now replaces eligible GC and non-GC static-base
+helpers with the native initialization guard, retaining the original helper on
+the cold path. Both CoreCLR and NativeAOT layouts, evaluation order, EH region
+inheritance and block weights follow the pinned implementation. Runtime lookups
+now use the same shared helper traversal and block-splitting support.
+
+The explicit-cctor corpus executes first and repeated accesses, two helpers in
+one expression and a reference surviving compacting GC. Fullopts and GCStress
+produce native-matching transformation logs and CFGs; CoreCLR minopts leaves the
+calls unexpanded. Post-phase VN identifiers and profile diagnostics still differ,
+so this is not full dump or machine-code parity. TLS and VN-intrinsic expansion
+remain inactive.
+
+Reproduce by building `sources\PortingStaticInitCorpus` in Release, then running
+`scripts\porting\Invoke-PortingCorpus.ps1` against a matching CoreRoot with
+`-TypeName RyuJitSharp.StaticInitCases -ExpectedMethods ReadInt,ReadObject,ReadPair`.
+Use a fresh output directory per capture; compare native, managed execution,
+`-MinOpts` and `-GcStress` configurations.
+
 ## 2026-09-26: Upstream synchronization
 
 The oracle, residual native source and existing C# implementations now track
