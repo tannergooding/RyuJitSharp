@@ -647,6 +647,17 @@ evaluation, but has no positive profiled-runtime capture yet. Block-table paddin
 uses the magnitude of a signed empty-field width, preserving native `printf`
 instead of throwing for long targets (B289).
 
+If-conversion is active for Windows x64. Its descriptor retains the native
+eligibility, profitability, operand and CFG transformations. The reachability
+work stack admits a null merge: equality with the excluded block is checked
+before dereferencing the item, after scratch initialization or clearing and
+without consuming budget (B287). This preserves native behavior rather than
+adding a null-merge shortcut. RISC-V-specific select arithmetic remains explicitly
+unsupported; other-target execution and full dump/code parity are not established.
+Special-operator evaluation now returns its calculated costs and level rather than
+discarding them (B291). The three positive return probes match native emitted
+bytes and SELECT/RETURN costs; that is scoped evidence, not general code parity.
+
 VN-based folding and insertion-time statement morphing are also complete
 prerequisites. Local-address folds retain the native 16-bit offset invariant;
 the native constructor's unsigned parameter does not imply wider field storage.

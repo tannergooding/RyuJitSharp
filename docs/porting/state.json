@@ -12,46 +12,53 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Integrate complete loop-cloning model and CSE candidate/dataflow prerequisites while Boolean optimization, full loop cloning, CSE heuristics and if-conversion proceed independently. Keep future phase entries inactive until complete dependency closure and execution validation.",
+      "scope": "Integrate complete if-conversion, loop-cloning and CSE dependency closures. Boolean optimization and switch recognition are committed and active. Keep each remaining phase inactive until its complete native dependency closure and execution validation.",
       "doneWhen": [
         "Preserve the completed loop-inversion/iteration-analysis contract and identify the first missing native transformation behind a concrete optimized-code difference.",
         "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
-        "Preserve complete VN traversal/evaluation, native-order loop state and all nineteen established execution configurations while completing subsequent optimization phases.",
+        "Preserve complete VN traversal/evaluation, native-order loop state and all twenty established execution configurations while completing subsequent optimization phases.",
         "Review each frozen packet, run focused Debug/Release cases and commit it with related tracking before integrating the next packet."
       ],
       "validation": [
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Switch activation plus B289 dump-padding repair validated1215D1172R and19captures121bodies/75phase completions/4changed.57-case probe matches native4 converted blocks; aligned bodies unchanged. Commit exact6 overlays+docs, then integrate corrected ifconversion4 (610:66/67,43D43R). d62 repairing B290 EH scan and omitted driver diagnostics before cloning activation.",
+      "parentScope": "If-conversion activation and B287/B291 repairs validated1240D1197R and20captures124bodies/78phase completions/9SELECTs. The99-case return probe passes native/baseline/current; final3 bodies and SELECT/RETURN costs match native. Commit exact6 source overlays and tracking, then integrate frozen CSE helper5 and SSA7 without overwriting ongoing heuristic work. Loop-cloning6 is diagnostic-complete and frozen.",
       "parallelPackets": [
         {
           "scope": "Complete Boolean optimization with the native CCMP switch-detection prerequisite.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
           "files": "New Compiler.BooleanOptimization*.cs/BooleanOptimizationTests.cs and Compiler.SwitchRecognition.Detection.cs/SwitchRecognitionDetectionTests.cs.",
+          "status": "done",
+          "remainingBoundary": "Boolean committed07d9ebe; switch recognition and B289 committed82b9829 after1215D1172R/19captures. Positive57-case probe matches native4 conversions. Worker now owns independent incremental SSA prerequisites."
+        },
+        {
+          "scope": "Complete native UseDefLocation, IncrementalSsaBuilder and inserted-SSA liveness prerequisites for CSE rewriting.",
+          "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
+          "files": "New ssabuilder files and IncrementalSsaBuilderTests.cs; Compiler.BasicBlockLocalPair.cs identity-key completion authorized.",
           "status": "in-progress",
-          "remainingBoundary": "Boolean committed07d9ebe. Switch3 packet3a:79/review942:106 integrated with B289 repair:1215D1172R/19captures. Positive57-case probe from3a:85 matches native4 conversions. Exact6 parent overlays ready to commit;3a idle."
+          "remainingBoundary": "Seven-file packet frozen30D30R on82b9829;942:110 review found no high-confidence defect. Block/local key identity, phi order and explicit NoVN initialization preserved.6a consuming exact manifest for PerformCSE; integrate frozen bytes before activation. EH/cyclic-phi/frontier-limit/existing-phi coverage remains limited."
         },
         {
           "scope": "Complete loop-cloning representation and guard-expression prerequisites before phase closure.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
           "files": "New conventional loopcloning type files, Compiler.LoopCloning*.cs and LoopCloningModelTests.cs/LoopCloningTests.cs.",
           "status": "in-progress",
-          "remainingBoundary": "Model committed830b309. Driver6 frozen through139,29D29R;942:107 found B290 premature EH-table break plus omitted phase-decision diagnostics. d62 authorized to fix scan, add failing-before nested/enclosing EH coverage and restore complete driver dumps; awaiting revised frozen packet. Public cloning phase inactive."
+          "remainingBoundary": "Model committed830b309. Driver6 through146 is diagnostic-complete, including candidate/condition traces, with31D30R. B290 fix and failing-before EH regression preserved. Frozen packet ready for parent activation; public cloning phase remains inactive."
         },
         {
           "scope": "Complete VN-CSE candidate/indexing and availability/dataflow prerequisites.",
           "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
           "files": "New Compiler.CSE.Candidates*.cs/Compiler.CSE.Dataflow*.cs/CSECandidateTests.cs; existing CSEdsc.cs and CSE_HeuristicCommon.cs explicitly authorized.",
           "status": "in-progress",
-          "remainingBoundary": "Prerequisite6a:86 committed115bd6b after60D58R/942:101 clear review;6a notified.6a owns complete next heuristic-selection/cost/rewrite prerequisites in NEW files only; report shared dependencies before edits. Compiler.opt.cs parent-owned during Boolean activation. Public CSE inactive."
+          "remainingBoundary": "Candidate prerequisites committed115bd6b. Helper5 frozen in heuristic-115bd6b-packet.json passes17D17R;942:108 review found no high-confidence defect. Preserve frozen bytes for integration while6a completes shared heuristic state/contracts and selection/rewrite dependencies with3a incremental SSA. CSE_HeuristicCommon extension authorized; public CSE inactive."
         },
         {
-          "scope": "Complete native if-conversion descriptor, transforms and private phase core.",
+          "scope": "Complete native if-conversion descriptor, transforms and production phase.",
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
           "files": "New ifconversion/OptIfConversionDsc*.cs, Compiler.IfConversion*.cs and IfConversionTests.cs.",
-          "status": "in-progress",
-          "remainingBoundary": "Corrected4-file packet610:66/67 frozen43D43R on115bd6b; exact native null exclusion preserves scratch initialization/clear and unchanged budget. Includes authorized nullable reachability helper. Ready for parent integration after switch commit; public phase inactive. No upstream defect/deviation."
+          "status": "done",
+          "remainingBoundary": "Production entry active after1240D1197R and20execution configurations.11 public-entry cases fail against the old stub;2 null-merge cases fail under the bypass;2 B291 cost/level cases fail before the shared return fix. Final3 positive bodies/costs match native. No upstream defect/deviation; wider target/code parity remains unestablished."
         },
         {
           "scope": "Complete native optUnrollLoops and required local helper/visitor closure.",
@@ -243,7 +250,7 @@
         }
       ],
       "deferred": [
-        "VN, assertion propagation, range elimination, copy propagation, VN dead-store removal, unrolling and redundant branches are active; Boolean optimization, loop cloning and CSE remain inactive.",
+        "VN, assertion propagation, range elimination, copy propagation, VN dead-store removal, unrolling, redundant branches, Boolean optimization, switch recognition and if-conversion are active; loop cloning and CSE remain inactive.",
         "Broader optimized execution and unfinished optimization phases beyond the current backend frontier.",
         "Full EH-funclet and hardware-import parity are subsequent execution-capability packets, not gates on the first scalar minopts backend path.",
         "Non-xarch hardware-intrinsic folding and hashBv iterator/countBits/setLowest APIs. Native vector Intersects/XOR defects are recorded in B247/B246; their corrected algorithms are not authorized and those entire vector operations are deferred.",
@@ -253,11 +260,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit switch activation+B289 after1215D1172R and19captures: exact6 overlays artifacts\\switch-phase-validation\\source-manifest-padding.json; final JIT artifacts\\switch-padding-jit\\RyuJitSharp.dll. Positive57-case probe matches native4 converted blocks; no full code-parity claim. Then integrate610:66/67 corrected ifconversion4 packet43D43R, preserving19 configs from artifacts\\switch-phase-validation\\capture-configurations.json. Awaitd62 B290+diagnostic repair and6a CSE heuristic packet. Parent snapshot07d9ebe+switch6 only; CoreRoot free; no publication.",
+    "nextAction": "Integrate frozen CSE helper5 from artifacts\\cse-validation\\heuristic-115bd6b-packet.json and its heuristic-115bd6b snapshot, preserving newer root heuristic WIP;17D17R and942:108 review complete. Then integrate3a SSA7 (30D30R,942:110 clear review) and activate collectedd62:146 diagnostic-complete cloning6 (31D30R). Parent snapshot82b9829+ifconversion6; final JIT artifacts\\ifconversion-cost-jit\\RyuJitSharp.dll and source-manifest-cost.json. Preserve20 configurations. Fast wrappers committedc9c6ecb; use -fast/direct analyzer+documentation overrides for inner loops, full analysis before freeze. CoreRoot free; no publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Collected3a:79-85 switch/probe;610:64-67 corrected ifconversion4;d62:134-140 driver6;942:106/107 switch/cloning reviews. Switch6 parent overlays validated ready. d62 repairing B290+diagnostics;6a CSE heuristic prerequisites ongoing;3a/610/942 idle. CoreRoot free; no app-native sessions.",
+      "workerPackets": "Collected610:71-73 B291 regression45D45R,3a:89-92 SSA7 freeze30D30R,942:108-110 CSE/SSA reviews and initial positive comparison, d62:146-147 complete cloning diagnostics31D30R.6a heuristic closure ongoing; other packets frozen/idle. Fast build wrappers committedc9c6ecb. CoreRoot free; no app-native sessions.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -273,6 +280,24 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "ifConversionActivation": {
+        "snapshotBase": "82b9829",
+        "sourceManifest": "artifacts\\ifconversion-phase-validation\\source-manifest-cost.json",
+        "debugPassed": 1240,
+        "releasePassed": 1197,
+        "skipped": 0,
+        "selection": "Exact switch-padding integration plus25 IfConversionTests cases; existing reachability selection retained. Full analyzer-enabled Debug/Release after fast iteration.",
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\ifconversion-cost-integrated-{Debug,Release}.trx",
+        "nativeAot": "artifacts\\ifconversion-cost-jit\\RyuJitSharp.dll",
+        "jitSha256": "A6880B22DCD4E36BBA2C1E816B05F9D4A06C67BFF973217366033AC7347A7BC6",
+        "runtimeEvidence": "artifacts\\ifconversion-phase-validation\\runtime-validation-cost.json",
+        "configurations": "artifacts\\ifconversion-phase-validation\\capture-configurations.json",
+        "runtime": "20 managed execution configurations,124 positive bodies,78 if-conversion completions,9 changed phases/SELECTs. All established optimized/minopts/GCStress4 retained. Native/baseline/current return probes pass99 boundary-value cases with both arms, unchecked overflow and independent operands.",
+        "regressions": "11 of23 original public-entry cases fail against82b9829 inactive stub. Restoring the null-merge bypass fails2 scratch/budget cases; restored packet passes43D43R. Two additional B291 cost/level cases fail with the hardcoded return; corrected focused packet passes45D45R.",
+        "comparison": "positive-cost-comparison.json verifies final3 emitted bodies and SELECT/RETURN costs against native:17/13/13 bytes. Prior managed bodies have the same sizes but6 instructions each versus5 after conversion. No throughput or full-parity claim.",
+        "supersededEvidence": "Initial ifconversion-phase-jit/source-manifest.json/runtime-validation.json precede B291; final evidence uses cost JIT, cost manifest and cost-prefixed20 captures.",
+        "gaps": "No broad target or full dump/code parity claim. RISC-V-specific select arithmetic remains explicitly unsupported."
+      },
       "switchRecognitionActivation": {
         "snapshotBase": "07d9ebe",
         "sourceManifest": "artifacts\\switch-phase-validation\\source-manifest-padding.json",
@@ -6623,6 +6648,13 @@
       "native": ["src\\coreclr\\jit\\rangecheck.h", "src\\coreclr\\jit\\rangecheck.cpp", "src\\coreclr\\jit\\assertionprop.cpp"],
       "csharp": ["sources\\Core\\jit\\rangecheck\\", "sources\\Core\\jit\\compiler\\Compiler.ap.Relational.cs"],
       "status": "Complete range-analysis dependency and relational application; RangeProperties remains canonical in the relational partial. Global assertion and range-check elimination phases are active.",
+      "reconciledCommit": null
+    },
+    {
+      "area": "if-conversion",
+      "native": ["src\\coreclr\\jit\\ifconversion.cpp:21-1056", "src\\coreclr\\jit\\gentree.cpp:7783-7815,10294-10303", "src\\coreclr\\jit\\redundantbranchopts.cpp:3257-3319"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.IfConversion.cs", "sources\\Core\\jit\\ifconversion\\OptIfConversionDsc.cs", "sources\\Core\\jit\\compiler\\Compiler.RedundantBranches.Reachability.cs", "sources\\Core\\jit\\compiler\\Compiler.gt.cs:gtSetEvalOrder"],
+      "status": "Windows-x64 production phase active, preserving null-merge scratch/budget behavior and calculated special-operator costs/level. RISC-V select arithmetic explicitly unsupported; native body retained for remaining targets.",
       "reconciledCommit": null
     },
     {

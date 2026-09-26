@@ -15,6 +15,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: If-conversion
+
+If-conversion now replaces eligible conditional stores and return diamonds with
+select expressions, preserving native profitability checks, evaluation order,
+profile updates and reachability limits. The shared reachability helper accepts
+the native null-merge case without skipping scratch-state initialization.
+
+Optimized and GC-stress execution remains intact. Three focused return shapes
+now match native emitted bytes and evaluation costs across both arms, integer
+overflow and independent operands. The comparison also exposed and corrected a
+shared cost-calculation bug that discarded computed special-operator costs and
+evaluation levels. Broader select coverage and complete dump/code parity remain
+outstanding.
+
 ## 2026-09-26: Switch recognition and dominant-case peeling
 
 Switch recognition now converts eligible comparison chains into switches and

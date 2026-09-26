@@ -23,7 +23,7 @@ public partial class Compiler
     }
 
     private ReachabilityResult optReachableWithBudget(
-        BasicBlock fromBlock, BasicBlock toBlock, BasicBlock? excludedBlock, int[]? budget)
+        BasicBlock? fromBlock, BasicBlock toBlock, BasicBlock? excludedBlock, int[]? budget)
     {
         if (fromBlock == toBlock)
         {
@@ -42,7 +42,7 @@ public partial class Compiler
             BitVecOps.ClearD(optReachableBitVecTraits, optReachableBitVec);
         }
 
-        var stack = new Stack<BasicBlock>();
+        var stack = new Stack<BasicBlock?>();
         stack.Push(fromBlock);
 
         while (stack.Count != 0)
@@ -54,6 +54,7 @@ public partial class Compiler
                 continue;
             }
 
+            assert(nextBlock is not null);
             var budgetExceeded = false;
             var visit = nextBlock.VisitAllSuccs(this, successor => {
                 if (successor == toBlock)

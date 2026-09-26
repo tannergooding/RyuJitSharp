@@ -15803,7 +15803,7 @@ public partial class Compiler
                 }
             }
 
-            return Done(tree, costEx: 1, costSz: 1, level: 0);
+            return Done(tree, costEx, costSz, level);
         }
 
         static int CommonCns(GenTree tree, byte costEx, byte costSz)
