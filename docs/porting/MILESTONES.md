@@ -15,6 +15,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Binary value-number constant folding
+
+Value numbering now has native binary folding eligibility, exception and
+overflow guards, scalar constant evaluation, numeric casts and bitcasts.
+Relocatable handles retain their operation restrictions; mixed operands,
+signed zero, NaN payloads and narrowing follow the native contracts.
+
+Binary function interning, algebraic identities, runtime type comparisons and
+the full value-numbering phase remain separate prerequisites. This does not
+enable optimized execution.
+
 ## 2026-09-25: Interior-reference and pinning execution
 
 Focused Windows-x64 minopts cases now preserve field and array interior

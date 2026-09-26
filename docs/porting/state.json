@@ -28,14 +28,14 @@
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
           "files": "liveness files, new Compiler.EarlyLiveness.cs, only the fgEarlyLiveness stub in Compiler.fg.cs, and EarlyLivenessTests.cs.",
           "doneWhen": "Review complete policy closure and isolated43Debug/38Release evidence; retain unchanged LIR behavior and validate integration before commit.",
-          "status": "awaiting-review"
+          "status": "validated-awaiting-execution"
         },
         {
           "scope": "Complete binary eligibility/safety and scalar constant evaluation/casts without full interning dispatch or VN activation.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
           "files": "ValueNumStore.BinaryFolding.cs, ValueNumStore.BinaryCasts.cs and ValueNumBinaryFoldingTests.cs.",
           "doneWhen": "Review full native function closure and isolated233Debug/233Release evidence; validate integration before commit.",
-          "status": "awaiting-review",
+          "status": "complete",
           "deferred": "Binary interning, math identities, VM type comparisons and the VN phase remain outside the packet."
         }
       ],
@@ -49,11 +49,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Review frozen early-tree liveness from610162a0 through turn2 (43Debug/38Release) and binary folding from3a2c8d9b through turn4 (233/233), verify snapshot hashes, validate integration and commit separately. The B248/B249 diagnostic packet is complete with failing-before regressions,51Debug/41Release, and isolated interior-diagnostics-jit execution of all3interior/pinned cases across3confirmed collections plus20standard methods underGCStress4. d62fc6a5 through turn65 is resolved. All handoffs are collected; do not start new packets before integrating these. Upstream defects remain tracked/deferred; no optimized allocator/VN activation or publication.",
+    "nextAction": "Binary folding is reviewed and complete. Finish the early-liveness packet: stage its four source/test files, save the exact source patch, publish a fresh NativeAOT DLL, then run the existing twenty-method minopts corpus and three interior/pinned cases under GCStress4. Integrated tests pass 276 Debug / 271 Release, including a failing-before correction that keeps the early driver's compCurStmt null. Commit early liveness with its mapping and evidence, then resume independent packets. All worker handoffs are collected; upstream defects remain deferred and no publication is authorized.",
     "handoff": {
       "status": "parallel-prerequisite-integration",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 through turn2 returned frozen early-tree liveness and43Debug/38Release in artifacts\\early-liveness-validation. 3a2c8d9b through turn4 returned frozen binary folding and233/233 in artifacts\\vn-binary-folding-validation. d62fc6a5 through turn65 returned the interior/pin probe; parent fixed the reached B248/B249 diagnostics and validated fresh execution. 6a004941 through turn35 and942a496f through turn61 remain resolved. No unread handoffs or app-native child-session coordination.",
+      "workerPackets": "610162a0 through turn2: early-tree liveness reviewed, native statement-cursor invariant repaired, integrated tests passed; fresh execution and commit remain. 3a2c8d9b through turn4: binary folding reviewed and complete. d62fc6a5 through turn65, 6a004941 through turn35 and942a496f through turn61 are resolved. All workers are idle, with no unread handoffs or app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -69,6 +69,27 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "binaryConstantFolding": {
+        "nativeBoundary": "valuenum.cpp:4218-4782,4902-5013,5070-5212 at the pinned oracle; includes complete scalar casts and bitcasts.",
+        "source": [
+          "sources\\Core\\jit\\valuenum\\ValueNumStore.BinaryFolding.cs",
+          "sources\\Core\\jit\\valuenum\\ValueNumStore.BinaryCasts.cs"
+        ],
+        "isolatedEvidence": "artifacts\\vn-binary-folding-validation\\artifacts\\binary-folding-evidence.txt",
+        "snapshotBase": "ec87bbd",
+        "snapshotHashesVerified": true,
+        "isolatedDebugPassed": 233,
+        "isolatedReleasePassed": 233,
+        "newFoldingCases": 52,
+        "integratedDebugTests": "artifacts\\parallel-prerequisites-results\\parallel-prerequisites-debug-final.trx",
+        "integratedReleaseTests": "artifacts\\parallel-prerequisites-results\\parallel-prerequisites-release-final.trx",
+        "integratedDebugPassed": 276,
+        "integratedReleasePassed": 271,
+        "skipped": 0,
+        "selection": "FullyQualifiedName~EarlyLivenessTests|FullyQualifiedName~LivenessOrchestrationLIRTests|FullyQualifiedName~LoweringPhaseTests|FullyQualifiedName~ValueNumBinary|FullyQualifiedName~AssertionTests.Unary|FullyQualifiedName~CheckedCastTests.IntegralBoundaries|FullyQualifiedName~CheckedCastTests.FloatingBoundaries",
+        "review": "Native unsigned-to-FP utility bodies are direct casts. Root production files match the validated snapshot hashes; final tests additionally respect target-specific invalid-operation NaN signs.",
+        "remaining": "Binary interning, mathematical identities, VM type comparisons and VN phase activation."
+      },
       "interiorReferenceDiagnostics": {
         "snapshotBase": "ec87bbd",
         "snapshot": "artifacts\\interior-display-validation",

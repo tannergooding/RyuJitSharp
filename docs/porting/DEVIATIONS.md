@@ -261,6 +261,10 @@ Tree-based non-negativity inference and the conservative-VN fallback are active.
 The VN predicate follows native phi traversal and intrinsic rules (B086/B091);
 this does not activate the broader value-numbering phase.
 
+Binary VN constant evaluation includes native eligibility and exception guards,
+numeric casts and bitcasts. Binary interning, algebraic identities and VM type
+comparisons remain unported; constant evaluation does not activate the VN phase.
+
 Assertion descriptors use immutable managed objects with value-type operands;
 reversal creates a new descriptor. Vector constants own a copied byte array
 containing only the active payload, instead of native inline/arena storage.
