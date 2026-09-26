@@ -29,25 +29,25 @@
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
           "files": "New LinearScan.LocalResolutionDriver partials and LinearScanLocalResolutionDriverTests.cs; no production gate, minimal resolution, compiler or shared graph changes.",
           "doneWhen": "Complete local-enabled resolution and final verification with isolated Debug/Release evidence; production optimized allocation gate unchanged.",
-          "status": "in-progress",
-          "result": "Prior edge packet committed d9471a7. Follow-up assigned after turn13; parent reported LocalResolutionDriverFinalization.cs IDE0007 for worker correction. Await the frozen driver handoff."
+          "status": "validating",
+          "result": "Turns14-16 collected: six frozen files pass71Debug/49Release focused and621Debug/520Release LSRA cases. Parent reviewed driver/finalization/vector insertion; worker942a496f reviewed only final-verification files with no findings (turn62). Parent replaced the nullable local-interval-array fallback with its required invariant; validate the integrated packet before commit."
         },
         {
-          "scope": "Complete block weights and the native loop-discovery/compaction/canonicalization phase required to prepare their loop state.",
+          "scope": "Complete the native Windows-AMD64 allocateRegisters traversal using the committed general selector and assignment primitives.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
-          "files": "Frozen block-weight/reachability files plus new Compiler.LoopDiscovery partials and LoopDiscoveryTests.cs; only optFindLoopsPhase's stub in Compiler.opt.cs may now be removed after the complete closure is ready.",
-          "doneWhen": "Preserve native profile/heuristic decisions, EH and loop assumptions, arithmetic and diagnostics with isolated Debug/Release evidence.",
-          "status": "complete",
-          "result": "Turns17-18 collected and complete native source reviewed. Seven frozen overlays pass46Debug/43Release; integrated loop/SSA/CHECK_IR/selector cases pass194Debug/143Release. Fresh frozen NativeAOT capture moves18 standard FullOpts methods past B262 to the existing allocator gate, and all32 selected minopts methods execute under GCStress4. Before failure remains retained.",
-          "deferred": "Major unported dependency subsystems, shared Compiler.fg.cs, SSA/LSRA/Lowering files and unrelated optimizations."
+          "files": "New LinearScan.AllocationTraversal partials and LinearScanAllocationTraversalTests.cs; no Minimal*, RegisterSelection*, RegisterAllocation, LocalResolutionDriver, Compiler or production gate edits.",
+          "doneWhen": "Complete all Windows-x64 traversal paths, both local modes, upper-vector handling, stress and diagnostics with isolated Debug/Release evidence; production activation remains parent-owned.",
+          "status": "in-progress",
+          "result": "Prior loop/weight packet committed f885d50 after turns17-18,194Debug/143Release integrated cases and32/32 native-host GCStress4 executions. New allocation traversal assignment follows turn18; baseline f885d50, selector primitives c2a2413, native lsra.cpp5459-6755. Include native-false AMD64 CanSkipUpperVectorSave if needed.",
+          "deferred": "Major missing shared subsystems without explicit ownership, other targets, phase activation and publication."
         },
         {
           "scope": "Complete native general CHECK_IR flags/types and block/link driver, reusing complete LIR and standalone SSA checks.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
           "files": "Compiler.IRVerification.cs, IRVerificationTests.cs and removal of only the fgDebugCheckLinks stub from Compiler.fg.cs; Phase.cs unchanged.",
           "doneWhen": "Complete checker closure with exact native ordering, focused cases and subsequent production capture; no partial SSA-only substitute.",
-          "status": "awaiting-review",
-          "result": "Turn84 collected and complete native source reviewed; existing CheckLir/local semantics reused. Frozen aa60950 snapshot passes42Debug cases and Release build; combined loop/SSA/selector selection passes194Debug/143Release. Worker is publishing and capturing this frozen checker snapshot; production validation remains before commit."
+          "status": "complete",
+          "result": "Turns84-87 collected. Complete native source review and194Debug/143Release combined cases pass. Combined NativeAOT captures verify SSA postchecks for25 optimized methods before existing frontiers and32/32 minopts GCStress4 executions, with no new assertion. Three InlineCaller relaxed notices match native;43 additional FoldHardware GTF_CALL notices occur on already-divergent hardware-import IR, not an accepted checker deviation."
         }
       ],
       "deferred": [
@@ -61,11 +61,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "General register-selection/assignment primitives are committed c2a2413; complete loop/weight closure is reviewed and validated, resolving B262 for18 standard FullOpts methods while retaining32/32 minopts GCStress4 execution. General CHECK_IR source review and combined194Debug/143Release cases pass; collect worker d62fc6a5 native-host checker validation after turn84 and fix any actual production invariant failures before committing it. Collect worker610162a0 local-resolution-driver handoff after turn13. Parent's next allocator implementation is full native allocateRegisters at lsra.cpp5459 onward; CanSkipUpperVectorSave at7413 is absent, and its AMD64 native result is always false. Reuse buildIntervalsWithLocals (c8bdd87), full selector and existing block helpers; do not duplicate them or activate incomplete allocation. No remote publication.",
+    "nextAction": "General CHECK_IR is fully reviewed and combined loop/checker runtime validation passes25 optimized SSA postchecks plus32 minopts GCStress4 executions; B261 closes without suppressing the43 additional FoldHardware notices on divergent hardware-import IR. Next validate/commit the six-file local-resolution packet (worker610162a0 through turn16, native driver/vector/finalization reviewed; verification review942a496f turn62 has no findings). Parent added the required localVarIntervals invariant in its driver, so use a fresh integrated snapshot rather than the old worker hashes. Collect3a2c8d9b allocation traversal after turn18. Then wire native doRegisterAllocation predicates: local-enabled build/resolve only when enregisterLocalVars, full allocation when enregisterLocalVars OR OptimizationEnabled. Existing interval construction and codegen home reporting are complete. Preserve gate until full traversal/resolution closure and actual execution are validated. No remote publication.",
     "handoff": {
-      "status": "loop-weights-validated-general-ir-capturing",
+      "status": "general-ir-validated-local-resolution-integration",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 through turn13 collected; local-resolution-driver follow-up in progress. 3a2c8d9b through turn18 collected; loop/weight packet reviewed and validated, worker idle. d62fc6a5 through turn84 collected; checker source reviewed, worker authorized to capture once its frozen publish completes; CoreRoot freed after loop captures. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
+      "workerPackets": "610162a0 through turn16 fully collected; local-resolution packet returned and reviewed, parent integrating. 3a2c8d9b through turn18 collected; full allocation traversal in progress from f885d50. d62fc6a5 through turn87 fully collected; combined checker captures passed, worker idle. 942a496f through turn62 collected: read-only final-allocation verification review found no high-confidence bugs, worker idle. 6a004941 through turn35 remains resolved/idle. CoreRoot capture owner is free. No app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -81,6 +81,26 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "generalIrVerification": {
+        "nativeBoundary": "fgdiagnostic.cpp:3347-3689,3939-4038 plus existing LIR/SSA helpers; gentree.cpp:8168-8195 reverse-evaluation eligibility.",
+        "workerManifest": "artifacts\\ir-verification-validation\\source-manifest.json",
+        "workerManifestSha256": "4F79707FAF469A1F37FAFEF323C4A0BA203FE95EBDED1D0D1B5829EE37EE1F84",
+        "workerDebugPassed": 42,
+        "workerReleaseBuildPassed": true,
+        "integratedManifest": "artifacts\\loop-ir-integration\\source-manifest.json",
+        "integratedManifestSha256": "92AD4FDECC29444ADF50ACE07ECF46605C142777FC6B030F63CE7A4EDB58ACE5",
+        "integratedBase": "c2a2413",
+        "debugPassed": 194,
+        "releasePassed": 143,
+        "skipped": 0,
+        "runtimeResults": "artifacts\\loop-ir-integration\\runtime-validation.json",
+        "runtimeResultsSha256": "7EC5724CC4211F1B8F0933E0D2384D5DDA4C7BF1982F13D408A0D7695C26DDF8",
+        "nativeAotDll": "artifacts\\loop-ir-jit\\RyuJitSharp.dll",
+        "nativeAotSha256": "6AEE7B566423B10653CED15A846E2FF7B3873C8253C3FDE9D3DB6E1A22C41350",
+        "execution": "All32 selected minopts methods execute with GCStress4, unique headers and nonzero managed code across five corpora. Three FullOpts diagnostic captures contain25 managed methods with successful SSA postchecks after loop canonicalization, before the existing optimized-allocation rejection; no new assertion.",
+        "noticeComparison": "artifacts\\ir-verification-validation\\flag-notice-comparison.json",
+        "limit": "Standard FullOpts Main still falls back after Allocate Objects and causes a duplicate header; not an optimized execution pass. Three InlineCaller relaxed notices match native, while FoldHardware adds43 GTF_CALL notices on already-divergent hardware-import IR. No full diagnostic/code parity."
+      },
       "loopDiscoveryAndWeights": {
         "nativeBoundary": "optimizer.cpp:40-232,2493-3147,5181-5207; fgopt.cpp:19-51; flowgraph.cpp:7623-7727; fgbasic.cpp:6430-6450; jiteh.cpp:872-899.",
         "sourceManifest": "artifacts\\loop-discovery-validation\\source-manifest.json",
@@ -131,7 +151,7 @@
         "releasePassed": 4,
         "skipped": 0,
         "coverage": "Fifteen Debug-only success/failure/notice cases and four actual SSA/rebuild outcomes. Release runs the unchanged four phase cases without Debug verification.",
-        "limit": "Standalone helper only. Native general CHECK_IR flags/types/LIR checks must be completed before fgDebugCheckLinks activates it; B261 remains open."
+        "limit": "This historical snapshot tested the standalone helper only. Subsequent complete CHECK_IR activation and runtime evidence are recorded under generalIrVerification."
       },
       "edgeResolution": {
         "nativeBoundary": "lsra.cpp:634-722,8434-8719,8793-10000; complete Windows-AMD64 edge resolution and native nullable stressLimitRegs.",
@@ -5879,10 +5899,10 @@
     },
     {
       "area": "ssa-verification",
-      "native": ["src\\coreclr\\jit\\fgdiagnostic.cpp:4206-4740,4757-4793"],
-      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.SsaVerification.cs"],
+      "native": ["src\\coreclr\\jit\\fgdiagnostic.cpp:3347-3689,3939-4038,4206-4740,4757-4793", "src\\coreclr\\jit\\gentree.cpp:8168-8195", "src\\coreclr\\jit\\lir.cpp:1409-1742"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.SsaVerification.cs", "sources\\Core\\jit\\compiler\\Compiler.IRVerification.cs", "sources\\Core\\jit\\lir\\LIR.Range.cs", "sources\\Core\\jit\\lir\\CheckLclVarSemanticsHelper.cs"],
       "reconciledCommit": null,
-      "scope": "Complete standalone SSA verifier. Unactivated until the full general IR-checking closure is ported; B261."
+      "scope": "Complete native CHECK_IR tree flag/type and link driver, existing LIR/local-semantic verification and SSA postchecks; B261 resolved. Reverse-evaluation eligibility lives in the Compiler verifier partial."
     },
     {
       "area": "linear-scan-edge-resolution",

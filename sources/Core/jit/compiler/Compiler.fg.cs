@@ -3443,9 +3443,6 @@ public partial class Compiler
     // TODO: Port phase check - fgDebugCheckLinkedLocals
     public void fgDebugCheckLinkedLocals() { }
 
-    // TODO: Port phase check - fgDebugCheckLinks
-    public void fgDebugCheckLinks(bool morphTrees = false) { }
-
     // TODO: Port phase check - fgDebugCheckLoops
     public void fgDebugCheckLoops() { }
 

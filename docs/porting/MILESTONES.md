@@ -15,6 +15,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: IR and SSA phase verification
+
+Native CHECK_IR verification is now active: tree phases check types, side-effect
+flags and statement links; linear IR checks use/definition ordering, threading
+and local semantics. SSA verification runs afterward at the native phase
+boundary, including after loop canonicalization and SSA construction.
+
+The checks preserve native relaxed-mode notices rather than suppressing them.
+Selected minopts execution remains intact. Hardware-intrinsic import differences
+still produce additional flag notices, so this does not establish full
+diagnostic parity.
+
 ## 2026-09-25: Loop canonicalization and block weights
 
 The optimized pipeline now discovers and compacts natural loops, creates

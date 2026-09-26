@@ -864,9 +864,13 @@ rethreading; NOP conversion uses the existing base-field-only transformation.
 The full SSA builder now inserts and renames local and memory PHIs, including
 EH propagation and shared GC-heap/byref state, in native traversal order.
 Its phase driver preserves liveness, zero-init cleanup and deep-rebuild order.
-The general `fgDebugCheckLinks` closure remains unported; annotation checking
-does not replace its SSA verifier or establish full diagnostic parity.
-The standalone SSA verifier is ported but unactivated. Its tuple-keyed managed
+The general `fgDebugCheckLinks` closure now preserves native tree flag/type and
+link checks, LIR use/definition and local-semantic checks, followed by SSA
+verification at CHECK_IR. Relaxed extra-flag notices remain visible and counted.
+The hardware-import-divergent `FoldHardware` input has additional `GTF_CALL`
+notices; these are not accepted diagnostic differences or evidence of a checker
+defect on identical IR. Full diagnostic parity remains unestablished.
+The SSA verifier's tuple-keyed managed
 dictionary is queried in native local/SSA descriptor order, not enumerated,
 so hash layout does not affect notice or failure ordering.
 At the end of local-list maintenance, managed code detaches obsolete local
