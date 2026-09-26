@@ -25,7 +25,23 @@ public sealed partial class ObjectAllocator
     private int _regionsToClone;
     private readonly int _initialMaxBlockID;
     private readonly Dictionary<int, CloneInfo> _cloneMap = [];
+    private readonly Dictionary<GenTree, StoreInfo> _storeAddressToIndexMap = [];
+    private readonly Dictionary<int, int> _enumeratorLocalToPseudoIndexMap = [];
     private bool _trackFields;
+
+    private sealed class StoreInfo(int index, bool connected = false)
+    {
+        public int Index = index;
+        public bool Connected = connected;
+    }
+
+    private bool CanHavePseudos() => _maxPseudos > 0;
+
+#if DEBUG
+    private static int TreeIdForDump(GenTree tree) => tree.TreeId;
+#else
+    private static int TreeIdForDump(GenTree tree) => 0;
+#endif
 
     private bool IsTrackedType(var_types type)
     {

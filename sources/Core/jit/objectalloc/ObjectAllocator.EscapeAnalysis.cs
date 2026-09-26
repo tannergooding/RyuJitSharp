@@ -9,13 +9,28 @@ namespace RyuJitSharp;
 
 public sealed partial class ObjectAllocator
 {
-    private sealed class EnumeratorVarAppearance(BasicBlock block, Statement stmt, int lclNum, bool isDef)
+    private sealed class EnumeratorVarAppearance
     {
-        public BasicBlock Block = block;
-        public Statement Stmt = stmt;
-        public int LclNum = lclNum;
-        public bool IsDef = isDef;
+        public BasicBlock Block;
+        public Statement Stmt;
+        public GenTreeUse? Use;
+        public int LclNum;
+        public bool IsDef;
         public bool IsGuard;
+
+        public EnumeratorVarAppearance(BasicBlock block, Statement stmt, int lclNum, bool isDef)
+            : this(block, stmt, lclNum, isDef, null)
+        {
+        }
+
+        public EnumeratorVarAppearance(BasicBlock block, Statement stmt, int lclNum, bool isDef, GenTreeUse? use)
+        {
+            Block = block;
+            Stmt = stmt;
+            LclNum = lclNum;
+            IsDef = isDef;
+            Use = use;
+        }
     }
 
     private sealed class EnumeratorVar

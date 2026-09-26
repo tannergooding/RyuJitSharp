@@ -83,25 +83,13 @@ public sealed partial class ObjectAllocator
 
     private bool CloneBlockComplexityExceeds(BasicBlock block, uint limit, ref uint size)
     {
-        // This is BasicBlock::ComplexityExceeds (compiler.hpp) for the node-count callback.
-        var compiler = CompilerInstance;
         var localCount = 0u;
-        foreach (var stmt in block.Statements)
-        {
-            var slack = unchecked(limit - localCount);
-            var exceeded = compiler.gtComplexityExceeds(stmt.RootNode, slack, _ => {
-                localCount++;
-                return 1;
-            });
-            if (exceeded)
-            {
-                size = unchecked(size + localCount);
-                return true;
-            }
-        }
-
+        var exceeded = block.ComplexityExceeds(CompilerInstance, limit, _ => {
+            localCount++;
+            return 1;
+        });
         size = unchecked(size + localCount);
-        return false;
+        return exceeded;
     }
 
     private bool CanClone(CloneInfo info)

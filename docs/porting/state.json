@@ -37,8 +37,8 @@
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
           "files": "Compiler.EHClone partials and required CloneTryInfo state/tests. Existing feasibility API must remain compatible; generic helper edits require a concrete handoff.",
           "doneWhen": "Complete native mutation/order/capacity/CFG-EH bookkeeping through function end, or return a complete prerequisite with a precise blocker. No partial mutation or reduced cloning.",
-          "status": "in-progress",
-          "result": "Turn18 returned54D51R mapped-target prerequisite. Continuing same closure with authorized BasicBlock.CloneBlockState and required statement-clone helpers; no helper-only integration yet."
+          "status": "done",
+          "result": "Turn19 complete EH clone63D60R reviewed, hashes verified and integrated with allocation-site analysis. Combined inversion/object/EH selection249D245R and selected execution pass."
         },
         {
           "scope": "Complete SIMD type recognition and associated hardware-import prerequisites.",
@@ -54,8 +54,8 @@
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
           "files": "ObjectAllocator analysis partials/state/tests; no DoPhase activation, clone transformations, stack/heap morphing or Compiler edits.",
           "doneWhen": "Complete native site/alias traversal and graph/pseudo/clone-state population using the committed escape/viability helpers; preserve phase gates.",
-          "status": "in-progress",
-          "result": "Escape/viability integrated31aaac0. New assignment after collected turn92, baselinef3a5815."
+          "status": "done",
+          "result": "Site/alias analysis through94 reviewed40D38R, sharing complete BasicBlock.ComplexityExceeds. Integrated with full EH cloning; positive EE-dependent enumerator allocation remains outside fixture coverage."
         }
       ],
       "deferred": [
@@ -69,11 +69,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Parent inversion body/cost walker and shared BasicBlock.ComplexityExceeds are implemented but unvalidated; Compiler.opt.cs stub removed in WIP and LoopDiscoveryTests gained top/bottom-tested cases. Integrate942's pending full iteration analysis, establish targeted Debug/Release and native FullOpts execution before committing inversion. d62 site-analysis40D38R is frozen under6a review; includes shared complexity helper. 610 full EH clone63D60R is frozen, needs review/integration. SIMD argument75D75R packet now integrated; next3a scope is full remaining hardware-import closure, not selective activation. Current validated binary still20b2aaf,27 optimized and32 minopts GCStress4 methods execute. No code/dump parity or publication.",
+    "nextAction": "Object-site analysis and full EH cloning are reviewed and validated together, with shared BasicBlock.ComplexityExceeds. Parent inversion plus942 iteration closure also passes combined249Debug/245Release and fresh NativeAOT execution27FullOpts/32minopts-GCStress4; finish its coherent commit after object/EH. Remaining raw bytes differ in all4 call-free probes, so no code parity claim. 3a returned creation/nonconstant fallback66D66R and is adding metadata lookup/flag support plus an exact missing SIMD constructor inventory; keep that packet together and assign the constructor closure after integration. Continue object transformations/morphing after the reviewed analysis/cloning prerequisites. No publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "942 iteration implementation active after65. d62 through94 collected/frozen40D38R, under6a review.610 through19 collected/frozen63D60R, review pending.3a through25 collected, SIMD arguments integrated75D75R; next assignment pending commit. Parent owns unvalidated inversion WIP and CoreRoot. Earlier notifications are resolved; no app-native sessions.",
+      "workerPackets": "d62 through95 and6a through37 collected; site/EH/iteration reviews report no high-confidence defects.610 through19 full EH clone andd62 through94 sites integrated.942 through66 iteration included in validated parent inversion WIP.3a through26 collected; continuing creation/fallback/metadata packet and constructor inventory. Parent CoreRoot is free. No app-native sessions.",
       "preserve": "Windows-AMD64 lowering/allocation/placement/generation/emission/metadata execute27 selected optimized methods and the established32-method minopts corpus under GCStress4. Optimized runs use native JitObjectStackAllocation=0 on both sides while object analysis is incomplete. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -89,6 +89,21 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "allocationSitesAndEhCloning": {
+        "nativeBoundary": "objectalloc.cpp556-916,1151-1276,1975-2409,3249-3820; fgehopt.cpp2341-2973; block.cpp818-839; optimizer.cpp518-667; compiler.hpp5827-5848",
+        "siteManifest": "artifacts\\objectalloc-site-validation\\source-manifest.json",
+        "siteManifestSha256": "DE6639C7F30341D3C77907976B7D068E66B28DA38A6F1C626E3E414442EA6EBA",
+        "ehManifest": "artifacts\\eh-clone-targets-validation\\source-manifest.json",
+        "ehManifestSha256": "096E5FA167B6ECACF70BC4BDC37926E44B001D5AE157A42D80B8E347914C0CF9",
+        "snapshotBase": "f3a5815",
+        "siteTests": "40Debug/38Release",
+        "ehTests": "63Debug/60Release",
+        "combinedTests": "artifacts\\loop-inversion-integration\\{debug,release}.trx:249Debug/245Release,zero skipped",
+        "combinedSourceManifest": "artifacts\\loop-inversion-integration\\source-manifest.json",
+        "combinedSourceManifestSha256": "62D43FABA23054AA9B779EBD5F9C6C020A4FF03452E3319C5D2F5239D8CC1B59",
+        "review": "Independent source reviews found no high-confidence conformance defects. Exact root/snapshot source hashes and final executed/pass counts verified. New and existing no-insertion EH APIs pass together.",
+        "scope": "Analysis and generic EH cloning, not object-specific transformations or stack/heap morphing. No production gate changed. Positive EE-dependent enumerator allocation is not exercised by these fixtures."
+      },
       "simdArgumentImport": {
         "nativeBoundary": "simd.cpp472-490;hwintrinsic.cpp1552-1583",
         "sourceManifest": "artifacts\\simd-import-validation\\source-manifest.json",
@@ -4921,6 +4936,14 @@
   },
   "sourceMap": [
     {
+      "area": "allocation-site-analysis-and-eh-cloning",
+      "native": ["src\\coreclr\\jit\\objectalloc.cpp:556-916,1151-1276,1975-2409,3249-3820", "src\\coreclr\\jit\\fgehopt.cpp:2341-2973", "src\\coreclr\\jit\\block.cpp:818-839", "src\\coreclr\\jit\\optimizer.cpp:518-667", "src\\coreclr\\jit\\compiler.hpp:5827-5848"],
+      "csharp": ["sources\\Core\\jit\\objectalloc\\ObjectAllocator.AllocationAnalysis.cs", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.AllocationViability.cs", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.ParentAnalysis.cs", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.GuardedAnalysis.cs", "sources\\Core\\jit\\compiler\\Compiler.EHCloneMutation.cs", "sources\\Core\\jit\\compiler\\Compiler.EHCloneMappedTargets.cs", "sources\\Core\\jit\\block\\BasicBlock.CloneState.cs", "sources\\Core\\jit\\block\\BasicBlock.Complexity.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete site/alias/guard analysis, stack viability and generic EH-region cloning. Shared complexity counting preserves native callback ordering and unsigned slack. Object transformations and stack/heap morphing still gate production stack allocation."
+    },
+    {
       "area": "hardware-import-prerequisites",
       "native": ["src\\coreclr\\jit\\hwintrinsic.cpp:1552-1583,1765-1798,1856-1969", "src\\coreclr\\jit\\hwintrinsicxarch.cpp:2751-2765", "src\\coreclr\\jit\\simd.cpp:472-490"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.HWIntrinsicImportPrerequisites.cs", "sources\\Core\\jit\\compiler\\Compiler.SIMDImport.cs"],
@@ -4934,7 +4957,7 @@
       "csharp": ["sources\\Core\\jit\\objectalloc\\ObjectAllocator.EscapeAnalysis.cs", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.CloneViability.cs", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.CloneRegionAnalysis.cs", "sources\\Core\\jit\\compiler\\Compiler.EHCloneFeasibility.cs"],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Complete escape closure and clone viability with nonmutating EH feasibility. Allocation-site walking, actual cloning and stack/heap morphing remain unported; production phase gate unchanged."
+      "status": "Complete escape closure and clone viability. Subsequent site/alias analysis and generic EH cloning are mapped separately; object-specific transformations and stack/heap morphing still gate production."
     },
     {
       "area": "post-allocation-loop-alignment",

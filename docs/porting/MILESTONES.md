@@ -15,6 +15,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Allocation-site analysis and EH cloning
+
+Object-allocation analysis now walks allocation sites and aliases, checks stack
+viability, and records guarded enumerator uses and clone appearances. The EH
+cloner can insert complete try regions, including nested handlers, filters and
+callfinally pairs, while preserving successor maps and block state.
+
+Object-specific clone transformations and stack/heap morphing still gate stack
+allocation. The existing heap-only production path remains unchanged.
+
 ## 2026-09-26: Hardware argument normalization
 
 Hardware-intrinsic arguments now use native SIMD/mask stack normalization,

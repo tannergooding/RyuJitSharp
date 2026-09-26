@@ -15,6 +15,16 @@ public sealed class CloneTryInfo
 
     public List<BasicBlock>? BlocksToClone;
 
+    public Dictionary<BasicBlock, BasicBlock>? Map;
+
+    public weight_t ProfileScale;
+
+    public uint EHIndexShift;
+
+    public bool AddEdges;
+
+    public bool ScaleOriginalBlockProfile;
+
     public CloneTryInfo(Compiler compiler)
     {
         Traits = new BitVecTraits(compiler, compiler.compBasicBlockID);
@@ -24,15 +34,41 @@ public sealed class CloneTryInfo
 
 public partial class Compiler
 {
-    // The no-insertion specialization of fgCloneTryRegion. The insertion and map-update path is not ported.
     public BasicBlock? fgCloneTryRegionFeasibility(BasicBlock tryEntry, CloneTryInfo info)
     {
+        BasicBlock? insertionPoint = null;
+        return fgCloneTryRegionCore(tryEntry, info, ref insertionPoint);
+    }
+
+    public BasicBlock? fgCloneTryRegion(BasicBlock tryEntry, CloneTryInfo info, ref BasicBlock insertAfter)
+    {
+        if (info.Map is null)
+        {
+            throw new FatalJitException("Cloning a try region requires a block map.");
+        }
+
+        var insertionPoint = (BasicBlock?)insertAfter;
+        var clone = fgCloneTryRegionCore(tryEntry, info, ref insertionPoint);
+        insertAfter = insertionPoint
+            ?? throw new FatalJitException("Cloning a try region requires an insertion point.");
+        return clone;
+    }
+
+    private BasicBlock? fgCloneTryRegionCore(BasicBlock tryEntry, CloneTryInfo info,
+        ref BasicBlock? insertAfter)
+    {
         assert(bbIsTryBeg(tryEntry));
-        JITDUMP($"Checking if it is possible to clone the try region EH#{tryEntry.TryIndex:D2} headed by {FMT_BB(tryEntry.bbNum)}\n");
+        var deferCloning = insertAfter is null;
+        JITDUMP($"{(deferCloning ? "Checking if it is possible to clone" : "Cloning")} the try region EH#{tryEntry.TryIndex:D2} headed by {FMT_BB(tryEntry.bbNum)}\n");
 
         var regionsToProcess = new Stack<ushort>();
         var tryIndex = tryEntry.TryIndex;
         var numberOfBlocksToClone = 0;
+        var blocksToClone = info.BlocksToClone;
+        if (!deferCloning && blocksToClone is null)
+        {
+            blocksToClone = [];
+        }
         var regionCount = 0;
 
         bool AddBlockToClone(BasicBlock block, string description)
@@ -45,7 +81,7 @@ public partial class Compiler
 
             JITDUMP($"  {description} block {FMT_BB(block.bbNum)}\n");
             numberOfBlocksToClone++;
-            info.BlocksToClone?.Add(block);
+            blocksToClone?.Add(block);
             return true;
         }
 
@@ -200,14 +236,23 @@ public partial class Compiler
             JITDUMP($"Existing EH region(s) EH#{insertBeforeIndex:D2}...EH#{compHndBBtabCount - 1:D2} will become EH#{insertBeforeIndex + regionCount:D2}...EH#{compHndBBtabCount + regionCount - 1:D2}\n");
         }
 
-        if (regionCount > ushort.MaxValue ||
-            fgTryAddEHTableEntries(insertBeforeIndex, (ushort)regionCount, deferAdding: true) < 0)
+        var clonedOutermostIndex = regionCount > ushort.MaxValue
+            ? -1 : fgTryAddEHTableEntries(insertBeforeIndex, (ushort)regionCount, deferAdding: deferCloning);
+        if (clonedOutermostIndex < 0)
         {
             JITDUMP("fgCloneTryRegion: unable to expand EH table\n");
             return null;
         }
 
-        JITDUMP("fgCloneTryRegion: cloning is possible\n");
-        return tryEntry;
+        if (deferCloning)
+        {
+            JITDUMP("fgCloneTryRegion: cloning is possible\n");
+            return tryEntry;
+        }
+
+        return fgCloneTryRegionMutating(tryEntry, info, ref insertAfter,
+            blocksToClone ?? throw new FatalJitException("Cloning a try region requires its blocks."),
+            tryIndex, outermostTryIndex, enclosingIndex, enclosingHandlerIndex,
+            regionCount, clonedOutermostIndex);
     }
 }
