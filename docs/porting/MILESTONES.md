@@ -15,6 +15,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Enregistered-local reference resolution
+
+Windows-x64 LSRA now resolves individual local references, preserving register
+homes, copy registers, fixed-register moves, spill/reload flags and EH
+write-through behavior. Promoted multi-register fields and single-definition
+spills retain their native handling.
+
+This completes another prerequisite for optimized allocation, not its
+activation. The production minopts allocator remains unchanged.
+
 ## 2026-09-25: SSA graph, memory and zero-initialization prerequisites
 
 The dominator phase now marks blocks dominated by exceptional entries. Shared

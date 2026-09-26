@@ -29,17 +29,17 @@
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
           "files": "New LocalResolution partials and LinearScanLocalResolutionTests.cs; shared helpers require a reported need before edits.",
           "doneWhen": "Frozen complete local-reference resolution with actual isolated Debug/Release evidence and exact hashes; production allocation gate unchanged.",
-          "status": "reviewed-and-validated",
-          "result": "Local-reference resolution through turn9 is frozen and reviewed; integrated995Debug/871Release and32-method GCStress4 execution pass. Commit this returned packet next."
+          "status": "complete",
+          "result": "Local-reference resolution through turn9 is reviewed and integrated; worker97Debug/87Release, integrated995Debug/871Release and32-method GCStress4 execution pass. Parent added explanatory comments only."
         },
         {
-          "scope": "Complete native optRemoveRedundantZeroInits without activating the SSA phase.",
+          "scope": "Correct B259 FullOpts FoldHardware lowering assertion using the complete native algorithm and ownership contract.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
-          "files": "Compiler.RedundantZeroInit.cs and RedundantZeroInitTests.cs only.",
-          "doneWhen": "Complete native function preserving first-reference, promoted-field, EH/GC and loop invariants; frozen isolated Debug/Release evidence.",
-          "status": "complete",
-          "result": "Through turn12, complete cleanup and IsPotentialGCSafePoint are reviewed and included in the SSA-prerequisite batch; worker48Debug/40Release and integrated995Debug/871Release pass.",
-          "deferred": "SsaBuilder orchestration, full SSA activation and unowned compiler changes."
+          "files": "Minimal relevant Lowering partials and one focused new regression fixture; shared compiler/LIR edits require a reported need.",
+          "doneWhen": "Establish the root cause and before/after regression, preserve the full native function and freeze exact source/evidence.",
+          "status": "in-progress",
+          "result": "Through turn12 zero-init cleanup is committed1d21dc9; worker reused for the observed FullOpts blocker.",
+          "deferred": "Unrelated lowering discrepancies, phase activation, SSA/LSRA files and unowned shared changes."
         },
         {
           "scope": "Complete native SsaBuilder PHI insertion, local/memory renaming and EH propagation.",
@@ -60,11 +60,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit the reviewed local-reference-resolution packet from610162a0 turn9, already covered by artifacts\\ssa-prerequisites-validation with995Debug/871Release and32 nonzero managed-code GCStress4 executions. Then collect d62fc6a5 turn77 on completion and integrate the complete SSA core with parent SsaBuilder.Build.cs; only wire fgSsaBuild after the full closure is ready. Shared dominator-phase, memory-map and successor APIs plus redundant-zero-init cleanup are complete. Native optimized standard/loop/EH references are captured; B259 records the old managed FullOpts FoldHardware lowering assertion without an established cause. Keep optimized allocation gated and do not publish.",
+    "nextAction": "Collect d62fc6a5 turn77 on completion and integrate the complete SSA core with parent SsaBuilder.Build.cs; only wire fgSsaBuild after the full closure is ready. Shared SSA prerequisites/zero-init cleanup are committed1d21dc9 and local-reference resolution is reviewed/integrated, with995Debug/871Release and32 nonzero managed-code GCStress4 executions in artifacts\\ssa-prerequisites-validation. Reuse610162a0 for the next complete optimized-allocation dependency after its local-resolution commit. Worker3a2c8d9b is correcting B259 against the existing failed optimized capture; do not duplicate that investigation. Native optimized standard/loop/EH references are ready. Keep optimized allocation gated and do not publish.",
     "handoff": {
-      "status": "ssa-core-with-reviewed-local-resolution",
+      "status": "ssa-core-and-optimized-lowering-correction",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 through turn9 is reviewed/integration-validated and idle, awaiting local-resolution commit. 3a2c8d9b through turn12 zero-init cleanup is integrated and idle. d62fc6a5 through turn76 is collected; turn77 implements the SSA core using supplied shared APIs. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
+      "workerPackets": "610162a0 through turn9 local-reference resolution is reviewed/integrated and ready for reuse after commit. 3a2c8d9b through turn12 is committed1d21dc9; now correcting B259. d62fc6a5 through turn76 is collected; turn77 implements the SSA core using supplied shared APIs. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -80,6 +80,19 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "localReferenceResolution": {
+        "nativeBoundary": "lsra.cpp:6910-6926 writeLocalReg and6966-7268 resolveLocalRef, with direct helpers at3342-3357 and7332-7403.",
+        "workerSourceManifest": "artifacts\\local-resolution-validation\\source-manifest.json",
+        "workerSnapshotBase": "56390604df6eb978b3a5cd30de5b7cca6a6750e8",
+        "workerDebugPassed": 97,
+        "workerReleasePassed": 87,
+        "integratedSourceManifest": "artifacts\\ssa-prerequisites-validation\\source-manifest.json",
+        "debugPassed": 995,
+        "releasePassed": 871,
+        "skipped": 0,
+        "coverage": "Copy versus home registers, fixed-register codegen moves versus GT_COPY insertion, spill/reload and optional containment, write-through EH definitions, single-definition spills, promoted multi-register homes, last-use/extended-lifetime rules and pre-mutation target/mode rejection.",
+        "limitation": "Parent added three native-contract explanations after the worker froze its manifest; the integration manifest seals final source. Production optimized allocation remains gated. Shared integrated runtime evidence is recorded under ssaPrerequisites."
+      },
       "ssaPrerequisites": {
         "nativeBoundary": "fgopt.cpp:171-223 fgComputeDominators; compiler.hpp:543-712 complete shared EH/all-successor traversal; compiler.h:12741-12758 memory SSA map ownership; optimizer.cpp:5765-6010 optRemoveRedundantZeroInits and compiler.hpp:3314-3338 IsPotentialGCSafePoint.",
         "sourceManifest": "artifacts\\ssa-prerequisites-validation\\source-manifest.json",
@@ -5701,6 +5714,13 @@
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.fg.cs", "sources\\Core\\jit\\compiler\\Compiler.MemorySsa.cs", "sources\\Core\\jit\\block\\BasicBlock.ExceptionalSuccessors.cs", "sources\\Core\\jit\\compiler\\Compiler.RedundantZeroInit.cs"],
       "reconciledCommit": null,
       "scope": "Complete fgComputeDominators, memory SSA allocation/map access, VisitAllSuccs/shared EH traversal and optRemoveRedundantZeroInits/IsPotentialGCSafePoint; production SSA construction remains unactivated."
+    },
+    {
+      "area": "linear-scan-local-reference-resolution",
+      "native": ["src\\coreclr\\jit\\lsra.cpp", "src\\coreclr\\jit\\lsra.h"],
+      "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.LocalResolution.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalResolutionHelpers.cs"],
+      "reconciledCommit": null,
+      "scope": "Complete Windows-AMD64 resolveLocalRef, writeLocalReg and direct copy/spill/home helpers; optimized allocation remains gated."
     },
     {
       "area": "saved-wip-lir-and-rationalization",
