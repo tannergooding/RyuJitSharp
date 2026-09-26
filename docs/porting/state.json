@@ -12,7 +12,7 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port complete native loop inversion and iteration analysis while independently completing hardware-import arguments, object allocation-site analysis and mutating EH clone prerequisites.",
+      "scope": "Integrate the validated loop-inversion boundary and remaining hardware-import prerequisites, then complete independent SIMD constructor/import and object clone/morph closures.",
       "doneWhen": [
         "Complete optTryInvertWhileLoop/optInvertLoops with full iteration-analysis eligibility, native cost/profile/CFG behavior and optimized execution evidence.",
         "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
@@ -25,37 +25,37 @@
       ],
       "parallelPackets": [
         {
-          "scope": "Complete natural-loop iteration analysis and increment recognition required by inversion.",
+          "scope": "Complete native SIMD constructors required by hardware import.",
           "owner": "942a496f-db30-4389-a403-265f28fdb23c",
-          "files": "FlowGraphNaturalLoop.Iteration partials, NaturalLoopIterInfo and Compiler.LoopIteration helpers/tests; parent owns inversion.",
-          "doneWhen": "Complete native AnalyzeIteration and optIsLoopIncrTree closure, not a selected counted-loop recognizer.",
+          "files": "New Compiler.SimdImportConstructors partials and focused tests; no shared Compiler.gt.cs or importer edits.",
+          "doneWhen": "Complete 24 named constructor dependencies: 20 substantive bodies, two guarded wrappers and two existing load/store aliases, preserving native ISA and operand contracts.",
           "status": "in-progress",
-          "result": "Assigned after collected turn65, baselinef3a5815. Preferred API AnalyzeIteration(out NaturalLoopIterInfo), TestBlock exposed; exact native return types to be confirmed."
+          "result": "Iteration through66 reviewed and integrated with inversion253D249R. Constructor closure assigned after66, baseline55aaf69."
         },
         {
-          "scope": "Complete native mutating fgCloneTryRegion or a whole-function prerequisite boundary.",
+          "scope": "Complete native allocation-to-stack rewriting and stack/heap morphing prerequisites.",
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
-          "files": "Compiler.EHClone partials and required CloneTryInfo state/tests. Existing feasibility API must remain compatible; generic helper edits require a concrete handoff.",
-          "doneWhen": "Complete native mutation/order/capacity/CFG-EH bookkeeping through function end, or return a complete prerequisite with a precise blocker. No partial mutation or reduced cloning.",
-          "status": "done",
-          "result": "Turn19 complete EH clone63D60R reviewed, hashes verified and integrated with allocation-site analysis. Combined inversion/object/EH selection249D245R and selected execution pass."
+          "files": "New ObjectAllocator.StackAllocation/AllocationMorphing partials and tests; no AnalysisState, DoPhase or shared Compiler edits.",
+          "doneWhen": "Complete native morph functions and their closure without activating the unfinished phase or replacing existing heap-only production lowering.",
+          "status": "in-progress",
+          "result": "EH clone through19 integrated55aaf69. Morphing assigned after19, baseline55aaf69."
         },
         {
-          "scope": "Complete SIMD type recognition and associated hardware-import prerequisites.",
+          "scope": "Complete portable hardware-intrinsic importer body.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
-          "files": "Compiler.SIMDImport/SIMDTypeRecognition partials and directly required SIMD stubs/state/tests; shared Compiler.cs edits require exact handoff.",
-          "doneWhen": "Complete getBaseJitTypeAndSizeOfSIMDType closure and impSIMDPopStack if bounded, preserving native ISA/type/size/fallback contracts. Keep importer gate until full closure.",
+          "files": "New Compiler.HWIntrinsicImportXplat.cs and focused tests; preceding creation/fallback/metadata packet remains frozen.",
+          "doneWhen": "Complete impXplatIntrinsic hwintrinsic.cpp2910-5841 with constructor dependencies; no selected-case activation or fabricated compile-time stubs.",
           "status": "in-progress",
-          "result": "Turn25 returned complete SIMD pop and getArgForHWIntrinsic75D75R, source reviewed/hashes verified and integrated. Existing SIMD recognition was already complete. Remaining closure: impHWIntrinsic2094-2884, xarch special1234-2740/nonconstant fallback1155-1207, portable xplat2910-5841 plus creation helpers.",
+          "result": "Through27 creation/fallback/metadata76D76R frozen and independently reviewed by6a through38. Parent must commit that packet. Xplat lane assigned after27;942 owns constructor closure.",
           "deferred": "Shared generators/tables, LSRA, ObjectAllocator, EH feasibility, other targets and publication."
         },
         {
-          "scope": "Complete ObjectAllocator DoAnalysis and allocation-site/alias walking.",
+          "scope": "Complete object-specific conditional clone transformations.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
-          "files": "ObjectAllocator analysis partials/state/tests; no DoPhase activation, clone transformations, stack/heap morphing or Compiler edits.",
-          "doneWhen": "Complete native site/alias traversal and graph/pseudo/clone-state population using the committed escape/viability helpers; preserve phase gates.",
-          "status": "done",
-          "result": "Site/alias analysis through94 reviewed40D38R, sharing complete BasicBlock.ComplexityExceeds. Integrated with full EH cloning; positive EE-dependent enumerator allocation remains outside fixture coverage."
+          "files": "New ObjectAllocator.CloneTransformation partials/tests and necessary AnalysisState additions; no morphing, DoPhase or shared Compiler edits.",
+          "doneWhen": "Complete native object clone transformation closure using committed analysis and full EH cloning, without phase activation.",
+          "status": "in-progress",
+          "result": "Site analysis through94 integrated55aaf69; iteration review through95 collected. Clone transformations assigned after95, baseline55aaf69."
         }
       ],
       "deferred": [
@@ -69,11 +69,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Object-site analysis and full EH cloning are reviewed and validated together, with shared BasicBlock.ComplexityExceeds. Parent inversion plus942 iteration closure also passes combined249Debug/245Release and fresh NativeAOT execution27FullOpts/32minopts-GCStress4; finish its coherent commit after object/EH. Remaining raw bytes differ in all4 call-free probes, so no code parity claim. 3a returned creation/nonconstant fallback66D66R and is adding metadata lookup/flag support plus an exact missing SIMD constructor inventory; keep that packet together and assign the constructor closure after integration. Continue object transformations/morphing after the reviewed analysis/cloning prerequisites. No publication.",
+    "nextAction": "Inversion/iteration is validated253Debug/249Release after correcting statement construction; fresh final JIT executes27FullOpts/32minopts-GCStress4. Final source/runtime manifests end in -final.json. Commit the reviewed HWI creation/fallback/metadata76D76R packet next, excluding active workers. Then trace a specific remaining native/managed optimizer difference while942 completes SIMD constructors,3a portable import,d62 object clone transformations and610 allocation morphing. Full importer/stack-allocation gates remain. No publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "d62 through95 and6a through37 collected; site/EH/iteration reviews report no high-confidence defects.610 through19 full EH clone andd62 through94 sites integrated.942 through66 iteration included in validated parent inversion WIP.3a through26 collected; continuing creation/fallback/metadata packet and constructor inventory. Parent CoreRoot is free. No app-native sessions.",
+      "workerPackets": "Collected through942:66,d62:95,610:19,3a:27,6a:38. Site/EH integrated55aaf69; iteration integrated with inversion.6a found no high-confidence HWI packet defects. Four active implementation lanes have disjoint ownership in activeBatch;6a idle/resolved. Parent CoreRoot is free. No app-native sessions.",
       "preserve": "Windows-AMD64 lowering/allocation/placement/generation/emission/metadata execute27 selected optimized methods and the established32-method minopts corpus under GCStress4. Optimized runs use native JitObjectStackAllocation=0 on both sides while object analysis is incomplete. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -89,6 +89,25 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "loopInversion": {
+        "nativeBoundary": "optimizer.cpp1768-2356;compiler.hpp3855-3887;iteration optimizer.cpp243-456 and flowgraph.cpp5493-5579,5643-6234,6839-7037",
+        "snapshotBase": "f806ffc",
+        "sourceManifest": "artifacts\\loop-inversion-integration\\source-manifest-final.json",
+        "sourceManifestSha256": "EAC1048D2A3A14DE8103E32E5AF6AC0229DAF98BED1D44BA7EBEE257EE88E239",
+        "tests": "artifacts\\loop-inversion-integration\\{debug,release}-final.trx",
+        "debugPassed": 253,
+        "releasePassed": 249,
+        "skipped": 0,
+        "regressions": "Top-tested case failed against the no-op phase. Before constructor correction, AllLocals/AllTrees clone-sequencing cases failed while4other cases passed; all6 now pass. Native fgNewStmtAtEnd uses gtNewStmt plus insertion, not fgNewStmtFromTree.",
+        "jit": "artifacts\\loop-inversion-final-jit\\RyuJitSharp.dll",
+        "jitSha256": "FF93B8D900A3F955B465AEF2CE440C77140CC072689781D12FF298E3ADEFC7AC",
+        "runtimeEvidence": "artifacts\\loop-inversion-integration\\runtime-validation-final.json",
+        "runtimeEvidenceSha256": "58BA0D9E22946AB7EE42EF39DA5051AA7F4B88095D519A7EFF9E27E649018AD8",
+        "execution": "27FullOpts and32minopts-GCStress4 methods, unique expected compilation headers and nonzero bodies, matching DLL hashes, explicit managed execution and zero exits/failure markers.",
+        "comparison": "Four call-free raw bodies differ. Native/managed byte counts:Counted17/17,Nested29/38,Conditional26/26,Mix104/101. Matching sizes are not parity.",
+        "iterationScope": "Complete AnalyzeIteration closure independently reviewed. Downstream ArrLenLimit accessor flowgraph.cpp7053-7074 used by loopcloning.cpp1252 remains outside this packet.",
+        "priorEvidence": "Pre-constructor-fix sources preserved under artifacts\\loop-inversion-integration\\pre-constructor-fix; earlier249D245R and runtime manifests retain their original hashes."
+      },
       "allocationSitesAndEhCloning": {
         "nativeBoundary": "objectalloc.cpp556-916,1151-1276,1975-2409,3249-3820; fgehopt.cpp2341-2973; block.cpp818-839; optimizer.cpp518-667; compiler.hpp5827-5848",
         "siteManifest": "artifacts\\objectalloc-site-validation\\source-manifest.json",
@@ -4935,6 +4954,14 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "loop-inversion-and-iteration-analysis",
+      "native": ["src\\coreclr\\jit\\optimizer.cpp:243-456,1768-2356", "src\\coreclr\\jit\\flowgraph.cpp:5493-5579,5643-6234,6839-7037", "src\\coreclr\\jit\\compiler.h:2017-2105", "src\\coreclr\\jit\\compiler.hpp:3855-3887"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.LoopInversion.cs", "sources\\Core\\jit\\compiler\\Compiler.LoopIteration.cs", "sources\\Core\\jit\\compiler\\NaturalLoopIterInfo.cs", "sources\\Core\\jit\\compiler\\FlowGraphNaturalLoop.Iteration.cs", "sources\\Core\\jit\\compiler\\FlowGraphNaturalLoop.IterationBaseCase.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete native inversion orchestration/transformation and iteration-analysis closure. Production optimized execution verified; downstream ArrLenLimit accessor and broader loop optimizations remain unported."
+    },
     {
       "area": "allocation-site-analysis-and-eh-cloning",
       "native": ["src\\coreclr\\jit\\objectalloc.cpp:556-916,1151-1276,1975-2409,3249-3820", "src\\coreclr\\jit\\fgehopt.cpp:2341-2973", "src\\coreclr\\jit\\block.cpp:818-839", "src\\coreclr\\jit\\optimizer.cpp:518-667", "src\\coreclr\\jit\\compiler.hpp:5827-5848"],

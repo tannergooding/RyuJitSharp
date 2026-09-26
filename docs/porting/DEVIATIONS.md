@@ -872,7 +872,12 @@ Loop discovery and canonicalization now preserve native preheader,
 backedge, exit and EH-header ordering, rebuilding cached DFS and loop data when
 required. Block weighting consumes that loop state rather than substituting
 lazy discovery for the native loop phase. Profile repair and other unported
-loop optimizations remain separate limitations.
+loop optimizations remain separate limitations. Loop inversion and its complete
+iteration-analysis prerequisite now preserve native eligibility, cost/profile
+decisions and CFG updates. Cloned statements use `gtNewStmt` plus insertion,
+matching native `fgNewStmtAtEnd` without premature cost preparation or threading.
+The downstream `NaturalLoopIterInfo.ArrLenLimit` cloning accessor remains
+unported; it is not required by iteration analysis or inversion.
 
 Liveness policies use static interface members in place of native template
 traits. Per-block scratch and stored sets retain independent managed storage.

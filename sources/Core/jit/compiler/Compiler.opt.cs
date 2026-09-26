@@ -225,9 +225,6 @@ public partial class Compiler
     // TODO: Port phase - optRecognizeAndOptimizeSwitchJumps
     public PhaseStatus optRecognizeAndOptimizeSwitchJumps() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port phase - optInvertLoops
-    public PhaseStatus optInvertLoops() => PhaseStatus.MODIFIED_NOTHING;
-
     // TODO: Port phase - optOptimizeFlow
     public PhaseStatus optOptimizeFlow() => PhaseStatus.MODIFIED_NOTHING;
 

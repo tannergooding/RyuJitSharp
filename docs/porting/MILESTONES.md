@@ -15,6 +15,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Loop inversion and iteration analysis
+
+Top-tested loops can now duplicate their entry conditions using native size,
+cost and profile heuristics. Iteration analysis recognizes induction-variable
+tests so already bottom-tested loops retain their shape. Inversion preserves
+EH boundaries, repairs edges and profiles, and rebuilds loop information.
+
+Selected optimized methods execute with this phase active, including call-free
+and collecting loops. Their machine code still differs from the native oracle;
+remaining optimizer work and code parity are not implied by execution.
+
 ## 2026-09-26: Allocation-site analysis and EH cloning
 
 Object-allocation analysis now walks allocation sites and aliases, checks stack

@@ -291,6 +291,63 @@ internal static unsafe class LoopDiscoveryTests
         });
     }
 
+    [TestCase(false, NodeThreading.None)]
+    [TestCase(false, NodeThreading.AllLocals)]
+    [TestCase(false, NodeThreading.AllTrees)]
+    [TestCase(true, NodeThreading.None)]
+    [TestCase(true, NodeThreading.AllLocals)]
+    [TestCase(true, NodeThreading.AllTrees)]
+    public static void InversionDuplicatesTopTestButRetainsBottomTestedLoops(bool bottomTested, NodeThreading threading)
+    {
+        WithCompiler(compiler => {
+#if OPT_CONFIG
+            InversionEnabled(ref JitConfig) = 1;
+#endif
+            InversionSizeLimit(ref JitConfig) = 100;
+            var blocks = CreateGraph(compiler, bottomTested
+                ? [[1], [2], [1, 3], []]
+                : [[1], [2, 3], [1], []]);
+            compiler.lvaCount = 1;
+            compiler.lvaTable = new LclVarDsc[1];
+            compiler.lvaTable[0].Type = var_types.TYP_INT;
+            var conditionBlock = blocks[bottomTested ? 2 : 1];
+            var comparison = new GenTreeOp(genTreeOps.GT_LT, var_types.TYP_INT,
+                compiler.gtNewLclvNode(var_types.TYP_INT, 0),
+                compiler.gtNewIconNode(var_types.TYP_INT, 10));
+            var jump = new GenTreeUnOp(genTreeOps.GT_JTRUE, var_types.TYP_VOID, comparison);
+            compiler.fgNodeThreading = threading;
+            compiler.fgInsertStmtAtEnd(conditionBlock, compiler.fgNewStmtFromTree(jump));
+            compiler._dfsTree = compiler.fgComputeDfs();
+            _ = compiler.optFindLoopsPhase();
+            var oldTree = compiler._dfsTree;
+
+            var status = compiler.optInvertLoops();
+
+            Assert.That(status, Is.EqualTo(bottomTested
+                ? PhaseStatus.MODIFIED_NOTHING : PhaseStatus.MODIFIED_EVERYTHING));
+            Assert.That(compiler.Metrics.LoopsInverted, Is.EqualTo(bottomTested ? 0 : 1));
+            Assert.That(compiler._loops!.NumLoops, Is.EqualTo(1));
+            if (!bottomTested)
+            {
+                Assert.That(compiler._dfsTree, Is.Not.SameAs(oldTree));
+                Assert.That(blocks[0].Kind, Is.EqualTo(BBJ_COND));
+                var clonedStatement = blocks[0].LastStmt!;
+                Assert.That(clonedStatement.RootNode.AsUnOp().Op1.Oper, Is.EqualTo(genTreeOps.GT_GE));
+                Assert.That(clonedStatement.TreeListBegin, Is.Null);
+                Assert.That(blocks[0].TrueEdge.Likelihood, Is.EqualTo(0.5));
+                Assert.That(blocks[0].FalseEdge.Likelihood, Is.EqualTo(0.5));
+            }
+        });
+    }
+
+#if OPT_CONFIG
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitDoLoopInversion")]
+    private static extern ref int InversionEnabled(ref JitConfigValues config);
+#endif
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitLoopInversionSizeLimit")]
+    private static extern ref int InversionSizeLimit(ref JitConfigValues config);
+
 #if FEATURE_LOOP_ALIGN
     [TestCase(7, false, false, false)]
     [TestCase(8, false, false, true)]
@@ -388,6 +445,7 @@ internal static unsafe class LoopDiscoveryTests
         for (var i = 0; i < blocks.Length; i++)
         {
             blocks[i] = BasicBlock.New(compiler, BBJ_RETURN);
+            blocks[i].bbRefs = i == 0 ? 1 : 0;
             if (i > 0)
             {
                 blocks[i - 1].Next = blocks[i];

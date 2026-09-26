@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 namespace RyuJitSharp;
 
 // A strongly connected set of blocks dominated by its header, including exceptional flow.
-public sealed class FlowGraphNaturalLoop
+public sealed partial class FlowGraphNaturalLoop
 {
     internal readonly FlowGraphDfsTree _dfsTree;
     internal readonly BasicBlock _header;
