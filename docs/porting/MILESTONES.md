@@ -15,6 +15,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Full register-allocation phase
+
+The native Windows-x64 allocation traversal is now connected to interval
+construction and resolution. Optimized compilation and enregistered locals use
+the full allocator; ordinary minopts retains its existing path. The traversal
+preserves entry assignments, block maps, spills, copies, delayed frees and
+upper-vector handling.
+
+The optimized pipeline now passes allocation and its IR checks. Enabled
+loop-alignment placement is the next boundary before code generation; optimized
+execution is not yet established. All 32 established minopts methods continue
+to execute managed-generated native code under GC stress.
+
 ## 2026-09-25: Object-allocation graph foundations
 
 Object allocation now has native connection-graph preparation and closure:

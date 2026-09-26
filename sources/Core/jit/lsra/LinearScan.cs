@@ -288,13 +288,6 @@ public sealed partial class LinearScan : IRegAlloc
     public PhaseStatus DoRegisterAllocation()
     {
 #if TARGET_AMD64 && !UNIX_AMD64_ABI
-        if (_compiler.opts.OptimizationEnabled || (_enregisterLocalVars && (_compiler.lvaTrackedCount != 0)))
-        {
-            const string message = "LinearScan register allocation with optimization or enregistered locals is not implemented.";
-            JITDUMP($"\nCOMPILATION FAILED: {message}\n");
-            throw new FatalJitException(CORJIT_SKIPPED, message);
-        }
-
         if (_enregisterLocalVars && (_compiler.lvaTrackedCount == 0))
         {
             _enregisterLocalVars = false;
@@ -304,7 +297,14 @@ public sealed partial class LinearScan : IRegAlloc
         assert(_compiler.codeGen is not null);
         _compiler.codeGen.RegSet.rsClearRegsModified();
         initMaxSpill();
-        buildIntervalsMinimal();
+        if (_enregisterLocalVars)
+        {
+            buildIntervalsWithLocals();
+        }
+        else
+        {
+            buildIntervalsMinimal();
+        }
 #if DEBUG
         if (VERBOSE)
         {
@@ -320,11 +320,25 @@ public sealed partial class LinearScan : IRegAlloc
 #endif
 
         initVarRegMaps();
-        allocateRegistersMinimal();
+        if (_enregisterLocalVars || _compiler.opts.OptimizationEnabled)
+        {
+            allocateRegisters();
+        }
+        else
+        {
+            allocateRegistersMinimal();
+        }
         _allocationPassComplete = true;
         _compiler.EndPhase(PHASE_LINEAR_SCAN_ALLOC);
 
-        resolveRegistersMinimal();
+        if (_enregisterLocalVars)
+        {
+            resolveRegistersWithLocals();
+        }
+        else
+        {
+            resolveRegistersMinimal();
+        }
         _compiler.EndPhase(PHASE_LINEAR_SCAN_RESOLVE);
         assert(_blockSequencingDone);
 

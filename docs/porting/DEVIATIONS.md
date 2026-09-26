@@ -827,19 +827,15 @@ supported.
 
 Initial parameter definitions and live-in/finally-local zero definitions follow
 native register preferences, stress predicates, OSR initialization and spill
-rules. They are prerequisites for the enregistered-local interval builder, not
-an alternate allocator or an activation of optimized allocation.
+rules.
 The complete Windows-AMD64 `buildIntervals<true>` specialization is implemented
 as `buildIntervalsWithLocals`, alongside the unchanged minopts builder. It
 includes predecessor selection, parameter stress and local interval validation.
-Production optimized allocation remains gated until allocation and resolution
-support those intervals.
 The full Windows-AMD64 register selector and assignment/copy primitives are
 implemented alongside the unchanged minimal versions. They reuse the native
 heuristic sequence and preserve fixed-register conflicts in both register-mask
 banks, related-interval horizons, spill costs and constant identity. The unused
-native reverse-selection local does not reorder heuristics. These primitives
-do not activate the unfinished optimized allocation traversal.
+native reverse-selection local does not reorder heuristics.
 Windows-AMD64 block-location processing includes native allocation and resolution
 map semantics, register reassignment, EH write-through homes and dead candidates.
 The complete `processBlockEndAllocation<true>` specialization is named
@@ -850,7 +846,12 @@ The complete Windows-AMD64 `resolveRegisters<true>` specialization is now
 upper-vector operations, resolves edges and finalizes local homes before native
 final-allocation verification and stack/spill accounting. The local interval
 array is required in this mode, not treated as an empty map when absent.
-The minimal resolver and production optimized-allocation gate remain unchanged.
+The complete allocation traversal is now dispatched under the native
+`enregisterLocalVars || OptimizationEnabled` predicate. Local-enabled building
+and resolution use only `enregisterLocalVars`; the minimal paths are unchanged.
+Production optimized compilation passes allocation and its checks, but still
+stops at the enabled loop-alignment placement frontier before code generation.
+This is not optimized execution or codegen parity.
 
 Loop discovery and canonicalization now preserve native preheader,
 backedge, exit and EH-header ordering, rebuilding cached DFS and loop data when

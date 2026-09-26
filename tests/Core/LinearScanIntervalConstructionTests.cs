@@ -13,6 +13,7 @@ using static RyuJitSharp.gtCallTypes;
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
+using SetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -139,25 +140,68 @@ internal static unsafe class LinearScanIntervalConstructionTests
         }, enregister: true);
     }
 
-    [TestCase(true, false)]
-    [TestCase(false, true)]
-    [TestCase(true, true)]
-    public static void UnsupportedAllocationModeRejectsBeforeMutation(bool optimized, bool trackedLocals)
+    [TestCase(false, false, false)]
+    [TestCase(false, false, true)]
+    [TestCase(false, true, false)]
+    [TestCase(false, true, true)]
+    [TestCase(true, false, false)]
+    [TestCase(true, false, true)]
+    [TestCase(true, true, false)]
+    [TestCase(true, true, true)]
+    public static void AllocationDispatchPreservesOptimizationAndLocalModes(
+        bool optimized, bool enregister, bool trackedLocal)
     {
         WithAllocator((compiler, allocator) => {
-            compiler.lvaTrackedCount = trackedLocals ? 1 : 0;
-            compiler.codeGen!.RegSet.rsSetRegsModified(RBM_RBX);
-            var previousPhase = compiler.mostRecentlyActivePhase;
+            var returnType = new ReturnTypeDesc();
+            returnType.InitializeReturnType(compiler, TYP_INT, null, CorInfoCallConvExtension.Managed);
+            compiler.compRetTypeDesc = returnType;
+            var blocks = trackedLocal
+                ? CreateBlocks(compiler, BBJ_ALWAYS, BBJ_RETURN)
+                : CreateBlocks(compiler, BBJ_RETURN);
+            foreach (var block in blocks)
+            {
+                block.bbLiveIn = SetOps.MakeEmpty(compiler);
+                block.bbLiveOut = SetOps.MakeEmpty(compiler);
+                block.bbVarUse = SetOps.MakeEmpty(compiler);
+                block.bbVarDef = SetOps.MakeEmpty(compiler);
+            }
 
-            var exception = Assert.Throws<FatalJitException>(() => allocator.DoRegisterAllocation());
+            var value = compiler.gtNewIconNode(TYP_INT, 7);
+            blocks[0].InsertAtEnd(value);
+            GenTree result = value;
+            if (trackedLocal)
+            {
+                blocks[0].SetKindAndTargetEdge(
+                    BBJ_ALWAYS, compiler.fgAddRefPred(blocks[1], blocks[0]));
+                SetOps.AddElemD(compiler, blocks[0].bbVarDef, 0);
+                SetOps.AddElemD(compiler, blocks[0].bbLiveOut, 0);
+                SetOps.AddElemD(compiler, blocks[1].bbVarUse, 0);
+                SetOps.AddElemD(compiler, blocks[1].bbLiveIn, 0);
+                blocks[0].InsertAtEnd(new GenTreeLclVar(TYP_INT, 0, value));
+                result = compiler.gtNewLclvNode(TYP_INT, 0);
+                blocks[1].InsertAtEnd(result);
+            }
+            var ret = new GenTreeUnOp(GT_RETURN, TYP_INT, result);
+            blocks[^1].InsertAtEnd(ret);
 
-            Assert.That(exception!.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(compiler.compRegAllocDone, Is.False);
-            Assert.That(compiler.mostRecentlyActivePhase, Is.EqualTo(previousPhase));
-            Assert.That(EnregisterLocalVars(allocator), Is.True);
-            Assert.That(allocator.refPositions, Is.Empty);
-            Assert.That(compiler.codeGen.RegSet.rsRegsModified(RBM_RBX), Is.True);
-        }, enregister: true, minOpts: !optimized);
+            var status = allocator.DoRegisterAllocation();
+
+            var localMode = enregister && trackedLocal;
+            Assert.That(status, Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            Assert.That(compiler.compRegAllocDone, Is.True);
+            Assert.That(compiler.mostRecentlyActivePhase, Is.EqualTo(Phases.PHASE_LINEAR_SCAN_RESOLVE));
+            Assert.That(AllocationPassComplete(allocator), Is.True);
+            Assert.That(EnregisterLocalVars(allocator), Is.EqualTo(localMode));
+            Assert.That(allocator.localVarIntervals is not null, Is.EqualTo(localMode));
+            Assert.That(allocator.intervals.Exists(interval => interval.isLocalVar), Is.EqualTo(localMode));
+            Assert.That(ret.Op1?.RegNum, Is.EqualTo(REG_INTRET));
+            Assert.That(compiler.codeGen!.RegSet.HasComputedTmpSize, Is.True);
+            if (trackedLocal)
+            {
+                Assert.That(compiler.lvaTable[0].lvLRACandidate, Is.EqualTo(localMode));
+                Assert.That(compiler.lvaTable[0].lvOnFrame, Is.EqualTo(!localMode));
+            }
+        }, enregister, minOpts: !optimized, trackedLocal);
     }
 
     [Test]
@@ -400,7 +444,9 @@ internal static unsafe class LinearScanIntervalConstructionTests
         return blocks;
     }
 
-    private static void WithAllocator(Action<Compiler, LinearScan> action, bool enregister = false, bool minOpts = true)
+    private static void WithAllocator(
+        Action<Compiler, LinearScan> action, bool enregister = false, bool minOpts = true,
+        bool trackedLocal = false)
     {
 #if DEBUG
         using var tls = new JitTls(null);
@@ -434,6 +480,21 @@ internal static unsafe class LinearScanIntervalConstructionTests
         codeGen.RegSet.rsClearRegsModified();
         try
         {
+            if (trackedLocal)
+            {
+                compiler.lvaCount = 1;
+                compiler.lvaTrackedCount = 1;
+                compiler.lvaTrackedCountInSizeTUnits = 1;
+                compiler.lvaTrackedFixed = true;
+                compiler.lvaTrackedToVarNum = [0];
+                compiler.lvaTable = [
+                    new LclVarDsc { Type = TYP_INT, lvTracked = true, _varIndex = 0, lvOnFrame = true },
+                ];
+                compiler.lvaTable[0].setLvRefCnt(2);
+                compiler.lvaTable[0].setLvRefCntWtd(2 * BB_UNITY_WEIGHT);
+                compiler.fgBBVarSetsInited = true;
+            }
+
             var allocator = new LinearScan(compiler);
             compiler.rpMustCreateEBPCalled = true;
             var returnType = new ReturnTypeDesc();

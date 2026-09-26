@@ -12,12 +12,11 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Integrate full Windows-AMD64 allocation with the completed local-enabled resolver, while preparing independent object-allocation connection-graph primitives without bypassing either phase gate.",
+      "scope": "Complete enabled Windows-x64 loop-alignment placement after full allocation, while independently porting object escape/clone analysis, its EH feasibility prerequisite and hardware-intrinsic import.",
       "doneWhen": [
-        "Complete the full native Windows-x64 allocation traversal, preserving both local modes, stress, upper-vector behavior and diagnostic ordering.",
-        "Wire the existing native build/allocate/resolve predicates only after complete traversal and local-resolution closures are validated together.",
+        "Complete native shouldAlignLoop and placeLoopAlignInstructions, preserving legality, profitability, placement and diagnostic rules rather than disabling alignment.",
         "Validate actual optimized managed execution separately from fallback and explicit skips; preserve the established checked minopts execution baseline.",
-        "Complete the independent object-allocation preparation/connection-graph closure functions; leave ComputeEscapingNodes, clone analysis and phase activation deferred until their whole closures are ready.",
+        "Complete independent object escape/clone analysis and nonmutating EH clone feasibility without activating unfinished object phases; port whole hardware-import prerequisites without a reduced dispatcher.",
         "Review each frozen packet, run focused Debug/Release cases and commit it with related tracking before integrating the next packet."
       ],
       "validation": [
@@ -26,34 +25,34 @@
       ],
       "parallelPackets": [
         {
-          "scope": "Complete Windows-AMD64 resolveRegisters<true> and its final-allocation verifier, reusing committed edge resolution.",
+          "scope": "Complete the native no-insertion EH-clone feasibility specialization required by ObjectAllocator.CheckCanClone.",
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
-          "files": "New LinearScan.LocalResolutionDriver partials and LinearScanLocalResolutionDriverTests.cs; no production gate, minimal resolution, compiler or shared graph changes.",
-          "doneWhen": "Complete local-enabled resolution and final verification with isolated Debug/Release evidence; production optimized allocation gate unchanged.",
-          "status": "complete",
-          "result": "Turns14-16 collected; driver/finalization/vector insertion reviewed by parent, verification reviewed by942a496f turn62 with no findings. Parent requires the initialized local interval array. Fresh db274ea integrated snapshot passes640Debug/539Release LSRA cases with matching source hashes; production gate unchanged."
-        },
-        {
-          "scope": "Complete the native Windows-AMD64 allocateRegisters traversal using the committed general selector and assignment primitives.",
-          "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
-          "files": "New LinearScan.AllocationTraversal partials and LinearScanAllocationTraversalTests.cs; no Minimal*, RegisterSelection*, RegisterAllocation, LocalResolutionDriver, Compiler or production gate edits.",
-          "doneWhen": "Complete all Windows-x64 traversal paths, both local modes, upper-vector handling, stress and diagnostics with isolated Debug/Release evidence; production activation remains parent-owned.",
+          "files": "New Compiler.EHCloneFeasibility.cs, required helper types and focused tests; no existing Compiler, ObjectAllocator, LSRA or phase edits.",
+          "doneWhen": "Complete fgehopt.cpp2341-2608 feasibility closure with native EH-region enumeration/capacity checks and no CFG/EH-table mutation; relay exact API to object worker.",
           "status": "in-progress",
-          "result": "Prior loop/weight packet committed f885d50 after turns17-18,194Debug/143Release integrated cases and32/32 native-host GCStress4 executions. New allocation traversal assignment follows turn18; baseline f885d50, selector primitives c2a2413, native lsra.cpp5459-6755. Include native-false AMD64 CanSkipUpperVectorSave if needed.",
-          "deferred": "Major missing shared subsystems without explicit ownership, other targets, phase activation and publication."
+          "result": "Local resolution committed4b9f59f. New assignment after collected turn16, baseline0671581; API handoff pending."
         },
         {
-          "scope": "Complete object-allocation connection-graph preparation and closure prerequisites, without escape/cloning analysis or phase activation.",
+          "scope": "Complete Windows-x64 hardware-intrinsic import or a dependency-coherent set of whole prerequisites behind B111.",
+          "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
+          "files": "New Compiler.HWIntrinsicImport partials/support and focused tests; existing dispatcher stub is replaced only when its complete supported closure is ready.",
+          "doneWhen": "Establish exact native closure and preserve ISA, forceExpand, fallback, evaluation and numeric contracts. No selected-case importer or changed ISA reporting.",
+          "status": "in-progress",
+          "result": "Traversal corrections collected through turn21 and integrated by parent. New hardware-import assignment from0671581; bounded native plan pending.",
+          "deferred": "Shared generators/tables, LSRA, ObjectAllocator, EH feasibility, other targets and publication."
+        },
+        {
+          "scope": "Complete ComputeEscapingNodes and its native clone-viability analysis closure.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
-          "files": "New ObjectAllocator analysis partials and tests; ObjectAllocator.cs may become partial and initialize required state, but DoPhase and the heap-only path stay unchanged. No Compiler, LSRA or documentation edits.",
-          "doneWhen": "Complete native tracked/index/mark/edge helpers, PrepareAnalysis, ComputeConnGraphClosure and ComputeStackObjectPointers with Debug/Release coverage and unchanged heap-only behavior.",
-          "status": "complete",
-          "result": "Turn89 returned four frozen files from db274ea with16Debug/15Release graph and heap-only cases. Independent native review942a496f turn63 found no high-confidence discrepancies; parent verified source hashes and final TRX results. ComputeEscapingNodes still requires AnalyzeIfCloningCanPreventEscape/AnalyzePseudoForCloning/CheckCanClone, not a conservative substitute; Main's object-stack-allocation frontier stays explicit."
+          "files": "New ObjectAllocator escape/clone-analysis partials and required state/tests; no DoPhase, actual clone transformations, allocation-site walking or Compiler edits.",
+          "doneWhen": "Complete AnalyzeIfCloningCanPreventEscape/AnalyzePseudoForCloning/CheckCanClone and required analysis helpers without approximating pseudo escapes; consume complete shared EH feasibility.",
+          "status": "in-progress",
+          "result": "Graph foundation committed0671581. Turn90 identified fgCloneTryRegion's no-insertion feasibility dependency;610 now owns that helper. Worker proceeds with independent analysis while its API is pending."
         }
       ],
       "deferred": [
         "Value-numbering memory-phi traversal and the full value-numbering phase; SSA map selection is complete.",
-        "General assertion propagation and full optimized allocation activation; parent may port prerequisite algorithms without bypassing the existing gate.",
+        "General assertion propagation and broader optimized execution beyond the current backend frontier.",
         "Full EH-funclet and hardware-import parity are subsequent execution-capability packets, not gates on the first scalar minopts backend path.",
         "Non-xarch hardware-intrinsic folding and hashBv iterator/countBits/setLowest APIs. Native vector Intersects/XOR defects are recorded in B247/B246; their corrected algorithms are not authorized and those entire vector operations are deferred.",
         "The preexisting fgVerifyHandlerTab diagnostic stub and broader EH verification, outside the cleanup algorithm.",
@@ -62,12 +61,12 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Local resolution committed4b9f59f; object connection-graph foundation reviewed and validated16Debug/15Release. Parent reviewed complete allocation traversal returned by3a2c8d9b turns19-20; worker is correcting exposed-use and nonlocal upper-save diagnostic callsites and required reference invariants before refreshed handoff. Parent's eight dispatch tests remain uncommitted: before activation three pass and five fail at the old gate. After collecting corrections, wire DoRegisterAllocation: local build/resolve when enregisterLocalVars; full allocation when enregisterLocalVars OR OptimizationEnabled. Validate integrated Debug/Release, publish fresh NativeAOT and compare to artifacts/allocation-native-fullopts (19 native bodies, DisableObjectStackAllocation and RawHexCode), then preserve checked32-method minopts execution. ComputeEscapingNodes and clone analysis remain the next independent object frontier. No remote publication.",
+    "nextAction": "Full native allocation is integrated:677Debug/572Release cases pass, and32 minopts GCStress4 methods execute managed code. Fresh optimized standard-fullopts capture passes Main's LSRA/IR checks, then rejects enabled loop alignment and the host exits with stack overflow; no optimized execution claim. Next port complete shouldAlignLoop and placeLoopAlignInstructions (compiler.cpp5205-5425), replacing Compiler.cs2508's gate. Do not disable alignment. Then publish fresh NativeAOT and repeat the matching optimized capture against allocation-native-fullopts (DisableObjectStackAllocation/RawHexCode). Collect610 EH feasibility API and relay to d62 object analysis; collect3a hardware-import boundary after turn21. All worker outputs remain isolated from parent snapshots. No remote publication.",
     "handoff": {
-      "status": "local-resolution-validated-allocation-traversal-pending",
+      "status": "full-allocation-validated-loop-alignment-frontier",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 through turn16 resolved/idle. 3a2c8d9b through turn20 collected; bounded allocation traversal review corrections in progress. d62fc6a5 through turn89 collected; object foundation reviewed and integrated, idle. 942a496f through turn63 collected: object foundation review has no high-confidence findings, idle. 6a004941 through turn35 resolved/idle. CoreRoot is free. No app-native child-session coordination.",
-      "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
+      "workerPackets": "610162a0 through turn16 collected, now implementing EH clone feasibility. 3a2c8d9b through turn21 collected, now hardware-import prerequisites. d62fc6a5 through turn90 collected, continuing escape/clone analysis with610 dependency. 942a496f through turn63 and6a004941 through35 resolved/idle. CoreRoot is free. No app-native child-session coordination.",
+      "preserve": "Windows-AMD64 lowering and allocation support their native local modes; generation/emission/metadata execute the established32-method minopts corpus. Optimized compilation is now blocked after allocation at loop alignment, not the former allocator gate. Focused GC stress is not broad runtime/other-target parity. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
       "nativeFlowGraphSource": "src/coreclr/jit/fgopt.cpp:4373-4902",
@@ -82,6 +81,25 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "fullAllocationIntegration": {
+        "nativeBoundary": "lsra.cpp1336-1430 phase dispatch,5459-6759 allocation traversal,7413-7429 AMD64 upper-save predicate; committed general selector and local/minimal build/resolve helpers.",
+        "sourceManifest": "artifacts\\allocation-phase-integration\\source-manifest.json",
+        "sourceManifestSha256": "E200F25C9543E37728B81FFE099A333B6E182CEBAB041408DFC7047BD2E724CF",
+        "snapshotBase": "0671581",
+        "debugTests": "artifacts\\allocation-phase-integration\\debug.trx",
+        "releaseTests": "artifacts\\allocation-phase-integration\\release.trx",
+        "debugPassed": 677,
+        "releasePassed": 572,
+        "skipped": 0,
+        "jit": "artifacts\\allocation-phase-jit\\RyuJitSharp.dll",
+        "jitSha256": "A1814CA9FD898BB766570714358F39B30809739B7B2A813E1F05B45F41DDA021",
+        "runtimeEvidence": "artifacts\\allocation-phase-integration\\runtime-validation.json",
+        "minoptsManagedMethods": 32,
+        "gcStress": 4,
+        "optimizedCapture": "artifacts\\allocation-phase-integration\\standard-fullopts",
+        "optimizedFrontier": "Main passes full allocation and CHECK_IR; enabled loop-alignment placement rejects, followed by host stack overflow (exit -1073741571). No optimized managed codegen/execution pass.",
+        "review": "Complete Windows-x64 traversal reviewed against native, including reused register-state helpers. Corrected exposed-use and unassigned upper-save diagnostic callsites before integration."
+      },
       "objectConnectionGraph": {
         "nativeBoundary": "objectalloc.cpp:79-175,258-555,997-1149 and corresponding objectalloc.h state/predicates.",
         "sourceManifest": "artifacts\\objectalloc-graph-validation\\source-manifest.json",
@@ -5922,7 +5940,7 @@
       "native": ["src\\coreclr\\jit\\lsrabuild.cpp", "src\\coreclr\\jit\\lsra.cpp", "src\\coreclr\\jit\\lsra.h"],
       "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.LocalIntervalConstruction.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalIntervalPredecessors.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalIntervalValidation.cs"],
       "reconciledCommit": null,
-      "scope": "Complete Windows-AMD64 buildIntervals<true> and required predecessor/stress/validation helpers; optimized allocation gate unchanged."
+      "scope": "Complete Windows-AMD64 buildIntervals<true> and required predecessor/stress/validation helpers, dispatched by the native local-enregistration predicate."
     },
     {
       "area": "dominator-and-frontier-construction",
@@ -5950,7 +5968,7 @@
       "native": ["src\\coreclr\\jit\\lsra.cpp", "src\\coreclr\\jit\\lsra.h"],
       "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.LocalResolution.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalResolutionHelpers.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalResolutionDriver.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalResolutionDriverFinalization.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalResolutionDriverVectors.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalResolutionDriverVerification.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalResolutionDriverVerificationMoves.cs"],
       "reconciledCommit": null,
-      "scope": "Complete Windows-AMD64 local-reference helpers and resolveRegisters<true> driver, vector insertion, descriptor finalization and final-allocation/move checking; optimized allocation remains gated."
+      "scope": "Complete Windows-AMD64 local-reference helpers and resolveRegisters<true> driver, vector insertion, descriptor finalization and final-allocation/move checking, integrated in production."
     },
     {
       "area": "object-allocation-connection-graph",
@@ -5971,14 +5989,14 @@
       "native": ["src\\coreclr\\jit\\lsra.cpp:634-722,8434-8719,8793-10000"],
       "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.EdgeResolution.cs", "sources\\Core\\jit\\lsra\\LinearScan.EdgeResolutionMoves.cs", "sources\\Core\\jit\\lsra\\LinearScan.EdgeResolutionRegisters.cs", "sources\\Core\\jit\\lsra\\LinearScan.EdgeResolutionParallelMoves.cs", "sources\\Core\\jit\\lsra\\LinearScan.SelectorHelpers.cs"],
       "reconciledCommit": null,
-      "scope": "Complete Windows-AMD64 resolution across edges and nullable shared stress limiting. Other targets explicitly reject; optimized allocation remains gated."
+      "scope": "Complete Windows-AMD64 resolution across edges and nullable shared stress limiting, integrated in production. Other targets explicitly reject."
     },
     {
       "area": "linear-scan-general-selection",
       "native": ["src\\coreclr\\jit\\lsra.cpp:335-354,489-493,2700-2780,2854-2921,3186-3230,10022-10037,13358-13812", "src\\coreclr\\jit\\lsra.h:2170-2182"],
-      "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.RegisterSelection.cs", "sources\\Core\\jit\\lsra\\LinearScan.RegisterSelection.General.cs", "sources\\Core\\jit\\lsra\\LinearScan.RegisterAllocation.cs"],
+      "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.RegisterSelection.cs", "sources\\Core\\jit\\lsra\\LinearScan.RegisterSelection.General.cs", "sources\\Core\\jit\\lsra\\LinearScan.RegisterAllocation.cs", "sources\\Core\\jit\\lsra\\LinearScan.AllocationTraversal.cs", "sources\\Core\\jit\\lsra\\LinearScan.AllocationTraversalDiagnostics.cs", "sources\\Core\\jit\\lsra\\LinearScan.cs"],
       "reconciledCommit": null,
-      "scope": "Complete Windows-AMD64 full selector and constant/assignment/copy primitives. Minimal path unchanged; full optimized allocation remains gated."
+      "scope": "Complete Windows-AMD64 full selector, constant/assignment/copy primitives and allocation traversal with native phase dispatch. Minimal path unchanged."
     },
     {
       "area": "critical-edge-splitting",
