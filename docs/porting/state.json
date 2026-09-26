@@ -26,6 +26,27 @@
       "parentScope": "Pair/exception/memory-state/array-parser closure committed44c8450 with391D388R and independent review. Parent owns VN reachability state and full phase/block/phi orchestration, plus shared integration. Workers own loop effects, tree evaluation and remaining intrinsic/memory/call closures. Do not activate a reduced fgValueNumber phase.",
       "parallelPackets": [
         {
+          "scope": "Complete relational assertion application prerequisite, assertionprop.cpp4433-4910.",
+          "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
+          "files": "New Compiler.ap.Relational.cs and AssertionRelationalTests.cs only.",
+          "status": "in-progress",
+          "remainingBoundary": "3a through64 has complete lookup with5D5R but no full dispatcher/application: requires6a range analysis and RangeProperties. Parent completed shared IsVNRelop ref-output API with275D275R. Await native range APIs rather than add equality-only dispatch; no phase activation."
+        },
+        {
+          "scope": "Complete native range-analysis prerequisite, then arithmetic/range/cast/bounds assertion application.",
+          "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
+          "files": "sources\\Core\\jit\\rangecheck\\ native analysis types/helpers and RangeAnalysisTests.cs; Compiler.ap.Arithmetic.cs/AssertionArithmeticTests.cs remain reserved but deferred.",
+          "status": "in-progress",
+          "remainingBoundary": "6a through69 found RangeCheck empty and Limit/Range/RangeOps/GetRangeFromAssertions absent. Ownership expanded to full required native rangecheck.h75-351/rangecheck.cpp analysis closure, including GetRange/TryGetRange SSA and stress paths. Return validated prerequisite before assertionprop.cpp4141-4353,5020-5178,5651-5826 application. No range-check/assertion phase activation."
+        },
+        {
+          "scope": "Complete VN-based assertion folding prerequisite.",
+          "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
+          "files": "New Compiler.ap.VNFolding.cs and AssertionVNFoldingTests.cs only.",
+          "status": "in-progress",
+          "remainingBoundary": "Native assertionprop.cpp2652-3469: memory-call folds, call/general/constant folding and substitution profitability. No phase activation."
+        },
+        {
           "scope": "Complete loop-side-effect analysis required by native fgValueNumber.",
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
           "files": "LoopSideEffects.cs, new Compiler.LoopSideEffects.cs and LoopSideEffectTests.cs.",
@@ -155,11 +176,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Tree/intrinsic/reachability closure is validated584D543R oncc5a9f0. Collect610 complete loop-analysis/invariance handoff and native-order field/array collection API;942 now owns ValueNumberPhaseTests.cs. Parent Compiler.ValueNumber.cs has unbuilt complete draft bodies for phase (temporarily named fgValueNumberCore), Blocks/Block/PhiDef and memory-loop initialization. Adapt its provisional collection enumeration to610's exact contract, compile and validate complete phase closure. Rename core to fgValueNumber and remove old production stub only at activation. Publish locally, preserve14runtime configurations, then examine Counted VN/assertion difference. No remote publication.",
+    "nextAction": "Tree/intrinsic/reachability committedff3b847 with584D543R. Await610 full loop-analysis/invariance handoff and native-order field/array collection API.942 phase fixture through84 has1passing/4expected-failing cases against the old production stub; artifacts\\vn-phase-tests-validation\\Debug-stub.trx. Parent Compiler.ValueNumber.cs has complete unbuilt draft phase (temporary fgValueNumberCore), Blocks/Block/PhiDef and memory-loop initialization, with IsOSR property and native TYP_UNKNOWN default corrected. Adapt provisional collection enumeration to610 contract and validate complete phase, then rename core/remove stub at activation. Publish locally and preserve14runtime configurations.3a/6a/d62 now own independent assertion prerequisites. No remote publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Collected memory942:83, intrinsic6a:68, dispatcher3a:63, reviewd62:115 and loop610:43. Memory/calls committedcc5a9f0. Tree/intrinsic/reachability integrated584D543R.610 continues full loop analysis;942 creates focused phase fixtures. Other packets frozen/resolved. Parent owns CoreRoot, currently free. No app-native sessions.",
+      "workerPackets": "Collected memory/phase942:84, intrinsic6a:68, dispatcher3a:63, reviewd62:115 and loop610:43. Memory/calls committedcc5a9f0, tree/intrinsic/reachability committedff3b847.610 continues full loop analysis;942 phase fixtures await declared source overlay. Reused3a/6a/d62 for independent assertion prerequisites after committing their VN packets. Parent owns CoreRoot, currently free. No app-native sessions.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -175,6 +196,17 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "vnRelationalQuery": {
+        "snapshotBase": "ff3b847",
+        "sourceManifest": "artifacts\\vn-memory-state-validation\\relop-query-source-manifest.json",
+        "debugPassed": 275,
+        "releasePassed": 275,
+        "skipped": 0,
+        "selector": "FullyQualifiedName~ValueNumBinary",
+        "tests": "snapshot\\artifacts\\tst\\{Debug,Release}\\relop-query-{Debug,Release}.trx",
+        "nativeBoundary": "valuenum.cpp7630-7673;valuenum.h1226",
+        "scope": "Complete native IsVNRelop query with optional function output represented by two public overloads. Reuses exact existing comparison predicate and leaves ref output unchanged on failure; fourteen cases cover all comparison functions and rejected shapes."
+      },
       "vnTreeIntrinsicClosure": {
         "snapshotBase": "cc5a9f0",
         "sourceManifest": "artifacts\\vn-memory-state-validation\\tree-intrinsic-source-manifest.json",

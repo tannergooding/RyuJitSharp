@@ -225,10 +225,22 @@ public sealed partial class ValueNumStore
         };
     }
 
-    private bool IsVNRelop(ValueNum vn)
+    public bool IsVNRelop(ValueNum vn)
     {
         var app = new VNFuncApp();
-        return GetVNFunc(vn, ref app) && (app.Arity == 2) && VNFuncIsComparison(app.Func);
+        return IsVNRelop(vn, ref app);
+    }
+
+    public bool IsVNRelop(ValueNum vn, ref VNFuncApp app)
+    {
+        var candidate = new VNFuncApp();
+        if (!GetVNFunc(vn, ref candidate) || (candidate.Arity != 2) || !VNFuncIsComparison(candidate.Func))
+        {
+            return false;
+        }
+
+        app = candidate;
+        return true;
     }
 
     private ValueNum GetReverseRelop(ValueNum vn)

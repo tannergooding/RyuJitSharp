@@ -16,6 +16,63 @@ internal static unsafe class ValueNumBinaryInterningTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "VNEvalFoldTypeCompare")]
     private static extern int FoldTypeCompare(ValueNumStore store, var_types type, VNFunc func, int left, int right);
 
+    [TestCase(VNFunc.VNF_EQ)]
+    [TestCase(VNFunc.VNF_NE)]
+    [TestCase(VNFunc.VNF_LT)]
+    [TestCase(VNFunc.VNF_LE)]
+    [TestCase(VNFunc.VNF_GT)]
+    [TestCase(VNFunc.VNF_GE)]
+    [TestCase(VNFunc.VNF_LT_UN)]
+    [TestCase(VNFunc.VNF_LE_UN)]
+    [TestCase(VNFunc.VNF_GT_UN)]
+    [TestCase(VNFunc.VNF_GE_UN)]
+    public static void RelationalQueryReturnsFunctionAndOperands(VNFunc function)
+    {
+        WithStore((store, _) =>
+        {
+            var left = store.VNForExpr(null, TYP_INT);
+            var right = store.VNForExpr(null, TYP_INT);
+            var value = store.VNForFunc(TYP_INT, function, left, right);
+            var application = new VNFuncApp();
+
+            Assert.That(store.IsVNRelop(value), Is.True);
+            Assert.That(store.IsVNRelop(value, ref application), Is.True);
+            Assert.That(application.Func, Is.EqualTo(function));
+            Assert.That(application.Arity, Is.EqualTo(2));
+            Assert.That(application.GetArg(0), Is.EqualTo(left));
+            Assert.That(application.GetArg(1), Is.EqualTo(right));
+        });
+    }
+
+    [TestCase(0)]
+    [TestCase(1)]
+    [TestCase(2)]
+    [TestCase(3)]
+    public static void NonRelationalQueryPreservesOutput(int kind)
+    {
+        WithStore((store, _) =>
+        {
+            var left = store.VNForExpr(null, TYP_INT);
+            var right = store.VNForExpr(null, TYP_INT);
+            var relation = store.VNForFunc(TYP_INT, VNFunc.VNF_LT, left, right);
+            var application = new VNFuncApp();
+            Assert.That(store.GetVNFunc(relation, ref application), Is.True);
+            var value = kind switch
+            {
+                0 => store.VNForIntCon(17),
+                1 => left,
+                2 => store.VNForFunc(TYP_INT, VNFunc.VNF_NOT, left),
+                _ => store.VNForFunc(TYP_INT, VNFunc.VNF_ADD, left, right),
+            };
+
+            Assert.That(store.IsVNRelop(value), Is.False);
+            Assert.That(store.IsVNRelop(value, ref application), Is.False);
+            Assert.That(application.Func, Is.EqualTo(VNFunc.VNF_LT));
+            Assert.That(application.GetArg(0), Is.EqualTo(left));
+            Assert.That(application.GetArg(1), Is.EqualTo(right));
+        });
+    }
+
     [TestCase(VNFunc.VNF_ADD)]
     [TestCase(VNFunc.VNF_MUL)]
     [TestCase(VNFunc.VNF_AND)]
