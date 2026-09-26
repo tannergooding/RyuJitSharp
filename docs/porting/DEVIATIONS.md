@@ -213,9 +213,10 @@ entries. The mutating clone path, allocation-site analysis traversal and
 stack/heap morphing remain unported; the phase gate is unchanged.
 
 Hardware-import prerequisites preserve native argument order and precise types,
-table-driven eligibility and xarch immediate/range-check rules. They do not
-activate `impHWIntrinsic`: SIMD signature recognition, stack handling and
-special-import/fallback closure remain incomplete. Existing hardware-code
+table-driven eligibility and xarch immediate/range-check rules. SIMD/mask stack
+normalization, call return buffers and scalar argument coercion are implemented.
+They do not activate `impHWIntrinsic`: the complete generic and
+special-import/fallback closure remains incomplete. Existing hardware-code
 differences are not accepted parity exceptions.
 
 Local-address values retain their owning statement/operand slot rather than a

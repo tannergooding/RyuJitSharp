@@ -46,7 +46,7 @@
           "files": "Compiler.SIMDImport/SIMDTypeRecognition partials and directly required SIMD stubs/state/tests; shared Compiler.cs edits require exact handoff.",
           "doneWhen": "Complete getBaseJitTypeAndSizeOfSIMDType closure and impSIMDPopStack if bounded, preserving native ISA/type/size/fallback contracts. Keep importer gate until full closure.",
           "status": "in-progress",
-          "result": "Turn24 returned full SIMD pop41D41R; existing SIMD recognition was already complete. Continuing same prerequisite closure with getArgForHWIntrinsic and exact dispatcher/special-import dependency plan; no helper-only integration yet.",
+          "result": "Turn25 returned complete SIMD pop and getArgForHWIntrinsic75D75R, source reviewed/hashes verified and integrated. Existing SIMD recognition was already complete. Remaining closure: impHWIntrinsic2094-2884, xarch special1234-2740/nonconstant fallback1155-1207, portable xplat2910-5841 plus creation helpers.",
           "deferred": "Shared generators/tables, LSRA, ObjectAllocator, EH feasibility, other targets and publication."
         },
         {
@@ -69,11 +69,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Call-free probe now executes4 methods at six trip counts, including actual3-byte adaptive padding (native1byte; differing earlier layout). Native inverts all4 loops while managed optInvertLoops is a no-op. Parent has read optimizer.cpp1821-2356: port complete inversion plus optInvertCountTreeInfo, reuse existing CFG/canonicalization, and integrate942's independent AnalyzeIteration/optIsLoopIncrTree closure. Next read native cost-counter preceding1821 and managed loop/CFG APIs, then implement. Other lanes continue3a hardware arguments,610 EH mutation with clone-state support,d62 allocation-site analysis. Current27 optimized and32 minopts GCStress4 methods execute. No code/dump parity or remote publication.",
+    "nextAction": "Parent inversion body/cost walker and shared BasicBlock.ComplexityExceeds are implemented but unvalidated; Compiler.opt.cs stub removed in WIP and LoopDiscoveryTests gained top/bottom-tested cases. Integrate942's pending full iteration analysis, establish targeted Debug/Release and native FullOpts execution before committing inversion. d62 site-analysis40D38R is frozen under6a review; includes shared complexity helper. 610 full EH clone63D60R is frozen, needs review/integration. SIMD argument75D75R packet now integrated; next3a scope is full remaining hardware-import closure, not selective activation. Current validated binary still20b2aaf,27 optimized and32 minopts GCStress4 methods execute. No code/dump parity or publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Earlier packets integrated. Active fromf3a5815:610 through18 collected and continuing clone-state/mutation;3a through24 collected and continuing hardware-argument closure;d62 allocation-site analysis after92;942 loop-iteration implementation after65. Returned mapped-target/SIMD-pop helpers belong to their continuing closure packets, not uncollected results. Parent owns inversion and CoreRoot. No app-native sessions.",
+      "workerPackets": "942 iteration implementation active after65. d62 through94 collected/frozen40D38R, under6a review.610 through19 collected/frozen63D60R, review pending.3a through25 collected, SIMD arguments integrated75D75R; next assignment pending commit. Parent owns unvalidated inversion WIP and CoreRoot. Earlier notifications are resolved; no app-native sessions.",
       "preserve": "Windows-AMD64 lowering/allocation/placement/generation/emission/metadata execute27 selected optimized methods and the established32-method minopts corpus under GCStress4. Optimized runs use native JitObjectStackAllocation=0 on both sides while object analysis is incomplete. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -89,6 +89,16 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "simdArgumentImport": {
+        "nativeBoundary": "simd.cpp472-490;hwintrinsic.cpp1552-1583",
+        "sourceManifest": "artifacts\\simd-import-validation\\source-manifest.json",
+        "sourceManifestSha256": "143DE673AC671F3F6250D6133934894F1D45E3D7095A89C4747BD2EFF405BFB6",
+        "snapshotBase": "f3a5815",
+        "debugPassed": 75,
+        "releasePassed": 75,
+        "skipped": 0,
+        "scope": "Complete SIMD/mask stack and hardware-argument normalization. Existing SIMD signature recognition reused. Generic/special/portable importer closure still unported; dispatcher remains unchanged."
+      },
       "callFreeLoopExecution": {
         "jitCommit": "20b2aaf",
         "runtimeEvidence": "artifacts\\loop-alignment-execution-probe\\runtime-validation.json",
@@ -4912,11 +4922,11 @@
   "sourceMap": [
     {
       "area": "hardware-import-prerequisites",
-      "native": ["src\\coreclr\\jit\\hwintrinsic.cpp:1765-1798,1856-1969", "src\\coreclr\\jit\\hwintrinsicxarch.cpp:2751-2765"],
-      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.HWIntrinsicImportPrerequisites.cs"],
+      "native": ["src\\coreclr\\jit\\hwintrinsic.cpp:1552-1583,1765-1798,1856-1969", "src\\coreclr\\jit\\hwintrinsicxarch.cpp:2751-2765", "src\\coreclr\\jit\\simd.cpp:472-490"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.HWIntrinsicImportPrerequisites.cs", "sources\\Core\\jit\\compiler\\Compiler.SIMDImport.cs"],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Complete signature reader, table/base-type predicates and xarch immediate/range-check helpers. SIMD recognition, operand handling and full dispatcher/special-import closure remain required."
+      "status": "Complete signature reader, table/base-type predicates, xarch immediate/range-check helpers and SIMD/hardware argument normalization (simd.cpp472-490,hwintrinsic.cpp1552-1583). Existing SIMD recognition reused. Full generic/special/portable importer closure remains required."
     },
     {
       "area": "object-escape-clone-analysis",

@@ -15,6 +15,15 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Hardware argument normalization
+
+Hardware-intrinsic arguments now use native SIMD/mask stack normalization,
+including call-like struct results that need return buffers. Scalar arguments
+retain the native implicit-coercion check and invalid-IL failure behavior.
+
+The complete generic and special hardware-import paths are still required
+before activating the dispatcher.
+
 ## 2026-09-26: Hardware-import prerequisites
 
 Hardware-intrinsic import now has native argument-signature reading, table-driven
