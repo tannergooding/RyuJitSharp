@@ -12,7 +12,7 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Activate complete native forward substitution, then complete empty-EH cleanup. Preserve native eligibility, evaluation/exception ordering, node ownership and EH/profile contracts; integrate the already frozen packets sequentially.",
+      "scope": "Activate complete native empty-EH cleanup from the frozen packet. Preserve native phase ordering, EH nesting/indices, callfinally continuations, predecessor/profile/IL contracts and retained handler effects.",
       "doneWhen": [
         "Preserve the completed loop-inversion/iteration-analysis contract and identify the first missing native transformation behind a concrete optimized-code difference.",
         "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
@@ -23,7 +23,7 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Head/tail activation4 complete679D554R,9old-stub failures/14controls,23configs132bodies172phases.3a:122 confirms native shared returns/SSA/CSE choices for all6B300methods; corresponding sizes match, not codegen parity. ForwardSub6 and EHcleanup5 frozen/reviewed, awaiting sequential activation. CoreRoot free.",
+      "parentScope": "ForwardSub activation7 complete694D569R,6old-stub failures/9controls,23configs132bodies132phases;3a:123 matches native positive allocation forwarding and3unchanged controls. EHcleanup5 frozen/reviewed with native positive empty-try/try-catch evidence; empty-finally positive runtime gap retained. CoreRoot free.",
       "parallelPackets": [
         {
           "scope": "Complete native early/late head and tail merging.",
@@ -36,15 +36,15 @@
           "scope": "Complete native forward substitution.",
           "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
           "files": "New Compiler.ForwardSub*.cs, conventional required models and ForwardSubTests.cs; parent owns existing entry.",
-          "status": "in-progress",
-          "remainingBoundary": "6a:120 frozen6files15D15R; manifest artifacts\\forwardsub-validation\\source-manifest.json;610:87 native review clear. Parent found positive native rangeMain allocation-call forwarding and3unchanged controls in artifacts\\forwardsub-integration\\native-positive-evidence.json. Await activation after head/tail commit."
+          "status": "done",
+          "remainingBoundary": "6a:120 packet/610:87 review integrated with original private entry visibility.7overlays694D569R,6old-stub failures/9controls,23configs132bodies132phases.3a:123 matches original allocation-call forwarding, temp-store removal, effects/order and3native unchanged controls."
         },
         {
           "scope": "Complete native empty EH cleanup.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
           "files": "New Compiler.EHCleanup*.cs and EHCleanupTests.cs; parent owns existing entries.",
           "status": "in-progress",
-          "remainingBoundary": "d62:174 frozen5files9D9R complete three phases plus direct predecessor/continuation helpers;942:143 native review clear. Public entries inactive; integrate after head/tail/forward substitution without mixing WIP."
+          "remainingBoundary": "d62:174 frozen5files9D9R and942:143 review clear; production entries inactive. d62:175/176 single frozen native probe produces positive empty-try and nonthrowing try/catch removal; empty-finally is consumed earlier and has no positive later-phase evidence. CoreRoot released. Integrate after ForwardSub commit."
         },
         {
           "scope": "Establish bounded positive native induction-variable execution evidence.",
@@ -365,11 +365,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Activate frozen ForwardSub6 from artifacts\\forwardsub-validation\\source-manifest.json: rename fgForwardSubCore to actual public fgForwardSub, remove Compiler.fg.cs stub and route tests through public entry.610:87 native review clear; prove positive old-stub regression, integrate fullD/R and freshAOT against committed head/tail baseline. Preserve23case artifacts\\head-tail-merge-integration\\capture-configurations.json and compare rangeMain positive allocation-call forwarding using artifacts\\forwardsub-integration\\native-positive-evidence.json. Then integrate frozen/reviewed EHcleanup5. No publication.",
+    "nextAction": "Activate frozen EHcleanup5 after ForwardSub commit: rename three complete cores to actual public fgRemoveEmptyFinally/fgRemoveEmptyTry/fgRemoveEmptyTryCatchOrTryFault, remove Compiler.fg.cs stubs and target production entries in tests.942:143 review clear. Prove positive old-stub failures, integrate fullD/R, publish freshAOT and run existing23cases plus exact ADA374DA native EH probe. Compare positive empty-try/try-catch transformations; retain empty-finally positive execution gap. CoreRoot free; no publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "3a:121/122 head/tail implementation/comparison and942:142 review fully integrated.6a:120 ForwardSub6 and610:87 review collected;d62:174 EHcleanup5 and942:143 review collected. The latter two packets remain inactive/uncommitted root WIP. All5workers idle; no parent command running or app-native sessions; CoreRoot free.",
+      "workerPackets": "ForwardSub6/610:87 review and3a:123 comparison integrated into completed activation7. EHcleanup5/942:143 review andd62:175/176 native probe collected but EH entries remain inactive/uncommitted. All5workers idle; no parent command running or app-native sessions; CoreRoot free.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -385,6 +385,28 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "emptyEhCleanup": {
+        "nativeEvidence": "artifacts\\eh-cleanup-native-probe\\native-positive-evidence.json",
+        "nativeProbe": "Three selected methods exit0/stdout9,10,11,1. EmptyTry promotes try-finally and removes EH#0; EmptyTryCatch removes a nonthrowing handler and EH#0.",
+        "corpusSha256": "ADA374DA3CF914D7F8E02E4F2380E37AEA2CB4BD9404ACD331D1D016C70F18CC",
+        "gaps": "Production entries inactive. EmptyFinally is optimized by the earlier empty-try phase; no positive native empty-finally-phase execution established by the single probe."
+      },
+      "forwardSubstitution": {
+        "snapshotBase": "a4ab10c",
+        "sourceManifest": "artifacts\\forwardsub-integration\\source-manifest.json",
+        "debugPassed": 694,
+        "releasePassed": 569,
+        "skipped": 0,
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\forwardsub-integrated-{Debug,Release}.trx",
+        "regressions": "Six positive cases fail against old production stub;9rejection controls pass. Snapshot Debug forwardsub-entry-before.trx and artifacts\\forwardsub-integration\\entry-before.log. Existing private entry visibility retained; tests target its real name via UnsafeAccessor.",
+        "review": "610:87 no high-confidence WindowsAMD64 native divergence in frozen closure.",
+        "nativeAot": "artifacts\\forwardsub-jit\\RyuJitSharp.dll",
+        "sha256": "25CB266C5E5F5DEE5D32D5579A45F2BD2AB691E8C382C5629F408BC7D1691B7C",
+        "runtime": "artifacts\\forwardsub-integration\\runtime-validation.json:23configurations132positive bodies132phase completions, including minopts invocations; exact JIT/methods/GCStress/no fallback verified.",
+        "nativeEvidence": "artifacts\\forwardsub-integration\\native-positive-evidence.json:rangeMain allocation-call forwarding, three unchanged controls.",
+        "comparison": "artifacts\\forwardsub-integration\\native-phase-comparison.json:rangeMain moves original allocation call000029 into V05 store000032, removes V11 temp statement00006 and preserves BB02 effects/order, matching native;3loop controls unchanged. Existing7byte Main size gap predates activation; no codegen parity claim.",
+        "gaps": "Focused tests omit16/200-node limits, throwing FIELD_ADDR multi-use cloning, promoted-field death correction and same-exception reordering. Earlier identity/type-display/string/profile diagnostics and broader code/metadata parity remain open."
+      },
       "headTailMerge": {
         "snapshotBase": "7753c19",
         "sourceManifest": "artifacts\\head-tail-merge-integration\\source-manifest.json",
@@ -5861,6 +5883,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "forward-substitution",
+      "native": ["src\\coreclr\\jit\\forwardsub.cpp:121-136,159-242,250-325,335-583,600-1078,1096-1141,1163-1220"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.ForwardSub.cs", "sources\\Core\\jit\\compiler\\Compiler.ForwardSub.Visitors.cs", "sources\\Core\\jit\\compiler\\Compiler.ForwardSub.Statement.cs", "sources\\Core\\jit\\compiler\\Compiler.ForwardSub.MultiUse.cs", "sources\\Core\\jit\\compiler\\Compiler.ForwardSub.Liveness.cs"],
+      "status": "Complete WindowsAMD64 production phase with original private visibility. Native positive call forwarding and selected execution established; broader parity remains open.",
+      "reconciledCommit": null
+    },
     {
       "area": "head-tail-merging",
       "native": ["src\\coreclr\\jit\\fgopt.cpp:5101-5635,5638-5739,5743-5770,5832-5969", "src\\coreclr\\jit\\arraystack.h:79-83,225-233"],

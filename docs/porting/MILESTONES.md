@@ -15,6 +15,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Forward substitution
+
+Forward substitution now moves eligible expressions into their next uses,
+removes temporary stores and clones cheap addresses for bounded multi-use
+cases. It preserves evaluation and exception ordering, tree ownership and
+local last-use information.
+
+The range probe matches native allocation-call forwarding: the original call
+moves directly into its destination store, the intermediate temporary disappears
+and surrounding effects retain their order. The other three loop methods remain
+unchanged in this phase. Established optimized and minopts/GC-stress corpora
+execute; broader dump/code parity remains outstanding.
+
 ## 2026-09-26: Head and tail merging
 
 Early and post-morph head/tail merging now share equivalent statement sequences

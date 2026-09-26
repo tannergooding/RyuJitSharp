@@ -15684,9 +15684,6 @@ public partial class Compiler
         return !info.compInitMem || (varDsc.lvIsTemp && !varDsc.HasGCPtr);
     }
 
-    // TODO: Port phase - fgForwardSub
-    private PhaseStatus fgForwardSub() => PhaseStatus.MODIFIED_NOTHING;
-
 #if DEBUG
     private static ConfigMethodRange s_localAddrPropagationRange;
 #endif
